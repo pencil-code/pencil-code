@@ -1,0 +1,75 @@
+#!/bin/csh
+#
+#  $Id: pc_jobtransfer,v 1.1 2004-03-22 19:01:42 brandenb Exp $
+#
+#  checks that a valid NEWDIR file exists, and that in
+#  the new directory there is another valid NEWDIR file.
+#  Only if everything is ok, this script will touch STOP
+#  to initialize the job transfer. This script should help
+#  wasting precious queue time by having wrong NEWDIR files.
+#
+#  21-mar-2004/axel: coded
+#
+set orgdir=$cwd
+#
+#  check that new directory name exists
+#
+if (-e NEWDIR) then
+  set newdir=`cat NEWDIR`
+  #
+  #  go to new directory and back again
+  #
+  if (-e $newdir) then
+    #
+    #  if new directory exists: check restart files
+    #
+    cd $newdir
+    echo ""
+    echo "new directory:"
+    pwd
+    tsnap-all
+    if (-e data/legend.dat) cat data/legend.dat
+    if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
+    #
+    #  use first preliminary rtndir, which is possibly a relative path
+    #
+    if (-e NEWDIR) then
+      set rtndir=`cat NEWDIR`
+      if (-e $rtndir) then
+        cd $rtndir
+        set rtndir=$cwd
+        echo
+        echo "return directory"
+        pwd
+        #tsnap-all
+        #if (-e data/legend.dat) cat data/legend.dat
+        #if (-e data/time_series.dat) tail -5 data/time_series.dat |grep -v "#"
+        #
+        #  check that original and return directories are the same
+        #
+        if ($orgdir == $rtndir) then
+          echo ""
+          echo "alright: both directories exist full circle"
+          echo "will now touch STOP file to do the transfer"
+          touch STOP
+          echo ""
+        else
+          echo "*not* alright, because original and return directories differ:"
+          echo "orignal directory:" $orgdir
+          echo " return directory:" $rtndir
+        endif
+      else
+        echo "return directory does *not* exist!"
+      endif
+    else
+      echo "stop: return directory does not exist!"
+      exit
+    endif
+  else
+    echo "stop: new directory does not exist!"
+    exit
+  endif
+else
+  echo "stop: new directory does not exist!"
+  exit
+endif
