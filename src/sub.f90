@@ -1195,10 +1195,15 @@ module Sub
       use Cdata, only: epsi
 !
       real, dimension(:) :: x
-      real, dimension(size(x,1)) :: der_step
+      real, dimension(size(x,1)) :: der_step,arg
       real :: x0,width
-
-      der_step = 0.5/(width*cosh((x-x0)/(width+epsi))**2)
+!
+!  Some argument gymnastics to avoid `floating overflow' for large
+!  arguments
+!
+      arg = abs((x-x0)/(width+epsi))
+      arg = min(arg,8.)         ! cosh^2(8) = 3e+27
+      der_step = 0.5/(width*cosh(arg)**2)
 !
       endfunction der_step
 !***********************************************************************
