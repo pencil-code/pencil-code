@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.51 2003-11-30 18:39:15 theine Exp $
+! $Id: visc_shock.f90,v 1.52 2003-12-03 14:18:38 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.51 2003-11-30 18:39:15 theine Exp $")
+           "$Id: visc_shock.f90,v 1.52 2003-12-03 14:18:38 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -152,7 +152,7 @@ module Viscosity
 !  23-nov-02/tony: coded
 !
       use IO
-      use Sub, only: grad
+!     use Sub, only: grad
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
@@ -446,8 +446,6 @@ module Viscosity
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
-      integer :: l,m,n
-
 !
 !  check for degeneracy
 !
@@ -612,7 +610,7 @@ module Viscosity
            (2.*nu*sij2  & 
              + nu_shock * shock * divu**2)
 !
-      if(ip==0) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
+      if(ip==0) print*,glnrho,rho1,cs2,f !(to keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -630,7 +628,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
       real, dimension (nx,3) :: gshock
-      real, dimension (nx) :: rho1,divu,shock,dtnu
+      real, dimension (nx) :: rho1,divu,shock
 
       intent (in) :: f, glnrho, rho1
       intent (out) :: df,shock,gshock

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.182 2003-11-29 18:21:01 theine Exp $
+! $Id: equ.f90,v 1.183 2003-12-03 14:18:38 brandenb Exp $
 
 module Equ
 
@@ -225,7 +225,6 @@ module Equ
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
       real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
-      real :: facdiffus ! ,facdss,facdlnrho
 !
 !  print statements when they are first executed
 !
@@ -233,7 +232,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.182 2003-11-29 18:21:01 theine Exp $")
+           "$Id: equ.f90,v 1.183 2003-12-03 14:18:38 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
