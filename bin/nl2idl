@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.7 2002-07-06 18:10:45 dobler Exp $
+# $Id: nl2idl,v 1.8 2002-10-05 12:07:53 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -57,6 +57,10 @@ Options:
   --function=<func> \tName the IDL function <func> (default is `$funcname')
   -m
   --minimize        \tMinimize strings by trimming trailing whitespace
+  -v <var>
+  --var=<var>       \tInstead of a function file, write a single line
+                    \tassigning the structure to variable <var>. Useful
+                    \tif you EXECUTE the corresponding string in IDL
   --version         \tWrite version number of $cmdname and exit
 ";
 
@@ -66,11 +70,13 @@ GetOptions(\%opts,
 	            --debug
                -f=s --function=s
 	       -m   --minimize
+               -v=s --var=s
 	            --version
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+my $varname = ($opts{'v'} || $opts{'var'} || '');
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 if ($debug) {
     foreach my $opt (keys(%opts)) {
@@ -80,7 +86,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.7 2002-07-06 18:10:45 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.8 2002-10-05 12:07:53 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -89,7 +95,11 @@ my $infile = ($ARGV[0] || '-');
 
 
 ## Some comments and the function definition header
-my $idl = <<"HEADER";
+my $idl='';
+if ($varname) {
+    $idl .= "$varname = { ";
+} else {
+    $idl .= <<"HEADER";
 ;
 ;  $funcname.pro
 ;
@@ -105,8 +115,8 @@ function $funcname
  
 HEADER
 #
-
-$idl .= "$prefix = { \$\n";
+    $idl .= "$prefix = { \$\n";
+}
 
 ## Read file contents
 my $prevlist="";
@@ -140,24 +150,34 @@ merge_nls(\%nlists);
 ## Print IDL statements to generate the namelists as structures
 my ($br0,$br1);			# opening/closing brackets if needed
 foreach my $nl (keys %nlists) {
-    print "$nl:\n" if $debug;
+    print STDERR "$nl:\n" if $debug;
     while (my ($var, $val) = each %{$nlists{$nl}}) {
 	if (@$val > 1) {	# list of values
 	    ($br0,$br1) = ("[", "]");
 	} else {
 	    ($br0,$br1) = ("", "");
 	}
-	my $varstr = sprintf("%-10s", $var);
-	$idl .= "    $varstr : $br0" . join(", ", @$val) . "$br1 , \$\n";
+	if ($varname) {
+	    $idl .= "$var: $br0" . join(", ", @$val) . "$br1, ";
+	} else {
+	    my $varstr = sprintf("%-10s", $var);
+	    $idl .= "    $varstr : $br0" . join(", ", @$val) . "$br1 , \$\n";
+	}
     }
 }
 
-## Replace the last ", $" by a closing brace and finish
-substr($idl,-4) = "\$\n";
-$idl .= "  }\n\n";
-$idl .= "  return, par\n\n";
-$idl .= "end\n";
-print $idl;
+if ($varname) {
+    ## Replace last comma by closing brace and finish
+    substr($idl,-2) = " }";
+} else {
+    ## Replace last ", $" by closing brace and finish
+    substr($idl,-4) = "\$\n";
+    $idl .= "  }\n\n";
+    $idl .= "  return, par\n\n";
+    $idl .= "end";
+}
+
+print "$idl\n";
 
 # ---------------------------------------------------------------------- #
 
