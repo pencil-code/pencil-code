@@ -12,42 +12,58 @@ fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
-#! /Good_Path/perl -w 
+#! /Good_Path/perl -w
 # line 17
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-01-25 11:34:24 $
-# $Revision: 1.6 $
+# $Date: 2003-01-26 16:06:12 $
+# $Revision: 1.7 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
 # Usage:
-#   pencil-test [-H|--html] [-c|--clean] [-u|--update] host1 [host2 [host3 ..]]
+#   pencil-test [-H] [-c] [-u] [-m <emaillist>] host1 [host2 [host3 ..]]
+# Options:
+#   -h, --help          -- Help
+#   -H, --html          --
+#   -c, --clean         --
+#   -u, --update        --
+#   -m <emaillist>,
+#   --mail=<emaillist>  -- Specify who to send mail to if tests fail
 # Crontab entry:
-#  05 01 * * *     $HOME/bin/pencil-test --html --update HOST > $HOME/public_html/pencil-code/tests/HOST.html
+#   05 01 * * *     $HOME/bin/pencil-test --html --update HOST > $HOME/public_html/pencil-code/tests/HOST.html
+# Email list syntax:
+#   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
+#   will not send mail if `interlocked-fluxrings' fails -- except for Nosy
+#   who explicitly requested this. Lazy will not get emails if only `hydro1'
+#   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
+#   but not at the beginning.
 
 use strict;
 use Getopt::Long;
 
-my (%opts);	# Variables written by GetOptions
+my (%opts);			# Variables written by GetOptions
+my $result;
+my (%emails,%pos,%neg,%sendmailto); # Info on mailing if tests fail
 
 ## Process command line
+eval {
+    Getopt::Long::config("bundling");
+};
 GetOptions(\%opts,
-	   qw( -H --html
-	       -c --clean
-	       -u --update
-                  --debug
+	   qw( -H   --html
+	       -c   --clean
+	       -u   --update
+               -m=s --mail=s
+                    --debug
 	                   ));
-my $debug  = (            $opts{debug}  || 0);
-my $html   = ($opts{H} || $opts{html}   || 0);
-my $clean  = ($opts{c} || $opts{clean}  || 0);
-my $update = ($opts{u} || $opts{update} || 0);
-
-my $usage = "Usage:
-  pencil-test [-H|--html] [-c|--clean] [-u|--update] host1 [host2 [host3 ..]]
-";
-die $usage if (! @ARGV);
+die usage() if ($opts{'h'} || $opts{'help'} || @ARGV < 1);
+my $debug  = (              $opts{'debug'}  || 0);
+my $html   = ($opts{'H'} || $opts{'html'}   || 0);
+my $clean  = ($opts{'c'} || $opts{'clean'}  || 0);
+my $update = ($opts{'u'} || $opts{'update'} || 0);
+my $emails = ($opts{'m'} || $opts{'mail'}   || '');
 
 ## Print header
 my $date = scalar localtime();
@@ -89,10 +105,15 @@ foreach my $host (@ARGV) {
 #    print "<",join("> <",@cmd,">\n");
 #    print "<@cmd'>\n");
     my $line;
-    print while (<POUT>);
+    while (defined($line=<POUT>)) {
+	print $line;
+	$result .= $line;
+    }
     close(POUT);
     $first = 0;
 }
+
+## Print footer
 if ($html) {
     print <<"END_FOOT";
 </pre>
@@ -100,5 +121,136 @@ if ($html) {
 </html>
 END_FOOT
 }
+
+## Check for errors and send emails
+if ($emails && ($result =~ /^Failed ([0-9]+) test/m)) {
+    my $nerrors = $1;
+    if ($debug) { print STDERR "Checking who to alert by email\n" };
+    parse_emails($emails);
+    # Analyse
+    my ($main,$summary) = split(/^----*\s?\n(?=Failed)/m,$result);
+    if (defined($summary)) {
+	# Extract list of failed directories
+	my @failures = split(/\n/,$summary);
+	($nerrors) = ($failures[0] =~ /Failed ([0-9]+) test/);
+	@failures = grep /^\s*\S+\s\(.*\)\s*$/, @failures;
+	@failures = map { $_ =~ s/^\s*(\S*).*/$1/; $_ } @failures;
+	foreach my $address (keys %emails) {
+	    foreach my $fail (@failures) {
+		my $def_matches = ! any_match($fail,$neg{''}); # default rule
+		my $pos_matches = any_match($fail,$pos{$address});
+		my $neg_matches = any_match($fail,$neg{$address});
+		if (($def_matches || $pos_matches) && ! $neg_matches) {
+		    if ($debug) { 
+			print STDERR "...", substr($fail,-15,15),
+			  ": \$sendmailto{$address}++\n";
+		    }
+                    $sendmailto{$address}++;
+		}
+	    }
+	}
+	foreach my $address (keys %sendmailto) {
+	    send_mail($address,$nerrors,$summary,$main);
+	}
+    } else {
+	warn "Can't split result string --- strange";
+    }
+}
+
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+        next unless /^\s*#\s*Usage:/m; # Paragraph _must_ contain `Usage:'
+        # Drop `Author:', etc:
+        s/.*?\n(\s*#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;
+    }
+    $_;
+}
+# ---------------------------------------------------------------------- #
+sub parse_emails {
+# Parse the email list into hashes
+    my $emaillist = shift;
+    my ($entry,$address,$spec);
+    while ($emaillist) {
+	$emaillist =~ /^([^\}\{,]*(?:\{[^\}]*\})?),?(.*)/
+	  or warn "Cannot parse email list <$emaillist>\n";
+	($entry,$emaillist) = ($1,$2);
+	($address,$spec) = ($entry =~ /([^\}\{]*)\{?([^\}]*)\}?/);
+	$emails{$address}++ if ($address =~ /\S/);
+	foreach my $sp (split(/,/,$spec)) {
+	    if ($sp =~ /^\-:(.*)/) {
+		push @{$neg{$address}}, $1
+#		push @{$neg{$1}}, $address;
+	    } elsif ($sp =~ /^\+:(.*)/) {
+		push @{$pos{$address}}, $1
+#		push @{$pos{$1}}, $address;
+	    } else {
+		warn "Strange specification: <$spec>\n";
+	    }
+	}
+    }
+}
+# ---------------------------------------------------------------------- #
+sub any_match {
+# Match a string against a list of patterns
+    my $string = shift;
+    my $pattern_pointer = shift;
+    my @patterns = ();
+
+    if (ref($pattern_pointer) eq 'ARRAY') {
+	@patterns = @{$pattern_pointer}
+    };
+
+    foreach my $patt (@patterns) {
+        if ($string =~ /$patt$/) { return 1; }
+    }
+    return 0;
+}
+# ---------------------------------------------------------------------- #
+sub send_mail {
+# Send an email to the given address
+    my $address = shift;
+    my $nerrors = shift;
+    my $text1   = shift;
+    my $text2   = shift;
+    my $mailer;
+
+    if (in_PATH("mailx")) {
+	$mailer = "mailx";
+    } else {
+	$mailer = "mail";
+    }
+
+    my $plurals = ($nerrors<=1 ? '' : 's');
+    if ($debug) {
+	print STDERR
+	  "$mailer -s 'Pencil-code: $nerrors error$plurals from autotest' "
+	  . "$address\n" };
+    open (MAIL,
+ 	  "| $mailer -s '$nerrors errors from pencil-code autotest' $address");
+    print MAIL "$text1\n";
+    print MAIL "-" x 70, "\n";
+    print MAIL "$text2\n";
+    close MAIL;
+}
+# --------------------------------------------------------------------- #
+sub in_PATH {
+# Check whether an executable is available in the execution PATH
+    my $file = shift;
+    my $path;
+    foreach $path (split(/:/,$ENV{PATH})) {
+        if (-x "$path/$file") { return 1; }
+    }
+    return 0;
+}
+# ---------------------------------------------------------------------- #
 
 # End of file pencil-test
