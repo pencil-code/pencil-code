@@ -1,4 +1,4 @@
-! $Id: hydro_fixed.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $
+! $Id: hydro_fixed.f90,v 1.2 2004-06-09 11:46:52 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -44,7 +44,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
-  logical :: lcalc_turbulence_pars
+  logical :: lcalc_turbulence_pars,lparametrized_Hp
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -53,7 +53,7 @@ module Hydro
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
-       nu_turb0, tau_nuturb, nu_turb1, lcalc_turbulence_pars
+       nu_turb0, tau_nuturb, nu_turb1, lcalc_turbulence_pars, lparametrized_Hp
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -116,7 +116,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_fixed.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $")
+           "$Id: hydro_fixed.f90,v 1.2 2004-06-09 11:46:52 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -882,39 +882,43 @@ module Hydro
 !
 !  Need mid-plane pressure for pressure scale height calculation
 !
-      if (iproc == nprocz/2) then
-        if (nprocz == 2*(nprocz/2)) then  ! Even no. of procs in z
-          call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
-              f(lpoint,mpoint,n1,iss),pp=pp0)
-        else                              ! Odd no. of procs in z
-          call eoscalc(ilnrho_ss,f(lpoint,mpoint,npoint,ilnrho),&
-              f(lpoint,mpoint,npoint,iss),pp=pp0)
+      if (lparametrized_Hp) then
+        Hp = cs_ave/Omega
+      else
+        if (iproc == nprocz/2) then
+          if (nprocz == 2*(nprocz/2)) then  ! Even no. of procs in z
+            call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
+                f(lpoint,mpoint,n1,iss),pp=pp0)
+          else                              ! Odd no. of procs in z
+            call eoscalc(ilnrho_ss,f(lpoint,mpoint,npoint,ilnrho),&
+                f(lpoint,mpoint,npoint,iss),pp=pp0)
+          endif
         endif
-      endif
-      call mpibcast_real(pp0,1,nprocz/2)
+        call mpibcast_real(pp0,1,nprocz/2)
 !
 !  Find pressure scale height and calculate turbulence properties
 !
-      Hp = 0.
-      pp2 = 0.
-      do n=n1,n2
-        pp1 = pp2
-        call eoscalc(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
-            f(lpoint,mpoint,n,iss),pp=pp2)
-        if (pp1 > 0.367879*pp0 .and. pp2 <= 0.367879*pp0) then
+        Hp = 0.
+        pp2 = 0.
+        do n=n1,n2
+          pp1 = pp2
+          call eoscalc(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
+              f(lpoint,mpoint,n,iss),pp=pp2)
+          if (pp1 > 0.367879*pp0 .and. pp2 <= 0.367879*pp0) then
 !
 !  Interpolate linearly between z1 and z2 (P_1+(P_2-P_1)/dz*Delta z = 1/e*P_0)
 !          
-          Hp = z(n-1) + dz/(pp2-pp1)*(0.367879*pp0-pp1)
-          exit
-        endif
-      enddo
+            Hp = z(n-1) + dz/(pp2-pp1)*(0.367879*pp0-pp1)
+            exit
+          endif
+        enddo
 !
 !  Broadcast scale height to all processors (Hp is 0 except where Hp is found)
 !
-      call mpireduce_sum((/ Hp /),Hp_arr,1)
-      if (lroot) Hp=Hp_arr(1)
-      call mpibcast_real(Hp,1)
+        call mpireduce_sum((/ Hp /),Hp_arr,1)
+        if (lroot) Hp=Hp_arr(1)
+        call mpibcast_real(Hp,1)
+      endif
 !  Shakury-Sunyaev alpha      
       alphaSS = nu_turb/(Hp**2*Omega)
 !  Speed of largest scale      
