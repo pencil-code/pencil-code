@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.167 2004-05-28 16:44:39 dobler Exp $
+! $Id: hydro.f90,v 1.168 2004-06-08 14:09:10 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.167 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: hydro.f90,v 1.168 2004-06-08 14:09:10 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -342,6 +342,10 @@ module Hydro
       case('power_randomphase') 
         ! initial spectrum k^power
         call power_randomphase(ampluu,initpower,cutoff,f,iux,iuz)
+
+      case('vortex_2d')
+        ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
+        call vortex_2d(f,xx,yy,b_ell)
   
       case default
         !
