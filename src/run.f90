@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.163 2003-11-14 11:23:56 theine Exp $
+! $Id: run.f90,v 1.164 2003-11-14 16:14:23 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -39,6 +39,8 @@
         logical :: stop=.false.,reload=.false.,save_lastsnap=.true.
         real :: wall_clock_time
 !
+        lrun = .true.
+!
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
 !
@@ -47,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.163 2003-11-14 11:23:56 theine Exp $")
+             "$Id: run.f90,v 1.164 2003-11-14 16:14:23 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -114,7 +116,7 @@
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-        call initialize_modules(f,lstart=.false.)
+        call initialize_modules(f,lstarting=.false.)
 !
 !  initialize ionization array
 !
@@ -182,7 +184,7 @@
               dt=0.
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
               call rprint_list(.true.) !(Re-read output list)
-              call initialize_modules(f,lstart=.false.)
+              call initialize_modules(f,lstarting=.false.)
               if (lroot) call remove_file("RELOAD")
               reload = .false.
             endif

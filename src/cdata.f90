@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.177 2003-11-14 15:28:11 theine Exp $
+! $Id: cdata.f90,v 1.178 2003-11-14 16:14:22 dobler Exp $
 
 module Cdata
 
@@ -98,6 +98,7 @@ module Cdata
   !  modules that are linked in (see Makefile.local) and can, in some cases,
   !  be reset also via appropriate namelist entries.
 
+  logical :: lstart=.false., lrun=.false.
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lspecial=.false., lwrite_slices=.false.

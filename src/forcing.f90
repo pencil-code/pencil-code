@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.54 2003-10-08 18:17:38 brandenb Exp $
+! $Id: forcing.f90,v 1.55 2003-11-14 16:14:22 dobler Exp $
 
 module Forcing
 
@@ -44,7 +44,6 @@ module Forcing
       use Sub
 !
       logical, save :: first=.true.
-      logical :: lstart
 !
       if (.not. first) call stop_it('register_forcing: called twice')
       first = .false.
@@ -54,22 +53,22 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.54 2003-10-08 18:17:38 brandenb Exp $")
+           "$Id: forcing.f90,v 1.55 2003-11-14 16:14:22 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing(lstart)
+    subroutine initialize_forcing(lstarting)
 !
 !  read seed field parameters
-!  nothing done from start.f90 (lstart=.true.)
+!  nothing done from start.f90 (lstarting=.true.)
 !
       use Cdata
       use Sub, only: inpui
 !
       logical, save :: first=.true.
-      logical :: lstart
+      logical :: lstarting
 !
-      if (lstart) then
+      if (lstarting) then
         if(ip<4) print*,'initialize_forcing: not needed in start'
       else
         if (first) then

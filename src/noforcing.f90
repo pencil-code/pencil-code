@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.11 2003-04-10 06:58:24 brandenb Exp $
+! $Id: noforcing.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $
 
 module Forcing
 
@@ -35,20 +35,20 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.11 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: noforcing.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing(lstart)
+    subroutine initialize_forcing(lstarting)
 !
 !  initialize random number generator in processor-dependent fashion
 !  see comments in start.f90 for details
 !
       use Cdata
 !
-      logical :: lstart
+      logical :: lstarting
 !
-      if(ip==0) print*,'lstart=',lstart !(to keep compiler quiet)
+      if(ip==0) print*,'lstarting=',lstarting !(to keep compiler quiet)
     endsubroutine initialize_forcing
 !***********************************************************************
     subroutine addforce(df)

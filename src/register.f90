@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.109 2003-11-14 15:28:11 theine Exp $
+! $Id: register.f90,v 1.110 2003-11-14 16:14:23 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -106,7 +106,7 @@ module Register
 !
     endsubroutine register_modules
 !***********************************************************************
-    subroutine initialize_modules(f,lstart)
+    subroutine initialize_modules(f,lstarting)
 !
 !  Call initialization routines, i.e. initialize physics and technical
 !  modules. This implies some preparation of auxiliary quantities, often
@@ -139,7 +139,7 @@ module Register
       use Special,      only: initialize_special
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      logical :: lstart
+      logical :: lstarting
 !
 !  Defaults for some logicals; will later be set to true if needed
       lneed_sij = .false.
@@ -210,7 +210,7 @@ module Register
       call initialize_gravity
       call initialize_hydro
       call initialize_density
-      call initialize_forcing(lstart)  ! get random seed from file, ..
+      call initialize_forcing(lstarting)  ! get random seed from file, ..
       call initialize_entropy          ! calculate radiative conductivity, etc.
 !      call initialize_magnetic
       call initialize_radiation
@@ -219,7 +219,7 @@ module Register
 !      call initialize_dustvelocity
 !      call initialize_dustdensity
       call initialize_cosmicray(f)
-      call initialize_interstellar(lstart)
+      call initialize_interstellar(lstarting)
       call initialize_shear
       call initialize_viscosity
       call initialize_special

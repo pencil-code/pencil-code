@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.62 2003-11-02 04:00:18 theine Exp $
+! $Id: interstellar.f90,v 1.63 2003-11-14 16:14:22 dobler Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.62 2003-11-02 04:00:18 theine Exp $")
+           "$Id: interstellar.f90,v 1.63 2003-11-14 16:14:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,7 +124,7 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(lstart)
+    subroutine initialize_interstellar(lstarting)
 !
 !  Perform any post-parameter-read initialization eg. set derived 
 !  parameters
@@ -140,12 +140,12 @@ module Interstellar
       use Ionization, only: getmu
 !
       logical, save :: first=.true.
-      logical :: lstart
+      logical :: lstarting
       logical :: exist
       real :: mu,factor_mysterious
 
       if (first) then
-         if (.not. lstart) then
+         if (.not. lstarting) then
             call inpui(trim(directory)//'/seed.dat',seed,nseed)
             if (lroot.and.ip<14) then
                print*, 'initialize_interstellar: reading seed file'
@@ -199,7 +199,7 @@ module Interstellar
         print*,'initialize_interstellar: finished'
       endif
 
-      if (lroot.and. (.not. lstart)) then
+      if (lroot.and. (.not. lstarting)) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
          write(1,'("# ",A)')  &
           '--it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-----------z_SN-----------rho_SN---------EE_SN&

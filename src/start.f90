@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.122 2003-11-05 11:57:47 theine Exp $
+! $Id: start.f90,v 1.123 2003-11-14 16:14:23 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -38,12 +38,14 @@
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
 !
+        lstart = .true.
+!
         call register_modules()         ! register modules, etc.
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.122 2003-11-05 11:57:47 theine Exp $")
+             "$Id: start.f90,v 1.123 2003-11-14 16:14:23 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -139,7 +141,7 @@
 !  pre-timestepping setup (must be done before need_XXXX can be used, for
 !  example).
 !
-        call initialize_modules(f,lstart=.true.)
+        call initialize_modules(f,lstarting=.true.)
 !
 !  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc)
 !  alternatively: read existing snapshot and overwrite only some fields

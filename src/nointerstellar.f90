@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.11 2003-11-02 04:00:18 theine Exp $
+! $Id: nointerstellar.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -44,7 +44,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.11 2003-11-02 04:00:18 theine Exp $")
+           "$Id: nointerstellar.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -53,17 +53,17 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar(lstart)
+    subroutine initialize_interstellar(lstarting)
 !
 !  Perform any post-parameter-read initialization eg. set derived 
 !  parameters
 !
 !  24-nov-02/tony: coded - dummy
 !
-      logical :: lstart
+      logical :: lstarting
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,lstart
+      if (ip==0) print*,lstarting
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
