@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.16 2002-05-13 18:52:54 dobler Exp $
+! $Id: mpicomm.f90,v 1.17 2002-05-21 06:57:31 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -28,20 +28,26 @@ module Mpicomm
  
   integer, parameter :: nbufy=nx*nz*nghost*mvar
   integer, parameter :: nbufz=nx*ny*nghost*mvar
+  integer, parameter :: nbufyz=nx*nghost*nghost*mvar
 
   real, dimension (nx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
+  real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufo,ulbufo
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: nprocs,iproc,root=0
   integer :: ipx,ipy,ipz
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer :: tocornzz=7,cornyz=8,cornyy=9,cornzy=10 ! msg. tags for corners
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
+  integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !!(corners)
+  integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !!(corners)
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
+  integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
   logical, dimension (ny*nz) :: necessary=.false.
 
   contains
@@ -56,6 +62,7 @@ module Mpicomm
 !  20-aug-01/wolf: coded
 !  31-aug-01/axel: added to 3-D
 !  15-sep-01/axel: adapted from Wolfgang's version
+!  21-may-02/axel: communication of corners added
 !
       use General
       use Cdata, only: lmpicomm,directory
@@ -107,12 +114,17 @@ module Mpicomm
       zlneigh = (modulo(ipz-1,nprocz)*nprocy+ipy)
       zuneigh = (modulo(ipz+1,nprocz)*nprocy+ipy)
 !
+!  set the four corners in the yz-plane (in cyclic order)
+!
+      llcorn=(modulo(ipz-1,nprocz)*nprocy+modulo(ipy-1,nprocy))
+      lucorn=(modulo(ipz-1,nprocz)*nprocy+modulo(ipy+1,nprocy))
+      uucorn=(modulo(ipz+1,nprocz)*nprocy+modulo(ipy+1,nprocy))
+      ulcorn=(modulo(ipz+1,nprocz)*nprocy+modulo(ipy-1,nprocy))
+!
+!  this value is not yet the one read in, but the one initialized in cparam.f90
+!
       if (ip<6) then
-        write(0,'(I3,": ",A,3(3I3,"  "))') &
-             iproc, 'ipy,ipz, {y,z}{l,u}neigh = ', &
-             ipy,ipz, &
-             ylneigh, zlneigh, &
-             yuneigh, zuneigh
+        print*,iproc,': ',ylneigh,llcorn,zlneigh,lucorn,yuneigh,uucorn,zuneigh,ulcorn
       endif
 !
 !  produce index-array for the sequence of points to be worked through:
@@ -177,6 +189,8 @@ module Mpicomm
 !  Does not wait for the receives to finish (done in finalise_isendrcv_bdry)
 !  leftneigh and rghtneigh are initialized by mpicomm_init
 !
+!  21-may-02/axel: communication of corners added
+!
       real, dimension (mx,my,mz,mvar) :: f
 !
 !  So far no distribution over x
@@ -186,8 +200,8 @@ module Mpicomm
 !  Periodic boundary conditions in y
 !
       if (nprocy>1) then
-        lbufyo=f(l1:l2,m1:m1i,n1:n2,:)
-        ubufyo=f(l1:l2,m2i:m2,n1:n2,:)
+        lbufyo=f(l1:l2,m1:m1i,n1:n2,:)  !!(lower y-zone)
+        ubufyo=f(l1:l2,m2i:m2,n1:n2,:)  !!(upper y-zone)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
         call MPI_ISEND(ubufyo,nbufy,MPI_REAL,yuneigh,touppy,MPI_COMM_WORLD,isend_rq_touppy,ierr)
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
@@ -197,12 +211,29 @@ module Mpicomm
 !  Periodic boundary conditions in z
 !
       if (nprocz>1) then
-        lbufzo=f(l1:l2,m1:m2,n1:n1i,:)
-        ubufzo=f(l1:l2,m1:m2,n2i:n2,:)
+        lbufzo=f(l1:l2,m1:m2,n1:n1i,:)  !!(lower z-zone)
+        ubufzo=f(l1:l2,m1:m2,n2i:n2,:)  !!(upper z-zone)
         call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
         call MPI_ISEND(ubufzo,nbufz,MPI_REAL,zuneigh,touppz,MPI_COMM_WORLD,isend_rq_touppz,ierr)
         call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
         call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
+      endif
+!
+!  The four corners (in counter-clockwise order)
+!
+      if (nprocy>1.and.nprocz>1) then
+        llbufo=f(l1:l2,m1:m1i,n1:n1i,:)
+        ulbufo=f(l1:l2,m2i:m2,n1:n1i,:)
+        uubufo=f(l1:l2,m2i:m2,n2i:n2,:)
+        lubufo=f(l1:l2,m1:m1i,n2i:n2,:)
+        call MPI_ISEND(llbufo,nbufyz,MPI_REAL,llcorn,TOll,MPI_COMM_WORLD,isend_rq_TOll,ierr)
+        call MPI_ISEND(ulbufo,nbufyz,MPI_REAL,ulcorn,TOul,MPI_COMM_WORLD,isend_rq_TOul,ierr)
+        call MPI_ISEND(uubufo,nbufyz,MPI_REAL,uucorn,TOuu,MPI_COMM_WORLD,isend_rq_TOuu,ierr)
+        call MPI_ISEND(lubufo,nbufyz,MPI_REAL,lucorn,TOlu,MPI_COMM_WORLD,isend_rq_TOlu,ierr)
+        call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
+        call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
+        call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
+        call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
       endif
 !
     endsubroutine initiate_isendrcv_bdry
@@ -211,35 +242,58 @@ module Mpicomm
 !
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
-!    Receive requests do not need to (and on OSF1 cannot) be explicitly
+!   Receive requests do not need to (and on OSF1 cannot) be explicitly
 !  freed, since MPI_Wait takes care of this.
+!
+!  21-may-02/axel: communication of corners added
 !
       use Boundcond
 
       real, dimension (mx,my,mz,mvar) :: f
       character (len=160) :: errmesg
 !
-!  Periodic boundary conditions in z, combined with communication.
+!  1. wait until data received
+!  2. set ghost zones
+!  3. wait until send completed, will be overwritten in next time step
 !
-      call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
-      call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-      call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
-      call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+!  Communication in y (includes periodic bc)
 !
-!  set boundary zones (this cannot be avoided)
+      if (nprocy>1) then
+        call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
+        f(l1:l2, 1:m1-1,n1:n2,:)=lbufyi  !!(set lower buffer)
+        f(l1:l2,m2+1:my,n1:n2,:)=ubufyi  !!(set upper buffer)
+        call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
+      endif
 !
-      f(l1:l2, 1:m1-1,n1:n2,:)=lbufyi
-      f(l1:l2,m2+1:my,n1:n2,:)=ubufyi
+!  Communication in z (includes periodic bc)
 !
-      f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi
-      f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi
+      if (nprocz>1) then
+        call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
+        call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
+        f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
+        f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
+        call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
+        call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+      endif
 !
-!  need to wait until send is completed before buffer can be overwritten
+!  The four yz-corners (in counter-clockwise order)
 !
-      call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
-      call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
-      call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
-      call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+      if (nprocy>1.and.nprocz>1) then
+        call MPI_WAIT(irecv_rq_FRuu,irecv_stat_Fuu,ierr)
+        call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
+        call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
+        call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
+        f(l1:l2, 1:m1-1, 1:n1-1,:)=llbufi  !!(set ll corner)
+        f(l1:l2,m2+1:my, 1:n1-1,:)=ulbufi  !!(set ul corner)
+        f(l1:l2,m2+1:my,n2+1:mz,:)=uubufi  !!(set uu corner)
+        f(l1:l2, 1:m1-1,n2+1:mz,:)=lubufi  !!(set lu corner)
+        call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,ierr)
+        call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,ierr)
+        call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,ierr)
+        call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,ierr)
+      endif
 !
 !  Now do the boundary conditions
 !  Periodic boundary conds. are what we get by default (communication has
