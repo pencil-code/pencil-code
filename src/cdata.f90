@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.185 2003-11-24 22:11:55 brandenb Exp $
+! $Id: cdata.f90,v 1.186 2003-11-25 09:25:47 nilshau Exp $
 
 module Cdata
 
@@ -51,7 +51,7 @@ module Cdata
   integer :: nvar,naux,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
   integer :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0,igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
-  integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0
+  integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper3=0
   integer :: iecr=0
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
@@ -115,7 +115,7 @@ module Cdata
   logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
-  logical :: lvisc_shock=.false.
+  logical :: lvisc_shock=.false.,lvisc_hyper3=.false.
   logical :: lcosmicray=.false.
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.
