@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.14 2002-05-01 18:16:12 dobler Exp $
+! $Id: mpicomm.f90,v 1.15 2002-05-08 17:47:28 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -61,7 +61,7 @@ module Mpicomm
       use Cdata, only: lmpicomm,directory
 !
       integer :: i,m,n
-      character (LEN=4) :: chproc
+      character (len=4) :: chproc
 !
       lmpicomm = .true.
 !
@@ -316,7 +316,7 @@ module Mpicomm
 !  Print message and stop
 !  6-nov-01/wolf: coded
 !
-      character (LEN=*) :: msg
+      character (len=*) :: msg
 !      
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize

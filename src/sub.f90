@@ -673,7 +673,7 @@ module Sub
 !
       integer :: nn
       real, dimension (nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
       read(1) a
@@ -689,7 +689,7 @@ module Sub
 !
       integer :: nn
       integer, dimension (nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
       read(1) a
@@ -705,7 +705,7 @@ module Sub
 !
       integer :: nn
       real, dimension (mx,my,mz,nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,file=file)
       read(1,10) a
@@ -722,7 +722,7 @@ module Sub
 !
       integer :: nn
       real, dimension (nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
       write(1) a
@@ -736,7 +736,7 @@ module Sub
 !
       integer :: nn
       integer, dimension (nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
       write(1) a
@@ -751,7 +751,7 @@ module Sub
       use Cdata
 !
       integer :: nn
-      character (LEN=*) :: file
+      character (len=*) :: file
       real, dimension (mx,my,mz,nn) :: a
 !
       open(1,file=file)
@@ -771,9 +771,9 @@ module Sub
       use Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: a
-      character (LEN=4) :: ch
-      character (LEN=9) :: file
-      character (LEN=*) :: chsnap
+      character (len=4) :: ch
+      character (len=9) :: file
+      character (len=*) :: chsnap
       logical lsnap
       integer, save :: ifirst,nsnap
       real, save :: tsnap
@@ -810,7 +810,7 @@ module Sub
       use Cdata
       use Mpicomm, only: ipx,ipy,ipz
 !
-      character (LEN=*) :: file
+      character (len=*) :: file
       integer, optional :: mxout,myout,mzout
       integer :: mxout1,myout1,mzout1
 !
@@ -924,7 +924,7 @@ module Sub
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
 !
-      character (LEN=*) :: file
+      character (len=*) :: file
       integer :: lun,nout
       real :: tout,dtout,ttt,tt,t
       integer, parameter :: nbcast_array=2
@@ -987,8 +987,8 @@ module Sub
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !
-      character (LEN=*) :: file
-      character (LEN=4) :: ch
+      character (len=*) :: file
+      character (len=4) :: ch
       logical lout,lch
       real :: t,tt,tout,dtout
       integer :: lun,nout
@@ -1030,7 +1030,7 @@ module Sub
 !
       use Cdata
 !
-      character (LEN=*) :: label
+      character (len=*) :: label
       real, dimension (mx,my,mz) :: a
 !
       if (ip.le.6) then
@@ -1046,7 +1046,7 @@ module Sub
 !
       use Cdata
 !
-      character (LEN=*) :: label
+      character (len=*) :: label
       real, dimension (mx,my,mz,3) :: a
       integer :: j
 !
@@ -1355,8 +1355,8 @@ module Sub
 !
         use Cparam, only: mvar,bclen
 !
-        character (LEN=2*bclen+1), dimension(mvar) :: bc
-        character (LEN=bclen), dimension(mvar) :: bc1,bc2
+        character (len=2*bclen+1), dimension(mvar) :: bc
+        character (len=bclen), dimension(mvar) :: bc1,bc2
         integer :: j,isep
 !
         intent(in) :: bc
@@ -1386,8 +1386,8 @@ module Sub
 !  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
 !  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
 !
-      character*(*) :: cname,cform
-      character*(*) :: ctest
+      character (len=*) :: cname,cform
+      character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length
 !
       intent(in)  :: iname,cname,ctest
@@ -1419,7 +1419,7 @@ module Sub
 !  Remove a file; this variant seems to be portable
 !  5-mar-02/wolf: coded
 !
-        character (LEN=*) :: fname
+        character (len=*) :: fname
 !
         open(1,FILE=fname)
         close(1,STATUS="DELETE")

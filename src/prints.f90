@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.5 2002-05-08 15:26:29 dobler Exp $
+! $Id: prints.f90,v 1.6 2002-05-08 17:47:28 dobler Exp $
 
 module Print
 
@@ -28,7 +28,7 @@ module Print
 !
 !  produce the format
 !
-      fform='(i10,f10.3,'//cform(1)
+      fform='(i10,f10.3,1pg10.3,'//cform(1)
       do iname=2,nname
         fform=trim(fform)//comma//cform(iname)
       enddo

@@ -33,7 +33,7 @@ module Io
   !       real,dimension(mx) :: pencil
   !       real :: t
   !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-  !       character (LEN=*) :: filename
+  !       character (len=*) :: filename
   !     endsubroutine output_penciled_c
   !   endinterface
 
@@ -49,7 +49,7 @@ contains
 !
       use Cdata
 !
-      character (LEN=*) :: file
+      character (len=*) :: file
       integer :: nn,mode
       real, dimension (mx,my,mz,nn) :: a
 !
@@ -90,7 +90,7 @@ contains
 !
       integer :: nn
       real, dimension (mx,my,mz,nn) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
       open(91,file=file,form='unformatted')
@@ -110,7 +110,7 @@ contains
 !
       integer :: nn
       real, dimension (mx,my,mz) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
@@ -132,7 +132,7 @@ contains
 !
       integer :: ndim
       real, dimension (nx,ndim) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_VECT: ndim =', ndim
 !
@@ -155,7 +155,7 @@ contains
 !
       integer :: ndim
       real, dimension (nx) :: a
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_SCAL'
       if (ndim /= 1) &
@@ -175,7 +175,7 @@ contains
       use Cdata
 !
       integer :: nn
-      character (LEN=*) :: file
+      character (len=*) :: file
       real, dimension (mx,my,mz,nn) :: a
 !
 !nn=mx/2
@@ -196,7 +196,7 @@ contains
       use Cdata, only: t,x,y,z,dx,dy,dz
 !      use Mpicomm
 !
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,FILE=file,FORM='unformatted')
       write(1) t,x,y,z,dx,dy,dz
@@ -213,7 +213,7 @@ contains
 !      use Mpicomm
 !
       real :: tdummy
-      character (LEN=*) :: file
+      character (len=*) :: file
 !
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz

@@ -10,7 +10,7 @@ module General
 !***********************************************************************
     subroutine chn(n,ch)
 !
-      character (LEN=4) :: ch
+      character (len=4) :: ch
       integer :: n
 !
       intent(in) :: n
@@ -39,7 +39,7 @@ module General
     subroutine chk_time(label,time1,time2)
 !
       integer :: time1,time2,count_rate
-      character (LEN=*) :: label
+      character (len=*) :: label
 !
 !  prints time in seconds
 !

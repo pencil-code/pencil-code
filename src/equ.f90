@@ -287,9 +287,9 @@ module Equ
       real, save :: tvid
       integer, save :: ifirst,nvid
 !
-      character (LEN=4) :: ch
-      character (LEN=9) :: file
-      character (LEN=*) :: chdir
+      character (len=4) :: ch
+      character (len=9) :: file
+      character (len=*) :: chdir
       logical lvid
 !
 !  Output vid-data in 'tvid' time intervals
@@ -345,8 +345,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.37 $", &
-           "$Date: 2002-05-04 15:49:26 $")
+           "$Revision: 1.38 $", &
+           "$Date: 2002-05-08 17:47:27 $")
 !
 !  initialize counter for calculating and communicating print results
 !

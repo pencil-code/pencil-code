@@ -40,7 +40,7 @@ module Cdata
   integer, parameter :: mname=100,mname_extra=2
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
-  character (LEN=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
+  character (len=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
@@ -48,9 +48,9 @@ module Cdata
   logical :: lroot=.true.
   logical :: lfirstpoint
 
-  character (LEN=80) :: form1
-  character (LEN=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
-  character (LEN=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-  character (LEN=12) :: directory
+  character (len=80) :: form1
+  character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
+  character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (len=12) :: directory
 
 endmodule Cdata

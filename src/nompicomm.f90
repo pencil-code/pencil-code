@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.20 2002-05-04 12:55:19 brandenb Exp $
+! $Id: nompicomm.f90,v 1.21 2002-05-08 17:47:28 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -35,7 +35,7 @@ module Mpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
-      character (LEN=4) :: chproc
+      character (len=4) :: chproc
       integer :: m,n
 !
 !  for single cpu machine, set processor to root value
@@ -326,7 +326,7 @@ module Mpicomm
 !  Print message and stop
 !  6-nov-01/wolf: coded
 !
-      character (LEN=*) :: msg
+      character (len=*) :: msg
 !      
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
