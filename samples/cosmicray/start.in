@@ -3,11 +3,13 @@
 !
 &init_pars
 ip=14
-  cvsid='$Id: start.in,v 1.1 2003-10-09 17:58:35 brandenb Exp $'
+  cvsid='$Id: start.in,v 1.2 2003-10-09 23:29:48 brandenb Exp $'
 /
 &hydro_init_pars
+  inituu='soundwave-x', ampluu=1., kx_uu=1.
 /
 &density_init_pars
 /
 &cosmicray_init_pars
+  initecr='const_ecr', ecr_const=1.
 /

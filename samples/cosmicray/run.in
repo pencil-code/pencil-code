@@ -2,13 +2,15 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2003-10-09 17:58:35 brandenb Exp $',
-  nt=20, it1=5, cdt=0.4, cdtv=0.4, isave=10, itorder=3,
-  dsnap=10., dvid=20., dtmin=1e-9, ip=16, 
+  cvsid='$Id: run.in,v 1.2 2003-10-09 23:29:48 brandenb Exp $',
+  nt=200, it1=50, cdt=0.4, cdtv=0.3, isave=10, itorder=3,
+  dsnap=10., dvid=.02, dtmin=1e-9, ip=16, 
 /
 &hydro_run_pars
+  nu=.04
 /
 &density_run_pars
 /
 &cosmicray_run_pars
+  cosmicray_diff=.04
 /
