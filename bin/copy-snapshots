@@ -1,0 +1,39 @@
+#!/bin/csh -x
+
+# Name:   copy-snapshots
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   24-Sep-2002
+# Description:
+#   Copy snapshots VAR# from /scratch to $PBS_O_WORKDIR (from where the
+#   code started).
+#     Relies on PBS (and on tcsh)  and is needed on Horseshoe (the Odense
+#   cluster).
+#     Should better be a Perl script.
+
+set srcdir = /scratch
+set targetdir = $PBS_O_WORKDIR
+set nodelist = `cat $PBS_NODEFILE`
+
+# Get size of var.dat (must exist, since run.csh only ever runs after
+# start.csh). Quite some silly hack.
+set lsout = (`ls -l "$srcdir/var.dat"`)
+set size = $lsout[5]
+
+while (1)
+  
+  foreach node ($nodelist)
+
+    foreach file (`cd $srcdir; ls VAR[0-9]* | sort -k1.4`)
+      if (-Z $srcdir/$file >= $size) then
+	# if file is ready (-Z is tcsh-specific), copy it and delete original 
+	rsh $node "cp $srcdir/$file $targetdir && rm $srcdir/$file"
+      endif
+    end
+  end
+
+  sleep 300			# only check every 5 minutes
+
+end
+
+
+# End of file copy-snapshots
