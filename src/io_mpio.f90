@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.1 2002-09-20 10:16:27 dobler Exp $
+! $Id: io_mpio.f90,v 1.2 2002-09-20 10:36:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -24,10 +24,13 @@ module Io
     module procedure output_pencil_scal
   endinterface
 
-  include 'mpiof.h'
+  include 'mpif.h'
+!  include 'mpiof.h'
 
+  integer :: ierr
   integer, dimension(3) :: globalsize=(/nx,ny,nz/)
   integer, dimension(3) :: localsize=(/ nx/nprocx,ny/nprocy,nz/nprocz /)
+  integer(kind=MPI_OFFSET_KIND) :: dist_zero
 
   !
   ! Interface to external C function(s).
@@ -160,6 +163,7 @@ contains
 !  19-sep-02/wolf: coded
 !
       use Cdata
+      use Mpicomm, only: lroot,stop_it
 !
       integer :: nn
       real, dimension (mx,my,mz) :: a
@@ -189,15 +193,15 @@ contains
       !
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
-               MPI_INFO_NULL, fhandle)
-      call MPI_FILE_SET_VIEW(fhandle, 0, MPI_REAL, filetype, "native", &
+               MPI_INFO_NULL, fhandle, ierr)
+      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, "native", &
                MPI_INFO_NULL, ierr)
       !
       !  write data
       !
       call MPI_FILE_WRITE_ALL(fhandle, a, product(localsize), MPI_REAL, &
                status, ierr)
-      call MPI_FILE_CLOSE(fhandle)
+      call MPI_FILE_CLOSE(fhandle, ierr)
 
 !      open(91,file=file,form='unformatted')
 !      write(91) a
