@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.68 2004-07-07 10:46:39 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.69 2004-07-08 14:46:35 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.68 2004-07-07 10:46:39 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.69 2004-07-08 14:46:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -376,6 +376,9 @@ module Dustvelocity
       select case(inituud)
 
       case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
+      case('gaussian-noise')
+        print*, iux, iuz, iudx, iudz, ampluud
+        do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
       case('follow_gas')
         do k=1,ndustspec
           f(:,:,:,iudx(k):iudz(k))=f(:,:,:,iux:iuz)
