@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.78 2002-11-02 16:37:36 dobler Exp $ 
+! $Id: param_io.f90,v 1.79 2002-11-04 14:46:13 dobler Exp $ 
 
 module Param_IO
 
@@ -78,14 +78,20 @@ module Param_IO
 !   2-nov-02/axel: adapted from get_datadir
 !
       character (len=*) :: dir
+      character (len=10) :: a_format
       logical :: exist
 !
-!  check for existence of datadir.in
+!  check for existence of `data/directory_snap'
 !
       inquire(FILE=trim(datadir)//'/directory_snap',EXIST=exist)
       if (exist) then
         open(1,FILE=trim(datadir)//'/directory_snap',FORM='formatted')
-        read(1,'(a)') dir
+! NB: the following does not work under IRIX (silently misses reading of
+! run parameters):
+!        read(1,'(a)') dir
+! ..so we do it like this:
+        a_format = '(a)'
+        read(1,a_format) dir
         close(1)
       endif
       if(lroot.and.ip<6) print*,'get_snapdir: dir=',trim(dir)
