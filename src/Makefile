@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.151 2003-02-02 16:50:39 dobler Exp $
+### $Id: Makefile,v 1.152 2003-02-03 12:00:56 tarek Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -111,7 +111,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
-#F77=$(FC) -dusty #(nl3|Mephisto)
+#F77=$(FC) -dusty #(nl3|Mephisto|mmtf)
 #F77=$(FC) -lm  #(tycho|erland)
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
