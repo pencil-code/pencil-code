@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.4 2002-06-02 21:04:39 brandenb Exp $ 
+! $Id: param_io.f90,v 1.5 2002-06-03 07:02:21 brandenb Exp $ 
 module Param_IO
 
 !
@@ -179,10 +179,11 @@ module Param_IO
         if (lgravz   ) read(1,NML=grav_z_init_pars  )
         if (lentropy ) read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
+        close(1)
 !
       if (lroot) then
         print*, "Lx,Ly,Lz=", Lx,Ly,Lz
-        print*, "rho0,gamma,gamma1=", rho0,gamma,gamma1
+        print*, "rho0,gamma=", rho0,gamma
       endif
 !
 !  read the print parameter list

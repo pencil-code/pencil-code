@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.11 2002-06-02 07:51:39 brandenb Exp $
+! $Id: hydro.f90,v 1.12 2002-06-03 07:02:21 brandenb Exp $
 
 module Hydro
 
@@ -8,12 +8,12 @@ module Hydro
   implicit none
 
   integer :: init=0,inituu=0,initlnrho=0
-  real :: cs0=1.,rho0=1.,gamma=5./3.,ampl=0.,urand=0.
-  real :: cs20,gamma1,cs2top
-!AB: why do we call it cs20, and not cs02?
+  real :: cs0=1., rho0=1., amplrho=10., gamma=5./3., ampl=0., width=.1, urand=0.
+  real :: cs20, cs2top, gamma1
 
   namelist /hydro_init_pars/ &
-       cs0,rho0,gamma,ampl,init,inituu,initlnrho,urand
+       cs0,rho0,amplrho,gamma,ampl,init,inituu, &
+       initlnrho,width,urand
 
   namelist /hydro_run_pars/ &
        cs0,rho0,gamma,nu,ivisc,cdiffrho
@@ -59,8 +59,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-06-02 07:51:39 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-06-03 07:02:21 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -93,7 +93,10 @@ module Hydro
 !  If init does't match, f=0 is assumed (default).
 !
       select case(inituu)
-      case(0)               ! random ux (Gaussian distribution)
+      case(0)
+        if (lroot) print*,'zero velocity'
+        f(:,:,:,iux)=0.
+      case(1)               ! random ux (Gaussian distribution)
         if (lroot) print*,'Gaussian-distributed ux'
         call random_number(r)
         call random_number(p)
@@ -111,6 +114,9 @@ module Hydro
       case(1)
         if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal/polytropic)'
         f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
+      case(2)
+        if (lroot) print*,'density jump; ampl,width=',ampl,width
+        f(:,:,:,ilnrho)=alog(rho0)+alog(amplrho)*.5*(1.+tanh(zz/width))
       endselect
 !
 !  init corresponds to different initializations of lnrho (called from start).
@@ -142,7 +148,8 @@ module Hydro
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+!AB: we supply y(m), but seem to expect array??
+!AB:      call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
 !          call potential(rr,pot) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
 

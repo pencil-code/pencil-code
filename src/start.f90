@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.34 2002-06-02 21:04:39 brandenb Exp $
+! $Id: start.f90,v 1.35 2002-06-03 07:02:21 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,15 +31,22 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.34 $", &
-             "$Date: 2002-06-02 21:04:39 $")
+             "$Revision: 1.35 $", &
+             "$Date: 2002-06-03 07:02:21 $")
 !
-!  set default values
+!  set default values: box of size (2pi)^3
 !
         xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
         Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
-        lperi =(/.true.,.true.,.true. /) ! periodicity
+        lperi =(/.true.,.true.,.true. /) ! all directions periodic
+!
+!  ?for convection
+!
         z1=0; z2=1; ztop=1.32
+!
+!  this may need to go into hydro;
+!  (maybe should have a separate density module, so we can run burgers)
+!
         cs0=1; gamma=5./3.; rho0=1.
 !
 !  read parameters from start.in
@@ -78,7 +85,7 @@
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
 !        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
-!AB: what's the plan here? grav_r?
+!AB: what's the plan here? move to grav_r?
 !
 !  different initial conditions
 !

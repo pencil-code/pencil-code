@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.15 2002-06-01 02:56:21 brandenb Exp $
+! $Id: grav_r.f90,v 1.16 2002-06-03 07:02:21 brandenb Exp $
 
 module Gravity
 
@@ -37,8 +37,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-06-03 07:02:21 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -108,6 +108,7 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
       use Cdata, only: nx,ny,nz,gravz
       use Sub, only: poly
 !
+!AB: are you sure that ymn etc should be 1-D arrays and not just scalars???
       real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
 !      real, dimension (mx,my,mz) :: rr,pot
 !

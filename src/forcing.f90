@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.11 2002-06-02 21:01:59 brandenb Exp $
+! $Id: forcing.f90,v 1.12 2002-06-03 07:02:21 brandenb Exp $
 
 module Forcing
 
@@ -41,8 +41,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-06-02 21:01:59 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-06-03 07:02:21 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -86,6 +86,7 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
+      integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf
@@ -96,7 +97,7 @@ module Forcing
         read(9,*) nk,kav
         if (lroot) print*,'average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'dimension mk in forcing1 is insufficient'
+          if (lroot) print*,'dimension mk in forcing_irro is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -156,6 +157,7 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
+      integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
@@ -167,7 +169,7 @@ module Forcing
         read(9,*) nk,kav
         if (lroot) print*,'average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'dimension mk in forcing1 is insufficient'
+          if (lroot) print*,'dimension mk in forcing_hel is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if

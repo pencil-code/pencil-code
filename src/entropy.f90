@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.50 2002-06-02 21:04:39 brandenb Exp $
+! $Id: entropy.f90,v 1.51 2002-06-03 07:02:21 brandenb Exp $
 
 module Entropy
 
@@ -54,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.50 $", &
-           "$Date: 2002-06-02 21:04:39 $")
+           "$Revision: 1.51 $", &
+           "$Date: 2002-06-03 07:02:21 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -157,6 +157,8 @@ module Entropy
     subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
 !
 !  calculate right hand side of entropy equation
+!  heat condution is currently disabled until old stuff,
+!  which in now in calc_heatcond, has been reinstalled.
 !
 !  17-sep-01/axel: coded
 !
@@ -184,7 +186,7 @@ module Entropy
 !
 !  begin by calculating all necessary dervatives
 !
-      if (headtt) print*,'just entered dss_dt'
+      if (headtt) print*,'solve dss_dt'
       call grad(f,ient,gss)
       call del2(f,ient,del2ss)
       call del2(f,ilnrho,del2lnrho)
@@ -195,9 +197,6 @@ module Entropy
       ss=f(l1:l2,m,n,ient)
       lnrho=f(l1:l2,m,n,ilnrho)
       cs2=cs20*exp(gamma1*lnrho+gamma*ss)
-if (headtt) print*,'m,n,cs2=',m,n,cs2
-if (headtt) print*,'lnrho=',lnrho
-if (headtt) print*,'ss=',ss
 !
 !  pressure gradient term
 !
@@ -225,13 +224,44 @@ if (headtt) print*,'ss=',ss
       enddo
       enddo
 !
-      if (headtt) print*,'dss_dt: cs2=',cs2
+!  calculate 1/T (in units of cp)
+!
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1 ok'
-! this one was wrong:
-!      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
-! hopefully correct:
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
+!
+!  Heat conduction / entropy diffusion
+!
+!--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
+    endsubroutine dss_dt
+!***********************************************************************
+    subroutine calc_heatcond(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
+!
+!  calculate right hand side of entropy equation
+!
+!  17-sep-01/axel: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Global
+      use Slices
+      use IO
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3,3) :: uij,sij
+      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
+      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
+      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
+      real, dimension (nx) :: ss,lnrho,lambda
+      real, dimension (nx) :: heat,prof
+      real :: ssref,z_prev=-1.23e20
+      integer :: i,j
+!
+      save :: z_prev,lambda,glhc
+!
+      intent(in) :: f,uu,uij,divu,rho1,glnrho
+      intent(out) :: df,gpprho,cs2,TT1,chi
 !
 !  Heat conduction / entropy diffusion
 !
@@ -315,10 +345,8 @@ if (headtt) print*,'ss=',ss
         prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
-      if (headtt) print*,'dss_dt: finished'
-
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
-    endsubroutine dss_dt
+!
+    endsubroutine calc_heatcond
 !***********************************************************************
     subroutine rprint_entropy(lreset)
 !
