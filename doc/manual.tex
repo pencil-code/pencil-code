@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.182 2003-07-15 07:05:32 nilshau Exp $
+%%  CVS: $Id: manual.tex,v 1.183 2003-07-15 09:02:41 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}
+\date{$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}
+  \emph{$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2368,25 +2368,29 @@ basic message is to watch out for such effects and to try varying
 \subsection{Running in double-precision}
 \label{double-precision}
 
+With many compilers, you can easily switch to double precision (8-byte
+floating point numbers) as follows.
+
 Edit \file[Makefile.local]{src/Makefile.local} and add the line
-  \begin{alltt}
-  FFLAGS_GENERAL=-r8
-  \end{alltt}
+\begin{alltt}
+  FFLAGS_GENERAL=-r8 \
+\end{alltt}
 In addition, if you are running MPI, replace 
-  \begin{alltt}
-  MPICOMM=mpicomm
-  \end{alltt}
+\begin{alltt}
+  MPICOMM=mpicomm \
+\end{alltt}
 by
-  \begin{alltt}
-  MPICOMM=mpicomm_double
-  \end{alltt}
-Running double precision seems to be important in turbulence runs where
+\begin{alltt}
+  MPICOMM=mpicomm_double \
+\end{alltt}
+Using double precision may be important in turbulence runs where
 the resolution is $256^3$ meshpoints and above.
 The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
 used to produce
 \file{var.dat} and \file{grid.dat} files in double precision.
-Note: the \code{kind} value on many compiles is 8 for double precision,
-but with the NAG compiler it is 2.
+% Note: the \code{kind} value on many compiles is 8 for double precision,
+% but with the NAG compiler it is 2.
+% wd: you shouldn't use explicit KIND values anyway
 
 % ---------------------------------------------------------------------- %
 
@@ -2395,29 +2399,35 @@ but with the NAG compiler it is 2.
 Given a real variable $u$, its Fourier transform $\tilde{u}$
 is given by
 \begin{eqnarray}
-\tilde{u}(k_x,k_y,k_z)
-&=&\mathcal{F}(u(x,y,z))
-   = \frac{1}{N_x N_y N_z} \sum_{x=0}^{N_x-1} \sum_{y=0}^{N_y-1} 
-     \sum_{z=0}^{N_z-1} u(x,y,z)  \nonumber \\
-&\times& \exp(-i2 \pi x k_x/N_x) \exp(-i2 \pi y k_y/N_y) 
-         \exp(-i2 \pi z k_z/N_z).
+  \tilde{u}(k_x,k_y,k_z)
+  \ =\ \mathcal{F}(u(x,y,z))
+  &=& \frac{1}{N_x N_y N_z} \sum_{p=0}^{N_x-1} \sum_{q=0}^{N_y-1} 
+       \sum_{r=0}^{N_z-1} u(x_p,y_q,z_r)  \nonumber \\
+  & & {} \times \exp(-i k_x  x_p) \exp(-i k_y y_q) 
+         \exp(-i k_z z_r) ,
 \end{eqnarray}
+where
+\[
+  k_x = \frac{2\pi}{N_x} \, ,\qquad
+  k_y = \frac{2\pi}{N_y} \, ,\qquad
+  k_z = \frac{2\pi}{N_z} \, .
+\]
 The three-dimensional power spectrum $P(k)$ is defined as
 \begin{equation}
-P(k)=\frac{1}{2}\tilde{u}\tilde{u}^*,
+  P(k)=\frac{1}{2}\tilde{u}\tilde{u}^*,
 \end{equation}
 when
 \begin{equation}
-k=\sqrt{k_x^2+k_y^2+k_z^2}, \mbox{ and } 1 \le k \le N_x/2.
+  k=\sqrt{k_x^2+k_y^2+k_z^2}, \mbox{ and } 1 \le k \le N_x/2.
 \end{equation}
 
 Edit \file{run.in} and add for example the following lines 
-  \begin{alltt}
+\begin{alltt}
   dspec=2.3, 
   vel_spec=T,mag_spec=T,
   fft_switch='fftpack',
-  oned=T
-  \end{alltt}
+  oned=T \
+\end{alltt}
 under \code{run_pars}.
 The kinetic (\code{vel_spec}) and magnetic  (\code{mag_spec}) power spectra
 will now be calculated every 2.3 (\code{dspec}) time unit. 
@@ -2428,11 +2438,11 @@ power spectra also the one-dimensional power spectra will be calculated
 
 In addition one must edit 
 \file[Makefile.local]{src/Makefile.local} and add the lines
-  \begin{alltt}
+\begin{alltt}
   FFT=fft
   POWER=power_spectrum
-  FFTPACK=fftpack
-  \end{alltt}
+  FFTPACK=fftpack \
+\end{alltt}
 
 Running the code will now create the files \name{powerb.dat} and 
 \name{poweru.dat} containing the three-dimensional 
@@ -2443,7 +2453,7 @@ three-dimensional files we will also find the one-dimensional files
 
 To visualize with \name{IDL} just type
 \cmd{power} and you get the last snapshot of the three-dimensional 
-power spectrum. See head of \file{\env{CVSROOT}/idl/power.pro} 
+power spectrum. See head of \file[power.pro]{\$PENCIL_HOME/idl/power.pro} 
 for options to \cmd{power}.
 
 % ---------------------------------------------------------------------- %
@@ -2452,12 +2462,12 @@ for options to \cmd{power}.
 \label{structure-functions}
 We define the p-th order longitudinal structure function of $\vec{u}$ as
 \begin{equation}
-S^p_{long.}(l)=< | u_x(x+l,y,z)-u_x(x,y,z)|^p >,
+S^p_{long.}(l)=< | u_x(x{+}l,y,z)-u_x(x,y,z)|^p >,
 \end{equation}
 while the transversal is 
 \begin{equation}
-S^p_{trans.}(l)= < | u_y(x+l,y,z)-u_y(x,y,z)|^p > 
-               + < | u_z(x+l,y,z)-u_z(x,y,z)|^p >.
+S^p_{trans.}(l)= < | u_y(x{+}l,y,z)-u_y(x,y,z)|^p > 
+               + < | u_z(x{+}l,y,z)-u_z(x,y,z)|^p >.
 \end{equation}
 
 Edit \file{run.in} and add for example the following lines 
@@ -2478,8 +2488,9 @@ In addition one must edit
 
 To visualize with \name{IDL} just type
 \cmd{structure} and you get the time-average of the first order longitudinal 
-structure function. (Be sure that \env{CVSROOT}/runs/forced/idl/ is in
-\env{IDLPATH}.) See head of \file{\env{CVSROOT}/runs/forced/idl/structure.pro} 
+structure function (be sure that
+\file[forced/idl/]{pencil-runs/forced/idl/} is in \env{IDL_PATH}).
+See head of \file[structure.pro]{pencil-runs/forced/idl/structure.pro} 
 for options to \cmd{structure}.
 
 % ====================================================================== %
@@ -3223,7 +3234,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}}}
 
 \section{Timings}
 
@@ -5491,7 +5502,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.182 2003-07-15 07:05:32 nilshau Exp $ $}
+$ $Id: manual.tex,v 1.183 2003-07-15 09:02:41 dobler Exp $ $}
 
 
 \end{document}

@@ -2,7 +2,7 @@
 #
 # Usage:
 #  make
-#  make manaul.ps
+#  make manual.ps
 #  make body.ps      (excludes appendix and indexes)
 #  make appendix.ps  (appendix and indexes only)
 #  make faq          (html version of Frequently Asked Questions)
