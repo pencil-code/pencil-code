@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.7 2002-06-09 10:13:01 brandenb Exp $
+! $Id: density.f90,v 1.8 2002-06-11 17:54:48 brandenb Exp $
 
 module Density
 
@@ -7,12 +7,12 @@ module Density
   implicit none
 
   integer :: initlnrho=0
-  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
+  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., zinfty=1., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
           cs20, cs2top, gamma1
 
   namelist /density_init_pars/ &
-       cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
+       cs0,rho0,ampllnrho,gamma,zinfty,initlnrho,widthlnrho, &
        rho_left,rho_right
 
   namelist /density_run_pars/ &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-06-09 10:13:01 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-06-11 17:54:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -91,8 +91,24 @@ module Density
         if (lroot) print*,'uniform lnrho'
         f(:,:,:,ilnrho)=0.
       case(1)
-        if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal/polytropic)'
-        f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
+        if (gamma1==0.) then
+          if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal atmosphere)'
+          f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
+        else
+          !
+          !  To maintain continuity with respect to the isothermal case,
+          !  one may want to specify cs20, and so zinfty is calculated from that.
+          !  On the other hand, for polytropic atmospheres it may be more
+          !  physical to specify zinfty, ie the top of the atmosphere.
+          !  This is done if zinfty is different from 0.
+          !
+          if (zinfty==0.) zinfty=cs20/(gamma1*gravz)  !(zinfty=0 is 
+          if (lroot) print*,'rho=(1-z/zinfty)^gamma1, zinfty=',zinfty
+          !cs20=-gamma1*gravz*zinfty
+          !cs0=sqrt(cs20)
+          !print*,'Note: since zinfty is given, we have reset: cs0=',cs0
+          f(:,:,:,ilnrho)=alog(1.-zz/zinfty)/gamma1
+        endif
       case(2)
         if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
         if (lroot) print*,'density jump; widthlnrho=',widthlnrho

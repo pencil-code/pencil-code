@@ -48,5 +48,6 @@ date
 echo "$mpirun $mpirunops $npops src/start.x"
 time $mpirun $mpirunops $npops src/start.x
 #
+echo ""
 date
 

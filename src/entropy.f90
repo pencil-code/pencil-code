@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.58 2002-06-10 13:07:14 brandenb Exp $
+! $Id: entropy.f90,v 1.59 2002-06-11 17:54:48 brandenb Exp $
 
 module Entropy
 
@@ -10,16 +10,19 @@ module Entropy
 
   integer :: initss=0
   real, dimension (nx) :: cs2,TT1
+  real :: radius=0.1,amplss=1.
+  real :: chi_t=0.
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,grads0, &
+       initss,grads0,radius,amplss, &
        hcond0,hcond1,hcond2,whcond, &
        mpoly0,mpoly1,mpoly2,isothtop
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
+       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat, &
+       chi_t
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0
@@ -57,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.58 $", &
-           "$Date: 2002-06-10 13:07:14 $")
+           "$Revision: 1.59 $", &
+           "$Date: 2002-06-11 17:54:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,9 +100,20 @@ module Entropy
         !
         select case(initss)
 !
-!  linear profile of ss, centered around ss=0.
+!  constant ss
 !
         case(1)
+          f(:,:,:,ient)=alog(-gamma1*gravz*zinfty)/gamma
+          if (amplss/=0.) then
+            print*,'put bubble: radius,amplss=',radius,amplss
+            tmp=xx**2+yy**2+zz**2
+            f(:,:,:,ient)=f(:,:,:,ient)+amplss*exp(-tmp/amax1(radius**2-tmp,1e-20))
+            !f(:,:,:,ient)=f(:,:,:,ient)+amplss*exp(-tmp/radius**2)
+          endif
+!
+!  linear profile of ss, centered around ss=0.
+!
+        case(2)
           f(:,:,:,ient) = grads0*zz
 !
 !  convection setup
@@ -181,7 +195,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,sij2        !(later,below) ,del2ss,del2lnrho
+      real, dimension (nx) :: ugss,sij2,del2ss        !(later,below) ,del2lnrho
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
 !     real, dimension (nx) :: heat
       integer :: i,j,ju
@@ -200,6 +214,7 @@ module Entropy
       ss=f(l1:l2,m,n,ient)
       cs2=cs20*exp(gamma1*lnrho+gamma*ss)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
+      if (headtt) print*,'entropy: cs20=',cs20
 !
 !  subtract pressure gradient term in momentum equation
 !
@@ -235,6 +250,18 @@ module Entropy
         if (headtt) print*,'no heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
       endif
+!
+!  "turbulent" (microscopic) entropy diffusion
+!
+      if (chi_t/=0.) then
+        if (headtt) print*,'"turbulent" (microscopic) entropy diffusion: chi_t=',chi_t
+        call del2(f,ient,del2ss)
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
+      endif
+!
+!--   call del2(f,ient,del2ss)
+!--   call del2(f,ilnrho,del2lnrho)
+!--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
 !
 !  Heat conduction / entropy diffusion
 !

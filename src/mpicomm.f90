@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.22 2002-06-07 08:18:46 brandenb Exp $
+! $Id: mpicomm.f90,v 1.23 2002-06-11 17:54:48 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -195,7 +195,7 @@ module Mpicomm
           nn(imn)=n
           imn=imn+1
         enddo
-        do m=max(m2i,m1),m2
+        do m=max(m2i,m1+1),m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1

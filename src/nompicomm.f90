@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.27 2002-06-07 08:18:46 brandenb Exp $
+! $Id: nompicomm.f90,v 1.28 2002-06-11 17:54:48 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -92,8 +92,9 @@ module Mpicomm
       enddo
 !
 !  left and right hand boxes
-!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
-!  instead of just m2i, to make sure the case ny=1 works ok.
+!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1+1)
+!  instead of just m2i, to make sure the case ny=1 works ok, and
+!  also that the same m is not set in both loops.
 !
       do n=n1,n2
         do m=m1,min(m1i,m2)
@@ -101,7 +102,7 @@ module Mpicomm
           nn(imn)=n
           imn=imn+1
         enddo
-        do m=max(m2i,m1),m2
+        do m=max(m2i,m1+1),m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
