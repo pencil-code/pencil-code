@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.24 2002-11-15 06:16:34 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.24 2002-11-15 06:16:34 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -125,7 +125,7 @@ module  power_spectrum
      spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
      write(1,*) t
-     write(1,*) spectrum_sum
+     write(1,'(1p,8e10.2)') spectrum_sum
      close(1)
   endif
   !
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.24 2002-11-15 06:16:34 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -264,12 +264,12 @@ module  power_spectrum
     spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
-    write(1,*) spectrum_sum
+    write(1,'(1p,8e10.2)') spectrum_sum
     close(1)
     !
     open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
     write(1,*) t
-    write(1,*) spectrumhel_sum
+    write(1,'(1p,8e10.2)') spectrumhel_sum
     close(1)
   endif
   !
