@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.64 2002-10-04 14:38:52 dobler Exp $ 
+! $Id: param_io.f90,v 1.65 2002-10-05 13:23:54 dobler Exp $ 
 
 module Param_IO
 
@@ -181,15 +181,18 @@ module Param_IO
       use Cdata
 !
       character (len=*), optional :: file
+      character (len=datelen) :: date
       integer :: unit=6         ! default unit is 6=stdout
 !
       if (lroot) then
         if (present(file)) then
           unit = 1
+          call date_time_string(date)
           open(unit,FILE=file)
           write(unit,*) &
                '# -------------------------------------------------------------'
           write(unit,'(A,A)') ' # ', 'Initializing'
+          write(unit,'(A,A)') ' # Date: ', trim(date)
           write(unit,*) '# t=', t
         endif
 !
