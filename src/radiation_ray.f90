@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.24 2003-09-30 13:39:46 theine Exp $
+! $Id: radiation_ray.f90,v 1.25 2003-10-02 17:01:06 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.24 2003-09-30 13:39:46 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.25 2003-10-02 17:01:06 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -157,63 +157,6 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine radcalc(f)
-!
-!  calculate source function and opacity
-!
-!  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-      use Ionization
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx) :: lnrho,yH,TT
-      real :: kx,ky,kz
-!
-!  test
-!
-      if(test_radiation) then
-        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
-        kx=2*pi/Lx
-        ky=2*pi/Ly
-        kz=2*pi/Lz
-        Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
-                   *spread(spread(cos(ky*y),1,mx),3,mz) &
-                   *spread(spread(cos(kz*z),1,mx),2,my)
-        kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
-                 *spread(spread(cos(2*ky*y),1,mx),3,mz) &
-                 *spread(spread(cos(2*kz*z),1,mx),2,my)
-        return
-      endif
-!
-!  no test
-!
-      do n=1,mz
-      do m=1,my
-!
-!  get thermodynamic quantities
-!
-         lnrho=f(:,m,n,ilnrho)
-         call ionget(f,yH,TT)
-!
-!  calculate source function
-!
-         Srad(:,m,n)=sigmaSB*TT**4/pi
-!
-!  calculate opacity
-!
-         if (lkappa_es) then
-            kaprho(:,m,n)=kappa_es*exp(lnrho)
-         else
-            kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-                             *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
-         endif
-!
-      enddo
-      enddo
-!
-    endsubroutine radcalc
-!***********************************************************************
     subroutine radtransfer(f)
 !
 !  Integration radioation transfer equation along rays
@@ -235,7 +178,7 @@ module Radiation
 !
 !  calculate source function and opacity
 !
-      call radcalc(f)
+      call radcalc(f,kaprho,Srad)
 !
 !  initialize heating rate
 !

@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.15 2003-10-02 15:43:17 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.16 2003-10-02 17:01:06 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -38,7 +38,7 @@ module Ionization
   real :: cp1tilde_
 
   ! secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,kappa0
+  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: xHe_term,yH_term,one_yH_term
 
@@ -46,12 +46,13 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   real :: yH0=.0,xHe=0.1
+  logical :: radcalc_test=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ yH0,xHe
+  namelist /ionization_init_pars/ yH0,xHe,radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,xHe
+  namelist /ionization_run_pars/ yH0,xHe,radcalc_test
 
   contains
 
@@ -81,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.15 2003-10-02 15:43:17 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.16 2003-10-02 17:01:06 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -91,6 +92,22 @@ module Ionization
       endif
 !
     endsubroutine register_ionization
+!*******************************************************************
+    subroutine getmu(mu)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   12-aug-03/tony: implemented
+!
+      real, intent(out) :: mu
+!
+      mu=1.+3.97153*xHe
+!
+! tobi: the real mean molecular weight would be:
+!
+! mu=(1.+3.97153*xHe)/(1+yH+xHe)
+!
+    endsubroutine getmu
 !***********************************************************************
     subroutine initialize_ionization()
 !
@@ -102,23 +119,25 @@ module Ionization
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real :: mu
+      real :: mu1yHxHe
 !
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
       if(headtt) print*,'initialize_ionization: assume cp is not 1, yH0=',yH0
-      mu=1.+3.97153*xHe  
+      mu1yHxHe=1.+3.97153*xHe  
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
-      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
-      ss_ion=k_B/m_H/mu      
-      kappa0=sigmaH_/m_H/mu
+      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      ss_ion=k_B/m_H/mu1yHxHe      
+      ee_ion=ss_ion*TT_ion
+      kappa0=sigmaH_/m_H/mu1yHxHe
+      Srad0=sigmaSB*TT_ion**4/pi
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
@@ -169,12 +188,21 @@ module Ionization
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
 !
+      open (1,file=trim(datadir)//'/pc_constants.pro')
+        write (1,*) 'TT_ion=',TT_ion
+        write (1,*) 'TT_ion_=',TT_ion_
+        write (1,*) 'lnrho_e=',lnrho_e
+        write (1,*) 'lnrho_H=',lnrho_H
+        write (1,*) 'lnrho_p=',lnrho_p
+        write (1,*) 'lnrho_He=',lnrho_He
+        write (1,*) 'lnrho_e_=',lnrho_e_
+        write (1,*) 'ss_ion=',ss_ion
+        write (1,*) 'ee_ion=',ee_ion
+        write (1,*) 'kappa0=',kappa0
+        write (1,*) 'Srad0=',Srad0
+      close (1)
+!
     endsubroutine initialize_ionization
-!*******************************************************************
-    subroutine getmu(mu)
-      real, intent(out) :: mu
-      mu=1.+3.97153*xHe  
-    endsubroutine getmu
 !*******************************************************************
     subroutine rprint_ionization(lreset)
 !
@@ -386,6 +414,59 @@ module Ionization
       if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
+!***********************************************************************
+    subroutine radcalc(f,kaprho,Srad)
+!
+!  calculate source function and opacity
+!
+!  24-mar-03/axel+tobi: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz), intent(out) :: kaprho,Srad
+      real, dimension(mx) :: lnrho,ss,yH,TT
+      real :: kx,ky,kz
+!
+!  test
+!
+      if(radcalc_test) then
+        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
+        kx=2*pi/Lx
+        ky=2*pi/Ly
+        kz=2*pi/Lz
+        Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
+                   *spread(spread(cos(ky*y),1,mx),3,mz) &
+                   *spread(spread(cos(kz*z),1,mx),2,my)
+        kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
+                 *spread(spread(cos(2*ky*y),1,mx),3,mz) &
+                 *spread(spread(cos(2*kz*z),1,mx),2,my)
+        return
+      endif
+!
+!  no test
+!
+      do n=1,mz
+      do m=1,my
+!
+         lnrho=f(:,m,n,ilnrho)
+         ss=f(:,m,n,iss)
+         yH=yH0
+         TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+!
+!  calculate source function
+!
+         Srad(:,m,n)=Srad0*(TT/TT_ion)**4
+!
+!  calculate opacity
+!
+         kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
+                          *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+!
+      enddo
+      enddo
+!
+    endsubroutine radcalc
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)

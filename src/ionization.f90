@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.108 2003-10-02 16:37:29 theine Exp $
+! $Id: ionization.f90,v 1.109 2003-10-02 17:01:06 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -33,20 +33,20 @@ module Ionization
   end interface
 
   !  secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,xHe_term
+  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,Srad0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   real :: xHe=0.1,yHacc=1e-5
-  logical :: lionstat=.false.
+  logical :: lionstat=.false.,radcalc_test=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yHacc,lionstat
+  namelist /ionization_init_pars/ xHe,yHacc,lionstat,radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yHacc,lionstat
+  namelist /ionization_run_pars/ xHe,yHacc,lionstat,radcalc_test
 
   contains
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.108 2003-10-02 16:37:29 theine Exp $")
+           "$Id: ionization.f90,v 1.109 2003-10-02 17:01:06 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -147,6 +147,7 @@ module Ionization
       ss_ion=k_B/m_H/mu1yHxHe
       ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu1yHxHe
+      Srad0=sigmaSB*TT_ion**4/pi
 !
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
@@ -175,7 +176,7 @@ module Ionization
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
-        write (1,*) 'sigmaSB=',sigmaSB
+        write (1,*) 'Srad0=',Srad0
       close (1)
 !
     endsubroutine initialize_ionization
@@ -732,6 +733,58 @@ module Ionization
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
 !
     endsubroutine saha_pp
+!***********************************************************************
+    subroutine radcalc(f,kaprho,Srad)
+!
+!  calculate source function and opacity
+!
+!  24-mar-03/axel+tobi: coded
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz), intent(out) :: kaprho,Srad
+      real, dimension(mx) :: lnrho,yH,TT
+      real :: kx,ky,kz
+!
+!  test
+!
+      if(radcalc_test) then
+        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
+        kx=2*pi/Lx
+        ky=2*pi/Ly
+        kz=2*pi/Lz
+        Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
+                   *spread(spread(cos(ky*y),1,mx),3,mz) &
+                   *spread(spread(cos(kz*z),1,mx),2,my)
+        kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
+                 *spread(spread(cos(2*ky*y),1,mx),3,mz) &
+                 *spread(spread(cos(2*kz*z),1,mx),2,my)
+        return
+      endif
+!
+!  no test
+!
+      do n=1,mz
+      do m=1,my
+!
+         lnrho=f(:,m,n,ilnrho)
+         yH=f(:,m,n,iyH)
+         TT=f(:,m,n,iTT)
+!
+!  calculate source function
+!
+         Srad(:,m,n)=Srad0*(TT/TT_ion)**4
+!
+!  calculate opacity
+!
+         kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
+                          *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+!
+      enddo
+      enddo
+!
+    endsubroutine radcalc
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
