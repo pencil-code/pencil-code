@@ -1,8 +1,8 @@
-$Id: README,v 1.4 2002-07-02 00:50:44 brandenb Exp $
+$Id: README,v 1.5 2002-08-02 21:31:36 dobler Exp $
 
 Modular pencil code.
 
-Not yet reasonably implemented. Basic idea is as follows:
+Basic idea is as follows:
 
 You decide to use, or not use, modules by including them or the `no-'
 versions in the makefile. E.g. to use MPI communication, you put 
@@ -22,12 +22,8 @@ List of alternatives (not all of them implemented yet):
                                    # monolithic file, or use hdf5
 
 
-The physics modules (those involving new variables like `magnetic' or
-`entropy'; in principle, there should also be a hydro module) *register*
-themselves via calls to their their `register_xxx' from the module
-`register'. They also provide their own initialisation (`init_ent',
-etc.) for start.f90.
+The physics modules (those involving new variables like `hydro', `magnetic' or
+`entropy') *register* themselves via calls to their their `register_xxx'
+from the module `register'. They also provide their own initialisation
+(`init_ent', etc.) for start.f90.
 
-The physics modules require that you correctly adapt mvar (and other
-parameters?) in cparam.dat. If you forget to do so, you will get a warning
-during run time -- or possibly already a compilation error.
