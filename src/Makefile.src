@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.19 2004-01-20 14:25:05 dobler Exp $
+### $Id: Makefile.src,v 1.20 2004-01-28 16:48:55 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -256,7 +256,7 @@ pacx-makefile: Makefile.src
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
 cparam.inc: Makefile.src Makefile.local
-	${PENCIL_HOME}/bin/mkcparam $(physics:.o=.f90) -o cparam.inc
+	${PENCIL_HOME}/bin/mkcparam $(physics:.o=.f90) cparam.local -o cparam.inc
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
