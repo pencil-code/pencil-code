@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.24 2003-02-23 12:14:09 brandenb Exp $ 
+! $Id: initcond.f90,v 1.25 2003-03-02 17:54:40 brandenb Exp $ 
 
 module Initcond 
  
@@ -239,8 +239,8 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax,hmin
-      real :: gamma,eps2,rad2,radius2
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax
+      real :: gamma,eps2,radius2
       real :: cs20=1.,gamma1,ztop
       integer :: l,m,n
 !
@@ -277,7 +277,7 @@ module Initcond
 !
       hh=amax1(hh,0.)
       hmax=maxval(hh)
-      hh=hh+.01*hmax
+      hh=hh+ampl*hmax
 !
       rr2=xx**2+eps2*yy**2+zz**2/delta2
       do n=n1,n2
@@ -696,6 +696,7 @@ module Initcond
       kz=2.*pi/Lz
       f(:,:,:,ivar) = ampl*cos(ky*yy)*cos(kz*zz)
 !
+      print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
 !***********************************************************************
 
