@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.73 2002-10-16 14:42:19 brandenb Exp $
+! $Id: hydro.f90,v 1.74 2002-10-25 16:30:09 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -13,7 +13,7 @@ module Hydro
   implicit none
 
   ! init parameters
-  real :: ampluu=0., widthuu=.1, urand=0., kx_uu=0., ky_uu=0., kz_uu=0.
+  real :: ampluu=0., widthuu=.1, urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   character (len=labellen) :: inituu='zero'
@@ -77,7 +77,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.73 2002-10-16 14:42:19 brandenb Exp $")
+           "$Id: hydro.f90,v 1.74 2002-10-25 16:30:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,7 +123,7 @@ module Hydro
         !  sound wave (should be consistent with density module)
         !
         if (lroot) print*,'x-wave in uu; ampluu=',ampluu
-        f(:,:,:,iux)=ampluu*sin(xx)
+        f(:,:,:,iux)=ampluu*sin(kx_uu*xx)
 
       case('shock-tube', '13')
         !

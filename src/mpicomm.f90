@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.57 2002-10-25 15:48:46 dobler Exp $
+! $Id: mpicomm.f90,v 1.58 2002-10-25 16:30:09 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -666,7 +666,7 @@ if (var=='y') then
       do px=0,nprocy-1
         if(px/=ipy) then
           partner=px+ipz*nprocy
-print*,iproc, 'MPICOMM: iproc, px, partner=', iproc, px, partner
+          if(ip<=6) print*,iproc, 'MPICOMM: iproc, px, partner=', iproc, px, partner
           send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
           call MPI_ISEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,isend_rq_y,ierr)
           call MPI_IRECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,irecv_rq_y,ierr)

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.44 2002-10-25 05:24:57 brandenb Exp $
+! $Id: io_dist.f90,v 1.45 2002-10-25 16:30:09 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.44 2002-10-25 05:24:57 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.45 2002-10-25 16:30:09 brandenb Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -142,17 +142,6 @@ contains
         if (ip<=3) print*,'y',y
         if (ip<=3) print*,'z',z
 !
-!  assume uniform mesh;
-!  commented out, since this is now done in rgrid
-!        dxmax=max(dx,dy,dz)
-!        dxmin=min(dx,dy,dz)
-!        Lx=dx*nx*nprocx
-!        Ly=dy*ny*nprocy
-!        Lz=dz*nz*nprocz
-!!
-!        if (ip<=4) print*
-!        if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
-        if (ip<=8) print*,'pi,nu=',pi,nu
       endif
 !
       close(1)
