@@ -28,9 +28,8 @@ if (any(tag_names(az) eq strupcase(vname))) then begin
         XTITLE='!8r!X', YTITLE='!8z!X', TITLE=vname
   endif
 endif else begin
-  print, 'No such variable in phi-averages: <', vname,'>'
+  print, 'No such variable in phi-averages: vname=<', vname,'>'
 endelse
-
 
 end
 ; End of file phiavg.pro
