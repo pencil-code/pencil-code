@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.32 2003-10-24 12:09:15 dobler Exp $
+! $Id: ionization_fixed.f90,v 1.33 2003-10-24 12:53:14 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -94,7 +94,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.32 2003-10-24 12:09:15 dobler Exp $")
+          "$Id: ionization_fixed.f90,v 1.33 2003-10-24 12:53:14 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -195,7 +195,8 @@ module Ionization
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
 !
-      open (1,file=trim(datadir)//'/pc_constants.pro')
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) 'TT_ion=',TT_ion
         write (1,*) 'TT_ion_=',TT_ion_
         write (1,*) 'lnrho_e=',lnrho_e
@@ -210,7 +211,8 @@ module Ionization
         write (1,*) 'lnTTss=',lnTTss
         write (1,*) 'lnTTlnrho=',lnTTlnrho
         write (1,*) 'lnTT0=',lnTT0
-      close (1)
+        close (1)
+      endif
 !
     endsubroutine initialize_ionization
 !*******************************************************************

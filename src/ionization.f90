@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.129 2003-10-24 12:09:15 dobler Exp $
+! $Id: ionization.f90,v 1.130 2003-10-24 12:53:14 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -119,7 +119,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.129 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: ionization.f90,v 1.130 2003-10-24 12:53:14 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -212,7 +212,8 @@ module Ionization
 !
 !  write ionization parameters to file; to be read by idl
 !
-      open (1,file=trim(datadir)//'/pc_constants.pro')
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) 'TT_ion=',TT_ion
         write (1,*) 'TT_ion_=',TT_ion_
         write (1,*) 'lnrho_e=',lnrho_e
@@ -224,7 +225,8 @@ module Ionization
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
         write (1,*) 'Srad0=',Srad0
-      close (1)
+        close (1)
+      endif
 !
     endsubroutine initialize_ionization
 !*******************************************************************

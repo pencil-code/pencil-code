@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.84 2003-10-24 12:09:15 dobler Exp $
+! $Id: noionization.f90,v 1.85 2003-10-24 12:53:14 dobler Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.84 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: noionization.f90,v 1.85 2003-10-24 12:53:14 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -124,7 +124,8 @@ module Ionization
 !  write constants to disk. In future we may want to deal with this
 !  using an include file or another module.
 !
-      open (1,file=trim(datadir)//'/pc_constants.pro')
+      if (lroot) then
+        open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) 'TT_ion=',TT_ion
         write (1,*) 'TT_ion_=',TT_ion_
         write (1,*) 'lnrho_e=',lnrho_e
@@ -134,7 +135,8 @@ module Ionization
         write (1,*) 'lnrho_e_=',lnrho_e_
         write (1,*) 'ss_ion=',ss_ion    
         write (1,*) 'kappa0=',kappa0
-      close (1)
+        close (1)
+      endif
 !
     endsubroutine initialize_ionization
 !*******************************************************************
