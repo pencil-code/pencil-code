@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.69 2004-08-06 17:26:54 snod Exp $
+### $Id: Makefile.src,v 1.70 2004-08-11 19:04:44 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -295,8 +295,12 @@ mpicomm_double_.f90: mpicomm_double.f90
 # The strange construct below is needed to have `make' realize there was
 # an error even when last command in pipe is FCCLEANER: 
 code:
-	($(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x \
-	  || echo "PENCIL COMPILATION ERROR") $(FCCLEANER)
+	if [ ! -z "$(FCCLEANER)" ]; then \
+	    ($(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x \
+	    || echo "PENCIL COMPILATION ERROR") $(FCCLEANER) ; \
+	else \
+	    $(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x ; \
+	fi
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
