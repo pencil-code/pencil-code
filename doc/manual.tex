@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.91 2002-09-09 16:10:06 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.92 2002-09-10 16:35:36 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -218,7 +218,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.91 $ $}
+\date{\today,~ $ $Revision: 1.92 $ $}
 
 % ====================================================================== %
 
@@ -250,7 +250,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.91 $ $}
+  \emph{\today,~ $ $Revision: 1.92 $ $}
 
   \vspace{\stretch{3}}
 
@@ -659,7 +659,7 @@ In this case, you need to first undefine the environment variable
 
 With your environment set up correctly, you can now go to the directory
 you want to work in and set up subdirectories and links.
-This is accomplished by the script \file{lnsrc}, which is located in
+This is accomplished by the script \file{setup-src}, which is located in
 \file{\$PENCIL_HOME/bin} and is thus now in your executable path.
 
 For concreteness, let us assume you want to use \file{samples/conv-slab}
@@ -668,7 +668,7 @@ of solar convection.
 You then do the following:
 \begin{alltt}
   \prompt{unix> } cd samples/conv-slab
-  \prompt{unix> } lnsrc
+  \prompt{unix> } setup-src
   {\sl{}[Output]}
 \end{alltt}
 The script has linked a number of scripts from \file{\$PENCIL_HOME/bin},
@@ -903,7 +903,7 @@ The following is not available yet.
   \prompt{unix> } cd somewhere/pencil-code
   \prompt{unix> } source sourceme.csh \quad\#(to put pencil-code/bin into your path)
   \prompt{unix> } cd runs/sample/rings
-  \prompt{unix> } lnsrc \quad\#(from \file{../../../bin}, which by now should be in your path)
+  \prompt{unix> } setup-src \quad\#(from \file{../../../bin}, which by now should be in your path)
   \prompt{unix> } cd src
   \prompt{unix> } make
   \prompt{unix> } cd ..
@@ -995,7 +995,7 @@ The subdirectory \file{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
 \file{cparam.local}, together with links to
 all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
-\file{src} directory (these links are set up by the script \cmd{lnsrc}.
+\file{src} directory (these links are set up by the script \cmd{setup-src}.
 
 General purpose visualization routines for \name{IDL} or \name{DX} are in the
 \file{idl} and \file{dx} directories, respectively.
@@ -1390,7 +1390,7 @@ quantities \code{bxmz} and \code{bymz} are set.
 
 \begin{description}
   \item[adapt-mkfile]
-  \item[lnsrc]
+  \item[setup-src]
   \item[new]
   \item[nl2idl]
   \item[timestr]
@@ -3335,7 +3335,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.91 2002-09-09 16:10:06 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.92 2002-09-10 16:35:36 brandenb Exp $ $}
 
 
 \end{document}
@@ -3349,7 +3349,7 @@ $ $Id: manual.tex,v 1.91 2002-09-09 16:10:06 brandenb Exp $ $}
 % LocalWords:  SPH CVS tex wd MHD makeindex pdflatex MPI Dobler nonperiodic src
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
 % LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
-% LocalWords:  setenv cvs cvspass code's dP sourceme lnsrc mkdir tmp tmp struct
+% LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp tmp struct
 % LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
 % LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
