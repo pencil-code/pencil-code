@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.86 2002-12-05 09:15:00 dobler Exp $ 
+! $Id: param_io.f90,v 1.87 2002-12-26 16:47:46 nilshau Exp $ 
 
 module Param_IO
 
@@ -47,7 +47,7 @@ module Param_IO
        lwrite_zaverages,test_nonblocking, &
        ix,iy,iz,iz2, &
        bcx,bcy,bcz, &
-       ttransient,tavg,idx_tavg,lserial_io
+       ttransient,tavg,idx_tavg,lserial_io,nr_directions,lpdf,lsf
   contains
 
 !***********************************************************************

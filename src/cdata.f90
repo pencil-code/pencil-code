@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.117 2002-12-19 17:17:21 dobler Exp $
+! $Id: cdata.f90,v 1.118 2002-12-26 16:47:46 nilshau Exp $
 
 module Cdata
 
@@ -48,6 +48,7 @@ module Cdata
 !
   integer :: nname=0,nnamez=0,nnamexy=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
+  integer :: nr_directions=1
   integer, parameter :: mname=100,mnamez=20,mnamexy=6,mnamerz=6
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
@@ -77,7 +78,7 @@ module Cdata
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.
   logical :: test_nonblocking=.false.
-
+  logical :: lpdf=.false.,lsf=.false.
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
 
