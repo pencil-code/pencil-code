@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.43 2002-06-12 09:46:03 brandenb Exp $
+! $Id: run.f90,v 1.44 2002-06-12 12:18:16 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.43 $", &
-             "$Date: 2002-06-12 09:46:03 $")
+             "$Revision: 1.44 $", &
+             "$Date: 2002-06-12 12:18:16 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -118,8 +118,9 @@
 !  remove wiggles in lnrho in sporadic time intervals
 !  This is necessary if the Reynolds number is large.
 !  iwig=500 is a typical value. For iwig=0 no action is taken.
+!  (These two queries must come separately on compaq machines.)
 !
-        if (iwig/=0.and.mod(it,iwig).eq.0) call rmwig(f)
+        if (iwig/=0) then; if (mod(it,iwig).eq.0) call rmwig(f); endif
 !
 !  time advance
 !
