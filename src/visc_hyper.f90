@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.3 2004-01-08 09:20:29 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.4 2004-01-27 12:54:00 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.3 2004-01-08 09:20:29 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.4 2004-01-27 12:54:00 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -144,7 +144,7 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: tmp
-      real, dimension (nx,ny,nz) :: sij2
+      real, dimension (nx,ny,nz) :: sij2,del2divu
       integer :: i,j
 !
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
@@ -156,6 +156,7 @@ module Viscosity
         f(:,:,:,ihyper:ihyper+2)=tmp
         call del2v_2nd(f,tmp,ihyper)
         f(:,:,:,ihyper:ihyper+2)=tmp
+        del2graddivu=tmp
         call del2v_2nd(f,tmp,ihyper)
         f(:,:,:,ihyper:ihyper+2)=tmp
       elseif (ivisc .eq. 'hyper2') then
@@ -194,7 +195,18 @@ module Viscosity
                    +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2 
             enddo
           enddo
-          epsK_hyper=2*nu*sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*sij2)
+!
+!  add diagonal terms
+!
+          call shock_divu(f,tmp(:,:,:,1))                     ! divu
+          call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,3))        ! del2(divu)
+          do i=1,3
+            call der_2nd_nof(f(:,:,:,iux+i-1),tmp(:,:,:,1),i) ! uii
+            call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,2))      ! nabla2 uii
+            sij2=sij2+(tmp(l1:l2,m1:m2,n1:n2,2)-tmp(l1:l2,m1:m2,n1:n2,3)/3.)**2
+          enddo
+!
+          epsK_hyper=2*nu*sum(sij2)
         endif
       endif
 !
@@ -203,6 +215,66 @@ module Viscosity
       !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu
 !
     endsubroutine calc_viscosity
+
+!***********************************************************************
+    subroutine shock_divu(f,df)
+!
+!  calculate divergence of a vector U, get scalar
+!  accurate to 2nd order, explicit,  centred an left and right biased 
+!
+!  23-nov-02/tony: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: df
+!
+!ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
+!ajwm Much slower using partial array?
+!      fac=1./(2.*dx)
+      df=0.
+
+
+      if (nxgrid/=1) then
+         df(1     ,:,:) =  df(1    ,:,:) &
+                           + (  4.*f(2,:,:,iux) &
+                              - 3.*f(1,:,:,iux) &
+                              -    f(3,:,:,iux))/(2.*dx)
+         df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
+                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) / (2.*dx)
+         df(mx    ,:,:) =  df(mx    ,:,:) &
+                           + (  3.*f(mx  ,:,:,iux) &
+                              - 4.*f(mx-1,:,:,iux) &
+                              +    f(mx-2,:,:,iux))/(2.*dx)
+      endif
+
+      if (nygrid/=1) then
+         df(:,1     ,:) = df(:,1     ,:) &
+                          + (  4.*f(:,2,:,iuy) &
+                             - 3.*f(:,1,:,iuy) &
+                             -    f(:,3,:,iuy))/(2.*dy)
+         df(:,2:my-1,:) = df(:,2:my-1,:) &  
+                          + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))/(2.*dy)
+         df(:,my    ,:) = df(:,my    ,:) &
+                          + (  3.*f(:,my  ,:,iuy) &
+                             - 4.*f(:,my-1,:,iuy) &
+                             +    f(:,my-2,:,iuy))/(2.*dy)
+      end if
+
+      if (nzgrid/=1) then
+         df(:,:,1     ) = df(:,:,1     ) &
+                          + (  4.*f(:,:,2,iuz) &
+                             - 3.*f(:,:,1,iuz) &
+                             -    f(:,:,3,iuz))/(2.*dz)
+         df(:,:,2:mz-1) = df(:,:,2:mz-1) &
+                          + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))/(2.*dz)
+         df(:,:,mz    ) = df(:,:,mz    ) &
+                          + (  3.*f(:,:,mz  ,iuz) &
+                             - 4.*f(:,:,mz-1,iuz) &
+                             +    f(:,:,mz-2,iuz))/(2.*dz)
+      end if
+    endsubroutine shock_divu
+
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
@@ -550,7 +622,7 @@ module Viscosity
 !***********************************************************************
     subroutine divgrad_2nd(f,divgradf,k)
 !
-!  24-nov-03/nils: coded
+!  24-nov-03/nils: coded (should be called graddiv)
 !
       use Cdata
 !
