@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2002-12-03 07:56:57 $
-;;;  $Revision: 1.2 $
+;;;  $Date: 2003-02-06 19:36:34 $
+;;;  $Revision: 1.3 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -116,8 +116,9 @@ if (in_list('t',labels)) then begin
   !x.title='!8t!X'
   for i=0,nplots-1 do begin
     lab = labels[idxlist[i]]
+    if ((lab eq 'brms') or (lab eq 'bmax')) then ylog=',/YLOG' else ylog=''
     !y.title = '!3'+lab+'!X'
-    pcmd = 'plot, ts.t, ts.'+lab
+    pcmd = 'plot, ts.t, ts.'+lab+ylog
     if (execute(pcmd) ne 1) then $
         message, 'There was a problem executing <' + pcmd + '>', /INFO
   endfor
