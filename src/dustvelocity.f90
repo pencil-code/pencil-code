@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.35 2004-02-01 14:52:01 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.36 2004-02-04 14:02:17 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.35 2004-02-01 14:52:01 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.36 2004-02-04 14:02:17 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -280,7 +280,8 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      integer :: i
+      real, dimension (nx) :: rhod,tausd1
+      integer :: k
 !
 !  inituud corresponds to different initializations of uud (called from start).
 !
@@ -288,26 +289,41 @@ module Dustvelocity
 
       case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
       case('follow_gas')
-        do i=1,ndustspec
-          f(:,:,:,iudx(i):iudz(i))=f(:,:,:,iux:iuz)
+        do k=1,ndustspec
+          f(:,:,:,iudx(k):iudz(k))=f(:,:,:,iux:iuz)
         enddo
+      case('terminal_vz')
+        if (ldustdrag) then
+          do k=1,ndustspec
+            do m=m1,m2
+              do n=n1,n2
+                rhod = f(l1:l2,m,n,ind(k))*md(k)
+                call get_stoppingtime(f,rhod,tausd1,k)
+                f(l1:l2,m,n,iudz(k)) = -tausd1**(-1)*Omega**2*z(n)
+              enddo
+            enddo
+          enddo
+        else
+          call stop_it("init_uud: Terminal velocity initial condition with no dust drag is not consistent!")
+        endif
+      
       case('Beltrami-x')
-        do i=1,ndustspec
-          call beltrami(ampluud,f,iuud(i),kx=kx_uud)
+        do k=1,ndustspec
+          call beltrami(ampluud,f,iuud(k),kx=kx_uud)
         enddo
       case('Beltrami-y')
-        do i=1,ndustspec
-          call beltrami(ampluud,f,iuud(i),ky=ky_uud)
+        do k=1,ndustspec
+          call beltrami(ampluud,f,iuud(k),ky=ky_uud)
         enddo
       case('Beltrami-z')
-        do i=1,ndustspec
-          call beltrami(ampluud,f,iuud(i),kz=kz_uud)
+        do k=1,ndustspec
+          call beltrami(ampluud,f,iuud(k),kz=kz_uud)
         enddo
       case('sound-wave')
-        do i=1,ndustspec
-          f(:,:,:,iudx(i)) = ampluud*sin(kx_uud*xx)
+        do k=1,ndustspec
+          f(:,:,:,iudx(k)) = ampluud*sin(kx_uud*xx)
           print*,'init_uud: iudx,ampluud,kx_uud=', &
-              iudx(i), ampluud, kx_uud
+              iudx(k), ampluud, kx_uud
         enddo
       case default
 !
@@ -345,7 +361,7 @@ module Dustvelocity
       real, dimension (nx,3,ndustspec) :: uud
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,ood,del2ud,tausd13,tausg13
-      real, dimension (nx) :: rho1,od2,oud,udx,udy,udz,rhod,rhod1
+      real, dimension (nx) :: rho1,od2,oud,udx,udy,udz,rhod
       real, dimension (nx) :: csrho,tausd1,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,k,l
@@ -370,7 +386,6 @@ module Dustvelocity
 !
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
         rhod =f(l1:l2,m,n,ind(k))*md(k)
-        rhod1=1./rhod
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
 !  calculate velocity gradient matrix
@@ -433,25 +448,10 @@ module Dustvelocity
         call del2v(f,iuud(k),del2ud)
         call max_for_dt(nud(k),maxdiffus)
 !
-!  Stopping time of dust depends on the choice of drag law
+!  Stopping time of dust is calculated in get_stoppingtime
 !
         if (ldustdrag) then
-          select case(draglaw)
-        
-          case ('epstein_cst')
-            ! Do nothing, initialized in initialize_dustvelocity
-          case ('epstein_cst_b')
-            tausd1 = betad(k)*rhod1
-          case ('epstein_var')
-            csrho  = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp + &
-                0.5*(gamma+1)*f(l1:l2,m,n,ilnrho) + &
-                0.5*(1-gamma)*lnrho0)
-            csrho = cs0*exp(f(l1:l2,m,n,ilnrho))
-            tausd1 = csrho*rhodsad1(k)
-          case default
-            call stop_it("duud_dt: No valid drag law specified.")
-
-          endselect
+          call get_stoppingtime(f,rhod,tausd1,k)
 !
 !  Add drag force on dust. If taus << dt, set udx = ux, udy=uy, udz=udz(term)
 !
@@ -572,6 +572,37 @@ module Dustvelocity
       enddo
 !
     endsubroutine duud_dt
+!***********************************************************************
+    subroutine get_stoppingtime(f,rhod,tausd1,k)
+!
+!  Calculate stopping time depending on choice of drag law
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Density, only: cs0
+      use Ionization, only: cp
+      
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: rhod,csrho,tausd1
+      integer :: k
+      save :: csrho
+!
+      select case(draglaw)
+        
+      case ('epstein_cst')
+        ! Do nothing, initialized in initialize_dustvelocity
+      case ('epstein_cst_b')
+        tausd1 = betad(k)/rhod
+      case ('epstein_var')
+        if (k .eq. 1) csrho = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp + &
+            0.5*(gamma+1)*f(l1:l2,m,n,ilnrho) + 0.5*(1-gamma)*lnrho0)
+        tausd1 = csrho*rhodsad1(k)
+       case default
+         call stop_it("get_stoppingtime: No valid drag law specified.")
+
+       endselect
+!
+    endsubroutine get_stoppingtime
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
 !
