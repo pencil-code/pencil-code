@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.139 2002-11-19 14:58:58 ngrs Exp $
+! $Id: entropy.f90,v 1.140 2002-11-20 02:47:32 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -17,6 +17,8 @@ module Entropy
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
   real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
+  !parameters for Sedov type initial condition
+  real :: thermal_background=0., thermal_peak=0.  
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
@@ -28,7 +30,7 @@ module Entropy
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,mpoly0,mpoly1,mpoly2,isothtop, &
-       khor_ss
+       khor_ss, thermal_background, thermal_peak
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -72,7 +74,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.139 2002-11-19 14:58:58 ngrs Exp $")
+           "$Id: entropy.f90,v 1.140 2002-11-20 02:47:32 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,6 +112,11 @@ module Entropy
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
 
+      case('sedov') 
+        if (lroot) print*,'init_ent: sedov - thermal background with gaussian energy burst'
+         call blob(thermal_peak,f,ient,radius_ss,0.,0.,0.)
+         f(:,:,:,ient) = alog(f(:,:,:,ient) + thermal_background)/gamma
+   
       case('isobaric')
         !
         !  ss = - ln(rho/rho0)
