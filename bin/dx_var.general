@@ -1,4 +1,5 @@
 #!/bin/csh
+# CVS: $Id: dx_var.general,v 1.2 2004-03-22 12:55:34 brandenb Exp $
 
 # Take 2 parameters $1 - Snapshot number (0 = current)
 #                   $2 - Processor number

@@ -1,4 +1,6 @@
 #!/bin/csh
+# CVS: $Id: start_run.csh,v 1.29 2004-03-22 12:55:34 brandenb Exp $
+
 #                       start_run.csh
 #                      ---------------
 #   Run first src/start.x and then src/run.x.

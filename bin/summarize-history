@@ -1,4 +1,5 @@
 #!/bin/sh
+# CVS: $Id: summarize-history,v 1.7 2004-03-22 12:55:34 brandenb Exp $
 #  -*-Perl-*-
 #======================================================================#
 # Run the right perl version:

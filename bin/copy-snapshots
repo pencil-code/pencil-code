@@ -1,4 +1,5 @@
 #!/bin/csh
+# CVS: $Id: copy-snapshots,v 1.29 2004-03-22 12:55:34 brandenb Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)

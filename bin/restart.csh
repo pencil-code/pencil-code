@@ -1,5 +1,9 @@
-#  Preliminaries for batch jobs
 #PBS -S /bin/csh
+# CVS: $Id: restart.csh,v 1.2 2004-03-22 12:55:34 brandenb Exp $
+
+# (I'm not sure this script is currently being used!?)
+
+# Preliminaries for batch jobs
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif

@@ -1,4 +1,6 @@
 #!/bin/sh
+# CVS: $Id: scpdatadir,v 1.2 2004-03-22 12:55:34 brandenb Exp $
+
 # make tarball of data directory and secure copy to $1 
 # tarek  Nov 26  2002
 

@@ -1,4 +1,6 @@
 #!/bin/csh
+# CVS: $Id: run.csh,v 1.69 2004-03-22 12:55:34 brandenb Exp $
+
 #                       run.csh
 #                      ---------
 #   Run src/run.x (timestepping for src/run.x).
