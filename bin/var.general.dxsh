@@ -1,7 +1,11 @@
 #!/bin/csh
 
+# Take 2 parameters $1 - Snapshot number (0 = current)
+#                   $2 - Processor number
+
 # Determine whether this is MPI, how many CPUS etc.
 #source getconf.csh  #BUT DON'T WANT ANY OUTPUT!
+
 
 if (-r datadir.in) then
   set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
@@ -9,4 +13,13 @@ else
   set datadir = "data"
 endif
 
-cat $datadir/var.general | sed -e s/var\.dat/VAR$1/
+
+set varfile = 'var\.dat'
+if ($#argv > 0) then 
+  if ($1 != 0) set varfile = "VAR$1"
+endif
+set processor = 'proc0'
+if ($#argv > 1) set processor = "proc$2"
+
+
+cat $datadir/var.general | sed -e s/var\.dat/$varfile/ | sed -e s/proc0/$processor/
