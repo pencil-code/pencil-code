@@ -3,8 +3,9 @@
 %%%%%%%%%%%%%%%%%%%%%%
 %%
 %%  Date:   06-Mar-2002
-%%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.139 2002-11-26 15:08:18 ngrs Exp $
+%%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+%%           ab (Axel.Brandenburg@nordita.dk)
+%%  CVS: $Id: manual.tex,v 1.140 2002-11-26 17:17:00 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -333,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.139 $ $}
+\date{\today,~ $ $Revision: 1.140 $ $}
 
 % ====================================================================== %
 
@@ -366,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.139 $ $}
+  \emph{\today,~ $ $Revision: 1.140 $ $}
 
   \vspace{\stretch{3}}
 
@@ -530,9 +531,11 @@ and Bob Stein (University of Michigan) who introduced us to the idea of
 using high-order schemes in compressible flows and who taught us a lot
 about simulations in general.
 
-The shearing sheet approximation and the flux-limited diffusion
+The calculation of the power spectra, the remeshing procedures,
+routines for changing the number of processors, as well as
+shearing sheet approximation and the flux-limited diffusion
 approximation for radiative transfer
-were implemented by Nils Erland Haugen (University of Trondheim).
+were implemented by Nils Erland L.\ Haugen (University of Trondheim).
 
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition.
@@ -2385,6 +2388,29 @@ In the code this equation is solved in terms of $\ln c$,
 Using $\ln c$ instead of $c$ has the advantage that it enforces $c>0$ for all
 times.
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Shock viscosity}
+
+Shock viscosity proportional to positive flow convergence, maximum over
+five zones, and smoothed to second order,
+\begin{equation}
+\zeta=\left<\max_5[(-\Div\uv)_+]\right>.
+\end{equation}
+Assume that the shock viscosity only enters as a bulk viscosity,
+\begin{equation}
+\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta\delta_{ij}\nab\cdot\uv
+\end{equation}
+Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
+\begin{equation}
+\varrho^{-1}\vekt{F}_{\rm visc}=
+\nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\varrho\right)
++\zeta\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta\right)\Div\uv\right].
+\end{equation}
+and
+\begin{equation}
+\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta(\Div\uv)^2
+\end{equation}
 
 % ====================================================================== %
 
@@ -2783,6 +2809,8 @@ application on your specific hardware.
    8 & fe1   & 0.98 & $256^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
    8 & Mhd   & 1.46 &$160^2\times40$& nomagn/entro&46 Mb& 7-oct-02& AB \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
+  16 & fe1   & 0.79 & $128^3$ & magn/noentro & 4x4/ifc& 10-nov-02 & AB \\
+  16 & Mhd   & 2.67 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
@@ -3774,9 +3802,11 @@ double precision, $\varepsilon\approx10^{-15}$.
                  all the time uses up plenty of disk space.\\
   \var{lnowrite} [\code{F}]
                & if set \code{T}, all initialization files are written,
-                 except file{var.dat}. This option allows you to use old
+                 except \file{var.dat}. This option allows you to use old
                  file{var.dat} files, but updates all other initialization
-                 files. This could be useful after having changed the code.\\
+                 files. This could be useful after having changed the code
+                 and, in particular, when the \file{var.dat} files will be
+                 overwritten by \file{remesh.csh}.\\
   \var{random_gen} [\code{system}]
                & \label{random-gen-init}
                  choose random number generator;
@@ -4537,7 +4567,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.139 2002-11-26 15:08:18 ngrs Exp $ $}
+$ $Id: manual.tex,v 1.140 2002-11-26 17:17:00 brandenb Exp $ $}
 
 
 \end{document}
