@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
-;;;  $Id: vsections.pro,v 1.17 2003-06-16 14:24:11 dobler Exp $
+;;;  $Id: vsections.pro,v 1.18 2003-08-08 20:09:59 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot velocity, density and entropy field in three horizontal
@@ -112,7 +112,7 @@ save_state
 wput
 
 !p.multi = [0,3,2]
-!p.charsize = 2
+if (!d.name eq 'X') then !p.charsize = 2
 !x.title = '!8x!X'
 !y.title = '!8z!X'
 

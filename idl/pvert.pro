@@ -5,10 +5,16 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert.pro,v 1.16 2002-10-16 14:41:01 dobler Exp $
+;;;  $Id: pvert.pro,v 1.17 2003-08-08 20:09:59 dobler Exp $
 ;;;
 ;;;  Description:
-;;;   Plot vertical profiles of uz, lnrho and entropy.
+;;;    Plot vertical profiles of uz, lnrho and entropy.
+;;;  PostScript output for the manual:
+;;;    psa,file='pvert0.eps' & device,XSIZE=14,YSIZE=7
+;;;    pvert_layout=[0,4,1]
+;;;    .r thermo
+;;;    .r pvert
+;;;    pse
 
 default, pvert_layout, [0,2,2]
 default, nprofs, 10              ; set to N for only N profiles, 0 for all
