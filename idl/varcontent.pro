@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.12 2003-11-27 19:19:36 mee Exp $
+;  $Id: varcontent.pro,v 1.13 2003-12-06 13:55:19 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -105,20 +105,32 @@ varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
-varcontent[iuud].variable = 'Dust velocity (uud)'
-varcontent[iuud].idlvar   = 'uud'
-varcontent[iuud].idlinit    = INIT_3VECTOR
-varcontent[iuud].idlvarloc= 'uud_loc'
-varcontent[iuud].idlinitloc = INIT_3VECTOR_LOC
-varcontent[iuud].skip     = 2
+for idust=1,dustlayers do begin
 
-varcontent[ilnrhod].variable = 'Dust log density (lnrhod)'
-varcontent[ilnrhod].idlvar   = 'lnrhod'
-varcontent[ilnrhod].idlinit    = INIT_SCALAR
-varcontent[ilnrhod].idlvarloc= 'lnrhod_loc'
-varcontent[ilnrhod].idlinitloc = INIT_SCALAR_LOC
+  if (dustlayers gt 1) then begin
+    sidust = strtrim(string(idust),2)
+    iuud=iuud1+3*(idust-1)
+    ilnrhod=ilnrhod1+(idust-1)
+  endif
 
-varcontent[igg].variable = 'Gravitational acceleation (gg)'
+  varcontent[iuud].variable = 'Dust velocity ' + sidust + $
+      ' (uud' + sidust + ')'
+  varcontent[iuud].idlvar   = 'uud'+sidust
+  varcontent[iuud].idlinit    = INIT_3VECTOR
+  varcontent[iuud].idlvarloc= 'uud'+sidust+'_loc'
+  varcontent[iuud].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iuud].skip     = 2
+
+  varcontent[ilnrhod].variable = 'Dust log density ' + sidust + $
+      ' (lnrhod'+sidust+')'
+  varcontent[ilnrhod].idlvar   = 'lnrhod'+sidust
+  varcontent[ilnrhod].idlinit    = INIT_SCALAR
+  varcontent[ilnrhod].idlvarloc= 'lnrhod'+sidust+'_loc'
+  varcontent[ilnrhod].idlinitloc = INIT_SCALAR_LOC
+
+endfor
+
+varcontent[igg].variable = 'Gravitational acceleration (gg)'
 varcontent[igg].idlvar   = 'gg'
 varcontent[igg].idlinit    = INIT_3VECTOR
 varcontent[igg].idlvarloc= 'gg_loc'
@@ -168,19 +180,6 @@ if (par.lwrite_aux ne 0) then begin
     varcontent[ishock].idlinit    = INIT_SCALAR
     varcontent[ishock].idlvarloc= 'shock_loc'
     varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
-
-    varcontent[itest].variable = 'Test field'
-    varcontent[itest].idlvar   = 'test'
-    varcontent[itest].idlinit    = INIT_SCALAR
-    varcontent[itest].idlvarloc= 'test_loc'
-    varcontent[itest].idlinitloc = INIT_SCALAR_LOC
-
-    varcontent[ihyper3].variable = 'Hyper diffusion (hyper3)'
-    varcontent[ihyper3].idlvar   = 'hyper3'
-    varcontent[ihyper3].idlinit    = INIT_3VECTOR
-    varcontent[ihyper3].idlvarloc= 'hyper3_loc'
-    varcontent[ihyper3].idlinitloc = INIT_3VECTOR_LOC
-    varcontent[ihyper3].skip  = 2
 end
 
 ; ZERO out default 'should never be used' definition
