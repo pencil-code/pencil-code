@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.169 2003-04-30 07:45:03 nilshau Exp $
+### $Id: Makefile,v 1.170 2003-04-30 07:46:45 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,7 +11,7 @@ MPICOMM      = nompicomm
 GLOBAL       = noglobal
 IO           =   io_dist
 FFT          = nofft
-FFTPACK      =   fftpack
+FFTPACK      = nofftpack
 POWER        = nopower_spectrum
 DEBUG        =   debug_c
 
