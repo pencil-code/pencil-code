@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.42 2003-07-02 17:14:33 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.43 2003-07-02 18:13:28 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.42 2003-07-02 17:14:33 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.43 2003-07-02 18:13:28 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -124,7 +124,7 @@ module Radiation
       enddo
       enddo
       enddo
-      print*,'initialize_radiation: directions=',directions
+      !print*,'initialize_radiation: directions=',directions
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -306,7 +306,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_intrinsic'
+        !print*,'intensity_intrinsic'
         first=.false.
       endif
 !
@@ -455,7 +455,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_communicate'
+        !print*,'intensity_communicate'
         first=.false.
       endif
 !
@@ -538,7 +538,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_revision'
+        !print*,'intensity_revision'
         first=.false.
       endif
 !

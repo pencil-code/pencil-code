@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.88 2003-07-02 17:14:33 brandenb Exp $
+! $Id: mpicomm.f90,v 1.89 2003-07-02 18:13:28 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -582,6 +582,10 @@ module Mpicomm
       integer :: lrad,radx0,nbuf_yz,idest,tag_yz
       real, dimension(radx0,my,mz) :: Ibuf_yz
 !
+!  Identifier
+!
+      print*,'radcomm_yz_send: lrad,ipx,nprocx=',lrad,ipx,nprocx
+!
 !  buffer size
 !
       nbuf_yz=radx0*my*mz
@@ -590,10 +594,19 @@ module Mpicomm
 !  lower point, ray in positive direction
 !
       if(lrad>0 .and. ipx/=nprocx-1) then
-         !  initiate send
+         print*,'Oops: we have only one processor in x'
+!
+!  send: idest is next processor along ray
+!
+         idest=ipx+sign(1,lrad)
+!
+!  initiate send
+!
          call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
                      MPI_COMM_WORLD,isend_yz,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
       endif
 !
@@ -609,6 +622,10 @@ module Mpicomm
       integer :: lrad,radx0,nbuf_yz,idest,tag_yz
       real, dimension(radx0,my,mz) :: Ibuf_yz
 !
+!  Identifier
+!
+      print*,'radcomm_yz_recv: lrad,ipx,nprocx=',lrad,ipx,nprocx
+!
 !  buffer size
 !
       nbuf_yz=radx0*my*mz
@@ -617,18 +634,26 @@ module Mpicomm
 !  lower point, ray in positive direction
 !
       if(lrad>0 .and. ipx==0) then
-         !call "lower boundary"
+!
+!  should call "lower boundary"
+!
          Ibuf_yz=0.0 !(for the time being)
       elseif(lrad<0 .and. ipx==nprocx-1) then
-         !call "upper boundary"
+!
+!  should call "upper boundary"
+!
          Ibuf_yz=0.0 !(for the time being)
       else
          print*,'Oops: we have only one processor in x'
          idest=ipx-sign(1,lrad)
-         !  initiate receive
+!
+!  initiate receive
+!
          call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
                      MPI_COMM_WORLD,irecv_yz,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
       endif
 !
@@ -643,6 +668,10 @@ module Mpicomm
       integer :: mrad,rady0,nbuf_zx,idest,tag_zx
       real, dimension(mx,rady0,mz) :: Ibuf_zx
 !
+!  Identifier
+!
+      print*,'radcomm_zx_send: mrad,ipy,nprocy=',mrad,ipy,nprocy
+!
 !  buffer size
 !
       nbuf_zx=mx*rady0*mz
@@ -651,10 +680,18 @@ module Mpicomm
 !  lower point, ray in positive direction
 !
       if(mrad>0 .and. ipy/=nprocy-1) then
-         !  initiate send
+!
+!  send: idest is next processor along ray
+!
+         idest=ipy+sign(1,mrad)
+!
+!  initiate send
+!
          call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
                         MPI_COMM_WORLD,isend_zx,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
       endif
 !
@@ -669,6 +706,10 @@ module Mpicomm
       integer :: mrad,rady0,nbuf_zx,idest,tag_zx
       real, dimension(mx,rady0,mz) :: Ibuf_zx
 !
+!  Identifier
+!
+      print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
+!
 !  buffer size
 !
       nbuf_zx=mx*rady0*mz
@@ -676,19 +717,29 @@ module Mpicomm
 !  determine whether or not we are on a boundary point
 !  lower point, ray in positive direction
 !
-print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
       if(mrad>0 .and. ipy==0) then
-         !call "lower boundary"
-         Ibuf_zx=0.7 !(for the time being)
+!
+!  should call "lower boundary"
+!
+         Ibuf_zx=0. !(for the time being)
       elseif(mrad<0 .and. ipy==nprocy-1) then
-         !call "upper boundary"
+!
+!  should call "upper boundary"
+!
          Ibuf_zx=0. !(for the time being)
       else
+!
+!  receive from processor at the beginning of ray
+!
          idest=ipy-sign(mrad,1)
-         !  initiate receive
+!
+!  initiate receive
+!
          call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
                         MPI_COMM_WORLD,irecv_zx,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
       endif
 !
@@ -703,6 +754,10 @@ print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
       integer :: nrad,radz0,nbuf_xy,idest,tag_xy
       real, dimension(mx,my,radz0) :: Ibuf_xy
 !
+!  Identifier
+!
+      !print*,'radcomm_xy_send: nrad,ipz,nprocz=',nrad,ipz,nprocz
+!
 !  buffer size
 !
       nbuf_xy=mx*my*radz0
@@ -711,10 +766,19 @@ print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
 !  lower point, ray in positive direction
 !
       if(nrad>0 .and. ipz/=nprocz-1) then
-         !  initiate send
+!
+!  send: idest is next processor along ray
+!
+         idest=ipz+sign(1,nrad)
+!
+!  initiate send
+!
+         print*,'radcomm_xy_send: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
          call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                         MPI_COMM_WORLD,isend_xy,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
       endif
 !
@@ -729,6 +793,10 @@ print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
       integer :: nrad,radz0,nbuf_xy,idest,tag_xy
       real, dimension(mx,my,radz0) :: Ibuf_xy
 !
+!  Identifier
+!
+      !print*,'radcomm_xy_recv: nrad,ipz,nprocz=',nrad,ipz,nprocz
+!
 !  buffer size
 !
       nbuf_xy=mx*my*radz0
@@ -737,17 +805,29 @@ print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
 !  lower point, ray in positive direction
 !
       if(nrad>0 .and. ipz==0) then
-         !call "lower boundary"
+!
+!  should call "lower boundary"
+!
          Ibuf_xy=1. !(for the time being)
       elseif(nrad<0 .and. ipz==nprocz-1) then
-         !call "upper boundary"
+!
+!  should call "upper boundary"
+!
          Ibuf_xy=0. !(for the time being)
       else
+!
+!  receive from processor at the beginning of ray
+!
          idest=ipz-sign(1,nrad)
-         !  initiate receive
+!
+!  initiate receive
+!
+         print*,'radcomm_xy_recv: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
          call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
-         !  finalize straight away
+!
+!  finalize straight away
+!
          call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
       endif
 !
