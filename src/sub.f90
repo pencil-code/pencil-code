@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.172 2004-04-10 04:24:02 brandenb Exp $ 
+! $Id: sub.f90,v 1.173 2004-04-10 19:12:07 dobler Exp $ 
 
 module Sub 
 
@@ -1649,6 +1649,10 @@ module Sub
     endsubroutine del6_nodx
 !***********************************************************************
     subroutine u_dot_gradf(f,k,gradf,uu,ugradf,upwind)
+!
+!  Do advection-type term u.grad f_k.
+!  Assumes gradf to be known, but takes f and k as arguments to be able
+!  to calculate upwind correction
 !
       use Cdata
       use Deriv
