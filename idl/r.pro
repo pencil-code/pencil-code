@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.20 2002-06-17 12:09:46 dobler Exp $
+; $Id: r.pro,v 1.21 2002-06-17 21:03:43 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -32,13 +32,17 @@ if (cpar gt 0) then begin
   spawn, '../../../bin/nl2idl -f param2 tmp/param2.nml > tmp/param2.pro'
   resolve_routine, 'param2', /IS_FUNCTION, /COMPILE_FULL_FILE
   par2=param2()
-  cs0=par2.cs0 & nu=par2.nu
+  if (lhydro) then begin
+    cs0=par2.cs0 & nu=par2.nu
 ;  cs0=1. & nu=0.
-  hcond0=par2.hcond0 & hcond1=par2.hcond1
-  hcond2=par2.hcond2 & whcond=par2.whcond
-  cheat=par2.cheat & wheat=par2.wheat
-  cool=par2.cool & wcool=par2.wcool
-  Fheat=par2.Fheat
+  endif
+  if (lentropy) then begin
+    hcond0=par2.hcond0 & hcond1=par2.hcond1
+    hcond2=par2.hcond2 & whcond=par2.whcond
+    cheat=par2.cheat & wheat=par2.wheat
+    cool=par2.cool & wcool=par2.wcool
+    Fheat=par2.Fheat
+  endif
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse
