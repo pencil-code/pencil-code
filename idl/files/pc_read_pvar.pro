@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.7 2005-02-09 15:08:09 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.8 2005-02-20 17:54:03 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -113,25 +113,32 @@ for i=0,nproc-1 do begin
 ;  global index numbers.
 ;
   readu, file, npar_loc 
-  ipar_loc=lonarr(npar_loc)
-  readu, file, ipar_loc
+;
+;  Read particle data (if any).
+;
+  if (npar_loc ne 0) then begin
+;    
+    ipar_loc=lonarr(npar_loc)
+    readu, file, ipar_loc
 ;
 ;  Register particle indices for later check if all particles have been read.
 ;  
-  for k=0,npar_loc-1 do begin
-    ipar0[ipar_loc[k]-1]=ipar0[ipar_loc[k]-1]+1
-  endfor
+    for k=0,npar_loc-1 do begin
+      ipar0[ipar_loc[k]-1]=ipar0[ipar_loc[k]-1]+1
+    endfor
 ;
 ;  Read local processor data.
 ;
-  array_loc=fltarr(npar_loc,mpvar)
-  readu, file, array_loc
+    array_loc=fltarr(npar_loc,mpvar)
+    readu, file, array_loc
 ;
 ;  Put local processor data into proper place in global data array
 ;        
-  for k=0,npar_loc-1 do begin
-    array[ipar_loc[k]-1,*]=array_loc[k,*]
-  endfor
+    for k=0,npar_loc-1 do begin
+      array[ipar_loc[k]-1,*]=array_loc[k,*]
+    endfor
+;
+  endif
 ;
 ;  Read time.
 ;
