@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.29 2002-05-27 12:04:32 dobler Exp $
+! $Id: run.f90,v 1.30 2002-05-29 04:57:20 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -42,40 +42,32 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.29 $", &
-             "$Date: 2002-05-27 12:04:32 $")
+             "$Revision: 1.30 $", &
+             "$Date: 2002-05-29 04:57:20 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
 !
         ix=mx/2; iy=my/2; iz=mz/2
-        dtmin=1e-6  !!(AB: this should be made an input parameter, better dimless)
+        dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
 !
-!  read in parameters
-!  nt is the number of timesteps
-!  dsnap is the time interval of snapshot output
-!  it1 is the frequency of output of rms and max values
-!  nu is viscosity
+!  read parameters and output parameter list
 !
-        call rparam             ! Read parameters from start.x;
-                                ! these may be overwritten by cread
+        call rparam !(Read parameters from start.x; may be overwritten by cread)
         call cread(PRINT=.true.)
-!
-!  read the print parameter list
-!
-        call rprint_list
+        call rprint_list(.false.)
 !
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        if (ip<=6) print*,'reading var files'
+        if (ip<=6.and.lroot) print*,'reading var files'
         call input(trim(directory)//'/var.dat',f,mvar,1)
         call rglobal()      ! Read global variables (if there are)
 !
 !  read coordinates
 !
-        if (ip<=6) print*,'reading grid coordinates'
+        if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
 !  read seed field parameters (only if forcing is turned on)
@@ -83,7 +75,6 @@
         if (iforce/=0) then
           if (lroot) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
-          if (iproc < 10) print*,'iproc,seed(1:2)=',iproc,seed
           call random_seed(put=seed)
         endif
 !
@@ -100,18 +91,15 @@
         if(lroot) then
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
-!          call cpu_time(time1)
           print*,'start time loop'
         endif
 !
 !  do loop in time
 !
         Time_loop: do it=1,nt
-          if (ip.le.10) print*,'it=',it
           lout=mod(it-1,it1).eq.0
           if (lout) then
-            inquire(FILE="STOP", EXIST=stop)! Exit DO loop if the file
-                                            ! `STOP' exists
+            inquire(FILE="STOP", EXIST=stop) !(exit DO loop if the file `STOP' exists)
             if (stop) then
               if (lroot) write(0,*) "Found STOP file -- quitting"
               exit Time_loop
@@ -122,7 +110,8 @@
             inquire(FILE="RELOAD", EXIST=reload)
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
-              call cread(PRINT=.true.) ! Re-read configuration
+              call cread(PRINT=.true.) !(Re-read configuration)
+              call rprint_list(.true.) !(Re-read output list)
               call remove_file("RELOAD")
               reload = .false.
             endif
@@ -148,7 +137,6 @@
           endif
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
-!        if(lroot) call cpu_time(time2)
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only

@@ -37,12 +37,12 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-05-27 12:04:32 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
     endsubroutine register_ent
 !***********************************************************************
-    subroutine init_ent(f,init,ampl,xx,yy,zz)
+    subroutine init_ent(f,init,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.

@@ -252,8 +252,8 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
-      real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
-      real, dimension(nx) :: rho,rho1,nurho1,nu_var,chi,diff,del2lam
+      real, dimension (nx) :: divu,uglnrho,u2,o2,ou
+      real, dimension(nx) :: rho1,nu_var,chi,diff,del2lam
       real, dimension(nx) :: pdamp
       real :: diffrho
       integer :: i,j
@@ -264,8 +264,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.44 $", &
-           "$Date: 2002-05-27 12:04:32 $")
+           "$Revision: 1.45 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -305,7 +305,6 @@ module Equ
 !
         if (ivisc==1) then
           if (headtt) print*,'full viscous force'
-!          nurho1=nu*rho1
           nu_var=nu*rho0*rho1   ! spatially varying nu
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3
@@ -349,7 +348,7 @@ module Equ
 !
 !  magnetic part
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,cs2)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
 !
 !  damping terms (artificial, but sometimes useful):
 !
@@ -417,9 +416,10 @@ module Equ
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
+!  The length of the timestep is not known here (--> moved to prints.f90)
 !
         if (ldiagnos) then
-          t_diag = t            ! diagnostic quantities are for this time
+          tdiagnos = t !(diagnostic quantities are for THIS time)
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -433,7 +433,6 @@ module Equ
           endif
           if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
           if (i_um2/=0) call max_mn_name(u2,i_um2)
-!         divu2=divu**2
 !         rho=exp(f(l1:l2,m,n,ilnrho))
 !         call max_mn (u2,u2max)
 !         call rms2_mn(u2,urms)
@@ -441,8 +440,6 @@ module Equ
 !         call rms2_mn(o2,orms)
 !         call max_mn (ou,oumax)
 !         call rms_mn (ou,ourms)
-!         call max_mn (divu2,divu2max)
-!         call rms2_mn(divu2,divurms)
 !         call mean_mn(rho,rmean)
 !         call max_mn (rho,rmax)
 !         call rms_mn (rho,rrms)

@@ -16,7 +16,7 @@ module Cdata
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
   real :: cs0,rho0,cs20,gamma,gamma1,cs2top
   real :: DD,nu,cmu,cnu2,cdiffrho
-  real :: t_diag,dtu,dtv
+  real :: tdiagnos,dtu,dtv
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
   real :: UUmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
@@ -33,7 +33,7 @@ module Cdata
 
   integer, dimension (2) :: seed
 !  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
-  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz,iforce
+  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
@@ -44,7 +44,7 @@ module Cdata
 !  in this section are all the things related to printing
 !
   integer :: nname
-  integer :: ilabel_max=-1,ilabel_sum=1
+  integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
   integer, parameter :: mname=100,mname_extra=2
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname

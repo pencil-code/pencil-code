@@ -23,6 +23,26 @@ module Sub
   contains
 
 !***********************************************************************
+    subroutine save_name(a,iname)
+!
+!  Lists the value of a (must be treated as real) in gname array
+!  This is done only when m=n=1.
+!
+!  26-may-02/axel: adapted from max_mn_name
+!
+      use Cdata
+!
+      real :: a
+      integer :: iname
+!
+!  Set corresponding entry in itype_name
+!  This routine is to be called only once per step
+!
+      fname(iname)=a
+      itype_name(iname)=ilabel_save
+!
+    endsubroutine save_name
+!***********************************************************************
     subroutine max_mn_name(a,iname)
 !
 !  successively calculate maximum of a, where a is supplied
@@ -1405,10 +1425,11 @@ module Sub
       character (len=*) :: cname,cform
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length
+      integer, save :: imsg=0
 !
-      intent(in)  :: iname,ctest
+      intent(in)  :: iname,cname,ctest
       intent(out) :: cform
-      intent(inout) :: cname,itest
+      intent(inout) :: itest
 !
 !  check whether format is given
 !
@@ -1425,9 +1446,15 @@ module Sub
         cform='1p,e10.2,0p'  !!(the nag-f95 compiler requires a comma after 1p)
         length=iform0-1
       endif
+      if (cname(1:length)==ctest .and. itest==0) itest=iname
 !
-      cname = cname(1:length)   ! don't need format any more
-      if (cname==ctest .and. itest==0) itest=iname
+!  Integer formats not currently supported: check whether ok
+!
+      if (index(cform,'i')/=0) then
+        if (imsg==0) print*,'INTEGER formats not currently supported!'
+        cform='f10.0'
+        imsg=1
+      endif
 !
       endsubroutine parse_name
 !***********************************************************************

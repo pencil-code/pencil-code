@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.29 2002-05-27 12:04:32 dobler Exp $
+! $Id: start.f90,v 1.30 2002-05-29 04:57:20 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -15,6 +15,7 @@
         use Sub
         use Register
         use Global
+        use Hydro
         use Gravity
         use Entropy
         use Magnetic
@@ -24,7 +25,7 @@
 !  define parameters
 !
         integer :: init,i
-        real :: ampl
+real :: ampl  !(AB: to be removed when added to namelist)
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
 !
@@ -34,8 +35,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.29 $", &
-             "$Date: 2002-05-27 12:04:32 $")
+             "$Revision: 1.30 $", &
+             "$Date: 2002-05-29 04:57:20 $")
 !
 !  set default input
 !
@@ -115,9 +116,9 @@
 !
         f = 0.
         call init_hydro(f,init,ampl,xx,yy,zz)
-        call init_ent  (f,init,ampl,xx,yy,zz)
-        call init_aa   (f,init,ampl,xx,yy,zz)
-        call init_grav (f,init,ampl,xx,yy,zz)
+        call init_ent  (f,init,xx,yy,zz)
+        call init_aa   (f,init,xx,yy,zz)
+        call init_grav (f,init,xx,yy,zz)
 !
 !  write to disk
 !

@@ -6,6 +6,8 @@ module Forcing
 
   implicit none
 
+  real :: force,relhel
+
   namelist /forcing_run_pars/ &
        iforce,force,relhel
 
@@ -32,8 +34,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-05-26 16:42:58 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
     endsubroutine register_forcing
 !***********************************************************************

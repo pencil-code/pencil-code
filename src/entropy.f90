@@ -51,8 +51,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.43 $", &
-           "$Date: 2002-05-27 12:04:32 $")
+           "$Revision: 1.44 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -61,7 +61,7 @@ module Entropy
 !
     endsubroutine register_ent
 !***********************************************************************
-    subroutine init_ent(f,init,ampl,xx,yy,zz)
+    subroutine init_ent(f,init,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
 !  7-nov-2001/wolf: coded
@@ -74,7 +74,7 @@ use IO
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real, dimension (mz) :: stp
-      real :: ampl,beta1,cs2int,ssint
+      real :: beta1,cs2int,ssint
       integer :: init
 !
       if (lgravz) then

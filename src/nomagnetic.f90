@@ -37,12 +37,12 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-05-19 07:55:25 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
     endsubroutine register_aa
 !***********************************************************************
-    subroutine init_aa(f,init,ampl,xx,yy,zz)
+    subroutine init_aa(f,init,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
 !  3-may-2002/wolf: dummy routine
@@ -57,7 +57,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,cs2)
+    subroutine daa_dt(f,df,uu,rho1,TT1)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -71,11 +71,13 @@ module Magnetic
 !
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine rprint_magnetic
+    subroutine rprint_magnetic(lreset)
 !
 !  reads and registers print parameters relevant for magnetic fields
 !  dummy routine
 !   3-may-02/axel: coded
+!
+      logical :: lreset
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

@@ -31,8 +31,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nograv.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-03-28 18:51:49 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -40,7 +40,7 @@ module Gravity
 !
     endsubroutine register_grav
 !***********************************************************************
-    subroutine init_grav(f,init,ampl,xx,yy,zz)
+    subroutine init_grav(f,init,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
 !   9-jan-02/wolf: coded
@@ -49,11 +49,9 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: ampl
       integer :: init
 !
 ! Not doing anything (this might change if we decide to store gg)
-!
 !
     endsubroutine init_grav
 !***********************************************************************

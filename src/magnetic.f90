@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.27 2002-05-26 16:42:58 brandenb Exp $
+! $Id: magnetic.f90,v 1.28 2002-05-29 04:57:20 brandenb Exp $
 
 module Magnetic
 
@@ -28,8 +28,8 @@ module Magnetic
   namelist /magnetic_run_pars/ &
        eta,B_ext
 
-  ! other variables
-  integer :: i_b2m,i_bm2,i_j2m,i_jm2,i_abm,i_jbm
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
 
   contains
 
@@ -66,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.27 $", &
-           "$Date: 2002-05-26 16:42:58 $")
+           "$Revision: 1.28 $", &
+           "$Date: 2002-05-29 04:57:20 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -76,7 +76,7 @@ module Magnetic
 !
     endsubroutine register_aa
 !***********************************************************************
-    subroutine init_aa(f,init,ampl,xx,yy,zz)
+    subroutine init_aa(f,init,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here all different routines (such as rings)
@@ -91,10 +91,10 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
-      real, dimension (mx,my,mz)      :: tmp,xx,yy,zz,xx1,yy1,zz1
+      real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
       real, dimension(3) :: axis,disp
       real    :: phi,theta,ct,st,cp,sp
-      real    :: ampl,fring,Iring,R0,width
+      real    :: fring,Iring,R0,width
       integer :: init,i
 !
 !  Gaussian noise
@@ -173,7 +173,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,cs2)
+    subroutine daa_dt(f,df,uu,rho1,TT1)
 !
 !  magnetic field evolution
 !
@@ -190,7 +190,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2,b2tot,ab,jb
+      real, dimension (nx) :: var1,rho1,J2,TT1,uy0,b2,b2tot,ab,jb
 !
       call curl(f,iaa,bb)
 !
@@ -278,16 +278,25 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine rprint_magnetic
+    subroutine rprint_magnetic(lreset)
 !
 !  reads and registers print parameters relevant for magnetic fields
 !
 !   3-may-02/axel: coded
+!  27-may-02/axel: added possibility to reset list
 !
       use Cdata
       use Sub
 !
       integer :: iname
+      logical :: lreset
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+      endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
@@ -308,7 +317,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
 !   1-may-02/wolf: coded
 !
-      use Cdata, only: mx,my,mz,mvar,Lz,pi
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz,3) :: vv
       real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp

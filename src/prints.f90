@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.10 2002-05-27 12:04:32 dobler Exp $
+! $Id: prints.f90,v 1.11 2002-05-29 04:57:20 brandenb Exp $
 
 module Print
 
@@ -17,38 +17,47 @@ module Print
 !  modules and marked in `print.in'
 !
 !   3-may-02/axel: coded
+!  27-may-02/axel: it,t,dt added as extra save parameters
 !
       use Cdata
       use Sub
+      use Hydro
 !
       logical,save :: first=.true.
       character (len=320) :: fform,legend
       character (len=1) :: comma=','
       integer :: iname
 !
-!  produce the format
+!  If the timestep (=dt) is to be outputted, it is known only after
+!  rk_2n, so the best place to enter it into the save list is here
 !
-      fform='(i10,f10.3,1pg10.3,0p,'//cform(1)
-      legend='it,t_diag,dt,'//cname(1)
+      if (i_t/=0) call save_name(tdiagnos,i_t)
+      if (i_dt/=0) call save_name(dt,i_dt)
+      if (i_it/=0) call save_name(float(it),i_it)
+!
+!  produce the format
+!  must set cform(1) explicitly, and then do iname>=2 in loop
+!
+      fform='('//cform(1)
+      legend=cname(1)
       do iname=2,nname
         fform=trim(fform)//comma//cform(iname)
         legend=trim(legend)//comma//cname(iname)
       enddo
       fform=trim(fform)//')'
-!print*,'PRINTS: form = ',trim(fform)
-!print*,'PRINTS: args = ',it-1,t_diag,dt,fname(1:nname)
 !
-!  this needs to be made more sophisticated of course...
+!! print*,'prints: form = ',trim(fform)
+!! print*,'prints: args = ',fname(1:nname)
+!
+!  This treats all numbers as floating point numbers.
+!  Only those numbers are given (and computed) that are
+!  also listed in print.in.
 !
       if(lroot) then
-        ! write to standard output
-        write( 6,trim(fform)) it-1,t_diag,dt,fname(1:nname)
-        ! write to `fort.20'
-        write(20,trim(fform)) it-1,t_diag,dt,fname(1:nname)
-        ! write to `check'
         open(3,file='check')
-        write(3,'(a)') legend
-        write(3,trim(fform)) it-1,t_diag,dt,fname(1:nname)
+        write(3,trim(fform))  fname(1:nname)  ! write to `check'
+        write(6,trim(fform))  fname(1:nname)  ! write to standard output
+        write(20,trim(fform)) fname(1:nname)  ! write to `fort.20'
         close(3)
       endif
       first = .false.
