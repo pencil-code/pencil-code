@@ -75,7 +75,12 @@ function texsyms, DEVICE=device
               phi_c       : '!7F!X' , $
               chi_c       : '!7C!X' , $
               psi_c       : '!7Y!X' , $
-              omega_c     : '!7W!X'   }
+              omega_c     : '!7W!X' , $
+    ; other symbols
+              Im          : '!7Á!X' ,  $
+              Re          : '!7Â!X' ,  $
+              sqrt        : '!7Ö!X'   $
+  }
   endif else begin
     ; lowercase lsymbols
     sym = { $
@@ -132,7 +137,12 @@ function texsyms, DEVICE=device
               phi_c       : '!7U!X' , $
               chi_c       : '!7V!X' , $
               psi_c       : '!7W!X' , $
-              omega_c     : '!7X!X'   }
+              omega_c     : '!7X!X' , $
+    ; other symbols
+              Im          : '!15I!X',  $
+              Re          : '!15R!X',  $
+              sqrt        : '!9r!X'   $
+  }
   endelse
 
   return, sym
