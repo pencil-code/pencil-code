@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.139 2003-05-30 16:31:48 mee Exp $
+! $Id: equ.f90,v 1.140 2003-05-30 20:47:44 ngrs Exp $
 
 module Equ
 
@@ -42,6 +42,7 @@ module Equ
       use Sub
 !
       integer :: iname,imax_count,isum_count,nmax_count,nsum_count
+      real :: dv
       real, dimension (mname) :: fmax_tmp,fsum_tmp,fmax,fsum
 !
 !  go through all print names, and sort into communicators
@@ -86,7 +87,13 @@ module Equ
                isum_count=isum_count+1
                if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)/(nw*ncpus)
                if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
-               if(itype_name(iname)==+3) fname(iname)=fsum(isum_count)*(dx*dy*dz)
+               if(itype_name(iname)==+3) then
+                  dv=1.
+                  if (nxgrid/=1) dv=dv*dx
+                  if (nygrid/=1) dv=dv*dy
+                  if (nzgrid/=1) dv=dv*dz
+                  fname(iname)=fsum(isum_count)*dv
+               endif
             endif
          enddo
          !nmax_count=imax_count
@@ -213,7 +220,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.139 2003-05-30 16:31:48 mee Exp $")
+           "$Id: equ.f90,v 1.140 2003-05-30 20:47:44 ngrs Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

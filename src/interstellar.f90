@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.23 2003-05-30 17:04:27 mee Exp $
+! $Id: interstellar.f90,v 1.24 2003-05-30 20:47:44 ngrs Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -77,7 +77,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.23 2003-05-30 17:04:27 mee Exp $")
+           "$Id: interstellar.f90,v 1.24 2003-05-30 20:47:44 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -274,7 +274,7 @@ module Interstellar
     real, dimension(mx,my,mz,mvar) :: f
     real, dimension(nx) :: lnrho,rho,rho_cloud,ss,TT
 !    real :: lnrho,rho,rho_cloud,ss,TT
-    real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII
+    real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII,dv
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
     real, dimension(ncpus) :: mass_cloud_byproc
     integer :: icpu
@@ -309,7 +309,11 @@ module Interstellar
        !print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
        call mpireduce_sum(fsum1_tmp,fsum1,1) 
        call mpibcast_real(fsum1,1)
-       mass_cloud_dim=fsum1(1)*(dx*dy*dz)*tosolarMkpc3
+       dv=1.
+       if (nxgrid/=1) dv=dv*dx
+       if (nygrid/=1) dv=dv*dy
+       if (nzgrid/=1) dv=dv*dz
+       mass_cloud_dim=fsum1(1)*dv*tosolarMkpc3
        !print*,'check_SNII, iproc,fsum1:',iproc,fsum1(1)
        ! need convert to dimensional units, for rate/probability calculation only. 
        ! don't overwrite mass_cloud (on individual processors), as it's re-used.
@@ -653,7 +657,6 @@ find_SN: do n=n1,n2
 !            call thermodynamics(f(l1:l2,m,n,ilnrho), & 
 !                  f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
 !            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
-
 
        enddo
       enddo
