@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.228 2004-10-27 14:21:47 ajohan Exp $
+! $Id: equ.f90,v 1.229 2004-10-27 14:52:56 ajohan Exp $
 
 module Equ
 
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.228 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: equ.f90,v 1.229 2004-10-27 14:52:56 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -383,7 +383,7 @@ module Equ
 !  if their evolution is turned off.
 !
         call duu_dt   (f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
-        call dlnrho_dt(f,df,uu,divu,lnrho,glnrho,shock,gshock)
+        call dlnrho_dt(f,df,uu,divu,lnrho,rho,glnrho,shock,gshock)
 !
 !  Entropy evolution
 !

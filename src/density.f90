@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.176 2004-10-27 14:21:46 ajohan Exp $
+! $Id: density.f90,v 1.177 2004-10-27 14:52:56 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -92,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.176 2004-10-27 14:21:46 ajohan Exp $")
+           "$Id: density.f90,v 1.177 2004-10-27 14:52:56 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -810,7 +810,7 @@ module Density
 
     endsubroutine numerical_equilibrium
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,divu,lnrho,glnrho,shock,gshock)
+    subroutine dlnrho_dt(f,df,uu,divu,lnrho,rho,glnrho,shock,gshock)
 !
 !  continuity equation
 !  calculate dlnrho/dt = - u.gradlnrho - divu
@@ -824,7 +824,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: lnrho,divu,uglnrho,gshockglnrho,glnrho2,shock
+      real, dimension (nx) :: divu,uglnrho,lnrho,rho,gshockglnrho,glnrho2,shock
       real, dimension (nx) :: fdiff,del2lnrho,del6rho
       integer :: j
 !
@@ -844,7 +844,7 @@ module Density
 !  continuity equation
 !
       if (ldensity_nolog) then
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-lnrho*divu
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-rho*divu
       else
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
       endif
