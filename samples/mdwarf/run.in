@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2003-11-23 21:55:26 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.6 2003-11-24 08:31:50 brandenb Exp $',
   ip=13,
   nt=100, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.08, dtmin=1e-6,
@@ -16,6 +16,7 @@
 !  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
   !iwig=1000
   random_gen='nr_f90'
+  slice_position='m'
 /
 &hydro_run_pars
   nu=10.e-4, ivisc='nu-const',
