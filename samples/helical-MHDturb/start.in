@@ -2,7 +2,7 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.13 2002-06-15 11:29:35 brandenb Exp $',
+  cvsid='$Id: start.in,v 1.14 2002-06-19 10:40:41 brandenb Exp $',
 /
 &hydro_init_pars
 /
@@ -10,6 +10,6 @@
   gamma=1.
 /
 &magnetic_init_pars
-  initaa=1,    ! 0 means random field (spectrum k^2), 1 for Beltrami field
-  amplaa=1e-1  ! amplitude of A field; for random: <B^2>=ampl/3*kmax^3.
+  initaa=12,	! 11 for Beltrami field in the x-direction
+  amplaa=1e-1	! amplitude of A field; for random: <B^2>=ampl/3*kmax^3.
 /
