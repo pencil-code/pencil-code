@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.175 2003-06-26 14:37:39 torkel Exp $
+! $Id: entropy.f90,v 1.176 2003-07-02 18:06:18 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -18,7 +18,7 @@ module Entropy
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
   real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.,ss_const=0.
-  real :: tau_ss_exterior=0.
+  real :: tau_ss_exterior=0., TT0=impossible,TT0top=impossible,TT0bot=impossible
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -39,7 +39,7 @@ module Entropy
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
        center2_x, center2_y, center2_z, &
-       yH0,xHe
+       yH0,xHe,TT0
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -84,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.175 2003-06-26 14:37:39 torkel Exp $")
+           "$Id: entropy.f90,v 1.176 2003-07-02 18:06:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -379,20 +379,54 @@ module Entropy
 !                  to allow isothermal condition for arbitrary density
 !
 !
+      use Gravity
+      use Ionization
+
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: tmp, pot
 !
       do n=n1,n2
       do m=m1,m2
-        f(l1:l2,m,n,ient)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+        if (lfixed_ionization) then
+           call potential(x(l1:l2),y(m),z(n),pot)
+!        if (lfixed_ionization) then
+           call isothermal_density_ion(pot,tmp)
+!print*,minval(tmp),maxval(tmp)
+           f(l1:l2,m,n,ilnrho)=lnrho0+tmp/TT0
+           f(l1:l2,m,n,ient) = ((1. + yH0 + xHe) &
+                * (1.5*log(TT0/TT_ion)+lnrho_e-f(l1:l2,m,n,ilnrho)+2.5)  &
+                +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)))*ss_ion
+
+           if (yH0.ne.0.) f(l1:l2,m,n,ient) = &
+                f(l1:l2,m,n,ient) - (2.*yH0*log(yH0) * ss_ion)
+           if (xHe.ne.0.) f(l1:l2,m,n,ient) = &
+                f(l1:l2,m,n,ient) - (xHe*log(xHe)* ss_ion)
+           if (yH0.ne.1.) f(l1:l2,m,n,ient) = &
+                f(l1:l2,m,n,ient) - ((1.-yH0)*log(1.-yH0) * ss_ion)
+
+!print*,minval(f(l1:l2,m,n,ient)),maxval(f(l1:l2,m,n,ient))
+        else
+          f(l1:l2,m,n,ient)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
                   ! + other terms for sound speed not equal to cs_0
+        endif
       enddo
       enddo
+
+      if (lionization.or.lfixed_ionization) then
+         TT0top=TT0
+         TT0bot=TT0
+         cs2bot=impossible
+         cs2top=impossible
+      else
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
-      cs2bot=cs20
-      cs2top=cs20
+         TT0top=impossible
+         TT0bot=impossible
+         cs2bot=cs20
+         cs2top=cs20
+      endif
 !
     endsubroutine isothermal_entropy
 !***********************************************************************
@@ -1177,15 +1211,17 @@ endif
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
+!  23-jun-2003/tony: implemented for lfixed_ionization
 !
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity
+      use Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy
-      integer :: i
+      real, dimension (mx,my) :: tmp_xy, ss
+      integer :: i, mcount,ncount
 !
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
@@ -1202,32 +1238,49 @@ endif
 !  bottom boundary
 !
       case('bot')
-        if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
-        tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
+          call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
+        if (lionization.or.lfixed_ionization) then
+           f(:,:,n1-nghost:n1,ient) = ((1. + yH0 + xHe) &
+                * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
+                +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+                -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+        else
+          if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
+          if (cs2bot<=0. .and. lroot) &
+                print*,'BOUNDCONDS: cannot have cs2bot<=0'
+            tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + alog(cs2bot/cs20)) / gamma
-        f(:,:,n1,ient) = tmp_xy
-        do i=1,nghost
-          f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
-        enddo
+            f(:,:,n1,ient) = tmp_xy
+            do i=1,nghost
+               f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
+            enddo
+         endif
 !
 !  top boundary
 !
       case('top')
-        if (ldebug) print*,'set top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-!       if (bcz1(ilnrho) /= "a2") &
-!            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
-        tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                 + alog(cs2top/cs20)) / gamma
-        f(:,:,n2,ient) = tmp_xy
-        do i=1,nghost
-          f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
-        enddo
+        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
+          call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
+        if (lfixed_ionization) then
+           f(:,:,n2:n2+nghost,ient) = ((1. + yH0 + xHe) &
+                * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n2:n2+nghost,ilnrho)+2.5)  &
+                +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+                -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+        else
+          if (ldebug) print*,'set top temperature: cs2top=',cs2top
+          if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+  !       if (bcz1(ilnrho) /= "a2") &
+  !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
+          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+                   + alog(cs2top/cs20)) / gamma
+          f(:,:,n2,ient) = tmp_xy
+          do i=1,nghost
+            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+          enddo
+        endif
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        if(lroot) print*,"invalid argument for 'bc_ss_temp_old'"
         call stop_it("")
       endselect
 !
@@ -1242,6 +1295,7 @@ endif
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity
+      use Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1287,6 +1341,8 @@ endif
         if(lroot) print*,"invalid argument for 'bc_ss_temp_x'"
         call stop_it("")
       endselect
+      
+
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1356,6 +1412,7 @@ endif
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity
+      use Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1376,6 +1433,9 @@ endif
 !  bottom boundary
 !
       case('bot')
+       if (lionization.or.lfixed_ionization) then
+        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+       else
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
@@ -1384,10 +1444,14 @@ endif
           f(:,:,n1-i,ient) = -f(:,:,n1+i,ient) + tmp &
                - gamma1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
         enddo
+     endif
 !
 !  top boundary
 !
       case('top')
+       if (lionization.or.lfixed_ionization) then
+        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+       else
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
@@ -1396,7 +1460,7 @@ endif
           f(:,:,n2+i,ient) = -f(:,:,n2-i,ient) + tmp &
                - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
-
+       endif
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
         call stop_it("")
@@ -1511,6 +1575,7 @@ endif
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity
+      use Ionization
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1522,28 +1587,35 @@ endif
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case(topbot)
 !
 !  bottom boundary
 !
       case('bot')
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        do i=1,nghost
-          f(:,:,n1-i,ient) = f(:,:,n1+i,ient) &
-               + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
-        enddo
+        if (lionization.or.lfixed_ionization) then
+          call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+        else
+          if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+          do i=1,nghost
+             f(:,:,n1-i,ient) = f(:,:,n1+i,ient) &
+                  + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
+          enddo
+        endif
 !
 !  top boundary
 !
       case('top')
+       if (lionization.or.lfixed_ionization) then
+        call stop_it("NOT IMPLEMENTED FOR IONISATION CASE")
+       else
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-        do i=1,nghost
-          f(:,:,n2+i,ient) = f(:,:,n2-i,ient) &
-               + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
-        enddo
-
+         do i=1,nghost
+           f(:,:,n2+i,ient) = f(:,:,n2-i,ient) &
+                + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
+         enddo
+        endif
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_stemp_z'"
         call stop_it("")

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.34 2003-06-19 10:32:15 mee Exp $
+! $Id: interstellar.f90,v 1.35 2003-07-02 18:06:18 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -11,7 +11,7 @@ module Interstellar
 
   implicit none
 
-  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,TT_SN,ss_SN,ampl_SN=1.0
+  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
   real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
@@ -95,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.34 2003-06-19 10:32:15 mee Exp $")
+           "$Id: interstellar.f90,v 1.35 2003-07-02 18:06:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -365,12 +365,14 @@ module Interstellar
     use Cdata
     use Mpicomm
     use General
+    use Ionization
 !
     real, dimension(mx,my,mz,mvar+maux) :: f
 !
     real, dimension(nzgrid) :: cum_prob_SNI
     real :: zn
-    real, dimension(3) :: fran3,fmpi3
+    real, dimension(3) :: fran3, fmpi3
+    real, dimension(4) :: fmpi4
     real, dimension(2) :: fmpi2
     integer :: i, l, nzskip=10   !prevent SNI from being too close to boundaries
     integer, dimension(4) :: impi4
@@ -492,7 +494,7 @@ module Interstellar
     if (iproc==iproc_SN) then
       !print*, 'position_SNI:',l_SN,m_SN,n_SN,ilnrho,f(l_SN,m_SN,n_SN,ilnrho)
       lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
-      rho_SN=exp(lnrho_SN)
+!      rho_SN=exp(lnrho_SN)
 ! calculate TT_SN here, for later use in explode_SN
       ss_SN=f(l_SN,m_SN,n_SN,ient)
 
@@ -500,18 +502,23 @@ module Interstellar
 
 !      call ioncalc(lnrho,ss,cs2,TT1,cp1tilde, &
 !        Temperature=TT_SN_new,InternalEnergy=ee,IonizationFrac=yH)
-      TT_SN=cs20*exp(gamma1*(lnrho_SN-lnrho0)+gamma*ss_SN)/gamma1*cp1
+!      TT_SN=cs20*exp(gamma1*(lnrho_SN-lnrho0)+gamma*ss_SN)/gamma1*cp1
+      call thermodynamics(lnrho_SN,ss_SN,TT1=TT_SN,ee=ee_SN)
+      TT_SN=1./TT_SN
+
       if (lroot.and.ip<14) &
            print*, 'position_SNI:',l_SN,m_SN,n_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN
     endif
 !
-!  Broadcast rho_SN, TT_SN to all processors.
+!  Broadcast lnrho_SN, TT_SN, etc. to all processors.
 !
-    fmpi2=(/ rho_SN, TT_SN /)
-    call mpibcast_real_nonroot(fmpi2,2,iproc_SN)
-    rho_SN=fmpi2(1); TT_SN=fmpi2(2)
-    if (lroot.and.ip<14) &
-         print*, 'position_SNI:',iproc_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN
+    fmpi4=(/ lnrho_SN, ee_SN, ss_SN, TT_SN /)
+    call mpibcast_real_nonroot(fmpi4,4,iproc_SN)
+    lnrho_SN=fmpi4(1); ee_SN=fmpi4(2); ss_SN=fmpi4(3); TT_SN=fmpi4(4)
+    rho_SN=exp(lnrho_SN);
+
+    if (lroot.and.ip<=14) &
+         print*, 'position_SNI:',iproc_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN,ee_SN,ss_SN
 !
     endsubroutine position_SNI
 !***********************************************************************
@@ -633,7 +640,7 @@ find_SN: do n=n1,n2
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
-      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,TT_SN_new,dv
+      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,TT_SN_new,dv,yH
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
@@ -668,10 +675,15 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-      !  need to call thermodynamics
-      TT_SN_new=TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
+
+      ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN / ee_SN)) ) / gamma  
+      call thermodynamics(lnrho_SN,ss_SN_new,TT1=TT_SN_new,yH=yH)
+!      TT_SN_new=1./TT_SN_new  
+
+!      TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
+
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min :',TT_SN,TT_SN_new,TT_SN_min
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH :',TT_SN,TT_SN_new,TT_SN_min, yH
 
       if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
@@ -680,8 +692,15 @@ find_SN: do n=n1,n2
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation 
 
-         TT_SN_new=TT_SN_min
          rho_SN_new=c_SN/TT_SN_min*TTunits
+         ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN_new / ee_SN)) ) / gamma  
+         lnrho_SN_new=alog(rho_SN_new)
+         call thermodynamics(lnrho_SN_new,ss_SN_new,TT1=TT_SN_new)
+         TT_SN_new=1./TT_SN_new
+
+         if(lroot) print*, &
+            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new :',TT_SN_new,rho_SN_new
+
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
          fmpi1_tmp=(/ profile_integral /)
          call mpireduce_sum(fmpi1_tmp,fmpi1,1) 

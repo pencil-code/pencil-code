@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.48 2003-07-01 13:37:03 brandenb Exp $
+! $Id: boundcond.f90,v 1.49 2003-07-02 18:06:18 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -200,6 +200,7 @@ module Boundcond
       use Entropy
       use Magnetic
       use Density
+      use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j,k,ip_ok

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.33 2003-06-30 09:33:57 brandenb Exp $
+! $Id: noionization.f90,v 1.34 2003-07-02 18:06:18 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -14,7 +14,12 @@ module Ionization
     module procedure thermodynamics_penc     ! explicit f implicit m,n
     module procedure thermodynamics_arbpenc  ! explicit lnrho(nx), ss(nx)
     module procedure thermodynamics_arbpoint ! explocit lnrho, ss
-  endinterface
+  end interface
+
+  interface ioncalc_ss                  ! Overload the 'ioncalc_ss' function
+    module procedure ioncalc_ss_penc
+    module procedure ioncalc_ss_point
+  end interface
 
   ! global ionization parameter for yH (here a scalar set to 0)
 !ajwm  real :: yyH=0.  shouldn't be used directly outside module
@@ -67,7 +72,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.33 2003-06-30 09:33:57 brandenb Exp $")
+           "$Id: noionization.f90,v 1.34 2003-07-02 18:06:18 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -184,6 +189,33 @@ module Ionization
 !
     endsubroutine ionset
 !***********************************************************************
+    subroutine ioncalc_ss_point(lnrho,TT,ss)
+      real,intent(in) :: lnrho,TT
+      real, intent(out) :: ss
+
+        ss = ((1. + yH0 + xHe) &
+                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
+                         +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+                         -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+    end subroutine ioncalc_ss_point
+!***********************************************************************
+    subroutine ioncalc_ss_penc(lnrho,TT,ss)
+      real, dimension(nx), intent(in) :: lnrho,TT
+      real, dimension(nx), intent(out) :: ss
+
+         ss = ((1. + yH0 + xHe) &
+                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
+                         +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+                         -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+    end subroutine ioncalc_ss_penc
+!***********************************************************************
+    subroutine isothermal_density_ion(pot,tmp)
+      real, dimension (nx), intent(in) :: pot
+      real, dimension (nx), intent(out) :: tmp
+
+      tmp=pot/(1+yH0+xHe)/ss_ion
+    end subroutine isothermal_density_ion
+!***********************************************************************
     subroutine output_ionization(lun)
       integer, intent(in) :: lun
       if(ip==0) print*,lun  !(keep compiler quiet)
@@ -206,7 +238,7 @@ module Ionization
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yH
       real, dimension (nx) :: TT,lnrho,ss
       logical :: ldummy
 !
@@ -248,7 +280,7 @@ module Ionization
       use Sub
       use Density, only:cs20,lnrho0,gamma
 !
-      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yH
       real, dimension (nx), intent(in) :: lnrho,ss
       real, dimension (nx) :: TT
       logical :: ldummy
@@ -289,7 +321,7 @@ module Ionization
       use Sub
       use Density, only:cs20,lnrho0,gamma
 !
-      real, intent(out), optional :: cs2,TT1,cp1tilde,ee, yH
+      real, optional :: cs2,TT1,cp1tilde,ee, yH
       real, intent(in) :: lnrho,ss
       real :: TT
       logical :: ldummy
@@ -298,6 +330,7 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
 !ajwm but where does the reference density come in to this? 
+print*,"Thermo of arbpoint, TT=",TT
         if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
         if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
         if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion

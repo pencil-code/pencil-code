@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.57 2003-06-30 09:33:57 brandenb Exp $
+! $Id: ionization.f90,v 1.58 2003-07-02 18:06:18 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -16,6 +16,11 @@ module Ionization
     module procedure thermodynamics_arbpenc  ! explicit lnrho(nx), ss(nx)
     module procedure thermodynamics_arbpoint ! explocit lnrho, ss
   endinterface
+
+  interface ioncalc_ss                  ! Overload the 'ioncalc_ss' function
+    module procedure ioncalc_ss_penc
+    module procedure ioncalc_ss_point
+  end interface
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,mu,twothirds
@@ -66,7 +71,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.57 2003-06-30 09:33:57 brandenb Exp $")
+           "$Id: ionization.f90,v 1.58 2003-07-02 18:06:18 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -242,6 +247,42 @@ module Ionization
       TT=exp(lnTT_)*TT_ion
 !
     endsubroutine ioncalc_point
+!***********************************************************************
+    subroutine ioncalc_ss_point(lnrho,TT,ss)
+      real,intent(in) :: lnrho,TT
+      real, intent(out) :: ss
+      real :: yH,ff
+!
+!ajwm WRONG
+!
+      ff = lnrho_e-lnrho+1.5*log(TT/TT_ion)-exp(TT_ion/TT)+log(1.-yH)-2.*log(yH)
+! Complete the square on Saha equation:  y^2 / (y-1) = f
+      yH = sqrt((ff**2)/4 - ff) + ff * 2.
+
+      ss = ((1. + yH + xHe) &
+           * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
+           +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+           -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
+    end subroutine ioncalc_ss_point
+!***********************************************************************
+    subroutine ioncalc_ss_penc(lnrho,TT,ss)
+      real, dimension(nx), intent(in) :: lnrho,TT
+      real, dimension(nx), intent(out) :: ss
+      real, dimension(nx) :: yH,ff
+!ajwm WRONG
+
+         ss = ((1. + yH + xHe) &
+                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
+                         +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+                         -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
+    end subroutine ioncalc_ss_penc
+!***********************************************************************
+    subroutine isothermal_density_ion(pot,tmp)
+      real, dimension (nx), intent(in) :: pot
+      real, dimension (nx), intent(out) :: tmp
+!ajwm WRONG
+      tmp=pot/(1+yH0+xHe)/ss_ion
+    end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine ionset(f,ss,lnrho,yH,TT)
 !
@@ -552,6 +593,65 @@ module Ionization
       enddo
       print *,'rtsafe: exceeded maximum iterations',f
     endsubroutine rtsafe
+!***********************************************************************
+    subroutine rtsafeTT(lnrho,TT,yH)
+!
+!   safe newton raphson algorithm (adapted from NR)
+!
+!   09-apr-03/tobi: changed to subroutine
+!
+      real, intent (in)    :: lnrho,TT
+      real, intent (inout) :: yH
+      real                 :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp
+      real, parameter      :: yHacc=1e-5
+      integer              :: i
+      integer, parameter   :: maxit=100
+
+      yH1=1.-yHacc
+      yH0=yHacc
+      dyHold=1.-2.*yHacc
+      dyH=dyHold
+!
+!  return if y is too close to 0 or 1
+!
+      call sahaTT(yH0,lnrho,TT,fh,df)
+      if (fh.le.0.) then
+         yH=yH0
+         return
+      endif
+      call sahaTT(yH1,lnrho,TT,fl,df)
+      if (fl.ge.0.) then
+         yH=yH1
+         return
+      endif
+!
+!  otherwise find root
+!
+      call sahaTT(yH,lnrho,TT,f,df)
+      do i=1,maxit
+         if (((yH-yH0)*df-f)*((yH-yH1)*df-f).gt.0. &
+              .or.abs(2.*f).gt.abs(dyHold*df)) then
+            dyHold=dyH
+            dyH=.5*(yH0-yH1)
+            yH=yH1+dyH
+            if (yH1.eq.yH) return
+         else
+            dyHold=dyH
+            dyH=f/df
+            temp=yH
+            yH=yH-dyH
+            if (temp.eq.yH) return
+         endif
+         if (abs(dyH).lt.yHacc) return
+         call sahaTT(yH,lnrho,TT,f,df)
+         if (f.lt.0.) then
+            yH1=yH
+         else
+            yH0=yH
+         endif
+      enddo
+      print *,'rtsafe: exceeded maximum iterations',f
+    endsubroutine rtsafeTT
 
 !***********************************************************************
     subroutine saha(yH,lnrho,ss,f,df)
@@ -572,5 +672,22 @@ module Ionization
       dlnTT_=(twothirds*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
     endsubroutine saha
+
+!***********************************************************************
+    subroutine sahaTT(yH,lnrho,TT,f,df)
+!
+!   we want to find the root of f
+!
+!   23-feb-03/tobi: errors fixed
+!
+      real, intent(in)  :: yH,lnrho,TT
+      real, intent(out) :: f,df
+      real              :: lnTT_,dlnTT_   
+
+      lnTT_ = log(TT/TT_ion)
+      f = lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH+xHe)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+    endsubroutine sahaTT
 
 endmodule ionization
