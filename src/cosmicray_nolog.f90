@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.9 2004-03-19 20:02:40 brandenb Exp $
+! $Id: cosmicray_nolog.f90,v 1.10 2004-03-20 13:16:03 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -38,7 +38,7 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
-  real :: bfloor_for_unitvector=0.
+  real :: limiter_cr=5.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -46,7 +46,7 @@ module CosmicRay
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr, &
-       bfloor_for_unitvector
+       limiter_cr
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -84,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.9 2004-03-19 20:02:40 brandenb Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.10 2004-03-20 13:16:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -322,6 +322,7 @@ module CosmicRay
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
+!  20-mar-04/axel: implemented limiter for CR advection speed such that |H|<1
 !
       use Sub
 !
@@ -330,6 +331,7 @@ module CosmicRay
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
       real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi
+      real, dimension (nx) :: hhh2,quenchfactor
 !
 !  use global Kperp, Kpara ?
 ! 
@@ -347,11 +349,11 @@ module CosmicRay
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-      b1=1./amax1(bfloor_for_unitvector,tiny(b2),sqrt(b2))
+      b1=1./amax1(tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)
-!  dot H with ecr gradient
+!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
 !
       if(simplified_cosmicray_tensor) then
         tmp=0.
@@ -367,6 +369,14 @@ module CosmicRay
           enddo
         enddo
         call multsv_mn(b1,hhh,hhh)
+!
+!  limit the length of H such that dxmin*H < 1, so we also multiply
+!  by 1/sqrt(1.+dxmin^2*H^2).
+!  and dot H with ecr gradient
+!
+        call dot2_mn(hhh,hhh2)
+        quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
+        call multsv_mn(quenchfactor,hhh,hhh)
         call dot_mn(hhh,gecr,tmp)
       endif
 !
