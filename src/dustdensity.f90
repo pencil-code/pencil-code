@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.100 2004-06-03 22:10:40 mee Exp $
+! $Id: dustdensity.f90,v 1.101 2004-06-08 14:09:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -22,7 +22,7 @@ module Dustdensity
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
-  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
+  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=1.
   real :: mdave0=1., adpeak=5e-4
   real :: supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero'
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.100 2004-06-03 22:10:40 mee Exp $")
+           "$Id: dustdensity.f90,v 1.101 2004-06-08 14:09:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -218,7 +218,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: mdpeak,rhodtot=0.
+      real :: mdpeak,rhodmt=0.
       integer :: i,j,k,l
 !
 !  different initializations of nd (called from start).
@@ -230,6 +230,7 @@ module Dustdensity
         print*, 'init_nd: All dust particles in first bin.'
         f(:,:,:,ind) = 0.
         f(:,:,:,ind(1)) = nd00
+        if (eps_dtog /= 0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
         print*,'init_nd: Initial dust distribution of MRN77'
         do k=1,ndustspec
@@ -242,12 +243,12 @@ module Dustdensity
                 (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*adpeak**(3.5)* &
                 unit_md**(1/3.)
           endif
-          rhodtot = rhodtot + f(l1,m1,n1,ind(k))*md(k)
+          rhodmt = rhodmt + f(l1,m1,n1,ind(k))*md(k)
         enddo
 
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodtot*unit_md)
+              f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodmt*unit_md)
         enddo
         
       case('const_nd'); f(:,:,:,ind) = nd_const
@@ -331,8 +332,9 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd
+      real, dimension (nx,3) :: glnrho
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: del2nd,del2md,del2mi
+      real, dimension (nx) :: del2nd,del2md,del2mi,del2lnrho,gndglnrho
       real, dimension (nx) :: udgnd,udgmd,rho,rho1,TT1,cs2,cc,cc1,mfluxcond
       integer :: k
 !
@@ -380,7 +382,16 @@ module Dustdensity
 !
         if (nd_diff(k) /= 0.) then
           call del2(f,ind(k),del2nd)
-          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*del2nd
+          if (.not. lmdvar) then
+            call grad(f,ilnrho,glnrho)
+            call del2(f,ilnrho,del2lnrho)
+            call grad(f,ind(k),gnd(:,:,k))
+            call dot_mn(gnd(:,:,k),glnrho,gndglnrho)
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*( &
+                del2nd - nd(l1:l2,k)*del2lnrho - gndglnrho)
+          else
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*del2nd
+          endif
         endif
         if (lmdvar .and. md_diff(k) /= 0.) then
           call del2(f,imd(k),del2md)
