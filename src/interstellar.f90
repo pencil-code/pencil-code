@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.57 2003-10-07 13:58:25 mee Exp $
+! $Id: interstellar.f90,v 1.58 2003-10-10 11:59:19 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -76,7 +76,8 @@ module Interstellar
   logical :: lSNI=.true., lSNII=.false.
   logical :: laverage_SN_heating = .false.
  ! real, parameter :: TT_SN_min=1.e8    ! vary for debug, tests
- 
+  real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
+
   integer :: dummy 
   namelist /interstellar_init_pars/ dummy
 
@@ -86,7 +87,8 @@ module Interstellar
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
-      point_width, inner_shell_proportion, outer_shell_proportion
+      point_width, inner_shell_proportion, outer_shell_proportion, &
+      center_SN_x, center_SN_y, center_SN_z
 
   contains
 
@@ -113,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.57 2003-10-07 13:58:25 mee Exp $")
+           "$Id: interstellar.f90,v 1.58 2003-10-10 11:59:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -439,7 +441,7 @@ module Interstellar
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
 !
     real, dimension(nzgrid) :: cum_prob_SNI
-    real :: zn, z00
+    real :: zn, z00, x00, y00
     real, dimension(3) :: fran3
     integer :: i, l, nzskip=10   !prevent SNI from being too close to boundaries
 !
@@ -448,6 +450,8 @@ module Interstellar
     if(headtt) print*,'position_SNI: ENTER'
     
     ! Calculate the global (nzgrid) lower z-coordinate
+    if (lperi(1)) then; x00=xyz0(1)+.5*dx; else; x00=xyz0(1); endif
+    if (lperi(2)) then; y00=xyz0(2)+.5*dy; else; y00=xyz0(2); endif
     if (lperi(3)) then; z00=xyz0(3)+.5*dz; else; z00=xyz0(3); endif
     
     
@@ -459,25 +463,40 @@ module Interstellar
                                  ! rnd. generators in sync
     if (lroot) then
        if (ltestSN) then
-          i=int(nxgrid/2)+1
-          l_SN=(i-1)+nghost
+          if (center_SN_x.eq.impossible) then
+            i=int(nxgrid/2)+1
+          else
+            do i=1,nx 
+              if ((x00+(i-1)*dx).gt.center_SN_x) exit 
+            enddo
+          endif
        else
           i=int(fran3(1)*nxgrid)+1
-          l_SN=(i-1)+nghost
        endif
+       l_SN=(i-1)+nghost
 
        if (ltestSN) then
-          i=int(nygrid/2)+1
-          ipy_SN=(i-1)/ny  ! uses integer division
-          m_SN=(i-1)-(ipy_SN*ny)+nghost
+          if (center_SN_y.eq.impossible) then
+            i=int(nygrid/2)+1
+          else
+            do i=1,ny 
+              if ((y00+(i-1)*dy).gt.center_SN_y) exit
+            enddo
+          endif
        else
           i=int(fran3(2)*nygrid)+1
-          ipy_SN=(i-1)/ny  ! uses integer division
-          m_SN=(i-1)-(ipy_SN*ny)+nghost
        endif
+       ipy_SN=(i-1)/ny  ! uses integer division
+       m_SN=(i-1)-(ipy_SN*ny)+nghost
 
        if (ltestSN) then
-          i=int(nzgrid/2)+1
+          if (center_SN_z.eq.impossible) then
+            i=int(nzgrid/2)+1
+          else
+            do i=1,nz 
+              if ((z00+(i-1)*dz).gt.center_SN_z) exit
+            enddo
+          endif
           ipz_SN=(i-1)/nz   ! uses integer division
           n_SN=(i-1)-(ipz_SN*nz)+nghost
        elseif (uniform_zdist_SNI) then
