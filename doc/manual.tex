@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -98,6 +98,10 @@
 \usepackage{parskip,a4,vmargin}
 \setmargrb{20mm}{25mm}{20mm}{15mm}
 \usepackage{multicol}
+
+\renewcommand{\textfraction}{0}
+\renewcommand{\bottomfraction}{1}
+\renewcommand{\floatpagefraction}{1}
 
 \frenchspacing
 \sloppy
@@ -297,7 +301,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.105 $ $}
+\date{\today,~ $ $Revision: 1.106 $ $}
 
 % ====================================================================== %
 
@@ -329,7 +333,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.105 $ $}
+  \emph{\today,~ $ $Revision: 1.106 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1505,7 +1509,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1532,7 +1536,7 @@ As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -2326,12 +2330,12 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 \section*{Appendix}
 
 In this appendix we give timing results, discuss in greater detail
-some initial conditions, list ?all possible input parameters, and
+some initial conditions, list all (?) input parameters, and
 discuss some numerical aspects of the code.
 
 \section{Timings}
 
-In Table~\ref{Ttimescale} we list the results of timings of the code on
+In the following table we list the results of timings of the code on
 different machines.
 Shown is (among other quantities) the wall clock time per mesh point
 (excluding the ghost zones) and per full 3-stage time step.
@@ -2346,15 +2350,16 @@ the code.
 
 
 % ---------------------------------------------------------------------- %
-\begin{table}[htb]
-  \begin{center}
-    \caption{
-      Wall clock time per mesh point (excluding the ghost zones)
-      and per full 3-stage time step.
-    }
-    \label{Ttimescale}
+%\begin{table}[htb]
+\begin{center}
+%    \caption{
+%      Wall clock time per mesh point (excluding the ghost zones)
+%      and per full 3-stage time step.
+%    }
+%    \label{Ttimescale}
     \begin{small}
-    \begin{tabular}{rllrlrll}
+%    \begin{tabular}{rllrlrll}
+    \begin{longtable}{rllrlrll}
     \toprule
    \mcc{proc(s)}
      & \mcc{machine}
@@ -2414,10 +2419,11 @@ the code.
  128 & fe1   & 0.166& $512^3$ & magn/noentro & 4x32   &  9-sep-02 & AB \\
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
     \bottomrule
-    \end{tabular}
+  \end{longtable}
+  %\end{tabular}
     \end{small}
   \end{center}
-\end{table}
+%\end{table}
 % ---------------------------------------------------------------------- %
 
 The machines we have used can be characterized as follows:
@@ -2458,8 +2464,12 @@ The machines we have used can be characterized as follows:
   native MPI
 \end{description}
 
+Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
+well-defined sample problems.
+
+
 % ---------------------------------------------------------------------- %
-\begin{figure}[hbtp]
+\begin{figure}[htb]
   \centering
   \includegraphics%
     [width=.6\textwidth,keepaspectratio]%
@@ -2468,10 +2478,6 @@ The machines we have used can be characterized as follows:
   \label{ptimings}
 \end{figure}
 % ---------------------------------------------------------------------- %
-
-
-Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
-well-defined sample problems.
 
 % ---------------------------------------------------------------------- %
 \begin{table}[htb]
@@ -3025,18 +3031,18 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
   \end{tabular}
 \end{table}
 
-\section{List of possible input parameter for \file{start.in}}
-\label{Sall-init-params}.
+\section{List of startup parameters for `start.in'}
+\label{Sall-init-params}
 
-The following table lists all (at the time of writing, July 2002)
-namelists with their corresponding start parameters (file \file{start.in})
+The following table lists all (at the time of writing, September 2002)
+namelists used in \file{run.in}, with the corresponding parameters
 and their default values (in square brackets).
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 Not all parameters are used for a given scenario.
-This list is likely not to be up to date; also, in many cases it can only
+This list is not necessarily up to date; also, in many cases it can only
 give an idea of the corresponding initial state; to get more insight and
-the latest information, you should have a look at the code.
+the latest set of parameters, you need to look at the code.
 
 The value $\varepsilon$ corresponds to 5 times the smallest number larger
 than zero.
@@ -3070,18 +3076,27 @@ double precision, $\varepsilon\approx10^{-15}$.
                  periodic (in which case the last point is omitted) or not.
                  In all cases, three ghost zones will be added. \\
   \var{lwrite_ic} [\code{F}]
-               & If set \code{T}, the initial data are written into the
+               & if set \code{T}, the initial data are written into the
                  file \file{VAR0}. This is generally useful, but doing this
                  all the time uses up plenty of disk space.\\
   \var{lnowrite} [\code{F}]
-               & If set \code{T}, all initialization files are written,
+               & if set \code{T}, all initialization files are written,
                  except file{var.dat}. This option allows you to use old
                  file{var.dat} files, but updates all other initialization
                  files. This could be useful after having changed the code.\\
   \var{random_gen} [\code{system}]
-               & If set to \code{system}, the systems random number generator
-                 is used. If set to \code{min_std}, a Numerical Recipes
-                 routine is used.\\
+               & \label{random-gen-init}
+                 choose random number generator;
+                 currently valid choices are
+                 \begin{description}
+                 \item[\code{'system'}] (your compiler's generator),
+                 \item[\code{'min_std'}] (the `minimal standard' generator
+                   \code{ran0()} from `Numerical Recipes'),
+                 \item[\code{'nr_f90'}] (the Parker-Miller-Marsaglia
+                   generator \code{ran()} from `Numerical Recipes for
+                   F90').
+                 \end{description}
+                 \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
@@ -3338,19 +3353,19 @@ double precision, $\varepsilon\approx10^{-15}$.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\section{List of possible input parameter for \file{run.in}}
-\label{Sall-run-params}.
+\section{List of runtime parameters for `run.in'}
+\label{Sall-run-params}
 
-The following table lists all (at the time of writing, July 2002)
-namelists with their corresponding run parameters (file \file{run.in}) and
-their default values (in square brackets).
+The following table lists all (at the time of writing, September 2002)
+namelists used in file \file{run.in}, with the corresponding
+parameters and their default values (in square brackets).
 Default values marked as [start] are taken from \file{start.in}.
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 Not all parameters are used for a given scenario.
-This list is likely not to be up to date; also, in many cases it can only
+This list is not necessarily up to date; also, in many cases it can only
 give an idea of the corresponding initial state; to get more insight and
-the latest information, you should have a look at the code.
+the latest set of parameters, you need to look at the code.
 
 
 % ---------------------------------------------------------------------- %
@@ -3423,6 +3438,8 @@ the latest information, you should have a look at the code.
   \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
                & boundary conditions. See Sect.~\ref{boundconds} for a
                  discussion. \\
+  \var{random_gen} [start]
+               & see start parameters, p.~\pageref{random-gen-init} \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
@@ -3643,7 +3660,7 @@ the latest information, you should have a look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $ $}
 
 
 \end{document}
