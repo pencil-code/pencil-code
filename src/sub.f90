@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.118 2003-06-16 04:41:11 brandenb Exp $ 
+! $Id: sub.f90,v 1.119 2003-06-17 22:52:39 dobler Exp $ 
 
 module Sub 
 
@@ -1167,6 +1167,33 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6_nodx
+!***********************************************************************
+    subroutine u_dot_gradf(f,k,gradf,uu,ugradf,upwind)
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k,gradf,uu,upwind
+      intent(out) :: ugradf
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: uu,gradf
+      real, dimension (nx) :: ugradf, del6f
+      integer :: k
+      logical, optional :: upwind
+      logical :: upwnd
+!
+      if (present(upwind)) then; upwnd=upwind; else; upwnd=.false.; endif
+      call dot_mn(uu,gradf,ugradf)
+!
+!  upwind correction (currently just for z-direction)
+!
+      if (upwnd) then
+        call der6(f,k,del6f,3,UPWIND=.true.)
+        ugradf = ugradf - abs(uu(:,3))*del6f
+      endif
+!
+    endsubroutine u_dot_gradf
 !***********************************************************************
     subroutine inpup(file,a,nn)
 !
