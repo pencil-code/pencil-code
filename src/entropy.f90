@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.88 2002-07-08 06:51:51 brandenb Exp $
+! $Id: entropy.f90,v 1.89 2002-07-08 20:48:45 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.88 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: entropy.f90,v 1.89 2002-07-08 20:48:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -343,7 +343,8 @@ module Entropy
 !
 !  thermal conduction
 !
-      if (Fheat/=0 .and. cheat==0) call calc_heatcond_simple(f,df,rho1,glnrho,gss)
+      if (Fheat/=0 .and. cheat==0) &
+           call calc_heatcond_simple(f,df,rho1,glnrho,gss)
 !
 !  more complex alternative
 !
@@ -386,7 +387,8 @@ module Entropy
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
       hcond=(1.-1./gamma)*(mpoly+1.)*Fheat
-      if(headtt) print*,'calc_heatcond_simple: hcond=',hcond
+      if(headtt) print*,'calc_heatcond_simple: hcond in ', &
+           minval(hcond), maxval(hcond)
 !
 !  Heat conduction
 !
