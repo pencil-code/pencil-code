@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.67 2004-06-22 05:05:02 brandenb Exp $
+! $Id: forcing.f90,v 1.68 2004-06-30 04:38:11 theine Exp $
 
 module Forcing
 
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.67 2004-06-22 05:05:02 brandenb Exp $")
+           "$Id: forcing.f90,v 1.68 2004-06-30 04:38:11 theine Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -426,7 +426,7 @@ module Forcing
       if (height_ff/=0.) then
         if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
         tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
 !  possibly multiply forcing by sgn(z) and radial profile
@@ -569,7 +569,7 @@ module Forcing
 !print*,fname(i_urms)
 
         if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
-        !      force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
+        !      force_ampl=work_ff/(.1+max(0.,rho_uu_ff))
         force_ampl=work_ff/rho_uu_ff
         if (force_ampl .gt. max_force) force_ampl=max_force
         if (force_ampl .lt. -max_force) force_ampl=-max_force
@@ -718,7 +718,7 @@ module Forcing
       if (height_ff/=0.) then
         if (lroot .and. ifirst==1) print*,'forcing_hel_noshear: include z-profile'
         tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
 !  possibly multiply forcing by sgn(z) and radial profile
@@ -824,7 +824,7 @@ module Forcing
 !
       if (height_ff/=0.) then
         tmpz=(z/height_ff)**2
-        gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
       fac=1./(60.*dz)
@@ -894,7 +894,7 @@ module Forcing
 !
       if (height_ff/=0.) then
         tmpz=(z/height_ff)**2
-        gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+        gz=sz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
       fac=1./(60.*dz)
@@ -984,7 +984,7 @@ module Forcing
         if(lroot) print*,'forcing_twist: division by r_ff=0!!'
       endif
       r2=(xx**2+zz**2)/r_ff**2
-      tmp=exp(-r2/amax1(1.-r2,1e-5))*ffnorm
+      tmp=exp(-r2/max(1.-r2,1e-5))*ffnorm
       fx=-zz*tmp
       fz=+xx*tmp
 !
@@ -999,14 +999,14 @@ module Forcing
         ! first twister
         !
         ry2=((y(m)-ytwist1)/width_ff)**2
-        fy=exp(-ry2/amax1(1.-ry2,1e-5))
+        fy=exp(-ry2/max(1.-ry2,1e-5))
         f(l1:l2,m,n1:n2,iffx)=f(l1:l2,m,n1:n2,iffx)+fy*fx
         f(l1:l2,m,n1:n2,iffz)=f(l1:l2,m,n1:n2,iffz)+fy*fz
         !
         ! second twister
         !
         ry2=((y(m)-ytwist2)/width_ff)**2
-        fy=exp(-ry2/amax1(1.-ry2,1e-5))
+        fy=exp(-ry2/max(1.-ry2,1e-5))
         f(l1:l2,m,n1:n2,iffx)=f(l1:l2,m,n1:n2,iffx)-fy*fx
         f(l1:l2,m,n1:n2,iffz)=f(l1:l2,m,n1:n2,iffz)-fy*fz
       enddo
@@ -1361,7 +1361,7 @@ module Forcing
       if (height_ff/=0.) then
         if (lroot .and. ifirst==1) print*,'hel_vec: include z-profile'
         tmpz=(z/height_ff)**2
-        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+        fz=fz*exp(-tmpz**5/max(1.-tmpz,1e-5))
       endif
 !
 !  possibly multiply forcing by sgn(z) and radial profile

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.94 2004-05-12 17:41:48 mee Exp $
+! $Id: interstellar.f90,v 1.95 2004-06-30 04:38:11 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -148,7 +148,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.94 2004-05-12 17:41:48 mee Exp $")
+           "$Id: interstellar.f90,v 1.95 2004-06-30 04:38:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -884,7 +884,7 @@ print*,ee_SN,rho_SN,c_SN
               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
-              lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
+              lnrho=alog(max(rho_old(:)+deltarho(:),rho_min))
             endif
   
             call perturb_energy(lnrho,(ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho),ss,lnTT,yH)

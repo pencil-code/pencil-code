@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.168 2004-06-22 16:08:29 mcmillan Exp $
+! $Id: density.f90,v 1.169 2004-06-30 04:38:11 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.168 2004-06-22 16:08:29 mcmillan Exp $")
+           "$Id: density.f90,v 1.169 2004-06-30 04:38:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -985,8 +985,8 @@ module Density
 !
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      !-- if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
-      if(zinfty<amin1(ztop,zgrav)) then
+      !-- if(zinfty<min(ztop,zgrav) .or. (-zinfty)>min(zbot,zgrav)) then
+      if(zinfty<min(ztop,zgrav)) then
         if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
         call stop_it( &
                  'polytropic_simply: rho and cs2 will vanish within domain')

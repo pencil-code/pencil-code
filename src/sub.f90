@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.191 2004-06-16 22:29:54 theine Exp $ 
+! $Id: sub.f90,v 1.192 2004-06-30 04:38:12 theine Exp $ 
 
 module Sub 
 
@@ -155,7 +155,7 @@ module Sub
       if (lfirstpoint) then
         fname(iname)=maxval(a)
       else
-        fname(iname)=amax1(fname(iname),maxval(a))
+        fname(iname)=max(fname(iname),maxval(a))
       endif
 !
 !  set corresponding entry in itype_name
@@ -412,7 +412,7 @@ module Sub
 !
 !  pomega and 1/pomega
 !
-      rcyl_mn1=1./amax1(rcyl_mn,epsi)
+      rcyl_mn1=1./max(rcyl_mn,epsi)
 !
 !  pomega unit vector
 !
@@ -464,7 +464,7 @@ module Sub
       if (lfirstpoint) then
         res=maxval(a)
       else
-        res=amax1(res,maxval(a))
+        res=max(res,maxval(a))
       endif
 !
     endsubroutine max_mn
@@ -2169,16 +2169,16 @@ module Sub
 !
       real, dimension (mx,my,mz) :: f,g
 !
-      g(1     ,:,:)=amax1(f(1     ,:,:),f(2     ,:,:))
-      g(2:mx-1,:,:)=amax1(f(1:mx-2,:,:),f(2:mx-1,:,:),f(3:mx,:,:))
-      g(  mx  ,:,:)=amax1(              f(  mx-1,:,:),f(  mx,:,:))
+      g(1     ,:,:)=max(f(1     ,:,:),f(2     ,:,:))
+      g(2:mx-1,:,:)=max(f(1:mx-2,:,:),f(2:mx-1,:,:),f(3:mx,:,:))
+      g(  mx  ,:,:)=max(              f(  mx-1,:,:),f(  mx,:,:))
 !
 !  check for degeneracy
 !
       if (my.gt.1) then
-        f(:,1     ,:)=amax1(g(:,1     ,:),g(:,2     ,:))
-        f(:,2:my-1,:)=amax1(g(:,1:my-2,:),g(:,2:my-1,:),g(:,3:my,:))
-        f(:,  my  ,:)=amax1(              g(:,  my-1,:),g(:,  my,:))
+        f(:,1     ,:)=max(g(:,1     ,:),g(:,2     ,:))
+        f(:,2:my-1,:)=max(g(:,1:my-2,:),g(:,2:my-1,:),g(:,3:my,:))
+        f(:,  my  ,:)=max(              g(:,  my-1,:),g(:,  my,:))
       else
         f=g
       endif
@@ -2186,9 +2186,9 @@ module Sub
 !  check for degeneracy
 !
       if (mz.gt.1) then
-        g(:,:,1     )=amax1(f(:,:,1     ),f(:,:,2     ))
-        g(:,:,2:mz-1)=amax1(f(:,:,1:mz-2),f(:,:,2:mz-1),f(:,:,3:mz))
-        g(:,:,  mz  )=amax1(              f(:,:,  mz-1),f(:,:,  mz))
+        g(:,:,1     )=max(f(:,:,1     ),f(:,:,2     ))
+        g(:,:,2:mz-1)=max(f(:,:,1:mz-2),f(:,:,2:mz-1),f(:,:,3:mz))
+        g(:,:,  mz  )=max(              f(:,:,  mz-1),f(:,:,  mz))
       else
         g=f
       endif
@@ -3444,7 +3444,7 @@ nameloop: do
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-      b1=1./amax1(tiny(b2),sqrt(b2))
+      b1=1./max(tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i
@@ -3522,12 +3522,12 @@ nameloop: do
 !***********************************************************************
     subroutine max_for_dt_nx_nx(f,maxf)
 !
-!  Like maxf = amax1(f,amax1), unless we have chosen to manipulate data
+!  Like maxf = max(f,max), unless we have chosen to manipulate data
 !  before taking the maximum value. Designed for calculation of time step,
 !  where one may want to exclude certain regions, etc.
 !
 !  Would be nicer as an (assumed-size) array-valued function (as a plug-in
-!  replacement for amax1), but this can be more than 2 times slower (NEC
+!  replacement for max), but this can be more than 2 times slower (NEC
 !  SX-5, compared to about 15% slower with Intel F95) than a subroutine
 !  call according to tests.
 !
@@ -3540,7 +3540,7 @@ nameloop: do
       intent(in)    :: f
       intent(inout) :: maxf
 
-      maxf = amax1(f,maxf)
+      maxf = max(f,maxf)
 
     endsubroutine max_for_dt_nx_nx
 !***********************************************************************
@@ -3558,7 +3558,7 @@ nameloop: do
       intent(in)    :: f
       intent(inout) :: maxf
 
-      maxf = amax1(f,maxf)
+      maxf = max(f,maxf)
 
     endsubroutine max_for_dt_1_nx
 !***********************************************************************
@@ -3576,7 +3576,7 @@ nameloop: do
       intent(in)    :: f1,f2,f3
       intent(inout) :: maxf
 
-      maxf = amax1(f1,f2,f3,maxf)
+      maxf = max(f1,f2,f3,maxf)
 
     endsubroutine max_for_dt_1_1_1_nx
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.201 2004-06-27 15:11:11 ajohan Exp $
+! $Id: magnetic.f90,v 1.202 2004-06-30 04:38:12 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.201 2004-06-27 15:11:11 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.202 2004-06-30 04:38:12 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,7 +284,7 @@ module Magnetic
             f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
           else
             beq2=2.*rho0*cs0**2
-            fact=amax1(1e-6,1.-b2/beq2)
+            fact=max(1e-6,1.-b2/beq2)
             if (lentropy.and.lpress_equil_via_ss) then
               f(l1:l2,m,n,iss)=f(l1:l2,m,n,iss)+fact/gamma
             else
@@ -561,7 +561,7 @@ module Magnetic
       if(height_eta/=0.) then
         if (headtt) print*,'daa_dt: height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
-        eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
+        eta_out1=eta_out*(1.-exp(-tmp**5/max(1.-tmp,1e-5)))-eta
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*jj
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.23 2004-04-26 16:05:16 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.24 2004-06-30 04:38:12 theine Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.23 2004-04-26 16:05:16 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.24 2004-06-30 04:38:12 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -286,7 +286,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !     call curl(f,iaa,BB)  ! now calculated by CALCULATE_VARS_MAGNETIC
 
       call dot2_mn(BB,B2)
-      B21=1./amax1(B2,B2min)
+      B21=1./max(B2,B2min)
 !
 !  "stretching" terms
 !

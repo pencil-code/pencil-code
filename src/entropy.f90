@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.318 2004-06-24 13:18:04 mcmillan Exp $
+! $Id: entropy.f90,v 1.319 2004-06-30 04:38:11 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.318 2004-06-24 13:18:04 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.319 2004-06-30 04:38:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -377,7 +377,7 @@ module Entropy
           if (ampl_ss/=0.) then
             print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
             tmp=xx**2+yy**2+zz**2
-            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
+            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/max(radius_ss**2-tmp,1e-20))
           !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
           endif
 

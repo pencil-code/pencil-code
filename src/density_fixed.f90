@@ -1,4 +1,4 @@
-! $Id: density_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $
+! $Id: density_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $
 
 !  This module takes care of density. Treats density as an auxiliary variable
 !  that does not undergo dynamical change. Useful for focusing on other
@@ -92,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $")
+           "$Id: density_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -945,8 +945,8 @@ module Density
 !
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      !-- if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
-      if(zinfty<amin1(ztop,zgrav)) then
+      !-- if(zinfty<min(ztop,zgrav) .or. (-zinfty)>min(zbot,zgrav)) then
+      if(zinfty<min(ztop,zgrav)) then
         if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
         call stop_it( &
                  'polytropic_simply: rho and cs2 will vanish within domain')

@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.32 2004-05-31 15:43:02 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.33 2004-06-30 04:38:12 theine Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.32 2004-05-31 15:43:02 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.33 2004-06-30 04:38:12 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,7 +170,7 @@ module Pscalar
       if(cc_min/=0.) then
         lncc_min=alog(cc_min)
         if(lroot) print*,'set floor value for cc; cc_min=',cc_min
-        f(:,:,:,ilncc)=amax1(lncc_min,f(:,:,:,ilncc))
+        f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
       endif
 !
     endsubroutine init_lncc_simple
@@ -231,7 +231,7 @@ module Pscalar
       if(cc_min/=0.) then
         lncc_min=alog(cc_min)
         if(lroot) print*,'set floor value for cc; cc_min=',cc_min
-        f(:,:,:,ilncc)=amax1(lncc_min,f(:,:,:,ilncc))
+        f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
       endif
 !
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)

@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.13 2004-04-30 09:30:49 ajohan Exp $
+! $Id: cosmicray_nolog.f90,v 1.14 2004-06-30 04:38:11 theine Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -91,7 +91,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.13 2004-04-30 09:30:49 ajohan Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.14 2004-06-30 04:38:11 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -357,7 +357,7 @@ module CosmicRay
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-      b1=1./amax1(tiny(b2),sqrt(b2))
+      b1=1./max(tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)
