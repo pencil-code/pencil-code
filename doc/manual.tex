@@ -172,7 +172,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.12 $ $}
+\date{\today,~ $ $Revision: 1.13 $ $}
 
 % ====================================================================== %
 
@@ -201,7 +201,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.12 $ $}
+  \emph{\today,~ $ $Revision: 1.13 $ $}
 
 
 \end{center}
@@ -495,12 +495,22 @@ $\lambda$ is the thermal conductivity, and
 \end{equation}
 is the traceless rate of strain tensor.
 
-    
+\bigskip
+
+Note that by setting $\gamma=1$ and initially $s=0$, one obtains an
+isothermal equation of state (albeit at some unnecessary expense of
+memory).
+Similarly, by switching of the evolution terms of entropy, one immediately
+gets polytropic behavior (if $s$ was initially constant) or generalised
+polytropic behavior
+(where $s$ is not uniform, but $\partial s/\partial t = 0$).
+
+
 % ====================================================================== %
 
 \section{Boundary conditions}
 
-    
+
 % ====================================================================== %
 
 \section{Using the Code}
@@ -791,10 +801,10 @@ Not all parameters are used for a given scenario.
 \item \file{tsnap.dat}, \file{tvid.dat}
 \item \file{tmp/dim.dat}
 \item \file{tmp/param.dat} \file{tmp/param2.dat}
-\item \file{tmp/proc\emph{X}/var.dat}
-\item \file{tmp/proc\emph{X}/VAR\emph{N}}
+\item \file{tmp/proc\emph{X}/var.dat} --- detailed format
+\item \file{tmp/proc\emph{X}/VAR\emph{N}} ---
+  same format as \file{tmp/proc\emph{X}/var.dat}
 \end{itemize}
-
 
 
 % ====================================================================== %
@@ -805,7 +815,8 @@ Not all parameters are used for a given scenario.
 \subsection{Magnetic flux rings}
 This initial condition sets up two interlocked thin magnetic tori
 (i.\,e.~thin, torus-shaped magnetic flux tubes).
-One torus of radius $R$ lying in the plane $z=0$ can be described by the
+One torus of radius $R$ lying in the plane $z=0$ can be described in
+cylindrical coordinates by the
 vector potential
 \begin{equation} \label{Av-flux-ring-cyl}
   \Av = 
@@ -872,6 +883,7 @@ to other cases (needed for regular tests of the code and for future
 releases) it is important to supply also a corresponding dummy routine,
 whose name will start with `no'.
 
+
 % ====================================================================== %
 
 \section{Frequently asked questions}
@@ -880,6 +892,7 @@ whose name will start with `no'.
 \item {\it What's so cool about the fort.20 file?}
 \item 
 \end{itemize}
+
 
 % ====================================================================== %
 
@@ -898,6 +911,7 @@ Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
 Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 %7288 with 32x32x64 (single processor, linux)
 %print,38*38*71.*8.*2.*4./1e6
+
 
 % ====================================================================== %
 
@@ -942,7 +956,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.12 2002-04-29 19:58:49 dobler Exp $ $}
+$ $Id: manual.tex,v 1.13 2002-05-01 13:04:27 dobler Exp $ $}
 
 
 \end{document}
