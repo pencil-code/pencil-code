@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.63 2004-06-13 13:15:58 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.64 2004-06-15 09:21:35 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -27,7 +27,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,mi,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
+  real :: rhods=1.,md0=1.,ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.2
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst
   real :: unit_md
@@ -38,8 +38,8 @@ module Dustvelocity
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 
   namelist /dustvelocity_init_pars/ &
-       rhods, md0, ad0, deltamd, draglaw, dust_geometry, ampluud, inituud, &
-       dust_chemistry
+       rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
+       dust_chemistry, dust_geometry
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.63 2004-06-13 13:15:58 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.64 2004-06-15 09:21:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -196,7 +196,8 @@ module Dustvelocity
 !
 !  Dust physics parameters
 !
-      if (ad0 .ne. 0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
+      if (ad0 /= 0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
+      if (ad1 /= 0.) md0 = 8*pi/(3*(1.+deltamd))*ad1**3*rhods
 
       do k=1,ndustspec
         mdminus(k) = md0*deltamd**(k-1)
