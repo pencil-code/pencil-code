@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.132 2003-08-26 09:49:28 dobler Exp $ 
+! $Id: param_io.f90,v 1.133 2003-09-08 10:02:49 dobler Exp $ 
 
 module Param_IO
 
@@ -350,7 +350,7 @@ module Param_IO
 !
 !  open namelist file
 !
-      open(1,file='run.in',form='formatted',STATUS='old')
+      open(1,FILE='run.in',FORM='formatted',STATUS='old')
 !
 !  read through all items that *may* be present
 !  in the various modules
@@ -682,6 +682,7 @@ module Param_IO
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                            write(1,NML=lphysics              ) 
+        close(1)
 !      endif
 !
     endsubroutine wparam
@@ -728,7 +729,7 @@ module Param_IO
 !
       if (lroot) then
         open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
-                        write(1,NML=run_pars          )
+                           write(1,NML=run_pars             )
         if (lhydro       ) write(1,NML=hydro_run_pars       )
         if (ldensity     ) write(1,NML=density_run_pars     )
         if (lforcing     ) write(1,NML=forcing_run_pars     )
@@ -743,6 +744,7 @@ module Param_IO
         if (linterstellar) write(1,NML=interstellar_run_pars)
         if (lshear       ) write(1,NML=shear_run_pars       )
         if (lviscosity   ) write(1,NML=viscosity_run_pars   )
+        close(1)
       endif
 !
     endsubroutine wparam2

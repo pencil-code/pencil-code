@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.66 2003-09-02 13:43:11 dobler Exp $
+! $Id: io_dist.f90,v 1.67 2003-09-08 10:02:49 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.66 2003-09-02 13:43:11 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.67 2003-09-08 10:02:49 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -133,7 +133,7 @@ contains
       real, dimension (mx,my,mz,nv) :: a
 !
       if (lserial_io) call start_serialize()
-      open(1,file=file,form='unformatted')
+      open(1,FILE=file,FORM='unformatted')
       if (ip<=8) print*,'input: open, mx,my,mz,nv=',mx,my,mz,nv
       read(1) a
       if (ip<=8) print*,'input: read ',file
@@ -197,7 +197,7 @@ contains
       if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
-      open(lun_output,file=file,form='unformatted')
+      open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
       write(lun_output) t,x,y,z,dx,dy,dz,deltay
 !
@@ -223,7 +223,7 @@ contains
       if ((ip<=8) .and. lroot) print*,'output_scal'
       if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       if (lserial_io) call start_serialize()
-      open(lun_output,file=file,form='unformatted')
+      open(lun_output,FILE=file,FORM='unformatted')
       write(lun_output) a
       write(lun_output) t,x,y,z,dx,dy,dz,deltay
 !
@@ -301,7 +301,7 @@ contains
       character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
 !
-      open(1,file=file,form='unformatted')
+      open(1,FILE=file,FORM='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
@@ -322,6 +322,7 @@ contains
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
+      close(1)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -343,6 +344,7 @@ contains
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
+      close(1)
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files

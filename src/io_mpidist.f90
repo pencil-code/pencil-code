@@ -1,4 +1,4 @@
-! $Id: io_mpidist.f90,v 1.7 2003-09-02 13:43:12 dobler Exp $
+! $Id: io_mpidist.f90,v 1.8 2003-09-08 10:02:49 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpidist.f90   !!!
@@ -98,7 +98,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.7 2003-09-02 13:43:12 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.8 2003-09-08 10:02:49 dobler Exp $")
 !
       io_initialized=.true.
 !
@@ -474,7 +474,7 @@ contains
 !
       call stop_it("output: doesn't work with io_mpio yet -- but wasn't used anyway")
 !
-      open(1,file=file,form='unformatted')
+      open(1,FILE=file,FORM='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
@@ -492,6 +492,7 @@ contains
       open(1,FILE=file,FORM='unformatted')
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
+      close(1)
 !
     endsubroutine wgrid
 !***********************************************************************
@@ -508,6 +509,7 @@ contains
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
+      close(1)
 !
       dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
       dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.24 2003-08-14 10:27:47 dobler Exp $
+! $Id: io_mpio.f90,v 1.25 2003-09-08 10:02:49 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.24 2003-08-14 10:27:47 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.25 2003-09-08 10:02:49 dobler Exp $")
 !
 !  consistency check
 !
@@ -404,7 +404,7 @@ contains
 !
       call stop_it("outpus: doesn't work with io_mpio yet -- but wasn't used anyway")
 !
-      open(1,file=file,form='unformatted')
+      open(1,FILE=file,FORM='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
