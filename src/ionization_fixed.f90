@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.50 2004-02-24 15:19:05 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.51 2004-03-14 13:58:59 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -94,7 +94,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.50 2004-02-24 15:19:05 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.51 2004-03-14 13:58:59 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -782,10 +782,15 @@ module Ionization
 !  11-feb-04/anders: Programmed more or less from scratch
 !
       use Cdata
+      use Gravity, only: grav_profile
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
       real, intent(in) :: T0,rho0
       real, dimension(nx) :: lnrho,ss,lnTT
+!
+      if (grav_profile /= 'linear') call stop_it &
+          ('isothermal_lnrho_ss: Only implemented for linear gravity profile')
 !
 !  First calculate hydrostatic density stratification when T=T0
 !
