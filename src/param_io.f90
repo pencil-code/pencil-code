@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.161 2004-02-21 16:20:43 dobler Exp $ 
+! $Id: param_io.f90,v 1.162 2004-02-21 16:48:38 dobler Exp $ 
 
 module Param_IO
 
@@ -510,7 +510,7 @@ module Param_IO
 !  write slice position to a file (for convenient post-processing)
 !
       if (lroot) then
-        open(1,file=trim(datadir)//'/slice_position.dat')
+        open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
         write(1,*) slice_position
         close(1)
       endif
