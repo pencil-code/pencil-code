@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.46 2002-06-14 08:34:52 brandenb Exp $
+! $Id: magnetic.f90,v 1.47 2002-06-14 09:33:08 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -78,8 +78,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.46 $", &
-           "$Date: 2002-06-14 08:34:52 $")
+           "$Revision: 1.47 $", &
+           "$Date: 2002-06-14 09:33:08 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -449,9 +449,9 @@ module Magnetic
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (nx,ny) :: f1,f2,f3
+      real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
-      integer :: i,j
+      integer :: j
       character (len=*) :: errmesg
 !
       errmesg=""
@@ -468,8 +468,8 @@ module Magnetic
             f(l1:l2,m1:m2,1:n1,iax+j)=fz
           enddo
           !
-          f1=f(l1:l2,m1:m2,n1,iax)
-          f2=f(l1:l2,m1:m2,n1,iay)
+          f2=f(l1:l2,m1:m2,n1,iax)
+          f3=f(l1:l2,m1:m2,n1,iay)
           call potentdiv(fz,f2,f3,-1)
           f(l1:l2,m1:m2,1:n1,iaz)=-fz
         endif
@@ -486,18 +486,18 @@ module Magnetic
             f(l1:l2,m1:m2,n2:mz,iax+j)=fz
           enddo
           !
-          f1=f(l1:l2,m1:m2,n2,iax)
-          f2=f(l1:l2,m1:m2,n2,iay)
+          f2=f(l1:l2,m1:m2,n2,iax)
+          f3=f(l1:l2,m1:m2,n2,iay)
           call potentdiv(fz,f2,f3,+1)
           f(l1:l2,m1:m2,n2:mz,iaz)=-fz
         endif
 !
     endsubroutine bc_aa
 !***********************************************************************
-      subroutine potential(f1,f2,f3,irev)
+      subroutine potential(fz,f2,f3,irev)
 !
 !  solves the potential field boundary condition;
-!  f1 is the boundary layer, and f2 and f3 are the next layers inwards.
+!  fz is the boundary layer, and f2 and f3 are the next layers inwards.
 !  The condition is the same on the two sides.
 !
 !  20-jan-00/axel+wolf: coded
@@ -506,7 +506,7 @@ module Magnetic
      use Cdata
 !
       real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
-      real, dimension (nx,ny,nghost+1) :: f1
+      real, dimension (nx,ny,nghost+1) :: fz
       real, dimension (nx) :: kx
       real, dimension (ny) :: ky
       real :: delz
@@ -534,7 +534,7 @@ module Magnetic
 !
 !  one-sided derivative
 !
-      fac=1./(3.+2.*dx*kk)
+      fac=1./(3.+2.*dz*kk)
       f1r=fac*(4.*f2r-f3r)
       f1i=fac*(4.*f2i-f3i)
 !
@@ -551,18 +551,18 @@ module Magnetic
         call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
         call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
 !
-!  reverse order if irev=-1
+!  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) f1(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) f1(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potential
 !***********************************************************************
-      subroutine potentdiv(f1,f2,f3,irev)
+      subroutine potentdiv(fz,f2,f3,irev)
 !
 !  solves the divA=0 for potential field boundary condition;
-!  f2 and f3 correspond to Ax and Ay (input) and f1 corresponds to Ax (out)
+!  f2 and f3 correspond to Ax and Ay (input) and fz corresponds to Ax (out)
 !  In principle we could save some ffts, by combining with the potential
 !  subroutine above, but this is now easier
 !
@@ -571,7 +571,7 @@ module Magnetic
      use Cdata
 !
       real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
-      real, dimension (nx,ny,nghost+1) :: f1
+      real, dimension (nx,ny,nghost+1) :: fz
       real, dimension (nx) :: kx
       real, dimension (ny) :: ky
       real :: delz
@@ -611,7 +611,7 @@ module Magnetic
 !  set ghost zones
 !
       do i=0,nghost
-        delz=(i-1)*dz
+        delz=i*dz
         fac=exp(-kk*delz)
         g1r=fac*f1r
         g1i=fac*f1i
@@ -621,10 +621,10 @@ module Magnetic
         call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
         call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
 !
-!  reverse order if irev=-1
+!  reverse order if irev=-1 (if we are at the bottom)
 !
-        if(irev==+1) f1(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
-        if(irev==-1) f1(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==+1) fz(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
     endsubroutine potentdiv
