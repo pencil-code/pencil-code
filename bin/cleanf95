@@ -18,15 +18,15 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   cleanf95
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   10-Oct-2002
-# CVS: $Id: cleanf95,v 1.6 2003-08-29 10:43:20 dobler Exp $
+# CVS: $Id: cleanf95,v 1.7 2003-11-10 17:55:14 dobler Exp $
 # Description:
 #   Read standard input (piped from Intel Fortran compiler with 2>&1 | i.e.
 #   from STDERR).
 #   Strip all the subroutine / function lines and dump the rest back out
 #   to STDERR
 # Usage:
-#   make [--intel|--hitachi] |& cleanf95      # (csh)
-#   make [--intel|--hitachi] 2>&1 | cleanf95  # (sh)
+#   make |& cleanf95 [--intel|--hitachi]     # (csh)
+#   make 2>&1 | cleanf95 [--intel|--hitachi] # (sh)
 
     use strict;
 use Getopt::Long;
