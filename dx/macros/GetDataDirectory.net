@@ -1,0 +1,57 @@
+//
+// time: Mon Dec  2 16:54:18 2002
+//
+// version: 3.1.2 (format), 4.2.0 (DX)
+//
+//
+// Begin MDF
+// MODULE GetDataDirectory
+// CATEGORY Pencil Code
+// DESCRIPTION Read datadir.in or get default path
+// OUTPUT data_directory; object;  
+// End MDF
+// workspace: width = 176, height = 334
+// layout: snap = 0, width = 50, height = 50, align = NN
+//
+macro GetDataDirectory(
+) -> (
+ data_directory
+) {
+    // 
+    // node ImportSpreadsheet[1]: x = 37, y = 54, inputs = 10, label = ImportSpreadsheet
+    // input[1]: defaulting = 0, visible = 1, type = 32, value = "!dx_get_datadir"
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "\t"
+    //
+GetDataDirectory_ImportSpreadsheet_1_out_1,
+GetDataDirectory_ImportSpreadsheet_1_out_2 = 
+    ImportSpreadsheet(
+    "!dx_get_datadir",
+    "\t",
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node Select[1]: x = 58, y = 185, inputs = 3, label = Select
+    // input[2]: defaulting = 0, visible = 1, type = 1, value = 0
+    //
+GetDataDirectory_Select_1_out_1 = 
+    Select(
+    GetDataDirectory_ImportSpreadsheet_1_out_2,
+    0,
+    NULL
+    ) [instance: 1, cache: 1];
+    // 
+    // node Output[3]: x = 102, y = 272, inputs = 1, label = data_directory
+    // parameter: position = 1, name = 'data_directory', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+data_directory = GetDataDirectory_Select_1_out_1;
+// network: end of macro body
+}
+GetDataDirectory_ImportSpreadsheet_1_out_2 = NULL;
+GetDataDirectory_Select_1_out_1 = NULL;

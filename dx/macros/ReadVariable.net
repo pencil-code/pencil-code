@@ -1,0 +1,89 @@
+//
+// time: Mon Dec  2 16:22:57 2002
+//
+// version: 3.1.2 (format), 4.2.0 (DX)
+//
+//
+// Begin MDF
+// MODULE ReadVariable
+// CATEGORY Pencil Code
+// DESCRIPTION Read in a variable from var.dat or VAR?
+// INPUT variable_name; string or string list; (none); Name of the variable to import
+// INPUT snapshot; value list or string; 0;  
+// INPUT processor; value list or string; 0;  
+// OUTPUT variable; object;  
+// End MDF
+// workspace: width = 497, height = 554
+// layout: snap = 0, width = 50, height = 50, align = NN
+//
+macro ReadVariable(
+ variable_name
+,snapshot = 0
+,processor = 0
+) -> (
+ variable
+) {
+    // 
+    // node Input[5]: x = 99, y = 32, inputs = 0, label = snapshot
+    // parameter: position = 2, name = 'snapshot', value = '0', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+ReadVariable_Input_5_out_1 = snapshot;
+    // 
+    // node Format[2]: x = 93, y = 190, inputs = 3, label = var.dat
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "!dx_var.general %d"
+    // input[2]: defaulting = 1, visible = 1, type = 16777245, value = {0}
+    // input[3]: visible = 0
+    //
+ReadVariable_Format_2_out_1 = 
+    Format(
+    "!dx_var.general %d",
+    ReadVariable_Input_5_out_1,
+    NULL
+    ) [instance: 2, cache: 1];
+    // 
+    // node Input[4]: x = 232, y = 31, inputs = 0, label = processor
+    // parameter: position = 3, name = 'processor', value = '0', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+ReadVariable_Input_4_out_1 = processor;
+    // 
+    // node Format[3]: x = 273, y = 277, inputs = 3, label = Format
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "%s %d"
+    // input[3]: defaulting = 1, visible = 1, type = 16777245, value = {0}
+    //
+ReadVariable_Format_3_out_1 = 
+    Format(
+    "%s %d",
+    ReadVariable_Format_2_out_1,
+    ReadVariable_Input_4_out_1
+    ) [instance: 3, cache: 1];
+    // 
+    // node Input[2]: x = 372, y = 33, inputs = 0, label = variable_name
+    // parameter: position = 1, name = 'variable_name', value = '(none)', descriptive = 1, description = 'Name of the variable to import', required = 1, visible = 1
+    //
+ReadVariable_Input_2_out_1 = variable_name;
+    // 
+    // node Import[5]: x = 425, y = 331, inputs = 6, label = Import
+    // input[3]: defaulting = 0, visible = 1, type = 32, value = "general"
+    //
+ReadVariable_Import_5_out_1 = 
+    Import(
+    ReadVariable_Format_3_out_1,
+    ReadVariable_Input_2_out_1,
+    "general",
+    NULL,
+    NULL,
+    NULL
+    ) [instance: 5, cache: 1];
+    // 
+    // node Output[2]: x = 368, y = 492, inputs = 1, label = variable
+    // parameter: position = 1, name = 'variable', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+variable = ReadVariable_Import_5_out_1;
+// network: end of macro body
+}
+ReadVariable_Input_5_out_1 = NULL;
+ReadVariable_Format_2_out_1 = NULL;
+ReadVariable_Input_4_out_1 = NULL;
+ReadVariable_Format_3_out_1 = NULL;
+ReadVariable_Input_2_out_1 = NULL;
+ReadVariable_Import_5_out_1 = NULL;
