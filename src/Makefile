@@ -37,7 +37,6 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
 #LDMPI=-lmpich #(Nq[0-9]+)
-#MPICOMM=nompicomm#(Nl3)
 #FC=mpif90 # (Samos)
 #FFLAGS=-O # (Samos)
 #LDMPI= # (Samos)

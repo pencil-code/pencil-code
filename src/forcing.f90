@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.10 2002-06-01 02:56:21 brandenb Exp $
+! $Id: forcing.f90,v 1.11 2002-06-02 21:01:59 brandenb Exp $
 
 module Forcing
 
@@ -41,8 +41,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-06-02 21:01:59 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -145,6 +145,7 @@ module Forcing
       use Mpicomm
       use Cdata
       use Sub
+      use Hydro
 !
       real :: phase,ffnorm
       real, save :: kav

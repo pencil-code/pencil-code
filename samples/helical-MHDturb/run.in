@@ -1,6 +1,6 @@
 &run_pars
   ip=14,
-  nt=20, it1=5, dt=-0.4, cdtv=8.80, isave=50, itorder=3,
+  nt=2000, it1=5, dt=-0.4, cdtv=8.80, isave=50, itorder=3,
   dsnap=200., dvid=0.2,
 /
 &hydro_run_pars
