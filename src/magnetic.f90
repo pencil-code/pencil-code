@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.211 2004-07-06 10:33:58 ajohan Exp $
+! $Id: magnetic.f90,v 1.212 2004-07-10 20:21:15 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -23,7 +23,7 @@ module Magnetic
   character (len=labellen) :: initaa='zero',initaa2='zero'
   character (len=labellen) :: iresistivity='eta-const'
   ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./),BB_ext
+  real, dimension(3) :: B_ext=(/0.,0.,0./),B_ext_tmp
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension (nx,3) :: bbb
@@ -50,9 +50,11 @@ module Magnetic
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.
+  logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lforce_free_test=.false.
   character (len=40) :: kinflow=''
   real :: nu_ni,nu_ni1,hall_term,alpha_effect
+  real :: displacement_gun=0.
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
 
   namelist /magnetic_init_pars/ &
@@ -78,7 +80,8 @@ module Magnetic
        iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,eta_shock,wresistivity, &
        rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction, &
-       reinitalize_aa,rescale_aa,lB_ext_pot
+       reinitalize_aa,rescale_aa,lB_ext_pot, &
+       lee_ext,lbb_ext,ljj_ext,displacement_gun
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -137,7 +140,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.211 2004-07-06 10:33:58 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.212 2004-07-10 20:21:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -322,6 +325,7 @@ module Magnetic
       use Cdata
       use Sub
       use Slices
+      use Global, only: get_global
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
       use Mpicomm, only: stop_it
@@ -334,6 +338,7 @@ module Magnetic
       real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
       real, dimension (nx,3) :: del2A,oo,oxu,uxDxuxb,del6A,fres,del4A
       real, dimension (nx,3) :: geta
+      real, dimension (nx,3) :: ee_ext,jj_ext
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
@@ -456,6 +461,14 @@ module Magnetic
       call curl_mn(bij,jj)
       if (mu01/=1.) jj=mu01*jj
 !
+!  external current (currently for spheromak experiments)
+!
+      if (ljj_ext) then
+        call get_global(jj_ext,m,n,'jj_ext')
+        !jj=jj+jj_ext
+        jj=jj-ee_ext*displacement_gun
+      endif
+!
 !  calculate Alfven speed
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
@@ -485,9 +498,14 @@ module Magnetic
 !
 !  calculate uxB+eta*del2A and add to dA/dt
 !  (Note: the linear shear term is added later)
+!  Read external electric field (currently for spheromak experiments)
 !
       if (linduction) then
         call cross_mn(uu,bb,uxB)
+        if (lee_ext) then
+          call get_global(ee_ext,m,n,'ee_ext')
+          uxB=uxB+ee_ext
+        endif
       else
         uxB=0.
       endif
@@ -814,11 +832,11 @@ module Magnetic
       use Cdata
       use Sub
       use Deriv
-      use Global
+      use Global, only: get_global
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
       real, dimension (nx,3) :: bb
-      real, dimension (nx,3) :: bb_ext_pot
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot
       real :: B2_ext,c,s
       
       intent(in)  :: f
@@ -839,22 +857,22 @@ module Magnetic
 !
       if (B2_ext/=0.) then
         if (omega_Bz_ext==0.) then
-          BB_ext=B_ext
+          B_ext_tmp=B_ext
         elseif (omega_Bz_ext/=0.) then
           c=cos(omega_Bz_ext*t)
           s=sin(omega_Bz_ext*t)
-          BB_ext(1)=B_ext(1)*c-B_ext(2)*s
-          BB_ext(2)=B_ext(1)*s+B_ext(2)*c
-          BB_ext(3)=B_ext(3)
+          B_ext_tmp(1)=B_ext(1)*c-B_ext(2)*s
+          B_ext_tmp(2)=B_ext(1)*s+B_ext(2)*c
+          B_ext_tmp(3)=B_ext(3)
         endif
 !
 !  add the external field
 !
-        if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+BB_ext(1)
-        if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+BB_ext(2)
-        if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+BB_ext(3)
+        if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext_tmp(1)
+        if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext_tmp(2)
+        if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext_tmp(3)
         if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
-        if (headtt) print*,'calculate_vars_magnetic: BB_ext=',BB_ext
+        if (headtt) print*,'calculate_vars_magnetic: B_ext_tmp=',B_ext_tmp
       endif
 !
 !  add the external potential field
@@ -862,6 +880,13 @@ module Magnetic
       if (lB_ext_pot) then
         call get_global(bb_ext_pot,m,n,'B_ext_pot')
         bb=bb+bb_ext_pot
+      endif
+!
+!  add external B-field (currently for spheromak experiments)
+!
+      if (lbb_ext) then
+        call get_global(bb_ext,m,n,'bb_ext')
+        bb=bb+bb_ext
       endif
 
     endsubroutine calculate_vars_magnetic
