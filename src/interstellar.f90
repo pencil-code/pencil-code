@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.11 2002-12-10 17:03:16 brandenb Exp $
+! $Id: interstellar.f90,v 1.12 2002-12-11 18:13:32 ngrs Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.11 2002-12-10 17:03:16 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.12 2002-12-11 18:13:32 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -108,6 +108,8 @@ module Interstellar
            call inpup(trim(datadir)//'/interstellar.dat',  &
                                      interstellarsave,ninterstellarsave)
            t_next_SNI=interstellarsave(1)
+           if (lroot.and.ip<14) &
+             print*, 'initialize_interstellar: t_next_SNI',t_next_SNI
          else
            interstellarsave(1)=t_next_SNI
          endif
@@ -237,7 +239,7 @@ module Interstellar
         call random_number_wrapper(fran1)   
         t_next_SNI=t_next_SNI + (1.0 + 0.4*(fran1(1)-0.5)) * t_interval_SNI
         print*,'Next SNI at time: ',t_next_SNI
-        interstellarsave=(/ t_next_SNI /)
+        interstellarsave(1)=t_next_SNI
       endif
       call mpibcast_real(t_next_SNI,1)
       l_SNI=.true.
@@ -295,15 +297,16 @@ module Interstellar
       !print*,'check_SNII, iproc,fsum1:',iproc,fsum1(1)
 ! need convert to dimensional units, for rate/probability calculation only. 
 ! don't overwrite mass_cloud (on individual processors), as it's re-used.
-      if (lroot) print*,'check_SNII, mass_cloud_dim:',mass_cloud_dim
+      if (lroot .and. ip < 14) &
+         print*,'check_SNII, mass_cloud_dim:',mass_cloud_dim
 !
       freq_SNII=frac_heavy*frac_converted*mass_cloud_dim/mass_SN/tau_cloud
       prob_SNII=freq_SNII*dt
       rate_SNII=freq_SNII*1e-3/Lxyz(1)/Lxyz(2)
       if (lroot) call random_number_wrapper(fran1)   
       call mpibcast_real(fran1,1)
-      if (lroot) print*,'check_SNII, rate,prob,rnd:',  &
-                                     rate_SNII,prob_SNII,fran1(1)
+      if (lroot .and. ip < 14) &
+          print*,'check_SNII, rate,prob,rnd:',rate_SNII,prob_SNII,fran1(1)
       if (fran1(1) <= prob_SNII) then
 !  position_SNII needs the mass_clouds for each processor;  
 !   communicate and store them here, to avoid recalculation.
@@ -558,8 +561,8 @@ find_SN: do n=n1,n2
     real, dimension(1) :: fsum1,fsum1_tmp
     real :: cnorm_SN=1.5484             ! (int exp(-r^6) 4\pi r^2 dr)^(1/3)
     real :: profile_check
-    real :: TT_limit=1.e7,ee_limit
-!    real :: TT_limit=1.e2,ee_limit     ! make weaker, for debug
+!    real :: TT_limit=1.e7,ee_limit
+    real :: TT_limit=1.e5,ee_limit     ! make weaker, for debug
     integer :: itype_SN,l,mshift,il,im,in
 !    integer :: point_width=4
     integer :: point_width=8            ! make larger, for debug
@@ -637,9 +640,9 @@ find_SN: do n=n1,n2
     if (lroot) print*, &
          'explode_SN, TT_SN_new,TT_limit:',TT_SN_new,TT_limit
 !  If central temperature would be too small, make a cavity.
-!ngrs: disbable cavity for now, to check weak explosions
-!    if (TT_SN_new < TT_limit) then
-    if (.false.) then     ! remove cavity option, for debug
+!ngrs: disable cavity for now, to check weak explosions
+    if (TT_SN_new < TT_limit) then
+!    if (.false.) then     ! remove cavity option, for debug
       ee_limit=TT_limit/TTunits
       lnrho_SN_new=alog(c_SN/ee_limit)
       if (lroot) print*, &
@@ -721,9 +724,9 @@ find_SN: do n=n1,n2
         EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
         dss(:)=dee(:)/TT(:)*cp1               ! dss non-dimensional
 !  Remember to allow for changes in rho if mass  was relocated.
-!ngrs: disbable cavity for now, to check weak explosions
-!        if (TT_SN_new < TT_limit) then
-        if (.false.) then     ! remove cavity option, for debug
+!ngrs: disable cavity for now, to check weak explosions
+        if (TT_SN_new < TT_limit) then
+!        if (.false.) then     ! remove cavity option, for debug
           f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient)*rho_old(:,im,in)/rho(:)
         endif
         f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + dss(:)
