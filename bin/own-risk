@@ -4,16 +4,29 @@
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   19-Jul-2002
 # Description:d
-#   Map pencil_modular/runs to pencil_moular_runs in all CVS/Repository
-#   files below the current directory. This is to follow the separation of
-#   the runs/ directory from the main code without removing and checking in
-#   anew.
+#   Map [pencil_modular/runs, pencil_modular, pencil_modular_runs]
+#   to  [pencil_modular_run,  pencil-code],   pencil-runs        ]
+#   in all CVS/Repository files below the current directory. This is to
+#   follow the new naming scheme without removing and checking in anew.
+
 # Use at your own risk (one backup copy is made, though).
 
-find . -path '*/CVS/Repository' -exec \
+# The following was GNU-find specific:
+# find . -path '*/CVS/Repository' \
+#  -exec perl -i.bak -pe \
+#    's{pencil_modular/runs}{pencil-runs}; \
+#     s{pencil_modular_runs($|/)}{pencil-runs$1}; \
+#     s{pencil_modular($|/)}{pencil-code$1}' {} \;
+
+# Far less elegant (and bound to not work on huge trees), but needed for
+# OSF1:
+set reps = `find . -type d -name CVS`
+foreach d ($reps)
   perl -i.bak -pe \
     's{pencil_modular/runs}{pencil-runs}; \
      s{pencil_modular_runs($|/)}{pencil-runs$1}; \
-     s{pencil_modular($|/)}{pencil-code$1}' {} \;
+     s{pencil_modular($|/)}{pencil-code$1}' $d/Repository
+end
+
 
 # End of file own-risc
