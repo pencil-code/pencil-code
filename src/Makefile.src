@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.59 2004-05-30 14:03:21 dobler Exp $
+### $Id: Makefile.src,v 1.60 2004-06-03 16:25:31 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -371,7 +371,7 @@ cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 general.o:   general.f90 cparam.o cdata.o
 slices.o:    slices.f90 cdata.o sub.o $(IONIZATION).o
-deriv.o:     deriv.f90 cdata.o
+deriv.o:     deriv.f90 cdata.o $(MPICOMM).o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
