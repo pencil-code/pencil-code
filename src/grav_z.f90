@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.59 2004-07-05 22:19:50 theine Exp $
+! $Id: grav_z.f90,v 1.60 2004-08-23 12:49:50 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -35,7 +35,7 @@ module Gravity
   real :: g0=0.,r0_pot=0.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
-  logical :: lgravzd=.true.,lnumerical_equilibrium=.false.
+  logical :: lgravz_dust=.true.,lgravz_gas=.true.,lnumerical_equilibrium=.false.
 
   real, parameter :: g_A_cgs=4.4e-9
   real, parameter :: g_C_cgs=1.7e-9
@@ -76,7 +76,7 @@ module Gravity
 
   namelist /grav_run_pars/ &
        zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top,lgravzd
+       lnrho_bot,lnrho_top,ss_bot,ss_top,lgravz_dust,lgravz_gas
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.59 2004-07-05 22:19:50 theine Exp $")
+           "$Id: grav_z.f90,v 1.60 2004-08-23 12:49:50 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -166,7 +166,7 @@ module Gravity
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1
       real :: nu_epicycle2
-      integer :: i
+      integer :: k
 !
       intent(in) :: f
 !
@@ -183,8 +183,8 @@ module Gravity
         if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         if (z(n)<=zgrav) then
-          if(lhydro) &
-              df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
+          if (lhydro .and. lgravz_gas) &
+              df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
         endif
 !
 !  linear gravity profile (for accretion discs)
@@ -195,8 +195,8 @@ module Gravity
         !endif
         nu_epicycle2=nu_epicycle**2
         if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-        if(lhydro) &
-            df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) -nu_epicycle2*z(n)
+        if(lhydro .and. lgravz_gas) &
+            df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
@@ -205,7 +205,7 @@ module Gravity
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate unuts.
 !AB: As it is now, it can never make much sense.
-        if(lhydro) &
+        if(lhydro .and. lgravz_gas) &
             df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
               -(g_A*z(n)/sqrt(z(n)**2+g_B**2) + g_C*z(n)/g_D)
             !df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
@@ -217,19 +217,20 @@ module Gravity
 !  Loop over dust species
 !
       if (ldustvelocity) then
-        do i=1,ndustspec
+        do k=1,ndustspec
 !
 !  different gravity profiles
 !
           if (grav_profile=='const') then
-            if (lgravzd) df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i)) + gravz
+            if (ldustvelocity .and. lgravz_dust) &
+                df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + gravz
 !
 !  linear gravity profile (for accretion discs)
 !
           elseif (grav_profile=='linear') then
             nu_epicycle2=nu_epicycle**2
-            if (lgravzd) &
-                df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i))-nu_epicycle2*z(n)
+            if (ldustvelocity .and. lgravz_dust) &
+                df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))-nu_epicycle2*z(n)
           endif
 !
 !  End loop over dust species
