@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.263 2004-01-31 14:01:22 dobler Exp $
+! $Id: entropy.f90,v 1.264 2004-02-02 21:33:53 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.263 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: entropy.f90,v 1.264 2004-02-02 21:33:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -946,7 +946,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnP
       real, dimension (nx) :: rho1
-      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2,chitotal
 !
       intent(in) :: f,glnrho,gss
       intent(out) :: df
@@ -978,7 +978,14 @@ module Entropy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) call max_for_dt((gamma*chi+chi_t),maxdiffus)
+      if (lfirst.and.ldt) then
+        chitotal=gamma*chi+chi_t
+        call max_for_dt(chitotal, maxdiffus)
+        ! diagnose
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
+        endif
+      endif
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -1309,6 +1316,9 @@ endif
         select case(cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
           heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
+        case ('cs2-rho', 'Temp-rho') ! cool to reference temperature cs2cool
+                                     ! in a more time-step neutral manner
+          heat = heat - cool*prof*(cs2-cs2cool)/cs2cool/rho1
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
 ! dgm
