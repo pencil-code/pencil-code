@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.49 2003-08-29 16:16:02 dobler Exp $
+! $Id: prints.f90,v 1.50 2003-09-02 18:17:49 theine Exp $
 
 module Print
 
@@ -184,7 +184,7 @@ module Print
       use Param_IO
 !
       real, save :: t2davg
-      integer :: n2davg
+      integer, save :: n2davg
       logical, save :: first=.true.
       logical :: lnow
       character (len=4) :: ch
