@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.32 2002-07-02 17:08:54 nilshau Exp $ 
+! $Id: param_io.f90,v 1.33 2002-07-02 18:51:41 dobler Exp $ 
 
 module Param_IO
 
@@ -23,11 +23,11 @@ module Param_IO
   integer :: iwig=0
 
   namelist /init_pars/ &
-       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,
+       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax,iwig, &
-       bcx,bcy,bcz,
+       bcx,bcy,bcz
  
   contains
 
