@@ -1,7 +1,10 @@
-!  $Id: noinitcond_spec.f90,v 1.6 2003-06-16 04:41:10 brandenb Exp $
+!  $Id: noinitcond_spec.f90,v 1.7 2004-06-09 23:52:06 dobler Exp $
 !
 !  Substitute routines for vortex_solve.f90
 !
+! [Could somebody please write a bit more about what this module is good
+!  for?]
+
 module Initcond_spec
 
   implicit none
