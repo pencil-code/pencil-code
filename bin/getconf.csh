@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.87 2003-09-09 11:18:39 mee Exp $
+# $Id: getconf.csh,v 1.88 2003-09-10 12:58:20 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -189,7 +189,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     set mpirun = ''
   endif
 
-else if ($hn =~ copson*) then
+else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
   set mpirun = /opt/score/bin/scout 
   if ($?JOB_ID) then
@@ -201,8 +201,6 @@ else if ($hn =~ copson*) then
 # -nodes=$((NSLOTS-1))x2 src/run.x     
 #    set mpirun = /opt/score/bin/mpirun
 #    set mpirunops = "-machinefile $PBS_NODEFILE"
-  set start_x=src/start.x
-  set run_x=src/run.x
 
   setenv SCRATCH_DIR /scratch
   if ($?JOB_ID) then
@@ -343,6 +341,7 @@ setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'
 if ($debug) then
   echo '$mpi          = ' "<$mpi>"
   echo '$ncpus        = ' "<$ncpus>"
+  echo '$npops        = ' "<$npops>"
   echo '$local_disc   = ' "<$local_disc>"
   echo '$remote_top   = ' "<$remote_top>"
   echo '$local_binary = ' "<$local_binary>"
