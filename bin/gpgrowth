@@ -57,6 +57,8 @@ Options:
   -h, --help             \tShow usage overview
       --x11              \tPlot to X11 canvas window;
                          \tdefault is Ascii terminal, like with `-a 79 30'
+      --tek              \tPlot to tektronix window (assumes you run
+                         \tan xterm)
   -a <width>x<height>
       --ascii=<w>x<h>    \tPlot in Ascii mode, with specified width and
                          \theight
@@ -78,6 +80,7 @@ Purpose:
 GetOptions(\%opts,
            qw( -h   --help
                     --x11
+	            --tek
                -a=s --ascii=s
 	       -x=s --xrange=s
 	       -y=s --yrange=s
@@ -88,6 +91,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 
 # Process terminal-related arguments
+if ($opts{'tek'}) { $term = "tek40xx";}
 if ($opts{'x11'}) { $term = "X11";}
 $geom = ($opts{'a'} || $opts{'ascii'} || '');
 if ($geom) {
@@ -163,7 +167,13 @@ print SCRIPT "$gppostplot\n";
 close SCRIPT;
 
 # Plot
+if ($term =~ /^tek/) {
+    print "\033[?38h\0338";	# switch to TEK mode
+}
 system("gnuplot $gpscript");
+if ($term =~ /^tek/) {
+    print "\033\003";
+}
 
 #unlink $gpscript;
 
