@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.54 2004-03-30 13:05:31 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.55 2004-03-31 11:17:02 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -106,7 +106,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.54 2004-03-30 13:05:31 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.55 2004-03-31 11:17:02 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -117,23 +117,16 @@ module Ionization
 !
     endsubroutine register_ionization
 !*******************************************************************
-    subroutine getmu(mu,mumol)
+    subroutine getmu(mu)
 !
-!  Calculate average particle mass in the gas relative to
+!  Calculate mean molecular weight of the gas
 !
 !   12-aug-03/tony: implemented
 !   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
       real, intent(out) :: mu
-      real, optional :: mumol
 !
-      mu=1.+3.97153*xHe
-
-      mumol = (1.+3.97153*xHe)/(1-xH2+xHe)
-!
-! tobi: the real mean molecular weight would be:
-!
-! mu=(1.+3.97153*xHe)/(1+yH+xHe)
+      mu = (1.+3.97153*xHe)/(1-xH2+xHe)
 !
     endsubroutine getmu
 !***********************************************************************
