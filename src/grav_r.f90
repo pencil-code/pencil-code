@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.38 2003-08-13 15:30:07 mee Exp $
+! $Id: grav_r.f90,v 1.39 2003-09-19 11:31:15 dorch Exp $
 
 module Gravity
 
@@ -55,7 +55,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.38 2003-08-13 15:30:07 mee Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.39 2003-09-19 11:31:15 dorch Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -106,6 +106,14 @@ module Gravity
         case ('M5-dwarf')       ! M5 dwarf
           if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
           cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
+
+        case ('M2-sgiant')       ! M super giant
+          if (lroot) print*, 'M super giant gravity potential'
+          cpot = (/ 1.100, 0.660, 2.800, 1.400, 0.100 /)
+
+        case ('A7-star')       ! Ap star 
+          if (lroot) print*, 'A star gravity potential'
+          cpot = (/ 4.080, -3.444, 15.2000, 11.2000, -12.1000 /)
 
         case ('simple')         ! simple potential for tests
           if (lroot) print*, 'initialize_gravity: very simple gravity potential'
