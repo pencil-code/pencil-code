@@ -10,9 +10,23 @@
 #   cluster).
 #     Should better be a Perl script.
 
+set debug = 0
+
+if ($#argv > 0) then
+  if (($1 == "-v") || ($1 == "--verbose")) then
+    set $debug = 1
+  endif
+endif
+
 set srcdir = /scratch
 set targetdir = $PBS_O_WORKDIR
 set nodelist = `cat $PBS_NODEFILE`
+
+if ($debug) then
+  echo "srcdir = $srcdir"
+  echo "targetlist = $targetlist"
+  echo "nodelist = $nodelist"
+endif
 
 # Get size of var.dat (must exist, since run.csh only ever runs after
 # start.csh). Quite some silly hack.
@@ -22,11 +36,14 @@ set size = $lsout[5]
 while (1)
   
   foreach node ($nodelist)
-
+    if ($debug) echo "node=$node"
     foreach file (`cd $srcdir; ls VAR[0-9]* | sort -k1.4`)
       if (-Z $srcdir/$file >= $size) then
 	# if file is ready (-Z is tcsh-specific), copy it and delete original 
+	if ($debug) echo "Copying $srcdir/$file to $targetdir"
 	rsh $node "cp $srcdir/$file $targetdir && rm $srcdir/$file"
+      else
+	if ($debug) echo "Size of $srcdir/$file < $size, so not copying yet"
       endif
     end
   end
