@@ -1,0 +1,27 @@
+#!/usr/bin/perl -w
+
+# Name:   perl_monitor
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   29-Nov-2004
+# Description:
+#   Sit around and wait for signals
+
+use strict;
+
+$SIG{USR1} = sub { stop_pencil_code('SIGUSR1') };
+$SIG{USR2} = sub { stop_pencil_code('SIGUSR2') };
+
+sleep;
+
+
+sub stop_pencil_code {
+    my $signal = (shift || '');
+
+    open(STOP, "> STOP") or die "Cannot open STOP for writing";
+    print STOP
+	"STOP file written by perl_monitor after receiving <$signal> signal\n";
+    close STOP;
+}
+
+
+# End of file perl_monitor
