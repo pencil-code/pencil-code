@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.137 2002-11-18 16:12:28 mee Exp $
+! $Id: entropy.f90,v 1.138 2002-11-19 14:12:22 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -21,7 +21,6 @@ module Entropy
   real :: FbotKbot=impossible,Kbot=impossible
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
-  logical :: linterstellar=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
@@ -73,7 +72,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.137 2002-11-18 16:12:28 mee Exp $")
+           "$Id: entropy.f90,v 1.138 2002-11-19 14:12:22 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
