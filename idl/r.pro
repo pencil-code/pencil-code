@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.37 2002-10-02 20:11:14 dobler Exp $
+; $Id: r.pro,v 1.38 2002-10-05 11:28:55 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.37 2002-10-02 20:11:14 dobler Exp $
+;;; $Id: r.pro,v 1.38 2002-10-05 11:28:55 dobler Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -22,7 +22,7 @@ endif
 undefine, read_all
 ;
 default, datadir, 'data'
-default, file, 'var.dat'
+default, varfile, 'var.dat'
 ;
 if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
 if (ldensity)   then lnrho = fltarr(mx,my,mz  )*one
@@ -58,7 +58,7 @@ endelse
 ;  Read data
 ;
 close,1
-openr,1, datadir+'/'+file, /F77
+openr,1, datadir+'/'+varfile, /F77
   ;
   if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
     print,'MHD with entropy'
@@ -88,7 +88,7 @@ openr,1, datadir+'/'+file, /F77
     print,'just density (probably just good for tests)'
     readu,1,lnrho
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ie ne 0 then begin
-    print,'just radiation
+    print,'just radiation'
     readu,1,ee,ff
   end else begin
     print,'not prepared...'

@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.22 2002-10-04 07:59:19 dobler Exp $
+;;;  $Id: rall.pro,v 1.23 2002-10-05 11:28:55 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -81,7 +81,7 @@ nzloc=mzloc-2*nghostz
 ;  read data
 ;
 default, dataopdir, 'data'
-default, file, 'var.dat'
+default, varfile, 'var.dat'
 ;
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)
 xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
@@ -120,7 +120,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   readf,1, ipx,ipy,ipz
   ; read data
   close,1
-  openr,1, datadir+'/'+file, /F77
+  openr,1, datadir+'/'+varfile, /F77
     ;
     if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc eq 0 then begin
       id='MHD with entropy'

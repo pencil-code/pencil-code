@@ -1,8 +1,7 @@
-;  $Id: r_ez.pro,v 1.7 2002-10-02 20:11:14 dobler Exp $
+;  $Id: r_ez.pro,v 1.8 2002-10-05 11:28:55 dobler Exp $
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
-;  which can sometimes fail (if the perl script fails,
-;  for example).
+;  which can sometimes fail (if nml2idl fails, for example).
 ;
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -21,13 +20,13 @@ readf,1,mx,my,mz,mvar
 close,1
 print,mx,my,mz,mvar
 ;
-dir=datatopdir+'/proc0/'
-file='var.dat'
+default, datadir, datatopdir+'/proc0/'
+default, varfile='var.dat'
 f=fltarr(mx,my,mz,mvar)
 x=fltarr(mx)
 y=fltarr(my)
 z=fltarr(mz)
-openr,1,dir+file,/f77
+openr,1,datadir+varfile,/f77
 readu,1,f
 readu,1,t,x,y,z,dx,dy,dz,deltay
 close,1

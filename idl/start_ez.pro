@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start_ez.pro,v 1.4 2002-10-02 20:11:14 dobler Exp $
+;;; $Id: start_ez.pro,v 1.5 2002-10-05 11:28:55 dobler Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -18,7 +18,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 default, proc, 0
 ;default, datatopdir, 'data'
-default, file, 'var.dat'
+default, datafile, 'var.dat'
 datadir=datatopdir+'/proc'+str(proc)
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat

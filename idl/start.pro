@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.39 2002-10-02 20:11:14 dobler Exp $
+;;; $Id: start.pro,v 1.40 2002-10-05 11:28:55 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -32,7 +32,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 default, proc, 0
 default, datatopdir, 'data'
-default, file, 'var.dat'
+default, varfile, 'var.dat'
 datadir=datatopdir+'/proc'+str(proc)
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
