@@ -1,6 +1,7 @@
-; $Id: rzaver.pro,v 1.3 2002-10-02 20:11:14 dobler Exp $
+; $Id: rzaver.pro,v 1.4 2003-10-16 17:18:39 brandenb Exp $
 ;
 ;  reads the zaver.dat file
+;  need to supply nprocy by hand...
 ;
 t=0.
 bmxy=fltarr(nx,ny*nprocy,nnamexy)
