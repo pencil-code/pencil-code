@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.117 2003-10-13 01:30:37 mee Exp $
+! $Id: start.f90,v 1.118 2003-10-20 17:02:10 mee Exp $
 !
 !***********************************************************************
       program start
@@ -21,6 +21,7 @@
         use Param_IO
         use Wsnaps
         use Filter
+        use Special, only: init_special
 !
         implicit none
 !
@@ -42,7 +43,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.117 2003-10-13 01:30:37 mee Exp $")
+             "$Id: start.f90,v 1.118 2003-10-20 17:02:10 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -155,16 +156,17 @@
 !  wd: also in the case where we have read in an existing snapshot??
 !
         if (lroot) print* !(empty line)
-        call init_gg   (f,xx,yy,zz)
-        call init_uu   (f,xx,yy,zz)
-        call init_lnrho(f,xx,yy,zz)
-        call init_ss   (f,xx,yy,zz)
-        call init_aa   (f,xx,yy,zz)
-        call init_rad  (f,xx,yy,zz)
-        call init_lncc (f,xx,yy,zz)
-        call init_uud  (f,xx,yy,zz)
-        call init_lnrhod(f,xx,yy,zz)
-        call init_ecr  (f,xx,yy,zz)
+        call init_gg      (f,xx,yy,zz)
+        call init_uu      (f,xx,yy,zz)
+        call init_lnrho   (f,xx,yy,zz)
+        call init_ss      (f,xx,yy,zz)
+        call init_aa      (f,xx,yy,zz)
+        call init_rad     (f,xx,yy,zz)
+        call init_lncc    (f,xx,yy,zz)
+        call init_uud     (f,xx,yy,zz)
+        call init_lnrhod  (f,xx,yy,zz)
+        call init_ecr     (f,xx,yy,zz)
+        call init_special (f,xx,yy,zz)
 !
 !  check whether we want ionization
 !
