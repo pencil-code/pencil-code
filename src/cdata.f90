@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.157 2003-08-04 17:56:02 mee Exp $
+! $Id: cdata.f90,v 1.158 2003-08-07 17:06:56 dobler Exp $
 
 module Cdata
 
@@ -20,7 +20,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax,drcyl
-  real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
+  real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: tsforce=-10., dtforce=10
   real, dimension (2) :: fran1,fran2
 
@@ -52,6 +52,7 @@ module Cdata
   integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
   integer :: ilncc=0
   integer :: iproc,ipx,ipy,ipz,root=0
+  integer :: mwriteaux=0
   logical, dimension(3) :: lperi
   character (len=labellen) ::fft_switch='fftpack'
 

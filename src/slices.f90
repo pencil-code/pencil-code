@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.15 2003-08-04 17:56:03 mee Exp $
+! $Id: slices.f90,v 1.16 2003-08-07 17:06:56 dobler Exp $
 
 !  This module produces slices for animation purposes
 
@@ -44,13 +44,14 @@ module Slices
 !
       file = trim(datadir)//'/tvid.dat'
       if (ifirst==0) then
-        call out1 (trim(file),tvid,nvid,dvid,t)
+        call read_snaptime(trim(file),tvid,nvid,dvid,t)
         ifirst=1
       endif
 !
 !  This routine sets lvid=T whenever its time to write a slice
 !
-      call out2 (trim(file),tvid,nvid,dvid,t,lvid,ch,.false.)
+      call update_snaptime(trim(file),tvid,nvid,dvid,t,lvid,ch, &
+                           ENUMERATE=.false.)
 !
     endsubroutine wvid_prepare
 !***********************************************************************

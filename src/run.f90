@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.148 2003-08-03 15:36:28 brandenb Exp $
+! $Id: run.f90,v 1.149 2003-08-07 17:06:56 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.148 2003-08-03 15:36:28 brandenb Exp $")
+             "$Id: run.f90,v 1.149 2003-08-07 17:06:56 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -64,6 +64,14 @@
 !
         call read_runpars()
         call rprint_list(.false.)
+!
+!  Will we write all slots of f?
+!
+        if (lwrite_aux) then
+          mwriteaux = maux
+        else
+          mwriteaux = 0
+        endif
 !
 !  print resolution
 !
@@ -125,7 +133,7 @@
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !        if (lgravr) call setup_grav()
 !
-        call wglobal()
+      call wglobal()
 !
 !  advance equations
 !  NOTE: headt=.true. in order to print header titles
@@ -225,9 +233,9 @@
           !  in regular intervals, calculate certain averages
           !  and do other output
           !
-          if(lout) call write_xyaverages()
-          if(lout.and.lwrite_zaverages) call write_zaverages()
-          if(lout) call write_phiaverages()
+          call write_1daverages()
+          call write_2daverages()
+          !
           if(lout.and.lroot.and.i_walltime/=0) then
              time2=mpiwtime()
              wall_clock_time = (time2-time1)
@@ -244,12 +252,8 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          if (lwrite_aux) then
-             call wsnap(trim(directory_snap)//'/VAR',f,mvar+maux, &
-                        ENUMERATE=.true.)
-          else
-             call wsnap(trim(directory_snap)//'/VAR',f,mvar,ENUMERATE=.true.)
-          endif
+          call wsnap(trim(directory_snap)//'/VAR',f,mvar+mwriteaux, &
+                     ENUMERATE=.true.)
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUMERATE=.true.)
           !
           !  Write slices (for animation purposes)
@@ -261,16 +265,11 @@
           !
           if (isave /= 0) then
             if (mod(it,isave)==0) then
-               if (lwrite_aux) then
-                  call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux, &
-                             ENUMERATE=.false.)
-               else
-                  call wsnap(trim(directory_snap)//'/var.dat',f,mvar, &
-                             ENUMERATE=.false.)
-               endif
-               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
-                                   ENUMERATE=.false.)
-               call wtime(trim(directory)//'/time.dat',t)
+              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+mwriteaux, &
+                         ENUMERATE=.false.)
+              call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
+                                  ENUMERATE=.false.)
+              call wtime(trim(directory)//'/time.dat',t)
             endif
           endif
           !
@@ -298,13 +297,8 @@
 !
         if(save_lastsnap) then
           if (lroot) print*, 'Writing final snapshot for t=', t
-           if (lwrite_aux) then
-              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux, &
-                         ENUMERATE=.false.)
-           else
-              call wsnap(trim(directory_snap)//'/var.dat',f,mvar, &
-                         ENUMERATE=.false.)
-           endif
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvar+mwriteaux, &
+                     ENUMERATE=.false.)
           call wtime(trim(directory)//'/time.dat',t)
           if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar, &
                                  ENUMERATE=.false.)

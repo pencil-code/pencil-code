@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.42 2003-08-06 07:31:14 brandenb Exp $
+! $Id: prints.f90,v 1.43 2003-08-07 17:06:56 dobler Exp $
 
 module Print
 
@@ -142,14 +142,61 @@ module Print
       first = .false.
     endsubroutine prints
 !***********************************************************************
-    subroutine write_xyaverages
+    subroutine write_1daverages()
 !
-!  reads and registers print parameters gathered from the different
-!  modules and marked in `xyaver.in'
+!  Write 1d averages (z-averages, .., i.e. quantities that are only  1d
+!  after averaging). These are written every it1 timesteps (like the
+!  diagnostic line) and appended to their individual files.
+!
+!   7-aug-03/wolf: coded
+!
+      if (lout) call write_xyaverages() !
+!
+    endsubroutine write_1daverages
+!***********************************************************************
+    subroutine write_2daverages()
+!
+!  Write 2d averages (z-averages, phi-averages, .., i.e. quantities that
+!  are still 2d after averaging) if it is time.
+!  In analogy to 3d output to VARN, the time interval between two writes
+!  is determined by a parameter (t2davg) in run.in.
+!
+!   7-aug-03/wolf: adapted from wsnap
+!
+      use Param_IO
+!
+      real, save :: t2davg
+      integer :: n2davg
+      logical, save :: first=.true.
+      logical :: lnow
+      character (len=4) :: ch
+      character (len=135) :: file
+!
+      file=trim(datadir)//'/t2davg.dat'
+      if (first) then
+        call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
+      endif
+      first = .false.
+      !
+      call update_snaptime(trim(file),t2davg,n2davg,d2davg,t,lnow,ch, &
+                           ENUMERATE=.true.)
+      if (lnow) then
+        if (lwrite_zaverages)   call write_zaverages()
+        if (lwrite_phiaverages) call write_phiaverages()
+        !
+        if(ip<=10.and.lroot) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch
+      endif
+!
+    endsubroutine write_2daverages
+!***********************************************************************
+    subroutine write_xyaverages()
+!
+!  Write xy-averages (which are 1d data) that have been requested via
+!  `xyaver.in'
 !
 !   6-jun-02/axel: coded
 !
-      logical,save :: first=.true.
+      logical, save :: first=.true.
 !
       if(lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
@@ -161,14 +208,14 @@ module Print
 !
     endsubroutine write_xyaverages
 !***********************************************************************
-    subroutine write_zaverages
+    subroutine write_zaverages()
 !
-!  reads and registers print parameters gathered from the different
-!  modules and marked in `zaver.in'
+!  Write z-averages (which are 2d data) that have been requested via
+!  `zaver.in'
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
-      logical,save :: first=.true.
+      logical, save :: first=.true.
 !
       if(lroot.and.nnamexy>0) then
         open(1,file=trim(datadir)//'/zaverages.dat',position='append')
@@ -180,14 +227,12 @@ module Print
 !
     endsubroutine write_zaverages
 !***********************************************************************
-    subroutine write_phiaverages
+    subroutine write_phiaverages()
 !
-!  Read and register print parameters gathered from the different
-!  modules and marked in `phiaver.in'
+!  Write azimuthal averages (which are 2d data) that have been requested
+!  via `phiaver.in'
 !
-!   2-jan-03/wolf: adapted from write_xyaverages
-!
-      logical,save :: first=.true.
+!   2-jan-03/wolf: adapted from write_zaverages
 !
       if(lroot.and.nnamerz>0) then
         open(1,FILE=trim(datadir)//'/phiaverages.dat',FORM='unformatted')
@@ -195,7 +240,6 @@ module Print
         write(1) t,rcyl,z(n1:n2),drcyl,dz
         close(1)
       endif
-      first = .false.
 !
     endsubroutine write_phiaverages
 !***********************************************************************

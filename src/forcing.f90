@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.47 2003-08-04 17:56:02 mee Exp $
+! $Id: forcing.f90,v 1.48 2003-08-07 17:06:56 dobler Exp $
 
 module Forcing
 
@@ -49,7 +49,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.47 2003-08-04 17:56:02 mee Exp $")
+           "$Id: forcing.f90,v 1.48 2003-08-07 17:06:56 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -961,13 +961,14 @@ module Forcing
 !
       file=trim(datadir)//'/tforce.dat'
       if (ifirst==0) then
-        call out1 (trim(file),tforce,nforce,dforce,t)
+        call read_snaptime(trim(file),tforce,nforce,dforce,t)
         ifirst=1
       endif
 !
 !  Check whether we want to do forcing at this time.
 !
-      call out2 (trim(file),tforce,nforce,dforce,t,lforce,ch,.true.)
+      call update_snaptime(trim(file),tforce,nforce,dforce,t,lforce,ch, &
+                           ENUMERATE=.true.)
       if (lforce) then
         call blob(force,f,iss,radius_ff,0.,0.,.5)
       endif

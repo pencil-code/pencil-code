@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.8 2003-07-14 17:27:14 dobler Exp $ 
+! $Id: timeavg.f90,v 1.9 2003-08-07 17:06:56 dobler Exp $ 
 
 module Timeavg
 
@@ -116,16 +116,17 @@ module Timeavg
         call safe_character_assign(file, trim(datadir)//'/tavgsnap.dat')
 !
 !  at first call, need to initialize tsnap
-!  tsnap calculated in out1, but only available to root processor
+!  tsnap calculated in read_snaptime, but only available to root processor
 !
         if (ifirst==0) then
-          call out1 (trim(file),tsnap,nsnap,dsnap,t)
+          call read_snaptime(trim(file),tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
 !
 !  Check whether we want to output snapshot.
 !
-        call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
+        call update_snaptime(trim(file),tsnap,nsnap,dsnap,t,lsnap,ch, &
+                             ENUMERATE=.true.)
         if (lsnap) then
           call output(chsnap//ch,f_tavg,mtavg)
         endif

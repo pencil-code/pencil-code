@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.35 2003-07-28 10:43:42 dobler Exp $
+! $Id: wsnaps.f90,v 1.36 2003-08-07 17:06:56 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -51,17 +51,18 @@ contains
         file=trim(datadir)//'/tsnap.dat'
 !
 !  at first call, need to initialize tsnap
-!  tsnap calculated in out1, but only available to root processor
+!  tsnap calculated in read_snaptime, but only available to root processor
 !
         if (ifirst==0) then
-          call out1 (trim(file),tsnap,nsnap,dsnap,t)
+          call read_snaptime(trim(file),tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
 !
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
-        call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
+        call update_snaptime(trim(file),tsnap,nsnap,dsnap,t,lsnap,ch, &
+                             ENUMERATE=.true.)
         if (lsnap) then
           call update_ghosts(a)
           call output(chsnap//ch,a,msnap)
@@ -117,17 +118,19 @@ contains
       file=trim(datadir)//'/tspec.dat'
 !
 !  at first call, need to initialize tspec
-!  tspec calculated in out1, but only available to root processor
+!  tspec calculated in read_snaptime, but only available to root processor
 !
       if(ldo_all.and.ifirst==0) then
-         call out1 (trim(file),tspec,nspec,dspec,t)
+         call read_snaptime(trim(file),tspec,nspec,dspec,t)
          ifirst=1
       endif
 !
 !  Check whether we want to output power snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
-      if(ldo_all) call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
+      if(ldo_all) &
+           call update_snaptime(trim(file),tspec,nspec,dspec,t,lspec,ch, &
+                                ENUMERATE=.false.)
       if (lspec.or.llwrite_only) then
          if (ldo_all)  call update_ghosts(a)
          if (vel_spec) call power(a,'u')

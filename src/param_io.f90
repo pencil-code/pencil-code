@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.124 2003-08-05 13:40:13 theine Exp $ 
+! $Id: param_io.f90,v 1.125 2003-08-07 17:06:56 dobler Exp $ 
 
 module Param_IO
 
@@ -45,7 +45,8 @@ module Param_IO
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
-  logical :: lwrite_zaverages=.false.,lread_oldsnap=.false.
+  logical :: lwrite_zaverages=.false.,lwrite_phiaverages=.false.
+  logical :: lread_oldsnap=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
@@ -60,12 +61,12 @@ module Param_IO
        bcx,bcy,bcz
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
-       dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
+       dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,ss_spec,cc_spec, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
-       lwrite_zaverages,test_nonblocking, &
+       lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        ix,iy,iz,iz2, &
        bcx,bcy,bcz, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &

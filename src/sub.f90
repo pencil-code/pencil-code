@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.129 2003-08-06 07:31:14 brandenb Exp $ 
+! $Id: sub.f90,v 1.130 2003-08-07 17:06:56 dobler Exp $ 
 
 module Sub 
 
@@ -1498,7 +1498,7 @@ module Sub
 !
       endsubroutine wdim
 !***********************************************************************
-    subroutine out1 (file,tout,nout,dtout,t)
+    subroutine read_snaptime(file,tout,nout,dtout,t)
 !
       use Mpicomm
 !
@@ -1561,20 +1561,22 @@ module Sub
         ttt=tt
       endif
 !
-    endsubroutine out1
+    endsubroutine read_snaptime
 !***********************************************************************
-    subroutine out2 (file,tout,nout,dtout,t,lout,ch,lch)
+    subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enumerate)
 !
       use General
 !
-!  Check whether we need to write snapshot; done by all processors
+!  Check whether we need to write snapshot; if so, update the snapshot
+!  file (e.g. tsnap.dat).
+!  Done by all processors
 !
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !
       character (len=*) :: file
       character (len=4) :: ch
-      logical lout,lch
+      logical lout,enumerate
       real :: t,tt,tout,dtout
       integer :: lun,nout
 !
@@ -1586,11 +1588,12 @@ module Sub
         tt=t
       endif
 !
-!  if lch=.false. we don't want to generate a running file number (eg in wvid)
-!  if lch=.true. we do want to generate character from nout for file name
+!  if enumerate=.false. we don't want to generate a running file number
+!  (eg in wvid)
+!  if enumerate=.true. we do want to generate character from nout for file name
 !  do this before nout has been updated to new value
 !
-      if (lch) call chn(nout,ch)
+      if (enumerate) call chn(nout,ch)
 !
 !  Mark lout=.true. when time has exceeded the value of tout
 !
@@ -1606,18 +1609,19 @@ module Sub
         lun=1
         open(lun,file=file)
         write(lun,*) tout,nout
-        write(lun,*) 'NOTE: this file is written automatically (out2, sub.f90).'
-        write(lun,*) 'The value above give time and number of *next* snapshot.'
-        write(lun,*) 'These values are only being read once in the beginning.'
-        write(lun,*) 'You may adapt these numbers by hand (eg after a crash).'
+        write(lun,*) 'This file is written automatically (routine'
+        write(lun,*) 'check_snaptime in sub.f90). The values above give'
+        write(lun,*) 'time and number of the *next* snapshot. These values'
+        write(lun,*) 'are only read once in the beginning. You may adapt'
+        write(lun,*) 'them by hand (eg after a crash).'
         close(lun)
       else
         lout=.false.
       endif
 !
-    endsubroutine out2
+    endsubroutine update_snaptime
 !***********************************************************************
-    subroutine vecout (lun,file,vv,thresh,nvec)
+    subroutine vecout(lun,file,vv,thresh,nvec)
 !
 !  write vectors to disc if their length exceeds thresh
 !
