@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.8 2004-03-26 14:09:38 dobler Exp $
+; $Id: pc_read_ts.pro,v 1.9 2004-04-07 11:29:04 dobler Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-03-26 14:09:38 $
-;  $Revision: 1.8 $
+;  $Date: 2004-04-07 11:29:04 $
+;  $Revision: 1.9 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -60,25 +60,27 @@ function in_list, label, list
   return, (list_idx(label,list)+1) ne 0
 end
 ; ---------------------------------------------------------------------- ;
-pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom,ssm=ssm, $
-                 object=object, filename=filename, $ 
-                 datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+pro pc_read_ts, $
+                FILENAME=filename,$
+                OBJECT=object, $ 
+                PRINT=PRINT, QUIET=QUIET, HELP=HELP,$
+                N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
+                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm
 
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "
     print, ""
-    print, "pc_read_ts,  t=t,                                                                           "
-    print, "             object=object,                                       " 
-    print, "             datadir=datadir, /PRINT, /DOUBLE, /QUIET, /HELP      "
-    print, "                                                                  "
+    print, "pc_read_ts,  T=t,"
+    print, "             OBJECT=object," 
+    print, "             FILENAME=filename," 
+    print, "             /PRINT, /DOUBLE, /QUIET, /HELP"
+    print, ""
     print, "Read time series data from time_series.dat into separate "
-    print, "variables or a structure.          "
-    print, "                                              "
-    print, "  datadir: specify the root data directory.               [string]"
-    print, "           Default is './data'           "
+    print, "variables or a structure."
+    print, ""
     print, " filename: specify the filename of the time series data   [string]"
-    print, "           Default is 'time_series.dat'                           "
+    print, "           Default is 'data/time_series.dat'                      "
     print, "                                                                  "
     print, "        n: number of entries (valid - not commented out) [integer]"
     print, "       it: array of time step numbers                  [float(it)]"
@@ -103,152 +105,148 @@ pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom
 
 ; Default data directory
 
-default, datadir, 'data'
-default, filename, 'time_series.dat'
+  default, filename, 'data/time_series.dat'
 ;
 ; Initialize / set default returns for ALL variables
 ;
-n=0
-it=0.
-t=0.
-dt=0.
-dtc=0.
-urms=0.
-ekin=0.
-eth=0.
-rhom=0.
-ssm=0.
+  n=0
+  it=0.
+  t=0.
+  dt=0.
+  dtc=0.
+  urms=0.
+  ekin=0.
+  eth=0.
+  rhom=0.
+  ssm=0.
 
 ; Get a unit number
-GET_LUN, file
-
-; Build the full path and filename
-fullfilename=datadir+'/'+filename         
+  GET_LUN, file
 
 ;
 ;  read header
 ;
 ; Check for existance and read the data
-dummy=findfile(fullfilename, COUNT=found)
-if (found gt 0) then begin
-    if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
-    openr, file, fullfilename
+  dummy=findfile(filename, COUNT=found)
+  if (found gt 0) then begin
+    if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
+    openr, file, filename
     line = ''
     repeat begin
-        readf, file, line
-        line = strtrim(line)
-        hashpos = strpos(line,'#')
-        ;; identify header line as / *#--/
+      readf, file, line
+      line = strtrim(line)
+      hashpos = strpos(line,'#')
+      ;; identify header line as / *#--/
     endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
     point_lun,-file,fileposition
     close,file
-end else begin
-    message, 'ERROR: cannot find file ' + fullfilename
-end
-FREE_LUN, file
+  end else begin
+    message, 'ERROR: cannot find file ' + filename
+  endelse
+  FREE_LUN, file
 
 ;
 ;  read table
 ;
-newheader=line
-full_data=0.
-full_labels=''
+  newheader=line
+  full_data=0.
+  full_labels=''
 
-while (fileposition ne -1) do begin
-  labels = parse_tsheader(newheader)
-  ncols = n_elements(labels)
-  newheader='^#--'
+  while (fileposition ne -1) do begin
+    labels = parse_tsheader(newheader)
+    ncols = n_elements(labels)
+    newheader='^#--'
  
-  data = input_table(fullfilename,DOUBLE=double,  $
-                     STOP_AT=newheader,FILEPOSITION=fileposition)
-  if ((size(data))[1] ne ncols) then begin
-    message, /INFO, 'Inconsistency: label number different from column number'
-  endif
+    data = input_table(filename,DOUBLE=double,  $
+                       STOP_AT=newheader,FILEPOSITION=fileposition)
+    if ((size(data))[1] ne ncols) then begin
+      message, /INFO, 'Inconsistency: label number different from column number'
+    endif
 
   ; Merge read data into full data set
-  if ((size(full_labels))[0] eq 0) then begin
+    if ((size(full_labels))[0] eq 0) then begin
     ;If it's the first time just chunk the data into place
-    full_labels=labels
-    full_data=data
-    if ((size(full_data))[0] eq 1) then $
-        full_data=reform(full_data,n_elements(full_data),1)
-    if ((size(full_data))[0] eq 0) then $
-        full_data=reform([full_data],1,1)
+      full_labels=labels
+      full_data=data
+      if ((size(full_data))[0] eq 1) then $
+          full_data=reform(full_data,n_elements(full_data),1)
+      if ((size(full_data))[0] eq 0) then $
+          full_data=reform([full_data],1,1)
     end else begin
-    col_index=intarr(ncols)
-    for i=0,ncols-1 do begin
-      if (not in_list(labels[i],full_labels)) then begin
-         old_full_labels=full_labels
-         old_ncols=n_elements(old_full_labels)
-         full_labels=strarr(old_ncols+1)
-         full_labels[0:old_ncols-1]=old_full_labels[*]
-         old_full_labels=0. 
+      col_index=intarr(ncols)
+      for i=0,ncols-1 do begin
+        if (not in_list(labels[i],full_labels)) then begin
+          old_full_labels=full_labels
+          old_ncols=n_elements(old_full_labels)
+          full_labels=strarr(old_ncols+1)
+          full_labels[0:old_ncols-1]=old_full_labels[*]
+          old_full_labels=0.
 
-         full_labels[old_ncols]=labels[i]
-	 col_index[i]=old_ncols
-      endif else begin
-        col_index[i]=list_idx(labels[i],full_labels)
-      endelse
-    endfor
+          full_labels[old_ncols]=labels[i]
+          col_index[i]=old_ncols
+        endif else begin
+          col_index[i]=list_idx(labels[i],full_labels)
+        endelse
+      endfor
          
-    old_ncols=(size(full_data))[1]
+      old_ncols=(size(full_data))[1]
     
-    old_nrows=(size(full_data))[2]
+      old_nrows=(size(full_data))[2]
 
-    new_ncols=(size(full_labels))[1]
-    new_nrows=old_nrows + (size(data))[2]
+      new_ncols=(size(full_labels))[1]
+      new_nrows=old_nrows + (size(data))[2]
     
-    old_full_data=full_data
-    if (keyword_set(double)) then begin
-      full_data = dblarr(new_ncols, new_nrows)
-      full_data[*,*] = !VALUES.D_NAN
-    endif else begin
-      full_data = fltarr(new_ncols, new_nrows)
-      full_data[*,*] = !VALUES.F_NAN
+      old_full_data=full_data
+      if (keyword_set(double)) then begin
+        full_data = dblarr(new_ncols, new_nrows)
+        full_data[*,*] = !VALUES.D_NAN
+      endif else begin
+        full_data = fltarr(new_ncols, new_nrows)
+        full_data[*,*] = !VALUES.F_NAN
+      endelse
+    
+      full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[0:old_ncols-1,0:old_nrows-1]
+      old_full_data=0.          ; Clear the allocated memory 
+    
+      for i=0,ncols-1 do begin
+        full_data[col_index[i],old_nrows:new_nrows-1]=data[i,*]
+      endfor   
     endelse
-    
-    full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[0:old_ncols-1,0:old_nrows-1]
-    old_full_data=0.  ; Clear the allocated memory 
-    
-    for i=0,ncols-1 do begin
-      full_data[col_index[i],old_nrows:new_nrows-1]=data[i,*]
-    endfor   
-  endelse
-endwhile
+  endwhile
 
 
 ;
 ;  assemble the data
 ;
-ncols = n_elements(full_labels)
-cmd = 'object = {'           ; build a command to execute
-for i=0,ncols-1 do begin
-  if (i eq 0) then pref=' ' else pref=', '
-  cmd = cmd + pref + full_labels[i] $
-                   + ': reform(full_data[' $
-                   + strtrim(i,2) + ',*])'
-endfor
-cmd = cmd + ' }'
+  ncols = n_elements(full_labels)
+  cmd = 'object = {'            ; build a command to execute
+  for i=0,ncols-1 do begin
+    if (i eq 0) then pref=' ' else pref=', '
+    cmd = cmd + pref + full_labels[i] $
+                     + ': reform(full_data[' $
+                     + strtrim(i,2) + ',*])'
+  endfor
+  cmd = cmd + ' }'
 
-if (execute(cmd) ne 1) then $
-  message, 'There was a problem executing <' + cmd + '>', /INFO
+  if (execute(cmd) ne 1) then $
+      message, 'There was a problem executing <' + cmd + '>', /INFO
 
 ; Unwrap and quantities that may have been separately requested from object
-n = (size(data))[1]
-if (in_list('t',full_labels))    then t = object.t
-if (in_list('dt',full_labels))   then dt = object.dt
-if (in_list('dtc',full_labels))  then dtc = object.dtc
-if (in_list('urms',full_labels)) then urms = object.urms
-if (in_list('ekin',full_labels)) then ekin = object.ekin
-if (in_list('eth',full_labels))  then eth = object.eth
-if (in_list('rhom',full_labels)) then rhom = object.rhom
-if (in_list('ssm',full_labels))  then ssm = object.ssm
+  n = (size(data))[1]
+  if (in_list('t',full_labels))    then t = object.t
+  if (in_list('dt',full_labels))   then dt = object.dt
+  if (in_list('dtc',full_labels))  then dtc = object.dtc
+  if (in_list('urms',full_labels)) then urms = object.urms
+  if (in_list('ekin',full_labels)) then ekin = object.ekin
+  if (in_list('eth',full_labels))  then eth = object.eth
+  if (in_list('rhom',full_labels)) then rhom = object.rhom
+  if (in_list('ssm',full_labels))  then ssm = object.ssm
 
 ; If requested print a summary
-if keyword_set(PRINT) then begin
+  if keyword_set(PRINT) then begin
     print, 'For GLOBAL calculation domain:'
     print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_ts.pro'
-endif
+  endif
 
 end
 ; ---------------------------------------------------------------------- ;
