@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.2 2004-09-28 11:42:40 ajohan Exp $
+# CVS: $Id: copy-snapshots_exp,v 1.3 2004-09-28 12:25:13 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -107,7 +107,7 @@ else
     foreach node ($nodelist)
       echo "-------------------- Checking proc$nodenumber -------------------"
       set move_me=$targetdir/proc$nodenumber/move-me.list
-      set source_me=$targetdir/proc$nodenumber/source-me.csh
+      set source_me=$targetdir/source-me.csh
       set moved_files=$targetdir/proc$nodenumber/moved-files.list
 ##
 ## Must make sure that both move-me.list and moved-files.list exist
@@ -116,11 +116,11 @@ else
       if (! -e $moved_files) touch $moved_files
       echo " ## Comparing $moved_files with $move_me"
       echo
-      echo "diff $moved_files $move_me | grep '>' | sed -e 's/> //g'"
+      echo "cat $moved_files $move_me | sort | uniq -u"
 ##
 ## Only do the diff once (there could be changes in the mean time)
 ##                  
-      set lines=`diff $moved_files $move_me | grep '>' | sed -e 's/> //g'`
+      set lines=`cat $moved_files $move_me | sort | uniq -u`
       echo
       echo $lines
       echo
@@ -128,8 +128,8 @@ else
 ## Consider all lines as filenames and move them from relevant node
 ##                  
       foreach line ($lines)
-        echo $SSH $node mv $line $targetdir/proc$nodenumber/
-        $SSH $node mv $line $targetdir/proc$nodenumber/
+        echo $SSH $node \mv -f $line $targetdir/proc$nodenumber/
+        $SSH $node \mv -f $line $targetdir/proc$nodenumber/
 ##
 ## Inform moved-files.list that the file has been moved (if successful)
 ##                        
@@ -146,10 +146,12 @@ else
 ## Execute user supplied script source-me.csh in the data directory.
 ##  
     if (-e $source_me) then
+      echo
       echo cat $source_me
       cat $source_me
+      echo
       source $source_me >> $targetdir/source-me.log
-      mv $source_me ${source_me}.used
+      \mv -f $source_me ${source_me}.used
     endif
 ##
 ## Break infinite while loop if set to check only once for files to copy
