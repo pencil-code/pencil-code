@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.102 2004-03-23 15:09:14 ajohan Exp $ 
+! $Id: initcond.f90,v 1.103 2004-03-23 16:05:39 theine Exp $ 
 
 module Initcond 
  
@@ -752,7 +752,7 @@ module Initcond
 !  23-may-04/anders: made structure for other input variables
 !
       use Mpicomm
-      use Ionization, only: eoscalc_point,ilnrho_lnTT
+      !use Ionization, only: eoscalc_point,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
@@ -791,7 +791,7 @@ module Initcond
         do n=1,ntotal
           read(19,*) ztmp,lnrho0(n),lnTT0(n)
           if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),lnTT0(n)
-          call eoscalc_point(ilnrho_lnTT,lnrho0(n),lnTT0(n),ss=ss0(n))
+          !call eoscalc_point(ilnrho_lnTT,lnrho0(n),lnTT0(n),ss=ss0(n))
         enddo
       endselect
 !
