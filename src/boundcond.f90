@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.13 2002-07-03 14:19:50 nilshau Exp $
+! $Id: boundcond.f90,v 1.14 2002-07-03 14:52:05 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -196,7 +196,7 @@ module Boundcond
             end do
          case ('ce')
             !
-            !  This makes the energy (by mass) constant at the boundaries
+            !  This makes cs2 (temperature) constant on the boundaries
             !
             if (lentropy) then 
                cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
@@ -248,7 +248,7 @@ module Boundcond
             end do
          case ('ce')
             !
-            !  This makes the energy (by mass) constant at the boundaries
+            !  This makes cs2 (temperature) constant on the boundaries
             !
             if (lentropy) then 
                cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
@@ -275,8 +275,3 @@ module Boundcond
 !***********************************************************************
  
 endmodule Boundcond
-
-
-
-
-

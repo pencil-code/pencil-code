@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.57 2002-07-02 04:56:00 brandenb Exp $
+! $Id: magnetic.f90,v 1.58 2002-07-03 14:52:05 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -79,7 +79,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.57 2002-07-02 04:56:00 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.58 2002-07-03 14:52:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -373,6 +373,9 @@ module Magnetic
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
+        !
+        !  v_A = |B|/sqrt(rho); in units where "4pi"=1
+        !
         if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
         if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
         !

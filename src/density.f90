@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.20 2002-07-02 18:37:04 dobler Exp $
+! $Id: density.f90,v 1.21 2002-07-03 14:52:05 brandenb Exp $
 
 module Density
 
@@ -9,12 +9,14 @@ module Density
 
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0.
-  character (len=labellen) :: initlnrho='zero'
+          cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0., &
+          radius_lnrho=.5
+  character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
-       rho_left,rho_right,cs2bot,cs2top
+       rho_left,rho_right,cs2bot,cs2top, &
+       initlnrho2,radius_lnrho
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top
@@ -53,7 +55,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.20 2002-07-02 18:37:04 dobler Exp $")
+           "$Id: density.f90,v 1.21 2002-07-03 14:52:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -248,11 +250,23 @@ module Density
         call stop_it("")
 
       endselect
-      !
-      !  check whether cs2bot,cs2top have been set
-      !
+!
+!  check whether cs2bot,cs2top have been set
+!
       if(lroot) print*,'verify(!): cs2bot,cs2top=',cs2bot,cs2top
-      !
+!
+!  different initializations of lnrho (called from start).
+!  If initrho does't match, f=0 is assumed (default).
+!
+      select case(initlnrho2)
+
+      case('addblob')
+        !
+        if (lroot) print*,'init_lnrho: add blob'
+        f(:,:,:,ilnrho)=f(:,:,:,ilnrho) &
+          +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
+      endselect
+!
       if(ip==0) print*,prof,yy  ! keep compiler quiet
     endsubroutine init_lnrho
 !***********************************************************************

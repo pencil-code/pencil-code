@@ -1,4 +1,4 @@
-! $Id: rotation.f90,v 1.1 2002-07-02 17:14:41 nilshau Exp $
+! $Id: rotation.f90,v 1.2 2002-07-03 14:52:05 brandenb Exp $
 
 !  This modules deals with all aspects of rotation; if no
 !  rotation are invoked, a corresponding replacement dummy
@@ -37,13 +37,13 @@ module Rotation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: rotation.f90,v 1.1 2002-07-02 17:14:41 nilshau Exp $")
+           "$Id: rotation.f90,v 1.2 2002-07-03 14:52:05 brandenb Exp $")
 !
     endsubroutine register_rot
 !***********************************************************************
     subroutine shearing(f,df)
 !
-!  Calculates the actuall shear terms
+!  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
 !
 !  2-july-02/nils: coded
 !

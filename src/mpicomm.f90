@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.27 2002-07-02 17:02:14 nilshau Exp $
+! $Id: mpicomm.f90,v 1.28 2002-07-03 14:52:05 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -228,7 +228,7 @@ module Mpicomm
 !
 !  So far no distribution over x
 !
-
+      !(We may never do this after having seen all the trouble involved!!)
 !
 !  Periodic boundary conditions in y
 !
