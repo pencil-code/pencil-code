@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.72 2004-08-16 14:48:28 ajohan Exp $
+### $Id: Makefile.src,v 1.73 2004-08-18 12:00:14 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -232,7 +232,7 @@ FCCLEANER=
 #CFLAGS=-O3 -DFUNDERSC=0
 #F77=xlf
 #FC=xlf90
-#FFLAGS=-I/usr/lpp/ppe.poe/include -O5 -w
+#FFLAGS=-I/usr/lpp/ppe.poe/include -I/usr/lpp/ppe.poe/include/thread -O5 -w
 #F90FLAGS=-qsuffix=f=f90
 #LDMPI=-F:mpxlf90
 
