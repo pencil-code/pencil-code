@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.21 2004-03-05 10:37:03 mee Exp $
+;  $Id: varcontent.pro,v 1.22 2004-04-06 11:52:20 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -136,13 +136,28 @@ for idust=0,n_elements(irhod)-1 do begin
   sidust = strtrim(string(idust),2)
 
   varcontent[irhod(idust)].variable = 'Dust density ' + sidust + $
-      ' (nd'+sidust+')'
+      ' (rhod'+sidust+')'
   varcontent[irhod(idust)].idlvar   = 'rhod'+sidust
   varcontent[irhod(idust)].idlinit    = INIT_SCALAR
   varcontent[irhod(idust)].idlvarloc= 'rhod'+sidust+'_loc'
   varcontent[irhod(idust)].idlinitloc = INIT_SCALAR_LOC
 
 endfor
+
+for idust=0,n_elements(irhoi)-1 do begin
+  
+  sidust = strtrim(string(idust),2)
+
+  varcontent[irhoi(idust)].variable = 'Ice density ' + sidust + $
+      ' (rhoi'+sidust+')'
+  varcontent[irhoi(idust)].idlvar   = 'rhoi'+sidust
+  varcontent[irhoi(idust)].idlinit    = INIT_SCALAR
+  varcontent[irhoi(idust)].idlvarloc= 'rhoi'+sidust+'_loc'
+  varcontent[irhoi(idust)].idlinitloc = INIT_SCALAR_LOC
+
+endfor
+
+
 varcontent[igg].variable = 'Gravitational acceleration (gg)'
 varcontent[igg].idlvar   = 'gg'
 varcontent[igg].idlinit    = INIT_3VECTOR
