@@ -1,4 +1,4 @@
-! $Id: grav_y.f90,v 1.2 2004-09-16 14:55:11 ajohan Exp $
+! $Id: grav_y.f90,v 1.3 2004-09-16 14:58:53 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_y.f90,v 1.2 2004-09-16 14:55:11 ajohan Exp $")
+           "$Id: grav_y.f90,v 1.3 2004-09-16 14:58:53 ajohan Exp $")
 !
       lgrav =.true.
       lgravy=.true.
@@ -105,6 +105,7 @@ module Gravity
 ! Not doing anything (this might change if we decide to store gg)
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+!        
     endsubroutine init_gg
 !***********************************************************************
     subroutine duu_dt_grav(f,df,uu,rho1)
@@ -134,7 +135,7 @@ module Gravity
         select case (grav_profile)
 
         case('const')
-          if (lroot) print*,'initialize_gravity: constant gravy=',gravy
+          if (lroot) print*,'duu_dt_grav: constant gravy=',gravy
           gravy_pencil =  gravy
           poty_pencil  = -gravy*(y(m)-yinfty)
         case('tanh')
@@ -143,23 +144,23 @@ module Gravity
 !  for isothermal EOS, we have 0=-cs2*dlnrho+gravy
 !  pot_ratio gives the resulting ratio in the density.
 !
-          if (dgravy==0.) call stop_it("initialize_gravity: dgravy=0 not OK")
-          if (lroot) print*,'initialize_gravity: tanh profile, gravy=',gravy
-          if (lroot) print*,'initialize_gravity: ygrav,dgravy=',ygrav,dgravy
+          if (dgravy==0.) call stop_it("duu_dt_grav: dgravy=0 not OK")
+          if (lroot) print*,'duu_dt_grav: tanh profile, gravy=',gravy
+          if (lroot) print*,'duu_dt_grav: ygrav,dgravy=',ygrav,dgravy
           gravy=-alog(pot_ratio)/dgravy
           gravy_pencil= gravy*.5/cosh((y(m)-ygrav)/dgravy)**2
           poty_pencil =-gravy*.5*(1.+tanh((y(m)-ygrav)/dgravy))*dgravy
 
         case('sinusoidal')
-          if(headtt) print*,'initialize_gravity: sinusoidal grav, gravy=',gravy
+          if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravy=',gravy
           gravy_pencil = -gravy*sin(ky_gg*y(m))
 
         case('sinxsiny')
-          if(headtt) print*,'initialize_gravity: sinusoidal grav, gravy=',gravy
+          if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravy=',gravy
           gravy_pencil = -gravy*sin(kx_gg*x(l1:l2))*sin(ky_gg*y(m))
 
         case default
-          if (lroot) print*,'initialize_gravity: grav_profile not defined'
+          if (lroot) print*,'duu_dt_grav: grav_profile not valid'
 
         endselect
 
@@ -243,7 +244,7 @@ module Gravity
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
 !
-      call stop_it("grav_x: potential_point not implemented")
+      call stop_it("grav_y: potential_point not implemented")
 !
       if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
     endsubroutine potential_point
