@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.34 2004-08-31 17:20:39 dobler Exp $
+# CVS: $Id: copy-snapshots,v 1.35 2004-09-22 08:18:03 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -12,188 +12,184 @@
 #     Should better be a Perl script.
 
 set debug = 0
-
 if ($#argv > 0) then
   if (($1 == "-v") || ($1 == "--verbose")) then
     set debug = 1
     shift
   endif
 endif
-
-if ($debug) then
-#  set verbose
-#  set echo
-endif
-
+##
+## Command line input provides the name of the file that should be copied
+##
 if ($#argv > 0) then
   set varfile = $1
   if ($debug) echo "varfile = <$varfile>"
 endif
-
+##
+## Set some necessary filesystem variables...
+##
 set pwd = `pwd`
 set targetdir = $pwd/data
 set nodelist = (`echo $NODELIST | sed 's/:/ /g'`) # unpack NODELIST
-
+##
+## ... and print out their values.
+##
 if ($debug) then
   echo "SCRATCH_DIR = <$SCRATCH_DIR>"
   echo "targetdir   = <$targetdir>"
   echo "nodelist    = <$nodelist>"
 endif
-
-# produce debug output
+##
+## Produce debug output file in data directory
+##
 if($debug) then
   echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
   echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
 endif
-
-if ($?varfile) then		# explicit filename given
+##
+## If explicit filename is given, copy that file from local scratch discs
+##
+if ($?varfile) then
   echo "======================== $varfile ========================"
   foreach node ($nodelist)
-    echo "---------------------- $node --------------------------- "
-    echo "copy-snapshots: working on $node.."
+    echo "------------------ working on node: $node ----------------------"
+##
+## Output directories and whereabouts of $varfile at the root processor's
+## scratch disc
+##
     if ($debug) then
-      printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
-      $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
+      printf "\n  ##Checking if scratch directory is accessible\n"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR"
+      printf "\n\n  ##Checking for presence of $varfile on scratch disc\n"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile"
+      printf "\n  ##Checking for presence of $varfile in data directory\n"
       printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
       $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
       echo
     endif
-    # Copy all files you find (not efficient on dual-CPU systems, unless
-    # we would delete files after copying..)
-    set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
-    if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
-    $SSH $node sh -c "'$remcmd'"
-    printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
-    $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
-  end
-  echo "========================================================"
+##
+## Copy all $varfile you find (on all nodes) to the data directory
+## (not efficient on dual-CPU systems, unless we would delete files 
+## after copying..)
+##
+    if ($debug) printf "  ##Copying proc*/$varfile and allprocs/$varfile to data directory\n\n"
 
-else				# no explicit file given -- copy VARN, TAVGN
-  echo
-  echo "====================== VARN, TAVGN ====================="
-  # Get size of var.dat (must exist, since run.csh only ever runs after
-  # start.csh). Quite some silly hack.
-  printf "Determining size of var.dat:"
-  set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
-  if (! $status) then
-    set size = $lsout[5]
-  else
-    echo
-    echo "Can't find proc0/var.dat in $targetdir, trying allprocs/var.dat"
-    set lsout = (`ls -l "$targetdir/allprocs/var.dat"`)
-    if (! $status) then
-      set size = $lsout[5]
-    else
-      echo "Can't find allprocs/var.dat either -- aborting"
-      exit 1
+    set remcmd = 'cd '"$SCRATCH_DIR"'; for f in `ls proc*/'"$varfile"' allprocs/'"$varfile"' 2> /dev/null`; do echo "Copying '"$SCRATCH_DIR"'/$f to '"$targetdir"'/$f"; cp '"$SCRATCH_DIR"'/$f '"$targetdir"'/$f; done'
+
+    if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
+    
+    $SSH $node sh -c "'$remcmd'"
+    
+    if ($debug) then
+      printf "\n  ##Checking for changes to $varfile in data directory\n"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
     endif
-  endif
-  echo " $size"
+
+  end  # loop over nodes
+  echo "========================================================"
+else
+##
+## If no explicit filename is given, copy VARN, TIMEAVGN
+##
   echo
-  
+  echo "=================== VARN, TIMEAVGN ====================="
+##
+## Check for relevant files at regular intervals
+##
   while (1)
     echo
     echo "=========  "`date`"  ========="
-    ## Is there something to copy? (It is sufficient to copy once the
-    ## files show up for the master process of this job -- might depend on
-    ## the queuing system etc.)
+##    
+## Is there something to copy? (It is sufficient to copy once the
+## files show up for the master process of this job -- might depend on
+## the queuing system etc.)
+##
     if { ( (ls $SCRATCH_DIR/proc0/VAR[0-9]*     || \
             ls $SCRATCH_DIR/proc0/TIMEAVG[0-9]* || \
             ls $SCRATCH_DIR/allprocs/VAR[0-9]*  || \
             ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) >& /dev/null ) } then
-      ## Decide whether to check for file size (old scheme; won't work with
-      ## TAVGN unless they have the same size as var.dat), or to use list of
-      ## snapshot files (new scheme, will not work with old binaries).
-      if ( (-e $SCRATCH_DIR/proc0/varN.list)     || \
-           (-e $SCRATCH_DIR/proc0/tavgN.list)    || \
-           (-e $SCRATCH_DIR/allprocs/tavgN.list) || \
-           (-e $SCRATCH_DIR/allprocs/tavgN.list) ) then
-	## New scheme
-	echo "New scheme for copying (based on varN.list)"
-	foreach node ($nodelist)
-	  if ($debug) echo "---------------------- $node --------------------------- "
-	  cd $SCRATCH_DIR	# just for debug output, but doesn't harm
-	  if ($debug) then
-	    echo "cd $SCRATCH_DIR; ls allprocs proc0 --> "`ls allprocs proc0`
-	    if (-e proc0/varN.list) echo "proc0/varN.list:" `cat proc0/varN.list`
-	    if (-e allprocs/varN.list) echo "allprocs/varN.list:" `cat allprocs/varN.list`
-	  endif
-#	  foreach d (`cd $SCRATCH_DIR; ls -d allprocs proc*`)
-#	    set fdir = $SCRATCH_DIR/$d
-#	    echo "d = <$d>;  fdir = <$fdir>"
-
-#            set remcmd = 'for f in `cat '"$fdir"'/*.list 2> /dev/null`; do file="'"$fdir"'/$f"; if [ -e $file ]; then echo "Moving $file to '"$targetdir/$d/"'"; mv -f $file '"$targetdir/$d/"'; fi; done;'
-
-          ## Construct remote command that will do approximately the
-          ## following thing (strongly complicated by the pathetic shell
-          ## quoting rules. ceterum censeo: This script should be written
-          ## in Perl):
-	  ##
-	  ##   for d in `cd $SCRATCH_DIR; ls -d allprocs proc*`; do
-	  ##       fdir="$SCRATCH_DIR/$d"
-	  ##       for f in `cat $fdir/*.list`; do
-	  ##           file=$fdir/$f
-	  ##           if [ -e $file ]; then
-	  ##               echo "Moving $file to $targetdir/$d/"
-	  ##               mv -f $file $targetdir/$d/"
-	  ##           fi
-	  ##       done
-	  ##   done
-	  ##
-	  ## This runs as a POSIX (Bourne) shell script on the remote
-          ## side, so wo can write a full for(each) loop in one line.
-          set remcmd = 'for d in `cd "'"$SCRATCH_DIR"'"; ls -d allprocs proc* 2> /dev/null`; do fdir="'"$SCRATCH_DIR"'/$d"; for f in `cat $fdir/*.list 2> /dev/null`; do file=$fdir/$f; if [ -e $file ]; then echo "Moving $file to '"$targetdir"'/$d/"; mv -f $file "'"$targetdir"'/$d/"; fi; done; done;'
-##	    if ($debug) echo "$SSH $node sh < $remshcmd"
-##	    echo "$remshcmd" | $SSH $node sh
-          if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
-          $SSH $node sh -c "'$remcmd'"
-#	  if ($debug) echo
-#	  end
-	  if ($debug) echo "-------------------------------------------------------- "
-	end
-
-      else
-
-	## Old scheme
-	echo "Old scheme for copying (size-based)-- will be removed at some point"
-	foreach node ($nodelist)
-	  if ($debug) echo "node=$node"
-	  echo '$targetdir' $targetdir
-	  foreach file (`$SSH $node "cd $SCRATCH_DIR; ls proc*/VAR[0-9]* proc*/TAVG[0-9]* allprocs/VAR[0-9]* allprocs/TAVG[0-9]*"`)
-	    set lsout = (`$SSH $node ls -l "$SCRATCH_DIR/$file"`)
-	    set VARsize = $lsout[5]
-	    if ($VARsize >= $size) then
-	      # if file is ready, copy it and delete original 
-	      if ($debug) echo "Moving ${node}:$SCRATCH_DIR/$file to $targetdir/$file"
-	      if ($debug) echo "$SSH $node 'mv $SCRATCH_DIR/$file $targetdir/$file'"
-	      $SSH $node "mv -f $SCRATCH_DIR/$file $targetdir/$file"
-	    else
-	      if ($debug) echo "Size of $SCRATCH_DIR/$file < $size, so not copying yet"
-	    endif
-	  end      
-	end
-
+##
+## Some debug output reporting that copy-snapshots found something to copy
+##
+      if ($debug) then
+        printf "  ##Found something to copy on the root processor's scratch disc\n"
+        echo "ls -l $SCRATCH_DIR/proc0/; ls -l $SCRATCH_DIR/allprocs/ :"
+        foreach node ($nodelist)
+          echo $node
+          $SSH $node "ls -l $SCRATCH_DIR/proc*/; ls -l $SCRATCH_DIR/allprocs/"
+        end
+        if (-e $SCRATCH_DIR/proc0/varN.list) then
+          printf "  ##Contents of $SCRATCH_DIR/proc0/varN.list :\n"
+          echo `cat $SCRATCH_DIR/proc0/varN.list`
+        endif
+          if (-e $SCRATCH_DIR/allprocs/varN.list) then
+          printf "  ##Contents of $SCRATCH_DIR/allprocs/varN.list :\n"
+          echo `cat $SCRATCH_DIR/allprocs/varN.list`
+        endif
+        printf "\n"
+        printf " ##Next copy-snapshots is going to move the filenames found\n"
+        printf " ##in proc*/varN.list from all nodes to the data directory.\n"
       endif
-
+##
+##  Go to all nodes and copy everything from proc*/varN.list to the 
+##  data directory (this is the so-called new method for copying snapshots).
+##      
+      foreach node ($nodelist)
+        echo "------------------ working on node: $node ----------------------"
+##
+## Construct remote command that will do approximately the
+## following thing (strongly complicated by the pathetic shell
+## quoting rules. ceterum censeo: This script should be written
+## in Perl):
+##
+##   for d in `cd $SCRATCH_DIR; ls -d allprocs proc*`; do
+##       fdir="$SCRATCH_DIR/$d"
+##       for f in `cat $fdir/*.list`; do
+##           file=$fdir/$f
+##           if [ -e $file ]; then
+##               echo "Moving $file to $targetdir/$d/"
+##               mv -f $file $targetdir/$d/"
+##           fi
+##       done
+##   done
+##        
+## This runs as a POSIX (Bourne) shell script on the remote
+## side, so wo can write a full for(each) loop in one line.
+##      
+        set remcmd = 'for d in `cd "'"$SCRATCH_DIR"'"; ls -d allprocs proc* 2> /dev/null`; do fdir="'"$SCRATCH_DIR"'/$d"; for f in `cat $fdir/*.list 2> /dev/null`; do file=$fdir/$f; if [ -e $file ]; then echo "Moving $file to '"$targetdir"'/$d/"; mv -f $file "'"$targetdir"'/$d/"; fi; done; done;'
+        if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
+        $SSH $node sh -c "'$remcmd'"
+	    echo "--------------------------------------------------------------"
+      end
+    
       if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
-	echo "No parent process (pid $PARENT_PID) -- exiting"
-	exit 1
+        echo "No parent process (pid $PARENT_PID) -- exiting"
+        exit 1
       endif
 
     else
-
-      echo 'Nothing to copy: no data/{proc0,allprocs}/{VAR,TIMEAVG}[0-9]*'
-
+##
+## Output message if no interesting files found
+##
+      printf "  ##Nothing to copy:\n"
+      printf "  ##no {proc0,allprocs}/{VAR,TIMEAVG}[0-9]* at the root processor's scratch disc\n"
     endif
-
+##
+## Check only every 60 seconds
+##
     if (! $?varfile) then
-      sleep 60			# only check every minute
+      sleep 60
     endif
 
-  end
+  end # while(1)
 
-endif
-
+endif # no input filename given
+##
+## Finishing output
+##
 if ($debug) echo "copy-snapshots: done"
 echo "------------------------------------------------------ "
 
