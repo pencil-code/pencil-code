@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.248 2003-11-19 17:37:28 brandenb Exp $
+! $Id: entropy.f90,v 1.249 2003-11-20 09:36:15 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.248 2003-11-19 17:37:28 brandenb Exp $")
+           "$Id: entropy.f90,v 1.249 2003-11-20 09:36:15 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -785,10 +785,7 @@ module Entropy
 !  add pressure gradient force from isothermal background density change in x
 !
         if (dlnrhobdx .ne. 0) then
-          do j=1,3
-            ju=j+iuu-1
-            df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*dlnrhobdx/gamma
-          enddo
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-cs2*dlnrhobdx/gamma
         endif
 !
 !  velocity damping in the coronal heating zone
