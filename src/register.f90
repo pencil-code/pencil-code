@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.37 2002-06-09 12:16:19 brandenb Exp $
+! $Id: register.f90,v 1.38 2002-06-15 11:29:35 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -71,9 +71,9 @@ module Register
 !
 !  read in the list of variables for xy-averages
 !
-      inquire(file='zaver.in',exist=exist)
+      inquire(file='xyaver.in',exist=exist)
       if (exist) then
-        open(1,file='zaver.in')
+        open(1,file='xyaver.in')
         do inamez=1,mnamez
           read(1,*,end=98) cnamez(inamez)
         enddo

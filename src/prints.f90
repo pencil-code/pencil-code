@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.18 2002-06-15 09:29:04 brandenb Exp $
+! $Id: prints.f90,v 1.19 2002-06-15 11:29:35 brandenb Exp $
 
 module Print
 
@@ -44,7 +44,13 @@ module Print
 !  so they are present on the root processor.
 !
       if (lmagnetic.and.i_bmz/=0.and.lroot) then
-        bmz=sum(fnamez(:,i_bxmz)**2+fnamez(:,i_bymz)**2)/nz
+        if(i_bxmz==0.or.i_bymz==0) then
+          if(first) print*
+          if(first) print*,"NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
+          if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
+          if(first) print*,"      We proceed, but you'll get bmz=0"
+        endif
+        bmz=sqrt(sum(fnamez(:,i_bxmz)**2+fnamez(:,i_bymz)**2)/nz)
         call save_name(bmz,i_bmz)
       endif
 !
@@ -67,6 +73,7 @@ module Print
 !  also listed in print.in.
 !
       if(lroot) then
+        if(first) print*
 !
 !  write legend to extra file
 !  (might want to do only once after each lreset)

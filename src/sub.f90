@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.58 2002-06-14 20:08:00 vpariev Exp $ 
+! $Id: sub.f90,v 1.59 2002-06-15 11:29:35 brandenb Exp $ 
 
 module Sub 
 
@@ -1388,7 +1388,7 @@ module Sub
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
       else
-        if ((ip<=8).and.lroot) print*,'set_Betrami field: i=',i
+        if (lroot) print*,'set Betrami field for variable i=',i
         f(:,:,:,i  )=ampl*spread(spread(cos(z),1,mx),2,my)
         f(:,:,:,i+1)=ampl*spread(spread(sin(z),1,mx),2,my)
         f(:,:,:,i+2)=0.

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.41 2002-06-15 09:29:04 brandenb Exp $
+! $Id: start.f90,v 1.42 2002-06-15 11:29:35 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.41 $", &
-             "$Date: 2002-06-15 09:29:04 $")
+             "$Revision: 1.42 $", &
+             "$Date: 2002-06-15 11:29:35 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -99,6 +99,7 @@
 !  different initial conditions
 !
         f = 0.
+        if (lroot) print* !(empty line)
         call init_hydro(f,xx,yy,zz)
         call init_lnrho(f,xx,yy,zz)
         call init_ent  (f,xx,yy,zz)
@@ -130,5 +131,6 @@
         call outpui(trim(directory)//'/seed.dat',seed,2)
 !
         call mpifinalize
+        if (lroot) print* !(finish with an empty line)
 !
       endprogram

@@ -43,7 +43,7 @@ foreach dir ($subdirs)
     rm -f $dir/vid* >& /dev/null
   endif
 end
-rm -f tmp/n.dat >& /dev/null
+if (-e tmp/n.dat) mv tmp/n.dat tmp/n.`timestr`
 
 # Run start.x
 date
@@ -54,3 +54,7 @@ time $mpirun $mpirunops $npops src/start.x
 echo ""
 date
 
+# cut & paste for job submission on the mhd machine
+# bsub -n  4 -q 4cpu12h -o start.`timestr` -e start.`timestr` start.csh
+# bsub -n  8 -q 8cpu12h -o start.`timestr` -e start.`timestr` start.csh
+# bsub -n 16 -q 16cpu8h -o start.`timestr` -e start.`timestr` start.csh
