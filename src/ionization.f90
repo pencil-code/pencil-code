@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.107 2003-10-02 16:14:39 theine Exp $
+! $Id: ionization.f90,v 1.108 2003-10-02 16:37:29 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.107 2003-10-02 16:14:39 theine Exp $")
+           "$Id: ionization.f90,v 1.108 2003-10-02 16:37:29 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -113,6 +113,10 @@ module Ionization
 !
       mu=1.+3.97153*xHe  
 !
+! tobi: the real mean molecular weight would be:
+!
+! mu=(1.+3.97153*xHe)/(1+yH+xHe)
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine initialize_ionization()
@@ -126,23 +130,23 @@ module Ionization
       use General
       use Mpicomm, only: stop_it
 !
-      real :: mu
+      real :: mu1yHxHe
 !
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      call getmu(mu)
+      mu1yHxHe=1+3.97153*xHe
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
-      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
-      ss_ion=k_B/m_H/mu
+      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu1yHxHe)
+      ss_ion=k_B/m_H/mu1yHxHe
       ee_ion=ss_ion*TT_ion
-      kappa0=sigmaH_/m_H/mu
+      kappa0=sigmaH_/m_H/mu1yHxHe
 !
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
