@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.21 2004-02-17 11:57:39 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.22 2004-03-11 09:50:19 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -100,7 +100,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.21 2004-02-17 11:57:39 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.22 2004-03-11 09:50:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -176,9 +176,9 @@ module Magnetic
         !
         !  calculate amplitudes
         !
-        call cross1(A0,B_ext,A0xB0)
-        call cross1(k_aa,A0,kxA0)
-        call cross1(A0,kxA0,A0xkxA0)
+        call cross(A0,B_ext,A0xB0)
+        call cross(k_aa,A0,kxA0)
+        call cross(A0,kxA0,A0xkxA0)
 print*,'init_aa: A0=',A0
 print*,'init_aa: A0xB0=',A0xB0
 print*,'init_aa: A0xkxA0=',A0xkxA0
