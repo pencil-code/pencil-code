@@ -1,8 +1,24 @@
-#!/usr/bin/perl -w
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
 
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
+# $Id: nl2idl,v 1.3 2002-06-15 16:39:51 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
