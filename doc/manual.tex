@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.124 2002-10-04 17:14:40 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.125 2002-10-04 17:15:20 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.124 $ $}
+\date{\today,~ $ $Revision: 1.125 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.124 $ $}
+  \emph{\today,~ $ $Revision: 1.125 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1346,6 +1346,12 @@ Time series of diagnostic variables (also printed to stdout).
 Time when the next snapshot \file{VAR$N$} or animation slice should be
 taken.
 
+\paragraph{\file[params.log]{data/params.log}}
+Keeps a log of all your parameters: \file{start.x} writes the startup
+parameters to this file, \file{run.x} appends the runtime parameters and
+appends them anew, each time you use the \file{RELOAD} mechanism (see
+\S\ref{S-RELOAD}).
+
 \paragraph{\file[param.nml]{data/param.nml}}
 Complete set of startup parameters, printed as Fortran namelist.
 This file is read in by \file{run.x} (this is how values of startup
@@ -1568,10 +1574,12 @@ Here is a list of the more important ones.
 % ---------------------------------------------------------------------- %
 
 \subsection{RELOAD and STOP files}
+\label{S-RELOAD}
 
 The code periodically (every \var{it} time steps) checks 
 for the existence of two files, \file{RELOAD}
 and \file{STOP}, which can be used to trigger certain behavior.
+
 
 \paragraph{Reloading run parameters}
 In the directory where you started the code, create the file
@@ -1583,9 +1591,22 @@ to force the code to re-read the runtime parameters from \file{run.in}.
 This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
 see Sect.~\ref{S-start-params}).
-% [Occasionally, however, and only on some
-% machines, one of the processors may not survive the MPI barrier and
-% stops; we will need to look further into this.]
+
+[Occasionally, however, and only on some
+machines, one of the processors may not survive the MPI barrier and
+stops; we will need to look further into this.]
+
+Each time the parameters are reloaded, the new set of parameters is
+appended (in the form of \name{namelists}) to the file
+\file[params.log]{data/params.log} together with the time $t$, so you have
+a full record of your changes.
+If \file{RELOAD} contains any text, its first line will be written to
+\file[params.log]{data/params.log} as well, which allows you to annotate
+changes:
+\begin{alltt}
+  \prompt{unix> } echo "Reduced eta to get fields growing" > RELOAD \
+\end{alltt}
+
 
 \paragraph{Stopping the code}
 In the directory where you started the code, create the file
@@ -4146,7 +4167,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.124 2002-10-04 17:14:40 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.125 2002-10-04 17:15:20 dobler Exp $ $}
 
 
 \end{document}
