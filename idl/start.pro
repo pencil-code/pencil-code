@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.41 2002-10-05 12:52:15 dobler Exp $
+;;; $Id: start.pro,v 1.42 2002-11-09 13:23:07 brandenb Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -16,6 +16,10 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+;
+;  Compile the derivative routines for data that have ghost zones
+;  For analysis purposes, one may want to use other routines (called
+;  xder_6th, yder_6th, ..., zder2_6th in Axel's idl/pro repo).
 ;
 @xder_6th_ghost
 @yder_6th_ghost

@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.2 2002-10-22 13:00:19 brandenb Exp $
+;  $Id: time_series.pro,v 1.3 2002-11-09 13:23:07 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -6,8 +6,13 @@
 @data/index
 print,'nname=',nname
 ;
+;  set datatopdir to default value
+;
+default, datatopdir, 'data'
 filen=datatopdir+'/time_series.dat'
-;a=rtable(filen,nname)
+;
+;  read table
+;
 a=input_table(filen)
 if defined(i_t) ne 0 then tt=reform(a(i_t-1,*))
 if defined(i_it) ne 0 then it=reform(a(i_it-1,*))
@@ -29,6 +34,9 @@ if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
+if defined(i_umx) ne 0 then umx=reform(a(i_umx-1,*))
+if defined(i_umy) ne 0 then umy=reform(a(i_umy-1,*))
+if defined(i_umz) ne 0 then umz=reform(a(i_umz-1,*))
 if defined(i_ruxm) ne 0 then ruxm=reform(a(i_ruxm-1,*))
 if defined(i_ruym) ne 0 then ruym=reform(a(i_ruym-1,*))
 if defined(i_ruzm) ne 0 then ruzm=reform(a(i_ruzm-1,*))
