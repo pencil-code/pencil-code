@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.41 2002-07-15 14:04:36 nilshau Exp $ 
+! $Id: param_io.f90,v 1.42 2002-07-22 08:51:44 dobler Exp $ 
 
 module Param_IO
 
@@ -29,7 +29,8 @@ module Param_IO
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax,iwig,ialive, &
-       bcx,bcy,bcz
+       bcx,bcy,bcz, &
+       ttrans
  
   contains
 

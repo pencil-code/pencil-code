@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.98 2002-07-21 21:34:59 dobler Exp $
+! $Id: entropy.f90,v 1.99 2002-07-22 08:51:44 dobler Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.98 2002-07-21 21:34:59 dobler Exp $")
+           "$Id: entropy.f90,v 1.99 2002-07-22 08:51:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -606,9 +606,9 @@ endif
         prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
              /(sqrt(pi/2.)*wheat*Lx*Ly)
         heat = cheat*prof
-        ! smoothly switch on heating if reuqired
-        if ((tinit > 0) .and. (t < tinit)) then
-          heat = heat * t*(2*tinit-t)/tinit**2
+        ! smoothly switch on heating if required
+        if ((ttrans > 0) .and. (t < ttrans)) then
+          heat = heat * t*(2*ttrans-t)/ttrans**2
         endif
         ! cooling profile; maximum = 1
         ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.51 2002-07-20 17:43:53 dobler Exp $
+! $Id: hydro.f90,v 1.52 2002-07-22 08:51:44 dobler Exp $
 
 module Hydro
 
@@ -22,11 +22,11 @@ module Hydro
   ! run parameters
   real, dimension (nx,3,3) :: sij
   real :: theta=0.
-  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   namelist /hydro_run_pars/ &
        nu,ivisc, &
        Omega,theta, &
-       tinit,tdamp,dampu,dampuext,rdamp,wdamp
+       tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.51 2002-07-20 17:43:53 dobler Exp $")
+           "$Id: hydro.f90,v 1.52 2002-07-22 08:51:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -387,14 +387,14 @@ module Hydro
           fvisc=nu*del2u
           maxdiffus=amax1(maxdiffus,nu)
 
-        case('rho_mu-const', '1')
+        case('rho_nu-const', '1')
           !
           !  viscous force: mu/rho*(del2u+graddivu/3)
           !  -- the correct expression for rho*nu=const (=rho0*nu)
           !
           if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
           if (.not.ldensity) &
-               print*, "ldensity better be .true. for ivisc='rho_mu-const'"
+               print*, "ldensity better be .true. for ivisc='rho_nu-const'"
           murho1=(nu*rho0)*rho1  !(=mu/rho)
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3

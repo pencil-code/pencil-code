@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.77 2002-07-21 21:34:59 dobler Exp $
+! $Id: cdata.f90,v 1.78 2002-07-22 08:51:44 dobler Exp $
 
 module Cdata
 
@@ -15,7 +15,8 @@ module Cdata
  
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
-  real :: t,dt=0.,cdt=0.4,cdtv=0.08,dx,dy,dz,dxmin,dxmax
+  real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttrans=0.
+  real :: dx,dy,dz,dxmin,dxmax
   real :: dsnap=100.,dvid=100.,dtmin=0.
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
@@ -42,7 +43,7 @@ module Cdata
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-  character (len=labellen) :: ivisc='simplified'
+  character (len=labellen) :: ivisc='nu-const'
 
 !
 !  in this section are all the things related to printing
