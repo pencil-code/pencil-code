@@ -1,0 +1,29 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2003-06-15 07:12:32 dobler Exp $',
+  ip=14,                        ! debugging parameter
+  xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
+  Lxyz  =  3. , 3. , 3.,        ! box size
+  lperi =  F  , F  , F,         ! periodic direction?
+/
+&hydro_init_pars
+  inituu='zero',
+  urand=0.05,
+/
+&density_init_pars
+  initlnrho='hydrostatic-r',
+  cs0=1.5, rho0=1.,             ! values at r=0
+/
+&grav_init_pars
+  ipotential='M5-dwarf'
+/
+&entropy_init_pars
+  initss='zero'
+/
+&magnetic_init_pars
+  initaa='gaussian-noise'
+  amplaa=1.e-4
+/

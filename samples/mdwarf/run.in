@@ -1,0 +1,38 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2003-06-15 07:12:32 dobler Exp $',
+  ip=13,
+  nt=10000, it1=50, isave=200, itorder=3,
+  cdt=0.4, cdtv=0.08, dtmin=1e-6,
+  dsnap=2., dvid=1000.,
+  ttransient=0.,
+  bcx = 'a','s','s','a2','sT','a','s','s',
+  bcy = 's','a','s','a2','sT','s','a','s',
+  bcz = 's','s','a','a2','sT','s','s','a',
+  tavg = 10.,                   ! time constant for time averaging
+!  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
+  !iwig=1000
+/
+&hydro_run_pars
+  nu=5.e-4, ivisc='nu-const',
+  dampu=0., tdamp=0.
+  dampuext=5, rdamp=1.1, wdamp=0.1,
+  Omega=0.2, theta=0. ! amount and direction of angular velocity
+/
+&density_run_pars
+  ! cs2bot=1.1, cs2top=1.1,   ! misnomed and inconsequent:
+                            ! this is the boundary temperature
+/
+&grav_run_pars
+/
+&entropy_run_pars
+  hcond0=1.e-3,
+  luminosity=.02, wheat=0.18,
+  cooltype='cs2', cs2cool=1.2, cool=5., rcool=1., wcool=0.1,
+/
+&magnetic_run_pars
+  eta=3.e-4
+/
