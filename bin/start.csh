@@ -11,7 +11,7 @@
 #PBS -q workq
 ##PBS -l ncpus=4,mem=2mb,walltime=0:00:10
 ##PBS -l ncpus=4
-#PBS -l nodes=256
+#PBS -l nodes=16
 ##PBS -q p-long
 ##PBS -l nodes=nq1+nq2
 #

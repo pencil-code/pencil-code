@@ -9,7 +9,7 @@
 ##PBS -l ncpus=4,mem=2mb,walltime=0:00:10
 ##PBS -l ncpus=4
 ##PBS -l nodes=4,walltime=0:00:10
-#PBS -l nodes=64
+#PBS -l nodes=16
 ##PBS -q p-long
 ##PBS -l nodes=nq1+nq2+nq3+nq4
 
