@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.105 2002-11-28 08:53:12 dobler Exp $ 
+! $Id: sub.f90,v 1.106 2002-11-29 10:33:26 theine Exp $ 
 
 module Sub 
 
@@ -2042,14 +2042,6 @@ module Sub
       write(1,'(A)') 'end'
 !
       close(1)
-!
-!  Write shell script for DX Import module
-!
-      open(2,FILE=file//'.dxsh')
-!
-      write(2,'(A)' ) 'sed -e "s:var.dat:VAR$1:" '//file
-!
-      close(2)
 
     endsubroutine write_dx_general
 !***********************************************************************
