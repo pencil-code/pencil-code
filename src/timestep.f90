@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.14 2002-06-19 21:23:24 brandenb Exp $
+! $Id: timestep.f90,v 1.15 2002-08-22 05:14:56 brandenb Exp $
 
 module Timestep
 
@@ -69,7 +69,7 @@ module Timestep
           if (ldt) dt = cdt*dxmin/UUmax
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
-        call mpibcast_real(dt,1)
+        if (lfirst) call mpibcast_real(dt,1)
         dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.77 2002-08-18 12:04:40 brandenb Exp $
+! $Id: run.f90,v 1.78 2002-08-22 05:14:56 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.77 2002-08-18 12:04:40 brandenb Exp $")
+             "$Id: run.f90,v 1.78 2002-08-22 05:14:56 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -116,7 +116,6 @@
 !  do loop in time
 !
         Time_loop: do it=1,nt
-
           lout=mod(it-1,it1).eq.0
           if (lout) then
             !
@@ -159,8 +158,15 @@
           !
           call rk_2n(f,df)
           count = count + 1     !  reliable loop count even for premature exit
+          !
+          !  advance shear parameter and add forcing (if applicable)
+          !
           if (lshear) call advance_shear
           if (lforcing) call addforce(f)
+          !
+          !  in regular intervals, calculate certain averages
+          !  and do other output.
+          !
           if(lout) call write_xyaverages
           if(lout) call write_zaverages
           if(lout) call prints
@@ -214,5 +220,3 @@
         call mpifinalize
 !
       endprogram run
-
-

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.61 2002-08-21 12:21:01 nilshau Exp $
+! $Id: hydro.f90,v 1.62 2002-08-22 05:14:56 brandenb Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.61 2002-08-21 12:21:01 nilshau Exp $")
+           "$Id: hydro.f90,v 1.62 2002-08-22 05:14:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -526,14 +526,10 @@ module Hydro
       if(lfirstpoint) then
         fsum_tmp(1)=ux_sum
         call mpireduce_max(fsum_tmp,fsum,1)
-        if(lroot) then
-          uxm=ux_sum/(nw*ncpus)
-        endif
+        if(lroot) uxm=ux_sum/(nw*ncpus)
         call mpibcast_real(uxm,1)
-print*,'root: uxm=',uxm
       endif
 !
-print*,'iproc,uxm=',iproc,uxm
       ux=f(l1:l2,m,n,iux)
       call sum_mn(ux,ux_sum)
       tau_damp_uxm1=1./tau_damp_uxm
@@ -567,14 +563,10 @@ print*,'iproc,uxm=',iproc,uxm
       if(lfirstpoint) then
         fsum_tmp(1)=uy_sum
         call mpireduce_max(fsum_tmp,fsum,1)
-        if(lroot) then
-          uym=fsum(1)/(nw*ncpus)
-          call mpibcast_real(uym,1)
-print*,'root: uym=',uym
-        endif
+        if(lroot) uym=fsum(1)/(nw*ncpus)
+        call mpibcast_real(uym,1)
       endif
 !
-print*,'iproc,uym=',iproc,uym
       uy=f(l1:l2,m,n,iuy)
       call sum_mn(uy,uy_sum)
       tau_damp_uym1=1./tau_damp_uym
