@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.217 2003-08-07 16:14:10 mee Exp $
+### $Id: Makefile,v 1.218 2003-08-07 16:24:59 christer Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -90,9 +90,9 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## Linux:
 ## The -tpp7 flag leads to a 10% speedup on nl6
 #
-#ifeq ($(MPICOMM),mpicomm)  #(cosmo|nw17|nl6|nl11|wormhole)
-#  MPICOMM=mpicomm_         #(cosmo|nw17|nl6|nl11|wormhole)
-#endif                      #(cosmo|nw17|nl6|nl11|wormhole)
+#ifeq ($(MPICOMM),mpicomm)  #(cosmo|nw17|nl6|nl11|wormhole|sandin)
+#  MPICOMM=mpicomm_         #(cosmo|nw17|nl6|nl11|wormhole|sandin)
+#endif                      #(cosmo|nw17|nl6|nl11|wormhole|sandin)
 #
 #FC=f95
 #FFLAGS=-O3
@@ -128,11 +128,12 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6|nl11|wormhole)
-#FC=ifc -I/usr/lib/lam/include #(nw17|nl6)  
+#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6|nl11|wormhole|sandin)
+#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6|nl11|wormhole)  
+#FC=ifc #(sandin)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(cosmo|sandin|nl11|wormhole)  
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo|nw17|nl6|nl11|wormhole)
-#LDMPI= # (Samos|fire)
+#LDMPI= # (Samos|fire|sandin)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
