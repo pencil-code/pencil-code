@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.103 2004-02-13 11:11:45 dobler Exp $
+# $Id: getconf.csh,v 1.104 2004-02-16 14:27:36 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -263,17 +263,19 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
     if ($PE =~ gm2) then                    # Using Myrinet?
       setenv SSH rsh
       setenv SCP rcp
-      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > $TMPDIR/hostfile
+      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
       set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
-      set mpirunops = "-local -machinefile $TMPDIR/hostfile"
-      setenv SCRATCH_DIR /tmp/pencil-data
-      set local_disc=1     ## Temporarily set to 0 while Keith fixes the junky TMPDIR stuff!
+      set mpirunops = "-v -local -machinefile hostfile"
+      setenv SCRATCH_DIR `cat $TMPDIR/scratch`
+      set local_disc=1     
       set one_local_disc=0
-
       # Hack to give common scratch space path on each node
       foreach host ($nodelist)
          $SSH $host "rm -rf $SCRATCH_DIR; ln -s ${dollar}TMPDIR $SCRATCH_DIR; ls -lR /tmp/pencil*" 
       end
+      echo '--------------- MPI_HOSTFILE ----------------'
+      cat hostfile 
+      echo '----------- MPI_HOSTFILE - END --------------'
     else if ($PE =~ score) then             # Using SCore?
       #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
       #echo '--------------- PE_HOSTFILE ----------------'
@@ -401,11 +403,7 @@ set procdirs = \
 if ($local_disc) then
   echo "Creating directory structure on scratch disc(s)"
   foreach host ($nodelist)
-    #$SSH $host "mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
     $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
-    echo ------------------------------------------------- On $host, SCRATCH_DIR looks like
-    $SSH $host "echo Here; echo $SCRATCH_DIR; ls -lR $SCRATCH_DIR/proc0" 
-    echo ------------------------------------------------- 
   end
 endif
 
