@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -129,9 +129,10 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,ivec
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nx) :: bbi
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nk) :: spectrum_hel=0.,spectrum_hel_sum=0
   integer, dimension(nxgrid) :: kx
@@ -142,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -170,7 +171,10 @@ module  power_spectrum
     if (sp=='kin') then
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iuu,a_re,ivec)
+          call curli(f,iuu,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          a_re(:,im,in)=bbi  !(this corrsponds to vorticity)
         enddo
       enddo
       b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
@@ -179,7 +183,10 @@ module  power_spectrum
     elseif (sp=='mag') then
       do n=n1,n2
         do m=m1,m2
-          call curli(f,iaa,b_re,ivec)
+          call curli(f,iaa,bbi,ivec)
+          im=m-nghost
+          in=n-nghost
+          b_re(:,im,in)=bbi  !(this corrsponds to magnetic field)
         enddo
       enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)

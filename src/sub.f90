@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.95 2002-10-22 12:34:28 brandenb Exp $ 
+! $Id: sub.f90,v 1.96 2002-10-22 16:58:19 brandenb Exp $ 
 
 module Sub 
 
@@ -722,7 +722,7 @@ module Sub
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1,i
 !
-      intent(in) :: f,k
+      intent(in) :: f,k,i
       intent(out) :: g
 !
       k1=k-1
