@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.85 2002-09-21 14:16:37 dobler Exp $
+! $Id: magnetic.f90,v 1.86 2002-09-27 16:16:01 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.85 2002-09-21 14:16:37 dobler Exp $")
+           "$Id: magnetic.f90,v 1.86 2002-09-27 16:16:01 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -126,6 +126,7 @@ module Magnetic
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
+      case('fluxrings-kb'); call fluxrings(f,iaa,xx,yy,zz,PROFILE='KB')
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
@@ -620,7 +621,7 @@ module Magnetic
 !
     endsubroutine alfven_test
 !***********************************************************************
-    subroutine fluxrings(f,ivar,xx,yy,zz)
+    subroutine fluxrings(f,ivar,xx,yy,zz,profile)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -630,6 +631,9 @@ module Magnetic
 !  rotation by theta around y.
 !  The array was already initialized to zero before calling this
 !  routine.
+!  Optional argument `profile' allows to choose a different profile (see
+!  norm_ring())
+!
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
@@ -639,7 +643,15 @@ module Magnetic
       real    :: phi,theta,ct,st,cp,sp
       real    :: fring,Iring,R0,width
       integer :: i,ivar
+      character (len=*), optional :: profile
+      character (len=labellen) :: prof
 !
+      if (present(profile)) then
+        prof = profile
+      else
+        prof = 'tanh'
+      endif
+
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
@@ -669,7 +681,7 @@ module Magnetic
           xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
           yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
           zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
-          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
+          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv,PROFILE=prof)
           ! calculate D*tmpv
           f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + amplaa*( &
                + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
@@ -683,7 +695,7 @@ module Magnetic
 !
     endsubroutine fluxrings
 !***********************************************************************
-    subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv)
+    subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv,profile)
 !
 !  Generate vector potential for a flux ring of magnetic flux FRING,
 !  current Iring (not correctly normalized), radius R0 and thickness
@@ -692,18 +704,38 @@ module Magnetic
 !   1-may-02/wolf: coded
 !
       use Cdata, only: mx,my,mz
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,3) :: vv
-      real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp
+      real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp,tmp2
       real :: fring,Iring,R0,width
+      character (len=*) :: profile
 !
       vv = 0.
 !
 !  magnetic ring
 !
       tmp = sqrt(xx**2+yy**2)-R0
-      vv(:,:,:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
-                            * 0.5/width/cosh(zz/width)**2
+
+      select case(profile)
+
+      case('tanh')
+        vv(:,:,:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
+                              * 0.5/width/cosh(zz/width)**2
+
+      case('KB')                ! a profile similar to the one used by
+                                ! Kerr & Bradenburg
+        where (tmp < width)
+          tmp2 = 1./(1-tmp**2)
+          tmp2 = (exp(-1.)-exp(-tmp2)*tmp2**(-1.5))
+        elsewhere
+          tmp2 = 0.
+        endwhere
+        vv(:,:,:,3) = -fring*tmp2
+
+      case default
+        call stop_it('No such fluxtube profile')
+      endselect
 !
 !  current ring (to twist the B-lines)
 !
