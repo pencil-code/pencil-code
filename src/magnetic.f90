@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.119 2003-08-06 07:31:14 brandenb Exp $
+! $Id: magnetic.f90,v 1.120 2003-08-08 17:41:07 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -88,7 +88,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.119 2003-08-06 07:31:14 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.120 2003-08-08 17:41:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -177,16 +177,14 @@ module Magnetic
         call stop_it("")
 
       endselect
-
-
+!
 !    If not already used in initaa one can still use kx_aa etc. 
 !    to define the wavenumber of the 2nd field. (For old runs!)
 !
        if (kx_aa2==impossible) kx_aa2 = kx_aa
        if (ky_aa2==impossible) ky_aa2 = ky_aa
        if (kz_aa2==impossible) kz_aa2 = kz_aa
-
-
+!
 !  superimpose something else
 !
       select case(initaa2)
@@ -222,6 +220,7 @@ module Magnetic
 !  22-nov-01/nils: coded
 !   1-may-02/wolf: adapted for pencil_modular
 !  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
+!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
 !
       use Cdata
       use Sub
@@ -236,7 +235,7 @@ module Magnetic
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
-      real :: tmp,eta_out1
+      real :: tmp,eta_out1,B_ext21=1.
       integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij
@@ -398,20 +397,35 @@ module Magnetic
           if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
         endif
         !
+        !  calculate B_ext21
+        !
+        B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+        if(B_ext21/=0.) then
+          B_ext21=1./B_ext21
+        else
+          B_ext21=1.
+        endif
+        !
+        !  calculate emf for alpha effect (for imposed field)
+        !
         if (i_uxbm/=0) then
           call cross_mn(uu,bbb,uxb)
           uxb_dotB0=B_ext(1)*uxb(:,1)+B_ext(2)*uxb(:,2)+B_ext(3)*uxb(:,3)
-          uxb_dotB0=uxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          uxb_dotB0=uxb_dotB0*B_ext21
           call sum_mn_name(uxb_dotB0,i_uxbm)
         endif
+        !
+        !  magnetic triple correlation term (for imposed field)
         !
         if (i_jxbxbm/=0) then
           call cross_mn(jj,bbb,jxb)
           call cross_mn(jxb,bbb,jxbxb)
           jxbxb_dotB0=B_ext(1)*jxbxb(:,1)+B_ext(2)*jxbxb(:,2)+B_ext(3)*jxbxb(:,3)
-          jxbxb_dotB0=jxbxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          jxbxb_dotB0=jxbxb_dotB0*B_ext21
           call sum_mn_name(jxbxb_dotB0,i_jxbxbm)
         endif
+        !
+        !  triple correlation from Reynolds tensor (for imposed field)
         !
         if (i_oxuxbm/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
@@ -420,7 +434,7 @@ module Magnetic
           call cross_mn(oo,uu,oxu)
           call cross_mn(oxu,bbb,oxuxb)
           oxuxb_dotB0=B_ext(1)*oxuxb(:,1)+B_ext(2)*oxuxb(:,2)+B_ext(3)*oxuxb(:,3)
-          oxuxb_dotB0=oxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          oxuxb_dotB0=oxuxb_dotB0*B_ext21
           call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
         endif
         !
@@ -435,7 +449,7 @@ module Magnetic
           uxDxuxb(:,2)=uxb(:,2)*(uij(:,1,1)+uij(:,3,3))-uxb(:,1)*uij(:,1,2)-uxb(:,3)*uij(:,3,2)
           uxDxuxb(:,3)=uxb(:,3)*(uij(:,1,1)+uij(:,2,2))-uxb(:,1)*uij(:,1,3)-uxb(:,2)*uij(:,2,3)
           uxDxuxb_dotB0=B_ext(1)*uxDxuxb(:,1)+B_ext(2)*uxDxuxb(:,2)+B_ext(3)*uxDxuxb(:,3)
-          uxDxuxb_dotB0=uxDxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          uxDxuxb_dotB0=uxDxuxb_dotB0*B_ext21
           call sum_mn_name(uxDxuxb_dotB0,i_uxDxuxbm)
         endif
         !
@@ -467,7 +481,7 @@ module Magnetic
 !
       if(i_brms==0) then
         if(lroot.and.lfirstpoint) then
-          print*,'magnetic: need to set brms in print.in to get bthresh'
+          print*,'calc_bthresh: need to set brms in print.in to get bthresh'
         endif
       endif
 !
@@ -484,6 +498,7 @@ module Magnetic
 !  calculate bthresh as a certain fraction of brms
 !
       bthresh=bthresh_scl*bthresh_per_brms*brms
+print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
     endsubroutine calc_bthresh
 !***********************************************************************
