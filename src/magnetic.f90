@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.22 2002-05-19 07:55:25 brandenb Exp $
+! $Id: magnetic.f90,v 1.23 2002-05-19 18:07:00 brandenb Exp $
 
 module Magnetic
 
@@ -66,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-05-19 07:55:25 $")
+           "$Revision: 1.23 $", &
+           "$Date: 2002-05-19 18:07:00 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,14 +167,12 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2,b2tot
 !
     !  aa=f(l1:l2,m,n,iax:iaz)
-print*,'calculate bb'
       call curl(f,iaa,bb)
 !
 !  calculate max and rms field
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2), w/o sqrt.
 !  Here we don't want to include the imposed field (if there is any)
 !
-print*,'enter diagnos in magnet'
       if (ldiagnos) then
         call dot2_mn(bb,b2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms)
@@ -193,13 +191,9 @@ print*,'enter diagnos in magnet'
 !
 !  calculating JxB/rho, uxB, J^2 and var1
 !
-print*,'cross product'
       call cross_mn(jj,bb,JxB)
-print*,'multiply with rho1'
       call multsv_mn(JxB,rho1,JxBr)
-print*,'uxB'
       call cross_mn(uu,bb,uxB)
-print*,'calculate J2'
       call dot2_mn(jj,J2)
     !  var1=qshear*Omega*aa(:,2)
 !
@@ -211,12 +205,10 @@ print*,'calculate J2'
 !
     !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
     !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
-print*,'add to daa'
       df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)+uxB+eta*del2A
 !
 !  add JxB/rho to momentum equation
 !
-print*,'add JxBr'
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
 !
 !  add eta mu_0 J2/rho to entropy equation
@@ -235,7 +227,6 @@ print*,'add JxBr'
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
-print*,'diagnos on J'
       if (ldiagnos) then
         call dot2_mn(jj,j2)
         if (i_jrms/=0) call sum_mn_name(j2,i_jrms)

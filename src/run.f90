@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.24 2002-05-19 07:55:25 brandenb Exp $
+! $Id: run.f90,v 1.25 2002-05-19 18:07:00 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -37,8 +37,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.24 $", &
-             "$Date: 2002-05-19 07:55:25 $")
+             "$Revision: 1.25 $", &
+             "$Date: 2002-05-19 18:07:00 $")
 !
 !  initialize MPI and register physics modules
 !
@@ -48,7 +48,7 @@
 !  set default values
 !
         ix=mx/2; iy=my/2; iz=mz/2
-        dtmin=1.e-6
+        dtmin=1e-6  !!(AB: this should be made an input parameter, better dimless)
 !
 !  read in parameters
 !  nt is the number of timesteps
@@ -134,14 +134,11 @@
 !
           call rk_2n(f,df)
           if(lout) call prints
-print*,'after prints'
           call wsnap(trim(directory)//'/VAR',f)
           call wvid(trim(directory))
-print*,'after wvid'
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
-print*,'before writing ghost zones for snapshot'
           if (mod(it,isave).eq.0) then
 !  update ghost zones for var.dat (cheap, since done infrequently)
             call initiate_isendrcv_bdry(f)
@@ -149,7 +146,6 @@ print*,'before writing ghost zones for snapshot'
 !  write data
             call output(trim(directory)//'/var.dat',f,mvar)
           endif
-print*,'after writing ghost zones for snapshot'
 !
           headt=.false.
           if (it>=nt) exit Time_loop
@@ -158,7 +154,6 @@ print*,'after writing ghost zones for snapshot'
             exit Time_loop
           endif
         enddo Time_loop
-print*,'end of time loop'
         if(lroot) call system_clock(count=time2)
 !        if(lroot) call cpu_time(time2)
 !
@@ -166,12 +161,10 @@ print*,'end of time loop'
 !  dvar is written for analysis purposes only
 !
 !  update ghost zones for var.dat (cheap, since done once)
-print*,'set ghost zones 2'
         call initiate_isendrcv_bdry(f)
         call finalise_isendrcv_bdry(f)
         call output(trim(directory)//'/var.dat',f,mvar)
         if (ip<=10) call output(trim(directory)//'/dvar.dat',df,mvar)
-print*,'after ghost zones 2'
 !
 !  write seed parameters (only if forcing is turned on)
 !
@@ -189,5 +182,4 @@ print*,'after ghost zones 2'
              if (it>1) print*,'time/step/pt [microsec]=',Wall_clock_time/(it-1)/mw/1e-6
         call mpifinalize
 !
-print*,'end of run'
       endprogram run

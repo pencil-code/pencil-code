@@ -38,8 +38,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-05-19 07:55:25 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-05-19 18:07:00 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -80,17 +80,12 @@ module Entropy
 !
       if (first) then
         cs2 = cs20
-        TT1 = 1./cs20           ! Assumes R/mu = 1, ehich is probably OK,
-                                ! as the usual c_p = 1 does not work in the
-                                ! isothermal case
+        TT1 = 0.
         if (gamma /= 1) print*, 'Noentropy, thus resetting gamma to 1'
         gamma = 1
         first=.false.
-      else
-        !print*,"Noentropy dss_dt: This can't happen"
-        print*,"Noentropy dss_dt: calculate entropy gradient"
-        gpprho=cs20*glnrho
       endif
+      gpprho=cs20*glnrho
 !
     endsubroutine dss_dt
 !***********************************************************************

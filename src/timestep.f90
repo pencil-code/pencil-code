@@ -62,11 +62,7 @@ module Timestep
 !  Then need to broadcast dt to all processors.
 !
         if (lfirst.and.lroot) then
-          if (ldt) then
-            dtu = cdt*dxmin/UUmax
-            dtv = cdtv*dxmin**2/viscmax
-            dt = min(dtu,dtv)
-          endif
+          if (ldt) dt = cdt*dxmin/UUmax
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         call mpibcast_real(dt,1)

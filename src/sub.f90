@@ -80,7 +80,6 @@ module Sub
       real, dimension (nx) :: a
       real :: res
 !
-!      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
         res=maxval(a)
       else
@@ -101,7 +100,6 @@ module Sub
       real, dimension (nx) :: a
       real :: res
 !
-!      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
         res=sum(a*1.D0)         ! sum at double precision to improve accuracy
       else
