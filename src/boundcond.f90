@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.67 2004-07-05 22:19:49 theine Exp $
+! $Id: boundcond.f90,v 1.68 2004-07-17 02:06:42 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -293,7 +293,9 @@ module Boundcond
                 call bc_frozen_in_bb_z(topbot)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('g')        ! set to given value(s) or function
-                 call bc_force_z(f,topbot,j)
+                 call bc_force_z(f,-1,topbot,j)
+              case ('gs')
+                 call bc_force_z(f,+1,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
@@ -953,7 +955,7 @@ module Boundcond
 !
     endsubroutine bc_db_x
 !***********************************************************************
-    subroutine bc_force_z(f,topbot,j)
+    subroutine bc_force_z(f,sgn,topbot,j)
 !
 !  Force values of j-th variable on vertical boundary topbot.
 !  This can either be used for freezing variables at the boundary, or for
@@ -969,7 +971,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: i,j
+      integer :: sgn,i,j
 !
       if (topbot /= 'bot') &
            call stop_it("BC_FORCE_Z: only implemented for lower boundary yet")
@@ -989,7 +991,7 @@ module Boundcond
 !
 !  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
 !
-      do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
+      do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
 !
     endsubroutine bc_force_z
 !***********************************************************************

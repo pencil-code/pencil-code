@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.19 2004-07-04 03:13:40 theine Exp $
+! $Id: deriv.f90,v 1.20 2004-07-17 02:06:42 theine Exp $
 
 module Deriv
   
@@ -194,8 +194,7 @@ module Deriv
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      real :: fac
+      real, dimension (nx) :: df,fac
       integer :: j,k
       logical, optional :: ignoredx,upwind
       logical :: igndx,upwnd
@@ -203,10 +202,6 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
-      if (.not. lequidist(j)) then
-        call stop_it('der6: NOT IMPLEMENTED for no equidistant grid')
-      endif
-!   
       if (present(ignoredx)) then
         igndx = ignoredx
       else
@@ -216,6 +211,9 @@ module Deriv
         upwnd = upwind
       else
         upwnd = .false.
+        if (.not. lequidist(j)) then
+          call stop_it('der6: NOT IMPLEMENTED for no equidistant grid')
+        endif
       endif
 !
       if (j==1) then
@@ -223,7 +221,7 @@ module Deriv
           if (igndx) then
             fac=1.
           else if (upwnd) then
-            fac = 1./(60*dx)
+            fac = (1./60.)*dx_1(l1:l2)
           else
             fac=1./dx**6
           endif
@@ -239,7 +237,7 @@ module Deriv
           if (igndx) then
             fac=1.
           else if (upwnd) then
-            fac = 1./(60*dy)
+            fac = (1./60.)*dy_1(m)
           else
             fac=1./dy**6
           endif
@@ -255,7 +253,7 @@ module Deriv
           if (igndx) then
             fac=1.
           else if (upwnd) then
-            fac = 1./(60*dz)
+            fac = (1./60.)*dz_1(n)
           else
             fac=1./dz**6
           endif
