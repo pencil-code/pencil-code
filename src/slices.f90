@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.22 2003-10-24 19:46:56 theine Exp $
+! $Id: slices.f90,v 1.23 2003-11-01 12:43:42 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -13,17 +13,17 @@ module Slices
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
-  real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2
+  real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
   real, dimension (nx,nz) :: TT_xz,yH_xz,ecr_xz
-  real, dimension (nx,nz) :: Qrad_xz
+  real, dimension (nx,nz) :: Qrad_xz,shock_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: TT_yz,yH_yz,ecr_yz
-  real, dimension (ny,nz) :: Qrad_yz
+  real, dimension (ny,nz) :: Qrad_yz,shock_yz
 
   contains
 
@@ -164,6 +164,19 @@ module Slices
         call wslice(path//'ss.xz',ss_xz,y(iy),nx,nz)
         call wslice(path//'ss.xy',ss_xy,z(iz),nx,ny)
         call wslice(path//'ss.Xy',ss_xy2,z(iz2),nx,ny)
+      endif
+!
+!  Shock viscosity
+!
+      if (lvisc_shock) then
+        shock_yz=f(ix,m1:m2,n1:n2,ishock)
+        shock_xz=f(l1:l2,iy,n1:n2,ishock)
+        shock_xy=f(l1:l2,m1:m2,iz,ishock)
+        shock_xy2=f(l1:l2,m1:m2,iz2,ishock)
+        call wslice(path//'shock.yz',shock_yz,x(ix),ny,nz)
+        call wslice(path//'shock.xz',shock_xz,y(iy),nx,nz)
+        call wslice(path//'shock.xy',shock_xy,z(iz),nx,ny)
+        call wslice(path//'shock.Xy',shock_xy2,z(iz2),nx,ny)
       endif
 !
 !  Temperature
