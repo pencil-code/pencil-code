@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.122 2003-10-21 11:58:01 brandenb Exp $
+! $Id: hydro.f90,v 1.123 2003-10-24 09:40:33 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -98,7 +98,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.122 2003-10-21 11:58:01 brandenb Exp $")
+           "$Id: hydro.f90,v 1.123 2003-10-24 09:40:33 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -175,7 +175,9 @@ module Hydro
                      f(:,:,:,iux:iuz)=0. 
       case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
-      case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
+      case('gaussian-noise-x'); call gaunoise(ampluu,f,iux)
+      case('gaussian-noise-y'); call gaunoise(ampluu,f,iuy)
+      case('gaussian-noise-z'); call gaunoise(ampluu,f,iuz)
       case('gaussian-noise-xy'); call gaunoise(ampluu,f,iux,iuy)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
                      call jump(f,iuy,uy_left,uy_right,widthuu,'x')

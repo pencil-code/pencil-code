@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.86 2003-10-13 08:35:27 ajohan Exp $ 
+! $Id: initcond.f90,v 1.87 2003-10-24 09:40:33 dobler Exp $ 
 
 module Initcond 
  
@@ -1124,7 +1124,7 @@ module Initcond
 !***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !
-!  Write snapshot file of penciled vector data (for debugging).
+!  Add Gaussian (= normally distributed) white noise for variables i1:i2
 !
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
@@ -1137,7 +1137,7 @@ module Initcond
 !  set gaussian random noise vector
 !
       if (ampl==0) then
-        if (lroot) print*,'gaunoise_vect: ampl=0, f unchanged i1,i2=',i1,i2
+        if (lroot) print*,'gaunoise_vect: ampl=0 for i1,i2=',i1,i2
       else
         if ((ip<=8).and.lroot) print*,'gaunoise_vect: i1,i2=',i1,i2
         do i=i1,i2
@@ -1158,7 +1158,7 @@ module Initcond
 !***********************************************************************
     subroutine gaunoise_scal(ampl,f,i)
 !
-!  Write snapshot file of penciled vector data (for debugging).
+!  Ad Gaussian (= normally distributed) white noise for variable i
 !
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
@@ -1170,12 +1170,16 @@ module Initcond
 !
 !  set gaussian random noise vector
 !
-      if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
-      call random_number_wrapper(r)
-      call random_number_wrapper(p)
-      tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-      f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
-      print*,'gaunoise_scal: variable i=',i
+      if (ampl==0) then
+        if (lroot) print*,'gaunoise_scal: ampl=0 for i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
+        call random_number_wrapper(r)
+        call random_number_wrapper(p)
+        tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
+        if (lroot) print*,'gaunoise_scal: variable i=',i
+      endif
 !
     endsubroutine gaunoise_scal
 !***********************************************************************
