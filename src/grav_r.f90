@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.19 2002-07-08 06:51:51 brandenb Exp $
+! $Id: grav_r.f90,v 1.20 2002-07-16 17:20:57 dobler Exp $
 
 module Gravity
 
@@ -11,8 +11,13 @@ module Gravity
   implicit none
 
   ! coefficients for potential
+! Solar case:
 !  real, dimension (5) :: cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
-  real, dimension (5) :: cpot = (/ 1., 0., 0., 1., 0. /)
+! M5 dwarf:
+  real, dimension (5) :: cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
+! Simple model potential:
+!  real, dimension (5) :: cpot = (/ 1., 0., 0., 1., 0. /)
+! No potential:
 !  real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
 
   real :: z1,z2,zref,gravz ! used by Entropy and Density
@@ -43,8 +48,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-07-08 06:51:51 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-07-16 17:20:57 $")
 !
       lgrav = .true.
       lgravz = .false.
