@@ -186,8 +186,5 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
 
   endif
 
-    plot_binned, r_spher, avg.rhomphi
-
-
 end
 ; End of file pvv_phiavg.pro
