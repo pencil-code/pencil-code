@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.47 2003-08-04 17:56:02 mee Exp $
+! $Id: noionization.f90,v 1.48 2003-08-05 03:53:29 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.47 2003-08-04 17:56:02 mee Exp $")
+           "$Id: noionization.f90,v 1.48 2003-08-05 03:53:29 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -265,7 +265,6 @@ module Ionization
 !
       real, intent(in) :: lnrho,ss
       real, intent(out) :: yH,TT
-      real :: lnTT_
 !
       yH=yH0
 !
@@ -287,7 +286,6 @@ module Ionization
       use Cdata
       use General
       use Sub
-      use Density, only:cs20,lnrho0,gamma
 !
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee
@@ -296,6 +294,7 @@ module Ionization
       if (present(cp1tilde)) cp1tilde=cp
       if (present(ee))       ee=eeTT*TT+eeyH0*yH
 !
+      if(ip==0) print*,lnrho,ss  !(to keep compiler quiet)
     endsubroutine thermodynamics_pencil
 !***********************************************************************
     subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
@@ -312,7 +311,6 @@ module Ionization
       use Cdata
       use General
       use Sub
-      use Density, only:cs20,lnrho0,gamma
 !
       real, intent(in) :: lnrho,ss,yH,TT
       real, optional :: cs2,cp1tilde,ee
@@ -321,6 +319,7 @@ module Ionization
       if (present(cp1tilde)) cp1tilde=cp
       if (present(ee))       ee=eeTT*TT+eeyH0*yH
 !
+      if(ip==0) print*,lnrho,ss  !(to keep compiler quiet)
     endsubroutine thermodynamics_point
 !***********************************************************************
 endmodule ionization

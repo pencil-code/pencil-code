@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.67 2003-08-04 17:56:02 mee Exp $ 
+! $Id: initcond.f90,v 1.68 2003-08-05 03:53:29 brandenb Exp $ 
 
 module Initcond 
  
@@ -472,7 +472,7 @@ module Initcond
 !
 !   2-aug-02/axel: adapted from Beltrami
 !
-      integer :: i,j
+      integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.,fac
@@ -549,6 +549,7 @@ module Initcond
       enddo
       close(19)
 !
+      print*,ampl,xx,yy,zz !(to keep compiler quiet)
     endsubroutine stratification
 !***********************************************************************
     subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width,rbound)
@@ -564,7 +565,7 @@ module Initcond
       real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,rbound
-      real :: gamma1,cs20,hh0
+      real :: gamma1,cs20
 !
 !  calculate sigma
 !
@@ -638,6 +639,7 @@ module Initcond
         endif
       endif
 !
+      print*,rbound !(to keep compiler quiet)
     endsubroutine planet_hc
 !***********************************************************************
     subroutine planet(rbound,f,xx,yy,zz,eps,radius,gamma,cs20,width,hh0)
@@ -649,8 +651,7 @@ module Initcond
      use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
-      real, dimension (mx,my) :: delS
+      real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
       real :: gamma1,ztop,cs20,hh0
@@ -1198,7 +1199,7 @@ module Initcond
       kz=.5*pi/Lz
       f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
 !
-      print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
+      if(ip==0) print*,yy !(to keep compiler quiet)
     endsubroutine olddiffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,cutoff,f,i1,i2)
@@ -1213,8 +1214,7 @@ module Initcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im
       real :: ampl,initpower,cutoff
-      logical :: ltrue
-      
+ 
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'set variable to zero; i1,i2=',i1,i2

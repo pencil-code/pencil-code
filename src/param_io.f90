@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.122 2003-08-02 19:38:15 mee Exp $ 
+! $Id: param_io.f90,v 1.123 2003-08-05 03:53:29 brandenb Exp $ 
 
 module Param_IO
 
@@ -133,7 +133,6 @@ module Param_IO
 !
       integer :: ierr
       logical, optional :: print,file
-      logical :: exist
       character (len=30) :: label='[none]'
 !
 !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.10 2003-08-02 13:05:26 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.11 2003-08-05 03:53:29 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.10 2003-08-02 13:05:26 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.11 2003-08-05 03:53:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -321,7 +321,7 @@ module Dustvelocity
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy
+      integer :: iname
       logical :: lreset
 !
 !  reset everything in case of reset

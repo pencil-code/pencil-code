@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.184 2003-08-04 17:56:02 mee Exp $
+! $Id: entropy.f90,v 1.185 2003-08-05 03:53:29 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.184 2003-08-04 17:56:02 mee Exp $")
+           "$Id: entropy.f90,v 1.185 2003-08-05 03:53:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
-      real :: cs2int,ssint,zbot,ztop
+      real :: cs2int,ssint,ztop
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
@@ -1305,8 +1305,8 @@ endif
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy, ss
-      integer :: i, mcount,ncount
+      real, dimension (mx,my) :: tmp_xy
+      integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !

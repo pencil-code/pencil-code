@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.108 2003-08-04 17:56:03 mee Exp $
+! $Id: start.f90,v 1.109 2003-08-05 03:53:30 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -29,24 +29,20 @@
 !  Although they are not necessary for start.f90, idl may want to read them,
 !  so we define therefore the full array and write it out.
 !
-        integer :: i
+        integer :: i,ifilter
 !       logical :: lock=.false.
-        logical :: exist
+!       logical :: exist
         real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
-!
-real, dimension (mx,my,mz) :: tmpxyz !for filter
-real, dimension (nx) :: tmp !for filter
-integer :: ivar,ifilter
 !
         call register_modules()         ! register modules, etc.
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.108 2003-08-04 17:56:03 mee Exp $")
+             "$Id: start.f90,v 1.109 2003-08-05 03:53:30 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
