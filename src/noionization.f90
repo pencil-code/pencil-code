@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.115 2004-06-16 20:02:20 theine Exp $
+! $Id: noionization.f90,v 1.116 2004-06-16 22:29:54 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.115 2004-06-16 20:02:20 theine Exp $')
+           '$Id: noionization.f90,v 1.116 2004-06-16 22:29:54 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -501,14 +501,14 @@ module Ionization
         ss_=var2
         lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
-        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+        pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
         lnTT_=log(gamma*cp1*ee_)
-        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+        pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
         call stop_it('eoscalc_point: NOT IMPLEMENTED IN NO IONIZATION')
@@ -558,14 +558,14 @@ module Ionization
         ss_=var1
         lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
-        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+        pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
         lnTT_=log(gamma*cp1*ee_)
-        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+        pp_=cs20*exp(gamma*(ss_+lnrho_)-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
         lnrho_=var1

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.190 2004-06-12 08:49:46 ajohan Exp $ 
+! $Id: sub.f90,v 1.191 2004-06-16 22:29:54 theine Exp $ 
 
 module Sub 
 
@@ -444,6 +444,7 @@ module Sub
       evr(:,1) = x_mn
       evr(:,2) = y_mn
       evr(:,3) = z_mn
+!  wolf: dave, did you mean tini instead of epsi?
       evr = evr / spread(r_mn+epsi,2,3)
 !
     endsubroutine calc_unitvects_sphere
@@ -3283,26 +3284,126 @@ nameloop: do
 !
     endsubroutine blob
 !***********************************************************************
-    function hypergeometric2F1(a,b,c,z,tol)
+    recursive function hypergeometric2F1(a,b,c,z,tol) result (hyp2F1)
 
-      real :: hypergeometric2F1,a,b,c,z,tol
+      real, intent(in) :: a,b,c,z,tol
+      real :: hyp2F1
       real :: fac
       integer :: n
 
+      real :: aa,bb,cc
+
+      aa=a; bb=b; cc=c
+
       fac=1
-      hypergeometric2F1=fac
+      hyp2F1=fac
       n=1
 
-      do while (fac>tol)
-        fac=fac*a*b*z/c/n
-        hypergeometric2F1=hypergeometric2F1+fac
-        a=a+1
-        b=b+1
-        c=c+1
-        n=n+1
-      enddo
+      if (z<=0.5) then
+
+        do while (fac>tol)
+          fac=fac*aa*bb*z/(cc*n)
+          hyp2F1=hyp2F1+fac
+          aa=aa+1
+          bb=bb+1
+          cc=cc+1
+          n=n+1
+        enddo
+
+      else
+
+        !!!!!!!! only valid for mu=-1 !!!!!!!!
+        !hyp2F1=2*hypergeometric2F1(aa,bb,aa+bb-cc+1,1-z,tol)-sqrt(1-z)* &
+               !2*hypergeometric2F1(cc-aa,cc-bb,cc-aa-bb+1,1-z,tol)
+        hyp2F1=(gamma_function(cc)*gamma_function(cc-aa-bb))/ &
+               (gamma_function(cc-aa)*gamma_function(cc-bb))* &
+               hypergeometric2F1(aa,bb,aa+bb-cc+1,1-z,tol) &
+              +(1-z)**(cc-aa-bb)* &
+               (gamma_function(cc)*gamma_function(aa+bb-cc))/ &
+               (gamma_function(aa)*gamma_function(bb))* &
+               hypergeometric2F1(cc-aa,cc-bb,cc-aa-bb+1,1-z,tol)
+
+      endif
 
     endfunction hypergeometric2F1
+!***********************************************************************
+    recursive function pi_function(x) result(pi_func)
+!
+!  calculates the Pi-function using rational approximation
+!
+!    Pi(x) = Gamma(x+1) = x!
+!
+!  coefficients were determined using maple's minimax() function
+!
+!
+!  9-jun-04/tobi+wolf: coded
+!
+      real, intent(in) :: x
+      real :: pi_func
+      integer, parameter :: order=7
+      real, dimension(order) :: coeff1,coeff2
+      real :: enum,denom
+      integer :: i
+
+      coeff1=(/0.66761295020790986430D00, &
+               0.36946093910826145313D00, &
+               0.18669829780572703887D00, &
+               0.48801451277274491892D-1, &
+               0.13652868415315546258D-1, &
+               0.17488042503123817001D-2, &
+               0.36032044608268574601D-3/)
+
+      coeff2=(/0.66761295020791115676D00, &
+               0.75481759205889796192D00, &
+              -0.37915754844972276118D-1, &
+              -0.11379619871302533906D00, &
+               0.15035521280605477060D-1, &
+               0.31375176929984224604D-2, &
+              -0.55599617153443517653D-3/)
+
+      if (x>1) then
+
+        pi_func=x*pi_function(x-1)
+
+      elseif (x<0) then
+
+        if (abs(x+1)<=epsilon(x)) then
+          pi_func=pi_function(x+1)/epsilon(x)
+        else
+          pi_func=pi_function(x+1)/(x+1)
+        endif
+
+      else
+
+        enum=coeff1(order)
+        do i=order-1,1,-1
+          enum=enum*x+coeff1(i)
+        enddo
+        denom=coeff2(order)
+        do i=order-1,1,-1
+          denom=denom*x+coeff2(i)
+        enddo
+        pi_func=enum/denom
+
+      endif
+
+    endfunction pi_function
+!***********************************************************************
+    function gamma_function(x)
+!
+!  calculates the Gamma-function as
+!
+!    Gamma(x) = Pi(x-1)
+!
+!
+!  9-jun-04/tobi+wolf: coded
+!
+      real, intent(in) :: x
+      real :: gamma_function
+
+      gamma_function=pi_function(x-1)
+
+    endfunction gamma_function
 !***********************************************************************
     subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,Kperp,Kpara,rhs,llog)
 !
