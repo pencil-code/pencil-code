@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.139 2004-08-24 18:44:40 dobler Exp $
+! $Id: start.f90,v 1.140 2004-08-24 19:13:27 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -39,7 +39,6 @@
         real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
-        real :: c_grid1
 !
         lstart = .true.
 !
@@ -48,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.139 2004-08-24 18:44:40 dobler Exp $")
+             "$Id: start.f90,v 1.140 2004-08-24 19:13:27 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
