@@ -1,4 +1,4 @@
-! $Id: grav_y.f90,v 1.3 2004-09-16 14:58:53 ajohan Exp $
+! $Id: grav_y.f90,v 1.4 2004-09-16 15:28:58 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_y.f90,v 1.3 2004-09-16 14:58:53 ajohan Exp $")
+           "$Id: grav_y.f90,v 1.4 2004-09-16 15:28:58 ajohan Exp $")
 !
       lgrav =.true.
       lgravy=.true.
@@ -166,10 +166,10 @@ module Gravity
 
       endif
 !
-!  Add gravity on dust and gas
+!  Add gravity acceleration on gas and dust
 !
-      if(lhydro .and. lgravy_gas) df(l1:l2,m,n,iuy) = &
-          df(l1:l2,m,n,iuy) + gravy_pencil
+      if(lhydro .and. lgravy_gas) & 
+          df(l1:l2,m,n,iuy) = df(l1:l2,m,n,iuy) + gravy_pencil
       if(ldustvelocity .and. lgravy_dust) then
         do k=1,ndustspec
           df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) + gravy_pencil
