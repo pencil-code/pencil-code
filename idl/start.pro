@@ -5,15 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.53 2003-06-19 21:42:09 mee Exp $
-
-function param
-; Dummy to keep IDL from complaining. The real param() routine will be
-; compiled below
-  message, $
-      "This dummy  function should never be called" $
-      + "-- make sure you have `data' in your !path ."
-end
+;;; $Id: start.pro,v 1.54 2003-06-23 19:11:27 dobler Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -34,6 +26,14 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 @lenstr
 ;
+;; Flag for controlling inverse verbosity
+;; quiet=0: print everything (default)
+;;       1: print mildly interesting messages
+;;       2: print interesting, but irrelevant info (status of reading, etc.)
+;;       3: print important info
+;;       4: print warnings about inconsistencies and unexpected behavior
+;;       5: don't print anything (to the extent this is possible)
+default, quiet, 0
 default, proc, 0
 default, datatopdir, 'data'
 default, varfile, 'var.dat'
@@ -65,7 +65,7 @@ if ((prec eq 'S') or (prec eq 's')) then begin
 endif else if ((prec eq 'D') or (prec eq 'd')) then begin
   one = 1.D0
 endif else begin
-  print, "prec = `", prec, "' makes no sense to me"
+  if (quiet le 4) then print, "prec = `", prec, "' makes no sense to me"
   STOP
 endelse
 zero = 0*one
@@ -73,7 +73,7 @@ zero = 0*one
 ;  the following files contain the positions of variables in f
 ;
 @data/index
-print,'nname=',nname
+if (quiet le 2) then print,'nname=',nname
 ;
 ;  Read grid
 ;
@@ -83,13 +83,13 @@ dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gfile=datadir+'/'+'grid.dat'
 dummy=findfile(gfile, COUNT=cgrid)
 if (cgrid gt 0) then begin
-  print, 'Reading grid.dat..'
+  if (quiet le 2) then print, 'Reading grid.dat..'
   openr,1, gfile, /F77
   readu,1, t,x,y,z
   readu,1, dx,dy,dz
   close,1
 endif else begin
-  print, 'Warning: cannot find file ', gfile
+  if (quiet le 4) then print, 'Warning: cannot find file ', gfile
 endelse
 ;
 ;print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
@@ -114,7 +114,7 @@ n1=3 & n2=mz-4 & n12=n1+indgen(nz)
 pfile = datatopdir+'/param.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Reading param.nml..'
+  if (quiet le 2) then print, 'Reading param.nml..'
   spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param.nml', result
   ;; Output may be split in 1024-byte blocks (ludicrous; IDL's fault),
   ;; so join these (joinstr is not available with IDL 5.2):
@@ -123,7 +123,7 @@ if (cpar gt 0) then begin
   ;; opening brace:
   brace = strpos(res,'{')
   if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-  if (brace ne 0) then begin
+  if ((brace ne 0) and (quiet le 4)) then begin
     print, "Your shell produces output when it shouldn't; you'd better"
     print, "fix your prompt."
     print, "Trying to clean up the mess.."
@@ -174,11 +174,11 @@ if (cpar gt 0) then begin
     mpoly2=par.mpoly2 & isothtop=par.isothtop
   endif
 endif else begin
-  print, 'Warning: cannot find file ', pfile
+  if (quiet le 4) then print, 'Warning: cannot find file ', pfile
 endelse
 
 ;
-print, '..done'
+if (quiet le 2) then print, '..done'
 ;
 started=1
 END

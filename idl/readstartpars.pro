@@ -4,14 +4,14 @@
 pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Reading param2.nml..'
+  if (quiet le 2) then print, 'Reading param2.nml..'
   spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param2.nml', result
   res = flatten_strings(result)
   ;; For people with an unclean shell: remove everything up to the
   ;; opening brace:
   brace = strpos(res,'{')
   if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-  if (brace ne 0) then begin
+  if ((brace ne 0) and (quiet le 4)) then begin
     print, "Your shell produces output when it shouldn't; you'd better"
     print, "fix your prompt."
     print, "Trying to clean up the mess.."
@@ -36,6 +36,6 @@ if (cpar gt 0) then begin
     eta=par2.eta
   endif
 endif else begin
-  print, 'Warning: cannot find file ', pfile
+  if (quiet le 4) then print, 'Warning: cannot find file ', pfile
   par2={lwrite_aux:0L}
 endelse
