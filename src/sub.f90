@@ -504,7 +504,7 @@ module Sub
 !  calculates a number of second derivative expressions of a vector
 !  outputs a number of different vector fields.
 !  Surprisingly, calling derij only if graddiv or curlcurl are present
-!  does not spped up the code on Mephisto @ 32x32x64).
+!  does not spped up the code on Mephisto @ 32x32x64.
 !
 !  12-sep-01/axel: coded
 !
@@ -526,21 +526,23 @@ module Sub
       do i=1,3
       do j=1,3
         call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
-        call derij(f,k1+j,tmp,i,j); fjji(:,i,j)=tmp  ! f_{j,ji}
+        call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
       enddo
       enddo
+!
+!  the diagonal terms have not been set in derij; do this now
+!  ** They are automatically set above, because derij   **
+!  ** doesn't overwrite the value of tmp for i=j!       **
+!
+!     do j=1,3
+!       fjji(:,j,j)=fijj(:,j,j)
+!     enddo
 !
       if (present(del2)) then
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
         enddo
       endif
-!
-!  the diagonal terms have not been set in derij; do this now
-!
-      do j=1,3
-        fjji(:,j,j)=fijj(:,j,j)
-      enddo
 !
       if (present(graddiv)) then
         do i=1,3
@@ -549,9 +551,9 @@ module Sub
       endif
 !
       if (present(curlcurl)) then
-        curlcurl(:,1)=fjji(:,2,1)-fijj(:,1,2)+fjji(:,3,1)-fijj(:,1,3)
-        curlcurl(:,2)=fjji(:,3,2)-fijj(:,2,3)+fjji(:,1,2)-fijj(:,2,1)
-        curlcurl(:,3)=fjji(:,1,3)-fijj(:,3,1)+fjji(:,2,3)-fijj(:,3,2)
+        curlcurl(:,1)=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
+        curlcurl(:,2)=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
+        curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
       endif
 !
     endsubroutine del2v_etc
@@ -734,6 +736,7 @@ module Sub
 !   8-sep-01/axel: adapted to take myout,mzout
 !
       use Cdata
+      use Mpicomm, only: ipx,ipy,ipz
 !
       character (LEN=*) :: file
       integer, optional :: mxout,myout,mzout
@@ -760,7 +763,11 @@ module Sub
 !  write number of ghost cells (could be different in x, y and z)
 !
       write(1,'(3i3)') nghost, nghost, nghost
-      write(1,'(3i3)') nprocx, nprocy, nprocz
+      if (present(mzout)) then
+        write(1,'(3i3)') nprocx, nprocy, nprocz
+      else
+        write(1,'(3i3)') ipx, ipy, ipz
+      endif
 !
       close(1)
     endsubroutine wdim
