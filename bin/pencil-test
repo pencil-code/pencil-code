@@ -17,18 +17,18 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-01-27 08:47:45 $
-# $Revision: 1.8 $
+# $Date: 2003-03-08 11:43:28 $
+# $Revision: 1.9 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
 # Usage:
-#   pencil-test [-H] [-c] [-u] [-m <emaillist>] host1 [host2 [host3 ..]]
+#   pencil-test [-H] [-u] [-c] [-m <emaillist>] host1 [host2 [host3 ..]]
 # Options:
 #   -h, --help          -- Help
-#   -H, --html          --
-#   -c, --clean         --
-#   -u, --update        --
+#   -H, --html          -- Write output as elementary HTML (mostly <pre>)
+#   -u, --update        -- `cvs update' before compiling
+#   -c, --clean         -- `make cleann' before compiling
 #   -m <emaillist>,
 #   --mail=<emaillist>  -- Specify who to send mail to if tests fail
 # Crontab entry:
