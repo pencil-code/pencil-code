@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.52 2004-05-10 16:45:00 mee Exp $
+! $Id: dustvelocity.f90,v 1.53 2004-05-10 17:05:20 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.52 2004-05-10 16:45:00 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.53 2004-05-10 17:05:20 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -878,22 +878,10 @@ module Dustvelocity
       call chn(iudy(1),sudy1)
       call chn(iudz(1),sudz1)
       if (lwr) then
-        if (lmdvar .and. lmice) then
-          write(3,*) 'iuud=indgen('//trim(sdustspec)//')*6 + '//trim(suud1)
-          write(3,*) 'iudx=indgen('//trim(sdustspec)//')*6 + '//trim(sudx1)
-          write(3,*) 'iudy=indgen('//trim(sdustspec)//')*6 + '//trim(sudy1)
-          write(3,*) 'iudz=indgen('//trim(sdustspec)//')*6 + '//trim(sudz1)
-        elseif (lmdvar) then
-          write(3,*) 'iuud=indgen('//trim(sdustspec)//')*5 + '//trim(suud1)
-          write(3,*) 'iudx=indgen('//trim(sdustspec)//')*5 + '//trim(sudx1)
-          write(3,*) 'iudy=indgen('//trim(sdustspec)//')*5 + '//trim(sudy1)
-          write(3,*) 'iudz=indgen('//trim(sdustspec)//')*5 + '//trim(sudz1)
-        else
-          write(3,*) 'iuud=indgen('//trim(sdustspec)//')*4 + '//trim(suud1)
-          write(3,*) 'iudx=indgen('//trim(sdustspec)//')*4 + '//trim(sudx1)
-          write(3,*) 'iudy=indgen('//trim(sdustspec)//')*4 + '//trim(sudy1)
-          write(3,*) 'iudz=indgen('//trim(sdustspec)//')*4 + '//trim(sudz1)
-        endif
+        write(3,*) 'iuud=indgen('//trim(sdustspec)//')*3 + '//trim(suud1)
+        write(3,*) 'iudx=indgen('//trim(sdustspec)//')*3 + '//trim(sudx1)
+        write(3,*) 'iudy=indgen('//trim(sdustspec)//')*3 + '//trim(sudy1)
+        write(3,*) 'iudz=indgen('//trim(sdustspec)//')*3 + '//trim(sudz1)
       endif
 !
     endsubroutine rprint_dustvelocity
