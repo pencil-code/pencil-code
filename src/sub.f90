@@ -1,8 +1,6 @@
-! $Id: sub.f90,v 1.85 2002-09-26 14:09:04 brandenb Exp $ 
+! $Id: sub.f90,v 1.86 2002-09-26 16:21:26 brandenb Exp $ 
 
 module Sub 
-
-!  use Io
 
   implicit none
 
@@ -1778,10 +1776,11 @@ module Sub
 !
       use Cparam, only: mseed
       use Mpicomm, only: lroot,stop_it      
+      use General
 !
       integer :: nseed
 !
-      call random_seed(SIZE=nseed)
+      call random_seed_wrapper(SIZE=nseed)
       !
       ! test whether mseed is large enough for this machine
       !

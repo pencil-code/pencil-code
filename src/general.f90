@@ -1,9 +1,11 @@
-! $Id: general.f90,v 1.7 2002-09-26 14:09:04 brandenb Exp $
+! $Id: general.f90,v 1.8 2002-09-26 16:21:25 brandenb Exp $
 
 module General
 
 !  Module with general utility subroutines
 !  (Used for example in Sub and Mpicomm)
+
+  use Cparam
 
   implicit none
 
@@ -15,6 +17,7 @@ module General
 !  default seed for random numbers
 !
   integer(selected_int_kind(9)), save :: iseed=-10
+  character (len=labellen) :: random_gen='system'
 
   contains
 
@@ -27,11 +30,21 @@ module General
       real, dimension(:) :: a
       integer :: i
 !
-      do i=1,size(a,1)
-        a(i)=ran(iseed)
-      enddo
+      select case(random_gen)
 !
-    end subroutine random_number_wrapper_1
+      case('system')
+        call random_number(a)
+      case('min_std')
+        do i=1,size(a,1)
+          a(i)=ran0(iseed)
+        enddo
+      case default
+        do i=1,size(a,1)
+          a(i)=ran(iseed)
+        enddo
+      endselect
+!
+    endsubroutine random_number_wrapper_1
 !***********************************************************************
     subroutine random_number_wrapper_3(a)
 !
@@ -49,7 +62,30 @@ module General
         enddo
       enddo
 !
-    end subroutine random_number_wrapper_3
+    endsubroutine random_number_wrapper_3
+!***********************************************************************
+    subroutine random_seed_wrapper(size,put,get)
+!
+!  mimics the f90 random_seed routine
+!
+      integer, optional, dimension(:) :: put,get
+      integer, optional :: size
+      integer :: nseed
+!
+      select case(random_gen)
+!
+      case('system')
+        call random_seed(SIZE=nseed)
+        if(present(size)) size=nseed
+        if(present(put))  call random_seed(PUT=put(1:nseed))
+        if(present(get))  call random_seed(GET=get(1:nseed))
+      case default
+        if(present(size)) size=1
+        if(present(put))  iseed=min(put(1),-1)  !(ensure iseed < 0)
+        if(present(get))  get=iseed
+      endselect
+!
+    endsubroutine random_seed_wrapper
 !***********************************************************************
     function ran0(dummy)
 !
@@ -72,9 +108,50 @@ module General
       dummy=ieor(dummy,mask)
       return
 !
-    end function ran0
+    endfunction ran0
 !***********************************************************************
-    function ran(iseed1)
+    function ran(idum)
+!
+!  From `Numerical Recipes in F90'. Not sure we are allowed to distribute
+!  this
+!
+! 28-aug-02/wolf: Adapted from Numerical Recipes
+!
+      implicit none
+!
+      integer, parameter :: k4b=selected_int_kind(9)
+      integer(k4b), intent(inout) :: idum
+      real :: ran
+!
+      ! "Minimal" random number generator of Park and Miller combined
+      ! with a Marsaglia shift sequence. Returns a uniform random deviate
+      ! between 0.0 and 1.0 (exclusive of the endpoint values). This fully
+      ! portable, scalar generator has the "traditional" (not Fortran 90)
+      ! calling sequence with a random deviate as the returned function
+      ! value: call with idum a negative integer to initialize;
+      ! thereafter, do not alter idum except to reinitialize. The period
+      ! of this generator is about 3.1×10^18.
+
+      integer(k4b), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
+      real, save :: am
+      integer(k4b), save :: ix=-1,iy=-1,k
+      if (idum <= 0 .or. iy < 0) then   ! Initialize.
+        am=nearest(1.0,-1.0)/im
+        iy=ior(ieor(888889999,abs(idum)),1)
+        ix=ieor(777755555,abs(idum))
+        idum=abs(idum)+1   ! Set idum positive.
+      end if
+      ix=ieor(ix,ishft(ix,13))   ! Marsaglia shift sequence with period 2^32-1.
+      ix=ieor(ix,ishft(ix,-17))
+      ix=ieor(ix,ishft(ix,5))
+      k=iy/iq   ! Park-Miller sequence by Schrage's method,
+      iy=ia*(iy-k*iq)-ir*k   ! period 231 - 2.
+      if (iy < 0) iy=iy+im
+      ran=am*ior(iand(im,ieor(ix,iy)),1)   ! Combine the two generators with
+                                           ! masking to ensure nonzero value.
+    end function ran
+!***********************************************************************
+    function ran9(iseed1)
 !
 !  From `Numerical Recipes in F90'. Not sure we are allowed to distribute
 !  this
@@ -84,7 +161,7 @@ module General
       implicit none
 !
       integer(selected_int_kind(9)), intent(inout) :: iseed1
-      real :: ran
+      real :: ran9
 !
       ! "Minimal" random number generator of Park and Miller combined
       ! with a Marsaglia shift sequence. Returns a uniform random deviate
@@ -111,9 +188,9 @@ module General
       k=iy/iq   ! Park-Miller sequence by Schrage's method,
       iy=ia*(iy-k*iq)-ir*k   ! period 231 - 2.
       if (iy < 0) iy=iy+im
-      ran=am*ior(iand(im,ieor(ix,iy)),1)   ! Combine the two generators with
+      ran9=am*ior(iand(im,ieor(ix,iy)),1)   ! Combine the two generators with
                                            ! masking to ensure nonzero value.
-    end function ran
+    endfunction ran9
 !***********************************************************************
     subroutine chn(n,ch)
 !

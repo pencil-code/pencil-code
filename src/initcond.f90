@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.13 2002-09-26 14:09:04 brandenb Exp $ 
+! $Id: initcond.f90,v 1.14 2002-09-26 16:21:25 brandenb Exp $ 
 
 module Initcond 
  
@@ -9,7 +9,7 @@ module Initcond
 !  are used both during run time and for the initial condition).
 
   use Cdata
-  use Random_nr
+  use General
 
   implicit none
 
@@ -503,15 +503,8 @@ module Initcond
         if ((ip<=8).and.lroot) print*,'set_random_vect: i1,i2=',i1,i2
         do i=i1,i2
           if (modulo(i-i1,2)==0) then
-             if (random_gen=='system') then
-                call random_number(r)
-                call random_number(p)
-             elseif (random_gen=='min_std') then
-                call min_std(r)
-                call min_std(p)
-             else
-                print*,'No such random number generator'
-             endif
+            call random_number_wrapper(r)
+            call random_number_wrapper(p)
             tmp=sqrt(-2*alog(r))*sin(2*pi*p)
           else
             tmp=sqrt(-2*alog(r))*cos(2*pi*p)
@@ -538,17 +531,9 @@ module Initcond
 !  set gaussian random noise vector
 !
       if ((ip<=8).and.lroot) print*,'set_random_scal: i=',i
-      if (random_gen=='system') then
-         call random_number(r)
-         call random_number(p)
-      elseif (random_gen=='min_std') then
-         call min_std(r)
-         call min_std(p)
-      else
-         print*,'No such random number generator'
-      endif
+      call random_number_wrapper(r)
+      call random_number_wrapper(p)
       tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-      !call smooth_3d(tmp,ismo)  !(may want to smooth)
       f(:,:,:,i)=ampl*tmp
       print*,'set gaussian noise: variable i=',i
 !

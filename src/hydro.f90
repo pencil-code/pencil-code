@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.63 2002-09-07 20:12:47 brandenb Exp $
+! $Id: hydro.f90,v 1.64 2002-09-26 16:21:25 brandenb Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.63 2002-09-07 20:12:47 brandenb Exp $")
+           "$Id: hydro.f90,v 1.64 2002-09-26 16:21:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,14 +110,6 @@ module Hydro
       case('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
       case('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
       case('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
-
-!AB: obsolete now?
-      case('random-normal', '1') ! random ux (Gaussian distribution)
-        if (lroot) print*,'init_hydro: Gaussian-distributed ux'
-        call random_number(r)
-        call random_number(p)
-        tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-        f(:,:,:,iux)=ampluu*tmp
 
       case('sound-wave', '11')
         !
@@ -185,10 +177,9 @@ module Hydro
         enddo
 !  Add some random noise to see the development of instability
 !WD: Can't we incorporate this into the urand stuff?
-        call random_number(r)
-        call random_number(p)
+        call random_number_wrapper(r)
+        call random_number_wrapper(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
-!        tmp=exp(-zz**2*10.)*cos(4.*xx)
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
   
       case('Fourier-trunc')
@@ -230,59 +221,20 @@ module Hydro
       endselect
 
 !
-!  This stuff is obsolete; should be incorporated into the new scheme or
-!  removed
+!  This allows an extra random velocity perturbation on
+!  top of the initialization so far.
 !
-!       select case(init)
-
-!       case (-1)
-!         if (lroot) print*,'Doing nothing with init -- do we need it at all?'
-
-!       case(0)               ! random ux (Gaussian distribution)
-!         if (lroot) print*,'Gaussian-distributed ux'
-!         call random_number(r)
-!         call random_number(p)
-!         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-!         f(:,:,:,iux)=ampluu*tmp
-
-!       case(2)               ! oblique sound wave
-!         if (lroot) print*,'oblique sound wave'
-!         tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
-!         f(:,:,:,ilnrho)=ampluu*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
-!         f(:,:,:,iux)=ampluu*cos(tmp)
-!         f(:,:,:,iuy)=ampluu*cos(tmp)*2.
-!         f(:,:,:,iuz)=ampluu*cos(tmp)*(-1)
-
-!       case(3)               ! uu = (sin 2x, sin 3y , cos z)
-!         if (lroot) print*,'uu harmonic (what is this good for?)'
-!         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
-!                      spread(spread(sin(3*y),1,mx),3,mz)* &
-!                      spread(spread(cos(1*z),1,mx),2,my)
-
-!       case default
-!         !
-!         !  Catch unknown values
-!         !
-!         if (lroot) print*,'There is no such value for init:', init
-!         call stop_it("")
-
-!       endselect
-!
-!AB: isn't this now also obsolete?
-!AB: Above we can add gaussian noise (both 3-d and only in ux)
-!WD: We are not _adding_ above, but setting. urand is for stuff like
-!WD: `sound wave' + noise
       if (urand /= 0) then
         if (lroot) print*, 'Adding random uu fluctuations'
         if (urand > 0) then
           do i=iux,iuz
-            call random_number(tmp)
+            call random_number_wrapper(tmp)
             f(:,:,:,i) = f(:,:,:,i) + urand*(tmp-0.5)
           enddo
         else
           if (lroot) print*, '  ..multiplicative fluctuations'
           do i=iux,iuz
-            call random_number(tmp)
+            call random_number_wrapper(tmp)
             f(:,:,:,i) = f(:,:,:,i) * urand*(tmp-0.5)
           enddo
         endif

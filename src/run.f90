@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.86 2002-09-25 06:40:15 brandenb Exp $
+! $Id: run.f90,v 1.87 2002-09-26 16:21:25 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.86 2002-09-25 06:40:15 brandenb Exp $")
+             "$Id: run.f90,v 1.87 2002-09-26 16:21:25 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -94,7 +94,7 @@
 !
 !  run initialization of individual modules
 !
-        call ss_run_hook()      ! calculate radiative conductivity (or Fbot), etc.
+        call ss_run_hook()      ! calculate radiative conductivity, etc.
         call forcing_run_hook() ! get random seed from file, ..
 !
 !  Write data to file for IDL
@@ -228,7 +228,7 @@
 !  write seed parameters (only if forcing is turned on)
 !
         if (lforcing) then
-          call random_seed(get=seed(1:nseed))
+          call random_seed_wrapper(get=seed(1:nseed))
           call outpui(trim(directory)//'/seed.dat',seed,nseed)
         endif
 !

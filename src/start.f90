@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.62 2002-09-21 16:35:50 dobler Exp $
+! $Id: start.f90,v 1.63 2002-09-26 16:21:25 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.62 2002-09-21 16:35:50 dobler Exp $")
+             "$Id: start.f90,v 1.63 2002-09-26 16:21:25 brandenb Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -41,9 +41,9 @@
 !  so we need to retain most of the initial entropy of the generator. 
 !
         call get_nseed(nseed)   ! get state length of random number generator
-        call random_seed(get=seed(1:nseed))
+        call random_seed_wrapper(get=seed(1:nseed))
         seed(1) = 1001+iproc    ! different random numbers on different CPUs
-        call random_seed(put=seed(1:nseed))
+        call random_seed_wrapper(put=seed(1:nseed))
 !
 !  set default values: box of size (2pi)^3
 !

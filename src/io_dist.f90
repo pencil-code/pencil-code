@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.33 2002-09-24 17:35:17 brandenb Exp $
+! $Id: io_dist.f90,v 1.34 2002-09-26 16:21:25 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.33 2002-09-24 17:35:17 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.34 2002-09-26 16:21:25 brandenb Exp $")
 
 !
 !  set directory name for the output (one subdirectory for each processor)
@@ -299,8 +299,6 @@ contains
 !  Write t to file
 !  21-sep-02/wolf: coded
 !
-      use Mpicomm, only: lroot
-!
       real :: tau
       character (len=*) :: file
 !
@@ -314,8 +312,6 @@ contains
 !
 !  Read t from file
 !  21-sep-02/wolf: coded
-!
-      use Mpicomm, only: lroot
 !
       real :: tau
       character (len=*) :: file

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.54 2002-09-26 14:09:04 brandenb Exp $ 
+! $Id: param_io.f90,v 1.55 2002-09-26 16:21:25 brandenb Exp $ 
 
 module Param_IO
 
@@ -9,6 +9,7 @@ module Param_IO
 !  modules at once.
 !
   use Sub
+  use General
   use Hydro
   use Forcing
   use Gravity

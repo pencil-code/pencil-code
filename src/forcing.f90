@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.29 2002-09-26 14:09:04 brandenb Exp $
+! $Id: forcing.f90,v 1.30 2002-09-26 16:21:25 brandenb Exp $
 
 module Forcing
 
@@ -6,6 +6,7 @@ module Forcing
 !  (or, in special cases, in the entropy equation).
 
   use Cdata
+  use General
 
   implicit none
 
@@ -45,7 +46,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.29 2002-09-26 14:09:04 brandenb Exp $")
+           "$Id: forcing.f90,v 1.30 2002-09-26 16:21:25 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -58,7 +59,7 @@ module Forcing
 !
       if (lroot.and.ip<14) print*, 'reading seed file'
       call inpui(trim(directory)//'/seed.dat',seed,nseed)
-      call random_seed(put=seed(1:nseed))
+      call random_seed_wrapper(put=seed(1:nseed))
 !
     endsubroutine forcing_run_hook
 !***********************************************************************
@@ -158,7 +159,7 @@ module Forcing
       endif
       ifirst=ifirst+1
 !
-      call random_number(fran)
+      call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
@@ -483,7 +484,7 @@ module Forcing
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number(fran)
+      call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst

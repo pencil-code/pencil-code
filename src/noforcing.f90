@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.7 2002-09-07 20:12:47 brandenb Exp $
+! $Id: noforcing.f90,v 1.8 2002-09-26 16:21:25 brandenb Exp $
 
 module Forcing
 
@@ -34,7 +34,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.7 2002-09-07 20:12:47 brandenb Exp $")
+           "$Id: noforcing.f90,v 1.8 2002-09-26 16:21:25 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -46,9 +46,9 @@ module Forcing
       use Cdata
 !
       if (lroot.and.ip<14) print*, 'initializing seed'
-      call random_seed(get=seed(1:nseed))
-      seed(1) = 1001+iproc    ! different random numbers on different CPUs
-      call random_seed(put=seed(1:nseed))
+      call random_seed_wrapper(get=seed(1:nseed))
+      seed(1) = -(10+iproc)    ! different random numbers on different CPUs
+      call random_seed_wrapper(put=seed(1:nseed))
 !
     endsubroutine forcing_run_hook
 !***********************************************************************
