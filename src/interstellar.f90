@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.6 2002-12-09 13:18:01 ngrs Exp $
+! $Id: interstellar.f90,v 1.7 2002-12-09 19:31:59 ngrs Exp $
 
 !  This modules solves contains ISM and SNe routines.
 !  Still in development. 
@@ -66,7 +66,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.6 2002-12-09 13:18:01 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.7 2002-12-09 19:31:59 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -151,7 +151,7 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine check_SN(f,df)
+    subroutine check_SN(f)
 !
 !  Checks for SNe, and implements appropriately:
 !   relevant subroutines in entropy.f90
@@ -165,7 +165,7 @@ module Interstellar
 !  NB: If SN implemented via df, then f should be intent(in).
 !      Old code modified (ee,rho) ~ f directly, however.
     intent(inout) :: f
-    intent(inout) :: df
+    !intent(inout) :: f,df
 !
 !  identifier  
 !
@@ -173,12 +173,12 @@ module Interstellar
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
-    call check_SNI(f,df,l_SNI)
-    call check_SNII(f,df,l_SNI)
+    call check_SNI (f,l_SNI)
+    call check_SNII(f,l_SNI)
 !
     endsubroutine check_SN
 !***********************************************************************
-    subroutine check_SNI(f,df,l_SNI)
+    subroutine check_SNI(f,l_SNI)
 !
 !  If time for next SNI, then implement, and calculate time of subsequent SNI
 !
@@ -186,12 +186,11 @@ module Interstellar
     use Mpicomm
     use General
 !
-    real, dimension(mx,my,mz,mvar) :: f,df
+    real, dimension(mx,my,mz,mvar) :: f
     real, dimension(1) :: fran1
     logical :: l_SNI
 !
-    intent(inout) :: f
-    intent(inout) :: df,l_SNI
+    intent(inout) :: f,l_SNI
 !
 !  identifier
 !
@@ -200,11 +199,11 @@ module Interstellar
     l_SNI=.false.
     if (t >= t_next_SNI) then
       call position_SNI(f)
-      call explode_SN(f,df,1)
+      call explode_SN(f,1)
 !  pre-determine time for next SNI
       if (lroot) then
         call random_number_wrapper(fran1)   
-        t_next_SNI=t_next_SNI + (fran1(1)-0.5)*0.4 * t_interval_SNI
+        t_next_SNI=t_next_SNI + (1.0 + 0.4*(fran1(1)-0.5)) * t_interval_SNI
         print*,'Next SNI at time: ',t_next_SNI
       endif
       call mpibcast_real(t_next_SNI,1)
@@ -213,7 +212,7 @@ module Interstellar
 !
     endsubroutine check_SNI
 !***********************************************************************
-    subroutine check_SNII(f,df,l_SNI)
+    subroutine check_SNII(f,l_SNI)
 !
 !  If time for next SNII, then implement.
 !
@@ -221,7 +220,7 @@ module Interstellar
     use General
     use Mpicomm
 ! 
-    real, dimension(mx,my,mz,mvar) :: f,df
+    real, dimension(mx,my,mz,mvar) :: f
     real, dimension(nx) :: lnrho,rho,rho_cloud,ss,TT
 !    real :: lnrho,rho,rho_cloud,ss,TT
     real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII
@@ -231,8 +230,7 @@ module Interstellar
     logical :: l_SNI
 !
     intent(in) :: l_SNI
-    intent(in) :: f
-    intent(inout) :: df
+    intent(inout) :: f
 !
 !  identifier
 !
@@ -279,7 +277,8 @@ module Interstellar
       rate_SNII=freq_SNII*1e-3/Lxyz(1)/Lxyz(2)
       if (lroot) call random_number_wrapper(fran1)   
       call mpibcast_real(fran1,1)
-      if (lroot) print*,'check_SNII,rate,prob,rnd:',rate_SNII,prob_SNII,fran1(1)
+      if (lroot) print*,'check_SNII, rate,prob,rnd:',  &
+                                     rate_SNII,prob_SNII,fran1(1)
       if (fran1(1) <= prob_SNII) then
 !  position_SNII needs the mass_clouds for each processor;  
 !   communicate and store them here, to avoid recalculation.
@@ -297,7 +296,7 @@ module Interstellar
 !        mass_cloud_byproc=fmax
         if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
         call position_SNII(f,mass_cloud_byproc)
-!        call explode_SN(f,df,2)
+!        call explode_SN(f,2)
       endif
     endif
 !
@@ -321,6 +320,9 @@ module Interstellar
     integer :: l_SN,m_SN,n_SN
     integer, dimension(1) :: impi
     logical :: lfound,lfoundx,lfoundy,lfoundz
+!
+    !intent(in) :: f
+    intent(inout) :: f
 !
 !  identifier
 !
@@ -394,11 +396,12 @@ module Interstellar
       !print*,'l,m,n_SN',l_SN,m_SN,n_SN
       lfound=(lfoundx .and. lfoundy .and. lfoundz)
       if (.not. lfound) print*,'position_SNI: SN not found!'
+      !print*, 'position_SNI:',l_SN,m_SN,n_SN,ilnrho,f(l_SN,m_SN,n_SN,ilnrho)
       rho_SN=exp(f(l_SN,m_SN,n_SN,ilnrho))
       !TT_SN not actually needed...
       !TT_SN=cs20*exp(gamma1*(f(l_SN,m_SN,n_SN,ilnrho)-lnrho0) +       &
       !                  gamma*f(l_SN,m_SN,n_SN,ient))/gamma1*cp1
-      !print*, 'position_SNI:',x_SN,y_SN,z_SN,rho_SN,TT_SN
+      print*, 'position_SNI:',l_SN,m_SN,n_SN,x_SN,y_SN,z_SN,rho_SN
     endif
 !
 !  Broadcast rho_SN to all processors.
@@ -432,7 +435,9 @@ module Interstellar
     real :: lnrho,rho,ss,TT
     integer :: icpu, l
 !
-    intent(in) :: f,mass_cloud_byproc
+    !intent(in) :: f,mass_cloud_byproc
+    intent(in) :: mass_cloud_byproc
+    intent(inout) :: f
 !
 !  identifier
 !
@@ -506,7 +511,7 @@ find_SN: do n=n1,n2
 !
     endsubroutine position_SNII
 !***********************************************************************
-    subroutine explode_SN(f,df,itype_SN)
+    subroutine explode_SN(f,itype_SN)
 !
 !  Implement SN (of either type), at pre-calculated position
 !  (This can all be made more efficient, after debugging.)
@@ -514,7 +519,7 @@ find_SN: do n=n1,n2
     use Cdata
     use Mpicomm
 !
-    real, dimension(mx,my,mz,mvar) :: f,df
+    real, dimension(mx,my,mz,mvar) :: f
     real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
     real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
     real :: dz_SN,yshift
@@ -527,19 +532,19 @@ find_SN: do n=n1,n2
 !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
     real, dimension(nx,ny,nz) :: dr2_SN,rho_old
 !  The following arrays can be streamlined, after debugging.
-    real, dimension(nx) :: lnrho,rho,TT,ss,dss,dee,profile_SN
+    real, dimension(nx) :: lnrho,rho,TT,ss,dss,dee,dlnrho,profile_SN
     real, dimension(nx) :: profile_shell_outer,profile_shell_inner
     real, dimension(2) :: fsum2,fsum2_tmp
     real, dimension(1) :: fsum1,fsum1_tmp
     real :: cnorm_SN=1.5484             ! (int exp(-r^6) 4\pi r^2 dr)^(1/3)
     real :: profile_check
     real :: TT_limit=1.e7,ee_limit
+!    real :: TT_limit=1.e2,ee_limit     ! make weaker, for debugging...
     integer :: itype_SN,l,mshift,il,im,in
     integer :: point_width=4
 !
     intent(in) :: itype_SN
     intent(inout) :: f
-    intent(inout) :: df
 !
 !  identifier
 !
@@ -611,19 +616,21 @@ find_SN: do n=n1,n2
     TT_SN_new=c_SN/rho_SN*TTunits
     if (lroot) print*, &
          'explode_SN, TT_SN_new,TT_limit:',TT_SN_new,TT_limit
-    if (TT_SN_new < TT_limit) then
 !  If central temperature would be too small, make a cavity.
-!  (NB: Don't actually need TT_SN for this...)
+!ngrs: disbable cavity for now, to check weak explosions
+!    if (TT_SN_new < TT_limit) then
+    if (.false.) then     ! remove cavity option, for debug
       ee_limit=TT_limit/TTunits
-      lnrho_SN=alog(rho_SN)
       lnrho_SN_new=alog(c_SN/ee_limit)
+      if (lroot) print*, &
+         'explode_SN, lnrho_SN,lnrho_SN_new:',lnrho_SN,lnrho_SN_new
       mass=0.; mass_cavity=0.; mass_check=0.
       profile_check=0.
       do n=n1,n2
         in=n-nghost
         do m=m1,m2
           im=m-nghost
-          profile_SN(:)=exp(-(dr2_SN(:,im,in)/width_SN**2)**3)
+          profile_SN(:)=exp(-min((dr2_SN(:,im,in)/width_SN**2)**3, 75.))
           profile_check=profile_check+sum(profile_SN(:))
           lnrho(:)=f(l1:l2,m,n,ilnrho)
           rho(:)=exp(lnrho(:))
@@ -633,6 +640,7 @@ find_SN: do n=n1,n2
           lnrho(:)=lnrho(:) + (lnrho_SN_new-lnrho_SN)*profile_SN(:)
           rho(:)=exp(lnrho(:))
 !  change f or df (depending on how SN are to be implemented)
+!fdf
           f(l1:l2,m,n,ilnrho)=lnrho(:)
 !          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) +                   &
 !                                (lnrho_SN_new-lnrho_SN)*profile_SN(:)
@@ -653,23 +661,31 @@ find_SN: do n=n1,n2
       mass_shell=(mass-mass_cavity) 
       c_shell=(mass-mass_cavity) /                                  &
            ((cnorm_SN*width_shell_outer)**3-(cnorm_SN*width_shell_inner)**3)
+      if (lroot) print*, &
+         'explode_SN, c_shell:',c_shell
 !  add missing mass back into shell
       do n=n1,n2
         in=n-nghost
         do m=m1,m2
           im=m-nghost
+          lnrho(:)=f(l1:l2,m,n,ilnrho)
+          rho(:)=exp(lnrho(:))
           profile_shell_outer(:)=                                       &
-                 exp(-(dr2_SN(:,im,in)/width_shell_outer**2)**3)
+                 exp(-min((dr2_SN(:,im,in)/width_shell_outer**2)**3, 75.))
           profile_shell_inner(:)=                                       &
-                 exp(-(dr2_SN(:,im,in)/width_shell_inner**2)**3)
-          rho(:)=rho(:)  + c_shell *                                    &
+                 exp(-min((dr2_SN(:,im,in)/width_shell_inner**2)**3, 75.))
+          rho(:)=rho(:) + c_shell *                                     &
                  (profile_shell_outer(:) - profile_shell_inner(:))
           mass_check=mass_check + c_shell *                             &
                  sum(profile_shell_outer(:) - profile_shell_inner(:))
 !  change f or df (depending on how SN are to be implemented)
-          f(l1:l2,m,n,ilnrho)=alog(rho(:))
-!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + alog(c_shell *    & 
-!                 (profile_shell_outer(:) - profile_shell_inner(:)))
+!fdf
+         f(l1:l2,m,n,ilnrho)=alog(rho(:))
+!          dlnrho(:)=0.0
+!          where (profile_shell_outer(:) - profile_shell_inner(:) /= 0.)     &
+!            dlnrho(:)=alog(c_shell *                                        &
+!                         (profile_shell_outer(:) - profile_shell_inner(:)))
+!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + dlnrho(:)
         enddo
       enddo
       fsum1_tmp=(/ mass_check /)
@@ -687,17 +703,27 @@ find_SN: do n=n1,n2
       in=n-nghost
       do m=m1,m2
         im=m-nghost
+        lnrho(:)=f(l1:l2,m,n,ilnrho)
+        rho(:)=exp(lnrho(:))
         profile_SN=exp(-min((dr2_SN(:,im,in)/width_SN**2)**3, 75.))
         ss(:)=f(l1:l2,m,n,ient)
         TT(:)=cs20*exp(gamma1*(lnrho(:)-lnrho0) + gamma*ss(:))/gamma1*cp1
         dee(:)=c_SN*profile_SN(:)/rho(:)      ! ee in dimensional units
         EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
         dss(:)=dee(:)/TT(:)*cp1               ! dss non-dimensional
-!  Remember to allow for changes in rho following mass relocation.
+!  Remember to allow for changes in rho if mass  was relocated.
 !  change f or df (depending on how SN are to be implemented)
-        f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient)*rho_old(:,im,in)/rho(:) + dss(:)
-!        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) +                           &
-!            f(l1:l2,m,n,ient)*(rho_old(:,im,in)/rho(:)-1.) + dss(:) 
+!ngrs: disbable cavity for now, to check weak explosions
+!        if (TT_SN_new < TT_limit) then
+        if (.false.) then     ! remove cavity option, for debug
+!fdf
+          f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient)*rho_old(:,im,in)/rho(:)
+!          df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) +                           &
+!              f(l1:l2,m,n,ient)*(rho_old(:,im,in)/rho(:)-1.)
+        endif
+!fdf
+        f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + dss(:)
+!        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) + dss(:) 
       enddo
     enddo
     fsum1_tmp=(/ EE_SN /)
