@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.166 2003-06-13 14:27:31 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.167 2003-06-13 15:43:11 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-13 14:27:31 $ $,~ $ $Revision: 1.166 $ $}
+\date{$ $Date: 2003-06-13 15:43:11 $ $,~ $ $Revision: 1.167 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-13 14:27:31 $ $,~ $ $Revision: 1.166 $ $}
+  \emph{$ $Date: 2003-06-13 15:43:11 $ $,~ $ $Revision: 1.167 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2249,7 +2249,6 @@ permanent snapshots, use (for example)
   \prompt{IDL> } .r r {\sl(or \texttt{.r rall})}
 \end{alltt}
 See Sect.~\ref{snapshots} for details on permanent snapshots.
-XX
 
 With \file{r.pro}, you can switch the part of the domain by changing the
 variable \var{datadir}:
@@ -2649,6 +2648,26 @@ is the optical depth ($s$ is the geometrical coordinate along the ray).
 % ---------------------------------------------------------------------- %
 
 \subsection{Dust equations}
+
+We treat gas and dust as two separate fluids.
+The governing equations can be written in the form
+\begin{equation}
+\rho\left[{\partial\uv\over\partial t}+\uv\cdot\nab\uv-\fv(\uv)\right]
+=-\nab p+\Fv-\beta(\uv-\uv_{\rm d}),
+\end{equation}
+\begin{equation}
+\rho_{\rm d}\left[{\partial\uv_{\rm d}\over\partial t}+\uv_{\rm d}\cdot\nab\uv_{\rm d}
+-\fv(\uv_{\rm d})\right]
+=\Fv_{\rm d}-\beta(\uv_{\rm d}-\uv),
+\end{equation}
+\begin{equation}
+{\partial\rho\over\partial t}+\nab\cdot(\rho\uv)=0,
+\end{equation}
+\begin{equation}
+{\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0,
+\end{equation} 
+where $\fv(\uv)$ denotes the Coriolis force and $\Fv$ and $\Fv_{\rm d}$
+other forces.
 
 % ====================================================================== %
 
@@ -5107,7 +5126,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.166 2003-06-13 14:27:31 dobler Exp $ $}
+$ $Id: manual.tex,v 1.167 2003-06-13 15:43:11 brandenb Exp $ $}
 
 
 \end{document}
