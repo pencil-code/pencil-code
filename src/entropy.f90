@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.116 2002-08-05 23:06:52 dobler Exp $
+! $Id: entropy.f90,v 1.117 2002-08-10 17:35:15 dobler Exp $
 
 module Entropy
 
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.116 2002-08-05 23:06:52 dobler Exp $")
+           "$Id: entropy.f90,v 1.117 2002-08-10 17:35:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -494,7 +494,7 @@ module Entropy
 !
       if(headtt) then
         print*,'calc_heatcond: hcond0=',hcond0
-        print*,'Fbot=',Fbot
+        if (lgravz) print*,'Fbot=',Fbot
       endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
