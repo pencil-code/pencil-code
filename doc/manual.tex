@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.228 2004-01-24 17:21:06 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.229 2004-01-29 15:41:14 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}
+%\date{$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}\\
+  \emph{$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3618,7 +3618,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-01-29 15:41:14 $ $,~ $ $Revision: 1.229 $ $}
 
 \section{Timings}
 
@@ -5424,32 +5424,38 @@ double precision, $\varepsilon\approx10^{-15}$.
                & initialization of magnetic field (vector potential).
                  Currently valid choices are
                  \begin{description}
-                 \item[\code{`zero'}] (zero field),
-                 \item[\code{`gaussian-noise'}] (white noise),
-                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
-                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
-                 \item[\code{`hor-fluxtube'}] (horizontal flux tube),
-                 \item[\code{`hor-tube'}] (horizontal flux tube in $\Bv$,
-                   oriented in the $y$-direction).
-                 \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
-                 \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
-                 \item[\code{`uniform-By'}] (uniform field in $y$ direction),
-                 \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
-                 \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
-                   see \S~\ref{fluxrings}),
-                 \item[\code{`fluxrings-kb'}] (malfunctioning),
-                 \item[\code{`Alfven-circ-x'}] (circularly polarized
-                   Alfv\'en wave).
-                 \item[\code{`sinxsinz'}] ($\sin x \sin z$),
+                 \item[\code{`Alfven-x'}] (Alfv\'en wave traveling in the
+                   $x$-direction; this also sets the velocity),
                  \item[\code{`Alfven-z'}] (Alfv\'en wave traveling in the
                    $z$-direction; this also sets the velocity),
                  \item[\code{`Alfvenz-rot'}] (same as \code{`Alfven-z'}, but
                    with rotation),
                  \item[\code{`Alfven-circ-x'}] (circularly polarized
                    Alfven wave in x direction),
-                 \item[\code{`'}] (),
+                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
+                 \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
                  \item[\code{`crazy'}] (for testing purposes).
+                 \item[\code{`diffrot'}] ([needs to be documented]),
+                 \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
+                   see \S~\ref{fluxrings}),
+                 \item[\code{`gaussian-noise'}] (white noise),
+                 \item[\code{`halfcos-Bx'}] ([needs to be documented]),
+                 \item[\code{`hor-tube'}] (horizontal flux tube in $\Bv$,
+                   oriented in the $y$-direction).
+                 \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
+                 \item[\code{`mag-support'}] ([needs to be documented]),
+                 \item[\code{`mode'}] ([needs to be documented]),
+                 \item[\code{`modeb'}] ([needs to be documented]),
+                 \item[\code{`propto-ux'}] ([needs to be documented]),
+                 \item[\code{`propto-uy'}] ([needs to be documented]),
+                 \item[\code{`propto-uz'}] ([needs to be documented]),
+                 \item[\code{`sinxsinz'}] ($\sin x \sin z$),
+                 \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
+                 \item[\code{`uniform-By'}] (uniform field in $y$ direction),
+                 \item[\code{`uniform-Bz'}] (uniform field in $z$ direction),
+                 \item[\code{`zero'}] (zero field),
                  \end{description}
                  \\
   \var{initaa2} [\code{'zero'}]
@@ -6355,7 +6361,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.228 2004-01-24 17:21:06 dobler Exp $ $}
+$ $Id: manual.tex,v 1.229 2004-01-29 15:41:14 dobler Exp $ $}
 
 
 \end{document}
