@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.73 2004-02-26 14:11:21 mee Exp $
+! $Id: interstellar.f90,v 1.74 2004-03-02 13:13:55 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -14,28 +14,26 @@ module Interstellar
   real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,lnTT_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
-  real :: t_next_SNI=0.0, t_interval_SNI=3.64e-3,h_SNI=0.325,h_SNII=0.09
-  real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
+
+  ! Save space for last SNI time
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
- ! real, parameter :: rho_crit=1.,TT_crit=4000.
-  real, parameter :: rho_crit=.6,TT_crit=4000.
-  real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
-  real, parameter :: rho_min=1.e-6
-  
+  real :: t_next_SNI=0.0
+  real :: t_interval_SNI=impossible
+
   
   ! Mesh width (in points) of a SNe insertion
   integer :: point_width=4
 
   ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
-  real, parameter, dimension(3) :: &
-                        cnorm_SN = (/ 1.85544 , 2.80538 , 3.71213666 /) 
   ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
   !   2d: 2 pi int_0^infty exp(-(r/a)^6) r   dr) / a^2
   !   3d: 4 pi int_0^infty exp(-(r/a)^6) r^2 dr) / a^3 )
   ! ( cf. 3.128289613 -- from where ?!? )
   ! NB: 1d and 2d results just from numerical integration -- calculate
   !      exact integrals at some point...
+  real, parameter, dimension(3) :: &
+                        cnorm_SN = (/ 1.85544 , 2.80538 , 3.71213666 /) 
 
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -48,9 +46,24 @@ module Interstellar
 !  NB: will start using thermodynamics, and unit_length, etc., imminently...
 
 !  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
-  real, parameter :: TTunits=46.6
+!  real, parameter :: TTunits=46.6
+
   double precision :: unit_Lambda
-  real, parameter :: tosolarMkpc3=1.483e7
+
+  ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
+  real :: TT_SN_min_cgs=1.e7
+  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-52
+  double precision, parameter :: solar_mass_cgs=1.989e33
+  real :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
+  real, parameter :: rho_crit_cgs=1e-24.,TT_crit_cgs=4000.
+
+  ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
+  real :: TT_SN_min=impossible
+  real :: SNI_area_rate=impossible
+  real :: h_SNI=impossible,h_SNII=impossible
+  real, parameter :: solar_mass=impossible
+  real, parameter :: rho_crit=impossible,TT_crit=impossible
+
 
   real, parameter :: rhoUV_cgs=0.1
   real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
@@ -62,21 +75,30 @@ module Interstellar
   real, dimension(6) :: coolT, &
     coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
   double precision, dimension(6) :: coolH 
+
   integer :: iproc_SN,ipy_SN,ipz_SN
   logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
                               ! origin and ONLY the type I scheme is used
                               ! Used in kompaneets test etc.
 
+  ! Should maybe be nondimensionalised
+  real :: tau_cloud=2e-2 
+  real, parameter :: rho_min=1.e-6
+  !real, parameter :: tosolarMkpc3=1.483e7
+  real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
+
   ! input parameters
   real :: outer_shell_proportion = 2.
   real :: inner_shell_proportion = 1.5
-  real :: TT_SN_min=1.e7
   real :: coolingfunction_scalefactor=1.
   logical :: lnever_move_mass
 !tony: disable SNII for debugging 
   logical :: lSNI=.true., lSNII=.false.
+
+! Flag and explosion rates for average interstellar heating
   logical :: laverage_SN_heating = .false.
- ! real, parameter :: TT_SN_min=1.e8    ! vary for debug, tests
+  real :: r_SNI=3.e+4, r_SNII=4.e+3
+
   real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
 
   integer :: dummy 
@@ -85,7 +107,7 @@ module Interstellar
   ! run parameters
   logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
-      t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
+      ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion, &
@@ -116,7 +138,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.73 2004-02-26 14:11:21 mee Exp $")
+           "$Id: interstellar.f90,v 1.74 2004-03-02 13:13:55 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -187,13 +209,23 @@ module Interstellar
                        mu**2 * m_H**2
 !unit_energy / (unit_density*unit_time*unit_mass)
       elseif (unit_system=='SI') then
-        unit_Lambda = unit_energy * unit_velocity**3 * unit_time**2 * &
-                       mu**2 * m_H**2 * 1D-2
-!tony Constant factor 1D-2 IS NOT CORRECT... NEED TO RECALCULATE
+        call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
       coolH = coolH_cgs / unit_Lambda * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
+
+      if (unit_system=='cgs') then
+        TT_SN_min=TT_SN_min_cgs / unit_temperature
+        SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        h_SNI=h_SNI_cgs / unit_length
+        h_SNII=h_SNII_cgs / unit_length
+        solar_mass=solar_mass_cgs / unit_mass
+        rho_crit=rho_crit_cgs / unit_density
+        TT_crit=TT_crit_cgs / unit_temperature
+      else
+        call stop_it('initialize_interstellar: SI unit conversions not implemented')
+      endif
 
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -408,7 +440,7 @@ module Interstellar
        if (nxgrid/=1) dv=dv*dx
        if (nygrid/=1) dv=dv*dy
        if (nzgrid/=1) dv=dv*dz
-       mass_cloud_dim=fsum1(1)*dv*tosolarMkpc3
+       mass_cloud_dim=fsum1(1)*dv/solar_mass
        !print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
        ! need convert to dimensional units, for rate/probability calculation only. 
        ! don't overwrite mass_cloud (on individual processors), as it's re-used.
@@ -422,7 +454,7 @@ module Interstellar
        if (Lxyz(2)/=0.) rate_SNII=rate_SNII/Lxyz(2)
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
-        if (lroot .and. ip < 12) &
+        if (lroot .and. ip < 16) &
              print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
@@ -599,11 +631,11 @@ module Interstellar
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
-    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
-              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
+!    franSN(1)=(franSN(1)-cum_prob_byproc(iproc_SN)) /                      &
+!              (cum_prob_byproc(iproc_SN+1)-cum_prob_byproc(iproc_SN))
 !
-!    if (lroot) call random_number_wrapper(franSN)   
-!    call mpibcast_real(franSN,1)
+    if (lroot) call random_number_wrapper(franSN)   
+    call mpibcast_real(franSN,1)
     if (iproc == iproc_SN) then
       cum_mass=0.0
 find_SN: do n=n1,n2
