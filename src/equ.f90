@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.161 2003-10-16 12:50:25 mee Exp $
+! $Id: equ.f90,v 1.162 2003-10-23 18:30:52 dobler Exp $
 
 module Equ
 
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.161 2003-10-16 12:50:25 mee Exp $")
+           "$Id: equ.f90,v 1.162 2003-10-23 18:30:52 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -283,7 +283,7 @@ module Equ
 !
         if (ldiagnos .and. (nnamerz>0)) call calc_phiavg_profile()
 !
-!  for each pencil, accummulate through the different routines
+!  for each pencil, accumulate through the different routines
 !  maximum diffusion, maximum advection (keep as nx-array)
 !  and maximum heating
 !  
@@ -342,7 +342,7 @@ module Equ
 !
         if (lradiation_ray.and.lentropy) call radiative_cooling(f,df)
 !
-!  Add shear if precent
+!  Add shear if present
 !
         if (lshear) call shearing(f,df)
 !
@@ -387,6 +387,7 @@ module Equ
 !
         headtt=.false.
       enddo
+!
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  diagnostic quantities
