@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.45 2002-08-14 20:23:26 nilshau Exp $
+! $Id: density.f90,v 1.46 2002-08-15 19:09:51 nilshau Exp $
 
 module Density
 
@@ -14,7 +14,7 @@ module Density
   real :: cs20, lnrho0
   real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0.
-  real :: cs2bot=1., cs2top=1., gamma1
+  real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
   real :: radius_lnrho=.5,kx_lnrho=0.,ky_lnrho=0.,kz_lnrho=0.
   real :: eps_planet=.5
   real :: mpoly=1.5
@@ -28,7 +28,7 @@ module Density
        rho_left,rho_right,cs2bot,cs2top, &
        initlnrho2,radius_lnrho,eps_planet, &
        mpoly, &
-       kx_lnrho,ky_lnrho,kz_lnrho
+       kx_lnrho,ky_lnrho,kz_lnrho,amplrho
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.45 2002-08-14 20:23:26 nilshau Exp $")
+           "$Id: density.f90,v 1.46 2002-08-15 19:09:51 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -260,7 +260,7 @@ module Density
                / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
 
       case('planet')
-        call planet(ampllnrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma)
+        call planet(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma)
 
       case default
         !
