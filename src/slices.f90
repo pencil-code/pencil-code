@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.45 2004-07-11 18:30:07 brandenb Exp $
+! $Id: slices.f90,v 1.46 2004-07-23 13:57:55 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -10,7 +10,7 @@ module Slices
 
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
   real, dimension (nx,ny,3) :: oo_xy,oo_xy2,aa_xy,aa_xy2
-  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
+  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,nd_xy,nd_xy2
   real, dimension (nx,ny) :: divu_xy,divu_xy2,o2_xy,o2_xy2,b2_xy,b2_xy2
   real, dimension (nx,ny) :: jb_xy,jb_xy2,u2_xy,u2_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
@@ -23,13 +23,13 @@ module Slices
   real, dimension (nx,ny) :: QQ_chiral_xy,QQ_chiral_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz,aa_xz
-  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
+  real, dimension (nx,nz) :: lnrho_xz,nd_xz,ss_xz,lncc_xz,divu_xz
   real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,u2_xz,o2_xz,b2_xz,jb_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
   real, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz,DQ_chiral_xz,QQ_chiral_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz,oo_yz,aa_yz
-  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
+  real, dimension (ny,nz) :: lnrho_yz,nd_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,u2_yz,o2_yz,b2_yz,jb_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
   real, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz,DQ_chiral_yz,QQ_chiral_yz
@@ -87,10 +87,10 @@ module Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
-!      character(len=4) :: sdust
+      character(len=4) :: sdust
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
-      integer :: inamev!,idust
+      integer :: inamev,k
       real :: tmpval
       integer :: l
 !
@@ -154,38 +154,38 @@ module Slices
 !  Dust velocity
 !
       case ('uud')
-!        do idust=1,ndustspec
-!          call chn(idust,sdust)
-!          if (idust .eq. 1) sdust = ''
-!          uud_yz=f(ix,m1:m2,n1:n2,iudx(idust):iudz(idust))
-!          uud_xz=f(l1:l2,iy,n1:n2,iudx(idust):iudz(idust))
-!          uud_xy=f(l1:l2,m1:m2,iz,iudx(idust):iudz(idust))
-!          uud_xy2=f(l1:l2,m1:m2,iz2,iudx(idust):iudz(idust))
-!          call wslice(path//'udx'//trim(sdust)//'.yz', &
-!              uud_yz(:,:,1),x(ix),ny,nz)
-!          call wslice(path//'udy'//trim(sdust)//'.yz', &
-!              uud_yz(:,:,2),x(ix),ny,nz)
-!          call wslice(path//'udz'//trim(sdust)//'.yz', &
-!              uud_yz(:,:,3),x(ix),ny,nz)
-!          call wslice(path//'udx'//trim(sdust)//'.xz', &
-!              uud_xz(:,:,1),y(iy),nx,nz)
-!          call wslice(path//'udy'//trim(sdust)//'.xz', &
-!              uud_xz(:,:,2),y(iy),nx,nz)
-!          call wslice(path//'udz'//trim(sdust)//'.xz', &
-!              uud_xz(:,:,3),y(iy),nx,nz)
-!          call wslice(path//'udx'//trim(sdust)//'.xy', &
-!              uud_xy(:,:,1),z(iz),nx,ny)
-!          call wslice(path//'udy'//trim(sdust)//'.xy', &
-!              uud_xy(:,:,2),z(iz),nx,ny)
-!          call wslice(path//'udz'//trim(sdust)//'.xy', &
-!              uud_xy(:,:,3),z(iz),nx,ny)
-!          call wslice(path//'udx'//trim(sdust)//'.Xy', &
-!              uud_xy2(:,:,1),z(iz2),nx,ny)
-!          call wslice(path//'udy'//trim(sdust)//'.Xy', &
-!              uud_xy2(:,:,2),z(iz2),nx,ny)
-!          call wslice(path//'udz'//trim(sdust)//'.Xy', &
-!              uud_xy2(:,:,3),z(iz2),nx,ny)
-!        enddo
+        do k=1,ndustspec
+          call chn(k,sdust)
+          if (k == 1) sdust = ''
+          uud_yz=f(ix,m1:m2,n1:n2,iudx(k):iudz(k))
+          uud_xz=f(l1:l2,iy,n1:n2,iudx(k):iudz(k))
+          uud_xy=f(l1:l2,m1:m2,iz,iudx(k):iudz(k))
+          uud_xy2=f(l1:l2,m1:m2,iz2,iudx(k):iudz(k))
+          call wslice(path//'udx'//trim(sdust)//'.yz', &
+              uud_yz(:,:,1),x(ix),ny,nz)
+          call wslice(path//'udy'//trim(sdust)//'.yz', &
+              uud_yz(:,:,2),x(ix),ny,nz)
+          call wslice(path//'udz'//trim(sdust)//'.yz', &
+              uud_yz(:,:,3),x(ix),ny,nz)
+          call wslice(path//'udx'//trim(sdust)//'.xz', &
+              uud_xz(:,:,1),y(iy),nx,nz)
+          call wslice(path//'udy'//trim(sdust)//'.xz', &
+              uud_xz(:,:,2),y(iy),nx,nz)
+          call wslice(path//'udz'//trim(sdust)//'.xz', &
+              uud_xz(:,:,3),y(iy),nx,nz)
+          call wslice(path//'udx'//trim(sdust)//'.xy', &
+              uud_xy(:,:,1),z(iz),nx,ny)
+          call wslice(path//'udy'//trim(sdust)//'.xy', &
+              uud_xy(:,:,2),z(iz),nx,ny)
+          call wslice(path//'udz'//trim(sdust)//'.xy', &
+              uud_xy(:,:,3),z(iz),nx,ny)
+          call wslice(path//'udx'//trim(sdust)//'.Xy', &
+              uud_xy2(:,:,1),z(iz2),nx,ny)
+          call wslice(path//'udy'//trim(sdust)//'.Xy', &
+              uud_xy2(:,:,2),z(iz2),nx,ny)
+          call wslice(path//'udz'//trim(sdust)//'.Xy', &
+              uud_xy2(:,:,3),z(iz2),nx,ny)
+        enddo
 !
 !  Logarithmic density
 !
@@ -199,25 +199,21 @@ module Slices
         call wslice(path//'lnrho.xy',lnrho_xy,z(iz),nx,ny)
         call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2),nx,ny)
 !
-!  Logarithmic dust density
+!  Dust density
 !
-      case ('lnrhod')
-!        do idust=1,ndustspec
-!          call chn(idust,sdust)
-!          if (idust .eq. 1) sdust = ''
-!          lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod(idust))
-!          lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod(idust))
-!          lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod(idust))
-!          lnrhod_xy2=f(l1:l2,m1:m2,iz2,ilnrhod(idust))
-!          call wslice(path//'lnrhod'//trim(sdust)//'.yz', &
-!              lnrhod_yz,x(ix),ny,nz)
-!          call wslice(path//'lnrhod'//trim(sdust)//'.xz', &
-!              lnrhod_xz,y(iy),nx,nz)
-!          call wslice(path//'lnrhod'//trim(sdust)//'.xy', &
-!              lnrhod_xy,z(iz),nx,ny)
-!          call wslice(path//'lnrhod'//trim(sdust)//'.Xy', &
-!              lnrhod_xy2,z(iz2),nx,ny)
-!        enddo
+      case ('nd')
+        do k=1,ndustspec
+          call chn(k,sdust)
+          if (k == 1) sdust = ''
+          nd_yz=f(ix,m1:m2,n1:n2,ind(k))
+          nd_xz=f(l1:l2,iy,n1:n2,ind(k))
+          nd_xy=f(l1:l2,m1:m2,iz,ind(k))
+          nd_xy2=f(l1:l2,m1:m2,iz2,ind(k))
+          call wslice(path//'nd'//trim(sdust)//'.yz',nd_yz,x(ix),ny,nz)
+          call wslice(path//'nd'//trim(sdust)//'.xz',nd_xz,y(iy),nx,nz)
+          call wslice(path//'nd'//trim(sdust)//'.xy',nd_xy,z(iz),nx,ny)
+          call wslice(path//'nd'//trim(sdust)//'.Xy',nd_xy2,z(iz2),nx,ny)
+        enddo
 ! 
 !  Entropy
 !
