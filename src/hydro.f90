@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.142 2003-11-28 17:00:00 theine Exp $
+! $Id: hydro.f90,v 1.143 2003-11-28 18:26:36 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -61,7 +61,7 @@ module Hydro
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
-  integer :: i_dtu=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_dtu=0,i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
@@ -106,7 +106,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.142 2003-11-28 17:00:00 theine Exp $")
+           "$Id: hydro.f90,v 1.143 2003-11-28 18:26:36 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -856,7 +856,7 @@ module Hydro
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_uxpt=0; i_uypt=0; i_uzpt=0
-        i_dtu=0; i_urms=0; i_umax=0; i_orms=0; i_omax=0
+        i_dtu=0; i_dtv=0; i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
         i_uxuym=0; i_uxuzm=0; i_uyuzm=0
@@ -875,6 +875,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
         call parse_name(iname,cname(iname),cform(iname),'dtu',i_dtu)
+        call parse_name(iname,cname(iname),cform(iname),'dtv',i_dtv)
         call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
         call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
@@ -935,6 +936,7 @@ module Hydro
         write(3,*) 'i_o2m=',i_o2m
         write(3,*) 'i_oum=',i_oum
         write(3,*) 'i_dtu=',i_dtu
+        write(3,*) 'i_dtv=',i_dtv
         write(3,*) 'i_urms=',i_urms
         write(3,*) 'i_umax=',i_umax
         write(3,*) 'i_ux2m=',i_ux2m

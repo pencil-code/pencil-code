@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.180 2003-11-28 17:00:00 theine Exp $
+! $Id: equ.f90,v 1.181 2003-11-28 18:26:36 theine Exp $
 
 module Equ
 
@@ -224,7 +224,7 @@ module Equ
       real, dimension (nx,3,3) :: uij,udij,bij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
-      real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp
+      real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
       real :: facdiffus ! ,facdss,facdlnrho
 !
 !  print statements when they are first executed
@@ -233,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.180 2003-11-28 17:00:00 theine Exp $")
+           "$Id: equ.f90,v 1.181 2003-11-28 18:26:36 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -388,7 +388,11 @@ module Equ
           !  (lmaxadvec_sum=.false. by default)
           !
           if (lmaxadvec_sum) then
-            UUtemp=amax1(sqrt(u2)+sqrt(cs2+va2),cdt*maxdiffus/(cdtvDim*dxmin))
+            maxadvec=sqrt(u2)+sqrt(cs2+va2)
+            if (ldiagnos.and.i_dtv/=0) then
+              call max_mn_name(maxadvec/dxmin/cdt,i_dtv,l_dt=.true.)
+            endif
+            UUtemp=amax1(maxadvec,cdt*maxdiffus/(cdtvDim*dxmin))
             call max_mn(UUtemp,UUmax)
           else
             call max_mn(sqrt(maxadvec2)+(cdt*maxdiffus)/(cdtvDim*dxmin),UUmax)
