@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.27 2002-07-08 19:28:14 brandenb Exp $
+! $Id: density.f90,v 1.28 2002-07-08 20:47:21 dobler Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.27 2002-07-08 19:28:14 brandenb Exp $")
+           "$Id: density.f90,v 1.28 2002-07-08 20:47:21 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -99,10 +99,19 @@ module Density
 !  If initrho does't match, f=0 is assumed (default).
 !
       select case(initlnrho)
-        case('zero', '0'); f(:,:,:,ilnrho)=0.
-        case('isothermal'); call isothermal(f)
-        case('polytropic_simple'); call polytropic_simple(f)
-        case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
+
+      case('zero', '0'); f(:,:,:,ilnrho)=0.
+      case('isothermal'); call isothermal(f)
+      case('polytropic_simple'); call polytropic_simple(f)
+      case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
+      case('gaussian-noise'); call gaunoise(ampllnrho,f,ilnrho,ilnrho)
+      case('gaussian-noise-x')
+        !
+        !  noise, but just x-dependent
+        !
+        call gaunoise(ampllnrho,f,ilnrho,ilnrho)
+        f(:,:,:,ilnrho) = spread(spread(f(:,ny/2,nz/2,ilnrho),2,my),3,mz)
+
       case('rho-jump', '2')
         !
         !  density jump (for shocks?)
