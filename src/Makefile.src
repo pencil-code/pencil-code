@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.5 2003-11-10 16:43:13 mee Exp $
+### $Id: Makefile.src,v 1.6 2003-11-10 17:21:04 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -135,13 +135,12 @@ FCCLEANER=
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
-#FFLAGS=-O3 -xW -vec_report0 #(wormhole)
-#FCCLEANER=2>&1 | cleanf95 #(wormhole)
-#FFLAGS=-g #(cosmo|nw17)
+#FFLAGS=-O3 -xW -vec_report0 #(wormhole|cosmo)
+#FCCLEANER=2>&1 | cleanf95 #(wormhole|cosmo)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin|davey[1-2])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11|wormhole)  
-#FC=mpif77 -i_dynamic #(cosmo)
+#FC=mpif77 #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11|wormhole)
 #LDMPI= # (Samos|fire|sandin)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
