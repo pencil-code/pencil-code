@@ -1392,7 +1392,8 @@ if (m==10 .and. n==10) print*,'SUM_MN_NAME: itype_name=',itype_name
 integer :: itest_old
 !
       intent(in)  :: iname,cname,ctest
-      intent(out) :: cform,itest
+      intent(out) :: cform
+      intent(inout) :: itest
 !
 !  check whether format is given
 !
