@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.40 2003-10-06 14:28:53 mcmillan Exp $
+! $Id: grav_r.f90,v 1.41 2003-10-07 14:33:04 mcmillan Exp $
 
 module Gravity
 
@@ -21,6 +21,7 @@ module Gravity
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
+  real :: r_int,r_ext
 
   character (len=labellen) :: ipotential='zero'
 
@@ -28,9 +29,9 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
 
-  namelist /grav_init_pars/ ipotential
+  namelist /grav_init_pars/ ipotential,r_int,r_ext
 
-  namelist /grav_run_pars/  ipotential
+  namelist /grav_run_pars/  ipotential,r_int,r_ext
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -55,7 +56,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.40 2003-10-06 14:28:53 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.41 2003-10-07 14:33:04 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
