@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.6 2004-06-07 09:04:45 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.7 2004-06-08 13:12:08 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -71,7 +71,12 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
   endif else if (keyword_set(rhod)) then begin
 
     sized=size(nd)
-    result=total(nd*md,sized[0])
+    sizemd=size(md)
+    if (sized[0] ne sizemd[0]) then begin
+      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])
+    endif else begin
+      result=total(nd*md,sized[0])
+    endelse
 
   endif else if (keyword_set(ppmon)) then begin
 
@@ -94,7 +99,12 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
   endif else if (keyword_set(epsd)) then begin
 
     sized=size(nd)
-    result = total(md*nd,sized[0])*unit_md/exp(lnrho)
+    sizemd=size(md)
+    if (sized[0] ne sizemd[0]) then begin
+      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/exp(lnrho)
+    endif else begin
+      result=total(nd*md,sized[0])*unit_md/exp(lnrho)
+    endelse
 
   endif else if (keyword_set(unit_md)) then begin
 
