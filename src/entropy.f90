@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.244 2003-11-17 13:43:18 theine Exp $
+! $Id: entropy.f90,v 1.245 2003-11-17 19:19:39 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -30,7 +30,7 @@ module Entropy
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
-  real :: tau_ss_exterior=0.,T0
+  real :: tau_ss_exterior=0.,T0=1.
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.244 2003-11-17 13:43:18 theine Exp $")
+           "$Id: entropy.f90,v 1.245 2003-11-17 19:19:39 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -232,8 +232,10 @@ module Entropy
         cs20 = cs0**2
 !       temperatures at shell boundaries
         beta1 = g0/(mpoly+1)
-        TT_ext = T0
-        TT_int = 1+beta1*(1/r_int-1)
+        !TT_ext = T0
+        !TT_int = 1+beta1*(1/r_int-1)
+        TT_ext = gamma/gamma1
+        TT_int = gamma/gamma1*(1+beta1*(1/r_int-1))
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
         call get_soundspeed(log(TT_ext),cs2_ext)
@@ -418,9 +420,10 @@ module Entropy
 !  no entropy initialization when lgravr=.true.
 !  why?
 !
-      if (lgravr) then
-        f(:,:,:,iss) = -0.
-      endif
+!  The following seems insane, so I comment this out.
+!     if (lgravr) then
+!       f(:,:,:,iss) = -0.
+!     endif
 
 !
 !  Add perturbation(s)
@@ -591,7 +594,7 @@ module Entropy
           r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
 
           where (r_mn >= r_ext) TT = TT_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)
+          where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
           where (r_mn <= r_int) TT = TT_int
 
           lnrho=f(l1:l2,m,n,ilnrho)

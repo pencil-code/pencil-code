@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.54 2003-10-24 13:17:31 dobler Exp $
+! $Id: grav_r.f90,v 1.55 2003-11-17 19:19:39 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.54 2003-10-24 13:17:31 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.55 2003-11-17 19:19:39 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -187,9 +187,9 @@ module Gravity
 
 ! geodynamo; 1/r potential in a spherical shell
         else
-          where (r_mn >= r_ext) g_r=g_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) g_r=g0/r_mn**2
-          where (r_mn <= r_int) g_r=g_int
+          where (r_mn >= r_ext) g_r=-g_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) g_r=-g0/r_mn**2
+          where (r_mn <= r_int) g_r=-g_int
 ! end geodynamo
         endif
 !
