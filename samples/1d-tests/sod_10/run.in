@@ -2,8 +2,8 @@
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2002-12-05 12:38:46 brandenb Exp $'
-  nt=20000, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
+  cvsid='$Id: run.in,v 1.3 2003-07-21 00:43:39 brandenb Exp $'
+  nt=20000, it1=50, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
   dsnap=20., dvid=.02,tmax=2.4,
   bcx = 'a','s','s','s','s'
 /
