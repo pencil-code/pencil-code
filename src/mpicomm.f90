@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.38 2002-09-03 21:36:28 nilshau Exp $
+! $Id: mpicomm.f90,v 1.39 2002-09-03 22:21:41 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -606,15 +606,16 @@ module Mpicomm
       STOP
     endsubroutine stop_it
 !***********************************************************************
-    subroutine transp(a,b,var)
+    subroutine transp(a,var)
 !
 !  Doing the transpose of information distributed on several processors
 !
 !  03.09.02/nils: coded
 !
-      real, dimension(nx,ny,nz,nvar) :: send_buf, recv_buf
+      real, dimension(nx,ny,nz,mvar) :: send_buf, recv_buf
+      real,dimension(nx,ny,nz) :: a
       real, dimension(nz) :: tmp
-      integer :: i,j,proc,sendc,recvc,sender
+      integer :: i,j,proc,sendc,recvc,sender,pz,py
       character :: var
 !
       sendc=nx*ny*nz/(nprocy*nprocz)
@@ -626,10 +627,10 @@ if (var=='y') then
 !
 !  Scatter information to different processors (x-y transpose)
 !
-      do i=0,nprocz-1
-         if (ipz==i) then
-            do i=1,nprocy
-               sender=i+ipz*nprocy
+      do pz=0,nprocz-1
+         if (ipz==pz) then
+            do py=0,nprocy-1
+               sender=py+ipz*nprocy
                call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
             enddo
          end if
@@ -639,8 +640,8 @@ if (var=='y') then
 !      
       do proc=1,nprocy
          do i=1,ny/nprocy
-            do j=ny/nprocy
-               tmp=recv_buf(i,j,proc)
+            do j=1,ny/nprocy
+               tmp=recv_buf(i,j,:,proc)
                recv_buf(i,j,:,proc)= recv_buf(j,i,:,proc)
                recv_buf(j,i,:,proc)=tmp
             enddo
@@ -653,10 +654,10 @@ elseif (var=='z') then
 !
 !  Scatter information to different processors (x-z transpose)
 !
-      do i=0,nprocy-1
-         if (ipy==i) then
-            do i=1,nprocz
-               sender=i+ipz*nprocy
+      do py=0,nprocy-1
+         if (ipy==py) then
+            do pz=0,nprocz-1
+               sender=pz+ipz*nprocy
                call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
             enddo
          end if
@@ -666,7 +667,7 @@ elseif (var=='z') then
 !      
       do proc=1,nprocz
          do i=1,nz/nprocz
-            do j=nz/nprocz
+            do j=1,nz/nprocz
                tmp=recv_buf(i,:,j,proc)
                recv_buf(i,:,j,proc)= recv_buf(j,:,i,proc)
                recv_buf(j,:,i,proc)=tmp
