@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.125 2003-03-11 08:34:55 brandenb Exp $
+! $Id: equ.f90,v 1.126 2003-03-18 20:31:05 brandenb Exp $
 
 module Equ
 
@@ -192,14 +192,15 @@ module Equ
       use Magnetic
       use Radiation
       use Pscalar
+      use Dustvelocity
       use Boundcond
       use IO
       use Shear
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
+      real, dimension (nx,3,3) :: uij,udij
+      real, dimension (nx,3) :: uu,uud,glnrho
+      real, dimension (nx) :: lnrho,divu,divud,u2,ud2,rho,rho1
       real :: fac, facheat
 !
 !  print statements when they are first executed
@@ -208,7 +209,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.125 2003-03-11 08:34:55 brandenb Exp $")
+           "$Id: equ.f90,v 1.126 2003-03-18 20:31:05 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -281,6 +282,10 @@ module Equ
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
         call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
         call dlncc_dt (f,df,uu,glnrho)
+!
+!  dust equations
+!
+        call duud_dt  (f,df,uu,uud,divud,ud2,udij)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?

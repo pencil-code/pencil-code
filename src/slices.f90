@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.10 2002-11-19 10:51:52 mee Exp $
+! $Id: slices.f90,v 1.11 2003-03-18 20:31:05 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -8,13 +8,13 @@ module Slices
 
   implicit none
 
-  real, dimension (nx,ny,3) :: uu_xy,uu_xy2,bb_xy,bb_xy2
+  real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,ss_xy,ss_xy2
 
-  real, dimension (nx,nz,3) :: uu_xz,bb_xz
+  real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,ss_xz
 
-  real, dimension (ny,nz,3) :: uu_yz,bb_yz
+  real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,ss_yz
 
   contains
@@ -30,6 +30,7 @@ module Slices
 !  20-oct-97/axel: coded
 !  08-oct-02/tony: increased size of file to handle datadir//'/tvid.dat'
 !  13-nov-02/axel: added more fields, use wslice.
+!  18-mar-03/axel: added dust velocity
 !
       use Sub
 !
@@ -87,6 +88,29 @@ module Slices
         call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2),nx,ny)
+      endif
+!
+!  Dust velocity
+!
+      if (ldustvelocity) then
+        do j=1,3
+          uud_yz(:,:,j)=f(ix,m1:m2,n1:n2,j+iuud-1)
+          uud_xz(:,:,j)=f(l1:l2,iy,n1:n2,j+iuud-1)
+          uud_xy(:,:,j)=f(l1:l2,m1:m2,iz,j+iuud-1)
+          uud_xy2(:,:,j)=f(l1:l2,m1:m2,iz2,j+iuud-1)
+        enddo
+        call wslice(path//'udx.yz',uud_yz(:,:,1),x(ix),ny,nz)
+        call wslice(path//'udy.yz',uud_yz(:,:,2),x(ix),ny,nz)
+        call wslice(path//'udz.yz',uud_yz(:,:,3),x(ix),ny,nz)
+        call wslice(path//'udx.xz',uud_xz(:,:,1),y(iy),nx,nz)
+        call wslice(path//'udy.xz',uud_xz(:,:,2),y(iy),nx,nz)
+        call wslice(path//'udz.xz',uud_xz(:,:,3),y(iy),nx,nz)
+        call wslice(path//'udx.xy',uud_xy(:,:,1),z(iz),nx,ny)
+        call wslice(path//'udy.xy',uud_xy(:,:,2),z(iz),nx,ny)
+        call wslice(path//'udz.xy',uud_xy(:,:,3),z(iz),nx,ny)
+        call wslice(path//'udx.Xy',uud_xy2(:,:,1),z(iz2),nx,ny)
+        call wslice(path//'udy.Xy',uud_xy2(:,:,2),z(iz2),nx,ny)
+        call wslice(path//'udz.Xy',uud_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
 !  logarithmic density

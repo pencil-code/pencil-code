@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.96 2003-02-24 01:19:36 brandenb Exp $ 
+! $Id: param_io.f90,v 1.97 2003-03-18 20:31:05 brandenb Exp $ 
 
 module Param_IO
 
@@ -14,6 +14,7 @@ module Param_IO
   use Entropy
   use Magnetic
   use Pscalar
+  use Dustvelocity
   use Radiation
   use Ionization
   use Forcing
@@ -151,6 +152,8 @@ module Param_IO
       if (lionization  ) read(1,NML=ionization_init_pars   ,ERR=99, IOSTAT=ierr)
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
+      label='dustvelocity_init_pars'
+      if (ldustvelocity) read(1,NML=dustvelocity_init_pars,ERR=99, IOSTAT=ierr)
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
       label='shear_init_pars'
@@ -212,6 +215,7 @@ module Param_IO
         if (lradiation   ) print*,'&radiation_init_pars      /'
         if (lionization  ) print*,'&ionization_init_pars     /'
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
+        if (ldustvelocity) print*,'&dustvelocity_init_pars   /'
         if (linterstellar) print*,'&interstellar_init_pars   /'
         if (lshear       ) print*,'&shear_init_pars          /'
         ! no input parameters for viscosity
@@ -260,6 +264,7 @@ module Param_IO
         if (lradiation   ) write(unit,NML=radiation_init_pars   )
         if (lionization  ) write(unit,NML=ionization_init_pars  )
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
+        if (ldustvelocity) write(unit,NML=dustvelocity_init_pars)
         if (linterstellar) write(unit,NML=interstellar_init_pars)
         if (lshear       ) write(unit,NML=shear_init_pars       )
         ! no input parameters for viscosity
@@ -324,6 +329,8 @@ module Param_IO
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
+      label='dustvelocity_run_pars'
+      if (ldustvelocity) read(1,NML=dustvelocity_run_pars ,ERR=99, IOSTAT=ierr)
       label='interstellar_run_pars'
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
       label='shear_run_pars'
@@ -401,6 +408,7 @@ module Param_IO
         if (lradiation   ) print*,'&radiation_run_pars      /'
         if (lionization  ) print*,'&ionization_run_pars     /'
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
+        if (ldustvelocity) print*,'&dustvelocity_run_pars   /'
         if (linterstellar) print*,'&interstellar_run_pars   /'
         if (lshear       ) print*,'&shear_run_pars          /'
         if (lviscosity   ) print*,'&viscosity_run_pars      /'
@@ -458,6 +466,7 @@ module Param_IO
         if (lradiation   ) write(unit,NML=radiation_run_pars   )
         if (lionization  ) write(unit,NML=ionization_run_pars  )
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
+        if (ldustvelocity) write(unit,NML=dustvelocity_run_pars)
         if (linterstellar) write(unit,NML=interstellar_run_pars)
         if (lshear       ) write(unit,NML=shear_run_pars       )
         if (lviscosity   ) write(unit,NML=viscosity_run_pars   )
@@ -499,6 +508,7 @@ module Param_IO
         if (lradiation   ) write(1,NML=radiation_init_pars   )
         if (lionization  ) write(1,NML=ionization_init_pars  )
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
+        if (ldustvelocity) write(1,NML=dustvelocity_init_pars)
         if (linterstellar) write(1,NML=interstellar_init_pars)
         if (lshear       ) write(1,NML=shear_init_pars       )
         ! no input parameters for viscosity
@@ -527,6 +537,7 @@ module Param_IO
         if (lradiation   ) read(1,NML=radiation_init_pars   )
         if (lionization  ) read(1,NML=ionization_init_pars  )
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
+        if (ldustvelocity) read(1,NML=dustvelocity_init_pars)
         if (linterstellar) read(1,NML=interstellar_init_pars)
         if (lshear       ) read(1,NML=shear_init_pars       )
         ! no input parameters for viscosity        
@@ -558,6 +569,7 @@ module Param_IO
         if (lradiation   ) write(1,NML=radiation_run_pars   )
         if (lionization  ) write(1,NML=ionization_run_pars  )
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
+        if (ldustvelocity) write(1,NML=dustvelocity_run_pars)
         if (linterstellar) write(1,NML=interstellar_run_pars)
         if (lshear       ) write(1,NML=shear_run_pars       )
         if (lviscosity   ) write(1,NML=viscosity_run_pars   )

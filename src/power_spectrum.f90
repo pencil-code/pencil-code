@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.31 2003-03-18 20:31:05 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.31 2003-03-18 20:31:05 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.31 2003-03-18 20:31:05 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -283,7 +283,7 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,im,in,ivec
+  integer :: i,im,in,ivec
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.31 2003-03-18 20:31:05 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
