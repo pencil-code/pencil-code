@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.203 2003-09-12 16:16:20 mee Exp $
+! $Id: entropy.f90,v 1.204 2003-09-24 12:14:37 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -92,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.203 2003-09-12 16:16:20 mee Exp $")
+           "$Id: entropy.f90,v 1.204 2003-09-24 12:14:37 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -980,6 +980,9 @@ module Entropy
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
       real :: z_prev=-1.23e20
+
+integer :: i
+
 !
       save :: z_prev,hcond,glhc
 !
@@ -1021,6 +1024,7 @@ module Entropy
         call dot_mn(glnT,glnThcond,g2)
         thdiff = chix * (gamma*del2ss+gamma1*del2lnrho + g2)
       else
+        chix = 0
         thdiff = 0
         ! not really needed, I (wd) guess -- but be sure before you
         ! remove them
