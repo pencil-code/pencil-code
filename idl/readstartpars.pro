@@ -1,12 +1,11 @@
 ;
 ;  Read startup parameters
-;  after start, cannot read param2.nml
 ;
-pfile = datatopdir+'/'+'param.nml'
+pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  if (quiet le 2) then print, 'Reading param.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param.nml', result
+  if (quiet le 2) then print, 'Reading param2.nml..'
+  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param2.nml', result
   res = flatten_strings(result)
   ;; For people with an unclean shell: remove everything up to the
   ;; opening brace:
@@ -22,19 +21,19 @@ if (cpar gt 0) then begin
   if (execute('par2 = '+res) ne 1) then $
       message, 'There was a problem with param.nml', /INFO
   if (lhydro) then begin
-    ;nu=par2.nu
+    nu=par2.nu
   endif
   if (ldensity) then begin
-    ;cs0=par2.cs0
+    cs0=par2.cs0
   endif
   if (lentropy) then begin
-    ;hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
-    ;luminosity=par2.luminosity & wheat=par2.wheat
-    ;cool=par2.cool & wcool=par2.wcool
-    ;Fbot=par2.Fbot
+    hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
+    luminosity=par2.luminosity & wheat=par2.wheat
+    cool=par2.cool & wcool=par2.wcool
+    Fbot=par2.Fbot
   endif
   if (lmagnetic) then begin
-    ;eta=par2.eta
+    eta=par2.eta
   endif
 endif else begin
   if (quiet le 4) then print, 'Warning: cannot find file ', pfile
