@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.1 2004-09-27 17:22:32 ajohan Exp $
+# CVS: $Id: copy-snapshots_exp,v 1.2 2004-09-28 11:42:40 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -100,26 +100,27 @@ else
     echo
     echo "=========  "`date`"  ========="
 ##    
-## Check for files to copy by diffing the files copied-files.list 
-## and copy-me.list in the proc directories
+## Check for files to copy by diffing the files moved-files.list 
+## and move-me.list in the proc directories
 ##
     set nodenumber=0
     foreach node ($nodelist)
       echo "-------------------- Checking proc$nodenumber -------------------"
-      set copied_files=$targetdir/proc$nodenumber/copied-files.list
-      set copy_me=$targetdir/proc$nodenumber/copy-me.list
+      set move_me=$targetdir/proc$nodenumber/move-me.list
+      set source_me=$targetdir/proc$nodenumber/source-me.csh
+      set moved_files=$targetdir/proc$nodenumber/moved-files.list
 ##
-## Must make sure that both copy-me.list and copied-files.list exist
+## Must make sure that both move-me.list and moved-files.list exist
 ##
-      if (! -e $copy_me) touch $copy_me
-      if (! -e $copied_files) touch $copied_files
-      echo " ## Comparing $copied_files with $copy_me"
+      if (! -e $move_me) touch $move_me
+      if (! -e $moved_files) touch $moved_files
+      echo " ## Comparing $moved_files with $move_me"
       echo
-      echo "diff $copied_files $copy_me | grep '>' | sed -e 's/> //g'"
+      echo "diff $moved_files $move_me | grep '>' | sed -e 's/> //g'"
 ##
 ## Only do the diff once (there could be changes in the mean time)
 ##                  
-      set lines=`diff $copied_files $copy_me | grep '>' | sed -e 's/> //g'`
+      set lines=`diff $moved_files $move_me | grep '>' | sed -e 's/> //g'`
       echo
       echo $lines
       echo
@@ -130,17 +131,26 @@ else
         echo $SSH $node mv $line $targetdir/proc$nodenumber/
         $SSH $node mv $line $targetdir/proc$nodenumber/
 ##
-## Inform copied-files.list that the file has been copied (if successful)
+## Inform moved-files.list that the file has been moved (if successful)
 ##                        
         if (! $status) then
           echo " copy-snapshots: Move successful (exit status 0)"
-          echo $line >> $copied_files
+          echo $line >> $moved_files
         else
           echo " copy-snapshots: Could not move file (exit status 1)"
         endif
       end
       set nodenumber=`expr $nodenumber + 1`
     end
+##
+## Execute user supplied script source-me.csh in the data directory.
+##  
+    if (-e $source_me) then
+      echo cat $source_me
+      cat $source_me
+      source $source_me >> $targetdir/source-me.log
+      mv $source_me ${source_me}.used
+    endif
 ##
 ## Break infinite while loop if set to check only once for files to copy
 ##
