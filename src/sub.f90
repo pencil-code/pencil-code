@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.132 2003-08-11 15:06:48 dobler Exp $ 
+! $Id: sub.f90,v 1.133 2003-08-12 11:37:59 dobler Exp $ 
 
 module Sub 
 
@@ -1450,7 +1450,7 @@ module Sub
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
-      integer :: mxout1,myout1,mzout1
+      integer :: mxout1,myout1,mzout1,real_prec
 !
 !  determine whether mxout=mx (as on each processor)
 !  or whether mxout is different (eg when writing out full array)
@@ -1478,10 +1478,14 @@ module Sub
         !
         !  check for double precision
         !
-        if (1..eq.1.+1e-10) then
+        real_prec = precision(1.)
+        if (real_prec == 6) then
           write(1,'(a)') 'S'
-        else
+        elseif (real_prec == 15) then
           write(1,'(a)') 'D'
+        else
+          print*, 'WARNING: encountered unknown precision ', real_prec
+          write(1,'(a)') '?'
         endif
         !
         !  write number of ghost cells (could be different in x, y and z)
@@ -2349,7 +2353,7 @@ module Sub
 !  Thus, in order to keep lnrho smooth one needs to smooth lnrho
 !  in sporadic time intervals.
 !
-!  11-Jul-01/axel: adapted from similar version in f77 code
+!  11-jul-01/axel: adapted from similar version in f77 code
 !
 !  WARNING: THIS ROUTINE IS LIKELY TO BE BROKEN IF YOU USE MPI
 !
