@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.23 2003-09-18 17:49:06 theine Exp $
+! $Id: radiation_ray.f90,v 1.24 2003-09-30 13:39:46 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -23,7 +23,6 @@ module Radiation
   real, dimension (maxdir) :: weight
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
-  real, parameter :: dtaumin=2*epsilon(1.)
   integer :: llstart,llstop,lsign
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
@@ -34,7 +33,7 @@ module Radiation
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
   logical :: nocooling=.false.,test_radiation=.false.,lkappa_es=.false.
-  logical :: l2ndorder=.false.
+  logical :: l2ndorder=.true.,lupwards=.true.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -44,11 +43,11 @@ module Radiation
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es, &
-       bc_rad,l2ndorder
+       bc_rad,l2ndorder,lupwards
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es,nocooling, &
-       bc_rad,l2ndorder
+       bc_rad,l2ndorder,lupwards
 
   contains
 
@@ -83,7 +82,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.23 2003-09-18 17:49:06 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.24 2003-09-30 13:39:46 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -148,9 +147,13 @@ module Radiation
 !
 !  check boundary conditions
 !
-      print*,'bc_rad=',bc_rad
+      print*,'initialize_radiation: bc_rad=',bc_rad
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
-      print*,'bc_rad1,bc_rad2=',bc_rad1,bc_rad2
+      print*,'initialize_radiation: bc_rad1,bc_rad2=',bc_rad1,bc_rad2
+!
+!  info about numerical scheme in subroutine Qintr
+!
+      print*,'initialize_radiation: l2ndorder,lupwards=',l2ndorder,lupwards
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -242,11 +245,7 @@ module Radiation
 !
       do idir=1,ndir
 !
-        if (l2ndorder) then
-          call Qintr2(f)
-        else
-          call Qintr(f)
-        endif
+        call Qintr(f)
         call Qperi()
         call Qcomm(f)
         call Qrev(f)
@@ -270,7 +269,10 @@ module Radiation
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real :: dlength,dtau,emdtau,dtau_ps,tau_term
+      real :: dlength,dtau,emdtau,tau_term
+      real :: Srad1st,Srad2nd,emdtau1,emdtau2
+      real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
+      real :: dtau01,dtau12,dSdtau01,dSdtau12
 !
 !  identifier
 !
@@ -286,18 +288,6 @@ module Radiation
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
 !
-!  Special care is required when calculating
-!                   exp(-dtau)-1+dtau
-!    tau_ps_term = -------------------
-!                         dtau 
-!  in order to avoid absurdly high values due to roundoff error if dtau << 1.
-!  We use the builtin exp function only for dtau>dtau_ps, otherwise the first
-!  three terms of the Taylor series. The threshold below was found to be good
-!  for real (rel. error in tau_ps_term <= 7e-6) and double precision
-!  (rel. error <= 4e-10).
-!
-      dtau_ps=1.8*epsilon(dtau)**0.2
-!
 !  determine start and stop positions
 !
       llstart=l1; llstop=l2; lsign=1
@@ -320,6 +310,61 @@ module Radiation
       do l=llstart,llstop,lsign 
       do m=mmstart,mmstop,msign
       do n=nnstart,nnstop,nsign
+!
+        if (l2ndorder) then
+!
+          if (lupwards) then
+!
+            dtau_m=(5*kaprho(l-lrad,m-mrad,n-nrad) &
+                   +8*kaprho(l     ,m     ,n     ) &
+                   -1*kaprho(l+lrad,m+mrad,n+nrad))*dlength/12
+            dtau_p=(5*kaprho(l+lrad,m+mrad,n+nrad) &
+                   +8*kaprho(l     ,m     ,n     ) &
+                   -1*kaprho(l-lrad,m-mrad,n-nrad))*dlength/12
+            dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
+            dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
+            Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
+            Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+            emdtau=exp(-dtau_m)
+            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
+            if (dtau_m>1e-5) then
+              emdtau1=1-emdtau
+              emdtau2=emdtau*(1+dtau_m)-1
+            else
+              emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
+              emdtau2=-dtau_m**2/2+dtau_m**3/3-dtau_m**4/8
+            endif
+            Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
+                       -Srad1st*emdtau1-Srad2nd*emdtau2
+!
+          else
+!
+            dtau01=(5*kaprho(l-0*lrad,m-0*mrad,n-0*nrad) &
+                   +8*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
+                     -kaprho(l-2*lrad,m-2*mrad,n-2*nrad))*dlength/12
+            dtau12=(5*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
+                   +8*kaprho(l-2*lrad,m-2*mrad,n-2*nrad) &
+                     -kaprho(l-3*lrad,m-3*mrad,n-3*nrad))*dlength/12
+            dSdtau01=(Srad(l-0*lrad,m-0*mrad,n-0*nrad) &
+                     -Srad(l-1*lrad,m-1*mrad,n-1*nrad))/dtau01
+            dSdtau12=(Srad(l-1*lrad,m-1*mrad,n-1*nrad) &
+                     -Srad(l-2*lrad,m-2*mrad,n-2*nrad))/dtau12
+            Srad1st=(dSdtau01*dtau12+dSdtau12*dtau01)/(dtau01+dtau12)
+            Srad2nd=2*(dSdtau01-dSdtau12)/(dtau01+dtau12)
+            emdtau=exp(-dtau01)
+            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
+            if (dtau01>1e-5) then
+              emdtau1=1-emdtau
+            else
+              emdtau1=dtau01-dtau01**2/2
+            endif
+            Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad2nd*dtau01 &
+                       +(Srad2nd-Srad1st)*emdtau1
+!
+          endif
+!
+        else
+!
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           emdtau=exp(-dtau)
           emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
@@ -330,101 +375,14 @@ module Radiation
           endif
           Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +tau_term*(Srad(l-lrad,m-mrad,n-nrad)-Srad(l,m,n))
+!
+        endif
+!
       enddo
       enddo
       enddo
 !
     endsubroutine Qintr
-!***********************************************************************
-    subroutine Qintr2(f)
-!
-!  Integration radiation transfer equation along rays
-!
-!  This routine is called before the communication part
-!  All rays start with zero intensity
-!
-!  16-jun-03/axel+tobi: coded
-!   3-aug-03/axel: added amax1(dtau,dtaumin) construct
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real :: dlength,dtau01,dtau12,emdtau,emdtau1,dSrad01,dSrad12,Srad1st,Srad2nd,dtau_ps
-!
-!  identifier
-!
-      if(ldebug.and.headt) print*,'Qintr2'
-!
-!  get direction components
-!
-      lrad=dir(idir,1)
-      mrad=dir(idir,2)
-      nrad=dir(idir,3)
-!
-!  line elements
-!
-      dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
-!
-!  Special care is required when calculating
-!                   exp(-dtau)-1+dtau
-!    tau_ps_term = -------------------
-!                         dtau 
-!  in order to avoid absurdly high values due to roundoff error if dtau << 1.
-!  We use the builtin exp function only for dtau>dtau_ps, otherwise the first
-!  three terms of the Taylor series. The threshold below was found to be good
-!  for real (rel. error in tau_ps_term <= 7e-6) and double precision
-!  (rel. error <= 4e-10).
-!
-      dtau_ps=1.8*epsilon(dtau01)**0.2
-!
-!  determine start and stop positions
-!
-      llstart=l1; llstop=l2; lsign=1
-      mmstart=m1; mmstop=m2; msign=1
-      nnstart=n1; nnstop=n2; nsign=1
-      if (lrad>0) then; llstart=l1; llstop=l2+lrad; lsign= 1; endif
-      if (lrad<0) then; llstart=l2; llstop=l1+lrad; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=m2+mrad; msign= 1; endif
-      if (mrad<0) then; mmstart=m2; mmstop=m1+mrad; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=n2+nrad; nsign= 1; endif
-      if (nrad<0) then; nnstart=n2; nnstop=n1+nrad; nsign=-1; endif
-!
-!  set optical depth and intensity initially to zero
-!
-      emtau=1
-      Qrad=0
-!
-!  loop over all meshpoints
-!
-      do l=llstart,llstop,lsign 
-      do m=mmstart,mmstop,msign
-      do n=nnstart,nnstop,nsign
-          dtau01=(5*kaprho(l-0*lrad,m-0*mrad,n-0*nrad) &
-                 +8*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
-                   -kaprho(l-2*lrad,m-2*mrad,n-2*nrad))*dlength/12
-          dtau12=(5*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
-                 +8*kaprho(l-2*lrad,m-2*mrad,n-2*nrad) &
-                   -kaprho(l-3*lrad,m-3*mrad,n-3*nrad))*dlength/12
-          dSrad01=Srad(l-0*lrad,m-0*mrad,n-0*nrad) &
-                 -Srad(l-1*lrad,m-1*mrad,n-1*nrad)
-          dSrad12=Srad(l-1*lrad,m-1*mrad,n-1*nrad) &
-                 -Srad(l-2*lrad,m-2*mrad,n-2*nrad)
-          Srad1st=(dSrad01*dtau12/dtau01+dSrad12*dtau01/dtau12)/(dtau01+dtau12)
-          Srad2nd=2*(dSrad01/dtau01-dSrad12/dtau12)/(dtau01+dtau12)
-          emdtau=exp(-dtau01)
-          emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-          if (dtau01>1e-5) then
-            emdtau1=1-emdtau
-          else
-            emdtau1=dtau01-dtau01**2/2
-          endif
-          Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad2nd*dtau01 &
-                     +(Srad2nd-Srad1st)*emdtau1
-      enddo
-      enddo
-      enddo
-!
-    endsubroutine Qintr2
 !***********************************************************************
     subroutine Qperi()
 !
