@@ -4,7 +4,7 @@ default,filename,'stratification.dat'
 
 if keyword_set(zresolution) then begin
   zout=congrid(reform(z,n_elements(z)),zresolution,1,1)
-  lnrhoout=congrid(reform(lnrhoout,n_elements(lnrhoout)),zresolution,1,1)
+  lnrhoout=congrid(reform(lnrho,n_elements(lnrho)),zresolution,1,1)
   ssout=congrid(ss,zresolution,1,1)
 end else begin
   zout=z
