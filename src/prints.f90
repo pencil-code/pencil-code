@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.64 2004-04-02 20:51:45 dobler Exp $
+! $Id: prints.f90,v 1.65 2004-04-13 10:57:13 dobler Exp $
 
 module Print
 
@@ -300,7 +300,11 @@ module Print
     subroutine write_phiaverages(ch)
 !
 !  Write azimuthal averages (which are 2d data) that have been requested
-!  via `phiaver.in'
+!  via `phiaver.in'.
+!  Note: fnamerz still has a third dimension indicating ipz, but the way
+!  we are writing we automatically end up with the full z-direction
+!  written contiguously.
+!
 !  File format:
 !    1. nr_phiavg, nz_phiavg, nvars, nprocz
 !    2. t, r_phiavg, z_phiavg, dr, dz
