@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.107 2002-11-19 14:58:58 ngrs Exp $
+! $Id: equ.f90,v 1.108 2002-11-23 19:10:27 brandenb Exp $
 
 module Equ
 
@@ -184,7 +184,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.107 2002-11-19 14:58:58 ngrs Exp $")
+           "$Id: equ.f90,v 1.108 2002-11-23 19:10:27 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -675,6 +675,23 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       endif
 !
     endsubroutine rmwig_old
+!***********************************************************************
+    subroutine debug_imn_arrays
+!
+!  for debug purposes: writes out the mm, nn, and necessary arrays
+!
+!  23-nov-02/axel: coded
+!
+      use Mpicomm
+!
+      open(1,file=trim(directory)//'/imn_arrays.dat')
+      do imn=1,ny*nz
+        write(1,'(4i6)') imn,mm(imn),nn(imn)
+        if(necessary(imn)) write(1,'(a)') 'end of inner save part'
+      enddo
+      close(1)
+!
+    endsubroutine debug_imn_arrays
 !***********************************************************************
 
 endmodule Equ
