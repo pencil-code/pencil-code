@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.123 2003-10-20 10:30:51 mcmillan Exp $
+! $Id: density.f90,v 1.124 2003-10-20 10:52:54 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.123 2003-10-20 10:30:51 mcmillan Exp $")
+           "$Id: density.f90,v 1.124 2003-10-20 10:52:54 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,7 +139,6 @@ module Density
       real :: zbot,ztop
       real :: lnrho_int,lnrho_ext,beta1  ! for spherical shell problems
                                          ! not to be confused with lnrhoint
-integer :: ijk
 !
 !  define bottom and top height
 !
