@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.11 2004-05-07 09:08:28 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.12 2004-05-07 09:45:53 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 09:08:28 $
-;  $Revision: 1.11 $
+;  $Date: 2004-05-07 09:45:53 $
+;  $Revision: 1.12 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -31,7 +31,7 @@ COMPILE_OPT IDL2,HIDDEN
   return,result
 end
 
-pro pc_read_var,t=t,xx=xx,yy=yy,zz=zz,dx=dx,dy=dy,dz=dz,deltay=deltay, $
+pro pc_read_var,t=t,dx=dx,dy=dy,dz=dz,deltay=deltay, $
                 object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
                 variables=variables,tags=tags, $
                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
@@ -276,10 +276,6 @@ for i=0,ncpus-1 do begin
     FREE_LUN,file
   endif
 endfor
-
-xx = x
-yy = y
-zz = z
 
 ; Tidy memory a little
 if (n_elements(proc) ne 1) then begin
