@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.175 2004-04-20 13:31:35 dobler Exp $ 
+! $Id: sub.f90,v 1.176 2004-04-26 13:57:26 dobler Exp $ 
 
 module Sub 
 
@@ -103,6 +103,7 @@ module Sub
   endinterface
 
   interface cubic_step
+    module procedure cubic_step_pt
     module procedure cubic_step_mn
     module procedure cubic_step_global
   endinterface
@@ -2495,12 +2496,34 @@ module Sub
 !
       endfunction der_step
 !***********************************************************************
-      function cubic_step_mn(x,x0,width,shift)
+      function cubic_step_pt(x,x0,width,shift)
 !
 !  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
 !  Optional argument SHIFT shifts center:
 !  for shift=1. the interval is [x0    ,x0+2*w],
 !  for shift=-1. it is          [x0-2*w,x0    ].
+!  This version is for scalar args.
+!
+!  18-apr-04/wolf: coded
+!
+        real :: x
+        real :: cubic_step_pt,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_step_pt = 0.5 + 0.25*xi*(3.-xi**2)
+!
+      endfunction cubic_step_pt
+!***********************************************************************
+      function cubic_step_mn(x,x0,width,shift)
+!
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Version for 1d arg (in particular pencils).
 !
 !  18-apr-04/wolf: coded
 !
@@ -2521,9 +2544,7 @@ module Sub
       function cubic_step_global(x,x0,width,shift)
 !
 !  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
-!  Optional argument SHIFT shifts center:
-!  for shift=1. the interval is [x0    ,x0+2*w],
-!  for shift=-1. it is          [x0-2*w,x0    ].
+!  Version for 3d-array arg.
 !
 !  18-apr-04/wolf: coded
 !
