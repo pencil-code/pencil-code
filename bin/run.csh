@@ -1,21 +1,33 @@
 #!/bin/csh
+#                       run.csh
+#                      ---------
+#   Run src/run.x (timestepping for src/run.x).
+#   Run parameters are set in run.in.
 #
-# run.csh -- driver for time stepping
-#
-# For SGE: use csh, work in submit directory:
-#$ -S /bin/csh
-#$ -cwd
-#$ -j y -o run.log
-#
+# Run this script with csh:
 #PBS -S /bin/csh
-##PBS -o run.log -j oe
+#$ -S /bin/csh
+#@$-s /bin/csh
+#
+# Join stderr and stout:
+#$ -j y -o run.log
+#@$-eo
+#
+# Work in submit directory (SGE):
+#$ -cwd
 
+# Work in submit directory (PBS):
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
+# Work in submit directory (SUPER-UX's nqs):
+if ($?QSUB_WORKDIR) then
+  cd $QSUB_WORKDIR
+endif
+
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
-setenv PATH ${PATH}:${PENCIL_HOME}/bin
+if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
 
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then
