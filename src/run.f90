@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.188 2004-07-22 12:17:57 ajohan Exp $
+! $Id: run.f90,v 1.189 2004-07-22 12:44:39 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -55,7 +55,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.188 2004-07-22 12:17:57 ajohan Exp $")
+             "$Id: run.f90,v 1.189 2004-07-22 12:44:39 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -232,6 +232,7 @@
               !
               !  read variable names from REINIT file
               !
+              ierr=0
               do while (ierr == 0)
                 read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
                 if (reinit_vars(nreinit) /= '') then
@@ -239,6 +240,7 @@
                   nreinit=nreinit+1
                 endif
               enddo
+              close(1)
               nreinit=nreinit-1
               !
               !  reinit all variables present in REINIT file
