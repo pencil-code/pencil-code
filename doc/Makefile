@@ -41,11 +41,12 @@ body.ps: manual.dvi
 
 appendix.ps: manual.dvi
 	first=`perl -000 -ne 'print $$1+1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
+	echo "first = <$$first>"; \
 	dvips -p "$$first" manual.dvi -o appendix.ps
 
 # Clean up
 clean:
-	rm -f manual.ps manual.dvi *.aux *.toc *.log \
+	rm -f manual.ps* body.ps* appendix.ps* manual.dvi *.aux *.toc *.log \
 	*.idx *.ind *.ilg *.vidx *.vind *.fidx *.find
 # same, but including image directory
 cleann: clean
