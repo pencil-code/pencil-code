@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.67 2002-06-25 15:15:22 dobler Exp $ 
+! $Id: sub.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $ 
 
 module Sub 
 
@@ -1184,10 +1184,8 @@ module Sub
       character (len=20) :: rcsfile, revision, author, date
       character (len=200) :: fmt
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
-      integer :: ir0,ir1,iv0,iv1,id0,id1,id2,iu0,iu1,ia0,ia1
+      integer :: ir0,ir1,iv0,iv1,id0,id1,id2,ia0,ia1
       integer :: rw=18, vw=12, aw=10, dw=19 ! width of individual fields
-
-      integer :: rcsflen, revlen, datelen
 
       !
       !  rcs file name

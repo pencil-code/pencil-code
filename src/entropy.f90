@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.77 2002-06-25 14:58:47 dobler Exp $
+! $Id: entropy.f90,v 1.78 2002-06-27 22:02:59 brandenb Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.77 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: entropy.f90,v 1.78 2002-06-27 22:02:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -569,12 +569,11 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
-      real :: height
       integer :: i
       character (len=*) :: errmesg
 !
+      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
       errmesg=""
-      cs20=cs0**2
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !
@@ -610,13 +609,19 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           enddo
         endif
 !
-!  Do the `c2' boundary condition (fixed temperature/sound speed) for
-!  entropy and density.
+!  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
+!  This assumes that the density is already set (ie density must register first!)
+!  tmp_xy = entropy(x,y) on the boundary.
+!  s/cp = [ln(cs2/cs20)-ln(rho/rho0)]/gamma
+!
 !  NB(vpariev): Sound speed is set to cs at the top for isoentropic
 !  density profile,so this is mostly useful for top boundary.  
 !  wd: sound speed is _always_ cs, so what's the point here?
+!  AB: I think cs is set to cstop or csbot, which is ok, or what?
 !
         if (bcz1(ient) == "c2") then
+          if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
+          if (cs2bot==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2bot=0'
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
           tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
@@ -628,27 +633,10 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
         endif
 !
         if (bcz2(ient) == "c2") then
+          if (ldebug) print*,'set top temperature: cs2top=',cs2top
+          if (cs2top==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2top=0'
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
-          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                   + alog(cs2top/cs20)) / gamma
-          f(:,:,n2,ient) = tmp_xy
-          do i=1,nghost
-            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
-          enddo
-        endif
-!
-!  zinfty stuff.
-!  wd: No clue what zinfty is good for if all we want to specify is a
-!      fixed value of temperature.
-!
-        if (bcz2(ient) == "c3") then
-          if (bcz1(ilnrho) /= "a2") &
-               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 5."
-          !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
-          height = zref-cs20/(gamma1*gravz) ! height of atm. above zref
-          zinfty = zref+height
-          cs2top = cs20*(1-(ztop-zref)/height)
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                    + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy

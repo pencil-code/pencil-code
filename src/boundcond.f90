@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.8 2002-06-21 16:34:55 dobler Exp $
+! $Id: boundcond.f90,v 1.9 2002-06-27 22:02:59 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -32,6 +32,7 @@ module Boundcond
       character (len=*) :: errmesg
 !
       errmesg=""
+      if(ldebug) print*,'ENTER: boundconds'
 !
 !  Boundary conditions in x
 !
@@ -39,6 +40,7 @@ module Boundcond
         !
         ! `lower' bdry
         !
+        if (ldebug) print*,'bcx1(j)=',bcx1(j)
         if (ipx == 0) then
           select case(bcx1(j))
           case ('p')              ! periodic
@@ -63,6 +65,7 @@ module Boundcond
         !
         ! `upper' bdry
         !
+        if (ldebug) print*,'bcx2(j)=',bcx2(j)
         if (ipx == nprocx-1) then
           select case(bcx2(j))
           case ('p')              ! periodic
@@ -92,6 +95,7 @@ module Boundcond
         !
         ! `lower' bdry
         !
+        if (ldebug) print*,'bcy1(j)=',bcy1(j)
         if (ipy == 0) then
           select case(bcy1(j))
           case ('p')              ! periodic
@@ -116,6 +120,7 @@ module Boundcond
         !
         ! `upper' bdry
         !
+        if (ldebug) print*,'bcy2(j)=',bcy2(j)
         if (ipy == nprocy-1) then
           select case(bcy2(j))
           case ('p')              ! periodic
@@ -144,6 +149,7 @@ module Boundcond
         !
         ! `lower' bdry
         !
+        if (ldebug) print*,'bcz1(j)=',bcz1(j)
         if (ipz == 0) then
           select case(bcz1(j))
           case ('p')              ! periodic
@@ -170,6 +176,7 @@ module Boundcond
         !
         ! `upper' bdry
         !
+        if (ldebug) print*,'bcz2(j)=',bcz2(j)
         if (ipz == nprocz-1) then
           select case(bcz2(j))
           case ('p')              ! periodic

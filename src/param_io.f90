@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.30 2002-06-25 14:58:47 dobler Exp $ 
+! $Id: param_io.f90,v 1.31 2002-06-27 22:02:59 brandenb Exp $ 
 
 module Param_IO
 
@@ -66,6 +66,12 @@ module Param_IO
         if (lmagnetic) write(*,NML=magnetic_init_pars)
       endif
 !
+!  set gamma1, cs20, and lnrho0
+!
+      gamma1=gamma-1.
+      cs20=cs0**2
+      lnrho0=alog(rho0)
+!
     endsubroutine read_inipars
 !***********************************************************************
     subroutine read_runpars(print)
@@ -104,7 +110,13 @@ module Param_IO
       close(1)
 !
 !  print cvs id from first line
+!
       if(lroot) call cvs_id(cvsid)
+!
+!  set debug logical (easier to use than the combination of ip and lroot)
+!
+      ldebug=lroot.and.(ip<7)
+      print*,'ldebug,ip=',ldebug,ip
 !
 !  Write data to file for IDL
 !
@@ -137,7 +149,7 @@ module Param_IO
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
 !
-!  set gamma1 and cs20
+!  set gamma1, cs20, and lnrho0
 !
       gamma1=gamma-1.
       cs20=cs0**2

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.67 2002-06-25 14:58:47 dobler Exp $
+! $Id: equ.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $
 
 module Equ
 
@@ -210,9 +210,9 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 
-      if (headtt.and.ldebug) print*,'ENTER equ'
+      if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.67 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: equ.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.31 2002-06-25 14:58:47 dobler Exp $
+! $Id: hydro.f90,v 1.32 2002-06-27 22:02:59 brandenb Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.31 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: hydro.f90,v 1.32 2002-06-27 22:02:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -91,11 +91,8 @@ module Hydro
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       integer :: i
 !
-      cs20=cs0**2
-!
 !  inituu corresponds to different initializations of uu (called from start).
 !
-
       select case(inituu)
 
       case('zero', '0')
@@ -188,7 +185,7 @@ module Hydro
         endif
       endif
 !
-!
+      if (ip==1) print*,yy,zz !(to keep compiler from complaining)
     endsubroutine init_hydro
 !***********************************************************************
     subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)

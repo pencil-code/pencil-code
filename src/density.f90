@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $
+! $Id: density.f90,v 1.18 2002-06-27 22:02:59 brandenb Exp $
 
 module Density
 
@@ -9,7 +9,7 @@ module Density
 
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20,cs2bot,cs2top,gamma1,zinfty,lnrho0
+          cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0.
   character (len=labellen) :: initlnrho='zero'
 
   namelist /density_init_pars/ &
@@ -53,7 +53,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: density.f90,v 1.18 2002-06-27 22:02:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,8 +95,10 @@ module Density
         !  hydrostatic for T=const or polytropic atmosphere
         !
         if (gamma1==0.) then
-          if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal atmosphere)'
-          f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
+          if (lroot) print*,'lnrho=lnrho0+gravz*zz/cs0^2 (for isothermal atmosphere)'
+          f(:,:,:,ilnrho)=lnrho0+(gravz/cs0**2)*zz
+          cs2bot=cs20
+          cs2top=cs20
         else
           !
           !  To maintain continuity with respect to the isothermal case,
@@ -105,10 +107,16 @@ module Density
           !  physical to specify zinfty, ie the top of the atmosphere.
           !  This is done if zinfty is different from 0.
           !
-          print*,'z=',z
+          if (lroot) print*,'hydrostatic-z; z(n1),z(n2),cs20=',z(n1),z(n2),cs20
           zinfty=-cs20/(gamma1*gravz)
           if (lroot) print*,'rho=(1-z/zinfty)^gamma1; zinfty=',zinfty
           f(:,:,n1:n2,ilnrho)=alog(1.-zz(:,:,n1:n2)/zinfty)/gamma1
+          !
+          !  set top/bot sounds speeds, in case we want to fix them via b.c.s
+          !  This assumes here that s=0; alternatively need to do it in entropy.
+          !
+          cs2bot=cs20*exp(alog(1.-z(n1)/zinfty)/gamma1)
+          cs2top=cs20*exp(alog(1.-z(n2)/zinfty)/gamma1)
         endif
 
       case('rho-jump', '2')
@@ -226,9 +234,12 @@ module Density
         call stop_it("")
 
       endselect
-!
+      !
+      !  check whether cs2bot,cs2top have been set
+      !
+      if(lroot) print*,'cs2bot,cs2top=',cs2bot,cs2top
+      !
       if(ip==0) print*,prof,yy  ! keep compiler quiet
-!
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
