@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.70 2004-07-22 09:52:39 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.71 2004-07-22 14:20:02 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -28,7 +28,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.2
-  real :: nud_all=0.,betad_all=0.,tausd_all=0.,tausd0=0.
+  real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst
   real :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
@@ -39,7 +39,7 @@ module Dustvelocity
 
   namelist /dustvelocity_init_pars/ &
        rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
-       dust_chemistry, dust_geometry, tausd0
+       dust_chemistry, dust_geometry, tausd
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.70 2004-07-22 09:52:39 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.71 2004-07-22 14:20:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,6 @@ module Dustvelocity
         case ('epstein_cst')
           do k=1,ndustspec
             do l=1,nx
-              tausd(k) = tausd0*ad(k)/ad(1)
               tausd1(l,k) = 1./tausd(k)
             enddo
           enddo
@@ -363,7 +362,6 @@ module Dustvelocity
       use Sub
       use Global
       use Gravity
-      use Initcond
       use Ionization, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -375,9 +373,6 @@ module Dustvelocity
       select case(inituud)
 
       case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
-      case('gaussian-noise')
-        print*, iux, iuz, iudx, iudz, ampluud
-        do k=1,ndustspec; call gaunoise(ampluud,f,iudx(k),iudz(k)); enddo
       case('follow_gas')
         do k=1,ndustspec
           f(:,:,:,iudx(k):iudz(k))=f(:,:,:,iux:iuz)
