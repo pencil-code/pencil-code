@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.30 2002-10-02 20:11:14 dobler Exp $
+! $Id: prints.f90,v 1.31 2002-10-06 07:22:46 brandenb Exp $
 
 module Print
 
@@ -88,9 +88,9 @@ module Print
 !
 !  append to diagnostics file
 !
-        open(1,file=trim(datadir)//'/n.dat',position='append')
+        open(1,file=trim(datadir)//'/time_series.dat',position='append')
         if(first) write(1,'("#",A)') trim(legend)
-        !write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
+        !write(1,trim(fform)) fname(1:nname)  ! write to `time_series.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
         write(1,'(a)') trim(line)
         write(6,'(a)') trim(line)

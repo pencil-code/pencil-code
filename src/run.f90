@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.98 2002-10-05 13:48:07 dobler Exp $
+! $Id: run.f90,v 1.99 2002-10-06 07:22:46 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.98 2002-10-05 13:48:07 dobler Exp $")
+             "$Id: run.f90,v 1.99 2002-10-06 07:22:46 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -196,10 +196,13 @@
           call wvid(trim(directory))
           !
           !  save snapshot every isnap steps in case the run gets interrupted
+          !  the time needs also to be written
           !
           if (isave /= 0) then
-            if (mod(it,isave)==0) &
-                 call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
+            if (mod(it,isave)==0) then
+              call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
+              call wtime(trim(directory)//'/time.dat',t)
+            endif
           endif
           !
           !  save spectrum snapshot

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.50 2002-10-04 18:02:27 dobler Exp $
+! $Id: register.f90,v 1.51 2002-10-06 07:22:46 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -122,7 +122,7 @@ module Register
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in
-!  the f-array and the n.dat files are written to data/index.pro
+!  the f-array and the time_series.dat files are written to data/index.pro
 !
       open(3,file=trim(datadir)//'/index.pro')
       call rprint_general(lreset)
