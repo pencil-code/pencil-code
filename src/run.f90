@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.50 2002-06-17 16:34:56 brandenb Exp $
+! $Id: run.f90,v 1.51 2002-06-19 10:39:45 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -35,17 +35,18 @@
 !
         call initialize
 !
-!  initialize MPI (currently disabled; didn't work)
+!  call signal handler (for compaq machine only)
+!  currently disabled; want to put as include file
 !
-        call siginit
-        call signonbrutal
+!       call siginit
+!       call signonbrutal
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.50 $", &
-             "$Date: 2002-06-17 16:34:56 $")
+             "$Revision: 1.51 $", &
+             "$Date: 2002-06-19 10:39:45 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -62,8 +63,11 @@
 !  [might better be put into another routine, possibly even in rparam or
 !  read_runpars]
 !
-        Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1) ! heat flux through
-                                                       ! polytropic atmosphere
+        if (gamma-1/=0) then
+          print*,'Wolfgang, this should go into the entropy module, I guess'
+          Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1) ! heat flux through
+                                                            ! polytropic atmosphere
+        endif
 !
 !  read parameters and output parameter list
 !
@@ -139,6 +143,7 @@
           count = count + 1     !  reliable loop count even for premature exit
           if (lforcing) call addforce(f)
           if(lout) call write_xyaverages
+          if(lout) call write_zaverages
           if(lout) call prints
           call outpui(trim(directory)//'/alive.info',spread(it,1,1),1) !(all procs alive?)
           call wsnap(trim(directory)//'/VAR',f,.true.)

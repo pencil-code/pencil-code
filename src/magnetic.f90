@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.48 2002-06-18 16:26:45 dobler Exp $
+! $Id: magnetic.f90,v 1.49 2002-06-19 10:39:45 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -41,7 +41,8 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
-  integer :: i_bxmz=0,i_bymz=0,i_bmz=0
+  integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
+  integer :: i_bxmxy,i_bymxy,i_bzmxy
 
   contains
 
@@ -78,8 +79,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.48 $", &
-           "$Date: 2002-06-18 16:26:45 $")
+           "$Revision: 1.49 $", &
+           "$Date: 2002-06-19 10:39:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +121,16 @@ module Magnetic
 !
       elseif (initaa==1) then
         call beltrami(amplaa,f,iaa)
+!
+!  Beltrami field
+!
+      elseif (initaa==11) then
+        call beltrami_x(amplaa,f,iaa)
+!
+!  Beltrami field
+!
+      elseif (initaa==12) then
+        call beltrami_y(amplaa,f,iaa)
 !
 !  Horizontal flux tube
 !
@@ -230,7 +241,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A
-      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,va2
+      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real :: tmp,eta_out1
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
@@ -247,10 +258,15 @@ module Magnetic
 !
 !  this doesn't need to be as frequent (check later)
 !
-        if (i_bxmz/=0) bx=bb(:,1)
-        if (i_bymz/=0) by=bb(:,2)
+        if (i_bxmz/=0.or.i_bxmxy/=0) bx=bb(:,1)
+        if (i_bymz/=0.or.i_bymxy/=0) by=bb(:,2)
+        if (i_bzmz/=0.or.i_bzmxy/=0) bz=bb(:,3)
         if (i_bxmz/=0) call zsum_mn_name(bx,i_bxmz)
         if (i_bymz/=0) call zsum_mn_name(by,i_bymz)
+        if (i_bzmz/=0) call zsum_mn_name(bz,i_bzmz)
+        if (i_bxmxy/=0) call xysum_mn_name(bx,i_bxmxy)
+        if (i_bymxy/=0) call xysum_mn_name(by,i_bymxy)
+        if (i_bzmxy/=0) call xysum_mn_name(bz,i_bzmxy)
       endif
 !
 !  possibility to add external field
@@ -357,7 +373,7 @@ call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
       use Cdata
       use Sub
 !
-      integer :: iname,inamez
+      integer :: iname,inamez,ixy
       logical :: lreset
 !
 !  reset everything in case of reset
@@ -365,6 +381,8 @@ call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+        i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
+        i_bxmxy=0; i_bymxy=0; i_bzmxy=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -376,6 +394,8 @@ call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
+        call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
       enddo
 !
@@ -384,6 +404,15 @@ call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
       do inamez=1,nnamez
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bxmz',i_bxmz)
         call parse_name(inamez,cnamez(inamez),cformz(inamez),'bymz',i_bymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'bzmz',i_bzmz)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do ixy=1,nnamexy
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bxmxy',i_bxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bymxy',i_bymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -403,10 +432,92 @@ call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
       write(3,*) 'nnamez=',nnamez
       write(3,*) 'i_bxmz=',i_bxmz
       write(3,*) 'i_bymz=',i_bymz
+      write(3,*) 'i_bzmz=',i_bzmz
+      write(3,*) 'i_bmx=',i_bmx
+      write(3,*) 'i_bmy=',i_bmy
       write(3,*) 'i_bmz=',i_bmz
+      write(3,*) 'nnamexy=',nnamexy
+      write(3,*) 'i_bxmxy=',i_bxmxy
+      write(3,*) 'i_bymxy=',i_bymxy
+      write(3,*) 'i_bzmxy=',i_bzmxy
       close(3)
 !
     endsubroutine rprint_magnetic
+!***********************************************************************
+    subroutine calc_mfield
+!
+!  calculate mean magnetic field from xy- or z-averages
+!
+!  19-jun-02/axel: moved from print to here
+!
+      use Cdata
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(nx) :: bymx,bzmx
+      real, dimension(ny,nprocy) :: bxmy,bzmy
+      real :: bmx,bmy,bmz
+      integer :: l,j
+!
+!  Magnetic energy in vertically averaged field
+!  The bymxy and bzmxy must have been calculated,
+!  so they are present on the root processor.
+!
+        if (i_bmx/=0) then
+          if(i_bymxy==0.or.i_bzmxy==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
+            if(first) print*,"      We proceed, but you'll get bmx=0"
+            bmx=0.
+          else
+            do l=1,nx
+              bymx(l)=sum(fnamexy(l,:,:,i_bymxy))/(ny*nprocy)
+              bzmx(l)=sum(fnamexy(l,:,:,i_bzmxy))/(ny*nprocy)
+            enddo
+            bmx=sqrt(sum(bymx**2+bzmx**2)/nx)
+          endif
+          call save_name(bmx,i_bmx)
+        endif
+!
+!  similarly for bmy
+!
+        if (i_bmy/=0) then
+          if(i_bxmxy==0.or.i_bzmxy==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
+            if(first) print*,"      We proceed, but you'll get bmy=0"
+            bmy=0.
+          else
+            do j=1,nprocy
+            do m=1,ny
+              bxmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
+              bzmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
+            enddo
+            enddo
+            bmy=sqrt(sum(bxmy**2+bzmy**2)/(ny*nprocy))
+          endif
+          call save_name(bmy,i_bmy)
+        endif
+!
+!  Magnetic energy in horizontally averaged field
+!  The bxmz and bymz must have been calculated,
+!  so they are present on the root processor.
+!
+        if (i_bmz/=0) then
+          if(i_bxmz==0.or.i_bymz==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
+            if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
+            if(first) print*,"      We proceed, but you'll get bmz=0"
+            bmz=0.
+          else
+            bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
+          endif
+          call save_name(bmz,i_bmz)
+        endif
+!
+      first = .false.
+    endsubroutine calc_mfield
 !***********************************************************************
     subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv)
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.56 2002-06-18 16:26:45 dobler Exp $
+! $Id: cdata.f90,v 1.57 2002-06-19 10:39:45 brandenb Exp $
 
 module Cdata
 
@@ -43,13 +43,15 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname,nnamez
+  integer :: nname,nnamez,nnamexy
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
-  integer, parameter :: mname=100,mnamez=20
+  integer, parameter :: mname=100,mnamez=20,mnamexy=5
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
+  real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
   character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
+  character (len=30) :: cnamexy(mnamexy),cformxy(mnamexy)
 
   ! other variables (needs to be consistent with reset list in register.90)
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0

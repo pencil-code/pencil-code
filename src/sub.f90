@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.61 2002-06-15 18:18:58 brandenb Exp $ 
+! $Id: sub.f90,v 1.62 2002-06-19 10:39:45 brandenb Exp $ 
 
 module Sub 
 
@@ -107,7 +107,7 @@ module Sub
       real, dimension (nx) :: a
       integer :: iname,n_nghost
 !
-!  alway initialize to zero, including other parts of the z-array
+!  always initialize to zero, including other parts of the z-array
 !  which later be merged with an mpi reduce command.
 !  Thus, it must be zero if is not set otherwise.
 !
@@ -119,6 +119,32 @@ module Sub
       fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
 !
     endsubroutine zsum_mn_name
+!***********************************************************************
+    subroutine xysum_mn_name(a,iname)
+!
+!  successively calculate sum of a, where a is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!  19-jun-02/axel: adapted from zsum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname,m_nghost
+!
+!  always initialize to zero, including other parts of the z-array
+!  which later be merged with an mpi reduce command.
+!  Thus, it must be zero if is not set otherwise.
+!
+      if (lfirstpoint) fnamexy(:,:,:,iname)=0.
+!
+!  m starts with nghost+1=4, so the correct index is m-nghost
+!  keep full x-dependence
+!
+      m_nghost=m-nghost
+      fnamexy(:,m_nghost,ipy+1,iname)=fnamexy(:,m_nghost,ipy+1,iname)+a
+!
+    endsubroutine xysum_mn_name
 !***********************************************************************
     subroutine max_mn(a,res)
 !
@@ -1374,6 +1400,58 @@ module Sub
 !
       endsubroutine remove_file
 !***********************************************************************
+    subroutine beltrami_x(ampl,f,i)
+!
+!  Write x-dependent Beltrami field as initial condition
+!
+!  19-jun-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+!  set Beltrami field
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        if (lroot) print*,'set x-dependent Betrami field for variable i=',i
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=ampl*spread(spread(cos(x),2,my),3,mz)
+        f(:,:,:,i+2)=ampl*spread(spread(sin(x),2,my),3,mz)
+      endif
+!
+    endsubroutine beltrami_x
+!***********************************************************************
+    subroutine beltrami_y(ampl,f,i)
+!
+!  Write x-dependent Beltrami field as initial condition
+!
+!  19-jun-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+!  set Beltrami field
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        if (lroot) print*,'set y-dependent Betrami field for variable i=',i
+        f(:,:,:,i  )=ampl*spread(spread(sin(y),1,mx),3,mz)
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=ampl*spread(spread(cos(y),1,mx),3,mz)
+      endif
+!
+    endsubroutine beltrami_y
+!***********************************************************************
     subroutine beltrami(ampl,f,i)
 !
 !  Write Beltrami field as initial condition
@@ -1392,7 +1470,7 @@ module Sub
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
       else
-        if (lroot) print*,'set Betrami field for variable i=',i
+        if (lroot) print*,'set z-dependent Betrami field for variable i=',i
         f(:,:,:,i  )=ampl*spread(spread(cos(z),1,mx),2,my)
         f(:,:,:,i+1)=ampl*spread(spread(sin(z),1,mx),2,my)
         f(:,:,:,i+2)=0.
@@ -1408,7 +1486,7 @@ module Sub
 !
       use Cdata
 !
-      integer :: i,i1,i2
+      integer :: i
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky

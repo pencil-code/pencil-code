@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $ 
+! $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $ 
 
 module Param_IO
 
@@ -55,7 +55,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $
+!   $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -108,7 +108,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $
+!   $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -149,7 +149,7 @@ module Param_IO
       cs20=cs0**2
       lnrho0=alog(rho0)
 !
-!  timestep
+!  timestep: if dt=0 (ie not initialized), ldt=.true.
 !
       ldt = (dt==0.)            ! need to calculate dt dynamically?
       if (lroot .and. ip<14) then

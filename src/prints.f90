@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.21 2002-06-16 05:37:26 brandenb Exp $
+! $Id: prints.f90,v 1.22 2002-06-19 10:39:45 brandenb Exp $
 
 module Print
 
@@ -29,7 +29,6 @@ module Print
       character (len=320) :: fform,legend
       character (len=1) :: comma=','
       integer :: iname
-      real :: bmz
 !
 !  If the timestep (=dt) is to be outputted, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
@@ -39,21 +38,7 @@ module Print
         if (i_dt/=0) call save_name(dt,i_dt)
         if (i_it/=0) call save_name(float(it-1),i_it)
         if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
-!
-!  Magnetic energy in horizontally averaged field
-!  The bxmz and bymz must have been calculated,
-!  so they are present on the root processor.
-!
-        if (lmagnetic.and.i_bmz/=0) then
-          if(i_bxmz==0.or.i_bymz==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-            if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*,"      We proceed, but you'll get bmz=0"
-          endif
-          bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
-          call save_name(bmz,i_bmz)
-        endif
+        if (lmagnetic) call calc_mfield
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop
@@ -90,20 +75,16 @@ module Print
         close(1)
 !
       endif
-      first = .false.
 !
+      first = .false.
     endsubroutine Prints
 !***********************************************************************
     subroutine write_xyaverages
 !
 !  reads and registers print parameters gathered from the different
-!  modules and marked in `print.in'
+!  modules and marked in `xyaver.in'
 !
 !   6-jun-02/axel: coded
-!
-      use Cdata
-      use Sub
-      use Hydro
 !
       logical,save :: first=.true.
 !
@@ -116,6 +97,25 @@ module Print
       first = .false.
 !
     endsubroutine write_xyaverages
+!***********************************************************************
+    subroutine write_zaverages
+!
+!  reads and registers print parameters gathered from the different
+!  modules and marked in `zaver.in'
+!
+!  19-jun-02/axel: adapted from write_xyaverages
+!
+      logical,save :: first=.true.
+!
+      if(lroot.and.nnamexy>0) then
+        open(1,file='tmp/zaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e10.3)') fnamexy(:,:,:,1:nnamexy)
+        close(1)
+      endif
+      first = .false.
+!
+    endsubroutine write_zaverages
 !***********************************************************************
 
 endmodule Print

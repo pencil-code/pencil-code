@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.15 2002-06-14 06:31:15 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.16 2002-06-19 10:39:45 brandenb Exp $
 
 module Magnetic
 
@@ -15,7 +15,8 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
-  integer :: i_bxmz=0,i_bymz=0,i_bmz=0
+  integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
+  integer :: i_bxmxy,i_bymxy,i_bzmxy
 
   contains
 
@@ -41,8 +42,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-06-14 06:31:15 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-06-19 10:39:45 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -103,10 +104,21 @@ module Magnetic
       write(3,*) 'nnamez=',nnamez
       write(3,*) 'i_bxmz=',i_bxmz
       write(3,*) 'i_bymz=',i_bymz
+      write(3,*) 'i_bzmz=',i_bzmz
+      write(3,*) 'i_bmx=',i_bmx
+      write(3,*) 'i_bmy=',i_bmy
+      write(3,*) 'i_bmz=',i_bmz
+      write(3,*) 'nnamexy=',nnamexy
+      write(3,*) 'i_bxmxy=',i_bxmxy
+      write(3,*) 'i_bymxy=',i_bymxy
+      write(3,*) 'i_bzmxy=',i_bzmxy
       close(3)
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic
+!***********************************************************************
+    subroutine calc_mfield
+    endsubroutine calc_mfield
 !***********************************************************************
     subroutine bc_aa(f,errmesg)
 !
