@@ -12,18 +12,20 @@ fi
 
 exec $perl -x -S $0 "$@"     # -x: start from the following line
 #======================================================================#
+#! /Good_Path/perl -w
+# line 17
 
 # Name:   cleanCVSup
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   19-Nov-2002
-# CVS: $Id: cleanCVSup,v 1.1 2002-11-21 15:31:05 mee Exp $
+# CVS: $Id: cleanCVSup,v 1.2 2002-11-21 15:40:37 brandenb Exp $
 # Description:
 #   Read standard input (piped from cvs with cvs up -dP| 
 #  
 #   Strip all the "cvs server: Updating" lines which stop me seeing
 #   what has changed
 # Usage:
-#   cvs up -dP | cleanf95
+#   cvs up -dP | cleanCVSup
 
 
 $| = 1;         # auto-flush output
