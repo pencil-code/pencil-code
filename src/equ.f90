@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.207 2004-05-19 11:10:48 ajohan Exp $
+! $Id: equ.f90,v 1.208 2004-05-19 12:36:14 ajohan Exp $
 
 module Equ
 
@@ -238,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.207 2004-05-19 11:10:48 ajohan Exp $")
+           "$Id: equ.f90,v 1.208 2004-05-19 12:36:14 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -261,6 +261,7 @@ module Equ
 !   f array before boundary conditions are sent)
 !
       if (ldustdensity .and. lmdvar .and. itsub == 1) call redist_mdbins(f)
+      if (ldustdensity .and. ldustnulling) call null_dust_vars(f)
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
