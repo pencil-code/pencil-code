@@ -177,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.29 $ $}
+\date{\today,~ $ $Revision: 1.30 $ $}
 
 % ====================================================================== %
 
@@ -206,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.29 $ $}
+  \emph{\today,~ $ $Revision: 1.30 $ $}
 
 
 \end{center}
@@ -1099,9 +1099,12 @@ Example: passive scalar.
 
 \begin{table}[htb]\caption{
 Here we give the wall clock time per mesh point (excluding the ghost zones)
-and per full 3-stage time step.
+and per full 3-stage time step. The Compaq (mhd) machine has 4 processors per note,
+so the memory consumption is given per node. For example, a $256^3$ MHD run without
+entropy evolution requires 241 Mb per node. So the size per processor is
+241/4 Mb = 60 Mb.
 }\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
-proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & Size & when/who \\
+proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & Size/proc & when/who \\
 \hline
 1     & 500MHz linux (nl3)&  19  &  $64^3$ & kinematic    & 10 Mb  & (20-may-02/AB)\\
 1     & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro & 20 Mb  & (20-may-02/AB)\\
@@ -1111,7 +1114,8 @@ proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & Size & when/who
 4     & linux nq0-3       & 6.8  & $256^3$ & magn/noentro & 294 Mb & (10-jun-02/AB)\\
 4     & Compaq (mhd)      & 2.76 &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
 8     & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
-16    & Origin3000 (ukaff)& 0.61 & $128^3$ & magn/noentro &?8.8 Gb & (22-may-02/AB)\\
+16    & Compaq (mhd)      & 0.   & $256^3$ & magn/noentro &241/4 Mb& (22-may-02/AB)\\
+16    & Origin3000 (ukaff)& 0.61 & $128^3$ & magn/noentro &        & (22-may-02/AB)\\
 16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
 32    & Origin3000 (ukaff)& 0.34 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
 32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro &        & (20-may-02/AB)\\
@@ -1210,7 +1214,7 @@ make[1]: *** [.f90.o] Error 1
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.29 2002-06-14 12:14:31 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.30 2002-06-15 18:07:51 brandenb Exp $ $}
 
 
 \end{document}

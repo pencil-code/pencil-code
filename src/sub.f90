@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.59 2002-06-15 11:29:35 brandenb Exp $ 
+! $Id: sub.f90,v 1.60 2002-06-15 18:07:51 brandenb Exp $ 
 
 module Sub 
 
@@ -107,12 +107,16 @@ module Sub
       real, dimension (nx) :: a
       integer :: iname,n_nghost
 !
+!  alway initialize to zero, including other parts of the z-array
+!  which later be merged with an mpi reduce command.
+!  Thus, it must be zero if is not set otherwise.
+!
+      if (lfirstpoint) fnamez(:,:,iname)=0.
+!
+!  n starts with nghost+1=4, so the correct index is n-nghost
+!
       n_nghost=n-nghost
-      if (lfirstpoint) then
-        fnamez(n_nghost,iname)=sum(a)
-      else
-        fnamez(n_nghost,iname)=fnamez(n_nghost,iname)+sum(a)
-      endif
+      fnamez(n_nghost,ipz,iname)=fnamez(n_nghost,ipz,iname)+sum(a)
 !
     endsubroutine zsum_mn_name
 !***********************************************************************

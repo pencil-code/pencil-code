@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.51 2002-06-15 11:29:35 brandenb Exp $
+! $Id: cdata.f90,v 1.52 2002-06-15 18:07:51 brandenb Exp $
 
 module Cdata
 
@@ -48,7 +48,7 @@ module Cdata
   integer, parameter :: mname=100,mnamez=20
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
-  real, dimension (nz,mnamez) :: fnamez
+  real, dimension (nz,nprocz,mnamez) :: fnamez
   character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
 
   ! other variables (needs to be consistent with reset list in register.90)

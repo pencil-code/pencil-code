@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.63 2002-06-15 09:29:04 brandenb Exp $
+! $Id: equ.f90,v 1.64 2002-06-15 18:07:51 brandenb Exp $
 
 module Equ
 
@@ -104,16 +104,16 @@ module Equ
       use Cdata
       use Sub
 !
-      real, dimension (nz,mnamez) :: fsumz
+      real, dimension (nz,nprocz,mnamez) :: fsumz
 !
 !  communicate over all processors
 !
-      call mpireduce_sum(fnamez,fsumz,nnamez*nz)
+      call mpireduce_sum(fnamez,fsumz,nnamez*nz*nprocz)
 !
 !  the result is only present on the root processor
 !
       if(lroot) then
-        fnamez=fsumz/(nx*ny*ncpus)
+        fnamez=fsumz/(nx*ny*nprocy)
       endif
 !
     endsubroutine xyaverages
@@ -194,8 +194,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.63 $", &
-           "$Date: 2002-06-15 09:29:04 $")
+           "$Revision: 1.64 $", &
+           "$Date: 2002-06-15 18:07:51 $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.19 2002-06-15 11:29:35 brandenb Exp $
+! $Id: prints.f90,v 1.20 2002-06-15 18:07:51 brandenb Exp $
 
 module Print
 
@@ -50,7 +50,7 @@ module Print
           if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
           if(first) print*,"      We proceed, but you'll get bmz=0"
         endif
-        bmz=sqrt(sum(fnamez(:,i_bxmz)**2+fnamez(:,i_bymz)**2)/nz)
+        bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
         call save_name(bmz,i_bmz)
       endif
 !
@@ -110,7 +110,7 @@ module Print
       if(lroot.and.nnamez>0) then
         open(1,file='tmp/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
-        write(1,'(1p,8e10.3)') fnamez(:,1:nnamez)
+        write(1,'(1p,8e10.3)') fnamez(:,:,1:nnamez)
         close(1)
       endif
       first = .false.
