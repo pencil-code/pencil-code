@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.83 2002-07-03 15:05:50 dobler Exp $
+! $Id: entropy.f90,v 1.84 2002-07-04 06:43:50 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.83 2002-07-03 15:05:50 dobler Exp $")
+           "$Id: entropy.f90,v 1.84 2002-07-04 06:43:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -86,95 +86,100 @@ module Entropy
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      if (lgravz) then
+      select case(initss)
 
-        select case(initss)
+      case('zero', '0')
+        f(:,:,:,ient) = 0.
 
-        case('zero', '0')
-          f(:,:,:,ient) = 0.
+      case('isothermal')
+        !
+        !  ss = - (gamma-1)/gamma*ln(rho/rho0)
+        !
+        if (lroot) print*,'init_ent: isothermal stratification'
+        f(:,:,:,ient) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
 
-        case('isothermal')
-          !
-          !  ss = -(gamma-1)*(lnrho-lnrho0)/gamma
-          !
-          if (lroot) print*,'init_ent: isothermal stratification'
-          f(:,:,:,ient)=-gamma1*(f(:,:,:,ilnrho)-lnrho0)/gamma
+      case('isobaric')
+        !
+        !  ss = - ln(rho/rho0)
+        !
+        if (lroot) print*,'init_ent: isobaric stratification'
+        f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
 
-        case('isentropic', '1')
-          !
-          !  ss = const.
-          !
-          if (lroot) print*,'isentropic stratification'
-          ! ss0=alog(-gamma1*gravz*zinfty)/gamma
-          ! print*,'isentropic stratification; ss=',ss0
-          f(:,:,:,ient)=0.
-          if (ampl_ss/=0.) then
-            print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-            tmp=xx**2+yy**2+zz**2
-            f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
-            !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
-          endif
+      case('isentropic', '1')
+        !
+        !  ss = const.
+        !
+        if (lroot) print*,'isentropic stratification'
+        ! ss0=alog(-gamma1*gravz*zinfty)/gamma
+        ! print*,'isentropic stratification; ss=',ss0
+        f(:,:,:,ient)=0.
+        if (ampl_ss/=0.) then
+          print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+          tmp=xx**2+yy**2+zz**2
+          f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
+          !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
+        endif
 
-        case('linprof', '2')
-          !
-          !  linear profile of ss, centered around ss=0.
-          !
-          if (lroot) print*,'linear entropy profile'
-          f(:,:,:,ient) = grads0*zz
+      case('linprof', '2')
+        !
+        !  linear profile of ss, centered around ss=0.
+        !
+        if (lroot) print*,'linear entropy profile'
+        f(:,:,:,ient) = grads0*zz
 
-        case('piecew-poly', '4')
-          !
-          !  piecewise polytropic convection setup
-          !  cs0, rho0 and ss0=0 refer to height z=zref
-          !
-          if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
-          !
-          !  override hcond1,hcond2 according to polytropic equilibrium
-          !  solution
-          !
-          hcond1 = (mpoly1+1.)/(mpoly0+1.)
-          hcond2 = (mpoly2+1.)/(mpoly0+1.)
-          if (lroot) &
-               print*, &
-               'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
-          !
-          cs2int = cs0**2
-          ss0 = 0.              ! reference value ss0 is zero
-          ssint = ss0
-          f(:,:,:,ient) = 0.    ! just in case
-          ! top layer
-          call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
-                            isothtop,cs2int,ssint)
-          ! unstable layer
-          call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
-          ! stable layer
-          call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+      case('piecew-poly', '4')
+        !
+        !  piecewise polytropic convection setup
+        !  cs0, rho0 and ss0=0 refer to height z=zref
+        !
+        if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
+        !
+        !  override hcond1,hcond2 according to polytropic equilibrium
+        !  solution
+        !
+        hcond1 = (mpoly1+1.)/(mpoly0+1.)
+        hcond2 = (mpoly2+1.)/(mpoly0+1.)
+        if (lroot) &
+             print*, &
+             'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+        !
+        cs2int = cs0**2
+        ss0 = 0.              ! reference value ss0 is zero
+        ssint = ss0
+        f(:,:,:,ient) = 0.    ! just in case
+        ! top layer
+        call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+                             isothtop,cs2int,ssint)
+        ! unstable layer
+        call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+        ! stable layer
+        call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
 
-        case('polytropic', '5')
-          !
-          !  polytropic stratification
-          !  cs0, rho0 and ss0=0 refer to height z=zref
-          !
-          if (lroot) print*,'polytropic vertical stratification (ss)'
-          !
-          cs20 = cs0**2
-          ss0 = 0.              ! reference value ss0 is zero
-          f(:,:,:,ient) = ss0   ! just in case
-          cs2int = cs20
-          ssint = ss0
-          ! only one layer
-          call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
+      case('polytropic', '5')
+        !
+        !  polytropic stratification
+        !  cs0, rho0 and ss0=0 refer to height z=zref
+        !
+        if (lroot) print*,'polytropic vertical stratification (ss)'
+        !
+        cs20 = cs0**2
+        ss0 = 0.              ! reference value ss0 is zero
+        f(:,:,:,ient) = ss0   ! just in case
+        cs2int = cs20
+        ssint = ss0
+        ! only one layer
+        call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
 
-        case default
-          !
-          !  Catch unknown values
-          !
-          if (lroot) print*,'No such value for initss: ', trim(initss)
-          call stop_it("")
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*,'No such value for initss: ', trim(initss)
+        call stop_it("")
 
-        endselect
+      endselect
 
-      endif
+!      endif
 !
       if (lgravr) then
           f(:,:,:,ient) = -0.
@@ -183,6 +188,8 @@ module Entropy
 !
 !  Add perturbation(s)
 !
+!      if (lgravz)
+
       select case (pertss)
 
       case('zero', '0')
