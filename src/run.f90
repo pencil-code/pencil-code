@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.117 2002-12-01 11:59:28 mee Exp $
+! $Id: run.f90,v 1.118 2002-12-04 12:05:01 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.117 2002-12-01 11:59:28 mee Exp $")
+             "$Id: run.f90,v 1.118 2002-12-04 12:05:01 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -152,8 +152,8 @@
             call mpibcast_logical(stop, 1)
             if (stop.or.t>tmax) then
               if (lroot) then
-                if (stop) write(0,*) "done: found STOP file"
-                if (t>tmax) write(0,*) "done: t > tmax"
+                if (stop) print*, "done: found STOP file"
+                if (t>tmax) print*, "done: t > tmax"
                 call remove_file("STOP")
               endif
               exit Time_loop
