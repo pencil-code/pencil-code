@@ -711,13 +711,14 @@ module Sub
 !  Write startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1
+      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1,ss0,grads0
       use Mpicomm
 !
       if (lroot) then
         open(1,FILE='tmp/param.dat',FORM='unformatted')
         write(1) Lx,Ly,Lz
         write(1) cs0,gamma,gamma1 ! Write gamma1 here to ensure it is in sync
+        write(1) ss0,grads0
       endif
 !
     endsubroutine wparam
@@ -727,13 +728,14 @@ module Sub
 !  Read startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1
+      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1,ss0,grads0
       use Mpicomm
 !
 !      if (lroot) then
         open(1,FILE='tmp/param.dat',FORM='unformatted')
         read(1) Lx,Ly,Lz
         read(1) cs0,gamma,gamma1
+        read(1) ss0,grads0
 !      endif
         print*, "Lx,Ly,Lz=", Lx,Ly,Lz
         print*, "cs0,gamma,gamma1=", cs0,gamma,gamma1

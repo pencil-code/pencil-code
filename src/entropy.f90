@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-01-21 18:23:46 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-01-23 19:56:13 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -60,15 +60,13 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real :: ampl
-      real :: ss0,dsdz0=-0.2      ! (1/c_p)ds/dz
       integer :: init
 !
       if (lgravz) then
-        ss0 = (alog(cs20) - gamma1*alog(rho0) - alog(gamma)) / gamma
         select case(init)
         case(1)               ! density stratification
-          f(:,:,:,ient) = (-alog(gamma) + alog(cs20))/gamma &
-                          + dsdz0 * zz
+          f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
+                              + grads0 * zz
         case default
           f(:,:,:,ient) = 0.
         endselect
@@ -96,7 +94,9 @@ module Entropy
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,gss,glnrho,gpprho
       real, dimension (nx) :: ugss,thdiff,del2ss,divu,sij2
-      real, dimension (nx) :: cs2,ss,lnrho,TT1,r,heat
+      real, dimension (nx) :: cs2,ss,lnrho,TT1,r
+      real, dimension (nx) :: chi,heat,prof
+      real :: ssref
       integer :: i,j
 !
       call grad(f,ient,gss)
@@ -137,29 +137,54 @@ module Entropy
       enddo
       enddo
 !
-!  this is a term for numerical purposes only
+!  Heat conduction / entropy diffusion
 !
-      thdiff=nu*del2ss
+      chi = chi0
+      thdiff=chi*del2ss
 !
       TT1=gamma1/cs2
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 ! hopefully correct:
       df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-ugss+TT1*2.*nu*sij2+thdiff
 !
+!  Vertical case:
+!  Heat at bottom, cool top layers
+      if (lgravz) then
+!
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !
-!      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-!           + .3*spread(exp(-((z(n)+1.)/(2*dz))**2), 1,l2-l1+1) &
-!           * (1. + tanh((t-5.)/3.))
+        ! heating profile, normalised, so volume integral = 1
+        prof = spread(exp(-0.5*((z(n)-z(n1))/wheat)**2), 1, l2-l1+1) &
+             /(sqrt(pi/2.)*wheat*Lx*Ly)
+        heat = cheat*prof
+        ! smoothly switch on heating if reuqired
+        if ((tinit > 0) .and. (t < tinit)) then
+          heat = heat * t*(2*tinit-t)/tinit**2
+        endif
+        ! cooling profile; maximum = 1
+        ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*z(n2)
+        prof = spread(exp(-0.5*((z(n2)-z(n))/wcool)**2), 1, l2-l1+1)
+        heat = heat - cool*prof*(f(l1:l2,m,n,ient)-ssref)
+      endif
+!
+!  Spherical case:
 !  heat at centre, cool outer layers
 !
-      r = rr(l1:l2,m,n)
-      ! central heating
-      heat = cheat * exp(-0.5*(r/rheat)**2) * (2*pi*rheat**2)**(-1.5)
-      ! surface cooling towards s=0
-      heat = heat - cool*(f(l1:l2,m,n,ient)-0.)*0.5*(1+tanh((r-1.)/wcool))
+      if (lgravr) then
+!        r = rr(l1:l2,m,n)
+        ! central heating
+        ! heating profile, normalised, so volume integral = 1
+        prof = exp(-0.5*(r/wheat)**2) * (2*pi*wheat**2)**(-1.5)
+        heat = cheat*prof
+        ! surface cooling towards s=0
+        ! cooling profile; maximum = 1
+        prof = 0.5*(1+tanh((r-1.)/wcool))
+        heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
+      endif
+
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
 !***********************************************************************
 
 endmodule Entropy
+

@@ -33,8 +33,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.10 $", &
-             "$Date: 2002-01-22 18:32:36 $")
+             "$Revision: 1.11 $", &
+             "$Date: 2002-01-23 19:56:13 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -51,8 +51,7 @@
 !
         call rparam             ! Read parameters from start.x;
                                 ! these may be overwritten by cread
-        call cread
-        call cprint
+        call cread(PRINT=.true.)
 !
 !  timestep
 !

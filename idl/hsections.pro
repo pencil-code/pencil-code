@@ -14,7 +14,8 @@
 
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; relative to absolute min and max of
-                                ;  colour-represented data
+                                ; colour-represented data
+default, show_ghosts, 0
 
 nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
@@ -38,6 +39,15 @@ wput
 !y.title = '!8y!X'
 
 tit = '!17u!6 at '
+!x.style = 1
+!y.style = 1
+if (show_ghosts) then begin
+  !x.range = [x[0], x[nx-1]]    ; No ghost zones
+  !y.range = [y[0], y[ny-1]]
+endif else begin
+  !x.range = [x[3], x[nx-4]]    ; No ghost zones
+  !y.range = [y[3], y[ny-4]]
+endelse
 
 if (absolute) then begin
   zruu = minmax(uu[*,*,*,2])
@@ -53,10 +63,6 @@ plot_3d_vect, uu[*,*,nz3,*],x,y, /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu
 opcircles, 1., LINE=2, THICK=2
 
 tit = '!8s!6 and !7r!6 at '
-!x.style = 1
-!y.style = 1
-!x.range = [x[3], x[nx-4]]      ; No ghost zones
-!y.range = [y[3], y[ny-4]]
 
 ;
 if (absolute) then begin

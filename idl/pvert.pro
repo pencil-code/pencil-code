@@ -32,7 +32,10 @@ for ivar = 0,2 do begin
       title = 'Entropy'
     end
   endcase
-  plot, z, z, /NODATA,XRANGE=minmax(var),YRANGE=minmax(z),TITLE=title
+  plot, z, z, /NODATA, $
+      XRANGE=minmax(var), XSTYLE=3, $
+      YRANGE=minmax(z), $
+      TITLE=title
   for ix=nign,nx-nign-1 do begin
     for iy=nign,ny-nign-1 do begin
       oplot, var[ix,iy,*], z

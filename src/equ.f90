@@ -5,23 +5,26 @@ module Equ
   contains
 
 !***********************************************************************
-    subroutine cread
+    subroutine cread(print)
 !
 !  read input parameters
 !  14-sep-01/axel: inserted from run.f90
 !
       use Cdata
 !
+      logical, optional :: print
+!
       open(1,file='run.in',form='formatted')
       read(1,*) nt,it1,dt,isave,itorder
       read(1,*) dsnap,dvid,dforce
-      read(1,*) tdamp,dampu
+      read(1,*) tinit,tdamp,dampu
       read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc
+      read(1,*) chi0,chi2
       read(1,*) cdiffrho
       read(1,*) gravz
-      read(1,*) cheat,rheat,cool
+      read(1,*) cheat,wheat,cool,wcool
       read(1,*) iforce,force,relhel
       read(1,*) bcx
       read(1,*) bcy
@@ -29,6 +32,10 @@ module Equ
       read(1,*) form1
       close(1)
       cs20=cs0**2 !(goes into cdata module)
+
+      if (present(print) .and. print) then
+        call cprint()
+      endif
 !  
 !  make sure ix,iy,iz are not outside the boundaries
 !
@@ -47,13 +54,14 @@ module Equ
       if (lroot) then
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
         print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
-        print*, 'tdamp,dampu=', tdamp,dampu
+        print*, 'tinit,tdamp,dampu=', tinit,tdamp,dampu
         print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
+        print*, 'chi,chi2=', chi0,chi2
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
-        print*, 'cheat,rheat,cool=', cheat,rheat,cool
+        print*, 'cheat,wheat,cool,wcool=', cheat,wheat,cool,wcool
         print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'bcx=', bcx
         print*, 'bcy=', bcy
@@ -230,8 +238,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-01-21 18:23:46 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-01-23 19:56:13 $")
 !
 !  initiate communication
 !
@@ -309,11 +317,13 @@ module Equ
 !
 !  2. damp motions for r>1
 !
-        r = rr(l1:l2,m,n)
-        pdamp = 0.5*(1+tanh((r-rdamp)/wdamp)) ! damping profile
-        do i=iux,iuz
-          df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-        enddo
+        if (lgravr) then
+!        r = rr(l1:l2,m,n)
+          pdamp = 0.5*(1+tanh((r-rdamp)/wdamp)) ! damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+          enddo
+        endif
 !
 !  add gravity
 !

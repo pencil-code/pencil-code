@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-01-21 18:23:46 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-01-23 19:56:13 $")
 !
 !
       if (nvar > mvar) then
@@ -101,7 +101,6 @@ module Register
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot
       real :: ampl
-      real :: dsdz0 = -0.2      ! (1/c_p)ds/dz (ought to be input parameter)
       real :: zmax,lnrho0
       integer :: init,i
 !
@@ -121,14 +120,15 @@ module Register
 !        print*, 'zmax = ', zmax
 !        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
 ! linear entropy gradient;
-          f(:,:,:,ilnrho) = -dsdz0*zz &
-                            + 1./gamma1*alog( 1 + gamma1*gravz/dsdz0/cs20 &
-                                                  *(1-exp(-dsdz0*zz)) )
+          f(:,:,:,ilnrho) = -grads0*zz &
+                            + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
+                                                  *(1-exp(-grads0*zz)) )
         endif
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-          call potential(rr, pot)       ! gravity potential
+          call potential(x(l1:l2),y(m),z(n),rmn,&
+               pot) ! gravity potential
           ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
           lnrho0 = alog(cs20/gamma)/gamma1
           f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
