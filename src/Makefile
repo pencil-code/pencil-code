@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.240 2003-09-22 11:41:15 dobler Exp $
+### $Id: Makefile,v 1.241 2003-10-06 10:05:47 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -121,7 +121,6 @@ PENCIL_MKFILE=makefile
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
-#LDMPI=-L/opt/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -lnsl -lutil #(nw17|nl6|nl11|wormhole)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
@@ -130,7 +129,8 @@ PENCIL_MKFILE=makefile
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-O3 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
+#FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
+#FFLAGS=-g #(cosmo|nw17)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11|wormhole)  
