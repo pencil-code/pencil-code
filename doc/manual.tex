@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.265 2004-07-17 16:25:28 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -60,6 +60,7 @@
 \else                           % running pdflatex
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
 \fi
+%\usepackage[dvipdfm]{hyperref}
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
 %\usepackage{german,a4}
@@ -370,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}
+%\date{$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}
 
 % ====================================================================== %
 
@@ -405,8 +406,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}\\
-  \url{http://www.nordita.dk/pencil-code/}
+  \emph{$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}\\
+  \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
 
@@ -730,7 +731,7 @@ This includes all problems in
 
 \item Get the password for anonymous \name{CVS} access to the Pencil Code
   from the download section in
-  \url{http://www.nordita.dk/pencil-code}.
+  \url{http://www.nordita.dk/software/pencil-code}.
   Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
   or \email{Axel.Brandenburg@nordita.dk}.
   Privileged users with write access to the original repository should
@@ -793,7 +794,7 @@ This includes all problems in
 \begin{enumerate}
 \item Download the tarball \texttt{pencil-code_\emph{X}.tar.gz}
   (where \emph{X} is the release number) from the download section in
-  \url{http://www.nordita.dk/pencil-code}
+  \url{http://www.nordita.dk/software/pencil-code}
 
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
@@ -862,7 +863,7 @@ this by:
 \begin{enumerate}
 \item Download the tarball file, pencil-code_X.tar.gz,
   where X is the release number, after registering on
-  \url{http://www.nordita.dk/pencil-code/}
+  \url{http://www.nordita.dk/software/pencil-code/}
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
   \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
@@ -3910,7 +3911,7 @@ What is the problem?
 %%%
 \subsubsection{Some samples don't even compile,}
 as you can see on the web,
-\url{http://www.nordita.dk/pencil-code/tests.html}.
+\url{http://www.nordita.dk/software/pencil-code/tests.html}.
 \begin{Verbatim}
 samples/helical-MHDturb:
     Compiling..           not ok:
@@ -4505,7 +4506,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}
 
 \section{Timings}
 
@@ -7559,7 +7560,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.265 2004-07-17 16:25:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $ $}
 
 
 \end{document}
