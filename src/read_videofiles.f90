@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.11 2003-11-24 15:31:11 mcmillan Exp $
+! $Id: read_videofiles.f90,v 1.12 2003-11-24 16:22:38 mee Exp $
 
 !***********************************************************************
       program rvid_box
@@ -46,13 +46,13 @@
 !  read name of the field (must coincide with file extension)
 !
       !call getarg (1,field)
-      write(*) 'enter name of variable (lnrho, ux, ..., bz): '
+      write(*,'(a)',ADVANCE='NO') 'enter name of variable (lnrho, ux, ..., bz): '
       read*,field
 !
 !  periphery or middle of the box?
 !
       !call getarg (1,field)
-      write(*) 'periphery (p), middle (m) of box? '
+      write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box? '
       read*,position_arrangement
 !
 !  interpret position_arrangement
