@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.6 2003-06-14 19:42:29 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.7 2003-06-14 20:37:58 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -70,7 +70,15 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.6 2003-06-14 19:42:29 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.7 2003-06-14 20:37:58 theine Exp $")
+!
+!
+!  Check we arn't registering too many auxilliary variables
+!
+      if (nvar > mvar) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('Register_radiation: naux > maux')
+      endif
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -118,8 +126,6 @@ module Radiation
 !  12-may-03/tobi: coded
 !
       use Cdata
-      use General
-      use Ionization
 !
       real, dimension(mx,my,mz,mvar) :: f
       real, dimension(mx,my,mz) :: mean_intensity,Iup,Idown
@@ -168,6 +174,7 @@ module Radiation
 !
       if(lroot.and.headt) print*,'radtransfer'
 !
+      call radcalc(f)
       f(:,:,:,iQrad)=-Srad+mean_intensity(f)
 !
     endsubroutine radtransfer
