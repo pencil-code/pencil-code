@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.78 2002-07-05 18:29:56 brandenb Exp $
+! $Id: equ.f90,v 1.79 2002-07-06 20:29:17 brandenb Exp $
 
 module Equ
 
@@ -8,6 +8,29 @@ module Equ
 
   contains
 
+!***********************************************************************
+      subroutine collect_UUmax
+!
+!  This routine is used for calculating the maximum effective advection
+!  velocity in the domain for determining dt at each timestep
+!
+!   2-sep-01/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use Sub
+!
+      real, dimension(1) :: fmax_tmp,fmax
+!
+!  communicate over all processors
+!  the result is then present only on the root processor
+!  reassemble using old names
+!
+      fmax_tmp(1)=UUmax
+      call mpireduce_max(fmax_tmp,fmax,1)
+      if(lroot) UUmax=fmax(1)
+!
+      endsubroutine collect_UUmax
 !***********************************************************************
     subroutine diagnostic
 !
@@ -173,6 +196,7 @@ module Equ
       use Gravity
       use Entropy
       use Magnetic
+      use Pscalar
       use Boundcond
       use IO
       use Shear
@@ -189,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.78 2002-07-05 18:29:56 brandenb Exp $")
+           "$Id: equ.f90,v 1.79 2002-07-06 20:29:17 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -249,6 +273,7 @@ module Equ
         call duu_dt   (f,df,uu,glnrho,divu,rho1,u2)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
         call dss_dt   (f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
+        call dlncc_dt (f,df,uu,glnrho)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
@@ -319,8 +344,9 @@ module Equ
       enddo
 !
 !  diagnostic quantities
-!  calculate maximum speed for time step
+!  collect from different processors UUmax for the time step
 !
+      if (lfirst.and.ldt) call collect_UUmax
       if (ldiagnos) then
         call diagnostic
         call xyaverages

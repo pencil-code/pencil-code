@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.3 2002-07-02 13:01:51 dobler Exp $
+! $Id: nohydro.f90,v 1.4 2002-07-06 20:29:17 brandenb Exp $
 
 module Hydro
 
@@ -41,7 +41,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.3 2002-07-02 13:01:51 dobler Exp $")
+           "$Id: nohydro.f90,v 1.4 2002-07-06 20:29:17 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -138,7 +138,6 @@ module Hydro
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/hydro.pro')
       write(3,*) 'i_u2m=',i_u2m
       write(3,*) 'i_um2=',i_um2
       write(3,*) 'i_o2m=',i_o2m
@@ -148,7 +147,6 @@ module Hydro
       write(3,*) 'iux=',iux
       write(3,*) 'iuy=',iuy
       write(3,*) 'iuz=',iuz
-      close(3)
 !
     endsubroutine rprint_hydro
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.43 2002-07-04 10:10:55 nilshau Exp $
+! $Id: register.f90,v 1.44 2002-07-06 20:29:17 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -27,6 +27,7 @@ module Register
       use Forcing
       use Entropy
       use Magnetic
+      use Pscalar
       use Shear
 !
 !  initialize all mpi stuff
@@ -41,6 +42,7 @@ module Register
       call register_forcing
       call register_ent
       call register_aa
+      call register_lncc
       call register_grav
       call register_shear
 !
@@ -61,6 +63,7 @@ module Register
       use Hydro
       use Entropy
       use Magnetic
+      use Pscalar
 !
       integer :: iname,inamez,ixy
       logical :: lreset,exist
@@ -102,12 +105,17 @@ module Register
       if (lroot.and.ip<14) print*,'nnamexy=',nnamexy
 !
 !  check which variables are set
+!  For the convenience of idl users, the indices of variables in
+!  the f-array and the n.dat files are written to tmp/index.pro
 !
+      open(3,file='tmp/index.pro')
       call rprint_general(lreset)
       call rprint_hydro(lreset)
       call rprint_density(lreset)
       call rprint_entropy(lreset)
       call rprint_magnetic(lreset)
+      call rprint_pscalar(lreset)
+      close(3)
 !
     endsubroutine rprint_list
 !***********************************************************************
@@ -142,13 +150,11 @@ module Register
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/general.pro')
       write(3,*) 'i_t=',i_t
       write(3,*) 'i_it=',i_it
       write(3,*) 'i_dt=',i_dt
       write(3,*) 'i_dtc=',i_dtc
       write(3,*) 'nname=',nname
-      close(3)
 !
     endsubroutine rprint_general
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.54 2002-07-03 15:27:36 dobler Exp $
+! $Id: run.f90,v 1.55 2002-07-06 20:29:17 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.54 2002-07-03 15:27:36 dobler Exp $")
+             "$Id: run.f90,v 1.55 2002-07-06 20:29:17 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -62,7 +62,11 @@
 !  read_runpars]
 !
         if (gamma-1/=0) then
-          print*,'Wolfgang, this should go into the entropy module, I guess'
+          print*
+          print*,'Wolfgang, this Fheat belongs actually into grav_z,'
+          print*,'because it will be different with grav_r, and is rather'
+          print*,'useless if one runs discs!!'
+          print*
           Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1) ! heat flux through
                                                             ! polytropic atmosphere
         endif

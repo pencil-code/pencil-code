@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.1 2002-07-04 10:10:55 nilshau Exp $
+! $Id: shear.f90,v 1.2 2002-07-06 20:29:17 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -11,7 +11,6 @@ module Shear
   use Cdata
 
   implicit none
-
 
   namelist /shear_init_pars/ &
        Omega,qshear
@@ -40,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.1 2002-07-04 10:10:55 nilshau Exp $")
+           "$Id: shear.f90,v 1.2 2002-07-06 20:29:17 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -49,58 +48,44 @@ module Shear
 !  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
 !
 !  2-july-02/nils: coded
+!  6-july-02/axel: runs through all nvar variables; added timestep check
 !
       use Cparam
       use Deriv
       use Hydro, only:theta
 !
+      integer :: j
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension(nx) :: uy0,dlnrhody,shearlnrho,dssdy,shearss
-      real, dimension (nx,3) :: dudy, shearu, A_vec, dAdy, shearA
+      real, dimension(nx) :: uy0,dfdy
+!
+!  print identifier
+!
+      if (headtt.or.ldebug) print*,'shearing: qshear,Omega=',qshear,Omega
+!
+!  add shear term, -uy0*df/dy, for all variables
 !
       uy0=-qshear*Omega*x(l1:l2)
+      do j=1,nvar
+        call der(f,j,dfdy,2)
+        df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
+      enddo
 !
-      if (lhydro) then
-         call der(f,iux,dudy(:,1),2)
-         call der(f,iuy,dudy(:,2),2)
-         call der(f,iuz,dudy(:,3),2)
-         call multvs_mn(dudy,uy0,shearu)
-         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-shearu
-      end if
-!
-      if (ldensity) then
-         call der(f,ilnrho,dlnrhody,2)
-         shearlnrho=dlnrhody*uy0
-         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-shearlnrho
-      end if
-!
-      if (lentropy) then
-         call der(f,ient,dssdy,2)
-         shearss=dssdy*uy0
-         df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-shearss
-      end if
-!
-      if (lmagnetic) then
-         call der(f,iaa+0,dAdy(:,1),2)
-         call der(f,iaa+1,dAdy(:,2),2)
-         call der(f,iaa+2,dAdy(:,3),2)
-         call multvs_mn(dAdy,uy0,shearA)
-         df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA
-      end if
-!
-! Taking care of the fact that the Corriolis force changes when 
-! we have got shear. The rest of the Corrilis force is calculated 
+! Taking care of the fact that the Coriolis force changes when 
+! we have got shear. The rest of the Coriolis force is calculated 
 ! in hydro.
 !
       if (Omega/=0.) then
         if (theta==0) then
-           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+qshear*Omega*f(l1:l2,m,n,iux)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+qshear*Omega*f(l1:l2,m,n,iux)
         else
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                +qshear*Omega*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
         endif
       endif
-
+!
+!  take shear into account for calculating time step
+!
+      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,uy0**2)
 !
     end subroutine shearing
 !***********************************************************************

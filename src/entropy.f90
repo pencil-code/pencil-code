@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.85 2002-07-04 21:46:47 dobler Exp $
+! $Id: entropy.f90,v 1.86 2002-07-06 20:29:17 brandenb Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.85 2002-07-04 21:46:47 dobler Exp $")
+           "$Id: entropy.f90,v 1.86 2002-07-06 20:29:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -555,11 +555,9 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/entropy.pro')
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
-      close(3)
 !
     endsubroutine rprint_entropy
 !***********************************************************************

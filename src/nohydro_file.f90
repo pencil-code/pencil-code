@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.2 2002-06-24 17:45:29 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.3 2002-07-06 20:29:17 brandenb Exp $
 
 module Hydro
 
@@ -39,8 +39,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-06-24 17:45:29 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-07-06 20:29:17 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -150,17 +150,19 @@ module Hydro
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/hydro.pro')
       write(3,*) 'i_u2m=',i_u2m
       write(3,*) 'i_um2=',i_um2
       write(3,*) 'i_o2m=',i_o2m
       write(3,*) 'i_oum=',i_oum
+      write(3,*) 'i_urms=',i_urms
+      write(3,*) 'i_umax=',i_umax
+      write(3,*) 'i_orms=',i_orms
+      write(3,*) 'i_omax=',i_omax
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux
       write(3,*) 'iuy=',iuy
       write(3,*) 'iuz=',iuz
-      close(3)
 !
     endsubroutine rprint_hydro
 !***********************************************************************

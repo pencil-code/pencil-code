@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.19 2002-07-04 21:46:47 dobler Exp $
+! $Id: nomagnetic.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $
 
 module Magnetic
 
@@ -41,7 +41,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.19 2002-07-04 21:46:47 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -87,7 +87,6 @@ module Magnetic
 !  write column where which magnetic variable is stored
 !  idl needs this even if everything is zero
 !
-      open(3,file='tmp/magnetic.pro')
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
       write(3,*) 'i_b2m=',i_b2m
@@ -110,7 +109,6 @@ module Magnetic
       write(3,*) 'i_bxmxy=',i_bxmxy
       write(3,*) 'i_bymxy=',i_bymxy
       write(3,*) 'i_bzmxy=',i_bzmxy
-      close(3)
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic

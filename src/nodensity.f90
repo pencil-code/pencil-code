@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.4 2002-07-02 13:01:51 dobler Exp $
+! $Id: nodensity.f90,v 1.5 2002-07-06 20:29:17 brandenb Exp $
 
 module Density
 
@@ -40,7 +40,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.4 2002-07-02 13:01:51 dobler Exp $")
+           "$Id: nodensity.f90,v 1.5 2002-07-06 20:29:17 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -56,7 +56,7 @@ module Density
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,f,xx,yy,zz
+      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
@@ -100,13 +100,11 @@ module Density
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/density.pro')
       write(3,*) 'i_eth=',i_eth
       write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname
       write(3,*) 'ilnrho=',ilnrho
-      close(3)
 !
     endsubroutine rprint_density
 !***********************************************************************

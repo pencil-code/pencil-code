@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.24 2002-07-04 21:46:47 dobler Exp $
+! $Id: noentropy.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.24 2002-07-04 21:46:47 dobler Exp $")
+           "$Id: noentropy.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -124,11 +124,9 @@ module Entropy
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/entropy.pro')
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
-      close(3)
 !
     endsubroutine rprint_entropy
 !***********************************************************************

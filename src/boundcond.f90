@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.19 2002-07-05 13:08:07 nilshau Exp $
+! $Id: boundcond.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -34,9 +34,11 @@ module Boundcond
 !  Boundary conditions in x
 !
       !
-      !  In case of rotation with shear 
+      !  shearing sheet boundary condition (default)
+      !  can still use other boundary conditions (even with shear)
       !
-      if (lshear .AND. qshear>0) then
+      if (bcx1(1)=='she') then
+         if (headtt) print*,'use shearing sheet boundary condition'
          call initiate_shearing(f)
          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
       else
@@ -177,7 +179,7 @@ module Boundcond
             !  (2nd order):
             !  Finding the derivatives on the boundary using a one 
             !  sided final difference method. This derivative is being 
-            !  used to calculates the boundary points. This will probably
+            !  used to calculate the boundary points. This will probably
             !  only be used for ln(rho)
             !
             do i=1,nghost
@@ -229,7 +231,7 @@ module Boundcond
             !
             !  Finding the derivatives on the boundary using a one 
             !  sided final difference method. This derivative is being 
-            !  used to calculates the boundary points. This will probably
+            !  used to calculate the boundary points. This will probably
             !  only be used for ln(rho).
             !
             do i=1,nghost

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.64 2002-07-05 17:34:10 brandenb Exp $
+! $Id: magnetic.f90,v 1.65 2002-07-06 20:29:17 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.64 2002-07-05 17:34:10 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.65 2002-07-06 20:29:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -372,7 +372,6 @@ module Magnetic
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/magnetic.pro')
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
       write(3,*) 'i_b2m=',i_b2m
@@ -401,7 +400,6 @@ module Magnetic
       write(3,*) 'i_bxmxy=',i_bxmxy
       write(3,*) 'i_bymxy=',i_bymxy
       write(3,*) 'i_bzmxy=',i_bzmxy
-      close(3)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************
