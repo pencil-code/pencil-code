@@ -66,7 +66,7 @@ tit = '!17u!6 at '
 !x.style = 1
 !y.style = 1
 if (show_ghosts) then begin
-  !x.range = [x[0], x[mx-1]]    ; No ghost zones
+  !x.range = [x[0], x[mx-1]]    ; Include ghost zones
   !y.range = [z[0], z[mz-1]]
 endif else begin
   !x.range = [x[3], x[mx-4]]    ; No ghost zones
