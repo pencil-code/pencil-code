@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.122 2004-08-28 12:11:27 ajohan Exp $
+! $Id: dustdensity.f90,v 1.123 2004-09-08 13:49:19 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -21,10 +21,11 @@ module Dustdensity
   implicit none
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension(nx,ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
+  real, dimension(nx,ndustspec) :: nd_diff_arr=0.,md_diff_arr=0.,mi_diff_arr=0.
+  real, dimension(ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd0=1.
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
-  real :: scaleHd
+  real :: scaleHd=1.
   character (len=labellen) :: initnd='zero'
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.,ludstickmax=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
@@ -117,7 +118,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.122 2004-08-28 12:11:27 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.123 2004-09-08 13:49:19 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,7 +171,7 @@ module Dustdensity
 !  24-nov-02/tony: coded 
       use Mpicomm, only: stop_it
 !
-      integer :: i,j
+      integer :: i,j,k
 !
       if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustgrowth,ldustcoagulation =', &
@@ -182,6 +183,14 @@ module Dustdensity
 
       if (lroot .and. nx*ny /= 1) print*,'initialize_dustdensity: WARNING -'// &
           'dust equations only tested in one dimension (z).'
+!
+!  Copy diffusion coefficient from input file to whole array
+!
+      do k=1,ndustspec
+        nd_diff_arr(:,k) = nd_diff(k)
+        if (lmdvar) md_diff_arr(:,k) = md_diff(k)
+        if (lmice)  mi_diff_arr(:,k) = mi_diff(k)
+      enddo
 !
 !  Special coagulation equation test cases require initialization of kernel
 !
@@ -395,13 +404,13 @@ module Dustdensity
 !  Loop over dust layers
 !
       do k=1,ndustspec
-        if (lnd_turb_diff) nd_diff(:,k) = nu_turb/(1.+Omega/tausd1(:,k))
-        if (lmdvar .and. lmd_turb_diff) md_diff(:,k) = nu_turb
-        if (lmice  .and. lmi_turb_diff) mi_diff(:,k) = nu_turb
+        if (lnd_turb_diff) nd_diff_arr(:,k) = nu_turb/(1.+Omega/tausd1(:,k))
+        if (lmdvar .and. lmd_turb_diff) md_diff_arr(:,k) = nu_turb
+        if (lmice  .and. lmi_turb_diff) mi_diff_arr(:,k) = nu_turb
 !
 !  Diffusion terms from drhod/dt = div(D*rho*grad(rhod/rho))
 !
-        if (maxval(nd_diff(:,k)) /= 0.) then
+        if (maxval(nd_diff_arr(:,k)) /= 0.) then
           call del2(f,ind(k),del2nd)
           if (.not. lmdvar) then
             call grad(f,ilnrho,glnrho)
@@ -411,22 +420,23 @@ module Dustdensity
             if (ldustdensity_log) then
               call dot2_mn(gnd(:,:,k),gnd2)
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
-                  nd_diff(:,k)*(del2nd + gnd2 - gndglnrho - del2lnrho)
+                  nd_diff_arr(:,k)*(del2nd + gnd2)! - gndglnrho - del2lnrho)
             else
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
-                  nd_diff(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
+                  nd_diff_arr(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
             endif
           else
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(:,k)*del2nd
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
+                nd_diff_arr(:,k)*del2nd
           endif
         endif
-        if (lmdvar .and. maxval(md_diff(:,k)) /= 0.) then
+        if (lmdvar .and. maxval(md_diff_arr(:,k)) /= 0.) then
           call del2(f,imd(k),del2md)
-          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff(:,k)*del2md
+          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff_arr(:,k)*del2md
         endif
-        if (lmice .and. maxval(mi_diff(:,k)) /= 0.) then
+        if (lmice .and. maxval(mi_diff_arr(:,k)) /= 0.) then
           call del2(f,imi(k),del2mi)
-          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) + mi_diff(:,k)*del2mi
+          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) + mi_diff_arr(:,k)*del2mi
         endif
 !
 !  Diagnostic output
