@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.75 2004-08-19 08:31:41 nilshau Exp $
+! $Id: io_dist.f90,v 1.76 2004-08-19 17:25:51 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.75 2004-08-19 08:31:41 nilshau Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.76 2004-08-19 17:25:51 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -391,13 +391,10 @@ contains
         endif
       endif
 !
+      dxmin = huge(dxmin)       ! initialize in case all n[x-z]grid=1
+      dxmax = huge(dxmax)       ! ditto
       dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
       dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
-!
-! On gridur dxmin is set to Infinity if nxgrid=nygrid=nzgrid=1, this
-! cause problems when calculating things including dxmin.
-!
-      if (dxmin>huge(dxmin)) dxmin=huge(dxmin)
 !
 !  debug output
 !

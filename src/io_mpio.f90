@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.27 2004-01-23 18:09:54 dobler Exp $
+! $Id: io_mpio.f90,v 1.28 2004-08-19 17:25:51 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -110,7 +110,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.27 2004-01-23 18:09:54 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.28 2004-08-19 17:25:51 dobler Exp $")
 !
 !  consistency check
 !
@@ -605,6 +605,8 @@ contains
         z(n2+i) = z(n2) + i*dz        
       enddo
 !
+      dxmin = huge(dxmin)       ! initialize in case all n[x-z]grid=1
+      dxmax = huge(dxmax)       ! ditto
       dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
       dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
 
