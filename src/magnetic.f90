@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.194 2004-06-07 19:50:13 theine Exp $
+! $Id: magnetic.f90,v 1.195 2004-06-08 21:53:57 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -38,6 +38,7 @@ module Magnetic
   real :: eta_shock=0.
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
+  real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,Bz0_ext_pot=1.0,r0_ext_pot=1.0
   real :: rescale_aa=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
@@ -58,7 +59,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss, &
+       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,Bz0_ext_pot,r0_ext_pot,lB_ext_pot,lB_ext_pot_normalize
 
   ! run parameters
@@ -132,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.194 2004-06-07 19:50:13 theine Exp $")
+           "$Id: magnetic.f90,v 1.195 2004-06-08 21:53:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
