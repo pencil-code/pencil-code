@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.46 2003-07-03 00:46:15 theine Exp $
+! $Id: radiation_exp.f90,v 1.47 2003-07-03 11:27:45 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.46 2003-07-03 00:46:15 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.47 2003-07-03 11:27:45 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -101,6 +101,7 @@ module Radiation
 !  Do this in the beginning of each run
 !
 !  16-jun-03/axel+tobi: coded
+!  03-jul-03/tobi: position array added
 !
       use Cdata
 !
@@ -217,15 +218,18 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-        if (lrad>=0) then; llstart=l1; llstop=l2; ldir=+1
-                     else; llstart=l2; llstop=l1; ldir=-1; endif
-        if (mrad>=0) then; mmstart=m1; mmstop=m2; mdir=+1
-                     else; mmstart=m2; mmstop=m1; mdir=-1; endif
-        if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
-                     else; nnstart=n2; nnstop=n1; ndir=-1; endif
-        call radtransfer_intrinsic(f)
-        call radtransfer_communicate
-        call radtransfer_revision(f)
+!
+           if (lrad>=0) then; llstart=l1; llstop=l2; ldir=+1
+                        else; llstart=l2; llstop=l1; ldir=-1; endif
+           if (mrad>=0) then; mmstart=m1; mmstop=m2; mdir=+1
+                        else; mmstart=m2; mmstop=m1; mdir=-1; endif
+           if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
+                        else; nnstart=n2; nnstop=n1; ndir=-1; endif
+!
+           call intensity_intrinsic(f)
+           call intensity_communicate()
+           call intensity_revision(f)
+!
         endif
       enddo
       enddo
@@ -233,7 +237,7 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine radtransfer_intrinsic(f)
+    subroutine intensity_intrinsic(f)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -249,7 +253,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_intrinsic'
+      if(lroot.and.headt) print*,'intensity_intrinsic'
 !
 !  line elements
 !
@@ -281,9 +285,9 @@ module Radiation
 !
       f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
 !
-    endsubroutine radtransfer_intrinsic
+    endsubroutine intensity_intrinsic
 !***********************************************************************
-    subroutine radtransfer_communicate
+    subroutine intensity_communicate()
 !
 !  Integration radioation transfer equation along rays
 !
@@ -302,69 +306,83 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_communicate'
+      if(lroot.and.headt) print*,'intensity_communicate'
 !
 !  set ghost zones, data from preceeding processor
 !  no communication in x currently, but keep it for generality
 !
-      if (lrad/=0) call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
-      if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
-      if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
+      if (lrad/=0) then
+         call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
+         if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
+         if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
+      endif
 !
 !  receive from processor in y, then set Irad0
 !
-      if (mrad/=0) call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
-      if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
-      if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
+      if (mrad/=0) then
+         call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
+         if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
+         if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
+      endif
 !
 !  receive from processor in z, then set Irad0
 !
-      if (nrad/=0) call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
-      if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
-      if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
+      if (nrad/=0) then
+         call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
+         if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
+         if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
+      endif
 !
 !  propagate boundary values
 !
-      call intensity_communicate
+      call propagate_intensity()
 !
 !  set boundary values for following processor
 !  no communication in x currently, but keep it for generality
 !
-      if (lrad<0) Irad0_yz=Irad0(l1:l1+radx0-1,:,:) &
-                                 *emtau(l1:l1+radx0-1,:,:) &
-                                 +Irad(l1:l1+radx0-1,:,:)
-      if (lrad>0) Irad0_yz=Irad0(l2-radx0+1:l2,:,:) &
-                                 *emtau(l2-radx0+1:l2,:,:) &
-                                 +Irad(l2-radx0+1:l2,:,:)
-      if (lrad/=0) call radcomm_yz_send(lrad,radx0,Irad0_yz,tag_yz)
+      if (lrad/=0) then
+         if (lrad<0) Irad0_yz=Irad0(l1:l1+radx0-1,:,:) &
+                             *emtau(l1:l1+radx0-1,:,:) &
+                              +Irad(l1:l1+radx0-1,:,:)
+         if (lrad>0) Irad0_yz=Irad0(l2-radx0+1:l2,:,:) &
+                             *emtau(l2-radx0+1:l2,:,:) &
+                              +Irad(l2-radx0+1:l2,:,:)
+         call radcomm_yz_send(lrad,radx0,Irad0_yz,tag_yz)
+      endif
 !
 !  set Irad0_zx, and send to next processor in y
 !
-      if (mrad<0) Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
-                                 *emtau(:,m1:m1+rady0-1,:) &
-                                 +Irad(:,m1:m1+rady0-1,:)
-      if (mrad>0) Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
-                                 *emtau(:,m2-rady0+1:m2,:) &
-                                 +Irad(:,m2-rady0+1:m2,:)
-      if (mrad/=0) call radcomm_zx_send(mrad,rady0,Irad0_zx,tag_zx)
+      if (mrad/=0) then
+         if (mrad<0) Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
+                             *emtau(:,m1:m1+rady0-1,:) &
+                              +Irad(:,m1:m1+rady0-1,:)
+         if (mrad>0) Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
+                             *emtau(:,m2-rady0+1:m2,:) &
+                              +Irad(:,m2-rady0+1:m2,:)
+         call radcomm_zx_send(mrad,rady0,Irad0_zx,tag_zx)
+      endif
 !
 !  set Irad0_xy, and send to next processor in z
 !
-      if (nrad<0) Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
-                                 *emtau(:,:,n1:n1+radz0-1) &
-                                 +Irad(:,:,n1:n1+radz0-1)
-      if (nrad>0) Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
-                                 *emtau(:,:,n2-radz0+1:n2) &
-                                 +Irad(:,:,n2-radz0+1:n2)
-      if (nrad/=0) call radcomm_xy_send(nrad,radz0,Irad0_xy,tag_xy)
+      if (nrad/=0) then
+         if (nrad<0) Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
+                             *emtau(:,:,n1:n1+radz0-1) &
+                              +Irad(:,:,n1:n1+radz0-1)
+         if (nrad>0) Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
+                             *emtau(:,:,n2-radz0+1:n2) &
+                              +Irad(:,:,n2-radz0+1:n2)
+         call radcomm_xy_send(nrad,radz0,Irad0_xy,tag_xy)
+      endif
 !
-    endsubroutine radtransfer_communicate
+    endsubroutine intensity_communicate
 !***********************************************************************
-    subroutine intensity_communicate
+    subroutine propagate_intensity()
 !
-!  Integration radiation transfer equation along all rays
+!  In order to communicate the correct boundary intensities for each ray
+!  to the next processor, we need to know the corresponding boundary
+!  intensities of this one.
 !
-!  16-jun-03/axel+tobi: coded
+!  03-jul-03/tobi: coded
 !
       use Cdata
 !
@@ -372,7 +390,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'intensity_communicate'
+      if(lroot.and.headt) print*,'propagate_intensity'
 !
 !  initialize position array in ghost zones
 !
@@ -407,9 +425,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_communicate
+    endsubroutine propagate_intensity
 !***********************************************************************
-    subroutine radtransfer_revision(f)
+    subroutine intensity_revision(f)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -424,7 +442,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_revision'
+      if(lroot.and.headt) print*,'intensity_revision'
 !
 !  do the ray...
 !
@@ -441,7 +459,7 @@ module Radiation
 !
       f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
 !
-    endsubroutine radtransfer_revision
+    endsubroutine intensity_revision
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !
