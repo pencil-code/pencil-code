@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.11 2002-06-06 07:09:35 brandenb Exp $ 
+! $Id: param_io.f90,v 1.12 2002-06-06 07:18:21 brandenb Exp $ 
 
 module Param_IO
 
@@ -36,7 +36,7 @@ module Param_IO
 !  open namelist file; read/print cvs id from first line
 !
       open(1,FILE='start.in',FORM='formatted')
-      read(1,*) Id; if(lroot) then; print*; print*,Id; endif
+      read(1,'(a80)') Id; if(lroot) then; print*; print*,Id; endif
 !
 !  read through all items that *may* be present
 !  in the various modules
@@ -86,7 +86,7 @@ module Param_IO
 !  open namelist file; read/print cvs id from first line
 !
       open(1,file='run.in',form='formatted')
-      read(1,*) Id; if(lroot) then; print*; print*,Id; endif
+      read(1,'(a80)') Id; if(lroot) then; print*; print*,Id; endif
 !
 !  read through all items that *may* be present
 !  in the various modules
