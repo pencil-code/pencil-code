@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.83 2004-05-12 17:27:07 ajohan Exp $
+! $Id: dustdensity.f90,v 1.84 2004-05-14 11:23:21 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.83 2004-05-12 17:27:07 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.84 2004-05-14 11:23:21 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -172,9 +172,9 @@ module Dustdensity
           'ldustgrowth,ldustcoagulation =', &
           ldustgrowth,ldustcoagulation
 !          
-      if (ldustgrowth .and. .not. lpscalar) &
+      if (ldustgrowth .and. (lpscalar_nolog .or. .not. lpscalar)) &
           call stop_it('initialize_dustdensity: ' // &
-          'Dust growth only works with pscalar_nolog')
+          'Dust growth only works with pscalar (log)')
 
       if (nx*ny /= 1) print*,'initialize_dustdensity: WARNING -'// &
           'dust equations only tested in one dimension (z).'

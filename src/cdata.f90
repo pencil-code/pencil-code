@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.222 2004-05-12 17:41:48 mee Exp $
+! $Id: cdata.f90,v 1.223 2004-05-14 11:23:21 ajohan Exp $
 
 module Cdata
 
@@ -125,7 +125,8 @@ module Cdata
   logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
-  logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
+  logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
+  logical :: lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
   logical :: lvisc_shock=.false.,lvisc_hyper=.false.
