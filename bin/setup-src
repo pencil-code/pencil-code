@@ -4,9 +4,23 @@
 ###  Link files into a local src directory
 ###  Also link files from the bin directory ==> should be renamed
 
-ln -s ../../../bin/start.csh .
-ln -s ../../../bin/run.csh .
-ln -s ../../../bin/getconf.csh .
+## Determine directories to link from
+set bindir="No-such-directory"
+set srcdir="No-such-directory"
+foreach dir ( ../../.. ../..)
+  # Note: the _last_ matching directory will be used
+  if (-d $dir/bin) set bindir=$dir/bin
+  if (-d $dir/src) set srcdir=$dir/src
+end
+
+## Link csh scripts
+foreach script (start.csh run.csh getconf.csh)
+  if (-e $bindir/$script) then
+    ln -s $bindir/$script .
+  else
+    echo "No such file: $bindir/$script"
+  endif
+end
 
 ## src subdirectory
 if (-d ./src) then
@@ -14,10 +28,22 @@ if (-d ./src) then
 else
   mkdir ./src
 endif
-
-cd src
 #
-ln -s ../../../../src/*.f90 .
-ln -s ../../../../src/Makefile .
-ln -s ../../../../src/*.c .
+cd src
+set n=0
+foreach file (../$srcdir/*.f90 ../$srcdir/Makefile ../$srcdir/*.c)
+  if (-e $file) then
+    if (! -e $file:t) then
+      ln -s $file .
+    else
+      # echo "$file:t already exists"
+      set n=`expr $n + 1`
+      set existf=$file:t
+    endif
+  else
+    echo "No such file: $file"
+  endif
+end
+if ($n == 1) echo "$existf already exists in src"
+if ($n > 1) echo "$n files already exist in src"
 
