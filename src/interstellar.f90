@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.26 2003-06-10 17:33:16 mee Exp $
+! $Id: interstellar.f90,v 1.27 2003-06-10 17:57:37 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -88,7 +88,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.26 2003-06-10 17:33:16 mee Exp $")
+           "$Id: interstellar.f90,v 1.27 2003-06-10 17:57:37 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -419,13 +419,16 @@ module Interstellar
        z_SN=z0+(i-1)*dz
        ipz_SN=(i-1)/nz
     else
-       do n=nzskip+1,nzgrid-nzskip
-          if (cum_prob_SNI(n-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(n)) &
-               z_SN=z0+(n-1)*dz
+       do i=nzskip+1,nzgrid-nzskip
+          if (cum_prob_SNI(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(i)) &
+               then
+               z_SN=z0+(i-1)*dz
+               ipz_SN=(i-1)/nz
+               exit
+            endif
        enddo
-       ipz_SN=(z_SN-z0)*nprocz/Lz
-       iproc_SN=ipz_SN*nprocy + ipy_SN
     endif
+    iproc_SN=ipz_SN*nprocy + ipy_SN
 
     !if (lroot) print*, 'z',fran3(3),z_SN,ipz_SN,iproc_SN
 !
