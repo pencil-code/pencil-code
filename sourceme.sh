@@ -7,7 +7,8 @@
 if [ -z  $_sourceme ]; then 
   CDPATH="./:../:../../:../../../:$HOME"
   PATH="${PATH}:../bin:../../bin:../../../bin:../../../../bin"
-  IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:+$HOME/idl:<IDL_DEFAULT>"
+  #IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:+$HOME/idl:<IDL_DEFAULT>"
+  IDL_PATH="+../idl:+../../idl:+../../../idl:tmp:<IDL_DEFAULT>"
   # if [ -z $TEXINPUTS ]; then
   #   TEXINPUTS=::./texinputs
   # else

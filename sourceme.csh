@@ -7,7 +7,8 @@
 if (! $?_sourceme) then
   set cdpath = ( . ../  ../../ ../../../ ~/ )
   set path=($path ../bin ../../bin ../../../bin ../../../../bin )
-  setenv IDL_PATH "+../idl:+../../idl:+../../../idl:tmp:+~/idl:<IDL_DEFAULT>"
+  #setenv IDL_PATH "+../idl:+../../idl:+../../../idl:tmp:+~/idl:<IDL_DEFAULT>"
+  setenv IDL_PATH "+../idl:+../../idl:+../../../idl:tmp:<IDL_DEFAULT>"
   # if ($?TEXINPUTS) then
   #   setenv TEXINPUTS ${TEXINPUTS}:./texinputs
   # else
