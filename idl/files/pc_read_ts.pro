@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.9 2004-04-07 11:29:04 dobler Exp $
+; $Id: pc_read_ts.pro,v 1.10 2004-04-10 17:18:53 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-04-07 11:29:04 $
-;  $Revision: 1.9 $
+;  $Date: 2004-04-10 17:18:53 $
+;  $Revision: 1.10 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -63,7 +63,7 @@ end
 pro pc_read_ts, $
                 FILENAME=filename,$
                 OBJECT=object, $ 
-                PRINT=PRINT, QUIET=QUIET, HELP=HELP,$
+                PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
                 EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm
 
@@ -158,7 +158,7 @@ pro pc_read_ts, $
     newheader='^#--'
  
     data = input_table(filename,DOUBLE=double,  $
-                       STOP_AT=newheader,FILEPOSITION=fileposition)
+                       STOP_AT=newheader,FILEPOSITION=fileposition,verbose=verbose)
     if ((size(data))[1] ne ncols) then begin
       message, /INFO, 'Inconsistency: label number different from column number'
     endif

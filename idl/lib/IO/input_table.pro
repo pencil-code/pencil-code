@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2004-03-12 12:36:09 $
-;;; $Revision: 1.7 $
+;;; $Date: 2004-04-10 17:18:53 $
+;;; $Revision: 1.8 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -116,7 +116,21 @@ function input_table, filename, $
   while ((not eof(in_file)) and (idat lt N_lines) $
                             and (not found_stop)) do begin
     readf, in_file, line
-    is_comm = (strmid(line,0,clen) eq cchar)
+
+    if (slen gt 0) then begin
+        if (stregex(line,STOP_AT,/BOOLEAN)) then begin
+          point_lun,-in_file,fileposition ; Save file position
+          stop_at=line                    ; Return the line
+          found_stop=-1                   ; Exit the loop
+          if (verb) then begin
+            print, 'Found stop regexp at'
+            print, '  position ', strtrim(fileposition,2)
+            print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
+            print, '  line = <'+line+'>'
+          endif
+        endif
+     endif
+     is_comm = (strmid(line,0,clen) eq cchar)
 
     if (not is_comm) then begin
       ;; If this is first data line, determine number of columns
@@ -145,19 +159,6 @@ function input_table, filename, $
         endif
       endif
     
-      if (slen gt 0) then begin
-        if (stregex(line,STOP_AT,/BOOLEAN)) then begin
-          point_lun,-in_file,fileposition ; Save file position
-          stop_at=line                    ; Return the line
-          found_stop=-1                   ; Exit the loop
-          if (verb) then begin
-            print, 'Found stop regexp at'
-            print, '  position ', strtrim(fileposition,2)
-            print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
-            print, '  line = <'+line+'>'
-          endif
-        endif
-      endif
 
       ;; Read one line and store in data[:,:]
       if (not found_stop) then begin
