@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.259 2004-01-12 13:16:36 dobler Exp $
+! $Id: entropy.f90,v 1.260 2004-01-14 17:47:39 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.259 2004-01-12 13:16:36 dobler Exp $")
+           "$Id: entropy.f90,v 1.260 2004-01-14 17:47:39 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,7 @@ module Entropy
         beta1 = g0/(mpoly+1)
         !TT_ext = T0
         !TT_int = 1+beta1*(1/r_int-1)
-        TT_ext = gamma/gamma1
+        TT_ext = gamma/gamma1*T0
         TT_int = gamma/gamma1*(1+beta1*(1/r_int-1))
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
