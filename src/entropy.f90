@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.90 2002-07-08 23:34:25 brandenb Exp $
+! $Id: entropy.f90,v 1.91 2002-07-09 10:34:41 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.90 2002-07-08 23:34:25 brandenb Exp $")
+           "$Id: entropy.f90,v 1.91 2002-07-09 10:34:41 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -539,7 +539,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,cs2,TT1
       real, dimension (nx) :: heat,prof
-      real :: ssref,ztop
+      real :: ssref,zbot,ztop
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -548,6 +548,8 @@ module Entropy
 !
       if(headtt) print*,'calc_heat_cool: lgravz=',lgravz
 !
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
 !  Vertical case:
 !  Heat at bottom, cool top layers
 !
@@ -556,7 +558,7 @@ module Entropy
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !
         ! heating profile, normalised, so volume integral = 1
-        prof = spread(exp(-0.5*((z(n)-z(n1))/wheat)**2), 1, l2-l1+1) &
+        prof = spread(exp(-0.5*((z(n)-zbot)/wheat)**2), 1, l2-l1+1) &
              /(sqrt(pi/2.)*wheat*Lx*Ly)
         heat = cheat*prof
         ! smoothly switch on heating if reuqired
@@ -564,8 +566,8 @@ module Entropy
           heat = heat * t*(2*tinit-t)/tinit**2
         endif
         ! cooling profile; maximum = 1
-        ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*z(n2)
-        prof = spread(exp(-0.5*((z(n2)-z(n))/wcool)**2), 1, l2-l1+1)
+        ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop
+        prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
         heat = heat - cool*prof*(cs2-cs20)/cs20
       endif
 !
@@ -582,7 +584,6 @@ module Entropy
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
 !WD: 'FIXME: what am I doing with ztop in spherical geometry?'
 !AB: check whether the following makes sense (ztop no longer in gravity)
-        ztop=xyz0(3)+Lxyz(3)
         prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
@@ -760,9 +761,10 @@ module Entropy
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
-!  This assumes that the density is already set (ie density must register first!)
-!  tmp_xy = entropy(x,y) on the boundary.
-!  s/cp = [ln(cs2/cs20)-ln(rho/rho0)]/gamma
+!  This assumes that the density is already set (ie density must register
+!  first!)
+!  tmp_xy = s(x,y) on the boundary.
+!  gamma*s/cp = [ln(cs2/cs20)-(gamma-1)ln(rho/rho0)]
 !
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
@@ -772,7 +774,7 @@ module Entropy
 !
       case('bot')
         if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
-        if (cs2bot==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2bot=0'
+        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
@@ -786,7 +788,7 @@ module Entropy
 !
       case('top')
         if (ldebug) print*,'set top temperature: cs2top=',cs2top
-        if (cs2top==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2top=0'
+        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
