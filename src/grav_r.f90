@@ -33,8 +33,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-04-04 17:06:16 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-04-10 16:26:31 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -71,15 +71,14 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: evr,gg
-      real, dimension (nx) :: r_mn,g_r
+      real, dimension (nx) :: g_r
 !
 !  evr is the radial unit vector
 !
-      evr(:,1) = x(l1:l2)
-      evr(:,2) = y(m)
-      evr(:,3) = z(n)
-      r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2) + epsi
-      evr = evr / spread(r_mn,2,3)
+      evr(:,1) = x_mn
+      evr(:,2) = y_mn
+      evr(:,3) = z_mn
+      evr = evr / spread(r_mn+epsi,2,3)
       g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
                               3*(cpot(1)*cpot(5)-cpot(3)), &
                               4*cpot(1)*cpot(3), &

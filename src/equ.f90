@@ -266,7 +266,7 @@ module Equ
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
       real, dimension(nx) :: rho,rho1,nurho1,nu_var,cs2,chi,diff,del2lam
-      real, dimension(nx) :: r,pdamp
+      real, dimension(nx) :: pdamp
       real :: diffrho
       integer :: i,j
 !
@@ -275,8 +275,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.25 $", &
-           "$Date: 2002-04-05 07:25:42 $")
+           "$Revision: 1.26 $", &
+           "$Date: 2002-04-10 16:26:31 $")
 !
 !  initiate communication
 !
@@ -300,6 +300,13 @@ module Equ
 !
         call gij(f,iuu,uij)
         call grad(f,ilnrho,glnrho)
+!
+!  coordinates are needed all the time
+!
+        x_mn = x(l1:l2)
+        y_mn = spread(y(m),1,nx)
+        z_mn = spread(z(n),1,nx)
+        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
 !
 !  rho1 (=1/rho) is needed by viscous term and heat conduction
 !
@@ -360,12 +367,11 @@ module Equ
           endif
         endif
 !
-!  2. damp motions for r>1
+!  2. damp motions for r_mn>1
 !
         if (lgravr) then
-!        r = rr(l1:l2,m,n)
-!          pdamp = 0.5*(1+tanh((r-rdamp)/wdamp)) ! damping profile
-          pdamp = step(r,rdamp,wdamp) ! damping profile
+!          pdamp = 0.5*(1+tanh((r_mn-rdamp)/wdamp)) ! damping profile
+          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo

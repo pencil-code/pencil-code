@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.35 $", &
-           "$Date: 2002-04-04 17:07:25 $")
+           "$Revision: 1.36 $", &
+           "$Date: 2002-04-10 16:26:31 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -144,7 +144,6 @@ use IO
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
       real, dimension (nx) :: divu,rho1,cs2,chi
-      real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
       real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
       real, dimension (nx) :: ss,lnrho,TT1,lambda
       real, dimension (nx) :: heat,prof
@@ -157,10 +156,6 @@ use IO
       intent(out) :: df,gpprho,cs2,chi
 !
 !  coordinates
-!
-      x_mn = x(l1:l2)
-      y_mn = spread(y(m),1,nx)
-      z_mn = spread(z(n),1,nx)
 !
       call grad(f,ient,gss)
       call del2(f,ient,del2ss)
@@ -264,7 +259,6 @@ use IO
 !  heat at centre, cool outer layers
 !
       if (lgravr) then
-!        r_mn = rr(l1:l2,m,n)
         ! central heating
         ! heating profile, normalised, so volume integral = 1
         prof = exp(-0.5*(r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)

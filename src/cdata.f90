@@ -7,7 +7,8 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real, dimension (nx) :: rmn
+  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
+!  real, dimension (nx) :: rmn
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp

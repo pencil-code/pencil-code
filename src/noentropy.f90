@@ -29,8 +29,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-03-28 18:51:49 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-04-10 16:26:31 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -67,7 +67,6 @@ use IO
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
       real, dimension (nx) :: divu,rho1,cs2,chi
-      real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
       real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
       real, dimension (nx) :: ss,lnrho,TT1,lambda
       real, dimension (nx) :: heat,prof
