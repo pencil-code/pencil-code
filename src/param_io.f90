@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.71 2002-10-23 13:16:42 dobler Exp $ 
+! $Id: param_io.f90,v 1.72 2002-10-25 07:49:43 brandenb Exp $ 
 
 module Param_IO
 
@@ -53,11 +53,10 @@ module Param_IO
 !  read datadir from file, or set default value
 !
 !   2-oct-02/wolf: coded
+!  25-oct-02/axel: default is taken from cdata.f90 where it's defined
 !
       character (len=*) :: dir
       logical :: exist
-!
-      dir = 'data'              ! default
 !
 !  check for existence of datadir.in
 !
@@ -459,9 +458,8 @@ module Param_IO
     subroutine rparam ()
 !
 !  Read startup parameters
+!
 !  21-jan-02/wolf: coded
-!  ?Is there a good reason to have this routine in sub.f90?
-!  ?How about register.f90, for example?
 !
       use Cdata
 !
@@ -486,6 +484,7 @@ module Param_IO
     subroutine wparam2 ()
 !
 !  Write runtime parameters for IDL
+!
 !  21-jan-02/wolf: coded
 !
       use Cdata

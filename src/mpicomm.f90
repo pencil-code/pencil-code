@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.55 2002-10-22 12:34:28 brandenb Exp $
+! $Id: mpicomm.f90,v 1.56 2002-10-25 07:49:43 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -773,7 +773,7 @@ subroutine transform_i(a_re,a_im)
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
   
-  if(lroot .AND. ip<10) print*,'doing fft'
+  if(lroot .AND. ip<10) print*,'doing three FFTs'
   call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
   call transp(a_re,'y')
   call transp(a_im,'y')

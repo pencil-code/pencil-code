@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -134,7 +134,7 @@ module  power_spectrum
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
-  real, dimension(nk) :: spectrum_hel=0.,spectrum_hel_sum=0
+  real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
   integer, dimension(nxgrid) :: kx
   integer, dimension(nygrid) :: ky
   integer, dimension(nzgrid) :: kz
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.12 2002-10-22 16:58:19 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -158,7 +158,7 @@ module  power_spectrum
   !  initialize power spectrum to zero
   !
   spectrum=0
-  spectrum_hel=0
+  spectrumhel=0
   !
   !  loop over all the components
   !
@@ -210,7 +210,7 @@ module  power_spectrum
             spectrum(k+1)=spectrum(k+1) &
                +b_re(ikx,iky,ikz)**2 &
                +b_im(ikx,iky,ikz)**2
-            spectrum_hel(k+1)=spectrum_hel(k+1) &
+            spectrumhel(k+1)=spectrumhel(k+1) &
                +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
                +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
           endif
@@ -224,18 +224,19 @@ module  power_spectrum
   !  The result is available only on root
   !
   call mpireduce_sum(spectrum,spectrum_sum,nk)
-  call mpireduce_sum(spectrum_hel,spectrum_hel_sum,nk)
+  call mpireduce_sum(spectrumhel,spectrumhel_sum,nk)
   !
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
   !
   !  append to diagnostics file
   !
   if (iproc==root) then
-    if (ip<10) print*,'Writing power spectra of variable',sp &
-         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
-    spectrum_sum=.5*spectrum_sum
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
     !
+    spectrum_sum=.5*spectrum_sum
     open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) spectrum_sum
@@ -243,7 +244,7 @@ module  power_spectrum
     !
     open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
     write(1,*) t
-    write(1,*) spectrum_hel_sum
+    write(1,*) spectrumhel_sum
     close(1)
   endif
   !

@@ -373,7 +373,7 @@ subroutine transform_i(a_re,a_im)
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
 !
-  if(lroot .AND. ip<10) print*,'doing fft'
+  if(lroot .AND. ip<10) print*,'doing three FFTs'
   call fft(a_re,a_im, nx*ny*nz, nx, nx      ,-1)
   call fft(a_re,a_im, nx*ny*nz, ny, nx*ny   ,-1)
   call fft(a_re,a_im, nx*ny*nz, nz, nx*ny*nz,-1)
@@ -381,7 +381,7 @@ subroutine transform_i(a_re,a_im)
   ! Normalize
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-
+!
 end subroutine transform_i
 !***********************************************************************
 endmodule Mpicomm
