@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.6 2004-03-17 14:51:50 snod Exp $
+! $Id: cosmicray_nolog.f90,v 1.7 2004-03-18 15:08:41 mee Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -50,6 +50,7 @@ module CosmicRay
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
+  integer :: i_ecrdivum=0
   integer :: i_kmax=0
 
   contains
@@ -83,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.6 2004-03-17 14:51:50 snod Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.7 2004-03-18 15:08:41 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -250,6 +251,7 @@ module CosmicRay
 !
       if (ldiagnos) then
         ecr=f(l1:l2,m,n,iecr)
+        if (i_ecrdivum/=0) call sum_mn_name(ecr*divu,i_ecrdivum)
         if (i_ecrm/=0) call sum_mn_name(ecr,i_ecrm)
         if (i_ecrmax/=0) call max_mn_name(ecr,i_ecrmax)
         if (i_kmax/=0) call max_mn_name(vKperp,i_kmax)
@@ -283,6 +285,7 @@ module CosmicRay
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ecrm',i_ecrm)
+        call parse_name(iname,cname(iname),cform(iname),'ecrdivum',i_ecrdivum)
         call parse_name(iname,cname(iname),cform(iname),'ecrmax',i_ecrmax)
         call parse_name(iname,cname(iname),cform(iname),'kmax',i_kmax)
       enddo
@@ -297,6 +300,7 @@ module CosmicRay
 !
       if (lwr) then
         write(3,*) 'i_ecrm=',i_ecrm
+        write(3,*) 'i_ecrdivum=',i_ecrdivum
         write(3,*) 'i_ecrmax=',i_ecrmax
         write(3,*) 'i_kmax=',i_kmax
         write(3,*) 'iecr=',iecr
