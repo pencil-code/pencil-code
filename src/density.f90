@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.169 2004-06-30 04:38:11 theine Exp $
+! $Id: density.f90,v 1.170 2004-06-30 17:59:32 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.169 2004-06-30 04:38:11 theine Exp $")
+           "$Id: density.f90,v 1.170 2004-06-30 17:59:32 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -511,7 +511,7 @@ module Density
         if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell region'
         call shell_lnrho(f)
 
-      case('geo-kws-constant-T')
+      case('geo-kws-constant-T','geo-benchmark')
       !
       ! radial hydrostatic profile throughout box, which is consistent
       ! with constant temperature in exterior regions, and gives continuous
@@ -713,6 +713,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: pot
       real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
+integer :: j
 !
       beta1 = g0/(mpoly+1)
 !
@@ -732,13 +733,18 @@ module Density
         if (initlnrho(1)=='geo-kws') then
           where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
           where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
-        elseif (initlnrho(1)=='geo-kws-constant-T') then
+        elseif (initlnrho(1)=='geo-kws-constant-T'.or.initlnrho(1)=='geo-benchmark') then
           call potential(R=r_int,POT=pot_int)
           call potential(R=r_ext,POT=pot_ext)
           call potential(RMN=r_mn,POT=pot)
           where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)
           where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)
         endif
+if (m==35 .and. n==35) then
+do j=1,nx
+print*,r_mn(j),pot(j),exp(f(l1-1+j,m,n,ilnrho))
+enddo
+endif
       enddo 
 !      
     endsubroutine shell_lnrho
