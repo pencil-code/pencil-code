@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.60 2003-12-31 13:23:10 dobler Exp $
+;;; $Id: start.pro,v 1.61 2004-01-06 15:37:05 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -130,7 +130,7 @@ pfile = datatopdir+'/param.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   if (quiet le 2) then print, 'Reading param.nml..'
-  spawn, "bash -c 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done'", result
+  spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result
   if (strlen(result[0])) le 0 then begin
     message, "Can't find writeable directory for temporary files"
   endif else begin
@@ -151,7 +151,8 @@ if (cpar gt 0) then begin
   ;; Restore old path and pwd
   !path = _path & cd, _pwd
   ;; Delete temporary file
-  file_delete, tmpfile
+  ; file_delete, tmpfile      ; not in IDL <= 5.3
+  spawn, 'rm -f '+tmpfile, /SH
   par = param()
 
   ;; Abbreviate some frequently used parameters

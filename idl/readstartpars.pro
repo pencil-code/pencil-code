@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.12 2003-12-31 13:23:10 dobler Exp $
+;  $Id: readstartpars.pro,v 1.13 2004-01-06 15:37:05 dobler Exp $
 ;
 ;  Read startup parameters
 ;
@@ -7,7 +7,7 @@ dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
 
   if (quiet le 2) then print, 'Reading param2.nml..'
-  spawn, "bash -c 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done'", result
+  spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result
   if (strlen(result[0])) le 0 then begin
     message, "Can't find writeable directory for temporary files"
   endif else begin
@@ -28,7 +28,8 @@ if (cpar gt 0) then begin
   ;; Restore old path and pwd
   !path = _path & cd, _pwd
   ;; Delete temporary file
-  file_delete, tmpfile
+  ; file_delete, tmpfile      ; not in IDL <= 5.3
+  spawn, 'rm -f '+tmpfile, /SH
   par2 = param2()
 
   ;; Abbreviate some frequently used parameters
