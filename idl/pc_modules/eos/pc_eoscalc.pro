@@ -33,7 +33,16 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
   default, datadir, 'data'
   ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
-  
+  ;
+  ;  Read the positions of variables in f
+  ;  Can't just use `@data/pc_constants', as the data directory may have a different name
+  ;
+  cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/pc_constants.pro'
+  spawn, cmd, result
+  res = flatten_strings(result)
+  if (execute(res) ne 1) then $
+    message, 'There was a problem with pc_constants.pro', /INFO
+ 
   result=0.
 
   lionization = safe_get_tag(param,'lionization',default=safe_get_tag(param,'leos_ionization',default=0)) 
@@ -65,6 +74,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
       lnrho=var1
       ss=var2
+
       @data/pc_constants.pro
       
       if (param.lcalc_cp) then cp=k_B/(param.mu*m_H) else cp=1.
