@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.60 2004-04-13 09:42:08 ajohan Exp $
+! $Id: dustdensity.f90,v 1.61 2004-04-15 12:39:25 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.60 2004-04-13 09:42:08 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.61 2004-04-15 12:39:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -619,16 +619,47 @@ module Dustdensity
       use Cdata
       use Sub
       use Entropy, only: nu_turb
+      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss,nu_mol
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu
-      real, dimension (nx) :: TT1,cs2,deltaud_drift2,ul0
-      real :: tl0,alphaSS,ust
+      real, dimension (nx) :: TT1,cs2,deltaud_drift2
+      real :: ust,pp0,pp1,pp2,cs2p,cp1tilde,cs_sum
+      real :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
       integer :: i,j,l
+      save :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
 !
-      tl0 = 1/Omega
-      alphaSS = exp(-27.0466)*nu_turb**0.623236
-      ul0 = alphaSS*sqrt(cs2)
+!  Calculate turbulence properties
+!
+      if (m == m1 .and. n == n1 .and. itsub == 1) then
+        do i=n1,n2
+          call pressure_gradient(f(l1,m,i,ilnrho),f(l1,m,i,iss),cs2p,cp1tilde)
+          cs_sum = cs_sum + sqrt(cs2p)
+        enddo
+        cs_ave = cs_sum/nz
+        call eoscalc_point &
+            (ilnrho_ss,f(l1,m,nz/2+3,ilnrho),f(l1,m,nz/2+3,iss),pp=pp0)
+        do i=nz/2+3,n2
+          pp2 = pp1
+          call eoscalc_point &
+              (ilnrho_ss,f(l1,m,i,ilnrho),f(l1,m,i,iss),pp=pp1)
+          if (pp2 > exp(-1.)*pp0 .and. pp1 <= exp(-1.)*pp0) then
+            Hp = dz*(i-(nz/2+3))
+            alphaSS = nu_turb/(Hp**2*Omega)
+            ul0  = alphaSS*cs_ave
+            tl0  = Hp/ul0
+            eps_diss = nu_turb*(qshear*Omega)**2
+            teta = (nu_mol/eps_diss)**0.5
+            ueta = (nu_mol*eps_diss)**0.25
+            tl01 = 1/tl0
+            teta1 = 1/teta
+            exit
+          endif
+        enddo
+      endif
+!
+!  Relative turbulent velocity depends on stopping time regimes
+!
       do i=1,ndustspec
         do j=i,ndustspec
           call dot2_mn (f(l1:l2,m,n,iudx(j):iudz(j))- &
@@ -636,8 +667,19 @@ module Dustdensity
           deltaud_drift = sqrt(deltaud_drift2)
           deltaud_therm = &
               sqrt( 8*k_B/(pi*TT1)*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
-          deltaud_turbu = &
-              ul0*3/(tausd1(:,j)/tausd1(:,i)+1.)*(1/(tl0*tausd1(:,j)))**0.5
+          if ( (tausd1(1,i) > tl01 .and. tausd1(1,j) > tl01) .and. &
+               (tausd1(1,i) < teta1 .and. tausd1(1,j) < teta1)) then
+            deltaud_turbu = &
+                ul0*3/(tausd1(1,j)/tausd1(1,i)+1.)*(1/(tl0*tausd1(1,j)))**0.5
+          elseif (tausd1(1,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
+              tausd1(1,i) > tl01 .and. tausd1(1,j) < tl01) then
+            deltaud_turbu = ul0
+          elseif (tausd1(1,i) < tl01 .and. tausd1(1,j) < tl01) then
+            deltaud_turbu = ul0*tl0*0.5*(tausd1(1,j) + tausd1(1,i))
+          elseif (tausd1(1,i) > teta1 .and. tausd1(1,j) > teta1) then
+            deltaud_turbu = ueta/teta*(tausd1(1,i)/tausd1(1,j)-1.)
+          endif
+          
           deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
 !
 !  Stick only when relative velocity below sticking velocity
