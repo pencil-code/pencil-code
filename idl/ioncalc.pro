@@ -3,6 +3,7 @@ pro saha,yH,lnrho,ss,f,df
 ;  We want to find the root of f
 ;
   @data/pc_constants.pro
+  xHe=par.xHe
 
   lnTT_=(2./3.)*((ss/ss_ion+(1-yH)*(alog(1-yH)-lnrho_H) $
                   +yH*(2*alog(yH)-lnrho_e-lnrho_p) $
@@ -19,9 +20,9 @@ function rtsafe,lnrho,ss
 ;  Safe Newton-Raphson root-finding algorithm
 ;
   @data/pc_constants.pro
+  yHacc=par.yHacc
 
   maxit=1000
-  yHacc=1e-5
   yHmax=1
   yHmin=0
   dyH=1
@@ -58,6 +59,7 @@ pro ioncalc,lnrho,ss,yH,TT
 ;  Calculate ionization degree and temperature
 ;
   @data/pc_constants.pro
+  xHe=par.xHe
 
   yH=0*lnrho
 

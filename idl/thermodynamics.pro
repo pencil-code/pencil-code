@@ -1,4 +1,6 @@
-;  $Id: thermodynamics.pro,v 1.9 2003-10-01 17:03:16 theine Exp $
+;  $Id: thermodynamics.pro,v 1.10 2003-10-02 15:44:34 theine Exp $
+
+xHe=par.xHe
 
 if (not lionization) then begin
   print,'Using simple equation of state...'
