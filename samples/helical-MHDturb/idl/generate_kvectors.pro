@@ -1,3 +1,18 @@
+;
+;  gwav.pro
+;
+;  generate table of wave numbers in a given range for helical (and
+;  non-helical) forcing of the velocity field
+;
+;  Author: axel
+;  CVS: $Id: generate_kvectors.pro,v 1.3 2002-07-10 16:06:49 dobler Exp $
+;
+; Wave vectors are located in a subvolume of the box
+;   -kmax <= kk:=(kx,ky,kz) <= kmax
+; given by
+;   k1 < |kk| < k2
+; (normally a spherical shell, if kmax is large enough)
+
 i=0
 k1=2.5 & k2=3.5
 k1=1. & k2=2.
@@ -17,6 +32,8 @@ kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
 kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
 ;
 kav=0.
+;
+if (kmax lt k2) then print, 'Warning: non-spherical region in k-space'
 ;
 for kx=-kmax,kmax do begin
 for ky=-kmax,kmax do begin
