@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.19 2003-06-16 10:01:39 brandenb Exp $
+#  $Id: mkdatadir,v 1.20 2003-07-21 21:44:28 nilshau Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -46,6 +46,9 @@ else if ($hn =~ nw*) then
 else if ($hn =~ fire) then
   echo $cwd/data >! .tmp
   set str='s/home\/parallab\/ntnu/work/g'
+else if ($hn =~ login*) then
+  echo $cwd/data >! .tmp
+  set str='s/home/disk\/global/g'
 else if ($hn =~ *.phys.ntnu.no) then
   set str='s/home\/gudrun/work\/erland/g'
 else if ($hn =~ linux*) then
