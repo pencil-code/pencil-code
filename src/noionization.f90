@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.9 2003-04-05 21:22:33 brandenb Exp $
+! $Id: noionization.f90,v 1.10 2003-04-05 21:39:56 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -39,10 +39,12 @@ module Ionization
 !***********************************************************************
     subroutine ionization_degree(f)
       real, dimension (mx,my,mz,mvar), intent(in) :: f
+      if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
     endsubroutine ionization_degree
 !***********************************************************************
     subroutine output_ionization(lun)
       integer, intent(in) :: lun
+      if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
     subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
@@ -125,6 +127,7 @@ module Ionization
       real, dimension(nx), intent(in)  :: lnrho,ss
       real, dimension(nx)              :: ionfrac
 
+      if(ip==0) print*,lnrho,ss  !(to keep compiler quiet)
       ionfrac=0.
     endfunction ionfrac
 !***********************************************************************
