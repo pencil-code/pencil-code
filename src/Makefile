@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.142 2003-01-23 10:52:15 nilshau Exp $
+### $Id: Makefile,v 1.143 2003-01-23 18:37:55 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -166,6 +166,8 @@ pacx-makefile: Makefile
 	cp pacx-makefile makefile
 cparam.inc: Makefile Makefile.local
 	mkcparam Makefile Makefile.local -o cparam.inc
+mpicomm_double.f90:
+	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 code:
 	make start.x run.x read_videofiles.x
 
