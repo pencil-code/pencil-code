@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.2 2002-07-16 11:24:11 nilshau Exp $
+! $Id: radiation.f90,v 1.3 2002-07-19 12:41:35 dobler Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -68,7 +68,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.2 2002-07-16 11:24:11 nilshau Exp $")
+           "$Id: radiation.f90,v 1.3 2002-07-19 12:41:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -125,6 +125,16 @@ module Radiation
       real, dimension (nx) :: f_sc,kappa_abs,kappa,E_gas,TT1,f2
       real :: gamma1,gamma
       integer :: i,j
+!
+!  identify module and boundary conditions
+!
+      if (headtt.or.ldebug) print*,'SOLVE dee_dt'
+      if (headtt) then
+        call identify_bcs('e ',ie )
+        call identify_bcs('fx',ifx)
+        call identify_bcs('fy',ify)
+        call identify_bcs('fz',ifz)
+      endif
 !
       gamma1=gamma-1
       E_rad=f(l1:l2,m,n,iE)

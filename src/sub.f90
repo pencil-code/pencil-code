@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.78 2002-07-18 13:31:28 brandenb Exp $ 
+! $Id: sub.f90,v 1.79 2002-07-19 12:41:35 dobler Exp $ 
 
 module Sub 
 
@@ -1412,6 +1412,23 @@ module Sub
 !
     endsubroutine cvs_id_3
 !***********************************************************************
+    subroutine identify_bcs(varname,idx)
+!
+!  print boundary conditions for scalar field
+!
+!  19-jul-02/wolf: coded
+!
+      use Cdata
+!
+      character (len=*) :: varname
+      integer :: idx
+!
+      write(*,'(A,A6,",  x: <",A6,">, y: <",A6,">,  z: <",A6,">")') &
+           'Bcs for ', varname, &
+           trim(bcx(idx)), trim(bcy(idx)), trim(bcz(idx))
+!
+    endsubroutine identify_bcs
+!***********************************************************************
     function noform(cname)
 !
 !  returns the name without format, fills empty space
@@ -1617,6 +1634,7 @@ module Sub
 !  24-jan-02/wolf: coded
 !
         use Cparam, only: mvar,bclen
+        use Mpicomm
 !
         character (len=2*bclen+1), dimension(mvar) :: bc
         character (len=bclen), dimension(mvar) :: bc1,bc2
@@ -1627,6 +1645,11 @@ module Sub
 !
 
         do j=1,mvar
+          if (bc(j) == '') then ! will probably never happen due to default='p'
+            if (lroot) print*, 'Empty boundary condition No. ', &
+                 j, 'in (x, y, or z)'
+            call stop_it('PARSE_BC')
+          endif
           isep = index(bc(j),':')
           if (isep > 0) then
             bc1(j) = bc(j)(1:isep-1)

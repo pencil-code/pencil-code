@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.95 2002-07-18 15:09:47 dobler Exp $
+! $Id: entropy.f90,v 1.96 2002-07-19 12:41:34 dobler Exp $
 
 module Entropy
 
@@ -61,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.95 2002-07-18 15:09:47 dobler Exp $")
+           "$Id: entropy.f90,v 1.96 2002-07-19 12:41:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -292,9 +292,13 @@ module Entropy
       intent(in) :: f,uu,glnrho,rho1,lnrho
       intent(out) :: df,cs2,TT1
 !
+!  identify module and boundary conditions
+!
+      if (headtt.or.ldebug) print*,'SOLVE dss_dt'
+      if (headtt) call identify_bcs('ss',ient)
+!
 !  entropy gradient: needed for advection and pressure gradient
 !
-      if (headtt.or.ldebug) print*,'SOLVE dss_dt',ldebug,headtt
       call grad(f,ient,gss)
 !
 !  sound speed squared

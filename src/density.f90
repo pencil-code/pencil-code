@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.36 2002-07-19 10:26:01 dobler Exp $
+! $Id: density.f90,v 1.37 2002-07-19 12:41:34 dobler Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.36 2002-07-19 10:26:01 dobler Exp $")
+           "$Id: density.f90,v 1.37 2002-07-19 12:41:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -355,9 +355,13 @@ module Density
       intent(in)  :: f,uu,divu
       intent(out) :: df,glnrho,lnrho
 !
-!  define lnrho; calculate density gradient and avection term
+!  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE dlnrho_dt'
+      if (headtt) call identify_bcs('lnrho',ilnrho)
+!
+!  define lnrho; calculate density gradient and avection term
+!
       lnrho=f(l1:l2,m,n,ilnrho)
       call grad(f,ilnrho,glnrho)
       call dot_mn(uu,glnrho,uglnrho)

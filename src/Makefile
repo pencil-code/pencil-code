@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.81 2002-07-16 11:24:11 nilshau Exp $
+### $Id: Makefile,v 1.82 2002-07-19 12:41:34 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -121,7 +121,7 @@ default: makefile cparam.inc code
 makefile: Makefile
 	adapt-mkfile Makefile makefile
 cparam.inc: Makefile Makefile.local
-	env PATH=${PATH}:../../../../bin mkcparam Makefile Makefile.local > cparam.inc
+	mkcparam Makefile Makefile.local > cparam.inc
 code:
 	make start.x run.x
 

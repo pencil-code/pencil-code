@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.72 2002-07-18 23:09:50 dobler Exp $
+! $Id: magnetic.f90,v 1.73 2002-07-19 12:41:35 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -81,7 +81,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.72 2002-07-18 23:09:50 dobler Exp $")
+           "$Id: magnetic.f90,v 1.73 2002-07-19 12:41:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -186,11 +186,16 @@ module Magnetic
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real :: tmp,eta_out1
 !
-!  calculate B-field, and then max and mean (w/o imposed field, if any)
+!  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE daa_dt'
+      if (headtt) then
+        call identify_bcs('Ax',iax)
+        call identify_bcs('Ay',iay)
+        call identify_bcs('Az',iaz)
+      endif
 !
-!  solve uxB term
+!  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
       call curl(f,iaa,bb)
       if (ldiagnos) then

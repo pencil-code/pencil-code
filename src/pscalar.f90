@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.6 2002-07-18 23:09:50 dobler Exp $
+! $Id: pscalar.f90,v 1.7 2002-07-19 12:41:35 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -61,7 +61,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.6 2002-07-18 23:09:50 dobler Exp $")
+           "$Id: pscalar.f90,v 1.7 2002-07-19 12:41:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -118,14 +118,20 @@ module Pscalar
       intent(in)  :: f,uu,glnrho
       intent(out) :: df
 !
-!  gradient of passive scalar
-!  allow for possibility to turn off passive scalar
-!  without changing file size and recompiling everything.
+!  identify module and boundary conditions
 !
       if (nopscalar) then
         if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
       else
         if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
+      endif
+      if (headtt) call identify_bcs('cc',icc)
+!
+!  gradient of passive scalar
+!  allow for possibility to turn off passive scalar
+!  without changing file size and recompiling everything.
+!
+      if (.not. nopscalar) then ! i.e. if (pscalar)
         call grad(f,ilncc,glncc)
         call dot_mn(uu,glncc,uglncc)
 !
