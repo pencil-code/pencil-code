@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.166 2003-12-13 15:12:34 theine Exp $
+! $Id: magnetic.f90,v 1.167 2003-12-13 15:52:15 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -34,8 +34,8 @@ module Magnetic
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
   real :: eta_shock=0.
-  real :: JxB_rhomin=0.
-  integer :: nbvec,nbvecmax=nx*ny*nz/4
+  real :: JxB_rhomin=0.,JxB_va2max=0.
+  integer :: nbvec,nbvecmax=nx*ny*nz/4,JxB_va2power=5
   logical :: lpress_equil=.false.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
@@ -62,7 +62,8 @@ module Magnetic
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
-       eta_int,eta_ext,eta_shock,wresistivity,JxB_rhomin
+       eta_int,eta_ext,eta_shock,wresistivity, &
+       JxB_rhomin,JxB_va2max,JxB_va2power
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -112,7 +113,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.166 2003-12-13 15:12:34 theine Exp $")
+           "$Id: magnetic.f90,v 1.167 2003-12-13 15:52:15 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -268,7 +269,7 @@ module Magnetic
       real, dimension (nx,3) :: geta
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1tilde
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,JxB_rho1
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: eta_mn,divA,eta_tot        ! dgm: 
@@ -399,18 +400,23 @@ module Magnetic
       call bij_etc(f,iaa,bij,del2A)
       call curl_mn(bij,jj)
 !
+!  calculate alven speed
+!  This must include the imposed field (if there is any)
+!  The b2 calculated above for only updated when diagnos=.true.
+!
+      call dot2_mn(bb,b2tot)
+      va2=b2tot*rho1
+!
 !  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
 !  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation
 !  set JxB_rhomin>0 to limit the JxB term at very low densities.
 !
       if (lhydro) then
         call cross_mn(jj,bb,JxB)
-        if (JxB_rhomin>0) then
-          rho1tilde=min(rho1,1/JxB_rhomin)
-          call multsv_mn(rho1tilde,JxB,JxBr)
-        else
-          call multsv_mn(rho1,JxB,JxBr)
-        endif
+        JxB_rho1=rho1
+        if (JxB_rhomin>0) JxB_rho1=min(JxB_rho1,1/JxB_rhomin)
+        if (JxB_va2max>0) JxB_rho1=JxB_rho1/(1+(va2/JxB_va2max)**JxB_va2power)
+        call multsv_mn(JxB_rho1,JxB,JxBr)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
         if(lentropy) then
           call dot2_mn(jj,J2)
@@ -484,13 +490,9 @@ module Magnetic
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
 !
-!  For the timestep calculation, need maximum Alfven speed.
-!  and maximum diffusion (for timestep)
-!  This must include the imposed field (if there is any)
-!  The b2 calculated above for only updated when diagnos=.true.
+!  For the timestep calculation, need maximum Alfven speed
+!  and maximum diffusion.
 !
-        call dot2_mn(bb,b2tot)
-        va2=b2tot*rho1
         if (lfirst.and.ldt) then
           maxadvec2=amax1(maxadvec2,va2)
           maxdiffus=amax1(maxdiffus,etatotal_max)
