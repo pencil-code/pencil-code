@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.112 2004-03-17 15:36:51 mee Exp $
+# $Id: getconf.csh,v 1.113 2004-03-29 13:58:48 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -368,6 +368,9 @@ else if ($hn =~ hwwsx5*) then
   endif
   setenv SSH rsh
   setenv SCP rcp
+
+else if ($hn =~ cosmo) then
+  set mpirunops = '-x NLSPATH'
 
 else
   echo "Generic setup; hostname is <$hn>"
