@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.30 2003-03-26 15:54:05 anders Exp $ 
+! $Id: initcond.f90,v 1.31 2003-03-27 05:14:09 brandenb Exp $ 
 
 module Initcond 
  
@@ -323,98 +323,6 @@ module Initcond
 !
     endsubroutine planet
 !***********************************************************************
-    subroutine KEPVOR(f,xx,yy,zz,a_ell,b_ell,xi0,gamma,cs20)
-!
-!  Ellipsoidal planet solution with gradual transition to Kepler flow
-!  (Chavanis 2000)
-!
-!  26 March 2003: AJ coded
-! 
-      real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,eta,xi,Psi,dPsidx,dPsidy
-      real, dimension (mx,my,mz) :: vorticity
-      real :: a_ell, b_ell, c_ell, q_ell, xi0
-      real :: gamma,eps2,radius2,width
-      real :: gamma1,zinfty2,cs20,hh0
-      external PSI, PSIDER
-!
-! Parameters
-!
-      kappa = qshear*Omega
-      q_ell = a_ell/b_ell
-      c_ell = sqrt(a_ell**2-b_ell**2)
-!
-! Calculate Psi (given in elliptical coordinates)
-!
-      do i=l1,l2
-        do j=m1,m2
-          do k=n1,n2
-            Psi(i,j,k) = PSI (xx(i,j,k),yy(i,j,k),zz(i,j,k),xi0,a_ell,b_ell,c_ell,q_ell,kappa)
-!
-! Vorticity is needed to calculate enthalpy
-!
-            if (xi .le. x0) then 
-              vorticity(i,j,k)=Omega
-            else
-              vorticity(i,j,k)=1.5*qshear
-            endif
-          enddo
-        enddo
-      enddo
-!
-! Calculate x and y derivative of Psi
-!
-      do i=l1,l2
-        do j=m1,m2
-          do k=n1,n2
-            dPsidx(i,j,k)=PSIDER(PSIX,x,y,z,xi0,a_ell,b_ell,c_ell,q_ell,kappa)
-            dPsidy(i,j,k)=PSIDER(PSIY,x,y,z,xi0,a_ell,b_ell,c_ell,q_ell,kappa)
-          enddo
-        enddo
-      enddo
-!
-! Velocity field u = (d/dx,d/dy,d/dz)x(0,0,Psi)
-!
-      f(:,:,:,iux) = dPsidy
-      f(:,:,:,iuy) =-dPsidx
-!
-!
-!
-      print*,'Planet with gradual transition from vortex to Kepler'
-      print*,'qshear,a_ell,b_ell,xi0=',qshear,a_ell,b_ell,xi0
-!
-!  calculate zinfty**2 (similar to poluytropic_simple)
-!
-      gamma1=gamma-1.
-      zinfty2=cs20/(.5*gamma1*Omega**2)
-      print*,'planet: zinfty2=',zinfty2
-!
-!  calculate enthalpy (so that velocity field satisfies Euler)
-!
-      hh = 1.5*Omega**2*xx**2-0.5*Omega**2*zz**2-2*Omega*Psi-0.5*(f(:,:,:,iux)**2+f(:,:,:,iuy)**2)+Psi*vorticity
-!
-!  calculate density, depending on what gamma is
-!
-      print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
-      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
-!
-!  have to use explicit indices here, because ghostzones are not set
-!
-      if(lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-            -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
-        print*,'planet solution with entropy jump for gamma=',gamma
-      else
-        if(gamma==1.) then
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
-          print*,'planet solution for gamma=1'
-        else
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          print*,'planet solution for gamma=',gamma
-        endif
-!
-    endsubroutine kepvor
-!*****************************************************************
     subroutine crazy(ampl,f,i)
 !
 !  A crazy initial condition
