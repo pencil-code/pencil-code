@@ -4,7 +4,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy.pro,v 1.1 2003-11-21 09:00:59 nilshau Exp $
+;;;  $Id: rallxy.pro,v 1.2 2004-01-23 10:35:21 nilshau Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 
@@ -13,14 +13,17 @@
 ;;;   Overwrites nx, ny, etc, from start.pro, thus you need to run
 ;;;   start.pro after this if you want to continue working on data
 ;;;   from individual processors (e.g. if you want to run r.pro).
-
+;
+function param2
+; Dummy to keep IDL from complaining. The real param2() routine will be
+; compiled below
+end
 ;
 ;  need to run start first: check whether this has been done
 ;
 if (n_elements(started) le 0) then begin
   message, "You need to run start.pro first: use `.rnew start'"
 endif
-
 ;
 ;  Read startup parameters
 ;
