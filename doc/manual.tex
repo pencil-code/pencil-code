@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.238 2004-03-18 16:08:38 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.239 2004-03-27 09:33:41 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -304,6 +304,7 @@
 % \newcommand{\av}            {\vekt{a}}
 \newcommand{\Bv}            {\vekt{B}}
 \newcommand{\Jv}            {\vekt{J}}
+\newcommand{\Uv}            {\vekt{U}}
 % \newcommand{\bv}            {\vekt{b}}
 \newcommand{\ev}            {\vekt{e}}
 % \newcommand{\Ev}            {\vekt{E}}
@@ -347,14 +348,28 @@
 \newcommand{\nab}{\mbox{\boldmath $\nabla$} {}}
 \newcommand{\dd}{{\rm d} {}}
 
+\newcommand{\Bhat}{\hat{B}}
+\newcommand{\BBhat}{\hat{\vekt{B}}}
+
 \newcommand{\EE}[1]{\,{\times}\,10^{#1}}
+
+\def\la{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr<\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr<\cr\sim\cr}}}}}
+\def\ga{\mathrel{\mathchoice {\vcenter{\offinterlineskip\halign{\hfil
+$\displaystyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\textstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptstyle##$\hfil\cr>\cr\sim\cr}}}
+{\vcenter{\offinterlineskip\halign{\hfil$\scriptscriptstyle##$\hfil\cr>\cr\sim\cr}}}}}
 
 % ---------------------------------------------------------------------- %
 
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}
+%\date{$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}
 
 % ====================================================================== %
 
@@ -389,7 +404,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}\\
+  \emph{$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -582,8 +597,9 @@ Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition.
 
 Use of the PPARC supported supercomputers in St Andrews (Mhd) and
-Leicester (Ukaff) is acknowledged. We also acknowledge use of the
-512 processor Beowulf cluster in Odense (Horseshoe).
+Leicester (Ukaff) is acknowledged. We also acknowledge the Danish Center
+for Scientific Computing for granting time on Horseshoe, which is a
+512+140 processor Beowulf cluster in Odense (Horseshoe).
 
 \clearpage
 \tableofcontents
@@ -1706,7 +1722,7 @@ Based on \file{rvid_box}, you can write your own video routines in
 
 \paragraph{An example}
 Suppose you have set up a run using \name{entropy.f90} and
-\name{magnetic.f90} (most probably together witih \name{hydro.f90} and
+\name{magnetic.f90} (most probably together with \name{hydro.f90} and
 other modules).
 In order to animate slices of entropy $s$ and the $z$-component $B_z$ of
 the magnetic field, in planes passing through the center of the box, do the
@@ -2931,6 +2947,7 @@ where the squared sound speed is given by
         = c_{\rm s0}^2\exp\left[\gamma s/c_p
                                 + (\gamma{-}1)\ln\frac{\varrho}{\varrho_0}
                                \right],
+\label{EOSsimple}
 \end{equation}
 and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
 
@@ -2942,6 +2959,7 @@ The equation of motion is accordingly
       + \frac{\jv\times\Bv}{\varrho}  \nonumber \\
     & &+ \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
       + 2\Strain\cdot\grad\ln\varrho\right) + \zeta\left(\grad\Div\uv\right); 
+\label{DuDt}
 \end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
@@ -3136,6 +3154,17 @@ and
 \index{Ionization}
 \label{Sionization}
 
+This part of the code can be invoked by setting
+\code{IONIZATION=ionization} in the \file{Makefile.local} file.
+The equation of state described below works for variable ionization,
+and the entropy offset is different from that used in
+Eq.~(\ref{EOSsimple}), which is now no longer valid.
+As a replacement, one can use \code{IONIZATION=ionization\_fixed},
+where the degree of ionization can be given by hand.
+Here the normalization of the entropy is the same as for
+\code{IONIZATION=ionization}.
+This case is described in more detail below.
+
 We treat the gas as being composed of partially ionized hydrogen and neutral
 helium. These are four different particle species, each of which regarded as
 a perfect gas.
@@ -3245,6 +3274,66 @@ The governing equations can be written in the form
 \end{equation} 
 where $\fv(\uv)$ denotes the \name{Coriolis force} and $\Fv$ and $\Fv_{\rm d}$
 other forces.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Cosmic ray pressure in diffusion approximation}
+\index{Cosmic rays}
+
+Cosmic rays are treated in the diffusion approximation.
+The equation of state is $p_{\rm c}=(\gamma_{\rm c})e_{\rm c}$
+where the value of $\gamma_{\rm c}$ is usually somewhere between
+$14/9$ and $4/3$.
+In the momentum equation (\ref{DuDt}) the cosmic ray pressure force,
+$-\varrho^{-1}\nab p_{\rm c}$ is added on the right hand side, and
+$e_{\rm c}$ satisfies the evolution equation
+\begin{equation}
+{\partial e_{\rm c}\over\partial t}+\nab\cdot(e_{\rm c}\uv)
++p_{\rm c}\nab\cdot\uv=\partial_i(K_{ij}\partial_j e_{\rm c})+Q_{\rm c},
+\end{equation}
+where $Q_{\rm c}$ is a source term and
+\begin{equation}
+K_{ij}=K_\perp\delta_{ij}+(K_\parallel-K_\perp)\Bhat_i\Bhat_j
+\end{equation}
+is an anisotropic diffusivity tensor.
+
+In the non-conservative formulation of this code it is advantageous
+to expand the diffusion term using the product rule, i.e.\
+\begin{equation}
+\partial_i(K_{ij}\partial_j e_{\rm c})
+=-\Uv_{\rm c}\cdot\nab e_{\rm c}+K_{ij}\partial_i\partial_j e_{\rm c}.
+\end{equation}
+where $U_{{\rm c}\,i}=-\partial K_{ij}/\partial x_j$ acts like an extra
+velocity trying trying to straighten magnetic field lines.
+We can write this term also as
+$\Uv_{\rm c}=-(K_\parallel-K_\perp)\nab\cdot(\BBhat\BBhat)$,
+where the last term is a divergence of the dyadic product of unit
+vectors.\footnote{In practice, we calculate $\partial_j(\Bhat_i\Bhat_j)
+=(\delta_{ij}-2\Bhat_i\Bhat_k)\Bhat_j B_{k,j}/|\Bv|$, where
+derivatives of $\Bv$ are calculated as $B_{i,j}=\epsilon_{ikl}A_{l,jk}$.}
+However, near magnetic nulls, this term can becomes infinite.
+In order to avoid this problem we are forced to limit
+$\nab\cdot(\BBhat\BBhat)$, and hence $|\Uv_{\rm c}|$,
+to the maximum possible value that can be resolved at a given
+resolution.
+
+If we were to calculate the divergence of the unit vector matrix
+numerically, the resulting value would not exceed a value that
+is of the order to the inverse mesh size, $1/\delta x$, i.e.\
+$|\delta x\,\nab\cdot(\BBhat\BBhat)|\la1$.
+In the present case, for reasons of large accuracy, we calculate the
+gradient of the unit vector of $\Bv$ by differentiating the magnetic
+vector potential.
+Thus, the term $\nab\cdot(\BBhat\BBhat)$ can indeed diverge.
+To prevent this from happening, we multiply
+$\Uv_{\rm c}$ by a quenching factor
+\begin{equation}
+q(\BBhat\BBhat)=1\left/
+\sqrt{1+[C_{\rm mesh}\,\delta x\,\nab\cdot(\BBhat\BBhat)]^2}\right.,
+\label{Cmesh}
+\end{equation}
+which begins to depart from unity in regions of strong curvature.
+Typical values of $C_{\rm mesh}$ are around 3.
 
 % ====================================================================== %
 
@@ -3909,7 +3998,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-27 09:33:41 $ $,~ $ $Revision: 1.239 $ $}
 
 \section{Timings}
 
@@ -6817,7 +6906,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.238 2004-03-18 16:08:38 dobler Exp $ $}
+$ $Id: manual.tex,v 1.239 2004-03-27 09:33:41 brandenb Exp $ $}
 
 
 \end{document}
