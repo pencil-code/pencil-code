@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-10-06 08:12:46 $
-# $Revision: 1.7 $
+# $Date: 2003-11-06 11:59:36 $
+# $Revision: 1.8 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -64,8 +64,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.7 $';
-    my $date = '$Date: 2003-10-06 08:12:46 $';
+    my $rev = '$Revision: 1.8 $';
+    my $date = '$Date: 2003-11-06 11:59:36 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
@@ -178,8 +178,8 @@ Show version number
 =over 4
 
 =item * The source file is copied from input to output and only the block
-between $start_tag and $end_tag (currently `### Begin machine dependent'
-and `### End machine dependent') is processed.
+between $start_tag and $end_tag (currently C<### Begin machine dependent>
+and C<### End machine dependent>) is processed.
 
 =item * A line of the form `## <OS>:' starts an OS block that ends on the
 next empty line
@@ -216,17 +216,17 @@ can look like:
 
   ### Begin machine dependent
 
-  ## OSF1:
-  ## Compaq/HP alpha
-  #FC=f95
-  #FFLAGS=-fast -O5
-  #FFLAGS=-fast -O5 -tune ev6 -arch ev6 #(Mhd.)
-
   ## Linux:
   ## This comment will always remain untouched
   #FC=f95
   #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
   #FFLAGS= -O4 -C -gline -Wc,-malign-double
+
+  ## OSF1:
+  ## Compaq/HP alpha
+  #FC=f95
+  #FFLAGS=-fast -O5
+  #FFLAGS=-fast -O5 -tune ev6 -arch ev6 #(Mhd.)
 
   ## IRIX64:
   #FC=f90
@@ -240,8 +240,8 @@ can look like:
 
 =head1 FILES
 
-At the end of the adapt-mkfile block, i.e. just before the `### End
-machine dependent', the contents of the following files will be inserted
+At the end of the adapt-mkfile block, i.e. just before the C<### End
+machine dependent>, the contents of the following files will be inserted
 (in this order) if present:
 
 =over 4
