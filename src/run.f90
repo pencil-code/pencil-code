@@ -36,8 +36,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.14 $", &
-             "$Date: 2002-02-14 20:31:19 $")
+             "$Revision: 1.15 $", &
+             "$Date: 2002-02-15 16:16:40 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -45,6 +45,7 @@
 !  set default values
 !
         ix=mx/2; iy=my/2; iz=mz/2
+        dtmin=1.e-6
 !
 !  read in parameters
 !  nt is the number of timesteps
@@ -140,6 +141,10 @@
 !
           headt=.false.
           if (it>=nt) exit Time_loop
+          if (dt < dtmin) then
+            write(0,*) 'Time step has become too short: dt = ', dt
+            exit Time_loop
+          endif
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
 !        if(lroot) call cpu_time(time2)
@@ -147,7 +152,7 @@
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
-!  update ghost zones for var.dat (cheap, since done once
+!  update ghost zones for var.dat (cheap, since done once)
         call initiate_isendrcv_bdry(f)
         call finalise_isendrcv_bdry(f)
         call output(trim(directory)//'/var.dat',f,mvar)

@@ -9,6 +9,7 @@ FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic
 IO=io_dist
+DEBUGGING=debugging
 
 ### Begin machine dependent
 
@@ -42,6 +43,8 @@ IO=io_dist
 #FC=mpif90 # (Samos)
 #FFLAGS=-O # (Samos)
 #LDMPI= # (Samos)
+#CC=cc
+#CFLAGS=-O3 -DFUNDERSC=1
 
 ## SunOS:
 #FC=pghpf #(Lomond)
@@ -80,6 +83,8 @@ LDFLAGS=$(FFLAGS)
 	$(FC) $(FFLAGS) -c $*.f90
 .mod.o:
 	$(FC) $(FFLAGS) -c $*.f90
+.c.o:
+	$(CC) $(CFLAGS) -c $*.c
 
 #####
 
@@ -93,9 +98,11 @@ code:
 
 technical=cparam.o cdata.o general.o slices.o deriv.o register.o
 physics=$(GLOBAL).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
-comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics)
-start_deps=$(comm_deps)
-run_deps=$(comm_deps) equ.o timestep.o
+comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics) $(DEBUGGING).o
+start_deps_f90=$(comm_deps)
+start_deps=$(start_deps_f90) debug_c.o
+run_deps_f90=$(comm_deps) equ.o timestep.o
+run_deps=$(run_deps_f90) debug_c.o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 
@@ -113,20 +120,24 @@ general.o:   general.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
-$(IO).o:     $(IO).f90 $(MPICOMM).o cdata.o
 sub.o:       sub.f90 cdata.o deriv.o general.o $(IO).o $(MPICOMM).o
 register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(physics)
 equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(physics) $(MPICOMM).o 
 timestep.o:  timestep.f90 cdata.o equ.o $(FORCING.o) $(MPICOMM).o
 #
-$(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
-$(GLOBAL).o:   $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
-$(GRAVITY).o:  $(GRAVITY).f90 cdata.o $(GLOBAL).o $(MPICOMM).o
-$(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
-$(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
+$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
+$(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
+$(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(GLOBAL).o $(MPICOMM).o
+$(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o $(DEBUGGING).o
+$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
+$(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o
+$(DEBUGGING).o: $(DEBUGGING).f90 cdata.o $(MPICOMM).o
+#
+debug_c.o:   debug_c.c
 
-TAG_SOURCE=$(run_deps:.o=.f90) start.f90 run.f90
+
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 

@@ -16,7 +16,7 @@ module Equ
 !
       open(1,file='run.in',form='formatted')
       read(1,*) nt,it1,dt,isave,itorder
-      read(1,*) dsnap,dvid,dforce
+      read(1,*) dsnap,dvid,dforce,dtmin
       read(1,*) tinit,tdamp,dampu
       read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
@@ -54,7 +54,7 @@ module Equ
 !
       if (lroot) then
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
-        print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
+        print*, 'dsnap,dvid,dforce,dtmin=', dsnap,dvid,dforce,dtmin
         print*, 'tinit,tdamp,dampu=', tinit,tdamp,dampu
         print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
@@ -165,13 +165,13 @@ module Equ
 !
       if(lroot) then
         write( 6,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax
+             rmean,rrms,rmax,divurms,divumax,dtu,dtv
         write(20,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax
+             rmean,rrms,rmax,divurms,divumax,dtu,dtv
         open(3,file='check')
-        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rmean,rrms,rmax,divurms,divumax'
+        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rmean,rrms,rmax,divurms,divumax,dtu,dtv'
         write( 3,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax
+             rmean,rrms,rmax,divurms,divumax,dtu,dtv
         close(3)
       endif
 !
@@ -243,8 +243,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.17 $", &
-           "$Date: 2002-02-14 20:31:19 $")
+           "$Revision: 1.18 $", &
+           "$Date: 2002-02-15 16:16:40 $")
 !
 !  initiate communication
 !

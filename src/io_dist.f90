@@ -118,7 +118,7 @@ contains
 !      write(91) t,x,y,z
 !      close(91)
 !    endsubroutine output_3vect
-!!***********************************************************************
+!***********************************************************************
     subroutine output_vect(file,a,nn)
 !
 !  write snapshot file, always write time and mesh, could add other things

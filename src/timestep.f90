@@ -19,7 +19,7 @@ module Timestep
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (3) :: alpha,beta,dt_beta
-      real :: ds,dtu,dtv
+      real :: ds
       integer :: i,j
 !
 !HPF$ ALIGN (:,:,:,*) WITH tmpl :: f,df
