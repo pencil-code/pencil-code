@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.244 2004-04-06 11:57:58 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.245 2004-04-12 19:29:31 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -372,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-04-06 11:57:58 $ $,~ $ $Revision: 1.244 $ $}
+%\date{$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-04-06 11:57:58 $ $,~ $ $Revision: 1.244 $ $}\\
+  \emph{$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4104,7 +4104,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-04-06 11:57:58 $ $,~ $ $Revision: 1.244 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}
 
 \section{Timings}
 
@@ -6252,11 +6252,14 @@ the latest set of parameters, you need to look at the code.
                  Currently just used to smoothly switch on heating
                  [Should be in \name{run_pars}, rather than here]. \\
   \var{dampu} [$0.$], \\
-  \var{tdamp} [$0.$]
+  \var{tdamp} [$0.$], \\
+  \var{ldamp_fade} [F]
                & damp motions during the initial time interval
                  $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
-                 Useful for situations where initial conditions are not near
-                 equilibrium. \\
+                 If \var{ldamp_fade} is set, smoothly reduce damping to
+                 zero over the second half of the time interval \var{tdamp}.
+                 Initial velocity damping is useful for situations where
+                 initial conditions are far from equilibrium. \\
   \var{dampuint} [$0.$], 
                & weighting of damping external to spherical region 
                  (see \var{wdamp}, $\var{damp}_u$ below). \\
@@ -7076,7 +7079,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.244 2004-04-06 11:57:58 dobler Exp $ $}
+$ $Id: manual.tex,v 1.245 2004-04-12 19:29:31 dobler Exp $ $}
 
 
 \end{document}
