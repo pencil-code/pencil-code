@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.75 2004-03-02 17:30:03 mee Exp $
+! $Id: interstellar.f90,v 1.76 2004-03-03 18:05:55 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -11,7 +11,7 @@ module Interstellar
 
   implicit none
 
-  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,lnTT_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
+  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,lnTT_SN,TT_SN,ss_SN,ee_SN
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
 
@@ -56,12 +56,13 @@ module Interstellar
   double precision, parameter :: solar_mass_cgs=1.989e33
   real, parameter :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
+  double precision, parameter :: ampl_SN_cgs=10D51
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
   real :: SNI_area_rate=impossible
   real :: h_SNI=impossible,h_SNII=impossible
-  real :: solar_mass=impossible
+  real :: solar_mass=impossible, ampl_SN=impossible
   real :: rho_crit=impossible,TT_crit=impossible
 
 
@@ -138,7 +139,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.75 2004-03-02 17:30:03 mee Exp $")
+           "$Id: interstellar.f90,v 1.76 2004-03-03 18:05:55 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -223,6 +224,7 @@ module Interstellar
         solar_mass=solar_mass_cgs / unit_mass
         rho_crit=rho_crit_cgs / unit_density
         TT_crit=TT_crit_cgs / unit_temperature
+        if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy 
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -242,7 +244,7 @@ module Interstellar
 
       if (ltestSN) then
         t_interval_SNI=1.E10
-        t_next_SNI=1.E10
+        t_next_SNI=0.
       endif
 !
     endsubroutine initialize_interstellar
