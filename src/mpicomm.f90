@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.94 2003-07-07 09:35:05 theine Exp $
+! $Id: mpicomm.f90,v 1.95 2003-07-07 12:35:41 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -585,7 +585,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_yz_recv: ipx,idest=',ipx,idest
+      if(lroot.and.ip<5) print*,'radcomm_yz_recv: ipx,idest=',ipx,idest
 !
 !  buffer sizes
 !
@@ -614,7 +614,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_zx_recv: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radcomm_zx_recv: ipy,idest=',ipy,idest
 !
 !  buffer sizes
 !
@@ -643,7 +643,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_xy_recv: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radcomm_xy_recv: ipz,idest=',ipz,idest
 !
 !  buffer sizes
 !
@@ -673,7 +673,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_yz_send: ipx,idest=',ipx,idest
+      if(lroot.and.ip<5) print*,'radcomm_yz_send: ipx,idest=',ipx,idest
 !
 !  buffer size
 !
@@ -702,7 +702,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_zx_send: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radcomm_zx_send: ipy,idest=',ipy,idest
 !
 !  buffer size
 !
@@ -731,7 +731,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      print*,'radcomm_xy_send: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radcomm_xy_send: ipz,idest=',ipz,idest
 !
 !  buffer size
 !

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.53 2003-07-07 11:53:22 dobler Exp $
+! $Id: radiation_exp.f90,v 1.54 2003-07-07 12:35:41 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,8 +14,10 @@ module Radiation
 !
   implicit none
 !
-  character (len=2*bclen+1), dimension(3) :: bc_rad=''
-  character (len=bclen), dimension(3) :: bc_rad1='',bc_rad2=''
+  character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
+  character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
+  !character (len=2*bclen+1), dimension(3) :: bc_rad=''
+  !character (len=bclen), dimension(3) :: bc_rad1='',bc_rad2=''
   integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
   real, dimension(mx,my,mz,3) :: pos
@@ -86,7 +88,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.53 2003-07-07 11:53:22 dobler Exp $")
+           "$Id: radiation_exp.f90,v 1.54 2003-07-07 12:35:41 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -172,7 +174,7 @@ module Radiation
 !  test
 !
       if(test_radiation) then
-        if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
+        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
         k=2*pi/Lx
         Srad=1.+.02*spread(spread(sin(k*x),2,my),3,mz)
         kaprho=spread(spread(cos(2*k*x),2,my),3,mz)

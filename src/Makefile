@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.195 2003-06-30 16:52:18 brandenb Exp $
+### $Id: Makefile,v 1.196 2003-07-07 12:35:41 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -224,7 +224,15 @@ start.x: $(start) Makefile.local
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
+# handy for debugging; just compile by hand what is changed
+# When you use this you must be certain that everying is consistent.
 linkonly:
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+
+# here a handy example when debugging radiation:
+rad:
+	ifc -c radiation_exp.f90
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
