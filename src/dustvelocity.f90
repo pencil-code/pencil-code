@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.30 2004-01-29 10:55:50 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.31 2004-01-29 15:54:08 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -23,10 +23,10 @@ module Dustvelocity
 
   ! init parameters
   real, dimension(ndustspec,ndustspec) :: scolld
-  real, dimension(ndustspec) :: md,mdplus,mdminus,ag,rhodsa1
+  real, dimension(ndustspec) :: md,mdplus,mdminus,ad,rhodsa1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real :: rhods=1.,md0=1.,deltamd=1.2
+  real :: rhods=1.,md0=1.,ad0=0.,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.
@@ -34,7 +34,7 @@ module Dustvelocity
   character (len=labellen) :: draglaw='epstein_cst', dust_geometry='sphere'
 
   namelist /dustvelocity_init_pars/ &
-       rhods, md0, deltamd, draglaw, dust_geometry, ampluud, inituud
+       rhods, md0, ad0, deltamd, draglaw, dust_geometry, ampluud, inituud
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.30 2004-01-29 10:55:50 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.31 2004-01-29 15:54:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,6 +147,8 @@ module Dustvelocity
 !
 !  Dust physics parameters
 !
+      if (ad0 .ne. 0.) md0 = 4/3.*pi*ad0**3
+
       do i=1,ndustspec
         mdminus(i) = md0*deltamd**(i-1)
         mdplus(i)  = md0*deltamd**i
@@ -159,13 +161,13 @@ module Dustvelocity
 
       case ('sphere')
         if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
-        ag(1)  = (0.75*md(1)/(pi*rhods))**(1/3.)  ! Spherical
+        ad(1)  = (0.75*md(1)/(pi*rhods))**(1/3.)  ! Spherical
         do i=2,ndustspec
-          ag(i)  = ag(1)*(md(i)/md(1))**(1/3.)
+          ad(i)  = ad(1)*(md(i)/md(1))**(1/3.)
         enddo
         do i=1,ndustspec
           do j=0,ndustspec
-            scolld(i,j) = pi*(ag(i)+ag(j))**2
+            scolld(i,j) = pi*(ad(i)+ad(j))**2
           enddo
         enddo
 
@@ -180,7 +182,7 @@ module Dustvelocity
       select case (draglaw)
      
       case ('epstein_var')
-        rhodsa1 = 1./rhods*ag
+        rhodsa1 = 1./rhods*ad
       case ('epstein_cst')
         tausd1 = 1./tausd(i)
 
