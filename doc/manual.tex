@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.254 2004-06-17 20:59:15 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.255 2004-06-18 15:59:40 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -280,7 +280,7 @@
 \newcommand{\De}      {\mathrm{D}}
 % \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
 % \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
-\newcommand{\atanh} {\mathop{\rm atanh}\nolimits}
+\newcommand{\artanh}  {\mathop{\rm artanh}\nolimits}
 % \newcommand{\sgn}    {\mathop{\rm sgn}\nolimits}
 % \newcommand{\grad}    {\mathop{\rm grad}\nolimits}
 % \newcommand{\Div}     {\mathop{\rm div}\nolimits}
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}
+%\date{$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}\\
+  \emph{$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -887,6 +887,14 @@ can set the environment variable
 \env{PENCIL_HOME} explicitly before you run the source command.
 
 \paragraph{Note 3}
+Do not just source the \file{sourceme} script from your shell startup file
+(\file[.cshrc]{\~{}/.cshrc} or \file[.bashrc]{\~{}/.bashrc}, bcause it
+outputs a few lines of diagnostics for each subshell, which will break
+many applications.
+To suppress all output, follow the instructions given in the header
+documentation of \file{sourceme.csh} and \file{sourceme.sh}.
+
+\paragraph{Note 4}
 The second time you source \file{sourceme}, it will not add
 anything to your \env{PATH} variable.
 This is on purpose to avoid cluttering of your environment: you can
@@ -1475,7 +1483,7 @@ compare results for identical runs on different machines.
 Our mechanism for picking the right set of compiler flags is based on the
 \name{Perl} script \file{adapt-mkfile} in \file[bin/]{\$PENCIL_HOME/bin}, which
 processes the file \file{Makefile.src} to a (localized) \file{Makefile}.
-You can view the full documentation for \file{adapt-mkfile} with the
+You can view the full documentation for \cmd{adapt-mkfile} with the
 command
 \begin{alltt}
   \prompt{unix > } perldoc adapt-mkfile
@@ -1522,20 +1530,19 @@ The \file{Makefile.src} you need will have the following section:
 If you have trouble with \cmd{make} or \file{adapt-mkfile}, look at the
 \file{Makefile} written by \file{adapt-mkfile} and check that it has the
 entries for your machine activated.
-In the example above, \code{\#(Janus)} is {\it not} a comment!
-The \file{adapt-mkfile} script will activate (uncomment) exactly this
-line once your machine name (check with \cmd{uname -n}) matches the
-name \code{Janus}.
-A vertical bar separates machine names, so you could also say
-\code{\#(onsager|Janus)}, if you want to use the same setup as for
-onsager (this is {\it not} case sensitive!).
+In the example above, \code{\#(Janus)} is {\it not} a comment, but marks
+this line to be activated (uncommented) by \cmd{adapt-mkfile} if your
+hostname (\cmd[uname]{`uname -n`}) matches `Janus' or `janus'
+(capitalization is irrelevant).
+You can combine machine names with a vertical bar:
+a line containing \code{\#(onsager|Janus)} will be activated on both,
+\name{Janus} and \name{Onsager}.
 
 \paragraph{Note 2}
-If you want to experiment with compiler flags, --- or even if you just
+If you want to experiment with compiler flags, or if you
 want to get things running without setting up the machine-dependent
-section of the \file{Makefile} --- you can set \name{make} variables at the
-command line.
-E.\,g.
+section of the \file{Makefile}, you can set \name{make} variables at the
+command line in the usual manner:
 \begin{alltt}
   \prompt{src> } make FC=f90 FFLAGS='-fast -u'
 \end{alltt}
@@ -1561,49 +1568,75 @@ and edit the \file{cparam.local} for the new resolution.
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
 
-We introduce a non-equidistant grid $z_i$ (so far only implemented for the
-vertical direction) as a function $=z(\zeta)$ of an equidistant grid
+We introduce a non-equidistant grid $z_i$
+(so far this is only implemented for the vertical direction)
+as a function $=z(\zeta)$ of an equidistant grid
 $\zeta_i$ with grid spacing $\Delta\zeta = 1$.
-Therefor the first derivative can be calculated by
+The first derivative can be calculated by
 \begin{equation} \label{Eq-nonequi-fprime}
   \frac{df}{dz} = \frac{df}{d\zeta}\frac{d\zeta}{dz}
                 = \frac{1}{z'}f'(\zeta) \; ,
 \end{equation}
-and the second derivative by
+and the second derivative is
 \begin{equation} \label{Eq-nonequi-f2prime}
   \frac{d^2f}{dz^2} =   \frac{1}{z'^2}f''(\zeta)
                       - \frac{z''}{z'^3}f'(\zeta) \; .
 \end{equation}
 
 The parameters \var{lequidist} (a 3-element logical array),
-\var{grid_func}, \var{coef_grid} and \var{zeta_grid0} define the function
-$z(\zeta)$.
+\var{grid_func}, \var{coef_grid} (a $\ge 2$-element real array)
+are used to choose a non-equidistant grid and define the function $z(\zeta)$.
 So far, one can choose between \code{grid_function='sinh'} and
 \code{grid_function='linear'} (which produces an equidistant grid for
 testing purposes).
 
-For \code{grid_function='sinh'}, the $z(\zeta)$ is given by
+For \code{grid_function='sinh'}, the function $z(\zeta)$ is given by
 \begin{equation}
   z(\zeta)
-  = z_0 - L_z \frac{\sinh a(\zeta_0-\zeta)}
-                   {\sinh a(\zeta_n-\zeta)-\sinh a(\zeta_0-\zeta)} \; .
+  = z_0
+    - L_z \frac{\sinh a(\zeta  {-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)}
+               {\sinh a(\zeta_2{-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)} \; ,
 \end{equation}
+where $z_0$ and $z_0+Lz$ are the lowest and uppermost levels, 
+$\zeta_1$, $\zeta_2$ are the $\zeta$ values representing those levels
+(normally $\zeta_1 = 0, \zeta_2 = N_z-1$ for a grid of $N_z$ vertical
+layers [excluding ghost layers]), and $\zeta_*$ is the
+$\zeta$ value of the inflection point of the $\sinh$ function.
+The $z$ coordinate and $\zeta$ value of the inflection point are related
+via
+\begin{equation}
+  z_*
+  = z_0
+    + L_z \frac{\sinh a(\zeta_*{-}\zeta_1)}
+               {\sinh a(\zeta_2{-}\zeta_*) + \sinh a(\zeta_*{-}\zeta_1)} \; ,
+\end{equation}
+which can be inverted (``after some algebra'') to
+\begin{equation}
+  \zeta_*
+  = \frac{\zeta_1{+}\zeta_2}{2}
+    + \frac{1}{a}
+      \artanh \left[  \left(2\frac{z_*{-}z_0}{L_z}-1\right)\;
+                      \tanh a \frac{\zeta_2{-}\zeta_1}{2}
+              \right] \; .
+\end{equation}
+
 To apply that profile, you can set the following in \file{start.in}:
 \begin{Verbatim}
   &init_pars
     [...]
     lequidist = T, T, F         ! non-equidistant grid in z
-    coef_grid = 0.05
+    coef_grid = , 0.05          ! (z_*, a) -- note the comma!
     grid_func = 'sinh'          ! sinh function: linear for small, but
                                 ! exponential for large z
-    ! zeta_grid0 = 0.           ! default anyway
-/
+    ! zeta_grid0 = 0.           ! old and soon to be removed
+  /
 \end{Verbatim}
-The parameter \var{coef_grid} represents $a$; the bottom height $z_0$ and
-the total box height $L_z$ are taken from \var{xyz0} and \var{Lxyz} as in
-the equidistant case.
-If you want the linear part of the $\sinh$ profile at a non-zero height,
-you can set \var{zeta_grid0} to a value $\zeta_0$ different from zero.
+The parameter array \var{coef_grid} represents $z_*$ and $a$; the bottom
+height $z_0$ and the total box height $L_z$ are taken from \var{xyz0} and
+\var{Lxyz} as in the equidistant case.
+If you want the inflection point of the $\sinh$ profile (the part where it
+is linear) at a non-zero height, you can set \var[coef_grid]{coef_grid(1)}
+(i.\,e.~$z_*$ to a value different from $z_0$.
 
 %
 \paragraph{Alternative formulation:}
@@ -3313,7 +3346,7 @@ and
 
 \subsection{Equation of state}
 \index{Equation of state}
-\label{Sionization}
+\label{S-eos}
 
 In its present configuration only hydrogen ionization is explicitly included.
 Other constituents (currently He and H$_2$) can have fixed values.
@@ -3366,7 +3399,7 @@ $y=x_{\rm e}/(1-2x_{\rm H_2})$.
 
 \subsection{Ionization}
 \index{Ionization}
-\label{Sionization}
+\label{S-ionization}
 
 This part of the code can be invoked by setting
 \code{IONIZATION=ionization} in the \file{Makefile.local} file.
@@ -3607,88 +3640,107 @@ Typical values of $C_{\rm mesh}$ are around 3.
 
 \subsection{Setup}
 
-\subsubsection{When sourcing the \file{sourceme.sh}/\file{sourceme.csh}
+\subsubsection[Shell gives error message when sourcing
+               {\file[sourceme]{sourceme.X}}]%
+              {When sourcing the \file{sourceme.sh}/\file{sourceme.csh}
   file or running \cmd{setup-src}, I get error messages from the shell,
   like `if: Expression Syntax.'
   or `set: Variable name must begin with a letter.'}
-Sounds like a buggy shell setup, either by yourself or your system
-administrator --- or a shell that is even more idiosyncratic than the ones
-we have been working with.
 
-To better diagnose the problem, collect the following information before
-filing a bug report to us:
+\medskip
 
-\begin{enumerate}
+{\em
 
-\item \code{uname -a}
+  Sounds like a buggy shell setup, either by yourself or your system
+  administrator --- or a shell that is even more idiosyncratic than the ones
+  we have been working with.
 
-\item \code{/bin/csh -v}
+  To better diagnose the problem, collect the following information before
+  filing a bug report to us:
 
-\item \code{echo \$version}
-
-\item \code{echo \$SHELL}
-
-\item \code{ps -p \$\$}
-
-\item If you have problems while sourcing the \file{sourceme} script,
   \begin{enumerate}
-  \item unset the \env{PENCIL_HOME} variable:
-    \begin{description}
-    \item[for \name{csh} and similar:]
-      \code{unsetenv PENCIL_HOME}
-    \item[for \name{bash} and similar:]
-      \code{unexport PENCIL_HOME; unset PENCIL_HOME}
-    \end{description}
-  \item switch your shell in verbose mode,
-    \begin{description}
-    \item[for \name{csh} and similar:]
-      \code{set verbose; set echo}
-    \item[for \name{bash} and similar:]
-      \code{set -v; set -x}
-    \item then source again.
-    \end{description}
-  \end{enumerate}
 
-\item If you have problems with \cmd{setup-src},
-  run it with \cmd{csh} in verbose mode:
-  \begin{alltt}
-    \code{/bin/csh -v -x \$PENCIL_HOME/bin/setup-src}
-  \end{alltt}
-\end{enumerate}
+  \item \code{uname -a}
+
+  \item \code{/bin/csh -v}
+
+  \item \code{echo \$version}
+
+  \item \code{echo \$SHELL}
+
+  \item \code{ps -p \$\$}
+
+  \item If you have problems while sourcing the \file{sourceme} script,
+    \begin{enumerate}
+    \item unset the \env{PENCIL_HOME} variable:
+      \begin{description}
+      \item[for \name{csh} and similar:]
+        \code{unsetenv PENCIL_HOME}
+      \item[for \name{bash} and similar:]
+        \code{unexport PENCIL_HOME; unset PENCIL_HOME}
+      \end{description}
+    \item switch your shell in verbose mode,
+      \begin{description}
+      \item[for \name{csh} and similar:]
+        \code{set verbose; set echo}
+      \item[for \name{bash} and similar:]
+        \code{set -v; set -x}
+      \item then source again.
+      \end{description}
+    \end{enumerate}
+
+  \item If you have problems with \cmd{setup-src},
+    run it with \cmd{csh} in verbose mode:
+    \begin{alltt}
+      \code{/bin/csh -v -x \$PENCIL_HOME/bin/setup-src}
+    \end{alltt}
+  \end{enumerate}
+}
+
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Compilation}
 
-\subsubsection{How do I compile the Pencil Code with  the Intel
+%%%
+\subsubsection[Compiling with \name{ifc} under Linux]%
+              {How do I compile the Pencil Code with  the Intel
   (\name{ifc}) compiler under \name{Linux}?}
-\name{ifc} 7.1 has bugs that prevent the Pencil Code from being compiled
-(typically you will get an `internal compiler error' during compilation of
-\file[hydro.f90]{src/hydro.f90}), so try to find an older one.
-You can find \name{ifc} 7.0 at
-\url{ftp://download.intel.com/software/products/compilers/downloads}.
 
-On many current (as of November 2003) Linux systems, there is a mismatch
-between the \name{glibc} versions used by the compiler and the linker.
-To work around this, use the following flag for compiling
-\begin{Verbatim}
-  FC=ifc -i_dynamic
-\end{Verbatim}
-and set the environment variable
-\begin{Verbatim}
-  LD_ASSUME_KERNEL=2.4.1; export LD_ASSUME_KERNEL
-\end{Verbatim}
-or
-\begin{Verbatim}
-  setenv LD_ASSUME_KERNEL 2.4.1
-\end{Verbatim}
-This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
-and kernel \emph{2.4.22}.
+\medskip
 
-Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
-this info.
+{\em
+  \name{ifc} 7.1 has bugs that prevent the Pencil Code from being compiled
+  (typically you will get an `internal compiler error' during compilation of
+  \file[hydro.f90]{src/hydro.f90}), so try to find an older one.
+  You can find \name{ifc} 7.0 at
+  \url{ftp://download.intel.com/software/products/compilers/downloads}.
+
+  On many current (as of November 2003) Linux systems, there is a mismatch
+  between the \name{glibc} versions used by the compiler and the linker.
+  To work around this, use the following flag for compiling
+  \begin{Verbatim}
+    FC=ifc -i_dynamic
+  \end{Verbatim}
+  and set the environment variable
+  \begin{Verbatim}
+    LD_ASSUME_KERNEL=2.4.1; export LD_ASSUME_KERNEL
+  \end{Verbatim}
+  or
+  \begin{Verbatim}
+    setenv LD_ASSUME_KERNEL 2.4.1
+  \end{Verbatim}
+  This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
+  and kernel \emph{2.4.22}.
+
+  Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
+  this info.
+}
 
 %%%
-\subsubsection{When compiling with MPI on a Linux system, the linker
-  complains:}
+\subsubsection[The underscore problem: linking with \name{MPI}]%
+              {When compiling with MPI on a Linux system, the linker
+               complains:}
 \label{Sec-underscore-problem}
 \begin{Verbatim}
   mpicomm.o: In function `mpicomm_mpicomm_init_':
@@ -3810,26 +3862,32 @@ make[1]: *** [density.o] Error 1
 make[1]: Leaving directory `/home/dobler/f90/pencil-code/samples/helical-MHDturb/src'
 make: *** [code] Error 2
 \end{Verbatim}
-What's the problem? Somebody may have checked in something without having
-run auto-test beforehand. The problem here is that something has been added in
-one module, but not in the corresponding no-module. You can of course check
-with \name{CVS} who it was\ldots
 
 \medskip
 
 {\em
-  Somebody ought to fix this, and fast! This can be most annoying\footnote{
-Once at a meeting I had the ethernet cable for only 5 min, checked in my own
-things (which worked fine) and somebody else has checked in his new things
-(which had already an error). This meant that I couldn't even go back to the
-old version so easily, so I missed the chance to submit my job before catching
-my train\ldots}. For the time being you can just say in the \file{src} directory
-\code{cvs up -D yesterday} or something.
+  Somebody may have checked in something without having
+  run auto-test beforehand. The problem here is that something has been added in
+  one module, but not in the corresponding no-module. You can of course check
+  with \name{CVS} who it was\ldots
 }
+
+%% [wd: I understand this is extremely annoyin, but this has no place
+%% in a user manual]
+%% {\em
+%%   Somebody ought to fix this, and fast! This can be most annoying\footnote{
+%% Once at a meeting I had the ethernet cable for only 5 min, checked in my own
+%% things (which worked fine) and somebody else has checked in his new things
+%% (which had already an error). This meant that I couldn't even go back to the
+%% old version so easily, so I missed the chance to submit my job before catching
+%% my train\ldots}. For the time being you can just say in the \file{src} directory
+%% \code{cvs up -D yesterday} or something.
+%% }
 
 %%%
 \subsubsection{Internal compiler error with Compaq/Dec F90}
-The Dec Fortran optimizer has occasional problems with \file{nompicomm.f90}:
+The Dec Fortran optimizer has occasional problems with
+\file{nompicomm.f90}:
 \begin{Verbatim}
   make start.x run.x read_videofiles.x
   f90  -fast -O5 -tune ev6 -arch ev6  -c cparam.f90
@@ -3878,26 +3936,35 @@ Under SunOS, I get an error message like
   f90: Fatal error in f90comp: Abort
 \end{Verbatim}
 
-This is a compiler bug that we find at least with Sun's
-WorkShop Compiler version `5.0 00/05/17 FORTRAN 90 2.0 Patch 107356-05'.
-Upgrade the compiler version (and possibly also the operating system):
-we find that the code compiles and works with version
-`Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
-SunOS version `5.8 Generic_108528-11'.
+\medskip
 
+{\em
+  This is a compiler bug that we find at least with Sun's
+  WorkShop Compiler version `5.0 00/05/17 FORTRAN 90 2.0 Patch 107356-05'.
+  Upgrade the compiler version (and possibly also the operating system):
+  we find that the code compiles and works with version
+  `Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
+  SunOS version `5.8 Generic_108528-11'.
+}
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Running}
 
 %%%
-\subsubsection{Why does \file{start.x} / \file{start.csh} write data with
+\subsubsection[Periodic boundary conditions in \file{start.x}]%
+              {Why does \file{start.x} / \file{start.csh} write data with
   periodic boundary conditions?}
 
-Because you are setting the boundary conditions in \file{run.in}, not in
-\file{start.in}; see Sect.~\ref{S-boundconds-where}.
-There is nothing wrong with the initial data --- the ghost-zone values
-will be re-calculated during the very first time step.
+\medskip
+
+{\em
+
+  Because you are setting the boundary conditions in \file{run.in}, not in
+  \file{start.in}; see Sect.~\ref{S-boundconds-where}.
+  There is nothing wrong with the initial data --- the ghost-zone values
+  will be re-calculated during the very first time step.
+}
 
 %%%
 \subsubsection{\file{run.csh} doesn't work:}
@@ -3925,21 +3992,25 @@ Under IRIX, I get
   Abort
 \end{Verbatim}
 
-This is a compiler bug that has been found at least with the MIPSpro F90
-compiler version 7.3.1.3m.
-It has been reported to SGI in mid-2002; you should complain to SGI if a
-patch is still not available.
+\medskip
 
-The error comes and goes, depending on the configuration (and possibly
-even the input parameters) you are using.
-Until SGI fix their compiler, you can experiment with adding new variables
-to the module \name{Param_IO}; this has solved the problem once for us.
-If this trick does not help,
-you will need to turn your namelist input (at least
-\file{run.in} into Fortran statements, include them into a replacement
-version of \file{param_io.f90}, and recompile each time you make changes.
+{\em
+  This is a compiler bug that has been found at least with the MIPSpro F90
+  compiler version 7.3.1.3m.
+  It has been reported to SGI in mid-2002; you should complain to SGI if a
+  patch is still not available.
 
+  The error comes and goes, depending on the configuration (and possibly
+  even the input parameters) you are using.
+  Until SGI fix their compiler, you can experiment with adding new variables
+  to the module \name{Param_IO}; this has solved the problem once for us.
+  If this trick does not help,
+  you will need to turn your namelist input (at least
+  \file{run.in} into Fortran statements, include them into a replacement
+  version of \file{param_io.f90}, and recompile each time you make changes.
+}
 
+%%%
 \subsubsection{Code crashes after restarting}
 
 \begin{Verbatim}
@@ -3950,37 +4021,42 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 > have introduced it, right? Pretty irritating..
 \end{Verbatim}
 
-In the current implementation, without a corresponding cleaning procedure,
-yes! My experience of some 5 days ago was quite enormous. It started
-with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
-there must be a problem with remesh.f90, because nobody remembered having
-tested this for nonuniform mesh-aspect ratios. (So I told Nils that his
-remesh routine needs reworking.)
+\medskip
 
-Later that day I noticed that several of my old jobs started crashing,
-so, of course, I thought there must be yet another mistake somewhere.
-Most incredible was that I lost places in 64 and 128 proc queues,
-even though I have a fairly save backup procedure in place that if a job
-crashes, it goes on another job. Because the job transfer times can be
-on the order of 2h, because of slow writing, and because we had detected
-some days earlier yet another timeout problem with job transfers of 64
-and 128 proc jobs, we thought the problem was connected with that.
+{\em
 
-Only later that day I noticed that what the real problem was.
+  In the current implementation, without a corresponding cleaning procedure,
+  yes! My experience of some 5 days ago was quite enormous. It started
+  with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
+  there must be a problem with remesh.f90, because nobody remembered having
+  tested this for nonuniform mesh-aspect ratios. (So I told Nils that his
+  remesh routine needs reworking.)
 
-It was rather bad that this was not predicted by any of the auto-tests,
-so I wrote the backwards-compatible, which detects those kind of errors.
+  Later that day I noticed that several of my old jobs started crashing,
+  so, of course, I thought there must be yet another mistake somewhere.
+  Most incredible was that I lost places in 64 and 128 proc queues,
+  even though I have a fairly save backup procedure in place that if a job
+  crashes, it goes on another job. Because the job transfer times can be
+  on the order of 2h, because of slow writing, and because we had detected
+  some days earlier yet another timeout problem with job transfers of 64
+  and 128 proc jobs, we thought the problem was connected with that.
 
-This was of course another wild experience. When I came back from
-swimming, "nothing" was working, and since I had done some minor changes,
-I thought I was to blame. Then I found the problem with init conditions,
-but this solved only one out of 3 problems. Then I found the mu\_r problem,
-but this solved only the 2nd problem. Finally, I found and solved the
-third problem.
+  Only later that day I noticed that what the real problem was.
 
-So, those people who checked in changes where already working with buggy
-codes and checked on even further bugs. As I said, I was worried that
-it was all my fault, but buggy codes are potentially bad for others too.
+  It was rather bad that this was not predicted by any of the auto-tests,
+  so I wrote the backwards-compatible, which detects those kind of errors.
+
+  This was of course another wild experience. When I came back from
+  swimming, "nothing" was working, and since I had done some minor changes,
+  I thought I was to blame. Then I found the problem with init conditions,
+  but this solved only one out of 3 problems. Then I found the mu\_r problem,
+  but this solved only the 2nd problem. Finally, I found and solved the
+  third problem.
+
+  So, those people who checked in changes where already working with buggy
+  codes and checked on even further bugs. As I said, I was worried that
+  it was all my fault, but buggy codes are potentially bad for others too.
+}
 
 % ---------------------------------------------------------------------- %
 
@@ -4008,17 +4084,16 @@ it was all my fault, but buggy codes are potentially bad for others too.
 %%%
 \subsubsection{\file{start.pro} doesn't work:}
 
-{\bf Q}:
 Isn't there some clever (or even trivial) way that one can avoid the 
 annoying error messages that one gets, when running e.g. ".r rall" after
 a new variable has been introduced in "idl/varcontent.pro". Ever so
 often there's a new variable that can't be found in my param2.nml --
-this time is was IECR, IGG, and ILNTT that I had to circumvent...
-\\
+this time is was IECR, IGG, and ILNTT that I had to circumvent\ldots
 
 \medskip
 
-{\bf A}:
+{\em
+
 The simplest solution is to say
 \begin{Verbatim}
   touch NOERASE
@@ -4029,7 +4104,7 @@ What it does is that it reruns \code{src/start.x} with a new version of
 the code; this then produces all the necessary auxiliary files, but it
 doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 \file{slice} files.
-
+}
 
 % ====================================================================== %
 
@@ -4313,7 +4388,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}
 
 \section{Timings}
 
@@ -7293,7 +7368,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.254 2004-06-17 20:59:15 dobler Exp $ $}
+$ $Id: manual.tex,v 1.255 2004-06-18 15:59:40 dobler Exp $ $}
 
 
 \end{document}
