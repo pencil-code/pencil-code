@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.8 2003-10-16 12:44:27 mee Exp $
+;  $Id: varcontent.pro,v 1.9 2003-10-18 20:44:13 brandenb Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -117,6 +117,13 @@ varcontent[ilnrhod].idlvar   = 'lnrhod'
 varcontent[ilnrhod].idlinit    = INIT_SCALAR
 varcontent[ilnrhod].idlvarloc= 'lnrhod_loc'
 varcontent[ilnrhod].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[igg].variable = 'Gravitational acceleation (gg)'
+varcontent[igg].idlvar   = 'gg'
+varcontent[igg].idlinit    = INIT_3VECTOR
+varcontent[igg].idlvarloc= 'gg_loc'
+varcontent[igg].idlinitloc = INIT_3VECTOR_LOC
+varcontent[igg].skip     = 2
 
 
 ; Special condition as can be maux or mvar variable

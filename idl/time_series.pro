@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.16 2003-10-09 16:41:57 brandenb Exp $
+;  $Id: time_series.pro,v 1.17 2003-10-18 20:44:13 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -51,6 +51,8 @@ if defined(i_yHm) ne 0 then yHm=reform(a(i_yHm-1,*))
 if defined(i_eth) ne 0 then eth=reform(a(i_eth-1,*))
 if defined(i_ethtot) ne 0 then ethtot=reform(a(i_ethtot-1,*))
 if defined(i_ekin) ne 0 then ekin=reform(a(i_ekin-1,*))
+if defined(i_ecrm) ne 0 then ecrm=reform(a(i_ecrm-1,*))
+if defined(i_ecrmax) ne 0 then ecrmax=reform(a(i_ecrmax-1,*))
 if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
@@ -64,6 +66,15 @@ if defined(i_umz) ne 0 then umz=reform(a(i_umz-1,*))
 if defined(i_ruxm) ne 0 then ruxm=reform(a(i_ruxm-1,*))
 if defined(i_ruym) ne 0 then ruym=reform(a(i_ruym-1,*))
 if defined(i_ruzm) ne 0 then ruzm=reform(a(i_ruzm-1,*))
+if defined(i_uxpt) ne 0 then uxpt=reform(a(i_uxpt-1,*))
+if defined(i_uypt) ne 0 then uypt=reform(a(i_uypt-1,*))
+if defined(i_uzpt) ne 0 then uzpt=reform(a(i_uzpt-1,*))
+if defined(i_bxpt) ne 0 then bxpt=reform(a(i_bxpt-1,*))
+if defined(i_bypt) ne 0 then bypt=reform(a(i_bypt-1,*))
+if defined(i_bzpt) ne 0 then bzpt=reform(a(i_bzpt-1,*))
+if defined(i_udxpt) ne 0 then udxpt=reform(a(i_udxpt-1,*))
+if defined(i_udypt) ne 0 then udypt=reform(a(i_udypt-1,*))
+if defined(i_udzpt) ne 0 then udzpt=reform(a(i_udzpt-1,*))
 if defined(i_uxBm) ne 0 then uxBm=reform(a(i_uxBm-1,*))
 if defined(i_oxuxBm) ne 0 then oxuxBm=reform(a(i_oxuxBm-1,*))
 if defined(i_uxDxuxbm) ne 0 then uxDxuxbm=reform(a(i_uxDxuxbm-1,*))
