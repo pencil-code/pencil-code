@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.134 2004-09-28 22:09:35 dobler Exp $
+# $Id: getconf.csh,v 1.135 2004-10-08 10:31:03 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -280,6 +280,18 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
       endif
       else
       set mpirun 'Cannot_find_out_which_mpirun_to_use'
+    endif
+  endif
+
+else if ($hn == "frontend") then
+  echo "KIS Bagdad cluster"
+    # Choose appropriate mpirun version (LAM vs. MPICH)
+    if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
+      if (-x /usr/local/share/lam-mpi/bin/mpirun) set mpirun=/usr/local/share/lam-mpi/bin/mpirun
+      if (-x /opt/lam/bin/mpirun)     set mpirun=/opt/lam/bin/mpirun
+      set mpirunops = "-O"
+    else if (`egrep -c 'MPICHX|MPICH_DEBUG_ERRS' src/start.x` > 0) then # mpich
+      if (-x /usr/local/share/mpich-g95/bin/mpirun)   set mpirun=/usr/local/share/mpich-g95/bin/mpirun
     endif
   endif
 
