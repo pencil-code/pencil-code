@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.233 2003-10-30 17:21:59 theine Exp $
+! $Id: entropy.f90,v 1.234 2003-10-31 13:47:17 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.233 2003-10-30 17:21:59 theine Exp $")
+           "$Id: entropy.f90,v 1.234 2003-10-31 13:47:17 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1140,7 +1140,7 @@ endif
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,TT,TT1
       real, dimension (nx) :: heat,prof,TTdiff
-      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,prof
+      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,prof1
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1235,8 +1235,8 @@ endif
 !
       if(tau_coronal>0.and.z(n)>=z_coronal) then
         xi=1-2*(ztop-z(n))/(ztop-z_coronal_u)
-        prof=0.5+0.25*xi*(3-xi**2)
-        heat=heat+ss*prof*(TT_coronal-TT)/(rho1*tau_coronal)
+        prof1=0.5+0.25*xi*(3-xi**2)
+        heat=heat+ss*prof1*(TT_coronal-TT)/(rho1*tau_coronal)
       endif
 !
 !  add heating and cooling to a reference temperature in a buffer
