@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.33 2003-07-09 16:11:54 dobler Exp $
+! $Id: wsnaps.f90,v 1.34 2003-07-14 17:27:14 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -15,9 +15,9 @@ module Wsnaps
 contains
 
 !***********************************************************************
-    subroutine wsnap(chsnap,a,msnap,llabel)
+    subroutine wsnap(chsnap,a,msnap,enumerate)
 !
-!  Write snapshot file, labelled consecutively if llabel==.true.
+!  Write snapshot file, labelled consecutively if enumerate==.true.
 !  Otherwise just write a snapshot without label (used for var.dat)
 !
 !  30-sep-97/axel: coded
@@ -41,14 +41,14 @@ contains
       character (len=4) :: ch
       character (len=135) :: file
       character (len=*) :: chsnap
-      logical lsnap,llabel
+      logical lsnap,enumerate
       integer, save :: ifirst,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
 !
-      if (llabel) then
+      if (enumerate) then
         file=trim(datadir)//'/tsnap.dat'
 !
 !  at first call, need to initialize tsnap

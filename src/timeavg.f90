@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.7 2003-06-16 04:41:11 brandenb Exp $ 
+! $Id: timeavg.f90,v 1.8 2003-07-14 17:27:14 dobler Exp $ 
 
 module Timeavg
 
@@ -86,10 +86,10 @@ module Timeavg
 !
     endsubroutine update_timeavgs
 !***********************************************************************
-    subroutine wsnap_timeavgs(chsnap,llabel)
+    subroutine wsnap_timeavgs(chsnap,enumerate)
 !
 !  Write snapshot file for time averages, labelled consecutively if
-!  llabel==.true. 
+!  enumerate==.true. 
 !  Otherwise write without label (used for timeavg.dat).
 !   Currently uses the same parameter dsnap as wsnaps
 !
@@ -104,14 +104,14 @@ module Timeavg
       character (len=4) :: ch
       character (len=80) :: file
       character (len=*) :: chsnap
-      logical lsnap,llabel
+      logical lsnap,enumerate
       integer, save :: ifirst,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
 !
-      if (llabel) then
+      if (enumerate) then
         ! file=trim(datadir)//'/tavgsnap.dat'
         call safe_character_assign(file, trim(datadir)//'/tavgsnap.dat')
 !

@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.5 2003-06-16 04:41:11 brandenb Exp $ 
+! $Id: notimeavg.f90,v 1.6 2003-07-14 17:27:14 dobler Exp $ 
 
 module Timeavg
 
@@ -44,12 +44,12 @@ module Timeavg
 !
     endsubroutine update_timeavgs
 !***********************************************************************
-    subroutine wsnap_timeavgs(chsnap,llabel)
+    subroutine wsnap_timeavgs(chsnap,enumerate)
 !
       character (len=*) :: chsnap
-      logical llabel
+      logical :: enumerate
 !
-      if(chsnap=='X') llabel=.false. !(to keep compiler quiet)
+      if(chsnap=='X') enumerate=.false. !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
 !***********************************************************************
 
