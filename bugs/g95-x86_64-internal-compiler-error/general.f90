@@ -1,12 +1,8 @@
-! $Id: general.f90,v 1.1 2004-11-02 21:33:48 dobler Exp $
+! $Id: general.f90,v 1.2 2004-11-02 21:49:09 dobler Exp $
 
 module General
 
-!  Module with general utility subroutines
-!  (Used for example in Sub and Mpicomm)
-
   implicit none
-
 
   contains
 
