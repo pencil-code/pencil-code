@@ -7,9 +7,21 @@
 ;;;  Date:   23-Aug-2000
 ;;;
 ;;;  Description:
-;;;   Like `rebin', but obtains new dimensions in one array.
+;;;   Like `rebin', but obtains new dimensions in one array and
+;;;   accepts complex numbers.
 
 function my_rebin, arr, dimv, _EXTRA=_extra
+
+  ;; Incredibly stupid: rebin does not work on complex data...
+  s = size(arr)
+  type = s[s[0]+1]
+  if (type eq 6) then begin     ; complex
+    return, complex(my_rebin(float    (arr),dimv,_EXTRA=_extra), $
+                    my_rebin(imaginary(arr),dimv,_EXTRA=_extra))
+  endif else if (type eq 9) then begin ; dcomplex
+    return, complex(my_rebin(double   (arr),dimv,_EXTRA=_extra), $
+                    my_rebin(imaginary(arr),dimv,_EXTRA=_extra))
+  endif
 
   n = n_elements(dimv)
   if (n eq 0) then begin
