@@ -5,11 +5,5 @@
 !  Local settings concerning grid size and number of CPUs.
 !  This file is included by cparam.f90
 !
-!** AUTOMATIC CPARAM.INC GENERATION ****************************
-!
-! NDUSTSPEC CONTRIBUTION 1
-!
-!***************************************************************
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=32,nygrid=64,nzgrid=32
-logical, parameter :: lmdvar=.false.
