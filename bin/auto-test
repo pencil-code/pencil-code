@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.19 2002-10-02 20:11:15 dobler Exp $
+# CVS: $Id: auto-test,v 1.20 2002-11-16 19:05:54 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -33,6 +33,7 @@ use constant QUIET=>1;
 use Cwd;
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
+use Data::Dumper;
 
 
 # ---------------------------------------------------------------------- #
@@ -55,7 +56,7 @@ my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
 (my $cmdname = $0) =~ s{.*/}{};
-my ($debug,$help) = (0,0);
+my ($debug,$help,$short) = (0,0,0);
 
 my $usage =
 "Usage:  $cmdname [options]
@@ -69,7 +70,8 @@ Options:
        --clean          \tClean up (make cleann) before compiling
   -c,  --compile-only   \tTest compilation only
   -nr, --norun          \tTest compilation and starting only
-  -v,  --version        \tPrint version number";
+  -v,  --version        \tPrint version number
+  -s,  --short          \tPrint short directory names only";
 
 ## Process command line options
 GetOptions(\%opts,
@@ -78,18 +80,31 @@ GetOptions(\%opts,
 	            --clean
                -c   --compile-only
 	       -nr  --norun
+	       -s   --short
 	       -v   --version
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.19 2002-10-02 20:11:15 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.20 2002-11-16 19:05:54 dobler Exp $ ' . "\n";
 }
-if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
-if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
-if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
+if ($opts{'nr'} || $opts{'norun'}) { $t_run=0 };
+if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 };
+if ($opts{'s'} || $opts{'short'}) { $short = 1 };
 my $clean = $opts{'clean'} ? 1 : 0;
+
+## Debugging output:
+if ($debug) {
+    print STDERR Dumper(\%opts);
+    print STDERR
+	"(\$t_comp,\$t_start,\$t_run,\$t_res)"
+	. " = ($t_comp,$t_start,$t_run,$t_res)\n";
+    print STDERR 
+	"(\$debug,\$help,\$short)           "
+	. " = ($debug,$help,$short)\n";
+}
 
 # $t_comp .. $t_res form a hierarchy: We can't test running without
 # compiling and starting
@@ -315,7 +330,9 @@ sub test_rundir {
 	return;
     }
     chdir $dir;
-    print "\n", cwd(), ":\n";
+    my $cwd = cwd();
+    if ($short) { $cwd =~ s{.*pencil[^/]*/}{}i };
+    print "\n", $cwd, ":\n";
     $ntests++;
 
     # Make sure we have everything we need
