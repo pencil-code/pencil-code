@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; Date:    9-Feb-2001
-;;; Version: 0.1
+;;; $Date: 2003-08-25 16:58:01 $
+;;; $Revision: 1.5 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -44,7 +44,7 @@
 ;;;
 
 function input_table, filename, $
-                STOP_AT=STOP_AT,fileposition=fileposition, $
+                STOP_AT=stop_AT,FILEPOSITION=fileposition, $
                 COMMENT_CHAR=cchar, DOUBLE=double, VERBOSE=verb
   ;on_error,2
   if (n_params() ne 1) then begin
@@ -74,8 +74,8 @@ function input_table, filename, $
   ;;spawn, 'grep -v "^' + cchar + '" ' + filename + '| wc -l ', ans
   ;;spawn,'egrep -c ^ ' + filename, ans
 
-  ;Favour the new IDL intrinsic if available
-  if (!VERSION.RELEASE ge 5.6) then begin
+  ;; Favour the new IDL intrinsic if available
+  if (!version.release ge 5.6) then begin
     N_lines = file_lines(filename) 
   endif else begin
     spawn, 'wc -l ' + filename, ans
@@ -87,7 +87,7 @@ function input_table, filename, $
   openr, in_file, filename, /GET_LUN, ERROR=err
   if (err ne 0) then begin
     free_lun, in_file
-    message, !ERR_STRING
+    message, !err_string
   endif
   
   ;; Read the data entries
@@ -99,8 +99,8 @@ function input_table, filename, $
 
   slen = -1
   
-  if (keyword_set(STOP_AT)) then begin
-    slen = strlen(STOP_AT)
+  if (keyword_set(stop_at)) then begin
+    slen = strlen(stop_at)
   endif 
 
   success = 0
@@ -112,11 +112,11 @@ function input_table, filename, $
   endif
   fileposition=-1 
   found_stop=0
-  while ((not eof(in_file)) and (idat lt N_lines-1) $
+  while ((not eof(in_file)) and (idat lt N_lines) $
                             and (not found_stop)) do begin
     readf, in_file, line
     if (N_cols eq 0) then begin
-      N_cols = n_elements(STRSPLIT(line,'[\ ]',/REGEX,/EXTRACT))
+      N_cols = n_elements(strsplit(line,'[\ ]',/REGEX,/EXTRACT))
 
       if (double) then begin
         row  = dblarr(N_cols)
@@ -142,15 +142,16 @@ function input_table, filename, $
     
     if (slen gt 0) then begin
       if (stregex(line,STOP_AT,/BOOLEAN)) then begin     
-        point_lun,-in_file,fileposition  ;Save the file position
-        STOP_AT=line                 ;Return the line
-        found_stop=-1                ;Exit the loop
+        point_lun,-in_file,fileposition  ; Save file position
+        stop_at=line                     ; Return the line
+        found_stop=-1                    ; Exit the loop
       endif
     endif
 
     if (not found_stop) then begin
       is_comm = (strmid(line,0,clen) eq cchar)
-      if (not is_comm) then begin ; If this is not a comment line
+      is_empty = (strlen(line) eq 0)
+      if (not (is_comm or is_empty)) then begin ; a data line
         reads, line, row
         data[*,idat] = row
         idat = idat + 1
