@@ -10,7 +10,12 @@
 #   Works on Linux (Intel F95, NAG F95), IRIX, Compaq 
 
 use strict;
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
 
+
+my (%opts);	# Variables written by GetOptions
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $nlstart = "^\\s*&($id)";	# regexp for start of a namelist
 my $numeric = '(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee](?:[+-]?\d+))?'; # float
@@ -20,6 +25,20 @@ my %nlists;
 my $line;
 
 my $debug = 0;
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+                             ));
+
+if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+if ($debug) {
+    foreach my $opt (keys(%opts)) {
+	print "\$opts{$opt} = `$opts{$opt}'\n";
+    }
+    print "\@ARGV = `@ARGV'\n";
+}
 
 ## Some comments and the lhs of the assignment
 my $idl = <<"HEADER";
@@ -189,7 +208,7 @@ sub expand_line {
 		    ( $line =~ /^([^*]*)([0-9]+)\*(\"[^\"]*\")[ ,](.*)/ );
 	    } else {		# n*<number|T|F>
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*([^ ,]*)[ ,]+(.*)/ );
+		    ( $line =~ /^([^*]*)([0-9]+)\*([^ ,]*)[ ,]*(.*)/ );
 	    }
 	    $xline .= $pre;
 	    foreach (1..$mul) {
@@ -197,14 +216,14 @@ sub expand_line {
 	    }
 	    $line = $post;
 	    if ($debug) {
-		print "\$pre  = <$pre>, $mul = <$mul>,",
+		print "\$pre  = <$pre>, \$mul = <$mul>,",
 		      "\$val = <$val>, \$post = <$post>\n";
 	    }
 	}
 	if ($debug) { print "expand_line:   --->  <$xline>\n"};
     }
     $xline .= $line;
-    if ($debug) { print "expand_line:   ===>  <$xline>\n"};
+    if ($debug) { print "expand_line:   ===>  <$xline>\n\n"};
 
     $_[0] = $xline;
 }
