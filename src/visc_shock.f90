@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.8 2002-11-27 08:55:54 mee Exp $
+! $Id: visc_shock.f90,v 1.9 2002-11-27 13:52:44 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.8 2002-11-27 08:55:54 mee Exp $")
+           "$Id: visc_shock.f90,v 1.9 2002-11-27 13:52:44 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -139,11 +139,17 @@ module Viscosity
                                      f(mx-1  ,:,:), &
                                      f(mx    ,:,:))
          elseif (mx.eq.4) then
-            maxf=spread(amax1(f(1,:,:),f(2,:,:),f(3,:,:),f(4,:,:)),1,4)
+            maxf(1,:,:)=amax1(f(1,:,:),f(2,:,:),f(3,:,:))
+            maxf(2,:,:)=amax1(f(1,:,:),f(2,:,:),f(3,:,:),f(4,:,:))
+            maxf(3,:,:)=maxf(2,:,:)
+            maxf(4,:,:)=amax1(f(2,:,:),f(3,:,:),f(4,:,:))
          elseif (mx.eq.3) then
-            maxf=spread(amax1(f(1,:,:),f(2,:,:),f(3,:,:)),1,3)
+            maxf(1,:,:)=amax1(f(1,:,:),f(2,:,:),f(3,:,:))
+            maxf(2,:,:)=maxf(1,:,:)
+            maxf(3,:,:)=maxf(1,:,:)
          elseif (mx.eq.2) then
-            maxf=spread(amax1(f(1,:,:),f(2,:,:)),1,2)
+            maxf(1,:,:)=amax1(f(1,:,:),f(2,:,:))
+            maxf(2,:,:)=maxf(1,:,:)
          else
             maxf=f
          endif
@@ -176,11 +182,17 @@ module Viscosity
                                   maxf(:,my-1  ,:), &
                                   maxf(:,my    ,:))
          elseif (my.eq.4) then
-            maxf=spread(amax1(f(:,1,:),f(:,2,:),f(:,3,:),f(:,4,:)),2,4)
+            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:))
+            maxf(:,2,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:),f(:,4,:))
+            maxf(:,3,:)=maxf(:,2,:)
+            maxf(:,4,:)=amax1(f(:,2,:),f(:,3,:),f(:,4,:))
          elseif (my.eq.3) then
-            maxf=spread(amax1(f(:,1,:),f(:,2,:),f(:,3,:)),2,3)
+            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:))
+            maxf(:,2,:)=maxf(:,1,:)
+            maxf(:,3,:)=maxf(:,1,:)
          elseif (my.eq.2) then
-            maxf=spread(amax1(f(:,1,:),f(:,2,:)),2,2)
+            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:))
+            maxf(:,2,:)=maxf(:,1,:)
          else
             maxf=f
          endif
@@ -212,11 +224,17 @@ module Viscosity
                                      f(:,:,mz-1  ), &
                                      f(:,:,mz    ))
          elseif (mz.eq.4) then
-            maxf=spread(amax1(f(:,:,1),f(:,:,2),f(:,:,3),f(:,:,4)),3,4)
+            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2),f(:,:,3))
+            maxf(:,:,2)=amax1(f(:,:,1),f(:,:,2),f(:,:,3),f(:,:,4))
+            maxf(:,:,3)=maxf(:,:,2)
+            maxf(:,:,4)=amax1(f(:,:,2),f(:,:,3),f(:,:,4))
          elseif (mz.eq.3) then
-            maxf=spread(amax1(f(:,:,1),f(:,:,2),f(:,:,3)),3,3)
+            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2),f(:,:,3))
+            maxf(:,:,2)=maxf(:,:,1)
+            maxf(:,:,3)=maxf(:,:,1)
          elseif (mz.eq.2) then
-            maxf=spread(amax1(f(:,:,1),f(:,:,2)),3,2)
+            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2))
+            maxf(:,:,2)=maxf(:,:,1)
          else
             maxf=f
          endif
