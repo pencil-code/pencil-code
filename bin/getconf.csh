@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.55 2003-08-02 19:38:15 mee Exp $
+# $Id: getconf.csh,v 1.56 2003-08-02 19:43:04 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -197,7 +197,7 @@ endif
 
 # Apply the SGI namelist read fix if running IRIX
 set os = `uname -s`
-if ($os ~= IRIX64) then
+if ($os =~ IRIX*) then
   touch SGIFIX
 else
   rm -f SGIFIX
