@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.55 2003-08-19 11:00:58 mee Exp $
+! $Id: noionization.f90,v 1.56 2003-08-19 21:39:56 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -40,14 +40,14 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   logical :: lionization=.false.,lionization_fixed=.false.
-  real :: yH0=0.5,yHacc=1e-5,xHe=0.1
+  real :: xHe=0.1
 
   ! input parameters
   integer :: dummy_ni 
-  namelist /ionization_init_pars/ yH0,yHacc,xHe
+  namelist /ionization_init_pars/ xHe
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,yHacc,xHe
+  namelist /ionization_run_pars/ xHe
 
   contains
 
@@ -75,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.55 2003-08-19 11:00:58 mee Exp $")
+           "$Id: noionization.f90,v 1.56 2003-08-19 21:39:56 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -91,6 +91,11 @@ module Ionization
       if(ip==0) print*,'initialize_ionization: keeping compiler quiet'
 !
     endsubroutine initialize_ionization
+!*******************************************************************
+    subroutine getmu(mu)
+      real, intent(out) :: mu
+      mu=1.+3.97153*xHe  
+    endsubroutine getmu
 !*******************************************************************
     subroutine rprint_ionization(lreset)
 !

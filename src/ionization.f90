@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.75 2003-08-19 11:00:58 mee Exp $
+! $Id: ionization.f90,v 1.76 2003-08-19 21:39:56 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -39,13 +39,13 @@ module Ionization
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.,lionization_fixed=.false.
-  real :: yH0=0.5,yHacc=1e-5,xHe=0.1
+  real :: yHacc=1e-5,xHe=0.1
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yH0,yHacc
+  namelist /ionization_init_pars/ xHe,yHacc
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yH0,yHacc
+  namelist /ionization_run_pars/ xHe,yHacc
 
   contains
 
@@ -78,7 +78,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.75 2003-08-19 11:00:58 mee Exp $")
+           "$Id: ionization.f90,v 1.76 2003-08-19 21:39:56 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -98,6 +98,11 @@ module Ionization
       write(5,*) 'TT = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_ionization
+!*******************************************************************
+    subroutine getmu(mu)
+      real, intent(out) :: mu
+      mu=1.+3.97153*xHe  
+    endsubroutine getmu
 !***********************************************************************
     subroutine initialize_ionization()
 !
