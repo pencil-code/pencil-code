@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.11 2004-12-06 10:06:24 brandenb Exp $
+;  $Id: pc_varcontent.pro,v 1.12 2005-03-09 09:17:55 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -85,7 +85,6 @@ INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
 
 ; DO mvar VARIABLES FIRST
 
-
 varcontent[iuu].variable   = 'Velocity (uu)'
 varcontent[iuu].idlvar     = 'uu'
 varcontent[iuu].idlinit    = INIT_3VECTOR
@@ -157,6 +156,13 @@ varcontent[iecr].idlvar   = 'ecr'
 varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
+
+varcontent[ifcr].variable = 'Cosmic ray energy flux (fcr)'
+varcontent[ifcr].idlvar   = 'fcr'
+varcontent[ifcr].idlinit    = INIT_3VECTOR
+varcontent[ifcr].idlvarloc= 'fcr_loc'
+varcontent[ifcr].idlinitloc = INIT_3VECTOR_LOC
+varcontent[ifcr].skip  = 2
 
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
