@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.98 2004-02-11 14:52:40 ajohan Exp $
+! $Id: noionization.f90,v 1.99 2004-02-18 16:51:23 ajohan Exp $
 
 !  Dummy routine for noionization
 
@@ -22,6 +22,7 @@ module Ionization
   interface eoscalc              ! Overload the `thermodynamics' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
+    module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
 
   interface getentropy
@@ -80,7 +81,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.98 2004-02-11 14:52:40 ajohan Exp $")
+           "$Id: noionization.f90,v 1.99 2004-02-18 16:51:23 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -306,7 +307,7 @@ module Ionization
       if (ip==0) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine eoscalc_pencil(f,yH,lnTT,ee,pp)
+    subroutine eoscalc_farray(f,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -334,7 +335,7 @@ module Ionization
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
       if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
 !
-    endsubroutine eoscalc_pencil
+    endsubroutine eoscalc_farray
 !***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
@@ -392,6 +393,63 @@ module Ionization
       if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_point
+!***********************************************************************
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      integer, intent(in) :: ivars
+      real, dimension(nx), intent(in) :: var1,var2
+      real, dimension(nx), intent(out), optional :: lnrho,ss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_
+!
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+!
+      select case (ivars)
+
+      case (ilnrho_ss)
+        lnrho_=var1
+        ss_=var1
+        lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
+        ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+
+      case (ilnrho_ee)
+        lnrho_=var1
+        ee_=var2
+        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
+        lnTT_=log(gamma*cp1*ee_)
+        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+
+      case (ilnrho_pp)
+        call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+        lnrho_=var1
+        pp_=var2
+        lnTT_=1
+        ss_=0
+        ee_=0
+
+      end select
+!
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=impossible
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
+!
+    endsubroutine eoscalc_pencil
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !
