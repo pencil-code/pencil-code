@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.45 2002-06-14 06:31:15 brandenb Exp $
+! $Id: magnetic.f90,v 1.46 2002-06-14 08:34:52 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -78,8 +78,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.45 $", &
-           "$Date: 2002-06-14 06:31:15 $")
+           "$Revision: 1.46 $", &
+           "$Date: 2002-06-14 08:34:52 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -450,7 +450,8 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx,ny) :: f1,f2,f3
-      integer :: i
+      real, dimension (nx,ny,nghost+1) :: fz
+      integer :: i,j
       character (len=*) :: errmesg
 !
       errmesg=""
@@ -460,30 +461,40 @@ module Magnetic
         if (bcz1(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the bottom'
           if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
-          f2=f(l1:l2,m1:m2,n1+1,iax); f3=f(l1:l2,m1:m2,n1+2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iax)=f1
-          f2=f(l1:l2,m1:m2,n1+1,iay); f3=f(l1:l2,m1:m2,n1+2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iay)=f1
-          f1=f(l1:l2,m1:m2,n1  ,iax); f2=f(l1:l2,m1:m2,n1  ,iay); call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n1,iaz)=-f1
-          do i=1,nghost
-            f(:,:,n1-i,iaz) = 2*f(:,:,n1,iaz) - f(:,:,n1+i,iaz)
+          do j=0,1
+            f2=f(l1:l2,m1:m2,n1+1,iax+j)
+            f3=f(l1:l2,m1:m2,n1+2,iax+j)
+            call potential(fz,f2,f3,-1)
+            f(l1:l2,m1:m2,1:n1,iax+j)=fz
           enddo
+          !
+          f1=f(l1:l2,m1:m2,n1,iax)
+          f2=f(l1:l2,m1:m2,n1,iay)
+          call potentdiv(fz,f2,f3,-1)
+          f(l1:l2,m1:m2,1:n1,iaz)=-fz
         endif
 !
-!  pontential field condition at the bottom top
+!  pontential field condition at the top
 !
         if (bcz2(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the top'
           if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
-          f2=f(l1:l2,m1:m2,n2-1,iax); f3=f(l1:l2,m1:m2,n2-2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iax)=f1
-          f2=f(l1:l2,m1:m2,n2-1,iay); f3=f(l1:l2,m1:m2,n2-2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iay)=f1
-          f1=f(l1:l2,m1:m2,n2,iax)  ; f2=f(l1:l2,m1:m2,n2,iay)  ; call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n2,iaz)=-f1
-          do i=1,nghost
-            f(:,:,n2+i,iaz) = 2*f(:,:,n2,iaz) - f(:,:,n2-i,iaz)
+          do j=0,1
+            f2=f(l1:l2,m1:m2,n2-1,iax+j)
+            f3=f(l1:l2,m1:m2,n2-2,iax+j)
+            call potential(fz,f2,f3,+1)
+            f(l1:l2,m1:m2,n2:mz,iax+j)=fz
           enddo
+          !
+          f1=f(l1:l2,m1:m2,n2,iax)
+          f2=f(l1:l2,m1:m2,n2,iay)
+          call potentdiv(fz,f2,f3,+1)
+          f(l1:l2,m1:m2,n2:mz,iaz)=-fz
         endif
 !
     endsubroutine bc_aa
 !***********************************************************************
-      subroutine potential(f1,f2,f3)
+      subroutine potential(f1,f2,f3,irev)
 !
 !  solves the potential field boundary condition;
 !  f1 is the boundary layer, and f2 and f3 are the next layers inwards.
@@ -494,10 +505,12 @@ module Magnetic
 !
      use Cdata
 !
-      real, dimension (nx,ny) :: fac,kk,f1,f1r,f1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny) :: fac,kk,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny,nghost+1) :: f1
       real, dimension (nx) :: kx
       real, dimension (ny) :: ky
-      integer :: i
+      real :: delz
+      integer :: i,irev
 !
       f2r=f2; f2i=0
       f3r=f3; f3i=0
@@ -525,28 +538,44 @@ module Magnetic
       f1r=fac*(4.*f2r-f3r)
       f1i=fac*(4.*f2i-f3i)
 !
+!  set ghost zones
+!
+      do i=0,nghost
+        delz=i*dz
+        fac=exp(-kk*delz)
+        g1r=fac*f1r
+        g1i=fac*f1i
+!
 !  Transform back
 !
-      call fft(f1r, f1i, nx*ny, nx,    nx,+1) ! x-direction
-      call fft(f1r, f1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
+        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
 !
-      f1 = f1r/(nx*ny)  ! Renormalize
+!  reverse order if irev=-1
+!
+        if(irev==+1) f1(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==-1) f1(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+      enddo
 !
     endsubroutine potential
 !***********************************************************************
-      subroutine potentdiv(f1,f2,f3)
+      subroutine potentdiv(f1,f2,f3,irev)
 !
 !  solves the divA=0 for potential field boundary condition;
 !  f2 and f3 correspond to Ax and Ay (input) and f1 corresponds to Ax (out)
+!  In principle we could save some ffts, by combining with the potential
+!  subroutine above, but this is now easier
 !
 !  22-mar-02/axel: coded
 !
      use Cdata
 !
-      real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1,f1r,f1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny) :: fac,kk,kkkx,kkky,f1r,f1i,g1r,g1i,f2,f2r,f2i,f3,f3r,f3i
+      real, dimension (nx,ny,nghost+1) :: f1
       real, dimension (nx) :: kx
       real, dimension (ny) :: ky
-      integer :: i
+      real :: delz
+      integer :: i,irev
 !
       f2r=f2; f2i=0
       f3r=f3; f3i=0
@@ -579,12 +608,24 @@ module Magnetic
       f1r=fac*(-kkkx*f2i-kkky*f3i)
       f1i=fac*(+kkkx*f2r+kkky*f3r)
 !
+!  set ghost zones
+!
+      do i=0,nghost
+        delz=(i-1)*dz
+        fac=exp(-kk*delz)
+        g1r=fac*f1r
+        g1i=fac*f1i
+!
 !  Transform back
 !
-      call fft(f1r, f1i, nx*ny, nx,    nx,+1) ! x-direction
-      call fft(f1r, f1i, nx*ny, ny, nx*ny,+1) ! y-direction
+        call fft(g1r, g1i, nx*ny, nx,    nx,+1) ! x-direction
+        call fft(g1r, g1i, nx*ny, ny, nx*ny,+1) ! y-direction
 !
-      f1 = f1r/(nx*ny)  ! Renormalize
+!  reverse order if irev=-1
+!
+        if(irev==+1) f1(:,:,       i+1) = g1r/(nx*ny)  ! Renormalize
+        if(irev==-1) f1(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
+      enddo
 !
     endsubroutine potentdiv
 !***********************************************************************
