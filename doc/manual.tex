@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.158 2003-05-09 10:05:17 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.159 2003-05-30 15:55:54 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-05-09 10:05:17 $ $,~ $ $Revision: 1.158 $ $}
+\date{$ $Date: 2003-05-30 15:55:54 $ $,~ $ $Revision: 1.159 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-05-09 10:05:17 $ $,~ $ $Revision: 1.158 $ $}
+  \emph{$ $Date: 2003-05-30 15:55:54 $ $,~ $ $Revision: 1.159 $ $}
 
   \vspace{\stretch{3}}
 
@@ -4722,12 +4722,13 @@ possible inputs to the \file{print.in} file.
   \multicolumn{2}{c}{Module \name{density.f90}} \\
 \midrule
   \var{rhom} & $\left<\varrho\right>$ \\
-  \var{eth} & $\left<\varrho e\right>$ \\
   \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{entropy.f90}} \\
 \midrule
+  \var{eth} & $\left<\varrho e\right>$ \\
+  \var{toteth} & $\int_V\varrho e\,dv$ \\
   \var{ssm} & $\left<s/c_p\right>$ \\
 %
 \midrule
@@ -4772,12 +4773,12 @@ possible inputs to the \file{print.in} file.
 
 The following tables list which parameters from each Namelist are required 
 (\req), optional (\opt) or irrelevant (blank). The distinction is 
-made between required and optional where by a parameter requires a setting if
-the default value would give an invalid or degenerate case for the initial
-condition.
+made between required and optional where by a parameter requires a setting 
+if the default value would give an invalid or degenerate case for the 
+initial condition.
 
-% ---------------------------------------------------------------------- %
-\begin{longtable}{lcccccccccccc}
+% - hydro_init_pars ---------------------------------------------------- %
+\begin{tabular}{@{}l|c|c|c|c|c|c|c|c|c|c|c|c}
 
 \toprule
   inituu & 
@@ -4861,10 +4862,116 @@ condition.
                     & {}   & {}   & {}   & {}   & {}   \\
 %
 \bottomrule
+\end{tabular}
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{l|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c}
+
+\toprule
+  initss & 
+       \rotatebox{90}{ampl_ss}   & 
+       \rotatebox{90}{radius_ss}   & 
+       \rotatebox{90}{widthss}   & 
+       \rotatebox{90}{epsilon_ss}   & 
+       \rotatebox{90}{grads0}  & 
+       \rotatebox{90}{pertss}   & 
+       \rotatebox{90}{ss_left}  & 
+       \rotatebox{90}{ss_right} & 
+       \rotatebox{90}{ss_const} & 
+       \rotatebox{90}{mpoly0} & 
+       \rotatebox{90}{mpoly1}  & 
+       \rotatebox{90}{mpoly2} & 
+       \rotatebox{90}{isothtop}    & 
+       \rotatebox{90}{khor_ss}    & 
+       \rotatebox{90}{center1_x}    & 
+       \rotatebox{90}{center1_y}    & 
+       \rotatebox{90}{center1_z}    & 
+       \rotatebox{90}{center2_x}    & 
+       \rotatebox{90}{center2_y}    & 
+       \rotatebox{90}{center2_z}    &
+       \rotatebox{90}{thermal_background}    &
+       \rotatebox{90}{thermal_peak}    &
+       \rotatebox{90}{thermal_scaling}    \\ 
+\midrule
+  zero              & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  const_ss          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & \req & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  blob              & \req & \req & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  isothermal        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  Ferriere          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  xjump             & {}   & {}   & \req & {}   & {}   & {}   & \req 
+                    & \req & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  hor-fluxtube      & \req & \req & {}   & \req & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  hor-tube          & \req & \req & {}   & \req & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  sedov             & {}   & \req & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & \req & \req & \req & {}   & {}   & {}   & \req
+                    & \req & \req \\
+\midrule
+  sedov-dual        & {}   & \req & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & \req & \req & \req & \req & \req & \req & \req
+                    & \req & \req \\
+\midrule
+  isobaric          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  isentropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  linprof           & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  piecew-poly       & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+\midrule
+  polytropic        & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   & {}   & {}   & {}   & {}   & {}
+                    & {}   & {}   \\
+%
+\bottomrule
 \end{longtable}
 
-
-
+ 
 % ====================================================================== %
 
 % r e f
@@ -4929,7 +5036,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.158 2003-05-09 10:05:17 dobler Exp $ $}
+$ $Id: manual.tex,v 1.159 2003-05-30 15:55:54 mee Exp $ $}
 
 
 \end{document}

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.158 2003-05-29 07:48:14 brandenb Exp $
+! $Id: entropy.f90,v 1.159 2003-05-30 15:56:15 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -49,7 +49,7 @@ module Entropy
        yH0,fHe,heat_uniform
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0
+  integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_toteth=0
 
   contains
 
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.158 2003-05-29 07:48:14 brandenb Exp $")
+           "$Id: entropy.f90,v 1.159 2003-05-30 15:56:15 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -468,9 +468,12 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if(ldiagnos) then
+        rho=exp(lnrho)
         if(i_eth/=0) then
-          rho=exp(lnrho)
           call sum_mn_name(rho*ee,i_eth)
+        endif
+        if(i_toteth/=0) then
+          call integrate_mn_name(rho*ee,i_toteth)
         endif
         if(i_TTm/=0) call sum_mn_name(TT,i_TTm)
         if(i_yHm/=0) call sum_mn_name(yH,i_yHm)
@@ -835,10 +838,11 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_eth=0; i_TTm=0; i_yHm=0; i_ssm=0; i_ugradpm=0
+        i_eth=0; i_TTm=0; i_yHm=0; i_ssm=0; i_ugradpm=0; i_toteth=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'toteth',i_toteth)
         call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
         call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
         call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
@@ -848,6 +852,7 @@ endif
 !
 !  write column where which magnetic variable is stored
 !
+      write(3,*) 'i_toteth=',i_toteth
       write(3,*) 'i_eth=',i_eth
       write(3,*) 'i_TTm=',i_TTm
       write(3,*) 'i_yHm=',i_yHm

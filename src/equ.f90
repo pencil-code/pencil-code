@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.136 2003-05-07 04:53:58 brandenb Exp $
+! $Id: equ.f90,v 1.137 2003-05-30 15:56:15 mee Exp $
 
 module Equ
 
@@ -69,27 +69,28 @@ module Equ
 !  the result is present only on the root processor
 !
       if(lroot) then
-        fsum=fsum/(nw*ncpus)
+!        fsum=fsum/(nw*ncpus)
 !
 !  sort back into original array
 !  need to take sqare root if |itype|=2
 !  (in current version, don't need itype=2 anymore)
 !
-      imax_count=0
-      isum_count=0
-      do iname=1,nname
-        if(itype_name(iname)<0) then
-          imax_count=imax_count+1
-          if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
-          if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
-        elseif(itype_name(iname)>0) then
-          isum_count=isum_count+1
-          if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)
-          if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(isum_count))
-        endif
-      enddo
-      !nmax_count=imax_count
-      !nsum_count=isum_count
+         imax_count=0
+         isum_count=0
+         do iname=1,nname
+            if(itype_name(iname)<0) then
+               imax_count=imax_count+1
+               if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
+               if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
+            elseif(itype_name(iname)>0) then
+               isum_count=isum_count+1
+               if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)/(nw*ncpus)
+               if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(isum_count)/(nw*ncpus))
+               if(itype_name(iname)==+3) fname(iname)=fsum(isum_count)*(dx*dy*dz)
+            endif
+         enddo
+         !nmax_count=imax_count
+         !nsum_count=isum_count
 !
       endif
 !
@@ -212,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.136 2003-05-07 04:53:58 brandenb Exp $")
+           "$Id: equ.f90,v 1.137 2003-05-30 15:56:15 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

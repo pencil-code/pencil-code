@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.115 2003-05-29 07:48:14 brandenb Exp $ 
+! $Id: sub.f90,v 1.116 2003-05-30 15:56:15 mee Exp $ 
 
 module Sub 
 
@@ -108,6 +108,31 @@ module Sub
       endif
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine integrate_mn_name(a,iname)
+!
+!  successively calculate sum of a, which is supplied at each call.
+!  Start from zero if lfirstpoint=.true. ultimately multiply by dv 
+!  to get the integral
+!
+!   30-may-03/tony: adapted form sum_mn_name
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname
+!
+      if (lfirstpoint) then
+        fname(iname)=sum(a)
+      else
+        fname(iname)=fname(iname)+sum(a)
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_integrate
+!
+    endsubroutine integrate_mn_name
 !***********************************************************************
     subroutine xysum_mn_name_z(a,iname)
 !
