@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.2 2002-06-12 21:20:37 brandenb Exp $
+! $Id: magnetic.f90,v 1.3 2004-04-28 08:48:33 brandenb Exp $
 
 module Magnetic
 
@@ -12,7 +12,6 @@ module Magnetic
 
   ! run parameters
   real :: eta=0.
-  namelist /magnetic_run_pars/ eta
 
 
   contains

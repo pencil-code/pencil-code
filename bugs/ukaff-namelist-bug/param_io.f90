@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.1 2002-06-12 17:25:17 dobler Exp $ 
+! $Id: param_io.f90,v 1.2 2004-04-28 08:48:33 brandenb Exp $ 
 
 module Param_IO
 
@@ -16,6 +16,8 @@ module Param_IO
 !
 !  open namelist file
 !
+  namelist /magnetic_run_pars/ eta
+
       open(1,file='run.in',form='formatted')
 
       write(0,*) '1.'
