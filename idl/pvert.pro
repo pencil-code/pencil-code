@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert.pro,v 1.14 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id: pvert.pro,v 1.15 2002-10-09 19:14:01 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot vertical profiles of uz, lnrho and entropy.
@@ -26,8 +26,8 @@ Nmax = Nxmax*Nymax
 if ((nprofs le 0) or (nprofs gt Nmax)) then nprofs = Nmax
 ixp=[[mx/2]] & iyp=[[my/2]]     ; case nprofs=1
 if (nprofs gt 1) then begin
-  Nxp = sqrt(nprofs+1e-5)*Nxmax/Nymax
-  Nyp = sqrt(nprofs+1e-5)*Nymax/Nxmax
+  Nxp = sqrt(nprofs+1e-5)*Nxmax/Nymax > 1
+  Nyp = sqrt(nprofs+1e-5)*Nymax/Nxmax > 1
   Nxyp = Nxp*Nyp
   ixp = nign + spread( indgen(Nxp)*Nxmax/Nxp, 1, Nyp )
   iyp = nign + spread( indgen(Nyp)*Nymax/Nyp, 0, Nxp )
