@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.6 2005-01-26 10:22:12 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.7 2005-02-09 15:08:09 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -82,10 +82,10 @@ endfor
 ;
 ;  Define arrays for temporary storage of data.
 ;
-line=fltarr(totalvars)*one
-ipar0=intarr(npar)*1
-ipar0_tot=intarr(npar)*1
+array=fltarr(npar,totalvars)*one
+ipar0=lonarr(npar)
 t=zero
+npar_loc=0L
 ;
 ;  Get a unit number.
 ;
@@ -109,31 +109,28 @@ for i=0,nproc-1 do begin
   close, file
   openr, file, filename, /F77
 ;
-;  Read mask containing ones for particles that are present at the
-;  current processor and zeros elsewhere.
+;  Read the number of particles at the local processor together with their
+;  global index numbers.
 ;
-  readu, file, ipar0
+  readu, file, npar_loc 
+  ipar_loc=lonarr(npar_loc)
+  readu, file, ipar_loc
 ;
-;  Go through all particles and read data for the ones that are present
-;  at the current processor.
+;  Register particle indices for later check if all particles have been read.
+;  
+  for k=0,npar_loc-1 do begin
+    ipar0[ipar_loc[k]-1]=ipar0[ipar_loc[k]-1]+1
+  endfor
 ;
-  for k=0,npar-1 do begin
-    if (ipar0[k] eq 1) then begin
-      ipar0_tot[k]=ipar0_tot[k]+1
+;  Read local processor data.
 ;
-;  Read line by line
-;      
-      readu, file, line
-      for iv=1L,mpvar do begin
+  array_loc=fltarr(npar_loc,mpvar)
+  readu, file, array_loc
 ;
-;  Put data from line into proper places of data array
+;  Put local processor data into proper place in global data array
 ;        
-        res=varcontent[iv].idlvar+'[k,*]=line[iv-1:iv-1+varcontent[iv].skip]'
-        if (execute(res,0) ne 1) then $
-            message, 'Error putting data into '+varcontent[iv].idlvar+' array'
-        iv=iv+varcontent[iv].skip
-      endfor
-    endif
+  for k=0,npar_loc-1 do begin
+    array[ipar_loc[k]-1,*]=array_loc[k,*]
   endfor
 ;
 ;  Read time.
@@ -145,15 +142,24 @@ for i=0,nproc-1 do begin
 
 endfor
 ;
+;  Put data into object structure.
+;
+for iv=1L,mpvar do begin
+  res=varcontent[iv].idlvar+'=array[*,iv-1:iv-1+varcontent[iv].skip]'
+  if (execute(res,0) ne 1) then $
+    message, 'Error putting data into '+varcontent[iv].idlvar+' array'
+  iv=iv+varcontent[iv].skip
+endfor
+;
 ;  Check if all particles found exactly once.
 ;
-if ( (max(ipar0_tot) ne 1) or (min(ipar0_tot) ne 1)) then begin
+if ( (max(ipar0) ne 1) or (min(ipar0) ne 1)) then begin
   print, 'Warning: Some particles not found at all or found more'
   print, 'than once in snapshot files.'
   print, 'Particle number---No. of occurences'
   for i=0,npar-1 do begin
-    if (ipar0_tot[i] ne 1) then begin
-      print, i, ipar0_tot[i]
+    if (ipar0[i] ne 1) then begin
+      print, i, ipar0[i]
     endif
   endfor
 endif
