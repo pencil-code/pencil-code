@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.121 2004-08-12 11:15:35 nilshau Exp $
+# $Id: getconf.csh,v 1.122 2004-08-18 11:53:58 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -460,6 +460,10 @@ else if ($hn =~ mhd) then
   if ($local_disc) then
     setenv SCRATCH_DIR /var/tmp
   endif
+
+else if ($hn =~ psi*) then
+  echo "RZG in Garching (IBM pSeries Regatta with AIX UNIX)"
+  set mpirun = "poe"
 
 else
   echo "Generic setup; hostname is <$hn>"
