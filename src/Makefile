@@ -9,7 +9,6 @@ FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic
 IO=io_dist
-DEBUGGING=debugging
 
 ### Begin machine dependent
 
@@ -98,7 +97,7 @@ code:
 
 technical=cparam.o cdata.o general.o slices.o deriv.o register.o
 physics=$(GLOBAL).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
-comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics) $(DEBUGGING).o
+comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) debug_c.o
 run_deps_f90=$(comm_deps) equ.o timestep.o
@@ -129,10 +128,9 @@ $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(GLOBAL).o $(MPICOMM).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:   $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o $(DEBUGGING).o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o
-$(DEBUGGING).o: $(DEBUGGING).f90 cdata.o $(MPICOMM).o
 #
 debug_c.o:   debug_c.c
 

@@ -45,7 +45,7 @@
 
 /* ---------------------------------------------------------------------- */
 
-int output_stenciled_c_(char *filename, REAL *stenc, FINT *ndim,
+int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
 			FINT *i, FINT *iy, FINT *iz, REAL *t,
 			FINT *nx, FINT *ny, FINT *nz, FINT *nghost,
 			FINT *fnlen)
@@ -54,80 +54,185 @@ int output_stenciled_c_(char *filename, REAL *stenc, FINT *ndim,
    fnlen   -- length of filename (needed due to unclear Fortran--C mapping of
               strings)
    i,ix,iy -- position of stencil. i is the loop index.
+
+   Using linked list data structure to allow for calling this routine with
+   different variables in parallel. This assumes that the calls occur in
+   the same order throughought the whole tencil loop -- the opposite is
+   very implausible.
 */
 {
-  REAL zero=0;
-  static FILE *file;
+  typedef struct node{
+    int depth;
+    struct node *next;
+    struct node *prev;
+    FILE *file;
+  } filenode;
+  static filenode root_node, *current_node;
+  filenode *new_node;
+
+  REAL zero=0.;
   static char *fname;
-  int nstenc,ilast,bcount,j;
+  int nstenc,ilast,bcount;
+  int j,k,l;
   long int mx,my,mz;
   long int datasize,pos;
+  int first_stenc,last_stenc;
+  static int first_var=1,max_depth,toggle;	/* Processing first variable */
 
   mx = *nx + 2*(*nghost);
   my = *ny + 2*(*nghost);
   mz = *nz + 2*(*nghost);
 
-  nstenc = (*ny)*(*nz);		/* Number of stencils (sans ghosts) */
+  nstenc = (*ny)*(*nz);		/* Number of stencils (excluding ghosts) */
   ilast = nstenc;
 
-  if (*i == 1) {
+  first_stenc = (*i == 1);
+  last_stenc = (*i == ilast);
+
     /* Called for the first time:
        - open file
        - calculate and write byte count
     */
+  if (first_stenc) {
+    if (first_var) {		/* First stencil, first variable: need to
+				   initialise list structure */
+      root_node.depth=0;
+      root_node.prev=0;		/* just to be safe */
+      current_node = &root_node;
+      max_depth = 0;
+      toggle = 1;
+    } else {			/* Append new node */
+      new_node = (filenode *) malloc(sizeof(filenode));
+      new_node->prev = current_node;
+      new_node->depth = current_node->depth + 1;
+      max_depth++;
+      current_node->next = new_node;
+      current_node = new_node;	/* move on in the linked list */
+fprintf(stderr, "  %dth > first var\n", current_node->depth);
+    }
     /* Extract filename as C string */
     fname = (char *)calloc(*fnlen+1, sizeof(char));
     strncpy(fname,filename,*fnlen);
     fname[*fnlen] = 0;
     /* Open file */
-    file = fopen(fname, "w");
-    if (file == NULL) {
+    current_node->file = fopen(fname, "w");
+    if (current_node->file == NULL) {
       fprintf(stderr, "debug_c.c: Can't open file %s\n", fname);
       abort;
     }
+fprintf(stderr, "Opening %s:\n  root=%p (%p|%p|%p), current=%p (<%p|%p|%p)\n",
+	fname,
+	&root_node,root_node.prev,root_node.file,root_node.next,
+	current_node,current_node->prev,current_node->file,current_node->next);
+    free(fname);
     datasize = mx*my*mz*sizeof(REAL);
     bcount = datasize;
-    fwrite(&bcount, sizeof(bcount), 1, file);
+    fwrite(&bcount, sizeof(bcount), 1, current_node->file);
   }
 
-  /* Neither first nor last call:
+  /* Second stencil called for first variable:
+     - reset first_var and toggle
+     (needs to be done just once; for the following calls, depth
+     vs. maxdepth is the correct criterion)
+  */
+  if (!first_stenc && toggle) {
+    toggle = 0;
+    first_var = 1;
+  }
+
+  /* Any call:
      - position appropriately
      - write nghosts zeros, one stencil, nghost zeros
   */
-  pos = sizeof(FINT) + mx*(*iy-1 + my*(*iz-1))*sizeof(REAL);
-if (*i == 1){
-  fprintf(stderr,"i=%d, iy=%d, iz=%d, pos=%d\n", *i, *iy,*iz,pos);
+  if (!first_stenc) {
+    if (first_var) {		/* reset current_node to start from top */
+      current_node = &root_node; 
+    } else {			/* move on in linked list */
+      current_node = current_node->next;
+    }
+  }
+if (*i < 3) {
+  fprintf(stderr, "i = %d, First_var = %d, Depth %d; Writing to file %p\n",
+	  *i, first_var, current_node->depth, current_node->file);
 }
-  fseek(file, pos, SEEK_SET);
+  pos = sizeof(FINT) + mx*(*iy-1 + my*(*iz-1))*sizeof(REAL);
+  fseek(current_node->file, pos, SEEK_SET);
   for (j=0;j<*nghost;j++) {
-    fwrite(&zero, sizeof(REAL), 1, file);
+    fwrite(&zero, sizeof(REAL), 1, current_node->file);
   }
-  fwrite(stenc, sizeof(REAL), *nx, file);
+  fwrite(stenc, sizeof(REAL), *nx, current_node->file);
   for (j=0;j<*nghost;j++) {
-    fwrite(&zero, sizeof(REAL), 1, file);
+    fwrite(&zero, sizeof(REAL), 1, current_node->file);
   }
-
-
-
-  if (*i == ilast) {
-    /* Last call:
-       - position after data block
-       - write byte count
-       - write time as short record
-       - close file
-    */
+  if (first_stenc || (current_node->depth < max_depth)) {
+    first_var = 0;
+  } else {			/* processing last variable */
+    first_var = 1;		/* reset for next call */
+  }
+  
+  /* Last call:
+     - fill remaining ghost zones with zeros
+     - position after data block
+     - write byte count
+     - write time as short record
+     - close file
+  */
+  if (last_stenc) {
+    for (k=0;k<*nghost;k++) {
+      for (l=0;l<mz;l++) {
+	pos = sizeof(FINT) + mx*(k + my*l)*sizeof(REAL);
+	fseek(current_node->file, pos, SEEK_SET);
+	for (j=0;j<mx;j++) {
+	  fwrite(&zero, sizeof(REAL), 1, current_node->file);
+	}
+	pos = sizeof(FINT) + mx*((my-k-1) + my*l)*sizeof(REAL);
+	fseek(current_node->file, pos, SEEK_SET);
+	for (j=0;j<mx;j++) {
+	  fwrite(&zero, sizeof(REAL), 1, current_node->file);
+	}
+      }
+    }
+    for (k=(*nghost);k<my-(*nghost);k++) {
+      for (l=0;l<*nghost;l++) {
+	pos = sizeof(FINT) + mx*(k + my*l)*sizeof(REAL);
+	fseek(current_node->file, pos, SEEK_SET);
+	for (j=0;j<mx;j++) {
+	  fwrite(&zero, sizeof(REAL), 1, current_node->file);
+	}
+	pos = sizeof(FINT) + mx*(k + my*(mz-l-1))*sizeof(REAL);
+	fseek(current_node->file, pos, SEEK_SET);
+	for (j=0;j<mx;j++) {
+	  fwrite(&zero, sizeof(REAL), 1, current_node->file);
+	}
+      }
+    }
+    /* Write byte count */
     datasize = mx*my*mz*sizeof(REAL);
     pos = (long int)(datasize+sizeof(FINT));
-    fseek(file, pos, SEEK_SET);
+    fseek(current_node->file, pos, SEEK_SET);
     bcount = datasize;
-    fwrite(&bcount, sizeof(bcount), 1, file);
+    fwrite(&bcount, sizeof(bcount), 1, current_node->file);
     /* Write time record */
     bcount = sizeof(REAL);
-    fwrite(&bcount, sizeof(bcount), 1, file);
-    fwrite(t, sizeof(REAL), 1, file);
-    fwrite(&bcount, sizeof(bcount), 1, file);
-    fclose(file);
-    free(fname);
+    fwrite(&bcount, sizeof(bcount), 1, current_node->file);
+    fwrite(t, sizeof(REAL), 1, current_node->file);
+    fwrite(&bcount, sizeof(bcount), 1, current_node->file);
+fprintf(stderr, "Closing: root=%p, current=%p (<%p|%p|%p)\n",
+	&root_node,
+	current_node,current_node->prev,current_node->file,current_node->next);
+    fclose(current_node->file);
+    /* Set first_var to zero -- unless this was the very last cycle, in
+       which case we set it to 1 for the next round */
+    if (current_node->depth < max_depth) { /* Is this the last variable? */
+      first_var = 0;
+    } else {
+      first_var = 1;
+      /* Walk through list and free memory */
+      while (current_node->depth >0) {
+	current_node = current_node->prev;
+	free(current_node->next);
+      }
+    }
   }
 
   return 1;
