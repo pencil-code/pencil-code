@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.186 2003-08-08 11:05:00 dobler Exp $
+! $Id: entropy.f90,v 1.187 2003-08-08 17:21:59 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -10,7 +10,7 @@ module Entropy
   use Hydro
   use Interstellar
   use Viscosity
-  use Ionization, only: lfixed_ionization,yH0,xHe
+  use Ionization, only: lionization_fixed,yH0,xHe
 
   implicit none
 
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.186 2003-08-08 11:05:00 dobler Exp $")
+           "$Id: entropy.f90,v 1.187 2003-08-08 17:21:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -393,9 +393,9 @@ module Entropy
 !
       do n=n1,n2
       do m=m1,m2
-        if (lfixed_ionization) then
+        if (lionization_fixed) then
            call potential(x(l1:l2),y(m),z(n),pot)
-!        if (lfixed_ionization) then
+!        if (lionization_fixed) then
            call isothermal_density_ion(pot,tmp)
 !print*,minval(tmp),maxval(tmp)
            f(l1:l2,m,n,ilnrho)=lnrho0+tmp/TT0
@@ -418,7 +418,7 @@ module Entropy
       enddo
       enddo
 
-      if (lionization.or.lfixed_ionization) then
+      if (lionization.or.lionization_fixed) then
          TT0top=TT0
          TT0bot=TT0
          cs2bot=impossible
@@ -1296,7 +1296,7 @@ endif
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !   8-jul-2002/axel: split old bc_ss into two
-!  23-jun-2003/tony: implemented for lfixed_ionization
+!  23-jun-2003/tony: implemented for lionization_fixed
 !
       use Mpicomm, only: stop_it
       use Cdata
@@ -1325,7 +1325,7 @@ endif
       case('bot')
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
           call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
-        if (lionization.or.lfixed_ionization) then
+        if (lionization.or.lionization_fixed) then
            f(:,:,n1-nghost:n1,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
@@ -1348,7 +1348,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       case('top')
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
           call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
-        if (lfixed_ionization) then
+        if (lionization_fixed) then
            f(:,:,n2:n2+nghost,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n2:n2+nghost,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
@@ -1519,7 +1519,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-       if (lionization.or.lfixed_ionization) then
+       if (lionization.or.lionization_fixed) then
         call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
@@ -1535,7 +1535,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-       if (lionization.or.lfixed_ionization) then
+       if (lionization.or.lionization_fixed) then
         call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
@@ -1680,7 +1680,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (lionization.or.lfixed_ionization) then
+        if (lionization.or.lionization_fixed) then
           call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
         else
           if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
@@ -1693,7 +1693,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-       if (lionization.or.lfixed_ionization) then
+       if (lionization.or.lionization_fixed) then
         call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
        else
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'

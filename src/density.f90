@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.106 2003-08-05 03:53:29 brandenb Exp $
+! $Id: density.f90,v 1.107 2003-08-08 17:21:59 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.106 2003-08-05 03:53:29 brandenb Exp $")
+           "$Id: density.f90,v 1.107 2003-08-08 17:21:59 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -604,7 +604,7 @@ module Density
 !                  to allow isothermal condition for arbitrary density
 !
       use Gravity
-!      use Ionization, only: lfixed_ionization, isothermal_density_ion 
+!      use Ionization, only: lionization_fixed, isothermal_density_ion 
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: pot,tmp
@@ -615,7 +615,7 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot)
-!        if (lfixed_ionization) then
+!        if (lionization_fixed) then
 !           call isothermal_density_ion(pot,tmp)
 !            tmp=0.
 !        else
