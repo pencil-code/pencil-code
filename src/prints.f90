@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.44 2003-08-08 08:49:38 dobler Exp $
+! $Id: prints.f90,v 1.45 2003-08-11 13:24:15 nilshau Exp $
 
 module Print
 
@@ -173,9 +173,11 @@ module Print
       character (len=135) :: file
 !
       file=trim(datadir)//'/t2davg.dat'
-      if (first) then
+!NILS: I commented out the if statement because apparantly it is
+!NILS: false even if t2davg.dat hasn't been read before.
+      !if (first) then
         call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
-      endif
+      !endif
       first = .false.
       !
       call update_snaptime(file,t2davg,n2davg,d2davg,t,lnow,ch,ENUM=.true.)
