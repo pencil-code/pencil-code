@@ -252,13 +252,14 @@ module Equ
 !
 !  10-sep-01/axel: coded
 !
-      use Mpicomm
       use Cdata
+      use Mpicomm
       use Slices
       use Sub
       use Global
       use Gravity
       use Entropy
+      use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
@@ -274,8 +275,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-03-05 17:43:13 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-03-09 14:13:57 $")
 !
 !  initiate communication
 !
@@ -335,6 +336,12 @@ module Equ
 !  entropy equation
 !
         if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
+!if (headt) then
+!  call del2v(f,iuu,del2u)
+!  call output_stenc(trim(directory)//'/d2u1.dat',del2u,3)
+!  call del2v_etc(f,iuu,del2u,graddiv=graddivu)
+!  call output_stenc(trim(directory)//'/d2u2.dat',del2u,3)
+!endif
 !
 !  momentum equation (forcing is now done in timestep)
 !
