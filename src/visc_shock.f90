@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.33 2003-10-26 21:20:13 theine Exp $
+! $Id: visc_shock.f90,v 1.34 2003-11-24 15:21:34 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.33 2003-10-26 21:20:13 theine Exp $")
+           "$Id: visc_shock.f90,v 1.34 2003-11-24 15:21:34 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -152,7 +152,7 @@ module Viscosity
       use Cdata
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (mx,my,mz) :: maxf
+      real, dimension (mx,my,mz) :: maxf, tmp
 !
 !  x-direction, f -> maxf
 !  check for degeneracy
@@ -202,42 +202,42 @@ module Viscosity
 !
       if (nygrid/=1) then
          if (my.ge.5) then
-            f(:,1     ,:) = amax1(maxf(:,1     ,:),  &
+            tmp(:,1     ,:) = amax1(maxf(:,1     ,:),  &
                                   maxf(:,2     ,:),  &
                                   maxf(:,3     ,:))
-            f(:,2     ,:) = amax1(maxf(:,1     ,:), &
+            tmp(:,2     ,:) = amax1(maxf(:,1     ,:), &
                                   maxf(:,2     ,:), &
                                   maxf(:,3     ,:), &
                                   maxf(:,4     ,:))
-            f(:,3:my-2,:) = amax1(maxf(:,1:my-4,:), &
+            tmp(:,3:my-2,:) = amax1(maxf(:,1:my-4,:), &
                                   maxf(:,2:my-3,:), &
                                   maxf(:,3:my-2,:), &
                                   maxf(:,4:my-1,:), &
                                   maxf(:,5:my  ,:))
-            f(:,my-1,:)   = amax1(maxf(:,my-3  ,:), &
+            tmp(:,my-1,:)   = amax1(maxf(:,my-3  ,:), &
                                   maxf(:,my-2  ,:), &
                                   maxf(:,my-1  ,:), &
                                   maxf(:,my    ,:))
-            f(:,my  ,:)   = amax1(maxf(:,my-2  ,:), &
+            tmp(:,my  ,:)   = amax1(maxf(:,my-2  ,:), &
                                   maxf(:,my-1  ,:), &
                                   maxf(:,my    ,:))
          elseif (my.eq.4) then
-            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
-            f(:,2,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
-            f(:,3,:)=f(:,2,:)
-            f(:,4,:)=amax1(maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
+            tmp(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
+            tmp(:,2,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
+            tmp(:,3,:)=tmp(:,2,:)
+            tmp(:,4,:)=amax1(maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
          elseif (my.eq.3) then
-            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
-            f(:,2,:)=f(:,1,:)
-            f(:,3,:)=f(:,1,:)
+            tmp(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
+            tmp(:,2,:)=f(:,1,:)
+            tmp(:,3,:)=f(:,1,:)
          elseif (my.eq.2) then
-            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:))
-            f(:,2,:)=f(:,1,:)
+            tmp(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:))
+            tmp(:,2,:)=tmp(:,1,:)
          else
-            f=maxf
+            tmp=maxf
          endif
       else
-         f=maxf
+         tmp=maxf
       endif
 !
 !  z-direction, f -> maxf
@@ -245,42 +245,42 @@ module Viscosity
 !
       if (nzgrid/=1) then
          if (mz.ge.5) then
-            maxf(:,:,1     ) = amax1(f(:,:,1     ),  &
-                                     f(:,:,2     ),  &
-                                     f(:,:,3     ))
-            maxf(:,:,2     ) = amax1(f(:,:,1     ), &
-                                     f(:,:,2     ), &
-                                     f(:,:,3     ), &
-                                     f(:,:,4     ))
-            maxf(:,:,3:mz-2) = amax1(f(:,:,1:mz-4), &
-                                     f(:,:,2:mz-3), &
-                                     f(:,:,3:mz-2), &
-                                     f(:,:,4:mz-1), &
-                                     f(:,:,5:mz  ))
-            maxf(:,:,mz-1  ) = amax1(f(:,:,mz-3  ), &
-                                     f(:,:,mz-2  ), &
-                                     f(:,:,mz-1  ), &
-                                     f(:,:,mz    ))
-            maxf(:,:,mz    ) = amax1(f(:,:,mz-2  ), &
-                                     f(:,:,mz-1  ), &
-                                     f(:,:,mz    ))
+            maxf(:,:,1     ) = amax1(tmp(:,:,1     ),  &
+                                     tmp(:,:,2     ),  &
+                                     tmp(:,:,3     ))
+            maxf(:,:,2     ) = amax1(tmp(:,:,1     ), &
+                                     tmp(:,:,2     ), &
+                                     tmp(:,:,3     ), &
+                                     tmp(:,:,4     ))
+            maxf(:,:,3:mz-2) = amax1(tmp(:,:,1:mz-4), &
+                                     tmp(:,:,2:mz-3), &
+                                     tmp(:,:,3:mz-2), &
+                                     tmp(:,:,4:mz-1), &
+                                     tmp(:,:,5:mz  ))
+            maxf(:,:,mz-1  ) = amax1(tmp(:,:,mz-3  ), &
+                                     tmp(:,:,mz-2  ), &
+                                     tmp(:,:,mz-1  ), &
+                                     tmp(:,:,mz    ))
+            maxf(:,:,mz    ) = amax1(tmp(:,:,mz-2  ), &
+                                     tmp(:,:,mz-1  ), &
+                                     tmp(:,:,mz    ))
          elseif (mz.eq.4) then
-            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2),f(:,:,3))
-            maxf(:,:,2)=amax1(f(:,:,1),f(:,:,2),f(:,:,3),f(:,:,4))
+            maxf(:,:,1)=amax1(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3))
+            maxf(:,:,2)=amax1(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3),tmp(:,:,4))
             maxf(:,:,3)=maxf(:,:,2)
-            maxf(:,:,4)=amax1(f(:,:,2),f(:,:,3),f(:,:,4))
+            maxf(:,:,4)=amax1(tmp(:,:,2),tmp(:,:,3),tmp(:,:,4))
          elseif (mz.eq.3) then
-            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2),f(:,:,3))
+            maxf(:,:,1)=amax1(tmp(:,:,1),tmp(:,:,2),tmp(:,:,3))
             maxf(:,:,2)=maxf(:,:,1)
             maxf(:,:,3)=maxf(:,:,1)
          elseif (mz.eq.2) then
-            maxf(:,:,1)=amax1(f(:,:,1),f(:,:,2))
+            maxf(:,:,1)=amax1(tmp(:,:,1),tmp(:,:,2))
             maxf(:,:,2)=maxf(:,:,1)
          else
-            maxf=f
+            maxf=tmp
          endif
       else
-         maxf=f
+         maxf=tmp
       endif
 !
     endsubroutine shock_max5
@@ -378,17 +378,18 @@ module Viscosity
 !      fac=1./(2.*dx)
       df=0.
 
+
       if (nxgrid/=1) then
-         df(1     ,:,:) =   (  4.*f(2,:,:,iux) &
-                               - 3.*f(1,:,:,iux) &
-                               -    f(3,:,:,iux) ) &
-                               / (2.*dx) 
-         df(2:mx-1,:,:) =   ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) &
-                                / (2.*dx) 
-         df(mx    ,:,:) =   (  3.*f(mx  ,:,:,iux) &
-                             - 4.*f(mx-1,:,:,iux) &
-                             +    f(mx-2,:,:,iux) &
-                             )/(2.*dx)
+         df(1     ,:,:) =  df(1    ,:,:) &
+                           + (  4.*f(2,:,:,iux) &
+                              - 3.*f(1,:,:,iux) &
+                              -    f(3,:,:,iux))/(2.*dx) 
+         df(2:mx-1,:,:) =  df(2:mx-1,:,:) &
+                           + ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) / (2.*dx) 
+         df(mx    ,:,:) =  df(mx    ,:,:) &
+                           + (  3.*f(mx  ,:,:,iux) &
+                              - 4.*f(mx-1,:,:,iux) &
+                              +    f(mx-2,:,:,iux))/(2.*dx)
       endif
 
       if (nygrid/=1) then
@@ -444,7 +445,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1 * &
            (2.*nu*sij2  & 
-           + nu_shock * shock * divu**2)
+             + nu_shock * shock * divu**2)
 
       maxheating=amax1(maxheating,df(l1:l2,m,n,iss))
 !
