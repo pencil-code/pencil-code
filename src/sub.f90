@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.159 2004-02-12 07:12:38 mee Exp $ 
+! $Id: sub.f90,v 1.160 2004-02-12 09:04:16 mee Exp $ 
 
 module Sub 
 
@@ -2597,7 +2597,7 @@ module Sub
       character (len=*) :: strin, strout
       character (len=255) :: envname, envvalue, chunk
       character (len=1) :: chr 
-      character (len=*), parameter :: envnamechars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-'
+      character (len=64), parameter :: envnamechars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'
       integer :: inptr, inlen, envstart, nameptr
 !
       intent(in)    :: strin
@@ -2624,12 +2624,8 @@ nameloop: do
             exit nameloop
           endif
 
-          if (nameptr .ge. inlen) then
-            nameptr=inlen
-            exit nameloop
-          endif
+          if (nameptr .gt. inlen) exit nameloop
         enddo nameloop
-        
         if ((nameptr-1) .ge. inptr) then
          envname=trim(strin(inptr:nameptr-1))
          call getenv(trim(envname),envvalue)

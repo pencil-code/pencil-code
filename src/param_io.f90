@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.159 2004-02-12 07:12:38 mee Exp $ 
+! $Id: param_io.f90,v 1.160 2004-02-12 09:04:16 mee Exp $ 
 
 module Param_IO
 
@@ -107,7 +107,7 @@ module Param_IO
 !   2-nov-02/axel: adapted from get_datadir
 !
       character (len=*) :: dir 
-      character (len=len(dir)) :: tdir
+      character (len=120) :: tdir
       character (len=10) :: a_format
       logical :: exist
 !
