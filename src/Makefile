@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.102 2002-10-02 04:42:57 brandenb Exp $
+### $Id: Makefile,v 1.103 2002-10-02 06:50:29 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -127,7 +127,7 @@ cparam.inc: Makefile Makefile.local
 code:
 	make start.x run.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o random_nr.o register.o prints.o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)

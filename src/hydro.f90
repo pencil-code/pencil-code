@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.66 2002-10-02 03:37:16 vpariev Exp $
+! $Id: hydro.f90,v 1.67 2002-10-02 06:50:29 brandenb Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.66 2002-10-02 03:37:16 vpariev Exp $")
+           "$Id: hydro.f90,v 1.67 2002-10-02 06:50:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -98,7 +98,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real :: kabs
-      integer :: i,j,k
+      integer :: i
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
