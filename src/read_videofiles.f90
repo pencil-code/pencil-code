@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.8 2003-10-28 12:45:28 theine Exp $
+! $Id: read_videofiles.f90,v 1.9 2003-11-20 18:51:18 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -21,7 +21,7 @@
       real, dimension (nx,nz) :: xz_loc
       real, dimension (ny,nz) :: yz_loc
 !
-      integer :: ipy,ipz,iproc,it,nt=999999
+      integer :: ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4
       logical :: eof=.false.
       real :: t
@@ -31,6 +31,7 @@
       character (len=120) :: datadir='data',path=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
+      character (len=1) :: position_arrangement='p'
 !
       real :: min_xy_loc,min_xy2_loc,min_xz_loc,min_yz_loc
       real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
@@ -42,11 +43,31 @@
       min_xz_loc=huge(min_xz_loc); max_xz_loc=-huge(max_xz_loc)
       min_yz_loc=huge(min_yz_loc); max_yz_loc=-huge(max_yz_loc)
 !
-!  read file name
+!  read name of the field (must coincide with file extension)
 !
       !call getarg (1,field)
-      print*,'enter name of variable (lnrho, ux, ..., bz):'
+      write(*,'(a,$)') 'enter name of variable (lnrho, ux, ..., bz): '
       read*,field
+!
+!  periphery or middle of the box?
+!
+      !call getarg (1,field)
+      write(*,'(a,$)') 'periphery (p), middle (m) of box? '
+      read*,position_arrangement
+!
+!  interpret position_arrangement
+!
+      if (position_arrangement=='p') then
+        ipz_top=nprocz-1
+        ipz_bottom=0
+        ipy_front=0
+      elseif (position_arrangement=='m') then
+        ipz_top=nprocz/2
+        ipz_bottom=0
+        ipy_front=nprocy/2
+      endif
+!
+!  loop through all times
 !
       do it=1,nt
         lun=10
@@ -54,8 +75,7 @@
 !  Top Xy-plane:
 !  need data where ipz=nprocz-1
 !
-!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY z MESH POINT
-      ipz=nprocz-1
+      ipz=ipz_top
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
         call chn(iproc,chproc,'rvid_box: top xy')
@@ -75,8 +95,7 @@
 !  Bottom xy-plane:
 !  need data where ipz=0
 !
-!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY z MESH POINT
-      ipz=0
+      ipz=ipz_bottom
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
         call chn(iproc,chproc,'rvid_box: bottom xy')
@@ -96,8 +115,7 @@
 !  Front xz-plane:
 !  need data where ipy=0
 !
-!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY y MESH POINT
-      ipy=0
+      ipy=ipy_front
       do ipz=0,nprocz-1
         iproc=ipy+nprocy*ipz
         call chn(iproc,chproc,'rvid_box: front xz')
@@ -115,7 +133,7 @@
       call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
 !
 !  Left side yz-plane:
-!  need data where ipx=0
+!  need data where ipx=0 (doesn't matter: we have always nprocx=1)
 !
       do ipz=0,nprocz-1
       do ipy=0,nprocy-1
