@@ -1,7 +1,7 @@
-! $Id: visc_shock.f90,v 1.18 2003-05-21 12:07:27 mee Exp $
+! $Id: visc_shock.f90,v 1.19 2003-05-26 19:14:45 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
-!  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
+!  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
 
 module Viscosity
 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.18 2003-05-21 12:07:27 mee Exp $")
+           "$Id: visc_shock.f90,v 1.19 2003-05-26 19:14:45 brandenb Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -88,6 +88,8 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp
 
+      if(headt) print*,'calc_viscosity: dxmin=',dxmin
+
       if (nu_shock /= 0.) then
          call shock_divu(f,f(:,:,:,ishock))
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
@@ -115,13 +117,14 @@ module Viscosity
 !  skipping 1 data point all round
 !
 !  23-nov-02/tony: coded - from sub.f90 - nearmax
+!  26-may-03/axel: maxf and f where interchanged in y-chunk
 !
       use Cdata
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: maxf
-      
 !
+!  x-direction, f -> maxf
 !  check for degeneracy
 !
       if (nxgrid/=1) then
@@ -163,8 +166,8 @@ module Viscosity
       else
          maxf=f
       endif
-
 !
+!  y-direction, maxf -> f (swap back again)
 !  check for degeneracy
 !
       if (nygrid/=1) then
@@ -189,24 +192,25 @@ module Viscosity
                                   maxf(:,my-1  ,:), &
                                   maxf(:,my    ,:))
          elseif (my.eq.4) then
-            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:))
-            maxf(:,2,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:),f(:,4,:))
-            maxf(:,3,:)=maxf(:,2,:)
-            maxf(:,4,:)=amax1(f(:,2,:),f(:,3,:),f(:,4,:))
+            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
+            f(:,2,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
+            f(:,3,:)=f(:,2,:)
+            f(:,4,:)=amax1(maxf(:,2,:),maxf(:,3,:),maxf(:,4,:))
          elseif (my.eq.3) then
-            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:),f(:,3,:))
-            maxf(:,2,:)=maxf(:,1,:)
-            maxf(:,3,:)=maxf(:,1,:)
+            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:),maxf(:,3,:))
+            f(:,2,:)=f(:,1,:)
+            f(:,3,:)=f(:,1,:)
          elseif (my.eq.2) then
-            maxf(:,1,:)=amax1(f(:,1,:),f(:,2,:))
-            maxf(:,2,:)=maxf(:,1,:)
+            f(:,1,:)=amax1(maxf(:,1,:),maxf(:,2,:))
+            f(:,2,:)=f(:,1,:)
          else
-            maxf=f
+            f=maxf
          endif
       else
-         maxf=f
+         f=maxf
       endif
 !
+!  z-direction, f -> maxf
 !  check for degeneracy
 !
       if (nzgrid/=1) then
@@ -251,6 +255,7 @@ module Viscosity
 !
     endsubroutine shock_max5
 
+!***********************************************************************
     subroutine shock_smooth(f,smoothf)
 !
 !  return array smoothed with by 2 points either way
@@ -263,8 +268,6 @@ module Viscosity
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
-
-
 !
 !  check for degeneracy
 !
