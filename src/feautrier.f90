@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.30 2003-06-21 15:26:52 theine Exp $
+! $Id: feautrier.f90,v 1.31 2003-06-24 17:44:29 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.30 2003-06-21 15:26:52 theine Exp $")
+           "$Id: feautrier.f90,v 1.31 2003-06-24 17:44:29 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -121,7 +121,7 @@ module Radiation
          yH=f(l1:l2,m,n,iyH)
          TT=f(l1:l2,m,n,iTT)
          Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
-         kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+         kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
          kaprho(l1:l2,m,n)=kappa*exp(lnrho)
       enddo

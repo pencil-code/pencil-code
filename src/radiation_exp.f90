@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.17 2003-06-19 21:28:17 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.18 2003-06-24 17:44:29 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.17 2003-06-19 21:28:17 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.18 2003-06-24 17:44:29 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -174,7 +174,7 @@ module Radiation
          if(lkappa_es) then
            kappa=kappa_es
          else
-           kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+           kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
                  *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
          endif
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.53 2003-06-24 16:28:41 theine Exp $
+! $Id: ionization.f90,v 1.54 2003-06-24 17:44:29 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -19,16 +19,14 @@ module Ionization
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,mu,twothirds
-  real :: TT_ion ,lnrho_ion ,chiH ,ss_ion
-  real :: TT_ion_,lnrho_ion_,chiH_,kappa0
-  real :: lnmHme,lnmpme,lnmHeme,lnmHmp,lnxHe
-  real :: lnrho_H,lnrho_e,lnrho_p,lnrho_He
+  real :: TT_ion,TT_ion_,chiH,chiH_,ss_ion,kappa0
+  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.,lfixed_ionization=.false.,output_yH=.false.
   character (len=labellen) :: cionization='hydrogen'
-  real :: yH0=impossible,xHe=0.1
+  real :: yH0=impossible,xHe=0.1,lnxHe
 
   ! input parameters
   namelist /ionization_init_pars/ cionization,output_yH
@@ -67,7 +65,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.53 2003-06-24 16:28:41 theine Exp $")
+           "$Id: ionization.f90,v 1.54 2003-06-24 17:44:29 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -105,10 +103,6 @@ module Ionization
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
-      lnmHme=log(m_H/m_e)
-      lnmpme=log(m_p/m_e)
-      lnmHeme=log(m_He/m_e)
-      lnmHmp=log(m_H/m_p)
       lnxHe=log(xHe)
       twothirds=2./3.
       mu=1.+3.97153*xHe
@@ -116,17 +110,16 @@ module Ionization
       chiH_=0.75*eV
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
-      lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu
       kappa0=sigmaH_/m_H/mu
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,lnrho_ion,ss_ion=',TT_ion,lnrho_ion,ss_ion
+        print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
       endif
     endsubroutine initialize_ionization
 
@@ -331,20 +324,20 @@ module Ionization
       if (present(TT1)) TT1=1./TT
       if (present(yH)) yH=yHcalc
       if (present(cs2).or.present(cp1tilde)) then
-         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+         ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
             +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
          dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
       endif
       if (present(cs2)) then
-         dlnTT_dlnrho=gamma1
-         dffdlnrho=gamma1*TT_ion/TT
+         dlnTT_dlnrho=twothirds
+         dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
          dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
          cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
          dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
          dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
@@ -388,20 +381,20 @@ module Ionization
       if (present(TT1)) TT1=1./TT
       if (present(yH)) yH=yHcalc
       if (present(cs2).or.present(cp1tilde)) then
-         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+         ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
             +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
          dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
       endif
       if (present(cs2)) then
-         dlnTT_dlnrho=gamma1
-         dffdlnrho=gamma1*TT_ion/TT
+         dlnTT_dlnrho=twothirds
+         dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
          dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
          cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
          dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
          dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
@@ -446,20 +439,20 @@ module Ionization
       if (present(TT1)) TT1=1./TT
       if (present(yH)) yH=yHcalc
       if (present(cs2).or.present(cp1tilde)) then
-         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+         ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
             +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
          dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
       endif
       if (present(cs2)) then
-         dlnTT_dlnrho=gamma1
-         dffdlnrho=gamma1*TT_ion/TT
+         dlnTT_dlnrho=twothirds
+         dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
          dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
          cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
          dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
          dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
@@ -546,8 +539,8 @@ module Ionization
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
                         +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
                        +lnrho-2.5)
-      f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-      dlnTT_=(log(m_H/m_p)-twothirds*(f+exp(-lnTT_))-1.)/(1.+yH+xHe)
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=(twothirds*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
     endsubroutine saha
 
