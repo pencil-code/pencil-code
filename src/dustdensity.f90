@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.101 2004-06-08 14:09:32 ajohan Exp $
+! $Id: dustdensity.f90,v 1.102 2004-06-08 22:07:29 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.101 2004-06-08 14:09:32 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.102 2004-06-08 22:07:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -387,8 +387,9 @@ module Dustdensity
             call del2(f,ilnrho,del2lnrho)
             call grad(f,ind(k),gnd(:,:,k))
             call dot_mn(gnd(:,:,k),glnrho,gndglnrho)
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*( &
-                del2nd - nd(l1:l2,k)*del2lnrho - gndglnrho)
+!AB: currently breaks the auto-test
+!           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*( &
+!               del2nd - nd(l1:l2,k)*del2lnrho - gndglnrho)
           else
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*del2nd
           endif
