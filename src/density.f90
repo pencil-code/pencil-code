@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.66 2002-12-10 17:03:16 brandenb Exp $
+! $Id: density.f90,v 1.67 2003-02-02 15:12:52 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,9 +13,9 @@ module Density
   real :: cs0=1., rho0=1.
   real :: cs20, lnrho0
   real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
-  real :: rho_left=1., rho_right=1., cdiffrho=0.
+  real :: rho_left=1., rho_right=1., cdiffrho=0., lnrho_const=0.
   real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
-  real :: radius_lnrho=.5,kx_lnrho=0.,ky_lnrho=0.,kz_lnrho=0.
+  real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
@@ -25,7 +25,7 @@ module Density
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
-       rho_left,rho_right,cs2bot,cs2top, &
+       rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
        initlnrho2,radius_lnrho,eps_planet, &
        mpoly, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.66 2002-12-10 17:03:16 brandenb Exp $")
+           "$Id: density.f90,v 1.67 2003-02-02 15:12:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -125,8 +125,8 @@ module Density
       select case(initlnrho)
 
       case('zero', '0'); if(lroot) print*,'zero lnrho'
-      case('constant')
-         f(:,:,:,ilnrho)=alog(rho_left)
+      case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
+      case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
       case('isothermal'); call isothermal(f)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
@@ -243,7 +243,7 @@ module Density
         !  sound wave (should be consistent with hydro module)
         !
         if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
-        f(:,:,:,ilnrho)=ampllnrho*sin(xx)
+        f(:,:,:,ilnrho)=lnrho_const+ampllnrho*sin(kx_lnrho*xx)
 
       case('shock-tube', '13')
         !
@@ -301,6 +301,7 @@ module Density
 !  check that cs2bot,cs2top are ok
 !
       if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
+      if(lroot) print*,'e.g. for ionization runs: cs2bot,cs2top not yet set' 
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).

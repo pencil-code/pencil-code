@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.124 2003-01-29 12:04:06 ngrs Exp $
+! $Id: run.f90,v 1.125 2003-02-02 15:12:52 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.124 2003-01-29 12:04:06 ngrs Exp $")
+             "$Id: run.f90,v 1.125 2003-02-02 15:12:52 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -113,19 +113,15 @@
 !  Write data to file for IDL
 !
       call wparam2()
-
 !
 !  possible debug output (can only be done after "directory" is set)
 !  check whether mn array is correct
 !
       if(ip<=3) call debug_imn_arrays
 !
-
 !ajwm - moved call to run_hooks and renamed run_hooks_grav
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !        if (lgravr) call setup_grav()
-
-
 !
         call wglobal()
 !
@@ -261,7 +257,7 @@
           !  so the data are useless and won't be saved!
           !
           if ((it < nt) .and. (dt < dtmin)) then
-            write(0,*) 'Time step has become too short: dt = ', dt
+            write(0,*) 'run: Time step has become too short: dt = ', dt
             save_lastsnap=.false.
             exit Time_loop
           endif

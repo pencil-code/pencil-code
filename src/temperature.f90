@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.2 2002-12-16 13:54:50 brandenb Exp $
+! $Id: temperature.f90,v 1.3 2003-02-02 15:12:52 brandenb Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -79,7 +79,7 @@ ient=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.2 2002-12-16 13:54:50 brandenb Exp $")
+           "$Id: temperature.f90,v 1.3 2003-02-02 15:12:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,11 +132,11 @@ ient=ilnTT  !(need to think how to deal with this...)
 !
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss_or_lnTT(f,xx,yy,zz)
+    subroutine init_ss(f,xx,yy,zz)
 !
 !  initialise lnTT; called from start.f90
 !
-!  13-dec-2002/axel+tobi: adapted from init_ss_or_lnTT
+!  13-dec-2002/axel+tobi: adapted from init_ss
 !
       use Cdata
       use Mpicomm
@@ -152,13 +152,13 @@ ient=ilnTT  !(need to think how to deal with this...)
       intent(inout) :: f
 !
       select case(initlnTT)
-        case('nothing'); if(lroot) print*,'init_ss_or_lnTT: nothing'
+        case('nothing'); if(lroot) print*,'init_ss: nothing'
         case('zero', '0'); f(:,:,:,ilnTT) = 0.
         case default
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'No such value for init_ss_or_lnTT: ', trim(initlnTT)
+          if (lroot) print*,'No such value for init_ss: ', trim(initlnTT)
           call stop_it("")
       endselect
 
@@ -170,7 +170,7 @@ ient=ilnTT  !(need to think how to deal with this...)
 !
       if(ip==0) print*,xx,yy,zz  !(to keep compiler quiet)
 !
-    endsubroutine init_ss_or_lnTT
+    endsubroutine init_ss
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
@@ -223,7 +223,7 @@ ient=ilnTT  !(need to think how to deal with this...)
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
-    subroutine dss_or_dlnTT_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -304,7 +304,7 @@ ient=ilnTT  !(need to think how to deal with this...)
         endif
       endif
 !
-    endsubroutine dss_or_dlnTT_dt
+    endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_heatcond_constchi(f,df,rho1,glnrho,gss)
 !

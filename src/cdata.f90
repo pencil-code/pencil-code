@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.122 2003-01-24 01:04:51 nilshau Exp $
+! $Id: cdata.f90,v 1.123 2003-02-02 15:12:52 brandenb Exp $
 
 module Cdata
 
@@ -62,6 +62,10 @@ module Cdata
 
   ! other variables (needs to be consistent with reset list in register.90)
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0
+
+  !  initialization of various switches; actual settings depends on the
+  !  modules that are linked in (see Makefile.local) and can, in some cases,
+  !  be reset also via appropriate namelist entries.
 
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.89 2003-01-24 01:04:51 nilshau Exp $ 
+! $Id: param_io.f90,v 1.90 2003-02-02 15:12:52 brandenb Exp $ 
 
 module Param_IO
 
@@ -15,6 +15,7 @@ module Param_IO
   use Magnetic
   use Pscalar
   use Radiation
+  use Ionization
   use Forcing
   use Gravity
   use Interstellar
@@ -137,6 +138,8 @@ module Param_IO
       if (lmagnetic    ) read(1,NML=magnetic_init_pars     ,ERR=99, IOSTAT=ierr)
       label='radiation_init_pars'
       if (lradiation   ) read(1,NML=radiation_init_pars    ,ERR=99, IOSTAT=ierr)
+      label='ionization_init_pars'
+      if (lionization  ) read(1,NML=ionization_init_pars   ,ERR=99, IOSTAT=ierr)
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
       label='interstellar_init_pars'
@@ -197,6 +200,7 @@ module Param_IO
         if (lentropy     ) print*,'&entropy_init_pars        /'
         if (lmagnetic    ) print*,'&magnetic_init_pars       /'
         if (lradiation   ) print*,'&radiation_init_pars      /'
+        if (lionization  ) print*,'&ionization_init_pars     /'
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
         if (linterstellar) print*,'&interstellar_init_pars   /'
         if (lshear       ) print*,'&shear_init_pars          /'
@@ -244,6 +248,7 @@ module Param_IO
         if (lentropy     ) write(unit,NML=entropy_init_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_init_pars    )
         if (lradiation   ) write(unit,NML=radiation_init_pars   )
+        if (lionization  ) write(unit,NML=ionization_init_pars  )
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
         if (linterstellar) write(unit,NML=interstellar_init_pars)
         if (lshear       ) write(unit,NML=shear_init_pars       )
@@ -383,6 +388,7 @@ module Param_IO
         if (lentropy     ) print*,'&entropy_run_pars        /'
         if (lmagnetic    ) print*,'&magnetic_run_pars       /'
         if (lradiation   ) print*,'&radiation_run_pars      /'
+        if (lionization  ) print*,'&ionization_run_pars     /'
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
         if (linterstellar) print*,'&interstellar_run_pars   /'
         if (lshear       ) print*,'&shear_run_pars          /'
@@ -439,6 +445,7 @@ module Param_IO
         if (lentropy     ) write(unit,NML=entropy_run_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_run_pars    )
         if (lradiation   ) write(unit,NML=radiation_run_pars   )
+        if (lionization  ) write(unit,NML=ionization_run_pars  )
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
         if (linterstellar) write(unit,NML=interstellar_run_pars)
         if (lshear       ) write(unit,NML=shear_run_pars       )
@@ -461,7 +468,7 @@ module Param_IO
 !
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
-           lforcing,lgravz,lgravr,lshear,linterstellar
+           lforcing,lgravz,lgravr,lshear,linterstellar,lionization
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -479,6 +486,7 @@ module Param_IO
         if (lentropy     ) write(1,NML=entropy_init_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_init_pars    )
         if (lradiation   ) write(1,NML=radiation_init_pars   )
+        if (lionization  ) write(1,NML=ionization_init_pars  )
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
         if (linterstellar) write(1,NML=interstellar_init_pars)
         if (lshear       ) write(1,NML=shear_init_pars       )
@@ -506,6 +514,7 @@ module Param_IO
         if (lentropy     ) read(1,NML=entropy_init_pars     )
         if (lmagnetic    ) read(1,NML=magnetic_init_pars    )
         if (lradiation   ) read(1,NML=radiation_init_pars   )
+        if (lionization  ) read(1,NML=ionization_init_pars  )
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
         if (linterstellar) read(1,NML=interstellar_init_pars)
         if (lshear       ) read(1,NML=shear_init_pars       )
@@ -536,6 +545,7 @@ module Param_IO
         if (lentropy     ) write(1,NML=entropy_run_pars     )
         if (lmagnetic    ) write(1,NML=magnetic_run_pars    )
         if (lradiation   ) write(1,NML=radiation_run_pars   )
+        if (lionization  ) write(1,NML=ionization_run_pars  )
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
         if (linterstellar) write(1,NML=interstellar_run_pars)
         if (lshear       ) write(1,NML=shear_run_pars       )

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.146 2002-12-13 18:46:30 brandenb Exp $
+! $Id: entropy.f90,v 1.147 2003-02-02 15:12:52 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -16,7 +16,7 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
+  real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.
   !parameters for Sedov type initial condition
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
@@ -30,7 +30,7 @@ module Entropy
   ! input parameters
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
-       ss_left,ss_right,mpoly0,mpoly1,mpoly2,isothtop, &
+       ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling
 
   ! run parameters
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.146 2002-12-13 18:46:30 brandenb Exp $")
+           "$Id: entropy.f90,v 1.147 2003-02-02 15:12:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,7 +95,7 @@ module Entropy
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
-
+!
       if (lgravz) then
         if (lmultilayer) then
           !
@@ -128,7 +128,7 @@ module Entropy
 !
     endsubroutine initialize_entropy
 !***********************************************************************
-    subroutine init_ss_or_lnTT(f,xx,yy,zz)
+    subroutine init_ss(f,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
 !  07-nov-2001/wolf: coded
@@ -149,17 +149,18 @@ module Entropy
       intent(inout) :: f
 !
       select case(initss)
-        case('nothing'); if(lroot) print*,'init_ss_or_lnTT: nothing'
+        case('nothing'); if(lroot) print*,'init_ss: nothing'
         case('zero', '0'); f(:,:,:,ient) = 0.
+        case('const_ss'); f(:,:,:,ient) = ss_const
         case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,0.)
-        case('isothermal'); if(lroot) print*,'init_ss_or_lnTT: isotherm set in density'
-        case('Ferriere'); if(lroot) print*,'init_ss_or_lnTT: Ferriere set in density'
+        case('isothermal'); if(lroot) print*,'init_ss: isotherm set in density'
+        case('Ferriere'); if(lroot) print*,'init_ss: Ferriere set in density'
         case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
 
       case('sedov') 
-        if (lroot) print*,'init_ss_or_lnTT: sedov - thermal background with gaussian energy burst'
+        if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
          call blob(thermal_peak,f,ient,radius_ss,0.,0.,0.)
          f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
    
@@ -167,7 +168,7 @@ module Entropy
         !
         !  ss = - ln(rho/rho0)
         !
-        if (lroot) print*,'init_ss_or_lnTT: isobaric stratification'
+        if (lroot) print*,'init_ss: isobaric stratification'
         f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
 
       case('isentropic', '1')
@@ -285,7 +286,7 @@ module Entropy
 !
       if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
-    endsubroutine init_ss_or_lnTT
+    endsubroutine init_ss
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
@@ -338,7 +339,7 @@ module Entropy
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
-    subroutine dss_or_dlnTT_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -346,9 +347,11 @@ module Entropy
 !
 !  17-sep-01/axel: coded
 !   9-jun-02/axel: pressure gradient added to du/dt already here
+!   2-feb-03/axel: added possibility of ionization
 !
       use Cdata
       use Mpicomm
+      use Ionization
       use Sub
       use Global
       use Slices
@@ -357,7 +360,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
       real, dimension (nx) :: ugss,uglnrho, divu
-      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
+      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho
@@ -365,7 +368,7 @@ module Entropy
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE dss_or_dlnTT_dt'
+      if (headtt.or.ldebug) print*,'SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',ient)
 !
 !  entropy gradient: needed for advection and pressure gradient
@@ -376,35 +379,38 @@ module Entropy
 !  include in maximum advection speed (for timestep)
 !
       ss=f(l1:l2,m,n,ient)
-      cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
+!
+!  calculate cs2, TT1, and cp1tilde in a separate routine
+!  With IONIZATION=noionization, assume perfect gas with const coeffs
+!
+      call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+      if (headtt) print*,'dss_dt: cs2,TT1,cp1tilde=',cs2(1),TT1(1),cp1tilde(1)
+!
+!  use sound speed in Courant condition
+!
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
       if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
-      if (headtt) print*,'entropy: cs20=',cs20
+      if (headtt) print*,'entropy (but not used with ionization): cs20=',cs20
 !
 !  subtract pressure gradient term in momentum equation
 !
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+gss(:,j))
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+cp1tilde*gss(:,j))
         enddo
       endif
 !
 !  advection term
 !
       call dot_mn(uu,gss,ugss)
-
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
 !
-!  calculate 1/T (in units of cp)
+!  1/T is now calculated in thermodynamics
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !
-      TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-      if (headtt) print*,'dss_or_dlnTT_dt: TT1(1)=',TT1(1)
-
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
-
 !
 !  thermal conduction
 !
@@ -440,7 +446,7 @@ module Entropy
         endif
       endif
 !
-    endsubroutine dss_or_dlnTT_dt
+    endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_heatcond_constchi(f,df,rho1,glnrho,gss)
 !
@@ -467,6 +473,7 @@ module Entropy
       if(headtt) print*,'calc_heatcond_constchi: chi==',chi
 !
 !  Heat conduction
+!  Note: these routines require revision when ionization turned on
 !
       call del2(f,ient,del2ss)
       call del2(f,ilnrho,del2lnrho)
@@ -519,6 +526,7 @@ module Entropy
       if(headtt) print*,'calc_heatcond_simple: max(hcond)=',maxval(hcond)
 !
 !  Heat conduction
+!  Note: these routines require revision when ionization turned on
 !
       call del2(f,ient,del2ss)
       call del2(f,ilnrho,del2lnrho)

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.57 2002-12-01 11:59:28 mee Exp $
+! $Id: register.f90,v 1.58 2003-02-02 15:12:52 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -30,6 +30,7 @@ module Register
       use Entropy
       use Magnetic
       use Radiation
+      use Ionization
       use Pscalar
       use Interstellar
       use Shear
@@ -53,6 +54,7 @@ module Register
       call register_entropy
       call register_magnetic
       call register_radiation
+      call register_ionization
       call register_pscalar
       call register_gravity
       call register_interstellar
@@ -86,16 +88,13 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-!      use Mpicomm
-!      use Sub
-!      use IO
-!      use Param_io
       use Gravity
       use Hydro
       use Forcing
       use Entropy
       use Magnetic
       use Radiation
+      use Ionization
       use Pscalar
       use Interstellar
       use Shear
@@ -109,7 +108,6 @@ module Register
 ! .or. to be performed serially
       lneed_sij = .false.
       lneed_glnrho = .false.
-
 !
 !  set gamma1, cs20, and lnrho0
 !  general parameter checks (and possible adjustments)
@@ -117,7 +115,6 @@ module Register
       gamma1=gamma-1.
       cs20=cs0**2
       lnrho0=alog(rho0)
-
 !
 !  run initialization of individual modules
 !
@@ -130,6 +127,7 @@ module Register
       call initialize_entropy  ! calculate radiative conductivity, etc.
       call initialize_magnetic
       call initialize_radiation
+      call initialize_ionization
       call initialize_pscalar
       call initialize_gravity
       call initialize_interstellar

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.116 2003-01-15 13:06:04 mee Exp $
+! $Id: equ.f90,v 1.117 2003-02-02 15:12:52 brandenb Exp $
 
 module Equ
 
@@ -211,7 +211,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.116 2003-01-15 13:06:04 mee Exp $")
+           "$Id: equ.f90,v 1.117 2003-02-02 15:12:52 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -277,7 +277,7 @@ module Equ
 !
         call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
-        call dss_or_dlnTT_dt (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
         call dlncc_dt (f,df,uu,glnrho)
 !
 !  Add gravity, if present
