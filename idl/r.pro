@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.53 2003-06-24 11:25:04 dobler Exp $
+; $Id: r.pro,v 1.54 2003-12-11 09:35:45 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.53 2003-06-24 11:25:04 dobler Exp $
+;;; $Id: r.pro,v 1.54 2003-12-11 09:35:45 dobler Exp $
 
 ;
 ;  read data
@@ -51,7 +51,7 @@ end
 dummy=0.
 
 content = strmid(content,2)
-if (quiet le 2) then print,'File contains: '+content
+if (quiet le 2) then print,'File '+varfile+' contains: ', content
 
 close,1
 openr,1, datadir+'/'+varfile, /F77

@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.35 2003-09-10 16:15:19 dobler Exp $
+;;;  $Id: rall.pro,v 1.36 2003-12-11 09:35:45 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -107,7 +107,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   readf,1, ipx,ipy,ipz
   ; read data
   if ((i eq 0) and (quiet le 2)) then begin
-    print,'File contains: '+content
+    print,'File '+varfile+' contains: ', content
     print, FORMAT='(A,$)', "Reading: "
   endif
 
