@@ -1,0 +1,12 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
+! Initialisation parameters for forced helical MHD turbulence
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2004-05-29 05:44:31 brandenb Exp $',
+/
+&chiral_init_pars
+  initXX_chiral='blob', amplXX_chiral=1., radiusXX_chiral=.5, xposXX_chiral=+1.
+  initYY_chiral='blob', amplYY_chiral=.01, radiusYY_chiral=.5, xposYY_chiral=-2.
+
+/
