@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.216 2004-07-30 18:06:50 mcmillan Exp $
+! $Id: magnetic.f90,v 1.217 2004-08-13 08:25:45 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -89,7 +89,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
-  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM2=0
+  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM2=0,i_epsM_LES=0
   integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
   integer :: i_beta1m=0,i_beta1max=0
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.216 2004-07-30 18:06:50 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.217 2004-08-13 08:25:45 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -373,7 +373,17 @@ module Magnetic
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
       real, dimension (nx) :: ufres,rufres,etatotal,pp
       real :: tmp,eta_out1,B_ext21=1.
-      integer :: j
+      integer :: j,i
+
+
+      real, dimension (nx,3,3) :: aij,Jij
+      real, dimension (nx) :: Jij2
+      real, dimension (nx) :: bb12,eta_smag
+
+      real, dimension (nx,3) :: graddiva,bglnrho
+      real, dimension (nx,3) :: nubglnrho,tmp1,tmp2
+
+
 !
       intent(in)  :: f,uu,rho1,TT1,uij,bb,shock,gshock
       intent(out) :: bij,va2
@@ -548,7 +558,34 @@ module Magnetic
           fres=eta*del2A
           etatotal=eta
         endif
-      case default
+      case ('Smagorinsky')
+          if (headtt) print*,'resistive force: Smagorinsky'
+          if(ldensity) then
+            call gij(f,iaa,aij)
+            diva=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
+            do j=1,3
+              do i=1,3
+                Jij(:,i,j)=.5*(aij(:,i,j)+aij(:,j,i))
+              enddo
+              Jij(:,j,j)=Jij(:,j,j)-.333333*diva
+            enddo
+            call multm2_mn(Jij,Jij2)
+            BB12=sqrt(2*Jij2)
+            eta_smag=(C_smag*dxmax)**2.*BB12
+            call del2v_etc(f,iaa,GRADDIV=graddiva)
+            call multmv_mn(Jij,glnrho,bglnrho)
+            call multsv_mn(eta_smag,bglnrho,nubglnrho)
+            tmp1=del2A+1./3.*graddiva
+            call multsv_mn(eta_smag,tmp1,tmp2)
+            fres=2*nubglnrho+tmp2
+            !
+            ! Add ordinary resistivity if eta /= 0
+            !
+            if (eta /= 0.) then
+               fres=fres+eta*del2A
+            endif
+          endif
+        case default
         if (lroot) print*,'daa_dt: no such ires:',iresistivity
         call stop_it("")
       end select
@@ -684,6 +721,14 @@ module Magnetic
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
+        !
+        !  mean heating term
+        !
+        if (i_epsM_LES/=0) then
+          if (iresistivity .eq. 'Smagorinsky') then
+            call sum_mn_name(2*eta_smag*exp(f(l1:l2,m,n,ilnrho))*Jij2,i_epsM_LES)
+           endif
+        endif
         !
         ! Dissipated energy directly from the resistive force
         ! (only correct for periodic bc)
@@ -1100,7 +1145,7 @@ module Magnetic
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
-        i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM2=0
+        i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM2=0; i_epsM_LES=0
         i_aybym2=0; i_exaym2=0; i_exjm2=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
         i_beta1m=0; i_beta1max=0
@@ -1133,6 +1178,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
         call parse_name(iname,cname(iname),cform(iname),'epsM',i_epsM)
         call parse_name(iname,cname(iname),cform(iname),'epsM2',i_epsM2)
+        call parse_name(iname,cname(iname),cform(iname),'epsM_LES',i_epsM_LES)
         call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
@@ -1212,6 +1258,7 @@ module Magnetic
         write(3,*) 'i_jm2=',i_jm2
         write(3,*) 'i_epsM=',i_epsM
         write(3,*) 'i_epsM2=',i_epsM2
+        write(3,*) 'i_epsM_LES=',i_epsM_LES
         write(3,*) 'i_brms=',i_brms
         write(3,*) 'i_bmax=',i_bmax
         write(3,*) 'i_jrms=',i_jrms
