@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.75 2002-07-31 21:20:25 dobler Exp $
+! $Id: run.f90,v 1.76 2002-08-03 23:16:37 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.75 2002-07-31 21:20:25 dobler Exp $")
+             "$Id: run.f90,v 1.76 2002-08-03 23:16:37 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -71,7 +71,7 @@
 !
 !  print resolution
 !
-        if (lroot) print*, 'mx,my,mz=',mx,my,mz
+        if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
 !  read data
 !  snapshot data are saved in the tmp subdirectory.

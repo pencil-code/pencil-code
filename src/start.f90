@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.58 2002-07-19 10:26:01 dobler Exp $
+! $Id: start.f90,v 1.59 2002-08-03 23:16:37 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.58 2002-07-19 10:26:01 dobler Exp $")
+             "$Id: start.f90,v 1.59 2002-08-03 23:16:37 dobler Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -58,7 +58,7 @@
 !
 !  print resolution
 !
-        if (lroot) print*, 'mx,my,mz=',mx,my,mz
+        if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
 !  postprocess input parameters
 !
