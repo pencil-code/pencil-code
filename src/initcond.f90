@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.40 2003-05-25 21:06:15 brandenb Exp $ 
+! $Id: initcond.f90,v 1.41 2003-05-27 14:08:26 ngrs Exp $ 
 
 module Initcond 
  
@@ -320,7 +320,9 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx) :: prof
+      real, dimension (mx) :: profx
+      real, dimension (my) :: profy
+      real, dimension (mz) :: profz
       real :: fleft,fright,width
       character(len=*) :: dir
 !
@@ -329,8 +331,16 @@ module Initcond
       select case(dir)
 !
       case('x')
-        prof=fleft+(fright-fleft)*.5*(1.+tanh(x/width))
-        f(:,:,:,i)=f(:,:,:,i)+spread(spread(prof,2,my),3,mz)
+        profx=fleft+(fright-fleft)*.5*(1.+tanh(x/width))
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profx,2,my),3,mz)
+!
+      case('y')
+        profy=fleft+(fright-fleft)*.5*(1.+tanh(y/width))
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profy,1,mx),3,mz)
+!
+      case('z')
+        profz=fleft+(fright-fleft)*.5*(1.+tanh(z/width))
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread(profz,1,mx),2,my)
 !
       case default
         print*,'jump: no default value'

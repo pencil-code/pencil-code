@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.156 2003-05-26 14:25:10 dobler Exp $
+! $Id: entropy.f90,v 1.157 2003-05-27 14:08:26 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -81,7 +81,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.156 2003-05-26 14:25:10 dobler Exp $")
+           "$Id: entropy.f90,v 1.157 2003-05-27 14:08:26 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,6 +166,8 @@ module Entropy
         case('isothermal'); if(lroot) print*,'init_ss: isotherm set in density'
         case('Ferriere'); if(lroot) print*,'init_ss: Ferriere set in density'
         case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
+        case('yjump'); call jump(f,ient,ss_left,ss_right,widthss,'y')
+        case('zjump'); call jump(f,ient,ss_left,ss_right,widthss,'z')
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
 
