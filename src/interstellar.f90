@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.68 2003-11-20 17:10:04 mee Exp $
+! $Id: interstellar.f90,v 1.69 2003-11-21 07:15:07 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.68 2003-11-20 17:10:04 mee Exp $")
+           "$Id: interstellar.f90,v 1.69 2003-11-21 07:15:07 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -548,7 +548,7 @@ module Interstellar
     use Cdata
     use General
     use Mpicomm
-    use Ionization, only: eoscalc
+    use Ionization, only: eoscalc,ilnrho_ss
 !
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
     real, intent(in) , dimension(ncpus) :: mass_cloud_byproc
@@ -609,7 +609,7 @@ find_SN: do n=n1,n2
             lnrho=f(l,m,n,ilnrho)
             rho=exp(lnrho)
             ss=f(l,m,n,iss)
-            call eoscalc('lnrho|ss',lnrho,ss,yH=yH,lnTT=lnTT)
+            call eoscalc(ilnrho_ss,lnrho,ss,yH=yH,lnTT=lnTT)
             TT=exp(lnTT)
             if (rho >= rho_crit .and. TT <= TT_crit) then
               cum_mass=cum_mass+rho
@@ -735,11 +735,11 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-      call eoscalc('lnrho|ss',lnrho_SN,ss_SN, &
+      call eoscalc(ilnrho_ss,lnrho_SN,ss_SN, &
                               yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       TT_SN=exp(lnTT_SN)
 
-      call eoscalc('lnhro|ee',lnrho_SN,ee_SN+c_SN/rho_SN, &
+      call eoscalc(ilnrho_ee,lnrho_SN,ee_SN+c_SN/rho_SN, &
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
@@ -759,10 +759,10 @@ find_SN: do n=n1,n2
            call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
            lnrho_SN_new=alog(rho_SN_new)
 
-           call eoscalc('lnrho|ss',lnrho_SN_new,ss_SN_new, &
+           call eoscalc(ilnrho_ss,lnrho_SN_new,ss_SN_new, &
                                  yH=yH_SN_new,lnTT=lnTT_SN_new,ee=ee_SN)
            TT_SN_new=exp(lnTT_SN_new)
-           call eoscalc('lnrho|ee',lnrho_SN_new,(ee_SN*rho_SN+c_SN)/rho_SN_new, &
+           call eoscalc(ilnrho_ee,lnrho_SN_new,(ee_SN*rho_SN+c_SN)/rho_SN_new, &
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 

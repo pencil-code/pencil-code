@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.249 2003-11-20 09:36:15 ajohan Exp $
+! $Id: entropy.f90,v 1.250 2003-11-21 07:15:07 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.249 2003-11-20 09:36:15 ajohan Exp $")
+           "$Id: entropy.f90,v 1.250 2003-11-21 07:15:07 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -670,7 +670,7 @@ module Entropy
            (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
            
           if (lionization) then
-            call eoscalc('lnrho|pp',lnrho,pp,ss=ss,lnTT=lnTT,yH=yH) 
+            call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,lnTT=lnTT,yH=yH) 
             f(l1:l2,m,n,iss)=ss
             !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
             if (n == n1 .and. m == m1) cs2bot=0.

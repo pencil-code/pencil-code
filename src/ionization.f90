@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.145 2003-11-19 17:40:08 theine Exp $
+! $Id: ionization.f90,v 1.146 2003-11-21 07:15:07 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -42,6 +42,8 @@ module Ionization
   public :: bc_ss_stemp_x,bc_ss_stemp_y,bc_ss_stemp_z
 ! Initial conditions
   public :: isothermal_entropy
+! integers specifying which independent variables to use in eoscalc
+  integer, parameter, public :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
 
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
@@ -108,7 +110,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.145 2003-11-19 17:40:08 theine Exp $")
+           "$Id: ionization.f90,v 1.146 2003-11-21 07:15:07 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -342,7 +344,7 @@ module Ionization
 
       do l=1,nx 
         temp=min(temp,(1-2*epsilon(yHacc))*ee(l)/ee_ion)
-        call rtsafe('lnrho|ee',lnrho(l),ee(l),yHmin,yHmax*min(ee(l)/ee_ion,1.0),temp)
+        call rtsafe(ilnrho_ee,lnrho(l),ee(l),yHmin,yHmax*min(ee(l)/ee_ion,1.0),temp)
         yH(l)=temp
       enddo
 
@@ -366,7 +368,7 @@ module Ionization
       temp=0.5
 
       do l=1,nx 
-        call rtsafe('lnrho|pp',lnrho(l),pp(l),yHmin,yHmax,temp)
+        call rtsafe(ilnrho_pp,lnrho(l),pp(l),yHmin,yHmax,temp)
         yH(l)=temp
       enddo
 
@@ -536,7 +538,7 @@ module Ionization
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(vars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -547,21 +549,22 @@ module Ionization
 !                   subroutine pressure_gradient
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
-      character(len=*) :: vars
+      integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_,fractions
 !
-      select case (vars)
+      select case (ivars)
 
-      case ('lnrho|ss')
+      case (ilnrho_ss)
         lnrho_=var1
         ss_=var1
         yH_=0.5*yHmax
-        call rtsafe('lnrho|ss',lnrho_,ss_,yHmin,yHmax,yH_)
+        call rtsafe(ilnrho_ss,lnrho_,ss_,yHmin,yHmax,yH_)
         fractions=(1+yH_+xHe)
         lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_)-lnrho_H) &
                           +yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
@@ -571,11 +574,11 @@ module Ionization
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
         pp_=fractions*rho_*TT_*ss_ion
 
-      case ('lnrho|ee')
+      case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         yH_=0.5*yHmax
-        call rtsafe('lnrho|ee',lnrho_,ee_,yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
+        call rtsafe(ilnrho_ee,lnrho_,ee_,yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
         fractions=(1+yH_+xHe)
         TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
         lnTT_=log(TT_)
@@ -585,11 +588,11 @@ module Ionization
                     -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
         pp_=fractions*rho_*TT_*ss_ion
 
-      case ('lnrho|pp')
+      case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
         yH_=0.5*yHmax
-        call rtsafe('lnrho|pp',lnrho_,pp_,yHmin,yHmax,yH_)
+        call rtsafe(ilnrho_pp,lnrho_,pp_,yHmin,yHmax,yH_)
         fractions=(1+yH_+xHe)
         rho_=exp(lnrho_)
         TT_=pp_/(fractions*ss_ion*rho_)
@@ -598,6 +601,9 @@ module Ionization
                    -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
                    -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
         ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+
+      case default
+        call stop_it("eoscalc_point: I don't get what the independent variables are.")
 
       end select
 
@@ -715,15 +721,15 @@ module Ionization
 !
     endsubroutine rtsafe_pencil
 !***********************************************************************
-    subroutine rtsafe(variables,variable1,variable2,yHlb,yHub,yH,rterror,rtdebug)
+    subroutine rtsafe(ivars,var1,var2,yHlb,yHub,yH,rterror,rtdebug)
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
 !
       use Cdata
 !
-      character(len=*), intent(in)   :: variables
-      real, intent(in)               :: variable1,variable2
+      integer, intent(in)            :: ivars
+      real, intent(in)               :: var1,var2
       real, intent(in)               :: yHlb,yHub
       real, intent(inout)            :: yH
       logical, intent(out), optional :: rterror
@@ -743,7 +749,7 @@ module Ionization
       dyH=1
       dyHold=dyH
 !
-      call saha(variables,variable1,variable2,yH,f,df)
+      call saha(ivars,var1,var2,yH,f,df)
 !
       do i=1,maxit
         if (present(rtdebug)) then
@@ -762,7 +768,7 @@ module Ionization
           if (temp==yH) return
         endif
         if (abs(dyH)<yHacc*yH) return
-        call saha(variables,variable1,variable2,yH,f,df)
+        call saha(ivars,var1,var2,yH,f,df)
         if (f<0) then
           yHh=yH
         else
@@ -774,7 +780,7 @@ module Ionization
 !
     endsubroutine rtsafe
 !***********************************************************************
-    subroutine saha(variables,variable1,variable2,yH,f,df)
+    subroutine saha(ivars,var1,var2,yH,f,df)
 !
 !   we want to find the root of f
 !
@@ -782,8 +788,8 @@ module Ionization
 !
       use Mpicomm, only: stop_it
 !
-      character(len=*), intent(in) :: variables
-      real, intent(in)             :: variable1,variable2,yH
+      integer, intent(in)          :: ivars
+      real, intent(in)             :: var1,var2,yH
       real, intent(out)            :: f,df
 !
       real :: lnrho,ss,ee,pp
@@ -791,20 +797,20 @@ module Ionization
 !
       fractions1=1/(1+yH+xHe)
 !
-      select case (variables)
-      case ('lnrho|ss')
-        lnrho=variable1
-        ss=variable2
+      select case (ivars)
+      case (ilnrho_ss)
+        lnrho=var1
+        ss=var2
         lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                          +yH*(2*log(yH)-lnrho_e-lnrho_p) &
                          +xHe_term)*fractions1+lnrho-2.5)
-      case ('lnrho|ee')
-        lnrho=variable1
-        ee=variable2
+      case (ilnrho_ee)
+        lnrho=var1
+        ee=var2
         lnTT_=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
-      case ('lnrho|pp')
-        lnrho=variable1
-        pp=variable2
+      case (ilnrho_pp)
+        lnrho=var1
+        pp=var2
         lnTT_=log(pp/ee_ion*fractions1)-lnrho
       case default
         call stop_it("saha: I don't get what the independent variables are.")
