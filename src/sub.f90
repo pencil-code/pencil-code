@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.153 2004-01-05 11:54:52 dobler Exp $ 
+! $Id: sub.f90,v 1.154 2004-01-24 17:21:01 dobler Exp $ 
 
 module Sub 
 
@@ -2107,8 +2107,10 @@ module Sub
 !***********************************************************************
     function noform(cname)
 !
+!  Given a string of the form `name(format)',
 !  returns the name without format, fills empty space
 !  of correct length (depending on format) with dashes
+!  for output as legend.dat and first line of time_series.dat
 !
 !  22-jun-02/axel: coded 
 !
@@ -2469,12 +2471,15 @@ module Sub
 !  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
 !  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
 !
+        use General, only: safe_character_assign
+!
       character (len=*) :: cname,cform
       character (len=*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
-      intent(in)  :: iname,cname,ctest
+      intent(in)    :: iname,cname,ctest
       intent(inout) :: itest,cform
+!      intent(out)   :: cform
 !
 !  check whether format is given
 !
@@ -2488,9 +2493,20 @@ module Sub
         cform=cname(iform1+1:iform2-1)
         length=iform1-1
       else
-        cform='1p,e10.2,0p'  !!(the nag-f95 compiler requires a comma after 1p)
+        cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
+                         !! 1p [does it?])
         length=iform0-1
       endif
+!
+!  fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d)
+!
+      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E')) then
+        call safe_character_assign(cform, '1p'//trim(cform))
+      endif
+      if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
+        call safe_character_assign(cform, '0p'//trim(cform))
+      endif
+
 !
 !  if the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.

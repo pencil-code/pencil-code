@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.62 2004-01-08 09:20:29 nilshau Exp $
+! $Id: prints.f90,v 1.63 2004-01-24 17:21:01 dobler Exp $
 
 module Print
 
@@ -71,7 +71,7 @@ module Print
       use Magnetic
       use Pscalar
       use Mpicomm
-      use General, only: safe_character_assign
+      use General, only: safe_character_append
 !
       logical,save :: first=.true.
       character (len=320) :: fform,legend,line
@@ -105,13 +105,15 @@ module Print
         fform='('//cform(1)
         legend=noform(cname(1))
         do iname=2,nname
-          call safe_character_assign(fform,  trim(fform)//comma//cform(iname))
-          call safe_character_assign(legend, trim(legend)//noform(cname(iname)))
+          call safe_character_append(fform,  comma//cform(iname))
+          call safe_character_append(legend, noform(cname(iname)))
         enddo
-        call safe_character_assign(fform, trim(fform)//')')
-!
-!! print*,'prints: form = ',trim(fform)
-!! print*,'prints: args = ',fname(1:nname)
+        call safe_character_append(fform, ')')
+
+        if(ldebug) then
+          write(0,*) 'PRINTS.prints: format = ', trim(fform)
+          write(0,*) 'PRINTS.prints: args   = ', fname(1:nname)
+        endif
 !
 !  This treats all numbers as floating point numbers.
 !  Only those numbers are given (and computed) that are

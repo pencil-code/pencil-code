@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.227 2004-01-20 17:06:26 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.228 2004-01-24 17:21:06 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-01-20 17:06:26 $ $,~ $ $Revision: 1.227 $ $}
+%\date{$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-01-20 17:06:26 $ $,~ $ $Revision: 1.227 $ $}\\
+  \emph{$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1548,23 +1548,25 @@ defined in the file \file{print.in} and can be changed without touching
 the code (even while the code is running).
 A simple example of \file{print.in} may look like this:
 \begin{verbatim}
-  t(f10.3)
-  urms(1pe13.4)
-  rhom(0pf10.5)
+  t(F10.3)
+  urms(E13.4)
+  rhom(F10.5)
   oum
 \end{verbatim}
 which means that the output table will contain time \var{t} in the first
-column formatted as \verb|(f10.3)|, followed by the mean squared velocity,
+column formatted as \verb|(F10.3)|, followed by the mean squared velocity,
 \var{urms} (i.e.~$\left<\uv^2\right>^{1/2}$) in the second column with format
-\verb|(1pe13.4)|, the average density \var{rhom} ($\left<\varrho\right>$,
-which allows to monitor mass conservation) formatted \verb|(f10.5)| and
+\verb|(E13.4)|, the average density \var{rhom} ($\left<\varrho\right>$,
+which allows to monitor mass conservation) formatted \verb|(F10.5)| and
 the kinetic helicity \var{oum}
 (that is $\left<\vekt{\omega}\cdot\uv\right>$) in the last column with the
-default format \verb|(1pe10.2)|.\footnote{
-  Note that immediately after a format that uses the modifier \code{1p},
-  one should switch back to \code{0p}, since otherwise the following numbers
-  printed with \code{f} formats will be one order of magnitude off.
-  This is the sad heritage of some more obscure Fortran I/O features.
+default format \verb|(E10.2)|.\footnote{
+  The format specifiers are like in Fortran, apart from the fact that the
+  \texttt{E} format will use standard scientific format, corresponding to
+  the Fortran \texttt{1pE} syntax.
+  Seasoned Fortran IV programmers may use formats like \texttt{(0pE13.4)}
+  to enjoy nostalgic feelings, or \texttt{(1pF10.5)} if they depend on
+  getting wrong numbers.
 }
 The corresponding diagnostic output will look like
 \begin{verbatim}
@@ -3616,7 +3618,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-01-20 17:06:26 $ $,~ $ $Revision: 1.227 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-01-24 17:21:06 $ $,~ $ $Revision: 1.228 $ $}
 
 \section{Timings}
 
@@ -6353,7 +6355,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.227 2004-01-20 17:06:26 dobler Exp $ $}
+$ $Id: manual.tex,v 1.228 2004-01-24 17:21:06 dobler Exp $ $}
 
 
 \end{document}
@@ -6419,4 +6421,5 @@ $ $Id: manual.tex,v 1.227 2004-01-20 17:06:26 dobler Exp $ $}
 % LocalWords:  visc walltime ekintot ethtot sedov Abramowitz Harri GNG tavg tst
 % LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth mkdatadir mkdotin pacx
 % LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
-% LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff
+% LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
+% LocalWords:  hyperviscous geodynamo DM coords
