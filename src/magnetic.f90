@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.148 2003-11-08 22:16:46 brandenb Exp $
+! $Id: magnetic.f90,v 1.149 2003-11-13 12:39:28 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -104,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.148 2003-11-08 22:16:46 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.149 2003-11-13 12:39:28 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -279,9 +279,9 @@ module Magnetic
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
       call curl(f,iaa,bb)
+      call dot2_mn(bb,b2)
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
-        call dot2_mn(bb,b2)
         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
         if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
@@ -344,6 +344,10 @@ module Magnetic
             if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
+          b2_yz(m-m1+1,n-n1+1)=b2(ix-l1+1)
+          if (m.eq.iy)  b2_xz(:,n-n1+1)=b2
+          if (n.eq.iz)  b2_xy(:,m-m1+1)=b2
+          if (n.eq.iz2) b2_xy2(:,m-m1+1)=b2
           if(bthresh_per_brms/=0) call calc_bthresh
           call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
         endif
