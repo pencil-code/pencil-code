@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.113 2003-06-17 18:47:07 dobler Exp $ 
+! $Id: param_io.f90,v 1.114 2003-06-18 17:53:16 dobler Exp $ 
 
 module Param_IO
 
@@ -8,6 +8,7 @@ module Param_IO
 !  Using this module is also a compact way of referring to all physics
 !  modules at once.
 !
+  use Cdata
   use Sub
   use General
   use Hydro

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.188 2003-06-18 13:56:30 ajohan Exp $
+### $Id: Makefile,v 1.189 2003-06-18 17:53:16 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -242,7 +242,7 @@ fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
-param_io.o:  param_io.f90 timestep.o $(TIMEAVG).o $(physics)
+param_io.o:  param_io.f90 cdata.o $(MPICOMM).o sub.o timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o prints.o
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
