@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.21 2003-07-29 14:25:12 dobler Exp $
+! $Id: io_mpio.f90,v 1.22 2003-07-30 10:07:21 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.21 2003-07-29 14:25:12 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.22 2003-07-30 10:07:21 dobler Exp $")
 !
 !  consistency check
 !
@@ -345,8 +345,8 @@ contains
       if (ip<9.and.lroot.and.imn==1) &
            print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
-      if (headt .and. (imn==1)) print*, &
-           'OUTPUT_PENCIL: Writing to ', trim(file), &
+      if (headt .and. (imn==1)) write(*,'(A)') &
+           ' OUTPUT_PENCIL: Writing to ' // trim(file) // &
            ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(file, a, ndim, &
