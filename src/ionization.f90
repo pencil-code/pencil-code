@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.148 2003-11-23 13:26:41 theine Exp $
+! $Id: ionization.f90,v 1.149 2003-11-23 15:31:47 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -62,16 +62,18 @@ module Ionization
   integer :: l
 
   ! namelist parameters
+  !real, parameter :: yHmin=tiny(yHmin), yHmax=1-epsilon(yHmax)
+  real, parameter :: yHmin=epsilon(yHmin), yHmax=1-epsilon(yHmax)
   real :: xHe=0.1
+  real :: yHmetals=0
   real :: yHacc=1e-5
-  real :: yHmin=2*tiny(yHacc), yHmax=1-2*epsilon(yHacc)
   logical :: radcalc_test=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yHacc,yHmin,yHmax,radcalc_test
+  namelist /ionization_init_pars/ xHe,yHmetals,yHacc,radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yHacc,yHmin,yHmax,radcalc_test
+  namelist /ionization_run_pars/ xHe,yHmetals,yHacc,radcalc_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -110,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.148 2003-11-23 13:26:41 theine Exp $")
+           "$Id: ionization.f90,v 1.149 2003-11-23 15:31:47 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -660,56 +662,45 @@ module Ionization
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
 !
-      use Cdata
-!
       real, dimension(mx), intent(in) :: lnrho,ss
       real, dimension(mx), intent(inout) :: yH
 !
-      real, dimension(mx) :: dyHold,dyH,yHl,yHh,f,df,temp
+      real, dimension(mx) :: dyHold,dyH,yHlow,yHhigh,f,df,yHcheck
       real, dimension(mx) :: lnTT_,dlnTT_,TT1_,fractions1
       integer             :: i
       integer, parameter  :: maxit=1000
 !
-      yHl=yHmin
-      yHh=yHmax
-      dyH=yHmax-yHmin
+      yHlow=yHmin
+      yHhigh=yHmax
+      dyH=yHhigh-yHlow
       dyHold=dyH
 !
-      temp=0
+      yHcheck=0
 !
-      lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yHl)*(log(1-yHl)-lnrho_H) &
-                         +yHl*(2*log(yHl)-lnrho_e-lnrho_p) &
-                         +xHe_term)/(1+yHl+xHe)+lnrho-2.5)
-      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1-yHl)-2*log(yHl)
-      where (f<0)
-        yH=yHl
-        temp=yH
-      elsewhere
-        fractions1=1/(1+yH+xHe)
-        lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
-                           +yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                           +xHe_term)*fractions1+lnrho-2.5)
-        TT1_=exp(-lnTT_)
-        f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
-        dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
-        df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
-      endwhere
+      fractions1=1/(1+yH+xHe)
+      lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                         +xHe_term)*fractions1+lnrho-2.5)
+      TT1_=exp(-lnTT_)
+      f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
+      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
+      df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
       do i=1,maxit
-        where (temp/=yH)
-          where (((yH-yHl)*df-f)*((yH-yHh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
+        where (yHcheck/=yH)
+          where (((yH-yHlow)*df-f)*((yH-yHhigh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
             dyHold=dyH
-            dyH=0.5*(yHl-yHh)
-            temp=yHh
-            yH=yHh+dyH
+            dyH=0.5*(yHhigh-yHlow)
+            yHcheck=yHhigh
+            yH=yHhigh-dyH
           elsewhere
             dyHold=dyH
             dyH=f/df
-            temp=yH
+            yHcheck=yH
             yH=yH-dyH
           endwhere
         endwhere
-        where (abs(dyH)>yHacc*yH.and.temp/=yH)
+        where (abs(dyH)>yHacc*yH.and.yHcheck/=yH)
           fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                              +yH*(2*log(yH)-lnrho_e-lnrho_p) &
@@ -719,14 +710,14 @@ module Ionization
           dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
           df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
           where (f<0)
-            yHh=yH
+            yHhigh=yH
           elsewhere
-            yHl=yH
+            yHlow=yH
           endwhere
         elsewhere
-          temp=yH
+          yHcheck=yH
         endwhere
-        if (all(temp==yH)) return
+        if (all(yHcheck==yH)) return
       enddo
 !
     endsubroutine rtsafe_pencil
@@ -883,7 +874,7 @@ module Ionization
 !  calculate opacity
 !
          lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                      +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
+                      +TT_ion_/TT+log(yH+yHmetals)+log(1-yH)+lnchi0
 
 !
       enddo
