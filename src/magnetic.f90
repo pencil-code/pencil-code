@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.89 2002-10-06 14:52:55 brandenb Exp $
+! $Id: magnetic.f90,v 1.90 2002-10-08 18:19:46 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.89 2002-10-06 14:52:55 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.90 2002-10-08 18:19:46 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,7 +124,6 @@ module Magnetic
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
-      case('fluxrings-kb'); call fluxrings(f,iaa,xx,yy,zz,PROFILE='KB')
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
@@ -701,16 +700,6 @@ module Magnetic
       case('tanh')
         vv(:,:,:,3) = - fring * 0.5*(1+tanh(tmp/width)) &
                               * 0.5/width/cosh(zz/width)**2
-
-      case('KB')                ! a profile similar to the one used by
-                                ! Kerr & Bradenburg
-        where (tmp < width)
-          tmp2 = 1./(1-tmp**2)
-          tmp2 = (exp(-1.)-exp(-tmp2)*tmp2**(-1.5))
-        elsewhere
-          tmp2 = 0.
-        endwhere
-        vv(:,:,:,3) = -fring*tmp2
 
       case default
         call stop_it('No such fluxtube profile')
