@@ -95,6 +95,9 @@ module Mpicomm
             f(:,:,n2+i,j) = f(:,:,n2-i,j)
           enddo
         case (-1)               ! antisymmetry
+          f(:,:,n1,j) = 0.      ! ensure boundary values are zero (indep.
+                                ! of initial conditions)
+          f(:,:,n2,j) = 0.
           do i=1,nghost
             f(:,:,n1-i,j) = -f(:,:,n1+i,j)
             f(:,:,n2+i,j) = -f(:,:,n2-i,j)
