@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.23 2003-12-06 13:52:21 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.24 2003-12-08 18:36:18 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 3*dustlayers
+! MVAR CONTRIBUTION 3*ndustspec
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -22,30 +22,32 @@ module Dustvelocity
   implicit none
 
   ! init parameters
-  real, dimension(dustlayers) :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real, dimension(dustlayers) :: beta=0.
-  real, dimension(dustlayers) :: taud=0.
-  real :: taud1=0.
-  logical, dimension(dustlayers) :: lfeedback_gas=.true.,lgravzd=.true.
-  character (len=labellen), dimension(dustlayers) :: inituud='zero'
+  real, dimension(ndustspec) :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
+  real, dimension(ndustspec) :: taud=0.,beta=0.,nud=0.
+  real :: taud1,nud_all=0.,beta_all=0.,taud_all=0.,ampluud_all=0.
+  logical, dimension(ndustspec) :: lfeedback_gas=.true.,lgravzd=.true.
+  logical :: lfeedback_gas_all=.false.,lgravzd_all=.false.
+  character (len=labellen), dimension(ndustspec) :: inituud='zero'
+  character (len=labellen) :: inituud_all=''
 
   namelist /dustvelocity_init_pars/ &
-       ampluud, inituud
+       ampluud, ampluud_all, inituud, inituud_all
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, beta, taud, lfeedback_gas, lgravzd
+       nud, nud_all, beta, beta_all, taud, taud_all, &
+       lfeedback_gas, lfeedback_gas_all, lgravzd, lgravzd_all
 
   ! other variables (needs to be consistent with reset list below)
-  integer, dimension(dustlayers) :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
-  integer, dimension(dustlayers) :: i_udxpt=0,i_udypt=0,i_udzpt=0
-  integer, dimension(dustlayers) :: i_udrms=0,i_udmax=0,i_odrms=0,i_odmax=0
-  integer, dimension(dustlayers) :: i_rdudmax=0
-  integer, dimension(dustlayers) :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0
-  integer, dimension(dustlayers) :: i_udmy=0,i_udmz=0
-  integer, dimension(dustlayers) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
-  integer, dimension(dustlayers) :: i_divud2m=0,i_epsKd=0
-  integer, dimension(dustlayers) :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0
+  integer, dimension(ndustspec) :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
+  integer, dimension(ndustspec) :: i_udxpt=0,i_udypt=0,i_udzpt=0
+  integer, dimension(ndustspec) :: i_udrms=0,i_udmax=0,i_odrms=0,i_odmax=0
+  integer, dimension(ndustspec) :: i_rdudmax=0
+  integer, dimension(ndustspec) :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0
+  integer, dimension(ndustspec) :: i_udmy=0,i_udmz=0
+  integer, dimension(ndustspec) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
+  integer, dimension(ndustspec) :: i_divud2m=0,i_epsKd=0
+  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0
 
   contains
 
@@ -71,7 +73,7 @@ module Dustvelocity
 !
       ldustvelocity = .true.
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
         if (idust .eq. 1) then
           iuud(1) = nvar+1
         else
@@ -93,7 +95,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.23 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.24 2003-12-08 18:36:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -102,9 +104,9 @@ module Dustvelocity
 !
 !  Writing files for use with IDL
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
         call chn(idust,sidust)
-        if (dustlayers .eq. 1) sidust = ''
+        if (ndustspec .eq. 1) sidust = ''
         if (lroot) then
           if (maux == 0) then
             if (nvar < mvar) write(4,*) ',uud'//trim(sidust)//' $'
@@ -125,7 +127,51 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-!  do nothing
+   integer :: idust
+!
+!  If *_all set, make all empty *(:) = *_all
+!
+      if (nud_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (nud(idust) .eq. 0.) nud(idust)=nud_all
+        enddo
+      endif
+!      
+      if (inituud_all .ne. '') then
+        do idust=1,ndustspec
+          if (inituud(idust) .eq. '') inituud(idust) = inituud_all
+        enddo
+      endif
+!
+      if (ampluud_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (ampluud(idust) .eq. 0.) ampluud(idust) = ampluud_all
+        enddo
+      endif
+!
+      if (beta_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (beta(idust) .eq. 0.) beta(idust) = beta_all
+        enddo
+      endif
+!
+      if (taud_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (taud(idust) .eq. 0.) taud(idust) = taud_all
+        enddo
+      endif
+!
+      if (.not. lfeedback_gas_all) then
+        do idust=1,ndustspec
+          lfeedback_gas(idust) = .false.
+        enddo
+      endif
+!
+      if (.not. lgravzd_all) then
+        do idust=1,ndustspec
+          lgravzd(idust) = .false.
+        enddo
+      endif
 !
     endsubroutine initialize_dustvelocity
 !***********************************************************************
@@ -148,7 +194,7 @@ module Dustvelocity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
 !  inituud corresponds to different initializations of uud (called from start).
 !
@@ -212,7 +258,7 @@ module Dustvelocity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
 !  identify module and boundary conditions
 !
@@ -284,7 +330,7 @@ module Dustvelocity
 !  the two formulations (ie with either constant beta or constant taud)
 !
         call del2v(f,iuud(idust),del2ud)
-        maxdiffus=amax1(maxdiffus,nud)
+        maxdiffus=amax1(maxdiffus,nud(idust))
 !
 !  if taud is set then assume that beta=rhod/taud,
 !  otherwise use beta
@@ -292,12 +338,14 @@ module Dustvelocity
         if (taud(idust) /= 0.) then
           taud1=1./taud(idust)
           df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
-              df(l1:l2,m,n,iudx(idust):iudz(idust))+nud*del2ud-taud1*(uud-uu)
+              df(l1:l2,m,n,iudx(idust):iudz(idust)) + &
+              nud(idust)*del2ud-taud1*(uud-uu)
         elseif (beta(idust) /= 0.) then
           rhod1=exp(-f(l1:l2,m,n,ilnrhod(idust)))
           do j=1,3; fac(:,j)=beta(idust)*rhod1; enddo
           df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
-              df(l1:l2,m,n,iudx(idust):iudz(idust))+nud*del2ud-fac*(uud-uu)
+              df(l1:l2,m,n,iudx(idust):iudz(idust)) + &
+              nud(idust)*del2ud-fac*(uud-uu)
         else
           call stop_it( &
               "duud_dt: Both tau_d and beta specified. Specify only one!")
@@ -421,7 +469,7 @@ module Dustvelocity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
         if (headtt) print*,'duud_dt_grav: lgravzd=', lgravzd
 !
@@ -493,7 +541,7 @@ module Dustvelocity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers 
+      do idust=1,ndustspec 
 !
 !  print identifier
 !
@@ -539,13 +587,13 @@ module Dustvelocity
       if (present(lwrite)) lwr=lwrite
       
       if (lwr) then
-        write(3,*) 'dustlayers=',dustlayers
+        write(3,*) 'ndustspec=',ndustspec
         write(3,*) 'nname=',nname
       endif
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
 !
 !  reset everything in case of reset
@@ -565,7 +613,7 @@ module Dustvelocity
         if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
           call chn(idust,sidust)
-          if (dustlayers .eq. 1) sidust=''
+          if (ndustspec .eq. 1) sidust=''
           call parse_name(iname,cname(iname),cform(iname), &
               'ud2m'//trim(sidust),i_ud2m(idust))
           call parse_name(iname,cname(iname),cform(iname), &
@@ -606,7 +654,7 @@ module Dustvelocity
 !
         if (lwr) then
           call chn(idust,sidust)
-          if (dustlayers .eq. 1) sidust = ''
+          if (ndustspec .eq. 1) sidust = ''
           write(3,*) 'i_ud2m'//trim(sidust)//'=',i_ud2m(idust)
           write(3,*) 'i_udm2'//trim(sidust)//'=',i_udm2(idust)
           write(3,*) 'i_od2m'//trim(sidust)//'=',i_od2m(idust)

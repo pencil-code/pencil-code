@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.16 2003-12-06 13:52:21 ajohan Exp $
+! $Id: dustdensity.f90,v 1.17 2003-12-08 18:36:18 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -20,22 +20,28 @@ module Dustdensity
 
   implicit none
 
-  real, dimension(dustlayers) :: rhod0=1.,lnrhod0
-  real, dimension(dustlayers) :: ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.
-  real, dimension(dustlayers) :: lnrhod_const=0.,rhod_const=1.
-  real, dimension(dustlayers) :: dust_to_gas_ratio=0.
-  real, dimension(dustlayers) :: kx_lnrhod,ky_lnrhod,kz_lnrhod
-  character (len=labellen), dimension(dustlayers) :: initlnrhod='zero'
+  real, dimension(ndustspec) :: ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.
+  real, dimension(ndustspec) :: lnrhod_const=0.,rhod_const=1.
+  real, dimension(ndustspec) :: dust_to_gas_ratio=0.
+  real, dimension(ndustspec) :: kx_lnrhod,ky_lnrhod,kz_lnrhod
+  real :: rhod0=1.,lnrhod0,ampllnrhod_all,dust_to_gas_ratio_all
+  real :: kx_lnrhod_all,ky_lnrhod_all,kz_lnrhod_all,amplrhod_all
+  real :: rhod_const_all,lnrhod_const_all,cdiffrhod_all
+  character (len=labellen), dimension(ndustspec) :: initlnrhod='zero'
+  character (len=labellen) :: initlnrhod_all=''
 
   namelist /dustdensity_init_pars/ &
-       rhod0,ampllnrhod,initlnrhod,dust_to_gas_ratio, &
-       kx_lnrhod,ky_lnrhod,kz_lnrhod,amplrhod,rhod_const
+       rhod0, ampllnrhod, ampllnrhod_all, initlnrhod, initlnrhod_all, &
+       dust_to_gas_ratio, dust_to_gas_ratio_all, &
+       kx_lnrhod, kx_lnrhod_all, ky_lnrhod, ky_lnrhod_all, &
+       kz_lnrhod, kz_lnrhod_all, amplrhod, amplrhod_all, &
+       rhod_const, rhod_const_all, lnrhod_const, lnrhod_const_all
 
   namelist /dustdensity_run_pars/ &
-       rhod0,cdiffrhod
+       rhod0, cdiffrhod, cdiffrhod_all
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer, dimension(dustlayers) :: i_rhodm=0
+  integer, dimension(ndustspec) :: i_rhodm=0
 
   contains
 
@@ -60,7 +66,7 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
         if (idust .eq. 1) then
           ilnrhod(1) = nvar+1         ! indix to access lam
         else
@@ -78,7 +84,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.16 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.17 2003-12-08 18:36:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,9 +93,9 @@ module Dustdensity
 !
 !  Writing files for use with IDL
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
         call chn(idust,sidust)
-        if (dustlayers .eq. 1) sidust = ''
+        if (ndustspec .eq. 1) sidust = ''
         if (lroot) then
           if (maux == 0) then
             if (nvar < mvar) write(4,*) ',lnrhod'//trim(sidust)//' $'
@@ -109,8 +115,70 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded 
+      integer :: idust
 !
-!  do nothing
+!  If *_all set, make all empty *(:) = *_all
+!
+      if (ampllnrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (ampllnrhod(idust) .eq. 0.) ampllnrhod(idust)=ampllnrhod_all
+        enddo
+      endif
+!           
+      if (initlnrhod_all .ne. '') then
+        do idust=1,ndustspec
+          if (initlnrhod(idust) .eq. '') initlnrhod(idust)=initlnrhod_all
+        enddo
+      endif
+!           
+      if (dust_to_gas_ratio_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (dust_to_gas_ratio(idust) .eq. 0.) &
+              dust_to_gas_ratio(idust)=dust_to_gas_ratio_all
+        enddo
+      endif
+!           
+      if (kx_lnrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (kx_lnrhod(idust) .eq. 0.) kx_lnrhod(idust)=kx_lnrhod_all
+        enddo
+      endif
+!           
+      if (ky_lnrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (ky_lnrhod(idust) .eq. 0.) ky_lnrhod(idust)=ky_lnrhod_all
+        enddo
+      endif
+!           
+      if (kz_lnrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (kz_lnrhod(idust) .eq. 0.) kz_lnrhod(idust)=kz_lnrhod_all
+        enddo
+      endif
+!           
+      if (amplrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (amplrhod(idust) .eq. 0.) amplrhod(idust)=amplrhod_all
+        enddo
+      endif
+!           
+      if (rhod_const_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (rhod_const(idust) .eq. 0.) rhod_const(idust)=rhod_const_all
+        enddo
+      endif
+!           
+      if (lnrhod_const_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (lnrhod_const(idust) .eq. 0.) lnrhod_const(idust)=lnrhod_const_all
+        enddo
+      endif
+!           
+      if (cdiffrhod_all .ne. 0.) then
+        do idust=1,ndustspec
+          if (cdiffrhod(idust) .eq. 0.) cdiffrhod(idust)=cdiffrhod_all
+        enddo
+      endif
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -134,11 +202,11 @@ module Dustdensity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
 !  different initializations of lnrhod (called from start).
 !
-        lnrhod0(idust)=alog(rhod0(idust))
+        lnrhod0=alog(rhod0)
 
         select case(initlnrhod(idust))
  
@@ -205,7 +273,7 @@ module Dustdensity
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
 !
 !  identify module and boundary conditions
 !
@@ -233,10 +301,10 @@ module Dustdensity
           maxdiffus=amax1(maxdiffus,diffrhod)
         endif
 !
-          if (ldiagnos) then
-            rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
-            if (i_rhodm(idust)/=0) call sum_mn_name(rhod,i_rhodm(idust))
-          endif
+        if (ldiagnos) then
+          rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
+          if (i_rhodm(idust)/=0) call sum_mn_name(rhod,i_rhodm(idust))
+        endif
 !
 !  End loop over dust layers
 !
@@ -265,15 +333,15 @@ module Dustdensity
       if (present(lwrite)) lwr=lwrite
 
       if (lwr) then
-        write(3,*) 'dustlayers=',dustlayers
+        write(3,*) 'ndustspec=',ndustspec
         write(3,*) 'nname=',nname
       endif
 !
 !  Loop over dust layers
 !
-      do idust=1,dustlayers
+      do idust=1,ndustspec
         call chn(idust,sidust)
-        if (dustlayers .eq. 1) sidust=''
+        if (ndustspec .eq. 1) sidust=''
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
