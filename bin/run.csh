@@ -4,9 +4,10 @@
 #
 ##PBS -S /bin/csh -W group_list=UK06005 -q UK06005
 ##PBS -l ncpus=32,mem=16gb,walltime=200:00:00
-#PBS -l ncpus=4
+#PBS -l ncpus=1
 #PBS -q p-long
-#PBS -l nodes=nq0+nq4+nq2+nq3
+##PBS -l nodes=nq0+nq4+nq2+nq3
+#PBS -l nodes=nq0
 
 #setenv PGHPF_HOST -file=$PBS_NODEFILE
 if ($?PBS_NODEFILE) then
@@ -29,7 +30,7 @@ rm -f STOP RELOAD fort.20
 date
 #
 echo "$mpirun $mpirunops $npops src/run.x"
-echo $mpirun $mpirunops $npops src/run.x >>run.log
+echo $mpirun $mpirunops $npops src/run.x >>run_command.log
 time $mpirun $mpirunops $npops src/run.x
 #
 date

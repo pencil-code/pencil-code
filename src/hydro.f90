@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.23 2002-06-10 13:07:14 brandenb Exp $
+! $Id: hydro.f90,v 1.24 2002-06-10 15:40:05 mattias Exp $
 
 module Hydro
 
@@ -8,17 +8,20 @@ module Hydro
 
   implicit none
 
+  ! init parameters
   integer :: init=-1,inituu=0
-  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: ampluu=0., widthuu=.1, urand=0.
   real :: uu_left=1.,uu_right=1.
-
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right
 
+  ! run parameters
+  real :: Omega=0.,theta=0.
+  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   namelist /hydro_run_pars/ &
        nu,ivisc, &
+       Omega,theta, &
        tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
@@ -60,8 +63,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.23 $", &
-           "$Date: 2002-06-10 13:07:14 $")
+           "$Revision: 1.24 $", &
+           "$Date: 2002-06-10 15:40:05 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,6 +247,7 @@ module Hydro
 !  pressure gradient force added in density and entropy modules.
 !
 !   7-jun-02/axel: incoporated from subroutine pde
+!  10-jun-02/axel+mattias: added Coriolis force
 !
       use Cdata
       use Sub
@@ -252,6 +256,7 @@ module Hydro
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,ugu,oo
       real, dimension (nx) :: u2,divu,o2,ou
+      real :: c2,s2
       integer :: i,j
 !  
 !  abbreviations
@@ -279,6 +284,26 @@ module Hydro
 !
       call multmv_mn(uij,uu,ugu)
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
+!
+!  Coriolis force, -2*Omega x u
+!  Omega=(-sin_theta, 0, cos_theta)
+!  theta corresponds to latitude
+!
+      if (Omega/=0.) then
+        if (theta==0) then
+          if (headtt) print*,'add Coriolis force; Omega=',Omega
+          c2=2*Omega
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)
+        else
+          if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
+          c2=2*Omega*cos(theta*pi/180.)
+          s2=2*Omega*sin(theta*pi/180.)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)+s2*uu(:,3)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
+        endif
+      endif
 !
 !  maximum squared avection speed
 !

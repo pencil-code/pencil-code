@@ -24,6 +24,7 @@ if i_ssm ne 0 then ssm=reform(a(i_ssm-1,*))
 if i_eth ne 0 then eth=reform(a(i_eth-1,*))
 if i_ekin ne 0 then ekin=reform(a(i_ekin-1,*))
 if i_rhom ne 0 then rhom=reform(a(i_rhom-1,*))
+if i_bmz ne 0 then bmz=reform(a(i_bmz-1,*))
 ;
 ;!p.multi=[0,1,2]
 if i_um2 ne 0 then plot,t,u2m,yst=0

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.41 2002-06-09 12:16:19 brandenb Exp $
+! $Id: magnetic.f90,v 1.42 2002-06-10 15:40:05 mattias Exp $
 
 module Magnetic
 
@@ -73,8 +73,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.41 $", &
-           "$Date: 2002-06-09 12:16:19 $")
+           "$Revision: 1.42 $", &
+           "$Date: 2002-06-10 15:40:05 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -391,6 +391,7 @@ module Magnetic
       write(3,*) 'nnamez=',nnamez
       write(3,*) 'i_bxmz=',i_bxmz
       write(3,*) 'i_bymz=',i_bymz
+      write(3,*) 'i_bmz=',i_bmz
       close(3)
 !
     endsubroutine rprint_magnetic
