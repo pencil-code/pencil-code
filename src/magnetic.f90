@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.210 2004-07-06 09:42:57 ajohan Exp $
+! $Id: magnetic.f90,v 1.211 2004-07-06 10:33:58 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -137,7 +137,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.210 2004-07-06 09:42:57 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.211 2004-07-06 10:33:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1361,7 +1361,7 @@ module Magnetic
 !
 !  18-aug-02/axel: coded
 !
-      use Cdata
+      use Cdata, only: lroot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
@@ -1393,7 +1393,7 @@ module Magnetic
 !
 !  28-june-04/anders: coded
 !
-      use Cdata
+      use Cdata, only: lroot
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
