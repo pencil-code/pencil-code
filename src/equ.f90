@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.88 2002-07-15 14:04:36 nilshau Exp $
+! $Id: equ.f90,v 1.89 2002-07-16 11:24:11 nilshau Exp $
 
 module Equ
 
@@ -215,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.88 2002-07-15 14:04:36 nilshau Exp $")
+           "$Id: equ.f90,v 1.89 2002-07-16 11:24:11 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -296,7 +296,7 @@ module Equ
 !
 !  Evolution of radiative energy
 !
-        if (lradiation) call de_dt(f,df,rho1,divu,uu,uij,TT1)
+        if (lradiation) call de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
 !
 !  Add shear if precent
 !

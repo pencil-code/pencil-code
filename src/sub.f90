@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.76 2002-07-12 17:40:59 brandenb Exp $ 
+! $Id: sub.f90,v 1.77 2002-07-16 11:24:11 nilshau Exp $ 
 
 module Sub 
 
@@ -302,6 +302,30 @@ module Sub
       b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
     endsubroutine dot2_mn
+!**********************************************************************
+    subroutine div(f,k,g)
+!
+!  calculate divergence of vector, get scalar
+!  13-dec-01/nils: coded
+!  16-jul-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: g, tmp
+      integer :: k,k1
+!
+      k1=k-1
+!
+      call der(f,k1+1,tmp,1)
+      g=tmp
+      call der(f,k1+2,tmp,2)
+      g=g+tmp
+      call der(f,k1+3,tmp,3)
+      g=g+tmp
+!
+    end subroutine div
 !***********************************************************************
     subroutine trace_mn(a,b)
 !
@@ -319,6 +343,47 @@ module Sub
       b=a(:,1,1)+a(:,2,2)+a(:,3,3)
 !
     endsubroutine trace_mn
+!***********************************************************************
+    subroutine multvv_mat_mn(a,b,c)
+!
+!  vector multiplied with vector, gives matrix
+!   21-dec-01/nils: coded
+!   16-jul-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx,3,3) :: c
+      integer :: i,j
+!
+      do i=1,3
+         do j=1,3
+            c(:,i,j)=a(:,j)*b(:,i)
+         end do
+      end do
+!
+    end subroutine multvv_mat_mn
+!***********************************************************************
+    subroutine multmm_sc_mn(a,b,c)
+!
+!  matrix multiplied with matrix, gives scalar
+!   21-dec-01/nils: coded
+!   16-jul-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: a,b
+      real, dimension (nx) :: c
+      integer :: i,j
+!
+      c=0
+      do i=1,3
+         do j=1,3
+            c=c+a(:,i,j)*b(:,i,j)
+         end do
+      end do
+!
+    end subroutine multmm_sc_mn
 !***********************************************************************
     subroutine multmv_mn(a,b,c)
 !

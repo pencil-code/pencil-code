@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.44 2002-07-06 20:29:17 brandenb Exp $
+! $Id: register.f90,v 1.45 2002-07-16 11:24:11 nilshau Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -27,6 +27,7 @@ module Register
       use Forcing
       use Entropy
       use Magnetic
+      use Radiation
       use Pscalar
       use Shear
 !
@@ -42,6 +43,7 @@ module Register
       call register_forcing
       call register_ent
       call register_aa
+      call register_rad
       call register_lncc
       call register_grav
       call register_shear
@@ -63,6 +65,7 @@ module Register
       use Hydro
       use Entropy
       use Magnetic
+      use Radiation
       use Pscalar
 !
       integer :: iname,inamez,ixy
@@ -114,6 +117,7 @@ module Register
       call rprint_density(lreset)
       call rprint_entropy(lreset)
       call rprint_magnetic(lreset)
+      call rprint_radiation(lreset)
       call rprint_pscalar(lreset)
       close(3)
 !
