@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.58 2004-05-12 17:25:13 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.59 2004-05-17 11:04:01 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.58 2004-05-12 17:25:13 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.59 2004-05-17 11:04:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -698,9 +698,10 @@ module Dustvelocity
 !
       use Cdata
       use Mpicomm, only: stop_it
+      use Sub, only: dot2
       
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: rho,rhod,csrho,cs2
+      real, dimension (nx) :: rho,rhod,csrho,cs2,deltaud2
       integer :: k
 !
       select case(draglaw)
@@ -710,7 +711,8 @@ module Dustvelocity
       case ('epstein_cst_b')
         tausd1(:,k) = betad(k)/rhod
       case ('epstein_var')
-        csrho       = sqrt(cs2)*rho
+        call dot2(f(l1:l2,m,n,iudx(k):iudz(k))-f(l1:l2,m,n,iux:iuz),deltaud2)
+        csrho       = sqrt(cs2+deltaud2)*rho
         tausd1(:,k) = csrho*rhodsad1(k)
       case default
         call stop_it("get_stoppingtime: No valid drag law specified.")
