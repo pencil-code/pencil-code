@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.56 2004-04-04 10:36:31 theine Exp $
+! $Id: radiation_ray.f90,v 1.57 2004-04-04 13:39:57 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -111,7 +111,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.56 2004-04-04 10:36:31 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.57 2004-04-04 13:39:57 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -242,12 +242,11 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: m,n,ilnrho,x,y,z
+      use Cdata, only: ilnrho,x,y,z
       use Ionization, only: Hminus_opacity
       use Mpicomm, only: stop_it
 
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx) :: lnrho
       logical, save :: lfirst=.true.
 
       select case (opacity_type)
@@ -256,12 +255,7 @@ module Radiation
         call Hminus_opacity(f,lnchi)
 
       case ('kappa_cst')
-        do n=1,mz
-        do m=1,my
-          lnrho=f(:,m,n,ilnrho)
-          lnchi(:,m,n)=log(kappa_cst)+lnrho
-        enddo
-        enddo
+        lnchi(:,:,:)=log(kappa_cst)+f(:,:,:,ilnrho)
 
       case ('blob')
         if (lfirst) then
