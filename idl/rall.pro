@@ -141,7 +141,13 @@ print,'t = ',t
 
 ; reset datadir to more reasonable default
 datadir=datatopdir+'/proc0'
-
+;
+;  reset boundary values for (full) physical domain (not sub-domain)
+;
+l1=3 & l2=mx-4
+m1=3 & m2=my-4
+n1=3 & n2=mz-4
+;
 read_all = 1                    ; marker for r.pro
 
 end

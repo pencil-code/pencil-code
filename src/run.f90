@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.25 2002-05-19 18:07:00 brandenb Exp $
+! $Id: run.f90,v 1.26 2002-05-19 22:45:59 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -33,16 +33,17 @@
 !       call siginit
 !       call signonbrutal
 !
+!  initialize MPI and register physics modules
+!  (must be done before lroot can be used, for example)
+!
+        call initialize
+!
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.25 $", &
-             "$Date: 2002-05-19 18:07:00 $")
-!
-!  initialize MPI and register physics modules
-!
-        call initialize
+             "$Revision: 1.26 $", &
+             "$Date: 2002-05-19 22:45:59 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -176,10 +177,11 @@
 !  print wall clock time and time per step and processor
 !  for diagnostic purposes
 !
-        if(lroot) &
-             Wall_clock_time=(time2-time1)/real(count_rate)
-             print*,'Wall clock time=',Wall_clock_time,' (+/- ', 1./count_rate,')'
-             if (it>1) print*,'time/step/pt [microsec]=',Wall_clock_time/(it-1)/mw/1e-6
+        if(lroot) then
+          Wall_clock_time=(time2-time1)/real(count_rate)
+          print*,'Wall clock time=',Wall_clock_time,' (+/- ', 1./count_rate,')'
+          if (it>1) print*,'time/step/pt [microsec]=',Wall_clock_time/(it-1)/nw/ncpus/1e-6
+        endif
         call mpifinalize
 !
       endprogram run

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.8 2002-05-13 19:00:50 dobler Exp $
+! $Id: prints.f90,v 1.9 2002-05-19 22:45:59 brandenb Exp $
 
 module Print
 
@@ -39,7 +39,11 @@ module Print
 !  this needs to be made more sophisticated of course...
 !
       if(lroot) then
-        write(6,trim(fform)) it-1,t_diag,dt,fname(1:nname)
+        open(3,file='check')
+        write(3,trim(fform))  it-1,t_diag,dt,fname(1:nname)
+        write(6,trim(fform))  it-1,t_diag,dt,fname(1:nname)
+        write(20,trim(fform)) it-1,t_diag,dt,fname(1:nname)
+        close(3)
       endif
       first = .false.
 !

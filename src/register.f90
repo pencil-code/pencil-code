@@ -62,7 +62,7 @@ module Register
       enddo
       close(1)
 99    nname=iname-1
-      print*,'nname=',nname
+      if (lroot) print*,'nname=',nname
 !
 !  check which variables are set
 !
