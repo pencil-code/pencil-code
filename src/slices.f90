@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.21 2003-10-09 23:30:53 brandenb Exp $
+! $Id: slices.f90,v 1.22 2003-10-24 19:46:56 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -13,14 +13,17 @@ module Slices
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
+  real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
   real, dimension (nx,nz) :: TT_xz,yH_xz,ecr_xz
+  real, dimension (nx,nz) :: Qrad_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: TT_yz,yH_yz,ecr_yz
+  real, dimension (ny,nz) :: Qrad_yz
 
   contains
 
@@ -187,6 +190,19 @@ module Slices
         call wslice(path//'yH.xz',yH_xz,y(iy),nx,nz)
         call wslice(path//'yH.xy',yH_xy,z(iz),nx,ny)
         call wslice(path//'yH.Xy',yH_xy2,z(iz2),nx,ny)
+      endif
+!
+!  Heating rate
+!
+      if (lradiation_ray) then
+        Qrad_yz=f(ix,m1:m2,n1:n2,iQrad)
+        Qrad_xz=f(l1:l2,iy,n1:n2,iQrad)
+        Qrad_xy=f(l1:l2,m1:m2,iz,iQrad)
+        Qrad_xy2=f(l1:l2,m1:m2,iz2,iQrad)
+        call wslice(path//'Qrad.yz',Qrad_yz,x(ix),ny,nz)
+        call wslice(path//'Qrad.xz',Qrad_xz,y(iy),nx,nz)
+        call wslice(path//'Qrad.xy',Qrad_xy,z(iz),nx,ny)
+        call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2),nx,ny)
       endif
 !
 !  Magnetic field
