@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.70 2003-08-06 19:31:51 mee Exp $ 
+! $Id: initcond.f90,v 1.71 2003-08-12 08:21:11 ajohan Exp $ 
 
 module Initcond 
  
@@ -654,7 +654,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,ztop,cs20,hh0
+      real :: gamma1,ztop,cs20,hh0,lnrho_max
       integer :: i,j,k
 !
 !  calculate sigma
@@ -747,6 +747,9 @@ module Initcond
         endif
       endif
 !
+      lnrho_max = maxval(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) - lnrho_max
+!      
     endsubroutine planet
 !***********************************************************************
     subroutine crazy(ampl,f,i)
