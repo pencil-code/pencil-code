@@ -1,8 +1,8 @@
-$Id: README,v 1.1.1.1 2001-11-01 15:07:55 dobler Exp $
+$Id: README,v 1.2 2001-11-26 10:12:05 dobler Exp $
 
 Modular pencil code.
 
-Not yet reaonably implemented. Basic idea is as follows:
+Not yet reasonably implemented. Basic idea is as follows:
 
 You decide to use, or not use, modules by including them or the `no-'
 versions in the makefile. E.g. to use MPI communication, you put 
@@ -19,7 +19,13 @@ List of alternatives (not all of them implemented yet):
   io-multi io-mono io-hdf5         # write to per-process file, use one
                                    # monolithic file, or use hdf5
 
-Some modules (like `magnetic' or `entropy' require that you correctly
-adapt mvar (and other parameters?) in cparam.dat. If you forget to do so,
-you will get a warning -- or possibly a compilation error.
 
+The physics modules (those involving new variables like `magnetic' or
+`entropy'; in principle, there should also be a hydro module) *register*
+themselves via calls to their their `register_xxx' from the module
+`register'. They also provide their own initialisation (`init_ent',
+etc.) for start.f90.
+
+The physics modules require that you correctly adapt mvar (and other
+parameters?) in cparam.dat. If you forget to do so, you will get a warning
+-- or possibly a compilation error.

@@ -128,7 +128,9 @@ module Entropy
       thdiff=nu*del2ss
 !
       TT1=gamma1/cs2
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
+!      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
+! hopefully correct:
+      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-ugss+TT1*2.*nu*sij2+thdiff
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !
