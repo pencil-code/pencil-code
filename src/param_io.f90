@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.139 2003-10-21 17:47:10 mee Exp $ 
+! $Id: param_io.f90,v 1.140 2003-10-22 15:29:59 dobler Exp $ 
 
 module Param_IO
 
@@ -132,8 +132,6 @@ module Param_IO
 !
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
-!
-      use Mpicomm, only: stop_it
 !
       integer :: ierr
       logical, optional :: print,file

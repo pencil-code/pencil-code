@@ -72,9 +72,8 @@ module Mpicomm
 !  but in this dummy routine this is done in finalise_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: dummy
 !
-      dummy=f(1,1,1,1)  !(prevent compiler warning "unused variable ...")
+      if (ip==0) print*,f       !(keep compiler quiet)
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
@@ -86,15 +85,14 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==0) print*,'FINALIZE_ISENDRCV_BDRY: f=',f
+      if (ip==0) print*,f       !(keep compiler quiet)
     endsubroutine finalise_isendrcv_bdry
 !***********************************************************************
     subroutine initiate_shearing(f)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: dummy
 !    
-      dummy=f(1,1,1,1)
+      if (ip==0) print*,f       !(keep compiler quiet)
     endsubroutine initiate_shearing
 !***********************************************************************
     subroutine finalise_shearing(f)
@@ -436,7 +434,9 @@ subroutine transform_cosq(a_re,direction)
   integer,optional :: direction
   integer :: l,m,n
 
-  if (present(direction).and. (direction.eq.-1)) lforward=.false.
+  if (present(direction)) then
+    if (direction.eq.-1) lforward=.false.
+  endif
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
   call cosqi(nx,wsavex)
@@ -507,7 +507,9 @@ subroutine transform_fftpack(a_re,a_im,direction)
   integer,optional :: direction
   integer :: l,m,n
 
-  if (present(direction).and. (direction.eq.-1)) lforward=.false.
+  if (present(direction)) then
+    if (direction.eq.-1) lforward=.false.
+  endif
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
   call cffti(nx,wsavex)

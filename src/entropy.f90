@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.219 2003-10-22 13:39:48 mcmillan Exp $
+! $Id: entropy.f90,v 1.220 2003-10-22 15:29:59 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.219 2003-10-22 13:39:48 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.220 2003-10-22 15:29:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -898,7 +898,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnrho,gss,glnT,glnP,gshock
+      real, dimension (nx,3) :: glnrho,gss,gshock
       real, dimension (nx) :: rho1,shock
       real, dimension (nx) :: thdiff,del2ss,g2
 !
@@ -935,7 +935,8 @@ module Entropy
 !  NEED TO FIX THIS
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi_shock*maxval(shock))
 !
-      if(ip==0) print*,rho1 !(to keep compiler quiet)
+      if(ip==0) print*,rho1,glnrho !(keep compiler quiet)
+!
     endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.124 2003-10-21 21:04:09 mee Exp $
+! $Id: ionization.f90,v 1.125 2003-10-22 15:29:59 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -120,7 +120,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.124 2003-10-21 21:04:09 mee Exp $")
+           "$Id: ionization.f90,v 1.125 2003-10-22 15:29:59 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -295,10 +295,8 @@ module Ionization
 !***********************************************************************
     subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
 !
-!  DOCUMENT ME
-!
-      use Mpicomm, only: stop_it
-      
+!  DOCUMENT ME!
+!      
       real,intent(in) :: lnrho,ee
       real, intent(out) :: ss,TT,yH
 
@@ -309,15 +307,13 @@ module Ionization
       ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
                  -yH*(2*log(yH)-lnrho_e-lnrho_p) &
                  -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
-       
+
     end subroutine perturb_energy_point
 !***********************************************************************
     subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
-      use Mpicomm, only: stop_it
-      
       real, dimension(nx) ,intent(in) :: lnrho,ee
       real, dimension(nx) ,intent(out) :: ss,TT,yH
       real :: temp
@@ -339,10 +335,8 @@ module Ionization
 !***********************************************************************
     subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
-      use Mpicomm, only: stop_it
-      
       real,intent(in) :: lnrho,pp
       real, intent(out) :: ss,TT,yH
 
@@ -358,11 +352,8 @@ module Ionization
 !***********************************************************************
     subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
-
-      use Mpicomm, only: stop_it
-      
       real, dimension(nx) ,intent(in) :: lnrho,pp
       real, dimension(nx) ,intent(out) :: ss,TT,yH
       real :: temp
@@ -383,11 +374,8 @@ module Ionization
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
-
-      use Mpicomm, only: stop_it
-      
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
 
@@ -433,7 +421,7 @@ module Ionization
 !***********************************************************************
     subroutine ionput_pencil(f,yH,TT)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -442,12 +430,15 @@ module Ionization
       real, dimension(nx), intent(out) :: yH,TT
 !
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION")
+      if (ip==0) yH=0           !(keep compiler quiet)
+      if (ip==0) TT=0           !(keep compiler quiet)
+      if (ip==0) print*,f       !(keep compiler quiet)      
 !
     endsubroutine ionput_pencil
 !***********************************************************************
     subroutine ionput_point(lnrho,ss,yH,TT)
 !
-!  DOCUMENT ME
+!  DOCUMENT ME!
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -456,6 +447,10 @@ module Ionization
       real, intent(out) :: yH,TT
 !
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION")
+      if (ip==0) yH=0           !(keep compiler quiet)
+      if (ip==0) TT=0           !(keep compiler quiet)
+      if (ip==0) print*,lnrho   !(keep compiler quiet)
+      if (ip==0) print*,ss      !(keep compiler quiet)
 !
     endsubroutine ionput_point
 !***********************************************************************
@@ -509,6 +504,10 @@ module Ionization
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
       if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
+      if (ip==0) print*,ss      !(keep compiler quiet)
+!
+! wd: Do we really need ss as arguments if we never use it?
+!
     endsubroutine thermodynamics_pencil
 !***********************************************************************
     subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
@@ -560,6 +559,10 @@ module Ionization
 !
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
       if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
+!
+      if (ip==0) print*,ss      !(keep compiler quiet)
+!
+! wd: Do we really need ss as arguments if we never use it?
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
@@ -615,12 +618,14 @@ module Ionization
       logical, intent(out), optional :: rterror
       logical, intent(in), optional  :: rtdebug
 !
-      real               :: dyHold,dyH,yHl,yHh,fl,fh,f,df,temp
+      real               :: dyHold,dyH,yHl,yHh,f,df,temp
       integer            :: i
       integer, parameter :: maxit=1000
 !
       if (present(rterror)) rterror=.false.
-      if (present(rtdebug).and.rtdebug) print*,'rtsafe: i,yH=',0,yH
+      if (present(rtdebug)) then
+        if(rtdebug) print*,'rtsafe: i,yH=',0,yH
+      endif
 !
       yHl=yHlb
       yHh=yHub
@@ -630,7 +635,9 @@ module Ionization
       call saha(variables,variable1,variable2,yH,f,df)
 !
       do i=1,maxit
-        if (present(rtdebug).and.rtdebug) print*,'rtsafe: i,yH=',i,yH
+        if (present(rtdebug)) then
+          if (rtdebug) print*,'rtsafe: i,yH=',i,yH
+        endif
         if (((yH-yHl)*df-f)*((yH-yHh)*df-f)>0.or.abs(2*f)>abs(dyHold*df)) then
           dyHold=dyH
           dyH=0.5*(yHl-yHh)
@@ -796,6 +803,9 @@ module Ionization
       real, intent(out) :: cs2
 !
       call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
+!
+      if (ip==0) print*, TT     !(keep compiler quiet)
+      if (ip==0) cs2=0          !(keep compiler quiet)
 !
     end subroutine get_soundspeed
 !***********************************************************************
