@@ -17,7 +17,7 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
-  integer, dimension (nx*ny) :: mm,nn
+  integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: iproc,root=0
   integer :: ipy,ipz
@@ -43,8 +43,6 @@ module Mpicomm
 !
       lmpicomm = .false.
       iproc=root
-
-print*,'###### root, iproc = ', root, iproc, ' ############'
 !
 !  produce index-array the the sequence of points to be worked through first
 !
@@ -55,17 +53,11 @@ print*,'###### root, iproc = ', root, iproc, ' ############'
           nn(imn)=n
           imn=imn+1
         enddo
-print*,'###### CPU NO', n, iproc, ' ############'
       enddo
 !
 !  produce a directory name for the output
 !
-print*,'###### CPU NO', iproc, ' ############'
-
       call chn(iproc,chproc)
-
-print*,'###### CPU NO', iproc, chproc, ' ############'
-
       directory='tmp/proc'//chproc
 !
     endsubroutine mpicomm_init
