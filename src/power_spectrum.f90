@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.16 2002-10-25 13:04:25 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.16 2002-10-25 13:04:25 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.16 2002-10-25 13:04:25 nilshau Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -249,49 +249,49 @@ module  power_spectrum
   endif
   !
   endsubroutine powerhel
-!***********************************************************************
-    subroutine powersnap(a)
-!
-!  Write a snapshot of power spectrum 
-!
-!  30-sep-97/axel: coded
-!  07-oct-02/nils: adapted from wsnap
-!  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
-!
-      use Io
-!
-      real, dimension (mx,my,mz,mvar) :: a
-      character (len=135) :: file
-      character (len=4) :: ch
-      logical lspec
-      integer, save :: ifirst,nspec
-      real, save :: tspec
-!
-!  Output snapshot in 'tpower' time intervals
-!  file keeps the information about time of last snapshot
-!
-      file=trim(datadir)//'/tspec.dat'
-!
-!  at first call, need to initialize tspec
-!  tspec calculated in out1, but only available to root processor
-!
-      if (ifirst==0) then
-         call out1 (trim(file),tspec,nspec,dspec,t)
-         ifirst=1
-      endif
-!
-!  Check whether we want to output power snapshot. If so, then
-!  update ghost zones for var.dat (cheap, since done infrequently)
-!
-      call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
-      if (lspec) then
-         if (vel_spec) call power(a,'u')
-         if (mag_spec) call power(a,'b')
-         if (vec_spec) call power(a,'a')
-         if (ab_spec)  call powerhel(a,'mag')
-         if (ou_spec)  call powerhel(a,'kin')
-      endif
-!
-    endsubroutine powersnap
-!***********************************************************************
+!!$!***********************************************************************
+!!$    subroutine powersnap(a)
+!!$!
+!!$!  Write a snapshot of power spectrum 
+!!$!
+!!$!  30-sep-97/axel: coded
+!!$!  07-oct-02/nils: adapted from wsnap
+!!$!  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
+!!$!
+!!$      use Io
+!!$!
+!!$      real, dimension (mx,my,mz,mvar) :: a
+!!$      character (len=135) :: file
+!!$      character (len=4) :: ch
+!!$      logical lspec
+!!$      integer, save :: ifirst,nspec
+!!$      real, save :: tspec
+!!$!
+!!$!  Output snapshot in 'tpower' time intervals
+!!$!  file keeps the information about time of last snapshot
+!!$!
+!!$      file=trim(datadir)//'/tspec.dat'
+!!$!
+!!$!  at first call, need to initialize tspec
+!!$!  tspec calculated in out1, but only available to root processor
+!!$!
+!!$      if (ifirst==0) then
+!!$         call out1 (trim(file),tspec,nspec,dspec,t)
+!!$         ifirst=1
+!!$      endif
+!!$!
+!!$!  Check whether we want to output power snapshot. If so, then
+!!$!  update ghost zones for var.dat (cheap, since done infrequently)
+!!$!
+!!$      call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
+!!$      if (lspec) then
+!!$         if (vel_spec) call power(a,'u')
+!!$         if (mag_spec) call power(a,'b')
+!!$         if (vec_spec) call power(a,'a')
+!!$         if (ab_spec)  call powerhel(a,'mag')
+!!$         if (ou_spec)  call powerhel(a,'kin')
+!!$      endif
+!!$!
+!!$    endsubroutine powersnap
+!!$!***********************************************************************
 end module power_spectrum

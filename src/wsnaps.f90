@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.11 2002-10-09 14:05:31 mee Exp $
+! $Id: wsnaps.f90,v 1.12 2002-10-25 13:04:25 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -70,6 +70,55 @@ contains
 !
     endsubroutine wsnap
 !***********************************************************************
-
+   subroutine powersnap(a)
+!
+!  Write a snapshot of power spectrum 
+!
+!  30-sep-97/axel: coded
+!  07-oct-02/nils: adapted from wsnap
+!  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
+!
+      use Cdata
+      use Mpicomm
+      use Boundcond
+      use Sub
+      use Io
+      use Power_spectrum
+!
+      real, dimension (mx,my,mz,mvar) :: a
+      character (len=135) :: file
+      character (len=4) :: ch
+      logical lspec
+      integer, save :: ifirst,nspec
+      real, save :: tspec
+!
+!  Output snapshot in 'tpower' time intervals
+!  file keeps the information about time of last snapshot
+!
+      file=trim(datadir)//'/tspec.dat'
+!
+!  at first call, need to initialize tspec
+!  tspec calculated in out1, but only available to root processor
+!
+      if (ifirst==0) then
+         call out1 (trim(file),tspec,nspec,dspec,t)
+         ifirst=1
+      endif
+!
+!  Check whether we want to output power snapshot. If so, then
+!  update ghost zones for var.dat (cheap, since done infrequently)
+!
+      call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
+      if (lspec) then
+         call update_ghosts(a)
+         if (vel_spec) call power(a,'u')
+         if (mag_spec) call power(a,'b')
+         if (vec_spec) call power(a,'a')
+         if (ab_spec)  call powerhel(a,'mag')
+         if (ou_spec)  call powerhel(a,'kin')
+      endif
+!
+    endsubroutine powersnap
+!***********************************************************************
 endmodule Wsnaps
 
