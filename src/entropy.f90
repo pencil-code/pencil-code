@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.223 2003-10-24 11:06:57 dobler Exp $
+! $Id: entropy.f90,v 1.224 2003-10-24 11:25:11 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -100,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.223 2003-10-24 11:06:57 dobler Exp $")
+           "$Id: entropy.f90,v 1.224 2003-10-24 11:25:11 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -109,13 +109,15 @@ module Entropy
 !
 !  Writing files for use with IDL
 !
-      if (maux == 0) then
-         if (nvar < mvar) write(4,*) ',ss $'
-         if (nvar == mvar) write(4,*) ',ss'
-      else
-        write(4,*) ',ss $'
-     endif
-      write(15,*) 'ss = fltarr(mx,my,mz)*one'
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',ss $'
+          if (nvar == mvar) write(4,*) ',ss'
+        else
+          write(4,*) ',ss $'
+        endif
+        write(15,*) 'ss = fltarr(mx,my,mz)*one'
+      endif
 !
     endsubroutine register_entropy
 !***********************************************************************

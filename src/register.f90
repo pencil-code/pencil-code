@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.104 2003-10-24 11:06:57 dobler Exp $
+! $Id: register.f90,v 1.105 2003-10-24 11:25:11 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -53,11 +53,13 @@ module Register
 !
 !  Writing files for use with IDL
 !
-      open(15,file=trim(datadir)//'/def_var.pro')
-      open(4,file=trim(datadir)//'/variables.pro')
-      write(4,*) 'close,1'
-      write(4,*) "openr,1, datadir+'/'+varfile, /F77"
-      write(4,*) 'readu,1 $'
+      if (lroot) then
+        open(15,file=trim(datadir)//'/def_var.pro')
+        open(4,file=trim(datadir)//'/variables.pro')
+        write(4,*) 'close,1'
+        write(4,*) "openr,1, datadir+'/'+varfile, /F77"
+        write(4,*) 'readu,1 $'
+      endif
 !
       call register_io
 !
@@ -80,11 +82,13 @@ module Register
 !
 !  Writing files for use with IDL
 !
-      do aux_count=1,maux
-         write(4,'(a10)') aux_var(aux_count)
-      enddo
-      close(4)
-      close(15)
+      if (lroot) then
+        do aux_count=1,maux
+          write(4,'(a10)') aux_var(aux_count)
+        enddo
+        close(4)
+        close(15)
+      endif
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.10 2003-10-20 16:27:20 dobler Exp $
+! $Id: cosmicray.f90,v 1.11 2003-10-24 11:25:11 dobler Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -74,7 +74,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.10 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.11 2003-10-24 11:25:11 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -83,13 +83,15 @@ module CosmicRay
 !
 !  Writing files for use with IDL
 !
-      if (maux == 0) then
-         if (nvar < mvar) write(4,*) ',ecr $'
-         if (nvar == mvar) write(4,*) ',ecr'
-      else
-         write(4,*) ',ecr $'
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',ecr $'
+          if (nvar == mvar) write(4,*) ',ecr'
+        else
+          write(4,*) ',ecr $'
+        endif
+        write(15,*) 'ecr = fltarr(mx,my,mz)*one'
       endif
-      write(5,*) 'ecr = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_cosmicray
 !***********************************************************************

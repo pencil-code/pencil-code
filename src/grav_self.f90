@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.14 2003-10-24 11:06:57 dobler Exp $
+! $Id: grav_self.f90,v 1.15 2003-10-24 11:25:11 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -83,7 +83,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.14 2003-10-24 11:06:57 dobler Exp $")
+           "$Id: grav_self.f90,v 1.15 2003-10-24 11:25:11 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,13 +91,15 @@ module Gravity
 !
 !  Writing files for use with IDL
 !
-      if (maux == 0) then
-         if (nvar < mvar) write(4,*) ',gg $'
-         if (nvar == mvar) write(4,*) ',gg'
-      else
-         write(4,*) ',gg $'
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',gg $'
+          if (nvar == mvar) write(4,*) ',gg'
+        else
+          write(4,*) ',gg $'
+        endif
+        write(15,*) 'gg = fltarr(mx,my,mz,3)*one'
       endif
-      write(15,*) 'gg = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_gravity
 !***********************************************************************

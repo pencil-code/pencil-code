@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.141 2003-10-24 11:06:57 dobler Exp $
+! $Id: magnetic.f90,v 1.142 2003-10-24 11:25:11 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -101,7 +101,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.141 2003-10-24 11:06:57 dobler Exp $")
+           "$Id: magnetic.f90,v 1.142 2003-10-24 11:25:11 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,13 +110,15 @@ module Magnetic
 !
 !  Writing files for use with IDL
 !
-      if (maux == 0) then
-         if (nvar < mvar) write(4,*) ',aa $'
-         if (nvar == mvar) write(4,*) ',aa'
-      else
-         write(4,*) ',aa $'
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',aa $'
+          if (nvar == mvar) write(4,*) ',aa'
+        else
+          write(4,*) ',aa $'
+        endif
+        write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
       endif
-      write(15,*) 'aa = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_magnetic
 !***********************************************************************

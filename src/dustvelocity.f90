@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.19 2003-10-24 11:06:57 dobler Exp $
+! $Id: dustvelocity.f90,v 1.20 2003-10-24 11:25:11 dobler Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -78,7 +78,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.19 2003-10-24 11:06:57 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.20 2003-10-24 11:25:11 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,13 +87,15 @@ module Dustvelocity
 !
 !  Writing files for use with IDL
 !
-      if (maux == 0) then
-         if (nvar < mvar) write(4,*) ',uud $'
-         if (nvar == mvar) write(4,*) ',uud'
-      else
-         write(4,*) ',uud $'
+      if (lroot) then
+        if (maux == 0) then
+          if (nvar < mvar) write(4,*) ',uud $'
+          if (nvar == mvar) write(4,*) ',uud'
+        else
+          write(4,*) ',uud $'
+        endif
+        write(15,*) 'uud = fltarr(mx,my,mz,3)*one'
       endif
-      write(15,*) 'uud = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
