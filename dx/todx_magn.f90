@@ -30,7 +30,7 @@
       real, dimension(mx,my,mz,3) :: bbb
       real :: x00,y00,z00,t,dx,dy,dz
       integer :: i,j,k,n
-      integer :: iux,iuy,iuz,ilnrho,ient,iax,iay,iaz,ilncc
+      integer :: iux,iuy,iuz,ilnrho,iss,iax,iay,iaz,ilncc
       integer :: i_t,i_it,i_dt,i_dtc,nname,i_u2m,i_um2,i_o2m
       integer :: i_oum,i_urms,i_umax,i_orms,i_omax,i_uxm
       integer :: i_uym,i_uzm,iuu,i_eth,i_ekin,i_rhom
@@ -44,7 +44,7 @@
       include 'tmp/index.pro'
       
       print*,'iux=',iux,' iuy=',iuy,' iuz=',iuz,' ilnrho=',  &
-       ilnrho,' ient=',ient,' iax=',iax,' iay=', iay,' iaz=', &
+       ilnrho,' iss=',iss,' iax=',iax,' iay=', iay,' iaz=', &
        iaz,' ilncc=',ilncc
 
 ! Read snapshot file
@@ -145,10 +145,10 @@
 
 
 ! Write out entropy field for Dx
-      if(ient.ne.0) then
+      if(iss.ne.0) then
 
       open(unit=20, file='./tmp/ss_dx.bin', form='unformatted')
-      write(20) (((real(f(i,j,k,ient)),k=nghost+1,mz-nghost),  &
+      write(20) (((real(f(i,j,k,iss)),k=nghost+1,mz-nghost),  &
        j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(20)
 

@@ -1,4 +1,4 @@
-;  $Id: extra_ez.pro,v 1.4 2002-08-11 04:00:11 brandenb Exp $
+;  $Id: extra_ez.pro,v 1.5 2003-08-04 17:59:58 theine Exp $
 ;
 ;  this is to be used in connection with r_ez.pro
 ;  it calculates a number of extra variables
@@ -20,7 +20,7 @@ zzz=z(n1:n2)
 ff=f(l1:l2,m1:m2,n1:n2,*)
 if (iuu ne 0) then uuu=f(l1:l2,m1:m2,n1:n2,iux-1:iuz-1)
 if (ilnrho ne 0) then llnrho=f(l1:l2,m1:m2,n1:n2,ilnrho-1)
-if (ient ne 0) then sss=f(l1:l2,m1:m2,n1:n2,ient-1)
+if (iss ne 0) then sss=f(l1:l2,m1:m2,n1:n2,iss-1)
 if (iaa ne 0) then bb=curl(f(*,*,*,iax-1:iaz-1))
 if (iaa ne 0) then jj=curl2(f(*,*,*,iax-1:iaz-1))
 
@@ -29,8 +29,8 @@ if (iaa ne 0) then aaa=f(l1:l2,m1:m2,n1:n2,iax-1:iaz-1)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then rho=exp(llnrho)
-if (ient ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
-if (ient ne 0) then ppp=rho*cs2/gamma
+if (iss ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
+if (iss ne 0) then ppp=rho*cs2/gamma
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
 ;

@@ -33,7 +33,7 @@
       real, dimension(mx,my,mz,3) :: bbb
       real :: x00,y00,z00,t,dx,dy,dz
       integer :: i,j,k,n
-      integer :: iux,iuy,iuz,ilnrho,ient,iax,iay,iaz
+      integer :: iux,iuy,iuz,ilnrho,iss,iax,iay,iaz
       character (len=2) :: sltype
       integer :: isltype,isl,nfile
 
@@ -129,10 +129,10 @@
 
 ! Write out entropy field for Dx
       if(mvar.ge.5) then
-      ient=5
+      iss=5
       open(unit=20, file='./tmp/ss_dx_sl'//char(nfile+48)//'.bin', & 
         form='unformatted')
-      write(20) ((real(f(i,j,isl,ient)),j=nghost+1,my-nghost), & 
+      write(20) ((real(f(i,j,isl,iss)),j=nghost+1,my-nghost), & 
         i=nghost+1,mx-nghost)
       close(20)
       endif
@@ -323,10 +323,10 @@
 
 ! Write out entropy field for Dx
       if(mvar.ge.5) then
-      ient=5
+      iss=5
       open(unit=20, file='./tmp/ss_dx_sl'//char(nfile+48)//'.bin', & 
         form='unformatted')
-      write(20) ((real(f(isl,j,k,ient)),k=nghost+1,mz-nghost), & 
+      write(20) ((real(f(isl,j,k,iss)),k=nghost+1,mz-nghost), & 
         j=nghost+1,my-nghost)
       close(20)
       endif
@@ -518,10 +518,10 @@
 
 ! Write out entropy field for Dx
       if(mvar.ge.5) then
-      ient=5
+      iss=5
       open(unit=20, file='./tmp/ss_dx_sl'//char(nfile+48)//'.bin', & 
         form='unformatted')
-      write(20) ((real(f(i,isl,k,ient)),k=nghost+1,mz-nghost), & 
+      write(20) ((real(f(i,isl,k,iss)),k=nghost+1,mz-nghost), & 
         i=nghost+1,mx-nghost)
       close(20)
       endif

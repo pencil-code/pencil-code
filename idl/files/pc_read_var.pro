@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.3 2002-12-02 21:28:55 mee Exp $
+; $Id: pc_read_var.pro,v 1.4 2003-08-04 17:59:58 theine Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-12-02 21:28:55 $
-;  $Revision: 1.3 $
+;  $Date: 2003-08-04 17:59:58 $
+;  $Revision: 1.4 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -79,13 +79,13 @@ dx=zero &  dy=zero &  dz=zero & deltay=zero
 
 iuu=0    
 ilnrho=0    
-ient=0  
+iss=0  
 iaa=0
 ie=0
 ilncc=0 
 if (params.lhydro)     then iuu=1
 if (params.ldensity)   then ilnrho=1    
-if (params.lentropy)   then ient=1  
+if (params.lentropy)   then iss=1  
 if (params.lmagnetic)  then iaa=1
 if (params.lradiation) then ie=1 
 if (params.lpscalar)   then ilncc=1 
@@ -114,16 +114,16 @@ if (cgrid gt 0) then begin
   ;
   openr,file, filename, /F77
                      ;
-  if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
+  if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'MHD with entropy'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,aa
-  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro without entropy, but with magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,aa
-  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and ie ne 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, density and radiation'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,ee,ff
-  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss
       if keyword_set(ASSOCIATE) then begin
@@ -132,22 +132,22 @@ if (cgrid gt 0) then begin
   end else if iuu ne 0 and ilnrho ne 0 and ilncc ne 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,lncc
-  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with no entropy and no magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho
-  end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just velocity (Burgers)'
       if not keyword_set(ASSOCIATE) then readu,file,uu
-  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
+  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just magnetic fparams.ield (kinematic)'
       if not keyword_set(ASSOCIATE) then readu,file,aa
-  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ilncc ne 0 then begin
+  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 and ilncc ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just passive scalar (no field nor hydro)'
       if not keyword_set(ASSOCIATE) then readu,file,lncc
-  end else if iuu eq 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+  end else if iuu eq 0 and ilnrho ne 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just density (probably just good for tests)'
       if not keyword_set(ASSOCIATE) then readu,file,lnrho
-  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ie ne 0 then begin
+  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just radiation'
       if not keyword_set(ASSOCIATE) then readu,file,ee,ff
   end else begin

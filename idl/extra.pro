@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.22 2003-08-03 09:50:06 brandenb Exp $
+;  $Id: extra.pro,v 1.23 2003-08-04 17:59:58 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -29,14 +29,14 @@ if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then begin
   llnrho=lnrho(l1:l2,m1:m2,n1:n2)
   rho=exp(llnrho)
-  if (ient eq 0) then cs2=cs20*exp(gamma1*llnrho)
-  if (ient ne 0 and iyH eq 0) then sss=ss(l1:l2,m1:m2,n1:n2)
-  if (ient ne 0 and iyH eq 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
-  if (ient ne 0 and iyH eq 0) then ppp=rho*cs2/gamma
+  if (iss eq 0) then cs2=cs20*exp(gamma1*llnrho)
+  if (iss ne 0 and iyH eq 0) then sss=ss(l1:l2,m1:m2,n1:n2)
+  if (iss ne 0 and iyH eq 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
+  if (iss ne 0 and iyH eq 0) then ppp=rho*cs2/gamma
   if (iyH ne 0) then yyH=yH(l1:l2,m1:m2,n1:n2)
   if (iyH ne 0) then TTT=TT(l1:l2,m1:m2,n1:n2)
   ; the following gives cs2,cp1tilde,eee,ppp
-  if (ient ne 0 and iyH ne 0) then begin
+  if (iss ne 0 and iyH ne 0) then begin
   @thermodynamics.pro
   endif
   hhh=cs2/gamma1  ;(enthalpy)
@@ -64,7 +64,7 @@ end
 ;
 ;  calculate vertical averages
 ;
-if (ient ne 0) then begin
+if (iss ne 0) then begin
   if (nz gt 1) then begin
     cs2m=haver(cs2) & csm=sqrt(cs2m)
     rhom=haver(rho)

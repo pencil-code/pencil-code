@@ -66,11 +66,11 @@ varcontent[ilnrho].idlinit    = INIT_SCALAR
 varcontent[ilnrho].idlvarloc  = 'lnrho_loc'
 varcontent[ilnrho].idlinitloc = INIT_SCALAR_LOC
 
-varcontent[ient].variable = 'Entropy (ss)'
-varcontent[ient].idlvar   = 'ss'
-varcontent[ient].idlinit    = INIT_SCALAR
-varcontent[ient].idlvarloc= 'ss_loc'
-varcontent[ient].idlinitloc = INIT_SCALAR_LOC
+varcontent[iss].variable = 'Entropy (ss)'
+varcontent[iss].idlvar   = 'ss'
+varcontent[iss].idlinit    = INIT_SCALAR
+varcontent[iss].idlvarloc= 'ss_loc'
+varcontent[iss].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[iaa].variable = 'Magnetic vector potential (aa)'
 varcontent[iaa].idlvar   = 'aa'
