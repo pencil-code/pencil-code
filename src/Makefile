@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.141 2003-01-21 12:41:39 nilshau Exp $
+### $Id: Makefile,v 1.142 2003-01-23 10:52:15 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -29,6 +29,9 @@ GRAVITY      = nograv
 FORCING      = noforcing
 SHEAR        = noshear
 TIMEAVG      = notimeavg
+
+## This allows us to add -r8 for double precision in Makefile.local
+FFLAGS_GENERAL=
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
@@ -134,21 +137,19 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O5 -qsuffix=f=f90
 
 ### End machine dependent
-
-
 LD=$(FC)
-LDFLAGS=$(FFLAGS)
+LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 # -Mpencil.map
 
 ## Generic rules:
 .SUFFIXES: .f90 .mod
 
 .f.o:
-	$(F77) $(FFLAGS) -c $*.f
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f
 .f90.o:
-	$(FC) $(FFLAGS) -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f90
 .mod.o:
-	$(FC) $(FFLAGS) -c $*.f90
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.33 2002-11-09 06:33:33 brandenb Exp $
+! $Id: prints.f90,v 1.34 2003-01-23 10:52:16 nilshau Exp $
 
 module Print
 
@@ -34,11 +34,12 @@ module Print
 !
 !  If the timestep (=dt) is to be written, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
+!  Use 1.*(it-1) to have floating point or double prrecision.
 !
       if (lroot) then
         if (i_t/=0)   call save_name(tdiagnos,i_t)
         if (i_dt/=0)  call save_name(dt,i_dt)
-        if (i_it/=0)  call save_name(float(it-1),i_it)
+        if (i_it/=0)  call save_name(1.*(it-1),i_it)
         if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
         if (lmagnetic) call calc_mfield
         if (lhydro)    call calc_mflow
