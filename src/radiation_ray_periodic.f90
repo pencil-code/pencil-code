@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.11 2005-04-02 13:14:18 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.12 2005-04-02 13:20:00 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -115,7 +115,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.11 2005-04-02 13:14:18 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.12 2005-04-02 13:20:00 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -151,15 +151,15 @@ module Radiation
       if (rady>1) call stop_it("rady currently must not be greater than 1")
       if (radz>1) call stop_it("radz currently must not be greater than 1")
 
-      if (radx==1.and.radz==1.and.nz>nx) then
+      if (radx==1.and.radz==1.and.rad2max>1.and.nz>nx) then
         ! Could be fixed but it's probably not worth it...
-        call stop_it("initialize_radiation: For periodic boundaries in the "//&
-                     "x-direction we need nz <= nx")
+        call stop_it("initialize_radiation: For inclined rays with periodic "//&
+                     "boundaries in the x-direction we need nz <= nx")
       endif
-      if (rady==1.and.radz==1.and.nz>ny) then
-        ! See above
-        call stop_it("initialize_radiation: For periodic boundaries in the "//&
-                     "y-direction we need nz <= ny")
+      if (rady==1.and.radz==1.and.rad2max>1.and.nz>ny) then
+        ! Could be fixed but it's probably not worth it...
+        call stop_it("initialize_radiation: For inclined rays with periodic "//&
+                     "boundaries in the y-direction we need nz <= ny")
       endif
 !
 !  Count
