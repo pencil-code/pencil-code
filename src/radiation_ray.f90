@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.45 2003-11-06 21:29:52 theine Exp $
+! $Id: radiation_ray.f90,v 1.46 2003-11-07 10:27:42 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -93,7 +93,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.45 2003-11-06 21:29:52 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.46 2003-11-07 10:27:42 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -271,6 +271,13 @@ module Radiation
       if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
       if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
 !
+!  determine start and stop processors
+!
+      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
+      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
+      if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
+      if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
+!
 !  set optical depth and intensity initially to zero
 !
       tau=0
@@ -320,6 +327,7 @@ module Radiation
 !
       use Mpicomm, only: radboundary_zx_periodic_ray
       use Mpicomm, only: radboundary_xy_periodic_ray
+      use Cdata
 !
       real, dimension(ny,nz) :: Qrad_tot_yz,tau_tot_yz,Qrad_yz,tau_yz
       real, dimension(ny,nz) :: Qrad0_yz,tau0_yz,emtau1_tot_yz
@@ -331,9 +339,8 @@ module Radiation
 !  x-direction
 !
       if (lperiodic_ray_x) then
-        print*,'periodic: llstart,llstop,l1,l2,lrad=',llstart,llstop,l1,l2,lrad
-        Qrad_tot_yz=Qrad(llstop,m1:m2,n1:n2)
-        tau_tot_yz=tau(llstop,m1:m2,n1:n2)
+        Qrad_tot_yz=Qrad(llstop-lrad,m1:m2,n1:n2)
+        tau_tot_yz=tau(llstop-lrad,m1:m2,n1:n2)
         Qrad0_yz=0
         tau0_yz=0
         where (tau_tot_yz>dtau_thresh)
@@ -342,55 +349,65 @@ module Radiation
           emtau1_tot_yz=tau_tot_yz-tau_tot_yz**2/2+tau_tot_yz**3/6
         endwhere
         Qrad0_yz=Qrad_tot_yz/emtau1_tot_yz*exp(-tau0_yz)+Qrad0_yz
-        Qrad0(llstart,m1:m2,n1:n2)=Qrad0_yz
+        Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad0_yz
       endif
 !
 !  y-direction
 !
       if (lperiodic_ray_y) then
         if (nprocy==1) then
-          Qrad_tot_zx=Qrad(l1:l2,mmstop,n1:n2)
-          tau_tot_zx=tau(l1:l2,mmstop,n1:n2)
+          Qrad_tot_zx=Qrad(l1:l2,mmstop-mrad,n1:n2)
+          tau_tot_zx=tau(l1:l2,mmstop-mrad,n1:n2)
           Qrad0_zx=0
           tau0_zx=0
         else
-          Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
-          tau_zx=tau(l1:l2,mmstop,n1:n2)
+          if (ipy/=ipystop) then
+            Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
+            tau_zx=tau(l1:l2,mmstop,n1:n2)
+          else
+            Qrad_zx=Qrad(l1:l2,mmstop-mrad,n1:n2)
+            tau_zx=tau(l1:l2,mmstop-mrad,n1:n2)
+          endif
           call radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx, &
                                            Qrad0_zx,tau0_zx, &
                                            Qrad_tot_zx,tau_tot_zx)
         endif
         where (tau_tot_zx>dtau_thresh)
-          emtau1_tot_zx=1-exp(tau_tot_zx)
+          emtau1_tot_zx=1-exp(-tau_tot_zx)
         elsewhere
           emtau1_tot_zx=tau_tot_zx-tau_tot_zx**2/2+tau_tot_zx**3/6
         endwhere
         Qrad0_zx=Qrad_tot_zx/emtau1_tot_zx*exp(-tau0_zx)+Qrad0_zx
-        Qrad0(l1:l2,mmstart,n1:n2)=Qrad0_zx
+        Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad0_zx
       endif
 !
 !  z-direction
 !
       if (lperiodic_ray_z) then
         if (nprocz==1) then
-          Qrad_tot_xy=Qrad(l1:l2,m1:m2,nnstop)
-          tau_tot_xy=tau(l1:l2,m1:m2,nnstop)
+          Qrad_tot_xy=Qrad(l1:l2,m1:m2,nnstop-nrad)
+          tau_tot_xy=tau(l1:l2,m1:m2,nnstop-nrad)
           Qrad0_xy=0
           tau0_xy=0
         else
-          Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
-          tau_xy=tau(l1:l2,m1:m2,nnstop)
-          call radboundary_xy_periodic_ray(mrad,Qrad_xy,tau_xy, &
+          if (ipy/=ipystop) then
+            Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
+            tau_xy=tau(l1:l2,m1:m2,nnstop)
+          else
+            Qrad_xy=Qrad(l1:l2,m1:m2,nnstop-nrad)
+            tau_xy=tau(l1:l2,m1:m2,nnstop-nrad)
+          endif
+          call radboundary_xy_periodic_ray(nrad,Qrad_xy,tau_xy, &
                                            Qrad0_xy,tau0_xy, &
                                            Qrad_tot_xy,tau_tot_xy)
         endif
         where (tau_tot_xy>dtau_thresh)
-          emtau1_tot_xy=1-exp(tau_tot_xy)
+          emtau1_tot_xy=1-exp(-tau_tot_xy)
         elsewhere
           emtau1_tot_xy=tau_tot_xy-tau_tot_xy**2/2+tau_tot_xy**3/6
         endwhere
         Qrad0_xy=Qrad_tot_xy/emtau1_tot_xy*exp(-tau0_xy)+Qrad0_xy
-        Qrad0(l1:l2,m1:m2,nnstart)=Qrad0_xy
+        Qrad0(l1:l2,m1:m2,nnstart-nrad)=Qrad0_xy
       endif
 !
     endsubroutine Qperiodic_ray
@@ -410,13 +427,6 @@ module Radiation
       real, dimension(mx,my) :: Qrad0_xy
       integer :: raysteps
       integer :: l,m,n
-!
-!  determine start and stop processors
-!
-      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
-      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
-      if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
-      if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
 !
 !  set boundary values
 !
@@ -513,12 +523,6 @@ module Radiation
 !  identifier
 !
       if(ldebug.and.headt) print*,'Qrevision'
-!
-!  special treatment of periodic rays
-!
-      if (lperiodic_ray_x) llstart=llstart+lrad
-      if (lperiodic_ray_y) mmstart=mmstart+mrad
-      if (lperiodic_ray_z) nnstart=nnstart+nrad
 !
 !  do the ray...
 !
