@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.18 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id: rall.pro,v 1.19 2002-08-18 13:16:11 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -145,7 +145,14 @@ for i=0,ncpus-1 do begin        ; read data from individual files
     endif
     print, FORMAT='(A," ",$)', tag
     ;
-  readu,1, t, xloc, yloc, zloc
+    ;  read deltay in case of shear
+    ;
+    if (lshear) then begin
+      readu,1, t, xloc, yloc, zloc, dx, dy, dz, deltay
+    end else begin
+      readu,1, t, xloc, yloc, zloc
+    end
+
   close,1
   ;
   ;  Don't overwrite ghost zones of processor to the left (and

@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.34 2002-08-11 04:00:11 brandenb Exp $
+; $Id: r.pro,v 1.35 2002-08-18 13:16:11 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.34 2002-08-11 04:00:11 brandenb Exp $
+;;; $Id: r.pro,v 1.35 2002-08-18 13:16:11 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -95,7 +95,11 @@ openr,1, datadir+'/'+file, /F77
     print,'not prepared...'
   end
   ;
-readu,1, t, x, y, z
+if (lshear) then begin
+  readu,1, t, x, y, z, dx, dy, dz, deltay
+end else begin
+  readu,1, t, x, y, z, dx, dy, dz
+end
 close,1
 ;
 xx = spread(x, [1,2], [my,mz])
