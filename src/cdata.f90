@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.147 2003-06-15 05:11:44 brandenb Exp $
+! $Id: cdata.f90,v 1.148 2003-06-16 09:19:22 nilshau Exp $
 
 module Cdata
 
@@ -111,5 +111,10 @@ module Cdata
                                         ! Register.initialize()
   character (len=120) :: directory='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
+
+  character (len=10), dimension(maux) :: aux_var
+  integer :: aux_count=1
+
+
 
 endmodule Cdata
