@@ -2,9 +2,10 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
                amin=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
-	       shell=shell,r_int=r_int,r_ext=r_ext,zoom=zoom
+               global_scaling=global_scaling,shell=shell,r_int=r_int,$
+               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg
 ;
-; $Id: rvid_plane.pro,v 1.9 2004-04-27 13:13:14 ngrs Exp $
+; $Id: rvid_plane.pro,v 1.10 2004-04-27 14:38:33 ngrs Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -175,7 +176,9 @@ slice_z2pos=0.*unit
 ;
 dev='x' ;(default)
 if keyword_set(png) then begin
-  resolution=[!d.x_size,!d.y_size] ; set window size
+  Nwx=zoom*nx & Nwy=zoom*ny
+  ;resolution=[!d.x_size,!d.y_size] ; set window size
+  resolution=[Nwx,Nwy] ; set window size
   print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
   device, SET_RESOLUTION=resolution ; set window size
@@ -183,7 +186,8 @@ if keyword_set(png) then begin
   dev='z'
 end else if keyword_set(mpeg) then begin
   ;Nwx=400 & Nwy=320
-  Nwx=!d.x_size & Nwy=!d.y_size
+  ;Nwx=!d.x_size & Nwy=!d.y_size
+  Nwx=zoom*nx & Nwy=zoom*ny
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
   print,'write mpeg movie: ',mpeg_name
@@ -195,6 +199,28 @@ end
 ;  initialize counter
 ;
 ijump=njump ;(make sure the first one is written)
+;
+if keyword_set(global_scaling) then begin
+  first=1L
+  close,1 & openr,1,file_slice,/f77
+  while not eof(1) do begin
+    if keyword_set(OLDFILE) then begin ; For files without position
+      readu,1,plane,t
+    endif else begin
+      readu,1,plane,t,slice_z2pos
+    endelse
+    if (first) then begin
+      amax=max(plane)
+      amin=min(plane)
+      first=0L
+    endif else begin
+      amax=max([amax,max(plane)])
+      amin=min([amin,min(plane)])
+    endelse
+  end
+  close,1
+  print,'Scale using global min, max: ', amin, amax
+endif
 ;
 close,1 & openr,1,file_slice,/f77
 while not eof(1) do begin
@@ -245,7 +271,7 @@ end else begin
       ;  show image scaled between amin and amax and filling whole screen
       ;
       ;tvscl,plane2,iplane
-      tvscl,bytscl(plane2,min=amin,max=amax)
+      tvscl,bytscl(plane2,min=amin,max=amax),iplane
       ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
       ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
@@ -266,8 +292,21 @@ end else begin
         ;  for idl_5.5 and later this requires the mpeg license
         ;
         image = tvrd(true=1)
+	if keyword_set(colmpeg) then begin
+	  ;ngrs seem to need to work explictly with 24-bit color to get 
+	  ;     color mpegs to come out on my local machines...
+          image24 = bytarr(3,Nwx,Nwy)
+          tvlct, red, green, blue, /GET
+        endif
         for irepeat=0,nrepeat do begin
-          mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
+	  if keyword_set(colmpeg) then begin
+            image24[0,*,*]=red(image[0,*,*])
+            image24[1,*,*]=green(image[0,*,*])
+            image24[2,*,*]=blue(image[0,*,*])
+            mpeg_put, mpegID, image=image24, FRAME=itmpeg, /ORDER
+          endif else begin
+            mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
+          endelse
           itmpeg=itmpeg+1 ;(counter)
         end
         print,islice,itmpeg,t,min([plane2]),max([plane2])
