@@ -47,6 +47,7 @@
 \usepackage{booktabs}
 \usepackage{longtable}
 
+\usepackage{fancyvrb}
 \usepackage{alltt}
 
 \usepackage{graphicx}
@@ -176,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.25 $ $}
+\date{\today,~ $ $Revision: 1.26 $ $}
 
 % ====================================================================== %
 
@@ -205,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.25 $ $}
+  \emph{\today,~ $ $Revision: 1.26 $ $}
 
 
 \end{center}
@@ -1022,6 +1023,40 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 %print,38*38*71.*8.*2.*4./1e6
 
 
+
+% ====================================================================== %
+
+\section{Frequently Asked Questions}
+
+\begin{description}
+
+\item[Compilation stops with the cryptic error message]{\bfseries \ 
+    
+    \begin{Verbatim}
+f95  -O3 -u -c .f90.f90
+Error : Could not open sourcefile .f90.f90
+compilation aborted for .f90.f90 (code 1)
+make[1]: *** [.f90.o] Error 1
+    \end{Verbatim}
+  
+    What is the problem?}
+  \medskip
+
+
+  One of the variables for the \file{makefile} has not been set, so
+  \cmd{make} expands it to the empty string.
+  Most probably you forgot to specify a module in
+  \file{src/Makefile.local}. One possibility is that you have upgraded
+  from an older version of the code that did not have some of the modules
+  the new version has.
+  
+  Compare your \file{src/Makefile.local} to one of the examples that
+  work.
+
+
+\end{description}
+
+
 % ====================================================================== %
 
 \section{Experimenting with the \LaTeX{} macros}
@@ -1065,7 +1100,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.25 2002-06-10 07:34:36 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.26 2002-06-10 17:08:19 dobler Exp $ $}
 
 
 \end{document}
