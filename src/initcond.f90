@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.25 2003-03-02 17:54:40 brandenb Exp $ 
+! $Id: initcond.f90,v 1.26 2003-03-06 14:17:58 brandenb Exp $ 
 
 module Initcond 
  
@@ -230,7 +230,7 @@ module Initcond
 !
     endsubroutine beltrami
 !***********************************************************************
-    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,ztop)
+    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,cs20)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -239,9 +239,9 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2
-      real :: cs20=1.,gamma1,ztop
+      real :: gamma1,zinfty2,cs20,hh0
       integer :: l,m,n
 !
 !  calculate sigma
@@ -266,45 +266,58 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
+!  calculate zinfty**2 (similar to poluytropic_simple)
+!
+      gamma1=gamma-1.
+      zinfty2=cs20/(.5*gamma1*Omega**2)
+      print*,'planet: zinfty2=',zinfty2
+!
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
 !
-      rr2=xx**2+eps2*yy**2
-      hh=+.5*delta2*Omega**2*amax1(radius2-rr2,0.)+.5*Omega**2*(ztop**2-zz**2)
-      print*,'planet: ztop=',ztop,minval(hh)
-!
-!  limit dynamical to 1% of maximum value (can always add a constant)
-!
-      hh=amax1(hh,0.)
-      hmax=maxval(hh)
-      hh=hh+ampl*hmax
-!
       rr2=xx**2+eps2*yy**2+zz**2/delta2
+      hh=+.5*delta2*Omega**2*(radius2-rr2)
+!
+!  add a constant to hh such that hh is "ampl" times in the vortex
+!
+      hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
+!
       do n=n1,n2
         do m=m1,m2
           do l=l1,l2
-            if (rr2(l,m,n)<radius2) then
+            if (hh(l,m,n)>0.) then
               f(l,m,n,iux)=   eps2*sigma *Omega*yy(l,m,n)
               f(l,m,n,iuy)=(qshear-sigma)*Omega*xx(l,m,n)
+              if(lentropy) f(l,m,n,ient)=-alog(ampl)
+              hh(l,m,n)=hh(l,m,n)+hh0
             else
               f(l,m,n,iux)=0.
               f(l,m,n,iuy)=0.
+              if(lentropy) f(l,m,n,ient)=0.
+              hh(l,m,n)=.5*Omega**2*(zinfty2-zz(l,m,n)**2)
             endif
+if (hh(l,m,n)<0.) print*,l,m,n,hh(l,m,n)
           enddo
         enddo
       enddo
 !
 !  calculate density, depending on what gamma is
 !
-      print*,'planet: hmin=',minval(hh)
-      if(gamma<=1.) print*,'must have gamma>1 for planet solution'
-      if(gamma==1.) then
-        f(:,:,:,ilnrho)=hh/cs20
-        print*,'planet solution for gamma=1'
+      print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
+      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+!
+      if(lentropy) then
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+            -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+        print*,'planet solution with entropy jump for gamma=',gamma
       else
-        gamma1=gamma-1.
-        f(:,:,:,ilnrho)=alog(gamma1*hh/cs20)/gamma1
-        print*,'planet solution for gamma=',gamma
+        if(gamma==1.) then
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
+          print*,'planet solution for gamma=1'
+        else
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+          print*,'planet solution for gamma=',gamma
+        endif
       endif
 !
     endsubroutine planet
