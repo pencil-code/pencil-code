@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.39 2003-11-26 14:00:00 mee Exp $
+! $Id: wsnaps.f90,v 1.40 2003-11-26 15:21:57 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -28,7 +28,7 @@ contains
       use Mpicomm
       use Boundcond
       use Radiation
-      use Viscosity, only: calc_viscosity
+!      use Viscosity, only: calc_viscosity
       use Ionization
       use Sub
       use Io
@@ -64,7 +64,7 @@ contains
 !
         call update_snaptime(file,tsnap,nsnap,dsnap,t,lsnap,ch,ENUM=.true.)
         if (lsnap) then
-          call calc_viscosity(a)
+!          call calc_viscosity(a)
           call update_ghosts(a)
           call output(chsnap//ch,a,msnap)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
