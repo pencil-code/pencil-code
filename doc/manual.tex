@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.242 2004-03-31 12:19:50 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.243 2004-04-01 13:00:26 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -372,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}
+%\date{$ $Date: 2004-04-01 13:00:26 $ $,~ $ $Revision: 1.243 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}\\
+  \emph{$ $Date: 2004-04-01 13:00:26 $ $,~ $ $Revision: 1.243 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4104,7 +4104,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-04-01 13:00:26 $ $,~ $ $Revision: 1.243 $ $}
 
 \section{Timings}
 
@@ -4845,6 +4845,63 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
     \end{tabular}
   \end{center}
 \end{table}
+
+
+% ====================================================================== %
+
+\section{Special techniques}
+\label{S-techinques}
+
+% --------------------------------------------------------------------- %
+
+\subsection{Remeshing}
+\index{Remeshing}
+\label{S-remesh}
+[This should be written up in a better way and put somewhere else.
+But currently, remeshing is only available for the Pencil developers
+anyway.]
+
+Suppose you have a directory run_64 with a $64^3$ run (running on
+\var{ny}$\times$\var{nz}=$2\times1$ CPUs) that you want to
+continue from \file{VAR1} at $128^3$ (on
+\var{ny}$\times$\var{nz}=$4\times4$ CPUs).
+\begin{enumerate}
+\item Get the remeshing stuff from repository:
+  \begin{alltt}
+  \prompt{unix> } cd $PENCIL_HOME; cvs co -d remesh pencil-remesh
+  \prompt{unix> } setenv PATH $\{PATH\}:$PENCIL_HOME/remesh/bin
+  \end{alltt}
+
+\item Create another run directory with current \file{VAR1} as
+  \file{var.dat} (remesh.csh so far only works with \file{var.dat}):
+  \begin{alltt}
+  \prompt{unix> } cd run_64
+  \prompt{unix> } reprodir -l ../run_64_restart {\sl or } new run_64_restart
+  \prompt{unix> } (cd ../run_64_restart/data ; mkproc-tree 2)
+  \prompt{unix> } restart-new-dir-VAR ../run_64_restart 1
+  \end{alltt}
+
+\item Create the new run directory:
+  \begin{alltt}
+  \prompt{unix> } cd ../run_64_restart
+  \prompt{unix> } reprodir -l ../run_128 {\sl or } new run_128
+  \prompt{unix> } vi ../run_128/src/cparam.local
+  {\sl{}# set nxgrid=128, ncpus=16, nprocy=4}
+  \prompt{unix> } (cd ../run_128; crtmp; setup-src; make)
+\end{alltt}
+
+\item Setup and do remeshing
+  \begin{alltt}
+  \prompt{unix> } setup-remesh
+  \prompt{unix> } (cd remesh; make)
+  \prompt{unix> } vi remesh/common.local
+  {\sl{}# set muly=2, mulz=4, remesh_par=2}
+  \prompt{unix> } vi remesh.in
+  {\sl{}# Replace line by ../run_128}
+  \prompt{unix> } remesh.csh
+  {\sl{}# Answer `yes'}  
+  \end{alltt}
+\end{enumerate}
 
 
 % ====================================================================== %
@@ -7015,7 +7072,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.242 2004-03-31 12:19:50 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.243 2004-04-01 13:00:26 dobler Exp $ $}
 
 
 \end{document}
