@@ -146,6 +146,7 @@ date
 if ($local_disc) then
   echo "Copying final var.dat back from local scratch disk"
   copy-snapshots -v var.dat
+  copy-snapshots -v dxyz.dat
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`

@@ -46,6 +46,7 @@ if ($local_disc) then
       foreach d (`cd $datadir; ls -d proc* allprocs`)
 	$SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
       end
+      $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
     end
   else # one local disc per MPI process (Horseshoe, etc);
        # still doesn't cover Copson
@@ -58,6 +59,7 @@ if ($local_disc) then
         set i=`expr $i + 1`
         set j=`expr $j - 1`
       end
+      $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
     end
   endif
 endif

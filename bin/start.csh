@@ -95,6 +95,7 @@ date
 if ($local_disc) then
   echo "Copying var.dat back to data directory"
   copy-snapshots -v var.dat
+  copy-snapshots -v dxyz.dat
 endif
 
 exit $start_status		# propagate status of mpirun
