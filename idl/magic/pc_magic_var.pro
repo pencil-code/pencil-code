@@ -41,6 +41,21 @@ pro pc_magic_var,variables,tags,param=param
         variables[iv]='pc_eoscalc(lnrho,ss,/pp,/lnrho_ss)'
       endelse
       tags[iv]='pp'
+    endif else if variables[iv] eq 'rhod' then begin
+      variables[iv]='pc_dust_aux(nd=nd,md=md,param=param,/rhod)'
+      tags[iv]='rhod'
+    endif else if variables[iv] eq 'fd' then begin
+      variables[iv]='pc_dust_aux(nd=nd,param=param,/cfd)'
+      tags[iv]='fd'
+    endif else if variables[iv] eq 'ad' then begin
+      variables[iv]='pc_dust_aux(md=md,param=param,/ad)'
+      tags[iv]='ad'
+    endif else if variables[iv] eq 'epsd' then begin
+      variables[iv]='pc_dust_aux(lnrho=lnrho,nd=nd,md=md,param=param,/epsd)'
+      tags[iv]='epsd'
+    endif else if variables[iv] eq 'unit_md' then begin
+      variables[iv]='pc_dust_aux(param=param,/unit_md)'
+      tags[iv]='unit_md'
     endif
   endfor
 
