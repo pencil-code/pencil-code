@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.81 2003-06-10 19:25:32 mee Exp $
+! $Id: register.f90,v 1.82 2003-06-14 16:41:44 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -282,6 +282,7 @@ module Register
       call rprint_entropy(lreset)
       call rprint_magnetic(lreset)
       call rprint_radiation(lreset)
+      call rprint_ionization(lreset)
       call rprint_pscalar(lreset)
       call rprint_dustvelocity(lreset)
       call rprint_dustdensity(lreset)
