@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.40 2004-03-21 17:34:00 snod Exp $
+### $Id: Makefile.src,v 1.41 2004-03-22 14:09:54 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -106,7 +106,7 @@ FCCLEANER=
 ##LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (copson) 
 ##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
 #FC=mpif90 # (Samos|fire|copson)
-#FFLAGS=-O3 -gm # (copson)
+#FFLAGS=-gm -fast -Mvect # (copson)
 #LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (nw43) 
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
