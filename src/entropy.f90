@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.328 2004-10-27 14:21:47 ajohan Exp $
+! $Id: entropy.f90,v 1.329 2004-11-09 21:40:14 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.328 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: entropy.f90,v 1.329 2004-11-09 21:40:14 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -312,7 +312,6 @@ module Entropy
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      print*,'NiniT:!!!',ninit
       if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-alog(gamma1))/gamma
       do iinit=1,ninit
 !
