@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.1 2003-01-31 09:32:13 dobler Exp $
+; $Id: wdvelovect.pro,v 1.2 2003-11-24 16:10:43 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -273,8 +273,10 @@ bady:            message, 'Y array has incorrect size.'
 	y_b1=y1+y_step
         if (not keyword_set(overplot)) then begin
 ;         if n_elements(position) eq 0 then begin
-          if (n_elements(xrange) le 1) then xrange=[x_b0,x_b1]
-          if (n_elements(yrange) le 1) then yrange=[y_b0,y_b1]
+          if ((n_elements(xrange) le 1) or (xrange[0] eq xrange[1])) $
+              then xrange=[x_b0,x_b1]
+          if ((n_elements(yrange) le 1) or (yrange[0] eq yrange[1])) $
+              then yrange=[y_b0,y_b1]
             plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
               color=color, xrange=xrange, yrange=yrange, $
               _EXTRA = extra
