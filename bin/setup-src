@@ -4,14 +4,21 @@
 ###  Link files into a local src directory
 ###  Also link files from the bin directory ==> should be renamed
 
-## Determine directories to link from
-set bindir="No-such-directory"
-set srcdir="No-such-directory"
-foreach dir ( ../../.. ../..)
-  # Note: the _last_ matching directory will be used
-  if (-d $dir/bin) set bindir=$dir/bin
-  if (-d $dir/src) set srcdir=$dir/src
-end
+if (! $?PENCIL_HOME) then
+  echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
+  exit 0
+endif
+
+#  ## Determine directories to link from
+#  set bindir="No-such-directory"
+#  set srcdir="No-such-directory"
+#  foreach dir ( ../../.. ../..)
+#    # Note: the _last_ matching directory will be used
+#    if (-d $dir/bin) set bindir=$dir/bin
+#    if (-d $dir/src) set srcdir=$dir/src
+#  end
+set bindir = $PENCIL_HOME/bin
+set srcdir = $PENCIL_HOME/src
 
 ## Link csh scripts
 foreach script (start.csh run.csh getconf.csh)
@@ -34,7 +41,7 @@ cd src
 #  LINK all *.f90, *.f, and the Makefile to local src directory
 #
 set n=0
-foreach file (../$srcdir/*.f90 ../$srcdir/*.f ../$srcdir/Makefile ../$srcdir/*.c)
+foreach file ($srcdir/*.f90 ../$srcdir/*.f $srcdir/Makefile $srcdir/*.c)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .
@@ -51,7 +58,7 @@ end
 #  COPY all *.local files into local src directory
 #
 set n=0
-foreach file (../$srcdir/*.local)
+foreach file ($srcdir/*.local)
   if (-e $file) then
     if (! -e $file:t) then
       cp $file .
