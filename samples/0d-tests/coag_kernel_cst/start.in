@@ -2,8 +2,8 @@
 ! Initialisation parameters for disc run
 !
 &init_pars
-  ip=7
-  cvsid='$Id: start.in,v 1.1 2003-12-29 17:23:26 ajohan Exp $'
+  ip=20
+  cvsid='$Id: start.in,v 1.2 2004-01-29 13:49:43 ajohan Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
 /
