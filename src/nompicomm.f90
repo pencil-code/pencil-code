@@ -244,6 +244,38 @@ module Mpicomm
     subroutine mpifinalize()
     endsubroutine mpifinalize
 !***********************************************************************
+    function mpiwtime()
+!
+!  Mimic the MPI_WTIME() timer function. On many machines, the
+!  implementation through system_clock() will overflow after about 50
+!  minutes, so MPI_WTIME() is better.
+!
+!   5-oct-2002/wolf: coded
+!
+      real :: mpiwtime
+      integer :: count_rate,time
+!
+      call system_clock(COUNT_RATE=count_rate)
+      call system_clock(COUNT=time)
+
+      mpiwtime = (time*1.)/count_rate
+
+    endfunction mpiwtime
+!***********************************************************************
+    function mpiwtick()
+!
+!  Mimic the MPI_WTICK() function for measureing timer resolution.
+!
+!   5-oct-2002/wolf: coded
+!
+      real :: mpiwtick
+      integer :: count_rate
+!
+      call system_clock(COUNT_RATE=count_rate)
+      mpiwtick = 1./count_rate
+!
+    endfunction mpiwtick
+!***********************************************************************
     subroutine stop_it(msg)
 !
 !  Print message and stop

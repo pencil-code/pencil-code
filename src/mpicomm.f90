@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.48 2002-10-02 10:37:04 dobler Exp $
+! $Id: mpicomm.f90,v 1.49 2002-10-05 13:34:58 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -603,6 +603,20 @@ module Mpicomm
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
     endsubroutine mpifinalize
+!***********************************************************************
+    function mpiwtime()
+!
+      real :: mpiwtime
+!
+      mpiwtime = MPI_WTIME()
+    endfunction mpiwtime
+!***********************************************************************
+    function mpiwtick()
+!
+      real :: mpiwtick
+!
+      mpiwtick = MPI_WTICK()
+    endfunction mpiwtick
 !***********************************************************************
     subroutine stop_it(msg)
 !

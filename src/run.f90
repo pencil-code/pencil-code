@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.96 2002-10-04 14:38:52 dobler Exp $
+! $Id: run.f90,v 1.97 2002-10-05 13:34:58 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -30,9 +30,10 @@
         implicit none
 !
         real, dimension (mx,my,mz,mvar) :: f,df
-        integer :: time1,time2,count,count_rate
+        real :: time1,time2
+        integer :: count
         logical :: stop=.false.,reload=.false.
-        real :: Wall_clock_time
+        real :: wall_clock_time
 !
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
@@ -48,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.96 2002-10-04 14:38:52 dobler Exp $")
+             "$Id: run.f90,v 1.97 2002-10-05 13:34:58 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -115,8 +116,7 @@
 !  NOTE: headt=.true. in order to print header titles
 !
         if(lroot) then
-          call system_clock(count_rate=count_rate)
-          call system_clock(count=time1)
+          time1 = mpiwtime()
           count = 0
         endif
 !
@@ -218,7 +218,7 @@
           endif
 
         enddo Time_loop
-        if(lroot) call system_clock(count=time2)
+        if(lroot) time2=mpiwtime()
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
@@ -244,11 +244,12 @@
 !  for diagnostic purposes
 !
         if(lroot) then
-          Wall_clock_time=(time2-time1)/real(count_rate)
+          wall_clock_time = time2-time1
           print*
-          print*,'Wall clock time [sec]=',Wall_clock_time,' (+/- ', 1./count_rate,')'
+          print*, 'Wall clock time [sec]=', Wall_clock_time, &
+               ' (+/- ', mpiwtick(),')'
           if (it>1) print*, 'Wall clock time/timestep/meshpoint [microsec]=', &
-               Wall_clock_time/count/nw/ncpus/1e-6
+               wall_clock_time/count/nw/ncpus/1e-6
           print*
         endif
         call mpifinalize
