@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.277 2004-03-08 12:40:01 mcmillan Exp $
+! $Id: entropy.f90,v 1.278 2004-03-13 15:20:51 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.277 2004-03-08 12:40:01 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.278 2004-03-13 15:20:51 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -760,10 +760,14 @@ module Entropy
       real :: absz,n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
-      real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6 !,k_B=0.0144
-      real :: rho,lnrho,pp,pp0,ss,lnTT,yH 
-      real, dimension(2) :: fmpi2
-!      real, dimension(1) :: fmpi1
+      real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6 
+      real :: T_c,T_w,T_i,T_h
+      real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
+      real :: cp1tilde
+!      real, dimension(nx) :: pp 
+      double precision :: pp0 
+!      real, dimension(2) :: fmpi2
+      real, dimension(1) :: fmpi1
 !      integer :: iproctop
 !
       if (lroot) print*,'ferriere: Ferriere density and entropy profile'
@@ -772,7 +776,14 @@ module Entropy
 !  pressure is set to 6 times thermal pressure, this factor roughly
 !  allowing for other sources, as modelled by Ferriere.
 !
-      pp0=6.0*k_B*(rho0/1.38) *                                               &
+      T_c=T_c_cgs/unit_temperature
+      T_w=T_w_cgs/unit_temperature
+      T_i=T_i_cgs/unit_temperature
+      T_h=T_h_cgs/unit_temperature
+
+      !pp0=6.0*k_B*(rho0/1.38) *                                               &
+      ! (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+      pp0=k_B*unit_length**3*                                               &
        (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
       cs20=gamma*pp0/rho0
       cs0=sqrt(cs20)
@@ -800,34 +811,47 @@ module Entropy
 !  define entropy via pressure, assuming fixed T for each component
         if(lentropy) then
 !  thermal pressure (eq 13)
-          pp=6.0*k_B*(rho0/1.38) *                                        &
+          pp=k_B*unit_length**3 *                                        &
            (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
            
-          if (lionization) then
-            call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,lnTT=lnTT,yH=yH) 
-            f(l1:l2,m,n,iss)=ss
-            !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
-            if (n == n1 .and. m == m1) cs2bot=0.
-            if (n == n2 .and. m == m1) cs2top=0.
-          else          
-            f(l1:l2,m,n,iss)=alog(gamma*pp/cs20)/gamma +                   &
-                                     gamma1/gamma*lnrho0 - lnrho
-            !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
-            if (n == n1 .and. m == m1) cs2bot=gamma*pp/rho
-            if (n == n2 .and. m == m1) cs2top=gamma*pp/rho
-          endif
+          call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,yH=yH,lnTT=lnTT) 
+          call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1tilde)
+          call pressure_gradient(lnrho(nx),ss(nx),cs2top,cp1tilde)
+
+          f(l1:l2,m,n,iss)=ss
+        
+          fmpi1=(/ cs2bot /)
+          call mpibcast_real_nonroot(fmpi1,1,0)
+          cs2bot=fmpi1(1) 
+          fmpi1=(/ cs2top /)
+          call mpibcast_real_nonroot(fmpi1,nprocs-1,0)
+          cs2top=fmpi1(1)
+
+
+!          if (lionization) then
+!           !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
+!           if (n == n1 .and. m == m1) cs2bot=0.
+!           if (n == n2 .and. m == m1) cs2top=0.
+!         else          
+!           !f(l1:l2,m,n,iss)=alog(gamma*pp/cs20)/gamma +                   &
+!           !                         gamma1/gamma*lnrho0 - lnrho
+!           !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
+!           if (iprocz == nprocz .and. iprocy==1) cs2bot=gamma*pp(1)/rho(1)
+!           if (iprocz == 1      .and. iprocy==1) cs2top=gamma*pp(nx)/rho(nx)
+!         endif
         endif
        enddo
       enddo
 !
 !  broadcast cs2bot, top
 !
-      if (lentropy) then
+!     if (lentropy) then
 !  just use symmetry to set cs2top=cs2bot, and broadcast from root
-        cs2top=cs2bot
-        fmpi2=(/ cs2bot, cs2top /)
-        call mpibcast_real(fmpi2,2)
-        cs2bot=fmpi2(1); cs2top=fmpi2(2)
+!       cs2top=cs2bot
+!       fmpi2=(/ cs2bot, cs2top /)
+!       call mpibcast_real(fmpi2,2)
+!        fmpi2=(/ cs2bot, cs2top /)
+!        cs2bot=fmpi2(1); cs2top=fmpi2(2)
 !!  or do directly from the right processor
 !        fmpi1=(/ cs2bot /)
 !        call mpibcast_real(fmpi1,1)    ! this case can use mpibcast_real
@@ -836,7 +860,7 @@ module Entropy
 !        fmpi1=(/ cs2top /)
 !        call mpibcast_real_nonroot(fmpi1,1,iproctop)
 !        cs2top=fmpi1(1)
-      endif
+!     endif
       
       if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.156 2004-02-20 21:08:23 theine Exp $
+! $Id: ionization.f90,v 1.157 2004-03-13 15:20:51 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -47,6 +47,7 @@ module Ionization
 
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
+    module procedure eoscalc_pencil
     module procedure eoscalc_point
   endinterface
 
@@ -117,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.156 2004-02-20 21:08:23 theine Exp $")
+           "$Id: ionization.f90,v 1.157 2004-03-13 15:20:51 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -586,6 +587,87 @@ module Ionization
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   i13-mar-04/tony: modified 
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      integer, intent(in) :: ivars
+      real, dimension(nx), intent(in) :: var1,var2
+      real, dimension(nx), intent(out), optional :: lnrho,ss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_,fractions
+      integer :: i
+!
+      select case (ivars)
+
+      case (ilnrho_ss)
+        lnrho_=var1
+        ss_=var1
+        yH_=0.5*yHmax
+        do i=1,nx 
+          call rtsafe(ilnrho_ss,lnrho_(i),ss_(i),yHmin,yHmax,yH_(i))
+        enddo
+        fractions=(1+yH_+xHe)
+        lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_)-lnrho_H) &
+                          +yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                          +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
+        TT_=exp(lnTT_)
+        rho_=exp(lnrho_)
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+        pp_=fractions*rho_*TT_*ss_ion
+
+      case (ilnrho_ee)
+        lnrho_=var1
+        ee_=var2
+        yH_=0.5*yHmax
+        do i=1,nx 
+          call rtsafe(ilnrho_ee,lnrho_(i),ee_(i),yHmin,yHmax*min(ee_(i)/ee_ion,1.0),yH_(i))
+        enddo
+        fractions=(1+yH_+xHe)
+        TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
+        lnTT_=log(TT_)
+        rho_=exp(lnrho_)
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                    -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                    -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
+        pp_=fractions*rho_*TT_*ss_ion
+
+      case (ilnrho_pp)
+        lnrho_=var1
+        pp_=var2
+        yH_=0.5*yHmax
+        do i=1,nx 
+          call rtsafe(ilnrho_pp,lnrho_(i),pp_(i),yHmin,yHmax,yH_(i))
+        enddo
+        fractions=(1+yH_+xHe)
+        rho_=exp(lnrho_)
+        TT_=pp_/(fractions*ss_ion*rho_)
+        lnTT_=log(TT_)
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+                   -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
+                   -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+
+      case default
+        call stop_it("eoscalc_point: I don't get what the independent variables are.")
+
+      end select
+
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=yH_
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
+!
+    endsubroutine eoscalc_pencil
+!!***********************************************************************
     subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
