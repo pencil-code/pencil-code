@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.75 2004-08-24 20:20:43 dobler Exp $
+### $Id: Makefile.src,v 1.76 2004-08-26 19:25:27 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -96,8 +96,10 @@ FCCLEANER=
 #OPTFLAGS=-fast -O5 
 #OPTFLAGS=-fast -O5 -notransform_loops #(Mhd.)
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
+#FFLAGS=$(OPTFLAGS)
 #F77=$(FC)
-#LIBSIG=-lsig
+## I (wd) guess the lsig stuff is obsolete now (Aug-2004)
+##LIBSIG=-lsig
 
 ## Linux:
 #FC=f95
