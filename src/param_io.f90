@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.95 2003-02-23 07:49:34 brandenb Exp $ 
+! $Id: param_io.f90,v 1.96 2003-02-24 01:19:36 brandenb Exp $ 
 
 module Param_IO
 
@@ -180,6 +180,13 @@ module Param_IO
           call print_startpars(FILE=trim(datadir)//'/params.log')
         endif
       endif
+!
+!  set gamma1, cs20, and lnrho0
+!  (At least cs20 needs to be calculated here; in register.f90 is not sufficient!)
+!
+!     gamma1=gamma-1.
+      cs20=cs0**2
+      lnrho0=alog(rho0)
 !
 !  calculate shear flow velocity; if Sshear is not given
 !  then Sshear=-qshear*Omega is calculated.
