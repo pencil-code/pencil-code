@@ -1,7 +1,8 @@
-PRO power,var1,var2,last,w,k=k,spec1=spec1,spec2=spec2,i=i,tt=tt, $
-  noplot=noplot,tmin=tmin,tmax=tmax,tot=tot,lin=lin
+PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
+          spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
+          tot=tot,lin=lin
 ;
-;  $Id: power.pro,v 1.17 2003-03-05 09:32:18 nilshau Exp $
+;  $Id: power.pro,v 1.18 2003-07-14 09:48:51 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -10,6 +11,26 @@ PRO power,var1,var2,last,w,k=k,spec1=spec1,spec2=spec2,i=i,tt=tt, $
 ;  The routine plots the spectra for the last time saved in the file.
 ;  All times are stored in the arrays spec1 and spec2.
 ;  The index of the first time is 1, and of the last time it is i-2.
+;
+;  var1  : Use v1 instead (Kept to be backward compatible)
+;  var2  : Use v2 instead (Kept to be backward compatible)
+;  last  : Use all instead (Kept to be backward compatible)
+;  w     : Use wait instead (Kept to be backward compatible)
+;
+;  v1    : First variable to be plotted (Ex: 'u')
+;  v2    : Second variable to be plotted (Ex: 'b') 
+;  all   : Plot all snapshots if /all is set, otherwise only last snapshot
+;  wait  : Time to wait between each snapshot (if /all is set) 
+;  k     : Returns the wavenumber vector
+;  spec1 : Returns all the spectral snapshots of the first variable 
+;  spec2 : Returns all the spectral snapshots of the second variable 
+;  i     : The index of the last time is i-2
+;  tt    : Returns the times for the different snapshots (vector)
+;  noplot: Do not plot if set
+;  tmin  : First time for plotting snapshots  (if /all is set) 
+;  tmax  : Last time for plotting snapshots  (if /all is set) 
+;  tot   : Plots total power spectrum if tot=1
+;  lin   : Plots the line k^lin
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -23,13 +44,35 @@ default,tmax,1e34
 default,tot,0
 default,lin,0
 ;
+;  This is done to make the code backward compatible.
+;
+if  keyword_set(all) then begin
+    last=0
+end
+if  keyword_set(wait) then begin
+    w=wait
+end
+if  keyword_set(v1) then begin
+    file1='power'+v1+'.dat'
+    if  keyword_set(v2) then begin
+        file2='power'+v2+'.dat'
+    end else begin
+        file2=''
+    end
+end else begin
+    if  keyword_set(v2) then begin
+        print,'In order to set v2 you must also set v1!'
+        print,'Exiting........'
+        stop
+    end
+    file1='power'+var1+'.dat'
+    file2='power'+var2+'.dat'
+end 
+;
 ;  plot only when iplot=1 (default)
 ;  can be turned off by using /noplot
 ;
 if keyword_set(noplot) then iplot=0 else iplot=1
-;
-file1='power'+var1+'.dat'
-file2='power'+var2+'.dat'
 ;
 ;!p.multi=[0,1,1]
 !p.charsize=2
