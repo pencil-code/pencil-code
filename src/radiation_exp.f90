@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.27 2003-06-30 09:33:57 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.28 2003-06-30 10:26:26 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,7 +14,8 @@ module Radiation
 !
   implicit none
 !
-  integer, parameter :: radx0=3,rady0=3,radz0=3
+  !integer, parameter :: radx0=3,rady0=3,radz0=3
+  integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
     :: Irad_xy,Irad0_xy,tau_xy
   real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
@@ -76,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.27 2003-06-30 09:33:57 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.28 2003-06-30 10:26:26 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -358,8 +359,8 @@ module Radiation
 !
       if(ipz/=nprocz-1) then
         if (first) print*,'radtransfer_comm: send_Irad0_xyp, zuneigh=',zuneigh,tag_xyp
-        Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
-                  +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
+        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,1:radz) &
+           +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
         call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
       endif
 !
@@ -382,14 +383,14 @@ module Radiation
         !
         if (first) print*,'radtransfer_comm: recv_Irad0_xym, zuneigh=',zuneigh,tag_xym
         call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
-        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy
+        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
       endif
 !
 !  send Ibuf_xy to ipz-1
 !
       if(ipz/=nprocz-1) then
         if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        Ibuf_xy=Irad_xy(:,:,:,:,:,-radz:-1) &
+        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
                   +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
         call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
       endif
