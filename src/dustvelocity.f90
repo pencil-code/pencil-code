@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.67 2004-07-06 15:41:19 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.68 2004-07-07 10:46:39 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.67 2004-07-06 15:41:19 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.68 2004-07-07 10:46:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -246,7 +246,7 @@ module Dustvelocity
 !
 !  If *_all set, make all primordial *(:) = *_all
 !
-      if (nud_all .ne. 0.) then
+      if (nud_all /= 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: nud_all=',nud_all
         do k=1,ndustspec
@@ -254,7 +254,7 @@ module Dustvelocity
         enddo
       endif
 !      
-      if (betad_all .ne. 0.) then
+      if (betad_all /= 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: betad_all=',betad_all
         do k=1,ndustspec
@@ -262,7 +262,7 @@ module Dustvelocity
         enddo
       endif
 !
-      if (tausd_all .ne. 0.) then
+      if (tausd_all /= 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: tausd_all=',tausd_all
         do k=1,ndustspec
@@ -741,7 +741,7 @@ module Dustvelocity
       use Sub
       use General, only: chn
 !
-      integer :: iname,i
+      integer :: iname,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=4) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
@@ -756,10 +756,20 @@ module Dustvelocity
         write(3,*) 'nname=',nname
       endif
 !
+!  reset everything in case of reset
+!
+      if (lreset) then
+        i_dtud=0; i_dtnud=0; i_ud2m=0; i_udm2=0; i_oudm=0; i_od2m=0
+        i_udxpt=0; i_udypt=0; i_udzpt=0; i_udrms=0; i_udmax=0; i_odrms=0
+        i_odmax=0; i_rdudmax=0; i_udmx=0; i_udmy=0; i_udmz=0; i_divud2m=0
+        i_epsKd=0
+      endif
+
+      call chn(ndustspec,sdustspec)
+!
 !  Define arrays for multiple dust species
 !
-      if (lwr) then
-        call chn(ndustspec,sdustspec)
+      if (lwr .and. ndustspec /= 1) then
         write(3,*) 'iuud=intarr('//trim(sdustspec)//')'
         write(3,*) 'iudx=intarr('//trim(sdustspec)//')'
         write(3,*) 'iudy=intarr('//trim(sdustspec)//')'
@@ -793,121 +803,110 @@ module Dustvelocity
 !
 !  Loop over dust layers
 !
-      do i=1,ndustspec
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-        if (lreset) then
-          i_dtud=0; i_dtnud=0
-          i_ud2m(i)=0; i_udm2(i)=0; i_oudm(i)=0; i_od2m(i)=0
-          i_udxpt(i)=0; i_udypt(i)=0; i_udzpt(i)=0
-          i_udrms(i)=0; i_udmax(i)=0; i_odrms(i)=0; i_odmax(i)=0
-          i_rdudmax(i)=0
-          i_udmx(i)=0; i_udmy(i)=0; i_udmz(i)=0
-          i_divud2m(i)=0; i_epsKd(i)=0
-        endif
+      do k=1,ndustspec
 !
 !  iname runs through all possible names that may be listed in print.in
 !
         if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
-          call chn(i,sdust)
+          call chn(k,sdust)
           if (ndustspec == 1) sdust=''
           call parse_name(iname,cname(iname),cform(iname), &
-              'dtud'//trim(sdust),i_dtud(i))
+              'dtud'//trim(sdust),i_dtud(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'dtnud'//trim(sdust),i_dtnud(i))
+              'dtnud'//trim(sdust),i_dtnud(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'ud2m'//trim(sdust),i_ud2m(i))
+              'ud2m'//trim(sdust),i_ud2m(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udm2'//trim(sdust),i_udm2(i))
+              'udm2'//trim(sdust),i_udm2(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'od2m'//trim(sdust),i_od2m(i))
+              'od2m'//trim(sdust),i_od2m(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'oudm'//trim(sdust),i_oudm(i))
+              'oudm'//trim(sdust),i_oudm(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udrms'//trim(sdust),i_udrms(i))
+              'udrms'//trim(sdust),i_udrms(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmax'//trim(sdust),i_udmax(i))
+              'udmax'//trim(sdust),i_udmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'rdudmax'//trim(sdust),i_rdudmax(i))
+              'rdudmax'//trim(sdust),i_rdudmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'odrms'//trim(sdust),i_odrms(i))
+              'odrms'//trim(sdust),i_odrms(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'odmax'//trim(sdust),i_odmax(i))
+              'odmax'//trim(sdust),i_odmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmx'//trim(sdust),i_udmx(i))
+              'udmx'//trim(sdust),i_udmx(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmy'//trim(sdust),i_udmy(i))
+              'udmy'//trim(sdust),i_udmy(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmz'//trim(sdust),i_udmz(i))
+              'udmz'//trim(sdust),i_udmz(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'divud2m'//trim(sdust),i_divud2m(i))
+              'divud2m'//trim(sdust),i_divud2m(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'epsKd'//trim(sdust),i_epsKd(i))
+              'epsKd'//trim(sdust),i_epsKd(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udxpt'//trim(sdust),i_udxpt(i))
+              'udxpt'//trim(sdust),i_udxpt(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udypt'//trim(sdust),i_udypt(i))
+              'udypt'//trim(sdust),i_udypt(k))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udzpt'//trim(sdust),i_udzpt(i))
+              'udzpt'//trim(sdust),i_udzpt(k))
         enddo
 !
 !  write column where which variable is stored
 !
         if (lwr) then
-          call chn(i-1,sdust)
-          if (i_dtud(i) .ne. 0) &
-              write(3,*) 'i_dtud['//trim(sdust)//']=',i_dtud(i)
-          if (i_dtnud(i) .ne. 0) &
-              write(3,*) 'i_dtnud['//trim(sdust)//']=',i_dtnud(i)
-          if (i_ud2m(i) .ne. 0) &
-              write(3,*) 'i_ud2m['//trim(sdust)//']=',i_ud2m(i)
-          if (i_udm2(i) .ne. 0) &
-              write(3,*) 'i_udm2['//trim(sdust)//']=',i_udm2(i)
-          if (i_od2m(i) .ne. 0) &
-              write(3,*) 'i_od2m['//trim(sdust)//']=',i_od2m(i)
-          if (i_oudm(i) .ne. 0) &
-              write(3,*) 'i_oudm['//trim(sdust)//']=',i_oudm(i)
-          if (i_udrms(i) .ne. 0) &
-              write(3,*) 'i_udrms['//trim(sdust)//']=',i_udrms(i)
-          if (i_udmax(i) .ne. 0) &
-              write(3,*) 'i_udmax['//trim(sdust)//']=',i_udmax(i)
-          if (i_rdudmax(i) .ne. 0) &
-              write(3,*) 'i_rdudmax['//trim(sdust)//']=',i_rdudmax(i)
-          if (i_odrms(i) .ne. 0) &
-              write(3,*) 'i_odrms['//trim(sdust)//']=',i_odrms(i)
-          if (i_odmax(i) .ne. 0) &
-              write(3,*) 'i_odmax['//trim(sdust)//']=',i_odmax(i)
-          if (i_udmx(i) .ne. 0) &
-              write(3,*) 'i_udmx['//trim(sdust)//']=',i_udmx(i)
-          if (i_udmy(i) .ne. 0) &
-              write(3,*) 'i_udmy['//trim(sdust)//']=',i_udmy(i)
-          if (i_udmz(i) .ne. 0) &
-              write(3,*) 'i_udmz['//trim(sdust)//']=',i_udmz(i)
-          if (i_divud2m(i) .ne. 0) &
-              write(3,*) 'i_divud2m['//trim(sdust)//']=',i_divud2m(i)
-          if (i_epsKd(i) .ne. 0) &
-              write(3,*) 'i_epsKd['//trim(sdust)//']=',i_epsKd(i)
-          if (i_udxpt(i) .ne. 0) &
-              write(3,*) 'i_udxpt['//trim(sdust)//']=',i_udxpt(i)
-          if (i_udypt(i) .ne. 0) &
-              write(3,*) 'i_udypt['//trim(sdust)//']=',i_udypt(i)
-          if (i_udzpt(i) .ne. 0) &
-              write(3,*) 'i_udzpt['//trim(sdust)//']=',i_udzpt(i)
-          if (i_udxmz(i) .ne. 0) &
-              write(3,*) 'i_udxmz['//trim(sdust)//']=',i_udxmz(i)
-          if (i_udymz(i) .ne. 0) &
-              write(3,*) 'i_udymz['//trim(sdust)//']=',i_udymz(i)
-          if (i_udzmz(i) .ne. 0) &
-              write(3,*) 'i_udzmz['//trim(sdust)//']=',i_udzmz(i)
-          if (i_udxmxy(i) .ne. 0) &
-              write(3,*) 'i_udxmxy['//trim(sdust)//']=',i_udxmxy(i)
-          if (i_udymxy(i) .ne. 0) &
-              write(3,*) 'i_udymxy['//trim(sdust)//']=',i_udymxy(i)
-          if (i_udzmxy(i) .ne. 0) &
-              write(3,*) 'i_udzmxy['//trim(sdust)//']=',i_udzmxy(i)
+          call chn(k-1,sdust)
+          sdust = '['//sdust//']'
+          if (ndustspec == 1) sdust=''
+          if (i_dtud(k) /= 0) &
+              write(3,*) 'i_dtud'//trim(sdust)//'=',i_dtud(k)
+          if (i_dtnud(k) /= 0) &
+              write(3,*) 'i_dtnud'//trim(sdust)//'=',i_dtnud(k)
+          if (i_ud2m(k) /= 0) &
+              write(3,*) 'i_ud2m'//trim(sdust)//'=',i_ud2m(k)
+          if (i_udm2(k) /= 0) &
+              write(3,*) 'i_udm2'//trim(sdust)//'=',i_udm2(k)
+          if (i_od2m(k) /= 0) &
+              write(3,*) 'i_od2m'//trim(sdust)//'=',i_od2m(k)
+          if (i_oudm(k) /= 0) &
+              write(3,*) 'i_oudm'//trim(sdust)//'=',i_oudm(k)
+          if (i_udrms(k) /= 0) &
+              write(3,*) 'i_udrms'//trim(sdust)//'=',i_udrms(k)
+          if (i_udmax(k) /= 0) &
+              write(3,*) 'i_udmax'//trim(sdust)//'=',i_udmax(k)
+          if (i_rdudmax(k) /= 0) &
+              write(3,*) 'i_rdudmax'//trim(sdust)//'=',i_rdudmax(k)
+          if (i_odrms(k) /= 0) &
+              write(3,*) 'i_odrms'//trim(sdust)//'=',i_odrms(k)
+          if (i_odmax(k) /= 0) &
+              write(3,*) 'i_odmax'//trim(sdust)//'=',i_odmax(k)
+          if (i_udmx(k) /= 0) &
+              write(3,*) 'i_udmx'//trim(sdust)//'=',i_udmx(k)
+          if (i_udmy(k) /= 0) &
+              write(3,*) 'i_udmy'//trim(sdust)//'=',i_udmy(k)
+          if (i_udmz(k) /= 0) &
+              write(3,*) 'i_udmz'//trim(sdust)//'=',i_udmz(k)
+          if (i_divud2m(k) /= 0) &
+              write(3,*) 'i_divud2m'//trim(sdust)//'=',i_divud2m(k)
+          if (i_epsKd(k) /= 0) &
+              write(3,*) 'i_epsKd'//trim(sdust)//'=',i_epsKd(k)
+          if (i_udxpt(k) /= 0) &
+              write(3,*) 'i_udxpt'//trim(sdust)//'=',i_udxpt(k)
+          if (i_udypt(k) /= 0) &
+              write(3,*) 'i_udypt'//trim(sdust)//'=',i_udypt(k)
+          if (i_udzpt(k) /= 0) &
+              write(3,*) 'i_udzpt'//trim(sdust)//'=',i_udzpt(k)
+          if (i_udxmz(k) /= 0) &
+              write(3,*) 'i_udxmz'//trim(sdust)//'=',i_udxmz(k)
+          if (i_udymz(k) /= 0) &
+              write(3,*) 'i_udymz'//trim(sdust)//'=',i_udymz(k)
+          if (i_udzmz(k) /= 0) &
+              write(3,*) 'i_udzmz'//trim(sdust)//'=',i_udzmz(k)
+          if (i_udxmxy(k) /= 0) &
+              write(3,*) 'i_udxmxy'//trim(sdust)//'=',i_udxmxy(k)
+          if (i_udymxy(k) /= 0) &
+              write(3,*) 'i_udymxy'//trim(sdust)//'=',i_udymxy(k)
+          if (i_udzmxy(k) /= 0) &
+              write(3,*) 'i_udzmxy'//trim(sdust)//'=',i_udzmxy(k)
         endif
 !
 !  End loop over dust layers

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.110 2004-07-07 09:47:30 ajohan Exp $
+! $Id: dustdensity.f90,v 1.111 2004-07-07 10:46:39 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -116,7 +116,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.110 2004-07-07 09:47:30 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.111 2004-07-07 10:46:39 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -852,11 +852,12 @@ module Dustdensity
         i_rhodmt = 0
         i_rhoimt = 0
       endif
+
+      call chn(ndustspec,sdustspec)
 !
 !  Define arrays for multiple dust species
 !
-      if (lwr) then
-        call chn(ndustspec,sdustspec)
+      if (lwr .and. ndustspec /= 1) then
         write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ndmin=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
@@ -883,12 +884,15 @@ module Dustdensity
 !  write column where which variable is stored
 !
         if (lwr) then
+          call chn(k-1,sdust)
+          sdust = '['//sdust//']'
+          if (ndustspec == 1) sdust=''
           if (i_ndm(k) /= 0) &
-              write(3,*) 'i_ndm['//trim(sdust)//']=',i_ndm(k)
+              write(3,*) 'i_ndm'//trim(sdust)//'=',i_ndm(k)
           if (i_ndmin(k) /= 0) &
-              write(3,*) 'i_ndmin['//trim(sdust)//']=',i_ndmin(k)
+              write(3,*) 'i_ndmin'//trim(sdust)//'=',i_ndmin(k)
           if (i_rhodm(k) /= 0) &
-              write(3,*) 'i_rhodm['//trim(sdust)//']=',i_rhodm(k)
+              write(3,*) 'i_rhodm'//trim(sdust)//'=',i_rhodm(k)
         endif
 !
 !  End loop over dust layers
