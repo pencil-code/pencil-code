@@ -50,9 +50,11 @@
         dx=Lx/nx
         dy=Ly/(ny*nprocy)
         dz=Lz/(nz*nprocz)
+        dz=Lz/((nz-1)*nprocz)
         do i=1,mx; x(i)=-Lx/2.+(i-0.5-nghost       )*dx; enddo
         do i=1,my; y(i)=-Ly/2.+(i-0.5-nghost+ipy*ny)*dy; enddo
         do i=1,mz; z(i)=-Lz/2.+(i-0.5-nghost+ipz*nz)*dz; enddo
+        do i=1,mz; z(i)=-Lz/2.+(i-1.0-nghost+ipz*nz)*dz; enddo
 !
 !  as full arrays
 !
