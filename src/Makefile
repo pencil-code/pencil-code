@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.205 2003-08-04 17:56:02 mee Exp $
+### $Id: Makefile,v 1.206 2003-08-04 18:42:20 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -89,6 +89,11 @@ CFLAGS=-O3 -DFUNDERSC=1
 
 ## Linux:
 ## The -tpp7 flag leads to a 10% speedup on nl6
+#
+#ifeq ($(MPICOMM),mpicomm)  #(cosmo|nw17|nl6|nl11|wormhole)
+#  MPICOMM=mpicomm_         #(cosmo|nw17|nl6|nl11|wormhole)
+#endif                      #(cosmo|nw17|nl6|nl11|wormhole)
+#
 #FC=f95
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
