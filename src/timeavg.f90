@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.3 2002-10-09 14:02:31 dobler Exp $ 
+! $Id: timeavg.f90,v 1.4 2002-10-09 14:09:17 dobler Exp $ 
 
 module Timeavg
 
@@ -42,7 +42,7 @@ module Timeavg
 !
       do i=1,mtavg
         if (idx_tavg(i) == 0) then
-          print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
+          if (lroot) print*, 'TIMEAVG: defaulting idx no.', i, ' to ', i
           idx_tavg(i)=i
         endif
       enddo
