@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.8 2002-10-02 16:37:52 dobler Exp $
+! $Id: io_mpio.f90,v 1.9 2002-10-02 17:29:20 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -79,6 +79,7 @@ contains
 !  closely follwing Gropp et al. `Using MPI-2'
 !  20-sep-02/wolf: coded
 !
+      use Cdata, only: datadir,directory_snap
       use Sub
       use Mpicomm, only: lroot,stop_it
 !
@@ -93,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.8 2002-10-02 16:37:52 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.9 2002-10-02 17:29:20 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -138,6 +139,7 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
+      use Cdata, only: datadir,directory,directory_snap
       use Mpicomm, only: iproc
 !
       directory = trim(datadir)//'/allprocs'

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.38 2002-10-02 16:37:52 dobler Exp $
+! $Id: io_dist.f90,v 1.39 2002-10-02 17:29:20 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -69,6 +69,7 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
+      use Cdata, only: datadir,directory_snap
       use General
       use Sub
       use Mpicomm, only: lroot,stop_it
@@ -80,7 +81,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.38 2002-10-02 16:37:52 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.39 2002-10-02 17:29:20 dobler Exp $")
 !
 !  initialize datadir and directory_snap (where var.dat and VAR# go)
 !  -- may be overwritten in *.in parameter file
@@ -99,6 +100,7 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
+      use Cdata, only: datadir,directory,directory_snap
       use Mpicomm, only: iproc
       use General, only: chn
 !
