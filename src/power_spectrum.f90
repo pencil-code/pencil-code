@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -404,7 +404,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -427,6 +427,17 @@ module  power_spectrum
   endif
   b1=0
   a2=a1
+
+
+
+spectrumx=0
+spectrumx_sum=0
+spectrumy=0
+spectrumy_sum=0
+spectrumz=0
+spectrumz_sum=0
+
+
   !
   !  Doing the Fourier transform
   !
@@ -444,10 +455,8 @@ module  power_spectrum
   do iky=1,ny
   do ikx=1,nk
     kxx=ikx-1
-  !  if (kxx<=(nk-1)) then
-      spectrumx(kxx+1)=spectrumx(kxx+1) &
-           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-   ! endif
+    spectrumx(kxx+1)=spectrumx(kxx+1) &
+         +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
   enddo
   enddo
   enddo
@@ -466,10 +475,8 @@ module  power_spectrum
     do iky=1,ny
     do ikx=1,nk
       kxx=ikx-1
- !     if (kxx<=(nk-1)) then
       spectrumy(kxx+1)=spectrumy(kxx+1) &
            +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
- !   endif
     enddo
     enddo
     enddo  
@@ -484,10 +491,8 @@ module  power_spectrum
     do iky=1,ny
     do ikx=1,nk
       kxx=ikx-1
-!      if (kxx<=(nk-1)) then
-        spectrumz(kxx+1)=spectrumz(kxx+1) &
-             +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
-!      endif
+      spectrumz(kxx+1)=spectrumz(kxx+1) &
+           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
     enddo
     enddo
     enddo
