@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.132 2004-09-28 11:33:05 ajohan Exp $
+# $Id: getconf.csh,v 1.133 2004-09-28 19:53:20 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -104,6 +104,18 @@ if ($mpi) echo "Running under MPI"
 set mpirunops  = ''  # options before -np $ncpus
 set mpirunops2 = ''  # options after -np $ncpus
 
+# Try to reconstruct submit host (to distinguish between the different
+# clusters that have nodes called `node7', etc). Possibly, $masterhost and
+# $masternode could be merged, but in fact these might be different host
+# names
+set masterhost = ''
+if ($?PBS_O_HOST) then
+  if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
+endif
+if ($?PBS_JOBID) then
+  if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
+endif
+
 # Get list of nodes; filters lines such that it would also handle
 # machines.XXX files or lam-bhost.der, although this is hardly necessary.
 if ($?PBS_NODEFILE) then
@@ -137,6 +149,7 @@ if ($hn =~ mhd*.st-and.ac.uk) then
   set mpirun = "dmpirun"
 
 else if ($hn =~ *.kis.uni-freiburg.de) then
+  echo "KIS machines"
   set mpirun = /opt/local/mpich/bin/mpirun
 
 else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
@@ -200,6 +213,7 @@ else if ($hn =~ giga[0-9][0-9]) then
   endif
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
+  echo "IBM in Aarhus (?)"
   set mpirun = /usr/bin/mpiexec
   set local_disc = 1
   set one_local_disc = 1
@@ -233,7 +247,7 @@ else if ($hn =~ psi*) then
   echo "Setting master node to psi24, the only node that is accesible by rsh"
 
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
-  echo "fire in Bergen"
+  echo "Fire in Bergen"
   set mpirunops = ''
   set mpirun = 'mpirunpbs'
   set npops = "-np $ncpus"
@@ -241,8 +255,9 @@ else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
 
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
-          || ($hn =~ master) || ($hn =~ node*) \
+          || ($hn =~ master) || ($hn =~ node* && $masterhost == '') \
 	  || ($hn =~ ns0*) ) then
+  echo "KIS cluster or Ns0"
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
     if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
@@ -394,7 +409,8 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
      set local_disc=0
   endif
 
-else if ($hn =~ obelix) then
+else if ($hn =~ obelix || \
+          ($hn =~ node[0-9][0-9] && $masterhost =~ obelix)) then
   echo "Obelix Cluster - Calgary"
   set local_disc = 0
   set one_local_disc = 0
@@ -402,7 +418,8 @@ else if ($hn =~ obelix) then
     cp $PBS_NODEFILE lamhosts
     lamboot -v lamhosts
     set booted_lam = 1
-    set mpirun = /opt/intel/compiler70/lam/bin/mpirun
+    # set mpirun = /opt/intel/compiler70/lam/bin/mpirun
+    set mpirun = /opt/gnu/lam-7.0/bin/mpirun
   endif
 
 else if ($hn == rasmussen) then
@@ -463,10 +480,11 @@ else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
   endif
 
 else if ($hn =~ cosmo) then
+  echo "Cosmo"
   set mpirunops = '-x NLSPATH'
 
 else if ($hn =~ mhd) then
-  echo "mhd node at Newcastle (alpha linux running LAM MPI)" 
+  echo "mhd node at Newcastle (alpha linux running LAM MPI)"
   #echo `hostname` "cpu=4" >! lamhosts
   #lamboot -v lamhosts
   #set booted_lam = 1
@@ -621,6 +639,7 @@ if ($debug) then
   echo '$datadir      	= ' "<$datadir>"
   echo '$SCRATCH_DIR  	= ' "<$SCRATCH_DIR>"
   echo '$hn           	= ' "<$hn>"
+  echo '$masterhost	= ' "<$masterhost>"
   echo '$mpirun       	= ' "<$mpirun>"
   echo '$mpirunops    	= ' "<$mpirunops>"
   echo '$mpirunops2   	= ' "<$mpirunops2>"
