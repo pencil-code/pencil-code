@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.8 2002-07-20 18:43:59 dobler Exp $
+! $Id: nohydro.f90,v 1.9 2002-07-31 20:16:53 brandenb Exp $
 
 module Hydro
 
@@ -42,7 +42,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.8 2002-07-20 18:43:59 dobler Exp $")
+           "$Id: nohydro.f90,v 1.9 2002-07-31 20:16:53 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -106,7 +106,7 @@ module Hydro
         if (i_um2/=0) call max_mn_name(u2,i_um2)
       endif
 !
-      if(ip==0) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
+      if(ip==0) print*,f,df,glnrho,divu,rho1,u2,uij  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine rprint_hydro(lreset)
