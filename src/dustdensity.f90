@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.103 2004-06-09 12:51:30 ajohan Exp $
+! $Id: dustdensity.f90,v 1.104 2004-06-11 08:05:24 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.103 2004-06-09 12:51:30 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.104 2004-06-11 08:05:24 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -648,12 +648,12 @@ module Dustdensity
             
             deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
 !
-!  Stick only when relative velocity below sticking velocity
+!  Stick only when relative speed is below sticking speed
 !
-            ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
-                ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.) 
-            if (deltaud > ust .and. ludstickmax) then
-              deltaud = 0.
+            if (ludstickmax) then
+              ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
+                  ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.) 
+              if (deltaud > ust) deltaud = 0.
             endif
             dkern(l,i,j) = scolld(i,j)*deltaud
             dkern(l,j,i) = dkern(l,i,j)
