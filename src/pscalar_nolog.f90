@@ -1,7 +1,9 @@
-! $Id: pscalar_nolog.f90,v 1.2 2003-05-20 15:47:58 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.3 2003-05-20 16:11:23 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
-!  Solves for c, not lnc
+!  Solves for c, not lnc. Keep ilncc and other names involving "ln"
+!  and pretend they are *generic* names. A better generic name
+!  might be "pscalar", so ipscalar instead of ilncc.
 
 module Pscalar
 
@@ -64,7 +66,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.2 2003-05-20 15:47:58 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.3 2003-05-20 16:11:23 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

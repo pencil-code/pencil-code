@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.27 2003-05-20 15:06:42 mee Exp $
+! $Id: pscalar.f90,v 1.28 2003-05-20 16:11:23 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -16,7 +16,7 @@ module Pscalar
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
-  real :: gradC0=0.
+  real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
@@ -63,7 +63,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.27 2003-05-20 15:06:42 mee Exp $")
+           "$Id: pscalar.f90,v 1.28 2003-05-20 16:11:23 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -188,10 +188,12 @@ module Pscalar
 !  restrict ourselves (for the time being) to z-gradient only
 !  makes sense really only for periodic boundary conditions
 !
-        if (gradC0/=0.) then
-          cc=exp(lncc)
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-gradC0*uu(:,3)/cc
-        endif
+        do j=1,3
+          if (gradC0(j)/=0.) then
+            cc=exp(lncc)
+            df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-gradC0(j)*uu(:,j)/cc
+          endif
+        enddo
 !
 !  tensor diffusion (but keep the isotropic one)
 !
