@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.10 2005-02-18 18:09:38 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.11 2005-04-02 13:14:18 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -27,10 +27,9 @@ module Radiation
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
-  real, dimension (mx,my,mz) :: Srad,lnchi,emtau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
-  real :: dtau_thresh1,dtau_thresh2
   real :: arad
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
@@ -116,7 +115,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.10 2005-02-18 18:09:38 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.11 2005-04-02 13:14:18 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -142,7 +141,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
 !
-      use Cdata, only: lroot,sigmaSB,pi,datadir
+      use Cdata, only: lroot,sigmaSB,pi,datadir,dtau_thresh1,dtau_thresh2
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
 !
@@ -390,6 +389,7 @@ module Radiation
 !   3-aug-03/axel: added max(dtau,dtaumin) construct
 !
       use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap
+      use Cdata, only: dtau_thresh1,dtau_thresh2
       use IO, only: output
 !
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
@@ -407,7 +407,7 @@ module Radiation
 !
 !  set optical depth and intensity initially to zero
 !
-      emtau=1
+      tau=0
       Qrad=0
 !
 !  loop over all meshpoints
@@ -435,7 +435,7 @@ module Radiation
           emdtau1=1-emdtau
           emdtau2=emdtau*(1+dtau_m)-1
         endif
-        emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
+        tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                    -Srad1st*emdtau1-Srad2nd*emdtau2
 
@@ -444,7 +444,7 @@ module Radiation
       enddo
 
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/emtau-'//raydir_str//'.dat',emtau,1)
+        call output(trim(directory_snap)//'/tau-'//raydir_str//'.dat',tau,1)
         call output(trim(directory_snap)//'/Qintr-'//raydir_str//'.dat',Qrad,1)
       endif
 !
@@ -499,7 +499,7 @@ module Radiation
           if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
           if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
           Qrad0(llstop,m,n)=Qrad0(llstop-lrad*steps,m-mrad*steps,n-nrad*steps)
-          Qrad0_yz(m,n)=Qrad0(llstop,m,n)*emtau(llstop,m,n)+Qrad(llstop,m,n)
+          Qrad0_yz(m,n)=Qrad0(llstop,m,n)*exp(-tau(llstop,m,n))+Qrad(llstop,m,n)
         enddo
         enddo
 !
@@ -526,7 +526,7 @@ module Radiation
           if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
           if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
           Qrad0(l,mmstop,n)=Qrad0(l-lrad*steps,mmstop-mrad*steps,n-nrad*steps)
-          Qrad0_zx(l,n)=Qrad0(l,mmstop,n)*emtau(l,mmstop,n)+Qrad(l,mmstop,n)
+          Qrad0_zx(l,n)=Qrad0(l,mmstop,n)*exp(-tau(l,mmstop,n))+Qrad(l,mmstop,n)
         enddo
         enddo
 !
@@ -557,7 +557,7 @@ module Radiation
           if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
           if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
           Qrad0(l,m,nnstop)=Qrad0(l-lrad*steps,m-mrad*steps,nnstop-nrad*steps)
-          Qrad0_xy(l,m)=Qrad0(l,m,nnstop)*emtau(l,m,nnstop)+Qrad(l,m,nnstop)
+          Qrad0_xy(l,m)=Qrad0(l,m,nnstop)*exp(-tau(l,m,nnstop)+Qrad(l,m,nnstop))
         enddo
         enddo
 
@@ -571,12 +571,12 @@ module Radiation
 !
 !  DOCUMENT ME!
 !
+      use Cdata, only: dtau_thresh1,dtau_thresh2
       use Mpicomm, only: radboundary_zx_periodic_ray
       use IO, only: output
 
-      real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(mx,mz) :: Qrad_zx,emtau_zx
+      real, dimension(my,mz) :: Qrad0_yz,Qrad_yz,tau_yz,emtau1_yz
+      real, dimension(mx,mz) :: Qrad0_zx,Qrad_zx,tau_zx,emtau1_zx
       integer :: l,m,n
 !
 !  x-direction
@@ -584,10 +584,22 @@ module Radiation
       if (lrad/=0) then
 
         forall (m=mmstart:mmstop:msign,n=nnstart:nnstop:nsign)
+          Qrad_yz(m,n)=Qrad(llstop,m,n)
+          tau_yz(m,n)=tau(llstop,m,n)
+        endforall
 
-          Qrad0_yz(m,n)=Qrad(llstop,m,n)/(1-emtau(llstop,m,m))
+        where (tau_yz>dtau_thresh1)
+          emtau1_yz=1.0
+        elsewhere (tau_yz<dtau_thresh2)
+          emtau1_yz=tau_yz*(1-0.5*tau_yz*(1-0.33333333*tau_yz))
+        elsewhere
+          emtau1_yz=1-exp(-tau_yz)
+        endwhere
+
+        Qrad0_yz=Qrad_yz/emtau1_yz
+
+        forall (m=mmstart:mmstop:msign,n=nnstart:nnstop:nsign)
           Qrad0(llstart-lrad,m,n)=Qrad0_yz(m,n)
-
         endforall
 
       endif
@@ -598,10 +610,18 @@ module Radiation
 
         forall (n=nnstart:nnstop:nsign,l=llstart:llstop:lsign)
           Qrad_zx(l,n)=Qrad(l,mmstop,n)
-          emtau_zx(l,n)=emtau(l,mmstop,n)
+          tau_zx(l,n)=tau(l,mmstop,n)
         endforall
 
-        call radboundary_zx_periodic_ray(mrad,Qrad_zx,emtau_zx,Qrad0_zx)
+        where (tau_zx>dtau_thresh1)
+          emtau1_zx=1.0
+        elsewhere (tau_zx<dtau_thresh2)
+          emtau1_zx=tau_zx*(1-0.5*tau_zx*(1-0.33333333*tau_zx))
+        elsewhere
+          emtau1_zx=1-exp(-tau_zx)
+        endwhere
+
+        call radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx,Qrad0_zx)
 
         forall (n=nnstart:nnstop:nsign,l=llstart:llstop:lsign)
           Qrad0(l,mmstart-mrad,n)=Qrad0_zx(l,n)
@@ -635,7 +655,7 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
           Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
-          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*emtau(l,m,n)
+          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
       enddo
       enddo
       enddo

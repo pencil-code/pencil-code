@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.129 2004-11-22 21:13:31 dobler Exp $
+! $Id: mpicomm.f90,v 1.130 2005-04-02 13:14:17 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -684,37 +684,45 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
-    subroutine radboundary_zx_periodic_ray(mrad,Qrad_zx,emtau_zx,Qrad0_zx)
+    subroutine radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx,Qrad0_zx)
 
-      use Cdata, only: directory_snap
+      use Cdata, only: directory_snap,dtau_thresh1,dtau_thresh2
       integer :: mrad
-      real, dimension(mx,mz) :: Qrad_zx,emtau_zx,Qrad0_zx
-      real, dimension(mx,mz,0:nprocy-1) :: Qrad_zx_all,emtau_zx_all
-      real, dimension(mx,mz) :: Qrad_tot_zx,emtau_tot_zx
+      real, dimension(mx,mz) :: Qrad_zx,tau_zx,Qrad0_zx
+      real, dimension(mx,mz,0:nprocy-1) :: Qrad_zx_all,tau_zx_all
+      real, dimension(mx,mz) :: Qrad_tot_zx,tau_tot_zx,emtau1_tot_zx
       integer :: ipystart,ipystop
       integer :: m
 
-      call MPI_ALLGATHER(emtau_zx,mx*mz,MPI_REAL,emtau_zx_all,mx*mz,MPI_REAL, &
+      call MPI_ALLGATHER(tau_zx,mx*mz,MPI_REAL,tau_zx_all,mx*mz,MPI_REAL, &
                          MPI_COMM_ROW,ierr)
 
       call MPI_ALLGATHER(Qrad_zx,mx*mz,MPI_REAL,Qrad_zx_all,mx*mz,MPI_REAL, &
                          MPI_COMM_ROW,ierr)
 
       Qrad_tot_zx=0.0
-      emtau_tot_zx=1.0
+      tau_tot_zx=0.0
 
       if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
       if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
 
       do m=ipystart,ipystop,mrad
-        Qrad_tot_zx=Qrad_tot_zx*emtau_zx_all(:,:,m)+Qrad_zx_all(:,:,m)
-        emtau_tot_zx=emtau_tot_zx*emtau_zx_all(:,:,m)
+        Qrad_tot_zx=Qrad_tot_zx*exp(-tau_zx_all(:,:,m))+Qrad_zx_all(:,:,m)
+        tau_tot_zx=tau_tot_zx+tau_zx_all(:,:,m)
       enddo
 
-      Qrad0_zx=Qrad_tot_zx/(1-emtau_tot_zx)
+      where (tau_tot_zx>dtau_thresh1)
+        emtau1_tot_zx=1.0
+      elsewhere (tau_tot_zx<dtau_thresh2)
+        emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
+      elsewhere
+        emtau1_tot_zx=1-exp(-tau_tot_zx)
+      endwhere
+
+      Qrad0_zx=Qrad_tot_zx/emtau1_tot_zx
 
       do m=ipystart,ipy-mrad,mrad
-        Qrad0_zx=Qrad0_zx*emtau_zx_all(:,:,m)+Qrad_zx_all(:,:,m)
+        Qrad0_zx=Qrad0_zx*exp(-tau_zx_all(:,:,m))+Qrad_zx_all(:,:,m)
       enddo
 
     endsubroutine radboundary_zx_periodic_ray

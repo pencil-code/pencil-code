@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.258 2005-03-02 06:10:04 dobler Exp $
+! $Id: cdata.f90,v 1.259 2005-04-02 13:14:17 theine Exp $
 
 module Cdata
 
@@ -200,6 +200,8 @@ module Cdata
 
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
+
+  real :: dtau_thresh1,dtau_thresh2
 
 
 endmodule Cdata
