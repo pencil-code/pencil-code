@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.68 2002-07-23 13:53:11 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.69 2002-07-24 11:46:03 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.68 $ $}
+\date{\today,~ $ $Revision: 1.69 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.68 $ $}
+  \emph{\today,~ $ $Revision: 1.69 $ $}
 
 
 \end{center}
@@ -1766,10 +1766,14 @@ the latest information, you should have a look at the code.
                  3rd-order Runge--Kutta). \\
   \var{dsnap} [$100.$]
                & save permanent snapshot every \var{dsnap} time units to
-                 files \file{VAR$N$}. \\
+                 files \file{VAR$n$}, where $n$ counts from $n=1$ upwards.
+                 (This information is stored in the file \file{tmp/tsnap.dat};
+                 see the module \var{wsnaps.f90}, which in turn uses the
+                 subroutines \var{out1} and \var{out2}.) \\
   \var{dvid} [$100.$]
                & write two-dimensional sections for generation of videos
-                 every \var{dvid} time units. \\
+                 every \var{dvid} time units (not timesteps; see the
+                 subroutines \var{out1} and \var{out2} in the code). \\
   \var{iwig} [$0$]
                & if $\ne 0$, apply a Nyquist filter (a filter eliminating
                  any signal at the Nyquist frequency, but affecting large
@@ -1811,7 +1815,7 @@ the latest information, you should have a look at the code.
   \var{theta} [$0.$]
                & direction of angular velocity ($\vartheta=0$ for
                  $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
-  \var{ttrans} [$0.$]
+  \var{ttransient} [$0.$]
                & initial time span for which to do something special
                  (transient).
                  Currently just used to smoothly switch on heating
@@ -1823,8 +1827,6 @@ the latest information, you should have a look at the code.
                  Useful for situations where initial conditions are not near
                  equilibrium. \\
   \var{dampuext} [$0.$], \\
-%AB: moved tdamp further down (because it's explained implicitly through dampu)
-%WD: Moved it up again, as it belongs to the same group as dampu
   \var{rdamp} [$1.2$], \\
   \var{wdamp} [$0.2$]
                & permanently damp motions in $|\xv|>r_{\rm damp}$ with
@@ -2167,7 +2169,7 @@ To discuss:
 \label{MPI}
 
 The code is parallelized using \name{MPI} (\dfn{message passing
-interface}) for a simple domain decomposition (data-pararellism), which is
+interface}) for a simple domain decomposition (data-parallelism), which is
 a straight-forward and very efficient way of parallelizing
 finite-difference codes.
 The current version has a few restrictions, which you should keep in mind
@@ -2208,14 +2210,18 @@ CPUs, you need to do the following (in that directory):
   by
   \begin{alltt}
   integer, parameter :: ncpus=16,nprocz=4,nprocy=ncpus/nprocz,nprocx=1
-  integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid \
+  integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid \
   \end{alltt}
   The first line specifies a $4{\times}4$ layout of the data in the $y$
   and $z$ direction.
-  The second line increases the resolution of the run because on most
-  architectures you won't gain much by running a problem as small as
-  $32^3$ on 16 CPUs (even $64^3$ may still be quite small in that
-  respect).
+  The second line increases the resolution of the run because
+%on most architectures you won't gain much by 
+%AB: one almost always gains something
+  running a problem as small as $32^3$ on 16 CPUs would be wasteful.
+  Even $128^3$ may still be quite small in that respect.
+  For performance timings, one should try and keep the size of the
+  problem per CPU the same, so for example $256^3$ on 16 CPUs should
+  be compared with $128^3$ on 2 CPUs.
 
 \item Recompile the code
   \begin{alltt}
@@ -2378,26 +2384,35 @@ times.
 
 % ====================================================================== %
 
-\section{Tuning the code for optimal performance}
+%\section{Tuning the code for optimal performance}
+%AB: what is described below is really a fake; not tuning.
+\section{Performance issues}
 
 \subsection{Using a simplified viscosity operator}
 
-For weakly compressible flows, there is little difference between the
+For weakly compressible flows (Mach numbers less than 10\%),
+there is little difference between the
 simplified viscous operator (\code{ivisc='simplified'}; see
 \S\ref{S-Eqn-of-motion}) and the full operator
-(\code{ivisc='nu-const'}), while the latter is numerically considerably
+(\code{ivisc='nu-const'}), while the latter is numerically
+%considerably
+%AB: not in connection with full MHD and other expensive things.
 more expensive.
 
-Strictly speaking, however, the equation of motion with the simplified
+The equation of motion with the simplified
 viscous operator does not conserve linear or angular momentum.
 It depends on your application whether this is a crucial shortcoming or
 totally irrelevant.
+In practice, we may use the simplified viscous operator
+during the initial relaxation phase of a long run, provided this
+is not already part of a production run.
 
-Thus, our recommendation is: compare results with the full viscous term to
-an otherwise identical run with simplified viscosity.
-If you don't find any relevant difference, you can carry out your
-production runs with the simplified term, provided you do counter-checks
-every now and then.
+%AB: we should not recommend this for production runs.
+%Thus, our recommendation is: compare results with the full viscous term to
+%an otherwise identical run with simplified viscosity.
+%If you don't find any relevant difference, you can carry out your
+%production runs with the simplified term, provided you do counter-checks
+%every now and then.
 
 
 % ====================================================================== %
@@ -3158,7 +3173,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.68 2002-07-23 13:53:11 dobler Exp $ $}
+$ $Id: manual.tex,v 1.69 2002-07-24 11:46:03 brandenb Exp $ $}
 
 
 \end{document}
@@ -3200,6 +3215,6 @@ $ $Id: manual.tex,v 1.68 2002-07-23 13:53:11 dobler Exp $ $}
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
 % LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
 % LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid ke
-% LocalWords:  nygrid nzgrid ccc widthss ttrans brandenb Nils Pariev tcsh ls ln
-% LocalWords:  cincinnatus CEST mx mz lnrho pf pararellism nprocy ncpus nprocz
+% LocalWords:  nygrid nzgrid ccc widthss ttransient brandenb Nils Pariev tcsh ls ln
+% LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz
 % LocalWords:  nprocx MIPSpro
