@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.47 2003-07-03 11:27:45 theine Exp $
+! $Id: radiation_exp.f90,v 1.48 2003-07-03 15:46:22 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.47 2003-07-03 11:27:45 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.48 2003-07-03 15:46:22 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -394,7 +394,7 @@ module Radiation
 !
 !  initialize position array in ghost zones
 !
-      do l=llstop-ldir*radx0+ldir,llstop
+      do l=llstop-ldir*radx0+ldir,llstop,ldir
       do m=m1,m2
       do n=n1,n2
          ll=pos(l,m,n,1)
@@ -405,7 +405,7 @@ module Radiation
       enddo
       enddo
       do l=l1,l2
-      do m=mmstop-mdir*rady0+mdir,mmstop
+      do m=mmstop-mdir*rady0+mdir,mmstop,mdir
       do n=n1,n2
          ll=pos(l,m,n,1)
          mm=pos(l,m,n,2)
@@ -416,7 +416,7 @@ module Radiation
       enddo
       do l=l1,l2
       do m=m1,m2
-      do n=nnstop-ndir*radz0+ndir,nnstop
+      do n=nnstop-ndir*radz0+ndir,nnstop,ndir
          ll=pos(l,m,n,1)
          mm=pos(l,m,n,2)
          nn=pos(l,m,n,3)
