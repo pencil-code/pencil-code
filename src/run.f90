@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.39 2002-06-09 10:13:02 brandenb Exp $
+! $Id: run.f90,v 1.40 2002-06-09 12:16:19 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.39 $", &
-             "$Date: 2002-06-09 10:13:02 $")
+             "$Revision: 1.40 $", &
+             "$Date: 2002-06-09 12:16:19 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -96,7 +96,8 @@
           if (lout) then
             inquire(FILE="STOP", EXIST=stop) !(exit DO loop if the file `STOP' exists)
             if (stop.or.t>tmax) then
-              if (lroot) write(0,*) "Found STOP file -- quitting"
+              if (lroot.and.stop) write(0,*) "done: found STOP file"
+              if (lroot.and.t>tmax) write(0,*) "done: t > tmax"
               exit Time_loop
             endif
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.54 2002-06-09 10:13:01 brandenb Exp $
+! $Id: entropy.f90,v 1.55 2002-06-09 12:16:19 brandenb Exp $
 
 module Entropy
 
@@ -57,8 +57,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.54 $", &
-           "$Date: 2002-06-09 10:13:01 $")
+           "$Revision: 1.55 $", &
+           "$Date: 2002-06-09 12:16:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,7 +180,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,del2ss,del2lnrho,sij2
+      real, dimension (nx) :: ugss,sij2 !,del2ss,del2lnrho
       real, dimension (nx) :: lnrho,ss,cs2,TT1
 !     real, dimension (nx) :: heat
       integer :: i,j,ju

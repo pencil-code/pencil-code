@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.16 2002-06-09 10:13:01 brandenb Exp $
+; $Id: r.pro,v 1.17 2002-06-09 12:16:19 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -18,29 +18,29 @@ undefine, read_all
 default, datadir, 'tmp'
 default, file, 'var.dat'
 ;
-if (iuu)    then uu    = fltarr(mx,my,mz,3)*one
-if (ilnrho) then lnrho = fltarr(mx,my,mz  )*one
-if (ient)   then ss = fltarr(mx,my,mz  )*one
-if (iaa)    then aa = fltarr(mx,my,mz,3)*one
+if (iuu ne 0)    then uu    = fltarr(mx,my,mz,3)*one
+if (ilnrho ne 0) then lnrho = fltarr(mx,my,mz  )*one
+if (ient ne 0)   then ss = fltarr(mx,my,mz  )*one
+if (iaa ne 0)    then aa = fltarr(mx,my,mz,3)*one
 ;
 ;  Read startup parameters
 ;
 pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
-if (cpar gt 0) then begin
-  print, 'Reading param2.nml..'
-  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
-  @tmp/param2.pro
+;if (cpar gt 0) then begin
+;  print, 'Reading param2.nml..'
+;  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
+;  @tmp/param2.pro
 ; cs0=par.cs0 & nu=par.nu
-  cs0=1. & nu=0.
+;  cs0=1. & nu=0.
 ; hcond0=par.hcond0 & hcond1=par.hcond1
 ; hcond2=par.hcond2 & whcond=par.whcond
 ; cheat=par.cheat & wheat=par.wheat
 ; cool=par.cool & wcool=par.wcool
 ; Fheat=par.Fheat
-endif else begin
-  print, 'Warning: cannot find file ', pfile
-endelse
+;endif else begin
+;  print, 'Warning: cannot find file ', pfile
+;endelse
 
 ;
 ;  Read data

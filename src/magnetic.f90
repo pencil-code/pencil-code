@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.40 2002-06-09 10:13:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.41 2002-06-09 12:16:19 brandenb Exp $
 
 module Magnetic
 
@@ -16,7 +16,7 @@ module Magnetic
   real :: amplaa=0., radius=.1, epsilonaa=1e-2
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   logical :: lpress_equil
-  character(len=40) kinflow
+  character(len=40) :: kinflow=''
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
@@ -73,8 +73,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.40 $", &
-           "$Date: 2002-06-09 10:13:02 $")
+           "$Revision: 1.41 $", &
+           "$Date: 2002-06-09 12:16:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

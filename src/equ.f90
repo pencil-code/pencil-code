@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.58 2002-06-09 10:13:01 brandenb Exp $
+! $Id: equ.f90,v 1.59 2002-06-09 12:16:19 brandenb Exp $
 
 module Equ
 
@@ -182,7 +182,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,divu,u2,rho,ee,rho1
+      real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
       integer :: j
 !
@@ -192,8 +192,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.58 $", &
-           "$Date: 2002-06-09 10:13:01 $")
+           "$Revision: 1.59 $", &
+           "$Date: 2002-06-09 12:16:19 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -281,7 +281,7 @@ module Equ
 !  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
 !
         if (ldiagnos.and.lhydro.and.ldensity) then
-          ee=cs2/(gamma*gamma1)
+          if (gamma1/=0.) ee=cs2/(gamma*gamma1)
           rho=exp(f(l1:l2,m,n,ilnrho))
           if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
           if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
