@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.12 2003-06-17 16:57:14 torkel Exp $
+! $Id: nohydro.f90,v 1.13 2003-07-19 07:39:36 brandenb Exp $
 
 module Hydro
 
@@ -11,13 +11,17 @@ module Hydro
   namelist /hydro_init_pars/ dummyuu
   namelist /hydro_run_pars/  dummyuu
 
-  ! run parameters
-  real, dimension (nx,3,3) :: sij
+  real :: frec_ux=100,ampl_osc_ux=1e-3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
+  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
+  integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
+  integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
+  integer :: i_Marms=0,i_Mamax=0 
+  integer :: i_divu2m=0,i_epsK=0
 
   contains
 
@@ -43,7 +47,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.12 2003-06-17 16:57:14 torkel Exp $")
+           "$Id: nohydro.f90,v 1.13 2003-07-19 07:39:36 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -138,7 +142,13 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
+        i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
+        i_urms=0; i_umax=0; i_orms=0; i_omax=0
+        i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_ux2m=0; i_uy2m=0; i_uz2m=0
+        i_umx=0; i_umy=0; i_umz=0
+        i_Marms=0; i_Mamax=0
+        i_divu2m=0; i_epsK=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -155,18 +165,46 @@ module Hydro
 !
       write(3,*) 'i_u2m=',i_u2m
       write(3,*) 'i_um2=',i_um2
+      write(3,*) 'i_o2m=',i_o2m
+      write(3,*) 'i_oum=',i_oum
+      write(3,*) 'i_urms=',i_urms
+      write(3,*) 'i_umax=',i_umax
       write(3,*) 'i_ux2m=',i_ux2m
       write(3,*) 'i_uy2m=',i_uy2m
       write(3,*) 'i_uz2m=',i_uz2m
-      write(3,*) 'i_o2m=',i_o2m
-      write(3,*) 'i_oum=',i_oum
+      write(3,*) 'i_orms=',i_orms
+      write(3,*) 'i_omax=',i_omax
+      write(3,*) 'i_ruxm=',i_ruxm
+      write(3,*) 'i_ruym=',i_ruym
+      write(3,*) 'i_ruzm=',i_ruzm
+      write(3,*) 'i_umx=',i_umx
+      write(3,*) 'i_umy=',i_umy
+      write(3,*) 'i_umz=',i_umz
+      write(3,*) 'i_Marms=',i_Marms
+      write(3,*) 'i_Mamax=',i_Mamax
+      write(3,*) 'i_divu2m=',i_divu2m
+      write(3,*) 'i_epsK=',i_epsK
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux
       write(3,*) 'iuy=',iuy
       write(3,*) 'iuz=',iuz
+      write(3,*) 'i_uxmz=',i_uxmz
+      write(3,*) 'i_uymz=',i_uymz
+      write(3,*) 'i_uzmz=',i_uzmz
+      write(3,*) 'i_uxmxy=',i_uxmxy
+      write(3,*) 'i_uymxy=',i_uymxy
+      write(3,*) 'i_uzmxy=',i_uzmxy
 !
     endsubroutine rprint_hydro
+!***********************************************************************
+    subroutine calc_mflow
+!
+!  dummy routine
+!
+!  19-jul-03/axel: adapted from hydro
+!
+    endsubroutine calc_mflow
 !***********************************************************************
 
 endmodule Hydro
