@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.42 2003-08-04 14:24:51 mee Exp $
+! $Id: noionization.f90,v 1.43 2003-08-04 16:11:17 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.42 2003-08-04 14:24:51 mee Exp $")
+           "$Id: noionization.f90,v 1.43 2003-08-04 16:11:17 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -140,24 +140,22 @@ module Ionization
 !
         yH0=amin1(amax1(yH0,yHacc),1.-yHacc)
 !
-        dlnPdlnrho=1.+twothirds
-        dlnPdss=twothirds/(1.+yH0+xHe) 
+        dlnPdlnrho=1.+(2./3.)
+        dlnPdss=(2./3.)/(1.+yH0+xHe) 
 !
-!        coef_lr=dlnPdlnrho-1.
-!        coef_ss=dlnPdss/ss_ion 
-        
         lnTTss=dlnPdss/ss_ion
         lnTTlnrho=dlnPdlnrho-1.
 
 ! Handle degenerate cases in yH0 and xHe
-        if (xHe .ne. 0.) yH0_term=yH0*log(yH0)
-        if (yH0 .ne. 1.) one_yH0_term=(1.-yH0)*log(1.-yH0)
-        if (xHe .ne. 0.) xHe_term=xHe*log(xHe)
+        if (xHe .ne. 0.) yH0_term=yH*(2.*log(yH)-lnrho_e-lnrho_p)
+        if (yH0 .ne. 1.) one_yH0_term=(1.-yH)*(log(1.-yH)-lnrho_H)
+        if (xHe .ne. 0.) xHe_term=xHe*(log(xHe)-lnrho_He)
 
-        lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH0)*log(m_H/m_e) &
-                          -1.5*yH0*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
-                          +one_yH0_term+2.*yH0_term+xHe_term) &
-                          /(1.+yH0+xHe)-lnrho_e-2.5)
+        lnTT0=log(TT_ion)+(2./3.)*(
+                              (one_yH0_term + yH0_term + xHe_term) &
+                              / (1.+yH0+xHe) - 2.5)
+        
+
         cs2TT=gamma1
         eeTT=1./gamma1
         eeyH0=0.        
@@ -296,7 +294,7 @@ module Ionization
 !
       if (present(cs2))      cs2=cs2TT*TT
       if (present(cp1tilde)) cp1tilde=cp
-      if (present(ee))       ee=eeTT*TT+eeyH0*yH0
+      if (present(ee))       ee=eeTT*TT+eeyH0*yH
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
@@ -321,7 +319,7 @@ module Ionization
 !
       if (present(cs2))      cs2=cs2TT*TT
       if (present(cp1tilde)) cp1tilde=cp
-      if (present(ee))       ee=eeTT*TT+eeyH0*yH0
+      if (present(ee))       ee=eeTT*TT+eeyH0*yH
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
