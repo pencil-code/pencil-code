@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.44 2004-02-27 16:03:42 ajohan Exp $
+! $Id: dustdensity.f90,v 1.45 2004-03-31 07:35:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.44 2004-02-27 16:03:42 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.45 2004-03-31 07:35:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -554,13 +554,13 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,pp,ppmon,ppsat,vth,epsmon
       real, dimension (nx) :: supsatratio1
-      real, save :: mu
+      real, save :: mu,mumol
 !
       select case(dust_chemistry)
 
       case ('ice')
         epsmon = f(l1:l2,m,n,ilncc)
-        if (it .eq. 1) call getmu(mu)
+        if (it .eq. 1) call getmu(mu,mumol=mumol)
         call eoscalc_pencil &
             (ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*epsmon*mu/mumon
