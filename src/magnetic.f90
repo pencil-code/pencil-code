@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.154 2003-11-25 15:29:29 brandenb Exp $
+! $Id: magnetic.f90,v 1.155 2003-11-25 15:40:01 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -33,11 +33,11 @@ module Magnetic
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
-  real :: eta_int=0.,eta_ext=0.,wres=.01
+  real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
   ! dgm: for hyper diffusion in any spatial variation of eta
-  logical :: lres_hyper=.false.,leta_const=.true.
+  logical :: lresistivity_hyper=.false.,leta_const=.true.
   character (len=40) :: kinflow=''
   real :: alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -59,7 +59,7 @@ module Magnetic
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms,iresistivity,lres_hyper, &
-       eta_int,eta_ext,wres
+       eta_int,eta_ext,wresistivity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -109,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.154 2003-11-25 15:29:29 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.155 2003-11-25 15:40:01 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,7 +420,7 @@ module Magnetic
 ! 
       call eta_spatial(f,eta_mn,geta,divA)
 !
-      if (lres_hyper) then
+      if (lresistivity_hyper) then
         call del6v(f,iaa,del6A)
         del2A=del6A
       endif
@@ -653,7 +653,7 @@ module Magnetic
         leta_const=.true.
       else if (iresistivity .eq. 'hyper6') then
         leta_const=.true.
-        lres_hyper=.true.
+        lresistivity_hyper=.true.
       else if (iresistivity .eq. 'shell') then
         leta_const=.false.
         call eta_shell(eta_mn,geta)
@@ -684,16 +684,16 @@ module Magnetic
 !
 !     calculate steps in resistivity
 !
-      prof=step(r_mn,r_int,wres)
+      prof=step(r_mn,r_int,wresistivity)
       eta_mn=d_int*(1-prof)
-      prof=step(r_mn,r_ext,wres)
+      prof=step(r_mn,r_ext,wresistivity)
       eta_mn=eta_mn+d_ext*prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
-      prof=der_step(r_mn,r_int,wres)
+      prof=der_step(r_mn,r_int,wresistivity)
       eta_r=-d_int*prof
-      prof=der_step(r_mn,r_ext,wres)
+      prof=der_step(r_mn,r_ext,wresistivity)
       eta_r=eta_r+d_ext*prof
       geta=evr*spread(eta_r,2,3)
 !
