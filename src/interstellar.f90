@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.77 2004-03-04 10:44:01 mee Exp $
+! $Id: interstellar.f90,v 1.78 2004-03-04 17:46:08 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -98,7 +98,9 @@ module Interstellar
 
 ! Flag and explosion rates for average interstellar heating
   logical :: laverage_SN_heating = .false.
+  logical :: lSN_eth=.true., lSN_ecr=.true.
   real :: r_SNI=3.e+4, r_SNII=4.e+3
+  real :: frac_ecr=0.1, frac_eth=0.9
 
   real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
 
@@ -112,7 +114,7 @@ module Interstellar
       uniform_zdist_SNI, ltestSN, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion, &
-      center_SN_x, center_SN_y, center_SN_z
+      center_SN_x, center_SN_y, center_SN_z, frac_ecr, frac_eth, lSN_eth, lSN_ecr
 
   contains
 
@@ -139,7 +141,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.77 2004-03-04 10:44:01 mee Exp $")
+           "$Id: interstellar.f90,v 1.78 2004-03-04 17:46:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -781,7 +783,7 @@ find_SN: do n=n1,n2
                               yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       TT_SN=exp(lnTT_SN)
 
-      ee_SN_new = ee_SN+c_SN/rho_SN
+      ee_SN_new = frac_eth*(ee_SN+c_SN/rho_SN)
       call eoscalc(ilnrho_ee,lnrho_SN,ee_SN_new, &
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
@@ -801,7 +803,7 @@ find_SN: do n=n1,n2
          if (lmove_mass) then
            call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
            lnrho_SN_new=log(rho_SN_new)
-           ee_SN_new=(ee_SN*rho_SN+c_SN)/rho_SN_new
+           ee_SN_new=frac_eth*(ee_SN*rho_SN+c_SN)/rho_SN_new
 
            call eoscalc(ilnrho_ee,lnrho_SN_new,ee_SN_new, &
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
@@ -848,13 +850,20 @@ find_SN: do n=n1,n2
               lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
             endif
   
-            call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho),ss,lnTT,yH)
-            !call eoscalc(ilnrho_ee,lnrho,ee_old+(deltaEE/rho_old),ss=ss,lnTT=lnTT,yH=yH)
+            call perturb_energy(lnrho,(ee_old*rho_old+deltaEE*frac_eth)/exp(lnrho),ss,lnTT,yH)
             TT=exp(lnTT)
 
+            if (lcosmicray.and.lSN_ecr) then 
+              f(l1:l2,m,n,iecr) = f(l1:l2,m,n,iecr) + (deltaEE * frac_ecr) 
+            endif
+            !call eoscalc(ilnrho_ee,lnrho,ee_old+(deltaEE/rho_old),ss=ss,lnTT=lnTT,yH=yH)
+
             ! Save changes 
-            f(l1:l2,m,n,ilnrho)=lnrho
-            f(l1:l2,m,n,iss)=ss
+            if (lSN_eth) then
+              f(l1:l2,m,n,ilnrho)=lnrho
+              f(l1:l2,m,n,iss)=ss
+            endif
+
             lnTT=log(TT)
             if (ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
