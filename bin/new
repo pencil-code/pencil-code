@@ -1,10 +1,13 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.8 2002-10-07 18:02:50 brandenb Exp $
+#  $Id: new,v 1.9 2002-10-21 07:59:07 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
 #  you may want to adapt mkdatadir for your particular machine).
+#
+#  Usage:
+#     new run1 run2
 #
 #  save current working directory and make new run directory
 #  and go there.
@@ -12,6 +15,7 @@
 set CWD=$cwd
 mkdir $2
 cd $2
+set targetdir=$cwd
 #
 #  In the new run directory, call mkdatadir, and go there
 #
@@ -22,7 +26,8 @@ cd src
 #  use *.local files from previous src directory
 #  and run setup-src
 #
-cp ../../$1/src/*.local .
+cp $CWD/$1/src/*.local .
+echo "Use *.local files from:" `pwd`; ls -l *.local
 cd ..
 $PENCIL_HOME/bin/setup-src
 #
@@ -30,6 +35,8 @@ $PENCIL_HOME/bin/setup-src
 #  the k.dat file is actually only needed for forced
 #  turbulence runs
 #
-cd ../$1
-cp *.in k.dat ../$2
+cd $CWD/$1
+echo "Use *.in files from:" `pwd`; ls -l *.in
+cp *.in $targetdir
+if (-f k.dat) cp k.dat $targetdir
 #
