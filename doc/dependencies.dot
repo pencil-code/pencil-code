@@ -1,4 +1,4 @@
-/* Mutual dependencies for the pencil_modular code.
+/* Mutual dependencies for the Pencil Code.
    Run this through
      dot -Tps dependencies.dot -o deps.ps
    to obtain a PostScript graph. dot is part of AT&T's `graphviz'

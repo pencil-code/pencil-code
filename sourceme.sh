@@ -11,7 +11,7 @@
 
 #  You may or may not want to put the lines
 #    setenv PENCIL_HOME [...]
-#    . $HOME/f90/pencil_modular/sourceme.sh
+#    . $PENCIL_HOME/sourceme.sh
 #  into your .bashrc
 
 if [ -z $PENCIL_HOME ]; then
