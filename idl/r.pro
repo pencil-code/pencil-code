@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.47 2003-05-31 04:37:44 brandenb Exp $
+; $Id: r.pro,v 1.48 2003-06-13 09:29:41 nilshau Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.47 2003-05-31 04:37:44 brandenb Exp $
+;;; $Id: r.pro,v 1.48 2003-06-13 09:29:41 nilshau Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -28,9 +28,13 @@ if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
 if (ldensity)   then lnrho = fltarr(mx,my,mz  )*one
 if (lentropy)   then ss    = fltarr(mx,my,mz  )*one
 if (lmagnetic)  then aa    = fltarr(mx,my,mz,3)*one
-if (lradiation) then ff    = fltarr(mx,my,mz,3)*one
-if (lradiation) then ee    = fltarr(mx,my,mz  )*one
+if (lradiation_fld) then ff    = fltarr(mx,my,mz,3)*one
+if (lradiation_fld) then ee    = fltarr(mx,my,mz  )*one
 if (lpscalar )  then lncc  = fltarr(mx,my,mz  )*one
+if (lradiation AND NOT lradiation_fld) then Qrad  = fltarr(mx,my,mz)*one
+if (lradiation AND NOT lradiation_fld) then Srad  = fltarr(mx,my,mz)*one
+if (lradiation AND NOT lradiation_fld) then kappa = fltarr(mx,my,mz)*one
+if (lradiation AND NOT lradiation_fld) then TT    = fltarr(mx,my,mz)*one
 ;
 ;  Read startup parameters
 ;
@@ -54,7 +58,10 @@ if (cpar gt 0) then begin
   if (execute('par2 = '+res) ne 1) then $
       message, 'There was a problem with param.nml', /INFO
   if (lhydro) then begin
-    cs0=par2.cs0 & nu=par2.nu
+    nu=par2.nu
+  endif
+  if (ldensity) then begin
+    cs0=par2.cs0
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
@@ -75,13 +82,13 @@ openr,1, datadir+'/'+varfile, /F77
   if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
     print,'MHD with entropy'
     readu,1,uu,lnrho,ss,aa
-  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 and iQrad eq 0 then begin
     print,'hydro without entropy, but with magnetic field'
     readu,1,uu,lnrho,aa
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and ie ne 0 then begin
     print,'hydro with entropy, density and radiation'
     readu,1,uu,lnrho,ss,ee,ff
-  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 and iQrad eq 0 then begin
     print,'hydro with entropy, but no magnetic field'
     readu,1,uu,lnrho,ss
   end else if iuu ne 0 and ilnrho ne 0 and ilncc ne 0 and iaa eq 0 then begin
@@ -103,8 +110,11 @@ openr,1, datadir+'/'+varfile, /F77
     print,'just density (probably just good for tests)'
     readu,1,lnrho
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ie ne 0 then begin
-    print,'just radiation'
+    print,'just radiation using FLD'
     readu,1,ee,ff
+  end else if iuu eq 1 and ilnrho ne 0 and ient ne 0 and iQrad ne 0 then begin
+    print,'hydro with density entropy and radiation (not FLD-app.)'
+    readu,1,uu,lnrho,ss,Qrad,Srad,kappa,TT
   end else begin
     print,'not prepared...'
   end
@@ -142,13 +152,24 @@ if (lentropy) then $
 if (lpscalar) then $
     print, FORMAT=fmt, 'lncc   =', $
       minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
-if (lradiation) then $
-    for j=0,2 do $
+if (lradiation_fld) then begin
+    for j=0,2 do begin
       print, FORMAT=fmt, 'ff_'+xyz[j]+'   =', $
       minmax(ff(*,*,*,j)), mean(ff(*,*,*,j),/DOUBLE), rms(ff(*,*,*,j),/DOUBLE)
-if (lradiation) then $
+    end
     print, FORMAT=fmt, 'ee     =', $
-      minmax(ee), mean(ee,/DOUBLE), rms(ee,/DOUBLE)
+    minmax(ee), mean(ee,/DOUBLE), rms(ee,/DOUBLE)
+end
+if (lradiation AND NOT lradiation_fld) then begin
+    print, FORMAT=fmt, 'Qrad     =', $
+    minmax(Qrad(l1:l2,m1:m2,n1:n2)), mean(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE)
+    print, FORMAT=fmt, 'Srad     =', $
+    minmax(Srad(l1:l2,m1:m2,n1:n2)), mean(Srad(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(Srad(l1:l2,m1:m2,n1:n2),/DOUBLE)
+    print, FORMAT=fmt, 'kappa     =', $
+    minmax(kappa(l1:l2,m1:m2,n1:n2)), mean(kappa(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(kappa(l1:l2,m1:m2,n1:n2),/DOUBLE)
+    print, FORMAT=fmt, 'TT     =', $
+    minmax(TT(l1:l2,m1:m2,n1:n2)), mean(TT(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(TT(l1:l2,m1:m2,n1:n2),/DOUBLE)
+end
 if (lmagnetic) then begin
     for j=0,2 do $
       print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
@@ -160,28 +181,28 @@ end
 ;
 print,'t = ',t
 ;
+;if (par.lradiation ne 0) then begin
+ ; if (par.output_Qrad) then begin
+ ;   Qrad=fltarr(mx,my,mz)*one
+ ;   Srad=fltarr(mx,my,mz)*one
+ ;   kappa=fltarr(mx,my,mz)*one
+ ;   TT=fltarr(mx,my,mz)*one
+ ;   readu,1,Qrad,Srad,kappa,TT
+ ;   print, FORMAT=fmt, 'Qrad   =', $
+ ;     minmax(Qrad), mean(Qrad,/DOUBLE), rms(Qrad,/DOUBLE)
+ ;   print, FORMAT=fmt, 'Srad   =', $
+ ;     minmax(Srad), mean(Srad,/DOUBLE), rms(Srad,/DOUBLE)
+ ;   print, FORMAT=fmt, 'kappa   =', $
+ ;     minmax(kappa), mean(kappa,/DOUBLE), rms(kappa,/DOUBLE)
+ ;   print, FORMAT=fmt, 'TT   =', $
+ ;     minmax(TT), mean(TT,/DOUBLE), rms(TT,/DOUBLE)
+ ; end
+;end
 if (par.lvisc_shock ne 0) then begin
     nu_shock=fltarr(mx,my,mz)*one
     readu,1,nu_shock
 endif
 ;
-if (par.lradiation ne 0) then begin
-  if (par.output_Qrad) then begin
-    Qrad=fltarr(mx,my,mz)*one
-    Srad=fltarr(mx,my,mz)*one
-    kappa=fltarr(mx,my,mz)*one
-    TT=fltarr(mx,my,mz)*one
-    readu,1,Qrad,Srad,kappa,TT
-    print, FORMAT=fmt, 'Qrad   =', $
-      minmax(Qrad), mean(Qrad,/DOUBLE), rms(Qrad,/DOUBLE)
-    print, FORMAT=fmt, 'Srad   =', $
-      minmax(Srad), mean(Srad,/DOUBLE), rms(Srad,/DOUBLE)
-    print, FORMAT=fmt, 'kappa   =', $
-      minmax(kappa), mean(kappa,/DOUBLE), rms(kappa,/DOUBLE)
-    print, FORMAT=fmt, 'TT   =', $
-      minmax(TT), mean(TT,/DOUBLE), rms(TT,/DOUBLE)
-  end
-end
 ;
 if (par.lionization ne 0) then begin
   if (par.output_yH) then begin
