@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.95 2002-09-20 10:16:27 dobler Exp $
+### $Id: Makefile,v 1.96 2002-09-20 10:17:27 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -42,7 +42,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(Antares)
 #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
-#FFLAGS= -64 -O3 -mips4 #(ukaff|origin)
+#FFLAGS= -64 -O3 -auto_use mpi_interface -mips4 #(ukaff|origin)
 #F77=$(FC)
 CFLAGS=-O3 -64 -DFUNDERSC=1
 
