@@ -1,14 +1,45 @@
 #!/bin/csh
-#$Id: move-slice,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#$Id: move-slice,v 1.2 2002-11-16 09:17:43 brandenb Exp $
 #
 #  Example:
 #     move-slice data2
+#
+#  Usage:
+#     Go into data dir where current slices are underneath proc dirs.
+#     move-slice <new target directory where proc tree will be created>
+#
+#  Description:
 #  Moves all slice files from the underlying proc directories to
-#  the directory data2 that must have been produced beforehand
-#  using "mkproc-tree 128", for example.
+#  the new target directory $1. It will be created if it doesn't exist yet.
+#  If it does exit, but the proc subdirectories not, they will be created.
+#  This routine is normally used when slice files has become too long.
+#  This routine can also be useful when restarting, and old data are
+#  corrupted or run will be restarted from another time.
+#
+#  15-nov-02/axel: coded
+#  16-nov-02/axel: made more robust; created directories that don't exist
 
+# make target directory if it doesn't exist yet
+if (! -e $1) then
+  mkdir $1
+  echo "created directory" $1
+endif
+echo next
+
+# save current working directory
+set CWD=$cwd
+
+# loop through all proc directories
 set procdirs  =  `ls | grep proc `
 foreach proc ($procdirs)
+  #check whether proc directory already exists in new directory
+  cd $1
+  if (! -e $proc) then
+    mkdir $proc
+  endif
+  cd $CWD
+
+  # mv slice files to new directory
   echo "mv $proc/slice* $1/$proc"
   mv $proc/slice* $1/$proc
 end
