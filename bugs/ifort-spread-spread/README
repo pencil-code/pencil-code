@@ -2,7 +2,7 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.1 2004-04-28 10:05:51 dobler Exp $
+$Id: README,v 1.2 2004-04-28 12:19:50 dobler Exp $
 
 
 1. Symptoms:
@@ -47,16 +47,19 @@ However, with ifort (Intel Fortran compiler, version 8.0), one gets
 
 2. Command sequence:
 
-  unix>  make FC=ifort
   unix>  make FC=ifort test
+or
+  unix>  make FC=ifort LD_LIBRARY_PATH=/usr/opt/intel/lib test
+(or similar)
 
 3. Platforms:
-   SuSe Linux 8.0, Kernel 2.4.18-4GB-SMP, AMD Athlon MP 1900+
-   
+   SuSe Linux 8.0,   Kernel 2.4.18-4GB-SMP, dual AMD Athlon MP 1900+, 1600 MHz
+   RedHat Linux 9.0, Kernel 2.4.20-28.9smp, dual Pentium III,          930 MHz
 
 
 4. Other compilers tested (OPK means problem could not be reproduced):
    - Intel ifc 6.0 (Linux)  OK
+   - Intel ifc 7.1 (Linux)  OK
 
 5. Workaround:
    Replace stacked spread(spread()) call by two consecutive calls using an
