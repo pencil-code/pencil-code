@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.74 2002-07-08 20:55:57 dobler Exp $ 
+! $Id: sub.f90,v 1.75 2002-07-09 12:57:55 dobler Exp $ 
 
 module Sub 
 
@@ -1622,6 +1622,29 @@ module Sub
       f(:,:,:,ilnrho)=alog(tmp)
 !
     endsubroutine rmwig0
+!***********************************************************************
+    subroutine get_nseed(nseed)
+!
+!  Get length of state of random number generator. The current seed can
+!  be represented by nseed (4-byte) integers.
+!  Different compilers have different lengths:
+!    SGI: 64, Intel: 47, NAG: 1, Compaq: 2
+!
+      use Cparam, only: mseed
+      use Mpicomm, only: lroot,stop_it      
+!
+      integer :: nseed
+!
+      call random_seed(SIZE=nseed)
+      !
+      ! test whether mseed is large enough for this machine
+      !
+      if (nseed > mseed) then
+        if (lroot) print*, "This machine requires mseed >= ", nseed
+        call stop_it("Need to increase mseed")
+      endif
+!
+    endsubroutine get_nseed
 !***********************************************************************
 
 endmodule Sub

@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.21 2002-07-08 06:51:51 brandenb Exp $
+! $Id: cparam.f90,v 1.22 2002-07-09 12:57:55 dobler Exp $
 
 module Cparam
 
@@ -40,6 +40,11 @@ module Cparam
 !  length of strings for boundary conditions and lables a la initss, initaa 
 !
   integer, parameter :: bclen=3,labellen=25
-
+!
+!  significant length of random number generator state
+!  Different compilers have different lengths:
+!    SGI: 64, Intel: 47, NAG: 1, Compaq: 2
+integer, parameter :: mseed=100
+!
 endmodule Cparam
 

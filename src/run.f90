@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.60 2002-07-09 11:39:22 brandenb Exp $
+! $Id: run.f90,v 1.61 2002-07-09 12:57:55 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.60 2002-07-09 11:39:22 brandenb Exp $")
+             "$Id: run.f90,v 1.61 2002-07-09 12:57:55 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -89,8 +89,9 @@
 !
         if (lforcing) then
           if (lroot.and.ip<14) print*,'reading seed file'
-          call inpui(trim(directory)//'/seed.dat',seed,2)
-          call random_seed(put=seed)
+          call get_nseed(nseed)   ! get state length of random number generator
+          call inpui(trim(directory)//'/seed.dat',seed,nseed)
+          call random_seed(put=seed(1:nseed))
         endif
 !
 !  advance equations
@@ -178,8 +179,8 @@
 !  write seed parameters (only if forcing is turned on)
 !
         if (lforcing) then
-          call random_seed(get=seed)
-          call outpui(trim(directory)//'/seed.dat',seed,2)
+          call random_seed(get=seed(1:nseed))
+          call outpui(trim(directory)//'/seed.dat',seed,nseed)
         endif
 !
 !  print wall clock time and time per step and processor

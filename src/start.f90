@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.52 2002-07-09 01:39:31 brandenb Exp $
+! $Id: start.f90,v 1.53 2002-07-09 12:57:55 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.52 2002-07-09 01:39:31 brandenb Exp $")
+             "$Id: start.f90,v 1.53 2002-07-09 12:57:55 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -130,7 +130,8 @@
 !  processor as forcing is applied in (global) Beltrami modes
 !
         seed(1)=1000
-        call outpui(trim(directory)//'/seed.dat',seed,2)
+        call get_nseed(nseed)   ! get state length of random number generator
+        call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
         if (lroot) print* !(finish with an empty line)
