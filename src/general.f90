@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.35 2004-04-02 20:51:45 dobler Exp $
+! $Id: general.f90,v 1.36 2004-09-17 19:33:57 dobler Exp $
 
 module General
 
@@ -311,7 +311,8 @@ module General
 !
       implicit none
 !
-      integer(selected_int_kind(9)), intent(inout) :: iseed1
+      integer, parameter :: ikind=kind(888889999)
+      integer(ikind), intent(inout) :: iseed1
       real :: ran
 !
       ! "Minimal" random number generator of Park and Miller combined
@@ -324,8 +325,8 @@ module General
       ! of this generator is about 3.1×10^18.
 
       real, save :: am
-      integer(selected_int_kind(9)), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
-      integer(selected_int_kind(9)), save :: ix=-1,iy=-1,k
+      integer(ikind), parameter :: ia=16807,im=2147483647,iq=127773,ir=2836
+      integer(ikind), save      :: ix=-1,iy=-1,k
 
       if (iseed1 <= 0 .or. iy < 0) then   ! Initialize.
         am=nearest(1.0,-1.0)/im
