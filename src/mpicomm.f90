@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.76 2003-05-29 17:24:00 ngrs Exp $
+! $Id: mpicomm.f90,v 1.77 2003-06-06 18:04:04 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -718,9 +718,12 @@ module Mpicomm
 !
 !  Doing the transpose of information distributed on several processors
 !  Used for doing FFTs in the y and z directions.
+!  This routine is presently restricted to the case nxgrid=nygrid (if var=y)
+!  and nygrid=nzgrid (if var=z)
 !
 !  03-sep-02/nils: coded
 !  26-oct-02/axel: comments added
+!   6-jun-03/axel: works now also in 2-D (need only nxgrid=nygrid)
 !
       real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
       real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
@@ -733,14 +736,6 @@ module Mpicomm
       character :: var
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-!  This routine is presently restricted to the case nxgrid=nygrid=nzgrid
-!  Make sure this is the case
-!
-      if(nxgrid/=nygrid.or.nygrid/=nzgrid) then
-        print*,'transp: need to have nxgrid=nygrid=nzgrid'
-        call stop_it('Inconsistency: nxgrid/=nygrid.or.nygrid/=nzgrid')
-      endif
-!
 !  Calculate the size of buffers.
 !  Buffers used for the y-transpose have the same size in y and z.
 !  Buffers used for the z-transpose have the same size in z and x.
@@ -751,6 +746,10 @@ module Mpicomm
 !  Doing x-y transpose if var='y'
 !
       if (var=='y') then
+        if(nxgrid/=nygrid) then
+          print*,'transp: need to have nxgrid=nygrid for var==y'
+          call stop_it('Inconsistency: nxgrid/=nygrid')
+        endif
 !
 !  Send information to different processors (x-y transpose)
 !  Divide x-range in as many intervals as we have processors in y.
@@ -826,6 +825,10 @@ module Mpicomm
 !  Doing x-z transpose if var='z'
 !
       elseif (var=='z') then
+        if(nygrid/=nzgrid) then
+          print*,'transp: need to have nygrid=nzgrid for var==z'
+          call stop_it('Inconsistency: nygrid/=nzgrid')
+        endif
 !
 !  Send information to different processors (x-z transpose)
 !  See the discussion above for why we use this communication pattern
@@ -958,7 +961,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
-  if(nxgrid/=nygrid .or. nxgrid/=nzgrid) then
+  if(nxgrid/=nygrid .or. (nxgrid/=nzgrid .and. nzgrid/=1)) then
     print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
     call stop_it("must have nxgrid=nygrid=nzgrid!")
   endif
@@ -991,20 +994,25 @@ subroutine transform_fftpack(a_re,a_im,dummy)
     a_im(:,m,n)=aimag(ax)
   enddo
   enddo
-  call transp(a_re,'z')
-  call transp(a_im,'z')
+!
+!  in 2-D, we can't do the last transpose
+!
+  if(nz>1) then
+    call transp(a_re,'z')
+    call transp(a_im,'z')
 !
 !  The length of the array in the z-direction is also nx
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in z'
-  do n=1,nz
-  do m=1,ny
-    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call cfftf(nx,ax,wsavex)
-    a_re(:,m,n)=real(ax)
-    a_im(:,m,n)=aimag(ax)
-  enddo
-  enddo
+    if(lroot .AND. ip<10) print*,'doing FFTpack in z'
+    do n=1,nz
+    do m=1,ny
+      ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+      call cfftf(nx,ax,wsavex)
+      a_re(:,m,n)=real(ax)
+      a_im(:,m,n)=aimag(ax)
+    enddo
+    enddo
+  endif
 !
 !  Normalize
 !
