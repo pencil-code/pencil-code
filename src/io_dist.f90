@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.37 2002-10-02 15:49:57 dobler Exp $
+! $Id: io_dist.f90,v 1.38 2002-10-02 16:37:52 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -63,13 +63,12 @@ contains
 !***********************************************************************
     subroutine register_io()
 !
-!  dummy routine, generates separate directory for each directory.
+!  dummy routine, generates separate directory for each processor.
 !  VAR#-files are written to the directory directory_snap which will
 !  be the same as directory, unless specified otherwise.
 !
 !  20-sep-02/wolf: coded
 !
-      use Cdata, only: iproc,datadir,datadir_snap
       use General
       use Sub
       use Mpicomm, only: lroot,stop_it
@@ -81,11 +80,13 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.37 2002-10-02 15:49:57 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.38 2002-10-02 16:37:52 dobler Exp $")
 !
-!  initialize datadir (may be overwritten in *.in parameter file)
+!  initialize datadir and directory_snap (where var.dat and VAR# go)
+!  -- may be overwritten in *.in parameter file
 !
       datadir = 'tmp'
+      directory_snap = ''
 !
     endsubroutine register_io
 !***********************************************************************
@@ -98,7 +99,6 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir,datadir_snap,directory,directory_snap
       use Mpicomm, only: iproc
       use General, only: chn
 !
@@ -106,8 +106,16 @@ contains
 !
       call chn(iproc,chproc)
       directory = trim(datadir)//'/proc'//chproc
-      if (datadir_snap .eq. '') datadir_snap = datadir
-      directory_snap = trim(datadir_snap)//'/proc'//chproc
+!
+!  check whether directory_snap contains `/proc0' -- if so, revert to the
+!  default name.
+!  Rationale: if directory_snap was not explicitly set in start.in, it
+!  will be written to param.nml as 'data/proc0', but this should in fact
+!  be data/procN on processor N.
+!
+      if ((directory_snap == '') .or. (index(directory_snap,'proc0')>0)) then
+        directory_snap = directory
+      endif
 !
     endsubroutine directory_names
 !***********************************************************************

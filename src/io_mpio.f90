@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.7 2002-10-02 15:49:57 dobler Exp $
+! $Id: io_mpio.f90,v 1.8 2002-10-02 16:37:52 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -79,7 +79,6 @@ contains
 !  closely follwing Gropp et al. `Using MPI-2'
 !  20-sep-02/wolf: coded
 !
-      use Cdata, only: iproc,directory,directory_snap
       use Sub
       use Mpicomm, only: lroot,stop_it
 !
@@ -94,7 +93,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.7 2002-10-02 15:49:57 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.8 2002-10-02 16:37:52 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -122,9 +121,11 @@ contains
 !
       io_initialized=.true.
 !
-!  initialize datadir (may be overwritten in *.in parameter file)
+!  initialize datadir and directory_snap (where var.dat and VAR# go)
+!  -- may be overwritten in *.in parameter file
 !
       datadir = 'data'
+      directory_snap = ''
 !
     endsubroutine register_io
 !***********************************************************************
@@ -137,12 +138,10 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir,datadir_snap,directory,directory_snap
       use Mpicomm, only: iproc
 !
       directory = trim(datadir)//'/allprocs'
-      if (datadir_snap .eq. '') datadir_snap = datadir
-      directory_snap = trim(datadir_snap)//'/allprocs'
+      if (directory_snap == '') directory_snap = directory
 !
     endsubroutine directory_names
 !***********************************************************************
