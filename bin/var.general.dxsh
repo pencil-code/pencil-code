@@ -1,0 +1,12 @@
+#!/bin/csh
+
+# Determine whether this is MPI, how many CPUS etc.
+#source getconf.csh  #BUT DON'T WANT ANY OUTPUT!
+
+if (-r datadir.in) then
+  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+else
+  set datadir = "data"
+endif
+
+cat $datadir/var.general | sed -e s/var\.dat/VAR$1/
