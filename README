@@ -1,29 +1,22 @@
-$Id: README,v 1.5 2002-08-02 21:31:36 dobler Exp $
+$Id: README,v 1.6 2002-10-02 09:17:35 dobler Exp $
 
-Modular pencil code.
+The Pencil Code
+===============
 
-Basic idea is as follows:
+Obtaining the code: http://www.nordita.dk/data/brandenb/pencil-code
 
-You decide to use, or not use, modules by including them or the `no-'
-versions in the makefile. E.g. to use MPI communication, you put 
-  MPICOMM=mpicomm
-into Makefile, while in order to not use MPI, you do
-  MPICOMM=nompicomm
+To get started, run one of the samples:
 
-List of alternatives (not all of them implemented yet):
+  unix>  cd pencil-code
+  unix>  source sourceme.csh  [or . sourceme.sh]
+  unix>  cd samples/conv-slab
+  unix>  setup-src
+  Then edit src/Makefile such that it uses the right compiler and switches
+  unix>  (cd src; make)
+  unix>  mkdir data  [I/O will be slow if you are in an NFS directory]
+  unix>  start.csh
+  unix>  run.csh
 
-  mpicomm   nompicomm
-  forcing   noforcing
-  magnetic  nomagnetic
-  entropy   noentropy
-  density   nodensity
-  hydro     nohydro  
-  io-multi io-mono io-hdf5         # write to per-process file, use one
-                                   # monolithic file, or use hdf5
-
-
-The physics modules (those involving new variables like `hydro', `magnetic' or
-`entropy') *register* themselves via calls to their their `register_xxx'
-from the module `register'. They also provide their own initialisation
-(`init_ent', etc.) for start.f90.
+For more details, see the manual in the doc/ directory (also available
+from the URL above).
 
