@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.22 2003-02-13 10:01:54 torkel Exp $ 
+! $Id: initcond.f90,v 1.23 2003-02-23 07:50:38 brandenb Exp $ 
 
 module Initcond 
  
@@ -235,12 +235,14 @@ module Initcond
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
 !   6-jul-02/axel: coded
+!  22-feb032/axel: fixed 3-D background solution for enthalpy
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,h0
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax,hmin
       real :: gamma,eps2,rad2,radius2
-      integer :: i,j
+      real :: cs20=1.,gamma1,ztop
+      integer :: l,m,n
 !
 !  calculate sigma
 !
@@ -264,35 +266,45 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
-!  calculate hh, and h0
-!AB: currently, h0 is not yet implemented correctly!
+!  calculate hh
+!  add continuous vertical stratification to horizontal planet solution
 !
-      h0=ampl**(gamma-1.)-zz**2/delta2
+      ztop=xyz1(3)
+      rr2=xx**2+eps2*yy**2
+      hh=+.5*delta2*Omega**2*amax1(radius2-rr2,0.)+.5*Omega**2*(ztop**2-zz**2)
+      print*,'planet solution, ztop=',ztop
+!
+!  limit dynamical to 1% of maximum value (can always add a constant)
+!
+      !hmax=maxval(hh)
+      !hh=hh+.01*hmin
+!
       rr2=xx**2+eps2*yy**2+zz**2/delta2
-      hh=+.5*delta2*Omega**2*(radius2-rr2)
-!
-!  limit dynamical range to 1:100
-!
-      hmax=maxval(hh)
-      hmin=ampl**(gamma-1)*hmax
-      hh=amax1(hh,hmin)
-!
-      if (gamma<=1.) print*,'must have gamma>1 for planet solution'
-!
-      do i=l1,l2
-        do j=m1,m2
-          rad2=x(i)**2+eps2*y(j)**2
-!          if (rad2<radius2) then
-          if (hh(i,j,4)>hmin) then
-            f(i,j,:,iux)=   eps2*sigma *Omega*yy(i,j,:)
-            f(i,j,:,iuy)=(qshear-sigma)*Omega*xx(i,j,:)
-          else
-            f(i,j,:,iux)=0.
-            f(i,j,:,iuy)=0.
-          endif
+      do n=n1,n2
+        do m=m1,m2
+          do l=l1,l2
+            if (rr2(l,m,n)<radius2) then
+              f(l,m,n,iux)=   eps2*sigma *Omega*yy(l,m,n)
+              f(l,m,n,iuy)=(qshear-sigma)*Omega*xx(l,m,n)
+            else
+              f(l,m,n,iux)=0.
+              f(l,m,n,iuy)=0.
+            endif
+          enddo
         enddo
       enddo
-      f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
+!
+!  calculate density, depending on what gamma is
+!
+      if(gamma<=1.) print*,'must have gamma>1 for planet solution'
+      if(gamma==1.) then
+        f(:,:,:,ilnrho)=hh/cs20
+        print*,'planet solution for gamma=1'
+      else
+        gamma1=gamma-1.
+        f(:,:,:,ilnrho)=alog(gamma1*hh/cs20)/gamma1
+        print*,'planet solution for gamma=',gamma
+      endif
 !
     endsubroutine planet
 !***********************************************************************
