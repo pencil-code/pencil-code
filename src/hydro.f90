@@ -1,6 +1,8 @@
-! $Id: hydro.f90,v 1.42 2002-07-08 06:51:51 brandenb Exp $
+! $Id: hydro.f90,v 1.43 2002-07-09 23:06:27 brandenb Exp $
 
 module Hydro
+
+!  Note that Omega is already defined in cdata.
 
   use Cparam
   use Cdata, only: nu,ivisc
@@ -23,7 +25,7 @@ module Hydro
   real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   namelist /hydro_run_pars/ &
        nu,ivisc, &
-       theta, &
+       Omega,theta, &
        tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
@@ -65,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.42 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: hydro.f90,v 1.43 2002-07-09 23:06:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

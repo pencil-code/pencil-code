@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.2 2002-07-06 20:29:17 brandenb Exp $
+! $Id: shear.f90,v 1.3 2002-07-09 23:06:27 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -13,10 +13,10 @@ module Shear
   implicit none
 
   namelist /shear_init_pars/ &
-       Omega,qshear
+       qshear
 
   namelist /shear_run_pars/ &
-       Omega,qshear
+       qshear
 
   contains
 
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.2 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: shear.f90,v 1.3 2002-07-09 23:06:27 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -52,7 +52,7 @@ module Shear
 !
       use Cparam
       use Deriv
-      use Hydro, only:theta
+      use Hydro, only:Omega,theta
 !
       integer :: j
       real, dimension (mx,my,mz,mvar) :: f,df
