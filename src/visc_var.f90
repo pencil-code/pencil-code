@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.10 2003-10-20 16:27:21 dobler Exp $
+! $Id: visc_var.f90,v 1.11 2003-10-23 12:55:09 tarek Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -58,7 +58,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.10 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: visc_var.f90,v 1.11 2003-10-23 12:55:09 tarek Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -163,8 +163,8 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnrho,del2u, graddivu,fvisc,sglnrho
-      real, dimension (nx) :: murho1,rho1,divu
+      real, dimension (nx,3) :: glnrho,del2u, graddivu,fvisc,sglnrho,gshock
+      real, dimension (nx) :: murho1,rho1,divu,shock
       integer :: i
 
       intent (in) :: f, glnrho, rho1
@@ -220,9 +220,9 @@ module Viscosity
           tf_DJO = (nu/nuf_DJO)**(1./pp)*(ti_DJO + t0_DJO) - t0_DJO
           if (lroot.and.lfirstpoint.and.lout) call write_viscosity
           if (headtt) print*,'Using DJO variable viscosity. with '
-          if (headtt.and.(ip.lt.6)) then   
-                print*,'VISC_VAR: nu, nuf,ti,tf,t0,q'
-                print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO
+          if (headtt.and.(ip.lt.10)) then   
+              !  print*,'VISC_VAR: nu, nuf,ti,tf,t0,q,nu_var'
+              !  print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO,nu_var
           endif 
           if (headtt) print*,'viscous force: nu_var*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
