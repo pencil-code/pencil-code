@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.40 2003-07-02 15:19:43 theine Exp $
+! $Id: radiation_exp.f90,v 1.41 2003-07-02 16:23:40 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.40 2003-07-02 15:19:43 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.41 2003-07-02 16:23:40 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -232,6 +232,7 @@ module Radiation
       real, dimension(mx,my,mz,mvar+maux) :: f
       integer, intent(in) :: lrad,mrad,nrad
       real, dimension(mx,my,mz) :: tau,Irad
+      real, dimension(mx,my,mz,3) :: pos
 !
 !  identifier
 !
@@ -239,7 +240,7 @@ module Radiation
 !
 !  calculate intrinsicinsic intensity and optical depth
 !
-      call intensity_intrinsic(lrad,mrad,nrad,tau,Irad)
+      call intensity_intrinsic(lrad,mrad,nrad,tau,Irad,pos)
 !
 !  add contribution to the heating rate Q
 !
@@ -250,31 +251,37 @@ module Radiation
      if (lrad<0) then
         tau_yz (:,:,:)=tau (l1:l1+radx0-1,:,:)
         Irad_yz(:,:,:)=Irad(l1:l1+radx0-1,:,:)
+        pos_yz(:,:,:,:)=pos(l1:l1+radx0-1,:,:,:)
      endif
      if (lrad>0) then
         tau_yz (:,:,:)=tau (l2-radx0+1:l2,:,:)
         Irad_yz(:,:,:)=Irad(l2-radx0+1:l2,:,:)
+        pos_yz(:,:,:,:)=pos(l2-radx0+1:l2,:,:,:)
      endif
      if (mrad<0) then
         tau_zx (:,:,:)=tau (:,m1:m1+rady0-1,:)
         Irad_zx(:,:,:)=Irad(:,m1:m1+rady0-1,:)
+        pos_zx(:,:,:,:)=pos(:,m1:m1+rady0-1,:,:)
      endif
      if (mrad>0) then
         tau_zx (:,:,:)=tau (:,m2-rady0+1:m2,:)
         Irad_zx(:,:,:)=Irad(:,m2-rady0+1:m2,:)
+        pos_zx(:,:,:,:)=pos(:,m2-rady0+1:m2,:,:)
      endif
      if (nrad<0) then
         tau_xy (:,:,:)=tau (:,:,n1:n1+radz0-1)
         Irad_xy(:,:,:)=Irad(:,:,n1:n1+radz0-1)
+        pos_xy(:,:,:,:)=pos(:,:,n1:n1+radz0-1,:)
      endif
      if (nrad>0) then
         tau_xy (:,:,:)=tau (:,:,n2-radz0+1:n2)
         Irad_xy(:,:,:)=Irad(:,:,n2-radz0+1:n2)
+        pos_xy(:,:,:,:)=pos(:,:,n2-radz0+1:n2,:)
      endif
 !
     endsubroutine radtransfer_intrinsic
 !***********************************************************************
-    subroutine intensity_intrinsic(lrad,mrad,nrad,tau,Irad)
+    subroutine intensity_intrinsic(lrad,mrad,nrad,tau,Irad,pos)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -288,9 +295,10 @@ module Radiation
 !
       integer, intent(in) :: lrad,mrad,nrad
       real, dimension(mx,my,mz), intent(out) :: tau,Irad
-      integer :: lstart,lstop,lsgn
-      integer :: mstart,mstop,msgn
-      integer :: nstart,nstop,nsgn
+      real, dimension(mx,my,mz,3), intent(out) :: pos
+      integer :: lstart,lstop,ldir
+      integer :: mstart,mstop,mdir
+      integer :: nstart,nstop,ndir
       real :: dlength,dtau,emdtau
       integer :: l
       logical, save :: first=.true.
@@ -304,16 +312,12 @@ module Radiation
 !
 !  calculate start and stop values
 !
-      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
-      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
-      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
-!
-!  make sure the loop is executed at least once, even when
-!  lrad,mrad,nrad=0.
-!
-      if(lrad>=0) then; lsgn=1; else; lsgn=-1; endif
-      if(mrad>=0) then; msgn=1; else; msgn=-1; endif
-      if(nrad>=0) then; nsgn=1; else; nsgn=-1; endif
+      if (lrad>=0) then; lstart=l1; lstop=l2; ldir=+1
+                   else; lstart=l2; lstop=l1; ldir=-1; endif
+      if (mrad>=0) then; mstart=m1; mstop=m2; mdir=+1
+                   else; mstart=m2; mstop=m1; mdir=-1; endif
+      if (nrad>=0) then; nstart=n1; nstop=n2; ndir=+1
+                   else; nstart=n2; nstop=n1; ndir=-1; endif
 !
 !  line elements
 !
@@ -324,13 +328,38 @@ module Radiation
       tau=0.
       Irad=0.
 !
+!  initialize position array in ghost zones
+!
+      do n=nstart-nrad,nstop+nrad,ndir
+      do m=mstart-mrad,mstop+mrad,mdir
+         pos(lstart-lrad,m,n,1)=lstart-lrad
+         pos(lstart-lrad,m,n,2)=m
+         pos(lstart-lrad,m,n,3)=n
+      enddo
+      enddo
+      do l=lstart-lrad,lstop+lrad,ldir
+      do n=nstart-nrad,nstop+nrad,ndir
+         pos(l,mstart-mrad,n,1)=l
+         pos(l,mstart-mrad,n,2)=mstart-mrad
+         pos(l,mstart-mrad,n,3)=n
+      enddo
+      enddo
+      do m=mstart-mrad,mstop+mrad,mdir
+      do l=lstart-lrad,lstop+lrad,ldir
+         pos(l,m,nstart-nrad,1)=l
+         pos(l,m,nstart-nrad,2)=m
+         pos(l,m,nstart-nrad,3)=nstart-nrad
+      enddo
+      enddo
+!
 !  loop
 !
-      do n=nstart,nstop,nsgn
-      do m=mstart,mstop,msgn
-      do l=lstart,lstop,lsgn 
+      do n=nstart,nstop,ndir
+      do m=mstart,mstop,mdir
+      do l=lstart,lstop,ldir 
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau
+          pos(l,m,n,:)=pos(l-lrad,m-mrad,n-nrad,:)
           emdtau=exp(-dtau)
           Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
@@ -402,9 +431,9 @@ module Radiation
 !
       integer, intent(in) :: lrad,mrad,nrad
       real, dimension(mx,my,mz), intent(inout) :: Irad0
-      integer :: lstart,lstop,lsgn
-      integer :: mstart,mstop,msgn
-      integer :: nstart,nstop,nsgn
+      integer :: lstart,lstop,ldir
+      integer :: mstart,mstop,mdir
+      integer :: nstart,nstop,ndir
       integer :: l
       logical, save :: first=.true.
 !
@@ -417,22 +446,18 @@ module Radiation
 !
 !  calculate start and stop values
 !
-      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
-      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
-      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
-!
-!  make sure the loop is executed at least once, even when
-!  lrad,mrad,nrad=0.
-!
-      if(lrad>=0) then; lsgn=1; else; lsgn=-1; endif
-      if(mrad>=0) then; msgn=1; else; msgn=-1; endif
-      if(nrad>=0) then; nsgn=1; else; nsgn=-1; endif
+      if (lrad>=0) then; lstart=l1; lstop=l2; ldir=+1
+                   else; lstart=l2; lstop=l1; ldir=-1; endif
+      if (mrad>=0) then; mstart=m1; mstop=m2; mdir=+1
+                   else; mstart=m2; mstop=m1; mdir=-1; endif
+      if (nrad>=0) then; nstart=n1; nstop=n2; ndir=+1
+                   else; nstart=n2; nstop=n1; ndir=-1; endif
 !
 !  loop
 !
-      do n=nstart,nstop,nsgn
-      do m=mstart,mstop,msgn
-      do l=lstart,lstop,lsgn
+      do n=nstart,nstop,ndir
+      do m=mstart,mstop,mdir
+      do l=lstart,lstop,ldir
           Irad0(l,m,n)=Irad0(l-lrad,m-mrad,n-nrad)
       enddo
       enddo
@@ -488,9 +513,9 @@ module Radiation
       real, dimension(mx,my,mz), intent(inout) :: Irad0
       real, dimension(mx,my,mz), intent(out) :: Irad
       real, dimension(mx,my,mz) :: tau
-      integer :: lstart,lstop,lsgn
-      integer :: mstart,mstop,msgn
-      integer :: nstart,nstop,nsgn
+      integer :: lstart,lstop,ldir
+      integer :: mstart,mstop,mdir
+      integer :: nstart,nstop,ndir
       real :: dlength,dtau
       integer :: l
       logical, save :: first=.true.
@@ -504,16 +529,12 @@ module Radiation
 !
 !  calculate start and stop values
 !
-      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
-      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
-      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
-!
-!  make sure the loop is executed at least once, even when
-!  lrad,mrad,nrad=0.
-!
-      if(lrad>=0) then; lsgn=1; else; lsgn=-1; endif
-      if(mrad>=0) then; msgn=1; else; msgn=-1; endif
-      if(nrad>=0) then; nsgn=1; else; nsgn=-1; endif
+      if (lrad>=0) then; lstart=l1; lstop=l2; ldir=+1
+                   else; lstart=l2; lstop=l1; ldir=-1; endif
+      if (mrad>=0) then; mstart=m1; mstop=m2; mdir=+1
+                   else; mstart=m2; mstop=m1; mdir=-1; endif
+      if (nrad>=0) then; nstart=n1; nstop=n2; ndir=+1
+                   else; nstart=n2; nstop=n1; ndir=-1; endif
 !
 !  line elements
 !
@@ -525,9 +546,9 @@ module Radiation
 !
 !  loop
 !
-      do n=nstart,nstop,nsgn
-      do m=mstart,mstop,msgn
-      do l=lstart,lstop,lsgn
+      do n=nstart,nstop,ndir
+      do m=mstart,mstop,mdir
+      do l=lstart,lstop,ldir
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau
           Irad0(l,m,n)=Irad0(l-lrad,m-mrad,n-nrad)
