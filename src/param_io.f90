@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.109 2003-05-31 09:44:01 brandenb Exp $ 
+! $Id: param_io.f90,v 1.110 2003-06-11 22:39:43 mee Exp $ 
 
 module Param_IO
 
@@ -44,6 +44,7 @@ module Param_IO
   integer :: isave=100,iwig=0,ialive=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lwrite_zaverages=.false.,lread_oldsnap=.false.
+  logical :: lwrite_aux=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -53,7 +54,7 @@ module Param_IO
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
-       random_gen,lserial_io,lread_oldsnap, &
+       random_gen,lserial_io,lread_oldsnap, lwrite_aux, &
        bcx,bcy,bcz
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
@@ -65,7 +66,8 @@ module Param_IO
        ix,iy,iz,iz2, &
        bcx,bcy,bcz, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
-       lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned
+       lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
+       lwrite_aux
   contains
 
 !***********************************************************************
