@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.237 2004-03-18 15:59:58 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.238 2004-03-18 16:08:38 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -354,7 +354,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}
+%\date{$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}
 
 % ====================================================================== %
 
@@ -389,7 +389,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}\\
+  \emph{$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3243,7 +3243,7 @@ The governing equations can be written in the form
 \begin{equation}
 {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0,
 \end{equation} 
-where $\fv(\uv)$ denotes the Coriolis force and $\Fv$ and $\Fv_{\rm d}$
+where $\fv(\uv)$ denotes the \name{Coriolis force} and $\Fv$ and $\Fv_{\rm d}$
 other forces.
 
 % ====================================================================== %
@@ -3909,7 +3909,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-18 16:08:38 $ $,~ $ $Revision: 1.238 $ $}
 
 \section{Timings}
 
@@ -5989,8 +5989,8 @@ the latest set of parameters, you need to look at the code.
                  \end{description}
                  \\
   \var{Omega} [$0.$]
-               & magnitude of angular velocity for Coriolis force (note:
-                 no centrifugal force is implemented). \\
+               & magnitude of angular velocity for \name{Coriolis force}
+               (note: currently, no centrifugal force is implemented). \\
   \var{theta} [$0.$]
                & direction of angular velocity ($\vartheta=0$ for
                  $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
@@ -6817,7 +6817,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.237 2004-03-18 15:59:58 dobler Exp $ $}
+$ $Id: manual.tex,v 1.238 2004-03-18 16:08:38 dobler Exp $ $}
 
 
 \end{document}
