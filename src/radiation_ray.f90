@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.27 2003-10-06 11:29:02 theine Exp $
+! $Id: radiation_ray.f90,v 1.28 2003-10-06 13:24:31 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -90,7 +90,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.27 2003-10-06 11:29:02 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.28 2003-10-06 13:24:31 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -1072,7 +1072,6 @@ module Radiation
         write (1,*) "openr,1,'"//trim(directory)//"/rad_debug"//trim(i_str)//".dat',/f77"
         write (1,*) "temp=fltarr(mx,my,mz,8)"
         write (1,*) "readu,1,temp"
-        write (1,*) "kaprho=temp[*,*,*,ikaprho] & Srad=temp[*,*,*,iSrad]"
         write (1,*) "dtau_m"//trim(i_str)//"=temp[*,*,*,idtau_m]"
         write (1,*) "dtau_p"//trim(i_str)//"=temp[*,*,*,idtau_p]"
         write (1,*) "dSdtau_m"//trim(i_str)//"=temp[*,*,*,idSdtau_m]"
