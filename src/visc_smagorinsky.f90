@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.1 2004-07-16 13:42:49 nilshau Exp $
+! $Id: visc_smagorinsky.f90,v 1.2 2004-07-20 14:54:36 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -67,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.1 2004-07-16 13:42:49 nilshau Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.2 2004-07-20 14:54:36 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -94,6 +94,8 @@ module Viscosity
 !
         if (headtt.and.lroot) print*,'viscosity: nu=',nu
         if (headtt.and.lroot) print*,'viscosity: c_smag=',c_smag
+
+        lneed_sij=.true.
 
     endsubroutine initialize_viscosity
 !*******************************************************************
@@ -144,11 +146,13 @@ module Viscosity
 !
       use IO
       use Mpicomm
+      use Sub, only: sum_mn_name
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,2) :: tmp
       real, dimension (nx,ny,nz) :: sij2
-      integer :: i,j
+      real, dimension (nx) :: nu_smag
+      integer :: i,j,ncount,mcount
 !
 
 
@@ -180,7 +184,23 @@ module Viscosity
       sij2=sij2+tmp(l1:l2,m1:m2,n1:n2,1)**2
 !
       f(l1:l2,m1:m2,n1:n2,ismagorinsky)=(C_smag*dxmax)**2.*sqrt(2*sij2)
-      nu_LES=sum(f(l1:l2,m1:m2,n1:n2,ismagorinsky))
+!
+! Diagnostics
+!
+      if (ldiagnos) then
+         if (i_nu_LES /= 0) then
+            itype_name(i_nu_LES)=ilabel_sum
+            do mcount=m1,m2
+               do ncount=n1,n2
+                  nu_smag=f(l1:l2,mcount,ncount,ismagorinsky)
+                  call sum_mn_name(nu_smag,i_nu_LES)
+               enddo
+            enddo
+         endif
+      endif
+
+
+
 !
     endsubroutine calc_viscosity
 
@@ -276,8 +296,9 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho,gshock
-      real, dimension (nx,3) :: nusglnrho,tmp1,tmp2
+      real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho
+      real, dimension (nx,3) :: gshock,sgradnu_smag
+      real, dimension (nx,3) :: nusglnrho,tmp1,tmp2,gradnu_smag
       real, dimension (nx) :: murho1,rho1,divu,shock,SS12,sij2
       integer :: i
 
@@ -290,51 +311,46 @@ module Viscosity
       select case (ivisc)
 
         case ('smagorinsky')
-!AB: the 2S.gradnu_smag is currently not implemented.
-!AB: Since this involves out-of-pencil derivatives, we may want
-!AB: to have this term optional (smagorinsky_simplified).
-!AB: Maybe the damage from smagorinsky_simplified is minor.
-!NILS: We then need something like the visc_shock or visc_hyper
-!NILS: modules where we allocate some auxilliary chunks of memory.
-!NILS: I guess it would be a good idea to call such a module for example 
-!NILS: visc_LES
-!NILS: such that we can use that module for possible other large eddy 
-!NILS: simulations aswell?
-!AB: visc_LES sounds good, although I would wait with renaming modules.
-!AB: Some LES may require more memory, and should be in a separate module.
-!AB: Thus, visc_smagorinsky is ok for the time being.
-!AB: But we can still keep the smagorinsky_simplified in visc_const.
           !
           !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
           !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
           !
           if (headtt) print*,'viscous force: Smagorinsky'
           if(ldensity) then
+             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+             call multmv_mn(sij,glnrho,sglnrho)
+             call multsv_mn(f(l1:l2,m,n,ismagorinsky),sglnrho,nusglnrho)
+             tmp1=del2u+1./3.*graddivu
+             call multsv_mn(f(l1:l2,m,n,ismagorinsky),tmp1,tmp2)
+             call grad(f,ismagorinsky,gradnu_smag)
+             call multmv_mn(sij,gradnu_smag,sgradnu_smag)
+             fvisc=2*nusglnrho+tmp2+2*sgradnu_smag
+             diffus_nu=max(diffus_nu,f(l1:l2,m,n,ismagorinsky)*dxyz_2)
+          else
+             if(lfirstpoint) &
+                  print*,"ldensity better be .true. for ivisc='smagorinsky'"
+          endif
+       case ('smagorinsky_simplified')
+          if (headtt) print*, 'for ivisc=smagorinsky_simplified use visc_const'
+          !
+          !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)
+          !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
+          !
+          if (headtt) print*,'viscous force: Smagorinsky_simplified'
+          if(ldensity) then
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(f(l1:l2,m,n,ismagorinsky),sglnrho,nusglnrho)
             tmp1=del2u+1./3.*graddivu
             call multsv_mn(f(l1:l2,m,n,ismagorinsky),tmp1,tmp2)
-            fvisc=2*nusglnrho+tmp2
+            call grad(f,ismagorinsky,gradnu_smag)
+            call multmv_mn(2*sij,gradnu_smag,sgradnu_smag)
+            fvisc=2*nusglnrho+tmp2+sgradnu_smag
             diffus_nu=max(diffus_nu,f(l1:l2,m,n,ismagorinsky)*dxyz_2)
-            !
-            ! Add ordinary viscosity if nu /= 0
-            !
-            if (nu /= 0.) then
-            !
-            !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
-            !  -- the correct expression for nu=const
-            !
-               fvisc=fvisc+2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-               diffus_nu=max(diffus_nu,nu*dxyz_2)
-            endif
          else
-            if(lfirstpoint) &
-                 print*,"ldensity better be .true. for ivisc='smagorinsky'"
+            if(lfirstpoint) print*,&
+                 "ldensity better be true for ivisc='smagorinsky_simplified'"
          endif
-      case ('smagorinsky_simplified')
-         if (lroot) print*, 'for ivisc=smagorinsky_simplified use visc_const'
-         call stop_it('calc_viscous_forcing')
       case default
          !
          !  Catch unknown values
@@ -343,6 +359,18 @@ module Viscosity
          call stop_it('calc_viscous_forcing')
          
       endselect
+      !
+      ! Add ordinary viscosity if nu /= 0
+      !
+      if (nu /= 0.) then
+         !
+         !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+         !  -- the correct expression for nu=const
+         !
+         fvisc=fvisc+2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
+         diffus_nu=max(diffus_nu,nu*dxyz_2)
+      endif
+!
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
 !
 !  set viscous time step
