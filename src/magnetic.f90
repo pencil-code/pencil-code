@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.179 2004-03-21 18:56:21 brandenb Exp $
+! $Id: magnetic.f90,v 1.180 2004-03-22 17:40:50 snod Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -117,7 +117,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.179 2004-03-21 18:56:21 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.180 2004-03-22 17:40:50 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -227,7 +227,8 @@ module Magnetic
       select case(initaa2)
         case('Beltrami-x'); call beltrami(amplaa2,f,iaa,KX=kx_aa2)
         case('Beltrami-y'); call beltrami(amplaa2,f,iaa,KY=ky_aa2)
-        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa2)
+        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa2)      
+        case('gaussian-noise'); call gaunoise(amplaa2,f,iax,iaz)
       endselect
 !
 !  allow for pressure equilibrium (for isothermal tube)
