@@ -22,16 +22,19 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #    Evaluate `params.log' and print a history of changes.
 
 use strict;
-# my $has_filetmp = ! eval("require File::Tempp qw/tempfile/ && import File::Tempp");
+no strict qw/refs/; # or open will throw error (Can't use string as symbol ref)
+
 my $has_filetmp = eval("require File::Temp") || 0;
 if ($has_filetmp) { import File::Temp qw/tempfile/ };
 
 my $parfile = "data/params.log"; # Default parameter file
 #my $diff = "diff";		 # Shell `diff' function to use
 my $diff = "sdiff";		# Shell `diff' function to use
-my @diff_opts = qw/-s -w78 -W/;	# Options for $diff
+# my @diff_opts = qw/-s -w78 -W/;	# Options for $diff (GNU sdiff only)
+my @diff_opts = qw/-s -w78/;	# Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
-my ($tmp1,$tmpname1,$tmp2,$tmpname2);
+my $need_cleanup = 0;
+my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
 
 
 my $log;
@@ -69,7 +72,7 @@ if ($entries[0] =~ /^\s*#\s*Initializing/) {
     warn "First entry doesn't look like output from start.x..\n";
 }
 
-## Are there at least two entries to be cmpared?
+## Are there at least two entries to be compared?
 if (@entries < 2) {
     print "Nothing to do\n";
     exit 0;
@@ -80,6 +83,7 @@ if ($has_filetmp) {		# use File::Temp if available
     ($tmp1,$tmpname1) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
     ($tmp2,$tmpname2) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
 } else {			# manually set and open temporary files
+    $need_cleanup = 1;
     $tmpname1 = "/tmp/summarize_history_${$}_a";
     $tmpname2 = "/tmp/summarize_history_${$}_b";
     open($tmp1,"> $tmpname1");
@@ -109,20 +113,13 @@ while (@entries) {
     print "$sepline\n";
 }
 
-print "1.\n";
-system("ls", "-trl", "/tmp/");
-
 END {
-    if (!$has_filetmp) {
-	close($tmp1);
-	close($tmp2);
+    if (!$has_filetmp && $need_cleanup) {
+	close($tmp1) if defined($tmp1);
+	close($tmp2) if defined($tmp2);
 	unlink($tmpname1);
 	unlink($tmpname2);
     }
-
-print "2.\n";
-system("ls", "-trl", "/tmp/");
-
 }
 
 # ---------------------------------------------------------------------- #
