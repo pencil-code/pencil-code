@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.21 2002-07-08 20:49:12 dobler Exp $
+! $Id: nomagnetic.f90,v 1.22 2002-07-08 23:34:25 brandenb Exp $
 
 module Magnetic
 
@@ -44,7 +44,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.21 2002-07-08 20:49:12 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.22 2002-07-08 23:34:25 brandenb Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -119,16 +119,17 @@ module Magnetic
     subroutine calc_mfield
     endsubroutine calc_mfield
 !***********************************************************************
-    subroutine bc_aa(f)
+    subroutine bc_aa_pot(f,topbot)
 !
 !  Dummy routine for potential field boundary condition
 !
 !  14-jun-2002/axel: adapted from similar
 !
+      character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (ip==1) print*,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_aa
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine bc_aa_pot
 !***********************************************************************
 
 endmodule Magnetic

@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.5 2002-07-07 18:32:07 dobler Exp $
+! $Id: wsnaps.f90,v 1.6 2002-07-08 23:34:26 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -56,8 +56,10 @@ contains
         call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call initiate_isendrcv_bdry(a)
-          call boundconds(a)
+          call boundconds_x(a)
           call finalise_isendrcv_bdry(a)
+          call boundconds_y(a)
+          call boundconds_z(a)
           call output(chsnap//ch,a,mvar)
         endif
 !
@@ -65,8 +67,10 @@ contains
 !
       else
         call initiate_isendrcv_bdry(a)
-        call boundconds(a)
+        call boundconds_x(a)
         call finalise_isendrcv_bdry(a)
+        call boundconds_y(a)
+        call boundconds_z(a)
         call output(chsnap,a,mvar)
       endif
 !

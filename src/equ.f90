@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.81 2002-07-08 20:55:57 dobler Exp $
+! $Id: equ.f90,v 1.82 2002-07-08 23:34:25 brandenb Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.81 2002-07-08 20:55:57 dobler Exp $")
+           "$Id: equ.f90,v 1.82 2002-07-08 23:34:25 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -221,11 +221,11 @@ module Equ
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
 !  initiate communication and do boundary conditions
-!  need to call boundconds, because it also deals with x-boundaries!
+!  need to deals first with x-boundaries
 !
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      call boundconds(f)
+      call boundconds_x(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -236,6 +236,8 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) then 
           call finalise_isendrcv_bdry(f)
+          call boundconds_y(f)
+          call boundconds_z(f)
         endif
 !
 !  coordinates are needed all the time
@@ -393,13 +395,12 @@ module Equ
         endif
       endif
 !
-!
 !  initiate communication and do boundary conditions
 !  need to call boundconds, because it also deals with x-boundaries!
 !
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      call boundconds(f)
+      call boundconds_x(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -410,6 +411,8 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) then 
           call finalise_isendrcv_bdry(f)
+          call boundconds_y(f)
+          call boundconds_z(f)
         endif
 
         call del6_nodx(f,ilnrho,tmp)

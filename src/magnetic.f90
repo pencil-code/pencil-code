@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.66 2002-07-08 06:51:51 brandenb Exp $
+! $Id: magnetic.f90,v 1.67 2002-07-08 23:34:25 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.66 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.67 2002-07-08 23:34:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -575,59 +575,67 @@ module Magnetic
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine bc_aa(f)
+      subroutine bc_aa_pot(f,topbot)
 !
 !  Potential field boundary condition for magnetic vector potential
 !
 !  14-jun-2002/axel: adapted from similar 
+!   8-jul-2002/axel: introduced topbot argument
 !
       use Cdata
       use Mpicomm, only: stop_it
 !
+      character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j
 !
+!  pontential field condition
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
 !  pontential field condition at the bottom
 !
-        if (bcz1(iaa) == "c1") then
-          if (headtt) print*,'potential field boundary condition at the bottom'
-          if (nprocy/=1) &
-               call stop_it("potential field: doesn't work yet with nprocy/=1")
-          do j=0,1
-            f2=f(l1:l2,m1:m2,n1+1,iax+j)
-            f3=f(l1:l2,m1:m2,n1+2,iax+j)
-            call potential(fz,f2,f3,-1)
-            f(l1:l2,m1:m2,1:n1,iax+j)=fz
-          enddo
-          !
-          f2=f(l1:l2,m1:m2,n1,iax)
-          f3=f(l1:l2,m1:m2,n1,iay)
-          call potentdiv(fz,f2,f3,-1)
-          f(l1:l2,m1:m2,1:n1,iaz)=-fz
-        endif
+      case('bot')
+        if (headtt) print*,'potential field boundary condition at the bottom'
+        if (nprocy/=1) &
+             call stop_it("potential field: doesn't work yet with nprocy/=1")
+        do j=0,1
+          f2=f(l1:l2,m1:m2,n1+1,iax+j)
+          f3=f(l1:l2,m1:m2,n1+2,iax+j)
+          call potential(fz,f2,f3,-1)
+          f(l1:l2,m1:m2,1:n1,iax+j)=fz
+        enddo
+        !
+        f2=f(l1:l2,m1:m2,n1,iax)
+        f3=f(l1:l2,m1:m2,n1,iay)
+        call potentdiv(fz,f2,f3,-1)
+        f(l1:l2,m1:m2,1:n1,iaz)=-fz
 !
 !  pontential field condition at the top
 !
-        if (bcz2(iaa) == "c1") then
-          if (headtt) print*,'potential field boundary condition at the top'
-          if (nprocy/=1) &
-               call stop_it("potential field: doesn't work yet with nprocy/=1")
-          do j=0,1
-            f2=f(l1:l2,m1:m2,n2-1,iax+j)
-            f3=f(l1:l2,m1:m2,n2-2,iax+j)
-            call potential(fz,f2,f3,+1)
-            f(l1:l2,m1:m2,n2:mz,iax+j)=fz
-          enddo
-          !
-          f2=f(l1:l2,m1:m2,n2,iax)
-          f3=f(l1:l2,m1:m2,n2,iay)
-          call potentdiv(fz,f2,f3,+1)
-          f(l1:l2,m1:m2,n2:mz,iaz)=-fz
-        endif
+      case('top')
+        if (headtt) print*,'potential field boundary condition at the top'
+        if (nprocy/=1) &
+             call stop_it("potential field: doesn't work yet with nprocy/=1")
+        do j=0,1
+          f2=f(l1:l2,m1:m2,n2-1,iax+j)
+          f3=f(l1:l2,m1:m2,n2-2,iax+j)
+          call potential(fz,f2,f3,+1)
+          f(l1:l2,m1:m2,n2:mz,iax+j)=fz
+        enddo
+        !
+        f2=f(l1:l2,m1:m2,n2,iax)
+        f3=f(l1:l2,m1:m2,n2,iay)
+        call potentdiv(fz,f2,f3,+1)
+        f(l1:l2,m1:m2,n2:mz,iaz)=-fz
+      case default
+        if(lroot) print*,"invalid argument for 'bc_aa_pot'"
+      endselect
 !
-    endsubroutine bc_aa
+      endsubroutine bc_aa_pot
 !***********************************************************************
       subroutine potential(fz,f2,f3,irev)
 !

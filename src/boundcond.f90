@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $
+! $Id: boundcond.f90,v 1.21 2002-07-08 23:34:25 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -17,9 +17,15 @@ module Boundcond
   contains
 
 !***********************************************************************
-    subroutine boundconds(f)
+    subroutine boundconds_x(f)
 !
 !  Physical boundary conditions in x except for periodic stuff.
+!  For the x-direction, this routines needs to be called immediately;
+!  for the y- and z-directions is needs to be called after all
+!  communication is done, because it needs to overwrite the otherwise
+!  periodic boundary conditions that have already been solved under mpi.
+!
+!   8-jul-02/axel: split up into different routines for x,y and z directions
 !
       use Cdata
       use Entropy
@@ -32,11 +38,9 @@ module Boundcond
       if(ldebug) print*,'ENTER: boundconds'
 !
 !  Boundary conditions in x
+!  shearing sheet boundary condition (default)
+!  can still use other boundary conditions (even with shear)
 !
-      !
-      !  shearing sheet boundary condition (default)
-      !  can still use other boundary conditions (even with shear)
-      !
       if (bcx1(1)=='she') then
          if (headtt) print*,'use shearing sheet boundary condition'
          call initiate_shearing(f)
@@ -96,6 +100,28 @@ module Boundcond
         enddo
       endif
 !
+    endsubroutine boundconds_x
+!***********************************************************************
+    subroutine boundconds_y(f)
+!
+!  Physical boundary conditions in y except for periodic stuff.
+!  For the x-direction, this routines needs to be called immediately;
+!  for the y- and z-directions is needs to be called after all
+!  communication is done, because it needs to overwrite the otherwise
+!  periodic boundary conditions that have already been solved under mpi.
+!
+!   8-jul-02/axel: split up into different routines for x,y and z directions
+!
+      use Cdata
+      use Entropy
+      use Magnetic
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: fder,cs2_2d
+      integer :: i,j
+!
+      if(ldebug) print*,'ENTER: boundconds'
+!
 !  Boundary conditions in y
 !
       do j=1,mvar 
@@ -150,6 +176,28 @@ module Boundcond
         endif
       enddo
 !
+    endsubroutine boundconds_y
+!***********************************************************************
+    subroutine boundconds_z(f)
+!
+!  Physical boundary conditions in z except for periodic stuff.
+!  For the x-direction, this routines needs to be called immediately;
+!  for the y- and z-directions is needs to be called after all
+!  communication is done, because it needs to overwrite the otherwise
+!  periodic boundary conditions that have already been solved under mpi.
+!
+!   8-jul-02/axel: split up into different routines for x,y and z directions
+!
+      use Cdata
+      use Entropy
+      use Magnetic
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: fder,cs2_2d
+      integer :: i,j
+!
+      if(ldebug) print*,'ENTER: boundconds'
+!
 !  Boundary conditions in z
 !
       do j=1,mvar
@@ -171,8 +219,10 @@ module Boundcond
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
           case ('c1')             ! complex (processed in its own routine)
+            if (j==ient) call bc_ss_flux(f,'bot')
+            if (j==iaa)  call bc_aa_pot(f,'bot')
           case ('c2')             ! complex (processed in its own routine)
-            ! handled below
+            if (j==ient) call bc_ss_temp(f,'bot')
           case ('db')
             !
             !  Set ghost zone to reproduce one-sided boundary consition 
@@ -225,8 +275,11 @@ module Boundcond
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
           case ('c1')             ! complex (processed in its own routine)
+            if (j==ient) call bc_ss_flux(f,'top')
+            if (j==iaa)  call bc_aa_pot(f,'top')
           case ('c2')             ! complex (processed in its own routine)
-            ! handled below
+            if (j==ient) call bc_ss_temp(f,'top')
+!
           case ('db')
             !
             !  Finding the derivatives on the boundary using a one 
@@ -261,10 +314,7 @@ module Boundcond
         endif
       enddo
 !
-      if (lentropy)  call bc_ss(f)
-      if (lmagnetic) call bc_aa(f)
-!
-    endsubroutine boundconds
+    endsubroutine boundconds_z
 !***********************************************************************
  
 endmodule Boundcond

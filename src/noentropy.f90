@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $
+! $Id: noentropy.f90,v 1.26 2002-07-08 23:34:25 brandenb Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.26 2002-07-08 23:34:25 brandenb Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -162,16 +162,29 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine bc_ss(f)
+    subroutine bc_ss_flux(f,topbot)
 !
 !  dummy routine for entropy boundary condition
 !
 !  12-jun-2002/axel: coded
 !
+      character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (ip==1) print*,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine bc_ss_flux
+!***********************************************************************
+    subroutine bc_ss_temp(f,topbot)
+!
+!  dummy routine for entropy boundary condition
+!
+!  12-jun-2002/axel: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine bc_ss_temp
 !***********************************************************************
 
 endmodule Entropy

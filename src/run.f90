@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.58 2002-07-08 20:55:57 dobler Exp $
+! $Id: run.f90,v 1.59 2002-07-08 23:34:26 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.58 2002-07-08 20:55:57 dobler Exp $")
+             "$Id: run.f90,v 1.59 2002-07-08 23:34:26 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -164,8 +164,9 @@
           endif
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
-
-        call rmwig(f,df,ilnrho)
+!
+!AB: I don't normally want to remove wiggles upon every exit.
+!--     call rmwig(f,df,ilnrho)
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only

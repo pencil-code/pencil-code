@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.89 2002-07-08 20:48:45 dobler Exp $
+! $Id: entropy.f90,v 1.90 2002-07-08 23:34:25 brandenb Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.89 2002-07-08 20:48:45 dobler Exp $")
+           "$Id: entropy.f90,v 1.90 2002-07-08 23:34:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -677,17 +677,19 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine bc_ss(f)
+    subroutine bc_ss_flux(f,topbot)
 !
-!  boundary condition for entropy
+!  constant flux boundary condition for entropy (called when bcz='c1')
 !
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
+!   8-jul-2002/axel: split old bc_ss into two
 !
       use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
+      character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
@@ -695,76 +697,109 @@ module Entropy
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
+!  check whether we want to do top or bottom (this is precessor dependent)
 !
-        if (bcz1(ient) == "c1") then
-          if (bcz1(ilnrho) /= "a2") &
-               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
-          tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                   * exp(-gamma*f(:,:,n1,ient) &
-                         - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-          tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
-          do i=1,nghost
-            f(:,:,n1-i,ient) = &
-                 (2*i*dz*tmp_xy &
-                  + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
-                 )/gamma &
-                 + f(:,:,n1+i,ient)
-          enddo
-        endif
+      select case(topbot)
 !
-        if (bcz2(ient) == "c1") then
-          if (bcz2(ilnrho) /= "a2") &
-               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
-          tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                   * exp(-gamma*f(:,:,n2,ient) &
-                         - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-          tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
-          do i=1,nghost
-            f(:,:,n2+i,ient) = &
-                 (-2*i*dz*tmp_xy &
-                  + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
-                 )/gamma &
-                 + f(:,:,n2-i,ient)
-          enddo
-        endif
+!  bottom boundary
+!
+      case('bot')
+        if (bcz1(ilnrho) /= "a2") &
+             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
+        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
+                 * exp(-gamma*f(:,:,n1,ient) &
+                       - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
+        tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
+        do i=1,nghost
+          f(:,:,n1-i,ient) = &
+               (2*i*dz*tmp_xy &
+                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
+               )/gamma &
+               + f(:,:,n1+i,ient)
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (bcz2(ilnrho) /= "a2") &
+             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
+        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
+                 * exp(-gamma*f(:,:,n2,ient) &
+                       - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
+        tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
+        do i=1,nghost
+          f(:,:,n2+i,ient) = &
+               (-2*i*dz*tmp_xy &
+                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
+               )/gamma &
+               + f(:,:,n2-i,ient)
+        enddo
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+      endselect
+!
+    endsubroutine bc_ss_flux
+!***********************************************************************
+    subroutine bc_ss_temp(f,topbot)
+!
+!  boundary condition for entropy
+!
+!  23-jan-2002/wolf: coded
+!  11-jun-2002/axel: moved into the entropy module
+!   8-jul-2002/axel: split old bc_ss into two
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: tmp_xy
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register first!)
 !  tmp_xy = entropy(x,y) on the boundary.
 !  s/cp = [ln(cs2/cs20)-ln(rho/rho0)]/gamma
 !
-!  NB(vpariev): Sound speed is set to cs at the top for isoentropic
-!  density profile,so this is mostly useful for top boundary.  
-!  wd: sound speed is _always_ cs, so what's the point here?
-!  AB: I think cs is set to cstop or csbot, which is ok, or what?
+!  check whether we want to do top or bottom (this is precessor dependent)
 !
-        if (bcz1(ient) == "c2") then
-          if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
-          if (cs2bot==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2bot=0'
-          if (bcz1(ilnrho) /= "a2") &
-               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
-          tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
-                   + alog(cs2bot/cs20)) / gamma
-          f(:,:,n1,ient) = tmp_xy
-          do i=1,nghost
-            f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
-          enddo
-        endif
+      select case(topbot)
 !
-        if (bcz2(ient) == "c2") then
-          if (ldebug) print*,'set top temperature: cs2top=',cs2top
-          if (cs2top==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2top=0'
-          if (bcz1(ilnrho) /= "a2") &
-               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
-          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                   + alog(cs2top/cs20)) / gamma
-          f(:,:,n2,ient) = tmp_xy
-          do i=1,nghost
-            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
-          enddo
-        endif
+!  bottom boundary
 !
-    endsubroutine bc_ss
+      case('bot')
+        if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
+        if (cs2bot==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2bot=0'
+        if (bcz1(ilnrho) /= "a2") &
+             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
+        tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
+                 + alog(cs2bot/cs20)) / gamma
+        f(:,:,n1,ient) = tmp_xy
+        do i=1,nghost
+          f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*,'set top temperature: cs2top=',cs2top
+        if (cs2top==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2top=0'
+        if (bcz1(ilnrho) /= "a2") &
+             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
+        tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+                 + alog(cs2top/cs20)) / gamma
+        f(:,:,n2,ient) = tmp_xy
+        do i=1,nghost
+          f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+        enddo
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+      endselect
+!
+    endsubroutine bc_ss_temp
 !***********************************************************************
 
 endmodule Entropy
