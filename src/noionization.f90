@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.3 2003-02-23 07:41:27 brandenb Exp $
+! $Id: noionization.f90,v 1.4 2003-03-06 14:20:39 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -48,7 +48,7 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS,rho,ee
       real :: ss0=-5.5542
 !
