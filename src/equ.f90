@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.85 2002-07-09 18:35:13 dobler Exp $
+! $Id: equ.f90,v 1.86 2002-07-10 17:54:05 dobler Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.85 2002-07-09 18:35:13 dobler Exp $")
+           "$Id: equ.f90,v 1.86 2002-07-10 17:54:05 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -223,9 +223,11 @@ module Equ
 !  initiate communication and do boundary conditions
 !  need to deals first with x-boundaries
 !
+      call boundconds_x(f)
+      call boundconds_y(f)
+      call boundconds_z(f)
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      call boundconds_x(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -236,8 +238,8 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) then 
           call finalise_isendrcv_bdry(f)
-          call boundconds_y(f)
-          call boundconds_z(f)
+!           call boundconds_y(f)
+!           call boundconds_z(f)
         endif
 !
 !  coordinates are needed all the time
