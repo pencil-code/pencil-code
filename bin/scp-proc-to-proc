@@ -1,11 +1,12 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.3 2003-03-19 09:58:12 brandenb Exp $
+#$Id: scp-proc-to-proc,v 1.4 2003-12-07 11:13:13 brandenb Exp $
 #
 #  Purpose:
 #      copies directory trees to another machine
 #
 #  Example:
 #     scp-proc-to-proc dim.dat $serv/f90/pencil-code/runs/forced/relax_twist128a
+#     scp-proc-to-proc dim.dat $bar/pencil-code/runs/geodynamo/kws93/128f .
 
 #  will copy all var.dat files fron current directory to var.dat in
 #  another run directory.

@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.27 2003-11-23 00:09:01 mee Exp $
+#  $Id: mkdatadir,v 1.28 2003-12-07 11:13:13 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -8,6 +8,9 @@
 #  desired data disk will be different and different
 #  machine, so you may need to add your particular
 #  machine name below
+#
+#  Note: to make user specific directory options, follow
+#  an example by searching for "$USER".
 #
 echo $cwd >! .tmp
 #
@@ -18,6 +21,9 @@ set hn = `hostname`
 echo "we are on" $hn ", the new workspace will be"
 if ($hn =~ mhd*.st-and.ac.uk) then
   set str='s/home/work2/g'
+else if (($hn =~ fe*) && ($USER =~ brandenb)) then
+  echo "special entry for Axel"
+  set str='s/people\/disk2/wkspace2/g'
 else if ($hn =~ fe*) then
   set str='s/people\/disk2/wkspace1/g'
 else if ($hn =~ ns0*) then

@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.23 2003-10-13 11:48:52 mee Exp $
+# CVS: $Id: mkcparam,v 1.24 2003-12-07 11:13:13 brandenb Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -40,7 +40,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                   they make to the f-array.
 # !** AUTOMATIC CPARAM.INC GENERATION ****************************
 # ! Declare (for generation of cparam.inc) the number of f array
-# ! variables and auxilliary variables added by this module
+# ! variables and auxiliary variables added by this module
 # !
 # ! MVAR CONTRIBUTION 0
 # ! MAUX CONTRIBUTION 1

@@ -27,16 +27,15 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
-rerun:
-
-# ---------------------------------------------------------------------- #
-
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
 # Prevent code from running twice (and removing files by accident)
 if (! -e "NEVERLOCK") touch LOCK
+
+# ====================================================================== #
+newdir:
 
 #
 #  If necessary, distribute var.dat from the server to the various nodes
@@ -62,8 +61,12 @@ if ($local_disc) then
     end
   endif
 endif
+
+# ---------------------------------------------------------------------- #
+rerun:
+
 # Clean up control and data files
-rm -f STOP RELOAD fort.20
+rm -f STOP RELOAD RERUN NEWDIR fort.20
 
 # On machines with local scratch directory, initialize automatic
 # background copying of snapshots back to the data directory.
@@ -94,6 +97,22 @@ time $mpirun $mpirunops $npops $run_x $x_ops
 set run_status=$status		# save for exit
 date
 
+# look for RERUN file 
+# With this method one can only reload a new executable.
+# One cannot change directory, nor are the var.dat files returned to server.
+# See the NEWDIR method below for more options.
+if (-e "RERUN") then 
+  rm -f RERUN
+  echo
+  echo "=============================================================================="
+  echo "Rerunning in the *same* directory; current run status: $run_status"
+  echo "We are *still* in: " `pwd`
+  echo "=============================================================================="
+  echo
+  goto rerun
+endif  
+# ---------------------------------------------------------------------- #
+
 # On machines with local scratch disc, copy var.dat back to the data
 # directory
 if ($local_disc) then
@@ -112,23 +131,44 @@ if ($local_disc) then
 endif
 echo "Done"
 
+# look for NEWDIR file 
+# if NEWDIR contains a directory name, then continue run in that directory
+if (-e "NEWDIR") then 
+  if (-s "NEWDIR") then
+    if (-e "LOCK") rm -f LOCK
+    set olddir=$cwd
+    cd `cat NEWDIR`
+    rm $olddir/NEWDIR
+    (echo "stopped run:"; date; echo "new run directory:"; echo $cwd; echo "")\
+       >> $olddir/$datadir/directory_change.log
+    (date; echo "original run script is in:"; echo $olddir; echo "")\
+       >> $datadir/directory_change.log
+    echo
+    echo "=============================================================================="
+    echo "Rerunning in new directory; current run status: $run_status"
+    echo "We are now in: " `pwd`
+    echo "=============================================================================="
+    echo
+    goto newdir
+  else
+    rm -f NEWDIR
+    echo
+    echo "=============================================================================="
+    echo "Rerunning in the *same* directory; current run status: $run_status"
+    echo "We are *still* in: " `pwd`
+    echo "=============================================================================="
+    echo
+    echo "Rerunning; current run status: $run_status"
+    goto newdir
+  endif
+endif  
+# ====================================================================== #
+
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
-
-# look for RERUN file 
-if (-e "RERUN") then 
-  if (-s "RERUN") then
-    cd `cat RERUN`
-  endif
-
-  rm -f RERUN
-
-  echo "Rerunning; current run status: $run_status"
-  goto rerun
-endif  
 
 exit $run_status		# propagate status of mpirun
 
