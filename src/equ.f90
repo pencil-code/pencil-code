@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.90 2002-07-22 17:55:34 dobler Exp $
+! $Id: equ.f90,v 1.91 2002-07-29 09:13:22 brandenb Exp $
 
 module Equ
 
@@ -215,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.90 2002-07-22 17:55:34 dobler Exp $")
+           "$Id: equ.f90,v 1.91 2002-07-29 09:13:22 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -240,8 +240,6 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) then 
           call finalise_isendrcv_bdry(f)
-!           call boundconds_y(f)
-!           call boundconds_z(f)
         endif
 !
 !  coordinates are needed all the time

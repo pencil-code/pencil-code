@@ -1,14 +1,16 @@
-! $Id: forcing.f90,v 1.21 2002-07-27 06:41:02 brandenb Exp $
+! $Id: forcing.f90,v 1.22 2002-07-29 09:13:22 brandenb Exp $
 
 module Forcing
 
-!! Module for forcing in the Navier-Stokes equation.
+!  Module for forcing in the Navier-Stokes equation
+!  (or, in special cases, in the entropy equation).
 
   use Cdata
 
   implicit none
 
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
+  real :: dforce=0.,radius_ff
   integer :: kfountain=5
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
@@ -17,7 +19,8 @@ module Forcing
 
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
-       iforce2,kfountain,fountain
+       iforce2,kfountain,fountain, &
+       dforce,radius_ff
 
   contains
 
@@ -41,7 +44,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.21 2002-07-27 06:41:02 brandenb Exp $")
+           "$Id: forcing.f90,v 1.22 2002-07-29 09:13:22 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -73,13 +76,14 @@ module Forcing
 !  calculate and add forcing function
 !
       select case(iforce)
-      case ('zero'); if (lroot) print*,'No forcing'
+      case ('zero'); if (headt) print*,'No forcing'
       case ('irrotational');  call forcing_irro(f)
       case ('helical', '2');  call forcing_hel(f)
       case ('fountain', '3'); call forcing_fountain(f)
       case ('horiz-shear');   call forcing_hshear(f)
       case ('twist');         call forcing_twist(f)
       case ('diffrot');       call forcing_diffrot(f)
+      case ('blobs');         call forcing_blobs(f)
       case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
       endselect
 !
@@ -619,6 +623,45 @@ module Forcing
       enddo
 !
     endsubroutine forcing_diffrot
+!***********************************************************************
+    subroutine forcing_blobs(f)
+!
+!  add blobs in entropy every dforce time units
+!
+!  28-jul-02/axel: coded
+!
+      !use Mpicomm
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, save :: tforce=0.
+      integer, save :: ifirst=0
+      integer, save :: nforce=0
+      logical :: lforce
+      character (len=4) :: ch
+      character (len=10) :: file
+!
+!  identifier
+!
+      if(headt) print*,'forcing_blobs'
+!
+!  the last forcing time is recorded in tforce.dat
+!
+      file='tforce.dat'
+      if (ifirst==0) then
+        call out1 (trim(file),tforce,nforce,dforce,t)
+        ifirst=1
+      endif
+!
+!  Check whether we want to do forcing at this time.
+!
+      call out2 (trim(file),tforce,nforce,dforce,t,lforce,ch,.true.)
+      if (lforce) then
+        call blob(force,f,ient,radius_ff,0.,0.,.5)
+      endif
+!
+    endsubroutine forcing_blobs
 !***********************************************************************
 
 endmodule Forcing

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.3 2002-07-27 06:41:02 brandenb Exp $ 
+! $Id: initcond.f90,v 1.4 2002-07-29 09:13:22 brandenb Exp $ 
 
 module Initcond 
  
@@ -48,34 +48,6 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
-!***********************************************************************
-    subroutine blob(ampl,f,i,radius,x0,y0,z0)
-!
-!  single  blob
-!
-!  27-jul-02/axel: coded
-!
-      integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
-      real,optional :: x0,y0,z0
-      real :: ampl,radius,x01=0.,y01=0.,z01=0.
-!
-!  single  blob
-!
-      if (present(x0)) x01=x0
-      if (present(y0)) y01=y0
-      if (present(z0)) z01=z0
-      if (ampl==0) then
-        if (lroot) print*,'ampl=0 in blob'
-      else
-        if (lroot) print*,'blob: variable i,ampl=',i,ampl
-        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
-           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
-          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
-          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
-      endif
-!
-    endsubroutine blob
 !***********************************************************************
     subroutine wave(ampl,f,i,kx,ky,kz)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.106 2002-07-27 06:41:02 brandenb Exp $
+! $Id: entropy.f90,v 1.107 2002-07-29 09:13:22 brandenb Exp $
 
 module Entropy
 
@@ -12,6 +12,7 @@ module Entropy
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi
   real :: cheat=0.,wheat=0.1,cool=0.,wcool=0.1
   real :: chi_t=0.,ss0=0.,khor_ss=1.
+  real :: tau_ss_exterior=0.
   real :: hcond0=0.
   real :: Fheat=impossible,hcond1=impossible,hcond2=impossible
   logical :: lcalc_heatcond_simple=.false.
@@ -26,7 +27,7 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss,cheat,wheat,cool,wcool,Fheat, &
-       chi_t,lcalc_heatcond_simple
+       chi_t,lcalc_heatcond_simple,tau_ss_exterior
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0
@@ -63,7 +64,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.106 2002-07-27 06:41:02 brandenb Exp $")
+           "$Id: entropy.f90,v 1.107 2002-07-29 09:13:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -80,6 +81,7 @@ module Entropy
       use Cdata
       use Mpicomm
       use IO
+      use Sub
       use Gravity
       use Initcond
 !
@@ -338,7 +340,7 @@ module Entropy
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-      if (headtt) print*,'dss_dt: TT1(l1)=',TT1(l1)
+      if (headtt) print*,'dss_dt: TT1(1)=',TT1(1)
 
       select case(ivisc)
       case ('simplified', '0')
@@ -367,6 +369,10 @@ module Entropy
 !
       if ((cheat /= 0) .or. (cool /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
+!
+!  possibility of entropy relaxation in exterior region
+!
+      if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
 !
 !  Calculate entropy related diagnostics
 !
@@ -641,6 +647,30 @@ endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_tau_ss_exterior(f,df)
+!
+!  entropy relaxation to zero on time scale tau_ss_exterior within
+!  exterior region. For the time being this means z > zgrav.
+!
+!  29-jul-02/axel: coded
+!
+      use Cdata
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real :: scl
+!
+      intent(in) :: f
+      intent(out) :: df
+!
+      if (headtt) print*,'calc_tau_ss_exterior: tau=',tau_ss_exterior
+      if(z(n)>zgrav) then
+        scl=1./tau_ss_exterior
+        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-scl*f(l1:l2,m,n,ient)
+      endif
+!
+    endsubroutine calc_tau_ss_exterior
 !***********************************************************************
     subroutine rprint_entropy(lreset)
 !

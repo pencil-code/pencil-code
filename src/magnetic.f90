@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.75 2002-07-27 06:41:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.76 2002-07-29 09:13:22 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -35,10 +35,11 @@ module Magnetic
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real :: eta=0.,height_eta=0.,eta_out=0.
+  real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
        eta,B_ext, &
-       height_eta,eta_out, &
+       height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
@@ -82,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.75 2002-07-27 06:41:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.76 2002-07-29 09:13:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -268,6 +269,10 @@ module Magnetic
         df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-eta_out1*jj
       endif
 !
+!  possibility of entropy relaxation in exterior region
+!
+      if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
+!
 !  For the timestep calculation, need maximum Alfven speed.
 !  and maximum diffusion (for timestep)
 !  This must include the imposed field (if there is any)
@@ -327,6 +332,33 @@ module Magnetic
       endif
 !     
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine calc_tau_aa_exterior(f,df)
+!
+!  magnetic field relaxation to zero on time scale tau_aa_exterior within
+!  exterior region. For the time being this means z > zgrav.
+!
+!  29-jul-02/axel: coded
+!
+      use Cdata
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real :: scl
+      integer :: j
+!
+      intent(in) :: f
+      intent(out) :: df
+!
+      if (headtt) print*,'calc_tau_aa_exterior: tau=',tau_aa_exterior
+      if(z(n)>zgrav) then
+        scl=1./tau_aa_exterior
+        do j=iax,iaz
+          df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-scl*f(l1:l2,m,n,j)
+        enddo
+      endif
+!
+    endsubroutine calc_tau_aa_exterior
 !***********************************************************************
     subroutine rprint_magnetic(lreset)
 !

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.80 2002-07-22 17:55:34 dobler Exp $ 
+! $Id: sub.f90,v 1.81 2002-07-29 09:13:22 brandenb Exp $ 
 
 module Sub 
 
@@ -1772,6 +1772,36 @@ module Sub
       endif
 !
     endsubroutine get_nseed
+!***********************************************************************
+    subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
+!
+!  single  blob
+!
+      use Cdata
+!
+!  27-jul-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: xblob,yblob,zblob
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+!
+!  single  blob
+!
+      if (present(xblob)) x01=xblob
+      if (present(yblob)) y01=yblob
+      if (present(zblob)) z01=zblob
+      if (ampl==0) then
+        if (lroot) print*,'ampl=0 in blob'
+      else
+        if (lroot) print*,'blob: variable i,ampl=',i,ampl
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
+           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
+          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
+          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+      endif
+!
+    endsubroutine blob
 !***********************************************************************
 
 endmodule Sub

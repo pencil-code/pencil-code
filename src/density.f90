@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.41 2002-07-22 19:51:49 dobler Exp $
+! $Id: density.f90,v 1.42 2002-07-29 09:13:22 brandenb Exp $
 
 module Density
 
@@ -66,7 +66,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.41 2002-07-22 19:51:49 dobler Exp $")
+           "$Id: density.f90,v 1.42 2002-07-29 09:13:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -494,6 +494,7 @@ module Density
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot)
         tmp=-gamma*pot/cs20
+print*,z(n),pot,tmp
         f(l1:l2,m,n,ilnrho)=lnrho0+tmp
         if(lentropy) f(l1:l2,m,n,ient)=-gamma1/gamma*tmp
       enddo
@@ -537,11 +538,13 @@ module Density
 !
       if (grav_profile=='const') then
         zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
+      elseif (grav_profile=='const_zero') then
+        zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
       elseif (grav_profile=='linear') then
         zinfty2=zref**2+(mpoly+1.)*cs20/(-.5*gamma*gravz)
         if(zinfty2<0) then
           if(lroot) print*,'polytropic_simple: zinfty**2<0 is not ok'
-          zinfty2=0. !(see what happens)
+          zinfty2=0. !(and see what happens)
         endif
         zinfty=sqrt(zinfty2)
       else
@@ -553,7 +556,7 @@ module Density
 !
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      if(zinfty<ztop .or. (-zinfty)>zbot) then
+      if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
         if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
         call stop_it('rho and cs2 will vanish within domain')
       endif

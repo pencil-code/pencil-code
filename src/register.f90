@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.45 2002-07-16 11:24:11 nilshau Exp $
+! $Id: register.f90,v 1.46 2002-07-29 09:13:22 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -52,6 +52,10 @@ module Register
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Initialize: nvar /= mvar. Fix mvar in cparam.local')
       endif
+!
+!  initialize headt for root processor only
+!
+      if (lroot) headt=.true.
 !
     endsubroutine initialize
 !***********************************************************************

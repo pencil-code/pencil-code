@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.22 2002-07-18 23:53:05 brandenb Exp $
+! $Id: grav_z.f90,v 1.23 2002-07-29 09:13:22 brandenb Exp $
 
 module Gravity
 
@@ -19,7 +19,8 @@ module Gravity
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
-  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty
+  integer :: ngrav=10
+  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=1e30
   character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -49,13 +50,13 @@ module Gravity
 !AB: We should introduce that instead of keeping a double meaning of gravz.
 
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,grav_profile
+       z1,z2,zref,gravz,grav_profile,zgrav
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       zref,gravz,grav_profile
+       zref,gravz,grav_profile,zgrav
 
   contains
 
@@ -78,7 +79,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.22 2002-07-18 23:53:05 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.23 2002-07-29 09:13:22 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -115,6 +116,7 @@ module Gravity
 !
 !  9-jan-02/wolf: coded
 ! 28-jun-02/axel: added 'linear' gravity profile
+! 28-jul-02/axel: added 'const_zero' gravity profile
 !
       use Cdata
       use Sub
@@ -129,9 +131,17 @@ module Gravity
 !
 !  linear gravity profile (for accretion discs)
 !
+      elseif (grav_profile=='const_zero') then
+        if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
+        if (z(n)<=zgrav) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gravz
+!
+!  linear gravity profile (for accretion discs)
+!
       elseif (grav_profile=='linear') then
         if (headtt) print*,'duu_dt_grav: linear gravz=',gravz
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz*z(n)
+      else
+        if(lroot) print*,'no gravity profile given'
       endif
 !
       if(ip==0) print*,f(1,1,1,1) !(keep compiler quiet)
@@ -183,18 +193,45 @@ module Gravity
       select case(grav_profile)
         case('const')
           pot=-gravz*(zmn-zinfty)
-          if (present(pot0)) pot0 = gravz*zinfty ! potential at z=0
+          if (present(pot0)) pot0 = gravz*zinfty !(potential at z=0)
           if (present(grav)) then
             grav(:,1:2)=0.
             grav(:,3)=gravz
           endif
+!
+!  gravity is set to zero above z=zgrav
+!
+        case('const_zero')
+          if(zmn<=zgrav) then
+            pot=-gravz*(zmn-zinfty)
+            if (present(grav)) then
+              grav(:,1:2)=0.
+              grav(:,3)=gravz
+            endif
+          else
+            pot=-gravz*(zgrav-zinfty)
+            if (present(grav)) grav=0.
+          endif
+          if (present(pot0)) then !(potential at z=0)
+            if(0.<=zgrav) then
+              pot0 = gravz*zinfty
+            else
+              pot0 =-gravz*(zgrav-zinfty)
+            endif
+          endif
+!
+!  gravity increases linearly with height (for accretion discs)
+!
         case('linear')
           pot=-.5*gravz*(zmn**2-zinfty**2)
-          if (present(pot0)) pot0 = .5*gravz*zinfty**2 ! potential at z=0
+          if (present(pot0)) pot0 = .5*gravz*zinfty**2 !(potential at z=0)
           if (present(grav)) then
-            grav(:,1:2)=0.
-            grav(:,3)=gravz*zmn
+            grav=0.
+            if(zmn<=zgrav) grav(:,3)=gravz*zmn
           endif
+!
+!  radial profile; not currently implemented
+!
         case('radial')
           if (present(rmn)) then
             r=rmn

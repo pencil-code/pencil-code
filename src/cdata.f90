@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.81 2002-07-22 22:36:59 brandenb Exp $
+! $Id: cdata.f90,v 1.82 2002-07-29 09:13:22 brandenb Exp $
 
 module Cdata
 
@@ -57,7 +57,7 @@ module Cdata
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
-  logical :: lout,headt=.true.,headtt=.true.,ldt,lfirst,ldiagnos
+  logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos
   logical :: lwrite_ic=.false.,lnowrite=.false.
   logical :: lroot=.true.,ldebug=.false.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
