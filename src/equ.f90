@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.135 2003-05-05 18:48:52 brandenb Exp $
+! $Id: equ.f90,v 1.136 2003-05-07 04:53:58 brandenb Exp $
 
 module Equ
 
@@ -212,7 +212,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.135 2003-05-05 18:48:52 brandenb Exp $")
+           "$Id: equ.f90,v 1.136 2003-05-07 04:53:58 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -314,7 +314,7 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij)
 !
 !  Evolution of radiative energy
 !

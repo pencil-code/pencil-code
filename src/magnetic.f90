@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.109 2003-04-26 09:21:07 brandenb Exp $
+! $Id: magnetic.f90,v 1.110 2003-05-07 04:53:58 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -48,7 +48,7 @@ module Magnetic
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-  integer :: i_uxuxBm=0
+  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
   integer :: i_b2mphi=0
 
   contains
@@ -85,7 +85,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.109 2003-04-26 09:21:07 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.110 2003-05-07 04:53:58 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -195,7 +195,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij)
 !
 !  magnetic field evolution
 !
@@ -212,13 +212,15 @@ module Magnetic
       use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr, uxuxB
-      real, dimension (nx,3) :: del2A
+      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
+      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
+      real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real :: tmp,eta_out1
       integer :: j
 !
-      intent(in)  :: f,uu,rho1,TT1
+      intent(in)  :: f,uu,rho1,TT1,uij
 !
 !  identify module and boundary conditions
 !
@@ -269,7 +271,9 @@ module Magnetic
         endif
 !
 !  possibility to add external field
+!  Note; for diagnostics purposes keep copy of original field
 !
+      if (ldiagnos) bbb=bb
       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
@@ -355,9 +359,40 @@ module Magnetic
           if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
         endif
         !
-        if (i_uxuxBm/=0) then
-          call cross_mn(uu,uxB,uxuxB)
-          call sum_mn_name(uxuxB,i_uxuxBm)
+        if (i_uxbm/=0) then
+          call cross_mn(uu,bbb,uxb)
+          uxb_dotB0=B_ext(1)*uxb(:,1)+B_ext(2)*uxb(:,2)+B_ext(3)*uxb(:,3)
+          uxb_dotB0=uxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          call sum_mn_name(uxb_dotB0,i_uxbm)
+        endif
+        !
+        if (i_jxbxbm/=0) then
+          call cross_mn(jj,bbb,jxb)
+          call cross_mn(jxb,bbb,jxbxb)
+          jxbxb_dotB0=B_ext(1)*jxbxb(:,1)+B_ext(2)*jxbxb(:,2)+B_ext(3)*jxbxb(:,3)
+          jxbxb_dotB0=jxbxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          call sum_mn_name(jxbxb_dotB0,i_jxbxbm)
+        endif
+        !
+        if (i_oxuxbm/=0) then
+          oo(:,1)=uij(:,3,2)-uij(:,2,3)
+          oo(:,2)=uij(:,1,3)-uij(:,3,1)
+          oo(:,3)=uij(:,2,1)-uij(:,1,2)
+          call cross_mn(oo,uu,oxu)
+          call cross_mn(oxu,bbb,oxuxb)
+          oxuxb_dotB0=B_ext(1)*oxuxb(:,1)+B_ext(2)*oxuxb(:,2)+B_ext(3)*oxuxb(:,3)
+          oxuxb_dotB0=oxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
+        endif
+        !
+        if (i_uxDxuxbm/=0) then
+          call cross_mn(uu,bbb,uxb)
+          uxDxuxb(:,1)=uxb(:,1)*(uij(:,2,2)+uij(:,3,3))-uxb(:,2)*uij(:,2,1)-uxb(:,3)*uij(:,3,1)
+          uxDxuxb(:,2)=uxb(:,2)*(uij(:,1,1)+uij(:,3,3))-uxb(:,1)*uij(:,1,2)-uxb(:,3)*uij(:,3,2)
+          uxDxuxb(:,3)=uxb(:,3)*(uij(:,1,1)+uij(:,2,2))-uxb(:,1)*uij(:,1,3)-uxb(:,2)*uij(:,2,3)
+          uxDxuxb_dotB0=B_ext(1)*uxDxuxb(:,1)+B_ext(2)*uxDxuxb(:,2)+B_ext(3)*uxDxuxb(:,3)
+          uxDxuxb_dotB0=uxDxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
+          call sum_mn_name(uxDxuxb_dotB0,i_uxDxuxbm)
         endif
         !
       endif
@@ -424,7 +459,7 @@ module Magnetic
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
-        i_uxuxBm=0
+        i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_uxDxuxbm=0.
         i_b2mphi=0
       endif
 !
@@ -444,7 +479,10 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
-        call parse_name(iname,cname(iname),cform(iname),'uxuxBm',i_uxuxBm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
+        call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
+        call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',i_uxDxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
@@ -487,7 +525,10 @@ module Magnetic
       write(3,*) 'i_jmax=',i_jmax
       write(3,*) 'i_vArms=',i_vArms
       write(3,*) 'i_vAmax=',i_vAmax
-      write(3,*) 'i_uxuxBm=',i_uxuxBm
+      write(3,*) 'i_uxbm=',i_uxbm
+      write(3,*) 'i_oxuxbm=',i_oxuxbm
+      write(3,*) 'i_jxbxbm=',i_jxbxbm
+      write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
       write(3,*) 'nname=',nname
       write(3,*) 'iaa=',iaa
       write(3,*) 'iax=',iax
