@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.77 2003-04-06 07:40:22 brandenb Exp $
+! $Id: density.f90,v 1.78 2003-04-08 18:26:19 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.77 2003-04-06 07:40:22 brandenb Exp $")
+           "$Id: density.f90,v 1.78 2003-04-08 18:26:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,6 +131,7 @@ module Density
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
       case('isothermal'); call isothermal(f)
+      case('stratification'); call stratification(amplrho,f,xx,yy,zz)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
       case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')

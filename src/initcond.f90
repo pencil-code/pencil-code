@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.31 2003-03-27 05:14:09 brandenb Exp $ 
+! $Id: initcond.f90,v 1.32 2003-04-08 18:26:19 brandenb Exp $ 
 
 module Initcond 
  
@@ -229,6 +229,30 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine stratification(ampl,f,xx,yy,zz)
+!
+!  read mean stratification from "stratification.dat"
+!
+!   8-apr-03/axel: coded
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real, dimension (mz) :: lnrho0,SS0
+      real :: ztmp,ampl
+!
+!  read mean stratification and write into array
+!
+      open(19,file='stratification.dat')
+      do n=1,mz
+        read(19,*) ztmp,lnrho0(n),SS0(n)
+        print*,ztmp,lnrho0(n),SS0(n)
+        f(:,:,n,ilnrho)=lnrho0(n)
+        f(:,:,n,ient)=SS0(n)
+      enddo
+      close(19)
+!
+    endsubroutine stratification
 !***********************************************************************
     subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width)
 !
