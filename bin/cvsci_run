@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: cvsci_run,v 1.14 2004-07-25 15:56:22 brandenb Exp $
+#$Id: cvsci_run,v 1.15 2004-07-26 08:13:08 mee Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -35,7 +35,8 @@ cvs add time_series.dat index.pro dim.dat legend.dat params.log *.nml
 #  add power spectra, if they exist
 #  (for the time being, test existence only on a few)
 #
-if ( (-e poweru.dat) || (-e power_kin.dat)) then
+\ls | egrep 'power.*\.dat' >/dev/null
+if ( ! $status ) then
   cvs add power*.dat
 endif
 #
