@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.5 2002-07-06 20:29:17 brandenb Exp $
+! $Id: nodensity.f90,v 1.6 2002-07-11 11:08:50 nilshau Exp $
 
 module Density
 
@@ -40,7 +40,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.5 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: nodensity.f90,v 1.6 2002-07-11 11:08:50 nilshau Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -107,6 +107,18 @@ module Density
       write(3,*) 'ilnrho=',ilnrho
 !
     endsubroutine rprint_density
+!***********************************************************************
+    subroutine bc_lnrho_db(f,topbot)
+!
+!  dummy routine for density boundary condition
+!
+!  11-jul-2002/nils: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+    end subroutine bc_lnrho_db
 !***********************************************************************
 
 endmodule Density
