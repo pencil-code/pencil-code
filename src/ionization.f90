@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.152 2003-11-23 17:16:02 theine Exp $
+! $Id: ionization.f90,v 1.153 2003-12-13 19:31:37 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -112,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.152 2003-11-23 17:16:02 theine Exp $")
+           "$Id: ionization.f90,v 1.153 2003-12-13 19:31:37 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -407,7 +407,7 @@ module Ionization
       call stop_it("getentropy_pencil: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) print*,lnrho           !(keep compiler quiet)
       if (ip==0) print*,lnTT            !(keep compiler quiet)
-      if (ip==0) print*,ss              !(keep compiler quiet)      
+      if (ip==0) ss=0                   !(keep compiler quiet)      
 !
     endsubroutine getentropy_pencil
 !***********************************************************************
@@ -424,7 +424,7 @@ module Ionization
       call stop_it("getentropy_point: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) print*,lnrho           !(keep compiler quiet)
       if (ip==0) print*,lnTT            !(keep compiler quiet)
-      if (ip==0) print*,ss              !(keep compiler quiet)
+      if (ip==0) ss=0                   !(keep compiler quiet)
 !
     endsubroutine getentropy_point
 !***********************************************************************
