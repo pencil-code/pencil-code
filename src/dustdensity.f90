@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.128 2004-10-27 14:21:47 ajohan Exp $
+! $Id: dustdensity.f90,v 1.129 2004-10-29 10:07:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -23,7 +23,7 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(nx,ndustspec) :: nd_diff_arr=0.,md_diff_arr=0.,mi_diff_arr=0.
   real, dimension(ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
-  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd0=1.
+  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: scaleHd=1.
   character (len=labellen) :: initnd='zero',idiffd='simplified'
@@ -120,7 +120,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.128 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.129 2004-10-29 10:07:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

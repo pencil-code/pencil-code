@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.86 2004-10-27 14:21:47 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.87 2004-10-29 10:07:32 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -26,14 +26,15 @@ module Dustvelocity
   real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,mi,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
-  real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real :: rhods=1.,md0=1.,ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.2
+  real :: ampluud=0.,kx_uud=1.,ky_uud=1.,kz_uud=1.
+  real :: rhods=1.,nd0=1.,md0=1.,rhod0=1.
+  real :: ad0=0.,ad1=0.,dimd1=0.333333,deltamd=1.2
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst
   real :: unit_md
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
-  logical :: lviscosity_dust=.true.
+  logical :: lviscosity_dust=.true.,lneed_sdij
   logical :: ldustvelocity_shorttausd=.false.
   character (len=labellen) :: inituud='zero',iviscd='simplified'
   character (len=labellen) :: draglaw='epstein_cst'
@@ -109,7 +110,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.86 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.87 2004-10-29 10:07:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -162,6 +163,11 @@ module Dustvelocity
       if (maxval(nud) == 0.) lviscosity_dust=.false.
       if (lroot) print*, &
           'initialize_dustvelocity: lviscosity_dust=',lviscosity_dust
+!
+!  Only calculate rate-of-strain tensor if necessary
+!
+      if (iviscd == 'nud-const' .and. lviscosity_dust .and. ldustdensity) &
+          lneed_sdij=.true.
 !
 !  Turn off all dynamical terms in duud/dt if short stopping time approximation
 !
@@ -451,8 +457,8 @@ module Dustvelocity
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,JxBr,ood,del2ud,graddivud,del6ud,fviscd
       real, dimension (nx,3) :: glnrho,glnnd,sdglnnd,tausd13,tausg13
-      real, dimension (nx) :: rho,rho1,cs2,od2,oud,udx,udy,udz,rhod
-      real, dimension (nx) :: csrho,tausg1
+      real, dimension (nx) :: rho,rho1,cs2,od2,oud,udx,udy,udz,nd,rhod
+      real, dimension (nx) :: csrho,tausg1,mudrhod1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,k,l
 !
@@ -490,17 +496,14 @@ module Dustvelocity
       do k=1,ndustspec
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
         if (ldustdensity_log) then
-          if (lmdvar) then
-            rhod = exp(f(l1:l2,m,n,ind(k)))*f(l1:l2,m,n,imd(k))
-          else
-            rhod = exp(f(l1:l2,m,n,ind(k)))*md(k)
-          endif
+          nd=exp(f(l1:l2,m,n,ind(k)))
         else
-          if (lmdvar) then
-            rhod = f(l1:l2,m,n,ind(k))*f(l1:l2,m,n,imd(k))
-          else
-            rhod = f(l1:l2,m,n,ind(k))*md(k)
-          endif
+          nd=f(l1:l2,m,n,ind(k))
+        endif
+        if (lmdvar) then
+          rhod = nd*f(l1:l2,m,n,imd(k))
+        else
+          rhod = nd*md(k)
         endif
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
@@ -512,9 +515,9 @@ module Dustvelocity
         call gij(f,iuud(k),udij)
         divud(:,k) = udij(:,1,1) + udij(:,2,2) + udij(:,3,3)
 !
-!  Calculate rate of strain tensor
+!  Calculate rate of strain tensor (if needed for viscosity)
 !
-        if (ldustdensity .and. nud(k) /= 0. .and. iviscd=='nu-const') then
+        if (lneed_sdij) then
           do j=1,3
             do i=1,3
               sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
@@ -564,13 +567,13 @@ module Dustvelocity
         if (ldragforce_dust) then
           call get_stoppingtime(f,rho,cs2,rhod,k)
 !
-!  Add drag force on dust.
+!  Add drag force on dust
 !
           do i=1,3; tausd13(:,i) = tausd1(:,k); enddo
           df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) - &
               tausd13*(uud(:,:,k)-uu)
 !
-!  Add drag force on gas (back-reaction)
+!  Add drag force on gas (back-reaction from dust)
 !
           if (ldragforce_gas) then
             tausg1 = rhod*tausd1(:,k)*rho1
@@ -587,30 +590,61 @@ module Dustvelocity
           select case (iviscd)
 
           case('simplified')
+!
+!  Viscous force: nud*del2ud
+!     -- not physically correct (no momentum conservation)
+!
+            if (headtt) print*, 'Viscous force (dust): nud*del2ud'
             call del2v(f,iuud(k),del2ud)
             fviscd=nud(k)*del2ud
 
           case('nud-const')
+!
+!  Viscous force: nud*(del2ud+graddivud/3+2Sd.glnnd)
+!    -- the correct expression for nud=const
+!
+            if (headtt) print*, &
+                'Viscous force (dust): nud*(del2ud+graddivud/3+2Sd.glnnd)'
             call del2v(f,iuud(k),del2ud)
             call del2v_etc(f,iuud(k),del2ud,GRADDIV=graddivud)
             if (ldustdensity) then
               call grad(f,ind(k),glnnd)
+              if (.not. ldustdensity_log) then
+                do i=1,3
+                  glnnd(:,i)=glnnd(:,i)/nd
+                enddo
+              endif
               call multmv_mn(sdij,glnnd,sdglnnd)
               fviscd=2*nud(k)*sdglnnd+nud(k)*(del2ud+1/3.*graddivud)
             else
               fviscd=nud(k)*(del2ud+1/3.*graddivud)
             endif
 
-          case('hyper3')
+          case('hyper3_simplified')
+!
+!  Viscous force: nud*del6ud (not momentum-conserving)
+!
+            if (headtt) print*, 'Viscous force (dust): nud*del6ud'
             call del6v(f,iuud(k),del6ud)
             fviscd=nud(k)*del6ud
+
+          case('hyper3_simplified2')
+!
+!  Viscous force: mud/rhod*del6ud
+!
+            if (headtt) print*, 'Viscous force (dust): mud/rhod*del6ud'
+            call del6v(f,iuud(k),del6ud)
+            mudrhod1=(nud(k)*nd0*md0)/rhod   ! = mud/rhod
+            do i=1,3
+              fviscd(:,i)=mudrhod1*del6ud(:,i)
+            enddo
 
           case default
             call stop_it("duud_dt: No such dust viscosity type")
 
           endselect
 
-        df(l1:l2,m,n,iudx(k):iudz(k))=df(l1:l2,m,n,iudx(k):iudz(k))+fviscd
+        df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) + fviscd
 
         endif
 !
