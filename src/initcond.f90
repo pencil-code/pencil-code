@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.95 2003-11-19 15:44:39 ajohan Exp $ 
+! $Id: initcond.f90,v 1.96 2003-11-19 15:53:03 ajohan Exp $ 
 
 module Initcond 
  
@@ -1007,6 +1007,7 @@ module Initcond
       elseif (lroot) then
         print*, 'baroclinic: no valid sz specified'
       endif
+
       f(:,:,:,iss) = sz
 !
 !  Solution to hydrostatic equlibrium in the z-direction
