@@ -18,14 +18,18 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.4 2004-02-20 08:26:57 dobler Exp $
+# CVS: $Id: emailfromcvs,v 1.5 2004-02-24 17:19:47 dobler Exp $
 # Usage:
-#   emailfromcvs cvs_user_id subject to_addr_1 <to_addr_2> .....
+#   emailfromcvs <cvs_user_id> <subject> <to_addr_1> [to_addr_2 ...]
 # Description:
-#   Lookup cvs_user_id in cvsemail file and sent the contents
-#   of STDIN to the specified users with the specified subject. 
+#   Lookup <cvs_user_id> in cvsemail file and mail STDIN data to
+#   <to_addr_1>, etc. with subject <subject>.
 # Example:
 #    emailfromcvs mee 'Committed changes' brandenb@nordita.dk 
+# Note:
+#   IRL stands for `in real life'
+# Test with:
+#   ls -ld . | emailfromcvs mee 'Committed changes' email@addr
 # Complain to:
 #   A.J.Mee@ncl.ac.uk
 
@@ -37,6 +41,8 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 
 use strict;
 
+my $debug = 0;
+
 die usage() if (@ARGV < 3); 
 
 my $cvsid = shift;
@@ -44,21 +50,30 @@ my $subject= shift;
 my $to = join (",",@ARGV);
 my $from = "";
 my $mailprog = "/usr/sbin/sendmail -t";
-# my $mailprog = "cat";
-my $cvsemailfile = "/home/mee/bin/axelcvsIRL";
-# my $cvsemailfile = "/home/dobler/f90/pencil-code/www/axelcvsIRL";
+if ($debug) { $mailprog = "cat"};
 
-open(CVSEMAIL,"< $cvsemailfile")
-    or die "Cannot open $cvsemailfile for reading\n";
+# try all of these until one is readable:
+my @cvsemailfiles = ("/home/mee/bin/axelcvsIRL", "./axelcvsIRL");
+
+my $success;
+irlfile: foreach my $irlfile (@cvsemailfiles) {
+    $success = open(CVSEMAIL,"< $irlfile");
+    if ($success) {
+	last irlfile;
+    } else {
+	warn "Cannot open $irlfile for reading\n";
+    }
+}
+die "None of @cvsemailfiles worked -- aborting\n" unless ($success);
+
 while (<CVSEMAIL>) {
     chop;
     my ($id, $addr, $irl) = split(/:/, $_);
-    if ($cvsid =~ $id) 
+    if ($cvsid eq $id) 
     {
-      $from = "$irl <$addr>";
-      last;
+	$from = "$irl <$addr>";
+	last;
     }
-    
 }
 close(CVSEMAIL);
 
@@ -66,7 +81,7 @@ my @message=<STDIN>;
 open(MAIL,"| $mailprog") or die "Cannot start $mailprog\n";
 print MAIL "To: $to\n";
 print MAIL "From: Pencil-Code\@nordita.dk\n";
-print MAIL "Reply-To: $from\n";
+print MAIL "Reply-To: $from\n" if ($from =~ /\S/); # skip if empty
 print MAIL "Subject: $subject\n\n";
 print MAIL @message;
 close(MAIL);
