@@ -232,7 +232,7 @@ endelse
       pnts=where(intr_angle gt !pi,siz)
       if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]-!pi
      
-      angle[*,*,k]=2.0*intr_angle  + faraday_depth
+      angle[*,*,k]=2.0*intr_angle  - faraday_depth
     endfor
 ;
 ;   *  Calculate the Q and U by summing along the line of sight
@@ -277,24 +277,40 @@ endif
   if siz gt 0 then RM[pnts]=RM[pnts]+!pi
   RM=RM/(lambdas[1]^2-lambdas[0]^2)
 
+  bad_pnts0=where(P_I[*,*,0] lt 0.1*mean(P_I[*,*,0]))
+  bad_pnts1=where(P_I[*,*,1] lt 0.1*mean(P_I[*,*,1]))
+
+;  RM[bad_pnts0]=!values.f_nan
+;  RM[bad_pnts1]=!values.f_nan
 ; Line of sight averaged B Field
   bb_los=fltarr(nx,ny,3)
   for i=0,nz-1 do bb_los = bb_los + bb[l1:l2,m1:m2,i,*]
   bb_los=bb_los/nz
   
-  bb_perp=fltarr(nx,ny,1,2)
+  bb_perp=fltarr(nx,ny,2,2)
   bb_perp[*,*,0,0]=P_I[*,*,0]*cos(polarization_angle[*,*,0])
-  bb_perp[*,*,0,1]=P_I[*,*,0]*sin(polarization_angle[*,*,0])
+  bb_perp[*,*,1,0]=P_I[*,*,0]*sin(polarization_angle[*,*,0])
+  bb_perp[*,*,0,1]=P_I[*,*,1]*cos(polarization_angle[*,*,1])
+  bb_perp[*,*,1,1]=P_I[*,*,1]*sin(polarization_angle[*,*,1])
+
+
 
   bb_parallel=fltarr(nx,ny,1)
   for j=0,ny-1 do begin 
   for i=0,nx-1 do begin 
-    bb_parallel[i,j]=RM[i,j]*nz*dz/total(n_e[i,j,*])
+    bb_parallel[i,j]=RM[i,j]/(nz*dz*total(n_e[i,j,*])*0.81)
   endfor
   endfor
 
+  bb_x=bb_perp[*,*,0,0]
+  bb_y=bb_perp[*,*,1,0]
 
-  j_parallel=der(spread(bb_perp[*,*,*,1],2,1),0)-der(spread(bb_perp[*,*,*,0],2,1),1)
+;  bb_x[bad_pnts0]=!values.f_nan
+;  bb_x[bad_pnts1]=!values.f_nan
+;  bb_y[bad_pnts0]=!values.f_nan
+;  bb_y[bad_pnts1]=!values.f_nan
+
+  j_parallel=der(spread(bb_y,2,1),0)-der(spread(bb_x,2,1),1)
   h_c=bb_parallel*j_parallel*dx*dy
 
 ;wind=0
