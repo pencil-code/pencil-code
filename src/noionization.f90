@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.28 2003-06-19 10:32:15 mee Exp $
+! $Id: noionization.f90,v 1.29 2003-06-19 11:22:41 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -9,6 +9,12 @@ module Ionization
   use Density
 
   implicit none
+
+  interface thermodynamics              ! Overload the `thermodynamics' function
+    module procedure thermodynamics_penc     ! explicit f implicit m,n
+    module procedure thermodynamics_arbpenc  ! explicit lnrho(nx), ss(nx)
+    module procedure thermodynamics_arbpoint ! explocit lnrho, ss
+  endinterface
 
   ! global ionization parameter for yH (here a scalar set to 0)
 !ajwm  real :: yyH=0.  shouldn't be used directly outside module
@@ -61,7 +67,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.28 2003-06-19 10:32:15 mee Exp $")
+           "$Id: noionization.f90,v 1.29 2003-06-19 11:22:41 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -110,12 +116,12 @@ module Ionization
                         -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
                         /(1.+yH+fHe)-lnrho_ion-2.5)
-        ! lnTT0 AKA. cs20
+
       dlnPdlnrho=5./3.    ! gamma?
-      dlnPdss=(2./3.)/(1.+yH0+fHe)  !(gamma - 1) / (\mu_{effecive}/\mu) ?
+      dlnPdss=(2./3.)/(1.+yH0+fHe)  !(gamma - 1) / (\mu_{effective}/\mu) ?
 !
       coef_lr=dlnPdlnrho-1.
-      coef_ss=dlnPdss/ss_ion  !AKA effective c_p
+      coef_ss=dlnPdss/ss_ion 
 !
     endsubroutine initialize_ionization
 !*******************************************************************
@@ -172,7 +178,7 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(f,TT1,cs2,cp1tilde,ee)
+    subroutine thermodynamics_penc(f,TT1,cs2,cp1tilde,ee,yH)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -189,8 +195,8 @@ module Ionization
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee
-      real, dimension (nx) :: yH,TT,lnrho,ss
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx) :: TT,lnrho,ss
       logical :: ldummy
 !
       lnrho=f(l1:l2,m,n,ilnrho)
@@ -199,11 +205,91 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
 !ajwm but where does the reference density come in to this? 
-        yH=yH0
 
-        if (present(cs2))      cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
         if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+      else
+        if(headtt) print*,'thermodynamics: assume cp=1'
+        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+        if (present(cs2))      cs2=gamma1*TT
+        if (present(cp1tilde)) cp1tilde=1.  
+        if (present(ee))       ee=cs2/(gamma1*gamma)
+      endif
+      if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yH0
+!
+    endsubroutine thermodynamics_penc
+!***********************************************************************
+    subroutine thermodynamics_arbpenc(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+!
+!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
+!  cs2=(dp/drho)_s is the adiabatic sound speed
+!  TT1=1/T is the inverse temperature
+!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
+!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!
+!   2-feb-03/axel: simple example coded
+!  15-jun-03/axel: made compatible with current ionization routine
+!
+      use Cdata
+      use General
+      use Sub
+      use Density, only:cs20,lnrho0,gamma
+!
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx), intent(in) :: lnrho,ss
+      real, dimension (nx) :: TT
+      logical :: ldummy
+!
+      if(lfixed_ionization) then
+        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
+        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
+!ajwm but where does the reference density come in to this? 
+
+        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
+        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+      else
+        if(headtt) print*,'thermodynamics: assume cp=1'
+        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+        if (present(cs2))      cs2=gamma1*TT
+        if (present(cp1tilde)) cp1tilde=1.  
+        if (present(ee))       ee=cs2/(gamma1*gamma)
+      endif
+      if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yH0
+!
+    endsubroutine thermodynamics_arbpenc
+!***********************************************************************
+    subroutine thermodynamics_arbpoint(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+!
+!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
+!  cs2=(dp/drho)_s is the adiabatic sound speed
+!  TT1=1/T is the inverse temperature
+!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
+!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!
+!   2-feb-03/axel: simple example coded
+!  15-jun-03/axel: made compatible with current ionization routine
+!
+      use Cdata
+      use General
+      use Sub
+      use Density, only:cs20,lnrho0,gamma
+!
+      real, intent(out), optional :: cs2,TT1,cp1tilde,ee, yH
+      real, intent(in) :: lnrho,ss
+      real :: TT
+      logical :: ldummy
+!
+      if(lfixed_ionization) then
+        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
+        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
+!ajwm but where does the reference density come in to this? 
+        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
+        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
         TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
@@ -213,7 +299,7 @@ module Ionization
       endif
       if (present(TT1)) TT1=1./TT
 !
-    endsubroutine thermodynamics
+    endsubroutine thermodynamics_arbpoint
 !***********************************************************************
     subroutine ioncalc(f)
 !
