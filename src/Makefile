@@ -1,10 +1,10 @@
-### $Id: Makefile,v 1.119 2002-11-13 10:08:51 brandenb Exp $
+### $Id: Makefile,v 1.120 2002-11-13 16:41:33 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
-LIBSIG=-L$(HOME)/f90/lib  ##(Wolfgang, should we take this out?)
+LIBSIG=
 LDMPI=-lmpi
 
 MPICOMM   = nompicomm
@@ -133,7 +133,7 @@ LDFLAGS=$(FFLAGS)
 
 #####
 
-default: makefile cparam.inc code
+default: makefile cparam.inc code read_videofiles.x
 
 pacx: pacx-makefile cparam.inc code
 
@@ -156,6 +156,8 @@ run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
 run_deps=$(run_deps_f90)
 start=start.o $(start_deps)
 run=run.o $(run_deps)
+read_videofiles_deps=cparam.o general.o
+read_videofiles=read_videofiles.o $(read_videofiles_deps)
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
@@ -163,8 +165,12 @@ start.x: $(start) Makefile.local
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
+read_videofiles.x: $(read_videofiles)
+	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
+
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
+read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 general.o:   general.f90 cparam.o
