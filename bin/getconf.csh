@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.107 2004-02-23 15:12:00 mee Exp $
+# $Id: getconf.csh,v 1.108 2004-02-23 15:27:36 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -295,13 +295,15 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
       set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
       set mpirunops = "-v -local -machinefile hostfile"
+      set mpirunops = "-v -local -machinefile $TMPDIR/machines"
       setenv SCRATCH_DIR `cat $TMPDIR/scratch`
       set local_disc=1     
       set one_local_disc=0
+      set nprocpernode=2
       # Hack to give common scratch space path on each node
-      foreach host ($nodelist)
-         $SSH $host "rm -rf $SCRATCH_DIR; ln -s ${dollar}TMPDIR $SCRATCH_DIR; ls -lR /tmp/pencil*" 
-      end
+      #foreach host ($nodelist)
+      #   $SSH $host "rm -rf $SCRATCH_DIR; ln -s ${dollar}TMPDIR $SCRATCH_DIR; ls -lR /tmp/pencil*" 
+      #end
       echo '--------------- MPI_HOSTFILE ----------------'
       cat hostfile 
       echo '----------- MPI_HOSTFILE - END --------------'
