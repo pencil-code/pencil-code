@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.38 2004-07-23 13:58:32 nilshau Exp $
+! $Id: visc_const.f90,v 1.39 2004-08-13 08:24:02 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -35,7 +35,7 @@ module Viscosity
   namelist /viscosity_run_pars/ nu, ivisc, nu_mol, C_smag
  
   ! other variables (needs to be consistent with reset list below)
-  !integer :: i_nu_LES=0
+  integer :: i_epsK2=0
 
   contains
 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.38 2004-07-23 13:58:32 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.39 2004-08-13 08:24:02 nilshau Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -107,6 +107,7 @@ module Viscosity
       if (lreset) then
         i_dtnu=0
         i_nu_LES=0
+        i_epsK2=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -115,6 +116,7 @@ module Viscosity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
         call parse_name(iname,cname(iname),cform(iname),'nu_LES',i_nu_LES)
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',i_epsK2)
       enddo
 !
 !  write column where which ionization variable is stored
@@ -125,6 +127,7 @@ module Viscosity
           write(3,*) 'i_nu_LES=',i_nu_LES
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
+          write(3,*) 'i_epsK2=',i_epsK2
           write(3,*) 'itest=',0
         endif
       endif
@@ -190,6 +193,7 @@ module Viscosity
       real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho,gshock
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2
       real, dimension (nx) :: murho1,rho1,divu,shock,SS12,nu_smag,sij2
+      real, dimension (nx) :: ufvisc,rufvisc
       integer :: i
 
       intent (in) :: f, glnrho, rho1
@@ -309,6 +313,11 @@ module Viscosity
          endif
          if (i_nu_LES /= 0) then
             call sum_mn_name(nu_smag,i_nu_LES)
+         endif
+         if (i_epsK2/=0) then
+           call dot_mn(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
+           rufvisc=ufvisc/rho1
+           call sum_mn_name(-rufvisc,i_epsK2)
          endif
       endif
 !
