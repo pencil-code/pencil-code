@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.31 2004-02-17 10:28:03 ajohan Exp $
+;  $Id: extra.pro,v 1.32 2004-02-17 11:52:44 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -25,7 +25,6 @@ if (iuu ne 0) then ooo=reform(oo(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then aaa=reform(aa(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then bbb=reform(bb(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then jjj=reform(jj(l1:l2,m1:m2,n1:n2,*))
-if (iuud ne 0) then uuud=reform(uud(l1:l2,m1:m2,n1:n2,*))
 ;
 if (ilnrho ne 0) then begin
   llnrho=reform(lnrho(l1:l2,m1:m2,n1:n2))
