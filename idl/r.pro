@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.26 2002-07-08 20:57:41 dobler Exp $
+; $Id: r.pro,v 1.27 2002-07-11 00:30:16 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -27,6 +27,7 @@ if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
 if (ldensity)   then lnrho = fltarr(mx,my,mz  )*one
 if (lentropy)   then ss    = fltarr(mx,my,mz  )*one
 if (lmagnetic)  then aa    = fltarr(mx,my,mz,3)*one
+if (lpscalar )  then lncc  = fltarr(mx,my,mz  )*one
 ;
 ;  Read startup parameters
 ;
@@ -76,6 +77,9 @@ openr,1, datadir+'/'+file, /F77
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
     print,'just magnetic field (kinematic)'
     readu,1,aa
+  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ilncc ne 0 then begin
+    print,'just passive scalar (no field nor hydro)'
+    readu,1,lncc
   end else if iuu eq 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
     print,'just density (probably just good for tests)'
     readu,1,lnrho

@@ -110,6 +110,7 @@ if (cpar gt 0) then begin
   lforcing  = par.lforcing
   lentropy  = par.lentropy
   lmagnetic = par.lmagnetic
+  lpscalar  = par.lpscalar
   ;
   if (ldensity) then begin
     cs0=par.cs0 & rho0=par.rho0
