@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.206 2004-07-03 02:13:14 theine Exp $
+! $Id: magnetic.f90,v 1.207 2004-07-04 01:52:41 ngrs Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -41,6 +41,7 @@ module Magnetic
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5,Bz0_ext_pot=1.0,r0_ext_pot=1.0
   real :: rescale_aa=1.
+  real :: ampl_B0=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
@@ -60,7 +61,8 @@ module Magnetic
        radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
-       mu_ext_pot,Bz0_ext_pot,r0_ext_pot,lB_ext_pot,lB_ext_pot_normalize
+       mu_ext_pot,Bz0_ext_pot,r0_ext_pot,lB_ext_pot,lB_ext_pot_normalize, &
+       ampl_B0
 
   ! run parameters
   real :: eta=0.,height_eta=0.,eta_out=0.
@@ -133,7 +135,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.206 2004-07-03 02:13:14 theine Exp $")
+           "$Id: magnetic.f90,v 1.207 2004-07-04 01:52:41 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1640,36 +1642,57 @@ module Magnetic
       use Sub, only: calc_unitvects_sphere
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f     
       real, dimension(nx) :: theta_mn,ar,atheta,aphi
+      real :: C_int,C_ext,A_int,A_ext
 
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         call calc_unitvects_sphere()
         theta_mn=acos(z_mn/r_mn)
+        phi_mn=atan2(y_mn,x_mn)
 
 ! calculate ax,ay,az (via ar,atheta,aphi) inside shell (& leave zero outside shell)
           select case(initaa) 
             case('geo-benchmark-case1')
               if (lroot .and. imn==1) print*, 'geo_benchmark_B: geo-benchmark-case1'
-              where (r_mn < r_ext .and. r_mn > r_int) 
-                ar=80.*2.*(3.*sin(theta_mn)**2-2.)*                         &
+              C_int=-( -1./63.*r_int**4 + 11./84.*r_int**3*r_ext             &
+                     + 317./1050.*r_int**2*r_ext**2                         &
+                     - 1./5.*r_int**2*r_ext**2*log(r_int) )
+              C_ext=-( -1./63.*r_ext**9 + 11./84.*r_ext**8*r_int             &
+                     + 317./1050.*r_ext**7*r_int**2                         &
+                     - 1./5.*r_ext**7*r_int**2*log(r_ext) )
+              A_int=5./2.*(r_ext-r_int)
+              A_ext=5./8.*(r_ext**4-r_int**4)
+
+              where (r_mn < r_int)
+                ar=C_int*ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*r_mn
+                atheta=3.*C_int*ampl_B0*80.*sin(2.*theta_mn)*r_mn 
+                aphi=ampl_B0*A_int*r_mn*sin(theta_mn)
+              endwhere
+
+              where (r_mn <= r_ext .and. r_mn >= r_int) 
+                ar=ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)*                 &
                    (   1./36.*r_mn**5 - 1./12.*(r_int+r_ext)*r_mn**4        &
                      + 1./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
                      - 1./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
-                     + 1./25.*r_int**2*r_ext**2*r_mn                        &
+                     - 1./25.*r_int**2*r_ext**2*r_mn                        &
                      + 1./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
-  
-                atheta=80.*sin(theta_mn)*                                   &
+                atheta=-ampl_B0*80.*sin(2.*theta_mn)*                        &
                    (   7./36.*r_mn**5 - 1./2.*(r_int+r_ext)*r_mn**4         &
                      + 5./14.*(r_int**2+4.*r_int*r_ext+r_ext**2)*r_mn**3    &
                      - 4./3.*(r_int**2*r_ext+r_int*r_ext**2)*r_mn**2        &
                      + 2./25.*r_int**2*r_ext**2*r_mn                        &
                      + 3./5.*r_int**2*r_ext**2*r_mn*log(r_mn) )
-    
-                aphi=5./8.*sin(theta_mn)*                                   &
+                aphi=ampl_B0*5./8.*sin(theta_mn)*                           &
                    ( 4.*r_ext*r_mn - 3.*r_mn**2 - r_int**4/r_mn**2 ) 
+              endwhere
+
+              where (r_mn > r_ext)
+                ar=C_ext*ampl_B0*80.*2.*(3.*sin(theta_mn)**2-2.)/r_mn**4
+                atheta=-2.*C_ext*ampl_B0*80.*sin(2.*theta_mn)/r_mn**4
+                aphi=ampl_B0*A_ext/r_mn**2*sin(theta_mn)
               endwhere
   
           ! debug checks -- look at a pencil near the centre...
@@ -1691,12 +1714,9 @@ module Magnetic
               call stop_it("")
           endselect
 
-          where (r_mn < r_ext .and. r_mn > r_int)
-            f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
-            f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
-            f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
-          endwhere
-
+          f(l1:l2,m,n,iax)=sin(theta_mn)*cos(phi_mn)*ar + cos(theta_mn)*cos(phi_mn)*atheta - sin(phi_mn)*aphi
+          f(l1:l2,m,n,iay)=sin(theta_mn)*sin(phi_mn)*ar + cos(theta_mn)*sin(phi_mn)*atheta + cos(phi_mn)*aphi
+          f(l1:l2,m,n,iaz)=cos(theta_mn)*ar - sin(theta_mn)*atheta
       enddo
 
       if (ip<=14) then
