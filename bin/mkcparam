@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.5 2002-08-09 08:01:57 nilshau Exp $
+# CVS: $Id: mkcparam,v 1.6 2002-10-04 18:54:13 dobler Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -39,13 +39,14 @@ my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
 # ---------------------------------------------------------------------- #
 
 use strict;
+use Getopt::Long;
 
 my $line;
 my %modcounts;
 
 (my $cmdname = $0) =~ s{.*/}{};
 my $usage =
-"Usage:  $cmdname <file1> [<file2> [..]]\n
+"Usage:  $cmdname <file1> [<file2> [..]] [-o outfile]\n
 Going through the input files, check for lines of the sort
   MAGNETIC=magnetic
 and calculate the number mvar of variables accordingly. Output is written
@@ -55,7 +56,19 @@ E.g.
 will generate a file that takes into account that Makefile.local overwrites
 settings from Makefile.";
 
-die "$usage\n" if ((@ARGV == 0) or $ARGV[0] =~ /--?h/);
+
+## Process command line
+my (%opts);	# Variables written by GetOptions
+GetOptions(\%opts,
+	   qw( -h   --help
+	       -o=s --output=s
+                               ));
+
+die "$usage\n" if ((@ARGV == 0) || $opts{h} || $opts{help});
+
+my $outfile = ($opts{o} || $opts{output} || "-");
+
+open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 
 # Cycle through files (later files will overwrite effect of earlier files)
 foreach my $infile (@ARGV) {
@@ -92,7 +105,7 @@ foreach(values(%modcounts)) {
 }
 
 ## ..and write output
-print <<"EOF";
+print OUT <<"EOF";
 !                    -*-f90-*-  (for Emacs)
 !  cparam.inc
 !
