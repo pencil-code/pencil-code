@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.10 2002-08-09 09:25:12 nilshau Exp $
+! $Id: radiation.f90,v 1.11 2002-08-09 10:40:32 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.10 2002-08-09 09:25:12 nilshau Exp $")
+           "$Id: radiation.f90,v 1.11 2002-08-09 10:40:32 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -196,7 +196,7 @@ module Radiation
 !
 !  some abbreviations and physical quantities
 !
-      if (ldensity==.FALSE.) rho1=1
+      if (.NOT. ldensity) rho1=1
       gamma1=gamma-1
       E_rad=f(l1:l2,m,n,iE)
       if (lentropy) then
