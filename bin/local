@@ -11,10 +11,16 @@ if ( ($#argv < 1) ||  ("$1" == "-h") || ("$1" == "--help") ) goto usage
 
 set tmpfile = tmp.$$
 
+if (`uname -s` =~ Linux) then
+  set deref = "-L"		# flag to cp for dereferencing links
+else
+  set deref = ""		# OK at least under OSF1
+endif
+
 foreach f ( $* )
   if (-l $f) then
     if (-d $f) then		# link to directory
-      cp -rpL $f $tmpfile && rm $f && mv $tmpfile $f
+      cp -rp $deref $f $tmpfile && rm $f && mv $tmpfile $f
     else			# link to file
       cp -p $f $tmpfile && rm $f && mv $tmpfile $f
     endif
