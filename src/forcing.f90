@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.28 2002-09-25 06:40:15 brandenb Exp $
+! $Id: forcing.f90,v 1.29 2002-09-26 14:09:04 brandenb Exp $
 
 module Forcing
 
@@ -45,7 +45,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.28 2002-09-25 06:40:15 brandenb Exp $")
+           "$Id: forcing.f90,v 1.29 2002-09-26 14:09:04 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -197,6 +197,7 @@ module Forcing
 !
       use Mpicomm
       use Cdata
+      use General
       use Sub
       use Hydro
 !
@@ -238,7 +239,7 @@ module Forcing
 !  ff=force*Re(exp(i(kx+phase)))
 !  |k_i| < akmax
 !
-      call random_number(fran)
+      call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if(ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst

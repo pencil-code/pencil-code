@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.84 2002-09-21 14:05:53 dobler Exp $ 
+! $Id: sub.f90,v 1.85 2002-09-26 14:09:04 brandenb Exp $ 
 
 module Sub 
 
@@ -21,7 +21,6 @@ module Sub
     module procedure cvs_id_1
     module procedure cvs_id_3
   endinterface
-
 
   contains
 

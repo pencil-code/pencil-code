@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.12 2002-09-19 07:35:08 brandenb Exp $ 
+! $Id: initcond.f90,v 1.13 2002-09-26 14:09:04 brandenb Exp $ 
 
 module Initcond 
  
@@ -507,8 +507,6 @@ module Initcond
                 call random_number(r)
                 call random_number(p)
              elseif (random_gen=='min_std') then
-                !call axel(r)
-                !call axel(p)
                 call min_std(r)
                 call min_std(p)
              else
