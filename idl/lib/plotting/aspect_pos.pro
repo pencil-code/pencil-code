@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-11-24 17:49:35 $
-;;;  $Revision: 1.5 $
+;;;  $Date: 2004-03-19 17:17:49 $
+;;;  $Revision: 1.6 $
 ;;;
 ;;;  Description:
 ;;;   Return position [X0, Y0, X1, Y1] (in normalized coordinates) for
@@ -95,6 +95,7 @@ function aspect_pos, ratio, npos, nx, ny, MARGIN=margin, $
   ystart = ycent - (0.5-margin[2])*ywidth
   yend   = ycent + (0.5-margin[3])*ywidth
   position = [xstart, ystart, xend, yend]
+  if (debug) then message, string('POSITION = ',position), /INFO
   return, position
 
 end
