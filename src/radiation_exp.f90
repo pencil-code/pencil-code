@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.83 2003-08-06 18:51:47 theine Exp $
+! $Id: radiation_exp.f90,v 1.84 2003-08-07 19:30:57 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.83 2003-08-06 18:51:47 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.84 2003-08-07 19:30:57 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -290,12 +290,12 @@ module Radiation
 !
 !  determine start and stop positions
 !
-      if (lrad>=0) then; llstart=l1; llstop=l2; lsign=+1
-                   else; llstart=l2; llstop=l1; lsign=-1; endif
-      if (mrad>=0) then; mmstart=m1; mmstop=m2; msign=+1
-                   else; mmstart=m2; mmstop=m1; msign=-1; endif
-      if (nrad>=0) then; nnstart=n1; nnstop=n2; nsign=+1
-                   else; nnstart=n2; nnstop=n1; nsign=-1; endif
+      if (lrad>=0) then; llstart=l1; llstop=mx; lsign=+1
+                   else; llstart=l2; llstop=1; lsign=-1; endif
+      if (mrad>=0) then; mmstart=m1; mmstop=my; msign=+1
+                   else; mmstart=m2; mmstop=1; msign=-1; endif
+      if (nrad>=0) then; nnstart=n1; nnstop=mz; nsign=+1
+                   else; nnstart=n2; nnstop=1; nsign=-1; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -318,7 +318,7 @@ module Radiation
             emdtau=exp(-dtau)
             emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
             Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
-                        +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
+                        +(1-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
                         +(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad)) &
                         *(emdtau-1+dtau)/dtau
           endif
@@ -361,7 +361,8 @@ module Radiation
           Irad0_zx=Irad0_zx*emtau(:,m2-rady0+1:m2,:)+Irad(:,m2-rady0+1:m2,:)
           emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
           if (ipy==nprocy-1) then
-            Irad0_zx=Irad0_zx/(1-emtau0_zx)
+            Irad0_zx(l1:l2,:,n1:n2)=Irad0_zx(l1:l2,:,n1:n2) &
+                               /(1-emtau0_zx(l1:l2,:,n1:n2))
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx)
           else
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
@@ -378,7 +379,8 @@ module Radiation
           Irad0_zx=Irad0_zx*emtau(:,m1:m1+rady0-1,:)+Irad(:,m1:m1+rady0-1,:)
           emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
           if (ipy==0) then
-            Irad0_zx=Irad0_zx/(1-emtau0_zx)
+            Irad0_zx(l1:l2,:,n1:n2)=Irad0_zx(l1:l2,:,n1:n2) &
+                               /(1-emtau0_zx(l1:l2,:,n1:n2))
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx)
           else
             call radboundary_zx_send(rady0,mrad,idir,Irad0_zx,emtau0_zx)
@@ -401,7 +403,8 @@ module Radiation
           Irad0_xy=Irad0_xy*emtau(:,:,n2-radz0+1:n2)+Irad(:,:,n2-radz0+1:n2)
           emtau0_xy=emtau0_xy*emtau(:,:,n2-radz0+1:n2)
           if (ipz==nprocz-1) then
-            Irad0_xy=Irad0_xy/(1-emtau0_xy)
+            Irad0_xy(l1:l2,m1:m2,:)=Irad0_xy(l1:l2,m1:m2,:) &
+                               /(1-emtau0_xy(l1:l2,m1:m2,:))
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy)
           else
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
@@ -418,7 +421,8 @@ module Radiation
           Irad0_xy=Irad0_xy*emtau(:,:,n1:n1+radx0-1)+Irad(:,:,n1:n1+radx0-1)
           emtau0_xy=emtau0_xy*emtau(:,:,n1:n1+radx0-1)
           if (ipz==0) then
-            Irad0_xy=Irad0_xy/(1-emtau0_xy)
+            Irad0_xy(l1:l2,m1:m2,:)=Irad0_xy(l1:l2,m1:m2,:) &
+                               /(1-emtau0_xy(l1:l2,m1:m2,:))
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy)
           else
             call radboundary_xy_send(radz0,nrad,idir,Irad0_xy,emtau0_xy)
@@ -642,7 +646,8 @@ module Radiation
 ! rays parallel to an axis
 !
         case ('p'); if (mrad==0.and.nrad==0) then
-                      Irad0_yz=Irad(l2-radx0+1:l2,:,:)/(1.-emtau(l2-radx0+1:l2,:,:))
+                      Irad0_yz(:,m1:m2,n1:n2)=Irad(l2-radx0+1:l2,m1:m2,n1:n2) &
+                                         /(1-emtau(l2-radx0+1:l2,m1:m2,n1:n2))
                     else
                       Irad0_yz=Irad(l2-radx0+1:l2,:,:)
                     endif
@@ -668,7 +673,8 @@ module Radiation
 ! rays parallel to an axis
 !
         case ('p'); if (mrad==0.and.nrad==0) then
-                      Irad0_yz=Irad(l1:l1+radx0-1,:,:)/(1.-emtau(l1:l1+radx0-1,:,:))
+                      Irad0_yz(:,m1:m2,n1:n2)=Irad(l1:l1+radx0-1,m1:m2,n1:n2) &
+                                         /(1-emtau(l1:l1+radx0-1,m1:m2,n1:n2))
                     else
                       Irad0_yz=Irad(l1:l1+radx0-1,:,:)
                     endif
@@ -712,7 +718,8 @@ module Radiation
                       call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
                     else
                       if (lrad==0.and.nrad==0) then
-                        Irad0_zx=Irad(:,m2-rady0+1:m2,:)/(1.-emtau(:,m2-rady0+1:m2,:))
+                        Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m2-rady0+1:m2,n1:n2) &
+                                           /(1-emtau(l1:l2,m2-rady0+1:m2,n1:n2))
                       else
                         Irad0_zx=Irad(:,m2-rady0+1:m2,:)
                       endif
@@ -743,7 +750,8 @@ module Radiation
                       call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
                     else
                       if (lrad==0.and.nrad==0) then
-                        Irad0_zx=Irad(:,m1:m1+rady0-1,:)/(1.-emtau(:,m1:m1+rady0-1,:))
+                        Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m1:m1+rady0-1,n1:n2) &
+                                           /(1-emtau(l1:l2,m1:m1+rady0-1,n1:n2))
                       else
                         Irad0_zx=Irad(:,m1:m1+rady0-1,:)
                       endif
@@ -799,7 +807,8 @@ module Radiation
                       call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
                     else
                       if (lrad==0.and.mrad==0) then
-                        Irad0_xy=Irad(:,:,n2-radz0+1:n2)/(1.-emtau(:,:,n2-radz0+1:n2))
+                        Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n2-radz0+1:n2) &
+                                           /(1-emtau(l1:l2,m1:m2,n2-radz0+1:n2))
                       else
                         Irad0_xy=Irad(:,:,n2-radz0+1:n2)
                       endif
@@ -840,7 +849,8 @@ module Radiation
                       call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
                     else
                       if (lrad==0.and.mrad==0) then
-                        Irad0_xy=Irad(:,:,n1:n1+radz0-1)/(1.-emtau(:,:,n1:n1+radz0-1))
+                        Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n1:n1+radz0-1) &
+                                           /(1-emtau(l1:l2,m1:m2,n1:n1+radz0-1))
                       else
                         Irad0_xy=Irad(:,:,n1:n1+radz0-1)
                       endif
