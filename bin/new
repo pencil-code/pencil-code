@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.11 2003-07-20 06:49:19 brandenb Exp $
+#  $Id: new,v 1.12 2003-07-30 00:21:03 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -8,13 +8,25 @@
 #
 #  Usage:
 #     new run1 run2
+#  Alternative usage, if one is already in run1
+#     new run2
+#
+if ($#argv == 2) then
+  set olddir=$cwd/$1
+  set newdir=$cwd/$2
+else
+  set olddir=$cwd
+  cd ..
+  set newdir=$cwd/$1
+endif
 #
 #  save current working directory and make new run directory
 #  and go there.
 #
-set CWD=$cwd
-mkdir $2
-cd $2
+set parentdir=$cwd
+echo "Parent directory: " $parentdir
+mkdir $newdir
+cd $newdir
 set targetdir=$cwd
 #
 #  In the new run directory, call mkdatadir, and
@@ -22,7 +34,7 @@ set targetdir=$cwd
 #  the new one is generated
 #
 $PENCIL_HOME/bin/mkdatadir
-(echo $CWD/$1; /bin/date) >>! data/new_from.dir
+(echo $olddir; /bin/date) >>! data/new_from.dir
 #
 #  make src dir and go there
 #
@@ -32,7 +44,8 @@ cd src
 #  use *.local files from previous src directory
 #  and run setup-src
 #
-cp $CWD/$1/src/*.local .
+echo "old source directory: " $olddir/src
+cp $olddir/src/*.local .
 echo "Use *.local files from:" `pwd`; ls -l *.local
 cd ..
 #
@@ -41,7 +54,7 @@ cd ..
 #  This gives the possibility to link your own routines
 #  into src (setup-src below won't overwrite those)
 #
-if (-f $CWD/bin/setup-src.local) $CWD/bin/setup-src.local
+if (-f $parentdir/bin/setup-src.local) $parentdir/bin/setup-src.local
 #
 #  continue with the usual setup procedure
 #
@@ -51,7 +64,7 @@ $PENCIL_HOME/bin/setup-src
 #  the k.dat file is actually only needed for forced
 #  turbulence runs
 #
-cd $CWD/$1
+cd $olddir
 echo "Use *.in files from:" `pwd`; ls -l *.in
 cp *.in $targetdir
 if (-f k.dat) cp k.dat $targetdir
