@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.110 2003-10-07 08:34:35 dobler Exp $
+! $Id: ionization.f90,v 1.111 2003-10-07 09:06:02 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.110 2003-10-07 08:34:35 dobler Exp $")
+           "$Id: ionization.f90,v 1.111 2003-10-07 09:06:02 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -106,6 +106,12 @@ module Ionization
     subroutine getmu(mu)
 !
 !  Calculate average particle mass in the gas relative to
+!  Note that the particles density is N = nHI + nHII + ne + nHe
+!  = (1-y)*nH + y*nH + y*nH + xHe*nH = (1 + yH + xHe) * nH, where
+!  nH is the number of protons per cubic centimeter.
+!  The number of particles per mole is therefore 1 + yH + xHe.
+!  The mass per mole is M=1.+3.97153*xHe, so the mean molecular weight
+!  per particle is M/N = (1.+3.97153*xHe)/(1 + yH + xHe).
 !
 !   12-aug-03/tony: implemented
 !
@@ -164,6 +170,8 @@ module Ionization
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
+!
+!  write ionization parameters to file; to be read by idl
 !
       open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) 'TT_ion=',TT_ion
