@@ -781,7 +781,7 @@ write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
         write(1) gravz,rho0,grads0
         write(1) z1,z2,ztop
         write(1) hcond0,hcond1,hcond2,whcond
-        write(1) mpoly0,mpoly1,mpoly2
+        write(1) mpoly0,mpoly1,mpoly2,isothtop
       endif
 !
     endsubroutine wparam
@@ -800,7 +800,7 @@ write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
         read(1) gravz,rho0,grads0
         read(1) z1,z2,ztop
         read(1) hcond0,hcond1,hcond2,whcond
-        read(1) mpoly0,mpoly1,mpoly2
+        read(1) mpoly0,mpoly1,mpoly2,isothtop
 !
       if (lroot) then
         print*, "Lx,Ly,Lz=", Lx,Ly,Lz
