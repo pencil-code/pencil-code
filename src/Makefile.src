@@ -1,11 +1,12 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.61 2004-07-05 01:07:05 theine Exp $
+### $Id: Makefile.src,v 1.62 2004-07-20 10:02:56 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
 LIBSIG=
+LDONLYFLAGS=
 LDMPI=-lmpi
 
 MPICOMM      = nompicomm
@@ -230,7 +231,7 @@ FCCLEANER=
 ### End machine dependent
 
 LD=$(FC)
-LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
+LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 # -Mpencil.map
 
 ## Generic rules:
@@ -286,8 +287,11 @@ mpicomm_.f90: mpicomm.f90
 mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
+# The strange construct below is needed to have `make' realize there was
+# an error even when last command in pipe is FCCLEANER: 
 code:
-	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x $(FCCLEANER)
+	($(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x \
+	  || echo "PENCIL COMPILATION ERROR") $(FCCLEANER)
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
