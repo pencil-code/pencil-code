@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.93 2003-11-19 16:41:51 theine Exp $
+! $Id: noionization.f90,v 1.94 2003-11-21 09:01:07 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -28,6 +28,10 @@ module Ionization
     module procedure getentropy_pencil
     module procedure getentropy_point
   end interface
+
+! integers specifying which independent variables to use in eoscalc
+! (only relevant in ionization.f90)
+  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
 
   ! secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,kappa0
@@ -76,7 +80,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.93 2003-11-19 16:41:51 theine Exp $")
+           "$Id: noionization.f90,v 1.94 2003-11-21 09:01:07 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -331,7 +335,7 @@ module Ionization
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine eoscalc_point(vars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -344,7 +348,7 @@ module Ionization
       use Cdata
       use Mpicomm, only: stop_it
 !
-      character(len=*) :: vars
+      integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
@@ -353,23 +357,23 @@ module Ionization
 !
       if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
 !
-      select case (vars)
+      select case (ivars)
 
-      case ('lnrho|ss')
+      case (ilnrho_ss)
         lnrho_=var1
         ss_=var1
         lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
         ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
         pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
 
-      case ('lnrho|ee')
+      case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
         lnTT_=log(gamma*cp1*ee_)
         pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
 
-      case ('lnrho|pp')
+      case (ilnrho_pp)
         call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
         lnrho_=var1
         pp_=var2

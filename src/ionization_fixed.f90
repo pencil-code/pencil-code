@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.41 2003-11-19 16:41:51 theine Exp $
+! $Id: ionization_fixed.f90,v 1.42 2003-11-21 09:01:07 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -30,6 +30,10 @@ module Ionization
     module procedure getentropy_pencil      ! (dummy routines here --
     module procedure getentropy_point       !  used in noionization.)
   end interface
+
+! integers specifying which independent variables to use in eoscalc
+! (only relevant in ionization.f90)
+  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
 
   ! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
@@ -83,7 +87,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.41 2003-11-19 16:41:51 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.42 2003-11-21 09:01:07 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -428,7 +432,7 @@ module Ionization
 !
     endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(vars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -440,16 +444,16 @@ module Ionization
 !
       use Cdata
 !
-      character(len=*) :: vars
+      integer, intent(in) :: ivars
       real, intent(in) :: var1,var2
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
 !
-      select case (vars)
+      select case (ivars)
 
-      case ('lnrho|ss')
+      case (ilnrho_ss)
         lnrho_=var1
         ss_=var1
         lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
@@ -458,7 +462,7 @@ module Ionization
         ee_=1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
         pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
 
-      case ('lnrho|ee')
+      case (ilnrho_ee)
         lnrho_=var1
         ee_=var2
         TT_=(2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
@@ -467,7 +471,7 @@ module Ionization
         rho_=exp(lnrho_)
         pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
 
-      case ('lnrho|pp')
+      case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
         rho_=exp(lnrho_)
