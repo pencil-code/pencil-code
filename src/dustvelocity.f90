@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.59 2004-05-17 11:04:01 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.60 2004-05-28 13:52:04 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.59 2004-05-17 11:04:01 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.60 2004-05-28 13:52:04 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -549,11 +549,14 @@ module Dustvelocity
 
           if (draglaw == 'epstein_var') then
             do l=1,nx
-              if (tausd1(l,k) > 1./(3*dt)) then
-                f(l1-1+l,m,n,iudx(k)) = f(l1-1+l,m,n,iux)
-                f(l1-1+l,m,n,iudy(k)) = f(l1-1+l,m,n,iuy)
-                f(l1-1+l,m,n,iudz(k)) = f(l1-1+l,m,n,iuz) - &
-                    tausd1(l,k)**(-1)*Omega**2*z(n)
+              if (tausd1(l,k) > 1./(3*dt_beta(itsub))) then
+                df(3+l,m,n,iudx(k)) = df(3+l,m,n,iux) + &
+                    1/dt_beta(itsub)*(uu(l,1) - uud(l,1,k))
+                df(3+l,m,n,iudy(k)) = df(3+l,m,n,iuy) + &
+                    1/dt_beta(itsub)*(uu(l,2) - uud(l,2,k))
+                df(3+l,m,n,iudz(k)) = df(3+l,m,n,iuz) + &
+                    1/dt_beta(itsub)*(uu(l,3) - uud(l,3,k) - &
+                    tausd1(l,k)**(-1)*Omega**2*z(n))
               else
                 df(l1:l2,m,n,iudx(k):iudz(k)) = &
                     df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
