@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.16 2003-05-29 09:17:13 mee Exp $
+! $Id: noionization.f90,v 1.17 2003-05-31 04:42:30 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -135,10 +135,6 @@ module Ionization
         if(present(IonizationFrac)) IonizationFrac=0.
      endif
 !
-!  optional output
-!
-!
-if(headtt) print*,'ss_ion,yH,cs2',ss_ion,yH,cs2
     endsubroutine thermodynamics
 !***********************************************************************
     subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.89 2003-05-31 04:25:14 brandenb Exp $
+! $Id: start.f90,v 1.90 2003-05-31 04:42:30 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -23,10 +23,13 @@
         implicit none
 !
 !  define parameters
+!  The f-array includes auxiliary variables
+!  Although they are not necessary for start.f90, idl may want to read them,
+!  so we define therefore the full array and write it out.
 !
         integer :: i
 !       logical :: lock=.false.
-        real, dimension (mx,my,mz,mvar) :: f
+        real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
 !
@@ -35,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.89 2003-05-31 04:25:14 brandenb Exp $")
+             "$Id: start.f90,v 1.90 2003-05-31 04:42:30 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -154,9 +157,9 @@
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat
 !
-        if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
+        if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,mvar+maux,.false.)
         if (.not.lnowrite) then
-          call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')

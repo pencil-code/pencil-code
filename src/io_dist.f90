@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.54 2003-05-30 20:39:20 brandenb Exp $
+! $Id: io_dist.f90,v 1.55 2003-05-31 04:42:30 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.54 2003-05-30 20:39:20 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.55 2003-05-31 04:42:30 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -172,7 +172,6 @@ contains
 !  (currently we always do this provided maux>0)
 !
       lauxiliary=(maux>0)
-print*,'nn1,nn2=',nn1,nn2
       if(lauxiliary) write(lun_output) a(:,:,:,nn1+1:nn1+1+nn2)
 !
     endsubroutine output_auxiliary
