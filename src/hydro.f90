@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.193 2005-03-02 06:10:05 dobler Exp $
+! $Id: hydro.f90,v 1.194 2005-04-06 00:31:39 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,8 +15,7 @@ module Hydro
 
 !  Note that Omega is already defined in cdata.
 
-  use Cparam
-!ajwm  use Cdata, only: nu,ivisc
+  use Cdata
   use Density
   use Viscosity 
 
@@ -128,7 +127,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.193 2005-03-02 06:10:05 dobler Exp $")
+           "$Id: hydro.f90,v 1.194 2005-04-06 00:31:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
