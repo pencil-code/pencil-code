@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.150 2003-02-10 14:53:05 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.151 2003-03-08 19:36:17 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-02-10 14:53:05 $ $,~ $ $Revision: 1.150 $ $}
+\date{$ $Date: 2003-03-08 19:36:17 $ $,~ $ $Revision: 1.151 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-02-10 14:53:05 $ $,~ $ $Revision: 1.150 $ $}
+  \emph{$ $Date: 2003-03-08 19:36:17 $ $,~ $ $Revision: 1.151 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1582,6 +1582,7 @@ quantities \code{bxmz} and \code{bymz} are set.
 \index{datafiles}
 
 \subsubsection{Snapshot files}
+\label{snapshots}
 
 Snapshot files contain the values of all evolving variables and are
 sufficient to restart a run.
@@ -2204,6 +2205,7 @@ permanent snapshots, use (for example)
   \prompt{IDL> } .r r {\sl(or \texttt{.r rall})}
 \end{alltt}
 See Sect.~\ref{snapshots} for details on permanent snapshots.
+XX
 
 With \file{r.pro}, you can switch the part of the domain by changing the
 variable \var{datadir}:
@@ -2547,8 +2549,8 @@ times.
 
 \subsection{Bulk viscosity}
 
-For a ???? gas it can be shown that the bilk viscosity vanishes.  Here
-the bulk viscosity is for numerical purposes only.
+For a monatomic gas it can be shown that the bulk viscosity vanishes.  Here
+the bulk viscosity is introduced for numerical purposes only.
 
 \subsubsection{Shock Viscosity}
 Shock viscosity proportional to positive flow convergence, maximum over
@@ -4750,7 +4752,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.150 2003-02-10 14:53:05 dobler Exp $ $}
+$ $Id: manual.tex,v 1.151 2003-03-08 19:36:17 brandenb Exp $ $}
 
 
 \end{document}
