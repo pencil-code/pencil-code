@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.40 2003-08-03 02:49:41 theine Exp $
+! $Id: noionization.f90,v 1.41 2003-08-03 15:25:28 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -35,6 +35,7 @@ module Ionization
   real,parameter :: twothirds=2./3.
   real :: TT_ion,TT_ion_,ss_ion,kappa0,xHetilde
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  real :: yHmin,yHmax
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -75,7 +76,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.40 2003-08-03 02:49:41 theine Exp $")
+           "$Id: noionization.f90,v 1.41 2003-08-03 15:25:28 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -140,6 +141,12 @@ module Ionization
 !
         coef_lr=dlnPdlnrho-1.
         coef_ss=dlnPdss/ss_ion 
+        
+        yHmin=yHacc
+        yHmax=1.-yHacc
+      else
+        yHmin=0.
+        yHmax=1.
       endif
 !
     endsubroutine initialize_ionization

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.73 2003-08-03 09:25:04 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.74 2003-08-03 15:25:28 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.73 2003-08-03 09:25:04 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.74 2003-08-03 15:25:28 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -693,6 +693,7 @@ module Radiation
     if (nrad>0) then
       select case(bc_rad1(3))
       case ('0'); Irad0_xy=0.
+      case ('e'); call radboundary_xy_exponential(Irad0_xy)
       case ('p'); call radboundary_xy_recv(radz0,zlneigh,Irad0_xy)
       case ('S'); Irad0_xy=Srad(:,:,n1-radz0:n1-1)
       endselect
@@ -703,12 +704,38 @@ module Radiation
     if (nrad<0) then
       select case(bc_rad2(3))
       case ('0'); Irad0_xy=0.
+      case ('e'); call radboundary_xy_exponential(Irad0_xy)
       case ('p'); call radboundary_xy_recv(radz0,zuneigh,Irad0_xy)
       case ('S'); Irad0_xy=Srad(:,:,n2+1:n2+radz0)
       endselect
     endif
 !
     endsubroutine radboundary_xy_set
+!***********************************************************************
+    subroutine radboundary_xy_exponential(Irad0_xy)
+!
+      use Cdata
+      use Ionization
+      use Gravity
+!
+      real, dimension(mx,my,radz0), intent(out) :: Irad0_xy
+      real, dimension(mx,my,radz0) :: kaprho_top,Srad_top,TT_top,H_top,tau_top
+!
+      if (nrad>0) then
+        kaprho_top=kaprho(:,:,n1-1:n1-radz0)
+        Srad_top=Srad(:,:,n1-1:n1-radz0)
+      endif
+      if (nrad<0) then
+        kaprho_top=kaprho(:,:,n2+1:n2+radz0)
+        Srad_top=Srad(:,:,n2+1:n2+radz0)
+      endif
+!
+      TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
+      H_top=(1.+yHmin+xHe)*ss_ion*TT_top/gravz
+      tau_top=kaprho_top*H_top
+      Irad0_xy=Srad_top*(1.-exp(-tau_top))
+!
+    endsubroutine radboundary_xy_exponential
 !***********************************************************************
     subroutine intensity_revision(f)
 !
