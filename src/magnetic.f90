@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.129 2003-09-04 12:58:04 dobler Exp $
+! $Id: magnetic.f90,v 1.130 2003-09-19 17:32:37 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -53,7 +53,7 @@ module Magnetic
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
-  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
+  integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
   integer :: i_b2mphi=0
 
   contains
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.129 2003-09-04 12:58:04 dobler Exp $")
+           "$Id: magnetic.f90,v 1.130 2003-09-19 17:32:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -234,9 +234,11 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
+      real, dimension (nx,3) :: gpxb,glnrho
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
+      real, dimension (nx) :: gpxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j
@@ -452,6 +454,17 @@ module Magnetic
           call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
         endif
         !
+        !  triple correlation from pressure gradient (for imposed field)
+        !  (assume cs2=1, and that no entropy evolution is included)
+        !
+        if (i_gpxbm/=0) then
+          call grad(f,ilnrho,glnrho)
+          call cross_mn(glnrho,bbb,gpxb)
+          gpxb_dotB0=B_ext(1)*gpxb(:,1)+B_ext(2)*gpxb(:,2)+B_ext(3)*gpxb(:,3)
+          gpxb_dotB0=gpxb_dotB0*B_ext21
+          call sum_mn_name(oxuxb_dotB0,i_gpxbm)
+        endif
+        !
         !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
         !   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
         !   ( < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
@@ -597,7 +610,7 @@ module Magnetic
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
-        i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_uxDxuxbm=0.
+        i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_b2mphi=0
       endif
 !
@@ -626,6 +639,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'gpxbm',i_gpxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',i_uxDxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
@@ -678,6 +692,7 @@ module Magnetic
       write(3,*) 'i_uxbm=',i_uxbm
       write(3,*) 'i_oxuxbm=',i_oxuxbm
       write(3,*) 'i_jxbxbm=',i_jxbxbm
+      write(3,*) 'i_gpxbm=',i_gpxbm
       write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
       write(3,*) 'nname=',nname
       write(3,*) 'iaa=',iaa
