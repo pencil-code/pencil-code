@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.46 2002-08-02 23:34:57 nilshau Exp $ 
+! $Id: param_io.f90,v 1.47 2002-08-05 08:04:34 nilshau Exp $ 
 
 module Param_IO
 
@@ -141,7 +141,7 @@ module Param_IO
 !
 !  set default to shearing sheet if lshear=.true.
 !
-      if (lshear .AND. qshear/=0) bcx1(1:nvar)='she'
+      if (lshear .AND. qshear/=0) bcx(1:nvar)='she'
 !
 !  open namelist file
 !
