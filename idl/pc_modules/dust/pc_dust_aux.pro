@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.4 2004-06-04 11:35:16 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.5 2004-06-04 11:43:14 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -34,7 +34,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
   endif else if (keyword_set(cmd)) then begin
  
     sized=size(nd)
-    ndustspec=sized(sized[0]-1)
+    ndustspec=sized(sized[0])
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     md=fltarr(ndustspec)
@@ -50,7 +50,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
   endif else if (keyword_set(cfd)) then begin
 
     sized=size(nd)
-    ndustspec=sized(sized[0]-1)
+    ndustspec=sized(sized[0])
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     mdminus=fltarr(ndustspec)
