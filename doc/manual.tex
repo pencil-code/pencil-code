@@ -4,8 +4,13 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  Description: 
-% 
+%%  Description:
+%     User manual for the MHD code 
+%   Process with:
+%     latex manual
+%     makeindex manual
+%     latex manual
+
 \ifx\pdfoutput\undefined        % not running pdflatex
   \documentclass[12pt,twoside,notitlepage,a4paper]{article}
 \else                           % running pdflatex
@@ -17,7 +22,8 @@
 %\usepackage{german,a4}
 %\usepackage[german,british]{babel}
 \usepackage[latin1]{inputenc}
-\usepackage[T1]{fontenc}
+%\usepackage[T1]{fontenc}
+%\usepackage{ae}                 % To get good PDF with the T1 encoding
 \usepackage{newcent,helvet}
 \renewcommand{\ttdefault}{cmtt}
 
@@ -83,12 +89,12 @@
 \newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
-\newcommand{\var}[1]{\textsl{#1}\index{#1}\/}
-\newcommand{\env}[1]{\code{#1}\index{#1}}
+\newcommand{\var}[1]{\textsl{#1}\index{#1@\emph{#1}}\/}
+\newcommand{\env}[1]{\code{#1}\index{#1@\emph{#1}}}
 \newcommand{\file}[1]{`\texttt{#1}'}
 \newcommand{\command}[1]{\code{#1}\index{#1}}
 \newcommand{\cmd}[1]{\command{#1}}
-\newcommand{\option}[1]{`\command{#1}'}
+\newcommand{\option}[1]{`\code{#1}'\index{#1@\emph{`#1'} option}}
 \newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
 %\newcommand{\cite}[1]{}
 \newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
@@ -163,7 +169,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.9 $ $}
+\date{\today,~ $ $Revision: 1.10 $ $}
 
 % ====================================================================== %
 
@@ -192,7 +198,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.9 $ $}
+  \emph{\today,~ $ $Revision: 1.10 $ $}
 
 
 \end{center}
@@ -276,8 +282,8 @@ of stripping off extra ballast from the code, so it compiles faster and
 uses less memory. It is also a convenient way of changing the physics
 without using messy switches.
 
-The parameter input file (\var{run.in}) is read whenever there exists the file
-\var{RELOAD} in the run directory. This allows one
+The parameter input file (\var{run.in}) is read whenever there exists the
+file \file{RELOAD} in the run directory. This allows one
 \footnote{OK, some of this should be moved to section 3.}
 to change parameters during the fly. This can be useful if one
 wants to stop the in a graceful way (ie reduce number of timesteps),
@@ -291,8 +297,8 @@ in future releases, so please get in touch with us.
 
 \vspace{5mm}
 %\noindent
-\var{Wolfgang.Dobler@kis.uni-freiburg.de}\\
-\var{Axel.Brandenburg@nordita.dk}
+\url{Wolfgang.Dobler@kis.uni-freiburg.de}\\
+\url{Axel.Brandenburg@nordita.dk}
 
 \tableofcontents
 \clearpage
@@ -305,12 +311,15 @@ in future releases, so please get in touch with us.
 \section{Obtaining the Code}
 
 To obtain the MHD code, you should use \name{CVS} (concurrent version
-system, see \url{http://fill.this.in}).
+system, see \url{http://www.cvshome.org/}).
 You proceed as follows:
 
 \begin{enumerate}
 
-\item Get a \name{CVS} client from \url{http://fill.this.in} and install it
+\item Get a \name{CVS} client from \url{http://www.cvshome.org/} and
+  install it.
+  Alternatively, just copy the executable from a binary compatible
+  machine.
 
 \item Get the password for anonymous \name{CVS} access to the MHD code
 
@@ -331,6 +340,7 @@ You proceed as follows:
   \prompt{unix> } cvs login
   cvs password: ........ \
 \end{alltt}
+(you only need to do this once).
 
 \item Go to wherever you want the code:
   \begin{alltt}
@@ -354,7 +364,7 @@ You proceed as follows:
 To get yourself started, you should run the convection example which is
 provided as the default configuration of the code.
 
-It is absolutely mandatory monitor exactly what one is doing.
+It is absolutely mandatory to monitor exactly what one is doing.
 IDL is a very useful tool to inspect the data in a very flexible fashion.
 
 % ====================================================================== %
@@ -372,10 +382,10 @@ IDL is a very useful tool to inspect the data in a very flexible fashion.
 
 
 \subsubsection{Data access in pencils}
-
+\index{pencil design}
 
 \subsubsection{Modules}
-
+\index{modules}
 
 \subsubsection{Localization (adapt-mkfile)}
 
@@ -430,7 +440,8 @@ viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
   = \uv\times\Bv - \eta\mu_0\jv \; .
 \end{equation}
 
-Here $\Av$ is the magnetic vector potential, $\Bv = \curl\Av$ the magnetic
+Here $\Av$ is the magnetic vector potential\index{vector potential},
+$\Bv = \curl\Av$ the magnetic
 flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
 ($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
 magnetic vacuum permeability.
@@ -439,6 +450,7 @@ magnetic vacuum permeability.
 % ---------------------------------------------------------------------- %
 
 \subsection{Entropy equation}
+\index{entropy}
 
 The current thermodynamics module \file{entropy} formulates the thermal
 part of the physics in terms of \emph{entropy} $s$, rather than thermal
@@ -481,19 +493,27 @@ is the traceless rate of strain tensor.
 Here's how to use the code \ldots
 
 % ---------------------------------------------------------------------- %
+\subsection{Helper scripts}
+\index{Perl}
+
+% ---------------------------------------------------------------------- %
 \subsection{RELOAD and STOP files}
 
 The code periodically checks for the existence of two files, \file{RELOAD}
 and \file{STOP}, which can be used to trigger certain behavior.
 
+\paragraph{Reloading run parameters}
 In the run directory from where you started the code, create the file
-\file{STOP} with
+\file{RELOAD} with
 \begin{alltt}
-  \prompt{unix> } touch STOP \
+  \prompt{unix> } touch RELOAD \
 \end{alltt}
-to stop the code in a controlled manner (it will write the latest
-snapshot).
+to force the code to re-read the runtime parameters from \file{run.in}.
+This will happen the next time the code is writing monitoring output (the
+frequency of this happening is controlled by the input parameter \var{it},
+see \S\ref{start-params}).
 
+\paragraph{Stopping the code}
 In the run directory from where you started the code, create the file
 \file{STOP} with
 \begin{alltt}
@@ -501,21 +521,24 @@ In the run directory from where you started the code, create the file
 \end{alltt}
 to stop the code in a controlled manner (it will write the latest
 snapshot).
+Again, the action will happen the next time the code is writing monitoring
+output.
 
 
 % ---------------------------------------------------------------------- %
 \subsection{IDL routines}
+
 Basic sequence:
 \begin{alltt}
-  \prompt{unix> } idl \
-  \prompt{IDL> }  .run start \
-  \prompt{IDL> }  .run r \
+  \prompt{unix> } idl
+  \prompt{IDL> }  .run start
+  \prompt{IDL> }  .run r
   \prompt{IDL> }  {\sf[specific commands]} \
 \end{alltt}
 You call \file{start.pro} once to initialise the fields and read in the
 startup parameters from the code.
 Each time you want to read in a new snapshot, you run \file{r.pro},
-possibly after adjusting the variable \var{file} to a specific snapshot
+possibly after adjusting the IDL variable \var{file} to a specific snapshot
 file; by default, the file \file{var.dat} in the data directory will be
 read, which is overwritten with new data in regular intervals.
 
@@ -527,15 +550,17 @@ To discuss:
 \end{itemize}
 
 
-
 % ---------------------------------------------------------------------- %
 \subsection{Start parameters}
+\label{start-params}
+
 Here is a list of parameters that are set in \file{start.in}
 
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 
 Not all parameters are used for a given scenario.
+
 
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.6\textwidth}}
@@ -597,6 +622,7 @@ Not all parameters are used for a given scenario.
 %\end{tabular}
 \end{longtable}
 % ---------------------------------------------------------------------- %
+
 
 % ---------------------------------------------------------------------- %
 \subsection{Run parameters}
@@ -739,9 +765,23 @@ Not all parameters are used for a given scenario.
                  be on the safe side). \\
 \bottomrule
 \end{longtable}
-% ---------------------------------------------------------------------- %
 
-\section{FAQs}
+
+% ---------------------------------------------------------------------- %
+\subsection{Output files}
+
+\begin{itemize}
+\item \file{fort.20}, file{check}
+\item \file{tsnap.dat}, \file{tvid.dat}
+\item \file{tmp/dim.dat}
+\item \file{tmp/param.dat} \file{tmp/param2.dat}
+\item \file{tmp/proc\emph{X}/var.dat}
+\item \file{tmp/proc\emph{X}/VAR\emph{N}}
+\end{itemize}
+
+
+% ---------------------------------------------------------------------- %
+\section{Frequently asked questions}
 
 \begin{itemize}
 \item {\it What's so cool about the fort.20 file?}
@@ -804,9 +844,10 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 % ====================================================================== %
 
 \printindex
+\
 
-\vfill\bigskip\noindent{\tiny\it
-$ $Id: manual.tex,v 1.9 2002-03-21 18:07:24 dobler Exp $ $}
+\vfill\bigskip\noindent{\footnotesize\it
+$ $Id: manual.tex,v 1.10 2002-03-27 16:11:23 dobler Exp $ $}
 
 
 \end{document}
