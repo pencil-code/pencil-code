@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-08-29 14:40:16 $
-# $Revision: 1.14 $
+# $Date: 2003-11-03 09:34:18 $
+# $Revision: 1.15 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -36,7 +36,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Email list syntax:
 #   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
 #   will not send mail if `interlocked-fluxrings' fails -- except for Nosy
-#   who explicitly requested this. Lazy will not get emails if only `hydro1'
+#   who explicitly requested this. Ignorant will not get emails if only `hydro1'
 #   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
 
