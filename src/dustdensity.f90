@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.53 2004-04-05 14:38:42 ajohan Exp $
+! $Id: dustdensity.f90,v 1.54 2004-04-06 11:51:52 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -40,7 +40,7 @@ module Dustdensity
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_ndmt,i_rhodmt,i_ssrm,i_ssrmax
+  integer :: i_ndmt,i_rhodmt,i_rhoit,i_ssrm,i_ssrmax
   integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0
 
   contains
@@ -70,28 +70,36 @@ module Dustdensity
         if (i == 1) then
           ind(1) = iuud(1)+3         ! indix to access lam
           if (lmdvar) irhod(1) = ind(1) + 1
+          if (lrhoice) irhoi(1) = ind(1) + 2
         else
-          if (lmdvar) then
+          if (lmdvar .and. lrhoice) then
+            ind(i) = ind(i-1) + 6
+            irhod(i) = ind(i) + 1
+            irhoi(i) = ind(i) + 2
+          elseif (lmdvar) then
             ind(i) = ind(i-1) + 5
             irhod(i) = ind(i) + 1
           else
             ind(i) = ind(i-1) + 4
           endif
         endif  
-        nvar = nvar + 1              ! add 1 variable pr. dust layer
+        nvar = nvar + 1                ! add 1 variable pr. dust species
         if (lmdvar) nvar = nvar + 1
+        if (lrhoice) nvar = nvar + 1
 !
         if ((ip<=8) .and. lroot) then
           print*, 'register_dustdensity: i = ', i
           print*, 'register_dustdensity: nvar = ', nvar
           print*, 'register_dustdensity: ind = ', ind(i)
+          if (lmdvar) print*, 'register_dustdensity: irhod = ', irhod(i)
+          if (lrhoice) print*, 'register_dustdensity: irhoi = ', irhoi(i)
         endif
       enddo
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.53 2004-04-05 14:38:42 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.54 2004-04-06 11:51:52 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -108,19 +116,23 @@ module Dustdensity
             if (nvar < mvar) then
               write(4,*) ',nd'//trim(sdust)//' $'
               if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
+              if (lrhoice) write(4,*) ',rhoi'//trim(sdust)//' $'
             endif
             if (nvar == mvar) then
               write(4,*) ',nd'//trim(sdust)
-              write(4,*) ',rhod'//trim(sdust)
+              if (lmdvar) write(4,*) ',rhod'//trim(sdust)
+              if (lrhoice) write(4,*) ',rhoi'//trim(sdust)
             endif
           else
             write(4,*) ',nd'//trim(sdust)//' $'
             if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
+            if (lrhoice) write(4,*) ',rhoi'//trim(sdust)//' $'
           endif
           write(15,*) 'nd'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-          if (lmdvar) then
-            write(15,*) 'rhod'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-          endif
+          if (lmdvar) &
+              write(15,*) 'rhod'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
+          if (lrhoice) &
+              write(15,*) 'rhoi'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
         endif
       enddo
 !
@@ -276,6 +288,10 @@ module Dustdensity
         do i=1,ndustspec; f(:,:,:,irhod(i)) = md(i)*f(:,:,:,ind(i)); enddo
       endif
 !
+!  Initialize ice density
+!      
+      if (lrhoice) f(:,:,:,irhoi) = 0.
+!
 !  sanity check
 !
       if ( notanumber(f(:,:,:,ind)) ) then
@@ -302,11 +318,12 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
-      real, dimension (nx,ndustspec) :: nd,divud,ndnew,rhodnew
+      real, dimension (nx,ndustspec) :: nd,divud,ndnew,rhodnew,rhoinew
       real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,rho,rho1
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm
       real, dimension (nx) :: TT1,ugrhod
       real, dimension (nx) :: mfluxcond, nofluxcond
+      real, dimension (ndustspec) :: mice
       real :: diffnd
       integer :: i,j,k,i_targ
 !
@@ -349,9 +366,12 @@ module Dustdensity
           if (i_targ == -1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
+            if (lrhoice) rhoinew(:,k) = rhoinew(:,k) + f(l1:l2,m,n,irhoi(k))
           elseif (i_targ >= 1 .and. i_targ <= ndustspec) then
             ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
             rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
+            if (lrhoice) &
+                rhoinew(:,i_targ) = rhoinew(:,i_targ)+f(l1:l2,m,n,irhoi(k))
           elseif (i_targ == 0) then
             if (lkeepinitnd) then
               print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
@@ -362,14 +382,17 @@ module Dustdensity
           elseif (i_targ == ndustspec+1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
+            if (lrhoice) rhoinew(:,k) = rhoinew(:,k) + f(l1:l2,m,n,irhoi(k))
             print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
             call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
         f(l1:l2,m,n,ind)   = ndnew(:,:)
         f(l1:l2,m,n,irhod) = rhodnew(:,:)
+        if (lrhoice) f(l1:l2,m,n,irhoi) = rhoinew(:,:)
         ndnew   = 0.
         rhodnew = 0.
+        if (lrhoice) rhoinew = 0.
 !
 !  Must redo calculation of grain mass
 !        
@@ -378,6 +401,9 @@ module Dustdensity
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
             md(k) = 0.5*(mdminus(k)+mdplus(k))
+          endif
+          if (lrhoice .and. f(l1,m,n,ind(k)) /= 0.) then
+            mice(k) = f(l1,m,n,irhoi(k))/f(l1,m,n,ind(k))
           endif
         enddo
 !
@@ -412,12 +438,22 @@ module Dustdensity
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= 0.99*eps_ctog &
-                .and. lkeepinitnd) then
-              ! Do nothing when mass is set to decrease below initial
-            elseif (nd(1,k) >= 0.) then
-              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
-              df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+            if (lrhoice) then
+              if (dndfac(1) < 0. .and. f(l1,m,n,irhoi(k)) <= 0) then
+                ! Do nothing when there is no ice in the dust grains
+              elseif (nd(1,k) >= 0.) then
+                df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
+                df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+                df(l1:l2,m,n,irhoi(k)) = df(l1:l2,m,n,irhoi(k)) + dndfac/unit_md
+              endif
+            else
+              if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= 0.99*eps_ctog &
+                  .and. lkeepinitnd) then
+                ! Do nothing when dust mass is set to decrease below initial
+              elseif (nd(1,k) >= 0.) then
+                df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
+                df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+              endif
             endif
           else
             call stop_it('dnd_dt: Dust condensation only works with lmdvar')
@@ -445,6 +481,8 @@ module Dustdensity
 !  Dust coagulation
 !
       if (ldustcoagulation) then
+        if (lrhoice) call stop_it('dnd_dt: Dust coagulation and ice density'// &
+            ' at the same time is not implemented (yet)')
         do i=1,ndustspec
           do j=i,ndustspec
             dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
@@ -479,12 +517,12 @@ module Dustdensity
 !
       do k=1,ndustspec
 !
-!  calculate dustdensity gradient and advection term
+!  calculate dust number density gradient and advection term
 !
         call grad(f,ind(k),gnd(:,:,k))
         call dot_mn(uud(:,:,k),gnd(:,:,k),ugnd)
 !
-!  continuity equation
+!  continuity equations
 !
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
             ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
@@ -492,6 +530,11 @@ module Dustdensity
         if (lmdvar) then
           df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + &
               md(k)*(-ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
+        endif
+
+        if (lrhoice) then
+          df(l1:l2,m,n,irhoi(k)) = df(l1:l2,m,n,irhoi(k)) + &
+              mice(k)*(-ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
         endif
 !
 !  mass diffusion, in units of dxmin*cs0
@@ -527,6 +570,15 @@ module Dustdensity
               lfirstpoint = .true.
             else
               call sum_mn_name(nd(:,k)*md(k),i_rhodmt)
+            endif
+          endif
+          if (i_rhoit /= 0) then
+            if (lfirstpoint .and. k /= 1) then
+              lfirstpoint = .false.
+              call sum_mn_name(f(l1:l2,m,n,irhoi(k)),i_rhoit)
+              lfirstpoint = .true.
+            else
+              call sum_mn_name(f(l1:l2,m,n,irhoi(k)),i_rhoit)
             endif
           endif
         endif
@@ -634,7 +686,7 @@ module Dustdensity
       integer :: iname,k
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sdust,sdustspec,snd1,srhod1
+      character (len=4) :: sdust,sdustspec,snd1,srhod1,srhoi1
 !
 !  Write information to index.pro that should not be repeated for all species
 !
@@ -653,6 +705,7 @@ module Dustdensity
         i_ndmt   = 0
         i_rhodm  = 0
         i_rhodmt = 0
+        i_rhoit  = 0
       endif
 !
 !  Define arrays for multiple dust species
@@ -660,7 +713,8 @@ module Dustdensity
       if (lwr) then
         call chn(ndustspec,sdustspec)
         write(3,*) 'ind=intarr('//trim(sdustspec)//')'
-        write(3,*) 'irhod=intarr('//trim(sdustspec)//')'
+        if (lmdvar) write(3,*) 'irhod=intarr('//trim(sdustspec)//')'
+        if (lrhoice) write(3,*) 'irhoi=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
       endif
@@ -699,12 +753,14 @@ module Dustdensity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ndmt',i_ndmt)
         call parse_name(iname,cname(iname),cform(iname),'rhodmt',i_rhodmt)
+        call parse_name(iname,cname(iname),cform(iname),'rhoit',i_rhoit)
         call parse_name(iname,cname(iname),cform(iname),'ssrm',i_ssrm)
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',i_ssrmax)
       enddo
       if (lwr) then
         if (i_ndmt /= 0)   write(3,*) 'i_ndmt=',i_ndmt
         if (i_rhodmt /= 0) write(3,*) 'i_rhodmt=',i_rhodmt
+        if (i_rhoit /= 0)  write(3,*)  'i_rhoit=',i_rhoit
         if (i_ssrm /= 0)   write(3,*) 'i_ssrm=',i_ssrm
         if (i_ssrmax /= 0) write(3,*) 'i_ssrmax=',i_ssrmax
       endif
@@ -713,8 +769,13 @@ module Dustdensity
 !      
       call chn(ind(1),snd1)
       if (lmdvar) call chn(irhod(1),srhod1)
+      if (lrhoice) call chn(irhoi(1),srhoi1)
       if (lwr) then
-        if (lmdvar) then
+        if (lmdvar .and. lrhoice) then
+          write(3,*) 'ind=indgen('//trim(sdustspec)//')*6 + '//trim(snd1)
+          write(3,*) 'irhod=indgen('//trim(sdustspec)//')*6 + '//trim(srhod1)
+          write(3,*) 'irhoi=indgen('//trim(sdustspec)//')*6 + '//trim(srhoi1)
+        elseif (lmdvar) then
           write(3,*) 'ind=indgen('//trim(sdustspec)//')*5 + '//trim(snd1)
           write(3,*) 'irhod=indgen('//trim(sdustspec)//')*5 + '//trim(srhod1)
         else

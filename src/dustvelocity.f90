@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.44 2004-04-05 13:23:11 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.45 2004-04-06 11:51:52 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -83,7 +83,9 @@ module Dustvelocity
         if (i == 1) then
           iuud(1) = nvar+1
         else
-          if (lmdvar) then
+          if (lmdvar .and. lrhoice) then
+            iuud(i) = iuud(i-1) + 6
+          elseif (lmdvar) then
             iuud(i) = iuud(i-1) + 5
           else
             iuud(i) = iuud(i-1) + 4
@@ -105,7 +107,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.44 2004-04-05 13:23:11 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.45 2004-04-06 11:51:52 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,7 +266,19 @@ module Dustvelocity
 !
 !  Copy boundary conditions after first dust species to end of array
 !
-      if (lmdvar) then
+      if (lmdvar .and. lrhoice) then
+        bcx(irhoi(ndustspec)+1:)  = bcx(irhoi(1)+1:)
+        bcy(irhoi(ndustspec)+1:)  = bcy(irhoi(1)+1:)
+        bcz(irhoi(ndustspec)+1:)  = bcz(irhoi(1)+1:)
+!
+!  Copy boundary conditions on first dust species to all species
+!
+        do i=2,ndustspec
+          bcx(iudx(i):irhoi(i))=bcx(iudx(1):irhoi(1))
+          bcy(iudx(i):irhoi(i))=bcy(iudx(1):irhoi(1))
+          bcz(iudx(i):irhoi(i))=bcz(iudx(1):irhoi(1))
+        enddo
+      elseif (lmdvar) then
         bcx(irhod(ndustspec)+1:)  = bcx(irhod(1)+1:)
         bcy(irhod(ndustspec)+1:)  = bcy(irhod(1)+1:)
         bcz(irhod(ndustspec)+1:)  = bcz(irhod(1)+1:)
@@ -841,7 +855,12 @@ module Dustvelocity
       call chn(iudy(1),sudy1)
       call chn(iudz(1),sudz1)
       if (lwr) then
-        if (lmdvar) then
+        if (lmdvar .and. lrhoice) then
+          write(3,*) 'iuud=indgen('//trim(sdustspec)//')*6 + '//trim(suud1)
+          write(3,*) 'iudx=indgen('//trim(sdustspec)//')*6 + '//trim(sudx1)
+          write(3,*) 'iudy=indgen('//trim(sdustspec)//')*6 + '//trim(sudy1)
+          write(3,*) 'iudz=indgen('//trim(sdustspec)//')*6 + '//trim(sudz1)
+        elseif (lmdvar) then
           write(3,*) 'iuud=indgen('//trim(sdustspec)//')*5 + '//trim(suud1)
           write(3,*) 'iudx=indgen('//trim(sdustspec)//')*5 + '//trim(sudx1)
           write(3,*) 'iudy=indgen('//trim(sdustspec)//')*5 + '//trim(sudy1)
