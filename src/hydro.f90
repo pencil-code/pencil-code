@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.159 2004-04-13 10:29:42 dobler Exp $
+! $Id: hydro.f90,v 1.160 2004-04-13 10:56:24 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -110,7 +110,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.159 2004-04-13 10:29:42 dobler Exp $")
+           "$Id: hydro.f90,v 1.160 2004-04-13 10:56:24 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -966,8 +966,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'dtv',i_dtv)
         call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
-        call parse_name(iname,cname(iname),cform(iname),'urms',i_uzrms)
-        call parse_name(iname,cname(iname),cform(iname),'umax',i_uzmax)
+        call parse_name(iname,cname(iname),cform(iname),'uzrms',i_uzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uzmax',i_uzmax)
         call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
