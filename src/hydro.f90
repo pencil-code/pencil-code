@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.116 2003-10-13 14:53:18 mcmillan Exp $
+! $Id: hydro.f90,v 1.117 2003-10-13 15:23:30 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -39,7 +39,8 @@ module Hydro
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
-  real :: tdamp=0.,dampu=0.,dampuext=0.,dampuint=0.,rdampint=0.0,rdampext=impossible,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,wdamp=0.2
+  real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
@@ -99,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.116 2003-10-13 14:53:18 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.117 2003-10-13 15:23:30 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,16 +129,20 @@ module Hydro
 !  
 !  r_int and r_ext override rdampint and rdampext if both are set
 ! 
-   if (r_int > epsi) then
-     rdampint = r_int
-   elseif (rdampint <= epsi) then
-     write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
-   endif     
+   if (dampuint /= 0.0) then        
+     if (r_int > epsi) then
+       rdampint = r_int
+     elseif (rdampint <= epsi) then
+       write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
+     endif 
+   endif    
 
-   if (r_ext < impossible) then         
-     rdampext = r_ext
-   elseif (rdampext == impossible) then
-     write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+   if (dampuext /= 0.0) then      
+     if (r_ext < impossible) then         
+       rdampext = r_ext
+     elseif (rdampext == impossible) then
+       write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+     endif
    endif
 
     endsubroutine initialize_hydro
