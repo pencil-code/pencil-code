@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.10 2003-01-20 21:00:19 nilshau Exp $
+! $Id: struct_func.f90,v 1.11 2003-01-21 11:54:46 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -41,13 +41,12 @@ module struct_func
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension (nx,ny,nz) :: vect,b_vec
   real, dimension (imax,qmax,3) :: sf,sf_sum
-  real, dimension (imax) :: totall 
-  real, dimension (ny,nz) :: dvect
+  real, dimension (ny,nz) :: dvect1,dvect2
   real, dimension(n_pdf,imax,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
-  integer, dimension (ny,nz) :: i_du
-  integer :: l,ll,j,q,direction
-  integer :: separation,i,ivec,sep
+  integer, dimension (ny,nz) :: i_du1,i_du2
+  integer :: l,ll,j,q,direction,ll1,ll2
+  integer :: i,ivec,lb_ll,separation
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
   character (len=*) :: variabl
@@ -62,28 +61,24 @@ module struct_func
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
      filetowrite='/sfu-'
      sf=0.
-     totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'b') then
      vect(:,:,:)=b_vec(:,:,:)
      filetowrite='/sfb-'
      sf=0.
-     totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'z1') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
      filetowrite='/sfz1-'
      sf=0.
-     totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'z2') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
      filetowrite='/sfz2-'
      sf=0.
-     totall=0
      llsf=.true.
      llpdf=.false.
   end if
@@ -109,21 +104,32 @@ module struct_func
   do direction=1,nr_directions
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
-        sep=1
-        do ll=l+1,nx
-           separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-           if (separation .eq. 2**(sep-1)) then
-              dvect=vect(l,:,:)-vect(ll,:,:)
+!        do ll=l+1,nx
+        do lb_ll=1,lb_nxgrid
+!           separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
+!           if (separation .eq. 2**(sep-1)) then
+           separation=2**(lb_ll-1)
+           ll1=mod(l+separation,nx)
+           ll2=mod(l-separation+nx,nx)
+           if (ll2 .eq. 0) ll2=nx
+!           if (ll .le. nx) then
+if (iproc == root) print*,ll1,ll2,l,separation
+              dvect1=vect(l,:,:)-vect(ll1,:,:)
+              dvect2=vect(l,:,:)-vect(ll2,:,:)
               if (llpdf) then !if pdf=.true.
-                 i_du=1+int((dvect-pdf_min)*n_pdf/(pdf_max-pdf_min))
-                 i_du=min(max(i_du,1),n_pdf)  !(make sure its inside array bdries)
+                 i_du1=1+int((dvect1-pdf_min)*n_pdf/(pdf_max-pdf_min))
+                 i_du1=min(max(i_du1,1),n_pdf)  !(make sure its inside array bdries)
+                 i_du2=1+int((dvect2-pdf_min)*n_pdf/(pdf_max-pdf_min))
+                 i_du2=min(max(i_du2,1),n_pdf)  !(make sure its inside array bdries)
                  !
                  !  Calculating pdf
                  !
                  do m=1,ny
                     do n=1,nz
-                       p_du(i_du(m,n),sep,direction) &
-                            =p_du(i_du(m,n),sep,direction)+1
+                       p_du(i_du1(m,n),lb_ll,direction) &
+                            =p_du(i_du1(m,n),lb_ll,direction)+1
+                       p_du(i_du2(m,n),lb_ll,direction) &
+                            =p_du(i_du2(m,n),lb_ll,direction)+1
                     enddo
                  enddo
               endif
@@ -132,15 +138,13 @@ module struct_func
                  !
                  !  Calculates sf
                  !
-                 !totall(sep)=totall(sep)+1
                  do q=1,qmax   
-                    sf(sep,q,direction) &
-                         =sf(sep,q,direction) &
-                         +sum(abs(dvect(:,:))**q)
+                    sf(lb_ll,q,direction) &
+                         =sf(lb_ll,q,direction) &
+                         +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
                  enddo
               endif
-              sep=sep+1
-           endif
+ !          endif
         enddo
      enddo
      if (nr_directions .gt. 1) then
