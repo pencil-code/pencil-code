@@ -44,7 +44,8 @@ if [ -z $_sourceme ]; then	# called for the first time?
     #  Set shell path
     echo "Adding $PENCIL_HOME/bin to path"
     PATH=${PATH}:$PENCIL_HOME/bin
-    IDL_PATH="./idl:../idl:+${PENCIL_HOME}/bin:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
+    
+IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
