@@ -4,7 +4,9 @@
 &init_pars
 /
 &hydro_init_pars
-  init=-1,ampl=1e-3,
+/
+&density_init_pars
+  gamma=1.
 /
 &magnetic_init_pars
   initaa=0,amplaa=1e-3
