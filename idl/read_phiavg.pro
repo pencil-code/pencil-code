@@ -7,9 +7,9 @@
 ;;;  Date:   11-Aug-2003
 ;;;
 ;;;  Description:
-;;;   Read phi-averages from file and return them in a structure
+p;;;   Read phi-averages from file and return them in a structure
 ;;;  File format:
-;;     3. nr_phiavg, nz_phiavg, nprocz, nvars
+;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
 ;;;    2. t, r_phiavg, z_phiavg, dr, dz
 ;;;    1. data
 ;;;    4. labels
@@ -65,9 +65,9 @@ function read_phiavg, file, $
   close, 1
   openr, 1, file, /F77
 
-  nr=1L & nz=1L & nprocz=1L & nvars=1L
-  readu, 1, nr, nz, nprocz, nvars
-  if (debug) then print,'nr,nz,nvars=',nr,nz,nprocz,nvars
+  nr=1L & nz=1L & nvars=1L & nprocz=1L
+  readu, 1, nr, nz, nvars, nprocz
+  if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
 
   t = 0.
   rcyl = fltarr(nr)
@@ -101,7 +101,7 @@ function read_phiavg, file, $
   labels = parse_labels(lline)
   if (n_elements(labels) ne nvars) then $
       message, 'Inconsistency: found ' + strtrim(n_elements(labels),2) + $
-      ' labels, but nvars=', + strtrim(nvars,2)
+      ' labels, but nvars=' + strtrim(nvars,2)
   def = '{t: t, rcyl: rcyl, z: z, nvars: nvars, labels: labels'
   for i=0, nvars-1 do begin
     def = def + ', ' + labels[i] + ': vars[*,*,'+strtrim(i,2)+']'

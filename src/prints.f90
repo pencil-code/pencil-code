@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.54 2003-11-23 21:59:37 brandenb Exp $
+! $Id: prints.f90,v 1.55 2003-11-24 13:20:33 dobler Exp $
 
 module Print
 
@@ -79,9 +79,10 @@ module Print
       character (len=1) :: comma=','
       integer :: iname,index_d,index_a
 !
+!  Add general (not module-specific) quantities for diagnostic output.
 !  If the timestep (=dt) is to be written, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
-!  Use 1.*(it-1) to have floating point or double prrecision.
+!  Use 1.*(it-1) to have floating point or double precision.
 !
       if (lroot) then
         if (i_t/=0)   call save_name(tdiagnos,i_t)
@@ -148,7 +149,7 @@ module Print
         write(6,'(a)') trim(line)
         close(1)
 !
-      endif
+      endif                     ! (lroot)
 !
 !  calculate brms (this requires that brms is set in print.in)
 !  broadcast result to other processors
@@ -263,10 +264,10 @@ module Print
 !  Write azimuthal averages (which are 2d data) that have been requested
 !  via `phiaver.in'
 !  File format:
-!     1. data
-!     2. t, r_phiavg, z_phiavg, dr, dz
-!     3. nr_phiavg, nz_phiavg, nvars
-!     4. labels
+!    1. nr_phiavg, nz_phiavg, nvars, nprocz
+!    2. t, r_phiavg, z_phiavg, dr, dz
+!    3. data
+!    4. labels
 !
 !   2-jan-03/wolf: adapted from write_zaverages
 !
@@ -284,7 +285,7 @@ module Print
         call safe_character_assign(fname, &
                                    trim(datadir)//'/averages/PHIAVG'//trim(ch))
         open(1,FILE=fname,FORM='unformatted')
-        write(1) nrcyl,n2-n1+1,nprocz,nnamerz ! sizes (just in case) 
+        write(1) nrcyl,n2-n1+1,nnamerz,nprocz
         write(1) t2davgfirst,rcyl,z(n1:n2),drcyl,dz
         write(1) fnamerz(:,1:nz,:,1:nnamerz)
 !

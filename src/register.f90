@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.114 2003-11-23 21:59:37 brandenb Exp $
+! $Id: register.f90,v 1.115 2003-11-24 13:20:33 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -380,18 +380,19 @@ module Register
       use Cdata
       use Sub
 !
-      integer :: iname
+      integer :: iname,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
       lwr = .false.
       if (present(lwrite)) lwr=lwrite
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
+!  reset everything in case of RELOAD
+!  (general variables that are defined in Cdata)
 !
       if (lreset) then
-        i_t=0;i_it=0;i_dt=0;i_dtc=0;i_walltime=0
+        i_t=0; i_it=0; i_dt=0; i_dtc=0; i_walltime=0 ! general print.in params
+        i_rcylmphi=0; i_phimphi=0; i_zmphi=0; i_rmphi=0 ! general phiaver.in params
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -405,6 +406,15 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
       enddo
 !
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',i_rcylmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', i_phimphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'zmphi',   i_zmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rmphi',   i_rmphi)
+      enddo
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
@@ -414,6 +424,11 @@ module Register
         write(3,*) 'i_dtc=',i_dtc
         write(3,*) 'i_walltime=',i_walltime
         write(3,*) 'nname=',nname
+!
+        write(3,*) 'i_rcylmphi=',i_rcylmphi
+        write(3,*) 'i_phimphi=',i_phimphi
+        write(3,*) 'i_zmphi=',i_zmphi
+        write(3,*) 'i_rmphi=',i_rmphi
 !ajwm Not really the correct place to put this...?
         write(3,*) 'ishock=',ishock
       endif

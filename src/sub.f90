@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.146 2003-11-23 21:59:37 brandenb Exp $ 
+! $Id: sub.f90,v 1.147 2003-11-24 13:20:33 dobler Exp $ 
 
 module Sub 
 
@@ -256,6 +256,18 @@ module Sub
 !
     endsubroutine phisum_mn_name_rz
 !***********************************************************************
+    subroutine calc_phiavg_general()
+!
+!  Calculate cylindrical quantities for given pencil.
+!  Needed for phi-averages.
+!
+      use Cdata
+!
+      rcyl_mn = sqrt(x_mn**2+y_mn**2)
+      phi_mn  = atan2(y_mn,x_mn)
+!
+    endsubroutine calc_phiavg_general
+!***********************************************************************
     subroutine calc_phiavg_profile()
 !
 !  Calculate profile for phi-averaging for given pencil
@@ -292,7 +304,6 @@ module Sub
 !
 !  pomega and 1/pomega
 !
-      rcyl_mn = sqrt(x_mn**2+y_mn**2) ! Needed for phi-averages
       rcyl_mn1=1./amax1(rcyl_mn,epsi)
 !
 !  pomega unit vector

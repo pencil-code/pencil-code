@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.150 2003-11-23 21:59:37 brandenb Exp $
+! $Id: magnetic.f90,v 1.151 2003-11-24 13:20:33 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -104,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.150 2003-11-23 21:59:37 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.151 2003-11-24 13:20:33 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,7 +337,6 @@ module Magnetic
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         bx=bb(:,1)
         by=bb(:,2)
         bz=bb(:,3)
@@ -1144,7 +1143,8 @@ module Magnetic
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
 !
-!  Potential field boundary condition for magnetic vector potential
+!  Potential field boundary condition for magnetic vector potential at
+!  bottom or top boundary (in z).
 !
 !  14-jun-2002/axel: adapted from similar 
 !   8-jul-2002/axel: introduced topbot argument

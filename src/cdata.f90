@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.181 2003-11-23 21:59:37 brandenb Exp $
+! $Id: cdata.f90,v 1.182 2003-11-24 13:20:33 dobler Exp $
 
 module Cdata
 
@@ -11,7 +11,7 @@ module Cdata
   real, dimension (my) :: y
   real, dimension (mz) :: z
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
-  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn
+  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
   real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor
@@ -94,6 +94,7 @@ module Cdata
 
   ! other variables (needs to be consistent with reset list in register.90)
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_walltime=0
+  integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0
 
   !  initialization of various switches; actual settings depends on the
   !  modules that are linked in (see Makefile.local) and can, in some cases,
