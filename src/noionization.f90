@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.82 2003-10-23 17:03:42 ngrs Exp $
+! $Id: noionization.f90,v 1.83 2003-10-24 10:49:49 mcmillan Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.82 2003-10-23 17:03:42 ngrs Exp $")
+           "$Id: noionization.f90,v 1.83 2003-10-24 10:49:49 mcmillan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -113,9 +113,9 @@ module Ionization
       if (lcalc_cp) then 
         cp=k_B/(mu*m_H)
       else if (initlnrho=='geo-kws') then
-        cp=5./3.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
+        cp=5./2.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
       else
-        cp=1.
+        cp=1.       
       endif
 
       cp1=1./cp
