@@ -1,11 +1,12 @@
-$Id: run.in,v 1.10 2002-06-08 08:09:16 brandenb Exp $
+$Id: run.in,v 1.11 2002-06-18 09:16:24 dobler Exp $
 !
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
+  nt=1, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=1,
   dsnap=50, dvid=0.5,
-/
+  ip=14
+  /
 &hydro_run_pars
   nu=0., ivisc=0,
 /

@@ -1,4 +1,4 @@
-$Id: start.in,v 1.14 2002-06-08 08:09:16 brandenb Exp $
+$Id: start.in,v 1.15 2002-06-18 09:16:24 dobler Exp $
 !
 ! Initialisation parameters
 !
@@ -10,7 +10,9 @@ $Id: start.in,v 1.14 2002-06-08 08:09:16 brandenb Exp $
   gamma=1.
 /
 &magnetic_init_pars
-  initaa=2,amplaa=1e-0
-  fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3, axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
-  fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3, axisr2=1.,0.,0., dispr2=0.,0.5,0.,
+  initaa=12,amplaa=1e-0
+  fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3,
+    axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
+  fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3,
+    axisr2=1.,0.,0., dispr2=0.,0.5,0.,
 /
