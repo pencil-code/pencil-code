@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.28 2003-05-31 09:44:43 brandenb Exp $
+;;;  $Id: rall.pro,v 1.29 2003-06-19 22:36:16 mee Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -29,38 +29,7 @@ endif
 ;
 ;  Read startup parameters
 ;
-pfile=datatopdir+'/'+'param2.nml'
-dummy=findfile(pfile, COUNT=cpar)
-if (cpar gt 0) then begin
-  print, 'Generating and reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param2.nml', result
-  res = flatten_strings(result)
-  ;; For people with an unclean shell: remove everything up to the
-  ;; opening brace:
-  brace = strpos(res,'{')
-  if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-  if (brace ne 0) then begin
-    print, "Your shell produces output when it shouldn't; you'd better"
-    print, "fix your prompt."
-    print, "Trying to clean up the mess.."
-    res = strmid(res,brace)
-  endif
-  ;; Execute the resulting line
-  if (execute('par2 = '+res) ne 1) then $
-      message, 'There was a problem with param.nml', /INFO
-  if (lhydro) then begin
-    cs0=par2.cs0 & nu=par2.nu
-;  cs0=1. & nu=0.
-  endif
-  if (lentropy) then begin
-    hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
-    luminosity=par2.luminosity & wheat=par2.wheat
-    cool=par2.cool & wcool=par2.wcool
-    Fbot=par2.Fbot
-  endif
-endif else begin
-  print, 'Warning: cannot find file ', pfile
-endelse
+@readstartpars
 
 ;
 ;  read global sizes
@@ -68,7 +37,7 @@ endelse
 nprocx=0L & nprocy=0L & nprocz=0L
 close,1
 openr,1,datatopdir+'/'+dimfile
-readf,1,mx,my,mz,nvar
+readf,1,mx,my,mz,nvar,naux
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
 readf,1,nprocx,nprocy,nprocz
@@ -97,34 +66,35 @@ default, varfile, 'var.dat'
 ;
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)
 xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
-if (lhydro) then begin
-  uu    = fltarr(mx,my,mz,3)*one
-  uu_loc = fltarr(mxloc,myloc,mzloc,3)*one
-endif
-if (ldensity) then begin
-  lnrho = fltarr(mx,my,mz)*one
-  lnrho_loc = fltarr(mxloc,myloc,mzloc)*one
-endif
-if (lentropy ) then begin
-  ss = fltarr(mx,my,mz)*one
-  ss_loc = fltarr(mxloc,myloc,mzloc)*one
-endif
-if (lmagnetic) then begin
-  aa = fltarr(mx,my,mz,3)*one
-  aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
-endif
-if (lpscalar) then begin
-  lncc = fltarr(mx,my,mz)*one
-  lncc_loc = fltarr(mxloc,myloc,mzloc)*one
-endif
-if (ldustvelocity) then begin
-  uud = fltarr(mx,my,mz,3)*one
-  uud_loc = fltarr(mxloc,myloc,mzloc,3)*one
-endif
-if (ldustdensity) then begin
-  lnrhod = fltarr(mx,my,mz)*one
-  lnrhod_loc = fltarr(mxloc,myloc,mzloc)*one
-endif
+
+;
+;  Read data
+;
+@varcontent
+
+; Prepare for read
+readstring=''
+content=''
+for i=1,totalvars do begin
+  readstring = readstring + ',' + varcontent[i].idlvarloc
+  content    = content + ', ' + varcontent[i].variable
+  ; Initialise variable
+  if (varcontent[i].variable eq 'UNKNOWN') then $
+           message, 'Unknown variable at position ' + str(i)  $
+                                    + ' needs declaring in varcontent.pro', /INFO   
+  if (execute(varcontent[i].idlvar+'='+varcontent[i].idlinit,0) ne 1) then $
+           message, 'Error initialising ' + varcontent[i].variable $
+                                    +' - '+ varcontent[i].idlvar, /INFO
+  if (execute(varcontent[i].idlvarloc+'='+varcontent[i].idlinitloc,0) ne 1) then $
+           message, 'Error initialising ' + varcontent[i].variable $
+                                    +' - '+ varcontent[i].idlvarloc, /INFO
+;If it's a vector quantity skip the required number of elements
+  i=i+varcontent[i].skip
+end
+
+dummy=0.
+
+content = strmid(content,2)
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
   tag='proc'+str(i)
@@ -139,44 +109,16 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   readf,1, dummy
   readf,1, ipx,ipy,ipz
   ; read data
+  if (i eq 0) then begin
+    print,'File contains: '+content
+    print, FORMAT='(A,$)', "Reading: "
+  endif
+
   close,1
   openr,1, datadir+'/'+varfile, /F77
-    ;
-    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='MHD with entropy'
-      readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 and ilncc eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='hydro without entropy, but with magnetic field'
-      readu,1,uu_loc,lnrho_loc,aa_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc ne 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='hydro with entropy, magnetic field, and passive scalar'
-      readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc,lncc_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='hydro with entropy, but no magnetic field'
-      readu,1,uu_loc,lnrho_loc,ss_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 and iuud ne 0 and ilnrhod ne 0 then begin
-      id='hydro with entropy and dust velocity and dust density, but no magnetic field'
-      readu,1,uu_loc,lnrho_loc,ss_loc,uud_loc,lnrhod_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc eq 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='hydro with no entropy and no magnetic field'
-      readu,1,uu_loc,lnrho_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc ne 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='hydro with passive scalar and no entropy and no magnetic field'
-      readu,1,uu_loc,lnrho_loc,lncc_loc
-    end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='just velocity (Burgers)'
-      readu,1,uu_loc
-    end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 and iuud eq 0 and ilnrhod eq 0 then begin
-      id='just magnetic ffield (kinematic)'
-      readu,1,aa_loc
-    end else begin
-      id='not prepared...'
-    end
-    if (i eq 0) then begin
-      print, id
-      print, FORMAT='(A,$)', "Reading: "
-    endif
     print, FORMAT='(A," ",$)', tag
+    if (execute('readu,1'+readstring) ne 1) then $
+      message, 'Error reading: ' + 'readu,1'+readstring
     ;
     ;  read deltay in case of shear
     ;
@@ -219,57 +161,52 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   x[i0x:i1x] = xloc[i0xloc:i1xloc]
   y[i0y:i1y] = yloc[i0yloc:i1yloc]
   z[i0z:i1z] = zloc[i0zloc:i1zloc]
-  uu [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
-      uu_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
-  lnrho[i0x:i1x,i0y:i1y,i0z:i1z]   = $
-      lnrho_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
-  if (ient ne 0) then ss[i0x:i1x,i0y:i1y,i0z:i1z]   = $
-      ss_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
-  if (iaa ne 0) then aa [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
-      aa_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
-  if (ilncc ne 0) then lncc[i0x:i1x,i0y:i1y,i0z:i1z]   = $
-      lncc_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
-  if (iuud ne 0) then uud[i0x:i1x,i0y:i1y,i0z:i1z,*]   = $
-      uud_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
-  if (ilnrhod ne 0) then lnrhod[i0x:i1x,i0y:i1y,i0z:i1z]   = $
-      lnrhod_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
+
+for i=1,totalvars do begin
+  if (execute(varcontent[i].idlvar+"[i0x:i1x,i0y:i1y,i0z:i1z,*]="  $
+               + varcontent[i].idlvarloc+"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"$
+             ,1) ne 1) then $
+    message, 'Error combining data for ' + varcontent[i].variable         
+  i=i+varcontent[i].skip
+end
+
 endfor
 print
+
 ;
 xx = spread(x, [1,2], [my,mz])
 yy = spread(y, [0,2], [mx,mz])
 zz = spread(z, [0,1], [mx,my])
+rr = sqrt(xx^2+yy^2+zz^2)
 ;
 ;  Summarise data
 ;
 xyz = ['x', 'y', 'z']
-fmt = '(A,4G15.6)'
-print, ' var        minval         maxval            mean           rms'
-if (lhydro) then $
-    for j=0,2 do $
-      print, FORMAT=fmt, 'uu_'+xyz[j]+'   =', $
-      minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-if (ldensity) then $
-    print, FORMAT=fmt, 'lnrho  =', $
-      minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-if (lentropy) then $
-    print, FORMAT=fmt, 'ss     =', $
-      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-if (lmagnetic) then $
-    for j=0,2 do $
-      print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
-      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
-if (lpscalar) then $
-    print, FORMAT=fmt, 'lncc   =', $
-      minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
-if (ldustvelocity) then $
-    for j=0,2 do $
-      print, FORMAT=fmt, 'uud_'+xyz[j]+'   =', $
-      minmax(uud(*,*,*,j)), mean(uud(*,*,*,j),/DOUBLE), rms(uud(*,*,*,j),/DOUBLE)
-if (ldustdensity) then $
-    print, FORMAT=fmt, 'lnrhod  =', $
-      minmax(lnrhod), mean(lnrhod,/DOUBLE), rms(lnrhod,/DOUBLE)
-
+fmt = '(A9,A,4G15.6)'
+print, '  var             minval         maxval          mean           rms'
+;
+;
+for i=1,totalvars do begin
+  if (varcontent[i].skip eq 2) then begin
+      for j=0,2 do begin
+          cmd = "print, FORMAT=fmt,strmid('"+varcontent[i].idlvar+"_'+xyz["+str(j)+"]+'        ',0,8),'=', " $
+            + "minmax("+varcontent[i].idlvar+"(*,*,*,"+str(j)+")), " $
+            + "mean("+varcontent[i].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE), " $
+            + "rms("+varcontent[i].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE)"
+          if (execute(cmd,1) ne 1) then $
+                          message, 'Error printing stats for ' + varcontent[i].variable         
+      end
+  end else begin
+      cmd = "print, FORMAT=fmt,strmid('"+varcontent[i].idlvar+"        ',0,8),'=', " $
+        + "minmax("+varcontent[i].idlvar+"(*,*,*)), " $
+        + "mean("+varcontent[i].idlvar+"(*,*,*),/DOUBLE), " $
+        + "rms("+varcontent[i].idlvar+"(*,*,*),/DOUBLE)"
+      if (execute(cmd,1) ne 1) then $
+        message, 'Error printing stats for ' + varcontent[i].variable         
+  end
+  i=i+varcontent[i].skip
+end
+;
 print,'t = ',t
 
 ; reset datadir to more reasonable default
