@@ -1,0 +1,26 @@
+$Id: README,v 1.1 2002-07-02 05:02:11 brandenb Exp $
+
+files currently in this directory
+
+   4 CVS/	       4 getconf.csh     4 new*         4 start.csh*     4 x*
+   0 README	       8 gpgrowth*      12 nl2idl*      4 timestr*
+   4 adapt-mkfile*     4 lnsrc*          4 run.csh*     4 tst.csh*
+
+lnsrc: is to called from the corresponding run directory to link
+       the source code into the src subdirectory. It also links
+       the getconf.csh, run.csh, and start.in files into the run
+       directory. When done, go into src and say "make".
+
+timestr: produces a time stamp; used by several scripts.
+
+tst.csh: runs start.csh and run.csh, and puts the results
+         directly into a TEST.* file, where the asterisk
+         denotes a time stamp.
+
+adapt-mkfile: used by Makefile
+
+new: produces a new run directory similar to another one.
+     Usage "new rings1 rings1b" for example, produces a new
+     run directory rings1b. You still need to compile the code
+     in the corresponding run directory.
+
