@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.1 2002-12-13 18:46:30 brandenb Exp $
+! $Id: temperature.f90,v 1.2 2002-12-16 13:54:50 brandenb Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -69,6 +69,7 @@ module Entropy
 !
       ilnTT = nvar+1             ! index to access entropy
       nvar = nvar+1
+ient=ilnTT  !(need to think how to deal with this...)
 !
       if ((ip<=8) .and. lroot) then
         print*, 'Register_ent:  nvar = ', nvar
@@ -78,7 +79,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.1 2002-12-13 18:46:30 brandenb Exp $")
+           "$Id: temperature.f90,v 1.2 2002-12-16 13:54:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
