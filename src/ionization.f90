@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.160 2004-03-27 13:43:14 theine Exp $
+! $Id: ionization.f90,v 1.161 2004-03-30 07:56:48 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -43,6 +43,8 @@ module Ionization
   public :: isothermal_entropy,isothermal_lnrho_ss
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter, public :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
+! dummy variables
+  real, public :: lnTT0
 
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
@@ -129,7 +131,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.160 2004-03-27 13:43:14 theine Exp $")
+           "$Id: ionization.f90,v 1.161 2004-03-30 07:56:48 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
