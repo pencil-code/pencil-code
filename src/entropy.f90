@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.103 2002-07-22 22:36:59 brandenb Exp $
+! $Id: entropy.f90,v 1.104 2002-07-23 13:50:14 dobler Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.103 2002-07-22 22:36:59 brandenb Exp $")
+           "$Id: entropy.f90,v 1.104 2002-07-23 13:50:14 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -398,7 +398,7 @@ module Entropy
         !
         if ((Fheat==impossible) .and. (bcz1(ient)=='c1')) then
           Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-          print*, 'Calculated Fheat = ', Fheat
+          if (lroot) print*, 'Calculated Fheat = ', Fheat
         endif
       endif
 !
