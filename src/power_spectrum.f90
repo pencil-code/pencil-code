@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $
+! $Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -394,22 +394,20 @@ module  power_spectrum
   real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
-  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
-  real, dimension(nxgrid) :: kx
+  real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
+  real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
+  real, dimension(nk) :: spectrumz=0.,spectrumz_sum=0
   character (len=1) :: sp
   character (len=7) :: str
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
   !
-  !  Define wave vector, defined here for the *full* mesh.
-  !  Each processor will see only part of it.
-  !
-  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
-  !
-  spectrum=0
+  spectrumx=0
+  spectrumy=0
+  spectrumz=0
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -435,6 +433,7 @@ module  power_spectrum
   !  Doing the Fourier transform
   !
   call transform_fftpack_1d(a1,b1)
+  if (onedall) call transform_fftpack(a1,b1)
   !
   !    Stopping the run if FFT=nofft
   !
@@ -445,14 +444,18 @@ module  power_spectrum
   if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
   do m=1,ny
      do n=1,nz
-        spectrum=spectrum+a1(1:nx/2,m,n)**2+b1(1:nx/2,m,n)**2
+        spectrumx=spectrumx+a1(1:nx/2,m,n)**2+b1(1:nx/2,m,n)**2
+        if (onedall) spectrumy=spectrumy+a1(m,1:nx/2,n)**2+b1(m,1:nx/2,n)**2
+        if (onedall) spectrumz=spectrumz+a1(m,n,1:nx/2)**2+b1(m,n,1:nx/2)**2
      enddo
   enddo
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
   !
-  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrumx,spectrumx_sum,nk)
+  if (onedall) call mpireduce_sum(spectrumy,spectrumy_sum,nk)
+  if (onedall) call mpireduce_sum(spectrumz,spectrumz_sum,nk)
   !
   !  on root processor, write global result to file
   !  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
@@ -469,11 +472,61 @@ module  power_spectrum
           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
      write(1,*) t
-     write(1,'(1p,8e10.2)') spectrum_sum
+     write(1,'(1p,8e10.2)') spectrumx_sum
      close(1)
   endif
   !
+  ! Save data for y and z spectra if onedall=.true.
+  !
+  if (onedall) then
+    !
+    ! Save y data
+    !
+    if (ivec .eq. 1) str='x_y.dat'
+    if (ivec .eq. 2) str='y_y.dat'
+    if (ivec .eq. 3) str='z_y.dat'
+    !
+    !  append to diagnostics file
+    !
+    if (iproc==root) then
+      if (ip<10) print*,'Writing power spectra of variable',sp &
+           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
+      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumy_sum
+      close(1)
+    endif
+    !
+    ! Save z data
+    !
+    if (ivec .eq. 1) str='x_z.dat'
+    if (ivec .eq. 2) str='y_z.dat'
+    if (ivec .eq. 3) str='z_z.dat'
+    !
+    !  append to diagnostics file
+    !
+    if (iproc==root) then
+      if (ip<10) print*,'Writing power spectra of variable',sp &
+           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
+      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
+      write(1,*) t
+      write(1,'(1p,8e10.2)') spectrumz_sum
+      close(1)
+    endif
+  endif
+
   endsubroutine power_1d
 !***********************************************************************
 
 end module power_spectrum
+
+
+
+
+
+
+
+
+
+
+

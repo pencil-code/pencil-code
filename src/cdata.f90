@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.164 2003-09-10 12:20:12 theine Exp $
+! $Id: cdata.f90,v 1.165 2003-09-10 14:01:50 nilshau Exp $
 
 module Cdata
 
@@ -114,7 +114,7 @@ module Cdata
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
   logical :: ro_spec=.false.,ss_spec=.false.,cc_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.,oned=.false.
-  logical :: test_nonblocking=.false.
+  logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written

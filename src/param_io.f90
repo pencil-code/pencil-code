@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.133 2003-09-08 10:02:49 dobler Exp $ 
+! $Id: param_io.f90,v 1.134 2003-09-10 14:01:50 nilshau Exp $ 
 
 module Param_IO
 
@@ -71,7 +71,7 @@ module Param_IO
        bcx,bcy,bcz, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux
+       lwrite_aux,onedall
   contains
 
 !***********************************************************************
