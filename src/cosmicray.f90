@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.24 2004-02-07 11:12:21 brandenb Exp $
+! $Id: cosmicray.f90,v 1.25 2004-03-20 14:39:22 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -39,6 +39,7 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
+  real :: limiter_cr=5.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -46,7 +47,7 @@ module CosmicRay
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants
+       luse_diff_constants, limiter_ecr
 
 
   ! other variables (needs to be consistent with reset list below)
@@ -84,7 +85,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.24 2004-02-07 11:12:21 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.25 2004-03-20 14:39:22 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -378,7 +379,9 @@ module CosmicRay
             hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
           enddo
         enddo
-        call multsv_mn(b1,hhh,hhh)
+        call dot2_mn(hhh,hhh2)
+        quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
+        call multsv_mn(quenchfactor,hhh,hhh)
         call dot_mn(hhh,gecr,tmp)
       endif
 !
