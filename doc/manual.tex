@@ -7,9 +7,7 @@
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
-%     latex manual
-%     makeindex manual
-%     latex manual
+%     latex manual; makeindex manual; latex manual
 
 \ifx\pdfoutput\undefined        % not running pdflatex
   \documentclass[12pt,twoside,notitlepage,a4paper]{article}
@@ -49,6 +47,7 @@
 \usepackage{longtable}
 
 \usepackage{fancyvrb}
+%\DefineShortVerb{\|}
 \usepackage{alltt}
 \usepackage{underscore}
 
@@ -112,7 +111,7 @@
 
 %
 \newcommand{\bsT}{{\fontencoding{T1}\selectfont{\symbol{92}}}}
-\newcommand{\bcks}{{\symbol{92}}}
+\newcommand{\bcks}{\texttt{\symbol{92}}}
 \newcommand{\bs}{\bcks}       % Save us creation of a couple of fonts
 
 %% Maths operators
@@ -172,8 +171,6 @@
 
 % \newcommand{\zerovect}      {\nullvekt}
 
-\newcommand{\uu}{\mbox{\boldmath $u$} {}}
-\newcommand{\oo}{\mbox{\boldmath $\omega$} {}}
 \newcommand{\bra}[1]{\langle #1\rangle}
 
 % ---------------------------------------------------------------------- %
@@ -181,7 +178,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.36 $ $}
+\date{\today,~ $ $Revision: 1.37 $ $}
 
 % ====================================================================== %
 
@@ -210,7 +207,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.36 $ $}
+  \emph{\today,~ $ $Revision: 1.37 $ $}
 
 
 \end{center}
@@ -290,18 +287,18 @@ could indeed gain by solving the outer regions with fewer points.
 In order to be cache-efficient, we solve the equations along
 \name{pencils} in the $x$ direction.
 One very convenient side-effect is that auxiliary and derived variables
-use very little memory, as thery are only ever defined on one pencil.
+use very little memory, as they are only ever defined on one pencil.
 The domain can be tiled evenly in the $y$ and $z$ directions.
 On multiprocessor computers, the code uses \name{MPI}
 (Message Passing Interface) calls to communicate between processors.
-An easy swithcing mechanism allows the user to run the code on a machine
+An easy switching mechanism allows the user to run the code on a machine
 without MPI libraries (e.g.~a notebook computer).
 Ghost zones are used to implement boundary conditions on physical and
 processor boundaries.
 
 The code achieves a high level of flexibility by encapsulating individual
 physical processes and variables in individual \name{modules}, which can
-be swithced on or off in the file \file{Makefile.local} in the local
+be switched on or off in the file \file{Makefile.local} in the local
 \file{src} directory.
 In order to avoid excessive use of preprocessor directives, we were lead
 to create one dummy module for each physics module.
@@ -327,7 +324,7 @@ code reload new parameters or exit gracefully.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
 on any Unix system with a F90/F95 compiler. If you have \name{IDL} as
-well, you will be able to visualise the results, but other tools such as
+well, you will be able to visualize the results, but other tools such as
 \name{DX} (OpenDX, data explorer) can also be used.
 
 \bigskip
@@ -367,15 +364,15 @@ To use the code, you will need the following:
     computer)
   \end{itemize}
 
-\item The follwing are dispensible, but enhance functionality in one ore
+\item The following are dispensable, but enhance functionality in one ore
   the other way:
   \begin{itemize}
-  \item an \name{MPI} implementation (for parallelisation on
+  \item an \name{MPI} implementation (for parallelization on
     multiprocessor systems)
   \item a \name{C} compiler (for some debugging functionality)
   \item \name{DX} alias \name{OpenDX} or \name{data explorer} (for
-    visualisation of results)
-  \item \name{IDL} (for visualisation of results; the 7-minute demo
+    visualization of results)
+  \item \name{IDL} (for visualization of results; the 7-minute demo
     license will do for many applications)
   \end{itemize}
 
@@ -426,7 +423,7 @@ this is provided for by anonymous CVS access.
 \item Get the password for anonymous \name{CVS} access to the MHD code
 \footnote{Wolfgang, we should make this automatically. Ideally, a new user
 should be able to register on our web site and get a password automatically.
-This needs then to be automatically put into the cvs passwd file.}
+This needs then to be automatically put into the CVS passwd file.}
 
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
@@ -445,7 +442,7 @@ This needs then to be automatically put into the cvs passwd file.}
   \prompt{unix> } cvs login
   cvs password: ........ \
 \end{alltt}
-(you only need to do this once; your cvs password is saved in the file
+(you only need to do this once; your CVS password is saved in the file
 \file{.cvspass} in your home directory)
 
 \item Go to wherever you want the code:
@@ -498,7 +495,7 @@ To get yourself started, you should run one of several examples which are
 provided in one of the runs/sample subdirectories.
 
 You will only be able to fully assess the numerical solutions if you
-visualise them with \name{IDL}, \name{DX} or other tools (see
+visualize them with \name{IDL}, \name{DX} or other tools (see
 Sect.~\ref{S-IDLroutines}).
 
 % ---------------------------------------------------------------------- %
@@ -557,8 +554,8 @@ without magnetic fields etc.
 
 \subsection{Directory tree}
 
-% ---------------------------------------------------------------------- %
-\begin{figure}
+ % ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
   \centering
   \includegraphics%
     [width=0.9\textwidth,height=0.65\textheight,keepaspectratio]%
@@ -580,35 +577,51 @@ files and directories:
 
 Almost all of the source code is contained in the directory \file{src/},
 but in order to encapsulate individual applications, the code is compiled
-separately for each run underneath the corresponding run directories, which
-are all included in \file{runs/}.
+separately for each run in a local \file{src} directory below the
+individual run directory, like e.g.~\file{runs/gravz/vconv1/src}.
 
-General purpose auxiliary routines for \var{IDL} or \var{DX} are in the
-\file{idl} and \file{dx} directories, respectively.
-
-For each run, we tend to save the \file{*.in} and \file{src/*.local}
-files under \var{cvs}. This allows everybody to reproduce a particular
-run. When the files are changed with time, the history is also saved
-under \var{cvs}. In order to keep the run directory tidy, we put
-in \file{runs} different problem {\it classes}, e.g.\
+The directory \file{runs} contains individual run directories, grouped in
+classes (like \file{spher} for spherical calculations, or \file{kinematic}
+for kinematic dynamo simulations.
+The current list of classes is
 \begin{verbatim}
-brandenb@nl3:/home/brandenb/f90/pencil_modular> ls -csF
-total 40
-   4 gravz/         4 forced/     4 OLD/           4 README        4 old/
-   4 buoy_tube/     4 CVS/        4 kinematic/     4 1d-tests/     4 rings/
+  gravz/      forced/     OLD/      old/
+  buoy_tube/  kinematic/  1d-tests/ rings/
 \end{verbatim}
-
 The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic). 
 \file{gravz/} contains runs with vertical gravity, \file{rings/}
-contains decaying mhd problems (interlocked flux rings as initial condition, for
+contains decaying MHD problems (interlocked flux rings as initial condition, for
 example), and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
+The file \file{runs/README} will always contain an up-to-date list and
+short description of the individual classes.
 
-In all these cases the input files are usually kept at a minimum, so most
-of the quantities are already initialized by default values.
-If you want to run a particular problem, the best will be to start by
-modifying a particular example which is closest to yours.
+The subdirectory \file{src} of each run directory contains a few local
+configuration files (currently these are \file{Makefile.local} and
+\file{cparam.local} and contains all the \file{.f90} and \file{.c} files,
+together with the \file{Makefile} as links from the top \file{src}
+directory.
+
+General purpose visualization routines for \name{IDL} or \name{DX} are in the
+\file{idl} and \file{dx} directories, respectively.
+
+The directory \file{doc} contains this manual; \file{bin} a number of
+utility scripts (\name{csh} and \name{Perl}).
+The \file{CVS} directory is used (you guessed it) by \name{CVS}, and is
+not normally directly accessed by the user.
+\file{bugs}, finally is used by us for internal purposes.
+
+\bigskip
+
+The files \file{sourceme.csh} and \file{sourceme.sh} will set up some
+environment variables --- in particular \var{PATH} --- and aliases/shell
+functions for your convenience.
+If you do not want to source one of these files, you need to make sure
+your \name{IDL} path is set appropriately (provided you want to use
+\name{IDL}, that is) and you will need to address the scripts from
+\file{bin} with their explicit path name.
+
 
 % ----------------------------------------------------------------------------- %
 
@@ -618,203 +631,142 @@ modifying a particular example which is closest to yours.
 \subsubsection{Data access in pencils}
 \index{pencil design}
 
-\subsubsection{Modules}
+\vspace{5cm}
+
+
+\subsubsection{2$N$-schemes}
+\index{2N-scheme}
+
+\vspace{5cm}
+
+\subsubsection{Modularity}
 \index{modules}
 
-Each run directory has a \file{src/Makefile.local} file which tells you
-whether or not entropy, magnetic fields, hydrodynamics, density, forcing,
-or gravity are invoked. Many possible combinations have already been tested
-and examples are all checked in, but you may come up with interesting
-combinations which were never tested and may not yet work. We hope that
-the necessary modifications don't affect the other routines too much and
-that we can document them in future releases. Please let us know!
-
-\subsubsection{Localization (adapt-mkfile)}
-
-
-
-% ====================================================================== %
-
-\section{The Equations}
-
-The equations solved by the MHD code are basically the standard
-compressible MHD equations. However, the modular structure allows
-some variations of the MHD equations, as well as to switch
-some of the equations off (nomagnetic, noentropy).
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Continuity equation}
-
-\begin{equation}
-  \frac{D\ln\varrho}{Dt}
-  = - \Div\uv \; .
-\end{equation}
-
-Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
-$D/Dt \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
-derivative.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Equation of motion}
-
-\begin{equation}
-  \frac{D\uv}{Dt}
-   =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
-      - \grad\Phi
-      + \frac{\jv\times\Bv}{\varrho}
-      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv \right) \; .
-\end{equation}
-Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
-$\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
-$\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
-the magnetic flux density, and $\nu$ is kinematic viscosity.
-Note that the viscous term used here is only correct if the dynamical
-viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
-
-
-% ---------------------------------------------------------------------- %
-\subsection{Induction equation}
-
-\begin{equation}
-  \frac{\partial\Av}{\partial t}
-  = \uv\times\Bv - \eta\mu_0\jv \; .
-\end{equation}
-
-Here $\Av$ is the magnetic vector potential\index{vector potential},
-$\Bv = \curl\Av$ the magnetic
-flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
-($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
-magnetic vacuum permeability.
-
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Entropy equation}
-\index{entropy}
-
-The current thermodynamics module \file{entropy} formulates the thermal
-part of the physics in terms of \emph{entropy} $s$, rather than thermal
-energy $e$, which you may be more familiar with.
-Thus the two fundamental thermodynamical variables are $\ln\varrho$
-and $s$.
-The reason for this choice of variables is that entropy is the natural
-physical variable for (at least) convection processes: the sign of the
-entropy gradient determines convective (in)stability, the
-\emph{Rayleigh number} is proportional to the entropy gradient
-of the associated hystrostatic reference solution, etc.
-
-\begin{equation}
-  \varrho T\frac{Ds}{Dt}
-   =  \Heat - \Cool
-      + \Div(\lambda\grad T)
-      + \eta\mu_0 \jv^2
-      + 2\varrho\nu {\sf S}^2 \; .
-\end{equation}
-
-Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
-$\Heat$ and $\Cool$ are explicit heating and cooling terms,
-$\lambda$ is the thermal conductivity, and
-\begin{equation}
-  {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
-                 -\frac{1}{3} \delta_{ik}\Div\uv
-\end{equation}
-is the traceless rate of strain tensor.
-
-\bigskip
-
-Note that by setting $\gamma=1$ and initially $s=0$, one obtains an
-isothermal equation of state (albeit at some unnecessary expense of
-memory).
-Similarly, by switching of the evolution terms of entropy, one immediately
-gets polytropic behavior (if $s$ was initially constant) or generalised
-polytropic behavior
-(where $s$ is not uniform, but $\partial s/\partial t = 0$).
-
-
-% ====================================================================== %
-
-\section{Boundary conditions}
-
-
-% ====================================================================== %
-
-\section{Using the Code}
-\label{Input-params}
-
-Here's how to use the code \ldots
-
-% ---------------------------------------------------------------------- %
-
-\subsection{I/O diagnostics}
-
-The code allows various output diagnostics to be turned on and off
-(even during the run!) by just changing the contents of the file
-\file{print.in}. A simple example would be\\
-
+Each run directory has a \file{src/Makefile.local} file in which you
+choose certain \name{modules}\footnote{%
+  We stress once more that we are not talking about F90 modules here,
+  although there is some connection, as most of our modules define F90
+  modules:
+  For example each of the three modules \name{grav_z}, \name{grav_r} and
+  \name{nograv} define a Fortran module \name{Gravity}.
+}, which tell the code whether or not entropy, magnetic fields,
+hydrodynamics, density, forcing, etc.~should be invoked.
+For example, the settings for forced turbulent MHD simulations are
 \begin{verbatim}
-t(f10.3)
-u2m(1pe13.4)
-oum
-~
-~
-"print.in"
+  HYDRO=hydro
+  DENSITY=density
+  ENTROPY=noentropy
+  MAGNETIC=magnetic
+  GRAVITY=nograv
+  FORCING=forcing
+  
+  MPICOMM=nompicomm
+  GLOBAL=noglobal
+  IO=io_dist
 \end{verbatim}
-\vspace{1em}
+This file will be processed by \cmd{make} and the settings are thus
+assignments of \name{make} variables.
+Apart from the physics modules (equation of motion: yes, density
+[pressure]: yes, entropy equation: no, magnetic fields: yes, gravity: no,
+forcing: yes), a few technical modules can also be used or deactivated; in
+the example above, these are \name{MPI} (switched off), additional global
+variables (none) and input/output (there is currently only one module
+available).
+Table \ref{Tab-modules} lists all currently available modules.
 
-\noindent
-which means that the output table will contain time \file{t} in the first
-column with format \var{'(f10.3)'}, followed by the mean squared velocity,
-$\bra{\uu^2}$, \file{u2m} in the second column with format \var{'(1pe13.4)'},
-and the kinetic helicity, $\bra{\oo\cdot\uu}$,  \file{oum} in the last column
-with the default format \var{'(1pe10.2)'}.
+\begin{table}
+  \centering
+  \caption{%
+    Switchable modules as of June 2002.
+  }
+  \label{Tab-modules}
+  \begin{tabular}{lp{0.7\textwidth}}
+    \toprule
+    hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
+                     motion; \\
+    nohydro.f90    & no variable $\uv$: useful for kinematic dynamo runs. \\
+    \midrule
+    density.f90    & Add variable $\varrho$ with continuity equation \\
+    nodensity.f90  & no variable $\varrho$: useful for Burgers' equation. \\
+    \midrule
+    entropy.f90    & Add variable $s$ with entropy equation (energy
+                     equation); \\
+    noentropy.f90  & no variable $s$: isothermal hydrodynamics. \\
+    \midrule
+    magnetic.f90   & Add variable $\Av$ (magnetic vector potential) with
+                     induction equation; \\
+    nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
+    \midrule
+    \midrule
+    forcing.f90    & Add a forcing function to rhs of equation of motion
+                    (typically helical forcing) for forced turbulence
+                    calculations; \\
+    noforcing.f90  & no forcing. \\
+    \midrule
+    grav_z.f90     & Constant vertical gravity in equation of motion; \\
+    grav_r.f90     & radially symmetric gravity; \\
+    nograv.f90     & no gravity. \\
+    \midrule
+    \midrule
+    global_rr.f90  & Radius \verb|rr| as an additional global variable; \\
+    global_pot.f90 & radially symmetric gravity potential as additional
+                     global variables; \\
+    noglobal.f90   & no additional global variables. \\
+    \midrule
+    fft.f          & Singleton (1968) FFT routine: needed for magnetic
+                     potential-field boundary condition; \\
+    nofft.f90      & no FFT: no need to bother about compiler warnings if
+                     you don't need this boundary condition. \\
+    \midrule
+    io_dist.f90    & Distributed input/output: each processor writes to
+                     its own directory; currently there are no
+                     alternatives. \\
+    \midrule
+    mpicomm.f90    & Use \name{MPI} for communication on multiprocessor
+                     machines; \\
+    nompicomm.f90  & no parallelization: convenient for testing and
+                     smaller production runs on desktop or notebook
+                     computers. \\
+    \midrule
+    debug_c.c      & Use I/O routines that allow to write auxiliary
+                     variables to a file (nontrivial in a pencil code);
+                     requires C compiler to be set up correctly and maybe
+                     requires appropriate compiler flags
+                     (\code{-DFUNDERSCORE}) for correctly interfacing C
+                     with Fortran (and may still not work); \\
+    nodebug.f90    & don't use these debugging routines, avoiding any
+                     C-Fortran interoperability problems. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+% ---------------------------------------------------------------------- %
 
-In the \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
-They are written in the file \file{tmp/zaverages.dat}. At the moment we
-can also output in \file{print.in} the associated mean square value
-of the horizontal field, but this requires that in \file{zaver.in} the
-quantities \code{bxmz} and \code{bymz} are set.
+
+Note that most of these \name{make} variables \emph{must} be set, but they
+will normally obtain reasonable default values in \file{Makefile}.
+It is by using this switching mechanism through \cmd{make} that we achieve
+high flexibility without resorting to excessive amounts of cryptic
+preprocessor directives.
+ 
+Many possible combinations of modules have already been tested
+and examples are part of the distribution, but you may be interested in a
+combination which were never tested and which may not yet work, since the
+modules are not fully orthogonal.
+In all such cases, we depend on your feedback for fixing the problems
+and documenting the changes for others.
+
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Helper scripts}
-\index{Perl}
-
-% ---------------------------------------------------------------------- %
-
-\subsection{RELOAD and STOP files}
-
-The code periodically checks (exactly every \var{it} time steps)
-for the existence of two files, \file{RELOAD}
-and \file{STOP}, which can be used to trigger certain behavior.
-
-\paragraph{Reloading run parameters}
-In the run directory from where you started the code, create the file
-\file{RELOAD} with
-\begin{alltt}
-  \prompt{unix> } touch RELOAD \
-\end{alltt}
-to force the code to re-read the runtime parameters from \file{run.in}.
-This will happen the next time the code is writing monitoring output (the
-frequency of this happening is controlled by the input parameter \var{it},
-see \S\ref{start-params}).
-
-\paragraph{Stopping the code}
-In the run directory from where you started the code, create the file
-\file{STOP} with
-\begin{alltt}
-  \prompt{unix> } touch STOP \
-\end{alltt}
-to stop the code in a controlled manner (it will write the latest
-snapshot).
-Again, the action will happen the next time the code is writing monitoring
-output.
+\subsection{Localization (adapt-mkfile)}
 
 
 % ---------------------------------------------------------------------- %
 
-\subsection{IDL routines}
+\subsection{Visualization}
+
+
+\subsubsection{IDL routines}
 \label{S-IDLroutines}
 
 Basic sequence:
@@ -836,21 +788,23 @@ reassemble everything into one file, you say
 \begin{alltt}
   \prompt{IDL> }  .r rall
 \end{alltt}
-Here, \file{.r} is a shorthand for \file{.run} which \file{idl} understands.
-The procedure \file{rall} reads (and assembles) the data from all processors.
-If one wants to look at just one processor, use the routine \file{r} instead.
+Here, \cmd{.r} is a shorthand for \cmd{.run}.
+The procedure \file{rall.pro} reads (and assembles) the data from all
+processors.
+If you want to look at just one processor, use \file{r.pro} instead.
 
 If you need the magnetic field or the current density, you can calculate
-it in idl by saying
+them in IDL by saying
 \begin{alltt}
   \prompt{IDL> }  bb=curl(aa)
   \prompt{IDL> }  jj=curl2(aa)
 \end{alltt}
 
-By default the one is reading always the latest time corresponding to the file
-\file{var.dat}. If you want to read any earlier snapshots, you say (for example)
+By default one is reading always the latest time corresponding to the file
+\file{var.dat}; if you want to read any earlier snapshots, you say (for
+example)
 \begin{alltt}
-  \prompt{IDL> }  file='VAR2  ;(by the way, the second quote is not needed!)
+  \prompt{IDL> }  file='VAR2'
   \prompt{IDL> }  .r rall
   \prompt{IDL> }  print,t
 \end{alltt}
@@ -864,7 +818,112 @@ To discuss:
 \end{itemize}
 
 
+
 % ---------------------------------------------------------------------- %
+
+\subsection{Files}
+
+\subsubsection{start.in, run.in}
+
+\subsubsection{param.nml, param2.nml; param[2].pro}
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{I/O diagnostics}
+
+
+% ====================================================================== %
+
+\section{Using the Code}
+\label{Input-params}
+
+Here's how to use the code \ldots
+
+% ---------------------------------------------------------------------- %
+
+\subsection{I/O diagnostics}
+
+Every \verb|n1| time steps (\verb|n1| is a runtime parameter, see
+\S\ref{Run-params}), the code writes monitoring output to \name{stdout}
+and, parallel to this, to the file \file{tmp/n.dat}.
+The variables that appear in this listing and the output format are
+defined in the file \file{print.in} and can be changed without touching
+the code (even while the code is running).
+A simple example of \file{print.in} may look like this:
+\begin{verbatim}
+  t(f10.3)
+  u2m(1pe13.4)
+  oum
+\end{verbatim}
+which means that the output table will contain time \var{t} in the first
+column with format \verb|(f10.3)|, followed by the mean squared velocity,
+\var{u2m} (i.e.~$\left<\uv^2\right>$) in the second column with format
+\verb|(1pe13.4)|, and the kinetic helicity \var{oum}
+(that is $\left<\vec{\omega}\cdot\uv\right>$) in the last column with the
+default format \verb|(1pe10.2)|.
+
+In the file \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
+They are written in the file \file{tmp/zaverages.dat}. At the moment we
+can also output in \file{print.in} the associated mean square value
+of the horizontal field, but this requires that in \file{zaver.in} the
+quantities \code{bxmz} and \code{bymz} are set.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Helper scripts}
+\index{Scripts}
+
+\begin{description}
+  \item[adapt-mkfile]
+  \item[lnsrc]
+  \item[new]
+  \item[nl2idl]
+  \item[timestr]
+  \item[x]
+\end{description}
+
+\vspace{5cm}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{RELOAD and STOP files}
+
+The code periodically checks (exactly every \var{it} time steps)
+for the existence of two files, \file{RELOAD}
+and \file{STOP}, which can be used to trigger certain behavior.
+
+\paragraph{Reloading run parameters}
+In the directory where you started the code, create the file
+\file{RELOAD} with
+\begin{alltt}
+  \prompt{unix> } touch RELOAD \
+\end{alltt}
+to force the code to re-read the runtime parameters from \file{run.in}.
+This will happen the next time the code is writing monitoring output (the
+frequency of this happening is controlled by the input parameter \var{it},
+see \S\ref{start-params}).
+
+\paragraph{Stopping the code}
+In the directory where you started the code, create the file
+\file{STOP} with
+\begin{alltt}
+  \prompt{unix> } touch STOP \
+\end{alltt}
+to stop the code in a controlled manner (it will write the latest
+snapshot).
+Again, the action will happen the next time the code is writing monitoring
+output.
+
+
+% ---------------------------------------------------------------------- %
+
+
+In all these cases the input files are usually kept at a minimum, so most
+of the quantities are already initialized by default values.
+If you want to run a particular problem, the best will be to start by
+modifying a particular example which is closest to yours.
+
 
 \subsection{Start parameters}
 
@@ -1112,13 +1171,129 @@ Not all parameters are used for a given scenario.
       procedure: must be the same for all processors, because globally
       coherent waves of given wavenumber are used
 \item \file{tmp/density.pro}, \file{tmp/hydro.pro}, \file{tmp/entropy.pro},
-      \file{tmp/magnetic.pro} --- can be used as include file in \var{idl}
+      \file{tmp/magnetic.pro} --- can be used as include file in \name{IDL}
       and contains the column in which certain variables appear in the
       diagnostics file (\file{n.dat}). It also contains the positions of
       variables in the \file{VAR} files. These positions depend on whether
       \var{entropy} or \var{noentropy}, etc, are invoked.
+\item \file{tmp/param.nml}
 \end{itemize}
 
+
+% ====================================================================== %
+
+\section{The Equations}
+
+The equations solved by the MHD code are basically the standard
+compressible MHD equations. However, the modular structure allows
+some variations of the MHD equations, as well as to switch
+some of the equations off (nomagnetic, noentropy).
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Continuity equation}
+
+\begin{equation}
+  \frac{D\ln\varrho}{Dt}
+  = - \Div\uv \; .
+\end{equation}
+
+Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
+$D/Dt \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
+derivative.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Equation of motion}
+
+\begin{equation}
+  \frac{D\uv}{Dt}
+   =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
+      - \grad\Phi
+      + \frac{\jv\times\Bv}{\varrho}
+      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv \right) \; .
+\end{equation}
+Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
+$\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
+$\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
+the magnetic flux density, and $\nu$ is kinematic viscosity.
+Note that the viscous term used here is only correct if the dynamical
+viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
+
+
+% ---------------------------------------------------------------------- %
+\subsection{Induction equation}
+
+\begin{equation}
+  \frac{\partial\Av}{\partial t}
+  = \uv\times\Bv - \eta\mu_0\jv \; .
+\end{equation}
+
+Here $\Av$ is the magnetic vector potential\index{vector potential},
+$\Bv = \curl\Av$ the magnetic
+flux density, $\eta = 1/(\mu_0\sigma)$ is the magnetic diffusivity
+($\sigma$ denoting the electrical conductivity), and $\mu_0$ the
+magnetic vacuum permeability.
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Entropy equation}
+\index{entropy}
+
+The current thermodynamics module \file{entropy} formulates the thermal
+part of the physics in terms of \emph{entropy} $s$, rather than thermal
+energy $e$, which you may be more familiar with.
+Thus the two fundamental thermodynamical variables are $\ln\varrho$
+and $s$.
+The reason for this choice of variables is that entropy is the natural
+physical variable for (at least) convection processes: the sign of the
+entropy gradient determines convective (in)stability, the
+\emph{Rayleigh number} is proportional to the entropy gradient
+of the associated hystrostatic reference solution, etc.
+The equation solved is
+\begin{equation}
+  \varrho T\frac{Ds}{Dt}
+   =  \Heat - \Cool
+      + \Div(\lambda\grad T)
+      + \eta\mu_0 \jv^2
+      + 2\varrho\nu {\sf S}^2 \; .
+\end{equation}
+
+Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
+$\Heat$ and $\Cool$ are explicit heating and cooling terms,
+$\lambda$ is the thermal conductivity, and
+\begin{equation}
+  {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
+                 -\frac{1}{3} \delta_{ik}\Div\uv
+\end{equation}
+is the traceless rate of strain tensor.
+
+\bigskip
+
+Note that by setting $\gamma=1$ and initially $s=0$, one obtains an
+isothermal equation of state (albeit at some unnecessary expense of
+memory).
+Similarly, by switching off the evolution terms of entropy, one immediately
+gets polytropic behavior (if $s$ was initially constant) or generalized
+polytropic behavior
+(where $s$ is not uniform, but $\partial s/\partial t = 0$).
+
+A better way to achieve isothermality is to use the \name{noentropy}
+module.
+
+
+% ====================================================================== %
+
+\section{Boundary conditions}
+
+\begin{description}
+\item[a]
+\item[s]
+\item[a2]
+\item[c1]
+\item[c2]
+\end{description}
 
 % ====================================================================== %
 
@@ -1126,10 +1301,11 @@ Not all parameters are used for a given scenario.
 
 \subsection{Random magnetic fields: \var{initaa=0}}
 
-The $\Av$-vector is set to a random variable with gaussian statistics
-at all meshpoints and for all three components. The power spectrum of
+The $\Av$-vector is set to normally distributed, uncorrelated(?) random
+numbers in all meshpoints for all three components.
+The power spectrum of
 $\Av$ increases then quadratically with wavenumber $k$ (without cutoff)
-and the powerspectrum of $\Bv$ increases like $k^4$.
+and the power spectrum of $\Bv$ increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
@@ -1205,7 +1381,7 @@ takes the form
 
 % ====================================================================== %
 
-\section{How to put new things into the code}
+\section{Adapting the code}
 
 In some cases, the best will be
 to write a new module that takes care of everything.
@@ -1274,7 +1450,7 @@ Example: passive scalar.
       }
     \label{Ttimescale}
     \begin{small}
-      \begin{tabular}{lccccccc}
+      \begin{tabular}{rllrlrl}
 proc(s)& machine          &  $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}
                              \rule[-2.8ex]{0pt}{5pt}$
                                  & resol.\ & what         & Size/proc
@@ -1416,7 +1592,7 @@ Reading param.nml..
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.36 2002-06-26 07:31:11 dobler Exp $ $}
+$ $Id: manual.tex,v 1.37 2002-06-26 21:32:44 dobler Exp $ $}
 
 
 \end{document}
@@ -1427,4 +1603,18 @@ $ $Id: manual.tex,v 1.36 2002-06-26 07:31:11 dobler Exp $ $}
 %% ispell-check-comments: t
 %% Local IspellDict: american
 %% End:
-% LocalWords:  SPH CVS
+% LocalWords:  SPH CVS tex wd MHD makeindex pdflatex MPI Dobler nonperiodic src
+% LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
+% LocalWords:  tarball unix somwhere cd gunzip xf mhd passwd CVSROOT cshrc sh
+% LocalWords:  setenv cvs cvspass code's dP sourceme lnsrc mkdir tmp tmp struct
+% LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
+% LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
+% LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
+% LocalWords:  interoperability rall bb aa jj Pvwave param nml param nml param
+% LocalWords:  stdout oum zaver bxmz bymz nl timestr lp ip ip iper iperx ztop
+% LocalWords:  hcond whcond mpoly isothtop ampl init urand cs nt dt cdt CFL bc
+% LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
+% LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho Fheat tvid
+% LocalWords:  wcool iforce relhel tsnap hystrostatic isothermality initaa jbm
+% LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
+% LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp
