@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.185 2003-12-12 08:04:38 nilshau Exp $
+! $Id: equ.f90,v 1.186 2003-12-29 17:12:52 ajohan Exp $
 
 module Equ
 
@@ -222,10 +222,11 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij
-      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
-      real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
+      real, dimension (nx,3) :: uu,glnrho,bb,gshock
+      real, dimension (nx,3,size(mg)) :: uud,gnd
+      real, dimension (nx,size(mg)) :: divud,ud2
+      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
       real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
-      integer :: idust
 !
 !  print statements when they are first executed
 !
@@ -233,7 +234,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.185 2003-12-12 08:04:38 nilshau Exp $")
+           "$Id: equ.f90,v 1.186 2003-12-29 17:12:52 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -339,8 +340,8 @@ module Equ
 !
 !  dust equations
 !
-        call duud_dt   (f,df,uu,uud,divud,ud2,udij)
-        call dlnrhod_dt(f,df,uud,glnrhod,divud,lnrhod)
+        call duud_dt  (f,df,uu,rho1,uud,divud,ud2,udij)
+        call dnd_dt   (f,df,uu,uud,divud,gnd)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
