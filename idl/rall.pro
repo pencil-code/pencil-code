@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.29 2003-06-19 22:36:16 mee Exp $
+;;;  $Id: rall.pro,v 1.30 2003-06-23 13:53:51 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -13,11 +13,6 @@
 ;;;   Overwrites nx, ny, etc, from start.pro, thus you need to run
 ;;;   start.pro after this if you want to continue working on data
 ;;;   from individual processors (e.g. if you want to run r.pro).
-
-function param2
-; Dummy to keep IDL from complaining. The real param() routine will be
-; compiled below
-end
 
 ;
 ;  need to run start first: check whether this has been done
@@ -162,13 +157,16 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   y[i0y:i1y] = yloc[i0yloc:i1yloc]
   z[i0z:i1z] = zloc[i0zloc:i1zloc]
 
-for i=1,totalvars do begin
-  if (execute(varcontent[i].idlvar+"[i0x:i1x,i0y:i1y,i0z:i1z,*]="  $
-               + varcontent[i].idlvarloc+"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"$
-             ,1) ne 1) then $
-    message, 'Error combining data for ' + varcontent[i].variable         
-  i=i+varcontent[i].skip
-end
+  for iv=1,totalvars do begin
+    cmd =   varcontent[iv].idlvar $
+          + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $
+          + varcontent[iv].idlvarloc $
+          +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"         
+    if (execute(cmd) ne 1) then $
+        message, 'Error combining data for ' + varcontent[iv].variable         
+  ; For vector quantities skip the required number of elements
+    iv=iv+varcontent[iv].skip
+  endfor
 
 endfor
 print

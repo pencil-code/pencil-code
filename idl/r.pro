@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.50 2003-06-19 22:36:16 mee Exp $
+; $Id: r.pro,v 1.51 2003-06-23 13:53:51 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,12 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.50 2003-06-19 22:36:16 mee Exp $
-
-function param2
-; Dummy to keep IDL from complaining. The real param() routine will be
-; compiled below
-end
+;;; $Id: r.pro,v 1.51 2003-06-23 13:53:51 dobler Exp $
 
 ;
 ;  read data
@@ -38,18 +33,19 @@ default, varfile, 'var.dat'
 ; Prepare for read
 res=''
 content=''
-for i=1,totalvars do begin
-  res     = res + ',' + varcontent[i].idlvar
-  content = content + ', ' + varcontent[i].variable
+for iv=1,totalvars do begin
+  res     = res + ',' + varcontent[iv].idlvar
+  content = content + ', ' + varcontent[iv].variable
   ; Initialise variable
-  if (varcontent[i].variable eq 'UNKNOWN') then $
-           message, 'Unknown variable at position ' + str(i)  $
-                                    + ' needs declaring in varcontent.pro', /INFO   
-  if (execute(varcontent[i].idlvar+'='+varcontent[i].idlinit,0) ne 1) then $
-           message, 'Error initialising ' + varcontent[i].variable $
-                                    +' - '+ varcontent[i].idlvar, /INFO
-;If it's a vector quantity skip the required number of elements
-  i=i+varcontent[i].skip
+  if (varcontent[iv].variable eq 'UNKNOWN') then $
+           message, 'Unknown variable at position ' + str(iv)  $
+                    + ' needs declaring in varcontent.pro', /INFO   
+  cmd = varcontent[iv].idlvar + '='+varcontent[iv].idlinit
+  if (execute(cmd) ne 1) then $
+      message, 'Error initialising ' + varcontent[iv].variable $
+                                     +' - '+ varcontent[iv].idlvar, /INFO
+  ; For vector quantities skip the required number of elements
+  iv=iv+varcontent[iv].skip
 end
 
 dummy=0.
