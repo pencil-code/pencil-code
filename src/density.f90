@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.87 2003-06-05 17:31:28 ajohan Exp $
+! $Id: density.f90,v 1.88 2003-06-09 12:08:11 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -17,7 +17,7 @@ module Density
   real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
-  real :: b_ell=1., q_ell=5., hh0=0.
+  real :: b_ell=1., q_ell=5., hh0=0., rbound=1.
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
@@ -28,7 +28,7 @@ module Density
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
        rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
        initlnrho2,radius_lnrho,eps_planet, &
-       b_ell,q_ell,hh0, &
+       b_ell,q_ell,hh0,rbound, &
        mpoly, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho
 
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.87 2003-06-05 17:31:28 ajohan Exp $")
+           "$Id: density.f90,v 1.88 2003-06-09 12:08:11 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -296,7 +296,7 @@ module Density
         !
         !  planet solution of Goodman, Narayan & Goldreich (1987)
         !
-        call planet(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma,cs20,widthlnrho,hh0)
+        call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho,gamma,cs20,widthlnrho,hh0)
 
       case('kepvor')
         !
