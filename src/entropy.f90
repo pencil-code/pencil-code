@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.282 2004-03-14 16:07:25 mee Exp $
+! $Id: entropy.f90,v 1.283 2004-03-15 05:32:42 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.282 2004-03-14 16:07:25 mee Exp $")
+           "$Id: entropy.f90,v 1.283 2004-03-15 05:32:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -825,7 +825,7 @@ module Entropy
           call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1tilde)
           call pressure_gradient(lnrho(nx),ss(nx),cs2top,cp1tilde)
 !
-          f(l1:l2,m,n,iss)=(n_c+n_w+n_i+n_h)
+          f(l1:l2,m,n,iss)=ss
 !        
           fmpi1=(/ cs2bot /)
           call mpibcast_real_nonroot(fmpi1,1,0)

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.175 2004-02-26 14:10:27 brandenb Exp $
+! $Id: magnetic.f90,v 1.176 2004-03-15 05:32:42 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -36,6 +36,7 @@ module Magnetic
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
   real :: eta_shock=0.
   real :: rhomin_JxB=0.,va2max_JxB=0.
+  real :: omega_Bz_ext
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false.
   ! dgm: for hyper diffusion in any spatial variation of eta
@@ -52,13 +53,13 @@ module Magnetic
        kx_aa2,ky_aa2,kz_aa2,lpress_equil
 
   ! run parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension(3) :: B_ext=(/0.,0.,0./),BB_ext
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,alpha_effect, &
+       eta,B_ext,omega_Bz_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
@@ -115,7 +116,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.175 2004-02-26 14:10:27 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.176 2004-03-15 05:32:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -670,29 +671,53 @@ module Magnetic
 !***********************************************************************
     subroutine calculate_vars_magnetic(f,bb)
 !
-!   Calculation of bb
+!  Calculation of bb
 !
-!   06-feb-04/bing: coded
-!      
+!  06-feb-04/bing: coded
+!  14-mar-04/axel: allow external magnetic field to precess about z-axis
+!
       use Cdata
       use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
       real, dimension (nx,3) :: bb
+      real :: B2_ext,c,s
       
       intent(in)  :: f
       intent(out) :: bb
       
       call curl(f,iaa,bb)
 !
-!  possibility to add external field
 !  Note; for diagnostics purposes keep copy of original field
 !
-       if (ldiagnos) bbb=bb
-       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
-       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
-       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
-       if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
+      if (ldiagnos) bbb=bb
+!
+!  possibility to add external field
+!
+      B2_ext=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+!
+!  allow external field to precess about z-axis
+!  with frequency omega_Bz_ext
+!
+      if (B2_ext/=0.) then
+        if (omega_Bz_ext==0.) then
+          BB_ext=B_ext
+        elseif (omega_Bz_ext/=0.) then
+          c=cos(omega_Bz_ext*t)
+          s=sin(omega_Bz_ext*t)
+          BB_ext(1)=B_ext(1)*c-B_ext(2)*s
+          BB_ext(2)=B_ext(1)*s+B_ext(2)*c
+          BB_ext(3)=B_ext(3)
+        endif
+!
+!  add the external field
+!
+        if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+BB_ext(1)
+        if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+BB_ext(2)
+        if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+BB_ext(3)
+        if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
+        if (headtt) print*,'calculate_vars_magnetic: BB_ext=',BB_ext
+      endif
 
     endsubroutine calculate_vars_magnetic
 !***********************************************************************
