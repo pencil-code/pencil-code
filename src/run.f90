@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.177 2004-04-10 17:04:27 mee Exp $
+! $Id: run.f90,v 1.178 2004-04-10 19:12:20 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.177 2004-04-10 17:04:27 mee Exp $")
+             "$Id: run.f90,v 1.178 2004-04-10 19:12:20 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -201,7 +201,7 @@
               ! Re-read configuration
               dt=0.
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
-              call rprint_list(.true.) !(Re-read output list)
+              call rprint_list(LRESET=.true.) !(Re-read output list)
               call initialize_modules(f,lstarting=.false.)
               call wparam2()
               if (lroot) call remove_file("RELOAD")
