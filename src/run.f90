@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.134 2003-06-10 19:25:32 mee Exp $
+! $Id: run.f90,v 1.135 2003-06-10 19:54:29 mee Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.134 2003-06-10 19:25:32 mee Exp $")
+             "$Id: run.f90,v 1.135 2003-06-10 19:54:29 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -235,7 +235,7 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          call wsnap(trim(directory_snap)//'/VAR',f,mvar+maux,.true.)
+          call wsnap(trim(directory_snap)//'/VAR',f,mvar,.true.)
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',.true.)
           !
           !  Write slices (for animation purposes)
@@ -247,7 +247,7 @@
           !
           if (isave /= 0) then
             if (mod(it,isave)==0) then
-              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
+              call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',.false.)
               call wtime(trim(directory)//'/time.dat',t)
             endif
@@ -275,9 +275,9 @@
 !  dvar is written for analysis purposes only
 !
         if(save_lastsnap) then
-          call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
           call wtime(trim(directory)//'/time.dat',t)
-          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar,.false.)
+          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar+maux,.false.)
         endif
 !
 !  save spectrum snapshot
