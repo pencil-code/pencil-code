@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.99 2002-09-20 07:06:25 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.100 2002-09-20 18:03:43 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -291,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.99 $ $}
+\date{\today,~ $ $Revision: 1.100 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.99 $ $}
+  \emph{\today,~ $ $Revision: 1.100 $ $}
 
   \vspace{\stretch{3}}
 
@@ -582,17 +582,15 @@ continue to use it.\footnote{In that case you'd say
 assuming that \cmd{\$USER} is the userid registered in the original
 repository. The content of this repository is copied automatically every
 hour to the anonymous cvs repository.}
-%XX
 
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
   \begin{alltt}
-  \prompt{csh> } setenv CVSROOT \bs
-          :pserver:anonymous@norserv.nordita.dk:/home/cvs/CVS \
+  \prompt{csh> } setenv CVSROOT :pserver:anonymous@norserv.nordita.dk:/home/cvs/public \
   \end{alltt}
   or (if you are running Bourne shell or bash)
   \begin{alltt}
-  \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/cvs/CVS
+  \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/cvs/public
   \prompt{sh> } export CVSROOT \
   \end{alltt}
 
@@ -3323,16 +3321,30 @@ to approach the Boussinesq case.
 
 \subsubsection{Entropy boundary condition}
 
-Bottom b.c.\ $F_{\rm bot}=-K\dd T/\dd z$,
+This discussion only applies to the case of convection in a slab.
+A commonly used lower boundary condition is to prescribe the
+radiative flux at the bottom, i.e.\ $F_{\rm bot}=-K\dd T/\dd z$.
+Assuming that the density in the ghost zones has already been
+updated, we can calculate the entropy gradient from
 \begin{equation}\label{Fbot}
 F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
-(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s\over\dd z}\right)
+(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s\over\dd z}\right),
 \end{equation}
-or
+which gives
 \begin{equation}\label{Fbot2}
 {\dd s\over\dd z}=-{\gamma-1\over\gamma}\left(
-{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
+{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right).
 \end{equation}
+
+\subsubsection{Temperature boundary condition at the top}
+
+In earlier papers the temperature at the top was set in terms of the
+quantity $\xi_0$, which is the ratio of the pressure scale height relative
+to the depth of the unstable layer. Expressed in terms of the sound speed
+at the top we have
+\EQ
+c_{\rm s,top}^2=\gamma\xi_0 gd.
+\EN
 
 % ---------------------------------------------------------------------- %
 
@@ -3484,7 +3496,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.99 2002-09-20 07:06:25 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.100 2002-09-20 18:03:43 brandenb Exp $ $}
 
 
 \end{document}
