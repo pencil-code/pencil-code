@@ -1,7 +1,7 @@
 PRO power,var1,var2,last,w,k=k,spec1=spec1,spec2=spec2,i=i,tt=tt, $
   noplot=noplot,tmin=tmin,tmax=tmax,tot=tot,lin=lin
 ;
-;  $Id: power.pro,v 1.16 2002-12-08 12:39:45 nilshau Exp $
+;  $Id: power.pro,v 1.17 2003-03-05 09:32:18 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -31,7 +31,7 @@ if keyword_set(noplot) then iplot=0 else iplot=1
 file1='power'+var1+'.dat'
 file2='power'+var2+'.dat'
 ;
-!p.multi=[0,1,1]
+;!p.multi=[0,1,1]
 !p.charsize=2
 
 mx=0L & my=0L & mz=0L & nvar=0L
