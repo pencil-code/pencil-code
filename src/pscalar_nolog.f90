@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.34 2004-07-03 02:13:14 theine Exp $
+! $Id: pscalar_nolog.f90,v 1.35 2004-07-24 07:47:14 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.34 2004-07-03 02:13:14 theine Exp $")
+           "$Id: pscalar_nolog.f90,v 1.35 2004-07-24 07:47:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -311,8 +311,8 @@ module Pscalar
 !  For the timestep calculation, need maximum diffusion
 !
         if (lfirst.and.ldt) then
-          diffus_pscl=max(diffus_pscl,pscalar_diff*dxyz_2)
-          diffus_pscl=max(diffus_pscl,tensor_pscalar_diff*dxyz_2)
+          diffus_pscalar=max(diffus_pscalar,pscalar_diff*dxyz_2)
+          diffus_pscalar=max(diffus_pscalar,tensor_pscalar_diff*dxyz_2)
         endif
 !
       endif

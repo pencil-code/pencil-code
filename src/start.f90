@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.137 2004-07-22 09:52:39 ajohan Exp $
+! $Id: start.f90,v 1.138 2004-07-24 07:47:14 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.137 2004-07-22 09:52:39 ajohan Exp $")
+             "$Id: start.f90,v 1.138 2004-07-24 07:47:14 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -174,15 +174,35 @@
         if(lread_oldsnap) then
           print*,'read old snapshot file'
           call input(trim(directory_snap)//'/var.dat',f,mvar,1)
+!
+!  read non-magnetic snapshot into an MHD run
+!
         elseif(lread_oldsnap_nomag) then
           print*,'read old snapshot file (but without magnetic field)'
           call input(trim(directory_snap)//'/var.dat',f,mvar-3,1)
+          ! shift the rest of the data
           if (iaz<mvar) then
             do i=iaz+1,mvar
               f(:,:,:,i)=f(:,:,:,i-3)
             enddo
             f(:,:,:,iax:iaz)=0.
           endif
+!
+!  read data without passive scalar into new run with passive scalar
+!
+        elseif(lread_oldsnap_nopscalar) then
+          print*,'read old snapshot file (but without passive scalar)'
+          call input(trim(directory_snap)//'/var.dat',f,mvar-1,1)
+          ! shift the rest of the data
+          if (iaz<mvar) then
+            do i=ilncc+1,mvar
+              f(:,:,:,i)=f(:,:,:,i-1)
+            enddo
+            f(:,:,:,ilncc)=0.
+          endif
+!
+!  default: everything zero
+!
         else
           f = 0.
         endif

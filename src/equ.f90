@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.221 2004-07-20 14:54:36 nilshau Exp $
+! $Id: equ.f90,v 1.222 2004-07-24 07:47:14 brandenb Exp $
 
 module Equ
 
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.221 2004-07-20 14:54:36 nilshau Exp $")
+           "$Id: equ.f90,v 1.222 2004-07-24 07:47:14 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -358,6 +358,7 @@ module Equ
 !  
         advec_uu=0.; advec_shear=0.; advec_hall=0.
         advec_cs2=0.; advec_va2=0.; advec_uud=0;
+        diffus_pscalar=0.
         diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
         diffus_eta=0.; diffus_nu=0.; diffus_chi=0.; diffus_nud=0.
 !
@@ -471,7 +472,7 @@ module Equ
           !
           maxadvec=advec_uu+advec_shear+advec_hall+sqrt(advec_cs2+advec_va2)
           maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
-                        diffus_cr,diffus_nud,diffus_chiral)
+                        diffus_pscalar,diffus_cr,diffus_nud,diffus_chiral)
           dt1_advec=maxadvec/cdt
           dt1_diffus=maxdiffus/cdtv
 

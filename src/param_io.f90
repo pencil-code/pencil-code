@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.187 2004-07-08 12:01:47 ajohan Exp $ 
+! $Id: param_io.f90,v 1.188 2004-07-24 07:47:14 brandenb Exp $ 
 
 module Param_IO
 
@@ -48,6 +48,7 @@ module Param_IO
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lread_oldsnap=.false.,lread_oldsnap_nomag=.false.
+  logical :: lread_oldsnap_nopscalar=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
@@ -60,7 +61,8 @@ module Param_IO
        lequidist,coeff_grid,zeta_grid0,grid_func,xyz_star, &
        lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
-       random_gen,nfilter,lserial_io,lread_oldsnap,lread_oldsnap_nomag, &
+       random_gen,nfilter,lserial_io, &
+       lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,lcalc_cp,pretend_lnTT, &
        lprocz_slowest, &
        bcx,bcy,bcz,r_int,r_ext,r_ref,mu0,force_lower_bound
