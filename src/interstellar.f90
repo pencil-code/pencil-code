@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.82 2004-03-15 05:32:42 brandenb Exp $
+! $Id: interstellar.f90,v 1.83 2004-03-17 11:44:38 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -54,9 +54,10 @@ module Interstellar
   real :: TT_SN_min_cgs=1.e7
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-52
   double precision, parameter :: solar_mass_cgs=1.989e33
-  real, parameter :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
+  real, parameter :: h_SNI_cgs=1.00295e21,h_SNII_cgs=2.7774e20
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
-  double precision, parameter :: ampl_SN_cgs=10D51
+  double precision, parameter :: ampl_SN_cgs=1D51
+  real :: r_SNI_yrkpc2=4.e-6, r_SNII_yrkpc2=3.e-5
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
@@ -92,6 +93,7 @@ module Interstellar
   real :: outer_shell_proportion = 2.
   real :: inner_shell_proportion = 1.5
   real :: coolingfunction_scalefactor=1.
+  real :: heatingfunction_scalefactor=1.
   logical :: lnever_move_mass
 !tony: disable SNII for debugging 
   logical :: lSNI=.true., lSNII=.false.
@@ -101,6 +103,7 @@ module Interstellar
   logical :: lSN_eth=.true., lSN_ecr=.true.
   real :: r_SNI=3.e+4, r_SNII=4.e+3
   real :: frac_ecr=0.1, frac_eth=0.9
+  real :: average_SNI_heating=0., average_SNII_heating=0.
 
   real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
 
@@ -112,7 +115,7 @@ module Interstellar
   namelist /interstellar_run_pars/ &
       ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, lnever_move_mass, &
-      lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
+      lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, heatingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
@@ -143,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.82 2004-03-15 05:32:42 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.83 2004-03-17 11:44:38 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,6 +174,8 @@ module Interstellar
       logical :: lstarting
       logical :: exist
       real :: mu,factor_mysterious
+      real, parameter :: yr_cgs = 31556922.5
+      double precision, parameter :: kpc_cgs=3.086d+21         ! [cm]
 
       if (first) then
          if (.not. lstarting) then
@@ -205,19 +210,16 @@ module Interstellar
          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 !
-!  Calculate unit_Lambda; the following gives the same as
-!  unit_Lambda =  unit_velocity**3 / (unit_density*unit_length)
 !
       call getmu(mu) 
       if (unit_system=='cgs') then
-        unit_Lambda = unit_energy * unit_velocity**3 * unit_time**2 * &
-                       mu**2 * m_H**2
-!unit_energy / (unit_density*unit_time*unit_mass)
+
+        unit_Lambda = unit_energy * unit_length**3 / unit_time 
       elseif (unit_system=='SI') then
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
-      coolH = coolH_cgs / unit_Lambda * coolingfunction_scalefactor
+      coolH = coolH_cgs / unit_Lambda * (unit_temperature**coolB) / (mu*m_H)**2 * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
 
       if (unit_system=='cgs') then
@@ -228,12 +230,15 @@ module Interstellar
         solar_mass=solar_mass_cgs / unit_mass
         rho_crit=rho_crit_cgs / unit_density
         TT_crit=TT_crit_cgs / unit_temperature
+        r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
+        r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy 
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
-
       t_interval_SNI = SNI_area_rate * Lxyz(1) * Lxyz(2)
+      average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
+      average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
 
 
       if (lroot.and.ip<14) then
@@ -307,8 +312,9 @@ module Interstellar
       cool=0.0
       do i=1,5
         where (coolT(i) <= TT .and. TT < coolT(i+1)) &
-          cool=cool+yH*coolH(i)*rho**2*(TT*unit_temperature)**coolB(i)
+               cool=cool+coolH(i)*rho**2*TT**coolB(i)
       enddo
+!print*,'min,max interstellar heating: ',minval(cool),maxval(cool)
 !
 !  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
 !  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
@@ -325,9 +331,8 @@ module Interstellar
 !  The amplitudes of both types is assumed the same (=ampl_SN)
 !
       if (laverage_SN_heating) then
-        norm=ampl_SN/sqrt(2*pi)
-        heat=heat+r_SNI *norm/h_SNI *exp(-(z(n)/h_SNI )**2)
-        heat=heat+r_SNII*norm/h_SNII*exp(-(z(n)/h_SNII)**2)
+        heat=heat+average_SNI_heating *exp(-(z(n)/h_SNI )**2)
+        heat=heat+average_SNII_heating*exp(-(z(n)/h_SNII)**2)
       endif
 !
 !  For clarity we have constructed the rhs in erg/s/volume [=rho*T*Ds/Dt]
@@ -752,7 +757,8 @@ find_SN: do n=n1,n2
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
-      real :: EE_SN=0.,EE2_SN=0.
+      real :: EE_SN=0.
+!,EE2_SN=0.
       real :: rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,ee_SN_new,TT_SN_new,dv
       
       real, dimension(nx) :: deltarho, deltaEE
@@ -770,6 +776,10 @@ find_SN: do n=n1,n2
       !
       width_SN=point_width*dxmin      
       idim=0                         !allow for 1-d, 2-d and 3-d profiles...
+      !
+      !  check whether idim can be replaced by dimensionality
+      !  that is calculated during initialize
+      !
       if (nxgrid /=1) idim=idim+1
       if (nygrid /=1) idim=idim+1
       if (nzgrid /=1) idim=idim+1
@@ -779,7 +789,7 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
+      if (lroot.and.ip<=40) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
         
       !
       !  Now deal with (if nec.) mass relocation
@@ -793,7 +803,7 @@ find_SN: do n=n1,n2
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
-      if(lroot.and.ip<=14) print*, &
+      if(lroot.and.ip<=40) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
                                 TT_SN,TT_SN_new,TT_SN_min, ee_SN
 
@@ -814,7 +824,7 @@ find_SN: do n=n1,n2
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
-           if(lroot.and.ip<=14) print*, &
+           if(lroot.and.ip<=40) print*, &
               'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
@@ -824,14 +834,15 @@ find_SN: do n=n1,n2
            call mpibcast_real(fmpi1,1)
            profile_integral=fmpi1(1)*dv
            mass_shell=-(rho_SN_new-rho_SN)*profile_integral
-           if (lroot.and.ip<=14) &
+           if (lroot.and.ip<=40) &
              print*, 'explode_SN: mass_shell=',mass_shell
            mass_gain=0.
          endif
       endif
       
 
-      EE_SN=0. ! EE_SN2=0.
+      EE_SN=0. 
+      !EE_SN2=0.
       do n=n1,n2
          do m=m1,m2
             
@@ -879,19 +890,20 @@ find_SN: do n=n1,n2
 
       ! Sum and share diagnostics etc. amongst processors
       fmpi2_tmp=(/ mass_gain, EE_SN /)
-      call mpireduce_sum(fmpi2_tmp,fmpi2,4) 
-      call mpibcast_real(fmpi2,4)
+      call mpireduce_sum(fmpi2_tmp,fmpi2,2) 
+      call mpibcast_real(fmpi2,2)
       mass_gain=fmpi2(1)*dv
       EE_SN=fmpi2(2)*dv
 ! Extra debug - no longer calculated 
-!      EE2_SN=fmpi3(3)*dv; 
+!      EE2_SN=fmpi2(3)*dv; 
+!print*,'EE2_SN = ',EE2_SN
 
       if (lroot.and.ip<=14) print*, &
            'explode_SN: mass_gain=',mass_gain
      
       if (lroot) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-         write(1,'(1i6,1e11.3,2i10,"    ",5e15.7,3i5)')  &
+         write(1,'(1i6,1p,1e11.3,0p,2i10,"    ",1p,5e15.7,0p,3i5)')  &
                           it,t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,l_SN,m_SN,n_SN
          close(1)
       endif
