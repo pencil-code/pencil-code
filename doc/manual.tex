@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.259 2004-07-12 13:16:03 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.260 2004-07-13 11:54:40 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -104,7 +104,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage{hyperref}
+\usepackage[dvipdfm]{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-07-12 13:16:03 $ $,~ $ $Revision: 1.259 $ $}
+%\date{$ $Date: 2004-07-13 11:54:40 $ $,~ $ $Revision: 1.260 $ $}
 
 % ====================================================================== %
 
@@ -399,13 +399,13 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{2}}
 
-  \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/}
-  \&
-  \htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/}
+  %\htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/}
+  %\&
+  %\htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-07-12 13:16:03 $ $,~ $ $Revision: 1.259 $ $}\\
+  \emph{$ $Date: 2004-07-13 11:54:40 $ $,~ $ $Revision: 1.260 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -418,10 +418,44 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
 \newpage
 \mbox{}
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.99\textwidth,keepaspectratio]%
+    {cvsstat}
+  \caption{Check-in patterns as a function of time for different
+  subroutines. The different users are marked by different symbols
+  and different colors.
+  }
+  \label{cvsstat}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
+\newpage
+
+Contributors to the code (in inverse alphabetical order according to
+their user name):\\
+
+  vpar\hfill\htmladdnormallink{Vladimir Pariev}{http://www.mas.ncl.ac.uk/~}\\
+  mcmi\hfill\htmladdnormallink{David McMillan}{http://www.mas.ncl.ac.uk/~}\\
+  ngrs\hfill\htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~}\\
+  snod\hfill\htmladdnormallink{Andrew Snodin}{http://www.mas.ncl.ac.uk/~}\\
+  tare\hfill\htmladdnormallink{Tarek A. Yousef}{http://www.mas.ncl.ac.uk/~}\\
+  nils\hfill\htmladdnormallink{Nils Erland L. Haugen}{http://www.mas.ncl.ac.uk/~}\\
+  thei\hfill\htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.mas.ncl.ac.uk/~}\\
+  pkap\hfill\htmladdnormallink{Petri K\"apyl\"a}{http://www.mas.ncl.ac.uk/~}\\
+  matt\hfill\htmladdnormallink{Mattias Christensson}{http://www.mas.ncl.ac.uk/~}\\
+  mee \hfill\htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~}\\
+  dobl\hfill\htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/}\\
+  amje\hfill\htmladdnormallink{Amjed Mohammed}{http://www.mas.ncl.ac.uk/~}\\
+  ajoh\hfill\htmladdnormallink{Anders Johansen}{http://www.mas.ncl.ac.uk/~}\\
+  bran\hfill\htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/}\\
+
 \vfill
 
-Copyright \copyright{} 2001,2002 Wolfgang Dobler \& Axel Brandenburg
-\bigskip
+%Copyright \copyright{} 2001,2002 Wolfgang Dobler \& Axel Brandenburg
+%\bigskip
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -584,7 +618,7 @@ He also added and/or improved shock diffusion for other variables
 and improved the resulting timestep control.
 Anders Johansen and Anja Andersen contributed to the implementation of
 the dust equations (which now comprises an array of different components).
-Anthony (Tony) Mee (University of Newcastle) implemented shock viscosity
+Antony (Tony) Mee (University of Newcastle) implemented shock viscosity
 and added the interstellar module together with
 Graeme R.\ Sarson (also University of Newcastle), who also implemented
 the geodynamo set-up together with David McMillan
@@ -3739,6 +3773,29 @@ Typical values of $C_{\rm mesh}$ are around 3.
 }
 
 %%%
+\subsubsection[Segmentation fault with \name{ifort} 8.0 under Linux]%
+              {I keep getting segmentation faults with \file{start.x} when
+                compiling with \name{ifort} 8.0}
+
+\medskip
+
+{\em
+  There was/is a number of issues with \name{ifort} 8.0.
+  Make sure you have tha latest patches apllied to the compiler.
+  A number of things to consider or try are:
+  \begin{enumerate}
+  \item Compile with the the \option[-nothreads]{-static -nothreads} flags.
+  \item Set your stacksize to a large value (but a far too large value may
+    be problematic, too).
+  \item Set the environment variable KMP_STACKSIZE to a large value (like
+    \code{100M})
+  \end{enumerate}
+
+See also \url{http://softwareforums.intel.com/ids/board/message?board.id=11&message.id=1375}
+
+}
+
+%%%
 \subsubsection[The underscore problem: linking with \name{MPI}]%
               {When compiling with MPI on a Linux system, the linker
                complains:}
@@ -4439,7 +4496,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-07-12 13:16:03 $ $,~ $ $Revision: 1.259 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-07-13 11:54:40 $ $,~ $ $Revision: 1.260 $ $}
 
 \section{Timings}
 
@@ -7424,7 +7481,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.259 2004-07-12 13:16:03 dobler Exp $ $}
+$ $Id: manual.tex,v 1.260 2004-07-13 11:54:40 dobler Exp $ $}
 
 
 \end{document}
