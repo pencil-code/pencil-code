@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.18 2004-03-31 06:35:07 ajohan Exp $
+;  $Id: thermodynamics.pro,v 1.19 2004-05-06 10:35:55 ajohan Exp $
 
 if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
@@ -17,12 +17,13 @@ endif else begin
     print,'Using fixed ionisation equation of state...'
     yH0=par.yH0
     xH2=par.xH2
+    nabla_ad=(gamma-1.)/gamma
     yyH=reform(spread(spread(spread(yH0,0,nx),1,ny),2,nz))
     lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
     TT=exp(lnTT)
     TTT=reform(TT(l1:l2,m1:m2,n1:n2))
-    cs2=(5./3.)*(1.+yH0+xHe-xH2)*ss_ion*TTT
-    cp1tilde=(2./5.)/(1.+yH0+xHe-xH2)/ss_ion
+    cs2=gamma*(1.+yH0+xHe-xH2)*ss_ion*TTT
+    cp1tilde=nabla_ad/(1.+yH0+xHe-xH2)/ss_ion
     ee=1.5*(1.+yH0+xHe-xH2)*ss_ion*TTT+yH0*ss_ion*TT_ion
     pp=(1.+yH0+xHe-xH2)*exp(llnrho)*TTT*ss_ion
   end else begin
