@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.273 2004-02-22 14:22:09 theine Exp $
+! $Id: entropy.f90,v 1.274 2004-02-24 16:08:37 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -27,7 +27,7 @@ module Entropy
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
-  real :: chi=0.,chi_t=0.,chi_shock=0.
+  real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
@@ -63,9 +63,9 @@ module Entropy
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-       chi_t,chi_shock,chi,iheatcond, &
+       chi_t,chi_shock,chi,Kappa0,iheatcond, &
        lcalc_heatcond_simple,lcalc_heatcond,lcalc_heatcond_constchi,&
-       tau_ss_exterior,chi,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
+       tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
        lsinus_heat
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.273 2004-02-22 14:22:09 theine Exp $")
+           "$Id: entropy.f90,v 1.274 2004-02-24 16:08:37 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -943,17 +943,20 @@ module Entropy
 !
       select case(iheatcond)
       case('K-const')
-        call calc_heatcond(f,df,rho1,glnrho,gss)
+         call calc_heatcond(f,df,rho1,glnrho,gss)
       case('simple')
-        call calc_heatcond_simple(f,df,rho1,glnrho,gss)
+         call calc_heatcond_simple(f,df,rho1,glnrho,gss)
       case('chi-const')
-        call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
+         call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
+      case ('magnetic')
+         call calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
+         call calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
       case default
-        if (lroot) then
-          print*,'dss_dt: No such value iheatcond = ', trim(iheatcond)
-          print*,'[Cryptic old comment: dss_dt: no calc_heatcond, may need chi_shock]'
-          call stop_it("")
-        endif
+         if (lroot) then
+            print*,'dss_dt: No such value iheatcond = ', trim(iheatcond)
+            print*,'[Cryptic old comment: dss_dt: no calc_heatcond, may need chi_shock]'
+            call stop_it("")
+         endif
       endselect
 !
 !  shock entropy diffusion
@@ -1076,9 +1079,9 @@ module Entropy
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_magnetic(f,df,glnrho,gss,bb,cs2)
+    subroutine calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
 !
-!  Calculates heat conduction parallel (and perpendicular) to magnetic field      
+!  Calculates heat conduction parallel to magnetic field lines     
 !
 !  10-feb-04/bing: coded
 !
@@ -1086,56 +1089,113 @@ module Entropy
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: egradcurlaa,allrho,allss
+      real, dimension (nx,3,3) :: gradcurlaa,allrho,allss
       real, dimension (nx,3) :: glnrho,gss,glnT,bb,curlcurlaa
-      real, dimension (nx) :: TT,bb2,bb21,cs2,QQ,Kappa0,KappaC
+      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal
 
       real, dimension (nx,3) :: c1,c2,c3,c4,c5,c6,c7
-      real, dimension (nx) :: c8
+      real, dimension (nx) :: tmp
 
+      integer :: i
       glnT = gamma*gss + gamma1*glnrho
-      TT = cs2/gamma1   ! ???? TEST ob gamma1 = 0 ?
+      TT = cs2/gamma1   
+ 
       call dot2_mn(bb,bb2)
-      bb21 = 1 / bb2 
+      do i=1,nx
+         if (bb2(i) < tiny(1.)) then
+            bb2(i)=3*tiny(1.)**2
+            bb(i,:)=tiny(1.)
+         endif
+      enddo
+      bb21 = 1 / bb2        
 
-      KappaC = 0
-      Kappa0 = 9e-12
-      
+      call dot_mn(bb,glnT,tmp)
+            
+      call multsv_mn(tmp,glnT,c1)
+      c1 = 3.5 * c1
 
+      call del2v_etc(f,iaa,gradcurl=gradcurlaa)
+      call multmv_mn_transp(gradcurlaa,bb,c2)
+      call multsv_mn(bb21,c2,c2)
+      call multsv_mn(tmp,c2,c2)
+      c2 = 2 * c2
 
-      call del2v_etc(f,iaa,curlcurl=curlcurlaa,egradcurl=egradcurlaa)
-      call cross_mn(bb,curlcurlaa,c1)
-      call cross_mn(glnT,curlcurlaa,c2)
-      call multmv_mn(egradcurlaa,bb,c3)
-      call multmv_mn(egradcurlaa,glnT,c4)
       call g2ij(f,ilnrho,allrho)
       call g2ij(f,iss,allss)
-      call multmv_mn(allss,bb,c5)
-      call multmv_mn(allrho,bb,c6)
-      call dot_mn(bb,glnT,c8)
+      call multmv_mn(allss,bb,c3)
+      call multmv_mn(allrho,bb,c4)
+      c3 = gamma * c3 
+      c4 = gamma1 * c4 
+
+      call multmv_mn_transp(gradcurlaa,glnT,c5)
+
+      c1 = c1 - c2 + c3 + c4 + c5
+
+      call dot_mn(c1,bb,thdiff)
+      thdiff = Kappa0 * thdiff * bb21 * rho1 * (TT**2.5)
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+
+      if (lfirst.and.ldt) then
+         chitotal= Kappa0*rho1*TT**2.5
+         call max_for_dt(chitotal, maxdiffus)
+     endif
+     
+    endsubroutine calc_heatcond_mpara
+!***********************************************************************
+    subroutine calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
+!
+!  Calculates heat conduction perpendicular to magnetic field lines     
+!  kapppaPerp << kappaPara  ->  Use of isotropic heat conduction
+!
+!  24-feb-04/bing: coded
+!
+      use Sub
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: gradcurlaa
+      real, dimension (nx,3) :: glnrho,gss,glnT,bb
+      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal,del2ss,del2lnrho
+
+      real, dimension (nx,3) :: c1
+      real, dimension (nx) :: tmp1,tmp2,tmp3
+
+      integer :: i
+      glnT = gamma*gss + gamma1*glnrho
+
+      TT = cs2/gamma1   
+
+      call dot2_mn(bb,bb2)
       
-      c5 = c5 * gamma
-      c6 = c6 * gamma1
+      do i=1,nx
+         if (bb2(i) < tiny(1.)) then
+            bb2(i)=3*tiny(1.)**2
+            bb(i,:)=tiny(1.)
+         endif
+      enddo
 
-      call multsv_mn(c8,glnT,c7)
-      c7 = 3.5 * c7
+      bb21 = 1 / bb2        
 
-      call multsv_mn(c8,c1,c1)
-      call multsv_mn(bb21,c1,c1)
-      c1 = 2 * c1
-
-      call multsv_mn(c8,c3,c3)
-      call multsv_mn(bb21,2*c3,c3)
-
-      c1 = c1 + c2 + c3 + c4 + c5 + c6 + c7
-
-      call dot_mn(c1,bb,QQ)
-      QQ = QQ * bb21
-      QQ = QQ * TT**3.5
+      call del2v_etc(f,iaa,gradcurl=gradcurlaa)
+      call multmv_mn_transp(gradcurlaa,bb,c1)
+      call dot_mn(c1,glnT,tmp1)
       
-      QQ = Kappa0 * QQ + KappaC
+      call dot2_mn(glnT,tmp2)
+      
+      call del2(f,iss,del2ss)
+      call del2(f,ilnrho,del2lnrho)
 
-    endsubroutine calc_heatcond_magnetic
+      tmp3 = gamma*del2ss + gamma1*del2lnrho + 0.5*tmp2 - 2*bb21*tmp1
+
+      thdiff = 2*10**(-31) * Kappa0 * TT**(-0.5) * bb21 * rho1 * tmp3
+       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+
+      if (lfirst.and.ldt) then
+         chitotal= Kappa0*rho1*TT**2.5
+         call max_for_dt(chitotal, maxdiffus)
+     endif
+     
+    endsubroutine calc_heatcond_mperp
 !***********************************************************************
     subroutine calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
