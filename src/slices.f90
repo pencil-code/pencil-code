@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.30 2003-11-14 16:19:30 theine Exp $
+! $Id: slices.f90,v 1.31 2003-11-15 17:15:11 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -84,7 +84,7 @@ module Slices
 !  Loop over slices
 !
       do inamev=1,nnamev
-      select case (cnamev(inamev))
+      select case (trim(cnamev(inamev)))
 !
 !  Velocity field
 !
