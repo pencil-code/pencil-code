@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.111 2004-03-05 10:35:56 mee Exp $
+# $Id: getconf.csh,v 1.112 2004-03-17 15:36:51 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -321,7 +321,10 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       set one_local_disc=0
     endif
   else
-    set local_disc=0
+      echo $hn >! hostfile
+      set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+      set mpirunops = "-local -machinefile hostfile"
+     set local_disc=0
   endif
 
 else if ($hn == rasmussen) then
