@@ -47,11 +47,13 @@ if (! $?_sourceme) then		# called for the fist time?
                        $PENCIL_HOME/utils \
 		       $PENCIL_HOME/utils/axel )
     #  Set path for DX macros
+    set _dxpath = "${PENCIL_HOME}/dx/macros:${PENCIL_HOME}/dx/macros/others"
     if ($?DXMACROS) then
-      setenv DXMACROS "${PENCIL_HOME}/dx/macros:$DXMACROS"
+      setenv DXMACROS "${_dxpath}:$DXMACROS"
     else
-      setenv DXMACROS "${PENCIL_HOME}/dx/macros"
+      setenv DXMACROS "${_dxpath}"
     endif
+    unset _dxpath
     #  Set IDL path
     if ($?IDL_PATH) then
       setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:$IDL_PATH"
