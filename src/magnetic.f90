@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.225 2004-09-24 14:08:25 nilshau Exp $
+! $Id: magnetic.f90,v 1.226 2004-09-28 17:55:14 snod Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -60,6 +60,7 @@ module Magnetic
   real :: pertamplaa=0.
   real :: initpower_aa=0.,cutoff_aa=0.
   character (len=labellen) :: pertaa='zero'
+  integer :: N_modes_aa=1
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -69,7 +70,7 @@ module Magnetic
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
-       ampl_B0,initpower_aa,cutoff_aa
+       ampl_B0,initpower_aa,cutoff_aa,N_modes_aa
 
   ! run parameters
   real :: eta=0.,height_eta=0.,eta_out=0.
@@ -145,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.225 2004-09-24 14:08:25 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.226 2004-09-28 17:55:14 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -214,7 +215,10 @@ module Magnetic
       case('rescale'); f(:,:,:,iax:iaz)=amplaa*f(:,:,:,iax:iaz)
       case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
-      case('power_randomphase'); call power_randomphase(amplaa,initpower_aa,cutoff_aa,f,iax,iaz)
+      case('power_randomphase')
+         call power_randomphase(amplaa,initpower_aa,cutoff_aa,f,iax,iaz)
+      case('random-isotropic-KS')
+         call random_isotropic_KS(amplaa,initpower_aa,cutoff_aa,f,iax,iaz,N_modes_aa)
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
       case('gaussian-noise-rprof')
         tmp=sqrt(xx**2+yy**2+zz**2)

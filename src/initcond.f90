@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.114 2004-06-22 12:30:27 ajohan Exp $ 
+! $Id: initcond.f90,v 1.115 2004-09-28 17:55:14 snod Exp $ 
 
 module Initcond 
  
@@ -1983,6 +1983,140 @@ module Initcond
       endif !(ampl.eq.0)
 !
     endsubroutine power_randomphase
+
+!***********************************************************************
+    subroutine random_isotropic_KS(ampl,initpower,cutoff,f,i1,i2,N_modes)
+!
+!   produces random, isotropic field from energy spectrum following the
+!   KS method (Malik and Vassilicos, 1999.)  
+!
+!   more to do; unsatisfactory so far - at least for a steep power-law energy spectrum 
+!   
+!   24-sept-04/snod: coded first attempt
+!  
+    use Sub    
+    integer :: modeN,N_modes,l,n,m,i1,i2
+    real, dimension (mx,my,mz,mvar+maux) :: f
+
+! how many wavenumbers? 
+    real, dimension (3,1024) :: kk,RA,RB !or through whole field for each wavenumber? 
+    real, dimension (3) :: k_unit,vec,ee,e1,e2,field
+    real :: ampl,initpower,cutoff,kmin,ps,k,phi,theta,alpha,beta,dk
+    real :: ex,ey,ez,norm,kdotx,r
+
+!
+!    minlen=Lxyz(1)/(nx-1)
+!    kmax=2.*pi/minlen
+!    N_modes=int(0.5*(nx-1))
+!    hh=Lxyz(1)/(nx-1)
+!    pta=(nx)**(1.0/(nx-1))
+!    do modeN=1,N_modes
+!       ggt=(kkmax-kkmin)/(N_modes-1)
+!       ggt=(kkmax/kkmin)**(1./(N_modes-1))
+!        k(modeN)=kmin+(ggt*(modeN-1))
+!        k(modeN)=(modeN+3)*2*pi/Lxyz(1)
+!       k(modeN)=kkmin*(ggt**(modeN-1)
+!    enddo
+!
+!    do modeN=1,N_modes
+!       if(modeN.eq.1)delk(modeN)=(k(modeN+1)-K(modeN))
+!       if(modeN.eq.N_modes)delk(modeN)=(k(modeN)-k(modeN-1))
+!       if(modeN.gt.1.and.modeN.lt.N_modes)delk(modeN)=(k(modeN+1)-k(modeN-2))/2.0
+!    enddo
+!          mk=(k2*k2)*((1.0 + (k2/(bk_min*bk_min)))**(0.5*initpower-2.0))
+!
+!  set kmin
+!
+    kmin=2.*pi/Lxyz(1)
+!       
+    do modeN=1,N_modes  
+!   
+!  pick wavenumber
+!
+       k=modeN*kmin
+!
+!  calculate dk
+!
+       dk=1.0*kmin
+!
+!   pick 4 random angles for each mode
+!
+  
+       call random_number_wrapper(r); theta=pi*(2*r - 0.)  
+       call random_number_wrapper(r); phi=pi*(2*r - 0.)  
+       call random_number_wrapper(r); alpha=pi*(2*r - 0.)  
+       call random_number_wrapper(r); beta=pi*(2*r - 0.)
+!       call random_number_wrapper(r); gamma(modeN)=pi*(2*r - 0.)  ! random phase?
+
+!
+!   make a random unit vector by rotating fixed vector to random position
+!   (alternatively make a random transformation matrix for each k)
+!
+       k_unit(1)=sin(theta)*cos(phi)
+       k_unit(2)=sin(theta)*sin(phi)
+       k_unit(3)=cos(theta)
+!
+!   make a vector kk of length k from the unit vector for each mode
+!
+       kk(:,modeN)=k*k_unit(:)
+!
+!   construct basis for plane having rr normal to it
+!   (bit of code from forcing to construct x', y')
+!
+       if((k_unit(2).eq.0).and.(k_unit(3).eq.0)) then
+        ex=0.; ey=1.; ez=0.           
+       else
+        ex=1.; ey=0.; ez=0.
+       endif
+       ee = (/ex, ey, ez/)
+       call cross(k_unit(:),ee,e1)
+       call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+       call cross(k_unit(:),e1,e2)
+       call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+!
+!   make two random unit vectors RB and RA in the constructed plane
+!
+       RA(:,modeN) = cos(alpha)*e1 + sin(alpha)*e2
+       RB(:,modeN) = cos(beta)*e1  + sin(beta)*e2
+!
+!   define the power spectrum (ps=sqrt(2.*power_spectrum(k)*delta_k/3.))
+!
+       ps=(k**(initpower/2.))*sqrt(dk*2./3.)
+!
+!   give RA and RB length ps
+!   
+       RA(:,modeN)=ps*RA(:,modeN)
+       RB(:,modeN)=ps*RB(:,modeN)
+!
+!   form RA = RA x k_unit and RB = RB x k_unit 
+!
+       call cross(RA(:,modeN),k_unit(:),RA(:,modeN))
+       call cross(RB(:,modeN),k_unit(:),RB(:,modeN))
+!
+     enddo
+!
+!   make the field
+!
+    do n=n1,n2
+      do m=m1,m2
+        do l=l1,l2
+          field=0.  ! initialize field
+          vec(1)=x(l)    ! local coordinates?
+          vec(2)=y(m)
+          vec(3)=z(n)
+          do modeN=1,N_modes  ! sum over N_modes modes
+             call dot(kk(:,modeN),vec,kdotx)
+             field = field + cos(kdotx)*RA(:,modeN) + sin(kdotx)*RB(:,modeN)    
+          enddo
+          f(l,m,n,i1)   = f(l,m,n,i1)   + field(1)
+          f(l,m,n,i1+1) = f(l,m,n,i1+1) + field(2)
+          f(l,m,n,i1+2) = f(l,m,n,i1+2) + field(3)
+        enddo             
+      enddo 
+    enddo  
+!
+!
+    endsubroutine random_isotropic_KS
 
 !***********************************************************************
 endmodule Initcond

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.185 2004-09-18 07:54:29 brandenb Exp $
+! $Id: hydro.f90,v 1.186 2004-09-28 17:55:14 snod Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -34,6 +34,7 @@ module Hydro
   real :: kep_cutoff_pos_ext= huge(1.0),kep_cutoff_width_ext=0.0
   real :: kep_cutoff_pos_int=-huge(1.0),kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
+  integer :: N_modes_uu
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
@@ -42,7 +43,7 @@ module Hydro
        nu_turb0, tau_nuturb, nu_turb1, &
        kep_cutoff_pos_ext,kep_cutoff_width_ext, &
        kep_cutoff_pos_int,kep_cutoff_width_int, &
-       u_out_kep
+       u_out_kep,N_modes_uu
 
   ! run parameters
   real :: theta=0.
@@ -126,7 +127,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.185 2004-09-18 07:54:29 brandenb Exp $")
+           "$Id: hydro.f90,v 1.186 2004-09-28 17:55:14 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -353,6 +354,9 @@ module Hydro
       case('power_randomphase') 
         ! initial spectrum k^power
         call power_randomphase(ampluu,initpower,cutoff,f,iux,iuz)
+      
+      case('random-isotropic-KS')
+        call random_isotropic_KS(ampluu,initpower,cutoff,f,iux,iuz,N_modes_uu)
 
       case('vortex_2d')
         ! Vortex solution of Goodman, Narayan, & Goldreich (1987)
