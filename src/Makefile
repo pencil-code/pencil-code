@@ -10,6 +10,8 @@ ENTROPY=entropy
 MAGNETIC=magnetic
 IO=io_dist
 
+CFLAGS=-O3 -DFUNDERSC=1
+
 ### Begin machine dependent
 
 ## IRIX64:
@@ -28,7 +30,6 @@ IO=io_dist
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #F77=$(FC)
 #LIBSIG=
-#CFLAGS=-O3 -DFUNDERSC=1
 
 ## Linux:
 #FC=f95
