@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.29 2003-01-17 16:44:52 dobler Exp $
+! $Id: cparam.f90,v 1.30 2003-01-24 01:03:27 nilshau Exp $
 
 module Cparam
 
@@ -20,7 +20,8 @@ module Cparam
 !  derived and fixed parameters
 !
   integer, parameter :: nghost=3
-  integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz,nw=nx*ny*nz
+  integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
+  integer(8), parameter :: nw=nx*ny*nz
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
   integer, parameter :: mz=nz+2*nghost,n1=1+nghost,n2=mz-nghost
