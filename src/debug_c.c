@@ -120,7 +120,7 @@ int FTNIZE(output_penciled_c) (char *filename, REAL *pencil, FINT *ndim,
     current_node->file = fopen(fname, "w");
     if (current_node->file == NULL) {
       fprintf(stderr, "debug_c.c: Can't open file %s\n", fname);
-      abort;
+      abort();
     }
     free(fname);
     datasize = mx*my*mz*(*ndim)*sizeof(REAL);
