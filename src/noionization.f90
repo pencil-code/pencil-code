@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $
+! $Id: noionization.f90,v 1.26 2003-06-16 13:45:37 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -19,7 +19,8 @@ module Ionization
   ! secondary parameters calculated in initialize
   double precision :: m_H,m_He,mu
   double precision :: TT_ion,lnrho_ion,ss_ion,chiH
-  double precision :: TT_ion_,lnrho_ion_,kappa0,chiH_
+!ajwm commented unused quantities
+!ajwm   double precision :: TT_ion_,lnrho_ion_,kappa0,chiH_
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -61,7 +62,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: noionization.f90,v 1.26 2003-06-16 13:45:37 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -90,15 +91,16 @@ module Ionization
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
-      mu=1.+3.97153*fHe
+      mu=1.+3.97153*fHe  
       chiH=13.6*eV
-      chiH_=0.75*eV
+!ajwm commented unused quantities
+!ajwm      chiH_=0.75*eV
       TT_ion=chiH/k_B
-      TT_ion_=chiH_/k_B
+!ajwm      TT_ion_=chiH_/k_B
       lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
-      ss_ion=k_B/m_H/mu
-      kappa0=sigmaH_/m_H/mu
+!ajwm      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
+      ss_ion=k_B/m_H/mu      ! AKA c_p for noionisation
+!ajwm      kappa0=sigmaH_/m_H/mu
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'TT_ion,lnrho_ion,ss_ion=',TT_ion,lnrho_ion,ss_ion
@@ -109,11 +111,12 @@ module Ionization
                         -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
                         /(1.+yH+fHe)-lnrho_ion-2.5)
-      dlnPdlnrho=5./3.
-      dlnPdss=(2./3.)/(1.+yH0+fHe)
+        ! lnTT0 AKA. cs20
+      dlnPdlnrho=5./3.    ! gamma?
+      dlnPdss=(2./3.)/(1.+yH0+fHe)  !(gamma - 1) / (\mu_{effecive}/\mu) ?
 !
       coef_lr=dlnPdlnrho-1.
-      coef_ss=dlnPdss/ss_ion
+      coef_ss=dlnPdss/ss_ion  !AKA effective c_p
 !
     endsubroutine initialize_ionization
 !*******************************************************************
@@ -155,10 +158,12 @@ module Ionization
       if(lfixed_ionization) then
         if(headtt) print*,'ionset: assume cp is not 1, yH0=',yH0
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
+!ajwm but where does the reference density come in to this? 
         yH=yH0
       else
         if(headtt) print*,'ionset: assume cp=1'
         TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+!ajwm - NEEDS TO BE DIVIDED BY the effective c_p ...
       endif
 !
     endsubroutine ionset
@@ -197,12 +202,12 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
         cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
-        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+        ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=gamma1*TT
-        cp1tilde=1.
-        if (ldiagnos) ee=cs2/(gamma1*gamma)
+        cp1tilde=1.  
+        ee=cs2/(gamma1*gamma)
       endif
 !
     endsubroutine thermodynamics
