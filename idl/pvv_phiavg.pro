@@ -10,10 +10,21 @@
 ;;;    Plot azimuthal averages of a vector field. Currently, only 'uu'
 ;;;    and 'bb' are supported.
 ;;;  Usage:
-;;;    pvv_phiavg, [filename], [/BB], [/UU]
-;;;    pvv_phiavg, [avg_struct], [/BB], [/UU]
+;;;    pvv_phiavg [,filename]   [,/BB] [,/UU] [,NLINES=nlines]
+;;;    pvv_phiavg [,avg_struct] [,/BB] [,/UU] [,NLINES=nlines]
 ;;;  IF FILENAME doesn't exist, try 'data/FILENAME' and
 ;;;  'data/averages/FILENAME'.
+;;;  Keywords:
+;;;    BB     -- if set, plot magnetic field bb (default is uu)
+;;;    UU     -- if set, plot velocity field uu (also the default)
+;;;    RADII  -- radii for overplotting circles
+;;;    MARGIN -- margin in x and y (see ASPECT_POS)
+;;;    STAT   -- print some statistics
+;;;    OMEGA  -- angular velocity for getting statistics right
+;;;    MAXVEC -- maximum number of vectors to plot (see WD_VELOVECT)
+;;;    NLINES -- if >0, plot NLINES field lines for the poloidal
+;;;              component instead of arrows
+;;;    QUIET  -- keep quiet
 ;;;  Examples:
 ;;;    pvv_phiavg                    ; plot uu data from PHIAVG1,
 ;;;    pvv_phiavg, /BB               ; plot bb data from PHIAVG1,
@@ -23,12 +34,13 @@
 ;;;    pvv_phiavg, avg, /STAT, OMEGA=.5 ; print some rms values
 ;;;  Advanced example:
 ;;;    avg=tavg_phiavg([800.,1e10])
-;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT
+;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20
 
 pro pvv_phiavg, arg, BB=bb, UU=uu, $
                 MARGIN=margin, RADII=radii, OMEGA=omega, $
                 CHARSIZE=charsize, MAXVEC=maxvec, $
-                STAT=stat, QUIET=quiet
+                STAT=stat, NLINES=nlines, $
+                QUIET=quiet
 
   datatopdir ='data'
   avgdir = datatopdir+'/averages'
@@ -42,6 +54,7 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   default, maxvec, [20,40]
   default, stat, 0
   default, quiet, 0
+  default, nlines, 0
   if (n_elements(omega) eq 0) then begin
     omega = 1.
     noomega = 1
@@ -83,6 +96,9 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
 
   endelse
 
+  nr = n_elements(avg.rcyl)
+  nz = n_elements(avg.z)
+
   if (bb) then begin
     var1 = avg.brmphi
     var2 = avg.bzmphi
@@ -95,17 +111,44 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     message, 'Need one of UU or BB to be true'
   endelse
 
-
   pos = aspect_pos((max(avg.z)-min(avg.z))/(max(avg.rcyl)-min(avg.rcyl)), $
                    MARGIN=margin)
-  plot_3d_vect, var1, var2, var3, $
-      avg.rcyl, avg.z, $
-      POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
-      YRANGE=minmax(avg.z), YSTYLE=1, $
-      /KEEP, $
-      XTITLE='!8r!X', YTITLE='!8z!X', $
-      MAXVEC=maxvec, CHARSIZE=charsize, $
-      /QUIET
+  if (nlines ne 0) then begin
+    ;; Plot fieldlines on color
+    ;; 1. Construct vector potential
+    pot = var1*0.
+    if (quiet eq 0) then print, 'Calculating stream function..'
+    for iiz=0,nz-1 do begin
+      pot[*,iiz] = integral(avg.rcyl,avg.rcyl*var2[*,iiz],/accumulate)
+    endfor
+    ;; 2. Plot
+    contourfill, var3, $
+        avg.rcyl, avg.z, $
+        POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
+        YRANGE=minmax(avg.z), YSTYLE=1, $
+        XTITLE='!8r!X', YTITLE='!8z!X', $
+        CHARSIZE=charsize
+    if (nlines gt 0) then begin
+      ; linearly spaced
+      levels = linspace(minmax(pot),abs(nlines),GHOST=0.5)
+    endif else begin
+      ; sqrt-spaced such that uniform field would have equidistant lines
+      levels = fllevels(pot,abs(nlines))
+    endelse
+    contour, pot, avg.rcyl, avg.z, $
+        /OVERPLOT, $
+        LEVELS=levels
+  endif else begin
+    ;; Plot arrows on color
+    plot_3d_vect, var1, var2, var3, $
+        avg.rcyl, avg.z, $
+        POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
+        YRANGE=minmax(avg.z), YSTYLE=1, $
+        /KEEP, $
+        XTITLE='!8r!X', YTITLE='!8z!X', $
+        MAXVEC=maxvec, CHARSIZE=charsize, $
+        /QUIET
+  endelse
 
   ;; Overplot spheres (well, circles) if that makes sense
   if (n_elements(radii) gt 0) then opcircle, radii
@@ -113,8 +156,6 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   ;; Print some statistics. Should ideally be in another place (or
   ;; rather standalone), but it comes handy to do this here.
   if (stat) then begin
-    nr = n_elements(avg.rcyl)
-    nz = n_elements(avg.z)
     ; ;; weights for use with rms(weight*var):
     ; weight = spread(sqrt(avg.rcyl),1,nz)
     ; weight = weight/rms(weight)
