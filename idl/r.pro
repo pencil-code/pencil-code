@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.30 2002-07-28 17:12:56 brandenb Exp $
+; $Id: r.pro,v 1.31 2002-07-31 18:05:26 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -113,13 +113,14 @@ if (ldensity) then $
 if (lentropy) then $
     print, FORMAT=fmt, 'ss     =', $
       minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-if (lmagnetic) then $
+if (lmagnetic) then begin
     for j=0,2 do $
       print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
       minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
     if (cpar gt 0) then begin
       eta=par2.eta
     end
+end
 ;
 print,'t = ',t
 ;
