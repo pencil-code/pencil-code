@@ -74,12 +74,12 @@ else
   # start.csh). Quite some silly hack.
   echo "Determining size of var.dat:"
   set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
-  if (!$status) then
+  if (! $status) then
     set size = $lsout[5]
   else
     echo "Can't find proc0/var.dat in $targetdir, trying allprocs/var.dat"
     set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
-    if (!$status) then
+    if (! $status) then
       set size = $lsout[5]
     else
       echo "Can't find allprocs/var.dat either -- aborting"
