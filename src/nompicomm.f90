@@ -228,6 +228,14 @@ module Mpicomm
       dummy=bcast_array
     endsubroutine mpibcast_real_arr
 !***********************************************************************
+    subroutine mpibcast_real_nonroot(bcast_array,nbcast_array,ibcast_proc)
+!
+      integer :: nbcast_array,ibcast_proc
+      real, dimension(nbcast_array) :: bcast_array,dummy
+!
+      dummy=bcast_array
+    endsubroutine mpibcast_real_nonroot
+!***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
 !
       integer :: nreduce
