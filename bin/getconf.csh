@@ -70,8 +70,8 @@ if ($mpi) then
     set start_x = $SCRATCH_DIR/start.x
     set run_x = $SCRATCH_DIR/run.x
     set local_disc = 1
-    #setenv SSH "rsh"
-    #setenv SCP "rcp"
+    setenv SSH rsh
+    setenv SCP rcp
 
   else
     echo "Use mpirun as the default option"
