@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.74 2003-10-17 13:07:19 nilshau Exp $
+! $Id: noionization.f90,v 1.75 2003-10-18 10:57:50 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -27,13 +27,11 @@ module Ionization
   interface ionget
     module procedure ionget_pencil
     module procedure ionget_point
-    module procedure ionget_xy
   end interface
 
   interface ionput                      ! does opposite of ionget...
     module procedure ionput_pencil      ! (i.e. calculates ss from TT (+ rho)
     module procedure ionput_point       !   cf. TT from ss (+ rho) )
-    module procedure ionput_xy
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -93,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.74 2003-10-17 13:07:19 nilshau Exp $")
+           "$Id: noionization.f90,v 1.75 2003-10-18 10:57:50 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -249,14 +247,11 @@ module Ionization
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(:), intent(inout) :: yH,TT
-      real, dimension(size(yH)) :: lnrho,ss
+      real, dimension(nx), intent(inout) :: yH,TT
+      real, dimension(nx) :: lnrho,ss
 !
-      if (size(lnrho)==nx) lnrho=f(l1:l2,m,n,ilnrho)
-      if (size(ss)==nx) ss=f(l1:l2,m,n,iss)
-!
-      if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
-      if (size(ss)==mx) ss=f(:,m,n,iss)
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
 !
       yH=0.
       TT=TT0*exp(gamma*ss+gamma1*(lnrho-lnrho0))
@@ -275,46 +270,20 @@ module Ionization
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine ionget_xy(f,yH,TT,boundary,radz0)
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      character(len=5), intent(in) :: boundary
-      integer, intent(in) :: radz0
-      real, dimension(mx,my,radz0) :: lnrho,ss
-      real, dimension(mx,my,radz0), intent(out) :: yH,TT
-!
-      if (boundary=='lower') then
-        lnrho=f(:,:,n1-radz0:n1-1,ilnrho)
-        ss=f(:,:,n1-radz0:n1-1,iss)
-      endif
-!
-      if (boundary=='upper') then
-        lnrho=f(:,:,n2+1:n2+radz0,ilnrho)
-        ss=f(:,:,n2+1:n2+radz0,iss)
-      endif
-!
-      yH=0.
-      TT=TT0*exp(gamma*ss+gamma1*(lnrho-lnrho0))
-!
-    endsubroutine ionget_xy
-!***********************************************************************
     subroutine ionput_pencil(f,yH,TT)
 !
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension(:), intent(inout) :: yH,TT
-      real, dimension(size(yH)) :: lnrho,ss
+      real, dimension(nx), intent(inout) :: yH,TT
+      real, dimension(nx) :: lnrho,ss
 !
-      if (size(lnrho)==nx) lnrho=f(l1:l2,m,n,ilnrho)
-      if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
+      lnrho=f(l1:l2,m,n,ilnrho)
 !
       yH=0.
       ss=(log(TT)-log(TT0)-gamma1*(lnrho-lnrho0))/gamma
-      if (size(ss)==nx) f(l1:l2,m,n,iss)=ss
-      if (size(ss)==mx) f(:,m,n,iss)=ss
+!
+      f(l1:l2,m,n,iss)=ss
 !
     endsubroutine ionput_pencil
 !***********************************************************************
@@ -329,37 +298,6 @@ module Ionization
       ss=(log(TT)-log(TT0)-gamma1*(lnrho-lnrho0))/gamma
 !
     endsubroutine ionput_point
-!***********************************************************************
-    subroutine ionput_xy(f,yH,TT,boundary,radz0)
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
-      character(len=5), intent(in) :: boundary
-      integer, intent(in) :: radz0
-      real, dimension(mx,my,radz0) :: lnrho,ss
-      real, dimension(mx,my,radz0), intent(inout) :: yH,TT
-!
-      if (boundary=='lower') then
-        lnrho=f(:,:,n1-radz0:n1-1,ilnrho)
-      endif
-!
-      if (boundary=='upper') then
-        lnrho=f(:,:,n2+1:n2+radz0,ilnrho)
-      endif
-!
-      yH=0.
-      ss=(log(TT)-log(TT0)-gamma1*(lnrho-lnrho0))/gamma
-!
-      if (boundary=='lower') then
-        f(:,:,n1-radz0:n1-1,iss)=ss
-      endif
-!
-      if (boundary=='upper') then
-        f(:,:,n2+1:n2+radz0,iss)=ss
-      endif
-!
-    endsubroutine ionput_xy
 !***********************************************************************
     subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !

@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.23 2003-10-17 13:07:19 nilshau Exp $
+! $Id: ionization_fixed.f90,v 1.24 2003-10-18 10:57:50 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -27,13 +27,11 @@ module Ionization
   interface ionget
     module procedure ionget_pencil
     module procedure ionget_point
-    module procedure ionget_xy
   end interface
 
   interface ionput                      ! Overload subroutine ionput
     module procedure ionput_pencil      ! (dummy routines here --
     module procedure ionput_point       !  used in noionization.)
-    module procedure ionput_xy
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -97,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.23 2003-10-17 13:07:19 nilshau Exp $")
+          "$Id: ionization_fixed.f90,v 1.24 2003-10-18 10:57:50 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -336,66 +334,34 @@ module Ionization
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
 !
+!  'extract' ionization fraction and temperature from f array pencilwise
+!
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(:), intent(out) :: yH,TT
-      real, dimension(size(yH)) :: lnrho,ss
+      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx) :: lnrho,ss
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
 !
       yH=yH0
-!
-!  depending on the size of the array yH, ss and lnrho are
-!  evaluated either with or without ghostzones included
-!
-      if (size(lnrho)==nx) lnrho=f(l1:l2,m,n,ilnrho)
-      if (size(ss)==nx) ss=f(l1:l2,m,n,iss)
-!
-!  ghost zones included
-!
-      if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
-      if (size(ss)==mx) ss=f(:,m,n,iss)
-!
-!  calculate temperature
-!
       TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_pencil
 !***********************************************************************
     subroutine ionget_point(lnrho,ss,yH,TT)
 !
+!  'extract' ionization fraction and temperature from f array
+!  for an arbitrary point
+!
       real, intent(in) :: lnrho,ss
       real, intent(out) :: yH,TT
 !
       yH=yH0
-!
       TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_point
-!***********************************************************************
-    subroutine ionget_xy(f,yH,TT,boundary,radz0)
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      character(len=5), intent(in) :: boundary
-      integer, intent(in) :: radz0
-      real, dimension(mx,my,radz0) :: lnrho,ss
-      real, dimension(mx,my,radz0), intent(out) :: yH,TT
-!
-      if (boundary=='lower') then
-        lnrho=f(:,:,n1-radz0:n1-1,ilnrho)
-        ss=f(:,:,n1-radz0:n1-1,iss)
-      endif
-!
-      if (boundary=='upper') then
-        lnrho=f(:,:,n2+1:n2+radz0,ilnrho)
-        ss=f(:,:,n2+1:n2+radz0,iss)
-      endif
-!
-      yH=yH0
-      TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
-!
-    endsubroutine ionget_xy
 !***********************************************************************
     subroutine ionput_pencil(f,yH,TT)
 !
@@ -403,8 +369,8 @@ module Ionization
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(:), intent(out) :: yH,TT
-      real, dimension(size(yH)) :: lnrho,ss
+      real, dimension(nx), intent(out) :: yH,TT
+      real, dimension(nx) :: lnrho,ss
 !
       call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION_FIXED")
 !
@@ -421,21 +387,6 @@ module Ionization
       call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION_FIXED")
 !
     endsubroutine ionput_point
-!***********************************************************************
-    subroutine ionput_xy(f,yH,TT,boundary,radz0)
-!
-      use Cdata
-      use Mpicomm, only: stop_it
-!
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      character(len=5), intent(in) :: boundary
-      integer, intent(in) :: radz0
-      real, dimension(mx,my,radz0) :: lnrho,ss
-      real, dimension(mx,my,radz0), intent(out) :: yH,TT
-!
-      call stop_it("ionput_xy: NOT IMPLEMENTED IN IONIZATION_FIXED")
-!
-    endsubroutine ionput_xy
 !***********************************************************************
     subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
