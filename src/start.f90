@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.118 2003-10-20 17:02:10 mee Exp $
+! $Id: start.f90,v 1.119 2003-10-24 12:48:44 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -43,7 +43,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.118 2003-10-20 17:02:10 mee Exp $")
+             "$Id: start.f90,v 1.119 2003-10-24 12:48:44 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -123,7 +123,7 @@
 !
 !  write grid.dat file
 !
-        call wgrid(trim(directory)//'/grid.dat')
+          if (lroot) call wgrid(trim(directory)//'/grid.dat')
 !
 !  write .general file for data explorer
 !
