@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.57 2003-06-15 09:28:10 brandenb Exp $
+! $Id: io_dist.f90,v 1.58 2003-07-09 16:03:43 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.57 2003-06-15 09:28:10 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.58 2003-07-09 16:03:43 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -178,7 +178,7 @@ contains
 !
     endsubroutine output_auxiliary
 !***********************************************************************
-    subroutine output_vect(file,a,nn,noclose)
+    subroutine output_vect(file,a,nn)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for vector field
@@ -189,8 +189,6 @@ contains
       use Mpicomm, only: start_serialize,end_serialize
 !
       integer :: nn
-      logical :: close=.true.
-      logical, intent(in), optional :: noclose
       real, dimension (mx,my,mz,nn) :: a
       character (len=*) :: file
 !
@@ -201,16 +199,12 @@ contains
       write(lun_output) a
       write(lun_output) t,x,y,z,dx,dy,dz,deltay
 !
-!  wsnap closes file itself, because it may append other quantities
-!
-      if(present(noclose)) close=.not.noclose
-      if(close) close(lun_output)
-!
+      close(lun_output)
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
 !***********************************************************************
-    subroutine output_scal(file,a,nn,noclose)
+    subroutine output_scal(file,a,nn)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for scalar field
@@ -221,8 +215,6 @@ contains
       use Mpicomm, only: lroot,stop_it,start_serialize,end_serialize
 !
       integer :: nn
-      logical :: close=.true.
-      logical, intent(in), optional :: noclose
       real, dimension (mx,my,mz) :: a
       character (len=*) :: file
 !
@@ -233,12 +225,9 @@ contains
       write(lun_output) a
       write(lun_output) t,x,y,z,dx,dy,dz,deltay
 !
-!  wsnap closes file itself, because it may append other quantities
-!
-      if(present(noclose)) close=.not.noclose
-      if(close) close(lun_output)
-!
+      close(lun_output)
       if (lserial_io) call end_serialize()
+!
     endsubroutine output_scal
 !***********************************************************************
     subroutine output_pencil_vect(file,a,ndim)

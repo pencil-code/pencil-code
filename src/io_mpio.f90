@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.14 2003-01-15 17:08:38 mee Exp $
+! $Id: io_mpio.f90,v 1.15 2003-07-09 16:03:43 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -23,6 +23,9 @@ module Io
     module procedure output_pencil_vect
     module procedure output_pencil_scal
   endinterface
+
+  ! define unique logical unit number for output calls
+  integer :: lun_output=91
 
   !
   ! Interface to external C function(s).
@@ -96,7 +99,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.14 2003-01-15 17:08:38 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.15 2003-07-09 16:03:43 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -144,9 +147,10 @@ contains
 !  02-oct-2002/wolf: coded
 !
       use Cdata, only: datadir,directory,directory_snap
+      use General
       use Mpicomm, only: iproc
 !
-      directory = trim(datadir)//'/allprocs'
+      call safe_character_assign(directory, trim(datadir)//'/allprocs')
       if (directory_snap == '') directory_snap = directory
 !
     endsubroutine directory_names

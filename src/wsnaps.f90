@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.31 2003-06-18 20:33:36 brandenb Exp $
+! $Id: wsnaps.f90,v 1.32 2003-07-09 16:03:43 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -65,7 +65,7 @@ contains
         call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call update_ghosts(a)
-          call output(chsnap//ch,a,msnap,noclose=.true.)
+          call output(chsnap//ch,a,msnap)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
         endif
 !
@@ -74,7 +74,7 @@ contains
 !  write snapshot without label (typically, var.dat)
 !
         call update_ghosts(a)
-        call output(chsnap,a,msnap,noclose=.true.)
+        call output(chsnap,a,msnap)
       endif
 !
 !  before closing, add possible extra (hard-to-get) output
