@@ -1,4 +1,4 @@
-; $Id: p_col.pro,v 1.3 2003-05-09 06:17:37 brandenb Exp $
+; $Id: p_col.pro,v 1.4 2003-11-15 11:08:13 brandenb Exp $
 ;
 window,xs=600,ys=480
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
@@ -33,12 +33,12 @@ oplot,k,fact*r,ps=-6,li=2,col=55
 oplot,l,fact*q,ps=-6,li=3,col=166
 ;
 xx=6. & dx=20. & siz=2.0 & xx2=7.
-legend,xx,dx,10^0.9,1,'!6Origin3000',col=1,siz=siz
-legend,xx,dx,10^0.7,0,'!6Horseshoe',col=122,siz=siz
-legend,xx,dx,10^0.5,2,'!6Kabul',col=55,siz=siz
-legend,xx,dx,10^0.3,3,'!6Mega-queue',col=166,siz=siz
+legend,xx,dx,10^0.9,1,'!3Origin3000',col=1,siz=siz
+legend,xx,dx,10^0.7,0,'!3Horseshoe',col=122,siz=siz
+legend,xx,dx,10^0.5,2,'!3Kabul',col=55,siz=siz
+legend,xx,dx,10^0.3,3,'!3Giga-queue',col=166,siz=siz
 ;
 ; xx=[1,120] & oplot,col=1,xx,4./xx^.7
 print,'import ptimings.png'
-print,'scp2 ptimings.png $scr/ccp2001'
+print,'mv ptimings.png ~/MyPictures/PencilCode/'
 END
