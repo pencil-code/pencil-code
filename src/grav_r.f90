@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.59 2003-12-23 10:51:00 dobler Exp $
+! $Id: grav_r.f90,v 1.60 2004-04-16 17:17:14 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -25,6 +25,11 @@ module Gravity
     module procedure potential_point
   endinterface
 
+  interface smoothpotential
+    module procedure smoothpotential_pencil
+    module procedure smoothpotential_point
+  endinterface
+
 
   ! coefficients for potential
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
@@ -32,6 +37,8 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   real :: g0=0.
+  real :: r0_pot=0.    ! peak radius for smoothed potential
+  integer :: n_pot=10  ! exponent for smoothed potential
 
   character (len=labellen) :: ipotential='zero'
 
@@ -39,9 +46,9 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
 
-  namelist /grav_init_pars/ ipotential,g0
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot
 
-  namelist /grav_run_pars/  ipotential,g0
+  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -66,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.59 2003-12-23 10:51:00 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.60 2004-04-16 17:17:14 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,8 +98,6 @@ module Gravity
 !
       real, dimension (nx,3) :: gg_mn
       real, dimension (nx) :: g_r
-      real :: r0pot
-      integer, parameter :: npot=10  !(exponent for smoothed potential)
 
       logical, save :: first=.true.
 ! geodynamo - set to false on condition of 1/r potential
@@ -144,8 +149,8 @@ module Gravity
           cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: smoothed 1/r potential in spherical shell'
+          if (r0_pot < epsi) print*, 'WARNING: r0_pot not may not be set in start.in'
           lpade=.false.
-          r0pot=.5*r_int  !(reasonable value)
 ! end geodynamo
 
         case default
@@ -176,7 +181,7 @@ module Gravity
 
 ! geodynamo; smoothed 1/r potential in a spherical shell
         else
-          g_r=-g0*r_mn**(npot-1)*(r_mn**npot+r0pot**npot)**(-1./float(npot)-1.)
+          g_r=-g0*r_mn**(n_pot-1)*(r_mn**n_pot+r0_pot**n_pot)**(-1./float(n_pot)-1.)
 ! end geodynamo
         endif
 !
@@ -332,6 +337,60 @@ endif
 !
       if(ip==0) print*,grav     !(to keep compiler quiet)
     endsubroutine potential_point
+!***********************************************************************
+    subroutine smoothpotential_pencil(xmn,ymn,zmn,rmn,pot)
+!
+!  Smoothed 1/r gravity potential along one pencil
+!
+!  13-apr-04/dave: coded
+!
+      use Cdata, only: nx
+      use Mpicomm, only: stop_it
+!
+      real, optional, dimension (nx) :: xmn,rmn
+      real, optional :: ymn,zmn
+      real, dimension (nx) :: pot,rad
+!      
+      if (present(rmn)) then
+        rad = rmn
+      else
+        if (present(xmn) .and. present(ymn) .and. present(zmn)) then
+          rad = sqrt(xmn**2+ymn**2+zmn**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in smoothpotential_pencil()")
+        endif
+      endif
+!
+      pot=g0/(rad**n_pot+r0_pot**n_pot)**(1./n_pot)
+!
+      if(ip==0) print*,xmn,ymn,zmn,rmn,pot  !(to keep compiler quiet)
+    endsubroutine smoothpotential_pencil
+!***********************************************************************
+    subroutine smoothpotential_point(x,y,z,r,pot)
+!
+!  Smoothed 1/r gravity potential at one point
+!
+!  13-apr-04/dave: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real, optional :: x,y,z,r
+      real :: pot,rad
+!
+      if (present(r)) then
+        rad = r
+      else
+        if (present(x) .and. present(y) .and. present(z)) then
+          rad = sqrt(x**2+y**2+z**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in smoothpotential_point()")
+        endif
+      endif
+!      
+      pot=g0/(rad**n_pot+r0_pot**n_pot)**(1./n_pot)
+!
+      if(ip==0) print*,x,y,z,r,pot     !(to keep compiler quiet)
+    endsubroutine smoothpotential_point
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !

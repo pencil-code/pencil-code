@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.158 2004-03-30 05:35:34 brandenb Exp $
+! $Id: density.f90,v 1.159 2004-04-16 17:17:14 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -86,7 +86,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.158 2004-03-30 05:35:34 brandenb Exp $")
+           "$Id: density.f90,v 1.159 2004-04-16 17:17:14 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -498,9 +498,18 @@ module Density
 
       case('geo-kws')
       !
-      ! radial hydrostatic profile for KWS spherical shell problem
+      ! radial hydrostatic profile in shell region only
       !
-        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell'
+        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell region'
+        call shell_lnrho(f)
+
+      case('geo-kws-constant-T')
+      !
+      ! radial hydrostatic profile throughout box, which is consistent
+      ! with constant temperature in exterior regions, and gives continuous
+      ! density at shell boundaries 
+      !
+        if (lroot) print*,'init_lnrho: kws hydrostatic in spherical shell and exterior'
         call shell_lnrho(f)
 
       case default
@@ -690,29 +699,42 @@ module Density
 !
 !  22-oct-03/dave -- coded
 !
-      use Gravity, only: g0
+      use Gravity, only: g0,r0_pot,n_pot,smoothpotential
       use Sub, only: calc_unitvects_sphere
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real :: beta1,lnrho_int,lnrho_ext
+      real, dimension (nx) :: pot
+      real :: beta1,lnrho_int,lnrho_ext,c_int,c_ext
 !
       beta1 = g0/(mpoly+1)
 !
-      if (initlnrho(1)=='geo-kws') then
-!       densities at shell boundaries
-        lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
-        lnrho_ext = lnrho0
+!     densities at shell boundaries
+      lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
+      lnrho_ext = lnrho0
+!
+!     constants for continuity of density across boundaries
+!     when using smoothed potential
+      c_int = lnrho_int-(g0*exp(-mpoly*lnrho_int))*(r_int**n_pot+r0_pot**n_pot)**(-1./float(n_pot))
+      c_ext = lnrho_ext-(g0*exp(-mpoly*lnrho_ext))*(r_ext**n_pot+r0_pot**n_pot)**(-1./float(n_pot))
+      
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
 !
           call calc_unitvects_sphere()
 !
-          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
+          ! in the fluid shell
           where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
-          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
+          ! outside the fluid shell
+          if (initlnrho(1)=='geo-kws') then
+            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
+            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
+          elseif (initlnrho(1)=='geo-kws-constant-T') then
+            call smoothpotential(RMN=r_mn,POT=pot)
+            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = pot+c_ext
+            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = pot+c_int
+          endif
         enddo 
-      endif
 !      
     endsubroutine shell_lnrho
 !***********************************************************************
