@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.137 2003-06-11 22:38:43 mee Exp $
+! $Id: run.f90,v 1.138 2003-06-12 02:11:22 mee Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.137 2003-06-11 22:38:43 mee Exp $")
+             "$Id: run.f90,v 1.138 2003-06-12 02:11:22 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -292,7 +292,7 @@
               call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
            endif
           call wtime(trim(directory)//'/time.dat',t)
-          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar+maux,.false.)
+          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar,.false.)
         endif
 !
 !  save spectrum snapshot
