@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.46 2003-11-28 19:00:34 theine Exp $
+! $Id: visc_shock.f90,v 1.47 2003-11-29 10:56:25 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -24,14 +24,14 @@ module Viscosity
   character (len=labellen) :: ivisc=''
   real :: maxeffectivenu
   integer :: itest
-  logical :: lvisc_first=.false.
+  logical :: lvisc_first=.false.,lvisc_addnu=.false.
 
   ! input parameters
   integer :: dummy
   namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, nu_shock, lvisc_first
+  namelist /viscosity_run_pars/ nu,nu_shock,lvisc_first,lvisc_addnu
  
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtnu=0,i_shockmax=0
@@ -68,7 +68,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.46 2003-11-28 19:00:34 theine Exp $")
+           "$Id: visc_shock.f90,v 1.47 2003-11-29 10:56:25 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -206,7 +206,11 @@ module Viscosity
 !
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
-      maxeffectivenu = amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
+      if (lvisc_addnu) then
+        maxeffectivenu=nu+maxval(f(:,:,:,ishock))*nu_shock
+      else
+        maxeffectivenu=amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
+      endif
 !f(:,:,:,iux:iuz)=savef
 !
 !ajwm debug only line:-
