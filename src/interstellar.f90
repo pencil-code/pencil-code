@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.15 2003-05-20 14:45:11 mee Exp $
+! $Id: interstellar.f90,v 1.16 2003-05-20 19:43:43 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.15 2003-05-20 14:45:11 mee Exp $")
+           "$Id: interstellar.f90,v 1.16 2003-05-20 19:43:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -739,9 +739,22 @@ find_SN: do n=n1,n2
     fsum1_tmp=(/ EE_SN /)
     call mpireduce_sum(fsum1_tmp,fsum1,1) 
     call mpibcast_real(fsum1,1)
-    EE_SN=fsum1(1)*dx*dy*dz
+
+    EE_SN=fsum1(1)
+if (nxgrid/=1) EE_SN=EE_SN*dx
+if (nygrid/=1) EE_SN=EE_SN*dy
+if (nzgrid/=1) EE_SN=EE_SN*dz
 !
-    if (lroot) print*,'explode_SN, EE_SN:',EE_SN
+    if (lroot) then
+       open(1,file=trim(datadir)//'/time_series.dat',position='append')
+       write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+                   '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+                   t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+       write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+                   '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+                   t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+       close(1)
+    endif
 !
     endsubroutine explode_SN
 !***********************************************************************
