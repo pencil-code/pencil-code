@@ -15,6 +15,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -auto_use mpi_interface -64 -O0 -fullwarn -C -mips4 #(ukaff|origin)
 #FFLAGS= -64 -O0 -DEBUG:verbose_runtime=ON -C -g -mips4 #(ukaff|origin)
+#FFLAGS= -n32
 #F77=$(FC)
 CFLAGS=-O3 -64 -DFUNDERSC=1
 

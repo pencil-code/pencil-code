@@ -2,7 +2,7 @@
                            ukaff-namelist-bug
                           --------------------
 
-$Id: README,v 1.2 2002-06-12 17:39:26 dobler Exp $
+$Id: README,v 1.3 2002-06-12 21:04:24 brandenb Exp $
 
 
 1. Symptoms:
@@ -29,6 +29,8 @@ $Id: README,v 1.2 2002-06-12 17:39:26 dobler Exp $
   Commenting out almost any unused routine in magnetic.f90 or hydro.f90 or
   even just commenting out variables in these routines makes the code
   succeed.
+
+  Using the compiler option -n32 instead of -64 also makes it work (at least on tac)
 
 2. Command sequence:
 
