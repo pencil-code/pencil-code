@@ -4,12 +4,13 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-11-07 16:08:15 $
-;;;  $Revision: 1.4 $
+;;;  $Date: 2003-11-24 17:49:35 $
+;;;  $Revision: 1.5 $
 ;;;
 ;;;  Description:
-;;;   Return position [X0, Y0, X1, Y1] for placing a graph with given
-;;;   aspect ratio RATIO. Works with !p.multi and for all devices.
+;;;   Return position [X0, Y0, X1, Y1] (in normalized coordinates) for
+;;;   placing a graph with given aspect ratio RATIO. Works with
+;;;   !p.multi and for all devices.
 ;;;     Based on aspect.pro by David Fanning.
 ;;;   Usage:
 ;;;     plot,a,b,POS=aspect_pos(Lb/La)
@@ -29,9 +30,12 @@
 ;;;                          specifying all four margins explicitly
 ;;;               Defaults to 0.05
 
-function aspect_pos, ratio, npos, nx, ny, MARGIN=margin
-  if (n_params() eq 0) then ratio = 1.0
+function aspect_pos, ratio, npos, nx, ny, MARGIN=margin, $
+                     DEBUG=debug
+  default, debug, 0
 
+  ;; Ensure safe value of ratio
+  if (n_params() eq 0) then ratio = 1.0
   if (ratio eq 0) then begin
     message, 'ratio=0 is meaningless. Defaulting to 1.', /INFO
     ratio = 1.0
@@ -72,14 +76,17 @@ function aspect_pos, ratio, npos, nx, ny, MARGIN=margin
   ;; Aspect ratio of current window.  
   wratio = float(!d.y_vsize)*(1-margin[2]-margin[3]) $
            / (!d.x_vsize*(1-margin[0]-margin[1]))
+  wratio = wratio
 
   ;; Normalized positions in window.
   xcent = (nposx+0.5)/nx
   ycent = (nposy+0.5)/ny
-  if (ratio le wratio) then begin
+  if (ratio*ny/nx le wratio) then begin
+    if (debug) then message, 'Bounded by xwidth', /INFO
     xwidth = 1./nx
     ywidth = xwidth*(ratio/wratio)
   endif else begin
+    if (debug) then message, 'Bounded by ywidth', /INFO
     ywidth = 1./ny
     xwidth = ywidth*(wratio/ratio)
   endelse
