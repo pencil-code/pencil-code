@@ -1,4 +1,4 @@
-! $Id: nostruct_func.f90,v 1.5 2003-01-20 16:56:53 nilshau Exp $
+! $Id: nostruct_func.f90,v 1.6 2003-03-06 14:24:37 brandenb Exp $
 !
 module  struct_func
   !
@@ -18,7 +18,7 @@ module  struct_func
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
   if(ip<=15) print*,'Use STRUCT_FUNC  = struct_func in Makefile.local'
-  if(ip>25)  print*,f(1,1,1,1)  !(to keep compiler happy)
+  if(ip==0)  print*,f,ivec,b_vec,variabl  !(to keep compiler happy)
 end subroutine structure
 !***********************************************************************
 
