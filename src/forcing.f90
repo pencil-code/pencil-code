@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.20 2002-07-22 12:49:20 brandenb Exp $
+! $Id: forcing.f90,v 1.21 2002-07-27 06:41:02 brandenb Exp $
 
 module Forcing
 
@@ -41,7 +41,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.20 2002-07-22 12:49:20 brandenb Exp $")
+           "$Id: forcing.f90,v 1.21 2002-07-27 06:41:02 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -79,6 +79,7 @@ module Forcing
       case ('fountain', '3'); call forcing_fountain(f)
       case ('horiz-shear');   call forcing_hshear(f)
       case ('twist');         call forcing_twist(f)
+      case ('diffrot');       call forcing_diffrot(f)
       case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
       endselect
 !
@@ -576,6 +577,48 @@ module Forcing
       enddo
 !
     endsubroutine forcing_twist
+!***********************************************************************
+    subroutine forcing_diffrot(f)
+!
+!  add differential rotation
+!
+!  26-jul-02/axel: coded
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,nz) :: fx,fz,tmp
+      real :: ffnorm,ffnorm2,kx,kz
+!
+!  identifier
+!
+      if(headt) print*,'forcing_diffrot'
+!
+!  need to multiply by dt (for Euler step).
+!
+      ffnorm=force*dt  !(dt for the timestep)
+!
+!  prepare velocity, Uy=sinkx*sinkz
+!
+      kx=.5*pi/Lx
+      kz=.5*pi/Lz
+      fx=spread(sin(kx*x(l1:l2)),2,nz)
+      fz=spread(sin(kz*z(n1:n2)),1,nx)
+!
+!  this forcing term is balanced by diffusion operator;
+!  need to multiply by nu*k^2
+!
+      ffnorm2=ffnorm*nu*(kx**2+kz**2)
+      tmp=ffnorm2*fx*fz
+!
+!  add
+!
+      do m=m1,m2
+        f(l1:l2,m,n1:n2,iuy)=f(l1:l2,m,n1:n2,iuy)+tmp
+      enddo
+!
+    endsubroutine forcing_diffrot
 !***********************************************************************
 
 endmodule Forcing

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.2 2002-07-09 18:37:49 dobler Exp $ 
+! $Id: initcond.f90,v 1.3 2002-07-27 06:41:02 brandenb Exp $ 
 
 module Initcond 
  
@@ -19,6 +19,63 @@ module Initcond
 
   contains
 
+!***********************************************************************
+    subroutine sinxsinz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave
+!
+!  26-jul-02/axel: coded
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'ampl=0 in sinx*sinz wave; kx,kz=',kx1,kz1
+      else
+        if (lroot) print*,'sinx*sinz wave; ampl,kx,kz=',ampl,kx1,kz1
+        j=i+1
+        f(:,:,:,j)=f(:,:,:,j)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
+                                   *spread(spread(sin(kz1*z),1,mx),2,my))
+      endif
+!
+    endsubroutine sinxsinz
+!***********************************************************************
+    subroutine blob(ampl,f,i,radius,x0,y0,z0)
+!
+!  single  blob
+!
+!  27-jul-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: x0,y0,z0
+      real :: ampl,radius,x01=0.,y01=0.,z01=0.
+!
+!  single  blob
+!
+      if (present(x0)) x01=x0
+      if (present(y0)) y01=y0
+      if (present(z0)) z01=z0
+      if (ampl==0) then
+        if (lroot) print*,'ampl=0 in blob'
+      else
+        if (lroot) print*,'blob: variable i,ampl=',i,ampl
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(&
+           spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
+          *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&
+          *spread(spread(exp(-((z-z01)/radius)**2),1,mx),2,my))
+      endif
+!
+    endsubroutine blob
 !***********************************************************************
     subroutine wave(ampl,f,i,kx,ky,kz)
 !
@@ -299,6 +356,31 @@ module Initcond
 !
       if (ip==1) print*,xx,yy
     endsubroutine uniform_x
+!***********************************************************************
+    subroutine uniform_y(ampl,f,i,xx,yy,zz)
+!
+!  Uniform B_y field (for vector potential)
+!
+!  27-jul-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        print*,'uniform x-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'ampl=',ampl
+        f(:,:,:,i  )=ampl*zz
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=0.
+      endif
+!
+      if (ip==1) print*,xx,yy
+    endsubroutine uniform_y
 !***********************************************************************
     subroutine vfield(ampl,f,i,xx)
 !

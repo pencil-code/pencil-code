@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.105 2002-07-26 05:03:15 brandenb Exp $
+! $Id: entropy.f90,v 1.106 2002-07-27 06:41:02 brandenb Exp $
 
 module Entropy
 
@@ -14,6 +14,7 @@ module Entropy
   real :: chi_t=0.,ss0=0.,khor_ss=1.
   real :: hcond0=0.
   real :: Fheat=impossible,hcond1=impossible,hcond2=impossible
+  logical :: lcalc_heatcond_simple=.false.
   character (len=labellen) :: initss='nothing',pertss='zero'
 
   ! input parameters
@@ -25,7 +26,7 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss,cheat,wheat,cool,wcool,Fheat, &
-       chi_t
+       chi_t,lcalc_heatcond_simple
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0
@@ -62,7 +63,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.105 2002-07-26 05:03:15 brandenb Exp $")
+           "$Id: entropy.f90,v 1.106 2002-07-27 06:41:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,7 +93,8 @@ module Entropy
       select case(initss)
         case('nothing'); if(lroot) print*,'init_ent: nothing'
         case('zero', '0'); f(:,:,:,ient) = 0.
-        case('isothermal'); if(lroot) print*,'init_ent: isothermal set in density'
+        case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,.5)
+        case('isothermal'); if(lroot) print*,'init_ent: isotherm set in density'
 
       case('isobaric')
         !
@@ -336,7 +338,7 @@ module Entropy
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-      if (headtt) print*,'dss_dt: TT1 ok'
+      if (headtt) print*,'dss_dt: TT1(l1)=',TT1(l1)
 
       select case(ivisc)
       case ('simplified', '0')
@@ -354,15 +356,12 @@ module Entropy
 !
 !  thermal conduction
 !
-      if (Fheat/=0 .and. cheat==0) &
-           call calc_heatcond_simple(f,df,rho1,glnrho,gss)
-!
-!  more complex alternative
-!WD: but often both will be called, which makes no sense. Should we hava
-!WD: a flag for the heat-conduction profile (similar to initss) in run.in?
-!
-      if ((hcond0 /= 0) .or. (chi_t /= 0)) &
-           call calc_heatcond(f,df,rho1,glnrho,gss)
+      if (lcalc_heatcond_simple) then
+        call calc_heatcond_simple(f,df,rho1,glnrho,gss)
+      else
+        !if ((hcond0 /= 0) .or. (chi_t /= 0)) &  !!(AB: needed?)
+        call calc_heatcond(f,df,rho1,glnrho,gss)
+      endif
 !
 !  heating/cooling
 !
@@ -442,13 +441,14 @@ module Entropy
 !  add heat conduction to entropy equation
 !
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
-      if (headtt) print*,'calc_heatcond: added thdiff'
+      if (headtt) print*,'calc_heatcond_simple: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -569,6 +569,7 @@ endif
 !    gamma*chi*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond
 !***********************************************************************

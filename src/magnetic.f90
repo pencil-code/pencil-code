@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.74 2002-07-20 18:43:59 dobler Exp $
+! $Id: magnetic.f90,v 1.75 2002-07-27 06:41:02 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.74 2002-07-20 18:43:59 dobler Exp $")
+           "$Id: magnetic.f90,v 1.75 2002-07-27 06:41:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -122,9 +122,11 @@ module Magnetic
                                             radius,epsilonaa)
       case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz, &
                                                z0aa,widthaa)
-      case('uniform-Bx', '23'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
+      case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
+      case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
+      case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-circ-x')
         !
