@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.80 2003-09-10 07:08:34 ajohan Exp $ 
+! $Id: initcond.f90,v 1.81 2003-09-10 17:38:45 brandenb Exp $ 
 
 module Initcond 
  
@@ -1116,6 +1116,7 @@ module Initcond
 !  Write snapshot file of penciled vector data (for debugging).
 !
 !  23-may-02/axel: coded
+!  10-sep-03/axel: result only *added* to whatever f array had before
 !
       integer :: i,i1,i2
       real, dimension (mx,my,mz) :: r,p,tmp
@@ -1125,8 +1126,7 @@ module Initcond
 !  set gaussian random noise vector
 !
       if (ampl==0) then
-        f(:,:,:,i1:i2)=0
-        if (lroot) print*,'gaunoise_vect: set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'gaunoise_vect: ampl=0, f unchanged i1,i2=',i1,i2
       else
         if ((ip<=8).and.lroot) print*,'gaunoise_vect: i1,i2=',i1,i2
         do i=i1,i2
@@ -1138,7 +1138,7 @@ module Initcond
             tmp=sqrt(-2*alog(r))*cos(2*pi*p)
           endif
           !call smooth_3d(tmp,ismo)  !(may want to smooth)
-          f(:,:,:,i)=ampl*tmp
+          f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
           if (lroot) print*,'gaunoise_vect: variable i=',i
         enddo
       endif
@@ -1150,6 +1150,7 @@ module Initcond
 !  Write snapshot file of penciled vector data (for debugging).
 !
 !  23-may-02/axel: coded
+!  10-sep-03/axel: result only *added* to whatever f array had before
 !
       integer :: i
       real, dimension (mx,my,mz) :: r,p,tmp
@@ -1162,7 +1163,7 @@ module Initcond
       call random_number_wrapper(r)
       call random_number_wrapper(p)
       tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-      f(:,:,:,i)=ampl*tmp
+      f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
       print*,'gaunoise_scal: variable i=',i
 !
     endsubroutine gaunoise_scal
