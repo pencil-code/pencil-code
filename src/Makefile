@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.103 2002-10-02 06:50:29 brandenb Exp $
+### $Id: Makefile,v 1.104 2002-10-02 09:12:50 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -32,6 +32,9 @@ FC=f90
 FFLAGS=-O3
 CFLAGS=-O3 -DFUNDERSC=1
 
+## The following block (`Begin/End machine dependent') specifies compilers
+## and switches for given architectures and machine names. See
+## `perldoc adapt-mkfile' for full documentation of the syntax.
 
 ### Begin machine dependent
 
