@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.2 2002-05-04 12:40:13 dobler Exp $
+! $Id: prints.f90,v 1.3 2002-05-04 15:13:42 dobler Exp $
 
 module Print
 
@@ -21,13 +21,15 @@ module Print
       use Cdata
       use Sub
 !
+      logical,save :: first=.true.
+!
 !  this needs to be made more sophisticated of course...
 !
       if(lroot) then
-        write( 6,*) 'it,t,dt,',cname(1:nname)
+        if (first) write( 6,*) 'it,t,dt,',cname(1:nname)
         write( 6,*) it-1,t_diag,dt,fname(1:nname)
-        write( 6,*) 
       endif
+      first = .false.
 !
     endsubroutine Prints
 !***********************************************************************
