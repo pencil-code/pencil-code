@@ -1,15 +1,18 @@
-! $Id: radiation_ray.f90,v 1.6 2003-03-26 05:49:49 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.7 2003-03-26 07:16:57 brandenb Exp $
 
 module Radiation
 
 !  Radiation (solves transfer equation along rays)
+!  The direction of the ray is given by the vector (lrad,mrad,nrad),
+!  and the parameters radx0,rady0,radz0 gives the maximum number of
+!  steps of the direction vector in the corresponding direction.
 
   use Cparam
 
   implicit none
 
   integer :: directions
-  integer, parameter :: radx0=1,rady0=1,radz0=1
+  integer, parameter :: radx0=3,rady0=3,radz0=3
   real, dimension (radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
   real, dimension (mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
   real, dimension (mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
@@ -56,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.6 2003-03-26 05:49:49 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.7 2003-03-26 07:16:57 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -68,6 +71,12 @@ module Radiation
 ! 25-mar-03/axel+tobi: coded
 !
   integer :: lrad,mrad,nrad,rad2
+!
+!  check that the number of rays does not exceed maximum
+!
+      if(radx>radx0) stop "radx0 is too small"
+      if(rady>rady0) stop "rady0 is too small"
+      if(radz>radz0) stop "radz0 is too small"
 !
 !  count
 !
@@ -105,11 +114,10 @@ module Radiation
 !
       do n=1,mz
       do m=1,my
-        lnrho=f(l1:l2,m,n,ilnrho)
         ss=f(l1:l2,m,n,ient)
+        lnrho=f(l1:l2,m,n,ilnrho)
         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature=TT)
         Source(l1:l2,m,n)=arad*TT**4
-        !Source(l1:l2,m,n)=arad*1./TT1**4
       enddo
       enddo
 !
@@ -184,7 +192,7 @@ module Radiation
           !
           call transfer(f,Intensity,lrad,mrad,nrad)
           Qrad=Qrad+frac*Intensity
-write(27) Intensity,lrad,mrad,nrad
+!write(27) Intensity,lrad,mrad,nrad
           !
           !  safe boundary values for next processor (or opposite boundary)
           !
@@ -198,7 +206,7 @@ write(27) Intensity,lrad,mrad,nrad
       enddo
       enddo
       enddo
-write(28) Qrad,Source
+ write(28) Qrad,Source
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -268,7 +276,7 @@ write(28) Qrad,Source
 !
     endsubroutine transfer
 !***********************************************************************
-    subroutine radiative_cooling(df)
+    subroutine radiative_cooling(f,df)
 !
 !  calculate source function
 !
@@ -276,13 +284,15 @@ write(28) Qrad,Source
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx) :: rho
 !
 !  Add radiative cooling
 !
       do n=1,mz
       do m=1,my
-        !df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+Qrad(l1:l2,m,n)
+        rho=exp(f(l1:l2,m,n,ilnrho))
+        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+kappa*rho*Qrad(l1:l2,m,n)
       enddo
       enddo
 !
