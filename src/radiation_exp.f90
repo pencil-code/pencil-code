@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.56 2003-07-07 13:42:32 theine Exp $
+! $Id: radiation_exp.f90,v 1.57 2003-07-07 15:28:25 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -16,8 +16,6 @@ module Radiation
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
-  !character (len=2*bclen+1), dimension(3) :: bc_rad=''
-  !character (len=bclen), dimension(3) :: bc_rad1='',bc_rad2=''
   integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
   real, dimension(mx,my,mz,3) :: pos
@@ -39,6 +37,7 @@ module Radiation
 !
   logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
   logical :: lkappa_es=.false.
+  logical :: axeltest=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -48,7 +47,7 @@ module Radiation
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es, &
-       bc_rad
+       bc_rad,axeltest
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es,nocooling, &
@@ -87,7 +86,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.56 2003-07-07 13:42:32 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.57 2003-07-07 15:28:25 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -225,6 +224,7 @@ module Radiation
 !  First initialize Qrad=-S. 
 !
       f(:,:,:,iQrad)=-Srad
+      if(axeltest) f(:,:,:,iQrad)=0
 !
 !  calculate weights
 !
@@ -404,8 +404,7 @@ module Radiation
 !
          if (lrad>0) then
             ! ray points in positive x-direction
-            if (ipx==0) Irad0_yz=Irad(l2-radx0+1:l2,:,:) &
-                           /(1.-emtau(l2-radx0+1:l2,:,:))
+            if (ipx==0) call radboundary_yz(1,Irad0_yz)
             if (ipx/=0) then
                idest=ipx-1
                call radcomm_yz_recv(radx0,idest,Irad0_yz)
@@ -415,8 +414,7 @@ module Radiation
 !
          if (lrad<0) then
             ! ray points in negative y-direction
-            if (ipy==nprocx-1) Irad0_yz=Irad(l1:l1+radx0-1,:,:) &
-                                   /(1.-emtau(l1:l1+radx0-1,:,:))
+            if (ipy==nprocx-1) call radboundary_yz(2,Irad0_yz)
             if (ipy/=nprocx-1) then
                idest=ipx+1
                call radcomm_yz_recv(radx0,idest,Irad0_yz)
@@ -438,7 +436,7 @@ module Radiation
 !
          if (mrad>0) then
             ! ray points in positive y-direction
-            if (ipy==0) Irad0_zx=0.
+            if (ipy==0) call radboundary_zx(1,Irad0_zx)
             if (ipy/=0) then
                idest=ipy-1
                call radcomm_zx_recv(rady0,idest,Irad0_zx)
@@ -448,7 +446,7 @@ module Radiation
 !
          if (mrad<0) then
             ! ray points in negative y-direction
-            if (ipy==nprocy-1) Irad0_zx=0.
+            if (ipy==nprocy-1) call radboundary_zx(2,Irad0_zx)
             if (ipy/=nprocy-1) then
                idest=ipy+1
                call radcomm_zx_recv(rady0,idest,Irad0_zx)
@@ -596,6 +594,72 @@ module Radiation
          endif
 !
     endsubroutine xy_boundary_send
+!***********************************************************************
+    subroutine radboundary_yz(ibound,Irad0_yz)
+!
+!  sets the physical boundary condition on xy plane
+!
+!   6-jul-03/axel: coded
+!
+    real, dimension(radx0,my,mz) :: Irad0_yz
+    integer :: ibound
+!
+!  lower x-boundary
+!
+    if(ibound==1) then
+      select case(bc_rad1(1))
+      case ('0'); Irad0_yz=0.
+print*,'null lower radboundary_yz'
+      case ('p'); Irad0_yz=Irad(l2-radx0+1:l2,:,:) &
+                     /(1.-emtau(l2-radx0+1:l2,:,:))
+print*,'periodic lower radboundary_yz'
+      case ('S'); Irad0_yz=Srad(l1-radx0:l1-1,:,:)
+print*,'S lower radboundary_yz'
+      endselect
+!
+!  upper x-boundary
+!
+    else if(ibound==2) then
+      select case(bc_rad2(1))
+      case ('0'); Irad0_yz=0.
+print*,'null upper radboundary_yz'
+      case ('p'); Irad0_yz=Irad(l1:l1+radx0-1,:,:) &
+                     /(1.-emtau(l1:l1+radx0-1,:,:))
+print*,'periodic upper radboundary_yz'
+      case ('S'); Irad0_yz=Srad(l1-radx0:l1-1,:,:)
+print*,'S upper radboundary_yz'
+      endselect
+    endif
+!
+    endsubroutine radboundary_yz
+!***********************************************************************
+    subroutine radboundary_zx(ibound,Irad0_zx)
+!
+!  sets the physical boundary condition on xy plane
+!
+!   6-jul-03/axel: coded
+!
+    real, dimension(mx,rady0,mz) :: Irad0_zx
+    integer :: ibound
+!
+!  lower y-boundary
+!
+    if(ibound==1) then
+      select case(bc_rad1(2))
+      case ('0'); Irad0_zx=0.
+      case ('S'); Irad0_zx=Srad(:,m1-rady0:m1-1,:)
+      endselect
+!
+!  upper y-boundary
+!
+    else if(ibound==2) then
+      select case(bc_rad2(2))
+      case ('0'); Irad0_zx=0.
+      case ('S'); Irad0_zx=Srad(:,m1-rady0:m1-1,:)
+      endselect
+    endif
+!
+    endsubroutine radboundary_zx
 !***********************************************************************
     subroutine radboundary_xy(ibound,Irad0_xy)
 !
