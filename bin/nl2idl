@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.3 2002-06-15 16:39:51 dobler Exp $
+# $Id: nl2idl,v 1.4 2002-06-15 16:56:16 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -70,10 +70,12 @@ my $idl = <<"HEADER";
 HEADER
 #
 $idl .= "$prefix = { \$\n";
-
+die "Line 73?";
 ## Read file contents
 my $prevlist="";
-while (<>) {
+my $infile = ($ARGV[0] || '-');
+open(INPUT,"< $infile") || die "Can't open $infile for reading";
+while (<INPUT>) {
     s/!.*$//;			# remove comments
     s/\s/ /g;			# normalise whitespace
     if (/$nlstart\s+(.*)/) {		# $1 now contains the namelist name
