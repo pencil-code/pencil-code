@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-05-26 14:32:05 $
-# $Revision: 1.11 $
+# $Date: 2003-08-29 13:27:49 $
+# $Revision: 1.12 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -56,14 +56,16 @@ GetOptions(\%opts,
 	       -u   --update
 	       -c   --clean
                -m=s --mail=s
+	       -p=s --postproc=s
                     --debug
 	                   ));
-die usage() if ($opts{'h'} || $opts{'help'} || @ARGV < 1);
-my $debug  = (              $opts{'debug'}  || 0);
-my $html   = ($opts{'H'} || $opts{'html'}   || 0);
-my $clean  = ($opts{'c'} || $opts{'clean'}  || 0);
-my $update = ($opts{'u'} || $opts{'update'} || 0);
-my $emails = ($opts{'m'} || $opts{'mail'}   || '');
+die usage() if ($opts{'h'} || $opts{'help'}     || @ARGV < 1);
+my $debug     = (              $opts{'debug'}      || 0);
+my $html      = ($opts{'H'} || $opts{'html'}       || 0);
+my $clean     = ($opts{'c'} || $opts{'clean'}      || 0);
+my $update    = ($opts{'u'} || $opts{'update'}     || 0);
+my $emails    = ($opts{'m'} || $opts{'mail'}       || '');
+my $postproc  = ($opts{'p'} || $opts{'postproc'}   || '');
 
 ## Print header
 my $date = scalar localtime();
@@ -96,14 +98,15 @@ foreach my $host (@ARGV) {
     }
     # Construct and execute remote command
     my @cmd = ("ssh", "-n", "$host");
-    my $remcmd = '\'cd $PENCIL_HOME';
+    my $remcmd = 'cd $PENCIL_HOME';
     if ($update) { $remcmd .= "; cvs update >& /dev/null"};
     $remcmd .= "; ./bin/auto-test -s -t";
-    if ($clean) { $remcmd .= " --clean"};
-    push @cmd, $remcmd;
+    if ($clean) { $remcmd .= " --clean" };
+    if ($postproc) { $remcmd .= " --postproc=\"$postproc\"" };
+#    push @cmd, $remcmd;
 #    system("@cmd |");
-    if ($debug) { print STDERR "open(POUT, \"@cmd' |\"\n" };
-    open(POUT, "@cmd' |");
+    if ($debug) { print STDERR "open(POUT, \"@cmd '$remcmd' |\"\n" };
+    open(POUT, "@cmd '$remcmd' |");
 #    print "<",join("> <",@cmd,">\n");
 #    print "<@cmd'>\n");
     my ($line,$result);

@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.36 2003-08-26 10:04:21 dobler Exp $
+# CVS: $Id: auto-test,v 1.37 2003-08-29 13:27:35 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -33,6 +33,7 @@ use Cwd;
 use POSIX qw(floor);
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
+use IPC::Open2;
 
 $ntests=0;
 
@@ -57,6 +58,7 @@ my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
 my $help = 0;
 (my $cmdname = $0) =~ s{.*/}{};
+my $nosummary = 0;
 
 my $usage =
 "Usage:  $cmdname [options] [dir1 [dir2 [..]]]
@@ -74,8 +76,8 @@ Options:
   -c,  --compile-only   \tTest compilation only
   -n,  --norun          \tTest compilation and starting only
   -t,  --time           \tPrint CPU time used
-  -s,  --short          \tPrint short directory names only";
-
+  -s,  --short          \tPrint short directory names only
+  -p,  --postproc=PP    \tApply postprocessor PP to output from make";
 ## Process command line options
 eval {
     Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
@@ -89,19 +91,21 @@ GetOptions(\%opts,
 	       -n   --norun
 	       -t   --time
 	       -s   --short
+	       -p=s --postproc=s
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.36 2003-08-26 10:04:21 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.37 2003-08-29 13:27:35 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
-my $debug = (              $opts{'debug'} || 0);
-my $short = ($opts{'s'} || $opts{'short'} || 0);
-my $time  = ($opts{'t'} || $opts{'time'}  || 0);
-my $clean = ($opts{'C'} || $opts{'clean'} || 0);
+my $debug    = (              $opts{'debug'}    || 0 );
+my $short    = ($opts{'s'} || $opts{'short'}    || 0 );
+my $time     = ($opts{'t'} || $opts{'time'}     || 0 );
+my $clean    = ($opts{'C'} || $opts{'clean'}    || 0 );
+my $postproc = ($opts{'p'} || $opts{'postproc'} || '');
 
 ## Debugging output:
 if ($debug) {
@@ -187,7 +191,7 @@ sub my_ok {
 	$failed{$dir} = $phase unless defined($failed{$dir});
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub test_shell_cmd {
     my $cmd = shift;
     my $dir = (shift || "<Unknown directory>");
@@ -196,12 +200,17 @@ sub test_shell_cmd {
 
     if ($debug) { print STDERR "Running `$cmd`" };
     my $res = (`$cmd 2>&1` || "Very BAD: `$cmd' returned undef");
+    my $cmdstatus = $?;
     if ($debug) { print STDERR " ..done \n" };
     chomp($res);
-    my_ok($?,0,$res,$dir,$phase,$quiet); # $? = 0 means success
+    if (($phase eq 'compilation') && ($postproc ne '')) {
+	print STDERR "Postprocessing output..\n" if ($debug);
+	$res = postprocess($res);
+    }
+    my_ok($cmdstatus,0,$res,$dir,$phase,$quiet); # $? = 0 means success
     $res;			# Return output so we can analyze it if desired
 }
-
+# ---------------------------------------------------------------------- #
 sub test_compile {
 # Test compilation only
     if ($t_comp) {
@@ -214,7 +223,7 @@ sub test_compile {
 	test_shell_cmd('cd src; make',$dir,"compilation");
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub test_start {
 # Test starting only
     if ($t_start) {
@@ -223,7 +232,7 @@ sub test_start {
 	test_shell_cmd('start.csh',$dir,"starting");
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub test_run {
 # Test running only (does not analyze output, but returns it)
     if ($t_run) {
@@ -232,7 +241,7 @@ sub test_run {
 	$res = test_shell_cmd('run.csh',$dir,"running");
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub test_results {
 # Analyze results from code
     if ($t_res) {
@@ -256,7 +265,7 @@ sub test_results {
 	}
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub extract_results {
 # Extract result lines (header line and numerical data) from the output of
 # the code
@@ -289,7 +298,7 @@ sub extract_results {
 	($noheader);
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub read_lines {
 # Read file an return hash of non-empty lines
     my $file = shift;
@@ -309,7 +318,7 @@ sub read_lines {
     $_[0] = $msg;
     @lines;
 }
-
+# ---------------------------------------------------------------------- #
 sub compare_results {
 # Compare two arrays linewise; if all lines are the same, return 1; if
 # not, return 0 and write report to third argument
@@ -338,7 +347,7 @@ sub compare_results {
     $_[0] = $diagn;		# the remaining argument (was the third one)
     $equal;
 }
-
+# ---------------------------------------------------------------------- #
 sub test_rundir {
 # Test compilation, starting, running and results
     my $dir = shift;
@@ -401,7 +410,7 @@ sub test_rundir {
 	system("rm", "-r", "$tmpdir");
     }
 }
-
+# ---------------------------------------------------------------------- #
 sub s_to_hms{
 # Convert no. of seconds to [ddd][hh:]mm:ss string
     my $secs = shift;
@@ -416,9 +425,39 @@ sub s_to_hms{
 
     $string;
 }
+# ---------------------------------------------------------------------- #
+sub postprocess {
+    # Clean compiler output with postprocessor
+    my $text = shift;
+
+    print STDERR "  PP: Cleaning compiler output with <$postproc>\n"
+      if ($debug);
+    # open read/write pipe to postprocessor (see `man perlipc')
+    my $pid = open2(\*POSTPROCD,\*UNPROCD, "$postproc 2>&1");
+    die "Couldn't start $postproc" unless defined($pid);
+    # fork() a child to avoid deadlock if $text is large
+    if (my $child_id=fork()) {		# parent --> read output
+	close UNPROCD;		# important
+	local $/ = undef;	# get it all at once
+	$text = <POSTPROCD>;
+	close POSTPROCD;	# not necessary, I guess
+	waitpid($child_id,0);	# not really needed her, but avoids zombies
+    } else {			# child --> write to postproc
+	die "Cannot fork: $!" unless defined($child_id);
+	$nosummary = 1;		# don't waffle when exiting
+ 	close POSTPROCD;	# apparently not necessary
+	print UNPROCD $text;
+	close UNPROCD;
+	exit 1;			# irrelevant
+    }
+    print STDERR "  PP: done postprocessing\n" if ($debug);
+    $text;
+}
+# ---------------------------------------------------------------------- #
+
 
 END {
-    if (!$help) {
+    if ( ! ($help || $nosummary)) {
 	print "\n" . "-" x 70 . "\n";
 	if (%failed) {
 	    print "Failed ", scalar(keys %failed),
