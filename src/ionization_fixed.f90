@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.22 2003-10-16 17:13:00 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.23 2003-10-17 13:07:19 nilshau Exp $
 
 !  Dummy routine for noionization
 
@@ -97,7 +97,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.22 2003-10-16 17:13:00 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.23 2003-10-17 13:07:19 nilshau Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -558,6 +558,17 @@ module Ionization
       H_xy=(1.+yH0+xHe)*ss_ion*TT_xy/gravz
 !
     endsubroutine scale_height_xy
+!***********************************************************************
+    subroutine yH_get(lnrho,Temp,yH)
+!
+!  Calculate ionization fraction for given temperature.
+!  To be used with the isothermal initial condition for entropy.
+!
+      real, intent (in)    :: lnrho,Temp
+      real, intent (inout) :: yH
+      double precision :: tmp1,tmp2,varA
+!
+    end subroutine yH_get
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)

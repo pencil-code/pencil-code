@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.116 2003-10-12 22:16:08 mee Exp $
+! $Id: ionization.f90,v 1.117 2003-10-17 13:07:19 nilshau Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -97,7 +97,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.116 2003-10-12 22:16:08 mee Exp $")
+           "$Id: ionization.f90,v 1.117 2003-10-17 13:07:19 nilshau Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -254,7 +254,7 @@ module Ionization
       integer :: iter
       integer :: maxiter=0
       logical,save :: first=.true.
-
+!
       do n=1,mz
       do m=1,my
       do l=1,mx
@@ -273,7 +273,7 @@ module Ionization
       enddo
       enddo
       enddo
-      
+      !
       if (lionstat) then
         avgiter=avgiter/(mx*my*mz)
         open(1,file=trim(datadir)//'/iterations.dat',position='append')
@@ -888,6 +888,31 @@ module Ionization
       H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
 !
     endsubroutine scale_height_xy
+!***********************************************************************
+    subroutine yH_get(lnrho,Temp,yH)
+!
+!  Calculate ionization fraction for given temperature.
+!  To be used with the isothermal initial condition for entropy.
+!
+      real, intent (in)    :: lnrho,Temp
+      real, intent (inout) :: yH
+      double precision :: tmp1,tmp2,varA
+!
+      tmp1=exp(lnrho_e)/exp(lnrho)*(Temp/TT_ion)**(1.5)
+      tmp2=exp(-chiH/(k_B*Temp))
+      varA=1./(tmp1*tmp2)
+!
+      if ((tmp1 .eq. 0) .or. (tmp2 .eq. 0)) then
+        yH=0
+      else
+        if (varA .lt. 1e-7) then
+          yH=1-2*varA
+        else
+          yH=(-1.+dsqrt(1+4*varA))/(2*varA)
+        endif
+      endif
+!
+    end subroutine yH_get
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)

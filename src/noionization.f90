@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.73 2003-10-16 17:13:00 brandenb Exp $
+! $Id: noionization.f90,v 1.74 2003-10-17 13:07:19 nilshau Exp $
 
 !  Dummy routine for noionization
 
@@ -47,9 +47,9 @@ module Ionization
   end interface
 
   ! secondary parameters calculated in initialize
-  !real :: TT_ion,TT_ion_,ss_ion,kappa0
-  !real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
-  !real :: xHe_term,yH_term,one_yH_term
+  real :: TT_ion,TT_ion_,ss_ion,kappa0
+  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  real :: xHe_term,yH_term,one_yH_term
   real :: TT0 
 
   !  lionization initialized to .false.
@@ -93,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.73 2003-10-16 17:13:00 brandenb Exp $")
+           "$Id: noionization.f90,v 1.74 2003-10-17 13:07:19 nilshau Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -416,6 +416,17 @@ module Ionization
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
+!***********************************************************************
+    subroutine yH_get(lnrho,Temp,yH)
+!
+!  Calculate ionization fraction for given temperature.
+!  To be used with the isothermal initial condition for entropy.
+!
+      real, intent (in)    :: lnrho,Temp
+      real, intent (inout) :: yH
+      double precision :: tmp1,tmp2,varA
+!
+    end subroutine yH_get
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)

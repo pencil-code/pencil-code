@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.210 2003-10-16 12:50:25 mee Exp $
+! $Id: entropy.f90,v 1.211 2003-10-17 13:07:18 nilshau Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -30,7 +30,7 @@ module Entropy
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
-  real :: tau_ss_exterior=0.
+  real :: tau_ss_exterior=0.,T0
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
   real :: center2_x=0., center2_y=0., center2_z=0.
@@ -53,7 +53,7 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
-       center2_x, center2_y, center2_z
+       center2_x, center2_y, center2_z,T0
      
 
   ! run parameters
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.210 2003-10-16 12:50:25 mee Exp $")
+           "$Id: entropy.f90,v 1.211 2003-10-17 13:07:18 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -435,6 +435,7 @@ module Entropy
 !
 !  11-jun-03/tony: extracted from isothermal routine in Density module
 !                  to allow isothermal condition for arbitrary density
+!  17-oct-03/nils: works also with lionization=T
 !
 !
       use Mpicomm, only: stop_it
@@ -442,15 +443,40 @@ module Entropy
       use Ionization
 
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: lnrho,ion_frac,tmp1,tmp2,ss,lnTT
+      integer :: li
 !
-      if (lionization.or.lionization_fixed) &
-       call stop_it("isothermal_entropy: NOT IMPLEMENTED FOR IONIZATION CASES")
-      do n=n1,n2
-      do m=m1,m2
-          f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
-                  ! + other terms for sound speed not equal to cs_0
-      enddo
-      enddo
+!
+      if (lionization.or.lionization_fixed) then
+        lnTT=log(T0)-log(TT_ion)
+        do n=n1,n2
+          do m=m1,m2
+            do li=l1,l2
+              lnrho=f(li,m,n,ilnrho)
+              call yH_get(lnrho,T0,ion_frac)
+              if (ion_frac .eq. 1.) then
+                tmp1=0
+              else
+                tmp1=(1.-ion_frac)*(log(1-ion_frac)-lnrho_H)
+              endif
+              if (ion_frac .eq. 0.) then
+                tmp2=0
+              else
+                tmp2=ion_frac*(2*log(ion_frac)-lnrho_e-lnrho_p)
+              endif
+              ss=ss_ion*((lnTT*1.5+2.5-lnrho)*(1.+ion_frac+xHe)-tmp1-tmp2-xHe_term)
+              f(li,m,n,iss)=ss
+            enddo
+          enddo
+        enddo
+      else
+        do n=n1,n2
+          do m=m1,m2
+            f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+            ! + other terms for sound speed not equal to cs_0
+          enddo
+        enddo
+      endif
 
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
