@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.15 2004-05-11 17:43:34 mee Exp $
+; $Id: pc_read_var.pro,v 1.16 2004-05-12 09:59:33 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 17:43:34 $
-;  $Revision: 1.15 $
+;  $Date: 2004-05-12 09:59:33 $
+;  $Revision: 1.16 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -178,6 +178,7 @@ end
 
 content = strmid(content,2)
 IF ( not keyword_set(QUIET) ) THEN print,'File '+varfile+' contains: ', content
+IF ( not keyword_set(QUIET) ) THEN print,'Time is t=', t
 
 for i=0,ncpus-1 do begin 
   if (n_elements(proc) eq 1) then begin
