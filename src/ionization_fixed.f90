@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.37 2003-11-02 04:00:18 theine Exp $
+! $Id: ionization_fixed.f90,v 1.38 2003-11-11 12:38:09 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -98,7 +98,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.37 2003-11-02 04:00:18 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.38 2003-11-11 12:38:09 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -360,21 +360,29 @@ module Ionization
 
     end subroutine getdensity
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,lnTT)
+    subroutine ionget_pencil(f,yH,lnTT,glnTT)
 !
 !  'extract' ionization fraction and temperature from f array pencilwise
 !
       use Cdata
+      use Sub, only: grad
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: yH,lnTT
+      real, dimension(nx,3), intent(out), optional :: glnTT
       real, dimension(nx) :: lnrho,ss
+      real, dimension(nx,3) :: glnrho,gss
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
 !
       yH=yH0
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+      if (present(glnTT)) then
+        call grad(f,iss,gss)
+        call grad(f,ilnrho,glnrho)
+        glnTT=lnTTss*gss+lnTTlnrho*glnrho
+      endif  
 !
     endsubroutine ionget_pencil
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.240 2003-11-05 15:45:22 mcmillan Exp $
+! $Id: entropy.f90,v 1.241 2003-11-11 12:38:09 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.240 2003-11-05 15:45:22 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.241 2003-11-11 12:38:09 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -722,7 +722,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho,gss,gshock
+      real, dimension (nx,3) :: uu,glnrho,gss,gshock,glnTT
       real, dimension (nx) :: ugss,uglnrho,divu
       real, dimension (nx) :: lnrho,ss,yH,lnTT,rho1,cs2,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
@@ -750,7 +750,7 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,iss)
-      call ionget(f,yH,lnTT)
+      call ionget(f,yH,lnTT,glnTT=glnTT)
       call thermodynamics(lnrho,yH,lnTT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
@@ -814,7 +814,7 @@ module Entropy
 !
 !  shock entropy diffusion
 !
-      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss,shock,gshock)
+      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
 !  heating/cooling
 !
@@ -912,7 +912,7 @@ module Entropy
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_shock(f,df,rho1,glnrho,gss,shock,gshock)
+    subroutine calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
 !  Adds in shock entropy diffusion. There is potential for
 !  recycling some quantities from previous calculations.
@@ -926,9 +926,9 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnrho,gss,gshock
+      real, dimension (nx,3) :: glnrho,gss,gshock,glnTT
       real, dimension (nx) :: rho1,shock
-      real, dimension (nx) :: thdiff,del2ss,g2
+      real, dimension (nx) :: thdiff,del2ss,g2,gshockgss
 !
       intent(in) :: f,glnrho,gss,shock,gshock
       intent(out) :: df
@@ -937,19 +937,16 @@ module Entropy
 !
       if(headtt) print*,'calc_heatcond_shock: chi_shock==',chi_shock
 !
-!  Heat conduction
-!  Note: these routines require revision when ionization turned on
 !
       call del2(f,iss,del2ss)
-      call dot_mn(gshock,gss,g2)
+      call dot_mn(gshock,gss,gshockgss)
+      call dot_mn(glnTT+glnrho,gss,g2)
 !
 !  shock entropy diffusivity
 !
       if(chi_shock/=0.) then
         if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
-!        thdiff = chi_shock*(shock*(del2ss+g2)+g2)
-         call stop_it("calc_heatcond_shock: Errr... Check this first!")
-         thdiff = 0             !(keep picky compilers quiet)
+          thdiff = thdiff + chi_shock*(shock*(del2ss+g2)+gshockgss)
       endif
 !
 !  add heat conduction to entropy equation

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.88 2003-11-03 09:47:02 dobler Exp $
+! $Id: noionization.f90,v 1.89 2003-11-11 12:38:09 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.88 2003-11-03 09:47:02 dobler Exp $")
+           "$Id: noionization.f90,v 1.89 2003-11-11 12:38:09 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -272,25 +272,34 @@ module Ionization
 !
     end subroutine isothermal_density_ion
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,lnTT)
+    subroutine ionget_pencil(f,yH,lnTT,glnTT)
 !
       use Cdata
+      use Sub, only: grad 
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(inout) :: yH,lnTT
+      real, dimension(nx,3), intent(out), optional :: glnTT
       real, dimension(nx) :: lnrho,ss
+      real, dimension(nx,3) :: glnrho,gss
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
 !
       yH=0.
       lnTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+      if (present(glnTT)) then
+        call grad(f,iss,gss)
+        call grad(f,ilnrho,glnrho)
+        glnTT=gamma*gss+gamma1*glnrho
+      endif  
 !
     endsubroutine ionget_pencil
 !***********************************************************************
     subroutine ionget_point(lnrho,ss,yH,lnTT)
 !
       use Cdata
+      use Sub, only: grad
 !
       real, intent(in) :: lnrho,ss
       real, intent(out) :: yH,lnTT

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.136 2003-11-06 12:05:08 theine Exp $
+! $Id: ionization.f90,v 1.137 2003-11-11 12:38:09 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -123,7 +123,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.136 2003-11-06 12:05:08 theine Exp $")
+           "$Id: ionization.f90,v 1.137 2003-11-11 12:38:09 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -441,17 +441,20 @@ module Ionization
 
     end subroutine getdensity
 !***********************************************************************
-    subroutine ionget_pencil(f,yH,lnTT)
+    subroutine ionget_pencil(f,yH,lnTT,glnTT)
 !
 !  extract ionization fraction and temperature from f array pencilwise
 !
       use Cdata
+      use Sub, only: grad
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx), intent(out) :: yH,lnTT
+      real, dimension(nx,3), intent(out), optional :: glnTT
 !
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
+      if (present(glnTT)) call grad(f,ilnTT,glnTT)
 !
     endsubroutine ionget_pencil
 !***********************************************************************
