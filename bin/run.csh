@@ -36,8 +36,7 @@ endif
 date
 #
 echo "$mpirun $mpirunops $npops src/run.x"
-touch run_command.log  # make sure it exists so we can append on any system
-echo $mpirun $mpirunops $npops src/run.x >> run_command.log
+echo $mpirun $mpirunops $npops src/run.x >>run_command.log
 time $mpirun $mpirunops $npops src/run.x
 #
 date
@@ -48,10 +47,9 @@ ls -lt /scratch
 if ($hn =~ s[0-9]*p[0-9]*) then
   echo "Use options for the Horseshoe cluster"
   copy-snapshots -v var.dat
+  echo "done, will now killall copy-snapshots"
+  killall copy-snapshots
 endif
-
-echo "done, will now killall copy-snapshots"
-killall copy-snapshots
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
