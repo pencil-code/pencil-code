@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.23 2003-05-13 17:24:04 pkapyla Exp $
+! $Id: pscalar.f90,v 1.24 2003-05-15 10:25:11 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -31,7 +31,7 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
-  integer :: i_ucm=0,i_uudcm=0
+  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0
 
   contains
 
@@ -64,7 +64,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.23 2003-05-13 17:24:04 pkapyla Exp $")
+           "$Id: pscalar.f90,v 1.24 2003-05-15 10:25:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -214,6 +214,8 @@ module Pscalar
         if (i_lnccmz/=0) call xysum_mn_name_z(lncc,i_lnccmz)
         if (i_ucm/=0) call sum_mn_name(uu(:,3)*cc,i_ucm)
         if (i_uudcm/=0) call sum_mn_name(uu(:,3)*cc*uglncc,i_uudcm)
+        if (i_Cz2m/=0) call sum_mn_name(rho*cc*z(n)**2,i_Cz2m)
+        if (i_Cz4m/=0) call sum_mn_name(rho*cc*z(n)**4,i_Cz4m)
       endif
 !
     endsubroutine dlncc_dt
@@ -234,7 +236,7 @@ module Pscalar
 !
       if (lreset) then
         i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
-        i_ucm=0; i_uudcm=0
+        i_ucm=0; i_uudcm=0; i_Cz2m=0; i_Cz4m=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -245,6 +247,8 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'lnccm',i_lnccm)
         call parse_name(iname,cname(iname),cform(iname),'ucm',i_ucm)
         call parse_name(iname,cname(iname),cform(iname),'uudcm',i_uudcm)
+        call parse_name(iname,cname(iname),cform(iname),'Cz2m',i_Cz2m)
+        call parse_name(iname,cname(iname),cform(iname),'Cz4m',i_Cz4m)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -261,6 +265,8 @@ module Pscalar
       write(3,*) 'i_ucm=',i_ucm
       write(3,*) 'i_uudcm=',i_uudcm
       write(3,*) 'i_lnccmz=',i_lnccmz
+      write(3,*) 'i_Cz2m=',i_Cz2m
+      write(3,*) 'i_Cz4m=',i_Cz4m
       write(3,*) 'ilncc=',ilncc
 !
     endsubroutine rprint_pscalar
