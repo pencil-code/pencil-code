@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.27 2003-06-17 19:14:58 dobler Exp $
+! $Id: noionization.f90,v 1.28 2003-06-19 10:32:15 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -11,7 +11,7 @@ module Ionization
   implicit none
 
   ! global ionization parameter for yH (here a scalar set to 0)
-  real :: yyH=0.
+!ajwm  real :: yyH=0.  shouldn't be used directly outside module
 
   ! global parameter for perfect gas EOS for either yH=0 or yH=1
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
@@ -61,7 +61,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.27 2003-06-17 19:14:58 dobler Exp $")
+           "$Id: noionization.f90,v 1.28 2003-06-19 10:32:15 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -172,7 +172,7 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH,TT)
+    subroutine thermodynamics(f,TT1,cs2,cp1tilde,ee)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -188,26 +188,30 @@ module Ionization
       use Sub
       use Density, only:cs20,lnrho0,gamma
 !
-      real, dimension (nx), intent(in) :: lnrho,ss
-      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde,ee
-      real, dimension (nx), intent(in), optional :: yH,TT
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee
+      real, dimension (nx) :: yH,TT,lnrho,ss
       logical :: ldummy
 !
-      if (.not. present(yH)) ldummy=.true.
-      if (.not. present(TT)) ldummy=.true.
-!
-      TT1=1./TT
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,ient)
       if(lfixed_ionization) then
         if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
-        cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
-        cp1tilde=dlnPdss/dlnPdlnrho
-        ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
+!ajwm but where does the reference density come in to this? 
+        yH=yH0
+
+        if (present(cs2))      cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
+        if (present(ee))       ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
-        cs2=gamma1*TT
-        cp1tilde=1.  
-        ee=cs2/(gamma1*gamma)
+        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+        if (present(cs2))      cs2=gamma1*TT
+        if (present(cp1tilde)) cp1tilde=1.  
+        if (present(ee))       ee=cs2/(gamma1*gamma)
       endif
+      if (present(TT1)) TT1=1./TT
 !
     endsubroutine thermodynamics
 !***********************************************************************

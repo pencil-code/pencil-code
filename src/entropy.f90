@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.171 2003-06-18 13:14:15 dobler Exp $
+! $Id: entropy.f90,v 1.172 2003-06-19 10:32:15 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -84,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.171 2003-06-18 13:14:15 dobler Exp $")
+           "$Id: entropy.f90,v 1.172 2003-06-19 10:32:15 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -459,8 +459,8 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,ient)
-      call ionset(f,ss,lnrho,yH,TT)
-      call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH=yH,TT=TT)
+!      call ionset(f,ss,lnrho,yH,TT)
+      call thermodynamics(f,TT1=TT1,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
 !?? does this option make sense?
 !       call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee)
 !     endif
@@ -1283,7 +1283,7 @@ endif
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case(topbot)
 !

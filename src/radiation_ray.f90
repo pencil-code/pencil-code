@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.20 2003-06-16 09:19:22 nilshau Exp $
+! $Id: radiation_ray.f90,v 1.21 2003-06-19 10:32:15 mee Exp $
 
 module Radiation
 
@@ -68,7 +68,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.20 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: radiation_ray.f90,v 1.21 2003-06-19 10:32:15 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -139,11 +139,12 @@ print*,'lnrho_border=',f(l1,m1,1:7,ilnrho)
 !!!!  do n=n1,n2
       do n=1,mz
       do m=m1,m2
-         lnrho=f(l1:l2,m,n,ilnrho)
-         ss=f(l1:l2,m,n,ient)
+!ajwm  - not coherently fixed for new thermodynamics function 
+!         lnrho=f(l1:l2,m,n,ilnrho)
+!         ss=f(l1:l2,m,n,ient)
 !         yH=yyH(l1:l2,m,n) yh is beeing calculated in ioncalc
-         call ioncalc(lnrho,ss,yH,kappa=kappa_)
-         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+!         call ioncalc(lnrho,ss,yH,kappa=kappa_)
+         call thermodynamics(f,TT1=TT1)
          f(l1:l2,m,n,iSrad)=sigmaSB/(pi*TT1**4)
          f(l1:l2,m,n,iTT)=1./TT1
          f(l1:l2,m,n,ikappa)=kappa_

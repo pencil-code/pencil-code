@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.33 2003-06-18 18:20:23 mee Exp $
+! $Id: interstellar.f90,v 1.34 2003-06-19 10:32:15 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -95,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.33 2003-06-18 18:20:23 mee Exp $")
+           "$Id: interstellar.f90,v 1.34 2003-06-19 10:32:15 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -715,7 +715,7 @@ find_SN: do n=n1,n2
 
             !compare old and new conversions for consistency...
             call ionset(f,lnrho_old,ss_old,yH_old,TT_old)
-            call thermodynamics(lnrho_old,ss_old,TT1_old,cs2_old,cp1tilde_old,ee_old,yH=yH_old,TT=TT_old)
+            call thermodynamics(f,ee=ee_old)
             ! TT_old=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)/gamma1*cp1
             ! ee_old=TT_old/TTunits
             ! TT1=1./TT_old

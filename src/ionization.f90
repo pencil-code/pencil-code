@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.50 2003-06-18 19:17:56 theine Exp $
+! $Id: ionization.f90,v 1.51 2003-06-19 10:32:15 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -60,7 +60,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.50 2003-06-18 19:17:56 theine Exp $")
+           "$Id: ionization.f90,v 1.51 2003-06-19 10:32:15 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -228,7 +228,7 @@ module Ionization
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee,yH,TT)
+    subroutine thermodynamics(f,TT1,cs2,cp1tilde,ee)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -243,44 +243,48 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension (nx), intent(in) :: lnrho,ss
-      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde,ee
-      real, dimension (nx), intent(in), optional :: yH,TT
-      real, dimension (nx) :: f,dlnTT_dy,dfdy,dlnTT_dlnrho
-      real, dimension (nx) :: dfdlnrho,dydlnrho,dlnPdlnrho
-      real, dimension (nx) :: dlnTT_dss,dfdss,dydss,dlnPdss
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee
+      real, dimension (nx) :: yH,TT,lnrho,ss
+      real, dimension (nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
+      real, dimension (nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
+      real, dimension (nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
       logical :: ldummy
 !
-!  dummies, since yH and TT are always given if IONIZATION=ionization,
-!  which implies lionization=.true.
+! P...p...p..pick up a Pencil for readability
 !
-      if (present(yH)) ldummy=.true.
-      if (present(TT)) ldummy=.true.
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,ient)
+      yH=f(l1:l2,m,n,iyH)
+      TT=f(l1:l2,m,n,iTT)
 !
 !  calculate cs2, TT1, and cp1tilde
 !
-      f=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yH)-2.*log(yH)
-      dlnTT_dy=(lnmHmp-gamma1*(f+TT_ion/TT)-1.)/(1.+yH+fHe)
-      dfdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
+      ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yH)-2.*log(yH)
+      dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yH+fHe)
+      dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
       dlnTT_dlnrho=gamma1
-      dfdlnrho=gamma1*TT_ion/TT
-      dydlnrho=-dfdlnrho/dfdy
+      dffdlnrho=gamma1*TT_ion/TT
+      dydlnrho=-dffdlnrho/dffdy
       dlnPdlnrho=1.+dydlnrho/(1.+yH+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-      dlnTT_dss=gamma1/((1.+yH+fHe)*ss_ion)
-      dfdss=(1.+dfdlnrho)/((1.+yH+fHe)*ss_ion)
-      dydss=-dfdss/dfdy
-      dlnPdss=dydss/(1.+yH+fHe)+dlnTT_dy*dydss+dlnTT_dss
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
-      TT1=1./TT
-      cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
-      cp1tilde=dlnPdss/dlnPdlnrho
+      if (present(TT1))      TT1=1./TT
+      if (present(cs2))      cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+
+      if (present(cp1tilde)) then
+         dlnTT_dss=gamma1/((1.+yH+fHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yH+fHe)*ss_ion)
+         dydss=-dffdss/dffdy
+         dlnPdss=dydss/(1.+yH+fHe)+dlnTT_dy*dydss+dlnTT_dss
+         cp1tilde=dlnPdss/dlnPdlnrho
+      endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(ee))       ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics
 !***********************************************************************
