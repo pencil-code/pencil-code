@@ -2,15 +2,15 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.18 2002-06-25 12:25:52 dobler Exp $'
+  cvsid='$Id: start.in,v 1.19 2004-03-11 21:33:59 dobler Exp $'
 /
 &hydro_init_pars
 /
 &density_init_pars
-  gamma=1.
+  gamma=1. ! isothermal
 /
 &magnetic_init_pars
-  initaa='4', amplaa=1e-0
+  initaa='fluxrings', amplaa=1e-0
   fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3,
     axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
   fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3,

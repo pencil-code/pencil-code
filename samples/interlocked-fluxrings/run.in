@@ -2,16 +2,17 @@
 !  run parameters for interlocked magnetic flux rings
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.19 2004-03-05 16:08:07 dobler Exp $'
+  cvsid='$Id: run.in,v 1.20 2004-03-11 21:33:59 dobler Exp $'
   nt=10, it1=2, cdt=0.4, cdtv=0.08, isave=50, itorder=3,
-  dsnap=50, dvid=0.5,
+  tmax = 50.
+  dsnap=50, dvid=0.6,
   ip=14
   /
 &hydro_run_pars
-  nu=0., ivisc='0',
+  nu=3e-3,
 /
 &density_run_pars
 /
 &magnetic_run_pars
-  eta=0.,
+  eta=3e-3,
 /
