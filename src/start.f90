@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.81 2003-04-09 13:31:32 brandenb Exp $
+! $Id: start.f90,v 1.82 2003-04-09 13:41:50 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.81 2003-04-09 13:31:32 brandenb Exp $")
+             "$Id: start.f90,v 1.82 2003-04-09 13:41:50 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -110,7 +110,10 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-!        rr=sqrt(xx**2+yy**2+zz**2)
+!  not currently needed.
+!  Wolfggang, can we take this out?
+!
+!!!!!    rr=sqrt(xx**2+yy**2+zz**2)
 !
 !  Seed for random number generator to be used in forcing.f90. Have to
 !  have the same on each  processor as forcing is applied in (global)
@@ -149,6 +152,7 @@
 !  check whether we want ionization
 !
         if(lionization) call ionfrac(f)
+        if(lradiation_ray) call radtransfer(f)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file
