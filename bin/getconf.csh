@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.119 2004-07-25 15:56:22 brandenb Exp $
+# $Id: getconf.csh,v 1.120 2004-08-10 14:34:58 nilshau Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -214,6 +214,15 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv SSH rsh
   setenv SCP rcp
   setenv LANG en_US
+
+
+else if ($hn =~ node*.clusters.com) then
+  echo "fire in Bergen"
+  set mpirunops = ''
+  set mpirun = 'mpirunpbs'
+  set npops = "-np $ncpus"
+#  set mpi = 1
+
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) \
