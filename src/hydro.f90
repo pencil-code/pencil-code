@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.38 2002-07-03 16:44:39 dobler Exp $
+! $Id: hydro.f90,v 1.39 2002-07-04 10:10:55 nilshau Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.38 2002-07-03 16:44:39 dobler Exp $")
+           "$Id: hydro.f90,v 1.39 2002-07-04 10:10:55 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -265,14 +265,14 @@ module Hydro
           if (headtt) print*,'add Coriolis force; Omega=',Omega
           c2=2*Omega
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ c2        *uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(c2-qshear)*uu(:,1)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)
         else
           if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
           if (qshear/=0) print*,'duu_dt: theta/=0 and theta/=0 maybe not ok/AB'
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(c2-qshear)*uu(:,1)+s2*uu(:,3)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
         endif
       endif

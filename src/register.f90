@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.42 2002-07-02 17:08:54 nilshau Exp $
+! $Id: register.f90,v 1.43 2002-07-04 10:10:55 nilshau Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -27,7 +27,7 @@ module Register
       use Forcing
       use Entropy
       use Magnetic
-      use Rotation
+      use Shear
 !
 !  initialize all mpi stuff
 !
@@ -42,7 +42,7 @@ module Register
       call register_ent
       call register_aa
       call register_grav
-      call register_rot
+      call register_shear
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.69 2002-07-02 17:08:54 nilshau Exp $
+### $Id: Makefile,v 1.70 2002-07-04 10:10:55 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -12,7 +12,7 @@ GRAVITY=nograv
 FORCING=noforcing
 ENTROPY=noentropy
 MAGNETIC=nomagnetic
-ROTATION=norotation
+SHEAR=shear
 HYDRO=hydro
 DENSITY=density
 IO=io_dist
@@ -121,7 +121,7 @@ code:
 	make start.x run.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o prints.o
-physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(ROTATION).o
+physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
@@ -156,7 +156,7 @@ wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
-$(ROTATION).o:	$(ROTATION).f90 $(MPICOMM).o cdata.o sub.o cparam.o 
+$(SHEAR).o:	$(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(DENSITY).o $(IO).o slices.o

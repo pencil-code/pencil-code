@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.14 2002-07-03 14:52:05 brandenb Exp $
+! $Id: boundcond.f90,v 1.15 2002-07-04 10:10:55 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -45,7 +45,7 @@ module Boundcond
       !
       !  In case of rotation with shear 
       !
-      if (lrotation .AND. qshear>0) then
+      if (lshear .AND. qshear>0) then
          call initiate_shearing(f)
          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
       else

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.34 2002-07-03 16:44:39 dobler Exp $ 
+! $Id: param_io.f90,v 1.35 2002-07-04 10:10:55 nilshau Exp $ 
 
 module Param_IO
 
@@ -14,7 +14,7 @@ module Param_IO
   use Gravity
   use Entropy
   use Magnetic
-  use Rotation
+  use Shear
  
   implicit none 
 
@@ -50,7 +50,7 @@ module Param_IO
       if (lgrav)     read(1,NML=grav_init_pars    )
       if (lentropy)  read(1,NML=entropy_init_pars )
       if (lmagnetic) read(1,NML=magnetic_init_pars)
-      if (lrotation) read(1,NML=rotation_init_pars)
+      if (lshear) read(1,NML=shear_init_pars)
       close(1)
 !
 !  output on the console, but only when root processor
@@ -66,7 +66,7 @@ module Param_IO
         if (lgrav)     write(*,NML=grav_init_pars  )
         if (lentropy ) write(*,NML=entropy_init_pars )
         if (lmagnetic) write(*,NML=magnetic_init_pars)
-        if (lrotation) read(1,NML=rotation_init_pars)
+        if (lshear) read(1,NML=shear_init_pars)
       endif
 !
 !  set gamma1, cs20, and lnrho0
@@ -110,7 +110,7 @@ module Param_IO
       if (lgrav    ) read(1,NML=grav_run_pars  )
       if (lentropy ) read(1,NML=entropy_run_pars )
       if (lmagnetic) read(1,NML=magnetic_run_pars)
-      ! rotation needs no run parameters
+      if (lshear)    read(1,NML=shear_run_pars)
       close(1)
 !
 !  print cvs id from first line
@@ -187,7 +187,7 @@ module Param_IO
         if (lgrav    ) write(*,NML=grav_run_pars  )
         if (lentropy ) write(*,NML=entropy_run_pars )
         if (lmagnetic) write(*,NML=magnetic_run_pars)
-        ! rotation needs no run parameters
+        if (lshear)    write(*,NML=shear_run_pars)
       endif
 !
     endsubroutine print_runpars
@@ -200,7 +200,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing,lrotation
+           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing,lshear
 !
       if (lroot) then
         open(1,FILE='tmp/param.nml',DELIM='apostrophe')
@@ -211,7 +211,7 @@ module Param_IO
         if (lgrav    ) write(1,NML=grav_init_pars  )
         if (lentropy ) write(1,NML=entropy_init_pars )
         if (lmagnetic) write(1,NML=magnetic_init_pars)
-        if (lrotation) write(1,NML=rotation_init_pars)
+        if (lshear)    write(1,NML=shear_init_pars)
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                        write(1,NML=lphysics         ) 
@@ -236,7 +236,7 @@ module Param_IO
         if (lgrav    ) read(1,NML=grav_init_pars  )
         if (lentropy ) read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
-        if (lrotation) read(1,NML=rotation_init_pars)
+        if (lshear) read(1,NML=shear_init_pars)
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -261,7 +261,7 @@ module Param_IO
         if (lgrav    ) write(1,NML=grav_run_pars  )
         if (lentropy ) write(1,NML=entropy_run_pars )
         if (lmagnetic) write(1,NML=magnetic_run_pars)
-        ! rotation needs no run parameters
+        if (lshear)    write(1,NML=shear_run_pars)
       endif
 !
     endsubroutine wparam2

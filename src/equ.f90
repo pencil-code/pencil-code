@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.71 2002-07-03 15:05:50 dobler Exp $
+! $Id: equ.f90,v 1.72 2002-07-04 10:10:55 nilshau Exp $
 
 module Equ
 
@@ -198,7 +198,7 @@ module Equ
       use Magnetic
       use Boundcond
       use IO
-      use Rotation
+      use Shear
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.71 2002-07-03 15:05:50 dobler Exp $")
+           "$Id: equ.f90,v 1.72 2002-07-04 10:10:55 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -285,7 +285,7 @@ module Equ
 !
 !  Add shear if precent
 !
-        if (lrotation) call shearing(f,df)
+        if (lshear) call shearing(f,df)
 !
 !  write slices for animation
 !  this needs to be put somewhere else for compactness

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.62 2002-07-02 17:08:54 nilshau Exp $
+! $Id: cdata.f90,v 1.63 2002-07-04 10:10:55 nilshau Exp $
 
 module Cdata
 
@@ -65,7 +65,7 @@ module Cdata
   logical :: lout,headt=.true.,headtt=.true.,ldt,lfirst,ldiagnos
   logical :: lwrite_ic=.false.,lnowrite=.false.
   logical :: lroot=.true.,ldebug=.false.
-  logical :: lrotation=.false.
+  logical :: lshear=.false.
   logical :: lfirstpoint
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
