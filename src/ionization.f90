@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.68 2003-08-04 15:45:55 theine Exp $
+! $Id: ionization.f90,v 1.69 2003-08-04 17:09:16 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -11,17 +11,17 @@ module Ionization
 
   implicit none
 
-  interface thermodynamics              ! Overload the `thermodynamics' function
-    module procedure thermodynamics_pencil     ! explicit f implicit m,n
-    module procedure thermodynamics_point      ! explicit lnrho, ss
+  interface thermodynamics              ! Overload subroutine thermodynamics
+    module procedure thermodynamics_pencil
+    module procedure thermodynamics_point
   endinterface
 
-  interface ioncalc_ss                  ! Overload the 'ioncalc_ss' function
-    module procedure ioncalc_ss_penc
+  interface ioncalc_ss                  ! Overload subroutine ioncalc_ss
     module procedure ioncalc_ss_point
+    module procedure ioncalc_ss_pencil
   end interface
 
-  interface ionget
+  interface ionget                      ! Overload subroutine ionget
     module procedure ionget_pencil
     module procedure ionget_point
   end interface
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.68 2003-08-04 15:45:55 theine Exp $")
+           "$Id: ionization.f90,v 1.69 2003-08-04 17:09:16 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -94,7 +94,6 @@ module Ionization
       write(5,*) 'TT = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_ionization
-
 !***********************************************************************
     subroutine initialize_ionization()
 !
@@ -137,7 +136,6 @@ module Ionization
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
     endsubroutine initialize_ionization
-
 !*******************************************************************
     subroutine rprint_ionization(lreset)
 !
@@ -210,33 +208,26 @@ module Ionization
     subroutine ioncalc_ss_point(lnrho,TT,ss)
       real,intent(in) :: lnrho,TT
       real, intent(out) :: ss
-      real :: yH,ff
+      real :: yH,K
 !
-!ajwm WRONG
+      K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+      yH=2./(1.+sqrt(1.+4./K))
+      ss=yH*(lnrho_e+lnrho_p-2.*log(yH))+(1.-yH)*(lnrho_H-log(1.-yH))+xHe_term &
+         +(1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)
 !
-      ff = lnrho_e-lnrho+1.5*log(TT/TT_ion)-exp(TT_ion/TT)+log(1.-yH)-2.*log(yH)
-! Complete the square on Saha equation:  y^2 / (y-1) = f
-      yH = sqrt((ff**2)/4 - ff) + ff * 2.
-
-      ss = ((1. + yH + xHe) &
-           * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
-           +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
-           -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
     end subroutine ioncalc_ss_point
 !***********************************************************************
-    subroutine ioncalc_ss_penc(lnrho,TT,ss)
+    subroutine ioncalc_ss_pencil(lnrho,TT,ss)
       real, dimension(nx), intent(in) :: lnrho,TT
       real, dimension(nx), intent(out) :: ss
-      real, dimension(nx) :: yH,ff
-!ajwm WRONG
-
-!AB: comment out; yH is not defined (according to compiler diagnostics)
-          ss=0.
-!         ss = ((1. + yH + xHe) &
-!                        * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
-!                        +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
-!                         -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
-    end subroutine ioncalc_ss_penc
+      real, dimension(nx) :: yH,K
+!
+      K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+      yH=2./(1.+sqrt(1.+4./K))
+      ss=yH*(lnrho_e+lnrho_p-2.*log(yH))+(1.-yH)*(lnrho_H-log(1.-yH))+xHe_term &
+         +(1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)
+!
+    end subroutine ioncalc_ss_pencil
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
       real, dimension (nx), intent(in) :: pot
@@ -328,7 +319,6 @@ module Ionization
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_pencil
-
 !***********************************************************************
     subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
 !
@@ -345,7 +335,7 @@ module Ionization
       use General
       use Sub
 !
-      real, intent(in) :: lnrho,ss,yH,TT
+      real, intent(in) ::lnrho,ss,yH,TT
       real, intent(out), optional :: cs2,cp1tilde,ee
       real :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real :: dffdlnrho,dydlnrho,dlnPdlnrho
@@ -380,7 +370,6 @@ module Ionization
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_point
-
 !***********************************************************************
     subroutine rtsafe(lnrho,ss,yH)
 !
@@ -439,7 +428,6 @@ module Ionization
       print *,'rtsafe: exceeded maximum iterations',f
 !
     endsubroutine rtsafe
-
 !***********************************************************************
     subroutine saha(yH,lnrho,ss,f,df)
 !
@@ -460,6 +448,5 @@ module Ionization
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
 !
     endsubroutine saha
-
 !***********************************************************************
 endmodule ionization
