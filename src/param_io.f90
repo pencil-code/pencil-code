@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.45 2002-07-23 16:06:09 dobler Exp $ 
+! $Id: param_io.f90,v 1.46 2002-08-02 23:34:57 nilshau Exp $ 
 
 module Param_IO
 
@@ -280,7 +280,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lpscalar,lforcing,lshear
+           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lradiation,lpscalar,lforcing,lshear
 !
       if (lroot) then
         open(1,FILE='tmp/param.nml',DELIM='apostrophe' )
