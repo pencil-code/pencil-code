@@ -548,5 +548,5 @@ c  Error finish, insufficient array storage
   998 isn=0
       print 999
       stop
-  999 format(44h0array bounds exceeded within subroutine fft)
+  999 format("array bounds exceeded within subroutine fft")
       end
