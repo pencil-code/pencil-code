@@ -84,7 +84,7 @@ date
 echo "$mpirun $mpirunops $npops $start_x $x_ops"
 time $mpirun $mpirunops $npops $start_x $x_ops
 set start_status=$status	# save for exit
-if ($status) exit $status	# something went wrong
+if ($start_status) exit $start_status	# something went wrong
 echo ""
 date
 

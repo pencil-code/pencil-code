@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.78 2003-09-03 15:48:05 dobler Exp $
+# $Id: getconf.csh,v 1.79 2003-09-03 15:51:44 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -61,15 +61,15 @@ set hn = `uname -n`
 if ($mpi) echo "Running under MPI"
 set mpirunops = ''
 
-# Construct list of nodes, separated by colons, so it can be transported
-# in an environment variable
+# Get list of nodes; filters lines such that it would also handle
+# machines.XXX files or lam-bhost.der, although this is hardly necessary.
 if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
-  set nodelist = `cat $PBS_NODEFILE`
+  set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//`
 else if ($?JOB_ID) then
   if ($debug) echo "Scout [?] job"
   if (-e $HOME/.score/ndfile.$JOB_ID) then
-    set nodelist = `cat $HOME/.score/ndfile.$JOB_ID`
+    set nodelist = `cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//`
   else
     echo "JOB_ID=$JOB_ID, but can't find ~/.score/ndfile.$JOB_ID -- aborting"
     kill $$			# full-featured suicide
@@ -313,7 +313,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separateds) environment variable
 # NODELIST for transport to sub-processes.
-setenv NODELIST `echo $nodelist | grep -v '^#.*' | sed 's/:[0-9]*//' | xargs printf ":%s" | sed s/^://`
+setenv NODELIST `echo $nodelist | xargs printf ":%s" | sed s/^://`
 
 if ($debug) then
   echo '$mpi          = ' "<$mpi>"
