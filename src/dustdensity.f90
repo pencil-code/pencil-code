@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.88 2004-05-19 11:10:48 ajohan Exp $
+! $Id: dustdensity.f90,v 1.89 2004-05-19 12:32:07 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.88 2004-05-19 11:10:48 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.89 2004-05-19 12:32:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -454,55 +454,56 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: nd
       real, dimension (ndustspec) :: ndnew,mdnew,minew
       integer :: j,k,i_targ,l
-
-      nd(:,:) = f(l1:l2,m,n,ind)
 !
 !  Loop over pencil
 !
-      do l=1,nx; do m=m1,m2; do n=n1,n2
-        md(:) = f(3+l,m,n,imd(:))
-        if (lmice) mi(:) = f(3+l,m,n,imi(:))
-        mdnew = 0.5*(mdminus+mdplus)
-        ndnew = 0.
-        minew = 0.
+      do m=m1,m2; do n=n1,n2
+        nd(:,:) = f(l1:l2,m,n,ind)
+        do l=1,nx
+          md(:) = f(3+l,m,n,imd(:))
+          if (lmice) mi(:) = f(3+l,m,n,imi(:))
+          mdnew = 0.5*(mdminus+mdplus)
+          ndnew = 0.
+          minew = 0.
 !
 !  Check for interval overflows on all species
 !          
-        do k=1,ndustspec
-          i_targ = k
-          if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
-            do j=k+1,ndustspec+1 
-              i_targ = j
-              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
-            enddo
-          elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
-            do j=k-1,0,-1
-              i_targ = j
-              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
-            enddo
-          endif
+          do k=1,ndustspec
+            i_targ = k
+            if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
+              do j=k+1,ndustspec+1 
+                i_targ = j
+                if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
+              enddo
+            elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
+              do j=k-1,0,-1
+                i_targ = j
+                if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
+              enddo
+            endif
 !
 !  Top boundary overflows are ignored
 !
-          if (i_targ == ndustspec+1) i_targ = ndustspec
+            if (i_targ == ndustspec+1) i_targ = ndustspec
 !
 !  Put all overflowing grains into relevant interval
 !
-          if (i_targ >= 1 .and. i_targ <= ndustspec .and. nd(l,k) /= 0.) then
-            mdnew(i_targ) = (nd(l,k)*md(k) + &
-                ndnew(i_targ)*mdnew(i_targ))/(nd(l,k) + ndnew(i_targ))
-            if (lmice) minew(i_targ) = (nd(l,k)*mi(k) + &
-                ndnew(i_targ)*minew(i_targ))/(nd(l,k) + ndnew(i_targ))
-            ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
-          elseif (i_targ == 0) then        !  Underflow below lower boundary
-            f(3+l,m,n,ilncc) = alog(exp(f(3+l,m,n,ilncc)) + &
-                 nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho)))
-          endif
+            if (i_targ >= 1 .and. i_targ <= ndustspec .and. nd(l,k) /= 0.) then
+              mdnew(i_targ) = (nd(l,k)*md(k) + &
+                  ndnew(i_targ)*mdnew(i_targ))/(nd(l,k) + ndnew(i_targ))
+              if (lmice) minew(i_targ) = (nd(l,k)*mi(k) + &
+                  ndnew(i_targ)*minew(i_targ))/(nd(l,k) + ndnew(i_targ))
+              ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
+            elseif (i_targ == 0) then        !  Underflow below lower boundary
+              f(3+l,m,n,ilncc) = alog(exp(f(3+l,m,n,ilncc)) + &
+                   nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho)))
+            endif
+          enddo
+          f(3+l,m,n,ind(:)) = ndnew(:)
+          f(3+l,m,n,imd(:)) = mdnew(:)
+          if (lmice) f(3+l,m,n,imi(:)) = minew(:)
         enddo
-        f(3+l,m,n,ind(:)) = ndnew(:)
-        f(3+l,m,n,imd(:)) = mdnew(:)
-        if (lmice) f(3+l,m,n,imi(:)) = minew(:)
-      enddo; enddo; enddo
+      enddo; enddo
 !
     endsubroutine redist_mdbins
 !***********************************************************************
