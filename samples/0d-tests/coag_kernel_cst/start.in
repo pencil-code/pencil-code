@@ -3,7 +3,7 @@
 !
 &init_pars
   ip=20
-  cvsid='$Id: start.in,v 1.2 2004-01-29 13:49:43 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.3 2004-02-03 11:47:51 ajohan Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
 /
@@ -12,6 +12,7 @@
 &density_init_pars
 /
 &dustvelocity_init_pars
+  md0=1., deltamd=1.2
 /
 &dustdensity_init_pars
   initnd='kernel_cst', nd00=1., dkern_cst=1.
