@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.161 2004-02-12 11:34:27 mee Exp $ 
+! $Id: sub.f90,v 1.162 2004-02-17 16:38:55 bingert Exp $ 
 
 module Sub 
 
@@ -1216,7 +1216,7 @@ module Sub
 !
     endsubroutine del4v
 !***********************************************************************
-    subroutine del2v_etc(f,k,del2,graddiv,curlcurl)
+    subroutine del2v_etc(f,k,del2,graddiv,curlcurl,egradcurl)
 !
 !  calculates a number of second derivative expressions of a vector
 !  outputs a number of different vector fields.
@@ -1230,20 +1230,26 @@ module Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: fjji,fijj
+      real, dimension (nx,3,3), optional :: egradcurl
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
+      real, dimension (nx,3) ::  fjik
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
 !
       intent(in) :: f,k
-      intent(out) :: del2,graddiv,curlcurl
+      intent(out) :: del2,graddiv,curlcurl,egradcurl
 !
-!  do the del2 diffusion operator
+!  calculate f_{i,jj} and f_{j,ji}
 !
       k1=k-1
       do i=1,3
       do j=1,3
-        call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
-        call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
+         if (present(del2) .or. present(curlcurl) .or. present(egradcurl)) then
+            call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
+         endif
+         if (present(graddiv) .or. present(curlcurl).or. present(egradcurl)) then
+            call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
+         endif
       enddo
       enddo
 !
@@ -1255,6 +1261,19 @@ module Sub
 !       fjji(:,j,j)=fijj(:,j,j)
 !     enddo
 !
+
+!      
+!  calculate f_{i,jk} for i /= j /= k
+! 
+     if (present(egradcurl)) then
+         call derij(f,k1+1,tmp,2,3)
+         fjik(:,1)=tmp
+         call derij(f,k1+2,tmp,1,3)
+         fjik(:,2)=tmp
+         call derij(f,k1+3,tmp,1,2)
+         fjik(:,3)=tmp
+      endif 
+!      
       if (present(del2)) then
         do i=1,3
           del2(:,i)=fijj(:,i,1)+fijj(:,i,2)+fijj(:,i,3)
@@ -1273,6 +1292,20 @@ module Sub
         curlcurl(:,3)=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
       endif
 !
+      if(present(egradcurl)) then
+         egradcurl(:,1,1) = fjik(:,3)   - fjik(:,2)
+         egradcurl(:,1,2) = fijj(:,3,2) - fjji(:,2,3)
+         egradcurl(:,1,3) = fjji(:,3,2) - fijj(:,2,3)
+
+         egradcurl(:,2,1) = fjji(:,1,3) - fijj(:,3,1)
+         egradcurl(:,2,2) = fjik(:,1)   - fjik(:,3)
+         egradcurl(:,2,3) = fijj(:,1,3) - fjji(:,3,1)
+
+         egradcurl(:,3,1) = fijj(:,2,1) - fjji(:,1,2)
+         egradcurl(:,3,2) = fjji(:,2,1) - fijj(:,1,2)
+         egradcurl(:,3,3) = fjik(:,2)   - fjik(:,1)         
+      endif
+
     endsubroutine del2v_etc
 !***********************************************************************
     subroutine del2vi_etc(f,k,ii,del2,graddiv,curlcurl)

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.194 2004-02-11 14:58:01 ajohan Exp $
+! $Id: equ.f90,v 1.195 2004-02-17 16:38:55 bingert Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.194 2004-02-11 14:58:01 ajohan Exp $")
+           "$Id: equ.f90,v 1.195 2004-02-17 16:38:55 bingert Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -336,7 +336,7 @@ module Equ
 !
         call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
-        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock)
+        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb)
         call dlncc_dt (f,df,uu,glnrho)
 !
 !  dust equations
