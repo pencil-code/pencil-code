@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.187 2003-07-29 09:20:42 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.188 2003-08-03 07:51:33 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -292,6 +292,7 @@
 \newcommand{\Av}            {\vekt{A}}
 % \newcommand{\av}            {\vekt{a}}
 \newcommand{\Bv}            {\vekt{B}}
+\newcommand{\Jv}            {\vekt{J}}
 % \newcommand{\bv}            {\vekt{b}}
 \newcommand{\ev}            {\vekt{e}}
 % \newcommand{\Ev}            {\vekt{E}}
@@ -340,7 +341,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}
+\date{$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +374,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}
+  \emph{$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2782,25 +2783,26 @@ Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nord
 is proportional to positive flow convergence, maximum over
 five zones, and smoothed to second order,
 \begin{equation}
-\zeta_{\rm shock}=\left<\max_5[(-\Div\uv)_+]\right>.
+\zeta_{\rm shock}=c_{\rm shock}\left<\max_5[(-\Div\uv)_+]\right>,
 \end{equation}
+where $c_{\rm shock}$ is a constant defining the strength of the shock viscosity.
+In the code this dimensionless coefficient is called \code{nu_shock}, and it
+is usually chosen to be around unity.
 Assume that the shock viscosity only enters as a bulk viscosity,
 so the whole stress tensor is then
 \begin{equation}
-\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\nu_{\rm shock}\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
+\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv.
 \end{equation}
 Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
 \begin{equation}
 \varrho^{-1}\vekt{F}_{\rm visc}=
 \nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\varrho\right)
-+\nu_{\rm shock}\zeta\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
++\zeta_{\rm shock}\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
 \end{equation}
 and
 \begin{equation}
-\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\nu_{\rm shock}\zeta(\Div\uv)^2
+\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta_{\rm shock}(\Div\uv)^2.
 \end{equation}
-where $\nu_{\rm shock}$ is simply a constant defining the strength of the 
-shock viscosity.
 
 % ---------------------------------------------------------------------- %
 
@@ -3309,7 +3311,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-08-03 07:51:33 $ $,~ $ $Revision: 1.188 $ $}}}
 
 \section{Timings}
 
@@ -3833,7 +3835,7 @@ $z_{\rm bot}$ & $z_{\rm top}$ & $c_{\rm s0}$ \\
 
 \subsubsection{The Rayleigh number}
 
-Brandenburg et al.\ (1996) defined the Rayleigh number as
+In Ref.~\cite{BJNRST96} the Rayleigh number is defined as
 \begin{equation}\label{Radef}
   \Ra = {gd^4\over\overline{\nu}\;\overline{\chi}}
 \left(-{\mbox{d}s/c_p\over\mbox{d}z}\right)_{\rm hydrostat},
@@ -4219,8 +4221,79 @@ horizontal sections for time $t=50$.
 
 \subsection{Sixth-order spatial derivatives}
 \index{6th-order derivatives}
+\index{Sixth-order derivatives}
 \label{S-6th-order}
-[To be written]
+
+Spectral methods are commonly used in almost all studies of ordinary
+(usually incompressible) turbulence. The use of this method is justified
+mainly by the high numerical accuracy of spectral schemes. Alternatively,
+one may use high order finite differences that are faster to compute
+and that can possess almost spectral accuracy.  Nordlund \& Stein \cite{NS90}
+and Brandenburg et al.\ \cite{BNST95} use high order finite difference
+methods, for example fourth and sixth order compact schemes
+\cite{Lele92}.\footnote{The fourth order compact scheme is really identical to
+calculating derivatives from a cubic spline, as was done in Ref.~\cite{NS90}.
+In the book by Collatz \cite{Collatz66} the compact methods are also
+referred to as {\it Hermitian methods} or as {\it Mehrstellen-Verfahren},
+because the derivative in one point is calculated using the derivatives
+in neighboring points.}
+
+The sixth order first and second derivative schemes are given by
+\begin{equation}
+f'_i=(-f_{i-3}+9f_{i-2}-45f_{i-1}
++45f_{i+1}-9f_{i+2}+f_{i+3})/(60\delta x),
+\end{equation}
+\begin{equation}
+f''_i=(2f_{i-3}-27f_{i-2}+270f_{i-1}-490f_i
++270f_{i+1}-27f_{i+2}+2f_{i+3})/(180\delta x^2),
+\end{equation}
+
+In Fig.~\ref{Fpkeff} we plot effective wavenumbers for different schemes.
+Apart from the different {\it explicit} finite difference schemes
+given above, we also consider a {\it compact} scheme of 6th order,
+which can be written in the form
+\begin{equation}
+{\textstyle{1\over3}}f'_{i-1}+f'_i+{\textstyle{1\over3}}f'_{i+1}
+=(f_{i-2}-28f_{i-1}+28f_{i+1}-f_{i+2})/(36\delta x),
+\end{equation}
+for the first derivative, and
+\begin{equation}
+{\textstyle{2\over11}}f''_{i-1}+f''_i+{\textstyle{2\over11}}f''_{i+1}
+=(3f_{i-2}+48f_{i-1}-102f_i+48f_{i+1}+3f_{i+2})/(44\delta x^2).
+\end{equation}
+for the second derivative. As we have already mentioned in the introduction, this
+scheme involves obviously solving tridiagonal matrix equations and is
+therefore effectively nonlocal.
+
+\begin{figure}[h!]\begin{center}\includegraphics[width=.99\textwidth]
+{pkeff}\end{center}\caption[]{
+Effective wave numbers for first and second derivatives using different
+schemes. Note that for the second derivatives the sixth order compact
+scheme is almost equivalent to the tenth order explicit scheme. For the
+first derivative the sixth order compact scheme is still superior to the
+tenth order explicit scheme.
+}\label{Fpkeff}\end{figure}
+
+In the second panel of Fig.~\ref{Fpkeff} we have plotted effective
+wavenumbers for second derivatives, which were calculated as
+\begin{equation}
+(\cos kx)''_{\rm num}=-k_{\rm eff}^2\cos kx.
+\end{equation}
+Of particular interest is the behavior of the second derivative at the
+Nyquist frequency, because that is relevant for damping zig-zag modes.
+For a second-order finite difference scheme $k_{\rm eff}^2$ is only 4,
+which is less than half the theoretical value of $\pi^2=9.87$. For fourth,
+sixth, and tenth order schemes this value is respectively 5.33, 6.04,
+6.83. The last value is almost the same as for the 6th order compact
+scheme, which is 6.86. Significantly stronger damping at the Nyquist
+frequency can be obtained by using hyperviscosity, which Nordlund \&
+Galsgaard (1995) treat as a quenching factor that diminishes the value
+of the second derivative for wavenumbers that are small compared with
+the Nyquist frequency. Accurate high order second derivatives (with no
+quenching factors) are important when calculating the current $\Jv$ in
+the Lorentz force $\Jv\times\Bv$ from a vector potential $\Av$ using
+$-\mu_0\Jv=\nabla^2\Av-\nab\nab\cdot\Av$. This will be important in
+the MHD calculations presented below.
 
 \subsection{Upwind derivatives}
 \index{Upwind}
@@ -5569,52 +5642,60 @@ initial condition.
 % r e f
 \begin{thebibliography}{99}
 
-\bibitem{2Nstorage} Williamson, J. H.,
+\bibitem{2Nstorage} Williamson, J. H.,~
   \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
 \bibitem{NS90} Nordlund, \AA., Stein, R. F.,
   \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
 \bibitem{BNST95} Brandenburg, A., Nordlund, \AA., Stein, R. F.,
-  \& Torkelsson, U.
+  \& Torkelsson, U.,~
   \emph{Astrophys. J.} \textbf{446}, 741--754 (1995)
   ``Dynamo-generated turbulence and large scale magnetic fields
 in a Keplerian shear flow''
-\bibitem{Ref-3} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
-Rieutord, M., Stein, R. F., \& Tuominen, I.
+\bibitem{BJNRST96} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
+Rieutord, M., Stein, R. F., \& Tuominen, I.,~
   \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
   ``Magnetic structures in a dynamo simulation''
-\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
+\bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,~
   \emph{Numerical Recipes in Fortran 90}, 2nd ed., Cambridge (1996)
 \bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
-  ed.\ A.\ Ferriz-Mas \& M.\ N\'u\~nez Jim\'enez (2002);
+  ed.\ A.\ Ferriz-Mas \& M.\ N\'u\~nez Jim\'enez,
+  (The Fluid Mechanics of Astrophysics and Geophysics, Vol.\ {\bf9})
+  Taylor \& Francis, London and New York, pp.~269--344 (2003);
   \url{http://arXiv.org/abs/astro-ph/0109497}
-\bibitem{Ref-4} Brandenburg, A., Dobler, W.,
+\bibitem{Ref-4} Brandenburg, A., Dobler, W.,~
   \emph{Astron. Astrophys.} \textbf{369}, 329--338 (2001)
   ``Large scale dynamos with helicity loss through boundaries''
-\bibitem{SH88} Stanescu, D., Habashi, W. G.,
+\bibitem{SH88} Stanescu, D., Habashi, W. G.,~
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
-\bibitem{KR80} Krause, F., R\"adler, K.-H.,
+\bibitem{KR80} Krause, F., R\"adler, K.-H.,~
   \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
   Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
-\bibitem{Ref-2} Brandenburg, A.,
+\bibitem{Ref-2} Brandenburg, A.,~
   \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
   ``The inverse cascade and nonlinear alpha-effect in simulations
 of isotropic helical hydromagnetic turbulence''
-\bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.
+\bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.,~
   \emph{Astron. Astrophys.} \textbf{370}, 1092--1102 (2001)
   ``Evolution of highly buoyant thermals in a stratified layer''
-\bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.
+\bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.,~
 \emph{MNRAS} \textbf{276}, 651--662 (1995)
 ``Galactic fountains as magnetic pumps''
-\bibitem{HTM84}Hurlburt, N. E., Toomre, J., \& Massaguer, J. M.
+\bibitem{HTM84}Hurlburt, N. E., Toomre, J., \& Massaguer, J. M.,~
   \emph{Astrophys. J.} \textbf{282}, 557--573 (1984)
   ``Two-dimensional compressible convection extending over multiple scale heights''
-\bibitem{BDS02}Brandenburg, A., Dobler, W., \& Subramanian, K.
+\bibitem{BDS02}Brandenburg, A., Dobler, W., \& Subramanian, K.,~
   \emph{Astron. Nachr.} \textbf{323}, 99--122 (2002)
   ``Magnetic helicity in stellar dynamos: new numerical experiments''
-\bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.
+\bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.,~
   \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
   ``The stability of accretion tori -- II. Nonlinear evolution
   to discrete planets''
+\bibitem{Collatz66}Collatz, L.,~
+  \emph{The numerical treatment of differential equations},
+  Springer-Verlag, New York, p. 164 (1966)
+\bibitem{Lele92}Lele, S. K.,~
+  \emph{J. Comp. Phys.} \textbf{103}, 16--42 (1992)
+  ``Compact finite difference schemes with spectral-like resolution''
 \end{thebibliography}
 
 
@@ -5628,7 +5709,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.187 2003-07-29 09:20:42 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.188 2003-08-03 07:51:33 brandenb Exp $ $}
 
 
 \end{document}
