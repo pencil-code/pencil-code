@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.19 2003-06-25 19:28:42 theine Exp $
+! $Id: radiation_exp.f90,v 1.20 2003-06-26 11:03:33 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.19 2003-06-25 19:28:42 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.20 2003-06-26 11:03:33 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -144,7 +144,7 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT,kappa
+      real, dimension(nx) :: lnrho
 !
 !  test
 !
@@ -159,30 +159,17 @@ module Radiation
 !
       do n=n1,n2
       do m=m1,m2
-         lnrho=f(l1:l2,m,n,ilnrho)
-         ss=f(l1:l2,m,n,ient)
-!
-!  Use the ionization module to calculate temperature.
-!  If noionization is used, yH and TT do not exist as 3-D arrays,
-!  but we still want Srad and kaprho to be full arrays.
-!
-         call ionset(f,ss,lnrho,yH,TT)
+         Srad(l1:l2,m,n)=sourcefunction(f)
 !
 !  opacity: if lkappa_es then take electron scattering opacity only;
 !  otherwise use Hminus opacity (but may need to add kappa_es as well).
 !
-         if(lkappa_es) then
-           kappa=kappa_es
+         if (lkappa_es) then
+            lnrho=f(l1:l2,m,n,ilnrho)
+            kaprho(l1:l2,m,n)=kappa_es*exp(lnrho)
          else
-           kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-                 *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+            kaprho(l1:l2,m,n)=opacity(f)
          endif
-!
-!  save the 3-D arrays Srad and kaprho (=kappa*rho) because they are used
-!  many times, depending on the number of rays in the radiation module.
-!
-         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
-         kaprho(l1:l2,m,n)=kappa*exp(lnrho)
       enddo
       enddo
 !

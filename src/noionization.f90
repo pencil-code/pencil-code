@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.30 2003-06-24 16:28:41 theine Exp $
+! $Id: noionization.f90,v 1.31 2003-06-26 11:03:33 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -23,10 +23,9 @@ module Ionization
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
 
   ! secondary parameters calculated in initialize
-  double precision :: m_H,m_He,mu
-  double precision :: TT_ion,lnrho_ion,ss_ion,chiH
-!ajwm commented unused quantities
-!ajwm   double precision :: TT_ion_,lnrho_ion_,kappa0,chiH_
+  double precision :: m_H,m_He,mu,twothirds
+  double precision :: TT_ion,TT_ion_,chiH,chiH_,ss_ion,kappa0
+  double precision :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -67,7 +66,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.30 2003-06-24 16:28:41 theine Exp $")
+           "$Id: noionization.f90,v 1.31 2003-06-26 11:03:33 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -98,24 +97,26 @@ module Ionization
       m_He=3.97153*m_H
       mu=1.+3.97153*xHe  
       chiH=13.6*eV
-!ajwm commented unused quantities
-!ajwm      chiH_=0.75*eV
+      chiH_=0.75*eV
       TT_ion=chiH/k_B
-!ajwm      TT_ion_=chiH_/k_B
-      lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-!ajwm      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
+      TT_ion_=chiH_/k_B
+      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu      ! AKA c_p for noionisation
-!ajwm      kappa0=sigmaH_/m_H/mu
+      kappa0=sigmaH_/m_H/mu
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,lnrho_ion,ss_ion=',TT_ion,lnrho_ion,ss_ion
+        print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
       endif
 !
       yH=amin1(amax1(yH0,1e-5),1.-1e-5)
       lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+xHe*log(xHe)) &
-                        /(1.+yH+xHe)-lnrho_ion-2.5)
+                        /(1.+yH+xHe)-lnrho_e-2.5)
 
       dlnPdlnrho=5./3.    ! gamma?
       dlnPdss=(2./3.)/(1.+yH0+xHe)  !(gamma - 1) / (\mu_{effective}/\mu) ?
@@ -298,8 +299,61 @@ module Ionization
         if (present(ee))       ee=cs2/(gamma1*gamma)
       endif
       if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yH0
 !
     endsubroutine thermodynamics_arbpoint
+!***********************************************************************
+    function opacity(f)
+!
+!  calculate opacity
+!
+!  26-jun-03/tobi: coded
+!
+      use Cdata
+      use Density, only:cs20,lnrho0,gamma
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx) :: lnrho,ss,yH,TT,kappa,opacity
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,ient)
+      yH=yH0
+      TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+!
+!  opacity: if lkappa_es then take electron scattering opacity only;
+!  otherwise use Hminus opacity (but may need to add kappa_es as well).
+!
+      kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 & 
+            *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+!
+!  return value
+!
+      opacity=kappa*exp(lnrho)
+!
+    endfunction opacity
+!***********************************************************************
+    function sourcefunction(f)
+!
+!  calculate opacity
+!
+!  26-jun-03/tobi: coded
+!
+      use Cdata
+      use Density, only:cs20,lnrho0,gamma
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx) :: lnrho,ss,TT,sourcefunction
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,ient)
+!
+      TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
+!
+!  return value
+!
+      sourcefunction=sigmaSB*TT**4/pi
+! 
+    endfunction sourcefunction
 !***********************************************************************
     subroutine ioncalc(f)
 !

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.31 2003-06-24 17:44:29 theine Exp $
+! $Id: feautrier.f90,v 1.32 2003-06-26 11:03:33 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -16,6 +16,7 @@ module Radiation
 
   real, dimension (mx,my,mz) :: Srad,kaprho
   logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
+  logical :: lkappa_es=.false.
 !
 !  default values for one pair of vertical rays
 !
@@ -28,10 +29,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation,nocooling
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es,nocooling
 
   contains
 
@@ -66,7 +67,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.31 2003-06-24 17:44:29 theine Exp $")
+           "$Id: feautrier.f90,v 1.32 2003-06-26 11:03:33 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -100,7 +101,7 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT,kappa
+      real, dimension(nx) :: lnrho
 !
 !  test
 !
@@ -116,14 +117,17 @@ module Radiation
 !
       do n=n1,n2
       do m=m1,m2
-         lnrho=f(l1:l2,m,n,ilnrho)
-         ss=f(l1:l2,m,n,ient)
-         yH=f(l1:l2,m,n,iyH)
-         TT=f(l1:l2,m,n,iTT)
-         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
-         kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-               *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
-         kaprho(l1:l2,m,n)=kappa*exp(lnrho)
+         Srad(l1:l2,m,n)=sourcefunction(f)
+!
+!  opacity: if lkappa_es then take electron scattering opacity only;
+!  otherwise use Hminus opacity (but may need to add kappa_es as well).
+!
+         if (lkappa_es) then
+            lnrho=f(l1:l2,m,n,ilnrho)
+            kaprho(l1:l2,m,n)=kappa_es*exp(lnrho)
+         else
+            kaprho(l1:l2,m,n)=opacity(f)
+         endif
       enddo
       enddo
 !

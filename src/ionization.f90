@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.54 2003-06-24 17:44:29 theine Exp $
+! $Id: ionization.f90,v 1.55 2003-06-26 11:03:33 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -65,7 +65,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.54 2003-06-24 17:44:29 theine Exp $")
+           "$Id: ionization.f90,v 1.55 2003-06-26 11:03:33 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -289,7 +289,7 @@ module Ionization
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine thermodynamics_penc(f,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_penc(f,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -305,8 +305,8 @@ module Ionization
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
-      real, dimension (nx) :: yHcalc,TT,lnrho,ss
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yHout
+      real, dimension (nx) :: yH,TT,lnrho,ss
       real, dimension (nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension (nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
@@ -315,42 +315,42 @@ module Ionization
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,ient)
-      yHcalc=f(l1:l2,m,n,iyH)
+      yH=f(l1:l2,m,n,iyH)
       TT=f(l1:l2,m,n,iTT)
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yHcalc
+      if (present(yHout)) yHout=yH
       if (present(cs2).or.present(cp1tilde)) then
          ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
-            +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
-         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+            +log(1.-yH)-2.*log(yH)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yH+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
       endif
       if (present(cs2)) then
          dlnTT_dlnrho=twothirds
          dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
-         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+         dlnPdlnrho=1.+dydlnrho/(1.+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yH+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yH+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yH+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_penc
 !***********************************************************************
-    subroutine thermodynamics_arbpenc(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_arbpenc(lnrho,ss,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -366,48 +366,48 @@ module Ionization
       use Sub
 !
       real, dimension (nx), intent(in) :: lnrho,ss
-      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
-      real, dimension (nx) :: yHcalc,TT
+      real, dimension (nx), intent(out), optional :: cs2,TT1,cp1tilde,ee,yHout
+      real, dimension (nx) :: yH,TT
       real, dimension (nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension (nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
 
 !  calculate TT, yH for arbitrary pencil
-      call ioncalc_penc(lnrho,ss,TT,yHcalc)
+      call ioncalc_penc(lnrho,ss,TT,yH)
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yHcalc
+      if (present(yHout)) yHout=yH
       if (present(cs2).or.present(cp1tilde)) then
          ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
-            +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
-         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+            +log(1.-yH)-2.*log(yH)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yH+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
       endif
       if (present(cs2)) then
          dlnTT_dlnrho=twothirds
          dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
-         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+         dlnPdlnrho=1.+dydlnrho/(1.+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yH+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yH+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yH+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_arbpenc
 !***********************************************************************
-    subroutine thermodynamics_arbpoint(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_arbpoint(lnrho,ss,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -423,47 +423,93 @@ module Ionization
       use Sub
 !
       real, intent(in) :: lnrho,ss
-      real, intent(out), optional :: cs2,TT1,cp1tilde,ee,yH
-      real :: yHcalc,TT
+      real, intent(out), optional :: cs2,TT1,cp1tilde,ee,yHout
+      real :: yH,TT
       real :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real :: dffdlnrho,dydlnrho,dlnPdlnrho
       real :: dlnTT_dss,dffdss,dydss,dlnPdss
 !
 ! P...p...p..pick up a Pencil for readability
 !
-      call ioncalc_point(lnrho,ss,TT,yHcalc)
+      call ioncalc_point(lnrho,ss,TT,yH)
 !
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yHcalc
+      if (present(yHout)) yHout=yH
       if (present(cs2).or.present(cp1tilde)) then
          ff=lnrho_e-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
-            +log(1.-yHcalc)-2.*log(yHcalc)
-         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yHcalc+xHe)
-         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+            +log(1.-yH)-2.*log(yH)
+         dlnTT_dy=(twothirds*(lnrho_H-lnrho_p-ff-TT_ion/TT)-1)/(1.+yH+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
       endif
       if (present(cs2)) then
          dlnTT_dlnrho=twothirds
          dffdlnrho=twothirds*TT_ion/TT
          dydlnrho=-dffdlnrho/dffdy
-         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+         dlnPdlnrho=1.+dydlnrho/(1.+yH+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yH+xHe)*ss_ion*TT*dlnPdlnrho
       endif
       if (present(cp1tilde)) then
-         dlnTT_dss=twothirds/((1.+yHcalc+xHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
+         dlnTT_dss=twothirds/((1.+yH+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yH+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yH+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_arbpoint
+!***********************************************************************
+    function opacity(f)
+!
+!  calculate opacity
+!
+!  26-jun-03/tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx) :: lnrho,yH,TT,kappa,opacity
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      yH=f(l1:l2,m,n,iyH)
+      TT=f(l1:l2,m,n,iTT)
+!
+!  opacity: if lkappa_es then take electron scattering opacity only;
+!  otherwise use Hminus opacity (but may need to add kappa_es as well).
+!
+      kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
+            *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+!
+!  return value
+!
+      opacity=kappa*exp(lnrho)
+!
+    endfunction opacity
+!***********************************************************************
+    function sourcefunction(f)
+!
+!  calculate opacity
+!
+!  26-jun-03/tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension (nx) :: TT,sourcefunction
+!
+      TT=f(l1:l2,m,n,iTT)
+!
+!  return value
+!
+      sourcefunction=sigmaSB*TT**4/pi
+!
+    endfunction sourcefunction
 !***********************************************************************
     subroutine rtsafe(lnrho,ss,yH)
 !
