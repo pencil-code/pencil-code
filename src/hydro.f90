@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.35 2002-07-02 17:08:54 nilshau Exp $
+! $Id: hydro.f90,v 1.36 2002-07-02 18:37:04 dobler Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.35 2002-07-02 17:08:54 nilshau Exp $")
+           "$Id: hydro.f90,v 1.36 2002-07-02 18:37:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -216,6 +216,9 @@ module Hydro
       real :: c2,s2
       integer :: i,j
 !
+      intent(in) :: f,rho1
+      intent(out) :: df,uu,glnrho,divu,u2
+!
 !  abbreviations
 !
       if (headtt.or.ldebug) print*,'SOLVE duu_dt'
@@ -303,7 +306,7 @@ module Hydro
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
-            fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
+            fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,nu)
           else
             if(lfirstpoint) print*,'ldensity better be .true. for ivisc=2'
