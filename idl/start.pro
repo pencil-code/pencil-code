@@ -98,6 +98,12 @@ xx = spread(x, [1,2], [ny,nz])
 yy = spread(y, [0,2], [nx,nz])
 zz = spread(z, [0,1], [nx,ny])
 ;
+;  set boundary values for physical (sub)domain
+;
+l1=3 & l2=nx-4
+m1=3 & m2=ny-4
+n1=3 & n2=nz-4
+;
 print, '..done'
 ;
 END
