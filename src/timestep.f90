@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.17 2003-08-03 15:36:28 brandenb Exp $
+! $Id: timestep.f90,v 1.18 2003-10-01 10:41:07 theine Exp $
 
 module Timestep
 
@@ -25,7 +25,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (3) :: alpha,beta,dt_beta
       real :: ds
-      integer :: i,j
+      integer :: j
 !
 !  coefficients for up to order 3
 !
@@ -46,15 +46,15 @@ module Timestep
         call mpifinalize
       endif
 !
-      do i=1,itorder
-        if (i==1) then
+      do itsub=1,itorder
+        if (itsub==1) then
           lfirst=.true.
           df=0.
           ds=0.
         else
           lfirst=.false.
-          df=alpha(i)*df  !(could be subsumed into pde, but could be dangerous!)
-          ds=alpha(i)*ds
+          df=alpha(itsub)*df  !(could be subsumed into pde, but could be dangerous!)
+          ds=alpha(itsub)*ds
         endif
         call pde(f,df)
         ds=ds+1.
@@ -76,11 +76,11 @@ module Timestep
         do j=1,mvar
         do n=n1,n2
         do m=m1,m2
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(i)*df(l1:l2,m,n,j)
+          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j)
         enddo
         enddo
         enddo
-        t=t+dt_beta(i)*ds
+        t=t+dt_beta(itsub)*ds
       enddo
 !
     endsubroutine rk_2n
