@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.63 2004-07-22 10:46:10 nilshau Exp $
+### $Id: Makefile.src,v 1.64 2004-07-22 11:41:42 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,6 +11,7 @@ LDMPI=-lmpi
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
+GRID         =   grid
 IO           =   io_dist
 FFT          = nofft
 FFTPACK      = nofftpack
@@ -255,7 +256,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL) $(LDONLYFLAGS)
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
-start_deps_f90=$(comm_deps) grid.o $(DEBUG).o
+start_deps_f90=$(comm_deps) $(GRID).o $(DEBUG).o
 start_deps=$(start_deps_f90)
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
@@ -377,7 +378,7 @@ read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
-grid.o:      grid.f90 cdata.o
+$(GRID).o:   $(GRID).f90 cdata.o
 general.o:   general.f90 cparam.o cdata.o
 slices.o:    slices.f90 cdata.o sub.o $(IONIZATION).o
 deriv.o:     deriv.f90 cdata.o $(MPICOMM).o
