@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: cvsci_run,v 1.9 2002-11-26 11:13:10 brandenb Exp $
+#$Id: cvsci_run,v 1.10 2003-02-24 13:23:50 nilshau Exp $
 #
 #  This script adds a new run to the repository
 #  and checks in all *.in files as well as material
@@ -14,5 +14,12 @@ cvs add *.local
 cd ..
 cd data
 cvs add time_series.dat index.pro dim.dat legend.dat params.log
+if (-e new_from.dir) then
+    cvs add new_from.dir
+endif
+if (-e remeshed_from.dir) then
+    cvs add remeshed_from.dir
+endif
+
 cd $CWD
 cvs ci -m "added new run: `uname -a`"
