@@ -105,61 +105,90 @@ module Grid
 !
 !  x coordinate
 !
-      call grid_profile(dummy,grid_func(1),dummy,err=err)
-      if (err) call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(1))
+      if (nxgrid == 1) then
+        x = x00
+        ! hopefully, we will only ever multiply by the following quantities:
+        xprim = 0.
+        xprim2 = 0.
+        dx_1 = 0.
+        dx_tilde = 0.
+      else
+        call grid_profile(dummy,grid_func(1),dummy,err=err)
+        if (err) call &
+             stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(1))
 
-      a=coeff_grid(1,1)*dx
-      xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
+        a=coeff_grid(1,1)*dx
+        xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
 
-      call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
-      call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
-      call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+        call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
+        call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
+        call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
 
-      x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
-      xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
-      xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+        x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+        xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+        xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
 
-      dx_1=1./xprim
-      dx_tilde=-xprim2/xprim**2
+        dx_1=1./xprim
+        dx_tilde=-xprim2/xprim**2
+      endif
 !
 !  y coordinate
 !
-      call grid_profile(dummy,grid_func(2),dummy,err=err)
-      if (err) call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
+      if (nygrid == 1) then
+        y = y00
+        ! hopefully, we will only ever multiply by the following quantities:
+        yprim = 0.
+        yprim2 = 0.
+        dy_1 = 0.
+        dy_tilde = 0.
+      else
+        call grid_profile(dummy,grid_func(2),dummy,err=err)
+        if (err) &
+             call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
 
-      a=coeff_grid(2,1)*dy
-      xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
+        a=coeff_grid(2,1)*dy
+        xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
 
-      call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
-      call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
-      call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
+        call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
+        call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
+        call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
 
-      y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
-      yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
-      yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+        y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
+        yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
+        yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
 
-      dy_1=1./yprim
-      dy_tilde=-yprim2/yprim**2
+        dy_1=1./yprim
+        dy_tilde=-yprim2/yprim**2
+      endif
 !
 !  z coordinate
 !
-      call grid_profile(dummy,grid_func(3),dummy,err=err)
-      if (err) call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(3))
+      if (nzgrid == 1) then
+        z = z00
+        ! hopefully, we will only ever multiply by the following quantities:
+        zprim = 0.
+        zprim2 = 0.
+        dz_1 = 0.
+        dz_tilde = 0.
+      else
+        call grid_profile(dummy,grid_func(3),dummy,err=err)
+        if (err) &
+             call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(3))
 
-      a=coeff_grid(3,1)*dz
-      xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
+        a=coeff_grid(3,1)*dz
+        xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
 
-      call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
-      call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
-      call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
+        call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
+        call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
+        call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
 
-      z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
-      zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
-      zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+        z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+        zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+        zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
 
-      dz_1=1./zprim
-      dz_tilde=-zprim2/zprim**2
-
+        dz_1=1./zprim
+        dz_tilde=-zprim2/zprim**2
+      endif
 
     endsubroutine construct_grid
 !***********************************************************************
@@ -262,7 +291,8 @@ module Grid
       integer :: it
 
 
-      if (xi_lo>=xi_up) call stop_it("FIND_STAR: xi1 >= xi2, what the ...?")
+      if (xi_lo>=xi_up) &
+           call stop_it("FIND_STAR: xi1 >= xi2 -- this should not happen")
 
       tol=epsi*(xi_up-xi_lo)
       xi_star= (xi_up+xi_lo)/2
