@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.28 2004-02-24 10:17:17 dobler Exp $
+### $Id: Makefile.src,v 1.29 2004-02-24 10:20:05 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -131,9 +131,9 @@ FCCLEANER=
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
-#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
+#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
-#F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
+#F90FLAGS= #(erland|igor|tycho|linux29|onsager|monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
@@ -156,7 +156,7 @@ FCCLEANER=
 #CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(cosmo)
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern)
-#F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
+#F77=$(FC) -lm  #(tycho|erland|igor|onsager|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
