@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.11 2003-06-15 21:13:25 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.12 2003-06-16 02:03:41 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -11,16 +11,25 @@ module Radiation
 !  steps of the direction vector in the corresponding direction.
 
   use Cparam
-
+!
   implicit none
-
+!
+  integer, parameter :: radx0=3,rady0=3,radz0=3
+  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_yz
+  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_zx
+  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_xy
   real, dimension (mx,my,mz) :: Srad,kaprho
-  logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
-  logical :: lkappa_es=.false.
+  integer :: directions
 !
 !  default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
+!
+  logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
+  logical :: lkappa_es=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -67,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.11 2003-06-15 21:13:25 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.12 2003-06-16 02:03:41 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -80,7 +89,33 @@ module Radiation
 !***********************************************************************
     subroutine initialize_radiation()
 !
-!  nothing to be done here
+!  Calculate number of directions of rays
+!  Do this in the beginning of each run
+!
+!  16-jun-03/axel+tobi: coded
+!
+  integer :: lrad,mrad,nrad,rad2
+!
+!  check that the number of rays does not exceed maximum
+!
+      if(radx>radx0) stop "radx0 is too small"
+      if(rady>rady0) stop "rady0 is too small"
+      if(radz>radz0) stop "radz0 is too small"
+!
+!  count
+!
+      directions=0
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if(rad2>0 .and. rad2<=rad2max) then 
+          directions=directions+1
+        endif
+      enddo
+      enddo
+      enddo
+      print*,'initialize_radiation: directions=',directions
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -179,7 +214,7 @@ module Radiation
       mean_intensity=.5*(Iup+Idown)
     endfunction mean_intensity
 !***********************************************************************
-    subroutine radtransfer(f)
+    subroutine radtransfer_old(f)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -197,7 +232,167 @@ module Radiation
       call radcalc(f)
       f(:,:,:,iQrad)=-Srad+mean_intensity(f)
 !
+    endsubroutine radtransfer_old
+!***********************************************************************
+    subroutine radtransfer(f)
+!
+!  Integration radioation transfer equation along rays
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz) :: Irad
+      real :: frac
+      integer :: lrad,mrad,nrad,rad2
+      integer :: counter=0
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'radtransfer'
+!
+!  calculate source function and opacity
+!
+      call radcalc(f)
+!
+!  set boundary values
+!  bottom boundary (rays point upwards): I=S
+!
+      do nrad=+1,+radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        Irad_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1:n1+radz0-1)
+      enddo
+      enddo
+      enddo
+!
+!  top boundary (rays point downwards): I=0
+!
+      do nrad=-radz,-1
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        Irad_xy(:,:,:,lrad,mrad,nrad)=0.
+      enddo
+      enddo
+      enddo
+!
+!  Accumulate the result for Qrad=(J-S),
+!  First initialize Qrad=-S. 
+!
+      f(:,:,:,iQrad)=-Srad
+!
+!  loop over rays
+!
+      frac=1./directions
+!
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if(rad2>0 .and. rad2<=rad2max) then 
+          !
+          !  set ghost zones, data from next processor (or opposite boundary)
+          !
+          if(lrad>0) &
+          Irad(l1:l1+radx0-1,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
+          if(lrad<0) &
+          Irad(l2-radx0+1:l2,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
+          if(mrad>0) &
+          Irad(:,m1:m1+rady0-1,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
+          if(mrad<0) &
+          Irad(:,m2-rady0+1:m2,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
+          if(nrad>0) &
+          Irad(:,:,n1:n1+radz0-1)=Irad_xy(:,:,:,lrad,mrad,nrad)
+          if(nrad<0) &
+          Irad(:,:,n2-radz0+1:n2)=Irad_xy(:,:,:,lrad,mrad,nrad)
+          !
+          !  do the ray, and add corresponding contribution to Q
+          !
+          call transfer(lrad,mrad,nrad,Irad)
+          f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
+          !
+          !  safe boundary values for next processor (or opposite boundary)
+          !
+          if(lrad<0) &
+          Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1:l1+radx0-1,:,:)
+          if(lrad>0) &
+          Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2-radx0+1:l2,:,:)
+          if(mrad<0) &
+          Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1:m1+rady0-1,:)
+          if(mrad>0) &
+          Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2-rady0+1:m2,:)
+          if(nrad<0) &
+          Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1:n1+radz0-1)
+          if(nrad>0) &
+          Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2-radz0+1:n2)
+        endif
+      enddo
+      enddo
+      enddo
+!
+      !print*,'Number of directions in this run:',counter
+!
     endsubroutine radtransfer
+!***********************************************************************
+    subroutine transfer(lrad,mrad,nrad,Irad)
+!
+!  Integration radiation transfer equation along all rays
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+!
+      integer :: lrad,mrad,nrad
+      real, dimension(mx,my,mz) :: Irad
+      integer :: lstart,lstop,lrad1
+      integer :: mstart,mstop,mrad1
+      integer :: nstart,nstop,nrad1
+      real :: dlength,dtau,emdtau
+      integer :: l
+      logical, save :: first=.true.
+!
+!  identifier
+!
+      if(first) then
+        print*,'transfer'
+        first=.false.
+      endif
+!
+!  calculate start and stop values
+!
+      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
+      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
+      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
+!
+!  make sure the loop is executed at least once, even when
+!  lrad,mrad,nrad=0.
+!
+      if(lrad==0) then; lrad1=1; else; lrad1=lrad; endif
+      if(mrad==0) then; mrad1=1; else; mrad1=mrad; endif
+      if(nrad==0) then; nrad1=1; else; nrad1=nrad; endif
+!
+!  line elements
+!
+      dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+!
+!
+!  loop
+!
+      do n=nstart,nstop,nrad1
+      do m=mstart,mstop,mrad1
+      do l=lstart,lstop,lrad1
+          dtau=.5*(kaprho(l,m,n)+kaprho(l+lrad,m+mrad,n+nrad))*dz
+          emdtau=exp(-dtau)
+          Irad(l+lrad,m+mrad,n+nrad)= &
+            Irad(l,m,n)*emdtau+(1.-emdtau)*Srad(l,m,n) &
+            +(emdtau-1+dtau)*(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine transfer
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !
