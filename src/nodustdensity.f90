@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.2 2003-03-18 23:27:09 brandenb Exp $
+! $Id: nodustdensity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -7,7 +7,6 @@ module Dustdensity
 
   use Cparam
   use Cdata
-  use Dustvelocity
 
   implicit none
 
@@ -41,7 +40,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.2 2003-03-18 23:27:09 brandenb Exp $")
+           "$Id: nodustdensity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -83,13 +82,10 @@ module Dustdensity
 !  18-mar-03/axel: adapted from dustdensity
 !
       use Sub
-      use Density, only: cs0
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uud,glnrhod
-      real, dimension (nx) :: lnrhod,divud,uglnrhod,glnrhod2
-      real, dimension (nx) :: del2lnrhod
-      real :: diffrhod
+      real, dimension (nx) :: lnrhod,divud
 !
       if(ip==0) print*,f,df,uud,glnrhod,divud,lnrhod ! keep compiler quiet
     endsubroutine dlnrhod_dt
@@ -102,7 +98,6 @@ module Dustdensity
 !
       use Sub
 !
-      integer :: iname
       logical :: lreset
 !
 !  write column where which magnetic variable is stored
@@ -111,6 +106,7 @@ module Dustdensity
       write(3,*) 'nname=',nname
       write(3,*) 'ilnrhod=',ilnrhod
 !
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustdensity
 !***********************************************************************
 

@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.2 2003-03-18 20:31:05 brandenb Exp $
+! $Id: nodustvelocity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -44,7 +44,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.2 2003-03-18 20:31:05 brandenb Exp $")
+           "$Id: nodustvelocity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -132,6 +132,7 @@ module Dustvelocity
       write(3,*) 'i_udymxy=',i_udymxy
       write(3,*) 'i_udzmxy=',i_udzmxy
 !
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_dustvelocity
 !***********************************************************************
 
