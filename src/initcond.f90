@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.94 2003-11-18 16:26:47 ajohan Exp $ 
+! $Id: initcond.f90,v 1.95 2003-11-19 15:44:39 ajohan Exp $ 
 
 module Initcond 
  
@@ -984,7 +984,7 @@ module Initcond
 !      
     endsubroutine planet
 !***********************************************************************
-    subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,dssdz,cs20)
+    subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20)
 !
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
@@ -992,29 +992,31 @@ module Initcond
       integer :: i,j,k,izmid,hires_q_z,mz_hr,izmid_hr
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,sz,I_int
-      real :: gamma,rho0,dlnrhobdx,dssdz,cs20
+      real :: gamma,rho0,dlnrhobdx,co1_ss,co2_ss,cs20
 !
-!  Put entropy in array
+!  Specify vertical entropy and integral of exp(-sz/cp)*z
 !
-      f(:,:,:,iss) = dssdz*abs(zz)
-!
-!  Need vertical entropy later
-!      
-      sz = dssdz*abs(zz)
-!
-!  Integral for calculating hydrostatic equilibrium density
-!
-      I_int = 1/(dssdz**2) * ( 1 - exp(-sz) * (1+dssdz*abs(zz)) )
+      if (co1_ss .ne. 0. .and. co2_ss .eq. 0.) then
+        if (lroot) print*,'baroclinic: sz =', co1_ss,'*abs(zz)'
+        sz = co1_ss*abs(zz)
+        I_int = 1/(co1_ss**2)*( 1 - exp(-sz) * (1+co1_ss*abs(zz)) )
+      elseif (co1_ss .eq. 0. .and. co2_ss .ne. 0.) then
+        if (lroot) print*,'baroclinic: sz =', co2_ss,'*zz**2'
+        sz = co2_ss*zz**2
+        I_int = -1/(2*co2_ss)*( exp(-co2_ss*zz**2)-1 )
+      elseif (lroot) then
+        print*, 'baroclinic: no valid sz specified'
+      endif
+      f(:,:,:,iss) = sz
 !
 !  Solution to hydrostatic equlibrium in the z-direction
 !
-      f(:,:,:,ilnrho) = 1/(gamma-1) * alog( exp( (1-gamma)*sz ) * &
-          ((1-gamma)/cs20 * I_int + 1) )
+      f(:,:,:,ilnrho) = 1/(gamma-1) * alog( (1-gamma)/cs20 * I_int + 1 ) - sz
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
 !
       f(:,:,:,iuy) = cs20/(2*Omega) * exp( gamma*f(:,:,:,iss) + &
-          (gamma-1)*f(:,:,:,ilnrho) )*dlnrhobdx/gamma
+          (gamma-1)*f(:,:,:,ilnrho) ) * dlnrhobdx/gamma
 !
     endsubroutine baroclinic
 !***********************************************************************
