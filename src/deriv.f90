@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.3 2002-07-08 20:55:57 dobler Exp $
+! $Id: deriv.f90,v 1.4 2002-10-07 07:20:12 brandenb Exp $
 
 module Deriv
 
@@ -24,7 +24,7 @@ module Deriv
       integer :: j,k
 !
       if (j==1) then
-        if (mx/=1) then
+        if (nxgrid/=1) then
           fac=1./(60.*dx)
           df=fac*(45.*(f(5:mx-2,m,n,k)-f(3:mx-4,m,n,k)) &
                   -9.*(f(6:mx-1,m,n,k)-f(2:mx-5,m,n,k)) &
@@ -34,7 +34,7 @@ module Deriv
           if (ip.le.10) print*, 'Degenerate case in x-direction'
         endif
       elseif (j==2) then
-        if (my/=1) then
+        if (nygrid/=1) then
           fac=1./(60.*dy)
           df=fac*(45.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -9.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
@@ -44,7 +44,7 @@ module Deriv
           if (ip.le.10) print*, 'Degenerate case in y-direction'
         endif
       elseif (j==3) then
-        if (mz/=1) then
+        if (nzgrid/=1) then
           fac=1./(60.*dz)
           df=fac*(45.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -9.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
@@ -73,7 +73,7 @@ module Deriv
       integer :: j,k
 !
       if (j==1) then
-        if (mx/=1) then
+        if (nxgrid/=1) then
           fac=1./(180.*dx**2)
           df=fac*(-490.*f(4:mx-3,m,n,k) &
                  +270.*(f(5:mx-2,m,n,k)+f(3:mx-4,m,n,k)) &
@@ -83,7 +83,7 @@ module Deriv
           df=0.
         endif
       elseif (j==2) then
-        if (my/=1) then
+        if (nygrid/=1) then
           fac=1./(180.*dy**2)
           df=fac*(-490.*f(l1:l2,m  ,n,k) &
                  +270.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
@@ -93,7 +93,7 @@ module Deriv
           df=0.
         endif
       elseif (j==3) then
-        if (mz/=1) then
+        if (nzgrid/=1) then
           fac=1./(180.*dz**2)
           df=fac*(-490.*f(l1:l2,m,n  ,k) &
                  +270.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
@@ -136,7 +136,7 @@ module Deriv
       endif
 !
       if (j==1) then
-        if (mx/=1) then
+        if (nxgrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dx**6; endif
           df=fac*(-20.* f(4:mx-3,m,n,k) &
                   +15.*(f(5:mx-2,m,n,k)+f(3:mx-4,m,n,k)) &
@@ -146,7 +146,7 @@ module Deriv
           df=0.
         endif
       elseif (j==2) then
-        if (my/=1) then
+        if (nygrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dy**6; endif
           df=fac*(-20.* f(l1:l2,m  ,n,k) &
                   +15.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
@@ -156,7 +156,7 @@ module Deriv
           df=0.
         endif
       elseif (j==3) then
-        if (mz/=1) then
+        if (nzgrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dz**6; endif
           df=fac*(-20.* f(l1:l2,m,n  ,k) &
                   +15.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
@@ -184,7 +184,7 @@ module Deriv
       integer :: i,j,k
 !
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
-        if (mx/=1.and.my/=1) then
+        if (nxgrid/=1.and.nygrid/=1) then
           fac=1./(60.**2*dx*dy)
           df=fac*( &
             45.*((45.*(f(5:mx-2,m+1,n,k)-f(3:mx-4,m+1,n,k))  &
@@ -211,7 +211,7 @@ module Deriv
           if (ip.le.10) print*, 'Degenerate case in x-direction'
         endif
       elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
-        if (my/=1.and.mz/=1) then
+        if (nygrid/=1.and.nzgrid/=1) then
           fac=1./(60.**2*dy*dz)
           df=fac*( &
             45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
@@ -238,7 +238,7 @@ module Deriv
           if (ip.le.10) print*, 'Degenerate case in y-direction'
         endif
       elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
-        if (mz/=1.and.mx/=1) then
+        if (nzgrid/=1.and.nxgrid/=1) then
           fac=1./(60.**2*dz*dx)
           df=fac*( &
             45.*((45.*(f(5:mx-2,m,n+1,k)-f(3:mx-4,m,n+1,k))  &
