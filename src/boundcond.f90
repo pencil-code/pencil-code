@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.53 2003-08-13 08:23:25 dobler Exp $
+! $Id: boundcond.f90,v 1.54 2003-08-19 07:54:01 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -242,7 +242,9 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
               case ('a3')       ! a2 - wiggles
                 call bc_asym3(f,topbot,j)
-              case ('1s')        ! one-sided
+              case ('v3')       ! vanishing third derivative
+                call bc_van3rd_z(f,topbot,j)
+              case ('1s')       ! one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
                 if (j==iss) call bc_ss_flux(f,topbot)
@@ -491,6 +493,42 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_van3rd_z(f,topbot,j)
+!
+!  Boundary condition with vanishing 3rd derivative
+!  (useful for vertical hydrostatic equilibrium in discs)
+!
+!  19-aug-03/anders: coded
+!
+    use Cdata
+!
+    character (len=3) :: topbot
+    real, dimension (mx,my,mz,mvar+maux) :: f
+    real, dimension (mx,my) :: cpoly0,cpoly1,cpoly2
+    integer :: i,j
+
+    select case(topbot)
+
+    case('bot')
+      cpoly0(:,:)=f(:,:,n1,j)
+      cpoly1(:,:)=-(3*f(:,:,n1,j)-4*f(:,:,n1+1,j)+f(:,:,n1+2,j))/(2*dz)
+      cpoly2(:,:)=-(-f(:,:,n1,j)+2*f(:,:,n1+1,j)-f(:,:,n1+2,j)) /(2*dz**2)
+      do i=1,nghost
+        f(:,:,n1-i,j) = cpoly0(:,:) - cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
+      enddo
+
+    case('top')
+      cpoly0(:,:)=f(:,:,n2,j)
+      cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
+      cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
+      do i=1,nghost
+        f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dx)**2
+      enddo
+
+    endselect
+
+    endsubroutine bc_van3rd_z
 !***********************************************************************
     subroutine bc_asym3(f,topbot,j)
 !
