@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.4 2002-07-29 09:13:22 brandenb Exp $ 
+! $Id: initcond.f90,v 1.5 2002-08-14 12:40:25 brandenb Exp $ 
 
 module Initcond 
  
@@ -176,12 +176,13 @@ module Initcond
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,psi,hh,h0
       real :: ampl,sigma2,sigma,delta2,delta,eps,Rx,Ry,Rz,hmax,hmin
-      real :: gamma
+      real :: gamma,eps2
 !
 !  calculate sigma
 !
       print*,'planet: qshear,eps=',qshear,eps
-      sigma2=2*qshear/(1.-eps**2)
+      eps2=eps**2
+      sigma2=2*qshear/(1.-eps2)
       if (sigma2<0.) then
         print*,'sigma2<0 not allowed; choose another value of eps_planet'
       else
@@ -200,8 +201,8 @@ module Initcond
 !
 !  calculate temporary parameters
 !
-      Ry=Rx/eps
-      Rz=Rx*delta
+      !Ry=Rx/eps
+      !Rz=Rx*delta
 !
 !  calculate psi, hh, and h0
 !
@@ -217,8 +218,8 @@ module Initcond
       hh=amax1(hh,hmin)
 !
       if (gamma<=1.) print*,'must have gamma>1 for planet solution'
-      f(:,:,:,iux)=-2*yy/Ry**2*psi
-      f(:,:,:,iuy)=+2*xx/Rx**2*psi
+      f(:,:,:,iux)=   eps2*sigma *Omega*yy
+      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx
       f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
 !
     endsubroutine planet
