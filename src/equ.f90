@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.111 2002-12-09 12:47:07 ngrs Exp $
+! $Id: equ.f90,v 1.112 2002-12-09 19:28:34 mee Exp $
 
 module Equ
 
@@ -176,7 +176,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
-      real :: fac
+      real :: fac, facheat
 !
 !  print statements when they are first executed
 !
@@ -184,7 +184,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.111 2002-12-09 12:47:07 ngrs Exp $")
+           "$Id: equ.f90,v 1.112 2002-12-09 19:28:34 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -233,10 +233,12 @@ module Equ
         r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
 !
 !  for each pencil, accummulate through the different routines
-!  maximum diffusion and maximum advection (keep as nx-array)
-!
-        maxdiffus=0.
-        maxadvec2=0.
+!  maximum diffusion, maximum advection (keep as nx-array)
+!  and maximum heating
+!  
+        maxdiffus  = 0.
+        maxadvec2  = 0.
+        maxheating = 0.
 !
 !  calculate inverse density
 !  WD: Also needed with heat conduction, so we better calculate it in all
@@ -289,7 +291,9 @@ module Equ
 !
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
-          call max_mn(sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
+          facheat=dxmin/cdt
+          call max_mn((facheat*maxheating)+ &
+               sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
         endif
 !
 !  calculate density diagnostics: mean density

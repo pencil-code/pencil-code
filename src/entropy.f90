@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.143 2002-11-26 19:59:19 mee Exp $
+! $Id: entropy.f90,v 1.144 2002-12-09 19:28:34 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -19,7 +19,7 @@ module Entropy
   real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
   !parameters for Sedov type initial condition
-  real :: thermal_background=0., thermal_peak=0.  
+  real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
@@ -31,7 +31,7 @@ module Entropy
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,mpoly0,mpoly1,mpoly2,isothtop, &
-       khor_ss, thermal_background, thermal_peak
+       khor_ss, thermal_background, thermal_peak, thermal_scaling
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.143 2002-11-26 19:59:19 mee Exp $")
+           "$Id: entropy.f90,v 1.144 2002-12-09 19:28:34 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,7 +161,7 @@ module Entropy
       case('sedov') 
         if (lroot) print*,'init_ent: sedov - thermal background with gaussian energy burst'
          call blob(thermal_peak,f,ient,radius_ss,0.,0.,0.)
-         f(:,:,:,ient) = alog(f(:,:,:,ient) + thermal_background)/gamma
+         f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
    
       case('isobaric')
         !
@@ -403,7 +403,7 @@ module Entropy
       if (headtt) print*,'dss_dt: TT1(1)=',TT1(1)
 
 !ajwm - lviscosity always true and there is not a noviscosity module
-      if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,TT1)
+      if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
 
 !
 !  thermal conduction

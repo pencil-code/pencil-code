@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.10 2002-12-01 11:59:28 mee Exp $
+! $Id: visc_shock.f90,v 1.11 2002-12-09 19:28:34 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -15,6 +15,7 @@ module Viscosity
   real :: nu_shock = 0.
   character (len=labellen) :: ivisc=''
   integer :: icalculated = -1
+  real :: maxeffectivenu
 
   ! input parameters
   integer :: dummy
@@ -52,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.10 2002-12-01 11:59:28 mee Exp $")
+           "$Id: visc_shock.f90,v 1.11 2002-12-09 19:28:34 mee Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -99,6 +100,8 @@ module Viscosity
       end if
 
       icalculated = it
+
+      maxeffectivenu = amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
 !ajwm debug onyl line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_viscosity
@@ -380,7 +383,7 @@ module Viscosity
     endsubroutine shock_divu
 
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,TT1)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -391,7 +394,7 @@ module Viscosity
       use Sub
 
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx) :: rho1,TT1
+      real, dimension (nx) :: rho1,TT1,cs2
       real, dimension (nx) :: sij2, divu
       real, dimension (nx,3) :: glnrho
 
@@ -405,6 +408,8 @@ module Viscosity
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1 * &
            (2.*nu*sij2 & 
            + nu_shock * f(l1:l2,m,n,ishock) * divu**2)
+
+      maxheating=amax1(maxheating,df(l1:l2,m,n,ient))
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -448,7 +453,7 @@ module Viscosity
             call multsv_mn(tmp,nu_shock*f(l1:l2,m,n,ishock),fvisc)
             call multsv_add_mn(fvisc,nu_shock * divu, gshock_characteristic,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            maxdiffus=amax1(maxdiffus,nu)
+            maxdiffus=amax1(maxdiffus,maxeffectivenu)
          else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"

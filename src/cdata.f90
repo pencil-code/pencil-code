@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.115 2002-12-01 11:59:28 mee Exp $
+! $Id: cdata.f90,v 1.116 2002-12-09 19:28:34 mee Exp $
 
 module Cdata
 
@@ -11,7 +11,7 @@ module Cdata
   real, dimension (my) :: y
   real, dimension (mz) :: z
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
-  real, dimension (nx) :: maxadvec2,maxdiffus
+  real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
   real, dimension (nx,3,3) :: sij  !Rate of Strain tensor
 

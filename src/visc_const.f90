@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.4 2002-11-26 19:59:19 mee Exp $
+! $Id: visc_const.f90,v 1.5 2002-12-09 19:28:34 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -46,7 +46,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.4 2002-11-26 19:59:19 mee Exp $")
+           "$Id: visc_const.f90,v 1.5 2002-12-09 19:28:34 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -72,7 +72,7 @@ module Viscosity
     endsubroutine initialize_viscosity
 
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,TT1)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -83,7 +83,7 @@ module Viscosity
       use Sub
 
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx)   :: rho1,TT1
+      real, dimension (nx)   :: rho1,TT1,cs2
       real, dimension (nx)   :: sij2, divu
       real, dimension (nx,3) :: glnrho
 !
