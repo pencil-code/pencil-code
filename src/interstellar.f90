@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.95 2004-06-30 04:38:11 theine Exp $
+! $Id: interstellar.f90,v 1.96 2004-08-22 10:57:35 mkorpi Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -68,14 +68,9 @@ module Interstellar
 
   real, parameter :: rhoUV_cgs=0.1
   real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
-  double precision, parameter, dimension(6) ::  &
-  coolT_cgs=(/ 300.D0,     2000.D0,    8000.D0,    1.D5,    4.D7,     1.D9 /),  &
-  coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, 0.D0   /)
-  
+
   real :: rhoUV,TUV,T0UV,cUV
-  real, dimension(6) :: coolT, &
-    coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
-  double precision, dimension(6) :: coolH 
+  double precision, dimension(6) :: coolT_cgs, coolH_cgs, coolT, coolH, coolB
 
   integer :: iproc_SN,ipy_SN,ipz_SN
   logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
@@ -109,8 +104,10 @@ module Interstellar
 
   real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
 
-  integer :: dummy 
-  namelist /interstellar_init_pars/ dummy
+  character (len=2) :: cooling_select='RB'
+  character (len=3) :: heating_select='off'
+  real :: heating_rate = 0.015
+  namelist /interstellar_init_pars/ cooling_select, heating_select, heating_rate
 
   ! run parameters
   logical:: uniform_zdist_SNI = .false.
@@ -148,7 +145,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.95 2004-06-30 04:38:11 theine Exp $")
+           "$Id: interstellar.f90,v 1.96 2004-08-22 10:57:35 mkorpi Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -216,6 +213,32 @@ module Interstellar
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
       if (lroot) print*,'initialize_interstellar: unit_Lambda',unit_Lambda
+!
+! Mara: Initialize cooling parameters according to selection
+! Default selection 'RB' Rosen & Bregman (1993)
+! Alternative selection 'SS' Sanchez-Salcedo et al. (2002)
+! Turn off cooling: 'no'
+! cooling_select in interstellar_init_pars added
+!
+      If (cooling_select == 'RB') Then
+         Print*,'initialize_interstellar: default RB cooling function'
+         coolT_cgs=(/ 300.D0,     2000.D0,    8000.D0,    1.D5,    4.D7,     1.D9 /)
+         coolH_cgs=(/ 2.2380D-32, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, 0.D0   /)
+         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
+      Else If (cooling_select == 'SS') Then
+         ! These are the SS et al (2002) coefficients multiplied by m_proton**2 to obtain 
+         ! same units as RB above
+         Print*,'initialize_interstellar: SS cooling function'
+         coolT_cgs=(/ 10.D0,     141.D0,    313.D0,    6102.D0,    1.D5,     1.D9 /)
+         coolH_cgs=(/ 9.54D-32, 2.54D-29, 3.10D-28, 5.58D-40, 0.D0, 0.D0 /)
+         coolB=(/ 2.12,     1.0,      0.56,     3.67,    0. ,      0.   /)
+      Else If (cooling_select == 'no') Then
+         Print*,'initialize_interstellar: no cooling applied'
+         coolT_cgs=0.D0
+         coolH_cgs=0.D0
+         coolB=0.D0
+      End If
+!
       coolH = coolH_cgs / unit_Lambda * (unit_temperature**coolB) / (mu*m_H)**2 * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
 
@@ -299,7 +322,9 @@ module Interstellar
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
 !
-!  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993
+!  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993 ('RB')
+!  OR
+!  Sanchez-Salcedo et al. ApJ, 577, 768, 2002 ('SS').
 !  cooling is Lambda*rho^2, with (eq 7)
 !     Lambda=coolH(i)*TT*coolB(i),   for coolT(i) <= T < coolT(i+1)
 !  nb: our coefficients coolH(i) differ from those in Rosen et al. by
@@ -322,12 +347,27 @@ module Interstellar
 !  nb: need rho0 from density_[init/run]_pars, if i want to implement
 !      the the arm/interarm scaling.
 !
-      heat=0.0
+!      heat=0.0
 !tony: DISABLE UV HEATING -- Requires reformulation
 !   heat(:)=rhoUV*(rho0/1.38)**1.4*unit_Lambda*coolH(3)*TUV**coolB(3)*   &
 !                               0.5*(1.0+tanh(cUV*(T0UV-TT(:))))
 !
 !tony: need to do unit_system stuff with scale heights etc.
+!
+! Mara:UV heating off, heating_select=´off´ in interstellar_init_pars
+!      Constant heating with a rate heating_rate[erg/g/s]: 'cst'
+!      Heating balancing the initial cooling function: 'eql'
+!      Default: 'off' with heating_rate = 0.015
+      If (heating_select == 'cst') Then
+         heat = heating_rate*unit_length/unit_velocity**3
+      Else If (heating_select == 'eql' .and. headtt) Then
+         heat = cool
+      Else If (heating_select == 'off') Then
+         heat = 0.
+      End If
+
+!      Print*,'Debug: cool, heat',cool,heat
+!
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
 !
