@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.11 2003-12-10 14:47:20 nilshau Exp $
+! $Id: deriv.f90,v 1.12 2004-01-20 14:25:05 dobler Exp $
 
 module Deriv
 
@@ -277,6 +277,12 @@ module Deriv
         igndx = ignoredx
       else
         igndx = .false.
+      endif
+      if (present(upwind)) then
+        upwnd = upwind
+        print*, 'WARNING: upwinding not implemented for der4'
+      else
+        upwnd = .false.
       endif
 !
       if (j==1) then

@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.7 2003-12-04 09:03:38 brandenb Exp $
+! $Id: nopower_spectrum.f90,v 1.8 2004-01-20 14:25:05 dobler Exp $
 !
 module  power_spectrum
   !
@@ -52,6 +52,7 @@ module  power_spectrum
   real :: pdf_mean,pdf_rms
   character (len=*) :: variabl
 !
+  if(ip<0) print*,f(1,1,1,1),variabl,pdf_mean,pdf_rms !(keep compiler quiet)
   endsubroutine pdf
 !***********************************************************************
 

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.18 2004-01-10 18:25:36 theine Exp $
+### $Id: Makefile.src,v 1.19 2004-01-20 14:25:05 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -132,7 +132,7 @@ FCCLEANER=
 #F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
-#FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
+#FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
@@ -149,7 +149,7 @@ FCCLEANER=
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(cosmo)
 #F77=$(FC)
-#F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
+#F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
@@ -376,11 +376,11 @@ $(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
 $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o $(COSMICRAY).o
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o 
-$(COSMICRAY).o:      $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(COSMICRAY).o:    $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
-$(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(IONIZATION).o $(COSMICRAY).o
+$(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(IONIZATION).o
 $(IONIZATION).o:   $(IONIZATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(GRAVITY).o
 $(IO).o:           $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 #$(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local

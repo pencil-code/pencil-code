@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.69 2003-11-21 07:15:07 theine Exp $
+! $Id: interstellar.f90,v 1.70 2004-01-20 14:25:05 dobler Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.69 2003-11-21 07:15:07 theine Exp $")
+           "$Id: interstellar.f90,v 1.70 2004-01-20 14:25:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -849,7 +849,7 @@ find_SN: do n=n1,n2
 !
 !  22-may-03/tony: coded
 !
-      use CData
+      use Cdata
 
       real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
       real, intent(in) :: width_SN
@@ -926,7 +926,7 @@ find_SN: do n=n1,n2
 !  22-may-03/tony: pencil formulation
 !
 !
-      use CData
+      use Cdata
 
       real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
       real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
@@ -987,7 +987,7 @@ find_SN: do n=n1,n2
 !***********************************************************************
     subroutine makecavity_SN(deltarho,width_SN,depth,mass_shell, &
                              cnorm_dim,idim,mass_gain)   
-      use CData
+      use Cdata
       !
       real, intent(in) :: width_SN, depth, mass_shell, cnorm_dim
       real, intent(inout) :: mass_gain
@@ -1024,7 +1024,7 @@ find_SN: do n=n1,n2
 
 !***********************************************************************
     subroutine injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
-      use CData
+      use Cdata
       !
       real, intent(in) :: width_SN,c_SN
       real, intent(inout) :: EE_SN
