@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2004-09-15 22:57:40 $
-;;;  $Revision: 1.4 $
+;;;  $Date: 2004-09-16 00:01:48 $
+;;;  $Revision: 1.5 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -87,7 +87,7 @@ if (n_elements(nlevels)    eq 0) then nlevels    = 60
 if (n_elements(equx)       eq 0) then equx       = 0
 if (n_elements(equy)       eq 0) then equy       = 0
 if (n_elements(enhance)    eq 0) then enhance    = -1
-if (n_elements(asinhscale) eq 0) then asinhscale = -1
+if (n_elements(asinhscale) eq 0) then asinhscale = 0
 if (n_elements(xstyle)     eq 0) then xstyle     = !x.style
 if (n_elements(ystyle)     eq 0) then ystyle     = !y.style
 
@@ -107,14 +107,13 @@ if (n_elements(overplot) eq 0) then begin
     ystyle1 = (ystyle or 4)
   endif else begin
     xstyle1 = xstyle
-    ystyle1 = xstyle    
+    ystyle1 = xstyle
   endelse
   plot, xvar, yvar, /NODATA, $
       XSTYLE=xstyle1, YSTYLE=ystyle1, $
-      COLOR=color, _EXTRA=extra, /NOERASE
+      COLOR=color, _EXTRA=extra
   pmulti2 = !p.multi       ; save so we can exit with correct !p.multi
 endif
-!p.multi = pmulti1
 
 xr = !x.crange                  ; NB: for /xlog, this is alog10(data_range)
 yr = !y.crange
@@ -139,7 +138,7 @@ if (!y.type ne 1) then begin
   yy=yvar
   mapy = linspace(yr,Nmy)
   ybin = yr[0] + (findgen(Nmy)+0.5)*dmy
-  imgyrange = xr
+  imgyrange = yr
 endif else begin
   yy=alog10(yvar)
   mapy = logspace(yr,Nmy)
@@ -219,7 +218,8 @@ endif else begin
     endif
   endif else begin              ; plotimage
     plotimage, fact*map, RANGE=minmax(fact*map), $
-        IMGXRANGE=imgxrange, IMGYRANGE=imgyrange, _EXTRA=extra
+        IMGXRANGE=imgxrange, IMGYRANGE=imgyrange, $
+        _EXTRA=extra
   endelse
 endelse
 
