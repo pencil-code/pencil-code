@@ -1,16 +1,24 @@
-; $Id: pc_read_ts.pro,v 1.4 2003-08-22 14:07:55 nilshau Exp $
+; $Id: pc_read_ts.pro,v 1.5 2003-08-25 14:57:34 dobler Exp $
 ;
-;  Read time_series.dat
+;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-22 14:07:55 $
-;  $Revision: 1.4 $
+;  $Date: 2003-08-25 14:57:34 $
+;  $Revision: 1.5 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
 ;
-;  REQUIRES: input_table.pro (WD)
-;  
+;  Requires: input_table.pro
+;
+;  Usage:
+;    pc_read_ts, OBJECT=ts1           ; Read all into a structure (recommended)
+;    plot, ts1.t, ts1.urms
+;    help, ts1, /STRUCTURE
+;
+;    pc_read_ts, T=time, DT=timestep  ; Name variables (limited to those coded)
+;
+;    pc_read_ts, /HELP
 ;
 ;
 function parse_tsheader, hline
