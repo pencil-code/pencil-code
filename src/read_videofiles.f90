@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.12 2003-11-24 16:22:38 mee Exp $
+! $Id: read_videofiles.f90,v 1.13 2003-11-28 16:30:38 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -52,7 +52,7 @@
 !  periphery or middle of the box?
 !
       !call getarg (1,field)
-      write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box? '
+      write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
       read*,position_arrangement
 !
 !  interpret position_arrangement
@@ -64,6 +64,10 @@
       elseif (position_arrangement=='m') then
         ipz_top=nprocz/2
         ipz_bottom=nprocz/2
+        ipy_front=nprocy/2
+      elseif (position_arrangement=='e') then
+        ipz_top=nprocz/4
+        ipz_bottom=0.
         ipy_front=nprocy/2
       endif
       print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
