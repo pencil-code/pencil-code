@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.10 2002-10-02 20:11:14 dobler Exp $',
+  cvsid='$Id: run.in,v 1.11 2003-08-08 20:08:58 dobler Exp $',
 !  datadir='tmp',
   ip=14,
   nt=50, it1=10, isave=200, itorder=3,
@@ -21,6 +21,7 @@
 /
 &density_run_pars
   cdiffrho=0.
+  lupw_lnrho=T ! use upwinding for lnrho to avoid wiggles
 /
 &grav_run_pars
   gravz=-1.
@@ -28,6 +29,7 @@
 &entropy_run_pars
   Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
   hcond0=8.e-3
+  lupw_ss=T ! use upwinding for entropy to avoid wiggles
 /
 
 ! Nomenclature for boundary conditions:

@@ -3,7 +3,7 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2002-09-26 13:08:52 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.6 2003-08-08 20:08:58 dobler Exp $',
   nt=20, it1=5, isave=100
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,
@@ -18,10 +18,12 @@
   theta=0.  ! direction of angular velocity vector (0 : vertical)
 /
 &density_run_pars
+lupw_lnrho=T
 /
 &grav_run_pars
   gravz=-1.
 /
 &entropy_run_pars
   hcond0=2.e-3
+  lupw_ss=T
 /
