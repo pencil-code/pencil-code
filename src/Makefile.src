@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.34 2004-03-04 14:09:44 ajohan Exp $
+### $Id: Makefile.src,v 1.35 2004-03-10 14:04:13 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -117,8 +117,9 @@ FCCLEANER=
 #FC=ifc -I/usr/lib/lam/include #(morvern)
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
 #FC=ifc #(nl6|mmtf|nl19)
-#FC=/opt/intel/compiler60/ia32/bin/ifc #(taspd209a)
+#FC=/opt/intel/compiler60/ia32/bin/ifc -I/usr/lib/lam/include #(taspd209a)
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
+#LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-fast -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FC=f95 #(karbala)
@@ -220,15 +221,8 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f 
-
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
-
-#.mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
-# [wd 03-mar-2004: commented out since on Ns0 the .mod files are sometimes
-# slightly newer than the .o, which causes lots of unnecessary recompilation]
-#	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
-
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
 
