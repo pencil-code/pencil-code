@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.79 2003-05-25 21:06:15 brandenb Exp $
+! $Id: register.f90,v 1.80 2003-05-26 14:25:10 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -205,7 +205,7 @@ module Register
 !***********************************************************************
     subroutine rprint_list(lreset)
 !
-!  read in output times from control file
+!  read variables to print and to calculate averages of from control files
 !
 !   3-may-01/axel: coded
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.155 2003-05-26 13:57:14 dobler Exp $
+! $Id: entropy.f90,v 1.156 2003-05-26 14:25:10 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -81,7 +81,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.155 2003-05-26 13:57:14 dobler Exp $")
+           "$Id: entropy.f90,v 1.156 2003-05-26 14:25:10 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,8 +120,11 @@ module Entropy
               Fbot=0.
             endif
           endif
-write(0,*) '===> Fbot,hcond0,hcond1 = ', Fbot, hcond0, hcond1
-          FbotKbot=Fbot/(hcond0*hcond1)
+          if (hcond0*hcond1 /= 0.) then
+            FbotKbot=Fbot/(hcond0*hcond1)
+          else
+            FbotKbot=0.
+          endif
         else
           !
           !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
