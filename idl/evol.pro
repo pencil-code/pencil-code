@@ -14,6 +14,9 @@ default, nfile, datatopdir + '/n.dat'
 default, oldfile, ''
 default, oldmtime, 0
 
+
+s = texsyms()
+
 ;;; In IDL 5.2, FSTAT does not have this functionality
 ; close,1
 ; openr,1,nfile
@@ -69,11 +72,11 @@ plot, tt, divurms, $
 oplot, tt, divumax, LINE=2
 
 ;; ln rho
-yr = minmax([0,rmean,rmax,rrms])
+yr = minmax([rmean,rmax,rrms])
 plot, tt, rrms, $
-    YRANGE=yr, YSTYLE=3, $
-    TITLE='!6log-density!X', $
-    XTITLE='!8t!X', YTITLE='!6ln !7r!X'
+    /YLOG, YRANGE=yr, $
+    TITLE='!6density!X', $
+    XTITLE='!8t!X', YTITLE=s.varrho
 oplot, tt, rmean, LINE=1
 oplot, tt, rmax, LINE=2
 

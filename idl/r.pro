@@ -61,13 +61,15 @@ xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, ' var        minval         maxval            mean           rms'
 for j=0,2 do $
-    print, FORMAT=fmt, $
-    'uu_'+xyz[j]+' =', minmax(uu(*,*,*,j)), mean(uu(*,*,*,j)), rms(uu(*,*,*,j))
-print, FORMAT=fmt, 'lam  =', minmax(lam), mean(lam), rms(lam)
-print, FORMAT=fmt, 'ent  =', minmax(ent), mean(ent), rms(ent)
+    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
+    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+print, FORMAT=fmt, 'lam  =', $
+    minmax(lam), mean(lam,/DOUBLE), rms(lam,/DOUBLE)
+print, FORMAT=fmt, 'ent  =', $
+    minmax(ent), mean(ent,/DOUBLE), rms(ent,/DOUBLE)
 for j=0,2 do $
-    print, FORMAT=fmt, $
-    'aa_'+xyz[j]+' =', minmax(aa(*,*,*,j)), mean(aa(*,*,*,j)), rms(aa(*,*,*,j))
+    print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
+    minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 ;
