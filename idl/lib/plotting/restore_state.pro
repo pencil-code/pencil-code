@@ -31,12 +31,20 @@ pro restore_state, VERBOSE=verb, NOOP=noop, FULL=full
     if (bottom) then begin
       message, 'Already at lowest level', /INFO
     endif else begin
-      if (full) then depth=1     ; does not clear pstack etc,
+      if (full) then depth=1    ; does not clear pstack etc,
                                 ; but next save_state will
-      !p = pstack(depth-1)
+      ;;; !d variable
       dstruct = dstack[depth-1] ; (You can't write to !d)
+      ;; set_plot will reset some things (like background colour), so
+      ;; only call when needed:
+      if (!d.name ne dstruct.name) then set_plot, dstruct.name
+      if (!d.name eq 'X') then wset, dstruct.window
+      ;;; !p variable
+      !p = pstack(depth-1)
+      ;;; colour table
       rgb = rgbstack[*,*,depth-1]
       tvlct, rgb
+      ;;; !x, !y, !z variables
       !x = xstack[depth-1]
       !y = ystack[depth-1]
       !z = zstack[depth-1]
@@ -44,8 +52,6 @@ pro restore_state, VERBOSE=verb, NOOP=noop, FULL=full
 ;; Why this one: ?
 ;    !p.multi[0]=0               ; Next plot overwrites
       ;; .. in particular all the fields of !d
-      set_plot, dstruct.name
-      if (!d.name eq 'X') then wset, dstruct.window
       if (depth gt 1) then begin ; Don't remove entries at lowest level
         pstack = pstack[0:depth-2]
         dstack = dstack[0:depth-2]
