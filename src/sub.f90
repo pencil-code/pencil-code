@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.73 2002-07-08 19:28:14 brandenb Exp $ 
+! $Id: sub.f90,v 1.74 2002-07-08 20:55:57 dobler Exp $ 
 
 module Sub 
 
@@ -767,6 +767,53 @@ module Sub
 !
 !   endsubroutine del2v_graddiv
 !***********************************************************************
+    subroutine del6(f,k,del6f)
+!
+!  calculate del6 of a scalar for hyperdiffusion
+!  8-jul-02/wolf: coded
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      integer :: k
+!
+      call der6(f,k,d6fdx,1)
+      call der6(f,k,d6fdy,2)
+      call der6(f,k,d6fdz,3)
+      del6f = d6fdx + d6fdy + d6fdz
+!
+    endsubroutine del6
+!***********************************************************************
+    subroutine del6_nodx(f,k,del6f)
+!
+!  calculate something similar to del6, but ignoring the steps dx, dy, dz.
+!  Useful for Nyquist filetering, where you just want to remove the
+!  Nyquist frequency fully, while retaining the amplitude in small wave
+!  numbers.
+!  8-jul-02/wolf: coded
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
+      integer :: k
+!
+      call der6(f,k,d6fdx,1,IGNOREDX=.TRUE.)
+      call der6(f,k,d6fdy,2,IGNOREDX=.TRUE.)
+      call der6(f,k,d6fdz,3,IGNOREDX=.TRUE.)
+      del6f = d6fdx + d6fdy + d6fdz
+!
+    endsubroutine del6_nodx
+!***********************************************************************
     subroutine inpup(file,a,nn)
 !
 !  read particle snapshot file
@@ -1057,6 +1104,8 @@ module Sub
 !  binomial coefficients (2*N \above k)/2^{2*N}.
 !  20-apr-99/wolf: coded
 !
+!  WARNING: This routine is likely to be broken if you use MPI
+!
       use Cdata
 !
       real, dimension (mx,my,mz) :: ff
@@ -1073,6 +1122,8 @@ module Sub
 !  Smooth scalar vector field FF binomially N times in direction IDIR.
 !  20-apr-99/wolf: coded
 !   1-sep-01/axel: adapted for case with ghost layers
+!
+!  WARNING: This routine is likely to be broken if you use MPI
 !
       use Cdata
 !
@@ -1547,7 +1598,7 @@ module Sub
 !
       endsubroutine remove_file
 !***********************************************************************
-      subroutine rmwig(f)
+      subroutine rmwig0(f)
 !
 !  There is no diffusion acting on the density, and wiggles in
 !  lnrho are not felt in the momentum equation at all (zero gradient).
@@ -1555,6 +1606,8 @@ module Sub
 !  in sporadic time intervals.
 !
 !  11-Jul-01/axel: adapted from similar version in f77 code
+!
+!  WARNING: THIS ROUTINE IS LIKELY TO BE BROKEN IF YOU USE MPI
 !
       use Cdata
 !
@@ -1568,6 +1621,7 @@ module Sub
       call smooth_3d(tmp,1)
       f(:,:,:,ilnrho)=alog(tmp)
 !
-    endsubroutine rmwig
+    endsubroutine rmwig0
+!***********************************************************************
 
 endmodule Sub

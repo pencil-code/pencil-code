@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.80 2002-07-07 18:32:07 dobler Exp $
+! $Id: equ.f90,v 1.81 2002-07-08 20:55:57 dobler Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.80 2002-07-07 18:32:07 dobler Exp $")
+           "$Id: equ.f90,v 1.81 2002-07-08 20:55:57 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -223,7 +223,7 @@ module Equ
 !  initiate communication and do boundary conditions
 !  need to call boundconds, because it also deals with x-boundaries!
 !
-      if (ldebug) print*,'bef. initiate_isendrcv_bdry'
+      if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       call boundconds(f)
 !
@@ -235,7 +235,7 @@ module Equ
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then 
-           call finalise_isendrcv_bdry(f)
+          call finalise_isendrcv_bdry(f)
         endif
 !
 !  coordinates are needed all the time
@@ -329,12 +329,16 @@ module Equ
 !  calculate density diagnostics: mean density
 !  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
 !
-        if (ldiagnos.and.lhydro.and.ldensity) then
-          if (gamma1/=0.) ee=cs2/(gamma*gamma1)
-          rho=exp(f(l1:l2,m,n,ilnrho))
-          if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
-          if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
-          if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
+        if (ldiagnos) then
+          if (ldensity) then
+            ! Nothing seems to depend on lhydro here:
+            ! if(lhydro) then
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            if (gamma1/=0.) ee=cs2/(gamma*gamma1)
+            if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
+            if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
+            if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
+          endif
         endif
 !
 !  end of loops over m and n
@@ -354,6 +358,71 @@ module Equ
       endif
 !
     endsubroutine pde
+!***********************************************************************
+      subroutine rmwig(f,df,ivar)
+!
+!  Remove small scale oscillations (`wiggles') from a component of f,
+!  normally from lnrho. Sometimes necessary since Nyquist oscillations in
+!  lnrho do not affect the equation of motion at all (dlnrho=0); thus, in
+!  order to keep lnrho smooth one needs to smooth lnrho in sporadic time
+!  intervals.
+!    Since this is a global operation, we need to do a full loop through
+!  imn here (including communication and boundary conditions[?]) and
+!  collect the result in df, from where it is applied to f after the
+!  loop.  
+!    
+!  since this is a global operation.
+!
+!  8-Jul-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Boundcond
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx) :: tmp
+      integer :: ivar
+!
+      if (lroot) then
+        if (ivar == ilnrho) then
+          print*,'RMWIG: removing wiggles in lnrho, t=',t
+        else
+          write(*,'(" ",A,I3,A,G12.5)') &
+               'RMWIG: removing wiggles in variable ', ivar, 't=', t
+        endif
+      endif
+!
+!
+!  initiate communication and do boundary conditions
+!  need to call boundconds, because it also deals with x-boundaries!
+!
+      if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
+      call initiate_isendrcv_bdry(f)
+      call boundconds(f)
+!
+!  do loop over y and z
+!  set indices and check whether communication must now be completed
+!
+      lfirstpoint=.true.        ! true for very first m-n loop
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+        if (necessary(imn)) then 
+          call finalise_isendrcv_bdry(f)
+        endif
+
+        call del6_nodx(f,ilnrho,tmp)
+        df(l1:l2,m,n,ilnrho) = 1./64.*tmp
+      enddo
+!
+!  Not necessary to do this in a (cache-efficient) loop updating in
+!  timestep, since this routine will be applied only infrequently.
+!
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = &
+           f(l1:l2,m1:m2,n1:n2,ilnrho) + df(l1:l2,m1:m2,n1:n2,ilnrho)
+!
+    endsubroutine rmwig
 !***********************************************************************
 
 endmodule Equ

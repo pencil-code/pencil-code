@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.2 2002-06-01 02:56:21 brandenb Exp $
+! $Id: deriv.f90,v 1.3 2002-07-08 20:55:57 dobler Exp $
 
 module Deriv
 
@@ -105,6 +105,69 @@ module Deriv
       endif
 !
     endsubroutine der2
+!***********************************************************************
+    subroutine der6(f,k,df,j,ignoredx)
+!
+!  Calculate 6th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!
+!   8-jul-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: df
+      real :: fac
+      integer :: j,k
+      logical, optional :: ignoredx
+      logical :: igndx
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+!
+      if (j==1) then
+        if (mx/=1) then
+          if (igndx) then; fac=1.; else; fac=1./dx**6; endif
+          df=fac*(-20.* f(4:mx-3,m,n,k) &
+                  +15.*(f(5:mx-2,m,n,k)+f(3:mx-4,m,n,k)) &
+                  - 6.*(f(6:mx-1,m,n,k)+f(2:mx-5,m,n,k)) &
+                  +    (f(7:mx  ,m,n,k)+f(1:mx-6,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (my/=1) then
+          if (igndx) then; fac=1.; else; fac=1./dy**6; endif
+          df=fac*(-20.* f(l1:l2,m  ,n,k) &
+                  +15.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  - 6.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  +    (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (mz/=1) then
+          if (igndx) then; fac=1.; else; fac=1./dz**6; endif
+          df=fac*(-20.* f(l1:l2,m,n  ,k) &
+                  +15.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  - 6.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  +    (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der6
 !***********************************************************************
     subroutine derij(f,k,df,i,j)
 !

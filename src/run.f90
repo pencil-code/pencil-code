@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.57 2002-07-08 06:51:51 brandenb Exp $
+! $Id: run.f90,v 1.58 2002-07-08 20:55:57 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.57 2002-07-08 06:51:51 brandenb Exp $")
+             "$Id: run.f90,v 1.58 2002-07-08 20:55:57 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -127,11 +127,15 @@
           endif
 !
 !  remove wiggles in lnrho in sporadic time intervals
-!  This is necessary if the Reynolds number is large.
+!  Necessary if the Reynolds number is large.
 !  iwig=500 is a typical value. For iwig=0 no action is taken.
 !  (These two queries must come separately on compaq machines.)
 !
-        if (iwig/=0) then; if (mod(it,iwig).eq.0) call rmwig(f); endif
+        if (iwig/=0) then
+          if (mod(it,iwig).eq.0) then
+            call rmwig(f,df,ilnrho)
+          endif
+        endif
 !
 !  time advance
 !
@@ -147,8 +151,10 @@
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
-          if (mod(it,isave).eq.0) call wsnap(trim(directory)//'/var.dat',f,.false.)
-!
+          if (isave /= 0) then
+            if (mod(it,isave).eq.0) &
+                 call wsnap(trim(directory)//'/var.dat',f,.false.)
+          endif
           headt=.false.
 !          if (it>=nt) exit Time_loop
 !          if (dt < dtmin) then
@@ -158,6 +164,8 @@
           endif
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
+
+        call rmwig(f,df,ilnrho)
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
