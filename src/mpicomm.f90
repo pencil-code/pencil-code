@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.18 2002-05-21 07:25:50 brandenb Exp $
+! $Id: mpicomm.f90,v 1.19 2002-05-21 09:59:45 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -73,8 +73,9 @@ module Mpicomm
       integer :: i,m,n
       character (len=4) :: chproc
 !
-      lmpicomm = .true.
+!  get processor number, number of procs, and whether we are root
 !
+      lmpicomm = .true.
       call MPI_INIT(ierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
@@ -119,15 +120,23 @@ module Mpicomm
 !
 !  set the four corners in the yz-plane (in cyclic order)
 !
-      llcorn=(modulo(ipz-1,nprocz)*nprocy+modulo(ipy-1,nprocy))
-      lucorn=(modulo(ipz-1,nprocz)*nprocy+modulo(ipy+1,nprocy))
-      uucorn=(modulo(ipz+1,nprocz)*nprocy+modulo(ipy+1,nprocy))
-      ulcorn=(modulo(ipz+1,nprocz)*nprocy+modulo(ipy-1,nprocy))
+      llcorn=modulo(ipy-1,nprocy)+modulo(ipz-1,nprocz)*nprocy
+      ulcorn=modulo(ipy+1,nprocy)+modulo(ipz-1,nprocz)*nprocy
+      uucorn=modulo(ipy+1,nprocy)+modulo(ipz+1,nprocz)*nprocy
+      lucorn=modulo(ipy-1,nprocy)+modulo(ipz+1,nprocz)*nprocy
 !
 !  this value is not yet the one read in, but the one initialized in cparam.f90
+!  The neighbors are listed in counterclockwise order (including the corners)
 !
-      if (ip<6) then
-        print*,iproc,': ',ylneigh,llcorn,zlneigh,lucorn,yuneigh,uucorn,zuneigh,ulcorn
+!   3   0   1   2   3   0     Example with 4x4 processors
+!  15  12  13  14  15  12
+!  11   8   9  10  11   8
+!   7   4   5   6   7   4
+!   3   9   1   2   3   0
+!  15  12  13  14  15  12
+!
+      if (ip<15) then
+        print*,iproc,': ',ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
       endif
 !
 !  produce index-array for the sequence of points to be worked through:
@@ -239,6 +248,11 @@ module Mpicomm
         call MPI_IRECV(ulbufi,nbufyz,MPI_REAL,ulcorn,TOlu,MPI_COMM_WORLD,irecv_rq_FRul,ierr)
       endif
 !
+!  example
+!
+      if (ip<7.and.ipy==0.and.ipz==3)&
+        print*,'send lu: ',iproc,lubufo(36,:,1,2),' to ',lucorn
+!
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
     subroutine finalise_isendrcv_bdry(f)
@@ -297,6 +311,11 @@ module Mpicomm
         call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,ierr)
         call MPI_WAIT(isend_rq_TOlu,isend_stat_Tlu,ierr)
       endif
+!
+!  example
+!
+      if (ip<7.and.ipy==3.and.ipz==0)&
+        print*,'receive ul: ',iproc,ulbufi(36,:,1,2),' from ',ulcorn
 !
 !  Now do the boundary conditions
 !  Periodic boundary conds. are what we get by default (communication has
