@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-05-01 19:57:05 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-05-03 16:09:22 $")
 !
 !
       if (nvar > mvar) then
@@ -101,6 +101,7 @@ module Register
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot
       real, dimension (mz) :: stp
+      real, dimension (nx,1) :: rmn
       real :: ampl
       real :: zmax,lnrho0
       real :: beta1,lnrhoint,cs2int
@@ -135,8 +136,8 @@ module Register
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-!          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
-          call potential(rr,pot) ! gravity potential
+          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+!          call potential(rr,pot) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
 
           ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)

@@ -29,8 +29,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-04-10 16:26:31 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-05-03 16:09:22 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -41,8 +41,6 @@ module Entropy
 !
       use Cdata
       use sub, only: step
-use Mpicomm
-use IO
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
@@ -52,31 +50,16 @@ use IO
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
+    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !
       use Cdata
-      use Mpicomm
-      use Sub
-      use Global
-      use Slices
-      use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
-      real, dimension (nx) :: divu,rho1,cs2,chi
-      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
-      real, dimension (nx) :: ss,lnrho,TT1,lambda
-      real, dimension (nx) :: heat,prof
-      real :: ssref,z_prev=-1.23e20
-      integer :: i,j
-!
-      save :: z_prev,lambda,glhc
-!
-      intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: df,gpprho,cs2,chi
+      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3) :: uu,glnrho,gpprho
+      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
 !
     endsubroutine dss_dt
 !***********************************************************************
