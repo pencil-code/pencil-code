@@ -48,7 +48,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O3 -u
 #LDMPI=
 #FC=mpif90 # (Samos)
-#FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen)
+#FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 #FC=ifc	#(Nq[0-9]+)
 #FC=/home/brandenb/bin/f95 #(Nq[0-9]+)
 #FC=pgf90 #(Nq[0-9]+)
@@ -61,7 +61,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC) -O4 -dusty
-#F77=$(FC) -O3 #(Cincinnatus|Owen)
+#F77=$(FC) -O3 #(Cincinnatus|Owen|Master)
 
 ## SunOS:
 #FC=pghpf #(Lomond)

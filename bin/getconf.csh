@@ -18,7 +18,7 @@ if ($mpi) then
     set mpirun = "dmpirun"
   else if ($hn =~ *.kis.uni-freiburg.de) then
     set mpirun = /opt/local/mpich/bin/mpirun
-  else if (($hn =~ cincinnatus*) || ($hn =~ owen*)) then
+  else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master)) then
     set mpirun = /usr/lib/lam/bin/mpirun
   else if ($hn =~ nq*) then
     set mpirun = /usr/lib/lam/bin/mpirun
