@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.74 2002-10-27 19:38:11 brandenb Exp $ 
+! $Id: param_io.f90,v 1.75 2002-10-30 05:44:38 brandenb Exp $ 
 
 module Param_IO
 
@@ -39,7 +39,7 @@ module Param_IO
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
-       vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,lfftpack, &
+       vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        directory_snap,random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,test_nonblocking, &

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.113 2002-10-27 19:38:11 brandenb Exp $
+### $Id: Makefile,v 1.114 2002-10-30 05:44:37 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -135,9 +135,9 @@ technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o reg
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
-start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o fftpack.o
+start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o fftpack.o fft_nr.o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
-run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o fftpack.o
+run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o fftpack.o fft_nr.o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 
@@ -155,8 +155,9 @@ general.o:   general.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
-fft.o:	     fft.f cdata.o
-fftpack.o:   fftpack.f cdata.o
+fft.o:	     fft.f
+fftpack.o:   fftpack.f
+fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o

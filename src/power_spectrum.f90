@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.18 2002-10-28 07:08:25 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.18 2002-10-28 07:08:25 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -144,7 +144,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.18 2002-10-28 07:08:25 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.19 2002-10-30 05:44:38 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -198,13 +198,19 @@ module  power_spectrum
     !
     !  Doing the Fourier transform
     !
-    if (lfftpack) then
+    select case (fft_switch)
+    case ('fft_nr')
+      call transform_nr(a_re,a_im)
+      call transform_nr(b_re,b_im)
+    case ('fftpack')
       call transform_fftpack(a_re,a_im)
       call transform_fftpack(b_re,b_im)
-    else
+    case ('Singleton')
       call transform_i(a_re,a_im)
       call transform_i(b_re,b_im)
-    endif
+    case default
+      call stop_it("powerhel: no fft_switch chosen")
+    endselect
     !
     !  integration over shells
     !

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.61 2002-10-28 07:08:25 brandenb Exp $
+! $Id: mpicomm.f90,v 1.62 2002-10-30 05:44:38 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -898,5 +898,64 @@ subroutine transform_fftpack(a_re,a_im)
   if(lroot .AND. ip<10) print*,'fft has finnished'
 !
 end subroutine transform_fftpack
+!***********************************************************************
+subroutine transform_nr(a_re,a_im)
+!
+!  Subroutine to do Fourier transform using Numerical Recipes routine.
+!  Note that this routine requires that nx, ny, and nz are powers of 2.
+!  The routine overwrites the input data.
+!
+!  30-oct-02/axel: adapted from transform_fftpack for Numerical Recipes
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  integer :: m,n
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
+  do n=1,nz
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call four1(ax,nx,-1)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+  call transp(a_re,'y')
+  call transp(a_im,'y')
+!
+!  The length of the array in the y-direction is nx
+!  (remember: nxgrid=nygrid=nzgrid!)
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in y'
+  do n=1,nz
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call four1(ax,nx,-1)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+  call transp(a_re,'z')
+  call transp(a_im,'z')
+!
+!  The length of the array in the z-direction is also nx
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in z'
+  do n=1,nz
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call four1(ax,nx,-1)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+  if(lroot .AND. ip<10) print*,'fft has finnished'
+!
+end subroutine transform_nr
 !***********************************************************************
 endmodule Mpicomm

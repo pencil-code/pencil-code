@@ -441,4 +441,55 @@ subroutine transform_fftpack(a_re,a_im)
 !
 end subroutine transform_fftpack
 !***********************************************************************
+subroutine transform_nr(a_re,a_im)
+!
+!  Subroutine to do Fourier transform using Numerical Recipes routine.
+!  Note that this routine requires that nx, ny, and nz are powers of 2.
+!  The routine overwrites the input data
+!
+!  30-oct-02/axel: adapted from transform_fftpack for Numerical Recipes
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  complex,dimension(ny) :: ay
+  complex,dimension(nz) :: az
+  integer :: l,m,n
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
+  do m=1,ny
+  do n=1,nz
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call four1(ax,nx,-1)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in y'
+  do l=1,nx
+  do n=1,nz
+    ay=cmplx(a_re(l,:,n),a_im(l,:,n))
+    call four1(ay,ny,-1)
+    a_re(l,:,n)=real(ay)
+    a_im(l,:,n)=aimag(ay)
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFT_nr in z'
+  do l=1,nx
+  do m=1,ny
+    az=cmplx(a_re(l,m,:),a_im(l,m,:))
+    call four1(az,nz,-1)
+    a_re(l,m,:)=real(az)
+    a_im(l,m,:)=aimag(az)
+  enddo
+  enddo
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+!
+end subroutine transform_nr
+!***********************************************************************
 endmodule Mpicomm
