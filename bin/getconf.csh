@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.64 2003-08-16 11:31:48 dobler Exp $
+# $Id: getconf.csh,v 1.65 2003-08-26 14:23:08 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -108,7 +108,7 @@ else if ($hn =~ nq* || $hn =~ ns*) then
     cat $PBS_NODEFILE > lamhosts
     set local_disc = 1
     set one_local_disc = 0
-    set local_binary = 1	# (really needed?)
+    set local_binary = 0
   else
     echo "Non-PBS, running on `hostname`"
     echo `hostname` > lamhosts
@@ -118,11 +118,11 @@ else if ($hn =~ nq* || $hn =~ ns*) then
                                 # mysteriously hangs on Nq0
   set booted_lam = 1
   lamnodes
-  set mpirun = /usr/bin/mpirun
   set mpirun = /opt/lam/bin/mpirun
-  set mpirunops = "-O -c2c -s n0"
+  set mpirun = /usr/bin/mpirun
+  set mpirunops = "-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1"#Fix bug in Redhat 9
   if ($local_disc) then
-     setenv SCRATCH_DIR "/var/tmp"
+    setenv SCRATCH_DIR "/var/tmp"
   endif
 
 else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
