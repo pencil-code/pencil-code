@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.7 2003-03-26 07:16:57 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.8 2003-04-01 20:07:35 brandenb Exp $
 
 module Radiation
 
@@ -59,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.7 2003-03-26 07:16:57 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.8 2003-04-01 20:07:35 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -112,8 +112,8 @@ module Radiation
 !  Use the thermodynamics module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !
-      do n=1,mz
-      do m=1,my
+      do n=n1,n2
+      do m=m1,m2
         ss=f(l1:l2,m,n,ient)
         lnrho=f(l1:l2,m,n,ilnrho)
         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature=TT)
