@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.65 2003-09-10 12:20:12 theine Exp $
+! $Id: noionization.f90,v 1.66 2003-09-10 12:40:14 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -76,7 +76,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.65 2003-09-10 12:20:12 theine Exp $")
+           "$Id: noionization.f90,v 1.66 2003-09-10 12:40:14 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -285,7 +285,7 @@ module Ionization
       if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*(lnrho-lnrho0))/gamma
+      if (present(pp)) pp=cs20*exp(gamma*(ss+lnrho)-gamma1*lnrho0)/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_pencil
@@ -311,7 +311,7 @@ module Ionization
       if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*(lnrho-lnrho0))/gamma
+      if (present(pp)) pp=cs20*exp(gamma*(ss+lnrho)-gamma1*lnrho0)/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
