@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.1 2003-05-20 15:15:08 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.2 2003-05-20 15:47:58 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc
@@ -64,7 +64,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.1 2003-05-20 15:15:08 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.2 2003-05-20 15:47:58 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -113,6 +113,7 @@ module Pscalar
         case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
+        case('sound-wave'); f(:,:,:,ilncc)=-ampllncc*cos(kx_lncc*xx)
         case('tang-discont-z')
            print*,'init_lncc: widthlncc=',widthlncc
         prof=.5*(1.+tanh(zz/widthlncc))
