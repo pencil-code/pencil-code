@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.11 2002-07-02 12:54:51 dobler Exp $
+! $Id: boundcond.f90,v 1.12 2002-07-02 17:00:13 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -10,8 +10,10 @@
 
 module Boundcond
 
+  use Mpicomm
+ 
   implicit none
-
+  
   contains
 
 !***********************************************************************
@@ -31,6 +33,7 @@ module Boundcond
       use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: fder,cs2_2d
       integer :: i,j
       character (len=*) :: errmesg
 !
@@ -39,6 +42,13 @@ module Boundcond
 !
 !  Boundary conditions in x
 !
+      !
+      !  In case of rotation with shear 
+      !
+      if (lrotation .AND. qshear>0) then
+         call initiate_shearing(f)
+         call finalise_shearing(f)
+      else
       do j=1,mvar
         !
         ! `lower' bdry
@@ -91,6 +101,7 @@ module Boundcond
           endselect
         endif
       enddo
+      end if
 !
 !  Boundary conditions in y
 !
@@ -169,6 +180,33 @@ module Boundcond
           case ('c1')             ! complex (processed in its own routine)
           case ('c2')             ! complex (processed in its own routine)
             ! handled below
+          case ('db')
+            !
+            !  Set ghost zone to reproduce one-sided boundary consition 
+            !  (2nd order):
+            !  Finding the derivatives on the boundary using a one 
+            !  sided final difference method. This derivative is being 
+            !  used to calculates the boundary points. This will probably
+            !  only be used for ln(rho)
+            !
+            do i=1,nghost
+               fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
+                    -f(:,:,n1-i+3,j))/(2*dz)
+               f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
+            end do
+         case ('ce')
+            !
+            !  This makes the energy (by mass) constant at the boundaries
+            !
+            if (lentropy) then 
+               cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+            else
+               cs2_2d=cs20;
+            end if
+            do i=1,nghost
+               f(:,:,n1-i,j)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+                    +log(cs2_2d))
+            end do
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz1 = ", &
@@ -196,6 +234,31 @@ module Boundcond
           case ('c1')             ! complex (processed in its own routine)
           case ('c2')             ! complex (processed in its own routine)
             ! handled below
+          case ('db')
+            !
+            !  Finding the derivatives on the boundary using a one 
+            !  sided final difference method. This derivative is being 
+            !  used to calculates the boundary points. This will probably
+            !  only be used for ln(rho).
+            !
+            do i=1,nghost
+               fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
+                    +f(:,:,n2+i-3,j))/(2*dz)
+               f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
+            end do
+         case ('ce')
+            !
+            !  This makes the energy (by mass) constant at the boundaries
+            !
+            if (lentropy) then 
+               cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+            else
+               cs2_2d=cs20;
+            end if
+            do i=1,nghost
+               f(:,:,n2+i,j)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+                    +log(cs2_2d))
+            end do
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz2 = ", &
@@ -210,5 +273,10 @@ module Boundcond
 !
     endsubroutine boundconds
 !***********************************************************************
-
+ 
 endmodule Boundcond
+
+
+
+
+
