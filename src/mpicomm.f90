@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.85 2003-06-30 16:52:18 brandenb Exp $
+! $Id: mpicomm.f90,v 1.86 2003-07-01 14:21:29 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -72,14 +72,18 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
-  integer :: isend_xy,irecv_xy
+  integer :: isend_xy,irecv_xy, &  !(for radiation)
+             isend_yz,irecv_yz, &
+             isend_zx,irecv_zx
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
                                          isend_stat_Tuu,isend_stat_Tlu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                          irecv_stat_Fll,irecv_stat_Ful
-  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat
+  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat, &
+                                         isend_yz_stat,irecv_yz_stat, &
+                                         isend_zx_stat,irecv_zx_stat
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
@@ -568,13 +572,13 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine send_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine send_Irad0_xy(Ibuf_xy,idest,radx0,rady0,radz0,tag_xy)
 !
 !  send intensities
 !
 !  29-jun-03/axel: coded
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,radx0,rady0,radz0
+      integer :: nbuf_xy,idest,tag_xy,radx0,rady0,radz0
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
 !  buffer size
@@ -583,7 +587,7 @@ module Mpicomm
 !
 !  initiate send
 !
-      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy, &
+      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                      MPI_COMM_WORLD,isend_xy,ierr)
 !
 !  finalize straight away
@@ -592,13 +596,13 @@ module Mpicomm
 !
     endsubroutine send_Irad0_xy
 !***********************************************************************
-    subroutine recv_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine recv_Irad0_xy(Ibuf_xy,idest,radx0,rady0,radz0,tag_xy)
 !
 !  send intensities
 !
 !  29-jun-03/axel: coded
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,radx0,rady0,radz0
+      integer :: nbuf_xy,idest,tag_xy,radx0,rady0,radz0
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
 !  buffer size
@@ -607,7 +611,7 @@ module Mpicomm
 !
 !  initiate receive
 !
-      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy, &
+      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
 !  finalize straight away
@@ -615,6 +619,102 @@ module Mpicomm
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
 !
     endsubroutine recv_Irad0_xy
+!***********************************************************************
+    subroutine send_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
+      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
+!
+!  initiate send
+!
+      call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+                     MPI_COMM_WORLD,isend_yz,ierr)
+!
+!  finalize straight away
+!
+      call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
+!
+    endsubroutine send_Irad0_yz
+!***********************************************************************
+    subroutine recv_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
+      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
+!
+!  initiate receive
+!
+      call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+                     MPI_COMM_WORLD,irecv_yz,ierr)
+!
+!  finalize straight away
+!
+      call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
+!
+    endsubroutine recv_Irad0_yz
+!***********************************************************************
+    subroutine send_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
+      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
+!
+!  initiate send
+!
+      call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+                     MPI_COMM_WORLD,isend_zx,ierr)
+!
+!  finalize straight away
+!
+      call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
+!
+    endsubroutine send_Irad0_zx
+!***********************************************************************
+    subroutine recv_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
+      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
+!
+!  initiate receive
+!
+      call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+                     MPI_COMM_WORLD,irecv_zx,ierr)
+!
+!  finalize straight away
+!
+      call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
+!
+    endsubroutine recv_Irad0_zx
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

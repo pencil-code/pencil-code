@@ -230,6 +230,66 @@ module Mpicomm
 !
     endsubroutine recv_Irad0_xy
 !***********************************************************************
+    subroutine send_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
+      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
+!
+    endsubroutine send_Irad0_yz
+!***********************************************************************
+    subroutine recv_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
+      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
+!
+    endsubroutine recv_Irad0_yz
+!***********************************************************************
+    subroutine send_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
+      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
+!
+    endsubroutine send_Irad0_zx
+!***********************************************************************
+    subroutine recv_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
+      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
+!
+    endsubroutine recv_Irad0_zx
+!***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
       integer :: nbcast_array
