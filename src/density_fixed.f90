@@ -1,4 +1,4 @@
-! $Id: density_fixed.f90,v 1.2 2004-06-11 08:07:35 ajohan Exp $
+! $Id: density_fixed.f90,v 1.3 2004-06-11 17:19:11 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density_fixed.f90,v 1.2 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: density_fixed.f90,v 1.3 2004-06-11 17:19:11 mcmillan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -707,12 +707,12 @@ module Density
 !
 !  22-oct-03/dave -- coded
 !
-      use Gravity, only: g0,r0_pot,n_pot,smoothpotential
+      use Gravity, only: g0,potential
       use Sub, only: calc_unitvects_sphere
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: pot
-      real :: beta1,lnrho_int,lnrho_ext,c_int,c_ext
+      real :: beta1,lnrho_int,lnrho_ext,pot_int,pot_ext
 !
       beta1 = g0/(mpoly+1)
 !
@@ -720,11 +720,6 @@ module Density
       lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
       lnrho_ext = lnrho0
 !
-!     constants for continuity of density across boundaries
-!     when using smoothed potential
-      c_int = lnrho_int-(g0*exp(-mpoly*lnrho_int))*(r_int**n_pot+r0_pot**n_pot)**(-1./float(n_pot))
-      c_ext = lnrho_ext-(g0*exp(-mpoly*lnrho_ext))*(r_ext**n_pot+r0_pot**n_pot)**(-1./float(n_pot))
-      
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
@@ -732,15 +727,17 @@ module Density
           call calc_unitvects_sphere()
 !
           ! in the fluid shell
-          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
+          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho)=mpoly*log(1+beta1*(1/r_mn-1))
           ! outside the fluid shell
           if (initlnrho(1)=='geo-kws') then
-            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
-            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
+            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext
+            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int
           elseif (initlnrho(1)=='geo-kws-constant-T') then
-            call smoothpotential(RMN=r_mn,POT=pot)
-            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = pot+c_ext
-            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = pot+c_int
+            call potential(R=r_int,POT=pot_int)
+            call potential(R=r_ext,POT=pot_ext)
+            call potential(RMN=r_mn,POT=pot)
+            where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho)=lnrho_ext+(pot_ext-pot)*exp(-lnrho_ext/mpoly)
+            where (r_mn <= r_int) f(l1:l2,m,n,ilnrho)=lnrho_int+(pot_int-pot)*exp(-lnrho_int/mpoly)
           endif
         enddo 
 !      

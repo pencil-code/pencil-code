@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.62 2004-06-07 19:50:13 theine Exp $
+! $Id: grav_r.f90,v 1.63 2004-06-11 17:19:11 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,12 +24,6 @@ module Gravity
     module procedure potential_penc
     module procedure potential_point
   endinterface
-
-  interface smoothpotential
-    module procedure smoothpotential_pencil
-    module procedure smoothpotential_point
-  endinterface
-
 
   ! coefficients for potential
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
@@ -73,7 +67,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.62 2004-06-07 19:50:13 theine Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.63 2004-06-11 17:19:11 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -309,9 +303,8 @@ endif
       use Mpicomm, only: stop_it
 
       real, dimension (nx) :: rad, pot
-      real, dimension (nx), optional :: xmn, rmn
-      real, optional :: ymn, zmn
-      real, optional :: pot0
+      real, optional :: ymn,zmn,pot0
+      real, optional, dimension (nx) :: xmn,rmn
       real, optional, dimension (nx,3) :: grav
       
       if (present(rmn)) then
@@ -380,60 +373,6 @@ endif
       if(ip==0) print*,present(grav)
 
     endsubroutine potential_point
-!***********************************************************************
-    subroutine smoothpotential_pencil(xmn,ymn,zmn,rmn,pot)
-!
-!  Smoothed 1/r gravity potential along one pencil
-!
-!  13-apr-04/dave: coded
-!
-      use Cdata, only: nx
-      use Mpicomm, only: stop_it
-!
-      real, optional, dimension (nx) :: xmn,rmn
-      real, optional :: ymn,zmn
-      real, dimension (nx) :: pot,rad
-!      
-      if (present(rmn)) then
-        rad = rmn
-      else
-        if (present(xmn) .and. present(ymn) .and. present(zmn)) then
-          rad = sqrt(xmn**2+ymn**2+zmn**2)
-        else
-          call stop_it("Need to specify either x,y,z or r in smoothpotential_pencil()")
-        endif
-      endif
-!
-      pot=g0/(rad**n_pot+r0_pot**n_pot)**(1./n_pot)
-!
-      if(ip==0) print*,xmn,ymn,zmn,rmn,pot  !(to keep compiler quiet)
-    endsubroutine smoothpotential_pencil
-!***********************************************************************
-    subroutine smoothpotential_point(x,y,z,r,pot)
-!
-!  Smoothed 1/r gravity potential at one point
-!
-!  13-apr-04/dave: coded
-!
-      use Mpicomm, only: stop_it
-!
-      real, optional :: x,y,z,r
-      real :: pot,rad
-!
-      if (present(r)) then
-        rad = r
-      else
-        if (present(x) .and. present(y) .and. present(z)) then
-          rad = sqrt(x**2+y**2+z**2)
-        else
-          call stop_it("Need to specify either x,y,z or r in smoothpotential_point()")
-        endif
-      endif
-!      
-      pot=g0/(rad**n_pot+r0_pot**n_pot)**(1./n_pot)
-!
-      if(ip==0) print*,x,y,z,r,pot     !(to keep compiler quiet)
-    endsubroutine smoothpotential_point
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !

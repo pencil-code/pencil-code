@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.22 2004-04-16 17:17:14 mcmillan Exp $
+! $Id: grav_self.f90,v 1.23 2004-06-11 17:19:11 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -21,11 +21,6 @@ module Gravity
     module procedure potential_global
     module procedure potential_penc
     module procedure potential_point
-  endinterface
-
-  interface smoothpotential
-    module procedure smoothpotential_pencil
-    module procedure smoothpotential_point
   endinterface
 
   real :: nu_epicycle=1.
@@ -92,7 +87,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.22 2004-04-16 17:17:14 mcmillan Exp $")
+           "$Id: grav_self.f90,v 1.23 2004-06-11 17:19:11 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -258,10 +253,9 @@ module Gravity
       use Cdata
       use Sub
 !
-      real, dimension (nx) :: xmn,pot
-      real :: ymn,zmn
-      real, optional :: pot0
-      real, optional, dimension (nx) :: rmn
+      real, dimension (nx) :: pot
+      real, optional :: ymn,zmn,pot0
+      real, optional, dimension (nx) :: xmn,rmn
       real, optional, dimension (nx,3) :: grav
 !
       intent(in) :: xmn,ymn,zmn,rmn
@@ -300,40 +294,6 @@ module Gravity
 !
       if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
     endsubroutine potential_point
-!***********************************************************************
-    subroutine smoothpotential_pencil(xmn,ymn,zmn,rmn,pot)
-!
-!  Smoothed 1/r gravity potential along one pencil
-!
-!  13-apr-04/dave: coded
-!
-      use Cdata, only: nx
-      use Mpicomm, only: stop_it
-!
-      real, optional, dimension (nx) :: xmn,rmn
-      real, optional :: ymn,zmn
-      real, dimension (nx) :: pot
-!      
-      call stop_it("grav_self: smoothpotential_pencil not implemented")
-!
-      if(ip==0) print*,xmn,ymn,zmn,rmn,pot  !(to keep compiler quiet)
-    endsubroutine smoothpotential_pencil
-!***********************************************************************
-    subroutine smoothpotential_point(x,y,z,r,pot)
-!
-!  Smoothed 1/r gravity potential at one point
-!
-!  13-apr-04/dave: coded
-!
-      use Mpicomm, only: stop_it
-!
-      real, optional :: x,y,z,r
-      real :: pot
-!
-      call stop_it("grav_self: smoothpotential_point not implemented")
-!
-      if(ip==0) print*,x,y,z,r,pot     !(to keep compiler quiet)
-    endsubroutine smoothpotential_point
 !!***********************************************************************
 !    subroutine self_gravity(f)
 !!
