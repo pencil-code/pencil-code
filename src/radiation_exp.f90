@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.95 2003-09-08 18:33:18 theine Exp $
+! $Id: radiation_exp.f90,v 1.96 2003-09-13 16:25:08 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -24,7 +24,7 @@ module Radiation
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
   real :: frac
-  real, parameter :: dtaumin=1e-37
+  real, parameter :: dtaumin=2*epsilon(1.)
   integer :: llstart,llstop,lsign
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
@@ -84,7 +84,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.95 2003-09-08 18:33:18 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.96 2003-09-13 16:25:08 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -261,7 +261,10 @@ module Radiation
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real :: dlength,dtau,emdtau
+      real, parameter :: one_2=1./2.
+      real, parameter :: one_6=1./6.
+      real, parameter :: one_24=1./24.
+      real :: dlength,dtau,emdtau,dtau_ps,tau_ps_term
 !
 !  identifier
 !
@@ -276,6 +279,18 @@ module Radiation
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+!
+!  Special care is required when calculating
+!                   exp(-dtau)-1+dtau
+!    tau_ps_term = -------------------
+!                         dtau 
+!  in order to avoid absurdly high values due to roundoff error if dtau << 1.
+!  We use the builtin exp function only for dtau>dtau_ps, otherwise the first
+!  three terms of the Taylor series. The threshold below was found to be good
+!  for real (rel. error in tau_ps_term <= 7e-6) and double precision
+!  (rel. error <= 4e-10).
+!
+      dtau_ps=1.8*epsilon(dtau)**0.2
 !
 !  determine start and stop positions
 !
@@ -303,17 +318,18 @@ module Radiation
       do m=mmstart,mmstop,msign
       do n=nnstart,nnstop,nsign
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
-          if (dtau<=dtaumin) then
-            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)
-            Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)
+          emdtau=exp(-dtau)
+          emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
+          if (dtau>dtau_ps) then
+            tau_ps_term=(emdtau-1+dtau)/dtau
           else
-            emdtau=exp(-dtau)
-            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-            Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
-                        +(1-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
-                        +(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad)) &
-                        *(emdtau-1+dtau)/dtau
+            !tau_term_ps=dtau/2-dtau**2/6+dtau**3/24
+            tau_ps_term=dtau*(one_2+dtau*(-one_6+dtau*one_24))
           endif
+          Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
+                      +(1-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
+                      +(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad)) &
+                      *tau_ps_term
       enddo
       enddo
       enddo
