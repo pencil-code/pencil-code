@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.7 2003-10-26 16:23:27 theine Exp $
+! $Id: read_videofiles.f90,v 1.8 2003-10-28 12:45:28 theine Exp $
 
 !***********************************************************************
       program rvid_box
@@ -27,15 +27,20 @@
       real :: t
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
 !
-      real :: min_xy_loc=huge(min_xy_loc),max_xy_loc=-huge(max_xy_loc)
-      real :: min_xy2_loc=huge(min_xy2_loc),max_xy2_loc=-huge(max_xy2_loc)
-      real :: min_xz_loc=huge(min_xz_loc),max_xz_loc=-huge(max_xz_loc)
-      real :: min_yz_loc=huge(min_yz_loc),max_yz_loc=-huge(max_yz_loc)
-!
       character (len=120) :: file='',fullname='',wfile=''
       character (len=120) :: datadir='data',path=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
+!
+      real :: min_xy_loc,min_xy2_loc,min_xz_loc,min_yz_loc
+      real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
+!
+!  initialize minimum and maximum values for each plane
+!
+      min_xy_loc=huge(min_xy_loc); max_xy_loc=-huge(max_xy_loc)
+      min_xy2_loc=huge(min_xy2_loc); max_xy2_loc=-huge(max_xy2_loc)
+      min_xz_loc=huge(min_xz_loc); max_xz_loc=-huge(max_xz_loc)
+      min_yz_loc=huge(min_yz_loc); max_yz_loc=-huge(max_yz_loc)
 !
 !  read file name
 !
