@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.92 2003-09-19 13:26:52 dobler Exp $
+# $Id: getconf.csh,v 1.93 2003-10-29 15:48:19 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -117,12 +117,17 @@ else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) ) then
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
-    if (`fgrep -c lam_mpi src/start.x` > 0) then
+    if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
       set mpirun = /usr/lib/lam/bin/mpirun
       set mpirunops = "-c2c -O"
-    else if (`fgrep -c MPICHX src/start.x` > 0) then
+    else if (`fgrep -c MPICHX src/start.x` > 0) then # mpich
       set mpirun = /usr/lib/mpich/bin/mpirun
-    else
+      if ($?SGE_O_WORKDIR) then	# sge job
+	set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
+      else			# interactive run
+	set mpirunops = "-nolocal" # or we get one CPU less
+      endif
+      else
       set mpirun 'Cannot_find_out_which_mpirun_to_use'
     endif
   endif
