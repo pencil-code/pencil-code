@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.221 2003-08-08 18:17:24 brandenb Exp $
+### $Id: Makefile,v 1.222 2003-08-09 19:42:00 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -89,10 +89,6 @@ CFLAGS=-O3 -DFUNDERSC=1
 
 ## Linux:
 ## The -tpp7 flag leads to a 10% speedup on nl6
-#
-#ifeq ($(MPICOMM),mpicomm)  #(cosmo|nw17|nl6|nl11|wormhole|sandin)
-#  MPICOMM=mpicomm_         #(cosmo|nw17|nl6|nl11|wormhole|sandin)
-#endif                      #(cosmo|nw17|nl6|nl11|wormhole|sandin)
 #
 #FC=f95
 #FFLAGS=-O3
@@ -250,7 +246,6 @@ run.x: $(run) Makefile.local
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
-
 #shorthand for this
 l:
 	make linkonly
