@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $
+! $Id: radiation.f90,v 1.5 2002-07-31 13:30:32 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $")
+           "$Id: radiation.f90,v 1.5 2002-07-31 13:30:32 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -281,8 +281,20 @@ module Radiation
          absgradE=sqrt(absgradE)
          RF=lgamma*absgradE/E_rad
          DFF=(9+RF**2)**(-0.5)
-      elseif (flim=='isotropic') then
+      elseif (flim=='Eddington') then
          DFF=1./3.
+      elseif (flim=='LP') then
+         RF=lgamma*absgradE/E_rad
+         DFF=(2+RF)/(6+3*RF+RF**2)
+      elseif (flim=='Minerbo') then
+         RF=lgamma*absgradE/E_rad
+         do i=1,nx
+            if (RF(i)<1.5) then 
+               DFF(i)=2/(3+sqrt(9+12*RF(i)**2))
+            else 
+               DFF(i)=1./(1+RF(i)+sqrt(1+2*RF(i)))
+            endif
+         enddo
       else
          print*,'There are no such flux-limiter:', flim
       end if
