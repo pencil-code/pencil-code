@@ -4,7 +4,7 @@
 ;;;  Author: axel, wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   8-Jul-1999
 ;;;  Version: vel_a 1.2
-;;;  CVS $Revision: 1.2 $
+;;;  CVS $Revision: 1.3 $
 ;;;  Based on: vel.pro,v 1.4 1997/01/15 03:11:50 idl Exp,
 ;;;  Description: A clone of IDL's vel allowing for
 ;;;    a) X and Y arguments and the corresponding {X,Y}RANGE,
@@ -218,7 +218,9 @@ if n_elements(nsteps) le 0 then nsteps = 10
 if n_elements(length) le 0 then length=.1
 if n_elements(title) le 0 then title='Velocity Field'
 if n_elements(seed) le 0 then seed=3.11
-if n_elements(color) le 0 then color=255
+if n_elements(color) le 0 then begin
+  if !d.name eq 'PS' then color=0 else color=255
+endif
 ;
 if n_elements(xx) le 0 then begin ; Mimic the old behaviour
   X=ARROWS_A(U,W,Nvecs,LENGTH, nsteps=nsteps,seed=seed)
