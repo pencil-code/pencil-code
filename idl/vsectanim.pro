@@ -89,24 +89,24 @@ for i=0,n_elements(flist)-1 do begin
 
     ;
     if (absolute) then begin
-      levent = linspace(minmax(ent)+[-1,1]*1e-27,nentlevs)
+      levent = linspace(minmax(ent)+[-1,1]*1e-27,nentlevs,/UNIQ)
     endif else begin
       undefine, levent          ; LEVELS=<undef> is like no LEVELS kw at all
     endelse
 
     contourfill, ent[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levent
     var = reform(lnrho[*,ny1,*])
-    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
     opcircles, 1., LINE=2, THICK=2
     ;
     contourfill, ent[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levent
     var = reform(lnrho[*,ny2,*])
-    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
     opcircles, 1., LINE=2, THICK=2
     ;
     contourfill, ent[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levent
     var = reform(lnrho[*,ny3,*])
-    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+    contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs,/UNIQ)
     opcircles, 1., LINE=2, THICK=2
 
     wget

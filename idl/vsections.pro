@@ -95,24 +95,24 @@ tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
-  levss = linspace(minmax(ss),nsslevs)
+  levss = linspace(minmax(ss),nsslevs,/UNIQ)
 endif else begin
   undefine, levss                 ; LEVELS=<undef> is like no LEVELS kw at all
 endelse
 
 contourfill, ss[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levss
 var = reform(lnrho[*,ny1,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ss[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levss
 var = reform(lnrho[*,ny2,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ss[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levss
 var = reform(lnrho[*,ny3,*])
-contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 wget
