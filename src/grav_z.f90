@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.61 2004-08-30 12:48:21 ajohan Exp $
+! $Id: grav_z.f90,v 1.62 2004-09-14 11:34:07 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,7 +32,7 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0=0.,r0_pot=0.,kz_gg=1.
+  real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
   logical :: lgravz_dust=.true.,lgravz_gas=.true.,lnumerical_equilibrium=.false.
@@ -68,14 +68,14 @@ module Gravity
 !      |
 !
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top,kz_gg
+       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav,kx_gg,ky_gg,kz_gg, &
+       lnrho_bot,lnrho_top,ss_bot,ss_top
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       zref,gravz,nu_epicycle,grav_profile,zgrav, &
+       zref,gravz,nu_epicycle,grav_profile,zgrav,kx_gg,ky_gg,kz_gg, &
        lnrho_bot,lnrho_top,ss_bot,ss_top,lgravz_dust,lgravz_gas
 
   ! other variables (needs to be consistent with reset list below)
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.61 2004-08-30 12:48:21 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.62 2004-09-14 11:34:07 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -202,7 +202,7 @@ module Gravity
               -(g_A*z(n)/sqrt(z(n)**2+g_B**2) + g_C*z(n)/g_D)
             !df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
             !-331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
-        case('default')     ! Catch unknown values
+        case default       ! Catch unknown values
           if(lroot) print*,'duu_dt_grav: No such gravity profile'
 
         endselect
@@ -227,11 +227,9 @@ module Gravity
             df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))-nu_epicycle2*z(n)
           case('sinusoidal')
             if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravz=',gravz
-            !df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) - &
-            !    gravz*Omega**2*Lz*sin(kz_gg*z(n))
             df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) - &
                 gravz*sin(kz_gg*z(n))
-          case('default')
+          case default
             call stop_it('duu_dt_grav: No such gravity profile')
 
           endselect
