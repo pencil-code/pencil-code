@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.38 2002-12-19 09:56:05 brandenb Exp $
+! $Id: forcing.f90,v 1.39 2003-01-17 17:40:31 nilshau Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.38 2002-12-19 09:56:05 brandenb Exp $")
+           "$Id: forcing.f90,v 1.39 2003-01-17 17:40:31 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -113,6 +113,7 @@ module Forcing
         case ('twist');         call forcing_twist(f)
         case ('diffrot');       call forcing_diffrot(f)
         case ('blobs');         call forcing_blobs(f)
+        case ('hel_smooth');    call forcing_hel_smooth(f)
         case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
         endselect
 !
@@ -952,6 +953,262 @@ module Forcing
       endif
 !
     endsubroutine forcing_blobs
+!***********************************************************************
+    subroutine forcing_hel_smooth(f)
+!
+      use Mpicomm
+      use Cdata
+      use Hydro
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,3) :: force1,force2,force_vec
+      real :: phase1,phase2,p_weight
+      real :: kx01,ky1,kz1,kx02,ky2,kz2
+      integer, parameter :: mk=3000
+      integer, dimension(mk), save :: kkx,kky,kkz
+      integer, save :: ifirst,nk
+      integer :: ik1,ik2,ik
+      real, save :: kav
+!
+      if (ifirst==0) then
+         if (lroot) print*,'helical forcing; opening k.dat'
+         open(9,file='k.dat')
+         read(9,*) nk,kav
+         if (lroot) print*,'average k=',kav
+         if(nk.gt.mk) then
+            if (lroot) print*, &
+                 'dimension mk in forcing_hel_smooth is insufficient'
+            print*,'nk=',nk,'mk=',mk
+            call mpifinalize
+         end if
+         read(9,*) (kkx(ik),ik=1,nk)
+         read(9,*) (kky(ik),ik=1,nk)
+         read(9,*) (kkz(ik),ik=1,nk)
+         close(9)
+      endif
+      ifirst=ifirst+1         
+!
+!  Re-calculate forcing wave numbers if necessary
+!
+      !tsforce is set to -10 in cdata.f90. It should also be saved in a file
+      !so that it will be read again on restarts.
+      if (t .gt. tsforce) then  
+         if (tsforce .lt. 0) then
+            call random_number_wrapper(fran1)
+         else
+            fran1=fran2
+         endif
+         call random_number_wrapper(fran2)
+         tsforce=t+dtforce
+      endif
+      phase1=pi*(2*fran1(1)-1.)
+      ik1=nk*.9999*fran1(2)+1
+      kx01=kkx(ik1)
+      ky1=kky(ik1)
+      kz1=kkz(ik1)
+      phase2=pi*(2*fran2(1)-1.)
+      ik2=nk*.9999*fran2(2)+1
+      kx02=kkx(ik2)
+      ky2=kky(ik2)
+      kz2=kkz(ik2)
+
+!
+!  Calculate forcing function
+!
+      call hel_vec(f,kx01,ky1,kz1,phase1,kav,ifirst,force1)
+      call hel_vec(f,kx02,ky2,kz2,phase2,kav,ifirst,force2)
+!
+!  Determine weight parameter
+!
+      p_weight=(tsforce-t)/dtforce
+!
+!  Add forcing
+!      
+      force_vec=p_weight*force1+(1-p_weight)*force2
+      f(l1:l2,m1:m2,n1:n2,1:3)= &
+           f(l1:l2,m1:m2,n1:n2,1:3)+force_vec(l1:l2,m1:m2,n1:n2,:)
+!
+    end subroutine forcing_hel_smooth
+!***********************************************************************
+    subroutine hel_vec(f,kx0,ky,kz,phase,kav,ifirst,force1)
+
+!
+!  Add helical forcing function, using a set of precomputed wavevectors.
+!  The relative helicity of the forcing function is determined by the factor
+!  sigma, called here also relhel. If it is +1 or -1, the forcing is a fully
+!  helical Beltrami wave of positive or negative helicity. For |relhel| < 1
+!  the helicity less than maximum. For relhel=0 the forcing is nonhelical.
+!  The forcing function is now normalized to unity (also for |relhel| < 1).
+!
+!  10-apr-00/axel: coded
+!   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
+!  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
+!   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
+!  17-jan-03/nils: adapted from forcing_hel
+!
+      use Mpicomm
+      use Cdata
+      use General
+      use Sub
+      use Hydro
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: phase,ffnorm
+      real :: kav
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx
+      real, dimension (mz) :: tmpz
+      real, dimension (mx,my,mz,3) :: force1
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      complex, dimension (3) :: coef
+      integer :: ik,j,jf
+      integer :: ifirst
+      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
+      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+
+!
+!  in the shearing sheet approximation, kx = kx0 - St*k_y.
+!  Here, St=-deltay/Lx
+!
+      if (Sshear==0.) then
+        kx=kx0
+      else
+        kx=kx0+ky*deltay/Lx
+      endif
+!
+      if(headt.or.ip<5) print*, 'kx0,kx,ky,kz=',kx0,kx,ky,kz
+      k2=kx**2+ky**2+kz**2
+      k=sqrt(k2)
+!
+!  pick e1 if kk not parallel to ee1. ee2 else.
+!
+      if((ky.eq.0).and.(kz.eq.0)) then
+        ex=0; ey=1; ez=0
+      else
+        ex=1; ey=0; ez=0
+      endif
+!
+!  k.e
+!
+      kde=kx*ex+ky*ey+kz*ez
+!
+!  k x e
+!
+      kex=ky*ez-kz*ey
+      key=kz*ex-kx*ez
+      kez=kx*ey-ky*ex
+!
+!  k x (k x e)
+!
+      kkex=ky*kez-kz*key
+      kkey=kz*kex-kx*kez
+      kkez=kx*key-ky*kex
+!
+!  ik x (k x e) + i*phase
+!
+!  Normalize ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  This does already include the new sqrt(2) factor (missing in B01).
+!  So, in order to reproduce the 0.1 factor mentioned in B01
+!  we have to set force=0.07.
+!
+!  Furthermore, for |relhel| < 1, sqrt(2) should be replaced by
+!  sqrt(1.+relhel**2). This is done now (9-nov-02).
+!  This means that the previous value of force=0.07 (for relhel=0)
+!  should now be replaced by 0.05.
+!
+!  Note: kav is not to be scaled with k1_ff (forcing should remain
+!  unaffected when changing k1_ff).
+!
+      ffnorm=sqrt(1.+relhel**2) &
+        *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
+      if (ip.le.9) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.9) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force/ffnorm*sqrt(dt)
+!
+!  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
+!  case one needs to scale by 2pi/Lx, etc.
+!
+      fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
+      fy=exp(cmplx(0.,ky*k1_ff*y))
+      fz=exp(cmplx(0.,kz*k1_ff*z))
+!
+!  possibly multiply forcing by z-profile
+!
+      if (height_ff/=0.) then
+        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
+        tmpz=(z/height_ff)**2
+        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
+!  possibly multiply forcing by sgn(z) and radial profile
+!
+      if (r_ff/=0.) then
+        if (lroot .and. ifirst==1) &
+             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+        !
+        ! only z-dependent part can be done here; radial stuff needs to go
+        ! into the loop
+        !
+        tmpz = tanh(z/width_ff)
+        fz = fz*tmpz
+      endif
+!
+      if (ip.le.5) print*,'fx=',fx
+      if (ip.le.5) print*,'fy=',fy
+      if (ip.le.5) print*,'fz=',fz
+!
+!  prefactor
+!
+      coef(1)=cmplx(k*kex,relhel*kkex)
+      coef(2)=cmplx(k*key,relhel*kkey)
+      coef(3)=cmplx(k*kez,relhel*kkez)
+      if (ip.le.5) print*,'coef=',coef
+!
+! loop the two cases separately, so we don't check for r_ff during
+! each loop cycle which could inhibit (pseudo-)vectorisation
+!
+      if (r_ff == 0) then       ! no radial profile
+        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            do m=m1,m2
+               force1(l1:l2,m,n,jf) = &
+                +force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
+        enddo
+      else                      ! with radial profile
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            sig = relhel*tmpz(n)
+            coef(1)=cmplx(k*kex,sig*kkex)
+            coef(2)=cmplx(k*key,sig*kkey)
+            coef(3)=cmplx(k*kez,sig*kkez)
+            do m=m1,m2
+              radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+              force1(l1:l2,m,n,jf) =  real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
+        enddo
+      endif
+!
+      if (ip.le.9) print*,'forcing OK'
+!
+
+    end subroutine hel_vec
 !***********************************************************************
 
 endmodule Forcing
