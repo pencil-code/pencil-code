@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.156 2004-01-31 14:01:22 dobler Exp $ 
+! $Id: sub.f90,v 1.157 2004-01-31 14:48:19 dobler Exp $ 
 
 module Sub 
 
@@ -31,6 +31,7 @@ module Sub
   interface max_for_dt
     module procedure max_for_dt_nx_nx
     module procedure max_for_dt_1_nx
+    module procedure max_for_dt_1_1_1_nx
   endinterface
 
   contains
@@ -2840,6 +2841,24 @@ module Sub
       maxf = amax1(f,maxf)
 
     endsubroutine max_for_dt_1_nx
+!***********************************************************************
+    subroutine max_for_dt_1_1_1_nx(f1,f2,f3,maxf)
+!
+!  Like max_for_dt_n_n, but with a different signature of argument shapes.
+!
+!  30-jan-04/wolf: coded
+!
+      use Cdata
+!
+      real, dimension(nx) :: maxf
+      real                :: f1,f2,f3
+!
+      intent(in)    :: f1,f2,f3
+      intent(inout) :: maxf
+
+      maxf = amax1(f1,f2,f3,maxf)
+
+    endsubroutine max_for_dt_1_1_1_nx
 !***********************************************************************
 
 
