@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $
+! $Id: deriv.f90,v 1.8 2003-06-17 22:52:39 dobler Exp $
 
 module Deriv
 
@@ -161,7 +161,7 @@ module Deriv
 !
     endsubroutine der2
 !***********************************************************************
-    subroutine der6(f,k,df,j,ignoredx)
+    subroutine der6(f,k,df,j,ignoredx,upwind)
 !
 !  Calculate 6th derivative of a scalar, get scalar
 !    Used for hyperdiffusion that affects small wave numbers as little as
@@ -169,6 +169,8 @@ module Deriv
 !    The optional flag IGNOREDX is useful for numerical purposes, where
 !  you want to affect the Nyquist scale in each direction, independent of
 !  the ratios dx:dy:dz.
+!    The optional flag UPWIND is a variant thereof, which calculates
+!  D^(6)*dx^5/60, which is the upwind correction of centered derivatives.
 !
 !   8-jul-02/wolf: coded
 !
@@ -178,8 +180,8 @@ module Deriv
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
-      logical, optional :: ignoredx
-      logical :: igndx
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
 !
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
@@ -189,10 +191,21 @@ module Deriv
       else
         igndx = .false.
       endif
+      if (present(upwind)) then
+        upwnd = upwind
+      else
+        upwnd = .false.
+      endif
 !
       if (j==1) then
         if (nxgrid/=1) then
-          if (igndx) then; fac=1.; else; fac=1./dx**6; endif
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = 1./(60*dx)
+          else
+            fac=1./dx**6
+          endif
           df=fac*(-20.* f(l1:l2,m,n,k) &
                   +15.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
                   - 6.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
@@ -202,7 +215,13 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          if (igndx) then; fac=1.; else; fac=1./dy**6; endif
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = 1./(60*dy)
+          else
+            fac=1./dy**6
+          endif
           df=fac*(-20.* f(l1:l2,m  ,n,k) &
                   +15.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
                   - 6.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
@@ -212,7 +231,13 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          if (igndx) then; fac=1.; else; fac=1./dz**6; endif
+          if (igndx) then
+            fac=1.
+          else if (upwnd) then
+            fac = 1./(60*dz)
+          else
+            fac=1./dz**6
+          endif
           df=fac*(-20.* f(l1:l2,m,n  ,k) &
                   +15.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
                   - 6.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
