@@ -2,7 +2,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,amin=amin,$
   nrepeat=nrepeat,wait=wait,njump=njump,datadir=datadir,OLDFILE=OLDFILE,$
   test=test,proc=proc,ix=ix,iy=iy,ps=ps
 ;
-; $Id: rvid_plane.pro,v 1.3 2003-09-10 14:46:08 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.4 2003-09-10 14:52:32 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -48,19 +48,23 @@ readf,1,prec
 readf,1,nghostx,nghosty,nghostz
 close,1
 ;
+;  double precision?
+;
+if prec eq 'D' unit=1d0 else unit=1e0
+;
 nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
 ;
-t=0. & islice=0
+t=0.*unit & islice=0
 ;
-if extension eq 'xy' then plane=fltarr(nx,ny)
-if extension eq 'xz' then plane=fltarr(nx,nz)
+if extension eq 'xy' then plane=fltarr(nx,ny)*unit
+if extension eq 'xz' then plane=fltarr(nx,nz)*unit
 help,plane
-slice_xpos=0.
-slice_ypos=0.
-slice_zpos=0.
-slice_z2pos=0.
+slice_xpos=0.*unit
+slice_ypos=0.*unit
+slice_zpos=0.*unit
+slice_z2pos=0.*unit
 ;
 ;  open MPEG file, if keyword is set
 ;
