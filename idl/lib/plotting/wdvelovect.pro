@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.6 2004-02-20 09:09:13 dobler Exp $
+; $Id: wdvelovect.pro,v 1.7 2004-05-05 16:26:35 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -197,13 +197,15 @@ bady:            message, 'Y array has incorrect size.'
 ;
 ; wd: regrid data if too many points
 ;
-        ;----------  pretend to plot to get plot window size right  -----------
-        if (n_elements(position) lt 4) then begin
-          plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE=''
-        endif else begin
-          plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE='', $
-              POSITION=position
-        endelse
+        if (not keyword_set(overplot)) then begin
+          ;---------  pretend to plot to get plot window size right  ---------
+          if (n_elements(position) lt 4) then begin
+            plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE=''
+          endif else begin
+            plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE='', $
+                POSITION=position
+          endelse
+        endif
         ; only now we can extract position
         position=[!x.window[0],!y.window[0],!x.window[1],!y.window[1]]
         xwidth = !x.window[1] - !x.window[0]
