@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.80 2004-05-11 08:00:58 ajohan Exp $
+! $Id: dustdensity.f90,v 1.81 2004-05-11 08:16:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -41,7 +41,7 @@ module Dustdensity
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_ndmt,i_rhodmt,i_rhoit,i_ssrm,i_ssrmax
+  integer :: i_ndmt,i_rhodmt,i_rhoimt,i_ssrm,i_ssrmax
   integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0
 
   contains
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.80 2004-05-11 08:00:58 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.81 2004-05-11 08:16:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -368,7 +368,7 @@ module Dustdensity
 !
 !  Continuity equations for nd, md and mi.
 !
-     if (ldustcontinuity) &
+      if (ldustcontinuity) &
          call dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
 !
 !  Calculate kernel of coagulation equation
@@ -404,11 +404,9 @@ module Dustdensity
           if (i_ndm(k) /= 0) call sum_mn_name(nd(:,k),i_ndm(k))
           if (i_rhodm(k) /= 0) then
             if (lmdvar) then
-              call sum_mn_name &
-                  (f(l1:l2,m,n,ind(k))*f(l1:l2,m,n,imd(k)),i_rhodm(k))
+              call sum_mn_name(nd(:,k)*f(l1:l2,m,n,imd(k)),i_rhodm(k))
             else
-              call sum_mn_name &
-                  (f(l1:l2,m,n,ind(k))*md(k),i_rhodm(k))
+              call sum_mn_name(nd(:,k)*md(k),i_rhodm(k))
             endif 
           endif
           if (i_ndmt /= 0) then
@@ -423,19 +421,19 @@ module Dustdensity
           if (i_rhodmt /= 0) then
             if (lfirstpoint .and. k /= 1) then
               lfirstpoint = .false.
-              call sum_mn_name(nd(:,k)*md(k),i_rhodmt)
+              call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
               lfirstpoint = .true.
             else
-              call sum_mn_name(nd(:,k)*md(k),i_rhodmt)
+              call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
             endif
           endif
-          if (i_rhoit /= 0) then
+          if (i_rhoimt /= 0) then
             if (lfirstpoint .and. k /= 1) then
               lfirstpoint = .false.
-              call sum_mn_name(f(l1:l2,m,n,imi(k))*f(l1:l2,m,n,ind(k)),i_rhoit)
+              call sum_mn_name(f(l1:l2,m,n,imi(k))*nd(:,k),i_rhoimt)
               lfirstpoint = .true.
             else
-              call sum_mn_name(f(l1:l2,m,n,imi(k))*f(l1:l2,m,n,ind(k)),i_rhoit)
+              call sum_mn_name(f(l1:l2,m,n,imi(k))*nd(:,k),i_rhoimt)
             endif
           endif
         endif
@@ -868,7 +866,7 @@ module Dustdensity
         i_ndmt   = 0
         i_rhodm  = 0
         i_rhodmt = 0
-        i_rhoit  = 0
+        i_rhoimt = 0
       endif
 !
 !  Define arrays for multiple dust species
@@ -913,14 +911,14 @@ module Dustdensity
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ndmt',i_ndmt)
         call parse_name(iname,cname(iname),cform(iname),'rhodmt',i_rhodmt)
-        call parse_name(iname,cname(iname),cform(iname),'rhoit',i_rhoit)
+        call parse_name(iname,cname(iname),cform(iname),'rhoimt',i_rhoimt)
         call parse_name(iname,cname(iname),cform(iname),'ssrm',i_ssrm)
         call parse_name(iname,cname(iname),cform(iname),'ssrmax',i_ssrmax)
       enddo
       if (lwr) then
         if (i_ndmt /= 0)   write(3,*) 'i_ndmt=',i_ndmt
         if (i_rhodmt /= 0) write(3,*) 'i_rhodmt=',i_rhodmt
-        if (i_rhoit /= 0)  write(3,*) 'i_rhoit=',i_rhoit
+        if (i_rhoimt /= 0) write(3,*) 'i_rhoimt=',i_rhoimt
         if (i_ssrm /= 0)   write(3,*) 'i_ssrm=',i_ssrm
         if (i_ssrmax /= 0) write(3,*) 'i_ssrmax=',i_ssrmax
       endif
