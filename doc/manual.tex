@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.87 2002-09-01 19:25:10 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.88 2002-09-02 09:47:31 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -218,7 +218,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.87 $ $}
+\date{\today,~ $ $Revision: 1.88 $ $}
 
 % ====================================================================== %
 
@@ -236,19 +236,23 @@
 
   {\Large\sffamily\bfseries PENCIL--MPI: A High-Order MPI code for MHD Turbulence}
 
-  \vspace{0.5cm}
+  \vspace{2ex}
 
   {\sffamily Documentation and Results of Test Problems}
 
-  \vspace{1.2cm}
+  \vspace{\stretch{2}}
+
+  \centerline{\includegraphics[angle=-90,width=0.9\textwidth]{pencils}}
+
+  \vspace{\stretch{2}}
 
   {Wolfgang Dobler \& Axel Brandenburg}
 
-  \includegraphics[width=0.9\textwidth]{pencil}
+  \vspace{\stretch{1}}
 
-  \vspace{1cm}
+  \emph{\today,~ $ $Revision: 1.88 $ $}
 
-  \emph{\today,~ $ $Revision: 1.87 $ $}
+  \vspace{\stretch{3}}
 
 
 \end{center}
@@ -2712,7 +2716,8 @@ Abort
   as \var{nvar} is big.
 }
 
-\subsubsection{Under IRIX, I get}
+\subsubsection{Namelist problem under IRIX}
+Under IRIX, I get
 \begin{Verbatim}
 lib-4001 : UNRECOVERABLE library error 
 
@@ -2725,6 +2730,9 @@ Abort
 This is a compiler bug that has been found at least with the MIPSpro F90
 compiler version 7.3.1.3m.
 It has been reported to SGI.
+
+The error comes and goes, depending on the configuration (and possibly
+even the input parameters) you are using.
 For the time being, you will need to turn your namelist input (at least
 \file{run.in} into Fortran statements, include them into a replacement
 version of \file{param_io.f90}, and recompile each time you make changes.
@@ -3307,7 +3315,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.87 2002-09-01 19:25:10 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.88 2002-09-02 09:47:31 dobler Exp $ $}
 
 
 \end{document}
