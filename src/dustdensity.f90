@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.59 2004-04-12 13:17:01 ajohan Exp $
+! $Id: dustdensity.f90,v 1.60 2004-04-13 09:42:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.59 2004-04-12 13:17:01 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.60 2004-04-13 09:42:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -622,7 +622,7 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu
-      real, dimension (nx) :: TT1,cs2,udiudj,ul0
+      real, dimension (nx) :: TT1,cs2,deltaud_drift2,ul0
       real :: tl0,alphaSS,ust
       integer :: i,j,l
 !
@@ -631,9 +631,9 @@ module Dustdensity
       ul0 = alphaSS*sqrt(cs2)
       do i=1,ndustspec
         do j=i,ndustspec
-          call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
-              f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
-          deltaud_drift = sqrt(udiudj)
+          call dot2_mn (f(l1:l2,m,n,iudx(j):iudz(j))- &
+              f(l1:l2,m,n,iudx(i):iudz(i)),deltaud_drift2)
+          deltaud_drift = sqrt(deltaud_drift2)
           deltaud_therm = &
               sqrt( 8*k_B/(pi*TT1)*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
           deltaud_turbu = &
