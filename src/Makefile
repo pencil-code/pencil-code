@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.173 2003-05-08 14:30:58 tarek Exp $
+### $Id: Makefile,v 1.174 2003-05-14 13:10:36 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -43,6 +43,7 @@ include Makefile.local
 ## Default settings
 FC=f90
 FFLAGS=-O3
+FFLAGS=
 F90FLAGS=
 F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
@@ -93,26 +94,27 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
+#F90FLAGS=
 #LDMPI=
 #FC=mpif90 # (Samos|fire)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
-##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-9])
-##FC=mpif77 #(fe[0-9])
+##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
+##FC=mpif77 #(fe[0-3])
 #FC=mpif77 #(ns0)
-#FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=ifc -I/usr/local/lib/LAM/include #(fe[0-3])
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
 #FC=ifc #(cosmo|nl6|mmtf)
 #FC=f95 #(karbala)
-#FC=pgf90 #(erland|igor|tycho|linux29|onsager)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4)
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
-#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
+#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
-#FFLAGS=-O3 -ipo #PACX #(fe[0-9])
-#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
-#F90FLAGS= #(erland|igor|tycho|linux29|onsager)
-#FFLAGS=-O3 -ipo #(fe[0-9])
-#FFLAGS=-O3 #(fe[0-9])  ##(compiles faster/axel)
+##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
+#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
+#F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4)
+##FFLAGS=-O3 -ipo #(fe[0-3])
+#FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS= -O3 -w90 #(Cosmo)
@@ -120,7 +122,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala)
-#F77=$(FC) -lm  #(tycho|erland|igor|onsager)
+#F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4)
 #F77=$(FC) #(Cincinnatus|Owen|Master|Cosmo)
 
 
