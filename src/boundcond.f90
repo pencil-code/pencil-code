@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.1 2002-05-13 18:52:54 dobler Exp $
+! $Id: boundcond.f90,v 1.2 2002-05-21 07:25:50 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -43,7 +43,7 @@ module Boundcond
         select case(bcx1(j))
         case ('p')              ! periodic
           if (nprocx==1) then
-            f(1:l1-1,m1:m2,n1:n2,j) = f(l2i:l2,m1:m2,n1:n2,j)
+            f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
@@ -64,7 +64,7 @@ module Boundcond
         select case(bcx2(j))
         case ('p')              ! periodic
           if (nprocx==1) then
-            f(l2+1:mx,m1:m2,n1:n2,j) = f(l1:l1i,m1:m2,n1:n2,j)
+            f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
@@ -90,7 +90,7 @@ module Boundcond
         select case(bcy1(j))
         case ('p')              ! periodic
           if (nprocy==1) then
-            f(l1:l2,1:m1-1,n1:n2,j) = f(l1:l2,m2i:m2,n1:n2,j)
+            f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
@@ -111,7 +111,7 @@ module Boundcond
         select case(bcy2(j))
         case ('p')              ! periodic
           if (nprocy==1) then
-            f(l1:l2,m2+1:my,n1:n2,j) = f(l1:l2,m1:m1i,n1:n2,j)
+            f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
@@ -137,7 +137,7 @@ module Boundcond
         select case(bcz1(j))
         case ('p')              ! periodic
           if (nprocz==1) then
-            f(l1:l2,m1:m2,1:n1-1,j) = f(l1:l2,m1:m2,n2i:n2,j)
+            f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
@@ -160,7 +160,7 @@ module Boundcond
         select case(bcz2(j))
         case ('p')              ! periodic
           if (nprocz==1) then
-            f(l1:l2,m1:m2,n2+1:mz,j) = f(l1:l2,m1:m2,n1:n1i,j)
+            f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
           endif
         case ('s')              ! symmetry
           do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.17 2002-05-21 06:57:31 brandenb Exp $
+! $Id: mpicomm.f90,v 1.18 2002-05-21 07:25:50 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -32,19 +32,22 @@ module Mpicomm
 
   real, dimension (nx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
-  real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufo,ulbufo
+  real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
+  real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: nprocs,iproc,root=0
   integer :: ipx,ipy,ipz
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
-  integer :: tocornzz=7,cornyz=8,cornyy=9,cornzy=10 ! msg. tags for corners
+  integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !!(corners)
   integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !!(corners)
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
+  integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul,isend_stat_Tuu,isend_stat_Tlu
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu,irecv_stat_Fll,irecv_stat_Ful
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)

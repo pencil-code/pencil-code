@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.24 2002-05-19 21:31:07 brandenb Exp $
+! $Id: magnetic.f90,v 1.25 2002-05-21 07:25:50 brandenb Exp $
 
 module Magnetic
 
@@ -64,8 +64,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.24 $", &
-           "$Date: 2002-05-19 21:31:07 $")
+           "$Revision: 1.25 $", &
+           "$Date: 2002-05-21 07:25:50 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -77,6 +77,8 @@ module Magnetic
     subroutine init_aa(f,init,ampl,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
+!  AB: maybe we should here all different routines (such as rings)
+!  AB: and others, instead of accummulating all this in a huge routine.
 !  7-nov-2001/wolf: coded
 !
       use Cdata
@@ -99,11 +101,11 @@ module Magnetic
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
 !
+      if (init==1) then
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
           print*, 'Initialising magnetic flux rings'
-          print*, '--TODO: make this depend on init or introduce init_magnet'
         endif
         do i=1,2
           if (i==1) then
@@ -142,6 +144,18 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         enddo
       endif
       if (lroot) print*, 'Magnetic flux rings initialized'
+      elseif (init==2) then
+        f(:,:,:,iax) = spread(spread(sin(2*x),2,my),3,mz)*&
+                       spread(spread(sin(3*y),1,mx),3,mz)*&
+                       spread(spread(cos(1*z),1,mx),2,my)
+        f(:,:,:,iay) = spread(spread(sin(5*x),2,my),3,mz)*&
+                       spread(spread(sin(1*y),1,mx),3,mz)*&
+                       spread(spread(cos(2*z),1,mx),2,my)
+        f(:,:,:,iaz) = spread(spread(sin(3*x),2,my),3,mz)*&
+                       spread(spread(sin(4*y),1,mx),3,mz)*&
+                       spread(spread(cos(2*z),1,mx),2,my)
+        if (lroot) print*, 'sinusoidal magnetic field: for debug purposes'
+      endif
 !
     endsubroutine init_aa
 !***********************************************************************
