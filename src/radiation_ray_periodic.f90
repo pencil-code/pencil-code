@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.3 2004-10-04 07:11:19 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.4 2004-10-04 07:50:12 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.3 2004-10-04 07:11:19 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.4 2004-10-04 07:50:12 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -568,95 +568,23 @@ module Radiation
 !
     endsubroutine Qrevision
 !***********************************************************************
-    subroutine radboundary_yz_set(Qrad0_yz)
-!
-!  sets the physical boundary condition on yz plane
-!
-!   6-jul-03/axel: coded
-!
-      real, dimension(my,mz) :: Qrad0_yz
-!
-! no incoming intensity
-!
-      if (bc_ray_x=='0') then
-        Qrad0_yz=-Srad(llstart-lrad,:,:)
-      endif
-!
-! periodic boundary consition
-!
-      if (bc_ray_x=='p') then
-        Qrad0_yz=Qrad(llstop-lrad,:,:)
-      endif
-!
-! set intensity equal to source function
-!
-      if (bc_ray_x=='S') then
-        Qrad0_yz=0
-      endif
-!
-    endsubroutine radboundary_yz_set
-!***********************************************************************
-    subroutine radboundary_zx_set(Qrad0_zx)
-!
-!  sets the physical boundary condition on zx plane
-!
-!   6-jul-03/axel: coded
-!
-      use Mpicomm, only: stop_it
-!
-      real, dimension(mx,mz) :: Qrad0_zx
-!
-! no incoming intensity
-!
-      if (bc_ray_y=='0') then
-        Qrad0_zx=-Srad(:,mmstart-mrad,:)
-      endif
-!
-! periodic boundary consition (currently not implemented for
-! multiple processors in the y-direction)
-!
-      if (bc_ray_y=='p') then
-        if (nprocy>1) then
-          call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
-        endif
-        Qrad0_zx=Qrad(:,mmstop-mrad,:)
-      endif
-!
-! set intensity equal to source function
-!
-      if (bc_ray_y=='S') then
-        Qrad0_zx=0
-      endif
-!
-    endsubroutine radboundary_zx_set
-!***********************************************************************
     subroutine radboundary_xy_set(Qrad0_xy)
 !
-!  sets the physical boundary condition on xy plane
+!  Sets the physical boundary condition on xy plane
 !
-!   6-jul-03/axel: coded
+!  6-jul-03/axel+tobi: coded
 !
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my) :: Qrad0_xy
 !
-!  no incoming intensity
+!  No incoming intensity
 !
       if (bc_ray_z=='0') then
         Qrad0_xy=-Srad(:,:,nnstart-nrad)
       endif
 !
-! periodic boundary consition (currently not implemented for
-! multiple processors in the z-direction)
-!
-      if (bc_ray_z=='p') then
-        if (nprocz>1) then
-          call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
-        endif
-        Qrad0_xy=Qrad(:,:,nnstop-nrad)
-      endif
-!
-!  set intensity equal to source function
+!  Set intensity equal to source function
 !
       if (bc_ray_z=='S') then
         Qrad0_xy=0
