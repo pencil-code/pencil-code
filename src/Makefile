@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.70 2002-07-04 10:10:55 nilshau Exp $
+### $Id: Makefile,v 1.71 2002-07-04 14:52:39 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -160,7 +160,7 @@ $(SHEAR).o:	$(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(DENSITY).o $(IO).o slices.o
-$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o $(FFT).o
+$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(DENSITY).o slices.o $(FFT).o
 $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o $(DEBUG).o
