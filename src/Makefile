@@ -139,8 +139,11 @@ TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 
+# Clean up, but leave makefile and TAGS
 clean:
 	rm -f *.x *.o *.mod *.d
-	rm -f makefile
-	rm -f TAGS
 	rm -f work.pc work.pcl
+
+# Clean up all
+cleann: clean
+	rm -f makefile TAGS

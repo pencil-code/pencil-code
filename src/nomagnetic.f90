@@ -5,8 +5,10 @@ module Magnetic
   implicit none
 
   integer :: iaa
-  real :: fring1,Iring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
-  real :: fring2,Iring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
+
+  integer :: dummy              ! We cannot define empty namelists
+  namelist /magnetic_init_pars/ dummy
+  namelist /magnetic_run_pars/  dummy
 
   contains
 
@@ -32,8 +34,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-05-04 15:38:10 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-05-11 12:18:48 $")
 !
     endsubroutine register_aa
 !***********************************************************************

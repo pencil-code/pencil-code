@@ -8,8 +8,41 @@ module Forcing
 
   real, dimension (mx,my,mz,3) :: fforce=0   !(forcing function)
 
+  ! run parameters
+  real    :: force,relhel
+  integer :: iforce
+
+  namelist /forcing_run_pars/ &
+       iforce,force,relhel
+
+
   contains
 
+!***********************************************************************
+    subroutine register_forcing()
+!
+!  add forcing in timestep()
+!  11-may-2002/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      logical, save :: first=.true.
+!
+      if (.not. first) call stop_it('register_forcing called twice')
+      first = .false.
+!
+      lforcing = .true.
+!
+!  identify version number
+!
+      if (lroot) call cvs_id( &
+           "$RCSfile: forcing.f90,v $", &
+           "$Revision: 1.4 $", &
+           "$Date: 2002-05-11 12:18:48 $")
+!
+    endsubroutine register_forcing
 !***********************************************************************
     subroutine addforce(df)
 !

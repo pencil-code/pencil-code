@@ -7,6 +7,20 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   integer :: ient
 
+
+  ! input parameters
+  real :: hcond0,hcond1,hcond2,whcond
+  real :: mpoly0,mpoly1,mpoly2,isothtop
+  
+  namelist /entropy_init_pars/ &
+       hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2,isothtop
+
+  ! run parameters
+  real :: cheat,wheat,cool,wcool,Fheat
+
+  namelist /entropy_run_pars/ &
+       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
+
   contains
 
 !***********************************************************************
@@ -40,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.39 $", &
-           "$Date: 2002-05-03 18:41:44 $")
+           "$Revision: 1.40 $", &
+           "$Date: 2002-05-11 12:18:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

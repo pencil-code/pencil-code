@@ -13,7 +13,6 @@ module Cdata
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
   real :: cs0,rho0,cs20,gamma,gamma1,force,relhel,cs2top
-  real :: eta,Bx_ext,By_ext,Bz_ext
   real :: DD,nu,cmu,cnu2,cdiffrho
   real :: hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2
   real :: t_diag,dtu,dtv
@@ -43,6 +42,7 @@ module Cdata
   character (len=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
+  logical :: lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt,headtt,ldt,lfirst,ldiagnos
   logical :: lroot=.true.

@@ -12,6 +12,9 @@ module Equ
 !
       use Cdata
       use Sub, only: wparam2,parse_bc
+      use Forcing
+      use Entropy
+      use Magnetic
 !
       logical, optional :: print
 !
@@ -22,17 +25,16 @@ module Equ
       read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc,cdtv
-      read(1,*) hcond0,hcond1,hcond2,whcond
-      read(1,*) eta,Bx_ext,By_ext,Bz_ext
       read(1,*) cdiffrho
       read(1,*) gravz
-      read(1,*) cheat,wheat,cool,wcool
-      read(1,*) Fheat
-      read(1,*) iforce,force,relhel
       read(1,*) bcx
       read(1,*) bcy
       read(1,*) bcz
       read(1,*) form1
+      !
+      if (lforcing ) read(1,NML=forcing_run_pars )
+      if (lentropy ) read(1,NML=entropy_run_pars )
+      if (lmagnetic) read(1,NML=magnetic_run_pars)
       close(1)
       cs20=cs0**2 !(goes into cdata module)
       ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
@@ -82,6 +84,9 @@ module Equ
 !  14-sep-01/axel: inserted from run.f90
 !
       use Cdata
+      use Forcing
+      use Entropy
+      use Magnetic
 !
       if (lroot) then
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
@@ -90,18 +95,16 @@ module Equ
         print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc,cdtv=', cs0,nu,ivisc,cdtv
-        print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
-        print*, 'eta,Bx_ext,By_ext,Bz_ext=', eta,Bx_ext,By_ext,Bz_ext
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
-        print*, 'cheat,wheat,cool,wcool=', cheat,wheat,cool,wcool
-        print*, 'Fheat=', Fheat
-        print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'bcx=', bcx
         print*, 'bcy=', bcy
         print*, 'bcz=', bcz
         print*, 'form1=', form1
         print*, 'cs20=', cs20
+        !
+        if (lentropy ) write(*,NML=entropy_run_pars )
+        if (lmagnetic) write(*,NML=magnetic_run_pars)
       endif
 !
     endsubroutine cprint
@@ -345,8 +348,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.38 $", &
-           "$Date: 2002-05-08 17:47:27 $")
+           "$Revision: 1.39 $", &
+           "$Date: 2002-05-11 12:18:48 $")
 !
 !  initialize counter for calculating and communicating print results
 !

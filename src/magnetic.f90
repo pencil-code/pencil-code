@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.19 2002-05-04 15:49:26 brandenb Exp $
+! $Id: magnetic.f90,v 1.20 2002-05-11 12:18:48 dobler Exp $
 
 module Magnetic
 
@@ -7,9 +7,28 @@ module Magnetic
   implicit none
 
   integer :: iaa
-  real :: fring1,Iring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
-  real :: fring2,Iring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
+
+  ! input parameters
+  real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
+  real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
+  real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
+  real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
+
+  namelist /magnetic_init_pars/ &
+       fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
+       fring2,Iring2,Rring2,wr2,axisr2,dispr2
+
+  ! run parameters
+  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real :: eta=0.
+
+  namelist /magnetic_run_pars/ &
+       eta,B_ext
+
+  ! other variables
   integer :: i_brms,i_bmax,i_jrms,i_jmax
+
+
 
   contains
 
@@ -46,8 +65,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-05-04 15:49:26 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-05-11 12:18:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -67,7 +86,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
       real, dimension (mx,my,mz)      :: tmp,xx,yy,zz,xx1,yy1,zz1
-      real, dimension(3) :: axis,shift
+      real, dimension(3) :: axis,disp
       real    :: phi,theta,ct,st,cp,sp
       real    :: ampl,fring,Iring,R0,width
       integer :: init,i
@@ -76,7 +95,7 @@ module Magnetic
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
-!    AA(xxx) = D*AA0(D^(-1)*xxx - xxx_shift) ,
+!    AA(xxx) = D*AA0(D^(-1)*xxx - xxx_disp) ,
 !  where AA0(xxx) is the canonical ring and D the rotation matrix
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
@@ -91,25 +110,25 @@ module Magnetic
             Iring = Iring1      ! current along ring (for twisted flux tube)
             R0    = Rring1      ! radius of ring
             width = wr1         ! ring thickness
-            axis  = (/nr1x,nr1y,nr1z/) ! orientation
-            shift = (/r1x,r1y,r1z/)    ! position
+            axis  = axisr1 ! orientation
+            disp  = dispr1    ! position
           else
             fring = fring2
             Iring = Iring2
             R0    = Rring2
             width = wr2
-            axis  = (/nr2x,nr2y,nr2z/)
-            shift = (/r2x,r2y,r2z/)
+            axis  = axisr2
+            disp  = dispr2
           endif
           phi   = atan2(axis(2)+1.e-30,axis(1))
           theta = atan2(sqrt(axis(1)**2+axis(2)**2)+1.e-30,axis(3))
           if (ip <= 6) print*, 'Init_aa: phi,theta = ', phi,theta
           ct = cos(theta); st = sin(theta)
           cp = cos(phi)  ; sp = sin(phi)
-          ! Calculate D^(-1)*xxx - shift
-          xx1 =  ct*cp*xx + ct*sp*yy - st*zz  - shift(1)
-          yy1 = -   sp*xx +    cp*yy          - shift(2)
-          zz1 =  st*cp*xx + st*sp*yy + ct*zz  - shift(3)
+          ! Calculate D^(-1)*xxx - disp
+          xx1 =  ct*cp*xx + ct*sp*yy - st*zz  - disp(1)
+          yy1 = -   sp*xx +    cp*yy          - disp(2)
+          zz1 =  st*cp*xx + st*sp*yy + ct*zz  - disp(3)
           call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
           ! calculate D*tmpv
           f(:,:,:,iax) = f(:,:,:,iax) &
@@ -159,9 +178,9 @@ module Magnetic
 !
 !  possibility to add external field
 !
-      if (Bx_ext/=0.) bb(:,1)=bb(:,1)+Bx_ext
-      if (By_ext/=0.) bb(:,2)=bb(:,2)+By_ext
-      if (Bz_ext/=0.) bb(:,3)=bb(:,3)+Bz_ext
+      if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
+      if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
+      if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
 !
 !  calculating the current jj
 !
