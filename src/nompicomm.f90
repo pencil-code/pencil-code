@@ -23,6 +23,9 @@ module Mpicomm
     module procedure mpibcast_logical_scl
   endinterface
 
+  integer :: ylneigh,zlneigh ! `lower' neighbours
+  integer :: yuneigh,zuneigh ! `upper' neighbours
+
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   logical, dimension (ny*nz) :: necessary=.false.

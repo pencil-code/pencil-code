@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.59 2003-07-07 16:20:06 theine Exp $
+! $Id: ionization.f90,v 1.60 2003-07-11 19:59:21 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -71,7 +71,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.59 2003-07-07 16:20:06 theine Exp $")
+           "$Id: ionization.f90,v 1.60 2003-07-11 19:59:21 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -274,10 +274,12 @@ module Ionization
       real, dimension(nx) :: yH,ff
 !ajwm WRONG
 
-         ss = ((1. + yH + xHe) &
-                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
-                         +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
-                         -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
+!AB: comment out; yH is not defined (according to compiler diagnostics)
+          ss=0.
+!         ss = ((1. + yH + xHe) &
+!                        * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
+!                        +1.5*((1.-yH)*log(m_H/m_e)+yH*log(m_p/m_e)+xHe*log(m_He/m_e)) &
+!                         -(1.-yH)*log(1.-yH)-2.*yH*log(yH)-xHe*log(xHe)) * ss_ion
     end subroutine ioncalc_ss_penc
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
@@ -558,11 +560,13 @@ module Ionization
 !
 !  return if y is too close to 0 or 1
 !
+print*,'call 1, yH0=',yH0
       call saha(yH0,lnrho,ss,fh,df)
       if (fh.le.0.) then
          yH=yH0
          return
       endif
+print*,'call 2, yH1=',yH1
       call saha(yH1,lnrho,ss,fl,df)
       if (fl.ge.0.) then
          yH=yH1
@@ -571,6 +575,7 @@ module Ionization
 !
 !  otherwise find root
 !
+print*,'call 3, yH=',yH
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
          if (((yH-yH0)*df-f)*((yH-yH1)*df-f).gt.0. &
@@ -587,6 +592,7 @@ module Ionization
             if (temp.eq.yH) return
          endif
          if (abs(dyH).lt.yHacc) return
+print*,'call 4, yH=',yH
          call saha(yH,lnrho,ss,f,df)
          if (f.lt.0.) then
             yH1=yH
@@ -667,10 +673,14 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 
+print*,'1a) ',ss,yH,lnrho_p
+print*,'1b) ',twothirds,ss_ion,lnrho_H
+print*,'1c) ',lnxHe,lnrho_e,lnrho
       lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
                         +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
                        +lnrho-2.5)
+print*,'2) ',lnTT_
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=(twothirds*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
