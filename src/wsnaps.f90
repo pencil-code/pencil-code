@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.52 2004-09-22 09:41:43 ajohan Exp $
+! $Id: wsnaps.f90,v 1.53 2004-09-28 14:17:39 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -52,13 +52,6 @@ contains
 !
       if (enum) then
         call safe_character_assign(file,trim(datadir)//'/tsnap.dat')
-!
-!  Reset snapshot time to zero if requested
-!
-        if (lresettsnap) then
-          tsnap=0.  !  aj: only correct if 1/dsnap is an integer
-          lresettsnap=.false.
-        endif
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in read_snaptime, but only available to root processor
@@ -130,13 +123,6 @@ contains
 !  file keeps the information about time of last snapshot
 !
       file=trim(datadir)//'/tspec.dat'
-!
-!  Reset snapshot time to zero if requested
-!
-      if (lresettspec) then
-        tspec=0.  !  aj: only correct if 1/dspec is an integer
-        lresettspec=.false.
-      endif
 !
 !  at first call, need to initialize tspec
 !  tspec calculated in read_snaptime, but only available to root processor

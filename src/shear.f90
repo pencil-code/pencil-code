@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.21 2004-07-08 12:01:47 ajohan Exp $
+! $Id: shear.f90,v 1.22 2004-09-28 14:17:39 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -43,7 +43,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.21 2004-07-08 12:01:47 ajohan Exp $")
+           "$Id: shear.f90,v 1.22 2004-09-28 14:17:39 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -167,11 +167,7 @@ module Shear
 !  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
 !
       deltay=deltay-Sshear*Lx*dt
-      if (deltay > Ly) then
-        deltay=deltay-int(deltay/Ly)*Ly
-        lresettsnap=.true.
-        lresettspec=.true.
-      endif
+      deltay=deltay-int(deltay/Ly)*Ly
 !
 !  print identifier
 !

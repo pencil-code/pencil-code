@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.255 2004-09-28 10:01:58 ajohan Exp $
+! $Id: cdata.f90,v 1.256 2004-09-28 14:17:38 ajohan Exp $
 
 module Cdata
 
@@ -165,7 +165,6 @@ module Cdata
   logical :: pretend_lnTT=.false.
   logical :: save_lastsnap=.true.
   logical :: lcopysnapshots_exp=.false.
-  logical :: ldsnap_unit_orbits=.false.,lresettsnap=.false.,lresettspec=.false.
 
   ! variables to allow modules to share 'precalculated' stuff
   ! when necessary (set in module initialize functions)
