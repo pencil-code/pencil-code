@@ -15,7 +15,7 @@ cd src
 #
 cp ../../$1/src/*.local .
 cd ..
-../../../bin/lnsrc
+lnsrc
 #
 #  copy some files into new directory
 #

@@ -3,6 +3,7 @@
 ###                      -------
 ###  Link files into a local src directory
 ###  Also link files from the bin directory ==> should be renamed
+###  CVS $Id: setup-src,v 1.10 2002-08-11 02:23:44 brandenb Exp $
 
 if (! $?PENCIL_HOME) then
   echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
