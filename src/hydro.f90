@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.145 2004-01-08 09:20:29 nilshau Exp $
+! $Id: hydro.f90,v 1.146 2004-01-18 20:30:05 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -43,10 +43,10 @@ module Hydro
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
-  real :: ampl_diffrot=0.
+  real :: ampl_diffrot=0.,Omega_int=0.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
-  logical :: ldamp_fade=.false.
+  logical :: ldamp_fade=.false.,lOmega_int=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -54,6 +54,7 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
+       lOmega_int,Omega_int, &
        ldamp_fade, &
        othresh,othresh_per_orms
 ! end geodynamo
@@ -106,7 +107,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.145 2004-01-08 09:20:29 nilshau Exp $")
+           "$Id: hydro.f90,v 1.146 2004-01-18 20:30:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -502,7 +503,6 @@ module Hydro
 !  interface for your personal subroutines calls
 !
       if (lspecial) call special_calc_hydro(f,df,uu,glnrho,divu,rho1,u2,uij)
-
 !
 !  write oo-slices for output in wvid in run.f90
 !  This must be done outside the diagnostics loop (accessed at different times).
@@ -834,6 +834,30 @@ module Hydro
             enddo
           endif
 ! end geodynamo 
+        endif
+!
+!  coupling the above internal and external rotation rates to lgravr is not
+!  a good idea. So, because of that spherical Couette flow has to be coded
+!  separately.
+!  ==> reconsider name <==
+!
+        if (lOmega_int) then
+          pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i)=df(l1:l2,m,n,i)-dampuext*pdamp*f(l1:l2,m,n,i)
+          enddo
+!
+!  internal angular velocity, uref=(-y,x,0)*Omega_int
+!
+          if (dampuint > 0.0) then
+            pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
+            df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux) &
+              -dampuint*pdamp*(f(l1:l2,m,n,iux)+y(m)*Omega_int)
+            df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+              -dampuint*pdamp*(f(l1:l2,m,n,iuy)-x(l1:l2)*Omega_int)
+            df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz) &
+              -dampuint*pdamp*(f(l1:l2,m,n,iuz))
+          endif
         endif
 !
     endsubroutine udamping
