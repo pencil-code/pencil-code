@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.181 2004-06-03 17:26:37 brandenb Exp $
+! $Id: run.f90,v 1.182 2004-06-09 10:18:38 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.181 2004-06-03 17:26:37 brandenb Exp $")
+             "$Id: run.f90,v 1.182 2004-06-09 10:18:38 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -103,10 +103,14 @@
 !
         if (ip<=6.and.lroot) print*,'reading var files'
 !
-!  no need to read maux variables as they will be calculated
-!  at the first time step -- even if lwrite_aux is set
+!  if lwrite_aux set, read in auxiliary variables as well
+!  (this is needed for fixed modules such as hydro_fixed)
 !
-        call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+        if (lwrite_aux) then
+          call input(trim(directory_snap)//'/var.dat',f,mvar+maux,1) 
+        else
+          call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+        endif
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if any)
 !
