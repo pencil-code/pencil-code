@@ -1,0 +1,67 @@
+
+                           ifort-spread-spread
+                          ---------------------
+
+$Id: README,v 1.1 2004-04-28 10:05:51 dobler Exp $
+
+
+1. Symptoms:
+
+The three short F90 programs should print
+
+    spread-tmp.x
+     spread-tmp: Starting
+     spread-tmp: <f> =    1.000000    
+     spread-tmp: Done.
+     
+    spread_255.x
+     spread_255: Starting
+     spread_255: <f> =    1.000000    
+     spread_255: Done.
+     
+    spread_256.x
+     spread_256: Starting
+     spread_256: <f> =    1.000000    
+     spread_256: Done.
+ 
+However, with ifort (Intel Fortran compiler, version 8.0), one gets
+
+    spread-tmp.x
+     spread-tmp: Starting
+     spread-tmp: <f> =    1.000000    
+     spread-tmp: Done.
+     
+    spread_255.x
+     spread_255: Starting
+     spread_255: <f> =    1.000000    
+     spread_255: Done.
+     
+    spread_256.x
+     spread_256: Starting
+    forrtl: severe (174): SIGSEGV, segmentation fault occurred
+    Image              PC        Routine            Line        Source
+    spread_256.x       08049E73  Unknown               Unknown  Unknown
+    spread_256.x       0804A078  Unknown               Unknown  Unknown
+    spread_256.x       400A89ED  Unknown               Unknown  Unknown
+    spread_256.x       08049C61  Unknown               Unknown  Unknown
+
+2. Command sequence:
+
+  unix>  make FC=ifort
+  unix>  make FC=ifort test
+
+3. Platforms:
+   SuSe Linux 8.0, Kernel 2.4.18-4GB-SMP, AMD Athlon MP 1900+
+   
+
+
+4. Other compilers tested (OPK means problem could not be reproduced):
+   - Intel ifc 6.0 (Linux)  OK
+
+5. Workaround:
+   Replace stacked spread(spread()) call by two consecutive calls using an
+   explicit temporary (as demonstrated by spread-tmp.f90)
+
+6. Original date:
+
+  Wed Apr 28 11:47:52 CEST 2004
