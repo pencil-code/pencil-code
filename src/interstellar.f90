@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.46 2003-08-19 21:39:55 mee Exp $
+! $Id: interstellar.f90,v 1.47 2003-08-20 08:30:35 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -62,9 +62,9 @@ module Interstellar
                               ! origin and ONLY the type I scheme is used
                               ! Used in kompaneets test etc.
 
-
   ! input parameters
   real :: TT_SN_min=1.e7
+  real :: coolingfunction_scalefactor=1.
   logical :: lnever_move_mass
 !ajwm: disable SNII for debugging 
   logical :: lSNI=.true., lSNII=.false.
@@ -79,7 +79,7 @@ module Interstellar
   namelist /interstellar_run_pars/ &
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
-      lSNI, lSNII, laverageSNheating
+      lSNI, lSNII, laverageSNheating, coolingfunction_scalefactor
 
   contains
 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.46 2003-08-19 21:39:55 mee Exp $")
+           "$Id: interstellar.f90,v 1.47 2003-08-20 08:30:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -133,7 +133,7 @@ module Interstellar
       logical, save :: first=.true.
       logical :: lstart
       logical :: exist
-      real :: mu
+      real :: mu,factor_mysterious
 
       if (first) then
          if (.not. lstart) then
@@ -167,7 +167,10 @@ module Interstellar
       if (lroot.and.uniform_zdist_SNI) then
          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
-      
+!
+!  Calculate unit_Lambda; the following gives the same as
+!  unit_Lambda =  unit_velocity**3 / (unit_density*unit_length)
+!
       call getmu(mu) 
       if (unit_system=='cgs') then
         unit_Lambda = unit_energy * unit_velocity**3 * unit_time**2 * &
@@ -179,7 +182,7 @@ module Interstellar
 !ajwm Constant factor 1D-2 IS NOT CORRECT... NEED TO RECALCULATE
       endif
       print*,'initialize_interstellar: unit_Lambda',unit_Lambda
-      coolH = coolH_cgs / unit_Lambda 
+      coolH = coolH_cgs / unit_Lambda * coolingfunction_scalefactor
       coolT = coolT_cgs / unit_temperature
 
       if (lroot.and.ip<14) then
@@ -218,7 +221,9 @@ module Interstellar
 !  identifier
 !
       if(headtt) print*,'calc_heat_cool_interstellar: ENTER'
-
+!
+!  rho factor (could perhaps better be calculated in entropy)
+!
       rho=1./rho1
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
@@ -230,12 +235,14 @@ module Interstellar
 !   factor (mu mp)^2, with mu=1.2, since Rosen works in number density, n.
 !   (their cooling = Lambda*n^2,  rho=mu mp n.)
 !  The factor Lambdaunits converts from cgs units to code units.
-!  We've increased coolT(1), to avoid creating gas too cold to resolve.
-!    
+!
+!  [Currently, coolT(1) is not modified, but this may be necessary
+!  to avoid creating gas too cold to resolve.]
+!
       cool=0.0
       do i=1,5
-        where (coolT(i) <= TT(:) .and. TT(:) < coolT(i+1))            &
-           cool(:)=cool(:) + yH*coolH(i)*rho**2*(TT(:)*unit_temperature)**coolB(i)
+        where (coolT(i) <= TT .and. TT < coolT(i+1)) &
+          cool=cool+yH*coolH(i)*rho**2*(TT*unit_temperature)**coolB(i)
       enddo
 !
 !  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
@@ -243,26 +250,25 @@ module Interstellar
 !  nb: need rho0 from density_[init/run]_pars, if i want to implement
 !      the the arm/interarm scaling.
 !
-    heat=0.0
+      heat=0.0
 !ajwm: DISABLE UV HEATING -- Requires reformulation
 !   heat(:)=rhoUV*(rho0/1.38)**1.4*unit_Lambda*coolH(3)*TUV**coolB(3)*   &
 !                               0.5*(1.0+tanh(cUV*(T0UV-TT(:))))
 !
-
-    if (laverageSNheating) then
-!ajwm: need to do unit_system stuff with scale heights etc.
-!  Average SN heating 
-!   (due to SNI)
-       norm = sqrt(2*pi)*ampl_SN
-       heat(:)=heat(:)+ r_SNI*rho1*norm/h_SNI*exp(-(z(l1:l2)/h_SNI)**2)
-!   (due to SNII)
-       heat(:)=heat(:)+ r_SNII*rho1*norm/h_SNII*exp(-(z(l1:l2)/h_SNII)**2)
-    endif
-!  heat and cool were calculated in terms of de/dt [~ erg/g/s], 
-!  so just multiply by TT1 to get ds/dt [~ erg/g/s/K]:
+!  ajwm: need to do unit_system stuff with scale heights etc.
+!  Average SN heating (due to SNI and SNII)
+!  The amplitudes of both types is assumed the same (=ampl_SN)
 !
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + &
-                      TT1(:)*(heat(:) - cool(:))
+      if (laverageSNheating) then
+        norm=ampl_SN/sqrt(2*pi)
+        heat=heat+r_SNI *norm/h_SNI *exp(-(z(l1:l2)/h_SNI )**2)
+        heat=heat+r_SNII*norm/h_SNII*exp(-(z(l1:l2)/h_SNII)**2)
+      endif
+!
+!  For clarity we have constructed the rhs in erg/s/volume [=rho*T*Ds/Dt]
+!  so therefore we now need to multiply by rho1*TT1.
+!
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rho1*TT1*(heat-cool)
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************

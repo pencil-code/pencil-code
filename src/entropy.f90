@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.196 2003-08-20 04:54:51 brandenb Exp $
+! $Id: entropy.f90,v 1.197 2003-08-20 08:30:35 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -90,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.196 2003-08-20 04:54:51 brandenb Exp $")
+           "$Id: entropy.f90,v 1.197 2003-08-20 08:30:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -603,8 +603,9 @@ module Entropy
       call u_dot_gradf(f,iss,gss,uu,ugss,UPWIND=lupw_ss)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - ugss
 !
-!  1/T is now calculated in thermodynamics
+!  T is now calculated in thermodynamics, calculate 1/T (==TT1)
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
+!  
       TT1=1./TT
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
