@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
-;;;  $Id: vsections.pro,v 1.16 2002-08-11 04:00:11 brandenb Exp $
+;;;  $Id: vsections.pro,v 1.17 2003-06-16 14:24:11 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot velocity, density and entropy field in three horizontal
@@ -32,6 +32,55 @@ pro _opstuff, z, r, LGRAVZ=lgravz, LGRAVR=lgravr
     opcircle, r, LINE=hline, THICK=3, COLOR=hcol1
     opcircle, r, LINE=hline,          COLOR=hcol2
   endif
+end
+; ---------------------------------------------------------------------- ;
+function _aspect_3x2, ratio, npos, MARGIN=margin
+;
+;  A hack of D. Fanning's aspect.pro that works for !p.multi=[0,3,2].
+;  Should rather fix aspect.pro to handle all kinds of !p.multi.
+;  NPOS is the index of the sub-image, i.e. !p.multi is in fact [npos,3,2]
+;
+  if (n_params() eq 0) then ratio = 1.0
+
+  if (ratio eq 0) then begin
+    message, 'Aspect Ratio of 0. Changing to 1...', /INFO
+    ratio = 1.0
+  endif
+  default, npos, 0
+  nposx = npos mod 3
+  nposy = npos / 3
+
+  s = size(ratio)
+  type = s(s(0)+1)
+  if (type ne 4 and type ne 5) then $
+      message, 'Aspect Ratio is not a FLOAT. Take care...', /INFO
+  
+  ; Check for margins:
+  if (n_elements(margin) eq 0) then margin = 0.15
+
+  ; Error checking:
+  if ((margin lt 0) or (margin ge 0.5)) then $
+      message, 'The MARGIN keyword value must be between 0.0 and 0.5.'
+ 
+  ; Calculate the aspect ratio of the current window.  
+  wratio = float(!d.y_vsize*3) / (!d.x_vsize*2)
+
+  ; Calculate normalized positions in window.
+  if (ratio le wratio) then begin
+    xstart = 0.333*nposx + margin
+    ystart = 0.75 - 0.5*nposy - (0.25 - margin) * (ratio / wratio)
+    xend   = 0.333*(nposx+1) - margin
+    yend   = 0.75 - 0.5*nposy + (0.25 - margin) * (ratio / wratio)
+  endif else begin
+    xstart = 0.1667 + 0.333*nposx - (0.1667 - margin) * (wratio / ratio)
+    ystart = 0.5*(1-nposy) + margin
+    xend   = 0.1667 + 0.333*nposx + (0.1667 - margin) * (wratio / ratio)
+    yend   = 0.5*(2-nposy) - margin
+  endelse
+
+  position = [xstart, ystart, xend, yend]
+  return, position
+
 end
 ; ---------------------------------------------------------------------- ;
 
@@ -84,16 +133,20 @@ endif else begin
   undefine, zruu                ; ZRANGE=<undef> is like no ZRANGE kw at all
 endelse
 
+ratio = (!y.range[1]-!y.range[0])/(!x.range[1]-!x.range[0])
 plot_3d_vect, uu[*,ny1,*,*],x,z, PERM=[0,2,1], $
-    /KEEP, TITLE=tit+sy1+'!X', ZRANGE=zruu
+    /KEEP, TITLE=tit+sy1+'!X', ZRANGE=zruu, $
+    POSITION=_aspect_3x2(ratio, 0, MARGIN=0.05)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 plot_3d_vect, uu[*,ny2,*,*],x,z, PERM=[0,2,1], $
-    /KEEP, TITLE=tit+sy2+'!X', ZRANGE=zruu
+    /KEEP, TITLE=tit+sy2+'!X', ZRANGE=zruu, $
+    POSITION=_aspect_3x2(ratio, 1, MARGIN=0.05)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 plot_3d_vect, uu[*,ny3,*,*],x,z, PERM=[0,2,1], $
-    /KEEP, TITLE=tit+sy3+'!X', ZRANGE=zruu
+    /KEEP, TITLE=tit+sy3+'!X', ZRANGE=zruu, $
+    POSITION=_aspect_3x2(ratio, 2, MARGIN=0.05)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 tit = '!8s!6 and '+s.varrho+'!6 at '
@@ -105,17 +158,20 @@ endif else begin
   undefine, levss                 ; LEVELS=<undef> is like no LEVELS kw at all
 endelse
 
-contourfill, ss[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levss
+contourfill, ss[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levss, $
+    POSITION=_aspect_3x2(ratio, 3, MARGIN=0.05)
 var = reform(lnrho[*,ny1,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ss[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levss
+contourfill, ss[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levss, $
+    POSITION=_aspect_3x2(ratio, 4, MARGIN=0.05)
 var = reform(lnrho[*,ny2,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-contourfill, ss[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levss
+contourfill, ss[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levss, $
+    POSITION=_aspect_3x2(ratio, 5, MARGIN=0.05)
 var = reform(lnrho[*,ny3,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs,/UNIQ)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
