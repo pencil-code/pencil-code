@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.75 2003-08-28 11:29:50 ajohan Exp $ 
+! $Id: initcond.f90,v 1.76 2003-08-28 15:35:41 ajohan Exp $ 
 
 module Initcond 
  
@@ -660,7 +660,7 @@ module Initcond
         enddo
       enddo
       rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      print*,'planet_hc: rho0=',rho0
+      if (ip < 14) print*,'planet_hc: rho0=',rho0
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !
     endsubroutine planet_hc
@@ -686,7 +686,7 @@ module Initcond
       eps2=eps**2
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
-      if (sigma2<0.) then
+      if (sigma2<0. .and. lroot) then
         print*,'planet: sigma2<0 not allowed; choose another value of eps_planet'
       else
         sigma=sqrt(sigma2)
@@ -698,7 +698,7 @@ module Initcond
 !
       delta2=(2.-sigma)*sigma
       if (lroot) print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
-      if (delta2<0.) then
+      if (delta2<0. .and. lroot) then
         print*,'planet: delta2<0 not allowed'
       else
         delta=sqrt(delta2)
@@ -750,7 +750,8 @@ module Initcond
            hh0,minval(hh(l1:l2,m1:m2,n1:n2))
       if (lentropy .and. lroot) print*,'planet: smin,smax', &
            minval(f(:,:,:,iss)), maxval(f(:,:,:,iss))
-      if(gamma1<0.) print*,'planet: must have gamma>1 for planet solution'
+      if (gamma1<0. .and. lroot) & 
+           print*,'planet: must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
 !
@@ -780,7 +781,7 @@ module Initcond
         enddo
       enddo
       rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      print*,'planet_hc: rho0=',rho0
+      if (ip < 14) print*,'planet_hc: rho0=',rho0
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !      
     endsubroutine planet
