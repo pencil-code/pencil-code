@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.14 2002-07-18 13:31:28 brandenb Exp $
+! $Id: nograv.f90,v 1.15 2002-07-18 23:09:50 dobler Exp $
 
 module Gravity
 
@@ -44,7 +44,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.14 2002-07-18 13:31:28 brandenb Exp $")
+           "$Id: nograv.f90,v 1.15 2002-07-18 23:09:50 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -66,6 +66,13 @@ module Gravity
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_grav
+!***********************************************************************
+    subroutine setup_grav()
+!
+!  Set up some variables for gravity; do nothing in nograv
+!  16-jul-02/wolf: coded
+!
+    endsubroutine setup_grav
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !

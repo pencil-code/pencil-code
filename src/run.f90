@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.66 2002-07-14 21:13:01 dobler Exp $
+! $Id: run.f90,v 1.67 2002-07-18 23:09:50 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -18,6 +18,7 @@
         use Global
         use Param_IO
         use Equ
+        use Gravity
         use Slices
         use Print
         use Timestep
@@ -44,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.66 2002-07-14 21:13:01 dobler Exp $")
+             "$Id: run.f90,v 1.67 2002-07-18 23:09:50 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -102,6 +103,12 @@
           seed(1) = 1000+iproc    ! different random numbers on different CPUs
           call random_seed(put=seed(1:nseed))
         endif
+!
+!  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
+!
+        if (lgravr) call setup_grav()
+        call wglobal()
+
 !
 !  advance equations
 !  NOTE: headt=.true. in order to print header titles

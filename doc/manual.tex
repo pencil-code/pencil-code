@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.55 2002-07-18 15:31:01 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.56 2002-07-18 23:09:50 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -182,7 +182,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.55 $ $}
+\date{\today,~ $ $Revision: 1.56 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.55 $ $}
+  \emph{\today,~ $ $Revision: 1.56 $ $}
 
 
 \end{center}
@@ -1534,16 +1534,16 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{radius_ss} [$0.1$]
                & radius of bubble for \code{initss=isentropic}. \\
   \var{hcond0} [$0.$], \\
-  \var{hcond1} [$0.$], \\
-  \var{hcond2} [$0.$]
+  \var{hcond1} [$1.$], \\
+  \var{hcond2} [$1.$]
                & \label{hcond0123-init}%
                  specific to the solar convection case
                  \code{initss=piecew-poly}:
                  heat conductivities $\lambda$ in the individual layers.
                  \var{hcond0} is the value $\lambda_{\rm unst}$ in the
-                 unstable layer, \var{hcond1} is the ratio
+                 unstable layer, \var{hcond1} is the \emph{ratio}
                  $\lambda_{\rm stab}/\lambda_{\rm unst}$ for the stable
-                 layer, and \var{hcond2} is the ratio 
+                 layer, and \var{hcond2} is the \emph{ratio} 
                  $\lambda_{\rm top}/\lambda_{\rm unst}$ for the top layer.
                  The function $\lambda(z)$ is not discontinuous, as the
                  transition between the different values is smoothed over
@@ -2947,7 +2947,7 @@ horizontal sections for time $t=100$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.55 2002-07-18 15:31:01 dobler Exp $ $}
+$ $Id: manual.tex,v 1.56 2002-07-18 23:09:50 dobler Exp $ $}
 
 
 \end{document}

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.5 2002-07-16 08:29:44 dobler Exp $
+! $Id: pscalar.f90,v 1.6 2002-07-18 23:09:50 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -10,8 +10,8 @@ module Pscalar
   implicit none
 
   integer :: ilncc=0
-  character(len=labellen) :: initlncc='wave-y',initlncc2='zero'
-  character(len=40) :: tensor_pscalar_file
+  character (len=labellen) :: initlncc='wave-y',initlncc2='zero'
+  character (len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false.
 
   ! input parameters
@@ -61,7 +61,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.5 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: pscalar.f90,v 1.6 2002-07-18 23:09:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

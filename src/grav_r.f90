@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.21 2002-07-16 21:35:22 dobler Exp $
+! $Id: grav_r.f90,v 1.22 2002-07-18 23:09:50 dobler Exp $
 
 module Gravity
 
@@ -19,7 +19,7 @@ module Gravity
   ! coefficients for potential
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
 
-  character (len=labellen) :: ipotential
+  character (len=labellen) :: ipotential='zero'
 
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,gravz,zinfty
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.21 2002-07-16 21:35:22 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.22 2002-07-18 23:09:50 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -69,21 +69,26 @@ module Gravity
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-! Not doing anything (this might change if we decide to store gg)
+! Not doing anything (this might change if we decide to save gg to a file)
 !
 !
     endsubroutine init_grav
 !***********************************************************************
     subroutine setup_grav()
 !
-!  Set up some variables for gravity, in particular set cpot according to
-!  the value of ipotential.
+!  Set up cpot according to the value of ipotential, and initialize the
+!  global variable gg (gravity field).
 !  Needed by both start.f90 and run.f90
 !
 !  16-jul-02/wolf: coded
 !
       use Cdata
+      use Sub, only: poly
       use Mpicomm
+      use Global
+!
+      real, dimension (nx,3) :: evr,gg_mn
+      real, dimension (nx) :: g_r
 !
 !  set coefficients for potential (coefficients a0, a2, a3, b2, b3)
 !  for the rational approximation
@@ -95,18 +100,23 @@ module Gravity
       select case(ipotential)
 
         case ('zero')           ! zero potential
+          if (lroot) print*, 'zero gravity potential'
           cpot = 0.
 
         case ('solar')          ! solar case
+          if (lroot) print*, 'solar gravity potential'
           cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
 
         case ('M5-dwarf')       ! M5 dwarf
+          if (lroot) print*, 'M5 dwarf gravity potential'
           cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 
         case ('simple')         ! simple potential for tests
+          if (lroot) print*, 'very simple gravity potential'
           cpot =  (/ 1., 0., 0., 1., 0. /)
 
         case ('simple-2')       ! another simple potential for tests
+          if (lroot) print*, 'simple gravity potential'
           cpot =  (/ 1., 1., 0., 1., 1. /)
 
         case default
@@ -115,8 +125,32 @@ module Gravity
         !
         if (lroot) print*, 'No such value for ipotential: ', trim(ipotential)
         call stop_it("")
-
+        
       endselect
+!
+!  initialize gg, so we can later retrieve gravity via get_global
+!
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
+!
+!  evr is the radial unit vector
+!
+        evr(:,1) = x_mn
+        evr(:,2) = y_mn
+        evr(:,3) = z_mn
+        evr = evr / spread(r_mn+epsi,2,3)
+        g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
+                                3*(cpot(1)*cpot(5)-cpot(3)), &
+                                4*cpot(1)*cpot(3), &
+                                cpot(5)*cpot(2)-cpot(3)*cpot(4), &
+                                2*cpot(2)*cpot(3), &
+                                cpot(3)**2  /), r_mn) &
+                     / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
+        gg_mn = evr*spread(g_r,2,3)
+!
+        call set_global(gg_mn,m,n,'gg')
+      enddo
 !
     endsubroutine setup_grav
 !***********************************************************************
@@ -128,14 +162,15 @@ module Gravity
 !
       use Cdata
       use Sub
-!      use Global
+      use Global
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: evr,gg
+      real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
 !
 !  evr is the radial unit vector
 !
+if (.false.) then
       evr(:,1) = x_mn
       evr(:,2) = y_mn
       evr(:,3) = z_mn
@@ -149,10 +184,15 @@ module Gravity
                    / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
 !      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
 !                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
-      gg = evr*spread(g_r,2,3)
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg
+      gg_mn = evr*spread(g_r,2,3)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
+else
+      call get_global(gg_mn,m,n,'gg')
+if (maxval(abs(gg_mn)) /= 0) print*,m,n,minval(gg_mn),maxval(gg_mn)
+      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
+endif
 !
-if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
+if (headt .and. lfirst) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
 !
 
 !
@@ -171,16 +211,19 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
 !
       real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
       real, optional :: pot0
+      real, dimension(1) :: pot1
 !
 !  remove this if you are sure rr is already calculated elsewhere      
 !
       rr=sqrt(xx**2+yy**2+zz**2)
 
+print*,'CPOT = ', cpot
+
       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
               / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
 !
       if (present(pot0)) then
-        pot0 = cpot(1)            ! potential at r=0
+        pot0 = -cpot(1)            ! potential at r=0
       endif
 !
     endsubroutine potential_global

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.20 2002-07-16 21:35:22 dobler Exp $
+! $Id: grav_z.f90,v 1.21 2002-07-18 23:09:50 dobler Exp $
 
 module Gravity
 
@@ -78,7 +78,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.20 2002-07-16 21:35:22 dobler Exp $")
+           "$Id: grav_z.f90,v 1.21 2002-07-18 23:09:50 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -100,6 +100,13 @@ module Gravity
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_grav
+!***********************************************************************
+    subroutine setup_grav()
+!
+!  Set up some variables for gravity; do nothing in grav_z
+!  16-jul-02/wolf: coded
+!
+    endsubroutine setup_grav
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !
