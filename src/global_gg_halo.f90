@@ -1,4 +1,4 @@
- ! $Id: global_gg_halo.f90,v 1.3 2003-08-13 15:30:07 mee Exp $
+ ! $Id: global_gg_halo.f90,v 1.4 2004-02-24 09:13:59 dobler Exp $
 
 module Global
 
@@ -155,8 +155,12 @@ module Global
       use Cdata
       use IO
 !
-      call output(trim(directory)//'/halo.dat',halo,1)
-      call output(trim(directory)//'/gg.dat'  ,gg  ,3)
+!  No need to read/write them as run.f90 will recalculate anyway
+!
+      if (ip <= 4) then
+        call output(trim(directory)//'/halo.dat',halo,1)
+        call output(trim(directory)//'/gg.dat'  ,gg  ,3)
+      endif
 !
     endsubroutine wglobal
 !***********************************************************************
@@ -169,8 +173,10 @@ module Global
       use Cdata
       use IO
 !
-      call input(trim(directory)//'/halo.dat',halo,1,0)
-      call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
+!  No need to read/write them as run.f90 will recalculate anyway
+!
+!      call input(trim(directory)//'/halo.dat',halo,1,0)
+!      call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
 !
     endsubroutine rglobal
 !***********************************************************************
