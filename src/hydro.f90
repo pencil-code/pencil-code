@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.77 2002-11-09 16:42:17 brandenb Exp $
+! $Id: hydro.f90,v 1.78 2002-11-11 21:19:09 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -79,7 +79,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.77 2002-11-09 16:42:17 brandenb Exp $")
+           "$Id: hydro.f90,v 1.78 2002-11-11 21:19:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -447,7 +447,7 @@ module Hydro
         !
         !  things related to vorticity
         !
-        if (i_oum/=0 .or. i_o2m/=0) then
+        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -755,7 +755,7 @@ module Hydro
         if (i_umz/=0) then
           if(i_uxmz==0.or.i_uymz==0.or.i_uzmz==0) then
             if(first) print*
-            if(first) print*,"NOTE: to get umz, uxmz and uymz must also be set in xyaver"
+            if(first) print*,"NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
             if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
             if(first) print*,"      We proceed, but you'll get umz=0"
             umz=0.

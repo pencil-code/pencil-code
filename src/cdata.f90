@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.108 2002-10-30 05:44:38 brandenb Exp $
+! $Id: cdata.f90,v 1.109 2002-11-11 21:19:09 brandenb Exp $
 
 module Cdata
 
@@ -44,7 +44,7 @@ module Cdata
 !
   integer :: nname=0,nnamez=0,nnamexy=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
-  integer, parameter :: mname=100,mnamez=20,mnamexy=5
+  integer, parameter :: mname=100,mnamez=20,mnamexy=6
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
