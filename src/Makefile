@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.219 2003-08-07 17:06:56 dobler Exp $
+### $Id: Makefile,v 1.220 2003-08-08 17:31:00 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -193,7 +193,24 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 
-#####
+# ---------------------------------------------------------------------- #
+## Abbreviations
+
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o
+comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
+start_deps_f90=$(comm_deps) $(DEBUG).o
+start_deps=$(start_deps_f90)
+run_deps_f90=$(comm_deps) equ.o timestep.o
+run_deps=$(run_deps_f90) $(DEBUG).o
+start=start.o $(start_deps)
+run=run.o $(run_deps)
+read_videofiles_deps=cparam.o cdata.o general.o
+read_videofiles=read_videofiles.o $(read_videofiles_deps)
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
+
+# ---------------------------------------------------------------------- #
+## Symbolic targets
 
 default: makefile cparam.inc code
 
@@ -216,25 +233,13 @@ mpicomm_double_.f90: mpicomm_double.f90
 code:
 	make start.x run.x read_videofiles.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o
-comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
-start_deps_f90=$(comm_deps) $(DEBUG).o
-start_deps=$(start_deps_f90)
-run_deps_f90=$(comm_deps) equ.o timestep.o
-run_deps=$(run_deps_f90) $(DEBUG).o
-start=start.o $(start_deps)
-run=run.o $(run_deps)
-read_videofiles_deps=cparam.o cdata.o general.o
-read_videofiles=read_videofiles.o $(read_videofiles_deps)
-
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
-# handy for debugging; just compile by hand what is changed
+# Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
@@ -244,11 +249,46 @@ linkonly:
 l:
 	make linkonly
 
-# here a handy example when debugging radiation:
+# Needed for the underscore trick:
+mpicomm_.f90:      mpicomm.f90
+
+# Shortcut for debugging radiation:
 rad:
 	ifc -c radiation_exp.f90
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+
+# Remove all build files, but keep executables
+# (misleading name..)
+run:
+	rm -f *.o *.mod *.d *.inc
+	rm -f work.pc work.pcl
+
+# Alternative to make run. To copy executables to parent directory.
+# Make clean(n) could then be run on the source.
+# (misleading name..)
+install:
+	cp *.x ../
+
+# TAGS file for Emacs.
+# $(TAG_SOURCE) requires nofftpack.f90 to exist, so we temporarily create it
+nofftpack.f90:
+	@ touch nofftpack.f90
+TAGS: $(TAG_SOURCE)
+	etags $(TAG_SOURCE)
+	@ if [ ! -s nofftpack.f90 ]; then rm nofftpack.f90; fi
+
+# Clean up, but leave makefile and TAGS
+clean:
+	rm -f *.x *.o *.mod *.d *.inc *.il
+	rm -f work.pc work.pcl
+
+# Clean up all
+cleann: clean
+	rm -f makefile TAGS mpicomm_.f90
+
+# ---------------------------------------------------------------------- #
+## Code targets
 
 read_videofiles.x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
@@ -304,29 +344,3 @@ $(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 $(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 
-# Needed for the underscore trick:
-mpicomm_.f90:      mpicomm.f90
-
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
-TAGS: $(TAG_SOURCE)
-	etags $(TAG_SOURCE)
-
-# Clean up, but leave makefile and TAGS
-clean:
-	rm -f *.x *.o *.mod *.d *.inc *.il
-	rm -f work.pc work.pcl
-
-# Clean up all
-cleann: clean
-	rm -f makefile TAGS mpicomm_.f90
-
-# Remove all build files, but keep executables
-run:
-	rm -f *.o *.mod *.d *.inc
-	rm -f work.pc work.pcl
-
-
-# Alternative to make run. To copy executables to parent directory.
-# Make clean(n) could then be run on the source.
-install:
-	cp *.x ../
