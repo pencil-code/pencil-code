@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.185 2004-07-05 22:19:50 theine Exp $ 
+! $Id: param_io.f90,v 1.186 2004-07-06 00:18:07 theine Exp $ 
 
 module Param_IO
 
@@ -66,7 +66,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext,r_ref,mu0,force_lower_bound
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &
-       dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive,border_frac, &
+       dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,uxj_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,ss_spec,cc_spec,cr_spec, &
        rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
@@ -79,7 +79,8 @@ module Param_IO
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
        save_lastsnap, &
-       force_lower_bound,twod
+       force_lower_bound,twod, &
+       border_frac,border_frac_x,border_frac_y,border_frac_z
   contains
 
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.116 2004-06-16 22:29:54 theine Exp $
+! $Id: noionization.f90,v 1.117 2004-07-06 00:18:07 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.116 2004-06-16 22:29:54 theine Exp $')
+           '$Id: noionization.f90,v 1.117 2004-07-06 00:18:07 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -429,10 +429,10 @@ module Ionization
 
       case (nx)
         lnrho=f(l1:l2,m,n,ilnrho)
-        ss=f(l1:l2,m,n,iss)
+        if (lentropy) then; ss=f(l1:l2,m,n,iss); else; ss=0; endif
       case (mx)
         lnrho=f(:,m,n,ilnrho)
-        ss=f(:,m,n,iss)
+        if (lentropy) then; ss=f(  :  ,m,n,iss); else; ss=0; endif
       case default
         call stop_it("eoscalc: no such pencil size")
 
