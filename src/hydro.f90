@@ -1,4 +1,6 @@
-! $Id: hydro.f90,v 1.68 2002-10-02 18:06:40 brandenb Exp $
+! $Id: hydro.f90,v 1.69 2002-10-06 14:52:55 brandenb Exp $
+
+!  This module takes care of everything related to velocity
 
 module Hydro
 
@@ -25,17 +27,17 @@ module Hydro
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
-  real :: tau_damp_uxm=0.,tau_damp_uym=0.
+  real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
   namelist /hydro_run_pars/ &
        nu,ivisc, &
        Omega,theta, &
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
-       tau_damp_uxm,tau_damp_uym
+       tau_damp_ruxm,tau_damp_ruym
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
-  integer :: i_uxm=0,i_uym=0,i_uzm=0
+  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
 
   contains
 
@@ -72,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.68 2002-10-02 18:06:40 brandenb Exp $")
+           "$Id: hydro.f90,v 1.69 2002-10-06 14:52:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -400,8 +402,8 @@ module Hydro
 !
 !  add the possibility of removing a mean flow in the y-direction
 !
-      if (tau_damp_uxm/=0.) call damp_uxm(f,df)
-      if (tau_damp_uym/=0.) call damp_uym(f,df)
+      if (tau_damp_ruxm/=0.) call damp_ruxm(f,df)
+      if (tau_damp_ruym/=0.) call damp_ruym(f,df)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
@@ -414,12 +416,12 @@ module Hydro
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         !
-        !  mean momenta (should perhaps rename variables i_uxm -> i_ruxm)
+        !  mean momenta
         !
-        if (i_uxm+i_uym+i_uzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
-        if (i_uxm/=0) then; ux=uu(:,1); call sum_mn_name(rho*ux,i_uxm); endif
-        if (i_uym/=0) then; uy=uu(:,2); call sum_mn_name(rho*uy,i_uym); endif
-        if (i_uzm/=0) then; uz=uu(:,3); call sum_mn_name(rho*uz,i_uzm); endif
+        if (i_ruxm+i_ruym+i_ruzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
+        if (i_ruxm/=0) then; ux=uu(:,1); call sum_mn_name(rho*ux,i_ruxm); endif
+        if (i_ruym/=0) then; uy=uu(:,2); call sum_mn_name(rho*uy,i_ruym); endif
+        if (i_ruzm/=0) then; uz=uu(:,3); call sum_mn_name(rho*uz,i_ruzm); endif
         !
         !  things related to vorticity
         !
@@ -444,9 +446,9 @@ module Hydro
 !
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine damp_uxm(f,df)
+    subroutine damp_ruxm(f,df)
 !
-!  Damps mean ux velocity, uxm, to zero.
+!  Damps mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
 !  This tends to be the case when there is linear shear but no rotation
 !  and the turbulence is forced. A constant drift velocity in the
@@ -454,7 +456,7 @@ module Hydro
 !  of <uy> due to the shear term. If there is rotation, the epicyclic
 !  motion brings one always back to no mean flow on the average.
 !
-!  20-aug-02/axel: adapted from damp_uym
+!  20-aug-02/axel: adapted from damp_ruym
 !   7-sep-02/axel: corrected mpireduce_sum (was mpireduce_max)
 !   1-oct-02/axel: turned into correction of momentum rather than velocity
 !
@@ -465,33 +467,33 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension(nx) :: rho,ux
       real, dimension(1) :: fsum_tmp,fsum
-      real :: tau_damp_uxm1
-      real, save :: uxm=0.,ux_sum=0.
+      real :: tau_damp_ruxm1
+      real, save :: ruxm=0.,rux_sum=0.
 !
-!  at the beginning of each timestep we calculate uxm
+!  at the beginning of each timestep we calculate ruxm
 !  using the sum of ux over all meshpoints, ux_sum,
 !  that was calculated at the end of the previous step.
 !  This result is only known on the root processor and
 !  needs to be broadcasted.
 !
       if(lfirstpoint) then
-        fsum_tmp(1)=ux_sum
+        fsum_tmp(1)=rux_sum
         call mpireduce_sum(fsum_tmp,fsum,1)
-        if(lroot) uxm=ux_sum/(nw*ncpus)
-        call mpibcast_real(uxm,1)
+        if(lroot) ruxm=rux_sum/(nw*ncpus)
+        call mpibcast_real(ruxm,1)
       endif
 !
       ux=f(l1:l2,m,n,iux)
       rho=exp(f(l1:l2,m,n,ilnrho))
-      call sum_mn(rho*ux,ux_sum)
-      tau_damp_uxm1=1./tau_damp_uxm
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_uxm1*uxm/rho
+      call sum_mn(rho*ux,rux_sum)
+      tau_damp_ruxm1=1./tau_damp_ruxm
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_ruxm1*ruxm/rho
 !
-    endsubroutine damp_uxm
+    endsubroutine damp_ruxm
 !***********************************************************************
-    subroutine damp_uym(f,df)
+    subroutine damp_ruym(f,df)
 !
-!  Damps mean uy velocity, uym, to zero.
+!  Damps mean y momentum, ruym, to zero.
 !  This can be useful in situations where a mean flow is generated.
 !
 !  18-aug-02/axel: coded
@@ -504,29 +506,29 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension(nx) :: rho,uy
       real, dimension(1) :: fsum_tmp,fsum
-      real :: tau_damp_uym1
-      real, save :: uym=0.,uy_sum=0.
+      real :: tau_damp_ruym1
+      real, save :: ruym=0.,ruy_sum=0.
 !
-!  at the beginning of each timestep we calculate uym
-!  using the sum of uy over all meshpoints, uy_sum,
+!  at the beginning of each timestep we calculate ruym
+!  using the sum of rho*uy over all meshpoints, ruy_sum,
 !  that was calculated at the end of the previous step.
 !  This result is only known on the root processor and
 !  needs to be broadcasted.
 !
       if(lfirstpoint) then
-        fsum_tmp(1)=uy_sum
+        fsum_tmp(1)=ruy_sum
         call mpireduce_max(fsum_tmp,fsum,1)
-        if(lroot) uym=fsum(1)/(nw*ncpus)
-        call mpibcast_real(uym,1)
+        if(lroot) ruym=fsum(1)/(nw*ncpus)
+        call mpibcast_real(ruym,1)
       endif
 !
       uy=f(l1:l2,m,n,iuy)
       rho=exp(f(l1:l2,m,n,ilnrho))
-      call sum_mn(rho*uy,uy_sum)
-      tau_damp_uym1=1./tau_damp_uym
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_uym1*uym/rho
+      call sum_mn(rho*uy,ruy_sum)
+      tau_damp_ruym1=1./tau_damp_ruym
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_ruym1*ruym/rho
 !
-    endsubroutine damp_uym
+    endsubroutine damp_ruym
 !***********************************************************************
     subroutine udamping(f,df)
 !
@@ -591,7 +593,7 @@ module Hydro
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
-        i_uxm=0; i_uym=0; i_uzm=0
+        i_ruxm=0; i_ruym=0; i_ruzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -606,9 +608,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
         call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
-        call parse_name(iname,cname(iname),cform(iname),'uxm',i_uxm)
-        call parse_name(iname,cname(iname),cform(iname),'uym',i_uym)
-        call parse_name(iname,cname(iname),cform(iname),'uzm',i_uzm)
+        call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
+        call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
+        call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -621,9 +623,9 @@ module Hydro
       write(3,*) 'i_umax=',i_umax
       write(3,*) 'i_orms=',i_orms
       write(3,*) 'i_omax=',i_omax
-      write(3,*) 'i_uxm=',i_uxm
-      write(3,*) 'i_uym=',i_uym
-      write(3,*) 'i_uzm=',i_uzm
+      write(3,*) 'i_ruxm=',i_ruxm
+      write(3,*) 'i_ruym=',i_ruym
+      write(3,*) 'i_ruzm=',i_ruzm
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux

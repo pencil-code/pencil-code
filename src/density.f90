@@ -1,9 +1,9 @@
-! $Id: density.f90,v 1.52 2002-10-02 06:45:17 brandenb Exp $
-
-module Density
+! $Id: density.f90,v 1.53 2002-10-06 14:52:55 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
+
+module Density
 
   use Cparam
   use Cdata
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.52 2002-10-02 06:45:17 brandenb Exp $")
+           "$Id: density.f90,v 1.53 2002-10-06 14:52:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
