@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.239 2003-11-05 15:34:32 mcmillan Exp $
+! $Id: entropy.f90,v 1.240 2003-11-05 15:45:22 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.239 2003-11-05 15:34:32 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.240 2003-11-05 15:45:22 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -577,7 +577,7 @@ module Entropy
       use Ionization, only: ionput
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension (nx) :: Temp,yH
+      real, dimension (nx) :: Temp,yH,lnTemp
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
@@ -596,7 +596,8 @@ module Entropy
           where (r_mn >= r_ext) Temp = TT_ext
           where (r_mn < r_ext .AND. r_mn > r_int) Temp = 1+beta1*(1/r_mn-1)
           where (r_mn <= r_int) Temp = TT_int
-          call ionput(f,yH,log(Temp))
+          lnTemp = log(Temp)
+          call ionput(f,yH,lnTemp)
         enddo 
       endif
       
