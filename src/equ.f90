@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.77 2002-07-05 13:08:07 nilshau Exp $
+! $Id: equ.f90,v 1.78 2002-07-05 18:29:56 brandenb Exp $
 
 module Equ
 
@@ -8,29 +8,6 @@ module Equ
 
   contains
 
-!***********************************************************************
-      subroutine calc_UUmax
-!
-!  This routine is used for calculating the maximum effective advection
-!  velocity in the domain for determining dt at each timestep 
-!  
-!   2-sep-01/axel: coded
-!
-      use Mpicomm
-      use Cdata
-      use Sub
-!
-      real, dimension(1) :: fmax_tmp,fmax
-!
-!  communicate over all processors
-!  the result is present only on the root processor
-!  need to take sqare root; reassemble using old names
-!
-      fmax_tmp(1)=UUmax
-      call mpireduce_max(fmax_tmp,fmax,1)
-      if(lroot) UUmax=sqrt(fmax(1))
-!
-      endsubroutine calc_UUmax
 !***********************************************************************
     subroutine diagnostic
 !
@@ -212,7 +189,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.77 2002-07-05 13:08:07 nilshau Exp $")
+           "$Id: equ.f90,v 1.78 2002-07-05 18:29:56 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -344,7 +321,6 @@ module Equ
 !  diagnostic quantities
 !  calculate maximum speed for time step
 !
-      if (lfirst.and.ldt) call calc_UUmax
       if (ldiagnos) then
         call diagnostic
         call xyaverages
