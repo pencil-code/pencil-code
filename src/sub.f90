@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.200 2004-09-28 14:17:39 ajohan Exp $ 
+! $Id: sub.f90,v 1.201 2004-09-28 15:02:00 dobler Exp $ 
 
 module Sub 
 
@@ -190,6 +190,8 @@ module Sub
 !    we can just use
 !         call sum_mn_name(b2,i_b2m)
 !  Same holds for similar routines.
+!  Update [28-Sep-2004 wd]: 
+!    Done here, but not yet in all other routines
 !
       use Cdata
 !
@@ -197,18 +199,22 @@ module Sub
       integer :: iname
       logical, optional :: lsqrt
 !
-      if (lfirstpoint) then
-        fname(iname)=sum(a)
-      else
-        fname(iname)=fname(iname)+sum(a)
-      endif
+      if (iname /= 0) then 
 !
-!  set corresponding entry in itype_name
+        if (lfirstpoint) then
+          fname(iname)=sum(a)
+        else
+          fname(iname)=fname(iname)+sum(a)
+        endif
+        !
+        !  set corresponding entry in itype_name
+        !
+        if (present(lsqrt)) then
+          itype_name(iname)=ilabel_sum_sqrt
+        else
+          itype_name(iname)=ilabel_sum
+        endif
 !
-      if (present(lsqrt)) then
-        itype_name(iname)=ilabel_sum_sqrt
-      else
-        itype_name(iname)=ilabel_sum
       endif
 !
     endsubroutine sum_mn_name
