@@ -1,5 +1,5 @@
 #!/bin/sh
-# CVS: $Id: pc_run,v 1.1 2004-04-05 18:37:14 mee Exp $
+# CVS: $Id: pc_run,v 1.2 2004-04-06 16:06:37 mee Exp $
 #                       pc_run
 #                      ---------
 #   Run src/run.x (timestepping for src/run.x).
@@ -25,6 +25,7 @@
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 # This implicitly sources pc_functions.sh too.
+debug=yes
 source pc_config.sh
 
 # Prevent code from running twice (and removing files by accident)

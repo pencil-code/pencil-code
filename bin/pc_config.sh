@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.2 2004-04-06 16:03:11 mee Exp $
+# $Id: pc_config.sh,v 1.3 2004-04-06 16:06:37 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -16,7 +16,6 @@
 
 source $PENCIL_HOME/bin/pc_functions.sh
 
-debug=yes
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
 [ -n "$PENCIL_HOME" ] && export PATH=${PATH}:${PENCIL_HOME}/bin
 # Save working directory for other scripts we call

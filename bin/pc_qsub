@@ -32,6 +32,6 @@ done
 jobname=${CWD/*\//}
 ln -sf $jobscript $jobname
 
-echo queue_submit $jobname $@
+queue_submit $jobname $@
 
 
