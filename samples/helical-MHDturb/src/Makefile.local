@@ -5,12 +5,13 @@
 
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
-MPICOMM=mpicomm
+MPICOMM=nompicomm
 GLOBAL=global_rr
 GRAVITY=nograv
 FORCING=forcing
 ENTROPY=noentropy
 MAGNETIC=magnetic
-DENSITY=density
 HYDRO=hydro
+DENSITY=density
 IO=io_dist
+
