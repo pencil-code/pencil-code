@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.49 2003-10-18 20:43:34 brandenb Exp $
+! $Id: grav_r.f90,v 1.50 2003-10-20 10:30:51 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.49 2003-10-18 20:43:34 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.50 2003-10-20 10:30:51 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,6 +91,8 @@ module Gravity
       real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
       real :: g_int,g_ext
+
+integer :: ijk
 
       logical, save :: first=.true.
 ! geodynamo - set to false on condition of 1/r potential
@@ -187,15 +189,9 @@ module Gravity
         else
           g_int = g0/r_int**2
           g_ext = g0/r_ext**2
-          where (r_mn >= r_ext) 
-            g_r=g_ext
-          elsewhere
-            where (r_mn > r_int)
-              g_r=g0/r_mn
-            elsewhere
-              g_r=g_int
-            endwhere
-          endwhere
+          where (r_mn >= r_ext) g_r=g_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) g_r=g0/r_mn**2
+          where (r_mn <= r_int) g_r=g_int
 ! end geodynamo
         endif
 !

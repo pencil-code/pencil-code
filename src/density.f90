@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.122 2003-10-18 20:43:34 brandenb Exp $
+! $Id: density.f90,v 1.123 2003-10-20 10:30:51 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.122 2003-10-18 20:43:34 brandenb Exp $")
+           "$Id: density.f90,v 1.123 2003-10-20 10:30:51 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,6 +139,7 @@ module Density
       real :: zbot,ztop
       real :: lnrho_int,lnrho_ext,beta1  ! for spherical shell problems
                                          ! not to be confused with lnrhoint
+integer :: ijk
 !
 !  define bottom and top height
 !
@@ -411,15 +412,9 @@ module Density
           z_mn = spread(z(n),1,nx)
           r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
 
-          where (r_mn >= r_ext) 
-            f(l1:l2,m,n,ilnrho) = lnrho_ext
-          elsewhere 
-            where (r_mn > r_int)
-              f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
-            elsewhere
-              f(l1:l2,m,n,ilnrho) = lnrho_int
-            endwhere
-          endwhere
+          where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
+          where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
         enddo 
 
       case default
