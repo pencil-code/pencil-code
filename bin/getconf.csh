@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.114 2004-04-03 16:56:22 mee Exp $
+# $Id: getconf.csh,v 1.115 2004-04-19 12:09:45 ngrs Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -369,8 +369,41 @@ else if ($hn =~ hwwsx5*) then
   setenv SSH rsh
   setenv SCP rcp
 
+else if ($hn =~ morvern || $hn =~ renton || $hn =~ lanark) then
+  echo "LAM MPI on Newcastle desktops)" 
+  #NB: need set mpi here: egrep on Makefile.local fails if using ~/.adapt-mkfile.inc 
+  set mpi = 1
+  echo "lamnodes:" 
+  lamnodes
+  set mpirun = 'mpirun'
+  set mpirunops = ''
+  set npops = ''
+  set local_disc = 0
+  set one_local_disc = 0 
+  if ($local_disc) then
+    setenv SCRATCH_DIR /var/tmp
+  endif
+
 else if ($hn =~ cosmo) then
   set mpirunops = '-x NLSPATH'
+
+else if ($hn =~ mhd) then
+  echo "mhd node at Newcastle (alpha linux running LAM MPI)" 
+  #echo `hostname` "cpu=4" >! lamhosts
+  #lamboot -v lamhosts
+  #set booted_lam = 1
+  echo "lamnodes:" 
+  lamnodes
+  set nprocpernode = 4
+  set mpirun = mpirun
+  #set mpirunops = "-ssi rpi tcp -s n0 N -v"
+  set mpirunops = "-v"
+  set npops = ''
+  set local_disc = 0
+  set one_local_disc = 0 
+  if ($local_disc) then
+    setenv SCRATCH_DIR /var/tmp
+  endif
 
 else
   echo "Generic setup; hostname is <$hn>"
