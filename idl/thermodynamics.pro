@@ -1,30 +1,37 @@
-;  $Id: thermodynamics.pro,v 1.5 2003-08-09 19:47:27 mee Exp $
+;  $Id: thermodynamics.pro,v 1.6 2003-08-10 06:42:35 brandenb Exp $
 
-if (cs20 ne impossible) then begin
+;if (cs20 ne impossible) then begin
+if (not lionization) then begin
   print,'Using simple equation of state...'
   cs2=cs20*exp(gamma1*llnrho+gamma*sss)
   ppp=rho*cs2/gamma
   cp1tilde=1.
   eee=cs2/gamma1
-end else begin
+endif else begin
   if (iyH ne 0) then begin 
     print,'Using full ionisation equation of state...'
     yyH=yH(l1:l2,m1:m2,n1:n2)
   end else begin
     print,'Using fixed ionisation equation of state...'
+    ;AB: is this really the idea? One may want to calculate yH when iyH=0
+    ;AB: if variable ionization is used.
     seedarray=fltarr(nx)
-    seedarray[*]=yH0
+    seedarray[*]=par.yH0
     yyH=spread(spread(seedarray,1,ny),2,nz)
   endelse  
   if (iTT ne 0) then begin
     TTT=TT(l1:l2,m1:m2,n1:n2)
-  end else begin
-    yyH_term=yyH*(2.*log(yyH)-lnrho_e-lnrho_p)
+  endif else begin
+    ;AB:  is this supposed to work for fixed *and* variable ionization?
+    ;AB:  at least fixed ionization had problems.
+    yyH_term=yyH*(2.*alog(yyH)-lnrho_e-lnrho_p)
+    yH_term=yyH_term ;(AB: is this what you had in mind?)
     yH_term[where (yyH eq 0.)]=0.
-    one_yyH_term=(1.-yyH)*(log(1.-yyH)-lnrho_H)
-    one_yyH_term[where (yyH eq 1.)]=0.
-    xHe_term=xHe*(log(xHe)-lnrho_He)
-    xHe_term[where (xHe eq 0.)]=0.
+yyH_term=0. ;(to make it work)
+    one_yyH_term=(1.-yyH)*(alog(1.-yyH)-lnrho_H)
+    if max(yyH) eq 1 then one_yyH_term[where (yyH eq 1.)]=0.  ;(AB: needed?)
+    xHe_term=xHe*(alog(xHe)-lnrho_He)
+    if min(xHe) eq 0. then xHe_term[where (xHe eq 0.)]=0.  ;(AB: needed?)
 
     lnTTT_=(2./3.)*((sss/ss_ion $
                    + one_yyH_term $

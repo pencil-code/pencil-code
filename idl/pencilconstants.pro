@@ -1,4 +1,4 @@
-;  $Id: pencilconstants.pro,v 1.5 2003-08-09 19:47:27 mee Exp $
+;  $Id: pencilconstants.pro,v 1.6 2003-08-10 06:42:35 brandenb Exp $
 ;
 ; constants in cgs units
 ;
@@ -54,6 +54,9 @@
   TT_ion=chiH/k_B
   TT_ion_=chiH_/k_B
   lnrho_e=1.5*alog((m_e/hbar)*(chiH/hbar)/2./!pi)+alog(m_H)+alog(mu)
+  lnrho_H=1.5*alog((m_H/hbar)*(chiH/hbar)/2./!pi)+alog(m_H)+alog(mu)
+  lnrho_p=1.5*alog((m_p/hbar)*(chiH/hbar)/2./!pi)+alog(m_H)+alog(mu)
+  lnrho_He=1.5*alog((m_He/hbar)*(chiH/hbar)/2./!pi)+alog(m_H)+alog(mu)
   lnrho_e_=1.5*alog((m_e/hbar)*(chiH_/hbar)/2./!pi)+alog(m_H)+alog(mu)
   ss_ion=k_B/m_H/mu
   kappa0=sigmaH_/m_H/mu
