@@ -40,6 +40,10 @@ default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; colour-represented data
 default, show_ghosts, 0
 
+default, z1,0                   ; neede later
+default, z2,0
+default, z3,0
+
 nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
 nsslevs = 60                    ; No of colours
