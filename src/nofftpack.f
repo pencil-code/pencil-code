@@ -1,4 +1,4 @@
-!  $Id: nofftpack.f,v 1.5 2003-08-29 16:16:02 dobler Exp $
+!  $Id: nofftpack.f,v 1.6 2003-10-01 13:11:41 theine Exp $
 !
 !  Dummy routine, to avoid never seeing the compiler warnings from fftpack.
 !
@@ -55,6 +55,6 @@
 !***********************************************************************
       SUBROUTINE COSQI (N,WSAVE)
       DIMENSION WSAVE(*)
-      if (.false.) print*,n,x(1),wsave(1) ! (keep compiler quiet)
+      if (.false.) print*,n,wsave(1) ! (keep compiler quiet)
       END
 !***********************************************************************
