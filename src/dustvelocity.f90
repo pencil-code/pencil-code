@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $
+! $Id: dustvelocity.f90,v 1.80 2004-09-16 14:03:18 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -107,7 +107,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $")
+           "$Id: dustvelocity.f90,v 1.80 2004-09-16 14:03:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -423,10 +423,11 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: udij
+      real, dimension (nx,3,3) :: udij,sdij
       real, dimension (nx,3,ndustspec) :: uud
       real, dimension (nx,ndustspec) :: divud,ud2
-      real, dimension (nx,3) :: uu,udgud,ood,del2ud,del6ud,tausd13,tausg13
+      real, dimension (nx,3) :: uu,udgud,ood,del2ud,graddivud,del6ud,fviscd
+      real, dimension (nx,3) :: glnnd,sdglnnd,tausd13,tausg13
       real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
       real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
@@ -483,6 +484,17 @@ module Dustvelocity
             m,n,iudx(k),iudz(k),ud2(:,k)
         call gij(f,iuud(k),udij)
         divud(:,k) = udij(:,1,1) + udij(:,2,2) + udij(:,3,3)
+!
+!  calculate rate of strain tensor
+!
+        if (ldustdensity .and. nud(k) /= 0. .and. iviscd=='nu-const') then
+          do j=1,3
+            do i=1,3
+              sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
+            enddo
+            sdij(:,j,j)=sdij(:,j,j)-.333333*divud(:,k)
+          enddo
+        endif
 !
 !  Dynamical terms
 !
@@ -554,16 +566,29 @@ module Dustvelocity
 !
           select case (iviscd)
 
-          case ('simplified')
-            df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
+          case('simplified')
+            fviscd=nud(k)*del2ud
+
+          case('nud-const')
+            call del2v_etc(f,iuud(k),del2ud,GRADDIV=graddivud)
+            if (ldustdensity) then
+              call grad(f,ind(k),glnnd)
+              call multmv_mn(sdij,glnnd,sdglnnd)
+              fviscd=2*nud(k)*sdglnnd+nud(k)*(del2ud+1/3.*graddivud)
+            else
+              fviscd=nud(k)*(del2ud+1/3.*graddivud)
+            endif
 
           case('hyper6')
             call del6v(f,iuud(k),del6ud)
-            df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del6ud
+            fviscd=nud(k)*del6ud
+
+          case default
+            call stop_it("duud_dt: No such dust viscosity type")
 
           endselect
+
+          df(l1:l2,m,n,iudx(k):iudz(k))=df(l1:l2,m,n,iudx(k):iudz(k))+fviscd
 !          
         endif   ! if (.not. ldustvelocity_shorttausd)
 !
