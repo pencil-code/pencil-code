@@ -21,7 +21,8 @@ if match "$0" "pc_functions.sh" ; then
   echo " anything when executed I'm going to die now.  Good bye.....           "
   echo "---------------------------------------------------------------------- "
   unset match
-  kill $$  
+#  kill $$  
+  exit 1
 fi
 
 #------------------------------------------------------------------------------
@@ -127,7 +128,7 @@ prepare_datadir()
       if [ ! -e NOERASE ]; then
         for rmfile in $list
         do
-          if [ $rmfile != $ddir/var.dat ]; then rm -f $rmfile >& /dev/null; fi
+          if [ $rmfile != $ddir/var.dat ]; then rm -f $rmfile &>/dev/null; fi
         done
       fi
     fi
@@ -139,7 +140,7 @@ prepare_datadir()
         mv $datadir/time_series.dat $datadir/time_series.`timestr`
     fi
     rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
-          $datadir/averages/* >& /dev/null
+          $datadir/averages/* &>/dev/null
   fi
 }
 
@@ -150,7 +151,7 @@ background_remote_top()
 {
   # Copy output from `top' on run host to a file we can read from login server
   if [ "$remote_top" == "yes" ]; then
-    remote-top >& remote-top.log &
+    remote-top &>remote-top.log &
   fi
 }
 
@@ -252,9 +253,9 @@ check_NEWDIR()
       cd `< NEWDIR`
       rm $olddir/NEWDIR
       (echo "stopped run:"; date; echo "new run directory:"; echo $cwd; echo "")\
-         >> $olddir/$datadir/directory_change.log
+         2>&1 >> $olddir/$datadir/directory_change.log
       (date; echo "original run script is in:"; echo $olddir; echo "")\
-         >> $datadir/directory_change.log
+         2>&1 >> $datadir/directory_change.log
       echo
       echo "=============================================================================="
       echo "Rerunning in new directory; current run status: $run_status"
@@ -287,30 +288,34 @@ distribute_data_to_nodes()
   #
   if [ "$local_disc" == "yes" ]; then
     if [ "$one_local_disc" == "yes" ]; then     # one common local disc 
+      echo -n "Distributing data to nodes...  "
       for node in $nodelist
       do
         for d in `cd $datadir; ls -d proc* allprocs`
         do
-          $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
-          $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+          $SCP ${remote_data_path}${datadir}/$d/var.dat ${node}:$SCRATCH_DIR/$d/ 2>/dev/null
+          $SCP ${remote_data_path}$datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/ 2>/dev/null
         done
-        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
+        $SCP ${remote_data_path}$datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs 2>/dev/null
       done
+      echo " Done."
     else # one local disc per MPI process (Horseshoe, etc);
-      i=0
+      echo -n "Distributing data to nodes...  "
+      local i=0
       for node in $nodelist
       do
-        echo "i = $i"
-        j=$nprocpernode
-        while [ $j != 0 ]
+        local j=$nprocpernode
+        while [ $j -gt 0 ]
         do
-          $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
-          $SCP $datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/
+          echo -n "$i "
+          $SCP ${remote_data_path}$datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null
+          $SCP ${remote_data_path}$datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/ 2>/dev/null 
           i=$(( $i + 1 ))
           j=$(( $j - 1 ))
         done
-        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
+        $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/ 2>/dev/null      
       done
+      echo " Done."
     fi
   fi
 }
@@ -328,13 +333,145 @@ distribute_binary()
 }
 
 
+copy_snapshots ()
+{
+  # Copy snapshots VAR# and TAVG# from /scratch to $PBS_O_WORKDIR (from
+  # where the code started).
+  # Relies on PBS (and on tcsh) and is needed on Horseshoe (the Odense
+  # cluster).
+  local debug=no
+
+  if [ "$1" == "-v" ] || [ "$1" == "--verbose" ]; then
+    debug=yes
+    shift
+  fi
+  
+  #[ "$debug" == "yes" ] && (set verbose;  set echo)
+  
+  local varfile=$1
+  [ "$debug" == "yes" ] && echo "varfile = <$varfile>"
+  
+  local pwd=`pwd`
+  local targetdir=$pwd/data
+#  local nodelist=`echo $NODELIST | sed 's/:/ /g'` # unpack NODELIST
+  
+  if [ "$debug" == "yes" ]; then
+    echo "SCRATCH_DIR = <$SCRATCH_DIR>"
+    echo "targetdir   = <$targetdir>"
+    echo "nodelist    = <$nodelist>"
+  fi
+  
+  if [ -n "$varfile" ]; then		# explicit filename given
+    for node in $nodelist
+    do
+      echo "---------------------- $node ---------------------------"
+      if [ "$debug" == "yes" ]; then
+        echo "node=$node"
+        printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
+        $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile" 2>/dev/null
+        printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/ :\n"
+        $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allprocs/" 2>/dev/null
+        echo
+      fi
+      # Copy all files you find (not efficient on dual-CPU systems, unless
+      # we would delete files after copying..)
+      # Extremely awkward due to quoting rules:
+      cmd1="cd $SCRATCH_DIR; "
+      cmd2='for f in `'
+      cmd3="ls proc*/$varfile allprocs/$varfile 2>/dev/null"
+      cmd4='`; do cp '
+      cmd5="$SCRATCH_DIR/"
+      cmd6='$f '
+      cmd7="$targetdir/"
+      cmd8='$f; done'
+      remcmd="$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
+      [ $debug == "yes" ]  && echo "Now running <$SSH $node sh -c $remcmd>"
+      $SSH $node sh -c "'$remcmd'"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile" 2>/dev/null
+      echo "--------------------------------------------------------"
+    done 
+  else				# no explicit file given -- copy VARN, TAVGN
+    if [ -e COPY_IN_PROGRESS ]; then    
+      echo "ERROR: Copy already in progress! Exiting..."
+      return 1
+    fi
+
+    touch COPY_IN_PROGRESS
+    while [ -e COPY_IN_PROGRESS ];   # loop until killed
+    do
+      sleep 60 &                    # only check every minute
+      local save_sleep_pid=$!
+      trap "kill $save_sleep_pid; rm -f COPY_IN_PROGRESS" SIGQUIT
+      wait $save_sleep_pid
+      [ -e COPY_IN_PROGRESS ] && date >> COPY_IN_PROGRESS
+
+      ## Is there something to copy? (It is sufficient to copy once the
+      ## files show up for the master process of this job -- might depend on
+      ## the queuing system etc.)
+      if ( (ls $SCRATCH_DIR/proc0/VAR[0-9]*     || \
+              ls $SCRATCH_DIR/proc0/TIMEAVG[0-9]* || \
+              ls $SCRATCH_DIR/allprocs/VAR[0-9]*  || \
+              ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) &> /dev/null ) ; then
+        ## Decide whether to check for file size (old scheme; won't work with
+        ## TAVGN unless they have the same size as var.dat), or to use list of
+        ## snapshot files (new scheme, will not work with old binaries).
+        if [ -e $SCRATCH_DIR/proc0/varN.list ]     || \
+           [ -e $SCRATCH_DIR/proc0/tavgN.list ]    || \
+           [ -e $SCRATCH_DIR/allprocs/tavgN.list ] || \
+           [ -e $SCRATCH_DIR/allprocs/tavgN.list ];  then
+          ## New scheme
+          echo "New scheme for copying (based on varN.list)"
+          for node in $nodelist
+          do
+            echo "---------------------- $node ---------------------------"
+            echo '$targetdir' $targetdir
+            for d in `cd $SCRATCH_DIR; ls -d allprocs proc* 2>/dev/null`
+            do
+              fdir="$SCRATCH_DIR/$d"
+              echo "cd $SCRATCH_DIR; ls allprocs proc* -->"
+              cd $SCRATCH_DIR; ls allprocs proc*
+              echo "d = <$d>"
+              echo "fdir = <$fdir>"
+              for f in `$SSH $node "cat $fdir/*.list"`
+              do
+                file="$fdir/$f"
+                echo "f     = <$f>"
+                echo "file = <$file>"
+                [ "$debug" == "yes" ] && echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
+                $SSH $node "if (-e $file) mv -f $file $targetdir/$d/"
+              done
+            done
+            echo "--------------------------------------------------------"
+          done
+        else
+          ## Old scheme
+          echo "Old scheme for copying (size-based)-- will be removed at some point"
+        fi
+  
+        if [ `ps -p $PARENT_PID | fgrep -c $PARENT_PID` -le 0 ]; then
+          rm -f COPY_IN_PROGRESS
+          echo "No parent process (pid $PARENT_PID) -- exiting"
+          exit 1
+        fi
+      fi
+    done
+  fi
+
+  rm -f COPY_IN_PROGRESS
+
+  [ "$debug" == "yes" ] && echo "copy_snapshots: done"
+}  
+
 background_copy_snapshots()
 {
   # On machines with local scratch directory, initialize automatic
   # background copying of snapshots back to the data directory.
   if [ "$local_disc" == "yes" ]; then
-    echo "Use local scratch disk"
-    copy-snapshots -v >& copy-snapshots.log &
+    echo -n "Starting background copy snapshots...  "
+    copy_snapshots -v &> copy-snapshots.log &
+    bkgnd_copy_snapshots_pid=$!
+    echo "Started."
   fi
 }
 
@@ -344,10 +481,10 @@ final_copy_snapshots()
   # directory
   if [ "$local_disc" == "yes" ]; then
     echo -n "Copying final var.dat back from local scratch disk...   "
-    copy-snapshots -v var.dat 2>&1 > copy-snapshots2.log
-    copy-snapshots -v dxyz.dat 2>&1 >> copy-snapshots2.log
-    copy-snapshots -v timeavg.dat 2>&1 >> copy-snapshots2.log
-    copy-snapshots -v crash.dat 2>&1 >> copy-snapshots2.log
+    copy_snapshots -v var.dat &> copy-snapshots2.log
+    copy_snapshots -v dxyz.dat 2>&1 >> copy-snapshots2.log
+    copy_snapshots -v timeavg.dat 2>&1 >> copy-snapshots2.log
+    copy_snapshots -v crash.dat 2>&1 >> copy-snapshots2.log
     echo "Done."
   fi
 }
@@ -356,17 +493,10 @@ unbackground_copy_snapshots()
 {
   # Kill all backgrounded copy-snapshots
   if [ "$local_disc" == "yes" ]; then
-    echo -n "Killing backgrounded copy_snapshots...   "
-    pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
-    echo "Shutting down processes ${pids}:"
-    for p in $pids     # need to do in a loop, and check for existence, since
-    do                 # some systems (Hitachi) abort this script when trying
-                       # to kill non-existent processes
-      echo "  pid $p"
-      # should not need existence check when scripting with sh 
-      #[ `ps -p $p | fgrep -c $p` ] 
-      kill -SIGKILL $p
-    done
+    echo -n "Stopping backgrounded copy_snapshots...   Waiting...  "
+#    kill $bkgnd_copy_snapshots_pid
+    kill -SIGQUIT $bkgnd_copy_snapshots_pid 2>&1 >/dev/null
+    wait $bkgnd_copy_snapshots_pid
     echo "Done."
   fi
 }
@@ -374,6 +504,27 @@ unbackground_copy_snapshots()
 #------------------------------------------------------------------------------
 #-- Run Lock Manipulation 
 #------------------------------------------------------------------------------
+check_is_run_directory()
+{
+  local isrundir=yes
+
+  if [ ! -e start.in ]; then
+    echo "ERROR: Cannot find start.in"
+    isrundir=no
+  fi
+
+  if [ ! -e run.in ]; then
+    echo "ERROR: Cannot find run.in"
+    isrundir=no
+  fi
+
+  if [ ! "$isrundir" == "yes" ]; then
+    echo "This does not appear to be a run directory! Exiting... "
+    exit 1
+#    kill -SIGKILL $$			# full-featured suicide
+  fi
+}
+
 check_not_locked()
 {
   # Prevent code from running twice (and removing files by accident)
@@ -383,8 +534,8 @@ check_not_locked()
     echo "This may indicate that the code is currently running in this directory"
     echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
     echo "rm LOCK"
-    # exit                        # won't work in a sourced file
-    kill -SIGKILL $$			# full-featured suicide
+    exit 1                        # won't work in a sourced file
+#    kill -SIGKILL $$			# full-featured suicide
   fi
 }
 
@@ -448,22 +599,23 @@ determine_nodelist()
 {
   # Get list of nodes; filters lines such that it would also handle
   # machines.XXX files or lam-bhost.der, although this is hardly necessary.
+echo -n "Determine nodelist... "
   if [ -e "$PBS_NODEFILE" ]; then
-    [ "$debug" == "yes" ] && echo "PBS job"
+    echo "PBS job"
     nodelist=`cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
   elif [ -e "$PE_HOSTFILE" ]; then
-    [ "$debug" == "yes" ] && echo "SGE Parallel Environment job - $PE"
-    nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
+    echo "SGE Parallel Environment job - $PE"
+    nodelist=`cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
   elif [ -n "$JOB_ID" ]; then
     if [ -e "$HOME/.score/ndfile.$JOB_ID" ]; then
-      [ "$debug" == "yes" ] && echo "Scout job"
+      echo "Scout job"
       nodelist=`cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//'`
     else
       # E.g. for wd running SGE on Kabul cluster
       echo "Apparently not a scout job"
     fi
   else
-    [ "$debug" == "yes" ] && echo "Setting nodelist to ($hn)"
+    echo "Setting nodelist to ($hn)"
     nodelist="$hn"
   fi
 }

@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.5 2004-04-06 17:35:10 mee Exp $
+# $Id: pc_config.sh,v 1.6 2004-04-06 22:56:41 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -14,8 +14,11 @@
 #   (see tagged cvs revision: cvs up -r sh_version getconf.csh)
 #
 
-source $PENCIL_HOME/bin/pc_functions.sh
+#source $PENCIL_HOME/bin/pc_functions.sh
+source pc_functions.sh
 
+# Check we are actually in a run directory
+check_is_run_directory
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
 [ -n "$PENCIL_HOME" ] && export PATH=${PATH}:${PENCIL_HOME}/bin
 # Save working directory for other scripts we call
@@ -84,15 +87,16 @@ elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   echo "Newcastle e-Science Cluster"
   queue_submit() # Override queue submission shell function
   { 
-    qsub -pe mpi2 $ncpus -N $2 $1 
+    qsub -pe mpi2 $(( (($ncpus+1)/2)*2 )) -N $2 $1 
   }
+  export LD_LIBRARY_PATH=/addon/shared/intel/compiler70/ia32/bin:$LD_LIBRARY_PATH
   if [ -n "$PE" ]; then
     echo "SGE job"
     local_disc=yes
     one_local_disc=no
     local_binary=no
 
-  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
+  #  cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc >hostfile
   #  set nodelist = `cat hostfile`
 
     if [ "$PE" == "mpi2" ]; then
@@ -114,24 +118,24 @@ elif ishost "giga[0-9][0-9]" ; then
   echo "Nordita cluster"
   if [ [ -n $PBS_NODEFILE ] && [ -e $PBS_NODEFILE ] ]; then
     echo "PBS job"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >lamhosts
     local_disc=yes
     one_local_disc=no
     local_binary=no
   else
     echo "Non-PBS, running on `hostname`"
-    echo `hostname` > lamhosts
+    echo `hostname` >lamhosts
   fi
   # lamboot with logging to file 
   echo "lambooting.."
-  echo 'pidof lamd | xargs ps -lfwww :' > lamboot.log
-  pidof lamd | xargs ps -lfwww >> lamboot.log
-  echo '------------------------------------------------' >> lamboot.log
-  lamboot -v lamhosts >> lamboot.log # discard output, or auto-test
+  echo 'pidof lamd | xargs ps -lfwww :' >lamboot.log
+  pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
+  echo '------------------------------------------------' >>lamboot.log
+  lamboot -v lamhosts 2>&1 >>lamboot.log # discard output, or auto-test
                                       # mysteriously hangs on Nq0
-  echo '------------------------------------------------' >> lamboot.log
-  echo 'pidof lamd | xargs ps -lfwww :' >> lamboot.log
-  pidof lamd | xargs ps -lfwww >> lamboot.log
+  echo '------------------------------------------------' >>lamboot.log
+  echo 'pidof lamd | xargs ps -lfwww :' >>lamboot.log
+  pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
   #
   booted_lam=yes
   echo "lamnodes:"
@@ -179,24 +183,24 @@ elif ishost "nq[0-9]*" || ishost "ns[0-9]*" ; then
   echo "Nordita cluster"
   if [ -e $PBS_NODEFILE ]; then
     echo "PBS job"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >lamhosts
     local_disc=yes
     one_local_disc=no
     local_binary=no
   else
     echo "Non-PBS, running on `hostname`"
-    echo `hostname` > lamhosts
+    echo `hostname` >lamhosts
   fi
   # lamboot with logging to file 
   echo "lambooting.."
-  echo 'pidof lamd | xargs ps -lfwww :' > lamboot.log
-  pidof lamd | xargs ps -lfwww >> lamboot.log
-  echo '------------------------------------------------' >> lamboot.log
-  lamboot -v lamhosts >> lamboot.log # discard output, or auto-test
-                                      # mysteriously hangs on Nq0
-  echo '------------------------------------------------' >> lamboot.log
-  echo 'pidof lamd | xargs ps -lfwww :' >> lamboot.log
-  pidof lamd | xargs ps -lfwww >> lamboot.log
+  echo 'pidof lamd | xargs ps -lfwww :' &>lamboot.log
+  pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
+  echo '------------------------------------------------' 2>&1 >>lamboot.log
+  lamboot -v lamhosts 2>&1 >>lamboot.log # discard output, or auto-test
+                                    # mysteriously hangs on Nq0
+  echo '------------------------------------------------' 2>&1 >>lamboot.log
+  echo 'pidof lamd | xargs ps -lfwww :' >>lamboot.log
+  pidof lamd | xargs ps -lfwww 2>&1 >>lamboot.log
   #
   booted_lam=yes
   echo "lamnodes:"
@@ -217,7 +221,7 @@ elif ishost "s[0-9]*p[0-9]*" || ishost "10_[0-9]*_[0-9]*_[0-9]*" ; then
       run_x=$PBS_O_WORKDIR/src/run.x
     else
       echo "Using LAM-MPI"
-      cat $PBS_NODEFILE > lamhosts
+      cat $PBS_NODEFILE >lamhosts
       lamboot -v lamhosts
       booted_lam=yes
       echo "lamnodes:"
@@ -236,7 +240,7 @@ elif ishost "s[0-9]*p[0-9]*" || ishost "10_[0-9]*_[0-9]*_[0-9]*" ; then
     export SCP=rcp
   else # (no MPI)
     echo "Batch job: non-MPI single processor run"
-    cat $PBS_NODEFILE > lamhosts
+    cat $PBS_NODEFILE >lamhosts
     lamboot -v lamhosts 
     booted_lam=yes
     echo "lamnodes:" 
@@ -266,7 +270,7 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
     if [ "$PE" == "gm" ]; then                    # Using Myrinet?
       export SSH=/usr/bin/rsh
       export SCP=/usr/bin/rcp
-      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
+      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc >hostfile
       mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun 
       mpirunops="-local -machinefile hostfile"
       export SCRATCH_DIR=`cat $TMPDIR/scratch`
@@ -289,7 +293,7 @@ elif ishost "copson\.st-and\.ac\.uk" || ishost "comp[0-9]*.st-and.ac.uk" ; then
       one_local_disc=no
     fi
   else
-      echo $hn > hostfile
+      echo $hn >hostfile
       mpirun=/usr/local/mpich-gm_INTEL/bin/mpirun 
       mpirunops="-local -machinefile hostfile"
       local_disc=no
