@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.193 2003-08-09 10:32:45 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.194 2003-08-12 08:13:58 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -343,7 +343,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-08-09 10:32:45 $ $,~ $ $Revision: 1.193 $ $}
+\date{$ $Date: 2003-08-12 08:13:58 $ $,~ $ $Revision: 1.194 $ $}
 
 % ====================================================================== %
 
@@ -376,7 +376,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-08-09 10:32:45 $ $,~ $ $Revision: 1.193 $ $}
+  \emph{$ $Date: 2003-08-12 08:13:58 $ $,~ $ $Revision: 1.194 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2768,6 +2768,7 @@ and
 % ---------------------------------------------------------------------- %
 
 \subsection{Ionization}
+\index{Ionization}
 \label{Sionization}
 
 We treat the gas as being composed of partially ionized hydrogen and neutral
@@ -2805,6 +2806,18 @@ account. Summing up everything, we can get a closed expression for the
 specific entropy $s$ in terms of $y$, $\ln\rho$ and $T$, which may be solved
 for $T$.
 
+% ---------------------------------------------------------------------- %
+\begin{figure}[htb]
+  \centering
+  \includegraphics%
+    [width=.6\textwidth,keepaspectratio]%
+    {pTTss}
+  \caption{Dependence of temperature on entropy for different values of
+     the density.}
+  \label{pTTss}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
 For given $\ln\rho$ and $s$ we are then able to calculate the ionization
 fraction $y$ by finding the root of
 
@@ -2820,6 +2833,8 @@ dependent on the ionization fraction $y$ such as its pressure,
 $P\!=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$, and its internal energy,
 $E=\frac{3}{2}(1+y+x_{\rm He})n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, where
 $x_{\rm He}$ gives the ratio of neutral helium to the total amount of hydrogen.
+The dependence of temperature on entropy is shown in Fig.~\ref{pTTss}
+for different values of the density.
 
 For further details regarding the procedure of solving for the entropy
 see Sect.~\ref{S-Ioni} in the appendix.
@@ -3272,7 +3287,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-08-09 10:32:45 $ $,~ $ $Revision: 1.193 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-08-12 08:13:58 $ $,~ $ $Revision: 1.194 $ $}}}
 
 \section{Timings}
 
@@ -5832,7 +5847,7 @@ initial condition.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.193 2003-08-09 10:32:45 dobler Exp $ $}
+$ $Id: manual.tex,v 1.194 2003-08-12 08:13:58 brandenb Exp $ $}
 
 
 \end{document}
