@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.3 2002-11-09 13:23:07 brandenb Exp $
+;  $Id: time_series.pro,v 1.4 2002-11-13 09:36:36 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -22,6 +22,10 @@ if defined(i_umax) ne 0 then umax=reform(a(i_umax-1,*))
 if defined(i_u2m) ne 0 then u2m=reform(a(i_u2m-1,*))
 if defined(i_um2) ne 0 then um2=reform(a(i_um2-1,*))
 if defined(i_b2m) ne 0 then b2m=reform(a(i_b2m-1,*))
+if defined(i_orms) ne 0 then orms=reform(a(i_orms-1,*))
+if defined(i_epsK) ne 0 then epsK=reform(a(i_epsK-1,*))
+if defined(i_epsM) ne 0 then epsM=reform(a(i_epsM-1,*))
+if defined(i_ugradpm) ne 0 then ugradpm=reform(a(i_ugradpm-1,*))
 if defined(i_brms) ne 0 then brms=reform(a(i_brms-1,*))
 if defined(i_bm2) ne 0 then bm2=reform(a(i_bm2-1,*))
 if defined(i_abm) ne 0 then abm=reform(a(i_abm-1,*))
@@ -54,7 +58,7 @@ if (((i_urms or i_um2) ne 0) and ((i_brms or i_bm2) ne 0)) then $
     !p.multi=[0,1,2]
 if i_urms ne 0 then plot,tt,urms,yst=0,TITLE='Velocity'
 if i_um2 ne 0 then oplot,tt,sqrt(um2),line=1
-if i_brms ne 0 then plot,tt,brms,TITLE='B-field'
+if i_brms ne 0 then plot_io,tt,brms,TITLE='B-field'
 if i_bm2 ne 0 then oplot,tt,sqrt(bm2),line=1
 ;
 !p.multi=[0,pmulti[1:*]]
