@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.190 2003-08-13 05:48:31 brandenb Exp $
+! $Id: entropy.f90,v 1.191 2003-08-13 08:23:25 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -88,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.190 2003-08-13 05:48:31 brandenb Exp $")
+           "$Id: entropy.f90,v 1.191 2003-08-13 08:23:25 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1293,7 +1293,7 @@ endif
                + f(:,:,n2-i,iss)
         enddo
       case default
-        if(lroot) print*,"bc_ss_flux: invalid argument"
+        print*,"bc_ss_flux: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1346,7 +1346,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         else
           if (ldebug) print*, &
                   'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
-          if (cs2bot<=0. .and. lroot) &
+          if (cs2bot<=0.) &
                 print*,'bc_ss_temp_old: cannot have cs2bot<=0'
             tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + alog(cs2bot/cs20)) / gamma
@@ -1369,7 +1369,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         else
           if (ldebug) print*, &
                      'bc_ss_temp_old: set top temperature - cs2top=',cs2top
-          if (cs2top<=0. .and. lroot) print*, &
+          if (cs2top<=0.) print*, &
                      'bc_ss_temp_old: cannot have cs2top<=0'
   !       if (bcz1(ilnrho) /= "a2") &
   !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
@@ -1381,7 +1381,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
           enddo
         endif
       case default
-        if(lroot) print*,"bc_ss_temp_old: invalid argument"
+        print*,"bc_ss_temp_old: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1419,7 +1419,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
       case('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*, &
+        if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
@@ -1433,7 +1433,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
       case('top')
         if (ldebug) print*, &
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*, &
+        if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
@@ -1443,7 +1443,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"bc_ss_temp_x: invalid argument"
+        print*,"bc_ss_temp_x: invalid argument"
         call stop_it("")
       endselect
       
@@ -1482,7 +1482,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
       case('bot')
         if (ldebug) print*, &
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*, &
+        if (cs2bot<=0.) print*, &
                    'bc_ss_temp_y: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
@@ -1496,7 +1496,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
       case('top')
         if (ldebug) print*, &
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*, &
+        if (cs2top<=0.) print*, &
                      'bc_ss_temp_y: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
@@ -1506,7 +1506,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"bc_ss_temp_y: invalid argument"
+        print*,"bc_ss_temp_y: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1547,7 +1547,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
        else
         if (ldebug) print*, &
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*, &
+        if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
@@ -1565,7 +1565,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
        else
         if (ldebug) print*, &
                      'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1574,7 +1574,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         enddo
        endif
       case default
-        if(lroot) print*,"bc_ss_temp_z: invalid argument"
+        print*,"bc_ss_temp_z: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1607,7 +1607,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (cs2bot<=0. .and. lroot) print*, &
+        if (cs2bot<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
           f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
@@ -1617,7 +1617,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (cs2top<=0. .and. lroot) print*, &
+        if (cs2top<=0.) print*, &
                         'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
@@ -1625,7 +1625,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"bc_ss_stemp_x: invalid argument"
+        print*,"bc_ss_stemp_x: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1658,7 +1658,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (cs2bot<=0. .and. lroot) print*, &
+        if (cs2bot<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
@@ -1668,7 +1668,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (cs2top<=0. .and. lroot) print*, &
+        if (cs2top<=0.) print*, &
                        'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
@@ -1676,7 +1676,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"bc_ss_stemp_y: invalid argument"
+        print*,"bc_ss_stemp_y: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1714,7 +1714,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         if (lionization.or.lionization_fixed) then
           call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
         else
-          if (cs2bot<=0. .and. lroot) print*, &
+          if (cs2bot<=0.) print*, &
                                   'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
              f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
@@ -1728,7 +1728,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
        if (lionization.or.lionization_fixed) then
         call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
        else
-        if (cs2top<=0. .and. lroot) print*, &
+        if (cs2top<=0.) print*, &
                  'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
            f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
@@ -1736,7 +1736,7 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
          enddo
         endif
       case default
-        if(lroot) print*,"bc_ss_stemp_z: invalid argument"
+        print*,"bc_ss_stemp_z: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1789,8 +1789,8 @@ print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
               +log(cs2_2d))
       enddo
     case default
-       if(lroot) print*,"bc_ss_energy: invalid argument"
-        call stop_it("")
+      print*,"bc_ss_energy: invalid argument"
+      call stop_it("")
     endselect
 
     end subroutine bc_ss_energy

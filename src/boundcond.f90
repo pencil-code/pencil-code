@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.52 2003-08-12 20:47:40 mee Exp $
+! $Id: boundcond.f90,v 1.53 2003-08-13 08:23:25 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -109,10 +109,9 @@ module Boundcond
                 case ('1')        ! f=1 (for debugging)
                   call bc_one_x(f,topbot,j)
                 case default
-                  if (lroot) &
-                       print*, &
-                      "boundconds_x: No such boundary condition bcx1/2 = ", &
-                               bc12(j), " for j=", j
+                  print*, &
+                       "boundconds_x: No such boundary condition bcx1/2 = ", &
+                       bc12(j), " for j=", j
                   call stop_it("")
                 endselect
               endif
@@ -179,9 +178,8 @@ module Boundcond
               case ('1')        ! f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
               case default
-                if (lroot) &
-                     print*, "boundconds_y: No such boundary condition bcy1/2 = ", &
-                             bc12(j), " for j=", j
+                print*, "boundconds_y: No such boundary condition bcy1/2 = ", &
+                     bc12(j), " for j=", j
                 call stop_it("")
               endselect
             endif
@@ -270,9 +268,8 @@ module Boundcond
                 call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
               case default
-                if (lroot) &
-                     print*, "boundconds_z: No such boundary condition bcz1/2 = ", &
-                             bc12(j), " for j=", j
+                print*, "boundconds_z: No such boundary condition bcz1/2 = ", &
+                     bc12(j), " for j=", j
                 call stop_it("")
               endselect
             endif
@@ -302,7 +299,7 @@ module Boundcond
         if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
 
       case default
-        if(lroot) print*, "bc_per_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_x: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -328,7 +325,7 @@ module Boundcond
         if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
 
       case default
-        if(lroot) print*, "bc_per_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_y: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -354,7 +351,7 @@ module Boundcond
         if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
 
       case default
-        if(lroot) print*, "bc_per_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_per_z: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -399,7 +396,7 @@ module Boundcond
         endif
 
       case default
-        if(lroot) print*, "bc_sym_x: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_x: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -444,7 +441,7 @@ module Boundcond
         endif
 
       case default
-        if(lroot) print*, "bc_sym_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_y: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -489,7 +486,7 @@ module Boundcond
         endif
 
       case default
-        if(lroot) print*, "bc_sym_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_sym_z: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -535,7 +532,7 @@ module Boundcond
         f(:,:,n2+3,j) = 2*f(:,:,n2,j) - f(:,:,n2-3,j) -4*Nyquist
 
       case default
-        if(lroot) print*, "bc_asym3: ", topbot, " should be `top' or `bot'"
+        print*, "bc_asym3: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -582,7 +579,7 @@ module Boundcond
         enddo
 
       case default
-        if(lroot) print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
+        print*, "bc_onesided_z ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -615,7 +612,7 @@ module Boundcond
         f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
 
       case default
-        if(lroot) print*, "bc_extrap_2_1: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap_2_1: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -655,7 +652,7 @@ module Boundcond
         f(:,:,n2+3,j)=1./35.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j)+87*f(:,:,n2m4,j))
 
       case default
-        if(lroot) print*, "bc_extrap_2_2: ", topbot, " should be `top' or `bot'"
+        print*, "bc_extrap_2_2: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -699,7 +696,7 @@ module Boundcond
           f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
         enddo
       case default
-        if(lroot) print*,"bc_db_z: invalid argument for 'bc_db_z'"
+        print*,"bc_db_z: invalid argument for 'bc_db_z'"
       endselect
 !
     endsubroutine bc_db_z
@@ -742,7 +739,7 @@ module Boundcond
           f(l2+i,:,:,j)=f(l2+i-2,:,:,j)+2*dx*fder
         enddo
       case default
-        if(lroot) print*,"bc_db_x: invalid argument for 'bc_db_x'"
+        print*,"bc_db_x: invalid argument for 'bc_db_x'"
       endselect
 !
     endsubroutine bc_db_x
@@ -768,7 +765,7 @@ module Boundcond
         ampl_osc=ampl_osc_ux
         frec=frec_ux
       else
-        if(lroot) print*,"bc_osc_x: invalid argument for 'bc_osc_x'"
+        print*,"bc_osc_x: invalid argument for 'bc_osc_x'"
       endif
 !         
       if (topbot=='bot') then
@@ -803,7 +800,7 @@ module Boundcond
           f(l2+1:mx,:,:,j)=1.
 
       case default
-        if(lroot) print*, "bc_one_x: ",topbot, " should be `top' or `bot'"
+        print*, "bc_one_x: ",topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -830,7 +827,7 @@ module Boundcond
           f(:,m2+1:my,:,j)=1.
 
       case default
-        if(lroot) print*, "bc_one_y: ", topbot, " should be `top' or `bot'"
+        print*, "bc_one_y: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
@@ -857,7 +854,7 @@ module Boundcond
           f(:,:,n2+1:mz,j)=1.
 
       case default
-        if(lroot) print*, "bc_one_z: ", topbot, " should be `top' or `bot'"
+        print*, "bc_one_z: ", topbot, " should be `top' or `bot'"
 
       endselect
 !
