@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.116 2004-07-22 14:20:02 ajohan Exp $
+! $Id: dustdensity.f90,v 1.117 2004-07-23 16:41:29 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -48,6 +48,7 @@ module Dustdensity
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ndmt,i_rhodmt,i_rhoimt,i_ssrm,i_ssrmax
   integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0,i_ndmin=0,i_ndmax=0
+  integer, dimension(ndustspec) :: i_epsdrms=0
 
   contains
 
@@ -117,7 +118,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.116 2004-07-22 14:20:02 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.117 2004-07-23 16:41:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -432,6 +433,15 @@ module Dustdensity
               call sum_mn_name(nd(:,k)*f(l1:l2,m,n,imd(k)),i_rhodm(k))
             else
               call sum_mn_name(nd(:,k)*md(k),i_rhodm(k))
+            endif 
+          endif
+          if (i_epsdrms(k) /= 0) then
+            if (lmdvar) then
+              call sum_mn_name((nd(:,k)*f(l1:l2,m,n,imd(k))*rho1)**2, &
+                  i_epsdrms(k),lsqrt=.true.)
+            else
+              call sum_mn_name((nd(:,k)*md(k)*rho1)**2, &
+                  i_epsdrms(k),lsqrt=.true.)
             endif 
           endif
           if (i_ndmt /= 0) then
@@ -862,7 +872,7 @@ module Dustdensity
 !
       if (lreset) then
         i_ndm=0; i_ndmin=0; i_ndmax=0; i_ndmt=0; i_rhodm=0; i_rhodmt=0
-        i_rhoimt=0
+        i_rhoimt=0; i_epsdrms=0
       endif
 
       call chn(ndustspec,sdustspec)
@@ -874,6 +884,7 @@ module Dustdensity
         write(3,*) 'i_ndmin=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ndmax=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_epsdrms=intarr('//trim(sdustspec)//')'
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics)
@@ -894,6 +905,8 @@ module Dustdensity
               'ndmax'//trim(sdust),i_ndmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'rhodm'//trim(sdust),i_rhodm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'epsdrms'//trim(sdust),i_epsdrms(k))
         enddo
 !
 !  write column where which variable is stored
@@ -910,6 +923,8 @@ module Dustdensity
               write(3,*) 'i_ndmax'//trim(sdust)//'=',i_ndmax(k)
           if (i_rhodm(k) /= 0) &
               write(3,*) 'i_rhodm'//trim(sdust)//'=',i_rhodm(k)
+          if (i_epsdrms(k) /= 0) &
+              write(3,*) 'i_epsdrms'//trim(sdust)//'=',i_epsdrms(k)
         endif
 !
 !  End loop over dust layers
