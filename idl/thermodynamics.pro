@@ -1,6 +1,5 @@
-;  $Id: thermodynamics.pro,v 1.6 2003-08-10 06:42:35 brandenb Exp $
+;  $Id: thermodynamics.pro,v 1.7 2003-08-11 17:50:15 mee Exp $
 
-;if (cs20 ne impossible) then begin
 if (not lionization) then begin
   print,'Using simple equation of state...'
   cs2=cs20*exp(gamma1*llnrho+gamma*sss)
@@ -8,30 +7,34 @@ if (not lionization) then begin
   cp1tilde=1.
   eee=cs2/gamma1
 endif else begin
-  if (iyH ne 0) then begin 
-    print,'Using full ionisation equation of state...'
-    yyH=yH(l1:l2,m1:m2,n1:n2)
-  end else begin
+  if (lionization_fixed) then begin 
     print,'Using fixed ionisation equation of state...'
-    ;AB: is this really the idea? One may want to calculate yH when iyH=0
-    ;AB: if variable ionization is used.
     seedarray=fltarr(nx)
     seedarray[*]=par.yH0
     yyH=spread(spread(seedarray,1,ny),2,nz)
+  end else begin
+    print,'Using full ionisation equation of state...'
+    if (iyH ne 0) then begin
+      yyH=yH(l1:l2,m1:m2,n1:n2)
+    end else begin
+      print,"Errr... not implemented calculation of ionization fraction in IDL (yet)"
+      stop
+    endelse
   endelse  
+
+; Get the temperature, either calculate it or use the one provided
   if (iTT ne 0) then begin
     TTT=TT(l1:l2,m1:m2,n1:n2)
   endif else begin
-    ;AB:  is this supposed to work for fixed *and* variable ionization?
-    ;AB:  at least fixed ionization had problems.
+    ; Handle limiting  cases of log terms
     yyH_term=yyH*(2.*alog(yyH)-lnrho_e-lnrho_p)
-    yH_term=yyH_term ;(AB: is this what you had in mind?)
-    yH_term[where (yyH eq 0.)]=0.
-yyH_term=0. ;(to make it work)
+    if min(yyH) eq 0. then yyH_term[where (yyH eq 0.)]=0.
+    
     one_yyH_term=(1.-yyH)*(alog(1.-yyH)-lnrho_H)
-    if max(yyH) eq 1 then one_yyH_term[where (yyH eq 1.)]=0.  ;(AB: needed?)
+    if max(yyH) eq 1. then one_yyH_term[where (yyH eq 1.)]=0.  
+
     xHe_term=xHe*(alog(xHe)-lnrho_He)
-    if min(xHe) eq 0. then xHe_term[where (xHe eq 0.)]=0.  ;(AB: needed?)
+    if min(xHe) eq 0. then xHe_term[where (xHe eq 0.)]=0. 
 
     lnTTT_=(2./3.)*((sss/ss_ion $
                    + one_yyH_term $
