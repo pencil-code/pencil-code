@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.60 2002-07-20 18:46:07 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.61 2002-07-21 12:25:41 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -175,7 +175,6 @@
 
 \newcommand{\zerovect}      {\vekt{0}}
 
-%AB: I've added here some of my favorite macros
 \newcommand{\bra}[1]{\langle #1\rangle}
 \newcommand{\Eq}[1]{Eq.~(\ref{#1})}
 \newcommand{\nab}{\mbox{\boldmath $\nabla$} {}}
@@ -186,7 +185,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.60 $ $}
+\date{\today,~ $ $Revision: 1.61 $ $}
 
 % ====================================================================== %
 
@@ -215,7 +214,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.60 $ $}
+  \emph{\today,~ $ $Revision: 1.61 $ $}
 
 
 \end{center}
@@ -487,6 +486,7 @@ to just look into the code without hassle}
   \begin{alltt}
   \prompt{unix> } cvs checkout -d pencil-code \
   \end{alltt} 
+%AB: -d is not normally needed when checking things out for the first time.
   This creates a subdirectory \file{somewhere/pencil-code} and populates it with
   the pencil-code's subdirectories.
 
@@ -516,6 +516,9 @@ Here is the upgrading procedure:
   \begin{alltt}
   \prompt{unix> } cvs -q update -dP \
   \end{alltt}
+(\file{-q} means `somewhat' quiet)
+%AB: Wolfgang, I'm not sure which macro to use here and in similar cases)
+%AB: Don't know what -P does.
 \item Fix any conflicts you encounter and make sure the examples are still
   working.
 \end{enumerate}
@@ -853,6 +856,8 @@ without magnetic fields etc.
 
 1-D sound waves and shock tube tests, interlocked pair of flux rings, stably stratified atmosphere.
 
+For 1-D and 2-D tests, one can put \var{nxgrid}=1, \var{nygrid}=1,
+and/or \var{nzgrid}=1.
 
 % ====================================================================== %
 
@@ -1809,13 +1814,16 @@ the latest information, you should have a look at the code.
                & initial time span for which to do something special
                  Currently just used for heating [Should be in
                  \name{run_pars}, rather than here]. \\
-  \var{tdamp} [$0.$], \\
+%AB: Maybe the name ttransient or something would be more suggestive.
   \var{dampu} [$0.$]
                & damp motions during the initial time interval
                  $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
                  Useful for situations where initial conditions are not near
                  equilibrium. \\
   \var{dampuext} [$0.$], \\
+%AB: moved tdamp further down (because it's explained implicitly through dampu;
+%AB: maybe dampu could be called udamp?)
+  \var{tdamp} [$0.$], \\
   \var{rdamp} [$1.2$], \\
   \var{wdamp} [$0.2$]
                & permanently damp motions in $|\xv|>r_{\rm damp}$ with
@@ -2166,7 +2174,7 @@ derivative.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Equation of motion (\var{ivisc}=2)}
+\subsection{Equation of motion}
 
 \begin{equation}
   \frac{D\uv}{Dt}
@@ -2184,14 +2192,16 @@ the traceless rate-of-strain tensor (\ref{Eq-S-traceless}).
 
 If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
 viscous term is used, which is not physically consistent (momentum
-conservation is violated for compressible media), but in many cases
-results will be qualitatively OK).
+conservation is violated for compressible media), but in some cases
+this option could be useful during an initial relaxation phase;
+it does run somewhat faster).
 
 If \code{ivisc='rho_mu-const'}, it is assumed that 
 $\mu \equiv \varrho\nu = \const$ everywhere; in that
 case the input parameter $\nu$ is used to give the value of
 $\mu/\varrho_0$.
-The rate-of-strain tensor does not appear in the equation.
+In that case, the term involving the
+rate-of-strain tensor does not appear in the equation.
 
 If \code{ivisc='nu-const'}, it is assumed that 
 $\nu = \const$ everywhere.
@@ -2271,7 +2281,7 @@ module.
                \right] \; .
 \end{equation}
 
-Here $c$ denotes the concentration (per mass) of the passive scalar and
+Here $c$ denotes the concentration (per unit mass) of the passive scalar and
 ${\cal D}$ its diffusion constant.
 Using $\ln c$ instead of $c$ has the advantage to enforce $c>0$ for all
 times.
@@ -2716,7 +2726,7 @@ and the power spectrum of $\Bv$ increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Magnetic flux rings}
+\subsection{Magnetic flux rings: \var{initaa='fluxrings'}}
 \label{fluxrings}
 
 This initial condition sets up two interlocked thin magnetic tori
@@ -2855,15 +2865,11 @@ and implies that
 \end{equation}
 
 For hydrostatic equilibrium we require
-$\tilde{h}+\Phi=\tilde{h}_{\rm ext}=\const$.
+$\tilde{h}+\Phi=\tilde{h}_0=\const$.
 For gravity potentials that vanish at infinity, we can have
-\footnote{Axel, it might be better to rename $h_{\rm ext}$ to $h_0$.
-  Only for some systems, there is really an external region that allows
-  a direct interpretation of this value. ???
-}%
-$\tilde{h}_{\rm ext}\neq0$, i.e.\ a finite pseudo enthalpy at infinity.
+$\tilde{h}_0\neq0$, i.e.\ a finite pseudo enthalpy at infinity.
 For $g_z=-1$ or $g_z=-z$, this is not the case, so we put
-$\tilde{h}_{\rm ext}=0$, and therefore $\tilde{h}=-\Phi$.
+$\tilde{h}_0=0$, and therefore $\tilde{h}=-\Phi$.
 Using $c_{\rm s}^2=(\gamma{-}1)h$ together with (\ref{hhtilde}) we find
 \begin{equation}
   c_{\rm s}^2 = -\frac{\gamma}{m{+}1}\,\Phi.
@@ -2881,11 +2887,7 @@ and
     + (m{+}1) \frac{c_{\rm s0}^2}{{\textstyle\frac{1}{2}}\gamma\Omega^2}
   \quad\mbox{for \var{grav_profile='linear'}}.
 \end{equation}
-
-Thus, when using \var{initlnrho='polytropic\_simple'}\footnote{
-  Axel, is in this case $\tilde{h}_{\rm ext} = \tilde{h}(z_\infty)$???
-}
- we calculate
+Thus, when using \var{initlnrho='polytropic\_simple'} we calculate
 \begin{equation}
   \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
   =\ln\left[-\frac{\gamma\Phi}{(m{+}1)c_{\rm s0}^2}\right]
@@ -3015,7 +3017,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.60 2002-07-20 18:46:07 dobler Exp $ $}
+$ $Id: manual.tex,v 1.61 2002-07-21 12:25:41 brandenb Exp $ $}
 
 
 \end{document}
