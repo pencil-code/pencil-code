@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.18 2003-07-11 19:27:13 dobler Exp $
+! $Id: io_mpio.f90,v 1.19 2003-07-24 19:07:26 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -69,8 +69,8 @@ module Io
   integer, dimension(MPI_STATUS_SIZE) :: status
 ! LAM-MPI does not know the MPI2 constant MPI_OFFSET_KIND, but LAM
 ! doesn't work with this module anyway
-!  integer(kind=8) :: dist_zero=0
-  integer(kind=MPI_OFFSET_KIND) :: dist_zero=0
+!  integer(kind=8) :: data_start=4
+  integer(kind=MPI_OFFSET_KIND) :: data_start=4
   integer :: io_filetype,io_memtype,io_filetype_v,io_memtype_v
   integer :: fhandle,ierr
   logical :: io_initialized=.false.
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.18 2003-07-11 19:27:13 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.19 2003-07-24 19:07:26 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -235,7 +235,7 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                MPI_MODE_RDONLY, &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype_v, &
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
                "native", MPI_INFO_NULL, ierr)
 !
 !  read data
@@ -272,7 +272,7 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype_v, &
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype_v, &
                "native", MPI_INFO_NULL, ierr)
       !
       !  write data
@@ -310,7 +310,7 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, io_filetype, &
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, io_filetype, &
                "native", MPI_INFO_NULL, ierr)
       !
       !  write data
@@ -489,7 +489,7 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, &
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, filetype, &
                "native", MPI_INFO_NULL, ierr)
 !
 !  write data and free type handle
@@ -519,7 +519,7 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                MPI_MODE_RDONLY, &
                MPI_INFO_NULL, fhandle, ierr)
-      call MPI_FILE_SET_VIEW(fhandle, dist_zero, MPI_REAL, filetype, &
+      call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, filetype, &
                "native", MPI_INFO_NULL, ierr)
 !
 !  read data and free type handle
