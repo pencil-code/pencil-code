@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.58 2003-10-10 11:59:19 mee Exp $
+! $Id: interstellar.f90,v 1.59 2003-10-13 01:29:22 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.58 2003-10-10 11:59:19 mee Exp $")
+           "$Id: interstellar.f90,v 1.59 2003-10-13 01:29:22 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -466,9 +466,7 @@ module Interstellar
           if (center_SN_x.eq.impossible) then
             i=int(nxgrid/2)+1
           else
-            do i=1,nx 
-              if ((x00+(i-1)*dx).gt.center_SN_x) exit 
-            enddo
+            i=int((center_SN_x-x00)/dx)+1
           endif
        else
           i=int(fran3(1)*nxgrid)+1
@@ -479,9 +477,7 @@ module Interstellar
           if (center_SN_y.eq.impossible) then
             i=int(nygrid/2)+1
           else
-            do i=1,ny 
-              if ((y00+(i-1)*dy).gt.center_SN_y) exit
-            enddo
+            i=int((center_SN_y-y00)/dy)+1
           endif
        else
           i=int(fran3(2)*nygrid)+1
@@ -493,9 +489,7 @@ module Interstellar
           if (center_SN_z.eq.impossible) then
             i=int(nzgrid/2)+1
           else
-            do i=1,nz 
-              if ((z00+(i-1)*dz).gt.center_SN_z) exit
-            enddo
+            i=int((center_SN_z-z00)/dz)+1
           endif
           ipz_SN=(i-1)/nz   ! uses integer division
           n_SN=(i-1)-(ipz_SN*nz)+nghost
