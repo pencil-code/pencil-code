@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.133 2003-05-31 04:25:14 brandenb Exp $
+! $Id: run.f90,v 1.134 2003-06-10 19:25:32 mee Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.133 2003-05-31 04:25:14 brandenb Exp $")
+             "$Id: run.f90,v 1.134 2003-06-10 19:25:32 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -219,6 +219,11 @@
           if(lout) call write_xyaverages()
           if(lout.and.lwrite_zaverages) call write_zaverages()
           if(lout) call write_phiaverages()
+          if(lout.and.lroot.and.i_walltime/=0) then
+             time2=mpiwtime()
+             wall_clock_time = (time2-time1)
+             call save_name(wall_clock_time/1.E-6,i_walltime) 
+          endif
           if(lout) call prints()
           !
           !  Setting ialive=1 can be useful on flaky machines!

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.80 2003-05-26 14:25:10 dobler Exp $
+! $Id: register.f90,v 1.81 2003-06-10 19:25:32 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -306,7 +306,7 @@ module Register
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_t=0;i_it=0;i_dt=0;i_dtc=0
+        i_t=0;i_it=0;i_dt=0;i_dtc=0;i_walltime=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -317,6 +317,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'it',i_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
         call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -325,6 +326,7 @@ module Register
       write(3,*) 'i_it=',i_it
       write(3,*) 'i_dt=',i_dt
       write(3,*) 'i_dtc=',i_dtc
+      write(3,*) 'i_walltime=',i_walltime
       write(3,*) 'nname=',nname
 !
     endsubroutine rprint_general
