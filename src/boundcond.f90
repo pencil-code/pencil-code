@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.32 2002-09-30 05:51:49 brandenb Exp $
+! $Id: boundcond.f90,v 1.33 2002-11-11 13:38:19 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -16,6 +16,24 @@ module Boundcond
   
   contains
 
+!***********************************************************************
+    subroutine boundconds(f)
+!
+!  Apply boundary conditions in all three directions.
+!  Note that we _must_ call boundconds_{x,y,z} in this order, or edges and
+!  corners will not be OK.
+!
+!  10-oct-02/wolf: coded
+!
+      use Cparam
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      call boundconds_x(f)      ! Do not change this order.
+      call boundconds_y(f)
+      call boundconds_z(f)      
+!
+    endsubroutine boundconds
 !***********************************************************************
     subroutine boundconds_x(f)
 !
@@ -469,9 +487,7 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mvar) :: a
 !
-      call boundconds_x(a)
-      call boundconds_y(a)
-      call boundconds_z(a)
+      call boundconds(a)
       call initiate_isendrcv_bdry(a)
       call finalise_isendrcv_bdry(a)
 !
