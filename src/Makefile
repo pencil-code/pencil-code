@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.249 2003-10-20 21:54:11 mee Exp $
+### $Id: Makefile,v 1.250 2003-10-23 10:21:32 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -37,8 +37,11 @@ SHEAR        = noshear
 TIMEAVG      = notimeavg
 SPECIAL      = nospecial
 
-## This allows us to add -r8 for double precision in Makefile.local
+## This allows us to switch to double precision in Makefile.local
+# FFLAGS_GENERAL=-r8
+# CFLAGS_GENERAL=-DDOUBLE_PRECISION
 FFLAGS_GENERAL=
+CFLAGS_GENERAL=
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
@@ -216,7 +219,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
 .c.o:
-	$(CC) $(CFLAGS) -c $*.c
+	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
 
 # ---------------------------------------------------------------------- #
 ## Abbreviations

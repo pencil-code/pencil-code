@@ -17,11 +17,15 @@
 
 
 /* Beware: You need to choose single or double precision here */
-#define REAL float
-#define FINT int
-#define NBYTES 4
-/*  #define REAL double */
-/*  #define NBYTES 8 */
+#ifdef DOUBLE_PRECISION
+#  define REAL double
+#  define FINT int		/* should this be long int? */
+#  define NBYTES 8
+#else
+#  define REAL float
+#  define FINT int
+#  define NBYTES 4
+#endif
 
 /* Some arbitrary limits */
 /* Maximum number of debugging files to write at one time: */
