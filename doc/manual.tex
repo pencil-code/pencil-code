@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.181 2003-07-13 09:34:55 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.182 2003-07-15 07:05:32 nilshau Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-13 09:34:55 $ $,~ $ $Revision: 1.181 $ $}
+\date{$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-13 09:34:55 $ $,~ $ $Revision: 1.181 $ $}
+  \emph{$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2388,6 +2388,100 @@ used to produce
 Note: the \code{kind} value on many compiles is 8 for double precision,
 but with the NAG compiler it is 2.
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Power spectrum}
+\label{power-spectrum}
+Given a real variable $u$, its Fourier transform $\tilde{u}$
+is given by
+\begin{eqnarray}
+\tilde{u}(k_x,k_y,k_z)
+&=&\mathcal{F}(u(x,y,z))
+   = \frac{1}{N_x N_y N_z} \sum_{x=0}^{N_x-1} \sum_{y=0}^{N_y-1} 
+     \sum_{z=0}^{N_z-1} u(x,y,z)  \nonumber \\
+&\times& \exp(-i2 \pi x k_x/N_x) \exp(-i2 \pi y k_y/N_y) 
+         \exp(-i2 \pi z k_z/N_z).
+\end{eqnarray}
+The three-dimensional power spectrum $P(k)$ is defined as
+\begin{equation}
+P(k)=\frac{1}{2}\tilde{u}\tilde{u}^*,
+\end{equation}
+when
+\begin{equation}
+k=\sqrt{k_x^2+k_y^2+k_z^2}, \mbox{ and } 1 \le k \le N_x/2.
+\end{equation}
+
+Edit \file{run.in} and add for example the following lines 
+  \begin{alltt}
+  dspec=2.3, 
+  vel_spec=T,mag_spec=T,
+  fft_switch='fftpack',
+  oned=T
+  \end{alltt}
+under \code{run_pars}.
+The kinetic (\code{vel_spec}) and magnetic  (\code{mag_spec}) power spectra
+will now be calculated every 2.3 (\code{dspec}) time unit. 
+The Fourier spectra is calculated using \name{fftpack} 
+(\code{fft_switch}). In addition to calculating the three-dimensional
+power spectra also the one-dimensional power spectra will be calculated 
+(\code{oned}).
+
+In addition one must edit 
+\file[Makefile.local]{src/Makefile.local} and add the lines
+  \begin{alltt}
+  FFT=fft
+  POWER=power_spectrum
+  FFTPACK=fftpack
+  \end{alltt}
+
+Running the code will now create the files \name{powerb.dat} and 
+\name{poweru.dat} containing the three-dimensional 
+magnetic and kinetic power spectra respectively. In addition to these 
+three-dimensional files we will also find the one-dimensional files
+\name{powerbx_x.dat}, \name{powerby_x.dat}, \name{powerbz_x.dat},
+\name{powerux_x.dat}, \name{poweruy_x.dat} and \name{poweruz_x.dat}.
+
+To visualize with \name{IDL} just type
+\cmd{power} and you get the last snapshot of the three-dimensional 
+power spectrum. See head of \file{\env{CVSROOT}/idl/power.pro} 
+for options to \cmd{power}.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Structure functions}
+\label{structure-functions}
+We define the p-th order longitudinal structure function of $\vec{u}$ as
+\begin{equation}
+S^p_{long.}(l)=< | u_x(x+l,y,z)-u_x(x,y,z)|^p >,
+\end{equation}
+while the transversal is 
+\begin{equation}
+S^p_{trans.}(l)= < | u_y(x+l,y,z)-u_y(x,y,z)|^p > 
+               + < | u_z(x+l,y,z)-u_z(x,y,z)|^p >.
+\end{equation}
+
+Edit \file{run.in} and add for example the following lines 
+  \begin{alltt}
+  dspec=2.3,
+  lsfu=T,lsfb=T,lsfz1=T,lsfz2=T
+  \end{alltt}
+under \code{run_pars}.
+The velocity (\code{lsfu}), magnetic (\code{lsfb}) and Elsasser 
+(\code{lsfz1} and \code{lsfz2}) structure functions will
+now be calculated every 2.3 (\code{dspec}) time unit. 
+
+In addition one must edit 
+\file[Makefile.local]{src/Makefile.local} and add the line
+  \begin{alltt}
+  STRUCT_FUNC  = struct_func
+  \end{alltt}
+
+To visualize with \name{IDL} just type
+\cmd{structure} and you get the time-average of the first order longitudinal 
+structure function. (Be sure that \env{CVSROOT}/runs/forced/idl/ is in
+\env{IDLPATH}.) See head of \file{\env{CVSROOT}/runs/forced/idl/structure.pro} 
+for options to \cmd{structure}.
+
 % ====================================================================== %
 
 \section{The Equations}
@@ -3129,7 +3223,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-13 09:34:55 $ $,~ $ $Revision: 1.181 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-15 07:05:32 $ $,~ $ $Revision: 1.182 $ $}}}
 
 \section{Timings}
 
@@ -4218,7 +4312,7 @@ Using a generalization of the trapezoidal rule,
   \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
   &\approx& \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')}
               \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau-\tau_0}\,
-	      (\tau'-\tau_0)\right] \; d\tau'\\
+              (\tau'-\tau_0)\right] \; d\tau'\\
   &=&       \left[1{-}e^{-(\tau-\tau_0)}\right] f(\tau)
           - \frac{1 - e^{-(\tau-\tau_0)}(1+\tau{-}\tau_0)}{\tau-\tau_0}
             [f(\tau)-f(\tau_0)]
@@ -5397,7 +5491,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.181 2003-07-13 09:34:55 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.182 2003-07-15 07:05:32 nilshau Exp $ $}
 
 
 \end{document}
