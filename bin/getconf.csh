@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.65 2003-08-26 14:23:08 ajohan Exp $
+# $Id: getconf.csh,v 1.66 2003-08-27 09:49:51 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -17,7 +17,7 @@ if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then
   echo ""
-  echo "start.csh: found LOCK file"
+  echo "getconf.csh: found LOCK file"
   echo "This may indicate that the code is currently running in this directory"
   echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
   echo "rm LOCK"
