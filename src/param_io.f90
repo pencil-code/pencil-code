@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.14 2002-06-08 08:01:16 brandenb Exp $ 
+! $Id: param_io.f90,v 1.15 2002-06-08 16:02:00 brandenb Exp $ 
 
 module Param_IO
 
@@ -13,16 +13,19 @@ module Param_IO
   use Gravity
   use Entropy
   use Magnetic
-!
+ 
   implicit none 
-!
+
+  ! run parameters
+  real :: tmax=1e33
+
   namelist /init_pars/ &
        ip,xyz0,Lxyz,lperi,lwrite_ic
   namelist /run_pars/ &
        ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
-       dsnap,dvid,dtmin, &
+       dsnap,dvid,dtmin,tmax, &
        bcx,bcy,bcz
-!
+ 
   contains
 
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.56 2002-06-08 11:17:15 brandenb Exp $
+! $Id: equ.f90,v 1.57 2002-06-08 16:02:00 brandenb Exp $
 
 module Equ
 
@@ -182,8 +182,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho,oo,gpprho
-      real, dimension (nx) :: lnrho,divu,u2,o2,ou,rho,ee
-      real, dimension(nx) :: rho1
+      real, dimension (nx) :: lnrho,divu,u2,o2,ou,rho,ee,rho1
       real :: fac
       integer :: j
 !
@@ -193,8 +192,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.56 $", &
-           "$Date: 2002-06-08 11:17:15 $")
+           "$Revision: 1.57 $", &
+           "$Date: 2002-06-08 16:02:00 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -296,11 +295,12 @@ module Equ
           if (i_um2/=0) call max_mn_name(u2,i_um2)
 !
 !  calculate density diagnostics: mean density
+!  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
 !
           ee=cs2/(gamma*gamma1)
           rho=exp(f(l1:l2,m,n,ilnrho))
-          if (i_eth/=0) call max_mn_name(rho*ee,i_eth)
-          if (i_ekin/=0) call max_mn_name(.5*rho*u2,i_ekin)
+          if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
+          if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
           if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
         endif
 !

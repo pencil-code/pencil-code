@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.52 2002-06-08 08:01:16 brandenb Exp $
+! $Id: entropy.f90,v 1.53 2002-06-08 16:02:00 brandenb Exp $
 
 module Entropy
 
@@ -20,6 +20,9 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat
+
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_ssm=0
 
   contains
 
@@ -54,8 +57,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.52 $", &
-           "$Date: 2002-06-08 08:01:16 $")
+           "$Revision: 1.53 $", &
+           "$Date: 2002-06-08 16:02:00 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -226,6 +229,13 @@ module Entropy
 !  Heat conduction / entropy diffusion
 !
 !--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
+!
+!  Calculate entropy related diagnostics
+!
+        if (ldiagnos) then
+          if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
+        endif
+!
     endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_heatcond(f,df,rho1,glnrho,gss,cs2)
@@ -359,16 +369,17 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!       i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+!       i_ssm=0
       endif
 !
       do iname=1,nname
-!       call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
+        call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       open(3,file='tmp/entropy.pro')
+      write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
       close(3)

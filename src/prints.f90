@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.16 2002-06-07 08:18:46 brandenb Exp $
+! $Id: prints.f90,v 1.17 2002-06-08 16:02:00 brandenb Exp $
 
 module Print
 
@@ -37,7 +37,7 @@ module Print
       if (i_t/=0) call save_name(tdiagnos,i_t)
       if (i_dt/=0) call save_name(dt,i_dt)
       if (i_it/=0) call save_name(float(it-1),i_it)
-      if (i_dtc/=0) call save_name(dt/cdt,i_dtc)
+      if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
 !
 !  Magnetic energy in horizontally averaged field
 !

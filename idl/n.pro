@@ -4,6 +4,7 @@
 ;
 @tmp/hydro
 @tmp/density
+@tmp/entropy
 @tmp/magnetic
 print,'nname=',nname
 ;
@@ -18,6 +19,7 @@ if i_b2m ne 0 then b2m=reform(a(i_b2m-1,*))
 if i_bm2 ne 0 then bm2=reform(a(i_bm2-1,*))
 if i_abm ne 0 then abm=reform(a(i_abm-1,*))
 if i_jbm ne 0 then jbm=reform(a(i_jbm-1,*))
+if i_ssm ne 0 then ssm=reform(a(i_ssm-1,*))
 if i_eth ne 0 then eth=reform(a(i_eth-1,*))
 if i_ekin ne 0 then ekin=reform(a(i_ekin-1,*))
 if i_rhom ne 0 then rhom=reform(a(i_rhom-1,*))
