@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.31 2003-01-29 18:30:35 dobler Exp $
+! $Id: cparam.f90,v 1.32 2003-02-03 13:42:15 dobler Exp $
 
 module Cparam
 
@@ -19,7 +19,7 @@ module Cparam
 !
 !  derived and fixed parameters
 !
-  integer, parameter :: ikind8=selected_int_kind(16) ! 8-byte integer kind
+  integer, parameter :: ikind8=selected_int_kind(14) ! 8-byte integer kind
   integer, parameter :: nghost=3
   integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz
   integer(KIND=ikind8), parameter :: nw=nx*ny*nz
