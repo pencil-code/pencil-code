@@ -1,8 +1,8 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
-          tot=tot,lin=lin
+          tot=tot,lin=lin,png=png,yrange=yrange
 ;
-;  $Id: power.pro,v 1.19 2003-11-02 17:52:28 brandenb Exp $
+;  $Id: power.pro,v 1.20 2003-11-04 21:20:18 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -31,6 +31,8 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
 ;  tmax  : Last time for plotting snapshots  (if /all is set) 
 ;  tot   : Plots total power spectrum if tot=1
 ;  lin   : Plots the line k^lin
+;  png   : to write png file for making a movie
+;  yrange: y-range for plot
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -43,6 +45,7 @@ default,tmin,0
 default,tmax,1e34
 default,tot,0
 default,lin,0
+default,dir,''
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -115,7 +118,7 @@ i=1
 close,1
 openr,1, datatopdir+'/'+file1
     while not eof(1) do begin
-       readf,1,time 
+       readf,1,time
        readf,1,spectrum1
        if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
        if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
@@ -137,9 +140,24 @@ endif
 ;
 ;  Plotting the results for last time frame
 ;
-!x.title='k'
-!y.title='P(k)'
+!x.title='!8k!3'
+!y.title='!8P!3(!8k!3)'
 !x.range=[1,imax]
+;
+;  check whether we want png files (for movies)
+;
+if keyword_set(png) then begin
+  set_plot, 'z'                   ; switch to Z buffer
+  device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
+  itpng=0 ;(image counter)
+  ;
+  ;  set character size to bigger values
+  ;
+  !p.charsize=2
+  !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
+endif else begin
+  set_plot, 'x' ;(we may need to be careful hardwiring this)
+endelse
 ;
 i=1 
 openr,1, datatopdir+'/'+file1
@@ -162,10 +180,11 @@ openr,1, datatopdir+'/'+file1
 	    if (time le tmax) then begin
 	      xrr=[1,imax]
 	      yrr=[globalmin,globalmax]
-	      !p.title='t=' + string(time)
-	      !y.range=[globalmin,globalmax]
+	      !p.title='t='+str(time)
+	      default,yrange,[globalmin,globalmax]
               if iplot eq 1 then begin
-		plot_oo,k,spectrum1
+		plot_oo,k,spectrum1,back=255,col=0,yr=yrange
+		;plot_oo,k,spectrum1
          	if (file2 ne '') then begin
 		  oplot,k,spectrum2,col=122
 		  if (tot eq 1) then begin
@@ -182,6 +201,21 @@ openr,1, datatopdir+'/'+file1
 	  endif
        	endif
        	i=i+1
+        ;
+        ;  check whether we want to write png file (for movies)
+        ;
+        if keyword_set(png) then begin
+          istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
+          image = tvrd()
+          ;
+          ;  write png file
+          ;
+          tvlct, red, green, blue, /GET
+          imgname = dir+'img_'+istr2+'.png'
+          write_png, imgname, image, red, green, blue
+          itpng=itpng+1 ;(counter)
+        endif
+      ;
     endwhile
     if (last eq 1 and iplot eq 1) then begin
 	!p.title='t=' + string(time)
