@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.5 2003-01-07 12:59:46 nilshau Exp $
+! $Id: struct_func.f90,v 1.6 2003-01-10 14:00:27 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -20,7 +20,7 @@ module struct_func
   contains
 
 !***********************************************************************
-    subroutine structure(f)
+    subroutine structure(f,variabl)
 !
 !  The following parameters may need to be readjusted:
 !  qmax should be set to the largest moment to be calculated
@@ -39,11 +39,11 @@ module struct_func
   integer, parameter :: qmax=8, imax=nx/2
   integer, parameter :: n_pdf=101
   real, dimension (mx,my,mz,mvar) :: f
-  real, dimension (nx,ny,nz,3) :: u_vec,b_vec,z1_vec,z2_vec
+  real, dimension (nx,ny,nz,3) :: vect,u_vec,b_vec
   real, dimension (nx) :: bb 
-  real, dimension (imax,3,qmax,3) :: sf,sf_sum,sfz1,sfz1_sum,sfz2,sfz2_sum
+  real, dimension (imax,3,qmax,3) :: sf,sf_sum
   real, dimension (imax) :: totall 
-  real, dimension (ny,nz,3) :: du,dz1,dz2
+  real, dimension (ny,nz,3) :: dvect
   real, dimension(n_pdf,imax,3,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz,3) :: i_du
@@ -51,30 +51,69 @@ module struct_func
   integer :: separation,i,ivec,im,in
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
-  character (len=20):: filetowriteu,filetowritez1,filetowritez2
+  character (len=*) :: variabl
+  character (len=20):: filetowrite
+  logical :: llsf=.false., llpdf=.false.
   ! 
   !
   !
   if (iproc==root) print*,'Doing structure functions'
   do ivec=1,3
      !
-     u_vec(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-     do n=n1,n2
-        do m=m1,m2
-           call curli(f,iaa,bb,ivec)
-           im=m-nghost
-           in=n-nghost
-           b_vec(:,im,in,ivec)=bb
+     if (variabl .eq. 'u') then
+        vect(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+        filetowrite='/sfu_'
+        sf=0.
+        totall=0
+        llsf=.true.
+        llpdf=.false.
+     elseif (variabl .eq. 'b') then
+        vect(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)
+        filetowrite='/sfb_'
+        sf=0.
+        totall=0
+        llsf=.true.
+        llpdf=.false.
+     elseif (variabl .eq. 'z1') then
+        u_vec(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iaa,bb,ivec)
+              im=m-nghost
+              in=n-nghost
+              b_vec(:,im,in,ivec)=bb
+           enddo
         enddo
-     enddo
-     z1_vec(:,:,:,ivec)=u_vec(:,:,:,ivec)+b_vec(:,:,:,ivec)
-     z2_vec(:,:,:,ivec)=u_vec(:,:,:,ivec)-b_vec(:,:,:,ivec)
+        vect(:,:,:,ivec)=u_vec(:,:,:,ivec)+b_vec(:,:,:,ivec)
+        filetowrite='/sfz1_'
+        sf=0.
+        totall=0
+        llsf=.true.
+        llpdf=.false.
+     elseif (variabl .eq. 'z2') then
+        u_vec(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iaa,bb,ivec)
+              im=m-nghost
+              in=n-nghost
+              b_vec(:,im,in,ivec)=bb
+           enddo
+        enddo
+        vect(:,:,:,ivec)=u_vec(:,:,:,ivec)-b_vec(:,:,:,ivec)
+        filetowrite='/sfz2_'
+        sf=0.
+        totall=0
+        llsf=.true.
+        llpdf=.false.
+     end if
   enddo
   !
   !  Setting some variables depending on wether we want to
   !  calculate pdf or structure functions.
   !
-  if (lpdf) then 
+  if (variabl .eq. 'pdf') then 
+     vect(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
      pdf_max= 1.  !(for the time being; assumes |u|<1)
      pdf_min=-pdf_max
      dx_du=(pdf_max-pdf_min)/n_pdf
@@ -82,34 +121,19 @@ module struct_func
         x_du(l)=(l-.5)*dx_du+pdf_min
      enddo
      p_du=0.
-  endif
-  !
-  !  Initialize structure function
-  !
-  if (lsf) then 
-     sf=0.
-     totall=0
-     if (nr_directions .eq. 1) filetowriteu='/sf_sum_'
-     if (nr_directions .ne. 1) filetowriteu='/sf_sum_transp_'           
-     if (nr_directions .eq. 1) filetowritez1='/sfz1_sum_'
-     if (nr_directions .ne. 1) filetowritez1='/sfz1_sum_transp_'           
-     if (nr_directions .eq. 1) filetowritez2='/sfz2_sum_'
-     if (nr_directions .ne. 1) filetowritez2='/sfz2_sum_transp_'           
+     llpdf=.true.
+     llsf=.false.
   endif
   !
   !  Beginning the loops
   !
   do direction=1,nr_directions
      do l=1,nx
-        !if (iproc==root) print*,'l=',l
         do ll=l+1,nx
            separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-!           du=f(l,m1:m2,n1:n2,1:3)-f(ll,m1:m2,n1:n2,1:3)
-           du=u_vec(l,:,:,:)-u_vec(ll,:,:,:)
-           dz1=z1_vec(l,:,:,:)-z1_vec(ll,:,:,:)
-           dz2=z2_vec(l,:,:,:)-z2_vec(ll,:,:,:)
-           if (lpdf) then !if pdf=.true.
-              i_du=1+int((du-pdf_min)*n_pdf/(pdf_max-pdf_min))
+           dvect=vect(l,:,:,:)-vect(ll,:,:,:)
+           if (llpdf) then !if pdf=.true.
+              i_du=1+int((dvect-pdf_min)*n_pdf/(pdf_max-pdf_min))
               i_du=min(max(i_du,1),n_pdf)  !(make sure its inside array bdries)
               !
               !  Calculating pdf
@@ -124,7 +148,7 @@ module struct_func
               enddo
            endif
            !
-           if (lsf) then
+           if (llsf) then
               !
               !  Calculates sf
               !
@@ -133,13 +157,7 @@ module struct_func
                  do q=1,qmax                          
                     sf(separation,j,q,direction) &
                          =sf(separation,j,q,direction) &
-                         +sum(abs(du(:,:,j))**q)
-                    sfz1(separation,j,q,direction) &
-                         =sfz1(separation,j,q,direction) &
-                         +sum(abs(dz1(:,:,j))**q)
-                    sfz2(separation,j,q,direction) &
-                         =sfz2(separation,j,q,direction) &
-                         +sum(abs(dz2(:,:,j))**q)
+                         +sum(abs(dvect(:,:,j))**q)
                  enddo
               enddo
            endif
@@ -148,34 +166,22 @@ module struct_func
      if (nr_directions .gt. 1) then
         if (direction .eq. 1) then
            !Doing transpose of y direction
-           call transp(u_vec(:,:,:,1),'y')
-           call transp(u_vec(:,:,:,2),'y')
-           call transp(u_vec(:,:,:,3),'y')
-           call transp(z1_vec(:,:,:,1),'y')
-           call transp(z1_vec(:,:,:,2),'y')
-           call transp(z1_vec(:,:,:,3),'y')
-           call transp(z2_vec(:,:,:,1),'y')
-           call transp(z2_vec(:,:,:,2),'y')
-           call transp(z2_vec(:,:,:,3),'y')
+           call transp(vect(:,:,:,1),'y')
+           call transp(vect(:,:,:,2),'y')
+           call transp(vect(:,:,:,3),'y')
         endif
         if (direction .eq. 2) then
            !Doing transpose of z direction
-           call transp(u_vec(:,:,:,1),'z')
-           call transp(u_vec(:,:,:,2),'z')
-           call transp(u_vec(:,:,:,3),'z')
-           call transp(z1_vec(:,:,:,1),'z')
-           call transp(z1_vec(:,:,:,2),'z')
-           call transp(z1_vec(:,:,:,3),'z')
-           call transp(z2_vec(:,:,:,1),'z')
-           call transp(z2_vec(:,:,:,2),'z')
-           call transp(z2_vec(:,:,:,3),'z')
+           call transp(vect(:,:,:,1),'z')
+           call transp(vect(:,:,:,2),'z')
+           call transp(vect(:,:,:,3),'z')
         endif
      endif
   enddo
   !
   !  Collecting all data on root processor and normalizing pdf and sf
   !
-  if(lpdf) then
+  if(llpdf) then
      call mpireduce_sum(p_du,p_du_sum,n_pdf*imax*3*3)  !Is this safe???
      do i=1,imax
         do j=1,3
@@ -187,16 +193,10 @@ module struct_func
      enddo
   endif
   !
-  if(lsf) then
+  if(llsf) then
      call mpireduce_sum(sf,sf_sum,imax*3*qmax*3)  !Is this safe???
      sf_sum=sf_sum/(nw*ncpus)
      sf_sum(imax,:,:,:)=2*sf_sum(imax,:,:,:)
-     call mpireduce_sum(sfz1,sfz1_sum,imax*3*qmax*3)  !Is this safe???
-     sfz1_sum=sfz1_sum/(nw*ncpus)
-     sfz1_sum(imax,:,:,:)=2*sfz1_sum(imax,:,:,:)
-     call mpireduce_sum(sfz2,sfz2_sum,imax*3*qmax*3)  !Is this safe???
-     sfz2_sum=sfz2_sum/(nw*ncpus)
-     sfz2_sum(imax,:,:,:)=2*sfz2_sum(imax,:,:,:)
   endif
   !
   !  Writing output file
@@ -204,7 +204,7 @@ module struct_func
   if (iproc==root) then
      do j=1,3              
         call chn(j,var)
-        if(lpdf) then
+        if(llpdf) then
            if (ip<10) print*,'Writing pdf of variable',var &
                 ,'to ',trim(datadir)//'/pdf_'//trim(var)//'.dat'
            open(1,file=trim(datadir)//'/pdf_'//trim(var) &
@@ -215,29 +215,13 @@ module struct_func
            close(1)
         endif
         !
-        if(lsf) then
+        if(llsf) then
            if (ip<10) print*,'Writing structure functions of variable',var &
-                ,'to ',trim(datadir)//trim(filetowriteu)//trim(var)//'.dat'
-           open(1,file=trim(datadir)//trim(filetowriteu)//trim(var) &
+                ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
+           open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &
                 //'.dat',position='append')
            write(1,*) t,qmax
            write(1,'(1p,8e10.2)') sf_sum(:,j,:,:)
-           close(1)
-!
-           if (ip<10) print*,'Writing structure functions of variable',var &
-                ,'to ',trim(datadir)//trim(filetowritez1)//trim(var)//'.dat'
-           open(1,file=trim(datadir)//trim(filetowritez1)//trim(var) &
-                //'.dat',position='append')
-           write(1,*) t,qmax
-           write(1,'(1p,8e10.2)') sfz1_sum(:,j,:,:)
-           close(1)
-!
-           if (ip<10) print*,'Writing structure functions of variable',var &
-                ,'to ',trim(datadir)//trim(filetowritez2)//trim(var)//'.dat'
-           open(1,file=trim(datadir)//trim(filetowritez2)//trim(var) &
-                //'.dat',position='append')
-           write(1,*) t,qmax
-           write(1,'(1p,8e10.2)') sfz2_sum(:,j,:,:)
            close(1)
         endif
      enddo

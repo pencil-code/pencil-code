@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.15 2003-01-01 07:49:49 brandenb Exp $
+! $Id: wsnaps.f90,v 1.16 2003-01-10 14:00:27 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -119,13 +119,17 @@ contains
 !
       if(ldo_all) call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
       if (lspec.or.llwrite_only) then
-         if(ldo_all) call update_ghosts(a)
+         if (ldo_all)  call update_ghosts(a)
          if (vel_spec) call power(a,'u')
          if (mag_spec) call power(a,'b')
          if (vec_spec) call power(a,'a')
          if (ab_spec)  call powerhel(a,'mag')
          if (ou_spec)  call powerhel(a,'kin')
-         if(lsf.or.lpdf) call structure(a)
+         if (lsfu)     call structure(a,'u')
+         if (lsfb)     call structure(a,'b')
+         if (lsfz1)    call structure(a,'z1')
+         if (lsfz2)    call structure(a,'z2')
+         if (lpdf)     call structure(a,'pdf')
       endif
 !
     endsubroutine powersnap
