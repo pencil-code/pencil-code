@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -301,7 +301,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.106 $ $}
+\date{\today,~ $ $Revision: 1.107 $ $}
 
 % ====================================================================== %
 
@@ -333,7 +333,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.106 $ $}
+  \emph{\today,~ $ $Revision: 1.107 $ $}
 
   \vspace{\stretch{3}}
 
@@ -700,7 +700,7 @@ Sect.~\ref{S-IDLroutines}).
 The functionality of helper scripts and IDL routines relies on a few
 environment variables being set correctly.
 The simplest way to achieve this is to go to the top directory of the code
-(we will assume here that it is called \file[pencil/]{pencil}) and source one of
+(we will assume here that it is called \file[pencil-code/]{pencil-code}) and source one of
 the two scripts \file{sourceme.csh} or \file{sourceme.sh} (depending on
 the type of shell you are using):
 \begin{alltt}
@@ -740,7 +740,7 @@ This is on purpose to avoid cluttering of your environment: you can
 source the file as often as you like (in your shell startup script, then
 manually and in addition in some script you have written), without
 thinking twice.
-If, however, at the first souring, the setting of \env{PENCIL_HOME} was
+If, however, at the first sourcing, the setting of \env{PENCIL_HOME} was
 wrong, this mechanism would keep you from ever adding the right directory
 to your \env{PATH}.
 In this case, you need to first undefine the environment variable
@@ -1334,7 +1334,7 @@ command
 \end{alltt}
 provided \file[bin/]{\$PENCIL_HOME/bin} is in your path.
 
-To give you an idea of how to add you own machines, let us assume you have
+To give you an idea of how to add your own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
 \option{-O4 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
 which needs the flags \option{-O3} and requires the additional
@@ -1352,7 +1352,7 @@ The \file{Makefile} you need will have the following section:
   ## Linux:
   {\sl{}[\ldots]   (leave everything from original Makefile and add:)}
   #FC=f95
-  #FFLAGS=-O3 -u
+  #FFLAGS=-O4 -u
   #FC=f90             #(Janus)
   #FFLAGS=-O3 -u      #(Janus)
   #LDMPI=-lmpi -llam  #(Janus)
@@ -1509,7 +1509,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $',
+  cvsid='$Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1536,7 +1536,7 @@ As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $',
+  cvsid='$Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -3107,7 +3107,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`zero'}] ($\uv=0$ ),
                  \item[\code{`random-normal'}] (random,
                    normally-distributed $u_x$),
-                 \item[\code{`sound=wave'}] (sound wave in $x$ direction),
+                 \item[\code{`sound-wave'}] (sound wave in $x$ direction),
                  \item[\code{`shock-tube'}] (polytropic standing shock).
                  \end{description}
                  \\
@@ -3386,7 +3386,7 @@ the latest set of parameters, you need to look at the code.
   \var{nt} [$0$]
                & number of time steps to run (at most). \\
   \var{it1} [$10$]
-               & write diagnostic output every \var{it} time steps 
+               & write diagnostic output every \var{it1} time steps 
                  (see Sect.~\ref{diagnostic-IO}). \\
   \var{cdt} [$0.4$]
                & Courant coefficient for advective time step; see
@@ -3660,7 +3660,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.106 2002-09-27 08:59:26 dobler Exp $ $}
+$ $Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $ $}
 
 
 \end{document}
