@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.129 2003-10-30 17:21:59 theine Exp $
+! $Id: hydro.f90,v 1.130 2003-10-31 14:01:07 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -101,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.129 2003-10-30 17:21:59 theine Exp $")
+           "$Id: hydro.f90,v 1.130 2003-10-31 14:01:07 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -708,8 +708,8 @@ module Hydro
 !  Velocity damping in the coronal heating zone
 !
         if (tau_coronal_u>0.and.z(n)>=z_coronal_u) then
-          xi=1-2*(ztop-z(n))/(ztop-z_coronal_u)
-          prof=0.5+0.25*xi*(3-xi**2)
+          xi=(z(n)-z_coronal_u)/(ztop-z_coronal_u)
+          prof=xi**2*(3-2*xi)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz) &
                                 -prof*f(l1:l2,m,n,iux:iuz)/tau_coronal_u
         endif
