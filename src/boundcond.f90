@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.17 2002-07-04 21:46:47 dobler Exp $
+! $Id: boundcond.f90,v 1.18 2002-07-05 07:18:19 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -17,9 +17,9 @@ module Boundcond
   contains
 
 !***********************************************************************
-    subroutine boundconds(f)
+    subroutine boundconds_x(f)
 !
-!  Physical boundary conditions except for periodic stuff.
+!  Physical boundary conditions in x except for periodic stuff.
 !
       use Cdata
       use Entropy
@@ -93,6 +93,21 @@ module Boundcond
           endif
         enddo
       endif
+    endsubroutine boundconds_x 
+!***********************************************************************
+    subroutine boundconds_yz(f)
+!
+!  Physical boundary conditions in y and z except for periodic stuff.
+!
+      use Cdata
+      use Entropy
+      use Magnetic
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: fder,cs2_2d
+      integer :: i,j
+!
+      if(ldebug) print*,'ENTER: boundconds'
 !
 !  Boundary conditions in y
 !
@@ -262,7 +277,7 @@ module Boundcond
       if (lentropy)  call bc_ss(f)
       if (lmagnetic) call bc_aa(f)
 !
-    endsubroutine boundconds
+    endsubroutine boundconds_yz
 !***********************************************************************
  
 endmodule Boundcond

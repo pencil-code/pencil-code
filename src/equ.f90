@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.74 2002-07-05 06:28:40 brandenb Exp $
+! $Id: equ.f90,v 1.75 2002-07-05 07:18:19 nilshau Exp $
 
 module Equ
 
@@ -212,7 +212,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.74 2002-07-05 06:28:40 brandenb Exp $")
+           "$Id: equ.f90,v 1.75 2002-07-05 07:18:19 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -224,7 +224,7 @@ module Equ
 !
       if (ldebug) print*,'bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      call boundconds(f)
+      call boundconds_x(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -233,7 +233,10 @@ module Equ
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) call finalise_isendrcv_bdry(f)
+        if (necessary(imn)) then 
+           call finalise_isendrcv_bdry(f)
+           call boundconds_yz(f)
+        endif
 !
 !  coordinates are needed all the time
 !  (but not for isotropic turbulence!)
