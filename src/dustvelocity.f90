@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.34 2004-01-31 14:01:22 dobler Exp $
+! $Id: dustvelocity.f90,v 1.35 2004-02-01 14:52:01 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -29,7 +29,7 @@ module Dustvelocity
   real :: rhods=1.,md0=1.,ad0=0.,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
-  logical :: lfeedback_gas_all=.true.
+  logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
   character (len=labellen) :: inituud='zero'
   character (len=labellen) :: draglaw='epstein_cst', dust_geometry='sphere'
 
@@ -39,7 +39,7 @@ module Dustvelocity
   ! run parameters
   namelist /dustvelocity_run_pars/ &
        nud, nud_all, betad, betad_all, tausd, tausd_all, &
-       lfeedback_gas, lfeedback_gas_all
+       ldustdrag, lfeedback_gas, lfeedback_gas_all
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.34 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.35 2004-02-01 14:52:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -179,14 +179,16 @@ module Dustvelocity
 !
 !  Auxilliary variables necessary for different drag laws
 !
-      select case (draglaw)
+      if (ldustdrag) then
+        select case (draglaw)
      
-      case ('epstein_var')
-        rhodsad1 = 1./(rhods*ad)
-      case ('epstein_cst')
-        tausd1 = 1./tausd(i)
+        case ('epstein_var')
+          rhodsad1 = 1./(rhods*ad)
+        case ('epstein_cst')
+          tausd1 = 1./tausd(i)
 
-      endselect
+        endselect
+      endif
 !
 !  If *_all set, make all primordial *(:) = *_all
 !
@@ -433,52 +435,54 @@ module Dustvelocity
 !
 !  Stopping time of dust depends on the choice of drag law
 !
-        select case(draglaw)
+        if (ldustdrag) then
+          select case(draglaw)
         
-        case ('epstein_cst')
-          ! Do nothing, initialized in initialize_dustvelocity
-        case ('epstein_cst_b')
-          tausd1 = betad(k)*rhod1
-        case ('epstein_var')
-          csrho  = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp + &
-              0.5*(gamma+1)*f(l1:l2,m,n,ilnrho) + &
-              0.5*(1-gamma)*lnrho0)
-          csrho = cs0*exp(f(l1:l2,m,n,ilnrho))
-          tausd1 = csrho*rhodsad1(k)
-        case default
-          call stop_it("duud_dt: No valid drag law specified.")
+          case ('epstein_cst')
+            ! Do nothing, initialized in initialize_dustvelocity
+          case ('epstein_cst_b')
+            tausd1 = betad(k)*rhod1
+          case ('epstein_var')
+            csrho  = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp + &
+                0.5*(gamma+1)*f(l1:l2,m,n,ilnrho) + &
+                0.5*(1-gamma)*lnrho0)
+            csrho = cs0*exp(f(l1:l2,m,n,ilnrho))
+            tausd1 = csrho*rhodsad1(k)
+          case default
+            call stop_it("duud_dt: No valid drag law specified.")
 
-        endselect
+          endselect
 !
 !  Add drag force on dust. If taus << dt, set udx = ux, udy=uy, udz=udz(term)
 !
-        do i=1,3; tausd13(:,i) = tausd1; enddo
+          do i=1,3; tausd13(:,i) = tausd1; enddo
 
-        if (draglaw .eq. 'epstein_var') then
-          do l=1,nx
-            if (tausd1(l) .gt. 1./(3*dt)) then
-              f(l1-1+l,m,n,iudx(k)) = f(l1-1+l,m,n,iux)
-              f(l1-1+l,m,n,iudy(k)) = f(l1-1+l,m,n,iuy)
-              f(l1-1+l,m,n,iudz(k)) = f(l1-1+l,m,n,iuz) - &
-                  tausd1(l)**(-1)*Omega**2*z(n)
-            else
-              df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                  df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
-            endif
-          enddo
-        else
-          df(l1:l2,m,n,iudx(k):iudz(k)) = &
-              df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
-        endif
+          if (draglaw .eq. 'epstein_var') then
+            do l=1,nx
+              if (tausd1(l) .gt. 1./(3*dt)) then
+                f(l1-1+l,m,n,iudx(k)) = f(l1-1+l,m,n,iux)
+                f(l1-1+l,m,n,iudy(k)) = f(l1-1+l,m,n,iuy)
+                f(l1-1+l,m,n,iudz(k)) = f(l1-1+l,m,n,iuz) - &
+                    tausd1(l)**(-1)*Omega**2*z(n)
+              else
+                df(l1:l2,m,n,iudx(k):iudz(k)) = &
+                    df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
+              endif
+            enddo
+          else
+            df(l1:l2,m,n,iudx(k):iudz(k)) = &
+                df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
+          endif
 !
 !  Add drag force on gas (back-reaction)
 !
-        if (lfeedback_gas(k)) then
-          tausg1 = rhod*tausd1*rho1
-          do i=1,3; tausg13(:,i) = tausg1; enddo
-          df(l1:l2,m,n,iux:iuz) = &
-              df(l1:l2,m,n,iux:iuz) - tausg13*(uu-uud(:,:,k))
-        endif
+          if (lfeedback_gas(k)) then
+            tausg1 = rhod*tausd1*rho1
+            do i=1,3; tausg13(:,i) = tausg1; enddo
+            df(l1:l2,m,n,iux:iuz) = &
+                df(l1:l2,m,n,iux:iuz) - tausg13*(uu-uud(:,:,k))
+          endif
+        endif  ! if (ldustdrag)
 !
 !  Add viscosity on dust
 !
