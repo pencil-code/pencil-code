@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.13 2002-06-19 21:23:23 brandenb Exp $
+! $Id: forcing.f90,v 1.14 2002-06-25 17:06:14 brandenb Exp $
 
 module Forcing
 
@@ -40,9 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-06-19 21:23:23 $")
+           "$Id: forcing.f90,v 1.14 2002-06-25 17:06:14 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
