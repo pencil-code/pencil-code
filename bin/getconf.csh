@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.131 2004-09-03 10:00:20 ajohan Exp $
+# $Id: getconf.csh,v 1.132 2004-09-28 11:33:05 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -76,6 +76,9 @@ set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
 set mpirun = 'mpirun'
+
+set copysnapshots="copy-snapshots"
+if { ( grep lcopysnapshots_exp=T start.in >& /dev/null ) } set copysnapshots="copy-snapshots_exp"
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
@@ -626,6 +629,7 @@ if ($debug) then
   echo '$SSH          	= ' "<$SSH>"
   echo '$SCP          	= ' "<$SCP>"
   echo '$PARENT_PID   	= ' "<$PARENT_PID>"
+  echo '$copysnapshots  = ' "<$copysnapshots>"
 endif
 
 exit

@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.78 2004-09-22 10:16:52 ajohan Exp $
+# CVS: $Id: run.csh,v 1.79 2004-09-28 11:33:06 ajohan Exp $
 
 #                       run.csh
 #                      ---------
@@ -89,7 +89,7 @@ rm -f STOP RELOAD RERUN fort.20
 # and start top command on all procs.
 if ($local_disc) then
   echo "Use local scratch disk"
-  copy-snapshots -v >&! copy-snapshots.log &
+  $copysnapshots -v >&! copy-snapshots.log &
 endif
 # Copy output from `top' on run host to a file we can read from login server
 if ($remote_top) then
@@ -141,11 +141,11 @@ endif
 # directory
 if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash. dat back from local scratch disks"
-  copy-snapshots -v var.dat     >&! copy-snapshots2.log
-  copy-snapshots -v -1          >>& copy-snapshots2.log
-  copy-snapshots -v dxyz.dat    >>& copy-snapshots2.log
-  copy-snapshots -v timeavg.dat >>& copy-snapshots2.log
-  copy-snapshots -v crash.dat   >>& copy-snapshots2.log
+  $copysnapshots -v var.dat     >&! copy-snapshots2.log
+  $copysnapshots -v -1          >>& copy-snapshots2.log
+  $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
+  $copysnapshots -v timeavg.dat >>& copy-snapshots2.log
+  $copysnapshots -v crash.dat   >>& copy-snapshots2.log
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`

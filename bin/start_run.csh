@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.36 2004-09-22 10:13:48 ajohan Exp $
+# CVS: $Id: start_run.csh,v 1.37 2004-09-28 11:33:06 ajohan Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -109,15 +109,15 @@ if ($local_disc) then
   # We still need to copy (at least one of) the var.dat files back, so
   # the background process copy-snapshots will know how large the snapshots
   # ought to be. Certainly far from elegant..
-  copy-snapshots -v var.dat     >&  copy-snapshots.log
-  copy-snapshots -v timeavg.dat >>& copy-snapshots.log
+  $copysnapshots -v var.dat     >&  copy-snapshots.log
+  $copysnapshots -v timeavg.dat >>& copy-snapshots.log
 
   # On machines with local scratch directory, initialize automatic
   # background copying of snapshots back to the data directory.
   # Also, if necessary copy executable to $SCRATCH_DIR of master node
   # and start top command on all procs.
   echo "Use local scratch disk"
-  copy-snapshots -v >>& copy-snapshots.log &
+  $copysnapshots -v >>& copy-snapshots.log &
 endif
 # Copy output from `top' on run host to a file we can read from login server
 if ($remote_top) then
@@ -144,11 +144,11 @@ date
 # directory
 if ($local_disc) then
   echo "Copying all var.dat, VAR*, TIMEAVG*, dxyz.dat, timeavg.dat and crash.dat back from local scratch disks"
-  copy-snapshots -v var.dat     >&! copy-snapshots2.log
-  copy-snapshots -v -1          >>& copy-snapshots2.log
-  copy-snapshots -v dxyz.dat    >>& copy-snapshots2.log
-  copy-snapshots -v timeavg.dat >>& copy-snapshots2.log
-  copy-snapshots -v crash.dat   >>& copy-snapshots2.log
+  $copysnapshots -v var.dat     >&! copy-snapshots2.log
+  $copysnapshots -v -1          >>& copy-snapshots2.log
+  $copysnapshots -v dxyz.dat    >>& copy-snapshots2.log
+  $copysnapshots -v timeavg.dat >>& copy-snapshots2.log
+  $copysnapshots -v crash.dat   >>& copy-snapshots2.log
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`

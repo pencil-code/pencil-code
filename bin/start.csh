@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.58 2004-09-03 10:00:20 ajohan Exp $
+# CVS: $Id: start.csh,v 1.59 2004-09-28 11:33:06 ajohan Exp $
 
 #                       start.csh
 #                      -----------
@@ -125,9 +125,9 @@ endif
 # If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
   echo "Copying var.dat back to data directory"
-  copy-snapshots -v var.dat     >&! copy-snapshots.log
-  copy-snapshots -v timeavg.dat >>& copy-snapshots.log
-  copy-snapshots -v dxyz.dat    >>& copy-snapshots.log
+  $copysnapshots -v var.dat     >&! copy-snapshots.log
+  $copysnapshots -v timeavg.dat >>& copy-snapshots.log
+  $copysnapshots -v dxyz.dat    >>& copy-snapshots.log
 
   if ($remove_scratch_root) then
     rm -rf $SCRATCH_DIR
