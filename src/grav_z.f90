@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.28 2002-11-24 13:14:59 mee Exp $
+! $Id: grav_z.f90,v 1.29 2003-03-06 14:25:51 brandenb Exp $
 
 module Gravity
 
@@ -22,6 +22,7 @@ module Gravity
   integer :: ngrav=10
   real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
   character (len=labellen) :: grav_profile='const'
+  logical :: lself_gravity=.false.
 
 !  The gravity potential must always be negative. However, in an plane
 !  atmosphere with constant gravity, the potential goes to zero at
@@ -73,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.28 2002-11-24 13:14:59 mee Exp $")
+           "$Id: grav_z.f90,v 1.29 2003-03-06 14:25:51 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -279,6 +280,15 @@ module Gravity
       first=.false.
 !
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine self_gravity(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine self_gravity
 !***********************************************************************
 
 endmodule Gravity

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.30 2002-11-24 13:14:59 mee Exp $
+! $Id: grav_r.f90,v 1.31 2003-03-06 14:25:51 brandenb Exp $
 
 module Gravity
 
@@ -24,6 +24,7 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
+  logical :: lself_gravity=.false.
 
   namelist /grav_init_pars/ ipotential
 
@@ -51,7 +52,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.30 2002-11-24 13:14:59 mee Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.31 2003-03-06 14:25:51 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -265,6 +266,15 @@ if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
       if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine self_gravity(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine self_gravity
 !***********************************************************************
 
 endmodule Gravity

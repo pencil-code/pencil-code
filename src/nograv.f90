@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.19 2002-11-24 13:14:59 mee Exp $
+! $Id: nograv.f90,v 1.20 2003-03-06 14:25:51 brandenb Exp $
 
 module Gravity
 
@@ -17,6 +17,7 @@ module Gravity
 
   real :: z1,z2,zref,zgrav,gravz,zinfty  !(used by Entropy and Density)
   character (len=labellen) :: grav_profile='const'  !(used by Density)
+  logical :: lself_gravity=.false.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
@@ -44,7 +45,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.19 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nograv.f90,v 1.20 2003-03-06 14:25:51 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -127,6 +128,15 @@ module Gravity
 !
       if(ip==0) print*,xmn,ymn,zmn,rmn,grav
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine self_gravity(f)
+!
+!  dummy routine
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
+    endsubroutine self_gravity
 !***********************************************************************
 
 endmodule Gravity
