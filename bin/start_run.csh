@@ -99,16 +99,16 @@ date
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
 
-# We still need to copy (at least one of) the var.dat files back, so
-# the background process copy-snapshots will know how large the snapshots
-# ought to be. Certainly far from elegant..
-copy-snapshots -v var.dat >& copy-snapshots.log
-
-# On machines with local scratch directory, initialize automatic
-# background copying of snapshots back to the data directory.
-# Also, if necessary copy executable to $SCRATCH_DIR of master node
-# and start top command on all procs.
 if ($local_disc) then
+  # We still need to copy (at least one of) the var.dat files back, so
+  # the background process copy-snapshots will know how large the snapshots
+  # ought to be. Certainly far from elegant..
+  copy-snapshots -v var.dat >& copy-snapshots.log
+
+  # On machines with local scratch directory, initialize automatic
+  # background copying of snapshots back to the data directory.
+  # Also, if necessary copy executable to $SCRATCH_DIR of master node
+  # and start top command on all procs.
   echo "Use local scratch disk"
   copy-snapshots -v >>& copy-snapshots.log &
 endif
