@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.77 2003-08-25 17:36:49 mee Exp $
+! $Id: ionization.f90,v 1.78 2003-08-26 14:26:23 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.77 2003-08-25 17:36:49 mee Exp $")
+           "$Id: ionization.f90,v 1.78 2003-08-26 14:26:23 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -148,9 +148,9 @@ module Ionization
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
-      open(1,file=trim(datadir)//'/testsn.dat',position='append')
-      write (1,"('#',A)") '--TT---ss----lnrho---yH---ionstat--noionstat---'
-    close(1)
+!      open(1,file=trim(datadir)//'/testsn.dat',position='append')
+!      write (1,"('#',A)") '--TT---ss----lnrho---yH---ionstat--noionstat---'
+!    close(1)
     endsubroutine initialize_ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset)
@@ -203,7 +203,7 @@ module Ionization
       integer :: l
       real :: ionstat,noionstat
 !
-      open(1,file=trim(datadir)//'/testsn.dat',position='append')
+!      open(1,file=trim(datadir)//'/testsn.dat',position='append')
       
       do n=1,mz
       do m=1,my
@@ -222,12 +222,12 @@ module Ionization
 noionstat=2./3.*(ss/ss_ion-(1.+xHe)*(2.5-lnrho)+ lnrho_H+xHe_term)
 ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 
-write (1,'(1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') exp(lnTT_)*TT_ion,ss,lnrho,yH,ionstat,noionstat
+!write (1,'(1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') exp(lnTT_)*TT_ion,ss,lnrho,yH,ionstat,noionstat
 
       enddo
       enddo
       enddo
-     close(1)
+!     close(1)
 !
     endsubroutine ioncalc
 !***********************************************************************
