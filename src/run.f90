@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.168 2003-12-07 08:42:14 brandenb Exp $
+! $Id: run.f90,v 1.169 2004-01-30 16:49:01 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.168 2003-12-07 08:42:14 brandenb Exp $")
+             "$Id: run.f90,v 1.169 2004-01-30 16:49:01 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -310,13 +310,18 @@
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
+        if (lroot) print*, 'Writing final snapshot for t=', t
+        call wtime(trim(directory)//'/time.dat',t)
         if(save_lastsnap) then
-          if (lroot) print*, 'Writing final snapshot for t=', t
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
-          call wtime(trim(directory)//'/time.dat',t)
           if (ip<=11) &
                call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
+        else
+          call wsnap(trim(directory_snap)//'/crash.dat',f,mvar_io,ENUM=.false.)
+          if (ip<=11) &
+               call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
         endif
+
 !
 !  save spectrum snapshot
 !
