@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.32 2003-12-17 11:33:15 nilshau Exp $
+! $Id: general.f90,v 1.33 2003-12-18 04:01:15 brandenb Exp $
 
 module General
 
@@ -145,6 +145,8 @@ module General
 !
 !  Produces a matrix filled with random numbers calculated
 !  with the 'Minimal Standard' random number generator
+!
+      use Cdata, only: lroot
 !
       real, dimension(:,:,:) :: a
       integer :: i,j,k
