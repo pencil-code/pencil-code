@@ -1,0 +1,56 @@
+$Id: comm-problem.txt,v 1.1 2002-07-24 12:26:05 dobler Exp $
+
+On Kabul, the code sometimes hangs after some 1000 or time steps (sometimes
+less, sometimes more). Here is the output of mpitask for a run on 5 CPUs
+(nprocy=nprocz=2):
+
+  TASK (G/L)           FUNCTION      PEER|ROOT  TAG    COMM   COUNT   DATATYPE
+  0/0 LAM_MPI_Fortran_ Recv          3/3        86     WORLD* 1       REAL
+  1/1 LAM_MPI_Fortran_ Recv          0/0        15     WORLD* 1       REAL
+  2/2 LAM_MPI_Fortran_ Wait          0/0        5      WORLD  49152   REAL
+  3/3 LAM_MPI_Fortran_ Wait          1/1        5      WORLD  49152   REAL
+
+This basically means that processor 0 waits for data from proc 3 to receive,
+proc 1 waits for data from proc0, while procs2 and 3 have read 49152 real
+numbers each and are MPI_WAITing.
+
+And this is the output of mpimsg
+
+  SRC (G/L)      DEST (G/L)     TAG     COMM     COUNT    DATATYPE    MSG
+  2/2            0/0            5       WORLD    49152    REAL        n2,#93
+  2/2            0/0            6       WORLD    49152    REAL        n2,#94
+
+  3/3            1/1            5       WORLD    49152    REAL        n2,#99
+  3/3            1/1            6       WORLD    49152    REAL        n2,#103
+
+  3/3            0/0            7       WORLD    4608     REAL        n2,#95
+  3/3            0/0            8       WORLD    4608     REAL        n2,#96
+  3/3            0/0            9       WORLD    4608     REAL        n2,#97
+  3/3            0/0            10      WORLD    4608     REAL        n2,#98
+
+  2/2            1/1            7       WORLD    4608     REAL        n2,#100
+  2/2            1/1            8       WORLD    4608     REAL        n2,#101
+  2/2            1/1            9       WORLD    4608     REAL        n2,#102
+  2/2            1/1            10      WORLD    4608     REAL        n2,#104
+
+
+Tag 5 is tolowz; there are no tags 86 or 15 (they must come from reduction
+or broadcast operations):
+
+  integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
+  integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+
+
+Thus everything hangs because:
+  3 waits for 1 (Wait; 5=tolowz)
+  1 waits for 0 (Recv; 15=??)
+  0 waits for 3 (Recv; 86=??)
+
+
+Possible explanation:
+  Some reduction (or similar) operations are occurring between
+  init_isendrecv and finalize_isendrecv and cause the mutual dependency
+  loop depicted above. MPI_BARRIER in the right place would then help.
+
+
+wd, Wed Jul 24 14:23:03 CEST 2002
