@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.153 2003-03-19 17:03:36 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.154 2003-03-27 20:36:35 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-03-19 17:03:36 $ $,~ $ $Revision: 1.153 $ $}
+\date{$ $Date: 2003-03-27 20:36:35 $ $,~ $ $Revision: 1.154 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-03-19 17:03:36 $ $,~ $ $Revision: 1.153 $ $}
+  \emph{$ $Date: 2003-03-27 20:36:35 $ $,~ $ $Revision: 1.154 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2999,7 +2999,7 @@ application on your specific hardware.
    8 & Mhd   & 1.46 & $160^2\times40$
                               & nomagn/entro &  46 Mb &  7-oct-02 & AB \\
    8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 Gb & 29-jan-03 & WD \\
-  16 & fe1   & 3.35 &  $64^3$ & convstar     &        &  6-feb-03 & AB \\
+  16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
   16 & fe1   & 0.78 & $128^3$ & magn/noentro & 4x4/ifc& 27-nov-02 & AB \\
   16 & Mhd   & 2.67 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
@@ -3245,8 +3245,8 @@ Use \var{grav_profile}='linear' to get
 \quad g_z=-\nu_{\rm g}^2z
 \end{equation}
 where $\nu_{\rm g}$ is the vertical epicyclic frequency. For a Keplerian
-accretion disc, $\nu_{\rm g}=\Omega$. For galactic discs,
-$\nu_{\rm g}=0.5\Omega$ is representative of the solar neighborhood.
+accretion disc, $\nu_{\rm g}=\varOmega$. For galactic discs,
+$\nu_{\rm g}=0.5\varOmega$ is representative of the solar neighborhood.
 
 The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
@@ -3497,17 +3497,19 @@ $\xi_0$ & $c_{\rm s,bot}^2$ \\
 
 \subsection{Planet solution in the shearing box}
 \label{S-planet}
-This setup is about the perturbation of an accretions disc (in the local
-shearing-box approximation) due to a passing planet.
+
+In order to test the setup for accretion discs and the sliding periodic
+shearing sheet boundary condition, a useful initial condition is the
+so-called planet solution of Goodman, Narayan, \& Goldreich \cite{GNG87}.
 
 Assume $s=0$ (isentropy), so the equations in 2-D are
 \begin{equation}\label{ux-eqn}
-  u_x u_{x,x} + (u_y^{(0)}+u_y) u_{x,y} = 2\Omega u_y - h_{,x}
+  u_x u_{x,x} + (u_y^{(0)}+u_y) u_{x,y} = 2\varOmega u_y - h_{,x}
 \end{equation}
 \begin{equation}\label{uy-eqn}
-  u_x u_{y,x} + (u_y^{(0)}+u_y) u_{y,y} = -(2-q)\Omega u_x - h_{,y}
+  u_x u_{y,x} + (u_y^{(0)}+u_y) u_{y,y} = -(2-q)\varOmega u_x - h_{,y}
 \end{equation}
-where $u_y^{(0)}=-q\Omega x$.
+where $u_y^{(0)}=-q\varOmega x$.
 Express ${\bf u}$ in terms of a stream function, so
 ${\bf u}=\curl(\psi\hat{\bf z})$, or
 \begin{equation}\label{u-streamfunction}
@@ -3515,16 +3517,16 @@ ${\bf u}=\curl(\psi\hat{\bf z})$, or
 \end{equation}
 Ansatz for enthalpy
 \begin{equation}\label{u-ansatz}
-  h={\textstyle{1\over2}}\delta^2\Omega^2(R^2- x^2 - \epsilon^2 y^2
+  h={\textstyle{1\over2}}\delta^2\varOmega^2(R^2- x^2 - \epsilon^2 y^2
   - z^2/\delta^2)
 \end{equation}
 \begin{equation}\label{u-ansatz2}
-  \psi=-{\textstyle{1\over2}}\sigma\Omega(R^2- x^2 - \epsilon^2 y^2)
-       -{\textstyle{1\over2}}q\Omega x^2
+  \psi=-{\textstyle{1\over2}}\sigma\varOmega(R^2- x^2 - \epsilon^2 y^2)
+       -{\textstyle{1\over2}}q\varOmega x^2
 \end{equation}
 This implies
 \begin{equation}\label{u-streamfunction2}
-  u_x = \sigma\Omega\epsilon^2 y,\quad u_y = (q-\sigma)\Omega x
+  u_x = \sigma\varOmega\epsilon^2 y,\quad u_y = (q-\sigma)\varOmega x
 \end{equation}
 and $u_{x,x}=u_{y,y}=0$.
 Inserting into Eqs~(\ref{ux-eqn}) and (\ref{uy-eqn}) yields
@@ -3534,7 +3536,7 @@ Inserting into Eqs~(\ref{ux-eqn}) and (\ref{uy-eqn}) yields
 \begin{equation}\label{uy-eqn-insert1}
   \sigma(q-\sigma) = -(2-q)\sigma+\delta^2
 \end{equation}
-where we have already canceled common $\Omega^2$ factors in both equations
+where we have already canceled common $\varOmega^2$ factors in both equations
 and common $\epsilon^2$ factors in the last equation.
 Simplifying both equations yields
 \begin{equation}\label{ux-eqn-insert2}
@@ -4312,7 +4314,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  degree of shear for shearing-box simulations (the
                  shearing-periodic boundaries are the $x$-boundaries and
                  are sheared in the $y$-direction). The shear velocity
-                 is ${\bf U}=-q\Omega x\,{\hat{\bf y}}$. \\
+                 is ${\bf U}=-q\varOmega x\,{\hat{\bf y}}$. \\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -4848,6 +4850,10 @@ of isotropic helical hydromagnetic turbulence''
 \bibitem{BDS02}Brandenburg, A., Dobler, W., \& Subramanian, K.
   \emph{Astron. Nachr.} \textbf{323}, 99--122 (2002)
   ``Magnetic helicity in stellar dynamos: new numerical experiments''
+\bibitem{GNG87}Goodman, J., Narayan, R. \& Goldreich, P.
+  \emph{Month. Not. Roy. Soc.} \textbf{225}, 695--711 (1987)
+  ``The stability of accretion tori -- II. Nonlinear evolution
+  to discrete planets''
 \end{thebibliography}
 
 
@@ -4861,7 +4867,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.153 2003-03-19 17:03:36 mee Exp $ $}
+$ $Id: manual.tex,v 1.154 2003-03-27 20:36:35 brandenb Exp $ $}
 
 
 \end{document}
