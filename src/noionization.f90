@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.4 2003-03-06 14:20:39 brandenb Exp $
+! $Id: noionization.f90,v 1.5 2003-03-24 18:44:29 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -34,7 +34,7 @@ module Ionization
     subroutine initialize_ionization()
     endsubroutine initialize_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -48,9 +48,12 @@ module Ionization
       use General
       use Sub
 !
+      real, dimension (nx),optional :: Temperature
       real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS,rho,ee
       real :: ss0=-5.5542
+!
+      intent(out) :: Temperature
 !
 !  calculate cs2, 1/T, and cp1tilde
 !  leave this in, in case we may activate it
@@ -62,6 +65,7 @@ module Ionization
         TT=exp(gamma1*(lnrho+ss-ss0)); TT1=1./TT
         cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
+        if(present(Temperature)) Temperature=TT
       else
 !
 !  if ionization turned off, continue assuming cp=1
@@ -70,6 +74,7 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
+        if(present(Temperature)) Temperature=cs2/gamma1
         cp1tilde=1.
       endif
 !

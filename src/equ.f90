@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.127 2003-03-18 23:27:09 brandenb Exp $
+! $Id: equ.f90,v 1.128 2003-03-24 18:44:29 brandenb Exp $
 
 module Equ
 
@@ -210,7 +210,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.127 2003-03-18 23:27:09 brandenb Exp $")
+           "$Id: equ.f90,v 1.128 2003-03-24 18:44:29 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -227,6 +227,10 @@ module Equ
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       if (test_nonblocking) call finalise_isendrcv_bdry(f)
+!
+!  Radiation transport along rays
+!
+      if(lradiation_ray) call radtransfer(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -304,7 +308,7 @@ module Equ
 !
 !  Evolution of radiative energy
 !
-        if (lradiation) call de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
+        if (lradiation_fld) call de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
 !
 !  Add shear if precent
 !
@@ -353,7 +357,7 @@ module Equ
         headtt=.false.
         lfirstpoint=.false.
       enddo
-      if (lradiation) f(:,:,:,idd)=DFF_new
+      if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

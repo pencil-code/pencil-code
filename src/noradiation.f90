@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.7 2002-11-24 13:14:59 mee Exp $
+! $Id: noradiation.f90,v 1.8 2003-03-24 18:44:29 brandenb Exp $
 
 
 module Radiation
@@ -7,6 +7,8 @@ module Radiation
 
   implicit none
 
+  ! radiation turned off
+ 
   integer :: dummyuu           ! We cannot define empty namelists
   namelist /radiation_init_pars/ dummyuu
   namelist /radiation_run_pars/  dummyuu
@@ -32,14 +34,26 @@ module Radiation
       if (.not. first) call stop_it('register_rad called twice')
       first = .false.
 !
-      lradiation = .false.
-!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.7 2002-11-24 13:14:59 mee Exp $")
+           "$Id: noradiation.f90,v 1.8 2003-03-24 18:44:29 brandenb Exp $")
 !
     endsubroutine register_radiation
+!***********************************************************************
+    subroutine radtransfer(f)
+!
+!  Integration radioation transfer equation along rays
+!
+!  24-mar-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if(ip==0) print*,f !(keep compiler quiet)
+    endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
 !

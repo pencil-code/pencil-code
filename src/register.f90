@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.65 2003-03-18 23:27:09 brandenb Exp $
+! $Id: register.f90,v 1.66 2003-03-24 18:44:29 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -143,7 +143,7 @@ module Register
 !
 !  print parameters in code units, but only when used
 !
-      if (lionization.or.lradiation.or.linterstellar) then
+      if (lionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
         print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
       endif
 !

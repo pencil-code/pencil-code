@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.18 2003-02-22 00:58:09 brandenb Exp $
+! $Id: radiation.f90,v 1.19 2003-03-24 18:44:29 brandenb Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -62,6 +62,8 @@ module Radiation
       first = .false.
 !
       lradiation = .true.
+      lradiation_fld = .true.
+!
       ie = nvar+1
       iff = nvar+2
       ifx = iff
@@ -80,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.18 2003-02-22 00:58:09 brandenb Exp $")
+           "$Id: radiation.f90,v 1.19 2003-03-24 18:44:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

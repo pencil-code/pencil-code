@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.131 2003-03-18 23:27:09 brandenb Exp $
+! $Id: cdata.f90,v 1.132 2003-03-24 18:44:29 brandenb Exp $
 
 module Cdata
 
@@ -84,7 +84,8 @@ module Cdata
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
-  logical :: lshear=.false.,lpscalar=.false.,lradiation=.false., lviscosity=.false.
+  logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
+  logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
 
   ! variables to allow modules to share 'precalculated' stuff

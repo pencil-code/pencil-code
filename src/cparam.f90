@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.33 2003-02-03 14:49:13 dobler Exp $
+! $Id: cparam.f90,v 1.34 2003-03-24 18:44:29 brandenb Exp $
 
 module Cparam
 
@@ -36,8 +36,6 @@ module Cparam
 !
 !  array dimension for reduce operation (maxima and sums)
 !  use here symbol mreduce, use nreduce in call
-!  u, divu (gives a total of 2)
-!  [??? this comment is absolutely cryptic -- wd]
 !
   integer, parameter :: mreduce=6
   integer :: ip=14

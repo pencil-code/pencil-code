@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.98 2003-03-18 23:27:09 brandenb Exp $ 
+! $Id: param_io.f90,v 1.99 2003-03-24 18:44:29 brandenb Exp $ 
 
 module Param_IO
 
@@ -154,9 +154,9 @@ module Param_IO
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
       label='dustvelocity_init_pars'
-      if (ldustvelocity) read(1,NML=dustvelocity_init_pars,ERR=99, IOSTAT=ierr)
+      if (ldustvelocity) read(1,NML=dustvelocity_init_pars ,ERR=99, IOSTAT=ierr)
       label='dustdensity_init_pars'
-      if (ldustdensity) read(1,NML=dustdensity_init_pars,ERR=99, IOSTAT=ierr)
+      if (ldustdensity ) read(1,NML=dustdensity_init_pars  ,ERR=99, IOSTAT=ierr)
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
       label='shear_init_pars'
