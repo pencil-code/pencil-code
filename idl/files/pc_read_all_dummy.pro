@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: pc_read_all_dummy.pro,v 1.1 2003-10-12 02:08:29 brandenb Exp $
+;;;  $Id: pc_read_all_dummy.pro,v 1.2 2004-03-15 12:49:31 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Dummy routine for reading data from all processors.
@@ -13,6 +13,11 @@
 ;;;   Overwrites nx, ny, etc, from start.pro, thus you need to run
 ;;;   start.pro after this if you want to continue working on data
 ;;;   from individual processors (e.g. if you want to run r.pro).
+
+function param2
+; Dummy to keep IDL from complaining. The real param2() routine will be
+; compiled below
+end
 
 ;
 ;  need to run start first: check whether this has been done
