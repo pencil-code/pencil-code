@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.65 2004-04-13 10:57:13 dobler Exp $
+! $Id: prints.f90,v 1.66 2004-04-26 17:25:35 ngrs Exp $
 
 module Print
 
@@ -331,7 +331,9 @@ module Print
         write(1) t2davgfirst,rcyl, &
                  z(n1)+(/(i*dz, i=0,nzgrid-1)/), &
                  drcyl,dz
-        write(1) fnamerz(:,1:nz,:,1:nnamerz)
+        !ngrs: use pack to explicitly order the array before writing
+        !     (write was messing up on copson without this...)
+        write(1) pack(fnamerz(:,1:nz,:,1:nnamerz),.true.)
 !
 !  write labels at the end of file
 !
