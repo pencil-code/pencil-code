@@ -6,7 +6,7 @@
 1e-3,-1,0.			ampl,init,urand
 ,1.,,0.,0.,			cs0,gamma,rho0,gravz,grads0
 &magnetic_init_pars
-initaa=0,amplaa=0
+initaa=0,amplaa=1e-3
 /
 
 # Meaning of init:
