@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.45 2003-10-09 13:03:21 mcmillan Exp $
+! $Id: grav_r.f90,v 1.46 2003-10-09 16:43:15 ngrs Exp $
 
 module Gravity
 
@@ -21,7 +21,7 @@ module Gravity
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0,r_int,r_ext
+  real :: g0
 
   character (len=labellen) :: ipotential='zero'
 
@@ -29,9 +29,9 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
 
-  namelist /grav_init_pars/ ipotential,g0,r_int,r_ext
+  namelist /grav_init_pars/ ipotential,g0
 
-  namelist /grav_run_pars/  ipotential,g0,r_int,r_ext
+  namelist /grav_run_pars/  ipotential,g0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -56,7 +56,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.45 2003-10-09 13:03:21 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.46 2003-10-09 16:43:15 ngrs Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -178,9 +178,13 @@ module Gravity
         else
           g_int = g0/r_int**2
           g_ext = g0/r_ext**2
-          where (r_mn < r_int) g_r = g_int
-          where (r_mn > r_ext) g_r = g_ext
-          where (r_mn >= r_int .and. r_mn <= r_ext) g_r = g0/r_mn(jmn)
+          where (r_mn >= r_ext) 
+            g_r=g_ext
+          elsewhere (r_mn > r_int)
+            g_r=g0/r_mn
+          elsewhere
+            g_r=g_int
+          endwhere
 ! end geodynamo
         endif
 !

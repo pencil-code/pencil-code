@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.112 2003-10-09 11:09:18 mcmillan Exp $
+! $Id: hydro.f90,v 1.113 2003-10-09 16:43:15 ngrs Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -11,9 +11,6 @@ module Hydro
 !ajwm  use Cdata, only: nu,ivisc
   use Density
   use Viscosity 
-! geodynamo
-  use Gravity, only: r_int, r_ext 
-! end geodynamo
 
   implicit none
 
@@ -94,7 +91,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.112 2003-10-09 11:09:18 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.113 2003-10-09 16:43:15 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.136 2003-10-09 16:31:57 mee Exp $ 
+! $Id: param_io.f90,v 1.137 2003-10-09 16:43:15 ngrs Exp $ 
 
 module Param_IO
 
@@ -59,7 +59,7 @@ module Param_IO
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io,lread_oldsnap, lwrite_aux, &
-       bcx,bcy,bcz
+       bcx,bcy,bcz,r_int,r_ext
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
@@ -69,7 +69,7 @@ module Param_IO
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
        ix,iy,iz,iz2, &
-       bcx,bcy,bcz, &
+       bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall, lcalc_cp

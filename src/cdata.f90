@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.168 2003-10-09 16:31:57 mee Exp $
+! $Id: cdata.f90,v 1.169 2003-10-09 16:43:15 ngrs Exp $
 
 module Cdata
 
@@ -20,6 +20,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
+  real :: r_int=0.0,r_ext=impossible   ! for spherical shell problems
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: tsforce=-10., dtforce=10
   real, dimension (2) :: fran1,fran2

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.41 2003-10-08 15:31:19 mcmillan Exp $
+! $Id: grav_z.f90,v 1.42 2003-10-09 16:43:15 ngrs Exp $
 
 module Gravity
 
@@ -23,7 +23,7 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0,r_int,r_ext
+  real :: g0
   logical :: lgravzd=.true.
   character (len=labellen) :: grav_profile='const'
 
@@ -82,7 +82,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.41 2003-10-08 15:31:19 mcmillan Exp $")
+           "$Id: grav_z.f90,v 1.42 2003-10-09 16:43:15 ngrs Exp $")
 !
       lgrav = .true.
       lgravz = .true.
