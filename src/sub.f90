@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.122 2003-07-07 10:19:53 brandenb Exp $ 
+! $Id: sub.f90,v 1.123 2003-07-10 13:43:47 dobler Exp $ 
 
 module Sub 
 
@@ -1313,32 +1313,48 @@ module Sub
 !  determine whether mxout=mx (as on each processor)
 !  or whether mxout is different (eg when writing out full array)
 !
-      if(present(mxout)) then; mxout1=mxout; else; mxout1=mx; endif
-      if(present(myout)) then; myout1=myout; else; myout1=my; endif
-      if(present(mzout)) then; mzout1=mzout; else; mzout1=mz; endif
-!
-      open(1,file=file)
-      write(1,'(5i7)') mxout1,myout1,mzout1,mvar,maux
-!
-!  check for double precision
-!
-      if (1..eq.1.+1e-10) then
-        write(1,'(a)') 'S'
-      else
-        write(1,'(a)') 'D'
-      endif
-!
-!  write number of ghost cells (could be different in x, y and z)
-!
-      write(1,'(3i3)') nghost, nghost, nghost
       if (present(mzout)) then
-        write(1,'(3i3)') nprocx, nprocy, nprocz
+        mxout1=mxout
+        myout1=myout
+        mzout1=mzout
+      elseif (lmonolithic_io) then
+        mxout1=nxgrid+2*nghost
+        myout1=nygrid+2*nghost
+        mzout1=nzgrid+2*nghost
       else
-        write(1,'(3i3)') ipx, ipy, ipz
+        mxout1=mx
+        myout1=my
+        mzout1=mz
+      endif
+      !
+      !  only root writes allprocs/dim.dat (with io_mpio.f90),
+      !  but everybody writes to their procN/dim.dat (with io_dist.f90)
+      !
+      if (lroot .or. .not. lmonolithic_io) then 
+        open(1,file=file)
+        write(1,'(5i7)') mxout1,myout1,mzout1,mvar,maux
+        !
+        !  check for double precision
+        !
+        if (1..eq.1.+1e-10) then
+          write(1,'(a)') 'S'
+        else
+          write(1,'(a)') 'D'
+        endif
+        !
+        !  write number of ghost cells (could be different in x, y and z)
+        !
+        write(1,'(3i3)') nghost, nghost, nghost
+        if (present(mzout)) then
+          write(1,'(3i3)') nprocx, nprocy, nprocz
+        else
+          write(1,'(3i3)') ipx, ipy, ipz
+        endif
+        !
+        close(1)
       endif
 !
-      close(1)
-    endsubroutine wdim
+      endsubroutine wdim
 !***********************************************************************
     subroutine out1 (file,tout,nout,dtout,t)
 !

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.16 2003-07-09 17:30:18 dobler Exp $
+! $Id: io_mpio.f90,v 1.17 2003-07-10 13:43:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -95,12 +95,14 @@ contains
       integer, dimension(3) :: start_index,mem_start_index
       logical, save :: first=.true.
 !
-!      if (.not. first) call stop_it('register_io called twice')
+      if (.not. first) call stop_it('register_io called twice')
       first = .false.
+      lmonolithic_io = .true.   ! we write f to one single file
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.16 2003-07-09 17:30:18 dobler Exp $")
+      if (lroot) call cvs_id( &
+           "$Id: io_mpio.f90,v 1.17 2003-07-10 13:43:47 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
