@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.179 2003-06-27 12:10:00 theine Exp $
+%%  CVS: $Id: manual.tex,v 1.180 2003-07-13 09:26:00 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}
+\date{$ $Date: 2003-07-13 09:26:00 $ $,~ $ $Revision: 1.180 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}
+  \emph{$ $Date: 2003-07-13 09:26:00 $ $,~ $ $Revision: 1.180 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3129,7 +3129,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-27 12:10:00 $ $,~ $ $Revision: 1.179 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-13 09:26:00 $ $,~ $ $Revision: 1.180 $ $}}}
 
 \section{Timings}
 
@@ -3237,7 +3237,9 @@ application on your specific hardware.
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & fe1   & 0.168& $512^3$ &nomagn/noentro&        &  9-oct-02 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
-  64 & mega  & 0.11 & $256^3$ &nomagn/noentro&  4x16  & 29-apr-03 & AB \\
+  64 & giga  & 0.11 & $256^3$ &nomagn/noentro&  4x16  & 29-apr-03 & AB \\
+  64 & giga  & 0.150& $256^3$ & magn/noentro &  4x16  &  1-jul-03 & AB \\
+  64 & giga  & 0.166& $512^3$ & magn/noentro &  4x16  & 10-jul-03 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
@@ -3775,6 +3777,28 @@ and subtracting the two yields
 \begin{equation}\label{ux-eqn-elim2}
   \sigma^2=2q/(1-\epsilon^2)
 \end{equation}
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Dependence of $\epsilon$ and $\delta$ on $\epsilon$.
+    }
+    \label{Tplanet_soltn}
+    \begin{tabular}{lcc}
+    \toprule
+$\epsilon$ & $\sigma$ & $\delta$ \\
+    \midrule
+ 0.1 & 1.74 & 0.67 \\
+ 0.2 & 1.77 & 0.64 \\
+ 0.3 & 1.82 & 0.58 \\
+ 0.4 & 1.89 & 0.46 \\
+ 0.48& 1.97 & 0.22 \\
+ 0.5 &  2   &  0   \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
 
 % ====================================================================== %
 
@@ -5372,7 +5396,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.179 2003-06-27 12:10:00 theine Exp $ $}
+$ $Id: manual.tex,v 1.180 2003-07-13 09:26:00 brandenb Exp $ $}
 
 
 \end{document}
