@@ -81,6 +81,7 @@ if ($local_binary) then
   ls -lt src/run.x $SCRATCH_DIR
 endif
 
+
 # Run run.x
 date
 echo "$mpirun $mpirunops $npops $run_x $x_ops"
@@ -97,15 +98,15 @@ if ($local_disc) then
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
-  echo "Killing processes ${pids}:"
+  echo "Shutting down processes ${pids}:"
   foreach p ($pids)  # need to do in a loop, and check for existence, since
                      # some systems (Hitachi) abort this script when trying
                      # to kill non-existent processes
     echo "  pid $p"
-    if ( `ps $p | fgrep -c $p` ) kill -KILL $p
+    if ( `ps -p $p | fgrep -c $p` ) kill -KILL $p
   end
 endif
-echo "Done killing"
+echo "Done"
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
@@ -121,7 +122,7 @@ if (-e "RERUN") then
 
   rm -f RERUN
 
-  echo "Previous run status: $run_status"
+  echo "Rerunning; current run status: $run_status"
   goto rerun
 endif  
 

@@ -107,7 +107,7 @@ copy-snapshots -v var.dat >& copy-snapshots.log
 # On machines with local scratch directory, initialize automatic
 # background copying of snapshots back to the data directory.
 # Also, if necessary copy executable to $SCRATCH_DIR of master node
-# and start top command on all procs
+# and start top command on all procs.
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >>& copy-snapshots.log &
@@ -124,6 +124,7 @@ if ($local_binary) then
   ls -lt src/run.x $SCRATCH_DIR
 endif
 
+
 # Run run.x
 date
 echo "$mpirun $mpirunops $npops $run_x $x_ops"
@@ -132,7 +133,6 @@ time $mpirun $mpirunops $npops $run_x $x_ops
 set run_status=$status		# save for exit
 date
 
-date
 # On machines with local scratch disc, copy var.dat back to the data
 # directory
 if ($local_disc) then
@@ -140,16 +140,16 @@ if ($local_disc) then
   copy-snapshots -v var.dat
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
-  set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed ' s/^ *//' | cut -d ' ' -f 1`
-  echo "Killing processes ${pids}:"
+  set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
+  echo "Shutting down processes ${pids}:"
   foreach p ($pids)  # need to do in a loop, and check for existence, since
                      # some systems (Hitachi) abort this script when trying
                      # to kill non-existent processes
     echo "  pid $p"
-    if ( `ps $p | fgrep -c $p` ) kill -KILL $p
+    if ( `ps -p $p | fgrep -c $p` ) kill -KILL $p
   end
 endif
-echo "Done killing"
+echo "Done"
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
@@ -157,15 +157,28 @@ if ($booted_lam) lamhalt
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
-exit $run_status
+# look for RERUN file 
+if (-e "RERUN") then 
+  if (-s "RERUN") then
+    cd `cat RERUN`
+  endif
+
+  rm -f RERUN
+
+  echo "Rerunning; current run status: $run_status"
+  #  goto rerun
+  ./run.csh
+endif  
+
+exit $run_status		# propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
-# bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
-# bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
+# bsub -n  4 -q 4cpu12h mpijob dmpirun src/start_run.x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun src/start_run.x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start_run.x
 
 # cut & paste for job submission for PBS
-# qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
-# qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long start.csh
-# qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start.csh
-# qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
+# qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start_run.csh
+# qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long start_run.csh
+# qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start_run.csh
+# qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start_run.csh
