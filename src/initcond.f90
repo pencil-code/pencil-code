@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.66 2003-08-02 21:50:46 brandenb Exp $ 
+! $Id: initcond.f90,v 1.67 2003-08-04 17:56:02 mee Exp $ 
 
 module Initcond 
  
@@ -545,7 +545,7 @@ module Initcond
         read(19,*) ztmp,lnrho0(n),SS0(n)
         if(ip<5) print*,ztmp,lnrho0(n),SS0(n)
         f(:,:,n,ilnrho)=lnrho0(n)
-        f(:,:,n,ient)=SS0(n)
+        f(:,:,n,iss)=SS0(n)
       enddo
       close(19)
 !
@@ -604,9 +604,9 @@ module Initcond
  
       print*,"planet_hc: integrate hot corona"
       hh(:,:,n2)=1.  !(initial condition)
-      f(:,:,:,ient)=-alog(ampl)*xi
+      f(:,:,:,iss)=-alog(ampl)*xi
       do n=n2-1,n1,-1
-        delS=f(:,:,n+1,ient)-f(:,:,n,ient)
+        delS=f(:,:,n+1,iss)-f(:,:,n,iss)
         hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+ &
              Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
       enddo
@@ -625,7 +625,7 @@ module Initcond
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)= &
              (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-             -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+             -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         print*,'planet solution with entropy jump for gamma=',gamma
       else
         if(gamma==1.) then
@@ -725,7 +725,7 @@ module Initcond
       if (lroot) print*,'planet: hh0,hmin',&
            hh0,minval(hh(l1:l2,m1:m2,n1:n2))
       if (lentropy .and. lroot) print*,'planet: smin,smax', &
-           minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
+           minval(f(:,:,:,iss)), maxval(f(:,:,:,iss))
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
@@ -733,7 +733,7 @@ module Initcond
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-            - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+            - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         if (lroot) print*,'planet solution with entropy jump for gamma=',gamma
       else
       if(gamma==1.) then

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.104 2003-08-02 21:50:46 brandenb Exp $
+! $Id: density.f90,v 1.105 2003-08-04 17:56:02 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.104 2003-08-02 21:50:46 brandenb Exp $")
+           "$Id: density.f90,v 1.105 2003-08-04 17:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -622,11 +622,11 @@ module Density
            tmp=-gamma*pot/cs20
 !        endif
         f(l1:l2,m,n,ilnrho)=lnrho0+tmp
-!        if(lentropy) f(l1:l2,m,n,ient)= -gamma1/gamma*tmp
+!        if(lentropy) f(l1:l2,m,n,iss)= -gamma1/gamma*tmp
 !                                      = gamma1*pot/cs20
 !   MOVED to isothermal_entropy routine
 
-        if(lentropy) f(l1:l2,m,n,ient)= &
+        if(lentropy) f(l1:l2,m,n,iss)= &
              -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
       enddo
       enddo
@@ -704,7 +704,7 @@ module Density
         call potential(x(l1:l2),y(m),z(n),pot)
         dlncs2=alog(-gamma*pot/((mpoly+1.)*cs20))
         f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
-        if(lentropy) f(l1:l2,m,n,ient)=mpoly*(ggamma/gamma-1.)*dlncs2
+        if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
       enddo
       enddo
 !
@@ -782,7 +782,7 @@ module Density
 !  thermal pressure (eq 13)
           pp=6.0*k_B*(rho0/1.38) *                                        &
            (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
-          f(l1:l2,m,n,ient)=alog(gamma*pp/cs20)/gamma +                   &
+          f(l1:l2,m,n,iss)=alog(gamma*pp/cs20)/gamma +                   &
                                      gamma1/gamma*lnrho0 - lnrho
 !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
           if (n == n1 .and. m == m1) cs2bot=gamma*pp/rho
@@ -847,16 +847,16 @@ module Density
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
-        f(:,:,n1,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
-        do i=1,nghost; f(:,:,n1-i,ient) = 2*f(:,:,n1,ient)-f(:,:,n1+i,ient); enddo
+        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n1-i,iss) = 2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
 !  for the time being, we don't worry about lnrho0 (assuming that it is 0)
 !
         tmp=-gravz/cs2bot
         do i=1,nghost
-          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,ient) &
-                                                  -f(:,:,n1-i,ient) +2*i*dz*tmp
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,iss) &
+                                                  -f(:,:,n1-i,iss) +2*i*dz*tmp
         enddo
 !
 !  top boundary
@@ -868,16 +868,16 @@ module Density
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
-        f(:,:,n2,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
-        do i=1,nghost; f(:,:,n2+i,ient) = 2*f(:,:,n2,ient)-f(:,:,n2-i,ient); enddo
+        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n2+i,iss) = 2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2top
 !  for the time being, we don't worry about lnrho0 (assuming that it is 0)
 !
         tmp=gravz/cs2top
         do i=1,nghost
-          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,ient) &
-                                                  -f(:,:,n2+i,ient) +2*i*dz*tmp
+          f(:,:,n2+i,ilnrho) = f(:,:,n2-i,ilnrho) +f(:,:,n2-i,iss) &
+                                                  -f(:,:,n2+i,iss) +2*i*dz*tmp
         enddo
 
       case default
@@ -924,18 +924,18 @@ module Density
 !         do m=m1,m2
 !         do l=l1,l2
 !           if (f(l,m,n1,iuz)>=0) then
-!             f(l,m,n1,ient)=ss_bot
+!             f(l,m,n1,iss)=ss_bot
 !           else
-!             f(l,m,n1,ient)=f(l,m,n1+1,ient)
+!             f(l,m,n1,iss)=f(l,m,n1+1,iss)
 !           endif
 !         enddo
 !         enddo
-          f(:,:,n2,ient)=ss_top
-          do i=1,nghost; f(:,:,n2+i,ient)=2*f(:,:,n2,ient)-f(:,:,n2-i,ient); enddo
+          f(:,:,n2,iss)=ss_top
+          do i=1,nghost; f(:,:,n2+i,iss)=2*f(:,:,n2,iss)-f(:,:,n2-i,iss); enddo
 !
 !  set density value such that pressure is constant at the bottom
 !
-          f(:,:,n2,ilnrho)=lnrho_top+ss_top-f(:,:,n2,ient)
+          f(:,:,n2,ilnrho)=lnrho_top+ss_top-f(:,:,n2,iss)
         else
           f(:,:,n2,ilnrho)=lnrho_top
         endif
@@ -960,18 +960,18 @@ module Density
 !         do m=m1,m2
 !         do l=l1,l2
 !           if (f(l,m,n1,iuz)>=0) then
-!             f(l,m,n1,ient)=ss_bot
+!             f(l,m,n1,iss)=ss_bot
 !           else
-!             f(l,m,n1,ient)=f(l,m,n1+1,ient)
+!             f(l,m,n1,iss)=f(l,m,n1+1,iss)
 !           endif
 !         enddo
 !         enddo
-          f(:,:,n1,ient)=ss_bot
-          do i=1,nghost; f(:,:,n1-i,ient)=2*f(:,:,n1,ient)-f(:,:,n1+i,ient); enddo
+          f(:,:,n1,iss)=ss_bot
+          do i=1,nghost; f(:,:,n1-i,iss)=2*f(:,:,n1,iss)-f(:,:,n1+i,iss); enddo
 !
 !  set density value such that pressure is constant at the bottom
 !
-          f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,ient)
+          f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,iss)
         else
           f(:,:,n1,ilnrho)=lnrho_bot
         endif

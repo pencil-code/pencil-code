@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.80 2003-08-04 16:27:09 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.81 2003-08-04 17:56:03 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -85,7 +85,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.80 2003-08-04 16:27:09 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.81 2003-08-04 17:56:03 mee Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -839,7 +839,7 @@ module Radiation
 !  Add radiative cooling
 !
       if(.not. nocooling) then
-         df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                            +4.*pi*kaprho(l1:l2,m,n) &
                             *f(l1:l2,m,n,iQrad) &
                             /f(l1:l2,m,n,iTT)*formfactor &

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.50 2003-07-11 19:27:13 dobler Exp $
+! $Id: boundcond.f90,v 1.51 2003-08-04 17:56:02 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -93,9 +93,9 @@ module Boundcond
                 case ('a2')       ! antisymmetry relative to boundary value
                   call bc_sym_x(f,-1,topbot,j,REL=.true.)
                 case ('cT')       ! constant temp.
-                  if (j==ient) call bc_ss_temp_x(f,topbot)
+                  if (j==iss) call bc_ss_temp_x(f,topbot)
                 case ('sT')       ! symmetric temp.
-                  if (j==ient) call bc_ss_stemp_x(f,topbot)
+                  if (j==iss) call bc_ss_stemp_x(f,topbot)
                 case ('in')
                   if (j==ie) call bc_ee_inflow_x(f,topbot)
                 case ('out')
@@ -171,9 +171,9 @@ module Boundcond
               case ('a2')       ! antisymmetry relative to boundary value
                 call bc_sym_y(f,-1,topbot,j,REL=.true.)
               case ('cT')       ! constant temp.
-                if (j==ient) call bc_ss_temp_y(f,topbot)
+                if (j==iss) call bc_ss_temp_y(f,topbot)
               case ('sT')       ! symmetric temp.
-                if (j==ient) call bc_ss_stemp_y(f,topbot)
+                if (j==iss) call bc_ss_stemp_y(f,topbot)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
               case default
@@ -245,21 +245,21 @@ module Boundcond
               case ('1s')        ! one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
-                if (j==ient) call bc_ss_flux(f,topbot)
+                if (j==iss) call bc_ss_flux(f,topbot)
                 if (j==iaa)  call bc_aa_pot(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
-                if (j==ient)   call bc_ss_temp_z(f,topbot)
+                if (j==iss)   call bc_ss_temp_z(f,topbot)
               case ('cp')       ! constant pressure
                 if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
               case ('sT')       ! symmetric temp.
-                if (j==ient) call bc_ss_stemp_z(f,topbot)
+                if (j==iss) call bc_ss_stemp_z(f,topbot)
               case ('c2')       ! complex
-                if (j==ient) call bc_ss_temp_old(f,topbot)
+                if (j==iss) call bc_ss_temp_old(f,topbot)
               case ('db')       ! complex
                 call bc_db_z(f,topbot,j) 
               case ('ce')       ! complex
-                if (j==ient) call bc_ss_energy(f,topbot)
+                if (j==iss) call bc_ss_energy(f,topbot)
               case ('e1')       ! extrapolation
                 call bc_extrap_2_1(f,topbot,j)
               case ('e2')       ! extrapolation

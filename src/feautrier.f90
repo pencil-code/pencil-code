@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.33 2003-06-27 21:47:11 theine Exp $
+! $Id: feautrier.f90,v 1.34 2003-08-04 17:56:02 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -67,7 +67,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.33 2003-06-27 21:47:11 theine Exp $")
+           "$Id: feautrier.f90,v 1.34 2003-08-04 17:56:02 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -182,8 +182,8 @@ module Radiation
          if (err) then
             print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
                             f(lrad,mrad,n2-5:n2,ilnrho)
-            print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
-                         f(lrad,mrad,n2-5:n2,ient)
+            print*,'ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
+                         f(lrad,mrad,n2-5:n2,iss)
             print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
             stop
          endif
@@ -249,8 +249,8 @@ module Radiation
          if (err) then
             print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
                             f(lrad,mrad,n2-5:n2,ilnrho)
-            print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
-                         f(lrad,mrad,n2-5:n2,ient)
+            print*,'ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
+                         f(lrad,mrad,n2-5:n2,iss)
             print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
             print*,'kappa=',f(lrad,mrad,n1:n1+5,ikappa),'...', &
                             f(lrad,mrad,n2-5:n2,ikappa)
@@ -403,7 +403,7 @@ module Radiation
       do n=n1,n2
       do m=m1,m2
          if(.not. nocooling) then
-            df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                               +4.*pi*f(l1:l2,m,n,ikappa) &
                                *f(l1:l2,m,n,iQrad) &
                                /f(l1:l2,m,n,iTT)*formfactor
@@ -553,7 +553,7 @@ module Radiation
       do n=n1,n2
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
-         ss=f(l1:l2,m,n,ient)
+         ss=f(l1:l2,m,n,iss)
          call ionset(f,ss,lnrho,yH,TT)
          f(l1:l2,m,n,iQrad)=sigmaSB*TT**4/pi
       enddo

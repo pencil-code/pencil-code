@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $
+! $Id: radiation.f90,v 1.26 2003-08-04 17:56:02 mee Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: radiation.f90,v 1.26 2003-08-04 17:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -198,7 +198,7 @@ module Radiation
          !  For perturbing the entropy after haveing found the 
          !  equilibrium between radiation and entropy.
          !
-         f(:,m1:m2,n1:n2,ient) = ampl_pert
+         f(:,m1:m2,n1:n2,iss) = ampl_pert
          f(:,m1:m2,n1:n2,ilnrho) = ampl_pert
       case default
          !
@@ -291,7 +291,7 @@ module Radiation
 !  add cooling to entropy equation
 !
       if (lentropy) then
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-(source-E_rad)*kappa_abs*c_gam*TT1
+      df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-(source-E_rad)*kappa_abs*c_gam*TT1
       endif
 !
 !  optical depth in x-dir.
@@ -498,7 +498,7 @@ module Radiation
       do i=1,my
          do j=1,mz
             lnrho=f(:,i,j,ilnrho)
-            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(:,i,j,ient))
+            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(:,i,j,iss))
             TT1=gamma1/cs2
             source=a_SB*TT1**(-4)
             f(:,i,j,ie) = source

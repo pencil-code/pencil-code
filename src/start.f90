@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.107 2003-07-29 15:37:36 dobler Exp $
+! $Id: start.f90,v 1.108 2003-08-04 17:56:03 mee Exp $
 !
 !***********************************************************************
       program start
@@ -46,7 +46,7 @@ integer :: ivar,ifilter
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.107 2003-07-29 15:37:36 dobler Exp $")
+             "$Id: start.f90,v 1.108 2003-08-04 17:56:03 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -55,7 +55,7 @@ integer :: ivar,ifilter
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
 !
 !  read parameters from start.in
-!  call also rprint_list, because it writes iuu, ilnrho, ient, and iaa to disk.
+!  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
 !
         call read_startpars(FILE=.true.)
         call rprint_list(.false.)

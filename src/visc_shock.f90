@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.24 2003-06-21 04:28:36 brandenb Exp $
+! $Id: visc_shock.f90,v 1.25 2003-08-04 17:56:03 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.24 2003-06-21 04:28:36 brandenb Exp $")
+           "$Id: visc_shock.f90,v 1.25 2003-08-04 17:56:03 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -433,11 +433,11 @@ module Viscosity
       call multm2_mn(sij,sij2)
 !      if (headtt) print*,'viscous heating: ',ivisc
 
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1 * &
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1 * &
            (2.*nu*sij2  & 
            + nu_shock * f(l1:l2,m,n,ishock) * divu**2)
 
-      maxheating=amax1(maxheating,df(l1:l2,m,n,ient))
+      maxheating=amax1(maxheating,df(l1:l2,m,n,iss))
 !
       if(ip==0) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
     endsubroutine calc_viscous_heat

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.36 2003-08-02 22:09:36 theine Exp $
+! $Id: interstellar.f90,v 1.37 2003-08-04 17:56:02 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -95,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.36 2003-08-02 22:09:36 theine Exp $")
+           "$Id: interstellar.f90,v 1.37 2003-08-04 17:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -211,7 +211,7 @@ module Interstellar
 !  heat and cool were calculated in terms of de/dt [~ erg/g/s], 
 !  so just multiply by TT1 to get ds/dt [~ erg/g/s/K]:
 !
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1(:)*(heat(:) - cool(:))
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1(:)*(heat(:) - cool(:))
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
@@ -308,7 +308,7 @@ module Interstellar
            do m=m1,m2
              lnrho(:)=f(l1:l2,m,n,ilnrho)
              rho(:)=exp(lnrho(:))
-             ss(:)=f(l1:l2,m,n,ient)
+             ss(:)=f(l1:l2,m,n,iss)
              TT(:)=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss(:))/gamma1*cp1
              rho_cloud(:)=0.0
              where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
@@ -496,7 +496,7 @@ module Interstellar
       lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
 !      rho_SN=exp(lnrho_SN)
 ! calculate TT_SN here, for later use in explode_SN
-      ss_SN=f(l_SN,m_SN,n_SN,ient)
+      ss_SN=f(l_SN,m_SN,n_SN,iss)
 
 ! NEED TO USE IONISATION CALCS 
 
@@ -595,7 +595,7 @@ find_SN: do n=n1,n2
              do l=l1,l2
                lnrho=f(l,m,n,ilnrho)
                rho=exp(lnrho)
-               ss=f(l,m,n,ient)
+               ss=f(l,m,n,iss)
 !ajwm: should use thermodynamics subroutine but need to resolve temperature unit issue first
                TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1*cp1
                if (rho >= rho_crit .and. TT <= TT_crit) then
@@ -729,7 +729,7 @@ find_SN: do n=n1,n2
 
             lnrho_old=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho_old)
-            ss_old=f(l1:l2,m,n,ient)
+            ss_old=f(l1:l2,m,n,iss)
 
             !compare old and new conversions for consistency...
             call ionget(f,yH_old,TT_old)
@@ -741,15 +741,15 @@ find_SN: do n=n1,n2
             ! use amax1 with rho_min to ensure rho doesn't go negative
             rho_new(:)=amax1(rho_old(:)+deltarho(:),rho_min)
             if (lmove_mass) f(l1:l2,m,n,ilnrho)=alog(rho_new)
-            f(l1:l2,m,n,ient)=ss_old + &
+            f(l1:l2,m,n,iss)=ss_old + &
                  ( alog(1.+ (deltaEE  &            ! / 12.56637061
                             / rho_new / ee_old)) ) / gamma  
-            if (lmove_mass) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
+            if (lmove_mass) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
                              - (gamma1*alog(rho_new / rho_old) )/ gamma
  
 ! EXTRA debug stuff
 !            call thermodynamics(f(l1:l2,m,n,ilnrho), & 
-!                  f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
+!                  f(l1:l2,m,n,iss),cs2,TT1,cp1tilde,InternalEnergy=e_new)
 !            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(ee_old*rho_old))
 
        enddo

@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -322,7 +322,7 @@ module  power_spectrum
     a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
     a_im=0.
   elseif (sp=='ss') then
-    a_re=f(l1:l2,m1:m2,n1:n2,ient)
+    a_re=f(l1:l2,m1:m2,n1:n2,iss)
     a_im=0.
   elseif (sp=='cc') then
     !old-- a_re=exp(f(l1:l2,m1:m2,n1:n2,ilncc)
@@ -402,7 +402,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.35 2003-08-04 17:56:02 mee Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.

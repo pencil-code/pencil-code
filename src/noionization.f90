@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.46 2003-08-04 17:53:45 theine Exp $
+! $Id: noionization.f90,v 1.47 2003-08-04 17:56:02 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.46 2003-08-04 17:53:45 theine Exp $")
+           "$Id: noionization.f90,v 1.47 2003-08-04 17:56:02 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -249,10 +249,10 @@ module Ionization
       yH=yH0
 !
       if (size(lnrho)==nx) lnrho=f(l1:l2,m,n,ilnrho)
-      if (size(ss)==nx) ss=f(l1:l2,m,n,ient)
+      if (size(ss)==nx) ss=f(l1:l2,m,n,iss)
 !
       if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
-      if (size(ss)==mx) ss=f(:,m,n,ient)
+      if (size(ss)==mx) ss=f(:,m,n,iss)
 !
 
       TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)

@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.14 2003-06-16 04:41:11 brandenb Exp $
+! $Id: slices.f90,v 1.15 2003-08-04 17:56:03 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -142,10 +142,10 @@ module Slices
 !  Entropy
 !
       if (lentropy) then
-        ss_yz=f(ix,m1:m2,n1:n2,ient)
-        ss_xz=f(l1:l2,iy,n1:n2,ient)
-        ss_xy=f(l1:l2,m1:m2,iz,ient)
-        ss_xy2=f(l1:l2,m1:m2,iz2,ient)
+        ss_yz=f(ix,m1:m2,n1:n2,iss)
+        ss_xz=f(l1:l2,iy,n1:n2,iss)
+        ss_xy=f(l1:l2,m1:m2,iz,iss)
+        ss_xy2=f(l1:l2,m1:m2,iz2,iss)
         call wslice(path//'ss.yz',ss_yz,x(ix),ny,nz)
         call wslice(path//'ss.xz',ss_xz,y(iy),nx,nz)
         call wslice(path//'ss.xy',ss_xy,z(iz),nx,ny)

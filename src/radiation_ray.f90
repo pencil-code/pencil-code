@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.21 2003-06-19 10:32:15 mee Exp $
+! $Id: radiation_ray.f90,v 1.22 2003-08-04 17:56:03 mee Exp $
 
 module Radiation
 
@@ -68,7 +68,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.21 2003-06-19 10:32:15 mee Exp $")
+           "$Id: radiation_ray.f90,v 1.22 2003-08-04 17:56:03 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -134,14 +134,14 @@ module Radiation
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !  Need Source function even in the ghost zones (for lower bc)
 !
-print*,'ss_border=',f(l1,m1,1:7,ient)
+print*,'ss_border=',f(l1,m1,1:7,iss)
 print*,'lnrho_border=',f(l1,m1,1:7,ilnrho)
 !!!!  do n=n1,n2
       do n=1,mz
       do m=m1,m2
 !ajwm  - not coherently fixed for new thermodynamics function 
 !         lnrho=f(l1:l2,m,n,ilnrho)
-!         ss=f(l1:l2,m,n,ient)
+!         ss=f(l1:l2,m,n,iss)
 !         yH=yyH(l1:l2,m,n) yh is beeing calculated in ioncalc
 !         call ioncalc(lnrho,ss,yH,kappa=kappa_)
          call thermodynamics(f,TT1=TT1)
@@ -322,7 +322,7 @@ write(28) Intensity,nrad
       do n=n1,n2
       do m=m1,m2
          if(.not. nocooling) then
-            df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+            df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
                               +4.*pi*f(l1:l2,m,n,ikappa) &
                                *f(l1:l2,m,n,iQrad) &
                                /f(l1:l2,m,n,iTT)

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.40 2003-06-16 04:41:10 brandenb Exp $
+! $Id: noentropy.f90,v 1.41 2003-08-04 17:56:02 mee Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.40 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.41 2003-08-04 17:56:02 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -150,7 +150,7 @@ module Entropy
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname
-      write(3,*) 'ient=',ient
+      write(3,*) 'iss=',iss
 !
     endsubroutine rprint_entropy
 !***********************************************************************

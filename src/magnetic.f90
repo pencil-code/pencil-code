@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.117 2003-08-03 15:36:28 brandenb Exp $
+! $Id: magnetic.f90,v 1.118 2003-08-04 17:56:02 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -88,7 +88,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.117 2003-08-03 15:36:28 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.118 2003-08-04 17:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,7 +329,7 @@ module Magnetic
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
         if(lentropy) then
           call dot2_mn(jj,J2)
-          df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+eta*J2*rho1*TT1
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.183 2003-08-03 15:33:00 brandenb Exp $
+! $Id: entropy.f90,v 1.184 2003-08-04 17:56:02 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -62,7 +62,7 @@ module Entropy
     subroutine register_entropy()
 !
 !  initialise variables which should know that we solve an entropy
-!  equation: ient, etc; increase nvar accordingly
+!  equation: iss, etc; increase nvar accordingly
 !
 !  6-nov-01/wolf: coded
 !
@@ -77,18 +77,18 @@ module Entropy
 !
       lentropy = .true.
 !
-      ient = nvar+1             ! index to access entropy
+      iss = nvar+1             ! index to access entropy
       nvar = nvar+1
 !
       if ((ip<=8) .and. lroot) then
         print*, 'Register_ent:  nvar = ', nvar
-        print*, 'ient = ', ient
+        print*, 'iss = ', iss
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.183 2003-08-03 15:33:00 brandenb Exp $")
+           "$Id: entropy.f90,v 1.184 2003-08-04 17:56:02 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,7 +132,7 @@ module Entropy
           !  calculate Fbot if it has not been set in run.in
           !
           if (Fbot==impossible) then
-            if (bcz1(ient)=='c1') then
+            if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
               if (lroot) print*, 'Calculated Fbot = ', Fbot
             else
@@ -151,7 +151,7 @@ module Entropy
           !  (K=hcond is radiative conductivity)
           !
           if (Fbot==impossible) then
-            if (bcz1(ient)=='c1') then
+            if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, 'Calculated Fbot = ', Fbot
             else
@@ -188,34 +188,34 @@ module Entropy
 !
       select case(initss)
         case('nothing'); if(lroot) print*,'init_ss: nothing'
-        case('zero', '0'); f(:,:,:,ient) = 0.
-        case('const_ss'); f(:,:,:,ient) = ss_const
-        case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,0.)
+        case('zero', '0'); f(:,:,:,iss) = 0.
+        case('const_ss'); f(:,:,:,iss) = ss_const
+        case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f)
         case('Ferriere'); if(lroot) print*,'init_ss: Ferriere set in density'
-        case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
-        case('yjump'); call jump(f,ient,ss_left,ss_right,widthss,'y')
-        case('zjump'); call jump(f,ient,ss_left,ss_right,widthss,'z')
-        case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
-        case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
+        case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
+        case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
+        case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
+        case('hor-fluxtube'); call htube(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
+        case('hor-tube'); call htube2(ampl_ss,f,iss,iss,xx,yy,zz,radius_ss,epsilon_ss)
 
         case('sedov') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-        call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
-      !   f(:,:,:,ient) = f(:,:,:,ient) + (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
+        call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
+      !   f(:,:,:,iss) = f(:,:,:,iss) + (alog(f(:,:,:,iss) + thermal_background)+alog(thermal_scaling))/gamma 
 
         case('sedov-dual') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-        call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
-        call blob(thermal_peak,f,ient,radius_ss,center2_x,center2_y,center2_z)
-      !   f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
+        call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
+        call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
+      !   f(:,:,:,iss) = (alog(f(:,:,:,iss) + thermal_background)+alog(thermal_scaling))/gamma 
    
         case('isobaric')
           !
           !  ss = - ln(rho/rho0)
           !
           if (lroot) print*,'init_ss: isobaric stratification'
-          f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
+          f(:,:,:,iss) = -(f(:,:,:,ilnrho)-lnrho0)
 
         case('isentropic', '1')
           !
@@ -224,12 +224,12 @@ module Entropy
           if (lroot) print*,'isentropic stratification'
           ! ss0=alog(-gamma1*gravz*zinfty)/gamma
           ! print*,'isentropic stratification; ss=',ss0
-          f(:,:,:,ient)=0.
+          f(:,:,:,iss)=0.
           if (ampl_ss/=0.) then
             print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
             tmp=xx**2+yy**2+zz**2
-            f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
-          !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
+            f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
+          !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
           endif
 
         case('linprof', '2')
@@ -237,7 +237,7 @@ module Entropy
           !  linear profile of ss, centered around ss=0.
           !
           if (lroot) print*,'linear entropy profile'
-          f(:,:,:,ient) = grads0*zz
+          f(:,:,:,iss) = grads0*zz
 
         case('piecew-poly', '4')
           !
@@ -258,7 +258,7 @@ module Entropy
           cs2int = cs0**2
           ss0 = 0.              ! reference value ss0 is zero
           ssint = ss0
-          f(:,:,:,ient) = 0.    ! just in case
+          f(:,:,:,iss) = 0.    ! just in case
           ! top layer
           call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
                                isothtop,cs2int,ssint)
@@ -287,7 +287,7 @@ module Entropy
           cs2int = cs0**2
           ss0 = 0.              ! reference value ss0 is zero
           ssint = ss0
-          f(:,:,:,ient) = 0.    ! just in case
+          f(:,:,:,iss) = 0.    ! just in case
           ! bottom (middle) layer
           call polytropic_ss_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
                                0,cs2int,ssint)
@@ -306,7 +306,7 @@ module Entropy
           !
           cs20 = cs0**2
           ss0 = 0.              ! reference value ss0 is zero
-          f(:,:,:,ient) = ss0   ! just in case
+          f(:,:,:,iss) = ss0   ! just in case
           cs2int = cs20
           ssint = ss0
           ! only one layer
@@ -327,13 +327,13 @@ module Entropy
 !  if ss_const/=0, add this constant to entropy
 !  (ss_const is already taken care of)
 !
-!     if (ss_const/=0) f(:,:,:,ient)=f(:,:,:,ient)+ss_const
+!     if (ss_const/=0) f(:,:,:,iss)=f(:,:,:,iss)+ss_const
 !
 !  no entropy initialization when lgravr=.true.
 !  why?
 !
       if (lgravr) then
-        f(:,:,:,ient) = -0.
+        f(:,:,:,iss) = -0.
       endif
 
 !
@@ -351,7 +351,7 @@ module Entropy
         !  hexagonal perturbation
         !
         if (lroot) print*,'adding hexagonal perturbation to ss'
-        f(:,:,:,ient) = f(:,:,:,ient) &
+        f(:,:,:,iss) = f(:,:,:,iss) &
                         + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
                                     *cos(0.5*khor_ss*yy) &
                                    + cos(khor_ss*yy) &
@@ -399,20 +399,20 @@ module Entropy
            call isothermal_density_ion(pot,tmp)
 !print*,minval(tmp),maxval(tmp)
            f(l1:l2,m,n,ilnrho)=lnrho0+tmp/TT0
-           f(l1:l2,m,n,ient) = ((1. + yH0 + xHe) &
+           f(l1:l2,m,n,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(l1:l2,m,n,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)))*ss_ion
 
-           if (yH0.ne.0.) f(l1:l2,m,n,ient) = &
-                f(l1:l2,m,n,ient) - (2.*yH0*log(yH0) * ss_ion)
-           if (xHe.ne.0.) f(l1:l2,m,n,ient) = &
-                f(l1:l2,m,n,ient) - (xHe*log(xHe)* ss_ion)
-           if (yH0.ne.1.) f(l1:l2,m,n,ient) = &
-                f(l1:l2,m,n,ient) - ((1.-yH0)*log(1.-yH0) * ss_ion)
+           if (yH0.ne.0.) f(l1:l2,m,n,iss) = &
+                f(l1:l2,m,n,iss) - (2.*yH0*log(yH0) * ss_ion)
+           if (xHe.ne.0.) f(l1:l2,m,n,iss) = &
+                f(l1:l2,m,n,iss) - (xHe*log(xHe)* ss_ion)
+           if (yH0.ne.1.) f(l1:l2,m,n,iss) = &
+                f(l1:l2,m,n,iss) - ((1.-yH0)*log(1.-yH0) * ss_ion)
 
-!print*,minval(f(l1:l2,m,n,ient)),maxval(f(l1:l2,m,n,ient))
+!print*,minval(f(l1:l2,m,n,iss)),maxval(f(l1:l2,m,n,iss))
         else
-          f(l1:l2,m,n,ient)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
                   ! + other terms for sound speed not equal to cs_0
         endif
       enddo
@@ -483,7 +483,7 @@ module Entropy
       !
       stp = step(z,zblend,widthss)
       p = spread(spread(stp,1,mx),2,my)
-      f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+      f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
@@ -539,7 +539,7 @@ module Entropy
       !
       stp = step(z,zblend,widthss)
       p = spread(spread(stp,1,mx),2,my)
-      f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+      f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_disc
 !***********************************************************************
@@ -575,16 +575,16 @@ module Entropy
 !  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE dss_dt'
-      if (headtt) call identify_bcs('ss',ient)
+      if (headtt) call identify_bcs('ss',iss)
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
-      call grad(f,ient,gss)
+      call grad(f,iss,gss)
 !
 !  calculate the necessary thermodynamics
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
-      ss=f(l1:l2,m,n,ient)
+      ss=f(l1:l2,m,n,iss)
       call ionget(f,yH,TT)
       call thermodynamics(lnrho,ss,yH,TT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
 !
@@ -610,8 +610,8 @@ module Entropy
 !
 !  advection term
 !
-      call u_dot_gradf(f,ient,gss,uu,ugss,UPWIND=lupw_ss)
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
+      call u_dot_gradf(f,iss,gss,uu,ugss,UPWIND=lupw_ss)
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - ugss
 !
 !  1/T is now calculated in thermodynamics
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
@@ -700,7 +700,7 @@ module Entropy
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
 !
-      call del2(f,ient,del2ss)
+      call del2(f,iss,del2ss)
       call del2(f,ilnrho,del2lnrho)
       glnT = gamma*gss + gamma1*glnrho
       glnP = gamma*gss + gamma*glnrho
@@ -713,7 +713,7 @@ module Entropy
 !
 !  add heat conduction to entropy equation
 !
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_simple: added thdiff'
 !
 !  shock entropy diffusivity
@@ -761,7 +761,7 @@ module Entropy
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
 !
-      call del2(f,ient,del2ss)
+      call del2(f,iss,del2ss)
       call del2(f,ilnrho,del2lnrho)
       glnT = gamma*gss + gamma1*glnrho
       glnP = gamma*gss + gamma*glnrho
@@ -777,7 +777,7 @@ module Entropy
 !
 !  add heat conduction to entropy equation
 !
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_shock: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion
@@ -819,7 +819,7 @@ module Entropy
 !  Heat conduction
 !  Note: these routines require revision when ionization turned on
 !
-      call del2(f,ient,del2ss)
+      call del2(f,iss,del2ss)
       call del2(f,ilnrho,del2lnrho)
       chix = rho1*hcond
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
@@ -829,7 +829,7 @@ module Entropy
 !
 !  add heat conduction to entropy equation
 !
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
       if (headtt) print*,'calc_heatcond_simple: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion
@@ -877,7 +877,7 @@ module Entropy
       endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
-        call del2(f,ient,del2ss)
+        call del2(f,iss,del2ss)
       endif
       if (hcond0 /= 0) then
         if (lgravz) then
@@ -916,7 +916,7 @@ module Entropy
             print*,"WARNING: hcond0 and chi_t combined don't seem to make sense"
           endif
         endif
-!        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
+!        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
         thdiff = chi_t*del2ss
       endif
 !
@@ -950,7 +950,7 @@ endif
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (headtt) print*,'calc_heatcond: added thdiff'
 !
@@ -1036,7 +1036,7 @@ endif
         case ('cs2', 'Temp')    ! cooling to reference temperatur cs2cool
           heat = heat - cool*prof*rho1*(cs2-cs2cool)/cs2cool
         case ('entropy')        ! cooling to reference entropy (currently =0)
-          heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
+          heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
         case default
           if (lroot) print*,'No such value for cooltype: ', trim(cooltype)
           call stop_it("")
@@ -1058,7 +1058,7 @@ endif
 !
 !  add to entropy equation
 !
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*rho1*heat
 !
     endsubroutine calc_heat_cool
 !***********************************************************************
@@ -1082,7 +1082,7 @@ endif
       if (headtt) print*,'calc_tau_ss_exterior: tau=',tau_ss_exterior
       if(z(n)>zgrav) then
         scl=1./tau_ss_exterior
-        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-scl*f(l1:l2,m,n,ient)
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-scl*f(l1:l2,m,n,iss)
       endif
 !
     endsubroutine calc_tau_ss_exterior
@@ -1124,7 +1124,7 @@ endif
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname
-      write(3,*) 'ient=',ient
+      write(3,*) 'iss=',iss
 !
     endsubroutine rprint_entropy
 !***********************************************************************
@@ -1221,15 +1221,15 @@ endif
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n1,ient) &
+                 * exp(-gamma*f(:,:,n1,iss) &
                        - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
         tmp_xy = Fbot/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
         do i=1,nghost
-          f(:,:,n1-i,ient) = &
+          f(:,:,n1-i,iss) = &
                (2*i*dz*tmp_xy &
                 + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
                )/gamma &
-               + f(:,:,n1+i,ient)
+               + f(:,:,n1+i,iss)
         enddo
 !
 !  bottom boundary
@@ -1246,7 +1246,7 @@ endif
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,ient))
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
@@ -1260,7 +1260,7 @@ endif
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n1-i,ient)=f(:,:,n1+i,ient)+gamma1/gamma* &
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma1/gamma* &
               (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
         enddo
 !
@@ -1272,15 +1272,15 @@ endif
         if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n2,ient) &
+                 * exp(-gamma*f(:,:,n2,iss) &
                        - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
         tmp_xy = FbotKbot * tmp_xy ! F_heat/(hcond T_0)
         do i=1,nghost
-          f(:,:,n2+i,ient) = &
+          f(:,:,n2+i,iss) = &
                (-2*i*dz*tmp_xy &
                 + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
                )/gamma &
-               + f(:,:,n2-i,ient)
+               + f(:,:,n2-i,iss)
         enddo
       case default
         if(lroot) print*,"invalid argument for 'bc_ss_flux'"
@@ -1326,7 +1326,7 @@ endif
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
           call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         if (lionization.or.lfixed_ionization) then
-           f(:,:,n1-nghost:n1,ient) = ((1. + yH0 + xHe) &
+           f(:,:,n1-nghost:n1,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
                 -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
@@ -1337,9 +1337,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
                 print*,'BOUNDCONDS: cannot have cs2bot<=0'
             tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + alog(cs2bot/cs20)) / gamma
-            f(:,:,n1,ient) = tmp_xy
+            f(:,:,n1,iss) = tmp_xy
             do i=1,nghost
-               f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
+               f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
             enddo
          endif
 !
@@ -1349,7 +1349,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
           call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         if (lfixed_ionization) then
-           f(:,:,n2:n2+nghost,ient) = ((1. + yH0 + xHe) &
+           f(:,:,n2:n2+nghost,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n2:n2+nghost,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
                 -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
@@ -1360,9 +1360,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
   !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                    + alog(cs2top/cs20)) / gamma
-          f(:,:,n2,ient) = tmp_xy
+          f(:,:,n2,iss) = tmp_xy
           do i=1,nghost
-            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+            f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
           enddo
         endif
       case default
@@ -1405,9 +1405,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(l1,:,:,ient) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
+        f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
-          f(l1-i,:,:,ient) = -f(l1+i,:,:,ient) + tmp &
+          f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
                - gamma1/gamma*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
         enddo
 !
@@ -1417,9 +1417,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set x top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(l2,:,:,ient) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
+        f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
-          f(l2+i,:,:,ient) = -f(l2-i,:,:,ient) + tmp &
+          f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
                - gamma1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
         enddo
 
@@ -1464,9 +1464,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set y bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,m1,:,ient) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
+        f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
-          f(:,m1-i,:,ient) = -f(:,m1+i,:,ient) + tmp &
+          f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
                - gamma1/gamma*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
         enddo
 !
@@ -1476,9 +1476,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set y top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,m2,:,ient) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
+        f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
-          f(:,m2+i,:,ient) = -f(:,m2-i,:,ient) + tmp &
+          f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
                - gamma1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
         enddo
 
@@ -1525,9 +1525,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,:,n1,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
-          f(:,:,n1-i,ient) = -f(:,:,n1+i,ient) + tmp &
+          f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
                - gamma1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
         enddo
      endif
@@ -1541,9 +1541,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,:,n2,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
+        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
-          f(:,:,n2+i,ient) = -f(:,:,n2-i,ient) + tmp &
+          f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
                - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
        endif
@@ -1583,7 +1583,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       case('bot')
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         do i=1,nghost
-          f(l1-i,:,:,ient) = f(l1+i,:,:,ient) &
+          f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
                + gamma1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
         enddo
 !
@@ -1592,7 +1592,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       case('top')
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         do i=1,nghost
-          f(l2+i,:,:,ient) = f(l2-i,:,:,ient) &
+          f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
                + gamma1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
         enddo
 
@@ -1632,7 +1632,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       case('bot')
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
         do i=1,nghost
-          f(:,m1-i,:,ient) = f(:,m1+i,:,ient) &
+          f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
                + gamma1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
         enddo
 !
@@ -1641,7 +1641,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       case('top')
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         do i=1,nghost
-          f(:,m2+i,:,ient) = f(:,m2-i,:,ient) &
+          f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
                + gamma1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
         enddo
 
@@ -1685,7 +1685,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
         else
           if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
           do i=1,nghost
-             f(:,:,n1-i,ient) = f(:,:,n1+i,ient) &
+             f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
                   + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
           enddo
         endif
@@ -1698,7 +1698,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
        else
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
          do i=1,nghost
-           f(:,:,n2+i,ient) = f(:,:,n2-i,ient) &
+           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
                 + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
         endif
@@ -1737,9 +1737,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,ient))
+      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,iss))
       do i=1,nghost
-         f(:,:,n1-i,ient)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+         f(:,:,n1-i,iss)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
 
@@ -1750,9 +1750,9 @@ print*,"Bottom CONSTANT TEMPERATURE"
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,iss))
       do i=1,nghost
-         f(:,:,n2+i,ient)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+         f(:,:,n2+i,iss)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
               +log(cs2_2d))
       enddo
     case default

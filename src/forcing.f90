@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.46 2003-07-29 09:43:36 brandenb Exp $
+! $Id: forcing.f90,v 1.47 2003-08-04 17:56:02 mee Exp $
 
 module Forcing
 
@@ -49,7 +49,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.46 2003-07-29 09:43:36 brandenb Exp $")
+           "$Id: forcing.f90,v 1.47 2003-08-04 17:56:02 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -969,7 +969,7 @@ module Forcing
 !
       call out2 (trim(file),tforce,nforce,dforce,t,lforce,ch,.true.)
       if (lforce) then
-        call blob(force,f,ient,radius_ff,0.,0.,.5)
+        call blob(force,f,iss,radius_ff,0.,0.,.5)
       endif
 !
     endsubroutine forcing_blobs

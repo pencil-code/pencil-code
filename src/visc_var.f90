@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.6 2003-07-19 05:40:34 brandenb Exp $
+! $Id: visc_var.f90,v 1.7 2003-08-04 17:56:03 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.6 2003-07-19 05:40:34 brandenb Exp $")
+           "$Id: visc_var.f90,v 1.7 2003-08-04 17:56:03 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -134,10 +134,10 @@ module Viscosity
          if (headtt) print*,'no heating: ivisc=',ivisc
        case('rho_nu-const', '1')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2*rho1
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*2.*nu*sij2*rho1
        case('nu-const', '2')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2
+         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*2.*nu*sij2
        case default
          if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
          call stop_it("") !"

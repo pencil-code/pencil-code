@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.204 2003-08-03 15:36:28 brandenb Exp $
+### $Id: Makefile,v 1.205 2003-08-04 17:56:02 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -122,15 +122,15 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6)
-#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6)  
-#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo|nw17|nl6)
+#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6|nl11|wormhole)
+#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6|nl11|wormhole)  
+#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo|nw17|nl6|nl11|wormhole)
 #LDMPI= # (Samos|fire)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
-#F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17)
+#F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 
 
 ## SunOS:
