@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.81 2003-09-10 17:38:45 brandenb Exp $ 
+! $Id: initcond.f90,v 1.82 2003-09-19 21:02:24 brandenb Exp $ 
 
 module Initcond 
  
@@ -113,6 +113,7 @@ module Initcond
 !  gaussian bump
 !
 !   2-may-03/axel: coded
+!  20-sep-03/axel: added 1/2 factor in defn; hopefully ok with everyone?
 !
       integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -129,7 +130,7 @@ module Initcond
           if (lroot) print*,'gaussian: ampl=0; kx=',k
         else
           if (lroot) print*,'gaussian: kx,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*x)**2),2,my),3,mz)
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-.5*(k*x)**2),2,my),3,mz)
         endif
       endif
 !
@@ -141,7 +142,7 @@ module Initcond
           if (lroot) print*,'gaussian: ampl=0; ky=',k
         else
           if (lroot) print*,'gaussian: ky,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*y)**2),1,mx),3,mz)
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-.5*(k*y)**2),1,mx),3,mz)
         endif
       endif
 !
@@ -153,7 +154,7 @@ module Initcond
           if (lroot) print*,'gaussian: ampl=0; kz=',k
         else
           if (lroot) print*,'gaussian: kz,i=',k,i
-          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*z)**2),1,mx),2,my)
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-.5*(k*z)**2),1,mx),2,my)
         endif
       endif
 !
