@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.195 2004-06-08 21:53:57 brandenb Exp $
+! $Id: magnetic.f90,v 1.196 2004-06-12 10:25:25 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.195 2004-06-08 21:53:57 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.196 2004-06-12 10:25:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1271,9 +1271,10 @@ module Magnetic
       real :: ampl,kx
       integer :: iuu,iaa,ilnrho
 !
-!  ux and Ay
+!  ux and Ay.
+!  Don't overwrite the density, just add to the log of it.
 !
-      f(:,:,:,ilnrho)=ampl*sin(kx*xx)
+      f(:,:,:,ilnrho)=ampl*sin(kx*xx)+f(:,:,:,ilnrho)
       f(:,:,:,iuu+0)=+ampl*sin(kx*xx)
       f(:,:,:,iuu+1)=+ampl*sin(kx*xx)
       f(:,:,:,iaa+2)=-ampl*cos(kx*xx)

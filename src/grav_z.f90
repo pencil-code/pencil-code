@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.57 2004-06-12 06:07:37 brandenb Exp $
+! $Id: grav_z.f90,v 1.58 2004-06-12 10:25:25 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.57 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.58 2004-06-12 10:25:25 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -133,8 +133,9 @@ module Gravity
     subroutine init_gg(f,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
-!  9-jan-02/wolf: coded
-!  24-nov-2002: renamed from init_grav to stay consistent
+!
+!   9-jan-02/wolf: coded
+!  24-nov-2002/tony: renamed from init_grav to stay consistent
 ! 
       use Cdata
 !
