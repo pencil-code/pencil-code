@@ -14,11 +14,15 @@ default, nfile, datatopdir + '/n.dat'
 default, oldfile, ''
 default, oldmtime, 0
 
-close,1
-openr,1,nfile
-fs = fstat(1)
-close,1
-mtime = fs.mtime
+;;; In IDL 5.2, FSTAT does not have this functionality
+; close,1
+; openr,1,nfile
+; fs = fstat(1)
+; close,1
+; mtime = fs.mtime
+;;; ..so we do this in Perl:
+spawn,"perl -e '@s=stat(""fort.20""); print $s[9]';", res
+mtime = ulong64(res[0])
 
 ;; Re-read file only if it has changed
 if ((nfile ne oldfile) or (mtime gt oldmtime)) then begin
