@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.12 2002-08-27 04:28:04 brandenb Exp $
+! $Id: radiation.f90,v 1.13 2002-10-04 11:00:42 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -22,6 +22,7 @@ module Radiation
   real :: amplee=0
   real :: ampl_pert=0
   real :: inflow=2
+  real, dimension(mx,my,mz) :: DFF_new=0
 
   ! init parameteres
   character (len=labellen) :: initrad='equil',pertee='none'
@@ -78,7 +79,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.12 2002-08-27 04:28:04 brandenb Exp $")
+           "$Id: radiation.f90,v 1.13 2002-10-04 11:00:42 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

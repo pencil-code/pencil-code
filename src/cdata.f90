@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.98 2002-10-04 10:13:14 nilshau Exp $
+! $Id: cdata.f90,v 1.99 2002-10-04 11:00:42 nilshau Exp $
 
 module Cdata
 
@@ -13,10 +13,6 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
 
-!? Nils, can't this be put in the radiation module?
-!? we don't want to waste this space if there is no radiation
-  real, dimension(mx,my,mz) :: DFF_new=0
- 
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
