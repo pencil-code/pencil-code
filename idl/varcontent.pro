@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.13 2003-12-06 13:55:19 ajohan Exp $
+;  $Id: varcontent.pro,v 1.14 2003-12-06 14:12:04 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -111,7 +111,9 @@ for idust=1,dustlayers do begin
     sidust = strtrim(string(idust),2)
     iuud=iuud1+3*(idust-1)
     ilnrhod=ilnrhod1+(idust-1)
-  endif
+  endif else begin
+    sidust = ''
+  endelse
 
   varcontent[iuud].variable = 'Dust velocity ' + sidust + $
       ' (uud' + sidust + ')'
