@@ -34,7 +34,7 @@ for ivar = 0,2 do begin
   endcase
   plot, z, z, /NODATA, $
       XRANGE=minmax(var), XSTYLE=3, $
-      YRANGE=minmax(z), $
+      YRANGE=minmax(z), YSTYLE=3,  $
       TITLE=title
   for ix=nign,nx-nign-1 do begin
     for iy=nign,ny-nign-1 do begin

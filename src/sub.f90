@@ -9,6 +9,11 @@ module Sub
     module procedure poly_3
   endinterface
 
+  interface notanumber              ! Overload the `notanumber' function
+    module procedure notanumber_1
+    module procedure notanumber_3
+  endinterface
+
   contains
 
 !***********************************************************************
@@ -771,14 +776,14 @@ module Sub
 !  Write startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1,ss0,grads0
+      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1,rho0,grads0
       use Mpicomm
 !
       if (lroot) then
         open(1,FILE='tmp/param.dat',FORM='unformatted')
-        write(1) Lx,Ly,Lz
+        write(1) x0,y0,z0,Lx,Ly,Lz
         write(1) cs0,gamma,gamma1 ! Write gamma1 here to ensure it is in sync
-        write(1) ss0,grads0
+        write(1) rho0,grads0
       endif
 !
     endsubroutine wparam
@@ -788,17 +793,17 @@ module Sub
 !  Read startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1,ss0,grads0
+      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1,rho0,grads0
       use Mpicomm
 !
-!      if (lroot) then
         open(1,FILE='tmp/param.dat',FORM='unformatted')
-        read(1) Lx,Ly,Lz
+        read(1) x0,y0,z0,Lx,Ly,Lz
         read(1) cs0,gamma,gamma1
-        read(1) ss0,grads0
-!      endif
+        read(1) rho0,grads0
+!      if (lroot) then
         print*, "Lx,Ly,Lz=", Lx,Ly,Lz
-        print*, "cs0,gamma,gamma1=", cs0,gamma,gamma1
+        print*, "rho0,gamma,gamma1=", rho0,gamma,gamma1
+!      endif
 !
     endsubroutine rparam
 !***********************************************************************
@@ -1171,6 +1176,72 @@ module Sub
       der_step = 0.5/(width*cosh((x-x0)/(width+epsi))**2)
 !
       endfunction der_step
+!***********************************************************************
+      function notanumber_1(f)
+!
+!  Check for denormalised floats (in fact NaN or -Inf, Inf).
+!  The test used here should work on all architectures even if
+!  optimisation is high (something like `if (any(f /= f+1))' would be
+!  optimised away).
+!  Version for 1d arrays.
+!  24-jan-02/wolf: coded
+!
+        logical :: notanumber_1
+        real, dimension(:) :: f
+        real, dimension(size(f,1)) :: g
+
+        g = f
+        notanumber_1 = (any(f /= g) .or. any(f .eq. g+1))
+!
+      endfunction notanumber_1
+!***********************************************************************
+      function notanumber_3(f)
+!
+!  Check for denormalised floats (in fact NaN or -Inf, Inf).
+!  The test used here should work on all architectures even if
+!  optimisation is high (something like `if (any(f /= f+1))' would be
+!  optimised away).
+!  Version for 3d arrays.
+!  24-jan-02/wolf: coded
+!
+        logical :: notanumber_3
+        real, dimension(:,:,:) :: f
+        real, dimension(size(f,1),size(f,2),size(f,3)) :: g
+
+        g = f
+        notanumber_3 = (any(f /= g) .or. any(f .eq. g+1))
+!
+      endfunction notanumber_3
+!***********************************************************************
+      subroutine parse_bc(bc,bc1,bc2)
+!
+!  Parse boundary conditions, which may be in the form `a' (applies to
+!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
+!  `s' for upper baoundary.
+!  24-jan-2001/wolf: coded
+!
+        use Cparam, only: mvar,bclen
+!
+        character (LEN=2*bclen+1), dimension(mvar) :: bc
+        character (LEN=bclen), dimension(mvar) :: bc1,bc2
+        integer :: j,isep
+!
+        intent(in) :: bc
+        intent(out) :: bc1,bc2
+!
+
+        do j=1,mvar
+          isep = index(bc(j),':')
+          if (isep > 0) then
+            bc1(j) = bc(j)(1:isep-1)
+            bc2(j) = bc(j)(isep+1:)
+          else
+            bc1(j) = bc(j)(1:bclen)
+            bc2(j) = bc(j)(1:bclen)
+          endif
+        enddo
+!
+      endsubroutine parse_bc
 !***********************************************************************
 
 endmodule Sub

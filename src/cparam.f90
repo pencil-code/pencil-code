@@ -9,6 +9,7 @@ module Cparam
   integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz
   integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
   integer, parameter :: nghost=3,mk=3000,mvar=8
+  integer, parameter :: bclen=3
 !
 !  derived parameters
 !

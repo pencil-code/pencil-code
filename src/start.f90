@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.13 $", &
-             "$Date: 2002-01-23 22:53:30 $")
+             "$Revision: 1.14 $", &
+             "$Date: 2002-01-25 08:04:47 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -39,22 +39,26 @@
 !
         open(1,FILE='start.in',FORM='formatted')
         read(1,*) ip
+        read(1,*) x0,y0,z0
         read(1,*) Lx,Ly,Lz
+        read(1,*) z1,z2,z3
         read(1,*) iperx,ipery,iperz
+        read(1,*) hcond0,hcond1,hcond2,whcond
         read(1,*) ampl,init,urand
-        read(1,*) cs0,gamma,rho0,gravz
-        read(1,*) ss0,grads0
+        read(1,*) cs0,gamma,rho0,gravz,grads0
         close(1)
 !
 !  output on the console, but only when root processor
 !
-        if (lroot)then
+        if (lroot) then
           print*, 'ip=', ip
+          print*, 'x0,y0,z0=', x0,y0,z0
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
+          print*, 'z1,z2,z3=', z1,z2,z3
           print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
+          print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
           print*, 'ampl,init,urand=', ampl,init,urand
-          print*, 'cs0,gamma,gravz=', cs0,gamma,gravz
-          print*, 'ss0,grads0=', ss0,grads0
+          print*, 'cs0,gamma,gravz,grads0=', cs0,gamma,gravz,grads0
         endif
 !
 !  ..and write to a parameter file (for run.x and IDL)
@@ -69,9 +73,9 @@
         if (ipery /= 0) then; dy = Ly/ny; else; dy = Ly/(ny-1); endif
         if (iperz /= 0) then; dz = Lz/nz; else; dz = Lz/(nz-1); endif
 
-        do i=1,mx; x(i)=-Lx/2.+(i-nghost-1       )*dx; enddo
-        do i=1,my; y(i)=-Ly/2.+(i-nghost-1+ipy*ny)*dy; enddo
-        do i=1,mz; z(i)=-Lz/2.+(i-nghost-1+ipz*nz)*dz; enddo
+        do i=1,mx; x(i)=x0+(i-nghost-1       )*dx; enddo
+        do i=1,my; y(i)=y0+(i-nghost-1+ipy*ny)*dy; enddo
+        do i=1,mz; z(i)=z0+(i-nghost-1+ipz*nz)*dz; enddo
 !
         call wgrid(trim(directory)//'/grid.dat')
 !

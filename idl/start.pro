@@ -49,6 +49,7 @@ zero = 0*one
 ;
 ;  Read startup parameters
 ;
+x0=zero & y0=zero & z0=zero
 Lx=zero & Ly=zero & Lz=zero
 cs0=zero & gamma=zero & gamma1=zero
 bx_ext=zero & by_ext=zero & bz_ext=zero
@@ -57,7 +58,7 @@ dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading grid.dat..'
   openr,1, datatopdir+'/'+'param.dat', /F77
-  readu,1, Lx,Ly,Lz
+  readu,1, x0,y0,z0,Lx,Ly,Lz
   readu,1, cs0,gamma,gamma1
   close,1
 endif else begin

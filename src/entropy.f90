@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-01-23 22:53:30 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-01-25 08:04:47 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -55,7 +55,6 @@ module Entropy
 !  7-nov-2001/wolf: coded
 !
       use Cdata
-      use Global
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
@@ -65,6 +64,7 @@ module Entropy
       if (lgravz) then
         select case(init)
         case(1)               ! density stratification
+          ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
                               + grads0 * zz
         case default
@@ -106,9 +106,9 @@ module Entropy
 !
 !  coordinates
 !
-      x_mn = x(l1:l2,m,n)
-      y_mn = y(l1:l2,m,n)
-      z_mn = z(l1:l2,m,n)
+      x_mn = x(l1:l2)
+      y_mn = spread(y(m),1,nx)
+      z_mn = spread(z(n),1,nx)
 !
       call grad(f,ient,gss)
       call del2(f,ient,del2ss)
@@ -164,6 +164,9 @@ module Entropy
       g2 = g1 + glhc
       call dot_mn(g1,g2,g1_g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
+
+print*,'chi in ', minval(chi), maxval(chi)
+if (notanumber(thdiff)) print*, 'NaNs in thdiff'
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 !
 !  Vertical case:
@@ -210,8 +213,8 @@ module Entropy
 !  calculate the heat conductivity lambda
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr
-      use Global
+      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,z3,hcond0,hcond1,hcond2,whcond
+      use Sub, only: step
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
@@ -230,8 +233,8 @@ module Entropy
 !  calculate grad(log lambda), where lambda is the heat conductivity
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr
-      use Global
+      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,z3,hcond0,hcond1,hcond2,whcond
+      use Sub, only: der_step
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc

@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-01-23 19:56:13 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-01-25 08:04:47 $")
 !
 !
       if (nvar > mvar) then
@@ -123,6 +123,9 @@ module Register
           f(:,:,:,ilnrho) = -grads0*zz &
                             + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
                                                   *(1-exp(-grads0*zz)) )
+          if (notanumber(f(:,:,:,ilnrho))) then
+            STOP "INIT_HYDRO: Imaginary density values"
+          endif
         endif
         !
         if (lgravr) then

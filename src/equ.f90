@@ -32,6 +32,7 @@ module Equ
       read(1,*) form1
       close(1)
       cs20=cs0**2 !(goes into cdata module)
+      ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
 
       if (present(print) .and. print) then
         call cprint()
@@ -238,8 +239,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-01-23 22:53:30 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-01-25 08:04:47 $")
 !
 !  initiate communication
 !
@@ -320,7 +321,7 @@ module Equ
         if (lgravr) then
 !        r = rr(l1:l2,m,n)
 !          pdamp = 0.5*(1+tanh((r-rdamp)/wdamp)) ! damping profile
-          pdamp = step(r,damp,wdamp) ! damping profile
+          pdamp = step(r,rdamp,wdamp) ! damping profile
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo
