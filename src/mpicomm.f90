@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.53 2002-10-09 19:40:48 dobler Exp $
+! $Id: mpicomm.f90,v 1.54 2002-10-10 19:47:51 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -325,10 +325,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
         do j=1,mvar
            if (ipz /= 0 .OR. bcz1(j)=='p') then 
-              f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
+              f(l1:l2,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
            endif
            if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
-              f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
+              f(l1:l2,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
@@ -345,18 +345,18 @@ module Mpicomm
         do j=1,mvar
            if (ipz /= 0 .OR. bcz1(j)=='p') then 
               if (ipy /= 0 .OR. bcy1(j)=='p') then 
-                 f(l1:l2, 1:m1-1, 1:n1-1,:)=llbufi  !!(set ll corner)
+                 f(l1:l2, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
               endif
               if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(l1:l2,m2+1:my, 1:n1-1,:)=ulbufi  !!(set ul corner)
+                 f(l1:l2,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
               endif
            endif
            if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
               if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
-                 f(l1:l2,m2+1:my,n2+1:mz,:)=uubufi  !!(set uu corner)
+                 f(l1:l2,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
               endif
               if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(l1:l2, 1:m1-1,n2+1:mz,:)=lubufi  !!(set lu corner)
+                 f(l1:l2, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
               endif
            endif
         enddo
