@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.151 2003-11-23 16:23:09 theine Exp $
+! $Id: ionization.f90,v 1.152 2003-11-23 17:16:02 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -65,15 +65,15 @@ module Ionization
   !real, parameter :: yHmin=tiny(yHmin), yHmax=1-epsilon(yHmax)
   real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
-  real :: yHmetals=0
+  real :: yMetals=0
   real :: yHacc=1e-5
   logical :: radcalc_test=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yHmetals,yHacc,radcalc_test
+  namelist /ionization_init_pars/ xHe,yMetals,yHacc,radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yHmetals,yHacc,radcalc_test
+  namelist /ionization_run_pars/ xHe,yMetals,yHacc,radcalc_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -112,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.151 2003-11-23 16:23:09 theine Exp $")
+           "$Id: ionization.f90,v 1.152 2003-11-23 17:16:02 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -201,7 +201,7 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'initialize_ionization: yHmin,yHmax,yHmetals=',yHmin,yHmax,yHmetals
+        print*,'initialize_ionization: yHmin,yHmax,yMetals=',yHmin,yHmax,yMetals
         print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
@@ -874,7 +874,7 @@ module Ionization
 !  calculate opacity
 !
          lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                      +TT_ion_/TT+log(yH+yHmetals)+log(1-yH)+lnchi0
+                      +TT_ion_/TT+log(yH+yMetals)+log(1-yH)+lnchi0
 
 !
       enddo
