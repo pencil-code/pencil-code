@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.46 2002-06-09 10:13:01 brandenb Exp $
+! $Id: cdata.f90,v 1.47 2002-06-11 08:45:51 dobler Exp $
 
 module Cdata
 
@@ -64,5 +64,6 @@ module Cdata
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (len=12) :: directory
+  character (len=120) :: cvsid
 
 endmodule Cdata

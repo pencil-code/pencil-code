@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.15 2002-06-08 16:02:00 brandenb Exp $ 
+! $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $ 
 
 module Param_IO
 
@@ -20,9 +20,9 @@ module Param_IO
   real :: tmax=1e33
 
   namelist /init_pars/ &
-       ip,xyz0,Lxyz,lperi,lwrite_ic
+       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic
   namelist /run_pars/ &
-       ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
+       cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax, &
        bcx,bcy,bcz
  
@@ -33,12 +33,9 @@ module Param_IO
 !
 !  read input parameters (done by each processor)
 !
-      character(len=80) Id
-!
-!  open namelist file; read/print cvs id from first line
+!  open namelist file
 !
       open(1,FILE='start.in',FORM='formatted')
-      read(1,'(a80)') Id; if(lroot) then; print*; print*,Id; endif
 !
 !  read through all items that *may* be present
 !  in the various modules
@@ -53,6 +50,12 @@ module Param_IO
       close(1)
 !
 !  output on the console, but only when root processor
+!
+!  print cvs id from first line
+!  [temporary solution; should have cvs_id parse the line
+!   $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $
+!   and extract the pieces it needs]
+      if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
       if (lroot.and.ip<14) then
                        write(*,NML=init_pars         )
@@ -85,10 +88,9 @@ module Param_IO
       do i=1,mvar; bcy(i)='p'; enddo
       do i=1,mvar; bcz(i)='p'; enddo
 !
-!  open namelist file; read/print cvs id from first line
+!  open namelist file
 !
       open(1,file='run.in',form='formatted')
-      read(1,'(a80)') Id; if(lroot) then; print*; print*,Id; endif
 !
 !  read through all items that *may* be present
 !  in the various modules
@@ -101,6 +103,12 @@ module Param_IO
       if (lentropy ) read(1,NML=entropy_run_pars )
       if (lmagnetic) read(1,NML=magnetic_run_pars)
       close(1)
+!
+!  print cvs id from first line
+!  [temporary solution; should have cvs_id parse the line
+!   $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $
+!   and extract the pieces it needs]
+      if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
 !  Write data to file for IDL
 !
