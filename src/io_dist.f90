@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.36 2002-10-01 15:57:17 brandenb Exp $
+! $Id: io_dist.f90,v 1.37 2002-10-02 15:49:57 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -69,29 +69,47 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
-      use Cdata, only: iproc,directory,directory_snap
+      use Cdata, only: iproc,datadir,datadir_snap
       use General
       use Sub
       use Mpicomm, only: lroot,stop_it
 !
       logical, save :: first=.true.
-      character (len=4) :: chproc
 !
       if (.not. first) call stop_it('register_io called twice')
       first = .false.
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.36 2002-10-01 15:57:17 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.37 2002-10-02 15:49:57 dobler Exp $")
 !
-!  set directory name for the output (one subdirectory for each processor)
-!  set directory_snap to directory if not already initialized.
+!  initialize datadir (may be overwritten in *.in parameter file)
 !
-      call chn(iproc,chproc)
-      directory='tmp/proc'//chproc
-      directory_snap=directory
+      datadir = 'tmp'
 !
     endsubroutine register_io
+!***********************************************************************
+    subroutine directory_names()
+!
+!  Set up the directory names:
+!  initialize datadir to `data' (would have been `tmp' with older runs)
+!  set directory name for the output (one subdirectory for each processor)
+!  if  datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
+!
+!  02-oct-2002/wolf: coded
+!
+      use Cdata, only: datadir,datadir_snap,directory,directory_snap
+      use Mpicomm, only: iproc
+      use General, only: chn
+!
+      character (len=5) :: chproc=''
+!
+      call chn(iproc,chproc)
+      directory = trim(datadir)//'/proc'//chproc
+      if (datadir_snap .eq. '') datadir_snap = datadir
+      directory_snap = trim(datadir_snap)//'/proc'//chproc
+!
+    endsubroutine directory_names
 !***********************************************************************
     subroutine input(file,a,nn,mode)
 !

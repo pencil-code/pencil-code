@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.6 2002-09-27 14:14:19 dobler Exp $
+! $Id: io_mpio.f90,v 1.7 2002-10-02 15:49:57 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.6 2002-09-27 14:14:19 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.7 2002-10-02 15:49:57 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -122,14 +122,29 @@ contains
 !
       io_initialized=.true.
 !
-!  set directory name for the output (one common directory for all processors)
-!  set directory_snap to the same name as directory, but it could be overwritten
-!  if set in namelist.
+!  initialize datadir (may be overwritten in *.in parameter file)
 !
-      directory='tmp/allprocs'
-      directory_snap=directory
+      datadir = 'data'
 !
     endsubroutine register_io
+!***********************************************************************
+    subroutine directory_names()
+!
+!  Set up the directory names:
+!  initialize datadir to `data' (would have been `tmp' with older runs)
+!  set directory name for the output (one subdirectory for each processor)
+!  if  datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
+!
+!  02-oct-2002/wolf: coded
+!
+      use Cdata, only: datadir,datadir_snap,directory,directory_snap
+      use Mpicomm, only: iproc
+!
+      directory = trim(datadir)//'/allprocs'
+      if (datadir_snap .eq. '') datadir_snap = datadir
+      directory_snap = trim(datadir_snap)//'/allprocs'
+!
+    endsubroutine directory_names
 !***********************************************************************
     subroutine commit_io_type_vect(nn)
 !
@@ -461,6 +476,7 @@ contains
 !
       character (len=*) :: file ! not used
 !
+print*, 'WGRID: ',trim(directory)//'/gridx.dat'
       call write_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
       call write_grid_data(trim(directory)//'/gridy.dat',nygrid,ny,my,ipy,y)
       call write_grid_data(trim(directory)//'/gridz.dat',nzgrid,nz,mz,ipz,z)

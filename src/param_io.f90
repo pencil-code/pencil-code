@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.59 2002-10-01 15:57:17 brandenb Exp $ 
+! $Id: param_io.f90,v 1.60 2002-10-02 15:49:57 dobler Exp $ 
 
 module Param_IO
 
@@ -33,12 +33,12 @@ module Param_IO
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
-       directory_snap,random_gen
+       datadir,datadir_snap,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
-       directory_snap,random_gen, &
+       datadir,datadir_snap,random_gen, &
        lrmwig_full,lrmwig_xyaverage, &
        bcx,bcy,bcz, &
        ttransient
@@ -54,6 +54,8 @@ module Param_IO
 !
       use Mpicomm, only: stop_it
 !
+
+      integer :: ierr
       character (len=30) :: label='[none]'
 !
 !  open namelist file
@@ -64,23 +66,23 @@ module Param_IO
 !  in the various modules
 !
       label='init_pars'
-                      read(1,NML=init_pars          ,err=99)
+                      read(1,NML=init_pars          ,ERR=99, IOSTAT=ierr)
       label='hydro_init_pars'
-      if (lhydro    ) read(1,NML=hydro_init_pars    ,err=99)
+      if (lhydro    ) read(1,NML=hydro_init_pars    ,ERR=99, IOSTAT=ierr)
       label='density_init_pars'
-      if (ldensity  ) read(1,NML=density_init_pars  ,err=99)
+      if (ldensity  ) read(1,NML=density_init_pars  ,ERR=99, IOSTAT=ierr)
       label='grav_init_pars'
-      if (lgrav     ) read(1,NML=grav_init_pars     ,err=99)
+      if (lgrav     ) read(1,NML=grav_init_pars     ,ERR=99, IOSTAT=ierr)
       label='entropy_init_pars'
-      if (lentropy  ) read(1,NML=entropy_init_pars  ,err=99)
+      if (lentropy  ) read(1,NML=entropy_init_pars  ,ERR=99, IOSTAT=ierr)
       label='magnetic_init_pars'
-      if (lmagnetic ) read(1,NML=magnetic_init_pars ,err=99)
+      if (lmagnetic ) read(1,NML=magnetic_init_pars ,ERR=99, IOSTAT=ierr)
       label='radiation_init_pars'
-      if (lradiation) read(1,NML=radiation_init_pars,err=99)
+      if (lradiation) read(1,NML=radiation_init_pars,ERR=99, IOSTAT=ierr)
       label='pscalar_init_pars'
-      if (lpscalar  ) read(1,NML=pscalar_init_pars  ,err=99)
+      if (lpscalar  ) read(1,NML=pscalar_init_pars  ,ERR=99, IOSTAT=ierr)
       label='shear_init_pars'
-      if (lshear    ) read(1,NML=shear_init_pars    ,err=99)
+      if (lshear    ) read(1,NML=shear_init_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'
       close(1)
 !
@@ -114,9 +116,10 @@ module Param_IO
         if (Sshear==impossible) Sshear=-qshear*Omega
       endif
 !
+      return
+!
 !  in case of i/o error: print sample input list
 !
-      return
 99    if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
@@ -132,8 +135,12 @@ module Param_IO
         print*,'------END sample namelist -------'
         print*
       endif
-      call stop_it('found error in input namelist "' // trim(label) &
-           // '": use sample above')
+      if (lroot) then
+        print*, 'Found error in input namelist "' // trim(label)
+        print*, 'iostat = ', ierr
+        print*,  '-- use sample above.'
+      endif
+      call stop_it('')
 !
     endsubroutine read_inipars
 !***********************************************************************
@@ -148,6 +155,7 @@ module Param_IO
       use Sub, only: parse_bc
       use Mpicomm, only: stop_it
 !
+      integer :: ierr
       logical, optional :: print
       character (len=30) :: label='[none]'
 !
@@ -171,25 +179,25 @@ module Param_IO
 !  in the various modules
 !
       label='run_pars'
-                      read(1,NML=run_pars          ,err=99)
+                      read(1,NML=run_pars          ,ERR=99, IOSTAT=ierr)
       label='hydro_run_pars'
-      if (lhydro    ) read(1,NML=hydro_run_pars    ,err=99)
+      if (lhydro    ) read(1,NML=hydro_run_pars    ,ERR=99, IOSTAT=ierr)
       label='density_run_pars'
-      if (ldensity  ) read(1,NML=density_run_pars  ,err=99)
+      if (ldensity  ) read(1,NML=density_run_pars  ,ERR=99, IOSTAT=ierr)
       label='forcing_run_pars'
-      if (lforcing  ) read(1,NML=forcing_run_pars  ,err=99)
+      if (lforcing  ) read(1,NML=forcing_run_pars  ,ERR=99, IOSTAT=ierr)
       label='grav_run_pars'
-      if (lgrav     ) read(1,NML=grav_run_pars     ,err=99)
+      if (lgrav     ) read(1,NML=grav_run_pars     ,ERR=99, IOSTAT=ierr)
       label='entropy_run_pars'
-      if (lentropy  ) read(1,NML=entropy_run_pars  ,err=99)
+      if (lentropy  ) read(1,NML=entropy_run_pars  ,ERR=99, IOSTAT=ierr)
       label='magnetic_run_pars'
-      if (lmagnetic ) read(1,NML=magnetic_run_pars ,err=99)
+      if (lmagnetic ) read(1,NML=magnetic_run_pars ,ERR=99, IOSTAT=ierr)
       label='radiation_run_pars'
-      if (lradiation) read(1,NML=radiation_run_pars,err=99)
+      if (lradiation) read(1,NML=radiation_run_pars,ERR=99, IOSTAT=ierr)
       label='pscalar_run_pars'
-      if (lpscalar  ) read(1,NML=pscalar_run_pars  ,err=99)
+      if (lpscalar  ) read(1,NML=pscalar_run_pars  ,ERR=99, IOSTAT=ierr)
       label='shear_run_pars'
-      if (lshear    ) read(1,NML=shear_run_pars    ,err=99)
+      if (lshear    ) read(1,NML=shear_run_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'
       close(1)
 !
@@ -275,8 +283,12 @@ module Param_IO
         print*,'------END sample namelist -------'
         print*
       endif
-      call stop_it('found error in input namelist "' // trim(label) &
-           // '": use sample above')
+      if (lroot) then
+        print*, 'Found error in input namelist "' // trim(label)
+        print*, 'iostat = ', ierr
+        print*,  '-- use sample above.'
+      endif
+      call stop_it('')
 !
     endsubroutine read_runpars
 !***********************************************************************

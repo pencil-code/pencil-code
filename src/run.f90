@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.91 2002-10-02 10:37:04 dobler Exp $
+! $Id: run.f90,v 1.92 2002-10-02 15:49:57 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.91 2002-10-02 10:37:04 dobler Exp $")
+             "$Id: run.f90,v 1.92 2002-10-02 15:49:57 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -76,6 +76,9 @@
 !
         if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
+!  set up directory names `directory' and `directory_snap'
+!
+      call directory_names()
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.

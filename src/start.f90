@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.66 2002-10-01 15:57:17 brandenb Exp $
+! $Id: start.f90,v 1.67 2002-10-02 15:49:57 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.66 2002-10-01 15:57:17 brandenb Exp $")
+             "$Id: start.f90,v 1.67 2002-10-02 15:49:57 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -55,6 +55,7 @@
 !
         gamma1 = gamma-1.
         call wparam()
+        call directory_names()
 !
         if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
