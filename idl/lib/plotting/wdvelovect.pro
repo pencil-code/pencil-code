@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.3 2004-02-09 17:24:47 dobler Exp $
+; $Id: wdvelovect.pro,v 1.4 2004-02-09 17:54:28 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -10,6 +10,7 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
         Missing = Missing, Length = length, Dots = dots,  $
         Color=color, CLIP=clip, NOCLIP=noclip, OVERPLOT=overplot,  $
         NOZERO=nozero, CENTER=center, XRANGE=xrange, YRANGE=yrange,  $
+        POSITION=position, $
         ScaLength = scalength, MAXVEC=maxvec, NOPLOT=noplot, QUIET=quiet, $
         _EXTRA=extra
 ;
@@ -193,21 +194,37 @@ bady:            message, 'Y array has incorrect size.'
            endif else $
               if n_elements(y) ne s[2] then goto,bady
         endelse
+;
 ; wd: regrid data if too many points
+;
+        ;----------  pretend to plot to get plot window size right  -----------
+        if (n_elements(position) le 1) then position=0
+        plot, x, y, /NODATA, /NOERASE, $
+            XSTYLE=4, YSTYLE=4, TITLE='', $
+            POSITION=position
         xwidth = !x.window[1] - !x.window[0]
         ywidth = !y.window[1] - !y.window[0]
         case n_elements(maxvec) of
-          0: begin  ; default settings
+          ;
+          0: begin
+            ;; default settings: maxvec depends on resolution
             if ((!d.flags and 1) eq 0) then begin ; fixed-size pixels
-              npix = 9    ; make longest arrows that many pixels long
+              npix = 9     ; make longest arrows that many pixels long
               maxvec = [!d.x_vsize*xwidth, !d.y_vsize*ywidth]/npix
             endif else begin    ; scalable pixels
               nmms = 2.0      ;  make longest arrows that many mm long
               maxvec = [!d.x_vsize*xwidth, !d.y_vsize*ywidth]/(nmms*100)
             endelse
           end
-          1: maxvec = floor([sqrt(maxvec*sx/sy), sqrt(maxvec*sy/sx)])
+          ;
+          1: begin
+            ;; One arg given : replicate for both directions according
+            ;; to number of points in x and y
+            maxvec = floor([sqrt(maxvec*sx/sy), sqrt(maxvec*sy/sx)])
+          end
+          ;
           else:                 ; nothing to do
+          ;
         endcase
 
         regrid = 0
@@ -294,7 +311,7 @@ bady:            message, 'Y array has incorrect size.'
           if (n_elements(yrange) le 1) then yrange=[y_b0,y_b1]
           if (yrange[0] eq yrange[1])  then yrange=[y_b0,y_b1]
             plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
-              color=color, xrange=xrange, yrange=yrange, $
+              color=color, xrange=xrange, yrange=yrange, POSITION=position, $
               _EXTRA = extra
 ;         endif else begin
 ;           plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
