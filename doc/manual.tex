@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.129 2002-10-09 02:07:45 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.130 2002-10-11 16:12:39 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.129 $ $}
+\date{\today,~ $ $Revision: 1.130 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.129 $ $}
+  \emph{\today,~ $ $Revision: 1.130 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1411,7 +1411,7 @@ Each of the directories can contain the following files:
 \section{Using the Code}
 \label{Input-params}
 
-\subsection{Localization (adapt-mkfile)}
+\subsection{Adapting the Makefile}
 \label{adapt-mkfile}
 
 By default, one \file{makefile} will only work on a given class of
@@ -1467,6 +1467,24 @@ The \file{Makefile} you need will have the following section:
   
   ### End machine dependent
 \end{alltt}
+
+
+\paragraph{Note 1}
+If you have troubles with \cmd{make} or \file{adapt-mkfile}, look at the
+\file{makefile} written by \file{adapt-mkfile} and check that it has the
+entries for your machine activated.
+
+\paragraph{Note 2}
+If you want to experiment with compiler flags, --- or even if you just
+want to get things running without setting up the machine-dependent
+section of the makefile --- you can set \name{make} variables at the
+command line.
+E.\,g.
+\begin{alltt}
+  \prompt{src> } make FC=f90 FFLAGS='-fast -u'
+\end{alltt}
+will use the compiler \cmd{f90} and the flags
+\option[-fast]{-fast -u} for both compilation and linking.
 
 
 % ---------------------------------------------------------------------- %
@@ -1905,7 +1923,10 @@ See \emph{need 1d and 2d samples} with examples.
 
 \subsubsection{Gnuplot}
 \label{S-gnuplot}
-Simple visualization can easily be done using \name{Gnuplot}.
+Simple visualization can easily be done using \name{Gnuplot}
+(\url{http://www.gnuplot.info}), an open-source plotting program suitable
+for two-dimensional plots.
+
 For example, suppose you have the variables
 \begin{verbatim}
   ---it-----t-------dt-------urms-----umax-----rhom-----ssm------dtc---
@@ -1928,17 +1949,52 @@ $u_{\rm max}(t)$, use ASCII graphics:
 \subsubsection{Data explorer}
 \label{S-openDX}
 
-A few networks for \name{DX} (\name{data explorer}) are available.
+\name{DX} (\name{data explorer}; \url{http://www.opendx.org}) is an
+open-source tool for visualization of three-dimensional data.
+
+The Pencil Code provides a few networks for \name{DX}.
 It is quite easy to read in a snapshot file from \name{DX} (the only
 tricky thing are four extra bytes at the beginning of the file,
-representing a Fortran record marker), and we should
-document this here and have the Fortran code write a \texttt{.general}
-file.
-[This is kind of available and needs to be documented]
+representing a Fortran record marker), and whenever you run \file{start.x},
+the code writes a file \file{var.general} that tells \name{DX} all it
+needs to know about the data structure.
+
+As a starting point for developing you own \name{DX} programs or
+\name{networks}, you can use a few generic \name{DX} scripts provided in
+the directory \file[dx/basic]{dx/basic/}.
+From the run directory, start \name{DX} with
+\begin{alltt}
+  \prompt{unix> } dx -edit \$PENCIL_HOME/dx/basic/lnrho
+\end{alltt}
+to load the file \file[lnrho.net]{dx/basic/lnrho.net}, and
+execute it with \key{Ctl-o} or \textsf{Execute $\rightarrow$ Execute Once}.
+You will see a set of iso-surfaces of logarithmic density.
+If the viewport does not fit to your data, you can reset it with
+\key{Ctl-f}.
+To rotate the object, drag the mouse over the Image window with the left or
+right mouse button pressed.
+Similar networks are provided for entropy (\file{ss.net}), velocity
+(\file{uu.net}) and magnetic field (\file{bb.net}).
+
+When you expand these simple networks to much more elaborate ones, it is
+probably a good idea to separate the different tasks (like Importing and
+Selecting, visualizing velocity, visualizing entropy, and Rendering) onto
+separate pages through \textsf{Edit $\rightarrow$ Page}.
+
+
+\paragraph{Note}
+Currently, \name{DX} can only read in data files written by one single
+processor, so from a multi-processor run, you can only visualize one
+subregion at a time.
 
 
 \subsubsection{IDL}
 \label{S-IDL-routines}
+
+\name{IDL} is a commercial visualization program for two-dimensional and
+simple three-dimensional graphics.
+It allows to access and manipulate numerical data in a fashion quite
+similar to how Fortran handles them.
 
 In \file[idl/]{\$PENCIL_HOME/idl}, we provide a number of general-purpose
 \name{IDL} scripts that we are using all the time in connection with the
@@ -4275,7 +4331,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.129 2002-10-09 02:07:45 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.130 2002-10-11 16:12:39 dobler Exp $ $}
 
 
 \end{document}
@@ -4325,4 +4381,5 @@ $ $Id: manual.tex,v 1.129 2002-10-09 02:07:45 brandenb Exp $ $}
 % LocalWords:  Marsaglia Gnuplot gnuplot Mattias vind polytrope Hurlburt Toomre
 % LocalWords:  noradiation mpio ux uy discont trunc xjump kb sinxsinz Alfvenz
 % LocalWords:  orms omax uxm uym uzm eth ekin brms bmax jrms jmax abm bmz ccmax
-% LocalWords:  rhoccm Torkelsson Rieutord Tuominen Hazlehurst Shukurov
+% LocalWords:  rhoccm Torkelsson Rieutord Tuominen Hazlehurst Shukurov fidx Ctl
+% LocalWords:  logscale oct Nqall ruxm ruym ruzm jm vArms vAmax Massaguer
