@@ -1,6 +1,6 @@
 PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i
 ;
-;  $Id: power.pro,v 1.8 2002-10-07 12:50:44 nilshau Exp $
+;  $Id: power.pro,v 1.9 2002-10-09 13:40:46 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -59,16 +59,22 @@ k=findgen(imax)
 ;
 ;  Looping through all the data to get number of spectral snapshots
 ;
+globalmin=1e12
+globalmax=1e-30
 i=1
 close,1
 openr,1, datatopdir+'/'+file1
     while not eof(1) do begin
        readf,1,time 
-       readf,1,spectrum
+       readf,1,spectrum1
+       if (max(spectrum1(1:*)) gt globalmax) then globalmax=max(spectrum1(1:*))
+       if (min(spectrum1(1:*)) lt globalmin) then globalmin=min(spectrum1(1:*))
        i=i+1
     endwhile
 close,1
 spec1=fltarr(imax,i-1)
+urms=fltarr(i-1)
+brms=fltarr(i-1)
 lasti=i-2
 ;
 ;  Opening file 2 if it is defined
@@ -82,34 +88,55 @@ endif
 ;
 ;  Plotting the results for last time frame
 ;
+!x.title='k'
+!y.title='P(k)'
+!x.range=[1,imax]
+;
 i=1 
 openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
-       readf,1,time
-       readf,1,spectrum1
-       spec1(*,i-1)=spectrum1
-       maxy=max(spectrum1(1:*))
-       miny=min(spectrum1(1:*))
-       if (file2 ne '') then begin
-	   readf,2,time
-	   readf,2,spectrum2
-           spec2(*,i-1)=spectrum2
-           if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
-           if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
-       endif
-       ttime='t=' + string(time)
-       if (last eq 0) then begin
-         plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1,xtitle='k',ytitle='P(k)',title=ttime
-         if (file2 ne '') then oplot,k,spectrum2,col=122
-         wait,.1
-       endif
-       i=i+1
+      	readf,1,time
+       	readf,1,spectrum1
+       	spec1(*,i-1)=spectrum1
+       	maxy=max(spectrum1(1:*))
+       	miny=min(spectrum1(1:*))
+       	if (file2 ne '') then begin
+	   	readf,2,time
+	   	readf,2,spectrum2
+           	spec2(*,i-1)=spectrum2
+           	if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
+           	if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+       	endif
+       	if (last eq 0) then begin
+ 		xrr=[1,imax]
+		yrr=[globalmin,globalmax]
+		!p.title='t=' + string(time)
+		!y.range=[globalmin,globalmax]
+         	plot_oo,k,spectrum1
+         	if (file2 ne '') then oplot,k,spectrum2,col=122
+		urms(i-1)=total(spectrum1)/2.
+		brms(i-1)=total(spectrum2)/2.
+         	wait,.1
+       	endif
+       	i=i+1
     endwhile
     if (last eq 1) then begin
-      plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1,xtitle='k',ytitle='P(k)',title=ttime
-      if (file2 ne '') then oplot,k,spectrum2,col=122
+	!p.title='t=' + string(time)
+	!y.range=[miny,maxy]
+	plot_oo,k,spectrum1
+      	if (file2 ne '') then oplot,k,spectrum2,col=122
     endif
-    close,1
+close,1
 close,2
 
+!x.title='' 
+!y.title=''
+!p.title=''
+!x.range=''
+!y.range=''
 END
+
+
+
+
+
