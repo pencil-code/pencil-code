@@ -11,6 +11,15 @@
 #   newrundir>  cvs-add-rundir
 
 set rundir = `pwd`
+set commit = 0
+set cmdname = $0
+set cmdname = $cmdname:t
+
+if ($#argv > 0) then
+  if (($1 =~ "-h") || ($1 =~ "--help")) then
+    goto usage
+  endif
+endif
 
 (cd ..; cvs add $rundir:t)
 cvs add *.in
@@ -18,5 +27,14 @@ cvs add src
 cvs add src/*.local
 
 exit:
+exit
+
+usage:
+
+echo "Usage:"
+echo "  $cmdname [-c|--commit]"
+echo "Add the current run directory to the CVS repository. Assumes that the"
+echo "directory above (..) is already under CVS."
+echo "With -c (--commit) do 'cvs commit', too."
 
 # End of file cvs-add-rundir
