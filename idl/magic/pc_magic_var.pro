@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.7 2004-07-10 21:47:22 mee Exp $
+; $Id: pc_magic_var.pro,v 1.8 2004-07-11 06:27:36 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-07-10 21:47:22 $
-;  $Revision: 1.7 $
+;  $Date: 2004-07-11 06:27:36 $
+;  $Revision: 1.8 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -51,12 +51,12 @@
 ;    tt      -> Temperature
 ;    pp      -> Pressure
 ;    rhod    -> Dust density
-;    fd      -> Ask Anders?
-;    ad      -> Ask Anders?
-;    epsd    -> Ask Anders?
-;    smon    -> Ask Anders?
-;    unit_md -> Ask Anders?
-;    mdave   -> Ask Anders?
+;    fd      -> Dust distribution function dn = f dm
+;    ad      -> Dust grain radius
+;    epsd    -> Dust-to-gas ratio (sum over all bins)
+;    smon    -> Supersaturation level Pmon/Psat
+;    unit_md -> Dust mass unit
+;    mdave   -> Average grain mass (mean over all bins)
 ;
 ;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
@@ -122,33 +122,33 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod'"
 
-    ; Ask Anders?
+    ; Dust distribution function dn = f dm
     endif else if variables[iv] eq 'fd' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,param=param,var='fd')"
 
-    ; Ask Anders?
+    ; Dust grain radius
     endif else if variables[iv] eq 'ad' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(md=md,param=param,var='ad')"
 
-    ; Ask Anders?
+    ; Dust-to-gas ratio (sum over all bins)
     endif else if variables[iv] eq 'epsd' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(lnrho=lnrho,nd=nd,md=md,par=param,var='epsd')"
 
-    ; Ask Anders?
+    ; Supersaturation level Pmon/Psat
     endif else if variables[iv] eq 'smon' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md," + $
           "param=param,datadir=datadir,var='smon')"
 
-    ; Ask Anders?
+    ; Dust mass unit
     endif else if variables[iv] eq 'unit_md' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(param=param,var='unit_md')"
 
-    ; Ask Anders?
+    ; Average grain mass (mean over all bins)
     endif else if variables[iv] eq 'mdave' then begin
       tags[iv]=variables[iv]
       variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='mdave')"
