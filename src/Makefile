@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.193 2003-06-30 12:18:32 dobler Exp $
+### $Id: Makefile,v 1.194 2003-06-30 13:05:07 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -123,10 +123,9 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS= -O3 -w90 #(cosmo|nw17)
-#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17)  
-#FC=ifc -I/usr/include #(nl6)  
-#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo)
+#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6)
+#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6)  
+#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo|nw17|nl6)
 #LDMPI= # (Samos|fire)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
