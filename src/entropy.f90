@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.269 2004-02-18 08:16:05 dobler Exp $
+! $Id: entropy.f90,v 1.270 2004-02-19 16:30:55 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.269 2004-02-18 08:16:05 dobler Exp $")
+           "$Id: entropy.f90,v 1.270 2004-02-19 16:30:55 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1034,7 +1034,7 @@ module Entropy
 
       glnT = gamma*gss + gamma1*glnrho
       TT = cs2/gamma1   ! ???? TEST ob gamma1 = 0 ?
-      call dot2(bb,bb2)
+      call dot2_mn(bb,bb2)
       bb21 = 1 / bb2 
 
       KappaC = 0
@@ -1043,32 +1043,32 @@ module Entropy
 
 
       call del2v_etc(f,iaa,curlcurl=curlcurlaa,egradcurl=egradcurlaa)
-      call cross(bb,curlcurlaa,c1)
-      call cross(glnT,curlcurlaa,c2)
+      call cross_mn(bb,curlcurlaa,c1)
+      call cross_mn(glnT,curlcurlaa,c2)
       call multmv_mn(egradcurlaa,bb,c3)
       call multmv_mn(egradcurlaa,glnT,c4)
       call g2ij(f,ilnrho,allrho)
       call g2ij(f,iss,allss)
       call multmv_mn(allss,bb,c5)
       call multmv_mn(allrho,bb,c6)
-      call dot(bb,glnT,c8)
+      call dot_mn(bb,glnT,c8)
       
       c5 = c5 * gamma
       c6 = c6 * gamma1
 
-      call multsv(c8,glnT,c7)
+      call multsv_mn(c8,glnT,c7)
       c7 = 3.5 * c7
 
-      call multsv(c8,c1,c1)
-      call multsv(bb21,c1,c1)
+      call multsv_mn(c8,c1,c1)
+      call multsv_mn(bb21,c1,c1)
       c1 = 2 * c1
 
-      call multsv(c8,c3,c3)
-      call multsv(bb21,2*c3,c3)
+      call multsv_mn(c8,c3,c3)
+      call multsv_mn(bb21,2*c3,c3)
 
       c1 = c1 + c2 + c3 + c4 + c5 + c6 + c7
 
-      call dot(c1,bb,QQ)
+      call dot_mn(c1,bb,QQ)
       QQ = QQ * bb21
       QQ = QQ * TT**3.5
       
