@@ -64,6 +64,8 @@ pro ioncalc,lnrho,ss,par,yH,TT
   size=size(lnrho)
   dim=size[0]
 
+  if dim eq 0 then yH=rtsafe(lnrho,ss,par)
+
   if dim eq 1 then begin
     yH=fltarr(size[1])
     for l=0,size[1]-1 do begin
