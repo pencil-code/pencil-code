@@ -97,9 +97,15 @@ else
       end
     end
 
+    if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
+      echo "No parent process -- exiting"
+      exit 1
+    endif
+
     if (! $?varfile) then
       sleep 300			# only check every 5 minutes
     endif
+
   end
 
 endif

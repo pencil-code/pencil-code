@@ -102,7 +102,8 @@ if ($local_disc) then
                      # some systems (Hitachi) abort this script when trying
                      # to kill non-existent processes
     echo "  pid $p"
-    if ( `ps $p | fgrep -c $p` ) kill -KILL $p
+#    if ( `ps $p | fgrep -c $p` ) kill -KILL $p
+    if ( `ps $p | fgrep -c $p` ) echo "Would have killed $p now"
   end
 endif
 echo "Done killing"

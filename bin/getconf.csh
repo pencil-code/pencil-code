@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.88 2003-09-10 12:58:20 mee Exp $
+# $Id: getconf.csh,v 1.89 2003-09-17 12:41:29 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -333,6 +333,9 @@ if ($os =~ IRIX*) then
 else
   rm -f SGIFIX
 endif
+
+# Propagate current pid to copy-snapshots:
+setenv PARENT_PID = $$
 
 # Wrap up nodelist as (scalar, colon-separateds) environment variable
 # NODELIST for transport to sub-processes.
