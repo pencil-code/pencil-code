@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.15 2002-05-08 17:47:28 dobler Exp $
+! $Id: mpicomm.f90,v 1.16 2002-05-13 18:52:54 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -69,11 +69,6 @@ module Mpicomm
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
       lroot = (iproc==root)
-!
-! temporary
-!
-      if (lroot) print*, &
-           'WARNING: boundary conditions ibc(j) not yet implemented'
 !
 !  consistency checks
 !
@@ -184,17 +179,13 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
-!  Periodic boundary conditions in x
+!  So far no distribution over x
 !
-      f( 1:l1-1,m1:m2,n1:n2,:) = f(l2i:l2,m1:m2,n1:n2,:)
-      f(l2+1:mx,m1:m2,n1:n2,:) = f(l1:l1i,m1:m2,n1:n2,:)
+
 !
 !  Periodic boundary conditions in y
 !
-      if (nprocy==1) then
-        f(l1:l2, 1:m1-1,n1:n2,:) = f(l1:l2,m2i:m2,n1:n2,:)
-        f(l1:l2,m2+1:my,n1:n2,:) = f(l1:l2,m1:m1i,n1:n2,:)
-      else
+      if (nprocy>1) then
         lbufyo=f(l1:l2,m1:m1i,n1:n2,:)
         ubufyo=f(l1:l2,m2i:m2,n1:n2,:)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
@@ -205,10 +196,7 @@ module Mpicomm
 !
 !  Periodic boundary conditions in z
 !
-      if (nprocz==1) then
-        f(l1:l2,m1:m2, 1:n1-1,:) = f(l1:l2,m1:m2,n2i:n2,:)
-        f(l1:l2,m1:m2,n2+1:mz,:) = f(l1:l2,m1:m2,n1:n1i,:)
-      else
+      if (nprocz>1) then
         lbufzo=f(l1:l2,m1:m2,n1:n1i,:)
         ubufzo=f(l1:l2,m1:m2,n2i:n2,:)
         call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
@@ -226,7 +214,10 @@ module Mpicomm
 !    Receive requests do not need to (and on OSF1 cannot) be explicitly
 !  freed, since MPI_Wait takes care of this.
 !
+      use Boundcond
+
       real, dimension (mx,my,mz,mvar) :: f
+      character (len=160) :: errmesg
 !
 !  Periodic boundary conditions in z, combined with communication.
 !
@@ -249,6 +240,13 @@ module Mpicomm
       call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
       call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
       call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
+!
+!  Now do the boundary conditions
+!  Periodic boundary conds. are what we get by default (communication has
+!  already occured, which may sometimes be unnecessary)
+!
+      call boundconds(f,errmesg)
+      if (errmesg /= "") call stop_it(trim(errmesg))
 !
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time

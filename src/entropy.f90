@@ -54,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.40 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.41 $", &
+           "$Date: 2002-05-13 18:52:54 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -81,6 +81,14 @@ use IO
       integer :: init
 !
       if (lgravz) then
+        !
+        !  override hcond1,hcond2 according to polytropic equilibrium solution
+        !
+        hcond1 = (mpoly1+1.)/(mpoly0+1.)
+        hcond2 = (mpoly2+1.)/(mpoly0+1.)
+        if (lroot) &
+             print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+        !
         select case(init)
         case(1)               ! density stratification
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma

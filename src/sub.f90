@@ -862,7 +862,7 @@ module Sub
         write(1) mpoly0,mpoly1,mpoly2,isothtop
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
-        write(1) lgravz,lgravr
+        write(1) lgravz,lgravr,lentropy,lmagnetic,lforcing
       endif
 !
     endsubroutine wparam

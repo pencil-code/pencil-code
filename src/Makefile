@@ -93,7 +93,7 @@ makefile: Makefile
 code:
 	make start.x run.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o register.o prints.o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o prints.o
 physics=$(GLOBAL).o $(HYDRO).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
@@ -121,9 +121,10 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o $(IO).o
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
+boundcond.o: cdata.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 #
-$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
+$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o boundcond.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o

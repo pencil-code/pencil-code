@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.25 2002-05-11 12:18:48 dobler Exp $
+! $Id: start.f90,v 1.26 2002-05-13 18:52:54 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -28,14 +28,14 @@
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
 !
+        call initialize         ! register modules, etc.
+!
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.25 $", &
-             "$Date: 2002-05-11 12:18:48 $")
-!
-        call initialize         ! register modules, etc.
+             "$Revision: 1.26 $", &
+             "$Date: 2002-05-13 18:52:54 $")
 !
 !  read input parameter (by each processor)
 !
@@ -61,9 +61,6 @@
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
           print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
           print*, 'z1,z2,ztop=', z1,z2,ztop
-          print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
-          print*, 'mpoly0,mpoly1,mpoly2,isothtop=', &
-                     mpoly0,mpoly1,mpoly2,isothtop
           print*, 'ampl,init,urand=', ampl,init,urand
           print*, 'cs0,gamma,rho0,gravz,grads0=', cs0,gamma,rho0,gravz,grads0
           !
@@ -72,12 +69,6 @@
           if (lmagnetic) write(*,NML=magnetic_init_pars)
 
         endif
-!
-!  override hcond1,hcond2 according to polytropic equilibrium solution
-!
-        hcond1 = (mpoly1+1.)/(mpoly0+1.)
-        hcond2 = (mpoly2+1.)/(mpoly0+1.)
-        print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
 !
 !  write input parameters to a parameter file (for run.x and IDL)
 !
@@ -121,7 +112,8 @@
         call output(trim(directory)//'/var.dat',f,mvar)
         call wdim(trim(directory)//'/dim.dat')
 !  also write full dimensions to tmp/ :
-        if (lroot) call wdim('tmp/dim.dat',nxgrid,nygrid,nzgrid)
+        if (lroot) call wdim('tmp/dim.dat', &
+             nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
 !  write global variables:
         call wglobal()
 

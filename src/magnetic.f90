@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.20 2002-05-11 12:18:48 dobler Exp $
+! $Id: magnetic.f90,v 1.21 2002-05-13 18:52:54 dobler Exp $
 
 module Magnetic
 
@@ -65,8 +65,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2002-05-13 18:52:54 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,15 +95,17 @@ module Magnetic
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
-!    AA(xxx) = D*AA0(D^(-1)*xxx - xxx_disp) ,
+!    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
 !  where AA0(xxx) is the canonical ring and D the rotation matrix
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
 !
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
-        print*, 'Initialising magnetic flux rings'
-        print*, '--TODO: make this depend on init or introduce init_magnet'
+        if (lroot) then
+          print*, 'Initialising magnetic flux rings'
+          print*, '--TODO: make this depend on init or introduce init_magnet'
+        endif
         do i=1,2
           if (i==1) then
             fring = fring1      ! magnetic flux along ring
@@ -120,15 +122,16 @@ module Magnetic
             axis  = axisr2
             disp  = dispr2
           endif
-          phi   = atan2(axis(2)+1.e-30,axis(1))
-          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+1.e-30,axis(3))
-          if (ip <= 6) print*, 'Init_aa: phi,theta = ', phi,theta
+          phi   = atan2(axis(2),axis(1)+epsi)
+          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
+!          if (ip <= 6 .and. lroot) print*, 'Init_aa: phi,theta = ', phi,theta
+if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
           ct = cos(theta); st = sin(theta)
           cp = cos(phi)  ; sp = sin(phi)
-          ! Calculate D^(-1)*xxx - disp
-          xx1 =  ct*cp*xx + ct*sp*yy - st*zz  - disp(1)
-          yy1 = -   sp*xx +    cp*yy          - disp(2)
-          zz1 =  st*cp*xx + st*sp*yy + ct*zz  - disp(3)
+          ! Calculate D^(-1)*(xxx-disp)
+          xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
+          yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
+          zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
           call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
           ! calculate D*tmpv
           f(:,:,:,iax) = f(:,:,:,iax) &
@@ -139,7 +142,7 @@ module Magnetic
                - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3)
         enddo
       endif
-      print*, 'Magnetic flux rings initialized'
+      if (lroot) print*, 'Magnetic flux rings initialized'
 !
     endsubroutine init_aa
 !***********************************************************************
