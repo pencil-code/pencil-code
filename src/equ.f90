@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.91 2002-07-29 09:13:22 brandenb Exp $
+! $Id: equ.f90,v 1.92 2002-08-09 08:09:22 nilshau Exp $
 
 module Equ
 
@@ -215,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.91 2002-07-29 09:13:22 brandenb Exp $")
+           "$Id: equ.f90,v 1.92 2002-08-09 08:09:22 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -354,6 +354,7 @@ module Equ
         headtt=.false.
         lfirstpoint=.false.
       enddo
+      if (lradiation) f(:,:,:,idd)=DFF_new
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step
