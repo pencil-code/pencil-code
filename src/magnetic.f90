@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.124 2003-08-15 08:58:51 brandenb Exp $
+! $Id: magnetic.f90,v 1.125 2003-08-15 09:18:35 christer Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.124 2003-08-15 08:58:51 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.125 2003-08-15 09:18:35 christer Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,7 +215,7 @@ module Magnetic
 !
 !  magnetic field evolution
 !
-!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
+!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J +alpha*bb
 !  add JxB/rho to momentum equation
 !  add eta mu_0 J2/rho to entropy equation
 !
@@ -223,7 +223,7 @@ module Magnetic
 !   1-may-02/wolf: adapted for pencil_modular
 !  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
 !   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
-!  12-aug-03/christer: added alpha effect
+!  12-aug-03/christer: added alpha effect (alpha in the equation above)
 !
       use Cdata
       use Sub
