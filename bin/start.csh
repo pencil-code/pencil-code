@@ -96,6 +96,10 @@ if ($local_disc) then
   echo "Copying var.dat back to data directory"
   copy-snapshots -v var.dat
   copy-snapshots -v dxyz.dat
+
+  if ($remove_scratch_root) then
+    rm -rf $SCRATCH_DIR
+  endif
 endif
 
 exit $start_status		# propagate status of mpirun

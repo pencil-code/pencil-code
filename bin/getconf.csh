@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.105 2004-02-17 13:20:43 mee Exp $
+# $Id: getconf.csh,v 1.106 2004-02-19 18:56:36 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -56,6 +56,7 @@ set local_disc     = 0
 set one_local_disc = 1		# probably the more common case
 set remote_top     = 0
 set local_binary   = 0
+set remove_scratch_root = 0
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
 setenv SCP scp
@@ -98,6 +99,24 @@ if ($hn =~ mhd*.st-and.ac.uk) then
 
 else if ($hn =~ *.kis.uni-freiburg.de) then
   set mpirun = /opt/local/mpich/bin/mpirun
+
+else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
+  echo "Newcastle e-Science Cluster"
+  if ($?PE) then
+    echo "SGE job"
+    set local_disc = 1
+    set one_local_disc = 0
+    set local_binary = 0
+  else
+    echo "Non-SGE, running on `hostname`"
+  endif
+  set mpirun = /addon/shared/lam/bin/mpirun
+  set mpirunops = "-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+  if ($local_disc) then
+    #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
+    setenv SCRATCH_DIR /work/$JOB_ID 
+    set remove_scratch_root = 0
+  endif
 
 else if ($hn =~ giga[0-9][0-9]) then
   echo "Nordita cluster"

@@ -131,6 +131,10 @@ if ($local_disc) then
     echo "  pid $p"
     if ( `ps -p $p | fgrep -c $p` ) kill -KILL $p
   end
+
+  if ($remove_scratch_root) then
+    rm -rf $SCRATCH_DIR
+  endif
 endif
 echo "Done"
 
