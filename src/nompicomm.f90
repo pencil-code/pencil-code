@@ -1,13 +1,14 @@
-!!!!!!!!!!!!!!!!!!!!!!
-!!!  mpidummy.f90  !!!
-!!!!!!!!!!!!!!!!!!!!!!
+!!!!!!!!!!!!!!!!!!!!!!!
+!!!  nompicomm.f90  !!!
+!!!!!!!!!!!!!!!!!!!!!!!
 
-!!!  Module with dummy MPI stuff
+!!!  Module with dummy MPI stuff.
 !!!  This allows code to be run on single cpu machine
 
 module Mpicomm
 
   use Cparam
+  use Cdata, only: lroot
 
   implicit none
 
@@ -31,6 +32,7 @@ module Mpicomm
     subroutine mpicomm_init()
 !
       use General
+      use Cdata, only: lmpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
@@ -39,6 +41,7 @@ module Mpicomm
 !
 !  for single cpu machine, set processor to root value
 !
+      lmpicomm = .false.
       iproc=root
 !
 !  produce index-array the the sequence of points to be worked through first

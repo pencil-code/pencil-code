@@ -17,6 +17,7 @@ module Equ
       read(1,*) dsnap,dvid,dforce
       read(1,*) ip,ix,iy,iz
       read(1,*) cs,nu,ivisc
+      read(1,*) gravz
       read(1,*) iforce,force,relhel
       read(1,*) ibc
       read(1,*) form1
@@ -38,14 +39,15 @@ module Equ
       use Cdata
 !
       if (lroot) then
-        print*,'nt,it1,dt,isave,itorder=',nt,it1,dt,isave,itorder
-        print*,'dsnap,dvid,dforce',dsnap,dvid,dforce
-        print*,'ip,ix,iy,iz',ip,ix,iy,iz
-        print*, cs,nu,ivisc
-        print*, iforce,force,relhel
-        print*, ibc
-        print*, form1
-        print*, 'cs20=',cs20
+        print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
+        print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
+        print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
+        print*, 'cs,nu,ivisc=', cs,nu,ivisc
+        print*, 'gravz=', gravz
+        print*, 'iforce,force,relhel=', iforce,force,relhel
+        print*, 'ibc=', ibc
+        print*, 'form1=', form1
+        print*, 'cs20=', cs20
       endif
 !
     endsubroutine cprint
@@ -199,13 +201,13 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2,rho,rho1,nurho1,cs2
-      logical :: headtt,lfirstpoint
+      logical :: lfirstpoint
       integer :: i,j
 !
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.2 2001-11-06 20:08:03 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.3 2001-11-07 17:05:17 dobler Exp $'
 !
 !  initiate communication
 !
@@ -261,6 +263,10 @@ module Equ
 !  momentum equation (forcing is now done in timestep)
 !
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu-gpprho+fvisc
+!
+!  add gravity
+!
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
 !
 !  continuity equation
 !

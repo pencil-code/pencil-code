@@ -4,7 +4,6 @@ module Entropy
 
   implicit none
 
-  real :: grav=1.
   integer :: ient
 
   contains
@@ -19,11 +18,14 @@ module Entropy
 !
       use Cdata
       use Mpicomm
+      use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call abort('register_ent called twice')
+      if (.not. first) call stop_it('register_ent called twice')
       first = .false.
+!
+      lentropy = .true.
 !
       ient = nvar+1             ! index to access entropy
       nvar = nvar+1
@@ -35,10 +37,27 @@ module Entropy
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call abort('Register_ent: nvar > mvar')
+        call stop_it('Register_ent: nvar > mvar')
       endif
 !
+      gamma = 1.66666666666666666
     endsubroutine register_ent
+!***********************************************************************
+    subroutine init_ent(f,init,ampl,xx,yy,zz)
+!
+!  initialise entropy; called from start.f90
+!  7-nov-2001/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
+      real :: ampl
+      integer :: init
+!
+      f(:,:,:,ient) = 0.
+!
+    endsubroutine init_ent
 !***********************************************************************
     subroutine dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
 !
@@ -46,10 +65,10 @@ module Entropy
 !
 !  17-sep-01/axel: coded
 !
-      use Mpicomm
       use Cdata
-      use Slices
+!      use Mpicomm
       use Sub
+      use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
@@ -101,11 +120,6 @@ module Entropy
 !
       TT1=gamma1/cs2
       df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
-!
-!  add gravity
-!
-      !if (headt) print*,'add gravity'
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-grav
 !
     endsubroutine dss_dt
 !***********************************************************************

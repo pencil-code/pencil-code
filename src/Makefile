@@ -2,10 +2,11 @@
 
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
-MPICOMM=mpicomm
+MPICOMM=nompicomm
 FORCING=forcing
 ENTROPY=entropy
 MAGNETIC=magnetic
+IO=io_dist
 
 ### Begin machine dependent
 
@@ -43,7 +44,7 @@ MAGNETIC=magnetic
 #FFLAGS= -Msmp -O4  #(Lomond)
 #FC=f95
 #FFLAGS=-O3 -I/opt/local/mpich/include
-#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -lnsl -laio
+#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #F77=$(FC)
 
 ## UNICOS/mk:
@@ -86,9 +87,9 @@ makefile: Makefile
 code:
 	make start.x run.x
 
-
-start_deps=cparam.o cdata.o general.o slices.o deriv.o sub.o $(MPICOMM).o register.o $(FORCING).o $(ENTROPY).o $(MAGNETIC).o
-run_deps=$(start_deps) equ.o timestep.o
+comm_deps=cparam.o cdata.o general.o slices.o deriv.o $(IO).o sub.o $(MPICOMM).o register.o $(FORCING).o $(ENTROPY).o $(MAGNETIC).o
+start_deps=$(comm_deps)
+run_deps=$(comm_deps) equ.o timestep.o
 
 start=start.o $(start_deps)
 start.x: $(start)
@@ -98,28 +99,30 @@ run=run.o $(run_deps)
 run.x: $(run)
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -lsig -o run.x 
 
-start.o:    start.f90 $(start_deps)
-run.o:      run.f90 $(run_deps)
+start.o:     start.f90 $(start_deps)
+run.o:       run.f90 $(run_deps)
 #
-cparam.o:   cparam.f90
-general.o:  general.f90
-cdata.o:    cdata.f90 cparam.o
-slices.o:   slices.f90 cdata.o
-deriv.o:    deriv.f90 cdata.o
-sub.o:      sub.f90 cdata.o deriv.o $(MPICOMM).o
-register.o: register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
-equ.o:      equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o
-timestep.o: timestep.f90 cdata.o $(FORCING.o) $(MPICOMM).o
+cparam.o:    cparam.f90
+general.o:   general.f90
+cdata.o:     cdata.f90 cparam.o
+slices.o:    slices.f90 cdata.o
+deriv.o:     deriv.f90 cdata.o
+$(IO).o:     $(IO).f90 cdata.o
+sub.o:       sub.f90 cdata.o deriv.o $(IO).o $(MPICOMM).o
+register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
+equ.o:       equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o
+timestep.o:  timestep.f90 cdata.o $(FORCING.o) $(MPICOMM).o
 #
 $(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
 $(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 
-TAG_SOURCE=$(run_deps:.o=.f90)
+TAG_SOURCE=$(run_deps:.o=.f90) start.f90 run.f90
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 
 clean:
 	rm -f *.x *.o *.mod
 	rm -f makefile
+	rm TAGS

@@ -19,13 +19,15 @@ module Magnetic
 !
       use Cdata
       use Mpicomm
+      use Sub
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call abort('register_aa called twice')
+      if (.not. first) call stop_it('register_aa called twice')
       first = .false.
 !
-      iaa = nvar+1              ! indices to access aa
+      lmagnetic = .true.
+!      iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
       iaz = iaa+2
@@ -38,10 +40,27 @@ module Magnetic
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call abort('Register_aa: nvar > mvar')
+        call stop_it('Register_aa: nvar > mvar')
       endif
 !
     endsubroutine register_aa
+!***********************************************************************
+    subroutine init_aa(f,init,ampl,xx,yy,zz)
+!
+!  initialise magnetic field; called from start.f90
+!  7-nov-2001/wolf: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
+      real :: ampl
+      integer :: init
+!
+      f(:,:,:,iax:iaz) = 0.
+!
+    endsubroutine init_aa
 !***********************************************************************
     subroutine daa_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
 !

@@ -56,18 +56,22 @@ module Mpicomm
 !  15-sep-01/axel: adapted from Wolfgang's version
 !
       use General
+      use Cdata, only: lmpicomm
 !
       integer :: i,m,n
       character chproc*4
 !
+      lmpicomm = .true.
+!
       call MPI_INIT(ierr)
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
+      lroot = (iproc==root)
 !
 !  consistency checks
 !
       if (nprocs /= nprocy*nprocz) then
-        if(iproc == root) then
+        if(lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &
           ', but running on ', nprocs, ' processors'
         endif

@@ -7,14 +7,15 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real :: t,dt,dx,dy,dz &
-         ,dsnap,dvid,dforce &
-         ,cs,cs20,gamma,force,relhel &
-         ,DD,nu,cmu,cnu2 &
-         ,rrms,rmax,urms,umax,divurms,divumax &
-         ,orms,omax,ourms,oumax &
-         ,UUmax,cdt,pi,Lx,Ly,Lz &
-         ,ibc(mvar)
+  real :: ibc(mvar)
+  real :: t,dt,dx,dy,dz
+  real :: dsnap,dvid,dforce
+  real :: cs,cs20,gamma,force,relhel
+  real :: DD,nu,cmu,cnu2
+  real :: rrms,rmax,urms,umax,divurms,divumax
+  real :: orms,omax,ourms,oumax
+  real :: UUmax,cdt,pi,Lx,Ly,Lz
+  real :: gravz
 
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: nt,it1,isave,itorder
@@ -23,7 +24,8 @@ module Cdata
   integer :: m,n,im,in
   integer, dimension (2) :: seed
 
-  logical :: lout,headt,ldt,lfirst
+  logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
+  logical :: lout,headt,headtt,ldt,lfirst
   logical :: lroot=.true.
 
   character*80 :: form1

@@ -1,11 +1,8 @@
 module Sub 
 
-  implicit none
+  use Io
 
-  interface output              ! Overload the `output' function
-    module procedure output_vect
-    module procedure output_scal
-  endinterface
+  implicit none
 
   contains
 
@@ -478,7 +475,7 @@ module Sub
 !
 !   endsubroutine del2v_graddiv
 !***********************************************************************
-    subroutine abort(msg)
+    subroutine stop_it(msg)
 !
 !  Print message and stop
 !  6-nov-01/wolf: coded
@@ -490,53 +487,7 @@ module Sub
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
       STOP
-    endsubroutine abort
-!***********************************************************************
-    subroutine input(file,a,nn,mode)
-!
-!  read snapshot file, possibly with mesh and time (if mode=1)
-!  11-apr-97/axel: coded
-!
-      use Cdata
-!
-      character*(*) file
-      integer :: nn,mode
-      real, dimension (mx,my,mz,nn) :: a
-      real :: dmax
-!
-      open(1,file=file,form='unformatted')
-      if (ip<=8) print*,'open, mx,my,mz,nn=',mx,my,mz,nn
-      read(1) a
-      if (ip<=8) print*,'read ',file
-      if (mode==1) then
-        read(1) t,x,y,z
-        if (ip<=3) print*,'ip,x',ip,x
-        if (ip<=3) print*,'y',y
-        if (ip<=3) print*,'z',z
-!
-!  assume uniform mesh; use the first two *interior* points
-!  to calculate mesh spacing
-!
-        if (mx.gt.1) dx=x(5)-x(4)
-        if (my.gt.1) dy=y(5)-y(4) 
-        if (mz.gt.1) then; dz=z(5)-z(4); else; dz=0.; endif
-        dmax=max(dx,dy,dz)
-        if (mx.eq.1) dx=dmax
-        if (my.eq.1) dy=dmax
-        if (mz.eq.1) dz=dmax
-        Lx=dx*mx
-        Ly=dy*my
-        Lz=dz*mz
-!
-        pi=2.*asin(1.)
-!
-        if (ip<=4) print*
-        if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
-        if (ip<=8) print*,'pi,nu=',pi,nu
-      endif
-!
-      close(1)
-    endsubroutine input
+    endsubroutine stop_it
 !***********************************************************************
     subroutine inpup(file,a,nn)
 !
@@ -617,123 +568,6 @@ module Sub
       close(1)
     endsubroutine outpui
 !***********************************************************************
-!    subroutine output(file,a,nn)
-!!
-!!  write snapshot file, always write mesh and time, could add other things
-!!  11-apr-97/axel: coded
-!!
-!      use Cdata
-!
-!      integer :: nn
-!      real, dimension (mx,my,mz,nn) :: a
-!      character*(*) file
-!!
-!      open(1,file=file,form='unformatted')
-!      write(1) a
-!      write(1) t,x,y,z
-!      close(1)
-!    endsubroutine output
-!!***********************************************************************
-!    subroutine output_mvarvect(file,a,nn)
-!!
-!!  write snapshot file, always write time and mesh, could add other things
-!!  version for vector field
-!!  11-apr-97/axel: coded
-!!
-!      use Cdata
-!!
-!      integer :: nn
-!      real, dimension (mx,my,mz,mvar) :: a
-!      character*(*) file
-!!
-!!      print*,'OUTPUT_VECTOR'
-!      if (nn /= mvar) STOP "OUTPUT_3vect called with nn/=mvar"
-!      open(91,file=file,form='unformatted')
-!      write(91) a
-!      write(91) t,x,y,z
-!      close(91)
-!    endsubroutine output_mvarvect
-!!***********************************************************************
-!    subroutine output_3vect(file,a,nn)
-!!
-!!  write snapshot file, always write time and mesh, could add other things
-!!  version for vector field
-!!  11-apr-97/axel: coded
-!!
-!      use Cdata
-!!
-!      integer :: nn
-!      real, dimension (mx,my,mz,3) :: a
-!      character*(*) file
-!!
-!!      print*,'OUTPUT_VECTOR'
-!      if (nn /= 3) STOP "OUTPUT_3vect called with nn/=3"
-!      open(91,file=file,form='unformatted')
-!      write(91) a
-!      write(91) t,x,y,z
-!      close(91)
-!    endsubroutine output_3vect
-!!***********************************************************************
-    subroutine output_vect(file,a,nn)
-!
-!  write snapshot file, always write time and mesh, could add other things
-!  version for vector field
-!  11-apr-97/axel: coded
-!
-      use Cdata
-!
-      integer :: nn
-      real, dimension (mx,my,mz,nn) :: a
-      character*(*) file
-!
-!      print*,'OUTPUT_VECTOR'
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z
-      close(91)
-    endsubroutine output_vect
-!***********************************************************************
-    subroutine output_scal(file,a,nn)
-!
-!  write snapshot file, always write time and mesh, could add other things
-!  version for scalar field
-!  11-apr-97/axel: coded
-!
-      use Cdata
-!
-      integer :: nn
-      real, dimension (mx,my,mz) :: a
-      character*(*) file
-!
-!      print*,'OUTPUT_SCALAR'
-      if (nn /= 1) STOP "OUTPUT called with scalar field, but nn/=1"
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z
-      close(91)
-    endsubroutine output_scal
-!***********************************************************************
-    subroutine outpus(file,a,nn)
-!
-!  write snapshot file, always write mesh and time, could add other things
-!  11-oct-98/axel: adapted
-!
-      use Cdata
-!
-      integer :: nn
-      character*(*) file
-      real, dimension (mx,my,mz,nn) :: a
-!
-!nn=mx/2
-!l1=(mx-nn)/2+1; l2=l1+nn-1
-!m1=(mx-nn)/2+1; m2=m1+nn-1
-!n1=(mx-nn)/2+1; n2=n1+nn-1
-      open(1,file=file,form='unformatted')
-      write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t,x,y,z
-      close(1)
-    endsubroutine outpus
-!***********************************************************************
     subroutine outpuf(file,a,nn)
 !
 !  write formatted snapshot, otherwise like output
@@ -784,37 +618,37 @@ module Sub
 !
     endsubroutine wsnap
 !***********************************************************************
-    subroutine wdim(file,mzfull,myfull)
+    subroutine wdim(file,myout,mzout)
 !
 !  write dimension to file
 !
-!   8-sep-01/axel: adapted to take mzout
+!   8-sep-01/axel: adapted to take myout,mzout
 !
       use Cdata
 !
       character*(*) file
-      integer, optional :: mzfull,myfull
-      integer :: mzful1,myful1
+      integer, optional :: myout,mzout
+      integer :: myout1,mzout1
 !
-!  determine whether mzfull=mz (as on each processor)
-!  or whether mzfull is different (eg when writing out full array)
+!  determine whether myout=my (as on each processor)
+!  or whether myout is different (eg when writing out full array)
 !
-      if(PRESENT(mzfull)) then
-        mzful1=mzfull
+      if(present(myout)) then
+        myout1=myout
       else
-        mzful1=mz
+        myout1=my
       endif
 !
-!  Do the same for my.
+!  Do the same for mz.
 !
-      if(PRESENT(myfull)) then
-        myful1=myfull
+      if(present(mzout)) then
+        mzout1=mzout
       else
-        myful1=my
+        mzout1=mz
       endif
 !
       open(1,file=file)
-      write(1,'(4i7)') mx,myful1,mzful1,mvar
+      write(1,'(4i7)') mx,myout1,mzout1,mvar
 !
 !  check for double precision
 !
@@ -823,6 +657,10 @@ module Sub
       else
         write(1,'(a)') 'D'
       endif
+!
+!  write number of ghost cells (could be different in x, y and z)
+!
+      write(1,*) 0, nghost, nghost
 !
       close(1)
     endsubroutine wdim
