@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.18 2003-06-24 17:44:29 theine Exp $
+! $Id: radiation_exp.f90,v 1.19 2003-06-25 19:28:42 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.18 2003-06-24 17:44:29 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.19 2003-06-25 19:28:42 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -188,67 +188,6 @@ module Radiation
 !
     endsubroutine radcalc
 !***********************************************************************
-    function mean_intensity(f)
-!
-!  Solves the transfer equation using Feautrier's method
-!  At the moment for vertical rays only
-!
-!  12-may-03/tobi: coded
-!
-      use Cdata
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: mean_intensity,Iup,Idown
-      real :: dtau,emdtau
-      integer :: lr,mr,nr
-!
-!  loop fastest over first index --> could do this for l-vectors
-!
-      do mr=m1,m2
-      do lr=l1,l2
-        Iup(lr,mr,n1)=Srad(lr,mr,n1)
-        do nr=n1,n2
-          dtau=.5*(kaprho(lr,mr,nr)+kaprho(lr,mr,nr+1))*dz
-          emdtau=exp(-dtau)
-          Iup(lr,mr,nr+1)=Iup(lr,mr,nr)*emdtau &
-                          +(1.-emdtau)*Srad(lr,mr,nr) &
-                          +(emdtau-1+dtau) &
-                           *(Srad(lr,mr,nr+1)-Srad(lr,mr,nr))/dtau
-        enddo
-        Idown(lr,mr,n2)=0
-        do nr=n2,n1,-1
-          dtau=.5*(kaprho(lr,mr,nr)+kaprho(lr,mr,nr-1))*dz
-          emdtau=exp(-dtau)
-          Idown(lr,mr,nr-1)=Idown(lr,mr,nr)*emdtau &
-                            +(1.-emdtau)*Srad(lr,mr,nr) &
-                            +(emdtau-1+dtau) &
-                             *(Srad(lr,mr,nr-1)-Srad(lr,mr,nr))/dtau
-        enddo
-      enddo
-      enddo
-      mean_intensity=.5*(Iup+Idown)
-    endfunction mean_intensity
-!***********************************************************************
-    subroutine radtransfer_old(f)
-!
-!  Integration radiation transfer equation along rays
-!
-!  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-      use Sub
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-!
-!  identifier
-!
-      if(lroot.and.headt) print*,'radtransfer'
-!
-      call radcalc(f)
-      f(:,:,:,iQrad)=-Srad+mean_intensity(f)
-!
-    endsubroutine radtransfer_old
-!***********************************************************************
     subroutine radtransfer(f)
 !
 !  Integration radioation transfer equation along rays
@@ -262,7 +201,6 @@ module Radiation
       real, dimension(mx,my,mz) :: Irad
       real :: frac
       integer :: lrad,mrad,nrad,rad2,i
-      integer :: counter=0
 !
 !  identifier
 !
@@ -272,7 +210,118 @@ module Radiation
 !
       call radcalc(f)
 !
-!  set boundary values
+!  Accumulate the result for Qrad=(J-S),
+!  First initialize Qrad=-S. 
+!
+      f(:,:,:,iQrad)=-Srad
+!
+!  calculate weights
+!
+      frac=1./directions
+!
+!  loop over rays
+!
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if (rad2>0 .and. rad2<=rad2max) then 
+           ! no boundary conditions (equal to zero)
+           ! they will be communicated in radtransfer_comm
+           call intensity(lrad,mrad,nrad,Irad)
+           f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
+        endif
+      enddo
+      enddo
+      enddo
+!
+!  communication
+!
+      call radtransfer_comm(f)
+!
+    endsubroutine radtransfer
+!***********************************************************************
+    subroutine intensity(lrad,mrad,nrad,Irad)
+!
+!  Integration radiation transfer equation along all rays
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+!
+      integer :: lrad,mrad,nrad
+      real, dimension(mx,my,mz) :: Irad
+      integer :: lstart,lstop,lrad1
+      integer :: mstart,mstop,mrad1
+      integer :: nstart,nstop,nrad1
+      real :: dlength,dtau,emdtau
+      integer :: l
+      logical, save :: first=.true.
+!
+!  identifier
+!
+      if(first) then
+        print*,'intensity'
+        first=.false.
+      endif
+!
+!  calculate start and stop values
+!
+      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
+      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
+      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
+!
+!  make sure the loop is executed at least once, even when
+!  lrad,mrad,nrad=0.
+!
+      if(lrad==0) then; lrad1=1; else; lrad1=lrad; endif
+      if(mrad==0) then; mrad1=1; else; mrad1=mrad; endif
+      if(nrad==0) then; nrad1=1; else; nrad1=nrad; endif
+!
+!  line elements
+!
+      dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+!
+!  set boundary intensity equal to zero
+!  corrections will be done later on in subroutine intensity_comm
+!
+      Irad(lstart-lrad,mstart-mrad,nstart-nrad)=0.
+!
+!  loop
+!
+      do n=nstart,nstop,nrad1
+      do m=mstart,mstop,mrad1
+      do l=lstart,lstop,lrad1
+          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
+          emdtau=exp(-dtau)
+          Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
+                      +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
+                      +(emdtau-1+dtau)*(Srad(l,m,n) &
+                                       -Srad(l-lrad,m-mrad,n-nrad))/dtau
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine intensity
+!***********************************************************************
+    subroutine radtransfer_comm(f)
+!
+!  Integration radioation transfer equation along rays
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz) :: Irad
+      real :: frac
+      integer :: lrad,mrad,nrad,rad2,i
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'radtransfer_comm'
+!
 !  bottom boundary (rays point upwards): I=S
 !
       do nrad=+1,+radz
@@ -298,20 +347,17 @@ module Radiation
       enddo
       enddo
 !
-!  Accumulate the result for Qrad=(J-S),
-!  First initialize Qrad=-S. 
-!
-      f(:,:,:,iQrad)=-Srad
-!
-!  loop over rays
+!  calculate weights
 !
       frac=1./directions
+!
+!  loop over rays
 !
       do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
-        if(rad2>0 .and. rad2<=rad2max) then 
+        if (rad2>0 .and. rad2<=rad2max) then 
           !
           !  set ghost zones, data from next processor (or opposite boundary)
           !
@@ -324,7 +370,7 @@ module Radiation
           !
           !  do the ray, and add corresponding contribution to Q
           !
-          call transfer(lrad,mrad,nrad,Irad)
+          call intensity_comm(lrad,mrad,nrad,Irad)
           f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
           !
           !  safe boundary values for next processor (or opposite boundary)
@@ -339,12 +385,9 @@ module Radiation
       enddo
       enddo
       enddo
-!
-      !print*,'Number of directions in this run:',counter
-!
-    endsubroutine radtransfer
+    endsubroutine radtransfer_comm
 !***********************************************************************
-    subroutine transfer(lrad,mrad,nrad,Irad)
+    subroutine intensity_comm(lrad,mrad,nrad,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -357,14 +400,14 @@ module Radiation
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
-      real :: dlength,dtau,emdtau
+      real :: dlength,tau
       integer :: l
       logical, save :: first=.true.
 !
 !  identifier
 !
       if(first) then
-        print*,'transfer'
+        print*,'intensity_comm'
         first=.false.
       endif
 !
@@ -385,23 +428,22 @@ module Radiation
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
 !
+!  initialize tau=0
+!
+      tau=0.
 !
 !  loop
 !
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
-          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
-          emdtau=exp(-dtau)
-          Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
-                      +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
-                      +(emdtau-1+dtau)*(Srad(l,m,n) &
-                                       -Srad(l-lrad,m-mrad,n-nrad))/dtau
+          tau=tau+.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
+          Irad(l,m,n)=Irad(lstart-lrad,mstart-mrad,nstart-nrad)*exp(-tau)
       enddo
       enddo
       enddo
 !
-    endsubroutine transfer
+    endsubroutine intensity_comm
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !
