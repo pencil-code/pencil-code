@@ -1,5 +1,10 @@
 # Makefile for generating different output formats of the manual.
-
+#
+# Usage:
+#  make
+#  make manaul.ps
+#  make body.ps      (excludes appendix and indexes)
+#  make appendix.ps  (appendix and indexes only)
 
 .SUFFIXES: .tex .dvi .ps .pdf
 
@@ -29,6 +34,14 @@ manual.pdf: manual.dvi
 
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
+
+body.ps: manual.dvi
+	last=`perl -000 -ne 'print $$1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
+	dvips -l "$$last" manual.dvi -o body.ps
+
+appendix.ps: manual.dvi
+	first=`perl -000 -ne 'print $$1+1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
+	dvips -p "$$first" manual.dvi -o appendix.ps
 
 # Clean up
 clean:

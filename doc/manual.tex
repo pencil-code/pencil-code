@@ -1,11 +1,11 @@
-%%%%%%%%%%%%%%%%%%%%%%            -*- mode: reftex -*-
+%%%%%%%%%%%%%%%%%%%%%%            -*- mode: latex; mode: reftex -*-
 %%%   manual.tex   %%%
 %%%%%%%%%%%%%%%%%%%%%%
 %%
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.157 2003-05-09 06:17:37 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.158 2003-05-09 10:05:17 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-05-09 06:17:37 $ $,~ $ $Revision: 1.157 $ $}
+\date{$ $Date: 2003-05-09 10:05:17 $ $,~ $ $Revision: 1.158 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-05-09 06:17:37 $ $,~ $ $Revision: 1.157 $ $}
+  \emph{$ $Date: 2003-05-09 10:05:17 $ $,~ $ $Revision: 1.158 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1691,10 +1691,10 @@ Here is a list of the more important ones.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
-  \file{data/time_series.dat}, \file{data/dim_series.dat} and
-  \file{data/index.pro} for subsequent processing in
-  \name{IDL} on another machine. This is particularly useful if collaborators
-  want to check each others runs.
+  \file[time_series.dat]{data/time_series.dat}, \file[dim.dat]{data/dim.dat} and
+  \file[index.pro]{data/index.pro} for subsequent processing in
+  \name{IDL} on another machine.
+  This is particularly useful if collaborators want to check each others' runs.
 \item[dx_*] These script perform several data collection or reformatting 
   exercises required to read particular files into \name{DX}.  They are
   called internally by some of the \name{DX} macros in the 
@@ -2382,7 +2382,8 @@ by
   \end{alltt}
 Running double precision seems to be important in turbulence runs where
 the resolution is $256^3$ meshpoints and above.
-The procedure \file{postproc/src/realtodouble.x} can be used to produce
+The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
+used to produce
 \file{var.dat} and \file{grid.dat} files in double precision.
 Note: the \code{kind} value on many compiles is 8 for double precision,
 but with the NAG compiler it is 2.
@@ -2966,6 +2967,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 
 
 % ====================================================================== %
+\typeout{=======LAST_BODY_PAGE=======}
 \appendix
 % ====================================================================== %
 
@@ -2977,8 +2979,8 @@ Shown is (among other quantities) the wall clock time per mesh point
 (excluding the ghost zones) and per full 3-stage time step, a quantity
 that is printed by the code at the end of a run.\footnote{
   Note that when using \file{nompicomm.f90}, the timer currently used will
-  overflow on some machines (after about 50 minutes), so you should not
-  blindly trust the timings given by the code.
+  overflow on some machines, so you should not blindly trust the timings
+  given by the code.
 }
 
 As these results were assembled during the development phase of the code
@@ -4927,7 +4929,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.157 2003-05-09 06:17:37 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.158 2003-05-09 10:05:17 dobler Exp $ $}
 
 
 \end{document}
