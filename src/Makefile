@@ -35,6 +35,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O2 -Minfo 	#(Norhpc)
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
+#LDMPI=-L/usr/pgi/linux86/lib/libmpichf90.a #(Nq[0-9]+)
 #LDMPI=-lmpich #(Nq[0-9]+)
 #FC=mpif90 # (Samos)
 #FFLAGS=-O # (Samos)

@@ -21,7 +21,7 @@ if ($mpi) then
   else if (($hn =~ cincinnatus*) || ($hn =~ owen*)) then
     set mpirun = /usr/lib/lam/bin/mpirun
   else if ($hn =~ nq*) then
-    set mpirun = /nq1/home/jes/mpich-1.2.1/bin/mpirun
+    set mpirun = /usr/pgi/linux86/bin/mpirun
   else
     set mpirun = mpirun
   endif

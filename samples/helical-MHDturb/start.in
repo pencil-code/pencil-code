@@ -1,5 +1,6 @@
-!                                  -*-f90-*-
-! Initialisation parameters
+$Id: start.in,v 1.8 2002-06-06 09:41:13 brandenb Exp $
+!
+! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
 /
@@ -9,5 +10,5 @@
   gamma=1.
 /
 &magnetic_init_pars
-  initaa=1,amplaa=2e-2
+  initaa=1,amplaa=1e-3
 /
