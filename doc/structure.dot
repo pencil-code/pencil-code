@@ -38,10 +38,10 @@ digraph G {
 */
 
   samples->conv_slab;
-  samples->conv_slab_flat;
+  samples->fluxrings;
   samples->dot_dot_dot;
   conv_slab      [shape=ellipse, label="conv-slab"];
-  conv_slab_flat [shape=ellipse, label="conv-slab-flat"];
+  fluxrings [shape=ellipse, label="interlocked-fluxrings"];
   dot_dot_dot    [shape=ellipse, label="..."];
 
   /* Switch default to boxed (for files) */

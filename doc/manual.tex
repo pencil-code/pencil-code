@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -74,8 +74,8 @@
 \setlength{\belowcaptionskip}{5pt} % Space after caption
 
 \usepackage[bf,sf,small,nonindentfirst]{titlesec}
-%\newcommand{\sectionbreak}{\clearpage} %(AB: starts new page for new section)
-%\titleformat{\subsubsection}{\normalfontitshape}{\thesubsubsection}{.5em}{}
+\newcommand{\sectionbreak}{\clearpage} % starts new page for new section
+\titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
 %\titlespacing{\subsubsection}{0pt}{*1}{*-1}
 \usepackage{fancyhdr}
 \usepackage{fancybox}
@@ -205,19 +205,22 @@
 %\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
 \makeatletter
 \newcommand{\command}[2][]{%
-  \def\index@{#1}\code{#2}%
-  \ifx\index@\@empty\index{#2}%
-  \else\index{#1}%
+  \def\index@{#1}%
+  \code{#2}%
+  \ifx\index@\@empty\index{#2@\emph{#2}}%
+  \else\index{#1@\emph{#1}}%
   \fi%
 }
 \newcommand{\file}[2][]{%
-  \def\index@{#1}`\texttt{#2}'%
+  \def\index@{#1}%
+  `\texttt{#2}'%
   \ifx\index@\@empty\index[file]{#2@\texttt{#2}}%
   \else\index[file]{#1@\texttt{#1}}%
   \fi%
 }
 \newcommand{\name}[2][]{%
-  \def\index@{#1}\textsl{#2\/}%
+  \def\index@{#1}%
+  \textsl{#2\/}%
   \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
   \else\index{#1}%
   \fi%
@@ -301,7 +304,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.109 $ $}
+\date{\today,~ $ $Revision: 1.110 $ $}
 
 % ====================================================================== %
 
@@ -333,7 +336,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.109 $ $}
+  \emph{\today,~ $ $Revision: 1.110 $ $}
 
   \vspace{\stretch{3}}
 
@@ -364,6 +367,9 @@ terms of a permission notice identical to this one.
 \pagestyle{plain}
 \pagenumbering{roman}
 
+
+% ====================================================================== %
+
 \section*{Foreword}
 
 This code was originally developed at the Turbulence Summer School of the
@@ -375,13 +381,14 @@ Having been approached by people interested in using our code, we
 decided to make it as flexible as possible and as user-friendly as seems
 reasonable, and to put it onto a public \name{CVS} repository.
 The code can certainly not be treated as a black box (no code can), and in
-order to solve a new problem in an optimal way, you will need to find your
-own set of parameters. In particular, you need to be careful in choosing
+order to solve a new problem in an optimal way, users will need to find their
+own optimal set of parameters.
+In particular, you need to be careful in choosing
 the right values of viscosity, magnetic diffusivity, and radiative
 conductivity.
 
-The code is primarily designed to deal with weakly compressible turbulent
-flows, which is why we use high-order first and second derivatives.
+The Pencil Code is primarily designed to deal with weakly compressible
+turbulent flows, which is why we use high-order first and second derivatives.
 To achieve good parallelization, we use explicit
 (as opposed to compact) finite differences.
 Typical scientific targets include driven MHD turbulence in a periodic box,
@@ -392,13 +399,13 @@ turbulence in the shearing sheet approximation, etc.
 Magnetic fields are implemented in terms of the magnetic vector potential
 to ensure that the field remains solenoidal (divergence-free).
 At the same time, having the magnetic
-vector potential readily available is a tremendous advantage if
+vector potential readily available is a big advantage if
 one wants to monitor the magnetic helicity, for example.
-The code is therefore particularly well suited for all kind of
+The code is therefore particularly well suited for all kinds of
 dynamo problems.
 
 The code is non-conservative; thus, conserved quantities should only be
-conserved up to the discretization error of the scheme (not the machine
+conserved up to the discretization error of the scheme (not to machine
 accuracy).
 There is no guarantee that a conservative code is more accurate with
 respect to quantities that are not explicitly conserved, such as entropy.
@@ -425,31 +432,33 @@ without MPI libraries (e.g.~a notebook computer).
 Ghost zones are used to implement boundary conditions on physical and
 processor boundaries.
 
-The code achieves a high level of flexibility by encapsulating individual
+A high level of flexibility is achieved by encapsulating individual
 physical processes and variables in individual \name{modules}, which can
 be switched on or off in the file \file{Makefile.local} in the local
 \file[src/]{src} directory.
-In order to avoid excessive use of preprocessor directives, we were lead
-to create one dummy module for each physics module.
+This approach avoids the use of difficult-to-read preprocessor directives,
+at the price of requiring one dummy module for each physics module.
 For nonmagnetic hydrodynamics, for example, one will use the module
-\file{nomagnetic.f90}:
+\file{nomagnetic.f90} and specifies
 \begin{Verbatim}
   MAGNETIC=nomagnetic
 \end{Verbatim}
+in \file{Makefile.local},
 while for MHD simulations, \file{magnetic.f90} will be used:
 \begin{Verbatim}
   MAGNETIC=magnetic
 \end{Verbatim}
-Note that the term \name{module} as used here is not identical to Fortran
-modules: both \file{magnetic.f90} and \file{nomagnetic.f90} define an F90
+Note that the term \name{module} as used here is only loosely related to
+Fortran modules:
+both \file{magnetic.f90} and \file{nomagnetic.f90} define an F90
 module named \emph{Magnetic} --- this is the basis of the switching
 mechanism we are using.
 
-Input parameters (in the files \file{start.in}, \file{run.in}) can be
-changed without recompilation.
+Input parameters (which are set in the files \file{start.in},
+\file{run.in}) can be changed without recompilation.
 Furthermore, one can change the list of variables for monitoring
 (diagnostic) output on the fly, and there are mechanisms for making the
-code reload new parameters or exit gracefully.
+code reload new parameters or exit gracefully at runtime.
 
 The requirements for using the Pencil-MPI code are modest: you can use it
 on any Unix system with a F90/F95 compiler. If you have \name{IDL} as
@@ -462,12 +471,12 @@ procedures are provided), but other tools such as
 If you want to make creative use of the code, this manual will contain far
 too little information.
 Its major aim is to give you an idea of the way the code is organized, so
-you can more efficiently \emph{read the source code}, which contains lots
-of comments.
-For further enhancements that you may want to add to the code, you can follow
--- as an example -- the lines in the code that deal with related variables,
+you can more efficiently \emph{read the source code}, which contains a
+reasonable amount of comments.
+For further enhancements that you may want to add to the code, you can
+take as an example the lines in the code that deal with related variables,
 functions, diagnostics, equations etc., which whave already been implemented.
-Remember: \cmd{grep} is one of your best friends when you want to
+Just remember: \cmd{grep} is one of your best friends when you want to
 understand how certain variables or functions are used in the code.
 
 \bigskip
@@ -480,6 +489,9 @@ in future releases and welcome any feedback.
 \email{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
 \email{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
 
+
+% ====================================================================== %
+
 \section*{Acknowledgments}
 
 Many people have contributed in different ways to the development of this
@@ -488,14 +500,15 @@ and Bob Stein (University of Michigan) who introduced us to the idea of
 using high-order schemes in compressible flows and who taught us a lot
 about simulations in general.
 
-The shearing sheet approximation and the flux limited diffusion approximation
+The shearing sheet approximation and the flux-limited diffusion
+approximation for radiative transfer
 were implemented by Nils Erland Haugen (University of Trondheim).
 
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition.
 
-Use of the PPARC supported supercomputers in St Andrews (mhd) and
-Leicester (ukaff) is acknowledged. We also acknowledge use of the
+Use of the PPARC supported supercomputers in St Andrews (Mhd) and
+Leicester (Ukaff) is acknowledged. We also acknowledge use of the
 512 processor Beowulf cluster in Odense (Horseshoe).
 
 \clearpage
@@ -548,15 +561,40 @@ To use the code, you will need the following:
 
 \section{Obtaining the Code}
 
-We are still improving the code which enhances functionality.
-To update a code with little effort it is best to use \name{CVS}.
-Occasionally we make a tarball of the current \name{CVS} repository
-available, but with \name{CVS} you can update those too.
+There are two ways to obtain the code: you can download the tarball of a
+stable release, or you can access the latest version via anonymous
+\name{CVS}.
 
-A set of test problems (listed in
+Since we are still actively developing the code (and probably always
+will), it is important to be able to update your version to the current
+one.
+You can do so via \name{CVS}, regardless of whether you have initially
+installed the tarball or have used \name{CVS} from the very start.
+
+To ensure at least some level of stability of the \name{CVS}
+versions, a set of test problems (listed in
 \file[auto-test]{\$PENCIL_HOME/bin/auto-test})
-are routinely tested. This set of test problems includes those in
+are routinely tested.
+This includes all problems in
 \file[samples/]{\$PENCIL_HOME/samples}.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining and unpacking the tarball}
+
+\begin{enumerate}
+\item Download the tarball \texttt{pencil-code_\emph{X}.tar.gz}
+  (where \emph{X} is the release number) from the download section in
+  \url{http://www.nordita.dk/data/brandenb/pencil-code}
+
+\item Put it into a convenient directory and unpack it:
+  \begin{alltt}
+  \prompt{unix> } mv pencil-code_\emph{X}.tar.gz somewhere/
+  \prompt{unix> } cd somewhere
+  \prompt{unix> } gunzip pencil-code_\emph{X}.tar.gz
+  \prompt{unix> } tar xf pencil-code_\emph{X}.tar \
+  \end{alltt}
+\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
@@ -564,32 +602,40 @@ are routinely tested. This set of test problems includes those in
 
 \begin{enumerate}
 
-\item Many machines have already \name{CVS} (just say \code{which cvs}).
-  If not, get a \name{CVS} client from \url{http://www.cvshome.org/} and
-  install it (on any machine where you want to run the code).
+\item Many machines have \name{CVS} installed
+  (try \code{cvs -v} or \code{which cvs}).
+  If yours have not, get a \name{CVS} client from
+  \url{http://www.cvshome.org/} and
+  install it on any machine where you want to run the code.
   Alternatively, just copy the executable from a binary compatible
   machine.
 
-\item Get the password for anonymous \name{CVS} access to the Pencil Code by
-going to the web address \url{http://www.nordita.dk/data/brandenb/pencil-code}.
-Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
-or \email{Axel.Brandenburg@nordita.dk}.
-Priviledged users with write access to the original repository should
-continue to use it.\footnote{In that case you'd say
-\code{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
-assuming that \cmd{\$USER} is the userid registered in the original
-repository. The content of this repository is copied automatically every
-hour to the anonymous cvs repository.}
+\item Get the password for anonymous \name{CVS} access to the Pencil Code
+  from the download section in
+  \path{http://www.nordita.dk/data/brandenb/pencil-code}.
+  Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
+  or \email{Axel.Brandenburg@nordita.dk}.
+  Priviledged users with write access to the original repository should
+  continue to use it.\footnote{%
+    In that case you'd say
+    \code{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
+    assuming that \var[USER]{\$USER} is the userid registered in the original
+    repository. The content of this repository is copied automatically every
+    hour to the anonymous cvs repository.}
 
 \item Set your environment variable \env{CVSROOT}:
+  \begin{small}
   \begin{alltt}
   \prompt{csh> } setenv CVSROOT :pserver:anonymous@norserv.nordita.dk:/home/cvs/public \
   \end{alltt}
-  or (if you are running Bourne shell or bash)
+  \end{small}
+  or (if you are running \name{bash} or \name{Bourne shell})
+  \begin{small}
   \begin{alltt}
   \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/cvs/public
   \prompt{sh> } export CVSROOT \
   \end{alltt}
+  \end{small}
 
 \item Log in:
   \begin{alltt}
@@ -599,18 +645,23 @@ hour to the anonymous cvs repository.}
 (you only need to do this once; your CVS password is saved in the file
 \file{.cvspass} in your home directory)
 
-\item Go to wherever you want the code (otherwise the code will land
-in your home directory, which will also be ok):
+\item Go to wherever you want the code:
   \begin{alltt}
-  \prompt{unix> } cd \file[somewhere/]{somewhere} \
+  \prompt{unix> } cd somewhere/ \
   \end{alltt}
-  and check the code out:
+  and check out the code:
   \begin{alltt}
   \prompt{unix> } cvs checkout pencil-code \
   \end{alltt} 
-  This creates a subdirectory \file[pencil-code/]{somewhere/pencil-code} and populates it with
-  the Pencil Code's subdirectories.
-
+  This creates a subdirectory \file[pencil-code/]{somewhere/pencil-code}
+  and populates it with the Pencil Code's subdirectories.
+  If you change your mind about the location of the code, you can just
+  move the whole directory,
+  \begin{alltt}
+  \prompt{unix> } mv somewhere/pencil-code elsewhere/ \
+  \end{alltt}
+  since \name{CVS} keeps all information in the local \file{CVS/}
+  subdirectories below \file{pencil-code/}.
 \end{enumerate}
 
 
@@ -618,63 +669,48 @@ in your home directory, which will also be ok):
 
 \subsection{Updating via CVS}
 
-Independent of how you installed the code in the first place (tarball or
-CVS), you can update your version via CVS.
+Independent of how you installed the code in the first place (from tarball
+or via \name{CVS}), you can update your version using \name{CVS}.
 If you have done nontrivial alterations to your version of the code, you
-ought to be careful about upgrading: although CVS is the optimal tool for
-distributed programming, conflicts are quite likely, since we are going to
+ought to be careful about upgrading: although \name{CVS} is an excellent
+tool for distributed programming,
+conflicts are quite likely, since we are going to
 touch many parts of the code while we develop it further.
-Thus, despite the fact that the code is under CVS, you should probably
+Thus, despite the fact that the code is under \name{CVS}, you should probably
 back up your changes before upgrading.
 
 Here is the upgrading procedure:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file[pencil-code/]{somewhere/pencil-code} \
+  \prompt{unix> } cd somewhere/pencil-code \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
   \prompt{unix> } cvs -q update -dP \
   \end{alltt}
-  (the option \option{-q} means `somewhat' quiet \option{-d} checks out
+  (the option \option{-q} means ``somewhat quiet'', \option{-d} checks out
   new directories, and \option{-P} removes empty directories)
-\item Fix any conflicts you encounter and make sure the examples are still
-  working.
+\item Fix any conflicts you encounter and make sure the examples in the
+  directory \file{samples/} are still working.
 \end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Getting older versions}
 
-You may find that the latest CVS version of the code produces errors.
+You may find that the latest \name{CVS} version of the code produces errors.
 If you have reasons to believe that this is due to changes introduced on
-31 June 2002 (to give an example), you can check out the version prior to
+27 November 2002 (to give an example), you can check out the version prior to
 this by:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file[pencil-code/]{somewhere/pencil-code} \
+  \prompt{unix> } cd somewhere/pencil-code \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
-  \prompt{unix> } cvs up -D "30 Jun 2002"\
-  \end{alltt}
-\end{enumerate}
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Obtaining and unpacking the tarball}
-
-\begin{enumerate}
-\item Download the tarball from
-  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code_X.tar.gz}
-where X is the release number.
-\item Put it into a convenient directory and unpack it:
-  \begin{alltt}
-  \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
-  \prompt{unix> } gunzip pencil-code_X.tar.gz
-  \prompt{unix> } tar xf pencil-code_X.tar \
+  \prompt{unix> } cvs up -D "26 Nov 2002"\
   \end{alltt}
 \end{enumerate}
 
@@ -686,10 +722,9 @@ where X is the release number.
 
 To get yourself started, you should run one or several examples which are
 provided in one of the \file{samples/} subdirectories.
-
-You will only be able to fully assess the numerical solutions if you
+Note that you will only be able to fully assess the numerical solutions if you
 visualize them with \name{IDL}, \name{DX} or other tools (see
-Sect.~\ref{S-IDLroutines}).
+Sect.~\ref{S-Visualization}).
 
 % ---------------------------------------------------------------------- %
 
@@ -716,10 +751,10 @@ for users of \name{bash}, \name{Bourne shell}, or similar shells.
 You should get output similar to
 \begin{alltt}
   PENCIL_HOME = </home/dobler/f90/pencil-code>
-  Adding /home/dobler/f90/pencil-code/bin to path
+  Adding /home/dobler/f90/pencil-code/bin to PATH
 \end{alltt}
 Apart from the \env{PATH} variable, the environment variable
-\env{IDL_PATH} has been set to something like
+\env{IDL_PATH} is set to something like
 \texttt{./idl:../idl:+\$PENCIL_HOME/bin:./tmp:<IDL_DEFAULT>} .
 
 \paragraph{Note 1}
@@ -730,7 +765,7 @@ the \file{sourceme} scripts.
 \paragraph{Note 2}
 If you  don't want to rely on the \file{sourceme} scripts' (quite
 heuristic) ability to correctly identify the code's main directory, you
-can set (or change, in case of tests!) the environment variable
+can set the environment variable
 \env{PENCIL_HOME} explicitly before you run the source command.
 
 \paragraph{Note 3}
@@ -770,15 +805,19 @@ You then do the following:
 \begin{alltt}
   \prompt{unix> } cd samples/conv-slab
   \prompt{unix> } setup-src
-  {\sl{}[Output]}
+  src already exists
+  2 files already exist in src
 \end{alltt}
 The script has linked a number of scripts from \file[bin/]{\$PENCIL_HOME/bin},
 generated a directory \file[src/]{src} for the source code and linked the
 Fortran source files (plus a few more files) from \file[src/]{\$PENCIL_HOME/src}
 to that directory:
 \begin{alltt}
-  \prompt{unix> } ls
-  {\sl{}[Output]}
+  \prompt{unix> } ls -F
+  CVS/           src/
+  start.csh@     run.csh@  getconf.csh@ 
+  start.in       run.in    print.in            
+  reference.out     
 \end{alltt}
 
 
@@ -788,6 +827,8 @@ This step requires some input from you, but you only have to do this once
 for each machine you want to run the code on.
 See Sect.~\ref{adapt-mkfile} for a description of the steps you need to
 take here.
+(If you are lucky and use compileres similar to the ones we have, you may
+be able to skip this step; but blame yourself if things don't compile, then.)
 
 
 \subsubsection{Running \cmd{make}}
@@ -802,7 +843,7 @@ Since you are using one of the predefined test problems, the settings in
   \prompt{unix> } make \
 \end{alltt}
 If you have set up the compiler flags correctly, compilation should
-complete successfully; don't forget to return to the run directory,
+complete successfully, and you can return to the run directory,
 \begin{alltt}
   \prompt{unix> } cd .. \
 \end{alltt}
@@ -820,8 +861,8 @@ a corresponding directory on the local disc of the computer you are
 running on and (soft-)link it to \file[tmp/]{./tmp}.
 Even if the link is part of an NFS directory, all the IO operations will
 be local.
-E.\,g.~if you have a local disc \file[/scratch/]{/scratch}, you can do the
-following
+For example, if you have a local disc \file[/scratch/]{/scratch}, you can
+do the following
 \begin{alltt}
   \prompt{unix> } mkdir -p /scratch/\$USER/pencil-data/samples/conv-slab
   \prompt{unix> } ln -s /scratch/\$USER/pencil-data/samples/conv-slab ./tmp \
@@ -876,7 +917,7 @@ version).
     computational box.
     The dashed lines denote domain boundaries:
     $z<-0.68$ is the lower ghost zone (points have no physical significance);
-    $-0.68<z<0$ is a stable stratified layer ($ds/dz>0$);
+    $-0.68<z<0$ is a stably stratified layer ($ds/dz>0$);
     $0<z<1$ is the unstable layer ($ds/dz<0$);
     $1<z<1.32$ is the isothermal top layer;
     $z>1.32$ is the upper ghost zone (points have no physical significance).
@@ -886,7 +927,7 @@ version).
 % ---------------------------------------------------------------------- %
 
 If you have IDL, you can visualize the initial state with (see
-Sec.~\ref{S-IDLroutines} for details)
+Sec.~\ref{S-IDL-routines} for details)
 \begin{alltt}
   \prompt{unix > } idl
   \prompt{IDL >  } .r start
@@ -894,8 +935,7 @@ Sec.~\ref{S-IDLroutines} for details)
   \prompt{IDL >  } .r thermo
   \prompt{IDL >  } .r pvert \
 \end{alltt}
-The result should look like in Fig.~\ref{Fig-pvert0}, apart from details
-of the vertical velocity field, which is random.
+The result should look like in Fig.~\ref{Fig-pvert0}.
 
 \bigskip
 
@@ -991,7 +1031,8 @@ Try
 \end{alltt}
 to see how \file{getconf.csh} makes its decisions. You would add a
 section for the host name of your machine with the particular settings.
-Since \file{getconf.csh} is always linked, your changes will be
+Since \file{getconf.csh} is linked from the central directory
+\file[bin/]{pencil-code/bin}, your changes will be
 useful for all your other runs too.
 
 % ---------------------------------------------------------------------- %
@@ -1019,25 +1060,18 @@ The following is not available yet.
 
 The output should look like \ldots
 
-\vspace{5cm}
-
-EXPLAIN: isotrop1, plan to set-up vortex rings as initial condition,
-without magnetic fields etc.
-
 % ---------------------------------------------------------------------- %
 
 \subsection{Other test problems}
 
-1-D sound waves and shock tube tests, interlocked pair of flux rings, stably stratified atmosphere.
+\begin{alltt}
+   conv-slab  conv-slab-flat  helical-MHDturb  interlocked-fluxrings
+\end{alltt}
 
-For 1-D and 2-D tests, one can put \var{nxgrid}=1, \var{nygrid}=1,
-and/or \var{nzgrid}=1.
 
 % ====================================================================== %
 
 \section{Code structure}
-
-% ---------------------------------------------------------------------- %
 
 \subsection{Directory tree}
 
@@ -1057,35 +1091,36 @@ Fig.~\ref{Fig-Structure}.
 Under \file[pencil-code/]{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
-  CVS/    bin/  bugs/         doc/
-  dx/     idl/  samples/      src/
-  README  TODO  sourceme.csh  sourceme.sh
+  CVS/      bin/    bugs/           doc/
+  dx/       idl/    samples/        src/
+  README    TODO    sourceme.csh    sourceme.sh
 \end{verbatim}
 
 Almost all of the source code is contained in the directory \file{src/},
 but in order to encapsulate individual applications, the code is compiled
-separately for each run in a local \file[src/]{src} directory below the
+separately for each run in a local directory \file[src/]{src} below the
 individual run directory, like
-e.g.~\file[conv-slab/src/]{samples/conv-slab/src}.
+e.\,g.~\file[conv-slab/src/]{samples/conv-slab/src}.
 
 It may be a good idea to keep your own runs also under \name{CVS}, but
-this would usually be a different repository. On the machine where you
-are running the code you may want to check in out in your
-\file[pencil-code/]{pencil-code} directory.
-In our case we have our own runs in a repository called
-\file[pencil-runs/]{pencil-runs}, so we say
+this would normally be a different repository. On the machine where you
+are running the code, you may want to check them out into a subdircetory
+of \file{pencil-code/}.
+For example, we have our own runs in a repository called
+\file[pencil-runs/]{pencil-runs}, so we do
 \begin{alltt}
-  \prompt{brandenb@fe1:/home/brandenb> } cd \$PENCIL_HOME
-  \prompt{brandenb@fe1:/home/brandenb/pencil-code> } cvs co -d runs pencil-runs
+  \prompt{unix> } cd \$PENCIL_HOME
+  \prompt{unix> } cvs co -d runs pencil-runs
 \end{alltt}
-In our case, \file[runs/]{runs} contains individual run directories, grouped in
+In this case, \file[runs/]{runs} contains individual run directories, grouped in
 classes (like \file[spher/]{spher} for spherical calculations, or
 \file[kinematic/]{kinematic} for kinematic dynamo simulations.
 The current list of classes in our own \file{pencil-runs} repository is
 \begin{verbatim}
-   1d-tests/    OLD/          convstar/    forced/       radiation/
-   2d-tests/    README        disc/        kinematic/    rings/
-   CVS/         buoy_tube/    discont/     pass_only/    slab_conv/
+  1d-tests/     2d-tests/     OLD/
+  buoy_tube/    convstar/     disc/         discont/
+  forced/       kinematic/    pass_only/    radiation/
+  rings/        slab_conv/
 \end{verbatim}
 The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic);
@@ -1102,22 +1137,22 @@ have changed names or other input convections.}
 
 The subdirectory \file[src/]{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
-\file{cparam.local}, together with links to
+\file{cparam.local}), together with links to
 all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
 \file[src/]{src} directory (these links are set up by the script
 \cmd{setup-src}.
 
-General purpose visualization routines for \name{IDL} or \name{DX} are in the
+General-purpose visualization routines for \name{IDL} or \name{DX} are in the
 \file[idl/]{idl} and \file[dx/]{dx} directories, respectively.
 There are additional and more specialized \name{IDL} directories in the
 different branches under \file[pencil-runs/]{pencil-runs}.
 
-The directory \file[doc/]{doc} contains this manual; \file[bin/]{bin} a
-number of utility scripts (mostly written in \name{csh} and \name{Perl}),
-and in particular the \file{start.csh}, \file{run.csh}, and
-\file{getconf.csh} scripts.
+The directory \file[doc/]{doc} contains this manual;
+\file[bin/]{bin} contains a number of utility scripts (mostly written in
+\name{csh} and \name{Perl}), and in particular the \file{start.csh},
+\file{run.csh}, and \file{getconf.csh} scripts.
 The \file[CVS/]{CVS} directory is used (you guessed it) by \name{CVS}, and is
-not normally directly accessed by the user.
+not normally directly accessed by the user;
 \file[bugs/]{bugs}, finally is used by us for internal purposes.
 
 \bigskip
@@ -1127,11 +1162,13 @@ environment variables --- in particular \env{PATH} --- and aliases/shell
 functions for your convenience.
 If you do not want to source one of these files, you need to make sure
 your \name{IDL} path is set appropriately (provided you want to use
-\name{IDL}, that is) and you will need to address the scripts from
-\file[bin/]{bin} with their explicit path name.
+\name{IDL}) and you will need to address the scripts from
+\file[bin/]{bin} with their explicit path name, or adjust your \var{PATH}
+manually.
 
 
-% ----------------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Basic concepts}
 
@@ -1142,11 +1179,13 @@ Unlike the CRAY computers that dominated supercomputing in the 80s and
 early 90s, all modern computers have a cache that constitutes a significant
 bottleneck for many codes.
 This is the case if large three-dimensional arrays are constantly used
-within each time step, which has the obvious advantage of leading to
-long arrays (good on vector processors). This approach also implies
-conceptual simplicity of the code and using F90 array syntax as much as
-possible.
-A more  cache-efficient way of coding is to calculate an entire time step
+within each time step, which has the obvious advantage of working on
+long arrays and allows vectorization of elementary machine operations.
+This approach also implies
+conceptual simplicity of the code and allows extensive use of the
+intuitive F90 array syntax.
+However, a more  cache-efficient way of coding is to calculate an entire
+time step
 (or substep of a multi-stage time-stepping scheme) only
 along a one-dimensional pencil of data within the numerical grid.
 This technique is more efficient for modern RISC processors:
@@ -1156,7 +1195,8 @@ An additional advantage is a drastic reduction in temporary storage for
 auxiliary variables within each time step.
 
 \subsubsection{Modularity}
-\index{modules}
+\label{S-modularity}
+\index{Modules}
 
 Each run directory has a file \file[Makefile.local]{src/Makefile.local} in
 which you
@@ -1167,7 +1207,7 @@ choose certain \name{modules}\footnote{%
   For example each of the three modules \name{grav_z}, \name{grav_r} and
   \name{nograv} define a Fortran module \name{Gravity}.
 }, which tell the code whether or not entropy, magnetic fields,
-hydrodynamics, density, forcing, etc.~should be invoked.
+hydrodynamics, forcing, etc.~should be invoked.
 For example, the settings for forced turbulent MHD simulations are
 \begin{verbatim}
   HYDRO    =   hydro
@@ -1182,94 +1222,18 @@ For example, the settings for forced turbulent MHD simulations are
   IO       =   io_dist
   FFT      = nofft
 \end{verbatim}
-This file will be processed by \cmd{make} and the settings are thus
+This file will be processed by \name{make} and the settings are thus
 assignments of \name{make} variables.
 Apart from the physics modules (equation of motion: yes, density
 [pressure]: yes, entropy equation: no, magnetic fields: yes, gravity: no,
 forcing: yes), a few technical modules can also be used or deactivated; in
 the example above, these are \name{MPI} (switched off), additional global
-variables (none), input/output (distributed), and \name{fft} (not compiled).
-Table~\ref{Tab-modules} lists all currently available modules.
-
-\begin{table}
-  \small
-  \centering
-  \caption{%
-    Switchable modules as of June 2002.
-  }
-  \label{Tab-modules}
-  \begin{tabular}{lp{0.6\textwidth}}
-    \toprule
-    hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
-                     motion; \\
-    nohydro.f90    & no variable $\uv$: useful for kinematic dynamo runs. \\
-    \midrule
-    density.f90    & Add variable $\ln\varrho$ with continuity equation \\
-    nodensity.f90  & no variable $\ln\varrho$: useful for Burgers' equation. \\
-    \midrule
-    entropy.f90    & Add variable $s$ with entropy equation (energy
-                     equation); \\
-    noentropy.f90  & no variable $s$: isothermal hydrodynamics. \\
-    \midrule
-    magnetic.f90   & Add variable $\Av$ (magnetic vector potential) with
-                     induction equation; \\
-    nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
-    \midrule
-    pscalar.f90    & Add variable $\ln c$ (concentration) with
-                     advection-diffusion equation for transport of a
-                     passive scalar; \\
-    nopscalar.f90  & no passive scalar, no variable $\ln c$. \\
-    \midrule
-    \midrule
-    forcing.f90    & Add a forcing function to rhs of equation of motion
-                    (typically helical forcing) for forced turbulence
-                    calculations; \\
-    noforcing.f90  & no forcing. \\
-    \midrule
-    shear.f90      & Shearing-box boundary conditions; \\
-    noshear.f90    & no shearing box. \\
-    \midrule
-    grav_z.f90     & Constant vertical gravity in equation of motion; \\
-    grav_r.f90     & radially symmetric gravity; \\
-    nograv.f90     & no gravity. \\
-    \midrule
-    \midrule
-    global_rr.f90  & Radius \verb|rr| as an additional global variable; \\
-    global_pot.f90 & radially symmetric gravity potential as additional
-                     global variables; \\
-    noglobal.f90   & no additional global variables. \\
-    \midrule
-    fft.f          & Singleton (1968) FFT routine: needed for magnetic
-                     potential-field boundary condition; \\
-    nofft.f90      & no FFT: no need to bother about compiler warnings if
-                     you don't need this boundary condition. \\
-    \midrule
-    io_dist.f90    & Distributed input/output: each processor writes to
-                     its own directory; currently there are no
-                     alternatives. \\
-    \midrule
-    mpicomm.f90    & Use \name{MPI} for communication on multiprocessor
-                     machines; \\
-    nompicomm.f90  & no parallelization: convenient for testing and
-                     smaller production runs on desktop or notebook
-                     computers. \\
-    \midrule
-    debug_c.c      & Use I/O routines that allow to write auxiliary
-                     variables to a file (nontrivial in a Pencil Code);
-                     requires C compiler to be set up correctly and maybe
-                     requires appropriate compiler flags
-                     (\code{-DFUNDERSCORE}) for correctly interfacing C
-                     with Fortran (and may still not work in some cases); \\
-    nodebug.f90    & don't use these debugging routines, avoiding any
-                     C-Fortran interoperability problems. \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-% ---------------------------------------------------------------------- %
-
+variables (none), input/output (distributed), and \name{fft} (not used).
+Table~\ref{Tab-modules} in the Appendix lists all currently available modules.
 
 Note that most of these \name{make} variables \emph{must} be set, but they
-will normally obtain reasonable default values in \file{Makefile}.
+will normally obtain reasonable default values in \file{Makefile} (so you
+only need to set the non-standard ones in \file{Makefile.local}).
 It is by using this switching mechanism through \cmd{make} that we achieve
 high flexibility without resorting to excessive amounts of cryptic
 preprocessor directives or other switches within the code.
@@ -1278,30 +1242,115 @@ Many possible combinations of modules have already been tested
 and examples are part of the distribution, but you may be interested in a
 combination which was never tried before and which may not work yet, since the
 modules are not fully orthogonal.
-In all such cases, we depend on your feedback for fixing problems
+In such cases, we depend on user feedback for fixing problems
 and documenting the changes for others.
 
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Files}
+\subsection{Files in the run directories}
 
-\subsubsection{start.in, run.in}
+\subsubsection{\file{start.in}, \file{run.in}, \file{print.in}}
+These files specify the startup and runtime parameters (see
+Sec.~\ref{S-start-params} and \ref{S-run-params}), and the list of
+diagnostic variables to print (see \ref{diagnostic-IO}).
+They specify the setup of a given simulation and are kept under CVS in
+the individual \file[samples/]{samples} directories.
 
-These files will contain mainly parameters that are different from their
-default values. You need to check very carefully that the code is doing
-what is desired. In the beginning of the run, it will show you normally a
-selected amount of parameters that are set.  You can get more information
-by lowering the \var{ip} parameter, but this tends to become messy,
-so it is better to check in \name{IDL} that you are doing the right thing.
+\subsubsection{\file{reference.out}}
+If present, \file{reference.out} contains the output you should obtain in
+the given run directory, provided you have not changed any parameters.
+To see whether the results of your run are OK, compare \file{n.dat} to
+\file{reference.out}:
+\begin{alltt}
+  \prompt{unix> } diff tmp/n.dat reference.out
+\end{alltt}
 
-\subsubsection{param.nml, param2.nml; param[2].pro}
+\subsubsection{\file{start.csh}, \file{run.csh}, \file{getconf.csh}}
+\label{start-run-getconf}
+These are links to \file[bin/]{\$PENCIL_HOME/bin}.
+You will be constantly using the scripts \file{start.csh} and
+\file{run.csh} to initialize the code.
+Things that are needed by both (like the name of the \cmd{mpirun}
+executable, \name{MPI} options, or the number of processors) are located in
+\file{getconf.csh}, which is never directly invoked.
 
-These are written automatically and used by other routines.
+\subsubsection{\file{src/}}
+The \file[src/]{src} directory contains two local files,
+\file[Makefile.local]{src/Makefile.local} and
+\file[cparam.local]{src/cparam.local}, which allow the user to choose
+individual modules (see \ref{S-modularity}) and to set parameters like the
+grid size and the number of processors for each direction.
+These two files are part of the setup of a given simulation and are kept
+under CVS in the individual \file[samples/]{samples} directories.
 
-% ---------------------------------------------------------------------- %
+The file \file[cparam.inc]{src/cparam.inc} is automatically generated by
+the script \file{mkcparam} and contains the number of fundamental
+variables for a given setup.
 
-\subsection{I/O diagnostics}
+All other files in \file{src/} are either links to source files (and the
+Makefile) in the \file[src/]{\$PENCIL_HOME/src} directory, or object and
+module files generated by the compiler.
+
+\subsubsection{\file{tmp/}}
+This directory (whose name is actually set by the variable \var{datadir} in
+\file{start.in}) contains the output from the code:
+
+\paragraph{\file[dim.dat]{tmp/dim.dat}}
+The global array dimensions.
+
+\paragraph{\file[legend.dat]{tmp/legend.dat}}
+The header line specifying the names of the diagnostic variables in
+\file{n.dat}.\footnote{WD: Do we still need this?}
+
+\paragraph{\file[n.dat]{tmp/n.dat}}
+Time series of diagnostic variables (also printed to stdout).
+
+\paragraph{\file[tsnap.dat]{tmp/tsnap.dat}, \file[tvid.dat]{tmp/tvid.dat}}
+Time when the next snapshot \file{VAR$N$} or animation slice should be
+taken.
+
+\paragraph{\file[param.nml]{tmp/param.nml}}
+Complete set of startup parameters, printed as Fortran namelist.
+This file is read in by \file{run.x} (this is how values of startup
+parameters are propagated to \file{run.x}) and by \name{IDL} (if you use
+it).
+
+\paragraph{\file[param2.nml]{tmp/param2.nml}}
+Complete set of runtime parameters, printed as Fortran namelist.
+This file is read \name{IDL} (if you use it).
+
+\paragraph{\file[index.pro]{tmp/index.pro}}
+Can be used as include file in \name{IDL} and contains the column in which
+certain variables appear in the diagnostics file (\file{n.dat}).
+It also contains the positions of variables in the \file{VAR$N$} files.
+These positions depend on whether \name{entropy} or \name{noentropy}, etc,
+are invoked.
+This is a temporary solution and the file may disappear in future
+releases.
+
+\paragraph{\file[proc$N$]{tmp/proc0}, \file[]{tmp/proc1}, \ldots}
+These are the directories containing data from the individual processors.
+So after running an \name{MPI} job on two processors, you will have the
+two directories \file[proc0]{tmp/proc0} and \file[proc1]{tmp/proc1}.
+Each of the directories can contain the following files:
+\begin{description}
+\item[\file{var.dat}] binary file containing the latest snapshot;
+\item[\file{VAR$N$}] binary file containing individual snapshot number $N$;
+\item[\file{dim.dat}] ASCII file containing the array dimensions as seen
+  by the given processor;
+\item[\file{time.dat}] ASCII file containing the time corresponding to
+  \file{var.dat};
+\item[\file{grid.dat}] binary file containing the part of the grid seen by
+  the given processor;
+\item[\file{seed.dat}] the random seed for the next time step (saved for
+  reasons of reproducibility).
+  For multi-procesor runs with velocity forcing, the files
+  \file[seed.dat]{proc$N$/seed.dat} must all contain the same numbers,
+  because globally coherent waves of given wavenumber are used;
+\item[\file{$X$.xy}, \file{$X$.xy}, \file{$X$.xy}] two-dimensional
+  sections of variable $X$. \footnote{WD: Axel, can you explain a bit more?}
+\end{description}
 
 
 % ====================================================================== %
@@ -1309,24 +1358,21 @@ These are written automatically and used by other routines.
 \section{Using the Code}
 \label{Input-params}
 
-
-% ---------------------------------------------------------------------- %
-
 \subsection{Localization (adapt-mkfile)}
 \label{adapt-mkfile}
 
 By default, one \file{makefile} will only work on a given class of
 computers with identical (or at least similar) compilers.
-Our aim when building the Pencil Code was however to allow running the
-code on different machines without any need to modify files.
+One aim when building the Pencil Code was however to allow running the
+code on different machines without needing to modify any file.
 This, together with \name{CVS} allows you for example to very quickly
 compare results for identical runs on different machines.
 
 Our mechanism for picking the right set of compiler flags is based on the
 \name{Perl} script \file{adapt-mkfile} in \file[bin/]{\$PENCIL_HOME/bin}, which
-processes the file \file{Makefile} to a (localized) \file{makefile}.
-When both \file{Makefile} and \file{makefile} are present, \cmd{make} will
-use the latter.
+processes the file \file{Makefile} to a (localized) \file{makefile}
+(if both \file{Makefile} and \file{makefile} are present, \cmd{make} will
+use the latter).
 You can view the full documentation for \file{adapt-mkfile} with the
 command
 \begin{alltt}
@@ -1338,7 +1384,7 @@ To give you an idea of how to add your own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
 \option{-O4 -u}, while one of them, \name{Janus}, runs a compiler \cmd{f90}
 which needs the flags \option{-O3} and requires the additional
-options \option{-lmpi} \option{-llam} for \name{MPI}.
+options \option[-lmpi]{-lmpi -llam} for \name{MPI}.
 
 The \file{Makefile} you need will have the following section:
 \begin{alltt}
@@ -1354,7 +1400,7 @@ The \file{Makefile} you need will have the following section:
   #FC=f95
   #FFLAGS=-O4 -u
   #FC=f90             #(Janus)
-  #FFLAGS=-O3 -u      #(Janus)
+  #FFLAGS=-O3         #(Janus)
   #LDMPI=-lmpi -llam  #(Janus)
   
   ## SunOS:
@@ -1372,11 +1418,11 @@ The \file{Makefile} you need will have the following section:
 
 % ---------------------------------------------------------------------- %
 
-\subsection{I/O diagnostics}
+\subsection{Diagnostic output}
 \label{diagnostic-IO}
 
 Every \var{it1} time steps (\var{it1} is a runtime parameter, see
-Sect.~\ref{Run-params}), the code writes monitoring output to \name{stdout}
+Sect.~\ref{S-run-params}), the code writes monitoring output to \name{stdout}
 and, parallel to this, to the file \file[n.dat]{tmp/n.dat}.
 The variables that appear in this listing and the output format are
 defined in the file \file{print.in} and can be changed without touching
@@ -1423,27 +1469,52 @@ quantities \code{bxmz} and \code{bymz} are set.
 \subsection{Helper scripts}
 \index{Scripts}
 
+The \file[bin/]{bin} directory contains a collection of utility scripts,
+some of which are discussed elsewhere,
+Here is a list of the more important ones.
+
 \begin{description}
-\item[adapt-mkfile]
-\item[auto-test]
-\item[copy-snapshots]
-\item[cvs-add-rundir]
-\item[cvsci_run]
-\item[getconf.csh]
-\item[gpgrowth]
-\item[local]
-\item[mkcparam]
-\item[mkdotin]
-\item[mkinpars]
-\item[new]
-\item[nl2idl]
-\item[own-risk]
-\item[run.csh]
-\item[setup-src]
-\item[start.csh]
-\item[timestr]
-\item[tst.csh]
-\item[x]
+\item[adapt-mkfile] Activate the settings in a \file{Makefile} that apply
+  to the given computer, see \S\ref{adapt-mkfile}.
+\item[auto-test] Verify that the code compiles and runs in a set of run
+  directories and compare the results to the reference output.
+  These tests are carried out routinely to ensure that the \name{CVS}
+  version of the code is inu a usable state.
+\item[copy-snapshots] Copy snapshots from a processor-local directory to
+  the global directory.
+  Supposed to be started in the background before \file{run.x} is invoked.
+  Specific to a Beowulf cluster in Odense.
+\item[cvs-add-rundir] Add the current run directory to the CVS repository.
+\item[cvsci_run] \footnote{WD: Need to see which one we keep:
+    cvs-add-rundir or cvsci_run}
+\item[getconf.csh] See \S~\ref{start-run-getconf}
+\item[gpgrowth] Plot simple time evolution with Gnuplot's ASCII graphics
+  for fast orientation via a slow modem line.
+\item[local] Materialize a symbolic link
+\item[mkcparam] Based on \file{Makefile} and \file{Makefile.local},
+  generate \file[cparam.inc]{src/cparam.inc}, which specifies the number
+  \var{mvar} of fundamental variables.
+  Called by the \file{Makefile}.
+\item[mkdotin] Generate minimal \file{start.in}, \file{run.in} files
+  based on \file{Makefile} and \file{Makefile.local}.
+\item[mkinpars] Wrapper around \item{mkdotin} --- needs proper
+  documentation.
+\item[new] ???
+\item[nl2idl] Transform a Fortran \name{namelist} (normally the files
+  \file{param.nml}, \file{param2.nml} written by the code) into an
+  \name{IDL} structure.
+  Generates an \name{IDL} file that can be sourced from \file{start.pro}
+  or \file{run.pro}.
+\item[run.csh] The script for running the code; see \S~\ref{start-run-getconf}
+\item[setup-src] Link \file{start.csh}, \file{run.csh} and
+  \file{getconf.csh} from \file[bin/]{\$PENCIL_HOME/bin}.
+  Generate \file{src/} if necessary and link the source code files from
+  \file[src/]{\$PENCIL_HOME/src} to that directory.
+\item[start.csh] The script for initializing the code; see
+  \S~\ref{start-run-getconf}
+\item[timestr] Generate a unique time string that can be appended to file
+  names from shell scripts through the backtick mechanism
+\item[x] ???
 \end{description}
 
 \vspace{5cm}
@@ -1465,7 +1536,7 @@ In the directory where you started the code, create the file
 to force the code to re-read the runtime parameters from \file{run.in}.
 This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
-see Sect.~\ref{start-params}). [Occasionally, however, and only on some
+see Sect.~\ref{S-start-params}). [Occasionally, however, and only on some
 machines, one of the processors may not survive the MPI barrier and
 stops; we will need to look further into this.]
 
@@ -1478,7 +1549,7 @@ In the directory where you started the code, create the file
 to stop the code in a controlled manner (it will write the latest
 snapshot).
 Again, the action will happen the next time the code is writing monitoring
-output. The \file{run.csh} removes and \file{STOP} files before starting
+output. The \file{run.csh} removes any \file{STOP} files before starting
 \file{src/run.x}. If you run without the \file{run.csh} script you need
 to remember doing this by hand.
 
@@ -1486,7 +1557,7 @@ to remember doing this by hand.
 
 
 \subsection{Start parameters}
-\label{start-params}
+\label{S-start-params}
 
 All input parameters in \file{start.in} (and \file{run.in}) occur in
 namelists.
@@ -1522,7 +1593,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $',
+  cvsid='$Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1540,16 +1611,18 @@ $\gamma=1$ is set explicitly (the default would have been 5/3).
 The magnetic vector potential is initialized with gaussian random noise
 with amplitude $10^{-4}$.
 
-A full list of input parameter is given in Appendix~\ref{Sall-init-params}.
+A full list of input parameter is given in Appendix~\ref{S-all-init-params}.
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Run parameters}
-\label{Run-params}
+\label{S-run-params}
 
 As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $',
+  cvsid='$Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -1574,7 +1647,9 @@ are set to $5\times10^{-3}$ (so the mesh Reynolds number is about
 $u_{\rm rms}\delta x/\nu=0.3\times(2\pi/32)/5\times10^{-3}\approx12$,
 which is rather a bit to high!)
 
-A full list of input parameter is given in Appendix~\ref{Sall-run-params}.
+A full list of input parameter is given in Appendix~\ref{S-all-run-params}.
+
+% ---------------------------------------------------------------------- %
 
 \subsection{The time step}
 \label{time-step}
@@ -1677,37 +1752,23 @@ last one is used.}
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Output files}
+\subsection{One- and two-dimensional runs}
 
-\begin{itemize}
-\item \file[n.dat]{tmp/n.dat} --- output diagnostics, depends on what is
-    put in print.in
-\item \file{tsnap.dat}, \file{tvid.dat}
-\item \file[dim.dat]{tmp/dim.dat}
-\item \file[param.dat]{tmp/param.dat} \file[param2.dat]{tmp/param2.dat}
-\item \file[var.dat]{tmp/proc\emph{X}/var.dat} --- detailed format
-\item \file[VAR$N$]{tmp/proc\emph{X}/VAR\emph{N}} --- same format as
-      \file[var.dat]{tmp/proc\emph{X}/var.dat}
-\item \file[seed.dat]{tmp/proc\emph{X}/seed.dat} --- seed field for forcing
-      procedure: must be the same for all processors, because globally
-      coherent waves of given wavenumber are used
-\item \file[index.pro]{tmp/index.pro}
-      --- can be used as include file in \name{IDL}
-      and contains the column in which certain variables appear in the
-      diagnostics file (\file{n.dat}). It also contains the positions of
-      variables in the \file{VAR} files. These positions depend on whether
-      \name{entropy} or \name{noentropy}, etc, are invoked.
-\item \file[param.nml]{tmp/param.nml}
-\end{itemize}
+If you want to run two-dimensional problems, set
+\var{nzgrid}=1 in \file{cparam.local}.
 
+Similarly, for one-dimensional problems, set
+\var{nxgrid}=1, \var{nygrid}=1 in \file{cparam.local}.
+
+See \emph{need 1d and 2d samples} for examples.
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Visualization}
-
+\label{S-Visualization}
 
 \subsubsection{IDL routines}
-\label{S-IDLroutines}
+\label{S-IDL-routines}
 
 The basic command sequence is:
 \begin{alltt}
@@ -2007,7 +2068,6 @@ times.
 % ====================================================================== %
 
 %\section{Tuning the code for optimal performance}
-%AB: what is described below is really a fake; not tuning.
 \section{Performance issues}
 
 \subsection{Processor layout when using MPI}
@@ -2030,8 +2090,6 @@ there is little difference between the
 simplified viscous operator (\code{ivisc='simplified'}; see
 \S\ref{S-Eqn-of-motion}) and the full operator
 (\code{ivisc='nu-const'}), while the latter is numerically
-%considerably
-%AB: not in connection with full MHD and other expensive things.
 more expensive.
 
 The equation of motion with the simplified
@@ -2046,9 +2104,6 @@ is not already part of a production run.
 % ====================================================================== %
 
 \section{Adapting the code}
-
-
-% ---------------------------------------------------------------------- %
 
 \subsection{Adding new output diagnostics}
 
@@ -2194,8 +2249,6 @@ starting point.
 % ====================================================================== %
 
 \section{Frequently Asked Questions}
-
-% ---------------------------------------------------------------------- %
 
 \subsection{Compilation}
 
@@ -2533,7 +2586,6 @@ well-defined sample problems.
 
 
 % ====================================================================== %
-
 
 \section{Some specific initial conditions}
 
@@ -2946,6 +2998,9 @@ horizontal sections for time $t=50$.
 \end{figure}
 % ---------------------------------------------------------------------- %
 
+
+% ====================================================================== %
+
 \section{Details about the numerical scheme}
 
 \subsection{The 2N-scheme}
@@ -3038,8 +3093,99 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
   \end{tabular}
 \end{table}
 
-\section{List of startup parameters for `start.in'}
-\label{Sall-init-params}
+
+% ====================================================================== %
+
+\section{Switchable modules}
+
+Table~\ref{Tab-modules} listas the available physics and technical
+modules.
+
+% ---------------------------------------------------------------------- %
+\begin{table}
+  \small
+  \centering
+  \caption{%
+    Switchable modules as of September 2002.
+  }
+  \label{Tab-modules}
+  \begin{tabular}{lp{0.6\textwidth}}
+    \toprule
+    hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
+                     motion; \\
+    nohydro.f90    & no variable $\uv$: useful for kinematic dynamo runs. \\
+    \midrule
+    density.f90    & Add variable $\ln\varrho$ with continuity equation \\
+    nodensity.f90  & no variable $\ln\varrho$: useful for Burgers' equation. \\
+    \midrule
+    entropy.f90    & Add variable $s$ with entropy equation (energy
+                     equation); \\
+    noentropy.f90  & no variable $s$: isothermal hydrodynamics. \\
+    \midrule
+    magnetic.f90   & Add variable $\Av$ (magnetic vector potential) with
+                     induction equation; \\
+    nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
+    \midrule
+    pscalar.f90    & Add variable $\ln c$ (concentration) with
+                     advection-diffusion equation for transport of a
+                     passive scalar; \\
+    nopscalar.f90  & no passive scalar, no variable $\ln c$. \\
+    \midrule
+    \midrule
+    forcing.f90    & Add a forcing function to rhs of equation of motion
+                    (typically helical forcing) for forced turbulence
+                    calculations; \\
+    noforcing.f90  & no forcing. \\
+    \midrule
+    shear.f90      & Shearing-box boundary conditions; \\
+    noshear.f90    & no shearing box. \\
+    \midrule
+    grav_z.f90     & Constant vertical gravity in equation of motion; \\
+    grav_r.f90     & radially symmetric gravity; \\
+    nograv.f90     & no gravity. \\
+    \midrule
+    \midrule
+    global_rr.f90  & Radius \verb|rr| as an additional global variable; \\
+    global_pot.f90 & radially symmetric gravity potential as additional
+                     global variables; \\
+    noglobal.f90   & no additional global variables. \\
+    \midrule
+    fft.f          & Singleton (1968) FFT routine: needed for magnetic
+                     potential-field boundary condition; \\
+    nofft.f90      & no FFT: no need to bother about compiler warnings if
+                     you don't need this boundary condition. \\
+    \midrule
+    io_dist.f90    & Distributed input/output: each processor writes to
+                     its own directory; currently there are no
+                     alternatives. \\
+    \midrule
+    mpicomm.f90    & Use \name{MPI} for communication on multiprocessor
+                     machines; \\
+    nompicomm.f90  & no parallelization: convenient for testing and
+                     smaller production runs on desktop or notebook
+                     computers. \\
+    \midrule
+    debug_c.c      & Use I/O routines that allow to write auxiliary
+                     variables to a file (nontrivial in a Pencil Code);
+                     requires C compiler to be set up correctly and maybe
+                     requires appropriate compiler flags
+                     (\code{-DFUNDERSCORE}) for correctly interfacing C
+                     with Fortran (and may still not work in some cases); \\
+    nodebug.f90    & don't use these debugging routines, avoiding any
+                     C-Fortran interoperability problems. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+% ---------------------------------------------------------------------- %
+
+
+
+% ====================================================================== %
+
+\section{Startup and Run-Time Parameters}
+
+\subsection{List of startup parameters for `start.in'}
+\label{S-all-init-params}
 
 The following table lists all (at the time of writing, September 2002)
 namelists used in \file{run.in}, with the corresponding parameters
@@ -3360,8 +3506,8 @@ double precision, $\varepsilon\approx10^{-15}$.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\section{List of runtime parameters for `run.in'}
-\label{Sall-run-params}
+\subsection{List of runtime parameters for `run.in'}
+\label{S-all-run-params}
 
 The following table lists all (at the time of writing, September 2002)
 namelists used in file \file{run.in}, with the corresponding
@@ -3554,7 +3700,7 @@ the latest set of parameters, you need to look at the code.
   \var{Fbot} [start]
                & heat flux for bottom boundary condition \option{c1}.
                  For polytropic atmospheres, if \var{Fbot} is not set, it will
-                 be calculated from the value of \var{hcond0} in \cmd{start.x},
+                 be calculated from the value of \var{hcond0} in \file{start.x},
                  provided the entropy boundary condition is set to \option{c1}. \\
   \var{chi_t} [$0.$]
                & entropy diffusion coefficient for diffusive term
@@ -3667,7 +3813,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.109 2002-09-27 20:20:54 dobler Exp $ $}
+$ $Id: manual.tex,v 1.110 2002-09-29 16:35:03 dobler Exp $ $}
 
 
 \end{document}
