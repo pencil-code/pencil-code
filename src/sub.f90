@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.168 2004-03-11 09:11:14 dobler Exp $ 
+! $Id: sub.f90,v 1.169 2004-03-27 13:43:14 theine Exp $ 
 
 module Sub 
 
@@ -3039,7 +3039,7 @@ nameloop: do
       if (ampl==0) then
         if (lroot) print*,'ampl=0 in blob'
       else
-        if (lroot) print*,'blob: variable i,ampl=',i,ampl
+        if (lroot.and.ip<14) print*,'blob: variable i,ampl=',i,ampl
         f(:,:,:,i)=f(:,:,:,i)+ampl*(&
            spread(spread(exp(-((x-x01)/radius)**2),2,my),3,mz)&
           *spread(spread(exp(-((y-y01)/radius)**2),1,mx),3,mz)&

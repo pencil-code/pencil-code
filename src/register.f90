@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.125 2004-03-24 11:21:39 mee Exp $
+! $Id: register.f90,v 1.126 2004-03-27 13:43:14 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -157,7 +157,8 @@ module Register
 !  convert physical constants
 !
       if (unit_system=='cgs') then
-        if(lroot.and.lionization) print*,'initialize_modules: unit_velocity, unit_density, etc, are in cgs'
+        if(lroot.and.lionization.and.ip<14) print*,'initialize_modules: ' &
+          //'unit_velocity, unit_density, etc, are in cgs'
         hbar=hbar_cgs/(unit_energy*unit_time)
         k_B=k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs/unit_mass
@@ -187,7 +188,7 @@ module Register
 !
 !  print parameters in code units, but only when used
 !
-      if (lroot) then
+      if (lroot.and.ip<14) then
          if (lionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
             print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
          endif

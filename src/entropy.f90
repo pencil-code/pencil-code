@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.289 2004-03-26 13:46:44 theine Exp $
+! $Id: entropy.f90,v 1.290 2004-03-27 13:43:14 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -47,12 +47,13 @@ module Entropy
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond=.false.,lcalc_heatcond_constchi=.false.
   logical :: lupw_ss=.false.
-  character (len=labellen) :: initss='nothing',initss2='nothing',pertss='zero'
+  character (len=labellen), dimension(ninit) :: initss='nothing'
+  character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',iheatcond='K-const'
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,initss2,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
+       initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -106,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.289 2004-03-26 13:46:44 theine Exp $")
+           "$Id: entropy.f90,v 1.290 2004-03-27 13:43:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -248,7 +249,7 @@ module Entropy
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initss)
+    select case(initss(1))
       case('geo-kws')
         if (lroot) print*,'initialize_entropy: set boundary temperatures and sound speeds for spherical shell problem'
 !       temperatures at shell boundaries
@@ -284,12 +285,20 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
       real :: cs2int,ssint,ztop,ss_ext,cd2_ext,pot0,pot_ext
+      logical :: lnothing=.true.
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      select case(initss)
-        case('nothing'); if(lroot) print*,'init_ss: nothing'
+      do iinit=1,ninit
+!
+      if (initss(iinit)/='nothing') then
+!
+      lnothing=.false.
+      call chn(iinit,iinit_str)
+!
+      select case(initss(iinit))
+
         case('zero', '0'); f(:,:,:,iss) = 0.
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
@@ -357,7 +366,7 @@ module Entropy
           !
           if (.not. ldensity) &
                call stop_it('isentropic-star requires density.f90')
-          if (initlnrho /= initss) &
+          if (initlnrho(1) /= initss(1)) &
                call stop_it('isentropic star requires initlnrho=initss')
           if (lgravr) then
             if (lroot) print*, &
@@ -482,10 +491,20 @@ module Entropy
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'init_ss: No such value for initss: ', trim(initss)
+          if (lroot) print*,'init_ss: No such value for initss(' &
+                           //trim(iinit_str)//'): ',trim(initss(iinit))
           call stop_it("")
 
       endselect
+
+      if (lroot) print*,'init_ss: initss(' &
+                        //trim(iinit_str)//') = ',trim(initss(iinit))
+
+      endif
+
+      enddo
+
+      if (lnothing) print*,'init_ss: zero entropy'
 !
 !  if ss_const/=0, add this constant to entropy
 !  (ss_const is already taken care of)
@@ -527,27 +546,6 @@ module Entropy
         !  Catch unknown values
         !
         if (lroot) print*,'init_ss: No such value for pertss:', pertss
-        call stop_it("")
-
-      endselect
-!
-!  Add some structures to the entropy initialized above
-!
-      select case(initss2)
-
-      case('nothing')
-
-        if (lroot.and.ip<=5) print*,"init_ss: initss2='nothing'"
-
-      case('addblob')
-
-        if (lroot) print*,'init_ss: add blob'
-        f(:,:,:,iss)=f(:,:,:,iss) &
-          +ampl_ss*exp(-(xx**2+yy**2+zz**2)/radius_ss**2)
-
-      case default
-
-        if (lroot) print*,'init_ss: No such value for initss2: ', trim(initss2)
         call stop_it("")
 
       endselect
@@ -739,7 +737,7 @@ module Entropy
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
-      if (initss=='geo-kws') then
+      if (initss(1)=='geo-kws') then
         do m=m1,m2
         do n=n1,n2
 !
@@ -1601,7 +1599,7 @@ endif
 ! dgm
         case ('shell')          !  heating/cooling at shell boundaries
           heat=0.                            ! default
-          select case(initss)
+          select case(initss(1))
             case ('geo-kws'); heat=0.        ! can add heating later based on value of initss
           endselect
           prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step

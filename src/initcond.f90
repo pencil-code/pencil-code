@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.104 2004-03-24 11:21:39 mee Exp $ 
+! $Id: initcond.f90,v 1.105 2004-03-27 13:43:14 theine Exp $ 
 
 module Initcond 
  
@@ -744,7 +744,7 @@ module Initcond
 !
     endsubroutine sinwave
 !***********************************************************************
-    subroutine stratification(ampl,f,xx,yy,zz,strati_type)
+    subroutine stratification(f,strati_type)
 !
 !  read mean stratification from "stratification.dat"
 !
@@ -755,10 +755,9 @@ module Initcond
       use Ionization, only: eoscalc,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz
       integer, parameter :: ntotal=nz*nprocz
       real, dimension (ntotal) :: lnrho0,lnTT0,ss0
-      real :: ztmp,ampl
+      real :: ztmp
       logical :: exist
       character (len=labellen) :: strati_type
 !
@@ -804,7 +803,6 @@ module Initcond
 !      
       close(19)
 !
-      if(ip==0) print*,ampl,xx,yy,zz !(to keep compiler quiet)
     endsubroutine stratification
 !***********************************************************************
     subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,rho0,width)

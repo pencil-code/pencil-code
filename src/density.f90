@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.155 2004-03-26 13:46:44 theine Exp $
+! $Id: density.f90,v 1.156 2004-03-27 13:43:14 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -32,16 +32,17 @@ module Density
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
-  integer:: isothtop=0
+  integer :: isothtop=0
   logical :: lupw_lnrho=.false.
-  character (len=labellen) :: initlnrho='nothing',initlnrho2='nothing'
-  character (len=labellen) :: strati_type='lnrho_ss'
+  character (len=labellen), dimension(ninit) :: initlnrho='nothing'
+  character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
+  character (len=4) :: iinit_str
   complex :: coeflnrho=0.
 
   namelist /density_init_pars/ &
-       cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
+       cs0,rho0,ampllnrho,gamma,initlnrho,initlnrho2,widthlnrho, &
        rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
-       initlnrho2,radius_lnrho,eps_planet, &
+       radius_lnrho,eps_planet, &
        b_ell,q_ell,hh0,rbound, &
        mpoly,strati_type, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
@@ -85,7 +86,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.155 2004-03-26 13:46:44 theine Exp $")
+           "$Id: density.f90,v 1.156 2004-03-27 13:43:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -123,7 +124,7 @@ module Density
 !
 !   make sure all relevant parameters are set for spherical shell problems
 !
-    select case(initlnrho)
+    select case(initlnrho(1))
       case('geo-kws')
         if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
 !ajwm Shouldn't be done here they should be set as input parameters in
@@ -163,6 +164,7 @@ module Density
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: pot_ext,lnrho_ext,cs2_ext
       real :: zbot,ztop
+      logical :: lnothing
 !
 !  define bottom and top height
 !
@@ -180,19 +182,26 @@ module Density
       lnrho0      = alog(rho0)
       lnrho_left  = alog(rho_left)
       lnrho_right = alog(rho_right)
-      select case(initlnrho)
 
-      case('nothing'); if(lroot) print*,'init_lnrho: nothing'
-      case('zero', '0'); 
-                          if(lroot) print*,'init_lnrho: zero lnrho'
-                          f(:,:,:,ilnrho)=0.
+      lnothing=.true.
+
+      do iinit=1,ninit
+
+      if (initlnrho(iinit)/='nothing') then
+
+      lnothing=.false.
+
+      call chn(iinit,iinit_str)
+
+      select case(initlnrho(iinit))
+
+      case('zero', '0'); f(:,:,:,ilnrho)=0.
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
-      case('stratification')
-        call stratification(amplrho,f,xx,yy,zz,strati_type)
+      case('stratification'); call stratification(f,strati_type)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*, &
                               'init_lnrho: use polytropic_simple instead!'
@@ -491,11 +500,20 @@ module Density
         !
         !  Catch unknown values
         !
-        if (lroot) print*, &
-              'init_lnrho: No such value for initlnrho: ', trim(initlnrho)
+        if (lroot) print*,'init_lnrho: No such value for initlnrho(' &
+                          //trim(iinit_str)//'): ',trim(initlnrho(iinit))
         call stop_it('')
 
       endselect
+
+      if (lroot) print*,'init_lnrho: initlnrho(' &
+                        //trim(iinit_str)//') = ',trim(initlnrho(iinit))
+
+      endif
+
+      enddo
+
+      if (lnothing) print*,'init_lnrho: zero density'
 !
 !  sanity check
 !
@@ -507,26 +525,31 @@ module Density
 !  dave:
 !  these variables are not always used, but always checked; 
 !  is there a way to limit this check to the appropriate cases?
+!  tobi:
+!  only print out when noionization is used
 !
-      if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
-      if(lroot) print*, &
-          'init_lnrho: e.g. for ionization runs: cs2bot,cs2top not yet set' 
       if (lionization .or. lionization_fixed) then
         cs2top=impossible
         cs2bot=impossible
+      else
+        if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       endif
 !
+!
 !  Add some structures to the lnrho initialized above
+!  Tobi: This is only kept for backwards compatibility
 !
       select case(initlnrho2)
-
+    
       case('nothing')
-
+    
         if (lroot.and.ip<=5) print*,"init_lnrho: initlnrho2='nothing'"
 
       case('addblob')
 
         if (lroot) print*,'init_lnrho: add blob'
+        if (lroot) print*,'initlnrho2 is deprecated. '// &
+                          "use initlnrho='initcond1','initcond2' instead"
         f(:,:,:,ilnrho)=f(:,:,:,ilnrho) &
           +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
 
@@ -537,8 +560,6 @@ module Density
         call stop_it("")
 
       endselect
-!
-      if(ip==0) print*, yy(1,1,1) ! keep compiler quiet
 !
     endsubroutine init_lnrho
 !***********************************************************************
@@ -675,7 +696,7 @@ module Density
 !
       beta1 = g0/(mpoly+1)
 !
-      if (initlnrho=='geo-kws') then
+      if (initlnrho(1)=='geo-kws') then
 !       densities at shell boundaries
         lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
         lnrho_ext = lnrho0

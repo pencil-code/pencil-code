@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.213 2004-03-18 15:01:35 theine Exp $
+! $Id: cdata.f90,v 1.214 2004-03-27 13:43:14 theine Exp $
 
 module Cdata
 
@@ -66,6 +66,8 @@ module Cdata
   integer :: ilncc=0
   integer :: iproc,ipx,ipy,ipz,root=0
   integer :: mvar_io=0,dimensionality
+  integer :: iinit
+  integer, parameter :: ninit=4
   integer, dimension(ndustspec) :: iuud,iudx,iudy,iudz,ind,irhod
   logical, dimension(3) :: lperi,lshift_origin
   character (len=labellen) ::fft_switch='fftpack'

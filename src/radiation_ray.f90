@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.54 2004-03-26 14:25:23 theine Exp $
+! $Id: radiation_ray.f90,v 1.55 2004-03-27 13:43:14 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -97,7 +97,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.54 2004-03-26 14:25:23 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.55 2004-03-27 13:43:14 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -168,13 +168,13 @@ module Radiation
 !
       weight=1.0/ndir
 !
-      if (lroot) print*,'initialize_radiation: ndir=',ndir
+      if (lroot.and.ip<14) print*,'initialize_radiation: ndir=',ndir
 !
 !  check boundary conditions
 !
-      if (lroot) print*,'initialize_radiation: bc_rad=',bc_rad
+      if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad=',bc_rad
+!
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
-      if (lroot) print*,'initialize_radiation: bc_rad1,bc_rad2=',bc_rad1,bc_rad2
 !
     endsubroutine initialize_radiation
 !***********************************************************************
