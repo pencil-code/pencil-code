@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   cleanf95
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   10-Oct-2002
-# CVS: $Id: cleanf95,v 1.3 2002-10-10 12:46:58 dobler Exp $
+# CVS: $Id: cleanf95,v 1.4 2003-08-26 18:02:07 dobler Exp $
 # Description:
 #   Read standard input (piped from Intel Fortran compiler with 2>&1 | 
 #   i.e. from STDERR)
@@ -27,14 +27,29 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Usage:
 #   make |& cleanf95
 
-my $identi = '[A-Z_0-9]+';  # valid F90 identifiers (as capitalized by compiler)
+my $Identi = '[A-Za-z_0-9%]+';	# valid chars of F90 identifiers
+my $IDENTI = '[A-Z_0-9]+';	# ..as capitalized by compiler
+my $identi = '[a-z_0-9]+';	# ..as downcased by compiler
+my $fname  = '[-.a-zA-Z_0-9/]+';	# valid chars of file names
 $| = 1;         # auto-flush output
 while(<STDIN>)
 {
-  next if /^\s*(module|external)\s+(subroutine|function)\s+$identi\s*$/;
-  next if /^\s*(program|module)\s+$identi\s*$/;
+  # Intel F95 compiler
+  next if /^\s*(module|external)\s+(subroutine|function)\s+$IDENTI\s*$/;
+  next if /^\s*(program|module)\s+$IDENTI\s*$/;
   next if /^[0-9]+\s*lines compiled/i;
   next if /^\s*$/;
- 
-  print STDERR $_;    
+
+  # Hitachi F90 compiler
+  next if /^f90: compile start : $fname$/;
+  next if /^\*OFORT90 V01-04 entered.$/;
+  next if /^\*end of compilation : $Identi\s*$/;
+  next if /^\*program name = $Identi\s*$/;
+  next if /^\*program units = 0001, no diagnostics generated\.$/;
+  next if /^\*program units = 0001,\s*[0-9]+\s+diagnostics generated, highest severity code is  00$/;
+  next if /^KCHF656K -I the following file is$/;
+  next if /^            referred.--$fname$/;
+  next if /^            $fname$/;
+
+  print STDERR $_;
 }
