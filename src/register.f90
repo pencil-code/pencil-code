@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.89 2003-08-08 12:34:19 dobler Exp $
+! $Id: register.f90,v 1.90 2003-08-11 17:54:11 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -126,7 +126,6 @@ module Register
       use Viscosity
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      double precision :: unit_mass,unit_energy,unit_time,unit_flux
       logical :: lstart
 !
 !  Defaults for some logicals; will later be set to true if needed
@@ -156,6 +155,7 @@ module Register
         kappa_es=kappa_es_cgs/(unit_length**2/unit_mass)
       elseif (unit_system=='SI') then
         if(lionization) print*,'unit_velocity, unit_density, etc, are in SI'
+        hbar=hbar_cgs*1e-7/(unit_energy*unit_time)
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass

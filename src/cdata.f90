@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.160 2003-08-08 11:55:03 dobler Exp $
+! $Id: cdata.f90,v 1.161 2003-08-11 17:54:11 mee Exp $
 
 module Cdata
 
@@ -27,6 +27,9 @@ module Cdata
   !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
   double precision :: unit_length=1.,unit_velocity=1.,unit_density=1.,unit_temperature=1.
+  ! Derived units
+  double precision :: unit_mass,unit_energy,unit_time,unit_flux
+  
   double precision :: k_B,m_p,m_e,m_H,m_He,eV,hbar, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
 

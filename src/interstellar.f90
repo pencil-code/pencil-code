@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $
+! $Id: interstellar.f90,v 1.39 2003-08-11 17:54:11 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -14,8 +14,8 @@ module Interstellar
   real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
-  real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
-  real :: tau_cloud=2e-2
+  real :: t_next_SNI=0.0, t_interval_SNI=3.64e-3,h_SNI=0.325,h_SNII=0.9
+  real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
   real, parameter :: rho_crit=1.,TT_crit=4000.
@@ -42,14 +42,20 @@ module Interstellar
 !   (this should really just be incorporated into coolH coefficients)
 !  NB: will start using thermodynamics, and unit_length, etc., imminently...
 
-  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
-  real, parameter :: TTunits=46.6,tosolarMkpc3=1.483e7
-  real, parameter :: Lambdaunits=3.29e-18
-  real, parameter :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
-  real, parameter, dimension(6) ::                                          &
-        coolT=(/ 500.,     2000.,    8000.,    1.e5,    4.e7,     1.e9 /),  &
-        coolH=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /),  &
-        coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
+!  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
+  real, parameter :: TTunits=46.6
+  real :: unit_Lambda
+  real, parameter :: tosolarMkpc3=1.483e7
+
+  real, parameter :: rhoUV_cgs=0.1
+  real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
+  double precision, parameter, dimension(6) ::  &
+    coolT_cgs=(/ 300.,     2000.,    8000.,    1.e5,    4.e7,     1.e9 /),  &
+    coolH_cgs=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /)
+  
+  real :: rhoUV,TUV,T0UV,cUV
+  real, dimension(6) :: coolH, coolT, &
+    coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
   integer :: iproc_SN,ipy_SN,ipz_SN
   logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
                               ! origin and ONLY the type I scheme is used
@@ -59,6 +65,9 @@ module Interstellar
   ! input parameters
   real :: TT_SN_min=1.e7
   logical :: lnever_move_mass
+!ajwm: disable SNII for debugging 
+  logical :: lSNI=.true., lSNII=.false.
+  logical :: laverageSNheating = .false.
  ! real, parameter :: TT_SN_min=1.e8    ! vary for debug, tests
  
   integer :: dummy 
@@ -68,7 +77,8 @@ module Interstellar
   logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
-      uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass
+      uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
+      lSNI, lSNII, laverageSNheating
 
   contains
 
@@ -95,7 +105,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.39 2003-08-11 17:54:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -155,6 +165,14 @@ module Interstellar
          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 
+      if (unit_system=='cgs') then
+        unit_Lambda =  unit_energy / (unit_density**3*unit_time)
+      elseif (unit_system=='SI') then
+        unit_Lambda =  1e-2 * unit_energy / (unit_density**3*unit_time)
+      endif
+      coolH = coolH_cgs / unit_Lambda 
+      coolT = coolT_cgs / unit_temperature
+
       if (lroot.and.ip<14) then
          print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
          print*,'initialize_interstellar: finished'
@@ -200,11 +218,12 @@ module Interstellar
 !   (their cooling = Lambda*n^2,  rho=mu mp n.)
 !  The factor Lambdaunits converts from cgs units to code units.
 !  We've increased coolT(1), to avoid creating gas too cold to resolve.
-!
+!    
       cool=0.0
       do i=1,5
-        where (coolT(i) <= TT(:) .and. TT(:) < coolT(i+1))                 &
-           cool(:)=cool(:) + Lambdaunits/rho1(:)*coolH(i)*TT(:)**coolB(i)
+        where (coolT(i) <= TT(:) .and. TT(:) < coolT(i+1))            &
+           cool(:)=cool(:) +                                          &
+                  rho1(:)*coolH(i)*(TT(:)*unit_temperature)**coolB(i)
       enddo
 !
 !  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
@@ -212,9 +231,22 @@ module Interstellar
 !  nb: need rho0 from density_[init/run]_pars, if i want to implement
 !      the the arm/interarm scaling.
 !
-      heat(:)=rhoUV*(rho0/1.38)**1.4*Lambdaunits*coolH(3)*TUV**coolB(3)*   &
-                               0.5*(1.0+tanh(cUV*(T0UV-TT(:))))
+    heat=0.0
+!ajwm: DISABLE UV HEATING -- Requires reformulation
+!   heat(:)=rhoUV*(rho0/1.38)**1.4*unit_Lambda*coolH(3)*TUV**coolB(3)*   &
+!                               0.5*(1.0+tanh(cUV*(T0UV-TT(:))))
 !
+
+    if (laverageSNheating) then
+!ajwm: need to do unit_system stuff with scale heights etc.
+!  Average SN heating 
+!   (due to SNI)
+       heat(:)=heat(:)+r_SNI*ampl_SN*(sqrt(2. * pi)*rho1(:)*h_SNI) &
+                          *exp(-(z(l1:l2)/h_SNI)**2)
+!   (due to SNII)
+       heat(:)=heat(:)+r_SNII*ampl_SN*(sqrt(2. * pi)*rho1(:)*h_SNII) &
+                          *exp(-(z(l1:l2)/h_SNII)**2)
+    endif
 !  heat and cool were calculated in terms of de/dt [~ erg/g/s], 
 !  so just multiply by TT1 to get ds/dt [~ erg/g/s/K]:
 !
@@ -241,8 +273,8 @@ module Interstellar
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
-    call check_SNI (f,l_SNI)
-    ! if (.not.ltestSN) call check_SNII(f,l_SNI)  !ngrs: leave out for faster debug
+    if (lSNI) call check_SNI (f,l_SNI)
+    if (lSNII) call check_SNII(f,l_SNI)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -316,7 +348,7 @@ module Interstellar
              lnrho(:)=f(l1:l2,m,n,ilnrho)
              rho(:)=exp(lnrho(:))
              ss(:)=f(l1:l2,m,n,iss)
-             TT(:)=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss(:))/gamma1*cp1
+!ajwm             TT(:)=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss(:))/gamma1*cp1
              rho_cloud(:)=0.0
              where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
                   rho_cloud(:)=rho(:)
@@ -604,7 +636,7 @@ find_SN: do n=n1,n2
                rho=exp(lnrho)
                ss=f(l,m,n,iss)
 !ajwm: should use thermodynamics subroutine but need to resolve temperature unit issue first
-               TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1*cp1
+!               TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1*cp1
                if (rho >= rho_crit .and. TT <= TT_crit) then
                  cum_mass=cum_mass+rho
                  cum_prob_onproc=cum_mass/mass_cloud
