@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.285 2004-03-19 15:28:07 mee Exp $
+! $Id: entropy.f90,v 1.286 2004-03-24 12:34:19 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -55,9 +55,8 @@ module Entropy
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
-       center1_x, center1_y, center1_z, &
-       center2_x, center2_y, center2_z,T0, &
-       kx_ss
+       center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
+       T0, kx_ss, nu_turb
      
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -107,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.285 2004-03-19 15:28:07 mee Exp $")
+           "$Id: entropy.f90,v 1.286 2004-03-24 12:34:19 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
