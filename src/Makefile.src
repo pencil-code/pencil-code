@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.95 2004-11-22 20:40:37 dobler Exp $
+### $Id: Makefile.src,v 1.96 2004-12-01 12:10:08 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -144,8 +144,8 @@ FCCLEANER=
 #FFLAGS=-O3 -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
-#FC=ifort #(erland|bohm|igor|onsager)
-##FC=pgf90 #(erland|bohm|igor|onsager)
+##FC=ifort #(erland|bohm|igor|onsager)
+#FC=pgf90 #(erland|bohm|igor|onsager)
 #FC=efc #(user0[1-9])
 #FC=lf95 #(pcponty)
 #FFLAGS=-O # (Samos)
@@ -162,8 +162,8 @@ FCCLEANER=
 #LDMPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(tycho|linux29)
-#FFLAGS= #(erland|bohm|igor|onsager)
-##FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
+##FFLAGS= #(erland|bohm|igor|onsager)
+#FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
