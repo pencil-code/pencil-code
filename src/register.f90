@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.110 2003-11-14 16:14:23 dobler Exp $
+! $Id: register.f90,v 1.111 2003-11-14 16:19:30 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -300,7 +300,6 @@ module Register
       endif
       if (lroot.and.ip<14) print*,'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
       if (lroot.and.ip<14) print*,'rprint_list: nnamev=',nnamev
-      if (lroot.and.ip<14) print*,'rprint_list: cnamev=',cnamev(1:nnamev)
 !
 !  read in the list of variables for xy-averages
 !
