@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.36 2004-02-14 16:53:28 ajohan Exp $
+! $Id: dustdensity.f90,v 1.37 2004-02-16 16:20:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -24,7 +24,7 @@ module Dustdensity
   real, dimension(ndustspec) :: cdiffnd=0
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
-  real :: mmon,mumon,surfmon
+  real :: mmon,mumon,surfmon,supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero', dust_chemistry='ice'
   logical :: ldustformation=.true.,ldustgrowth=.true.,ldustcoagulation=.true.
   logical :: lcalcdkern=.true.
@@ -32,11 +32,11 @@ module Dustdensity
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, dust_chemistry, ldustformation, ldustgrowth, ldustcoagulation, &
-      lcalcdkern
+      lcalcdkern, supsatfac
 
   namelist /dustdensity_run_pars/ &
       rhod0, cdiffnd, cdiffnd_all, ldustformation, ldustgrowth, &
-      ldustcoagulation, lcalcdkern
+      ldustcoagulation, lcalcdkern, supsatfac
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.36 2004-02-14 16:53:28 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.37 2004-02-16 16:20:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -190,6 +190,11 @@ module Dustdensity
           if (cdiffnd(i) .eq. 0.) cdiffnd(i) = cdiffnd_all
         enddo
       endif
+!
+!  Need 1/(super saturation factor) in runs
+!
+      supsatfac1 = 1/supsatfac
+      if (lroot) print*, 'initialize_dustdensity: supsatfac =', supsatfac
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -309,7 +314,7 @@ module Dustdensity
       real, dimension (nx,3,ndustspec) :: gnd,uud
       real, dimension (nx,ndustspec) :: nd,divud
       real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud,rho,rho1
-      real, dimension (nx) :: taucond1
+      real, dimension (nx) :: mfluxcond, nofluxcond
       real :: diffnd
       integer :: i,j,k
       logical :: lfirstpoint2
@@ -366,33 +371,31 @@ module Dustdensity
       enddo
       rho = exp(f(l1:l2,m,n,ilnrho))
 !
-!  Rate of dust growth or dust evaporation
-!
-      if (ldustformation .or. ldustgrowth) call get_condtime(f,taucond1,rho)
-!
 !  Formation of the smallest dust particles due to condensation
 !
       if (ldustformation) then
-        dndfac = taucond1*(md(1)/mmon)**(1.-dimd1)*nd(:,1)
+        call get_nofluxcond(f,nofluxcond,rho)
+        dndfac = surfd(1)*nofluxcond*nd(:,1)
         df(l1:l2,m,n,ind(1)) = df(l1:l2,m,n,ind(1)) + dndfac
         df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(1)*rho1*dndfac
       endif
 !
 !  Dust growth due to condensation on grains
 !
-     if (ldustgrowth) then
-       do k=1,ndustspec
-         if (lmdvar) then
-           dndfac = taucond1(:)*mmon**dimd1*md(k)**(1.-dimd1)*nd(:,k)
-           df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
-           df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
-         else
-           dndfac = taucond1(:)*(md(k)/mmon)**(-dimd1)*nd(:,k)
-           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + dndfac
-           df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(k)*rho1*dndfac
-         endif
-       enddo
-     endif
+      if (ldustgrowth) then
+        call get_mfluxcond(f,mfluxcond,rho)
+        do k=1,ndustspec
+          if (lmdvar) then
+            dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
+            df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
+            df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+          else
+            dndfac = surfd(k)*mfluxcond(:)*nd(:,k)/md(k)
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + dndfac
+            df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(k)*rho1*dndfac
+          endif
+        enddo
+      endif
 !
 !  Calculate kernel of coagulation equation
 !
@@ -489,17 +492,19 @@ module Dustdensity
 !
     endsubroutine dnd_dt
 !***********************************************************************
-    subroutine get_condtime(f,taucond1,rho)
+    subroutine get_mfluxcond(f,mfluxcond,rho)
 !
-!  Calculate stopping time depending on choice of drag law
+!  Calculate mass flux of condensing monomers
 !
       use Cdata
       use Mpicomm, only: stop_it
       use Ionization, only: getmu,eoscalc
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: taucond1,rho,lnTT,TT,pp,ppmon,ppsat,vth,epsmon
+      real, dimension (nx) :: mfluxcond,rho,lnTT,TT,pp,ppmon,ppsat,vth,epsmon
+      real, dimension (nx) :: supsatratio1
       real, save :: mu
+      integer :: l
 !
       select case(dust_chemistry)
 
@@ -511,14 +516,56 @@ module Dustdensity
         ppmon = pp*epsmon*mu/mumon
         ppsat = 1.013e6*exp(-5940/TT+15.6)
         vth = (3*k_B*TT/mmon)**0.5
-        taucond1 = surfmon*vth*epsmon*rho/mmon*(1-ppsat/ppmon)
+        supsatratio1 = ppsat/ppmon
+        mfluxcond = vth*epsmon*rho*(1-supsatratio1)
 
       case default
-        call stop_it("get_condtime: No valid dust chemistry specified.")
+        call stop_it("get_mfluxcond: No valid dust chemistry specified.")
 
       endselect
 !
-    endsubroutine get_condtime
+    endsubroutine get_mfluxcond
+!***********************************************************************
+    subroutine get_nofluxcond(f,nofluxcond,rho)
+!
+!  Calculate number flux of condensing monomers
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Ionization, only: getmu,eoscalc
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: nofluxcond,rho,lnTT,TT,pp,ppmon,ppsat,vth,epsmon
+      real, dimension (nx) :: supsatratio1
+      real, save :: mu
+      integer :: l
+!
+      select case(dust_chemistry)
+
+      case ('ice')
+        epsmon = f(l1:l2,m,n,ilncc)
+        call eoscalc(f,lnTT=lnTT,pp=pp)
+        TT = exp(lnTT)
+        if (it .eq. 1) call getmu(mu)
+        ppmon = pp*epsmon*mu/mumon
+        ppsat = 1.013e6*exp(-5940/TT+15.6)
+        vth = (3*k_B*TT/mmon)**0.5
+        supsatratio1 = ppsat/ppmon
+        nofluxcond = vth*epsmon*rho/mmon*(1-supsatratio1)
+
+        if (supsatfac1 .ne. 1.) then
+          do l=l1,l2
+            if (supsatratio1(l) .le. 1. &
+                .and. supsatratio1(l) .gt. supsatfac1) nofluxcond(l) = 0.
+          enddo
+        endif
+
+      case default
+        call stop_it("get_nofluxcond: No valid dust chemistry specified.")
+
+      endselect
+!
+    endsubroutine get_nofluxcond
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
