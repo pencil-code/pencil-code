@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.120 2002-09-11 17:38:14 brandenb Exp $
+! $Id: entropy.f90,v 1.121 2002-09-19 07:35:08 brandenb Exp $
 
 module Entropy
 
@@ -15,7 +15,8 @@ module Entropy
   real :: tau_ss_exterior=0.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
-  logical :: lcalc_heatcond_simple=.false.
+  real :: FbotKbot=impossible,Kbot=impossible
+  logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
@@ -28,7 +29,8 @@ module Entropy
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-       chi_t,lcalc_heatcond_simple,tau_ss_exterior
+       chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
+       lmultilayer,Kbot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0
@@ -65,7 +67,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.120 2002-09-11 17:38:14 brandenb Exp $")
+           "$Id: entropy.f90,v 1.121 2002-09-19 07:35:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -396,21 +398,32 @@ module Entropy
       use Gravity, only: gravz
 !
       if (lgravz) then
-        !
-        !  calculate hcond1,hcond2 if they have not been set in run.in
-        !
-        if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
-        if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
-        !
-        !  calculate Fbot if it has not been set in run.in
-        !
-        if (Fbot==impossible) then
-          if (bcz1(ient)=='c1') then
-            Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-            if (lroot) print*, 'Calculated Fbot = ', Fbot
-          else
-            Fbot=0.
+        if (lmultilayer) then
+          !
+          !  calculate hcond1,hcond2 if they have not been set in run.in
+          !
+          if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
+          if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
+          !
+          !  calculate Fbot if it has not been set in run.in
+          !
+          if (Fbot==impossible) then
+            if (bcz1(ient)=='c1') then
+              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+              if (lroot) print*, 'Calculated Fbot = ', Fbot
+            else
+              Fbot=0.
+            endif
           endif
+          FbotKbot=Fbot/(hcond0*hcond1)
+!
+!  other alternative: single layer system, Fbot given,
+!  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
+!
+        else
+          Kbot=gamma1/gamma*(mpoly+1.)*Fbot
+          FbotKbot=Fbot/Kbot
+          if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
         endif
       endif
 !
@@ -438,9 +451,8 @@ module Entropy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
-      hcond=gamma1/gamma*(mpoly+1.)*Fbot
-      if(headtt) print*,'calc_heatcond_simple: hcond in ', &
-           minval(hcond), maxval(hcond)
+      hcond=Kbot
+      if(headtt) print*,'calc_heatcond_simple: max(hcond)=',maxval(hcond)
 !
 !  Heat conduction
 !
@@ -722,9 +734,14 @@ endif
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)
 !
-!  calculate the heat conductivity hcond
+!  calculate the heat conductivity hcond along a pencil.
+!  This is an attempt to remove explicit reference to hcond[0-2] from
+!  code, e.g. the boundary condition routine.
+!
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
+!
 !  23-jan-2002/wolf: coded
+!  18-sep-2002/axel: added lmultilayer switch
 !
       use Cdata, only: nx,lgravz,lgravr
       use Sub, only: step
@@ -734,17 +751,20 @@ endif
       real, dimension (nx) :: hcond
 !
       if (lgravz) then
-        hcond = 1 + (hcond1-1)*step(z,z1,-widthss) &
-                  + (hcond2-1)*step(z,z2,widthss)
-        hcond = hcond0*hcond
+        if (lmultilayer) then
+          hcond = 1 + (hcond1-1)*step(z,z1,-widthss) &
+                    + (hcond2-1)*step(z,z2,widthss)
+          hcond = hcond0*hcond
+        else
+          hcond=Kbot
+        endif
       endif
 
       if (lgravr) then
         hcond = hcond0
       endif
 !
-    if(ip==0) print*,x,y  !(to keep compiler quiet)
-!
+      if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine heatcond
 !***********************************************************************
     subroutine gradloghcond(x,y,z,glhc)
@@ -771,8 +791,7 @@ endif
         glhc = 0.
       endif
 !
-    if(ip==0) print*,x,y  !(to keep compiler quiet)
-!
+      if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine gradloghcond
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot)
@@ -789,7 +808,7 @@ endif
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my) :: tmp_xy
+      real, dimension (mx,my) :: tmp_xy,cs2_xy
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
@@ -801,7 +820,8 @@ endif
 !
 !  bottom boundary
 !
-      case('bot')
+      case('strange-bot')
+        if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
@@ -816,9 +836,31 @@ endif
                + f(:,:,n1+i,ient)
         enddo
 !
+!  bottom boundary
+!
+      case('bot')
+        if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+!       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
+!
+!  calculate Fbot/(K*cs2)
+!
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,ient))
+        tmp_xy=FbotKbot/cs2_xy
+!
+        !tmp_xy=Fbot/(hcond0*hcond1*cs2_xy)
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!  EXPERIMENTAL--->
+!
+        do i=1,nghost
+          f(:,:,n1-i,ient)=f(:,:,n1+i,ient)+gamma1/gamma* &
+              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+        enddo
+!
 !  top boundary
 !
       case('top')
+        if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
         if (bcz2(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
@@ -887,8 +929,8 @@ endif
       case('top')
         if (ldebug) print*,'set top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-        if (bcz1(ilnrho) /= "a2") &
-             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
+!       if (bcz1(ilnrho) /= "a2") &
+!            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + alog(cs2top/cs20)) / gamma
         f(:,:,n2,ient) = tmp_xy

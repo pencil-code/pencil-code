@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.47 2002-09-12 05:59:01 brandenb Exp $
+! $Id: density.f90,v 1.48 2002-09-19 07:35:08 brandenb Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.47 2002-09-12 05:59:01 brandenb Exp $")
+           "$Id: density.f90,v 1.48 2002-09-19 07:35:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,6 +114,7 @@ module Density
       case('isothermal'); call isothermal(f)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
+      case('xjump'); call jump(f,ilnrho,alog(rho_left),alog(rho_right),widthlnrho,'x')
       case('gaussian-noise'); call gaunoise(ampllnrho,f,ilnrho,ilnrho)
       case('gaussian-noise-x')
         !
@@ -122,9 +123,9 @@ module Density
         call gaunoise(ampllnrho,f,ilnrho,ilnrho)
         f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
 
-      case('rho-jump', '2')
+      case('rho-jump-z', '2')
         !
-        !  density jump (for shocks?)
+        !  density jump (for shocks)
         !
         if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
         if (lroot) print*,'density jump; widthlnrho=',widthlnrho
@@ -494,10 +495,13 @@ module Density
 !  Note: gravz is normally negative!
 !
       if (grav_profile=='const') then
+        if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
         zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
       elseif (grav_profile=='const_zero') then
+        if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
         zinfty=zref+(mpoly+1.)*cs20/(-gamma*gravz)
       elseif (grav_profile=='linear') then
+        if(lroot.and.gravz==0.) print*,'polytropic_simple: divide by gravz=0'
         zinfty2=zref**2+(mpoly+1.)*cs20/(-.5*gamma*gravz)
         if(zinfty2<0) then
           if(lroot) print*,'polytropic_simple: zinfty**2<0 is not ok'

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.24 2002-07-29 23:39:51 brandenb Exp $
+! $Id: grav_z.f90,v 1.25 2002-09-19 07:35:08 brandenb Exp $
 
 module Gravity
 
@@ -20,7 +20,7 @@ module Gravity
 !  density module) is the height where rho=cs2=0.
 
   integer :: ngrav=10
-  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=1e30,nu_epicycle=1.
+  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
   character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -73,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.24 2002-07-29 23:39:51 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.25 2002-09-19 07:35:08 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -128,6 +128,7 @@ module Gravity
 !
       elseif (grav_profile=='const_zero') then
         if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
+        if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
         if (z(n)<=zgrav) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gravz
 !
 !  linear gravity profile (for accretion discs)
@@ -166,7 +167,9 @@ module Gravity
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
-!  gravity potential
+!  calculates gravity potential and gravitational acceleration
+!  on a pencil.
+!
 !  21-jan-02/wolf: coded
 !   8-jul-02/axel: activated and used for initial conditions
 !
@@ -201,6 +204,7 @@ module Gravity
 !  gravity is set to zero above z=zgrav
 !
         case('const_zero')
+          if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
           if(zmn<=zgrav) then
             pot=-gravz*(zmn-zinfty)
             if (present(grav)) then
@@ -212,6 +216,7 @@ module Gravity
             if (present(grav)) grav=0.
           endif
           if (present(pot0)) then !(potential at z=0)
+            if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
             if(0.<=zgrav) then
               pot0 = gravz*zinfty
             else

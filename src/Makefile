@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.92 2002-09-11 13:01:24 brandenb Exp $
+### $Id: Makefile,v 1.93 2002-09-19 07:35:08 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -129,9 +129,9 @@ cparam.inc: Makefile Makefile.local
 code:
 	make start.x run.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o random_nr.o register.o prints.o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
-comm_deps=$(technical) $(IO).o sub.o param_io.o random_nr.o $(MPICOMM).o $(physics)
+comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
@@ -150,7 +150,7 @@ run.o:       run.f90 $(run_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 general.o:   general.f90
-random_nr.o: random_nr.f90
+random_nr.o: random_nr.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o

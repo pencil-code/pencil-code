@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.11 2002-09-11 17:38:14 brandenb Exp $ 
+! $Id: initcond.f90,v 1.12 2002-09-19 07:35:08 brandenb Exp $ 
 
 module Initcond 
  
@@ -100,6 +100,33 @@ module Initcond
       endif
 !
     endsubroutine wave
+!***********************************************************************
+    subroutine jump(f,i,fleft,fright,width,dir)
+!
+!  jump
+!
+!  19-sep-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx) :: prof
+      real :: fleft,fright,width
+      character(len=*) :: dir
+!
+!  jump; check direction
+!
+      select case(dir)
+!
+      case('x')
+        prof=fleft+(fright-fleft)*.5*(1.+tanh(x/width))
+        f(:,:,:,i)=f(:,:,:,i)+spread(spread(prof,2,my),3,mz)
+!
+      case default
+        print*,'jump: no default value'
+!
+      endselect
+!
+    endsubroutine jump
 !***********************************************************************
     subroutine beltrami(ampl,f,i,kx,ky,kz)
 !
@@ -480,6 +507,8 @@ module Initcond
                 call random_number(r)
                 call random_number(p)
              elseif (random_gen=='min_std') then
+                !call axel(r)
+                !call axel(p)
                 call min_std(r)
                 call min_std(p)
              else
