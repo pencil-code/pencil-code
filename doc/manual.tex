@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.225 2003-12-30 13:05:13 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.226 2004-01-09 15:29:37 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-12-30 13:05:13 $ $,~ $ $Revision: 1.225 $ $}
+%\date{$ $Date: 2004-01-09 15:29:37 $ $,~ $ $Revision: 1.226 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-12-30 13:05:13 $ $,~ $ $Revision: 1.225 $ $}\\
+  \emph{$ $Date: 2004-01-09 15:29:37 $ $,~ $ $Revision: 1.226 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3616,7 +3616,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-12-30 13:05:13 $ $,~ $ $Revision: 1.225 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-01-09 15:29:37 $ $,~ $ $Revision: 1.226 $ $}
 
 \section{Timings}
 
@@ -5908,22 +5908,40 @@ possible inputs to the file \file{print.in}.
 \midrule
   \multicolumn{2}{c}{Module \file{prints.f90}} \\
 \midrule
-  \var{it} & number of time step \quad(since beginning of job only)\\
-  \var{t} & $t$ \quad(since start.csh)\\
-  \var{dt} & $\delta t$ \\
-  \var{dtc} & $\delta t\;c_{\rm s}/\delta x$ \\
+  \var{it}    & number of time step \quad(since beginning of job only)\\
+  \var{t}     & $t$ \quad(since start.csh)\\
+  \var{dt}    & $\delta t$ \\
+  \var{dtc}   & $\delta t\;c_{\rm s}/\delta x$ \\
+  \var{dtu}   & advective time step
+                $c_{\delta t}\,\delta x/\max|\mathbf{u}|$
+                (see \S~\ref{time-step})\\
+  \var{dtb}   & Alfv{\'e}n time step
+                $c_{\delta t}\,\delta x/v_{\rm A,max}$
+                (see \S~\ref{time-step})\\
+  \var{dteta} & resistive time step
+                $c_{\delta t,{\rm v}}\,
+                 \delta x^2/\eta_{\rm max}$
+                (see \S~\ref{time-step})\\
+  \var{dtchi} & time step based on heat conductivity
+                $c_{\delta t,{\rm v}}\,
+                 \delta x^2/\chi_{\rm max}$
+                (see \S~\ref{time-step})\\
+  \var{dtnu}  & viscous time step
+                $c_{\delta t,{\rm v}}\,
+                 \delta x^2/\nu_{\rm max}$
+                (see \S~\ref{time-step})\\
   \var{walltime} & wall clock time since run.x started in seconds \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
-  \var{u2m} & $\left<\uv^2\right>$ \\
+  \var{u2m}  & $\left<\uv^2\right>$ \\
   \var{urms} & $\left<\uv^2\right>^{1/2}$ \\
   \var{umax} & $\max(|\uv|)$ \\
-  \var{o2m} & $\left<\boldsymbol{\omega}^2\right>$ \\
+  \var{o2m}  & $\left<\boldsymbol{\omega}^2\right>$ \\
   \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
-  \var{oum} & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{oum}  & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
   \var{ruxm} & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
   \var{ruym} & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
   \var{ruzm} & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
@@ -5931,8 +5949,8 @@ possible inputs to the file \file{print.in}.
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
-  \var{rhom} & $\left<\varrho\right>$ \\
-  \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \\
+  \var{rhom}    & $\left<\varrho\right>$ \\
+  \var{ekin}    & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot} & $\int_V{1\over2}\varrho\uv^2\, dv$ \\
 %
 \midrule
@@ -6334,7 +6352,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.225 2003-12-30 13:05:13 dobler Exp $ $}
+$ $Id: manual.tex,v 1.226 2004-01-09 15:29:37 dobler Exp $ $}
 
 
 \end{document}
