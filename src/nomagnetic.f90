@@ -32,8 +32,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-05-03 15:27:43 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-05-04 15:38:10 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -65,6 +65,14 @@ module Magnetic
       real, dimension (nx) :: rho1,TT1,cs2
 !
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine rprint_magnetic
+!
+!  reads and registers print parameters relevant for magnetic fields
+!  dummy routine
+!   3-may-02/axel: coded
+!
+    endsubroutine rprint_magnetic
 !***********************************************************************
 
 endmodule Magnetic
