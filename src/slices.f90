@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.12 2003-03-18 23:27:09 brandenb Exp $
+! $Id: slices.f90,v 1.13 2003-05-20 14:21:53 pkapyla Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,13 +9,13 @@ module Slices
   implicit none
 
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
-  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2,ss_xy,ss_xy2
+  real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2,ss_xy,ss_xy2,lncc_xy,lncc_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
-  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz
+  real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
-  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz
+  real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz
 
   contains
 
@@ -167,6 +167,19 @@ module Slices
         call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2),nx,ny)
+      endif
+!
+!  Passive scalar
+!
+      if (lpscalar) then
+        lncc_yz=f(ix,m1:m2,n1:n2,ilncc)
+        lncc_xz=f(l1:l2,iy,n1:n2,ilncc)
+        lncc_xy=f(l1:l2,m1:m2,iz,ilncc)
+        lncc_xy2=f(l1:l2,m1:m2,iz2,ilncc)
+        call wslice(path//'lncc.yz',lncc_yz,x(ix),ny,nz)
+        call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
+        call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
+        call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
       endif
 !
     endsubroutine wvid
