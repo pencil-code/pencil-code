@@ -58,15 +58,16 @@ if (! -d "$datadir") then
 endif
 
 # Create list of subdirectories
-set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
-foreach dir ($subdirs)
+set subdirs = ("$datadir/allprocs" "$datadir/averages" "$datadir/idl")
+set procdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
+foreach dir ($procdirs $subdirs)
   # Make sure a sufficient number of subdirectories exist
   if (! -e $dir) then
     mkdir $dir
   else
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/*.info $dir/slice*`
+    set list=`/bin/ls $dir/VAR* $dir/TAVG* $dir/*.dat $dir/*.info $dir/slice*`
     #if ($list != "") then
       foreach rmfile ($list)
         if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
@@ -84,7 +85,8 @@ foreach dir ($subdirs)
   #endif
 end
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
-rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
+rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
+      $datadir/averages/* >& /dev/null
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
 if ($local_disc) then

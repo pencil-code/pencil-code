@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.22 2003-07-29 14:25:12 dobler Exp $
+! $Id: general.f90,v 1.23 2003-08-11 18:50:14 dobler Exp $
 
 module General
 
@@ -13,6 +13,11 @@ module General
   interface random_number_wrapper   ! Overload this function
     module procedure random_number_wrapper_1
     module procedure random_number_wrapper_3
+  endinterface
+
+  interface safe_character_append   ! Overload this function
+    module procedure safe_character_append_2
+    module procedure safe_character_append_3 ! add more if you like..
   endinterface
 !
 !  state and default generator of random numbers
@@ -377,7 +382,7 @@ module General
 
     endsubroutine safe_character_assign
 !***********************************************************************
-    subroutine safe_character_append(str1,str2)
+    subroutine safe_character_append_2(str1,str2)
 !
 !  08-oct-02/wolf: coded
 !
@@ -386,7 +391,18 @@ module General
 !
       call safe_character_assign(str1, trim(str1) // str2)
 !
-    endsubroutine safe_character_append
+    endsubroutine safe_character_append_2
+!***********************************************************************
+    subroutine safe_character_append_3(str1,str2,str3)
+!
+!  08-oct-02/wolf: coded
+!
+      character (len=*), intent(inout):: str1
+      character (len=*), intent(in):: str2,str3
+!
+      call safe_character_assign(str1, trim(str1) // trim(str2) // trim(str3))
+!
+    endsubroutine safe_character_append_3
 !***********************************************************************
     function spline_derivative(z,f)
 !

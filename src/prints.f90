@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.45 2003-08-11 13:24:15 nilshau Exp $
+! $Id: prints.f90,v 1.46 2003-08-11 18:50:14 dobler Exp $
 
 module Print
 
@@ -150,7 +150,7 @@ module Print
 !
 !   7-aug-03/wolf: coded
 !
-      if (lout) call write_xyaverages() !
+      if (lout) call write_xyaverages()
 !
     endsubroutine write_1daverages
 !***********************************************************************
@@ -182,8 +182,8 @@ module Print
       !
       call update_snaptime(file,t2davg,n2davg,d2davg,t,lnow,ch,ENUM=.true.)
       if (lnow) then
-        if (lwrite_zaverages)   call write_zaverages()
-        if (lwrite_phiaverages) call write_phiaverages()
+        if (lwrite_zaverages)   call write_zaverages(ch)
+        if (lwrite_phiaverages) call write_phiaverages(ch)
         !
         if(ip<=10.and.lroot) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch
       endif
@@ -197,26 +197,23 @@ module Print
 !
 !   6-jun-02/axel: coded
 !
-      logical, save :: first=.true.
-!
       if(lroot.and.nnamez>0) then
         open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
         write(1,'(1p,8e10.3)') fnamez(:,:,1:nnamez)
         close(1)
       endif
-      first = .false.
 !
     endsubroutine write_xyaverages
 !***********************************************************************
-    subroutine write_zaverages()
+    subroutine write_zaverages(ch)
 !
 !  Write z-averages (which are 2d data) that have been requested via
 !  `zaver.in'
 !
 !  19-jun-02/axel: adapted from write_xyaverages
 !
-      logical, save :: first=.true.
+      character (len=4) :: ch
 !
       if(lroot.and.nnamexy>0) then
         open(1,file=trim(datadir)//'/zaverages.dat',position='append')
@@ -224,21 +221,40 @@ module Print
         write(1,'(1p,8e10.3)') fnamexy(:,:,:,1:nnamexy)
         close(1)
       endif
-      first = .false.
 !
     endsubroutine write_zaverages
 !***********************************************************************
-    subroutine write_phiaverages()
+    subroutine write_phiaverages(ch)
 !
 !  Write azimuthal averages (which are 2d data) that have been requested
 !  via `phiaver.in'
+!  File format:
+!     1. data
+!     2. t, r_phiavg, z_phiavg, dr, dz
+!     3. nr_phiavg, nz_phiavg, nvars
+!     4. labels
 !
 !   2-jan-03/wolf: adapted from write_zaverages
 !
+      use General
+!
+      integer :: i
+      character (len=4) :: ch
+      character (len=80) :: fname
+      character (len=1024) :: labels
+ !
       if(lroot.and.nnamerz>0) then
-        open(1,FILE=trim(datadir)//'/phiaverages.dat',FORM='unformatted')
-        write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
+        call safe_character_assign(fname, &
+                                   trim(datadir)//'/averages/PHIAVG'//trim(ch))
+        open(1,FILE=fname,FORM='unformatted')
+        write(1) nrcyl,n2-n1+1,nnamerz ! sizes (just in case) 
         write(1) t,rcyl,z(n1:n2),drcyl,dz
+        write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
+        labels = trim(cnamerz(1))
+        do i=2,nnamerz
+          call safe_character_append(labels,",",trim(cnamerz(i)))
+        enddo
+        write(1) len(labels),labels
         close(1)
       endif
 !
