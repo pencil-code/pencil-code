@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.4 2002-10-07 07:20:12 brandenb Exp $
+! $Id: deriv.f90,v 1.5 2002-10-29 10:26:02 mee Exp $
 
 module Deriv
 
@@ -26,9 +26,9 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./(60.*dx)
-          df=fac*(45.*(f(5:mx-2,m,n,k)-f(3:mx-4,m,n,k)) &
-                  -9.*(f(6:mx-1,m,n,k)-f(2:mx-5,m,n,k)) &
-                     +(f(7:mx  ,m,n,k)-f(1:mx-6,m,n,k)))
+          df=fac*(45.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  -9.*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                     +(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
         else
           df=0.
           if (ip.le.10) print*, 'Degenerate case in x-direction'
@@ -75,10 +75,10 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./(180.*dx**2)
-          df=fac*(-490.*f(4:mx-3,m,n,k) &
-                 +270.*(f(5:mx-2,m,n,k)+f(3:mx-4,m,n,k)) &
-                  -27.*(f(6:mx-1,m,n,k)+f(2:mx-5,m,n,k)) &
-                   +2.*(f(7:mx  ,m,n,k)+f(1:mx-6,m,n,k)))
+          df=fac*(-490.*f(l1:l2    ,m,n,k) &
+                 +270.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  -27.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                   +2.*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
@@ -138,10 +138,10 @@ module Deriv
       if (j==1) then
         if (nxgrid/=1) then
           if (igndx) then; fac=1.; else; fac=1./dx**6; endif
-          df=fac*(-20.* f(4:mx-3,m,n,k) &
-                  +15.*(f(5:mx-2,m,n,k)+f(3:mx-4,m,n,k)) &
-                  - 6.*(f(6:mx-1,m,n,k)+f(2:mx-5,m,n,k)) &
-                  +    (f(7:mx  ,m,n,k)+f(1:mx-6,m,n,k)))
+          df=fac*(-20.* f(l1:l2,m,n,k) &
+                  +15.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  - 6.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  +    (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
         else
           df=0.
         endif
@@ -187,24 +187,24 @@ module Deriv
         if (nxgrid/=1.and.nygrid/=1) then
           fac=1./(60.**2*dx*dy)
           df=fac*( &
-            45.*((45.*(f(5:mx-2,m+1,n,k)-f(3:mx-4,m+1,n,k))  &
-                  -9.*(f(6:mx-1,m+1,n,k)-f(2:mx-5,m+1,n,k))  &
-                     +(f(7:mx  ,m+1,n,k)-f(1:mx-6,m+1,n,k))) &
-                -(45.*(f(5:mx-2,m-1,n,k)-f(3:mx-4,m-1,n,k))  &
-                  -9.*(f(6:mx-1,m-1,n,k)-f(2:mx-5,m-1,n,k))  &
-                     +(f(7:mx  ,m-1,n,k)-f(1:mx-6,m-1,n,k))))&
-            -9.*((45.*(f(5:mx-2,m+2,n,k)-f(3:mx-4,m+2,n,k))  &
-                  -9.*(f(6:mx-1,m+2,n,k)-f(2:mx-5,m+2,n,k))  &
-                     +(f(7:mx  ,m+2,n,k)-f(1:mx-6,m+2,n,k))) &
-                -(45.*(f(5:mx-2,m-2,n,k)-f(3:mx-4,m-2,n,k))  &
-                  -9.*(f(6:mx-1,m-2,n,k)-f(2:mx-5,m-2,n,k))  &
-                     +(f(7:mx  ,m-2,n,k)-f(1:mx-6,m-2,n,k))))&
-               +((45.*(f(5:mx-2,m+3,n,k)-f(3:mx-4,m+3,n,k))  &
-                  -9.*(f(6:mx-1,m+3,n,k)-f(2:mx-5,m+3,n,k))  &
-                     +(f(7:mx  ,m+3,n,k)-f(1:mx-6,m+3,n,k))) &
-                -(45.*(f(5:mx-2,m-3,n,k)-f(3:mx-4,m-3,n,k))  &
-                  -9.*(f(6:mx-1,m-3,n,k)-f(2:mx-5,m-3,n,k))  &
-                     +(f(7:mx  ,m-3,n,k)-f(1:mx-6,m-3,n,k))))&
+            45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
+                     +(f(l1+3:l2+3,m+1,n,k)-f(l1-3:l2-3,m+1,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-1,n,k)-f(l1-1:l2-1,m-1,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-1,n,k)-f(l1-2:l2-2,m-1,n,k))  &
+                     +(f(l1+3:l2+3,m-1,n,k)-f(l1-3:l2-3,m-1,n,k))))&
+            -9.*((45.*(f(l1+1:l2+1,m+2,n,k)-f(l1-1:l2-1,m+2,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+2,n,k)-f(l1-2:l2-2,m+2,n,k))  &
+                     +(f(l1+3:l2+3,m+2,n,k)-f(l1-3:l2-3,m+2,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-2,n,k)-f(l1-1:l2-1,m-2,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-2,n,k)-f(l1-2:l2-2,m-2,n,k))  &
+                     +(f(l1+3:l2+3,m-2,n,k)-f(l1-3:l2-3,m-2,n,k))))&
+               +((45.*(f(l1+1:l2+1,m+3,n,k)-f(l1-1:l2-1,m+3,n,k))  &
+                  -9.*(f(l1+2:l2+2,m+3,n,k)-f(l1-2:l2-2,m+3,n,k))  &
+                     +(f(l1+3:l2+3,m+3,n,k)-f(l1-3:l2-3,m+3,n,k))) &
+                -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
+                  -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
+                     +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
                  )
         else
           df=0.
@@ -241,24 +241,24 @@ module Deriv
         if (nzgrid/=1.and.nxgrid/=1) then
           fac=1./(60.**2*dz*dx)
           df=fac*( &
-            45.*((45.*(f(5:mx-2,m,n+1,k)-f(3:mx-4,m,n+1,k))  &
-                  -9.*(f(6:mx-1,m,n+1,k)-f(2:mx-5,m,n+1,k))  &
-                     +(f(7:mx  ,m,n+1,k)-f(1:mx-6,m,n+1,k))) &
-                -(45.*(f(5:mx-2,m,n-1,k)-f(3:mx-4,m,n-1,k))  &
-                  -9.*(f(6:mx-1,m,n-1,k)-f(2:mx-5,m,n-1,k))  &
-                     +(f(7:mx  ,m,n-1,k)-f(1:mx-6,m,n-1,k))))&
-            -9.*((45.*(f(5:mx-2,m,n+2,k)-f(3:mx-4,m,n+2,k))  &
-                  -9.*(f(6:mx-1,m,n+2,k)-f(2:mx-5,m,n+2,k))  &
-                     +(f(7:mx  ,m,n+2,k)-f(1:mx-6,m,n+2,k))) &
-                -(45.*(f(5:mx-2,m,n-2,k)-f(3:mx-4,m,n-2,k))  &
-                  -9.*(f(6:mx-1,m,n-2,k)-f(2:mx-5,m,n-2,k))  &
-                     +(f(7:mx  ,m,n-2,k)-f(1:mx-6,m,n-2,k))))&
-               +((45.*(f(5:mx-2,m,n+3,k)-f(3:mx-4,m,n+3,k))  &
-                  -9.*(f(6:mx-1,m,n+3,k)-f(2:mx-5,m,n+3,k))  &
-                     +(f(7:mx  ,m,n+3,k)-f(1:mx-6,m,n+3,k))) &
-                -(45.*(f(5:mx-2,m,n-3,k)-f(3:mx-4,m,n-3,k))  &
-                  -9.*(f(6:mx-1,m,n-3,k)-f(2:mx-5,m,n-3,k))  &
-                     +(f(7:mx  ,m,n-3,k)-f(1:mx-6,m,n-3,k))))&
+            45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
+                     +(f(l1+3:l2+3,m,n+1,k)-f(l1-3:l2-3,m,n+1,k))) &
+                -(45.*(f(l1+1:l2+1,m,n-1,k)-f(l1-1:l2-1,m,n-1,k))  &
+                  -9.*(f(l1+2:l2+2,m,n-1,k)-f(l1-2:l2-2,m,n-1,k))  &
+                     +(f(l1+3:l2+3,m,n-1,k)-f(l1-3:l2-3,m,n-1,k))))&
+            -9.*((45.*(f(l1+1:l2+1,m,n+2,k)-f(l1-1:l2-1,m,n+2,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+2,k)-f(l1-2:l2-2,m,n+2,k))  &
+                     +(f(l1+3:l2+3,m,n+2,k)-f(l1-3:l2-3,m,n+2,k))) &
+                -(45.*(f(l1+1:l2+1,m,n-2,k)-f(l1-1:l2-1,m,n-2,k))  &
+                  -9.*(f(l1+2:l2+2,m,n-2,k)-f(l1-2:l2-2,m,n-2,k))  &
+                     +(f(l1+3:l2+3,m,n-2,k)-f(l1-3:l2-3,m,n-2,k))))&
+               +((45.*(f(l1+1:l2+1,m,n+3,k)-f(l1-1:l2-1,m,n+3,k))  &
+                  -9.*(f(l1+2:l2+2,m,n+3,k)-f(l1-2:l2-2,m,n+3,k))  &
+                     +(f(l1+3:l2+3,m,n+3,k)-f(l1-3:l2-3,m,n+3,k))) &
+                -(45.*(f(l1+1:l2+1,m,n-3,k)-f(l1-1:l2-1,m,n-3,k))  &
+                  -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
+                     +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
         else
           df=0.
