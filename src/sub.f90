@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.202 2004-10-29 13:40:39 ajohan Exp $ 
+! $Id: sub.f90,v 1.203 2004-11-02 20:47:21 dobler Exp $ 
 
 module Sub 
 
@@ -1801,18 +1801,26 @@ module Sub
 !***********************************************************************
     subroutine inpui(file,a,nv)
 !
-!  read particle snapshot file
+!  read data (random seed, etc.) from file
 !  11-apr-00/axel: adapted from input
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
-      integer :: nv
+      integer :: nv,iostat
       integer, dimension (nv) :: a
       character (len=*) :: file
 !
       open(1,file=file,form='formatted')
-      read(1,*) a
+      read(1,*,IOSTAT=iostat) a
       close(1)
+!
+      if (iostat /= 0) then
+        if (lroot) &
+             print*, "Error encountered reading ", &
+                     size(a), "integers from ", trim(file)
+        call stop_it("")
+      endif
     endsubroutine inpui
 !***********************************************************************
     subroutine inpuf(file,a,nv)
