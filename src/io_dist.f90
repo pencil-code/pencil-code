@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.41 2002-10-05 07:51:16 brandenb Exp $
+! $Id: io_dist.f90,v 1.42 2002-10-09 13:52:41 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.41 2002-10-05 07:51:16 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.42 2002-10-09 13:52:41 dobler Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -315,30 +315,18 @@ contains
 !***********************************************************************
     subroutine wtime(file,tau)
 !
-!  Write t to file
-!  21-sep-02/wolf: coded
-!
       real :: tau
       character (len=*) :: file
 !
-      open(1,FILE=file)
-      write(1,*) tau
-      close(1)
-!
+      if (.false.) print*,tau,file
     endsubroutine wtime
 !***********************************************************************
     subroutine rtime(file,tau)
 !
-!  Read t from file
-!  21-sep-02/wolf: coded
-!
       real :: tau
       character (len=*) :: file
 !
-      open(1,FILE=file)
-      read(1,*) tau
-      close(1)
-!
+      if (.false.) print*,tau,file
     endsubroutine rtime
 !***********************************************************************
 
