@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.267 2004-07-25 19:04:31 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,12 +371,14 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}
+%\date{$ $Date: 2004-07-25 19:04:31 $ $,~ $ $Revision: 1.267 $ $}
 
 % ====================================================================== %
 
 \begin{document}
 \pagestyle{empty}
+\pagestyle{plain}
+\pagenumbering{roman}
 
 %\maketitle
 
@@ -406,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}\\
+  \emph{$ $Date: 2004-07-25 19:04:31 $ $,~ $ $Revision: 1.267 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -419,6 +421,11 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
 \newpage
 \mbox{}
+
+\begin{center}
+  {\bf The Pencil Code: multi-purpose and multi-user maintained}\\
+  \url{http://www.nordita.dk/~brandenb/talks/misc/PencilCode04.htm}
+\end{center}
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[htb]
@@ -436,27 +443,31 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
 \newpage
 
-Contributors to the code (in inverse alphabetical order according to
-their user name):\\
+\begin{center}
+  {\bf Contributors to the code}\\
+  (in inverse alphabetical order according to their CVS user name)\\
+\end{center}
 
-  vpar\hfill\htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/}\\
-  tork\hfill\htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/}\\
-  thei\hfill\htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.nordita.dk/~theine/}\\
-  tare\hfill\htmladdnormallink{Tarek A. Yousef}{http://www.pvv.ntnu.no/~tarek/}\\
-  snod\hfill\htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm}\\
-  pkap\hfill\htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/}\\
-  nils\hfill\htmladdnormallink{Nils Erland L. Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html}\\
-  ngrs\hfill\htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html}\\
-  mee \hfill\htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/}\\
-  mcmi\hfill\htmladdnormallink{David McMillan}{http://www.mas.ncl.ac.uk/~ndgm5/}\\
-  matt\hfill\htmladdnormallink{Mattias Christensson}{http://www.nordita.dk/~mattias/}\\
-  dorc\hfill\htmladdnormallink{Bertil Dorch}{http://www.astro.ku.dk/~dorch/}\\
-  dobl\hfill\htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/}\\
-  chri\hfill\htmladdnormallink{Christer Sandin}{http://www.astro.uu.se/~christer/CS_index.html}\\
-  bran\hfill\htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/}\\
-  bing\hfill\htmladdnormallink{Sven Bingert}{http://www.kis.uni-freiburg.de/~peter/corona/}\\
-  amje\hfill\htmladdnormallink{Amjed Mohammed}{http://ehf.uni-oldenburg.de/member.php?nav=staff&sprache=english&show=43}\\
-  ajoh\hfill\htmladdnormallink{Anders Johansen}{http://www.astro.ku.dk/~ajohan/}\\
+\begin{tabular}{lll}
+  vpariev & \htmladdnormallink{Vladimir Pariev}{http://www.pas.rochester.edu/~vpariev/} & University of Rochester\\
+  torkel & \htmladdnormallink{Ulf Torkelsson}{http://fy.chalmers.se/~torkel/} & Chalmers University\\
+  theine & \htmladdnormallink{Tobias (Tobi) Heinemann}{http://www.nordita.dk/~theine/} & University of Calgary\\
+  tarek & \htmladdnormallink{Tarek A. Yousef}{http://www.pvv.ntnu.no/~tarek/} & University of Trondheim\\
+  snod & \htmladdnormallink{Andrew Snodin}{http://www.ncl.ac.uk/math/postgrad/postgrads.htm} & University of Newcastle\\
+  pkapyla & \htmladdnormallink{Petri K\"apyl\"a}{http://cc.oulu.fi/~pkapyla/} & Oulu University and Kiepenheuer Institute\\
+  nils & \htmladdnormallink{Nils Erland L. Haugen}{http://www.phys.ntnu.no/~nilshau/index2.html} & University of Trondheim\\
+  ngrs & \htmladdnormallink{Graeme R. Sarson}{http://www.mas.ncl.ac.uk/~ngrs/home.html} & University of Newcastle\\
+  mee  & \htmladdnormallink{Antony (tOnY) Mee}{http://www.mas.ncl.ac.uk/~n7026413/pencil-code/movies/} & University of Newcastle\\
+  mcmillan & \htmladdnormallink{David McMillan}{http://www.mas.ncl.ac.uk/~ndgm5/} & University of Newcastle\\
+  mattias & \htmladdnormallink{Mattias Christensson}{http://www.nordita.dk/~mattias/} & Nordita\\
+  dorch & \htmladdnormallink{Bertil Dorch}{http://www.astro.ku.dk/~dorch/} & University of Copenhagen\\
+  dobler & \htmladdnormallink{Wolfgang Dobler}{http://www.kis.uni-freiburg.de/~dobler/} & University of Calgary\\
+  christer & \htmladdnormallink{Christer Sandin}{http://www.astro.uu.se/~christer/CS_index.html} & University of Uppsala\\
+  brandenb & \htmladdnormallink{Axel Brandenburg}{http://www.nordita.dk/~brandenb/} & Nordita\\
+  bing & \htmladdnormallink{Sven Bingert}{http://www.kis.uni-freiburg.de/~peter/corona/} & Kiepenheuer Institute\\
+  amjed & \htmladdnormallink{Amjed Mohammed}{http://ehf.uni-oldenburg.de/member.php?nav=staff\&sprache=english\&show=43} & University of Oldenburg\\
+  ajohan & \htmladdnormallink{Anders Johansen}{http://www.astro.ku.dk/~ajohan/} & Nordita and University of Copenhagen\\
+\end{tabular}
 
 \vfill
 
@@ -472,11 +483,142 @@ of this manual under the conditions for verbatim copying,
 provided that the entire resulting derived work is distributed under the
 terms of a permission notice identical to this one.
 
+\clearpage
+
+\begin{center}
+  {\bf License agreement and giving credit}\\
+\end{center}
+
+The content of all files under
+\code{:pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS}
+are under the GNU General Public License
+(\url{http://www.gnu.org/licenses/gpl.html}).
+
+We, the {\textsc Pencil Code} community, ask that in publications
+and presentations the use of the code (or parts of it)
+be acknowledged with reference to the web site
+\url{http://www.nordita.dk/software/pencil-code/}.
+As a courtesy to the people involved in developing particularly important
+parts of the program (use \cmd{cvs annotate src/*.f90} to find out who did what!)
+we suggest to give appropriate reference to one or
+several of the following papers:
+
+\newcommand{\astroph}[1]{\htmladdnormallink{\sf astro-ph/#1}{http://arXiv.org/abs/astro-ph/#1}}
+\newcommand{\condmat}[1]{\htmladdnormallink{\sf cond-mat/#1}{http://arXiv.org/abs/abs/cond-mat/#1}}
+\newcommand{\physics}[1]{\htmladdnormallink{\sf physics/#1}{http://arXiv.org/abs/abs/physics/#1}}
+\newcommand{\qbio}[1]{\htmladdnormallink{\sf q-bio/#1}{http://arXiv.org/abs/abs/q-bio/#1}}
+\newcommand{\yannr}[5]{:~#1, ``#5,'' {\em Ann.\ Rev.\ Astron.\ Astrophys. }{\bf #2}, #3-#4}
+\newcommand{\yica}[5]{:~#1, ``#5,'' {\em Icarus }{\bf #2}, #3-#4}
+\newcommand{\ysph}[5]{:~#1, ``#5,'' {\em Solar Phys. }{\bf #2}, #3-#4}
+\newcommand{\ysphs}[5]{:~#1, ``#5'' {\em Solar Phys. }{\bf #2}, #3-#4}
+\newcommand{\ymn}[5]{:~#1, ``#5,'' {\em Monthly Notices Roy. Astron. Soc. }{\bf #2}, #3-#4}
+\newcommand{\yan}[5]{:~#1, ``#5,'' {\em Astron. Nachr. }{\bf #2}, #3-#4}
+\newcommand{\yana}[5]{:~#1, ``#5,'' {\em Astron. Astrophys. }{\bf #2}, #3-#4}
+\newcommand{\yanas}[5]{:~#1, ``#5'' {\em Astron. Astrophys. }{\bf #2}, #3-#4}
+\newcommand{\yass}[5]{:~#1, ``#5,'' {\em Astrophys. Spa. Sci. }{\bf #2}, #3-#4}
+\newcommand{\yapj}[5]{:~#1, ``#5,'' {\em Astrophys. J. }{\bf #2}, #3-#4}
+\newcommand{\yapjl}[5]{:~#1, ``#5,'' {\em Astrophys. J. Lett. }{\bf #2}, #3-#4}
+\newcommand{\yapjlS}[5]{:~#1, ``#5'' {\em Astrophys. J. Lett. }{\bf #2}, #3-#4}
+\newcommand{\yjfm}[5]{:~#1, ``#5,'' {\em J. Fluid Mech. }{\bf #2}, #3-#4}
+\newcommand{\ygafd}[5]{:~#1, ``#5,'' {\em Geophys. Astrophys. Fluid Dyn. }{\bf #2}, #3-#4}
+\newcommand{\sproc}[5]{:~#1, ``#2,'' in {\em #3}, ed.\ #4, #5 (submitted)}
+\newcommand{\eproc}[6]{:~#1, ``#2,'' in {\em #3}, \url{#4}, #5}
+\newcommand{\pproc}[5]{:~#1, ``#2,'' in {\em #3}, ed.\ #4, #5 (in press)}
+\newcommand{\ypr}[5]{:~#1, ``#5,'' {\em Phys. Rev. }{\bf #2}, #3-#4}
+\newcommand{\yprN}[5]{:~#1, ``#5,'' {\em Phys. Rev. }{\bf #2}, #3, #4}
+\newcommand{\yproc}[7]{:~#1, ``#4,'' in {\em #5}, ed.\ #6, #7, pp.~#2-#3}
+\newcommand{\yjour}[6]{:~#1, ``#6,'' {\em #2} {\bf #3}, #4-#5}
+\newcommand{\sjour}[3]{:~#1, ``#3,'' {\em #2} (submitted)}
+\newcommand{\sjourS}[3]{:~#1, ``#3'' {\em #2} (submitted)}
+\newcommand{\pjour}[3]{:~#1, ``#3,'' {\em #2} (in press)}
+\newcommand{\ybook}[3]{:~#1,  {\em #2}. #3}
+\newcommand{\ypf}[5]{:~#1, ``#5,'' {\em Phys. Fluids }{\bf #2}, #3-#4}
+\newcommand{\ypp}[5]{:~#1, ``#5,'' {\em Phys. Plasmas }{\bf #2}, #3-#4}
+\newcommand{\yepl}[5]{:~#1, ``#5,'' {\em Europhys. Lett. }{\bf #2}, #3-#4}
+\newcommand{\yprl}[5]{:~#1, ``#5,'' {\em Phys. Rev. Lett. }{\bf #2}, #3-#4}
+\newcommand{\ybif}[5]{:~#1, ``#5,'' {\em Int. J. Bifurc. Chaos }{\bf #2}, #3-#4}
+\newcommand{\ycsf}[5]{:~#1, ``#5,'' {\em Chaos, Solitons \& Fractals }{\bf #2}, #3-#4}
+\newcommand{\ycsfS}[5]{:~#1, ``#5'' {\em Chaos, Solitons \& Fractals }{\bf #2}, #3-#4}
+\newcommand{\sprl}[2]{:~#1, ``#2,'' {\em Phys. Rev. Lett.} (submitted)}
+\newcommand{\pprl}[2]{:~#1, ``#2,'' {\em Phys. Rev. Lett.} (in press)}
+\newcommand{\tpr}[3]{:~#1, ``#3,'' {\em Phys. Rev. }{\bf #2} (to be submitted)}
+\newcommand{\spr}[3]{:~#1, ``#3,'' {\em Phys. Rev. }{\bf #2} (submitted)}
+\newcommand{\ppr}[3]{:~#1, ``#3,'' {\em Phys. Rev. }{\bf #2} (in press)}
+\newcommand{\pppp}[3]{:~#1, ``#2,'' {\em Phys. Plasmas} (in press, scheduled for the #3 issue)}
+\newcommand{\ppp}[2]{:~#1, ``#2,'' {\em Phys. Plasmas} (in press)}
+\newcommand{\spp}[2]{:~#1, ``#2,'' {\em Phys. Plasmas} (submitted)}
+\newcommand{\tpp}[2]{:~#1, ``#2,'' {\em Phys. Plasmas} (to be submitted)}
+\newcommand{\tppS}[2]{:~#1, ``#2'' {\em Phys. Plasmas} (to be submitted)}
+\newcommand{\san}[2]{:~#1, ``#2,'' {\em Astron. Nachr.} (submitted)}
+\newcommand{\pan}[2]{:~#1, ``#2,'' {\em Astron. Nachr.} (in press)}
+\newcommand{\sana}[2]{:~#1, ``#2,'' {\em Astron. Astrophys.} (submitted)}
+\newcommand{\tana}[2]{:~#1, ``#2,'' {\em Astron. Astrophys.} (to be submitted)}
+\newcommand{\sanas}[2]{:~#1, ``#2'' {\em Astron. Astrophys.} (submitted)}
+\newcommand{\pana}[2]{:~#1, ``#2,'' {\em Astron. Astrophys.} (in press)}
+\newcommand{\panas}[2]{:~#1, ``#2'' {\em Astron. Astrophys.} (in press)}
+\newcommand{\sgafd}[2]{:~#1, ``#2,'' {\em Geophys. Astrophys. Fluid Dyn.} (submitted)}
+\newcommand{\pgafd}[2]{:~#1, ``#2,'' {\em Geophys. Astrophys. Fluid Dyn.} (in press)}
+\newcommand{\ppgafd}[3]{:~#1, ``#3,'' {\em Geophys. Astrophys. Fluid Dyn.} {\bf #2}}
+\newcommand{\tapj}[2]{:~#1, ``#2,'' {\em Astrophys. J.} (to be submitted)}
+\newcommand{\ppapj}[2]{:~#1, ``#2,'' {\em Astrophys. J.} (in press)}
+\newcommand{\ppapjl}[2]{:~#1, ``#2,'' {\em Astrophys. J. Lett.} (in press)}
+\newcommand{\sapj}[2]{:~#1, ``#2,'' {\em Astrophys. J.} (submitted)}
+\newcommand{\sapjS}[2]{:~#1, ``#2'' {\em Astrophys. J.} (submitted)}
+\newcommand{\ppapjS}[2]{:~#1, ``#2'' {\em Astrophys. J.} (in press)}
+\newcommand{\sapjl}[2]{:~#1, ``#2,'' {\em Astrophys. J. Lett.} (submitted)}
+\newcommand{\ppapjlS}[2]{:~#1, ``#2'' {\em Astrophys. J. Lett.} (in press)}
+\newcommand{\sapjlS}[2]{:~#1, ``#2'' {\em Astrophys. J. Lett.} (submitted)}
+\newcommand{\papj}[4]{:~#1, ``#3,'' {\em Astrophys. J. }{\bf #2} (scheduled for the #4 issue)}
+\newcommand{\papjS}[4]{:~#1, ``#3'' {\em Astrophys. J. }{\bf #2} (scheduled for the #4 issue)}
+\newcommand{\papjl}[4]{:~#1, ``#3,'' {\em Astrophys. J. Lett. }{\bf #2} (scheduled for the #4 issue)}
+\newcommand{\papjlS}[4]{:~#1, ``#3'' {\em Astrophys. J. Lett. }{\bf #2} (scheduled for the #4 issue)}
+\newcommand{\spf}[2]{:~#1, ``#2,'' {\em Phys. Fluids} (submitted)}
+\newcommand{\ppf}[2]{:~#1, ``#2,'' {\em Phys. Fluids} (in press)}
+\newcommand{\ssph}[2]{:~#1, ``#2,'' {\em Solar Phys.} (submitted)}
+\newcommand{\psph}[2]{:~#1, ``#2,'' {\em Solar Phys.} (in press)}
+\newcommand{\sbif}[2]{:~#1, ``#2,'' {\em Int. J. Bifurc. Chaos} (submitted)}
+\newcommand{\pbif}[2]{:~#1, ``#2,'' {\em Int. J. Bifurc. Chaos} (in press)}
+\newcommand{\pjfm}[2]{:~#1, ``#2,'' {\em J. Fluid Mech. } (in press)}
+\newcommand{\sjfm}[2]{:~#1, ``#2,'' {\em J. Fluid Mech. } (submitted)}
+\newcommand{\tjfm}[2]{:~#1, ``#2,'' {\em J. Fluid Mech. } (to be submitted)}
+\newcommand{\pmn}[2]{:~#1, ``#2,'' {\em Monthly Notices Roy. Astron. Soc.} (in press)}
+\newcommand{\smn}[2]{:~#1, ``#2,'' {\em Monthly Notices Roy. Astron. Soc.} (submitted)}
+\newcommand{\tmn}[2]{:~#1, ``#2,'' {\em Monthly Notices Roy. Astron. Soc.} (to be submitted)}
+
+\begin{list}{}{\leftmargin 3em \itemindent -3em\listparindent \itemindent
+\itemsep 0pt \parsep 1pt}\item[]
+
+Dobler, W., Haugen, N. E. L., Yousef, T. A., \&
+Brandenburg, A.\yprN{2003}{E 68}{026304}
+{1-8}{Bottleneck effect in three-dimensional turbulence simulations}
+(\astroph{0303324})
+
+Haugen, N. E. L., Brandenburg, A., \& Dobler, W.\yapjlS{2003}{597}{L141}
+{L144}{Is nonhelical hydromagnetic turbulence peaked at small scales?}
+(\astroph{0303372})
+
+Brandenburg, A., K\"apyl\"a, P., \& Mohammed, A.\ypf{2004}{16}{1020}
+{1027}{Non-Fickian diffusion and tau-approximation from numerical turbulence}
+(\astroph{0306521})
+
+Johansen, A., Andersen, A. C., \& Brandenburg, A.\yana{2004}{417}{361}
+{371}{Simulations of dust-trapping vortices in protoplanetary discs}
+(\astroph{0310059})
+
+Haugen, N. E. L., Brandenburg, A., \& Mee, A. J.\pmn{2004}
+{Mach number dependence of the onset of dynamo action}
+(\astroph{0405453})
+
+Brandenburg, A., \& Multam\"aki, T.\sjourS{2004}{Int.\ J.\ Astrobiol.}
+{How long can left and right handed life forms coexist?}
+(\qbio{0407008})
+
+Heinemann, T., Dobler, W., Nordlund, \AA., \& Brandenburg, A.\tana{2004}
+{Radiative transfer in decomposed domains}
+
+\end{list}
 
 \clearpage
-\pagestyle{plain}
-\pagenumbering{roman}
-
 
 % ====================================================================== %
 
@@ -3787,7 +3929,7 @@ Typical values of $C_{\rm mesh}$ are around 3.
 
 {\em
   There was/is a number of issues with \name{ifort} 8.0.
-  Make sure you have tha latest patches applied to the compiler.
+  Make sure you have the latest patches applied to the compiler.
   A number of things to consider or try are:
   \begin{enumerate}
   \item Compile with the the \option[-nothreads]{-static -nothreads} flags.
@@ -4188,9 +4330,10 @@ often there's a new variable that can't be found in my param2.nml --
 this time is was IECR, IGG, and ILNTT that I had to circumvent\ldots
 
 \medskip
+\index{NOERASE file}
 
 {\em
-The simplest solution is to say
+The simplest solution is to invoke \file{NOERASE}, i.e.\ say
 \begin{Verbatim}
   touch NOERASE
   start.csh
@@ -4506,7 +4649,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-07-18 14:50:32 $ $,~ $ $Revision: 1.266 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-07-25 19:04:31 $ $,~ $ $Revision: 1.267 $ $}
 
 \section{Timings}
 
@@ -4546,8 +4689,8 @@ application on your specific hardware.
                                              & \mcc{mem./proc}
                                                       & \mcc{when}&\mcc{who}\\
     \midrule
-   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
-   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
+   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 MB & 20-may-02 & AB \\
+   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 MB & 20-may-02 & AB \\
    1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
    1 & Mattias&8.7  &  $64^3$ & magn/noentro &        & 30-sep-02 & AB \\
@@ -4567,9 +4710,9 @@ application on your specific hardware.
    1 & Nq4   &14.4  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    1 & Nq5   & 6.7  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    1 & fe1   & 5.1  & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
-   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
-   1 & Hwwsx5& 3.4  & $256^3$ & convstar     & 7.8 Gb & 29-jan-03 & WD \\
-   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
+   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 MB & 20-jun-02 & WD \\
+   1 & Hwwsx5& 3.4  & $256^3$ & convstar     & 7.8 GB & 29-jan-03 & WD \\
+   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 MB & 20-jun-02 & WD \\
    2 & Nq3+4 & 7.4  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    2 & Nq4+4 & 8.9  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    2 & Nq4+5 & 7.3  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
@@ -4577,10 +4720,10 @@ application on your specific hardware.
    2 & fe1   & 3.45 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    2 & Nq2   & 9.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    2 & Nq1+2 & 8.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
-   2 & Hwwsx5& 1.8  & $256^3$ & convstar     & 7.9 Gb & 29-jan-03 & WD \\
+   2 & Hwwsx5& 1.8  & $256^3$ & convstar     & 7.9 GB & 29-jan-03 & WD \\
    4 & Nq1+2 & 5.4  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    4 & Nq1235& 4.1  & $128^3$ & magn/noentro &        & 11-sep-02 & AB \\
-   4 & Nq0-3 & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
+   4 & Nq0-3 & 6.8  & $256^3$ & magn/noentro & 294 MB & 10-jun-02 & AB \\
    4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
    4 & fe1   & 3.39 &  $32^3$ & magn/noentro &        & 16-aug-02 & AB \\
    4 & Rasm. & 2.02 &  $64^3$ & magn/noentro &  2x2   &  8-sep-02 & AB \\
@@ -4594,8 +4737,8 @@ application on your specific hardware.
                      & nomagn/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
    4 & fe1   & 5.48 & $16^2{\times}512$                                  
                      & nomagn/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
-   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
-   4 & Hwwsx5& 1.8  & $256^3$ & convstar     & 8.2 Gb & 29-jan-03 & WD \\
+   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 MB & 20-jun-02 & WD \\
+   4 & Hwwsx5& 1.8  & $256^3$ & convstar     & 8.2 GB & 29-jan-03 & WD \\
    8 & Nqall & 3.0  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    8 & fe1   & 3.15 &  $64^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 2.36 &  $64^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
@@ -4605,14 +4748,14 @@ application on your specific hardware.
    8 & fe1   & 1.68 & $128^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 1.50 & $128^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 1.44 & $128^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
-   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
+   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 MB & 20-jun-02 & WD \\
    8 & Gridur& 1.46 & $128^3$ & magn/noentro &        & 19-aug-02 & NE \\
-   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
+   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 MB & 20-jun-02 & WD \\
    8 & fe1   & 0.99 & $256^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 0.98 & $256^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
    8 & Mhd   & 1.46 & $160^2\times40$
-                              & nomagn/entro &  46 Mb &  7-oct-02 & AB \\
-   8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 Gb & 29-jan-03 & WD \\
+                              & nomagn/entro &  46 MB &  7-oct-02 & AB \\
+   8 & Hwwsx5& 0.50 & $256^3$ & convstar     & 8.6 GB & 29-jan-03 & WD \\
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
@@ -4620,7 +4763,7 @@ application on your specific hardware.
   16 & giga  & 0.47 & $128^3$ & chiral       & 4x4/ifc& 29-may-04 & AB \\
   16 & giga  & 0.43 & $128^3$ & nomag/noentro& 4x4/ifc& 28-apr-03 & AB \\
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
-  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
+  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 MB & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
   16 & fe1   & 6.30 & $128\times256\times128$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
@@ -4628,8 +4771,8 @@ application on your specific hardware.
                      & nomagn/entro/rad2/ion &  4x4   &  1-nov-03 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
   16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
-  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
-  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
+  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 MB & 20-jun-02 & WD \\
+  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 MB & 20-jun-02 & WD \\
   16 & Gridur& 0.81 & $128^3$ & magn/noentro &        & 19-aug-02 & NE \\
   16 & Gridur& 0.66 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   16 & Sander& 0.53 & $256^3$ & magn/noentro &        &  8-sep-02 & AB \\
@@ -4645,7 +4788,7 @@ application on your specific hardware.
   64 & fe1   & 0.164& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
   64 & giga  & 0.091& $512^3$ &nomagn/noentro/hyper&4x16&17-dec-03& AB \\
   64 & giga  & 0.150& $256^3$ & magn/noentro &  4x16  &  1-jul-03 & AB \\
-  64 & giga  & 0.166& $512^3$ & magn/noentro &  4x16  & 10-jul-03 & AB \\
+  64 & giga  & 0.166& $512^3$ & magn/noentro &4x16, 64*173MB& 10-jul-03 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
@@ -4738,24 +4881,24 @@ in Fig~\ref{cvsstat}.
     \midrule
       \multicolumn{7}{c}{\emph{conv-slab}}\\
     \midrule
-        1 & Mhd         & 6.45 &  $32^3$ &    4 Mb & 23-jul-02 & wd \\
-        1 & Cincinnatus & 4.82 &  $32^3$ &    3 Mb & 23-jul-02 & wd \\
-        1 & Cincinnatus & 11.6 &  $64^3$ &   14 Mb & 23-jul-02 & wd \\
-        1 & Cincinnatus & 20.8 & $128^3$ &   93 Mb & 23-jul-02 & wd \\
+        1 & Mhd         & 6.45 &  $32^3$ &    4 MB & 23-jul-02 & wd \\
+        1 & Cincinnatus & 4.82 &  $32^3$ &    3 MB & 23-jul-02 & wd \\
+        1 & Cincinnatus & 11.6 &  $64^3$ &   14 MB & 23-jul-02 & wd \\
+        1 & Cincinnatus & 20.8 & $128^3$ &   93 MB & 23-jul-02 & wd \\
         1 & Kabul       & 3.91 &  $32^3$ &         & 23-jul-02 & wd \\
         1 & Kabul       & 3.88 &  $64^3$ &         & 23-jul-02 & wd \\
-        1 & Kabul       & 4.16 & $128^3$ &   93 Mb & 23-jul-02 & wd \\
+        1 & Kabul       & 4.16 & $128^3$ &   93 MB & 23-jul-02 & wd \\
     \midrule
       \multicolumn{7}{c}{\emph{conv-slab-flat}}\\
     \midrule
         1 & Kabul       & 3.02 &  $128^2{\times}32$
-                                         &   29 Mb & 23-jul-02 & wd \\
+                                         &   29 MB & 23-jul-02 & wd \\
         2 & Kabul       & 1.81 &  $128^2{\times}32$
-                                         &   18 Mb & 23-jul-02 & wd \\
+                                         &   18 MB & 23-jul-02 & wd \\
         4 & Kabul       & 1.03 &  $128^2{\times}32$
-                                         &   11 Mb & 23-jul-02 & wd \\
+                                         &   11 MB & 23-jul-02 & wd \\
         8 & Kabul       & 0.87 &  $128^2{\times}32$
-                                         &    9 Mb & 23-jul-02 & wd \\
+                                         &    9 MB & 23-jul-02 & wd \\
     \bottomrule
     \end{tabular}
     \end{small}
@@ -5601,15 +5744,15 @@ the MHD calculations presented below.
 %AB: in kompendien/numerik/FiniteDiff.tex
 %AB: If your checked-in version was not up-to-date, you can overwrite this.
 
-The ``wiggles'' in $\ln\varrho$ in (high-order centred-difference)
+The ``wiggles'' in $\ln\varrho$ in (high-order centered-difference)
 convection simulations are apparently caused by a velocity profile where
 the velocity approaches zero at the boundary.
 This causes the density profile to be squeezed into a boundary layer where
-eventually numerical resolution is insufficient and, for centred
+eventually numerical resolution is insufficient and, for centered
 differences, a spurious Nyquist signal is generated that almost
 instantaneously propagates into the whole box.
 
-This behaviour is hardly influenced by the boundary conditions on
+This behavior is hardly influenced by the boundary conditions on
 $\ln\varrho$ at all.
 A solution, however, is to apply upwinded derivative operators.
 The simplest upwind derivative is a finite-difference derivative operator
@@ -6205,6 +6348,17 @@ double precision, $\varepsilon\approx10^{-15}$.
                  you'd give no initial condition for density and velocity
                  (so you keep the data from a hopefully relaxed run),
                  and just add whatever you need for the magnetic field.\\
+  \var{lread_oldsnap_nomag} [\code{F}]
+               & if set \code{T}, the old snapshot from a non-magnetic run
+                 will be read in before producing (overwriting) initial
+                 conditions. This allows one to let a hydrodynamic run
+                 relax before adding a magnetic field.\\
+  \var{lread_oldsnap_nopscalar} [\code{F}]
+               & if set \code{T}, the old snapshot from a run without
+                 passive scalar will be read in before producing
+                 (overwriting) initial conditions. This allows one to
+                 let a hydrodynamic run relax before adding a passive
+                 scalar.\\
   \var{unit_system} [\code{'cgs'}]
                & you can set this character string to \index{SI units}
                  \code{'SI'}, which means that you can give \index{Units}
@@ -7560,7 +7714,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.267 2004-07-25 19:04:31 brandenb Exp $ $}
 
 
 \end{document}
@@ -7584,7 +7738,7 @@ $ $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $ $}
 % LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
 % LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid std
 % LocalWords:  wcool iforce relhel tsnap isothermality initaa jbm Peclet Eq Ra
-% LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
+% LocalWords:  meshpoints jb mn rprint xy Compaq MB resol linux magn noentro nq
 % LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
 % LocalWords:  ODEs PDEs iterform ccccccc pscalar nopscalar urms rhom Lxyz xyz
 % LocalWords:  cvsid lperi lwrite lnowrite inituu ampluu widthuu uu initlnrho
@@ -7614,7 +7768,7 @@ $ $Id: manual.tex,v 1.266 2004-07-18 14:50:32 brandenb Exp $ $}
 % LocalWords:  logscale oct Nqall ruxm ruym ruzm jm vArms vAmax Massaguer ts ev
 % LocalWords:  openDX Eqn videofiles otal vm OPTFLAGS notransform ifc nov cyl
 % LocalWords:  convsample Chandrasekhar eqn timestep nonhelical hsection RK pp
-% LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS Gb
+% LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS GB
 % LocalWords:  HTM BDS Subramanian Nachr ajwm cdts postproc decfort idx Hwwsx
 % LocalWords:  WorkShop convstar jan reftex varfile datadir Gyr realtodouble ok
 % LocalWords:  dspec vel fftpack oned powerb poweru powerbx powerby powerbz sfu
