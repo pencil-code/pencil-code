@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.149 2003-11-23 15:31:47 theine Exp $
+! $Id: ionization.f90,v 1.150 2003-11-23 15:55:00 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -63,7 +63,7 @@ module Ionization
 
   ! namelist parameters
   !real, parameter :: yHmin=tiny(yHmin), yHmax=1-epsilon(yHmax)
-  real, parameter :: yHmin=epsilon(yHmin), yHmax=1-epsilon(yHmax)
+  real, parameter :: yHmin=epsilon(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
   real :: yHmetals=0
   real :: yHacc=1e-5
@@ -112,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.149 2003-11-23 15:31:47 theine Exp $")
+           "$Id: ionization.f90,v 1.150 2003-11-23 15:55:00 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -201,7 +201,7 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'initialize_ionization: yHmin,yHmax=',yHmin,yHmax
+        print*,'initialize_ionization: yHmin,yHmax,yHmetals=',yHmin,yHmax,yHmetals
         print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
