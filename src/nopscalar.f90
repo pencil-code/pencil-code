@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.10 2003-10-24 13:17:31 dobler Exp $
+! $Id: nopscalar.f90,v 1.11 2003-12-04 09:03:38 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -18,6 +18,7 @@ module Pscalar
 
   implicit none
 
+  real :: rhoccm=0., cc2m=0., gcc1m=0.
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /pscalar_init_pars/ dummy
@@ -25,6 +26,11 @@ module Pscalar
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
+  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
+  integer :: i_cc1m=0,i_cc2m=0,i_cc3m=0,i_cc4m=0,i_cc5m=0
+  integer :: i_cc6m=0,i_cc7m=0,i_cc8m=0,i_cc9m=0,i_cc10m=0
+  integer :: i_gcc1m=0,i_gcc2m=0,i_gcc3m=0,i_gcc4m=0,i_gcc5m=0
+  integer :: i_gcc6m=0,i_gcc7m=0,i_gcc8m=0,i_gcc9m=0,i_gcc10m=0
 
   contains
 
@@ -50,7 +56,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.10 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nopscalar.f90,v 1.11 2003-12-04 09:03:38 brandenb Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************

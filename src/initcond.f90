@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.97 2003-11-24 22:11:55 brandenb Exp $ 
+! $Id: initcond.f90,v 1.98 2003-12-04 09:03:38 brandenb Exp $ 
 
 module Initcond 
  
@@ -24,7 +24,7 @@ module Initcond
 !***********************************************************************
     subroutine sinxsinz(ampl,f,i,kx,ky,kz)
 !
-!  sinusoidal wave
+!  sinusoidal wave. Note: f(:,:,:,j) with j=i+1 is set.
 !
 !  26-jul-02/axel: coded
 !
@@ -51,6 +51,37 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
+!***********************************************************************
+    subroutine cosx_cosy_cosz(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave, adapted from sinxsinz (that routine was already doing
+!  this, but under a different name)
+!
+!   2-dec-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
+!
+!  wavenumber k, helicity H=ampl (can be either sign)
+!
+!  sinx(kx*x)*sin(kz*z)
+!
+      if (present(kx)) kx1=kx
+      if (present(ky)) ky1=ky
+      if (present(kz)) kz1=kz
+      if (ampl==0) then
+        if (lroot) print*,'cosx_cosy_cosz: ampl=0'
+      else
+        if (lroot) print 10,'cosx_cosy_cosz: ampl,kx,ky,kz=',ampl,kx1,ky1,kz1
+        f(:,:,:,i)=f(:,:,:,i)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
+                                   *spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
+      endif
+!
+10    format(1x,a,4f8.2)
+    endsubroutine cosx_cosy_cosz
 !***********************************************************************
     subroutine hat(ampl,f,i,width,kx,ky,kz)
 !

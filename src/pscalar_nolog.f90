@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.12 2003-10-24 13:17:31 dobler Exp $
+! $Id: pscalar_nolog.f90,v 1.13 2003-12-04 09:03:38 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -36,6 +36,7 @@ module Pscalar
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
+  real :: rhoccm=0., cc2m=0., gcc1m=0.
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
@@ -44,6 +45,10 @@ module Pscalar
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
   integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
+  integer :: i_cc1m=0,i_cc2m=0,i_cc3m=0,i_cc4m=0,i_cc5m=0
+  integer :: i_cc6m=0,i_cc7m=0,i_cc8m=0,i_cc9m=0,i_cc10m=0
+  integer :: i_gcc1m=0,i_gcc2m=0,i_gcc3m=0,i_gcc4m=0,i_gcc5m=0
+  integer :: i_gcc6m=0,i_gcc7m=0,i_gcc8m=0,i_gcc9m=0,i_gcc10m=0
 
   contains
 
@@ -76,7 +81,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.12 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: pscalar_nolog.f90,v 1.13 2003-12-04 09:03:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -141,6 +146,7 @@ module Pscalar
         case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
+        case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
@@ -193,6 +199,7 @@ module Pscalar
         case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
+        case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
         case('sound-wave'); f(:,:,:,ilncc)=-ampllncc*cos(kx_lncc*xx)
         case('tang-discont-z')
            print*,'init_lncc: widthlncc=',widthlncc
@@ -201,6 +208,7 @@ module Pscalar
         case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
+
 !
 !  superimpose something else
 !
@@ -232,6 +240,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,gcc,glnrho
       real, dimension (nx) :: cc,rho,ugcc,diff_op,del2cc
+      real, dimension (nx) :: cc1,gcc1,gcc2
       integer :: j
 !
       intent(in)  :: f,uu,glnrho
@@ -299,6 +308,8 @@ module Pscalar
       if (ldiagnos) then
         cc=f(l1:l2,m,n,ilncc)
         rho=exp(f(l1:l2,m,n,ilnrho))
+        cc1=rho*abs(cc)
+        call dot2_mn(gcc,gcc2); gcc1=sqrt(gcc2)
         if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
         if (i_lnccmz/=0) call xysum_mn_name_z(cc,i_lnccmz)
@@ -307,6 +318,26 @@ module Pscalar
         if (i_Cz2m/=0) call sum_mn_name(rho*cc*z(n)**2,i_Cz2m)
         if (i_Cz4m/=0) call sum_mn_name(rho*cc*z(n)**4,i_Cz4m)
         if (i_Crmsm/=0) call sum_mn_name((rho*cc)**2,i_Crmsm,lsqrt=.true.)
+        if (i_cc1m/=0) call sum_mn_name(cc1   ,i_cc1m)
+        if (i_cc2m/=0) call sum_mn_name(cc1**2,i_cc2m)
+        if (i_cc3m/=0) call sum_mn_name(cc1**3,i_cc3m)
+        if (i_cc4m/=0) call sum_mn_name(cc1**4,i_cc4m)
+        if (i_cc5m/=0) call sum_mn_name(cc1**5,i_cc5m)
+        if (i_cc6m/=0) call sum_mn_name(cc1**6,i_cc6m)
+        if (i_cc7m/=0) call sum_mn_name(cc1**7,i_cc7m)
+        if (i_cc8m/=0) call sum_mn_name(cc1**8,i_cc8m)
+        if (i_cc9m/=0) call sum_mn_name(cc1**9,i_cc9m)
+        if (i_cc10m/=0)call sum_mn_name(cc1**10,i_cc10m)
+        if (i_gcc1m/=0) call sum_mn_name(gcc1   ,i_gcc1m)
+        if (i_gcc2m/=0) call sum_mn_name(gcc1**2,i_gcc2m)
+        if (i_gcc3m/=0) call sum_mn_name(gcc1**3,i_gcc3m)
+        if (i_gcc4m/=0) call sum_mn_name(gcc1**4,i_gcc4m)
+        if (i_gcc5m/=0) call sum_mn_name(gcc1**5,i_gcc5m)
+        if (i_gcc6m/=0) call sum_mn_name(gcc1**6,i_gcc6m)
+        if (i_gcc7m/=0) call sum_mn_name(gcc1**7,i_gcc7m)
+        if (i_gcc8m/=0) call sum_mn_name(gcc1**8,i_gcc8m)
+        if (i_gcc9m/=0) call sum_mn_name(gcc1**9,i_gcc9m)
+        if (i_gcc10m/=0)call sum_mn_name(gcc1**10,i_gcc10m)
       endif
 !
     endsubroutine dlncc_dt
@@ -332,6 +363,10 @@ module Pscalar
       if (lreset) then
         i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
         i_ucm=0; i_uudcm=0; i_Cz2m=0; i_Cz4m=0; i_Crmsm=0
+        i_cc1m=0; i_cc2m=0; i_cc3m=0; i_cc4m=0; i_cc5m=0
+        i_cc6m=0; i_cc7m=0; i_cc8m=0; i_cc9m=0; i_cc10m=0
+        i_gcc1m=0; i_gcc2m=0; i_gcc3m=0; i_gcc4m=0; i_gcc5m=0
+        i_gcc6m=0; i_gcc7m=0; i_gcc8m=0; i_gcc9m=0; i_gcc10m=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -345,6 +380,26 @@ module Pscalar
         call parse_name(iname,cname(iname),cform(iname),'Cz2m',i_Cz2m)
         call parse_name(iname,cname(iname),cform(iname),'Cz4m',i_Cz4m)
         call parse_name(iname,cname(iname),cform(iname),'Crmsm',i_Crmsm)
+        call parse_name(iname,cname(iname),cform(iname),'cc1m',i_cc1m)
+        call parse_name(iname,cname(iname),cform(iname),'cc2m',i_cc2m)
+        call parse_name(iname,cname(iname),cform(iname),'cc3m',i_cc3m)
+        call parse_name(iname,cname(iname),cform(iname),'cc4m',i_cc4m)
+        call parse_name(iname,cname(iname),cform(iname),'cc5m',i_cc5m)
+        call parse_name(iname,cname(iname),cform(iname),'cc6m',i_cc6m)
+        call parse_name(iname,cname(iname),cform(iname),'cc7m',i_cc7m)
+        call parse_name(iname,cname(iname),cform(iname),'cc8m',i_cc8m)
+        call parse_name(iname,cname(iname),cform(iname),'cc9m',i_cc9m)
+        call parse_name(iname,cname(iname),cform(iname),'cc10m',i_cc10m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc1m',i_gcc1m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc2m',i_gcc2m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc3m',i_gcc3m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc4m',i_gcc4m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc5m',i_gcc5m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc6m',i_gcc6m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc7m',i_gcc7m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc8m',i_gcc8m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc9m',i_gcc9m)
+        call parse_name(iname,cname(iname),cform(iname),'gcc10m',i_gcc10m)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -365,6 +420,26 @@ module Pscalar
         write(3,*) 'i_Cz2m=',i_Cz2m
         write(3,*) 'i_Cz4m=',i_Cz4m
         write(3,*) 'i_Crmsm=',i_Crmsm
+        write(3,*) 'i_cc1m=',i_cc1m
+        write(3,*) 'i_cc2m=',i_cc2m
+        write(3,*) 'i_cc3m=',i_cc3m
+        write(3,*) 'i_cc4m=',i_cc4m
+        write(3,*) 'i_cc5m=',i_cc5m
+        write(3,*) 'i_cc6m=',i_cc6m
+        write(3,*) 'i_cc7m=',i_cc7m
+        write(3,*) 'i_cc8m=',i_cc8m
+        write(3,*) 'i_cc9m=',i_cc9m
+        write(3,*) 'i_cc10m=',i_cc10m
+        write(3,*) 'i_gcc1m=',i_gcc1m
+        write(3,*) 'i_gcc2m=',i_gcc2m
+        write(3,*) 'i_gcc3m=',i_gcc3m
+        write(3,*) 'i_gcc4m=',i_gcc4m
+        write(3,*) 'i_gcc5m=',i_gcc5m
+        write(3,*) 'i_gcc6m=',i_gcc6m
+        write(3,*) 'i_gcc7m=',i_gcc7m
+        write(3,*) 'i_gcc8m=',i_gcc8m
+        write(3,*) 'i_gcc9m=',i_gcc9m
+        write(3,*) 'i_gcc10m=',i_gcc10m
         write(3,*) 'ilncc=',ilncc
       endif
 !

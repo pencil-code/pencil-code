@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.95 2003-11-24 22:11:55 brandenb Exp $
+! $Id: noionization.f90,v 1.96 2003-12-04 09:03:38 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -80,7 +80,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.95 2003-11-24 22:11:55 brandenb Exp $")
+           "$Id: noionization.f90,v 1.96 2003-12-04 09:03:38 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -459,24 +459,27 @@ module Ionization
       real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
       real, intent(in) :: T0
       real, dimension(nx) :: lnrho,ss
+      real :: ss_offset=0.
+!
+!  if T0 is different from unity, we interpret
+!  ss_offset = ln(T0)/gamma as an additive offset of ss
+!
+      if (T0/=1.) ss_offset=alog(T0)/gamma
 !
       do n=n1,n2
       do m=m1,m2
         lnrho=f(l1:l2,m,n,ilnrho)
         ss=-gamma1*(lnrho-lnrho0)/gamma
           !+ other terms for sound speed not equal to cs_0
-        f(l1:l2,m,n,iss)=ss
+        f(l1:l2,m,n,iss)=ss+ss_offset
       enddo
       enddo
-
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
 !
       cs2bot=cs20
       cs2top=cs20
-!
-      if(ip==0) print*,T0,'T0 not used here'  !(keep compiler quiet)
 !
     endsubroutine isothermal_entropy
 !***********************************************************************

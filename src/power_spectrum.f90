@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.41 2003-12-04 09:03:38 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.41 2003-12-04 09:03:38 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.41 2003-12-04 09:03:38 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.41 2003-12-04 09:03:38 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -406,7 +406,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.40 2003-10-12 05:45:16 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.41 2003-12-04 09:03:38 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -564,16 +564,102 @@ module  power_spectrum
 
   endsubroutine power_1d
 !***********************************************************************
+    subroutine pdf(f,variabl,pdf_mean,pdf_rms)
+!
+!  Calculated pdf of scalar field.
+!  This routine is in this module, because it is always called at the
+!  same time when spectra are invoked (called in wsnaps).
+!
+!    2-dec-03/axel: coded
+!
+  use Cdata
+  use Sub
+  use General
+  use Mpicomm
+!
+  integer :: i,l,i_pdf
+  integer, parameter :: n_pdf=3001
+  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension (nx,3) :: gcc
+  real, dimension (nx) :: pdf_var,gcc2
+  real, dimension(n_pdf) :: pdf_xx
+  integer, dimension (n_pdf) :: pdf_yy
+  real :: pdf_min,pdf_max,pdf_mean,pdf_rms,pdf_dx,pdf_dx1,pdf_scl
+  character (len=120) :: pdf_file=''
+  character (len=*) :: variabl
+  logical :: logscale=.false.
+!
+!  initialize counter and set scaling factor
+!
+   pdf_yy=0.
+   pdf_scl=1./pdf_rms
+!
+!  m-n loop
+!
+   do n=n1,n2
+   do m=m1,m2
+!
+!  select the right variable
+!
+     if (variabl=='rhocc') then
+       pdf_var=exp(f(l1:l2,m,n,ilnrho))*f(l1:l2,m,n,ilncc)-pdf_mean
+       logscale=.false.
+     elseif (variabl=='cc') then
+       pdf_var=f(l1:l2,m,n,ilncc)-pdf_mean
+       logscale=.false.
+     elseif (variabl=='lncc') then
+       pdf_var=abs(f(l1:l2,m,n,ilncc)-pdf_mean)
+       logscale=.true.
+     elseif (variabl=='gcc') then
+       call grad(f,ilncc,gcc)
+       call dot2_mn(gcc,gcc2)
+       pdf_var=sqrt(gcc2)
+       logscale=.false.
+     elseif (variabl=='lngcc') then
+       call grad(f,ilncc,gcc)
+       call dot2_mn(gcc,gcc2)
+       pdf_var=sqrt(gcc2)
+       logscale=.true.
+     endif
+!
+!  put in the right pdf slot
+!
+     if (logscale) then
+       !pdf_max=1.5  !(fixed choice, for time being)
+       pdf_max=3.0  !(fixed choice, for time being)
+       pdf_min=-pdf_max
+       pdf_dx=(pdf_max-pdf_min)/n_pdf
+       pdf_dx1=1./pdf_dx
+       do l=l1,l2
+         i_pdf=1+int(pdf_dx1*alog10(pdf_scl*pdf_var(l))-pdf_min)
+         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
+         pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
+       enddo
+     else
+       pdf_max=30.  !(fixed choice, for time being)
+       pdf_min=-pdf_max
+       pdf_dx=(pdf_max-pdf_min)/n_pdf
+       pdf_dx1=1./pdf_dx
+       do l=l1,l2
+         i_pdf=1+int(pdf_dx1*(pdf_scl*pdf_var(l)-pdf_min))
+         i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
+         pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
+       enddo
+     endif
+   enddo
+   enddo
+!
+!  write file
+!
+   pdf_file=trim(directory)//'/pdf_'//trim(variabl)//'.dat'
+   open(1,file=trim(pdf_file),position='append')
+   write(1,10) t,n_pdf,pdf_dx,pdf_min,pdf_mean,pdf_rms
+   write(1,11) pdf_yy
+   close(1)
+!
+10 format(1p,e11.5,0p,i6,1p,4e12.4)
+11 format(8i10)
+endsubroutine pdf
+!***********************************************************************
 
 end module power_spectrum
-
-
-
-
-
-
-
-
-
-
-

@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.43 2003-12-01 21:00:10 theine Exp $
+! $Id: wsnaps.f90,v 1.44 2003-12-04 09:03:38 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -97,6 +97,7 @@ contains
       use Io
       use Power_spectrum
       use Struct_func
+      use Pscalar
 !
       real, dimension (mx,my,mz,mvar+maux) :: a
       real, dimension (nx,ny,nz) :: b_vec
@@ -178,6 +179,15 @@ contains
             if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
             if (lpdfz2)   call structure(a,ivec,b_vec,'pdfz2')
          enddo
+         !
+         !  do pdf of passive scalar field (if present)
+         !
+         if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
+         if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
+         if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
+         if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,gcc1m)
+         if (lngcc_pdf) call pdf(a,'lngcc',0.    ,gcc1m)
+         !
       endif
 !
     endsubroutine powersnap

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.152 2003-11-28 09:56:28 theine Exp $ 
+! $Id: param_io.f90,v 1.153 2003-12-04 09:03:38 brandenb Exp $ 
 
 module Param_IO
 
@@ -65,6 +65,7 @@ module Param_IO
        dsnap,d2davg,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
        ro_spec,ss_spec,cc_spec,cr_spec, &
+       rhocc_pdf,cc_pdf,lncc_pdf,gcc_pdf,lngcc_pdf, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
@@ -463,7 +464,16 @@ module Param_IO
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
-      if (slice_position=='m') then
+      if (slice_position=='p') then
+        ix=l1
+        iy=m1
+        iz=n1
+        iz2=n2
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='m') then
         ix=(l1+l2)/2
         iy=m1
         iz=n1

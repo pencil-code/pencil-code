@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.19 2003-09-02 13:43:12 dobler Exp $
+! $Id: struct_func.f90,v 1.20 2003-12-04 09:03:38 brandenb Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -243,4 +243,5 @@ endif
   !
 endsubroutine structure
 !***********************************************************************
+
 endmodule struct_func
