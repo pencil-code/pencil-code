@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.5 2002-12-10 00:50:51 ngrs Exp $
+! $Id: nointerstellar.f90,v 1.6 2003-05-20 15:38:38 brandenb Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -44,7 +44,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.5 2002-12-10 00:50:51 ngrs Exp $")
+           "$Id: nointerstellar.f90,v 1.6 2003-05-20 15:38:38 brandenb Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -53,14 +53,18 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar()
+    subroutine initialize_interstellar(lstart)
 !
 !  Perform any post-parameter-read initialization eg. set derived 
 !  parameters
 !
 !  24-nov-02/tony: coded - dummy
 !
-
+      logical :: lstart
+!
+! (to keep compiler quiet)
+      if (ip==0) print*,lstart
+!
     endsubroutine initialize_interstellar
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(df,rho1,TT1)
