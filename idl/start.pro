@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.43 2002-11-12 08:11:43 dobler Exp $
+;;; $Id: start.pro,v 1.44 2003-02-24 21:22:11 theine Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -131,6 +131,10 @@ if (cpar gt 0) then begin
       message, 'There was a problem with param.nml', /INFO
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
+  unit_system=par.unit_system
+  unit_length=par.unit_length
+  unit_velocity=par.unit_velocity
+  unit_density=par.unit_density
   ;
   lhydro    = par.lhydro
   ldensity  = par.ldensity
