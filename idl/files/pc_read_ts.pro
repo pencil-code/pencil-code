@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.2 2003-08-20 19:42:46 mee Exp $
+; $Id: pc_read_ts.pro,v 1.3 2003-08-20 23:25:14 mee Exp $
 ;
 ;  Read time_series.dat
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-20 19:42:46 $
-;  $Revision: 1.2 $
+;  $Date: 2003-08-20 23:25:14 $
+;  $Revision: 1.3 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -61,31 +61,33 @@ pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom
     print, "Usage: "
     print, ""
     print, "pc_read_ts,  t=t,                                                                           "
-    print, "             object=object,                                                                 "
-    print, "             /DOUBLE,                                                                       "
-    print, "             datadir=datadir, /PRINT, /QUIET, /HELP                                         "
-    print, "                                                                                            "
-    print, "Read time series data from time_series.dat into separate variables or a structure.          "
-    print, "                                                                                            "
-    print, "  datadir: specify the root data directory. Default is './data'                     [string]"
-    print, "                                                                                            "
-    print, "        n: number of entries (valid - not commented out)                           [integer]"
-    print, "       it: array of time step numbers                                            [float(it)]"
-    print, "        t: array containing time in code units                                   [float(it)]"
-    print, "       dt: array of time step sizes                                              [float(it)]"
-    print, "      dtc: time step limit by CFL condition                                      [float(it)]"
-    print, "     urms: RMS velocity                                                          [float(it)]"
-    print, "     ekin: total kinetic energy                                                  [float(it)]"
-    print, "      eth: total thermal energy                                                  [float(it)]"
-    print, "     rhom:                                                                       [float(it)]"
-    print, "      ssm:                                                                       [float(it)]"
+    print, "             object=object,                                       " 
+    print, "             datadir=datadir, /PRINT, /DOUBLE, /QUIET, /HELP      "
+    print, "                                                                  "
+    print, "Read time series data from time_series.dat into separate "
+    print, "variables or a structure.          "
+    print, "                                              "
+    print, "  datadir: specify the root data directory.               [string]"
+    print, "           Default is './data'           "
+    print, "                                                                  "
+    print, "        n: number of entries (valid - not commented out) [integer]"
+    print, "       it: array of time step numbers                  [float(it)]"
+    print, "        t: array containing time in code units         [float(it)]"
+    print, "       dt: array of time step sizes                    [float(it)]"
+    print, "      dtc: time step limit by CFL condition            [float(it)]"
+    print, "     urms: RMS velocity                                [float(it)]"
+    print, "     ekin: total kinetic energy                        [float(it)]"
+    print, "      eth: total thermal energy                        [float(it)]"
+    print, "     rhom:                                             [float(it)]"
+    print, "      ssm:                                             [float(it)]"
     print, ""
-    print, "   object: optional structure in which to return all the above as tags           [structure]"
+    print, "   object: optional structure in which to return all   [structure]"
+    print, "           the above as tags   "
     print, ""
-    print, "  /DOUBLE: instruction to read all values as double precision                               "
-    print, "   /PRINT: instruction to print all variables to standard output                            "
-    print, "   /QUIET: instruction not to print any 'helpful' information                               "
-    print, "    /HELP: display this usage information, and exit                                         "
+    print, "  /DOUBLE: instruction to read all values as double precision    "
+    print, "   /PRINT: instruction to print all variables to standard output "
+    print, "   /QUIET: instruction not to print any 'helpful' information    "
+    print, "    /HELP: display this usage information, and exit              "
     return
   ENDIF
 
@@ -128,50 +130,108 @@ if (found gt 0) then begin
         hashpos = strpos(line,'#')
         ;; identify header line as / *#--/
     endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
+    point_lun,-file,fileposition
     close,file
 end else begin
     message, 'ERROR: cannot find file ' + filename
 end
 
-labels = parse_tsheader(line)
-ncols = n_elements(labels)
 ;
 ;  read table
 ;
-data = input_table(filename)
-if ((size(data))[1] ne ncols) then begin
-  message, /INFO, 'Inconsistency: label numer different from column number'
-endif
+newheader=line
+full_data=0.
+full_labels=''
+
+while (fileposition ne -1) do begin
+  labels = parse_tsheader(newheader)
+  ncols = n_elements(labels)
+  newheader='^#--'
+ 
+  data = input_table(filename,DOUBLE=DOUBLE,  $
+                     STOP_AT=newheader,FILEPOSITION=fileposition)
+  if ((size(data))[1] ne ncols) then begin
+    message, /INFO, 'Inconsistency: label number different from column number'
+  endif
+
+  ; Merge read data into full data set
+  if ((size(full_labels))[0] eq 0) then begin
+    ;If it's the first time just chunk the data into place
+    full_labels=labels
+    full_data=data
+  end else begin
+    col_index=intarr(ncols)
+    for i=0,ncols-1 do begin
+      if (not in_list(labels[i],full_labels)) then begin
+         old_full_labels=full_labels
+         old_ncols=n_elements(old_full_labels)
+         full_labels=strarr(old_ncols+1)
+         full_labels[0:old_ncols-1]=old_full_labels[*]
+         old_full_labels=0. 
+
+         full_labels[old_ncols]=labels[i]
+	 col_index[i]=old_ncols
+      endif else begin
+        col_index[i]=list_idx(labels[i],full_labels)
+      endelse
+    endfor
+         
+    old_ncols=(size(full_data))[1]
+    old_nrows=(size(full_data))[2]
+
+    new_ncols=(size(full_labels))[1]
+    new_nrows=old_nrows + (size(data))[2]
+    
+    old_full_data=full_data
+    if (keyword_set(double)) then begin
+      full_data = dblarr(new_ncols, new_nrows)
+      full_data[*,*] = !VALUES.D_NAN
+    endif else begin
+      full_data = fltarr(new_ncols, new_nrows)
+      full_data[*,*] = !VALUES.F_NAN
+    endelse
+    
+    full_data[0:old_ncols-1,0:old_nrows-1] = old_full_data[*,*]
+    old_full_data=0.  ; Clear the allocated memory 
+    
+    for i=0,ncols-1 do begin
+      full_data[col_index[i],old_nrows:new_nrows-1]=data[i,*]
+    endfor   
+  endelse
+endwhile
+
+
 ;
 ;  assemble the data
 ;
+ncols = n_elements(full_labels)
 cmd = 'object = {'           ; build a command to execute
 for i=0,ncols-1 do begin
   if (i eq 0) then pref=' ' else pref=', '
-  cmd = cmd + pref + labels[i] + ': reform(data[' + strtrim(i,2) + ',*])'
+  cmd = cmd + pref + full_labels[i] $
+                   + ': reform(full_data[' $
+                   + strtrim(i,2) + ',*])'
 endfor
 cmd = cmd + ' }'
 
 if (execute(cmd) ne 1) then $
-    message, 'There was a problem executing <' + cmd + '>', /INFO
-
-
+  message, 'There was a problem executing <' + cmd + '>', /INFO
 
 ; Unwrap and quantities that may have been separately requested from object
 n = (size(data))[1]
-if (in_list('t',labels))    then t = object.t
-if (in_list('dt',labels))   then dt = object.dt
-if (in_list('dtc',labels))  then dtc = object.dtc
-if (in_list('urms',labels)) then urms = object.urms
-if (in_list('ekin',labels)) then ekin = object.ekin
-if (in_list('eth',labels))  then eth = object.eth
-if (in_list('rhom',labels)) then rhom = object.rhom
-if (in_list('ssm',labels))  then ssm = object.ssm
+if (in_list('t',full_labels))    then t = object.t
+if (in_list('dt',full_labels))   then dt = object.dt
+if (in_list('dtc',full_labels))  then dtc = object.dtc
+if (in_list('urms',full_labels)) then urms = object.urms
+if (in_list('ekin',full_labels)) then ekin = object.ekin
+if (in_list('eth',full_labels))  then eth = object.eth
+if (in_list('rhom',full_labels)) then rhom = object.rhom
+if (in_list('ssm',full_labels))  then ssm = object.ssm
 
 ; If requested print a summary
 if keyword_set(PRINT) then begin
     print, 'For GLOBAL calculation domain:'
-    print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_params.pro'
+    print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_ts.pro'
 endif
 
 end
