@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.162 2003-10-23 18:30:52 dobler Exp $
+! $Id: equ.f90,v 1.163 2003-11-15 19:09:02 brandenb Exp $
 
 module Equ
 
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.162 2003-10-23 18:30:52 dobler Exp $")
+           "$Id: equ.f90,v 1.163 2003-11-15 19:09:02 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -331,8 +331,7 @@ module Equ
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
 !
 !  cosmic ray energy density
-!
-        call decr_dt  (f,df,uu,rho1,divu,bij,bb)
+!  call decr_dt  (f,df,uu,rho1,divu,bij,bb)
 !
 !  Evolution of radiative energy
 !
@@ -354,8 +353,11 @@ module Equ
 !  Note that we are (currently) accumulating the maximum value,
 !  not the maximum squared!
 !
+!  The dimension of the run ndim (=0, 1, 2, or 3) enters the viscous time step.
+!  This has to do with the term on the diagonal, cdtv depends on order of scheme
+!
         if (lfirst.and.ldt) then
-          fac=cdt/(cdtv*dxmin)
+          fac=cdt/(cdtv*dxmin)*dimensionality
           facheat=dxmin/cdt
 ! if(ip<=14) print*,'pde: facheat,maxheating(1)=',facheat,maxheating(1)
 ! if(ip<=14) print*,'pde: maxadvec2(1),fac=',maxadvec2(1),fac

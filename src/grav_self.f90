@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.17 2003-10-24 13:17:31 dobler Exp $
+! $Id: grav_self.f90,v 1.18 2003-11-15 19:09:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,7 +24,7 @@ module Gravity
 
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
-  real :: grav_const=1.
+  real :: grav_const=1.,gravdiff=0.
   real :: g0
 
 !  NOTE: the following quantities are needed for compatibility
@@ -44,7 +44,7 @@ module Gravity
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-    grav_const
+    grav_const,gravdiff
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -83,7 +83,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.17 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: grav_self.f90,v 1.18 2003-11-15 19:09:02 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -138,7 +138,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,curlgg
+      real, dimension (nx,3) :: uu,curlgg,curlcurlgg
       real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2
       integer :: j
 !
@@ -149,11 +149,19 @@ module Gravity
       if (headtt) print*,'duu_dt_grav: SOLVE'
 !
 !  advance gravity, dg/dt = 4pi*G*rho*uu
+!  Note that 4pi*G = "grav_const"
 !
       rho=1./rho1
       do j=0,2
         df(l1:l2,m,n,igg+j)=df(l1:l2,m,n,igg+j)+grav_const*rho*uu(:,1+j)
       enddo
+!
+!  diffuse non-potential contribution to gravity to zero
+!
+      if (gravdiff/=0.) then
+        call del2v_etc(f,igg,curlcurl=curlcurlgg)
+        df(l1:l2,m,n,igx:igz)=df(l1:l2,m,n,igx:igz)-gravdiff*curlcurlgg
+      endif
 !
 !  add gravitational acceleration to momentum equation
 !

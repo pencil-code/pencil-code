@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.178 2003-11-14 16:14:22 dobler Exp $
+! $Id: cdata.f90,v 1.179 2003-11-15 19:09:02 brandenb Exp $
 
 module Cdata
 
@@ -18,7 +18,7 @@ module Cdata
 
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
-  real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
+  real :: t,dt=0.,cdt=0.4,cdtv=0.4,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: r_int=0.0,r_ext=impossible   ! for spherical shell problems
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
@@ -57,7 +57,7 @@ module Cdata
   integer :: it=1,itsub,ix,iy,iz,iz2
   integer :: ilncc=0
   integer :: iproc,ipx,ipy,ipz,root=0
-  integer :: mvar_io=0
+  integer :: mvar_io=0,dimensionality
   logical, dimension(3) :: lperi
   character (len=labellen) ::fft_switch='fftpack'
 !

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.123 2003-11-14 16:14:23 dobler Exp $
+! $Id: start.f90,v 1.124 2003-11-15 19:09:02 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,6 +31,7 @@
 !  so we define therefore the full array and write it out.
 !
         integer :: i,ifilter
+        logical :: lnoerase=.false.
 !       logical :: lock=.false.
 !       logical :: exist
         real, dimension (mx,my,mz,mvar+maux) :: f
@@ -45,7 +46,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.123 2003-11-14 16:14:23 dobler Exp $")
+             "$Id: start.f90,v 1.124 2003-11-15 19:09:02 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -188,15 +189,18 @@
         endif
 !
 !  write to disk
-!  The option lnowrite writes everything except the actual var.dat file
-!  This can be useful if auxiliary files are outdated, and don't want
-!  to overwrite an existing var.dat
 !
         if (lwrite_ic) then
           call wsnap( &
                trim(directory_snap)//'/VAR0',f,mvar_io,ENUM=.false.)
         endif
-        if (.not.lnowrite) then
+!
+!  The option lnowrite writes everything except the actual var.dat file
+!  This can be useful if auxiliary files are outdated, and don't want
+!  to overwrite an existing var.dat
+!
+        inquire(FILE="NOERASE", EXIST=lnoerase)
+        if (.not.lnowrite .and. .not.lnoerase) then
           if (ip<12) print*,'START: writing to ' // trim(directory_snap)//'/var.dat'
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)

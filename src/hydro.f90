@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.134 2003-11-06 20:19:18 nilshau Exp $
+! $Id: hydro.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -102,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.134 2003-11-06 20:19:18 nilshau Exp $")
+           "$Id: hydro.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -198,6 +198,12 @@ module Hydro
       case('tor_pert'); call tor_pert(ampluu,f,iux,xx,yy,zz)
       case('diffrot'); call diffrot(ampluu,f,iuy,xx,yy,zz)
       case('olddiffrot'); call olddiffrot(ampluu,f,iuy,xx,yy,zz)
+      case('sinwave-x'); call sinwave(ampluu,f,iux,kx=kx_uu)
+      case('sinwave-y'); call sinwave(ampluu,f,iuy,ky=ky_uu)
+      case('sinwave-z'); call sinwave(ampluu,f,iuz,kz=kz_uu)
+      case('coswave-x'); call coswave(ampluu,f,iux,kx=kx_uu)
+      case('coswave-y'); call coswave(ampluu,f,iuy,ky=ky_uu)
+      case('coswave-z'); call coswave(ampluu,f,iuz,kz=kz_uu)
       case('soundwave-x'); call soundwave(ampluu,f,iux,kx=kx_uu)
       case('soundwave-y'); call soundwave(ampluu,f,iuy,ky=ky_uu)
       case('soundwave-z'); call soundwave(ampluu,f,iuz,kz=kz_uu)

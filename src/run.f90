@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.164 2003-11-14 16:14:23 dobler Exp $
+! $Id: run.f90,v 1.165 2003-11-15 19:09:02 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.164 2003-11-14 16:14:23 dobler Exp $")
+             "$Id: run.f90,v 1.165 2003-11-15 19:09:02 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -75,8 +75,10 @@
           mvar_io = mvar
         endif
 !
-!  print resolution
+!  print resolution and dimension of the simulation
 !
+        dimensionality=min(nxgrid-1,1)+min(nygrid-1,1)+min(nzgrid-1,1)
+        if (lroot) write(*,'(a,i1,a)') 'This is a ',dimensionality,'-D run'
         if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
 !  set up directory names `directory' and `directory_snap'
@@ -95,7 +97,7 @@
 !
         call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
         call rtime(trim(directory)//'/time.dat',t)
-        call rglobal()      ! Read global variables (if there are)
+        call rglobal()      ! Read global variables (if any)
 !
 !  read coordinates
 !

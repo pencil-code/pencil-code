@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.134 2003-11-12 17:33:51 ajohan Exp $
+! $Id: density.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.134 2003-11-12 17:33:51 ajohan Exp $")
+           "$Id: density.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,6 +181,12 @@ module Density
       case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=1.)
       case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=1.)
       case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=1.)
+      case('sinwave-x'); call sinwave(ampllnrho,f,ilnrho,kx=kx_lnrho)
+      case('sinwave-y'); call sinwave(ampllnrho,f,ilnrho,ky=ky_lnrho)
+      case('sinwave-z'); call sinwave(ampllnrho,f,ilnrho,kz=kz_lnrho)
+      case('coswave-x'); call coswave(ampllnrho,f,ilnrho,kx=kx_lnrho)
+      case('coswave-y'); call coswave(ampllnrho,f,ilnrho,ky=ky_lnrho)
+      case('coswave-z'); call coswave(ampllnrho,f,ilnrho,kz=kz_lnrho)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
       case('gaussian-noise'); call gaunoise(ampllnrho,f,ilnrho,ilnrho)
       case('gaussian-noise-x')

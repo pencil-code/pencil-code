@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.91 2003-11-13 20:00:02 mcmillan Exp $ 
+! $Id: initcond.f90,v 1.92 2003-11-15 19:09:02 brandenb Exp $ 
 
 module Initcond 
  
@@ -579,6 +579,108 @@ module Initcond
       endif
 !
     endsubroutine soundwave
+!***********************************************************************
+    subroutine coswave(ampl,f,i,kx,ky,kz)
+!
+!  cosine wave (as initial condition)
+!
+!  14-nov-03/axel: adapted from sinwave
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.,fac
+!
+!  wavenumber k
+!
+!  set x-dependent cos wave
+!
+      if (present(kx)) then
+        k=kx; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'coswave: ampl=0; kx=',k
+        else
+          if (lroot) print*,'coswave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(cos(k*x),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-dependent cos wave field
+!
+      if (present(ky)) then
+        k=ky; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'coswave: ampl=0; ky=',k
+        else
+          if (lroot) print*,'coswave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(cos(k*y),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-dependent cos wave field
+!
+      if (present(kz)) then
+        k=kz; if(k==0) print*,'coswave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'coswave: ampl=0; kz=',k
+        else
+          if (lroot) print*,'coswave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(cos(k*z),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine coswave
+!***********************************************************************
+    subroutine sinwave(ampl,f,i,kx,ky,kz)
+!
+!  sine wave (as initial condition)
+!
+!  14-nov-03/axel: adapted from sound wave
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.,fac
+!
+!  wavenumber k
+!
+!  set x-dependent sin wave
+!
+      if (present(kx)) then
+        k=kx; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'sinwave: ampl=0; kx=',k
+        else
+          if (lroot) print*,'sinwave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*x),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-dependent sin wave field
+!
+      if (present(ky)) then
+        k=ky; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'sinwave: ampl=0; ky=',k
+        else
+          if (lroot) print*,'sinwave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*y),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-dependent sin wave field
+!
+      if (present(kz)) then
+        k=kz; if(k==0) print*,'sinwave: k must not be zero!'; fac=ampl
+        if (ampl==0) then
+          if (lroot) print*,'sinwave: ampl=0; kz=',k
+        else
+          if (lroot) print*,'sinwave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*z),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine sinwave
 !***********************************************************************
     subroutine stratification(ampl,f,xx,yy,zz)
 !
