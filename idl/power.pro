@@ -1,6 +1,8 @@
-PRO power,file1,file2,k=k,spec1=spec1,spec2=spec2,i=i
+PRO power,file1,file2,last,k=k,spec1=spec1,spec2=spec2,i=i
 
 default,file1,'poweru.dat'
+default,file2,'powerb.dat'
+default,last,1
 
 !p.multi=[0,1,1]
 !p.charsize=2
@@ -11,6 +13,7 @@ nghostx=0L & nghosty=0L & nghostz=0L
 ;
 ;  Reading number of grid points from 'data/dim.dat'
 ;
+datatopdir='data'
 close,1
 openr,1,datatopdir+'/'+'dim.dat'
 readf,1,mx,my,mz,nvar
@@ -35,44 +38,51 @@ k=findgen(imax)
 ;
 i=1
 close,1
-openr,1, datadir+'/'+file1
+openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
        readf,1,spectrum
        i=i+1
     endwhile
 close,1
 spec1=fltarr(imax,i-1)
+lasti=i-2
 ;
 ;  Opening file 2 if it is defined
 ;
 if (file2 ne '') then begin
   close,2
   spectrum2=fltarr(imax)
-  openr,2,datadir+'/'+file2
+  openr,2,datatopdir+'/'+file2
   spec2=fltarr(imax,i-1)
 endif
 ;
 ;  Plotting the results
 ;
 i=1 
-openr,1, datadir+'/'+file1
+openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
        readf,1,spectrum1
        spec1(*,i-1)=spectrum1
-       maxy=max(spectrum1)
-       miny=min(spectrum1)
+       maxy=max(spectrum1(1:*))
+       miny=min(spectrum1(1:*))
        if (file2 ne '') then begin
 	   readf,2,spectrum2
            spec2(*,i-1)=spectrum2
-           if (max(spectrum2) gt maxy) then maxy=max(spectrum2)
-           if (min(spectrum2) lt miny) then miny=min(spectrum2)
+           if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
+           if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        endif
-       plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
-       if (file2 ne '') then oplot,k,spectrum2,col=122
-       wait,.1
+       if (last eq 0) then begin
+         plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
+         if (file2 ne '') then oplot,k,spectrum2,col=122
+         wait,.1
+       endif
        i=i+1
     endwhile
-close,1
+    if (last eq 1) then begin
+      plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
+      if (file2 ne '') then oplot,k,spectrum2,col=122
+    endif
+    close,1
 close,2
 
 
