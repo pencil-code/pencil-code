@@ -3,13 +3,15 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.80 2003-09-03 17:04:25 dobler Exp $
+# $Id: getconf.csh,v 1.81 2003-09-03 17:30:48 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
 #  other setup needed by both start.csh and run.csh.
 
 set debug = 1
+# set verbose
+# set echo
 
 # Set up PATH for people who don't include $PENCIL_HOME/bin by default
 if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
@@ -217,7 +219,7 @@ else if ($hn == hwwsr8k) then
   setenv SSH rsh 
   setenv SCP rcp
 
-else if ($hn == hwwsx5) then
+else if ($hn =~ hwwsx5*) then
   echo "NEC-SX5 in Stuttgart"
   set mpirun = mpiexec
   set mpirunops = ''
