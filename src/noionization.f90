@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.36 2003-07-12 21:12:49 theine Exp $
+! $Id: noionization.f90,v 1.37 2003-08-01 22:01:38 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -72,7 +72,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.36 2003-07-12 21:12:49 theine Exp $")
+           "$Id: noionization.f90,v 1.37 2003-08-01 22:01:38 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -226,7 +226,7 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics_penc(f,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_penc(f,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -243,7 +243,7 @@ module Ionization
       use Density, only:cs20,lnrho0,gamma
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yHout
       real, dimension (nx) :: TT,lnrho,ss
       logical :: ldummy
 !
@@ -265,7 +265,7 @@ module Ionization
         if (present(ee))       ee=cs2/(gamma1*gamma)
       endif
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yH0
+      if (present(yHout)) yHout=yH0
 !
     endsubroutine thermodynamics_penc
 !***********************************************************************

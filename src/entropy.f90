@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.178 2003-07-22 07:03:19 brandenb Exp $
+! $Id: entropy.f90,v 1.179 2003-08-01 22:01:38 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.178 2003-07-22 07:03:19 brandenb Exp $")
+           "$Id: entropy.f90,v 1.179 2003-08-01 22:01:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -327,8 +327,9 @@ module Entropy
       endselect
 !
 !  if ss_const/=0, add this constant to entropy
+!  (ss_const is already taken care of)
 !
-      if (ss_const/=0) f(:,:,:,ient)=f(:,:,:,ient)+ss_const
+!     if (ss_const/=0) f(:,:,:,ient)=f(:,:,:,ient)+ss_const
 !
 !  no entropy initialization when lgravr=.true.
 !  why?
@@ -587,7 +588,7 @@ module Entropy
 !
       ss=f(l1:l2,m,n,ient)
 !      call ionset(f,ss,lnrho,yH,TT)
-      call thermodynamics(f,TT1=TT1,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
+      call thermodynamics(f,TT1=TT1,cs2=cs2,cp1tilde=cp1tilde,ee=ee,yHout=yH)
 !?? does this option make sense?
 !       call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee)
 !     endif
@@ -661,7 +662,7 @@ module Entropy
         if(i_ethtot/=0) then
           call integrate_mn_name(rho*ee,i_ethtot)
         endif
-        if(i_TTm/=0) call sum_mn_name(TT,i_TTm)
+        if(i_TTm/=0) call sum_mn_name(1./TT1,i_TTm)
         if(i_yHm/=0) call sum_mn_name(yH,i_yHm)
         if(i_ssm/=0) call sum_mn_name(ss,i_ssm)
         if(i_ugradpm/=0) then
