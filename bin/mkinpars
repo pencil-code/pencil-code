@@ -1,0 +1,5 @@
+#!/bin/csh
+
+## Generate start.in and run.in if necessary
+if (! -e start.in) mkdotin --start src/Makefile src/Makefile.local
+if (! -e run.in  ) mkdotin --run   src/Makefile src/Makefile.local

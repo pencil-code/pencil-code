@@ -1,0 +1,175 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@";     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   mkstartrun
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   06-Jul-2002
+# CVS: $Id: mkdotin,v 1.1 2002-07-07 21:25:38 dobler Exp $
+# Description:
+#   Given a set of files (normally Makefile and Makefile.local), scan
+#   through all lines of the type
+#     MAGNETIC=magnetic
+#   and construct the files ./start.in, ./run.in (if they don't exist as
+#   yet) corresponding to the moduels which are used and those which are
+#   not used.
+
+# ---------------------------------------------------------------------- #
+# Modules that have startup parameters (order as in read_inipars):
+my @startlist =
+    qw{HYDRO DENSITY         GRAVITY ENTROPY MAGNETIC PSCALAR SHEAR};
+# Modules that have runtime parameters (order as in read_runpars):
+my @runlist =
+    qw{HYDRO DENSITY FORCING GRAVITY ENTROPY MAGNETIC PSCALAR SHEAR};
+# Short names (`nicknames') that are used with suffices _{init,run}_pars:
+my %nick = ( # MODULE_NAME => nickname
+	     GRAVITY => 'grav'
+	   );
+my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
+my ($startfile,$runfile) = ("start.in", "run.in");
+# ---------------------------------------------------------------------- #
+
+use strict;
+use Getopt::Long;
+# Allow for `-Plp' as equivalent to `-P lp' etc:
+Getopt::Long::config("bundling");
+
+my ($line,$MOD,$label,$header,$file,@list,$stage);
+my (%modules);
+my $dollar='$';			# keep CVS from expanding some strings
+my (%opts);     # Variables written by GetOptions
+
+(my $cmdname = $0) =~ s{.*/}{};
+my $usage =
+"Usage:  $cmdname <file1> [<file2> [..]]\n
+Given a set of files (normally Makefile and Makefile.local), scan
+through all lines of the type
+  MAGNETIC=magnetic
+and construct the files ./start.in, ./run.in (if they don't exist as
+yet) corresponding to the moduels which are used and those which are
+not used.
+E.g.
+  $cmdname src/Makefile src/Makefile.local
+";
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+               -s   --start
+               -r   --run
+               -v   --version     ));
+if ($opts{'h'} || $opts{'help'}) { die $usage; }
+if ($opts{'v'} || $opts{'version'}) {
+    my $rev = '$Revision: 1.1 $';
+    my $date = '$Date: 2002-07-07 21:25:38 $';
+    $rev =~ s/${dollar}Revision:\s*(\S+).*/$1/;
+    $date =~ s/${dollar}Date:\s*(\S+).*/$1/;
+    die "$cmdname version $rev ($date)\n";
+}
+
+## For start.in:
+my $startheader = <<"ESTART";
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='${dollar}Id:${dollar}',
+/
+ESTART
+
+## For run.in:
+my $runheader = <<"ERUN";
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='${dollar}Id:${dollar}',
+  nt=10,
+/
+ERUN
+
+if ($opts{'s'} || $opts{'start'}) {
+    $file   = $startfile;
+    $header = $startheader;
+    @list   = @startlist;
+    $stage  = 'init';
+} elsif ($opts{'r'} || $opts{'run'}) {
+    $file   = $runfile;
+    $header = $runheader;
+    @list   = @runlist;
+    $stage  = 'run';
+} else {
+    die "You need to specify `-s|--start' or `-r|--run'.\n"
+}
+
+# Cycle through files (later files will overwrite effect of earlier files)
+foreach my $infile (@ARGV) {
+    open(INPUT,"< $infile") || die "Can't open $infile for reading";
+    # Cycle through lines in file
+  file: while (defined($line=<INPUT>)) {
+	# Only definitions of Make variables are interesting:
+	next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier/);
+	# cycle through module lists and extract entries
+	foreach $MOD (@list) {
+	    if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
+		$modules{$MOD} = $1;
+	    }
+	}
+    }
+}
+
+# use Data::Dumper;
+# print Dumper(\%modules);
+
+## Write the file
+write_file($file,$header,\@list,\%modules,"init");
+
+
+# ---------------------------------------------------------------------- #
+sub write_file {
+    # Given the arguments ($filename,$header,\@modlist,\%modules,$stage)
+    # write the corresponding file, backing up if necessary.
+
+    my $fname   = shift;
+    my $header  = shift;
+    my $modlist = shift;
+    my $modules = shift;
+    my $stage   = shift;
+
+    if (-e $fname) {
+	if (-e "$fname.bak") {
+	    warn "Not backing up $fname twice\n";
+	} else {
+	    rename("$fname","$fname.bak")
+	}
+    }
+    open (FILE,"> $fname") or die "Can't open $fname";
+    print FILE $header;
+    #
+    foreach $MOD (@$modlist) {
+	if ($$modules{$MOD} !~ /^no/){
+	    # get nickname if it exists
+	    $label = "\L$MOD" unless defined($label=$nick{$MOD});
+	    print FILE "&", "$label", "_${stage}_pars\n/\n";
+	}
+    }
+
+}
+# ---------------------------------------------------------------------- #
+
+# End of file mkcparam
