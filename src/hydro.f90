@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.69 2002-10-06 14:52:55 brandenb Exp $
+! $Id: hydro.f90,v 1.70 2002-10-07 07:53:19 dobler Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.69 2002-10-06 14:52:55 brandenb Exp $")
+           "$Id: hydro.f90,v 1.70 2002-10-07 07:53:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -255,6 +255,7 @@ module Hydro
       use Cdata
       use Mpicomm, only: stop_it
       use Sub
+      use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
@@ -289,7 +290,7 @@ module Hydro
 !
 !  calculate rate of strain tensor
 !
-      if (lentropy.or.ivisc=='nu-const') then
+      if (lentropy .or. (ivisc=='nu-const')) then
         do j=1,3
           do i=1,3
             sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
@@ -326,7 +327,7 @@ module Hydro
 !
 !  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
 !
-      if(ldensity) call grad(f,ilnrho,glnrho)
+      if(ldensity .or. (ivisc=='nu-const')) call grad(f,ilnrho,glnrho)
 !
 !  viscosity operator
 !  rho1 is pre-calculated in equ
@@ -356,17 +357,16 @@ module Hydro
           murho1=(nu*rho0)*rho1  !(=mu/rho)
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3
-            fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
+            fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
           enddo
           maxdiffus=amax1(maxdiffus,murho1)
 
-        case('nu-const', '2')
+        case('nu-const')
           !
           !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
           !  -- the correct expression for nu=const
           !
           if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=nu-visc'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
