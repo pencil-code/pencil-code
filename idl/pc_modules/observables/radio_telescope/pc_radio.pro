@@ -220,8 +220,8 @@ endelse
 
 if (HPBW gt 0.) then begin
   for nl=0,n_elements(lambdas)-1 do begin
-    Q[*,*,nl]=pc_radio_beamsmooth(Q[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_scale)
-    U[*,*,nl]=pc_radio_beamsmooth(U[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_scale)
+    Q[*,*,nl]=pc_radio_beamsmooth(Q[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
+    U[*,*,nl]=pc_radio_beamsmooth(U[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
   endfor
 endif
 
