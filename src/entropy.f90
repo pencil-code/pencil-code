@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.271 2004-02-20 21:08:23 theine Exp $
+! $Id: entropy.f90,v 1.272 2004-02-21 16:19:05 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.271 2004-02-20 21:08:23 theine Exp $")
+           "$Id: entropy.f90,v 1.272 2004-02-21 16:19:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -646,7 +646,7 @@ module Entropy
       real, intent(in) :: ss_const
       real :: cs2,cp1tilde,lnrho,lnrho_m
 
-      if (lgravz==.false.) then
+      if (.not. lgravz) then
         call stop_it("hydrostatic_isentropic: currently only works with vertical gravity")
       endif
       !
