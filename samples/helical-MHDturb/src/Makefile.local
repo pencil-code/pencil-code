@@ -4,7 +4,7 @@
 ###
 
 LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
+LDMPI=
 MPICOMM=nompicomm
 GLOBAL=global_rr
 GRAVITY=nograv

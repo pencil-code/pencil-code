@@ -6,8 +6,9 @@
 ##PBS -l ncpus=32,mem=16gb,walltime=200:00:00
 #PBS -l ncpus=4
 #PBS -q p-long
-#PBS -l nodes=nq0+nq1+nq2+nq3
+#PBS -l nodes=nq0+nq4+nq2+nq3
 
+#setenv PGHPF_HOST -file=$PBS_NODEFILE
 if ($?PBS_NODEFILE) then
   setenv PGHPF_HOST -file=$PBS_NODEFILE
 endif
@@ -28,6 +29,7 @@ rm -f STOP RELOAD fort.20
 date
 #
 echo "$mpirun $mpirunops $npops src/run.x"
+echo $mpirun $mpirunops $npops src/run.x >>run.log
 time $mpirun $mpirunops $npops src/run.x
 #
 date
