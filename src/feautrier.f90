@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.8 2003-04-02 17:28:45 brandenb Exp $
+! $Id: feautrier.f90,v 1.9 2003-04-03 12:23:31 theine Exp $
 
 module Radiation
 
@@ -54,7 +54,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.8 2003-04-02 17:28:45 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.9 2003-04-03 12:23:31 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -108,6 +108,7 @@ module Radiation
       real, dimension(nz) :: kaprho,tau,Srad_,Prad_
       real, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
+      logical :: err=.false.
 !
       do lrad=l1,l2
       do mrad=m1,m2
@@ -128,7 +129,11 @@ module Radiation
                      +2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
          c(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
 !
-         call tridag(a,b,c,Srad_,Prad_)
+         call tridag(a,b,c,Srad_,Prad_,err=err)
+         if (err) then
+            print*,'tau=',tau
+            stop
+         endif
 !
          feautrier(lrad,mrad,n1:n2)=Prad_
          !print*,'Prad',Prad_
