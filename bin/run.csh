@@ -36,7 +36,8 @@ rm -f STOP RELOAD fort.20
 date
 #
 echo "$mpirun $mpirunops $npops src/run.x"
-echo $mpirun $mpirunops $npops src/run.x >>run_command.log
+touch run_command.log  # make sure it exists so we can append on any system
+echo $mpirun $mpirunops $npops src/run.x >> run_command.log
 time $mpirun $mpirunops $npops src/run.x
 #
 date
