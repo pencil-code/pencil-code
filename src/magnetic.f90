@@ -5,8 +5,8 @@ module Magnetic
   implicit none
 
   integer :: iaa
-  real :: fring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
-  real :: fring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
+  real :: fring1,Iring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
+  real :: fring2,Iring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
 
   contains
 
@@ -43,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-01 19:57:05 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-05-02 12:47:51 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -66,7 +66,7 @@ module Magnetic
       real, dimension (mx,my,mz)      :: tmp,xx,yy,zz,xx1,yy1,zz1
       real, dimension(3) :: axis,shift
       real    :: phi,theta,ct,st,cp,sp
-      real    :: ampl,fring,R0,width
+      real    :: ampl,fring,Iring,R0,width
       integer :: init,i
 !
       f(:,:,:,iax:iaz) = 0.
@@ -83,13 +83,15 @@ module Magnetic
         print*, '--TODO: make this depend on init or introduce init_magnet'
         do i=1,2
           if (i==1) then
-            fring = fring1
-            R0    = Rring1
-            width = wr1
-            axis  = (/nr1x,nr1y,nr1z/)
-            shift = (/r1x,r1y,r1z/)
+            fring = fring1      ! magnetic flux along ring
+            Iring = Iring1      ! current along ring (for twisted flux tube)
+            R0    = Rring1      ! radius of ring
+            width = wr1         ! ring thickness
+            axis  = (/nr1x,nr1y,nr1z/) ! orientation
+            shift = (/r1x,r1y,r1z/)    ! position
           else
             fring = fring2
+            Iring = Iring2
             R0    = Rring2
             width = wr2
             axis  = (/nr2x,nr2y,nr2z/)
