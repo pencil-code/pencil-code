@@ -5,18 +5,13 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.143 2002-12-06 14:30:00 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.144 2002-12-11 15:56:12 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
 %     latex manual; makeindex -s dotted.idxsty manual; makeindex -s dotted.idxsty manual.vidx -o manual.vind; makeindex -s dotted.idxsty manual.fidx -o manual.find; latex manual
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
 %
-%     \name:    Name of a program, object, etc.
-%                   \name{object}
-%               will put `Object' (capitalized) into the index;
-%                   \name[Subject]{object}
-%               will put `Subject' into the index;
 %     \code:    A fragment of code:
 %                   use the line \code{call remove\_file()}
 %     \kbd:     Keyboard input:
@@ -25,6 +20,17 @@
 %                   press \key{F1} of \key{C-h}
 %     \samp:    Sample input (?)
 %                   \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+%     \url:     A url:
+%                   \url{http://www.nowhere.net/second_page.html}
+%     \email:   An email address:
+%                   \email{nobody@nowhere.nil}
+%
+% The following will also be automatically indexed:
+%     \name:    Name of a program, object, etc.
+%                   \name{object}
+%               will put `Object' (capitalized) into the index;
+%                   \name[Subject]{object}
+%               will put `Subject' into the index;
 %     \var:     A variable:
 %                   is determined by \var{ivisc}
 %     \env:     An environment variable:
@@ -44,11 +50,6 @@
 %                   obfuscated to be misunderstood 
 %     \acronym: An acronym (hardly ever used here):
 %                   should we call the code \acronym{PROMPT}?
-%     \url:     A url:
-%                   \url{http://www.nowhere.net/second_page.html}
-%     \email:   An email address:
-%                   \email{nobody@nowhere.nil}
-%
 
 \ifx\pdfoutput\undefined        % not running pdflatex
   \documentclass[12pt,twoside,notitlepage,a4paper]{article}
@@ -257,7 +258,9 @@
 \newcommand{\bcks}{\texttt{\symbol{92}}}
 \newcommand{\bs}{\bcks}       % Save us creation of a couple of fonts
 
+% ---------------------------------------------------------------------- %
 %% Maths operators
+
 % \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
 % \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
 \newcommand{\atanh} {\mathop{\rm atanh}\nolimits}
@@ -278,51 +281,48 @@
 \newcommand{\const}   {\mbox{\rm const}}
 
 %% Maths variables
+
+%% Vectors
 \newcommand{\Av}            {\vekt{A}}
 % \newcommand{\av}            {\vekt{a}}
-
 \newcommand{\Bv}            {\vekt{B}}
 % \newcommand{\bv}            {\vekt{b}}
-
-\newcommand{\Cool}          {{\cal C}}
-\newcommand{\cs}            {c_{\rm s}}
-\newcommand{\csnull}        {c_{{\rm s},0}}
-
+\newcommand{\ev}            {\vekt{e}}
 % \newcommand{\Ev}            {\vekt{E}}
-% \newcommand{\ev}            {\vekt{e}}
 % \newcommand{\ex}            {\ev_{x}}
 % \newcommand{\ey}            {\ev_{y}}
 % \newcommand{\ez}            {\ev_{z}}
-
 \newcommand{\Fv}            {\vekt{F}}
-
-\newcommand{\gv}            {\vekt{g}}
-
-\newcommand{\Heat}          {{\cal H}}
-\newcommand{\Heavi}         {\theta}
-
-\newcommand{\jv}            {\vekt{j}}
-
-\newcommand{\ev}            {\vekt{e}}
 \newcommand{\fv}            {\vekt{f}}
+\newcommand{\gv}            {\vekt{g}}
+\newcommand{\jv}            {\vekt{j}}
 \newcommand{\kv}            {\vekt{k}}
-
+\newcommand{\uv}            {\vekt{u}}
+\newcommand{\xv}            {\vekt{x}}
+\newcommand{\zerovect}      {\vekt{0}}
 \newcommand{\omv}           {\boldsymbol{\omega}}
 
+% Reynolds numbers
 \newcommand{\Ra}            {\mathrm{Ra}}
 \newcommand{\Reynolds}      {\mathrm{Re}}
 \newcommand{\Rm}            {\mathrm{Rm}}
 
+% Heating and Cooling
+\newcommand{\Heat}          {{\cal H}}
+\newcommand{\Heavi}         {\theta}
+\newcommand{\Cool}          {{\cal C}}
+
+% Sound Speed
+\newcommand{\cs}            {c_{\rm s}}
+\newcommand{\csnull}        {c_{{\rm s},0}}
+
+% Strain Tensor
 \newcommand{\Strain}        {\boldsymbol{\mathsf{S}}}
 
-\newcommand{\uv}            {\vekt{u}}
 
 % \newcommand{\Vol}           {{\cal V}}
+% Alfven Speed
 \newcommand{\vA}            {v_{\rm A}}
-
-\newcommand{\xv}            {\vekt{x}}
-
-\newcommand{\zerovect}      {\vekt{0}}
 
 \newcommand{\bra}[1]{\langle #1\rangle}
 \newcommand{\Eq}[1]{Eq.~(\ref{#1})}
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2002-12-06 14:30:00 $ $,~ $ $Revision: 1.143 $ $}
+\date{$ $Date: 2002-12-11 15:56:12 $ $,~ $ $Revision: 1.144 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2002-12-06 14:30:00 $ $,~ $ $Revision: 1.143 $ $}
+  \emph{$ $Date: 2002-12-11 15:56:12 $ $,~ $ $Revision: 1.144 $ $}
 
   \vspace{\stretch{3}}
 
@@ -900,7 +900,7 @@ complete successfully, and you can return to the run directory,
 
 \subsubsection{Choosing a data directory}
 
-The code will write data like snapshot files to the subdirectory
+The code will by default write data like snapshot files to the subdirectory
 \file[data/]{data} of the run directory.
 Since this will involve a large volume of IO-operations (at least for
 large grid sizes), one will normally try to avoid writing the data via
@@ -920,6 +920,15 @@ do the following
 Even if you don't have an NFS-mounted directory (say, on your notebook
 computer), it is probably still a good idea to have code and data well
 separated by a scheme like the one described above.
+
+An alternative to symbolic links, is to provide a file called 
+\file{datadir.in} in the root of the run directory.  This file
+should contain one line of text specifying the absolute or relative data 
+directory path to use.  This facility is useful if one wishes to switch
+one run directory between different data directories.  It is suggested
+that in such cases symbolic links are again made in the run directory
+to the various locations, then the \file{datadir.in} need
+contain only a short relative path.
 
 
 \subsubsection{Running the code}
@@ -1167,10 +1176,11 @@ classes (like \file[spher/]{spher} for spherical calculations, or
 \file[kinematic/]{kinematic} for kinematic dynamo simulations).
 The current list of classes in our own \file{pencil-runs} repository is
 \begin{verbatim}
-  1d-tests/     2d-tests/     OLD/
-  buoy_tube/    convstar/     disc/         discont/
-  forced/       kinematic/    pass_only/    radiation/
-  rings/        slab_conv/
+  1d-tests/   disc/          kinematic/  rings/
+  2d-tests/   discont/       Misc/       slab_conv/ 
+  3d-tests/   discussion/    OLD/        test/
+  buoy_tube/  forced/        pass_only/
+  convstar/   interstellar/  radiation/
 \end{verbatim}
 The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic);
@@ -1187,10 +1197,10 @@ have changed names or other input convections.}
 
 The subdirectory \file[src/]{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
-\file{cparam.local}), together with links to
+\file{cparam.local}). To compile the sample links to
 all the \file[*.f90]{.f90} and \file[*.c]{.c} files and the \file{Makefile} in the top
-\file[src/]{src} directory (these links are set up by the script
-\cmd{setup-src}).
+\file[src/]{src} directory must be created.  These links are set up by the script
+\cmd{setup-src}) when used in a the root of run directory.
 
 General-purpose visualization routines for \name{IDL} or \name{DX} are in the
 directories \file[idl/]{idl} and \file[dx/]{dx}, respectively.
@@ -1260,17 +1270,17 @@ choose certain \name{modules}\footnote{%
 hydrodynamics, forcing, etc.\ should be invoked.
 For example, the settings for forced turbulent MHD simulations are
 \begin{verbatim}
-  HYDRO    =   hydro
-  DENSITY  =   density
-  ENTROPY  = noentropy
-  MAGNETIC =   magnetic
-  GRAVITY  = nograv
-  FORCING  =   forcing
+  HYDRO     =   hydro
+  DENSITY   =   density
+  ENTROPY   = noentropy
+  MAGNETIC  =   magnetic
+  GRAVITY   = nograv
+  FORCING   =   forcing
     
-  MPICOMM  = nompicomm
-  GLOBAL   = noglobal
-  IO       =   io_dist
-  FFT      = nofft
+  MPICOMM   = nompicomm
+  GLOBAL    = noglobal
+  IO        =   io_dist
+  FFT       = nofft
 \end{verbatim}
 This file will be processed by \name{make} and the settings are thus
 assignments of \name{make} variables.
@@ -1419,6 +1429,11 @@ Each of the directories can contain the following files:
 \item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
   two-dimensional sections of variable $X$, where $X$ stands for the
   corresponding variable. The current list includes
+\item[\file{interstallar.dat}] ASCII file containing the time at which the
+  next Supernova event will occur.  Like \file{seed.dat}, for 
+  multi-processor runs the files 
+  \file[interstellar.dat]{proc$N$/interstellar.dat} must contain the same 
+  numbers.
 \begin{verbatim}
   bx.xy  bx.xz  by.xy  by.xz  bz.xy  bz.xz  divu.xy  lnrho.xz
   ss.xz  ux.xy  ux.xz  uz.xy  uz.xz
@@ -1578,6 +1593,14 @@ Here is a list of the more important ones.
   the global directory.
   To be started in the background before \file{run.x} is invoked.
   Used by \file{start.csh} and \file{run.csh} on network connected processors.
+\item[cleanf95] Can be use to clean up the output from the Intel x86 Fortran
+  95 compiler (ifc).
+\item[copy-proc-to-proc]
+\item[copy-snapshots]
+\item[copy-var-to-var]
+\item[copy-VAR-to-var] Used to restart a run from a particular snapshot 
+  \file{VAR$N$}. Copies a specified snapshot \file{VAR$N$} to \file{var.dat}
+  where $N$ and the target run directory are given on the command line.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
@@ -1585,18 +1608,30 @@ Here is a list of the more important ones.
   \file{data/index.pro} for subsequent processing in
   \name{IDL} on another machine. This is particularly useful if collaborators
   want to check each others runs.
+\item[dx_*] These script perform several data collection or reformatting 
+  excercises required to read particular files into \name{DX}.  They are
+  called internally by some of the \name{DX} macros in the 
+  \file[dx/macros/]{dx/macros/} directory.
 \item[getconf.csh] See \S~\ref{start-run-getconf}
 \item[gpgrowth] Plot simple time evolution with Gnuplot's ASCII graphics
   for fast orientation via a slow modem line.
 \item[local] Materialize a symbolic link
 \item[mkcparam] Based on \file{Makefile} and \file{Makefile.local},
   generate \file[cparam.inc]{src/cparam.inc}, which specifies the number
-  \var{mvar} of fundamental variables.
-  Called by the \file{Makefile}.
+  \var{mvar} of fundamental variables, and \var{maux} of auxilliary 
+  variables. Called by the \file{Makefile}.
 \item[mkdotin] Generate minimal \file{start.in}, \file{run.in} files
   based on \file{Makefile} and \file{Makefile.local}.
 \item[mkinpars] Wrapper around \item{mkdotin} --- needs proper
   documentation.
+\item[mkproc-tree] Generates a multi-processor(\file{proc$N$}/), directory 
+  structure. Useful when copying data files in a processor tree, 
+  such as slice files.
+\item[mkwww] Generates a template HTML file for describing a run of the code,
+  showing input parameters and results.
+\item[move-slice] Moves all the slice files from a processor tree structure,
+  \file[proc$N$]{proc$N$/}, to a new target tree creating directories where
+  necessary.
 \item[new] Generates a new run directory from an old one. The new one contains
   a copy of the old \file{*.local} files, runs \cmd{setup-src}, and
   makes also a copy of the old \file{*.in} and \file{k.dat} files.
@@ -1605,16 +1640,30 @@ Here is a list of the more important ones.
   \name{IDL} structure.
   Generates an \name{IDL} file that can be sourced from \file{start.pro}
   or \file{run.pro}.
+\item[pacx-adapt-makefile] Version of adapt-makefile for highly 
+  distributed runs using PACX MPI.
+\item[read_videofiles.csh] The script for running read_videofiles.x.
+\item[remote-top] Create a file \file{top.log} in the relevant 
+  \file[proc$N$]{proc$N$/} directory containing the output of \code{top}
+  for the appropriate processor. Used in batch scripts for 
+  multi-processor runs.
 \item[run.csh] The script for producing restart files with the initial
   condition; see \S~\ref{start-run-getconf}
+\item[scpdatadir] Make a tarball of data directory, \file[data/]{data/} and 
+  use \code{scp} to secure copy to copy it to the specified destination.
 \item[setup-src] Link \file{start.csh}, \file{run.csh} and
   \file{getconf.csh} from \file[bin/]{\$PENCIL_HOME/bin}.
   Generate \file{src/} if necessary and link the source code files from
   \file[src/]{\$PENCIL_HOME/src} to that directory.
 \item[start.csh] The script for initializing the code; see
   \S~\ref{start-run-getconf}
+\item[summarize-history] Evaluate \file{params.log} and print a history 
+  of changes.
+\item[tst.csh] Execute \code{start.csh} and \code{run.csh} placing any output
+  into a file called \code{.TEST.{`\it timestr}`}.
 \item[timestr] Generate a unique time string that can be appended to file
-  names from shell scripts through the backtick mechanism
+  names from shell scripts through the backtick mechanism.
+\item[tsnap] Extract time information from a snapshot file, \file{VAR$N$}.
 \item[x] Check the execution of the current run: prints legend and the last
  few lines of the \file{time_series.dat} file. It also appends this result to a file
  called \file{SPEED}, which contains also the current wall clock time, so
@@ -1744,12 +1793,11 @@ The run parameters for \file{samples/helical-MHDturb} are
 \begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
-    nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=20, itorder=3,
-    dsnap=50., dvid=0.5,
+    nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
+    dsnap=50, dvid=0.5,
     random_gen='nr_f90'
   /
   &hydro_run_pars
-    nu=5e-3, ivisc='nu-const',
   /
   &density_run_pars
   /
@@ -1758,7 +1806,10 @@ The run parameters for \file{samples/helical-MHDturb} are
   /
   &magnetic_run_pars
     eta=5e-3,
-  / 
+  /
+  &viscosity_run_pars
+    nu=5e-3
+  /
 \end{alltt}
 Here we run for \var{nt}$=10$ timesteps, every second step, we write a
 line of diagnostic output; we require the time step to keep the advective
@@ -1800,6 +1851,7 @@ which should not exceed a certain value which can be problem-dependent.
 Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
 Similarly there exist mesh Peclet and mesh magnetic Reynolds numbers that
 should not be too small.
+%ajwm - not sure what to write here about the shock viscosity
 
 % ---------------------------------------------------------------------- %
 
@@ -1807,7 +1859,8 @@ should not be too small.
 \label{time-step}
 
 The time step is normally specified as Courant time step through the
-coefficients \var{cdt} ($c_{\delta t}$) and \var{cdtv} ($c_{\delta t,{\rm v}}$).
+coefficients \var{cdt} ($c_{\delta t}$), \var{cdtv} ($c_{\delta t,{\rm v}}$)
+and \var{cdts} ($c_{\delta t,{\rm s}}$).
 The resulting Courant step is given by
 \begin{equation}
   \delta t
@@ -1815,8 +1868,11 @@ The resulting Courant step is given by
                     {U_{\rm max}} ,
                c_{\delta t,{\rm v}}
                \frac{\delta x_{\rm min}^2}
-                    {D_{\rm max}}
-        \right) \; ,
+                    {D_{\rm max}},
+               c_{\delta t,{\rm s}}
+               \frac{1}
+                    {H_{\rm max}}
+         \right) \; ,
 \end{equation}
 where
 \begin{equation}
@@ -1827,14 +1883,17 @@ where
                       + \sqrt{\cs^2{+}\vA^2}\right) \; ,
 \end{equation}
 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
-and
 \begin{equation} \label{Dmax}
   D_{\rm max} = \max(\nu,\gamma\chi,\eta) ,
 \end{equation}
 where
 $\nu$ denotes kinematic viscosity,
 $\chi = K/(c_p\varrho)$ thermal
-diffusivity and $\eta$ the magnetic diffusivity.
+diffusivity and $\eta$ the magnetic diffusivity;
+and
+\begin{equation} \label{Hmax}
+  H_{\rm max} = \max(\frac{2\nu\Strain^2+\nu_{\rm shock}\zeta(\Div\uv)^2}{c_vT}) ,
+\end{equation}
 
 To fix the time step $\delta t$ to a value independent of velocities and
 diffusivities, explicitly set the run parameter \var{dt}, rather than
@@ -2209,8 +2268,13 @@ basic message is to watch out for such effects and to try varying
 
 The equations solved by the Pencil Code are basically the standard
 compressible MHD equations. However, the modular structure allows
-some variations of the MHD equations, as well as switching
-some of the equations off (nomagnetic, noentropy, etc.).
+some variations of the MHD equations, as well as switching off
+some of the equations or individual terms of the equation (nomagnetic, 
+noentropy, etc.).
+
+In this section the equations are presented in their most complete form.
+It may be expected that the code can evolve most subsets or 
+simplifications of these equations.
 
 % ---------------------------------------------------------------------- %
 
@@ -2245,44 +2309,50 @@ where the squared sound speed is given by
 and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
 
 The equation of motion is accordingly
-\begin{equation}
+\begin{eqnarray}
   \frac{D\uv}{Dt}
-   =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
+   =& &-\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
       - \grad\Phi_{\rm grav}
-      + \frac{\jv\times\Bv}{\varrho}
-      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + 2\Strain\cdot\grad\ln\varrho\right) \; .
-\end{equation}
+      + \frac{\jv\times\Bv}{\varrho}  \nonumber \\
+    & &+ \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
+      + 2\Strain\cdot\grad\ln\varrho\right) + \zeta\left(\Div\uv\right); 
+\end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
-the magnetic flux density, $\nu$ is kinematic viscosity, and
+the magnetic flux density, $\nu$ is kinematic viscosity,
 \begin{equation} \label{Eq-S-traceless}
   {\mathsf S}_{ij} = \frac{1}{2}\left({\partial u_i\over\partial x_j}
                  + {\partial u_j\over\partial x_i}
                  -\frac{2}{3} \delta_{ij}\Div\uv\right)
 \end{equation}
-is the traceless rate-of-strain tensor.
+is the traceless rate-of-strain tensor and $\zeta$ describes some bulk
+viscosity.
 
-If \code{ivisc='nu-const'}, it is assumed that 
-$\nu = \const$ everywhere.
-
-If \code{ivisc='rho_nu-const'}, it is assumed that 
-$\mu \equiv \varrho\nu = \const$ everywhere; in that
-case the input parameter \var{nu} is used to give the value of
-$\mu/\varrho_0$ (\var{rho0} is another input parameter).
-The term involving the
-rate-of-strain tensor does not appear in the equation,
-and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
-
-If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
-viscous term is used.
-This viscous operator is not physically consistent (linear and angular
-momentum conservation is violated for compressible media), but for weakly
-compressible flows (Mach numbers less than 10\%), there is little
-difference to the full one.
-In practice, one may decide to use the simplified viscous operator
-during the initial relaxation phase of a long run, provided this
-is not already part of a production run.
+The interpretation of the two viscosity terms varies greatly depending upon 
+the Viscosity module used, and indeed on the parameters given to the module.
+See \S??????.
+%ajwm - move this elsewhere? See section...
+%ajwm - and add description of shock viscosity
+%If \code{ivisc='nu-const'}, it is assumed that 
+%$\nu = \const$ everywhere.
+%
+%If \code{ivisc='rho_nu-const'}, it is assumed that 
+%$\mu \equiv \varrho\nu = \const$ everywhere; in that
+%case the input parameter \var{nu} is used to give the value of
+%$\mu/\varrho_0$ (\var{rho0} is another input parameter).
+%The term involving the
+%rate-of-strain tensor does not appear in the equation,
+%and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
+%
+%If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
+%viscous term is used.
+%This viscous operator is not physically consistent (linear and angular
+%momentum conservation is violated for compressible media), but for weakly
+%compressible flows (Mach numbers less than 10\%), there is little
+%difference to the full one.
+%In practice, one may decide to use the simplified viscous operator
+%during the initial relaxation phase of a long run, provided this
+%is not already part of a production run.
 
 
 
@@ -2328,13 +2398,14 @@ The equation solved is
    =  \Heat - \Cool
       + \Div(K\grad T)
       + \eta\mu_0 \jv^2
-      + 2\varrho\nu\Strain^2 \; .
+      + 2\varrho\nu\Strain^2 + \zeta\left(\Div\uv\right)^2\; .
 \end{equation}
 
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
-$K$ is the radiative (thermal) conductivity, and
-$\Strain$ is the traceless rate-of-strain tensor.
+$K$ is the radiative (thermal) conductivity, 
+$\Strain$ is the traceless rate-of-strain tensor and $\zeta$ describes
+some bulk viscosity.
 
 The heat conduction term can be written in the form
 \begin{eqnarray}
@@ -2348,7 +2419,7 @@ The heat conduction term can be written in the form
       \Bigr] \\
 %
   &=&
-  \chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \\
+  \chi \left[ \gamma\Laplace s/c_p + (\gamma{-}1)\Laplace\ln\varrho \right] \nonumber\\
   & &   + \chi \left[ \gamma\grad s/c_p
                       + (\gamma{-}1)\grad\ln\varrho \right]
           \cdot\left[ \gamma\left(\grad s/c_p + \grad\ln\varrho\right)
@@ -2393,28 +2464,33 @@ times.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Shock viscosity}
+\subsection{Bulk viscosity}
 
+For a ???? gas it can be shown that the bilk viscosity vanishes.  Here
+the bulk viscosity is for numerical purposes only.
+
+\subsubsection{Shock Viscosity}
 Shock viscosity proportional to positive flow convergence, maximum over
 five zones, and smoothed to second order,
 \begin{equation}
-\zeta=\left<\max_5[(-\Div\uv)_+]\right>.
+\zeta_{\rm shock}=\left<\max_5[(-\Div\uv)_+]\right>.
 \end{equation}
 Assume that the shock viscosity only enters as a bulk viscosity,
 \begin{equation}
-\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\zeta\delta_{ij}\nab\cdot\uv
+\vekt{\tau}_{ij}=2\varrho\nu{\sf S}_{ij}+\varrho\nu_{\rm shock}\zeta_{\rm shock}\delta_{ij}\nab\cdot\uv
 \end{equation}
 Assume $\nu=\mbox{const}$, but $\zeta\neq\mbox{const}$, so
 \begin{equation}
 \varrho^{-1}\vekt{F}_{\rm visc}=
 \nu\left(\Laplace\uv+\frac{1}{3}\grad\Div\uv+2\Strain\cdot\grad\ln\varrho\right)
-+\zeta\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta\right)\Div\uv\right].
++\nu_{\rm shock}\zeta\left[\grad\Div\uv+\left(\grad\ln\varrho+\grad\ln\zeta_{\rm shock}\right)\Div\uv\right].
 \end{equation}
 and
 \begin{equation}
-\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\zeta(\Div\uv)^2
+\varrho^{-1}\Gamma_{\rm visc}=2\nu\Strain^2+\nu_{\rm shock}\zeta(\Div\uv)^2
 \end{equation}
-
+where $\nu_{\rm shock}$ is simply a constant defining the strength of the 
+shock viscosity.
 % ====================================================================== %
 
 \section{Adapting the code}
@@ -4567,7 +4643,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.143 2002-12-06 14:30:00 dobler Exp $ $}
+$ $Id: manual.tex,v 1.144 2002-12-11 15:56:12 mee Exp $ $}
 
 
 \end{document}
