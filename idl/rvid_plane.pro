@@ -3,9 +3,10 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
-               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential
+               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential, $
+               contourplot=contourplot
 ;
-; $Id: rvid_plane.pro,v 1.14 2004-09-23 11:17:14 mee Exp $
+; $Id: rvid_plane.pro,v 1.15 2005-03-30 19:16:39 mee Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -293,8 +294,11 @@ end else begin
       ;
       ;  show image scaled between amin and amax and filling whole screen
       ;
-      tv,bytscl(plane2,min=amin,max=amax),iplane
-      ;contourfill,plane2,lev=grange(amin,amax,60)
+      if keyword_set(contourplot) then begin
+        contourfill,plane2,lev=grange(amin,amax,60)
+      endif else begin
+        tv,bytscl(plane2,min=amin,max=amax),iplane
+      endelse
       ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
       ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
