@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.5 2004-09-29 11:01:45 ajohan Exp $
+# CVS: $Id: copy-snapshots_exp,v 1.6 2004-09-30 13:18:48 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -137,6 +137,7 @@ else
           echo " copy-snapshots: Move successful (exit status 0)"
         else
           echo " copy-snapshots: Could not move file (exit status 1)"
+          echo " copy-snapshots: Will not attempt to move file again"
         endif
         set i=`expr $i + 1`
       end
