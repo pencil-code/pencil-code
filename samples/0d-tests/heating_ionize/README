@@ -1,0 +1,11 @@
+$Id: README,v 1.1 2003-08-02 07:28:07 brandenb Exp $
+
+In this test we solve an ODE with the Pencil Code (hence 0-D).
+
+    rho T ds/dt = heat_uniform
+
+We have variable degree of hydrogen ionization, but Helium stays neutral.
+Our units are [rho]=1e-6 g/cm^3, [u]=km/s, [x]=Mm, [T]=K.
+
+idl.png shows the resulting temperature as a function of thermal energy.
+This result is plotted using plot_result.csh
