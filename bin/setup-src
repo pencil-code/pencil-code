@@ -2,7 +2,13 @@
 ###                       lnsrc
 ###                      -------
 ###  Link files into a local src directory
+###  Also link files from the bin directory ==> should be renamed
 
+ln -s ../../bin/start.csh .
+ln -s ../../bin/run.csh .
+ln -s ../../bin/getconf.csh .
+
+## src subdirectory
 if (-d ./src) then
   echo "src already exists"
 else
