@@ -97,9 +97,9 @@ module Grid
 !
 !  The following is correct for periodic and non-periodic case
 !
-      xi1lo=0; xi1up=nxgrid-merge(0,1,lperi(1))
-      xi2lo=0; xi2up=nygrid-merge(0,1,lperi(2))
-      xi3lo=0; xi3up=nzgrid-merge(0,1,lperi(3))
+      xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
+      xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
+      xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
 !
 !  Construct nonequidistant grid
 !
