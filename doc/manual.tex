@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.236 2004-03-17 18:24:55 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.237 2004-03-18 15:59:58 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -42,6 +42,8 @@
 %               Like \name, \file accepts an optional argument that will
 %               override the index entry:
 %                   \file[var.dat]{data/var.dat}
+%     \File     Same formatting as \file, but generates no index entry
+%               (useful for section headings to avoid weird header lines)
 %     \command,
 %     \cmd:     A command line:
 %                   use \command{rm -f *} at your own risk
@@ -240,6 +242,9 @@
   \else\index[file]{#1@\texttt{#1}}%
   \fi%
 }
+\newcommand{\File}[2][]{%
+  `\texttt{#2}'%
+}
 \newcommand{\name}[2][]{%
   \def\index@{#1}%
   \textsl{#2\/}%
@@ -349,7 +354,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}
+%\date{$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +389,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}\\
+  \emph{$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3901,8 +3906,10 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \appendix
 % ====================================================================== %
 
+\part{Appendix}
+
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-18 15:59:58 $ $,~ $ $Revision: 1.237 $ $}
 
 \section{Timings}
 
@@ -5413,7 +5420,8 @@ modules.
 \section{Startup and Run-Time Parameters}
 \label{S-all-parameters}
 
-\subsection{List of startup parameters for \file{start.in}}
+\subsection[Startup parameters for \File{start.in}]%
+{List of startup parameters for \file{start.in}}
 \label{S-all-init-params}
 
 The following table lists all (at the time of writing, September 2002)
@@ -5830,7 +5838,8 @@ double precision, $\varepsilon\approx10^{-15}$.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\subsection{List of runtime parameters for \file{run.in}}
+\subsection[Runtime parameters for \File{run.in}]%
+{List of runtime parameters for \file{run.in}}
 \label{S-all-run-params}
 
 The following table lists all (at the time of writing, September 2002)
@@ -6250,7 +6259,8 @@ the latest set of parameters, you need to look at the code.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\subsection{List of parameters for \file{print.in}}
+\subsection[Parameters for \File{print.in}]%
+{List of parameters for \file{print.in}}
 \label{S-print.in-params}
 
 The following table lists all (at the time of writing, September 2002)
@@ -6308,13 +6318,13 @@ possible inputs to the file \file{print.in}.
 \midrule
   \var{rhom}    & $\left<\varrho\right>$ \\
   \var{ekin}    & $\left<{1\over2}\varrho\uv^2\right>$ \\
-  \var{ekintot} & $\int_V{1\over2}\varrho\uv^2\, dv$ \\
+  \var{ekintot} & $\int_V{1\over2}\varrho\uv^2\, dV$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
   \var{eth} & $\left<\varrho e\right>$ \\
-  \var{ethtot} & $\int_V\varrho e\,dv$ \\
+  \var{ethtot} & $\int_V\varrho e\,dV$ \\
   \var{ssm} & $\left<s/c_p\right>$ \\
 %
 \midrule
@@ -6358,7 +6368,8 @@ possible inputs to the file \file{print.in}.
 
 
 
-\subsection{List of parameters for \file{video.in}}\
+\subsection[Parameters for \File{video.in}]%
+{List of parameters for \file{video.in}}\
 \label{S-video.in-params}
 
 The following table lists all (at the time of writing, March 2004)
@@ -6452,7 +6463,8 @@ possible inputs to the file \file{video.in}.
 
 
 
-\subsection{List of parameters for \file{phiaver.in}}\
+\subsection[Parameters for \File{phiaver.in}]%
+{List of parameters for \file{phiaver.in}}\
 \label{S-phiaver.in-params}
 
 The following table lists all (at the time of writing, November 2003)
@@ -6805,7 +6817,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.236 2004-03-17 18:24:55 dobler Exp $ $}
+$ $Id: manual.tex,v 1.237 2004-03-18 15:59:58 dobler Exp $ $}
 
 
 \end{document}
