@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.2 2004-09-14 11:36:49 ajohan Exp $
+! $Id: grav_x.f90,v 1.3 2004-09-16 14:52:49 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -13,7 +13,8 @@ module Gravity
 
 !  Gravity in the x-direction
 
-  use cparam
+  use Cdata
+  use Cparam
 
   implicit none
 
@@ -37,7 +38,7 @@ module Gravity
   real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10
   character (len=labellen) :: grav_profile='const'
-  logical :: lgravx_gas=.true.,lgravx_dust=.true.,lnumerical_equilibrium=.false.
+  logical :: lnumerical_equilibrium=.false.
 
   namelist /grav_init_pars/ &
        grav_profile,gravx,xgrav,dgravx,pot_ratio,kx_gg,ky_gg,kz_gg
@@ -73,12 +74,12 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.2 2004-09-14 11:36:49 ajohan Exp $")
+           "$Id: grav_x.f90,v 1.3 2004-09-16 14:52:49 ajohan Exp $")
 !
-      lgrav = .true.
-      lgravx = .true.
-      lgravz = .false.
-      lgravr = .false.
+      lgrav =.true.
+      lgravx=.true.
+      lgravx_gas =.true.
+      lgravx_dust=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************

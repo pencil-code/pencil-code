@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.62 2004-09-14 11:34:07 ajohan Exp $
+! $Id: grav_z.f90,v 1.63 2004-09-16 14:52:49 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -15,7 +15,8 @@ module Gravity
 !  (The full star geometry is currently in grav_r, but it may well
 !  be possible to migrate it in here.)
 
-  use cparam
+  use Cdata
+  use Cparam
 
   implicit none
 
@@ -29,13 +30,14 @@ module Gravity
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
+  real, dimension(nx) :: gravz_pencil
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
-  logical :: lgravz_dust=.true.,lgravz_gas=.true.,lnumerical_equilibrium=.false.
+  logical :: lnumerical_equilibrium=.false.
 
   real, parameter :: g_A_cgs=4.4e-9
   real, parameter :: g_C_cgs=1.7e-9
@@ -102,11 +104,12 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.62 2004-09-14 11:34:07 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.63 2004-09-16 14:52:49 ajohan Exp $")
 !
-      lgrav = .true.
-      lgravz = .true.
-      lgravr = .false.
+      lgrav =.true.
+      lgravz=.true.
+      lgravz_gas =.true.
+      lgravz_dust=.true.
 !
     endsubroutine register_gravity
 !***********************************************************************
@@ -156,7 +159,7 @@ module Gravity
 ! 28-jun-02/axel: added 'linear' gravity profile
 ! 28-jul-02/axel: added 'const_zero' gravity profile
 !  1-jun-03/axel: dust velocity added
-!  3-dec-03/anders: removed dust gravity to duud_dt_grav
+! 16-sep-04/anders: added 'sinusoidal' + pencilised gravity force 
 !
       use Cdata
       use Sub
@@ -171,9 +174,9 @@ module Gravity
 !
       intent(in) :: f
 !
-!  Gravity on the gas
+!  Gravity on the gas and on the dust
 !
-      if (lhydro .and. lgravz_gas) then
+      if (lhydro .or. ldustdensity) then
 !
 !  Different gravity profiles
 !
@@ -181,15 +184,18 @@ module Gravity
 
         case('const')       !  Constant gravity acceleration
           if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) +gravz
+          gravz_pencil = gravz
         case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
           if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
           if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-          if (z(n)<=zgrav) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
+          if (z(n)<=zgrav) gravz_pencil = gravz
         case('linear')      !  Linear gravity profile (for accretion discs)
           nu_epicycle2=nu_epicycle**2
           if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
+          gravz_pencil = -nu_epicycle2*z(n)
+        case('sinusoidal')
+          if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravz=',gravz
+          gravz_pencil = -gravz*sin(kz_gg*z(n))
         case('Ferriere')
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
@@ -209,34 +215,18 @@ module Gravity
 
       endif
 !
-!  Gravity on the dust
+!  Add gravity on dust and gas
 !
+      if (lhydro .and. lgravz_gas) df(l1:l2,m,n,iuz) = &
+          df(l1:l2,m,n,iuz) + gravz_pencil
       if (ldustvelocity .and. lgravz_dust) then
         do k=1,ndustspec
-!
-!  Different gravity profiles
-!
-          select case (grav_profile)
-
-          case('const')
-            if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
-            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + gravz
-          case('linear')
-            nu_epicycle2=nu_epicycle**2
-            if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))-nu_epicycle2*z(n)
-          case('sinusoidal')
-            if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravz=',gravz
-            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) - &
-                gravz*sin(kz_gg*z(n))
-          case default
-            call stop_it('duu_dt_grav: No such gravity profile')
-
-          endselect
+          df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + gravz_pencil
         enddo
       endif
 !
       if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)
+!        
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)

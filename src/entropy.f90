@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.326 2004-09-12 09:49:34 brandenb Exp $
+! $Id: entropy.f90,v 1.327 2004-09-16 14:52:49 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.326 2004-09-12 09:49:34 brandenb Exp $")
+           "$Id: entropy.f90,v 1.327 2004-09-16 14:52:49 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1606,13 +1606,13 @@ module Entropy
           ! For vertical geometry, we only need to calculate this for each
           ! new value of z -> speedup by about 8% at 32x32x64
           if (z_mn(1) /= z_prev) then
-            call heatcond(x_mn,y_mn,z_mn,hcond)
-            call gradloghcond(x_mn,y_mn,z_mn, glhc)
+            call heatcond(hcond)
+            call gradloghcond(glhc)
             z_prev = z_mn(1)
           endif
         else
-          call heatcond(x_mn,y_mn,z_mn,hcond)        ! returns hcond=hcond0
-          call gradloghcond(x_mn,y_mn,z_mn, glhc)    ! returns glhc=0
+          call heatcond(hcond)       ! returns hcond=hcond0
+          call gradloghcond(glhc)    ! returns glhc=0
         endif
         call del2(f,ilnrho,del2lnrho)
         chix = rho1*hcond
@@ -1923,7 +1923,7 @@ module Entropy
 !
     endsubroutine rprint_entropy
 !***********************************************************************
-    subroutine heatcond(x,y,z,hcond)
+    subroutine heatcond(hcond)
 !
 !  calculate the heat conductivity hcond along a pencil.
 !  This is an attempt to remove explicit reference to hcond[0-2] from
@@ -1934,17 +1934,15 @@ module Entropy
 !  23-jan-2002/wolf: coded
 !  18-sep-2002/axel: added lmultilayer switch
 !
-      use Cdata, only: nx,lgravz
       use Sub, only: step
       use Gravity
 !
-      real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
 !
       if (lgravz) then
         if (lmultilayer) then
-          hcond = 1 + (hcond1-1)*step(z,z1,-widthss) &
-                    + (hcond2-1)*step(z,z2,widthss)
+          hcond = 1 + (hcond1-1)*step(z_mn,z1,-widthss) &
+                    + (hcond2-1)*step(z_mn,z2,widthss)
           hcond = hcond0*hcond
         else
           hcond=Kbot
@@ -1953,32 +1951,28 @@ module Entropy
         hcond = hcond0
       endif
 !
-      if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine heatcond
 !***********************************************************************
-    subroutine gradloghcond(x,y,z,glhc)
+    subroutine gradloghcond(glhc)
 !
 !  calculate grad(log hcond), where hcond is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz
       use Sub, only: der_step
       use Gravity
 !
-      real, dimension (nx) :: x,y,z
       real, dimension (nx,3) :: glhc
 !
       if (lgravz) then
         glhc(:,1:2) = 0.
-        glhc(:,3) = (hcond1-1)*der_step(z,z1,-widthss) &
-                    + (hcond2-1)*der_step(z,z2,widthss)
+        glhc(:,3) = (hcond1-1)*der_step(z_mn,z1,-widthss) &
+                    + (hcond2-1)*der_step(z_mn,z2,widthss)
         glhc(:,3) = hcond0*glhc(:,3)
       else
         glhc = 0.
       endif
 !
-      if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine gradloghcond
 !***********************************************************************
 endmodule Entropy
