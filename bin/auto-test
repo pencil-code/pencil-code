@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.38 2003-08-29 14:36:32 dobler Exp $
+# CVS: $Id: auto-test,v 1.39 2003-08-29 19:20:25 mee Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -41,7 +41,8 @@ $ntests=0;
 # Test the following subdirs of samples/ :
 my @sampdir = qw( conv-slab conv-slab-flat
                   helical-MHDturb interlocked-fluxrings mdwarf
-                  dust-vortex 0d-tests/heating_ionize 1d-tests/sod_10);
+                  interstellar 0d-tests/heating_ionize 1d-tests/sod_10
+                  dust-vortex );
 # Test the following subdirs of runs/ :
 my @runsdir = qw( forced/hydro1 radiation/solar1d4);
 # ---------------------------------------------------------------------- #
@@ -97,7 +98,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.38 2003-08-29 14:36:32 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.39 2003-08-29 19:20:25 mee Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
