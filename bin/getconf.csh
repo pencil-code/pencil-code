@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.138 2004-11-11 17:14:00 dobler Exp $
+# $Id: getconf.csh,v 1.139 2004-11-11 23:10:34 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -111,6 +111,9 @@ set mpirunops2 = ''  # options after -np $ncpus
 set masterhost = ''
 if ($?PBS_O_HOST) then
   if ($PBS_O_HOST =~ obelix*) set masterhost = 'obelix'
+endif
+if ($?SGE_O_HOST) then
+  if ($SGE_O_HOST =~ obelix*) set masterhost = 'obelix'
 endif
 if ($?PBS_JOBID) then
   if ($PBS_JOBID =~ *.obelix*) set masterhost = 'obelix'
