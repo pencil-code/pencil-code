@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.4 2005-01-23 15:35:03 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.5 2005-01-24 12:12:59 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -150,7 +150,12 @@ endfor
 if ( (max(ipar0_tot) ne 1) or (min(ipar0_tot) ne 1)) then begin
   print, 'Warning: Some particles not found at all or found more'
   print, 'than once in snapshot files.'
-  print, 'Integrated mask=', ipar0_tot
+  print, 'Particle number---No. of occurences'
+  for i=0,npar-1 do begin
+    if (ipar0_tot[i] ne 1) then begin
+      print, i, ipar0_tot[i]
+    endif
+  endfor
 endif
 ;
 ;  Put in to object.
