@@ -3,7 +3,7 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.5 2003-09-03 15:48:05 dobler Exp $
+# $Id: remote-top,v 1.6 2004-02-05 23:31:51 dobler Exp $
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 
@@ -35,6 +35,7 @@ if ($debug) then
   echo "nodelist = $nodelist"
 endif
 
+date
 while (1)
   set i=0
   foreach node ($nodelist)
