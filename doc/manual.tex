@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.177 2003-06-27 06:44:08 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.178 2003-06-27 06:52:12 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}
+\date{$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}
+  \emph{$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2630,19 +2630,18 @@ shock viscosity.
 
 \subsection{Ionization}
 
-We treat the gas as a composition of partially ionized hydrogen and neutral
+We treat the gas as being composed of partially ionized hydrogen and neutral
 helium. These are four different particle species, each of which regarded as
 a perfect gas.
 
 The ionization fraction $y$, which gives the ratio of ionized hydrogen to the
-total amount of hydrogen $n_{\rm H}$, is obtained from the Saha equation,
-which in this case may be written as
-
-\[
+total amount of hydrogen $n_{\rm H}$, is obtained from the Saha equation
+which, in this case, may be written as
+\begin{equation}
 \frac{y^2}{1-y}=\frac{1}{n_{\rm H}}
 \left(\frac{m_{\rm e}k_{\rm B}T}{2\pi\hbar^2}\right)^{3/2}
 \exp\left(-\frac{\chi_{\rm H}}{k_{\rm B}T}\right)\ .
-\]
+\end{equation}
 
 The temperature $T$ cannot be obtained directly from the Pencil Code's
 independent variables $\ln\rho$ and $s$, but is itself dependent on $y$.
@@ -2650,13 +2649,12 @@ Hence, the calculation of $y$ essentially becomes a root finding problem.
 
 The entropy of a perfect gas consisting of particles of type $i$ is known from
 the Sackur-Tetrode equation
-
-\[
+\begin{equation}
 S_i=k_{\rm B}N_i\left(\ln\left[\frac{1}{n_{\rm tot}}
                                \left(\frac{m_ik_{\rm B}T}
                                      {2\pi\hbar^2}\right)^{3/2}\right]
                       +\frac{5}{2}\right)\ .
-\]
+\end{equation}
 
 Here $N_i$ is the number of particles of a single species and $n_{\rm tot}$
 is the total number density of all particle species.
@@ -2669,12 +2667,12 @@ which may be solved for $T$.
 For given $\ln\rho$ and $s$ we are then able to calculate the ionization
 fraction $y$ by finding the root of
 
-\[
+\begin{equation}
 f(y)=\ln\left[\frac{1-y}{y^2}\frac{1}{n_{\rm H}}
               \left(\frac{m_{\rm e}k_{\rm B}T(y)}
                     {2\pi\hbar^2}\right)^{3/2}\right]
      -\frac{\chi_{\rm H}}{k_{\rm B}T(y)}\ .
-\]
+\end{equation}
 
 In the ionized case, several thermodynamic quantities of the gas become
 dependent on the ionization fraction $y$ such its as pressure
@@ -3130,7 +3128,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-27 06:52:12 $ $,~ $ $Revision: 1.178 $ $}}}
 
 \section{Timings}
 
@@ -4090,27 +4088,27 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
 \label{S-Ioni}
 
 The specific entropy of each particle species (neutral Hydrogen, electrons, protons and neutral Helium) may be written as
-\[
+\begin{equation}
 \frac{s_i}{s_0}=x_i\left(\ln\left[\frac{1}{x_{\rm tot}}
 \frac{\rho_i}{\rho}\left(\frac{T}{T_0}\right)^{3/2}\right]
 +\frac{5}{2}\right)\ ,
-\]
+\end{equation}
 where
-\[
+\begin{equation}
 x_{\rm H}=1-y\ ,\quad x_{\rm e}=x_{\rm p}=y\ ,\quad x_{\rm tot}=1+y+x_{\rm He}
-\]
-\[
+\end{equation}
+\begin{equation}
 s_0=\frac{k_{\rm B}}{\mu m_{\rm H}}\ ,\quad
 T_0=\frac{\chi_{\rm H}}{k_{\rm B}}\ ,
-\]
+\end{equation}
 and
-\[
+\begin{equation}
 \rho_i=\mu m_{\rm H}\left(\frac{m_i\chi_{\rm H}}{2\pi\hbar^2}\right)^{3/2}\ .
-\]
+\end{equation}
 The specific entropy of mixing is
-\[
+\begin{equation}
 \frac{s_{\rm mix}}{s_0}=-\sum_ix_i\ln\frac{x_i}{x_{\rm tot}}\ .
-\]
+\end{equation}
 Summing up everything, we get the total specific entropy 
 \begin{align}
 \frac{s}{s_0}&=\sum_i\frac{s_i}{s_0}+\frac{s_{\rm mix}}{s_0}
@@ -4121,61 +4119,62 @@ Summing up everything, we get the total specific entropy
 \left(\frac{T}{T_0}\right)^{3/2}\right]+\frac{5}{2}\right)\ .
 \end{align}
 Solving for $T$ gives
-\[
+\begin{equation}
 \frac{3}{2}\ln\frac{T}{T_0}=\frac{s/s_0
 +\sum_ix_i\ln x_i/\rho_i}{x_{\rm tot}}
 +\ln\rho-\frac{5}{2}\ .
-\]
+\end{equation}
 Using this expression and the constants defined above, we may obtain the
 ionization fraction $y$ for given $\ln\rho$ and $s$ by finding the root of
-\[
+\begin{equation}
 F=\ln\left[\frac{\rho_{\rm e}}{\rho}\left(\frac{T}{T_0}\right)^{3/2}
            \frac{1-y}{y^2}\right]-\frac{T_0}{T}\ .
-\]
+\end{equation}
 The derivative with respect to $y$ for Newton-Raphson is
-\[
+\begin{equation}
 \frac{\partial F}{\partial y}
 =\left(\frac{3}{2}+\frac{T_0}{T}\right)\frac{\partial\ln T/T_0}{\partial y}
  -\frac{1}{1-y}-\frac{2}{y}\ ,
-\]
+\end{equation}
 where
-\[
+\begin{equation}
 \frac{\partial\ln T/T_0}{\partial y}
 =\frac{\frac{2}{3}\left(\ln\rho_{\rm H}/\rho_{\rm p}-F-T_0/T\right)-1}
       {1+y+x_{\rm He}}\ .
-\]
-In order to compute the pressure gradient, the derivative of $y$ with respect
-to $\ln\rho$ and $s$ needs to be known.
-\[
+\end{equation}
+In order to compute the pressure gradient in the momentum equation,
+the derivative of $y$ with respect
+to $\ln\rho$ and $s$ needs to be known:
+\begin{equation}
 \frac{\partial\ln P}{\partial\ln\rho}
 =\frac{1}{1+y+x_{\rm He}}\frac{\partial y}{\partial\ln\rho}
 +\frac{\partial\ln T}{\partial\ln\rho}
-+\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial\ln\rho}+1
-\]
-\[
++\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial\ln\rho}+1,
+\end{equation}
+\begin{equation}
 \frac{\partial\ln P}{\partial s}
 =\frac{1}{1+y+x_{\rm He}}\frac{\partial y}{\partial s}
 +\frac{\partial\ln T}{\partial s}
-+\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial s}
-\]
++\frac{\partial\ln T}{\partial y}\frac{\partial y}{\partial s}.
+\end{equation}
 Since $F=0$ for all desired solutions $(y,\ln\rho,s)$ we also have
-\[
+\begin{equation}
 dF=\left(\frac{\partial F}{\partial\ln\rho}\right)_{s,y}\!\delta\ln\rho
    +\left(\frac{\partial F}{\partial s}\right)_{\rho,y}\!\delta s
    +\left(\frac{\partial F}{\partial y}\right)_{\rho,s}\!\delta y=0\ ,
-\]
+\end{equation}
 and thus
-\[
+\begin{equation}
 \frac{\partial y}{\partial\ln\rho}
 =\left(\frac{\delta y}{\delta\ln\rho}\right)_{\delta s=0}
 =-\frac{(\partial F/\partial\ln\rho)_{s,y}}{(\partial F/\partial y)_{\rho,s}}
-\]
+\end{equation}
 and
-\[
+\begin{equation}
 \frac{\partial y}{\partial s}
 =\left(\frac{\delta y}{\delta s}\right)_{\delta\ln\rho=0}
-=-\frac{(\partial F/\partial s)_{\rho,y}}{(\partial F/\partial y)_{\rho,s}}
-\]
+=-\frac{(\partial F/\partial s)_{\rho,y}}{(\partial F/\partial y)_{\rho,s}}.
+\end{equation}
 
 % --------------------------------------------------------------------- %
 
@@ -5372,7 +5371,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.177 2003-06-27 06:44:08 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.178 2003-06-27 06:52:12 brandenb Exp $ $}
 
 
 \end{document}
