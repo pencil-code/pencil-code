@@ -1,14 +1,12 @@
-! $Id: hydro.f90,v 1.95 2003-07-21 00:48:32 brandenb Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $
 
-
-!  This module takes care of everything related to velocity
+!  This module solve the momentum equation for relativistic force-free MHD
+!  dS/dt = curlB x B +  curlE x E + divE E
+!  where E = (BxS)/B^2
 
 module Hydro
 
-!  Note that Omega is already defined in cdata.
-
   use Cparam
-!ajwm  use Cdata, only: nu,ivisc
   use Density
   use Viscosity  
 
@@ -85,7 +83,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.95 2003-07-21 00:48:32 brandenb Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -297,16 +295,12 @@ module Hydro
 !     if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
+    subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij)
 !
-!  velocity evolution
-!  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
-!  pressure gradient force added in density and entropy modules.
+!  dS/dt = curlB x B +  curlE x E + divE E
+!  where E = (BxS)/B^2
 !
-!   7-jun-02/axel: incoporated from subroutine pde
-!  10-jun-02/axel+mattias: added Coriolis force
-!  23-jun-02/axel: glnrho and fvisc are now calculated in here
-!  17-jun-03/ulf:  ux2, uy2 and uz2 added as diagnostic quantities
+!  21-jul-03/axel: coded
 !
       use Cdata
       use Sub
@@ -314,19 +308,20 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,ugu,oo,glnrho
-      real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2
-      real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
-      real :: c2,s2
-      integer :: i,j
+      real, dimension (nx,3,3) :: Bij,uij
+      real, dimension (nx,3) :: uu,SS,BB,CC,EE,divS,curlS,curlB,del2A,curlE
+      real, dimension (nx,3) :: SgB,BgS,BdivS,CxB,curlBxB,curlExE,divEE
+      real, dimension (nx,3) :: glnrho,oo
+      real, dimension (nx) :: u2,B2,B21,divE,ou,o2,sij2,rho1
+      real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
+      real :: c2=1,B2min=1e-12
 !
       intent(in) :: f,rho1
-      intent(out) :: df,uu,glnrho,divu,u2
+      intent(out) :: df,uu,glnrho,u2,uij
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE duu_dt'
+      if (headtt.or.ldebug) print*,'SOLVE duu_dt (ffreeMHDrel)'
       if (headtt) then
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
@@ -338,71 +333,14 @@ module Hydro
       uu=f(l1:l2,m,n,iux:iuz)
       call dot2_mn(uu,u2)
 !
-!  calculate velocity gradient matrix
-!
-      if (lroot .and. ip < 5) &
-           print*,'call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
-      call gij(f,iuu,uij)
-      divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
-!
-!  calculate rate of strain tensor
-!
-      if (lneed_sij) then
-        do j=1,3
-          do i=1,3
-            sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
-          enddo
-          sij(:,j,j)=sij(:,j,j)-.333333*divu
-        enddo
-      endif
-!
-!  advection term
-!
-      if (ldebug) print*,'call multmv_mn(uij,uu,ugu)'
-      call multmv_mn(uij,uu,ugu)
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
-!
-!  Coriolis force, -2*Omega x u
-!  Omega=(-sin_theta, 0, cos_theta)
-!  theta corresponds to latitude
-!
-      if (Omega/=0.) then
-        if (theta==0) then
-          if (headtt) print*,'add Coriolis force; Omega=',Omega
-          c2=2*Omega
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)
-        else
-          if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
-          c2=2*Omega*cos(theta*pi/180.)
-          s2=2*Omega*sin(theta*pi/180.)
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)+s2*uu(:,3)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           -s2*uu(:,2)
-        endif
-      endif
-!
-!  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
-!
-      if(lneed_glnrho) call grad(f,ilnrho,glnrho)
-!
 ! calculate viscous force
 !
-      if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1)
+!     if (lviscosity) call calc_viscous_force(f,df,glnrho,divS,rho1)
 !
 !  maximum squared avection speed
 !
       if (headtt.or.ldebug) print*,'hydro: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
-      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
-!
-!  damp motions in some regions for some time spans if desired
-!
-      if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
-!
-!  add the possibility of removing a mean flow in the y-direction
-!
-      if (tau_damp_ruxm/=0.) call damp_ruxm(f,df)
-      if (tau_damp_ruym/=0.) call damp_ruym(f,df)
+      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2+c2)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
@@ -414,7 +352,7 @@ module Hydro
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
-        if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
+        if (i_divu2m/=0) call sum_mn_name(divS**2,i_divu2m)
         if (i_ux2m/=0) then
            ux2 = uu(:,1)*uu(:,1)
            call sum_mn_name(ux2,i_ux2m)
@@ -431,9 +369,8 @@ module Hydro
 !  mean heating term
 !
         if (i_epsK/=0) then
-          rho=exp(f(l1:l2,m,n,ilnrho))
           call multm2_mn(sij,sij2)
-          call sum_mn_name(2*nu*rho*sij2,i_epsK)
+          call sum_mn_name(sij2,i_epsK)
         endif
 !
 !  this doesn't need to be as frequent (check later)
@@ -450,17 +387,16 @@ module Hydro
         !
         !  mean momenta
         !
-        if (i_ruxm+i_ruym+i_ruzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
-        if (i_ruxm/=0) then; ux=uu(:,1); call sum_mn_name(rho*ux,i_ruxm); endif
-        if (i_ruym/=0) then; uy=uu(:,2); call sum_mn_name(rho*uy,i_ruym); endif
-        if (i_ruzm/=0) then; uz=uu(:,3); call sum_mn_name(rho*uz,i_ruzm); endif
+        if (i_ruxm/=0) then; ux=uu(:,1); call sum_mn_name(ux,i_ruxm); endif
+        if (i_ruym/=0) then; uy=uu(:,2); call sum_mn_name(uy,i_ruym); endif
+        if (i_ruzm/=0) then; uz=uu(:,3); call sum_mn_name(uz,i_ruzm); endif
         !
         !  things related to vorticity
         !
         if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0) then
-          oo(:,1)=uij(:,3,2)-uij(:,2,3)
-          oo(:,2)=uij(:,1,3)-uij(:,3,1)
-          oo(:,3)=uij(:,2,1)-uij(:,1,2)
+          oo(:,1)=Sij(:,3,2)-Sij(:,2,3)
+          oo(:,2)=Sij(:,1,3)-Sij(:,3,1)
+          oo(:,3)=Sij(:,2,1)-Sij(:,1,2)
           !
           if (i_oum/=0) then
             call dot_mn(oo,uu,ou)
@@ -476,138 +412,12 @@ module Hydro
         endif
       endif
 !
+!  make sure compiler doesn't complain, so need to set them
+!
+      uij=0.
+      glnrho=0.
+!
     endsubroutine duu_dt
-!***********************************************************************
-    subroutine damp_ruxm(f,df)
-!
-!  Damps mean x momentum, ruxm, to zero.
-!  This can be useful in situations where a mean flow is generated.
-!  This tends to be the case when there is linear shear but no rotation
-!  and the turbulence is forced. A constant drift velocity in the
-!  x-direction is most dangerous, because it leads to a linear increase
-!  of <uy> due to the shear term. If there is rotation, the epicyclic
-!  motion brings one always back to no mean flow on the average.
-!
-!  20-aug-02/axel: adapted from damp_ruym
-!   7-sep-02/axel: corrected mpireduce_sum (was mpireduce_max)
-!   1-oct-02/axel: turned into correction of momentum rather than velocity
-!
-      use Cdata
-      use Mpicomm
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: rho,ux
-      real, dimension(1) :: fsum_tmp,fsum
-      real :: tau_damp_ruxm1
-      real, save :: ruxm=0.,rux_sum=0.
-!
-!  at the beginning of each timestep we calculate ruxm
-!  using the sum of rho*ux over all meshpoints, rux_sum,
-!  that was calculated at the end of the previous step.
-!  This result is only known on the root processor and
-!  needs to be broadcasted.
-!
-      if(lfirstpoint) then
-        fsum_tmp(1)=rux_sum
-        call mpireduce_sum(fsum_tmp,fsum,1)
-        if(lroot) ruxm=fsum(1)/(nw*ncpus)
-        call mpibcast_real(ruxm,1)
-      endif
-!
-      ux=f(l1:l2,m,n,iux)
-      rho=exp(f(l1:l2,m,n,ilnrho))
-      call sum_mn(rho*ux,rux_sum)
-      tau_damp_ruxm1=1./tau_damp_ruxm
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_ruxm1*ruxm/rho
-!
-    endsubroutine damp_ruxm
-!***********************************************************************
-    subroutine damp_ruym(f,df)
-!
-!  Damps mean y momentum, ruym, to zero.
-!  This can be useful in situations where a mean flow is generated.
-!
-!  18-aug-02/axel: coded
-!   1-oct-02/axel: turned into correction of momentum rather than velocity
-!
-      use Cdata
-      use Mpicomm
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: rho,uy
-      real, dimension(1) :: fsum_tmp,fsum
-      real :: tau_damp_ruym1
-      real, save :: ruym=0.,ruy_sum=0.
-!
-!  at the beginning of each timestep we calculate ruym
-!  using the sum of rho*uy over all meshpoints, ruy_sum,
-!  that was calculated at the end of the previous step.
-!  This result is only known on the root processor and
-!  needs to be broadcasted.
-!
-      if(lfirstpoint) then
-        fsum_tmp(1)=ruy_sum
-        call mpireduce_sum(fsum_tmp,fsum,1)
-        if(lroot) ruym=fsum(1)/(nw*ncpus)
-        call mpibcast_real(ruym,1)
-      endif
-!
-      uy=f(l1:l2,m,n,iuy)
-      rho=exp(f(l1:l2,m,n,ilnrho))
-      call sum_mn(rho*uy,ruy_sum)
-      tau_damp_ruym1=1./tau_damp_ruym
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_ruym1*ruym/rho
-!
-    endsubroutine damp_ruym
-!***********************************************************************
-    subroutine udamping(f,df)
-!
-!  damping terms (artificial, but sometimes useful):
-!
-      use Cdata
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: pdamp
-      integer :: i
-!  
-!  warn about the damping term
-!
-        if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
-          print*, 'Damping velocities until time ', tdamp
-        endif
-!
-!  1. damp motion during time interval 0<t<tdamp.
-!  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
-!
-        if ((dampu .ne. 0.) .and. (t < tdamp)) then
-          ! damp motion provided t<tdamp
-          if (dampu > 0) then
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                    - dampu*f(l1:l2,m,n,iux:iuz)
-          else 
-            if (dt > 0) then    ! dt known and good
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      + dampu/dt*f(l1:l2,m,n,iux:iuz)
-            endif
-          endif
-        endif
-!
-!  2. damp motions for r_mn>1
-!
-        if (lgravr) then
-          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
-          do i=iux,iuz
-            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-          enddo
-        endif
-!
-    endsubroutine udamping
 !***********************************************************************
     subroutine rprint_hydro(lreset)
 !

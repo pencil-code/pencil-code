@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.7 2003-06-16 09:19:22 nilshau Exp $
+! $Id: dustvelocity.f90,v 1.8 2003-07-21 00:48:32 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.7 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: dustvelocity.f90,v 1.8 2003-07-21 00:48:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -133,8 +133,7 @@ module Dustvelocity
 
       endselect
 !
-      if (ip==1) print*,'Ignore these:', &
-           minval(yy),maxval(zz) !(keep compiler from complaining)
+      if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uud
 !***********************************************************************
     subroutine duud_dt(f,df,uu,uud,divud,ud2,udij)

@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.10 2003-06-16 04:41:10 brandenb Exp $
+! $Id: nodensity.f90,v 1.11 2003-07-21 00:48:32 brandenb Exp $
 
 module Density
 
@@ -15,7 +15,7 @@ module Density
   namelist /density_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_eth=0,i_ekin=0,i_rhom=0
+  integer :: i_ekin=0,i_rhom=0,i_ekintot=0
 
   contains
 
@@ -41,7 +41,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.10 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: nodensity.f90,v 1.11 2003-07-21 00:48:32 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -108,18 +108,38 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_eth=0;i_ekin=0;i_rhom=0
+        i_ekin=0; i_rhom=0; i_ekintot=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_eth=',i_eth
+      write(3,*) 'i_ekintot=',i_ekintot
       write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname
       write(3,*) 'ilnrho=',ilnrho
 !
     endsubroutine rprint_density
+!***********************************************************************
+    subroutine bc_lnrho_temp_z(f,topbot)
+!
+!  dummy routine
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,f,topbot
+    endsubroutine bc_lnrho_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_pressure_z(f,topbot)
+!
+!  dummy routine
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,f,topbot
+    endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
 
 endmodule Density

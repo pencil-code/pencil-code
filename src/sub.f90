@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.123 2003-07-10 13:43:47 dobler Exp $ 
+! $Id: sub.f90,v 1.124 2003-07-21 00:48:32 brandenb Exp $ 
 
 module Sub 
 
@@ -399,7 +399,7 @@ module Sub
 !***********************************************************************
     subroutine dot_mn_add(a,b,c)
 !
-!  dot product
+!  dot product, add to previous value
 !  11-nov-02/axel: adapted from dot_mn
 !
       use Cdata
@@ -413,6 +413,23 @@ module Sub
       c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
 !
     endsubroutine dot_mn_add
+!***********************************************************************
+    subroutine dot_mn_sub(a,b,c)
+!
+!  dot product, subtract from previous value
+!  21-jul-03/axel: adapted from dot_mn_sub
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx) :: c
+!
+      intent(in) :: a,b
+      intent(inout) :: c
+!
+      c=c-(a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3))
+!
+    endsubroutine dot_mn_sub
 !***********************************************************************
     subroutine dot2_mn(a,b)
 !
@@ -455,6 +472,25 @@ module Sub
       g=g+tmp
 !
     end subroutine div
+!***********************************************************************
+    subroutine curl_mn(a,b)
+!
+!  curl of a matrix
+!  21-jul-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: a
+      real, dimension (nx,3) :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b(:,1)=a(:,3,2)-a(:,2,3)
+      b(:,2)=a(:,1,3)-a(:,3,1)
+      b(:,3)=a(:,2,1)-a(:,1,2)
+!
+    endsubroutine curl_mn
 !***********************************************************************
     subroutine trace_mn(a,b)
 !
@@ -538,6 +574,8 @@ module Sub
     subroutine multmv_mn(a,b,c)
 !
 !  matrix multiplied with vector, gives vector
+!  C_i = A_{i,j} B_j
+!
 !   3-apr-01/axel+gitta: coded
 !
       use Cdata
@@ -560,6 +598,35 @@ module Sub
       enddo
 !
     endsubroutine multmv_mn
+!***********************************************************************
+    subroutine multmv_mn_transp(a,b,c)
+!
+!  transposed matrix multiplied with vector, gives vector
+!  could have called multvm_mn, but this may not be clear enough
+!  C_i = A_{j,i} B_j
+!
+!  21-jul-03/axel: adapted from multmv_mn
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: a
+      real, dimension (nx,3) :: b,c
+      real, dimension (nx) :: tmp
+      integer :: i,j
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      do i=1,3
+        j=1
+        tmp=a(:,j,i)*b(:,j)
+        do j=2,3
+          tmp=tmp+a(:,j,i)*b(:,j)
+        enddo
+        c(:,i)=tmp
+      enddo
+!
+    endsubroutine multmv_mn_transp
 !***********************************************************************
     subroutine dot2mu(a,b,c)
 !
@@ -1057,6 +1124,62 @@ module Sub
       endif
 !
     endsubroutine del2v_etc
+!***********************************************************************
+    subroutine bij_etc(f,iref,Bij,del2)
+!
+!  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
+!
+!  21-jul-03/axel: coded
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3,3) :: bij
+      real, dimension (nx,3) :: del2
+      real, dimension (nx) :: tmp
+      integer :: iref,iref1,i,j,k,l
+      real :: eps
+!
+      intent(in) :: f,iref
+      intent(out) :: Bij,del2
+!
+!  reference point of argument
+!
+      iref1=iref-1
+!
+!  initialize diagonal terms A_l,ll of A_l,jj
+!  they would not be accessed below because of epsilon(i,k,l)
+!
+      do l=1,3
+        call der2(f,iref1+l,tmp,l)
+        del2(:,l)=tmp
+      enddo
+!
+!  calculate B_i,j = eps_ikl A_l,jk
+!  do remaining terms of A_l,jj
+!
+      bij=0.
+      do i=1,3
+      do j=1,3
+      do k=1,3
+      do l=1,3
+        eps=levi_civita(i,k,l)
+        if(eps/=0.) then
+          if(j==k) then
+            call der2(f,iref1+l,tmp,j)
+            del2(:,l)=del2(:,l)+tmp
+          else
+            call derij(f,iref1+l,tmp,j,k)
+          endif
+          bij(:,i,j)=bij(:,i,j)+eps*tmp
+        endif
+      enddo
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine bij_etc
 !***********************************************************************
     subroutine g2ij(f,k,g)
 !
@@ -1816,6 +1939,31 @@ module Sub
       number=10
       goto 10     
     endfunction noform
+!***********************************************************************
+    function levi_civita(i,j,k)
+!
+!  totally antisymmetric tensor
+!
+!  20-jul-03/axel: coded 
+!
+      real :: levi_civita
+      integer :: i,j,k
+!
+      if( &
+        (i==1 .and. j==2 .and. k==3) .or. &
+        (i==2 .and. j==3 .and. k==1) .or. &
+        (i==3 .and. j==1 .and. k==2) ) then
+        levi_civita=1.
+      elseif( &
+        (i==3 .and. j==2 .and. k==1) .or. &
+        (i==1 .and. j==3 .and. k==2) .or. &
+        (i==2 .and. j==1 .and. k==3) ) then
+        levi_civita=-1.
+      else
+        levi_civita=0.
+      endif
+
+    endfunction levi_civita
 !***********************************************************************
     function poly_1(coef, x)
 !
