@@ -17,6 +17,19 @@ if ($mpi) then
 
   # Compaq has `dmpirun' instead of `mpirun'; some mpiruns have specail path
   set hn = `hostname`
+echo hostname:
+echo $hn
+which lamboot
+which hboot
+locate hboot
+
+setenv PATH ${PATH}:/usr/local/lib/LAM/bin
+
+foreach host (`cat $PBS_NODEFILE`)
+  /usr/bin/rsh $host 'echo $PATH'
+  /usr/bin/rsh $host 'which hboot'
+end
+
   if ($hn =~ mhd*.st-and.ac.uk) then
     set mpirun = "dmpirun"
   else if ($hn =~ *.kis.uni-freiburg.de) then
@@ -32,7 +45,7 @@ if ($mpi) then
     set mpirun = /usr/bin/mpirun
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
-  else if ($hn =~ fe) then
+  else if ($hn =~ s09p*) then
     #  is that the right place??
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts

@@ -7,9 +7,11 @@
 # run.csh -- driver for time stepping
 #
 ##PBS -S /bin/csh -W group_list=UK07001 -q UK07001
+#PBS -S /bin/csh
 #PBS -q workq
 ##PBS -l ncpus=4,mem=2mb,walltime=0:00:10
-#PBS -l ncpus=4
+##PBS -l ncpus=4
+#PBS -l nodes=4,walltime=0:00:10
 ##PBS -q p-long
 ##PBS -l nodes=nq1+nq2
 #
