@@ -56,26 +56,22 @@ endif
 # Create list of subdirectories
 # If the file NOERASE exists, the old directories are not erased
 #   (start.x also knows then that var.dat is not created)
-#
-#set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
-#foreach dir ($subdirs)
-@ i = 0
-while ( $i < $ncpus )
-  set dir="data/proc$i" 
+foreach dir ($procdirs $subdirs)
   # Make sure a sufficient number of subdirectories exist
-  if (! -e $dir) then
-    mkdir $dir
+  set ddir = "$datadir/$dir"
+  if (! -e $ddir) then
+    mkdir $ddir
   else
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/*.info $dir/slice*`
+    set list = \
+        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice*`
     if (! -e NOERASE) then
       foreach rmfile ($list)
-        if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
+        if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
       end
     endif
   endif
-  @ i++
 end
 
 # Clean up previous runs
