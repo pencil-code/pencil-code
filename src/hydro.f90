@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.165 2004-05-21 12:38:23 ajohan Exp $
+! $Id: hydro.f90,v 1.166 2004-05-23 10:33:33 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.165 2004-05-21 12:38:23 ajohan Exp $")
+           "$Id: hydro.f90,v 1.166 2004-05-23 10:33:33 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1253,6 +1253,7 @@ module Hydro
 !  Find pressure scale height and calculate turbulence properties
 !
       Hp = 0.
+      pp2 = 0.
       do n=n1,n2
         pp1 = pp2
         call eoscalc(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
