@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.131 2002-10-15 16:03:55 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.132 2002-10-16 13:59:22 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.131 $ $}
+\date{\today,~ $ $Revision: 1.132 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.131 $ $}
+  \emph{\today,~ $ $Revision: 1.132 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1554,8 +1554,8 @@ Here is a list of the more important ones.
   version of the code is in a usable state.
 \item[copy-snapshots] Copy snapshots from a processor-local directory to
   the global directory.
-  Supposed to be started in the background before \file{run.x} is invoked.
-  Specific to a Beowulf cluster in Odense.
+  To be started in the background before \file{run.x} is invoked.
+  Used by \file{start.csh} and \file{run.csh} on network connected processors.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
@@ -1583,7 +1583,8 @@ Here is a list of the more important ones.
   \name{IDL} structure.
   Generates an \name{IDL} file that can be sourced from \file{start.pro}
   or \file{run.pro}.
-\item[run.csh] The script for running the code; see \S~\ref{start-run-getconf}
+\item[run.csh] The script for producing restart files with the initial
+  condition; see \S~\ref{start-run-getconf}
 \item[setup-src] Link \file{start.csh}, \file{run.csh} and
   \file{getconf.csh} from \file[bin/]{\$PENCIL_HOME/bin}.
   Generate \file{src/} if necessary and link the source code files from
@@ -1954,12 +1955,12 @@ open-source tool for visualization of three-dimensional data.
 
 The Pencil Code provides a few networks for \name{DX}.
 It is quite easy to read in a snapshot file from \name{DX} (the only
-tricky thing are four extra bytes at the beginning of the file,
+tricky thing is the four extra bytes at the beginning of the file,
 representing a Fortran record marker), and whenever you run \file{start.x},
 the code writes a file \file{var.general} that tells \name{DX} all it
 needs to know about the data structure.
 
-As a starting point for developing you own \name{DX} programs or
+As a starting point for developing your own \name{DX} programs or
 \name{networks}, you can use a few generic \name{DX} scripts provided in
 the directory \file[dx/basic]{dx/basic/}.
 From the run directory, start \name{DX} with
@@ -2769,8 +2770,7 @@ The machines we have used can be characterized as follows:
   4\,GB memory per node (i.\,e.~1\,GB per CPU)
   OSF1 4.0;
   native MPI
-\item[Sander:] Origin 3000
-\item[Rasmussen:] Origin 3000
+\item[Sander and Rasmussen:] Origin 3000
 \item[Gridur:] Origin 3000
 \end{description}
 
@@ -2793,7 +2793,7 @@ well-defined sample problems.
 \begin{table}[htb]
   \begin{center}
     \caption{
-      Like Table~\ref{Ttimescale}, but for the versions from the
+      Like previous table, but for the versions from the
       \file[samples/]{samples} directory.
     }
     \label{Ttimescale-convsample}
@@ -3020,7 +3020,7 @@ Using $c_{\rm s}^2=(\gamma{-}1)h$ together with (\ref{hhtilde}) we find
 In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
-  z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{-\gamma g_z}
+  z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{\gamma(-g_z)}
   \quad\mbox{for \var{grav_profile}='const'},
 \end{equation}
 and
@@ -3088,12 +3088,15 @@ mass in the box per volume, which is conserved. For a polytrope we have
 \end{equation}
 where $z_{\rm m}=(z_1+z_2)/2$. This factor was also present in
 the definition of Hurlburt et al.\ \cite{HTM84}, but their definition
-differs slightly from Eq.~(\ref{Radef}). Since the Rayleigh number is
+differs slightly from Eq.~(\ref{Radef}), because they normalized the
+density not with respect to the average value (which is constant for
+all times), but with respect to the value at the top of the initial
+hydrostatic solution. Since the Rayleigh number is
 proportional to $\rho^2$, their definition included the extra factor
 $[(z_{\infty}-z_{\rm m})/d]^2$. Therefore
 \begin{equation}\label{Rdef}
-  \Ra_{\rm HT}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
-  \left({\overline\rho\over\rho_{\rm top}}\right)^2\Ra
+  \Ra_{\rm HTM}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
+  \left({\rho_{\rm top}\over\overline\rho}\right)^2\Ra
 \end{equation}
 
 %\subsubsection{Relation to the setup of Hurlburt \& Toomre}
@@ -3112,8 +3115,9 @@ F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
 which gives
 \begin{equation}\label{Fbot2}
 {\dd s/c_p\over\dd z}=-{\gamma-1\over\gamma}\left(
-{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right).
+{F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right)
 \end{equation}
+for the derivative of the entropy at the bottom.
 
 \subsubsection{Temperature boundary condition at the top}
 
@@ -4222,8 +4226,8 @@ possible inputs to the \file{print.in} file.
 \midrule
   \multicolumn{2}{c}{Module \name{prints.f90}} \\
 \midrule
-  \var{it} & number of time step (since beginning of job only)\\
-  \var{t} & $t$ (since start.csh)\\
+  \var{it} & number of time step \quad(since beginning of job only)\\
+  \var{t} & $t$ \quad(since start.csh)\\
   \var{dt} & $\delta t$ \\
   \var{dtc} & $\delta t\;c_{\rm s}/\delta x$ \\
 %
@@ -4237,16 +4241,16 @@ possible inputs to the \file{print.in} file.
   \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
   \var{oum} & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
-  \var{ruxm} & $\left<\varrho u_x\right>$ (mean $x$-momentum) \\
-  \var{ruym} & $\left<\varrho u_y\right>$ (mean $y$-momentum) \\
-  \var{ruzm} & $\left<\varrho u_z\right>$ (mean $z$-momentum) \\
+  \var{ruxm} & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
+  \var{ruym} & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
+  \var{ruzm} & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{density.f90}} \\
 \midrule
   \var{rhom} & $\left<\varrho\right>$ \\
   \var{eth} & $\left<\varrho e\right>$ \\
-  \var{ekin} & $\left<{1\over2}\varrho\uv^2u_x\right>$ \\
+  \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{entropy.f90}} \\
@@ -4266,17 +4270,26 @@ possible inputs to the \file{print.in} file.
   \var{jmax} & $\max(|\jv|)$ \\
   \var{abm} & $\left<\Av\cdot\Bv\right>$ \\
   \var{jbm} & $\left<\jv\cdot\Bv\right>$ \\
-  \var{vArms} & $\left<\Bv^2/varrho\right>^{1/2}$ \\
-  \var{vAmax} & $\max(\Bv^2/varrho)^{1/2}$ \\
-  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ (energy of $yz$-averaged mean field) \\
-  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ (energy of $xz$-averaged mean field) \\
-  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ (energy of $xy$-averaged mean field) \\
+  \var{vArms} & $\left<\Bv^2/\varrho\right>^{1/2}$ \\
+  \var{vAmax} & $\max(\Bv^2/\varrho)^{1/2}$ \\
+  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ \quad(energy of $yz$-averaged mean field) \\
+  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ \quad(energy of $xz$-averaged mean field) \\
+  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \quad(energy of $xy$-averaged mean field) \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{pscalar.f90}} \\
 \midrule
   \var{rhoccm} & $\left<\varrho c\right>$ \\
   \var{ccmax} & $\max(c)$ \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \name{equ.f90}} \\
+\midrule
+  \var{rhom} & $\left<\varrho\right>$ \quad(mass per volume)\\
+  \var{eth} & $\left<\varrho e\right>$ \quad(thermal energy per volume)\\
+  \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \quad(kinetic energy per volume)\\
+  \var{Marms} & $\left<\uv^2/c_{\rm s}^2\right>^{1/2}$ \quad(rms Mach number)\\
+  \var{Mamax} & $\max(Ma)$ \quad(maximum Mach number)\\
 %
 \bottomrule
 \end{longtable}
@@ -4286,7 +4299,7 @@ possible inputs to the \file{print.in} file.
 
 % ====================================================================== %
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 
 \bibitem{2Nstorage} Williamson, J. H.,
   \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
@@ -4340,7 +4353,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.131 2002-10-15 16:03:55 dobler Exp $ $}
+$ $Id: manual.tex,v 1.132 2002-10-16 13:59:22 brandenb Exp $ $}
 
 
 \end{document}

@@ -1,4 +1,4 @@
-; $Id: p_col.pro,v 1.1 2002-09-27 07:29:34 brandenb Exp $
+; $Id: p_col.pro,v 1.2 2002-10-16 13:59:22 brandenb Exp $
 ;
 window,xs=600,ys=480
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
@@ -32,7 +32,7 @@ oplot,k,fact*r,ps=-6,li=2,col=55
 xx=5. & dx=20. & siz=2.0
 legend,xx,dx,10^0.9,1,'!6Origin3000',col=1,siz=siz
 legend,xx,dx,10^0.7,0,'!6Horseshoe',col=122,siz=siz
-legend,xx,dx,10^0.5,2,'!6GB switch',col=55,siz=siz
+legend,xx,dx,10^0.5,2,'!6Kabul',col=55,siz=siz
 ;
 ; xx=[1,120] & oplot,col=1,xx,4./xx^.7
 print,'import ptimings.jpg'
