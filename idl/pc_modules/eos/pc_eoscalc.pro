@@ -79,6 +79,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
   endif else if (param.lionization_fixed) then begin
 
     yH0=param.yH0
+    xHe=param.xHe
     xH2=param.xH2
     gamma=param.gamma
     nabla_ad=(gamma-1.)/gamma
@@ -111,7 +112,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
       TT=exp(lnTT)
     
       if keyword_set(pp) then begin
-        result=(1.+yH0+xHe-xH2)*exp(llnrho)*TT*ss_ion
+        result=(1.+yH0+xHe-xH2)*exp(lnrho)*TT*ss_ion
       endif else if keyword_set(ee) then begin
         result=1.5*(1.+yH0+xHe-xH2)*ss_ion*TT+yH0*ss_ion*TT_ion
       endif else if keyword_set(tt) then begin
