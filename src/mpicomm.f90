@@ -76,6 +76,7 @@ module Mpicomm
 !
 !  consistency checks
 !
+      if (nprocx /= 1) call stop_all('Inconsistency: nprocx > 1 not implemented')
       if (nprocs /= nprocy*nprocz) then
         if(lroot) then
           print*, 'Compiled with NCPUS = ', ncpus, &

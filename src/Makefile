@@ -19,6 +19,7 @@ IO=io_dist
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -64 -O3 -mips4 #(ukaff|origin)
 #F77=$(FC)
+#MPICOMM=mpicomm#(ukaff)
 
 ## OSF1:
 #FC=f90 #(Mhd.)
