@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.85 2003-09-06 18:55:30 theine Exp $
+! $Id: ionization.f90,v 1.86 2003-09-07 18:12:21 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -78,7 +78,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.85 2003-09-06 18:55:30 theine Exp $")
+           "$Id: ionization.f90,v 1.86 2003-09-07 18:12:21 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -754,7 +754,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy,TT_xy,rho_xy
+      real, dimension (mx,my) :: tmp_xy,TT_xy,rho_xy,yH_xy
       integer :: i
       
 !
@@ -763,8 +763,8 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
       select case(topbot)
 !
-!  bottom boundary (full ionization)
-!  =================================
+!  bottom boundary
+!  ===============
 !
       case('bot')
         if (lmultilayer) then
@@ -776,7 +776,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        TT_xy=exp(f(:,:,n1,iTT))
+        TT_xy=f(:,:,n1,iTT)
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
@@ -787,15 +787,19 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
           tmp_xy=FheatK/TT_xy
         endif
 !
+!  get ionization fraction at bottom boundary
+!
+        yH_xy=f(:,:,n1,iyH)
+!
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ss_ion*(2+xHe)* &
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ss_ion*(1+yH_xy+xHe)* &
               (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+3*i*dz*tmp_xy)
         enddo
 !
-!  top boundary (no ionization)
-!  ============================
+!  top boundary
+!  ============
 !
       case('top')
         if (lmultilayer) then
@@ -807,7 +811,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n2,ilnrho))
-        TT_xy=exp(f(:,:,n2,iTT))
+        TT_xy=f(:,:,n2,iTT)
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
@@ -818,10 +822,14 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
           tmp_xy=FheatK/TT_xy
         endif
 !
+!  get ionization fraction at top boundary
+!
+        yH_xy=f(:,:,n2,iyH)
+!
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+ss_ion*(1+xHe)* &
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+ss_ion*(1+yH_xy+xHe)* &
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-3*i*dz*tmp_xy)
         enddo
 !
