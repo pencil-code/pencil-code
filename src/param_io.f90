@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.170 2004-04-10 04:24:02 brandenb Exp $ 
+! $Id: param_io.f90,v 1.171 2004-04-10 20:44:28 dobler Exp $ 
 
 module Param_IO
 
@@ -363,10 +363,18 @@ module Param_IO
       character (len=*), optional :: annotation
       character (len=30) :: label='[none]'
 !
-!  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
-!
+!  Reset some parameters, in particular those where we play tricks with
+!  `impossible' values
+      !
+      !  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
+      !
       if (lshear) bcx(1:nvar)='she'
-
+      !
+      !  entropy
+      !
+      Kbot=impossible
+      hcond0=impossible
+!
 ! find out if we should open and close the file everytime
 ! to fix the SGI reading problem
       inquire(FILE='SGIFIX',EXIST=lsgifix)
