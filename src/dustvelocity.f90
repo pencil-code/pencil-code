@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.82 2004-09-20 13:09:36 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.83 2004-09-22 12:16:25 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -109,7 +109,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.82 2004-09-20 13:09:36 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.83 2004-09-22 12:16:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -575,14 +575,14 @@ module Dustvelocity
 !
         if (lviscosity_dust) then
 
-          call del2v(f,iuud(k),del2ud)
-
           select case (iviscd)
 
           case('simplified')
+            call del2v(f,iuud(k),del2ud)
             fviscd=nud(k)*del2ud
 
           case('nud-const')
+            call del2v(f,iuud(k),del2ud)
             call del2v_etc(f,iuud(k),del2ud,GRADDIV=graddivud)
             if (ldustdensity) then
               call grad(f,ind(k),glnnd)
