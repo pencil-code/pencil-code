@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.40 2002-07-01 20:37:39 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.41 2002-07-03 14:52:47 brandenb Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -173,13 +173,14 @@
 % \newcommand{\zerovect}      {\nullvekt}
 
 \newcommand{\bra}[1]{\langle #1\rangle}
+\newcommand{\Eq}[1]{Eq.~(\ref{#1})}
 
 % ---------------------------------------------------------------------- %
 
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.40 $ $}
+\date{\today,~ $ $Revision: 1.41 $ $}
 
 % ====================================================================== %
 
@@ -208,7 +209,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.40 $ $}
+  \emph{\today,~ $ $Revision: 1.41 $ $}
 
 
 \end{center}
@@ -337,6 +338,20 @@ in future releases and welcome any feedback.
 %\noindent
 \url{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
 \url{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
+
+\section*{Acknowledgements}
+
+Many people have contributed in different ways to the development of this
+code. We thank first of all {\AA}ke Nordlund (Copenhagen Observatory)
+and Bob Stein (University of Michigan) who introduced us to the idea of
+using high-order schemes in compressible flows and who taught us a lot
+about simulations in general.
+
+The shearing sheet approximation and the flux limited diffusion approximation
+were implemented by Nils Haugen (University of Trondheim).
+
+Vladimir Pariev (University of Rochester) contributed to the development
+and testing of the potential field boundary condition.
 
 \tableofcontents
 \clearpage
@@ -487,6 +502,27 @@ Here is the upgrading procedure:
   working.
 \end{enumerate}
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Getting older versions}
+
+You may find that the latest version produces errors. This is quite
+possible if introduced changes to the code. It it therefore extremely
+useful to get an older version where you know it should work correctly.
+
+Here is what you have to do:
+\begin{enumerate}
+\item Go to the top directory of the code:
+  \begin{alltt}
+  \prompt{unix> } cd \file{somewhere/mhd} \
+  \end{alltt}
+\item Run \cmd{cvs update}:
+  \begin{alltt}
+  \prompt{unix> } cvs up -D "30 Jun 2000"\
+  \end{alltt}
+\end{enumerate}
+(...if that's the version you want)
+
 
 % ====================================================================== %
 
@@ -504,7 +540,7 @@ Sect.~\ref{S-IDLroutines}).
 \subsection{Setup}
 
 \begin{itemize}
-\item sourceme.x
+\item sourceme.x (where \var{x} stands for \var{csh} or \var{sh})
 \item lnsrc (alias setup)
 \item edit the Makefile (full description here or elsewhere?)
 \end{itemize}
@@ -628,17 +664,75 @@ your \name{IDL} path is set appropriately (provided you want to use
 
 \subsection{Basic concepts}
 
-
 \subsubsection{Data access in pencils}
 \index{pencil design}
 
-\vspace{5cm}
+Unlike the CRAY computers that dominated supercomputing in the 80s and
+early 90s, all modern computers have a cache that constitutes a significant
+bottleneck for many codes. This is the case if large three-dimensional
+arrays are constantly used within each time step. The advantage of this
+way of coding is clearly the conceptual simplicity of the code. A more
+cache-efficient way of coding is to calculate an entire time step (or
+a corresponding substep in a three-stage $2N$ Runge-Kutta scheme) only
+along a one-dimensional pencil of data within the box. On Linux and Irix
+architectures, for example, this leads to a speed-up by 60\%. An additional
+advantage is a drastic reduction in temporary storage that is needed for
+auxiliary variables within each time step.
 
 
-\subsubsection{2$N$-schemes}
+\subsubsection{The 2$N$-scheme}
 \index{2N-scheme}
 
-\vspace{5cm}
+For the time stepping high-order schemes are necessary in order to reduce
+the amplitude error of the scheme and to allow longer time steps. Usually
+such schemes require large amounts of memory. However, there are the
+memory-effective $2N$-schemes that require only two sets of variables
+to be held in memory. Such schemes work for
+arbitrarily high order, although not all Runge-Kutta schemes can be
+written as $2N$-schemes \cite{2Nstorage,SH88}.
+These schemes work iteratively according to the formula
+\begin{equation}
+w_i=\alpha_i w_{i-1}+\delta t\,F(t_{i-1},u_{i-1}),
+\end{equation}
+\begin{equation}
+u_i=u_{i-1}+\beta_i w_i.
+\label{iterform0}
+\end{equation}
+For a three-step scheme we have $i=1,...,3$.
+In order to advance the variable $u$ from $u^{(n)}$ at time $t^{(n)}$
+to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta h$ we set in \Eq{iterform0}
+\begin{equation}
+u_0=u^{(n)}\quad\mbox{and}\quad u^{(n+1)}=u_3,
+\end{equation}
+with $u_1$ and $u_2$ being intermediate steps. In order to be able to
+calculate the first step, $i=1$, for which no $w_{i-1}\equiv w_0$ exists,
+we have to require $\alpha_1=0$. Thus, we are left with 5 unknowns,
+$\alpha_2$, $\alpha_3$, $\beta_1$, $\beta_2$, and $\beta_3$. Three
+conditions follow from the fact that the scheme be third order, so we
+have to have two more conditions. One possibility is to choose the
+fractional times at which the right hand side is evaluated, for
+example (0,~1/3,~2/3) or even (0,~1/2,~1). In the latter case the right hand
+side is evaluated twice at the same time. It is therefore some sort of
+predictor-corrector scheme. Yet another possibility is to require that
+inhomogeneous equations of the form $\dot{u}=t^n$ with $n=1$ and 2 are
+solved exactly.
+The corresponding coefficients are listed in Table~\ref{T-2N-RK3} and compared
+with those given by Williamson \cite{2Nstorage}. In practice all of them
+are about equally good when it comes to real applications, although
+we found the first one in Table~\ref{T-2N-RK3} (`symmetric') marginally better in some
+simple test problems where an analytic solution was known.
+
+\begin{table}[htb]\caption{
+Possible coefficients for different $2N$-RK3 schemes.
+}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+\hline
+label & $\alpha_2$ & $\alpha_3$ & $\beta_1$ & $\beta_2$ & $\beta_3$ \\
+\hline
+symmetric           &  $-2/3$  &   $-1$   & 1/3 &  1  & 1/2 \\
+predictor/corrector &  $-1/4$  &  $-4/3$  & 1/2 & 2/3 & 1/2 \\
+inhomogeneous       & $-17/32$ & $-32/27$ & 1/4 & 8/9 & 3/4 \\
+Williamson (1980)   &  $-5/9$  &$-153/128$& 1/3 &15/16& 8/15\\
+\label{T-2N-RK3}\end{tabular}}\end{table}
 
 \subsubsection{Modularity}
 \index{modules}
@@ -673,7 +767,7 @@ forcing: yes), a few technical modules can also be used or deactivated; in
 the example above, these are \name{MPI} (switched off), additional global
 variables (none) and input/output (there is currently only one module
 available).
-Table \ref{Tab-modules} lists all currently available modules.
+Table~\ref{Tab-modules} lists all currently available modules.
 
 \begin{table}
   \centering
@@ -1469,7 +1563,7 @@ takes the form
   \end{pmatrix} \; .
 \end{equation}
 
-\subsection{Vertical stratification for local accretion discs simulation}
+\subsection{Vertical stratification for local accretion disc simulations}
 
 Use \var{initlnrho='isothermal'}, \var{grav_profile='linear'},
 \var{initss='isothermal'}, which means
@@ -1634,14 +1728,14 @@ make[1]: *** [.f90.o] Error 1
   work.
   }
 
-\item[Start.pro doesn't work:]{\bfseries \
+\item[start.pro doesn't work:]{\bfseries \
 
     \begin{Verbatim}
 Reading grid.dat..
 Reading param.nml..
 % Expression must be a structure in this context: PAR.
 % Execution halted at:  $MAIN$            104
-/usr/home/brandenb/f90/pencil_modular/runs/forced/hel1/../../../idl/start.pro
+/home/brandenb/f90/pencil_modular/runs/forced/hel1/../../../idl/start.pro
     \end{Verbatim}
     }
     \medskip
@@ -1652,12 +1746,50 @@ Reading param.nml..
     or set a sufficient IDL path otherwise.
     }
 
+\item[run.csh doesn't work:]{\bfseries \
+
+    \begin{Verbatim}
+Invalid character ''' in NAMELIST input
+Program terminated by fatal I/O error
+Abort
+    \end{Verbatim}
+    }
+    \medskip
+
+    {\em
+    The string array for the boundary condition, e.g.\ \var{bcx} or
+    \var{bcz} is too long. Make sure it has exactly as many elements
+    as nvar is big.
+    }
+
 \end{description}
 
 
 % ====================================================================== %
 
-\section{Experimenting with the \LaTeX{} macros}
+\begin{thebibliography}{9}
+
+\bibitem{2Nstorage} Williamson, J. H., J. Comp. Phys. 35, 48 (1980)
+\bibitem{Lele92} Lele, S. K., J. Comp. Phys. 103, 16 (1992)
+\bibitem{NS90} Nordlund, \AA., Stein, R. F., Comput. Phys. Commun. 59, 119 (1990)
+\bibitem{Ref-3} Brandenburg, A., et al., J. Fluid Mech. 306, 325 (1996)
+\bibitem{BNST95} Brandenburg, A., et al., Astrophys. J., 446, 741 (1995)
+\bibitem{Ref-1} Brandenburg, A., in Advances in non-linear dynamos,
+ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2001);
+\url{http://arXiv.org/abs/astro-ph/0109497}
+\bibitem{Ref-4} Brandenburg, A., Dobler, W., Astron. Astrophys. 369, 329 (2001)
+\bibitem{SH88} Stanescu, D., Habashi, W. G., J. Comp. Phys. 143, 674 (1988)
+\bibitem{KR80} Krause, F., R\"adler, K.-H., Mean-Field
+Magneto\-hy- dro\-dy\-na\-mics and Dynamo Theory,
+Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
+\bibitem{Ref-2} Brandenburg, A., Astrophys. J. 550, 824 (2001)
+
+\end{thebibliography}
+
+
+% ====================================================================== %
+
+\section*{Experimenting with the \LaTeX{} macros}
 
 
 \bs{}code:    \code{call remove\_file()}
@@ -1698,7 +1830,7 @@ Reading param.nml..
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.40 2002-07-01 20:37:39 dobler Exp $ $}
+$ $Id: manual.tex,v 1.41 2002-07-03 14:52:47 brandenb Exp $ $}
 
 
 \end{document}

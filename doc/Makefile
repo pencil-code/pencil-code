@@ -17,5 +17,8 @@ default: manual.dvi
 manual.dvi: manual.tex manual.ind
 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; latex manual; makeindex manual; latex manual
 
+# Clean up
+clean:
+	rm -f *.ps *.idx *.toc
 
 # End of file
