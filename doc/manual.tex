@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.251 2004-06-02 16:37:02 bingert Exp $
+%%  CVS: $Id: manual.tex,v 1.252 2004-06-09 04:08:38 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}
+%\date{$ $Date: 2004-06-09 04:08:38 $ $,~ $ $Revision: 1.252 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}\\
+  \emph{$ $Date: 2004-06-09 04:08:38 $ $,~ $ $Revision: 1.252 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1559,10 +1559,10 @@ its parent directory, i.e.\
 and edit the \file{cparam.local} for the new resolution.
 
 % ---------------------------------------------------------------------- %
-\subsection{Using non equdistant grid}
+\subsection{Using non equidistant grid}
 
 The non equidistant grid z=z($\zeta$) in the vertical direction is a function of a equidistant grid with 
-a gridspace of one.\\
+a grid space of one.\\
 Therefor the first derivative is calculated by\\
 \begin{equation}
 \frac{df}{dz}=\frac{df}{d\zeta}\frac{d\zeta}{dz}=\frac{1}{z'}f'
@@ -1572,7 +1572,7 @@ and the second derivative by\\
 \frac{d^2f}{dz^2}=\frac{1}{z'^2}f''-\frac{z''}{z'^3}f'
 \end{equation}
 The non equidistant grid is implemented only for the vertical
-direction right now. The function is choosen to be\\
+direction right now. The function is chosen to be\\
 \begin{equation}
 z(\zeta)=z_0 - L_z \frac{\sinh{a(\zeta_0-\zeta)}}{\sinh{a(\zeta_n-\zeta)}-\sinh{a(\zeta_0-\zeta)}}
 \end{equation}
@@ -2284,7 +2284,7 @@ and temperatures are in
   \caption{Units of magnetic field and temperature for some choices of
     $[\varrho]$ and $[v]$ according to Eqs.~(\ref{unit-B}) and
     (\ref{unit-T}).
-    Values are for a monoatomic gas ($\gamma=5/3$) of mean atomic
+    Values are for a monatomic gas ($\gamma=5/3$) of mean atomic
     weight $\bar{\mu}_{\rm g} = \bar{\mu}/\unit[1]{g}$ in grams.}
   \label{Tab-units-B-T}
   \newcommand{\fracstrut}{\rule[-2.0ex]{0pt}{5.2ex}}%
@@ -2323,8 +2323,8 @@ For some choices of density and velocity units, Table~\ref{Tab-units-B-T}
 shows the resulting units of magnetic field and temperature.
 
 On the other hand, as soon as material equations are used (e.\,g.~one of
-the popular parameterizations for radiative losses, Kramer's opacity,
-Spitzer's conductivities or ionization, which implies well-defined
+the popular parameterizations for radiative losses, Kramers opacity,
+Spitzer conductivities or ionization, which implies well-defined
 ionization energies), the corresponding routines in the code need to know
 the units you are using.
 This information is specified in \file{start.in} or \file{run.in} through
@@ -3716,7 +3716,7 @@ What is the problem?
     This problem can also occur if you added a new
     module (and have an empty space after the module
     name in \file[Makefile.src]{src/Makefile.src}, i.e.\
-    \cmd{CHRIAL=nochiral\textvisiblespace}), in which case the compiler
+    \cmd{CHIRAL=nochiral\textvisiblespace}), in which case the compiler
     will talk about ``circular dependence'' for the file \file{nochiral}.
 
   \end{enumerate}
@@ -3898,6 +3898,48 @@ you will need to turn your namelist input (at least
 \file{run.in} into Fortran statements, include them into a replacement
 version of \file{param_io.f90}, and recompile each time you make changes.
 
+
+\subsubsection{Code crashes after restarting}
+
+\begin{Verbatim}
+>  > removing mu_r from the namelist just `like that' makes the code
+>  > backwards incompatible.
+>
+> That means that we can never get rid of a parameter in start.in once we
+> have introduced it, right? Pretty irritating..
+\end{Verbatim}
+
+In the current implemention, without a corresponding cleaning procedure,
+yes! My experience of some 5 days ago was quite enormous. It started
+with noticing that remesh.f90 doesn't work correctly. I thought:- ok,
+there must be a problem with remesh.f90, because nobody remembered having
+tested this for nonuniform mesh-aspect ratios. (So I told Nils that his
+remesh routine needs reworking.)
+
+Later that day I noticed that several of my old jobs started crashing,
+so, of course, I thought there must be yet another mistake somewhere.
+Most incredible was that I lost places in 64 and 128 proc queues,
+even though I have a fairly save backup procedure in place that if a job
+crashes, it goes on another job. Because the job transfer times can be
+on the order of 2h, because of slow writing, and because we had detected
+some days earlier yet another timeout problem with job transfers of 64
+and 128 proc jobs, we thought the problem was connected with that.
+
+Only later that day I noticed that what the real problem was.
+
+It was rather bad that this was not predicted by any of the auto-tests,
+so I wrote the backwards-compatible, which detects those kind of errors.
+
+This was of course another wild experience. When I came back from
+swimming, "nothing" was working, and since I had done some minor changes,
+I thought I was to blame. Then I found the problem with init conditions,
+but this solved only one out of 3 problems. Then I found the mu\_r problem,
+but this solved only the 2nd problem. Finally, I found and solved the
+third problem.
+
+So, those people who checked in changes where already working with buggy
+codes and checked on even further bugs. As I said, I was worried that
+it was all my fault, but buggy codes are potentially bad for others too.
 
 % ---------------------------------------------------------------------- %
 
@@ -4230,7 +4272,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-06-09 04:08:38 $ $,~ $ $Revision: 1.252 $ $}
 
 \section{Timings}
 
@@ -4341,6 +4383,7 @@ application on your specific hardware.
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
   16 & fe1   & 0.75 & $128^3$ & magn/noentro & 4x4/ifc&  9-may-03 & AB \\
+  16 & giga  & 0.47 & $128^3$ & chiral       & 4x4/ifc& 29-may-04 & AB \\
   16 & giga  & 0.43 & $128^3$ & nomag/noentro& 4x4/ifc& 28-apr-03 & AB \\
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
@@ -7209,7 +7252,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.251 2004-06-02 16:37:02 bingert Exp $ $}
+$ $Id: manual.tex,v 1.252 2004-06-09 04:08:38 brandenb Exp $ $}
 
 
 \end{document}
@@ -7277,5 +7320,5 @@ $ $Id: manual.tex,v 1.251 2004-06-02 16:37:02 bingert Exp $ $}
 % LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
 % LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
 % LocalWords:  hyperviscous geodynamo DM coords substeps dec noionization pc ll
-% LocalWords:  Kramer's Myr Spitzer's Kippenhahn Weigert Remeshing remeshing
+% LocalWords:  Kramers Myr Spitzer Kippenhahn Weigert Remeshing remeshing
 % LocalWords:  phiaver
