@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.17 2003-06-13 09:28:58 nilshau Exp $
+! $Id: radiation_ray.f90,v 1.18 2003-06-13 11:56:11 nilshau Exp $
 
 module Radiation
 
@@ -23,12 +23,6 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-! init parameteres
-!
-  character (len=labellen) :: initrad='equil',pertee='none'
-  real :: amplee=0
-  real :: ampl_pert=0
-!
 !  definition of dummy variables for FLD routine
 !
   real :: DFF_new=0.  !(dum)
@@ -36,7 +30,7 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,initrad,amplee,pertee,ampl_pert
+       radx,rady,radz,rad2max,output_Qrad
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,output_Qrad,nocooling
@@ -65,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.17 2003-06-13 09:28:58 nilshau Exp $")
+           "$Id: radiation_ray.f90,v 1.18 2003-06-13 11:56:11 nilshau Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -343,7 +337,7 @@ write(28) Intensity,nrad
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)

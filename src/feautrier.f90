@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.23 2003-06-13 09:28:58 nilshau Exp $
+! $Id: feautrier.f90,v 1.24 2003-06-13 11:56:11 nilshau Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -20,12 +20,6 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-! init parameteres
-!
-  character (len=labellen) :: initrad='equil',pertee='none'
-  real :: amplee=0
-  real :: ampl_pert=0
-!
 !  definition of dummy variables for FLD routine
 !
   real :: DFF_new=0.  !(dum)
@@ -33,7 +27,7 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,initrad,amplee,pertee,ampl_pert
+       radx,rady,radz,rad2max,output_Qrad
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,output_Qrad,nocooling
@@ -68,7 +62,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.23 2003-06-13 09:28:58 nilshau Exp $")
+           "$Id: feautrier.f90,v 1.24 2003-06-13 11:56:11 nilshau Exp $")
 !
 ! Check we arn't registering too many auxilliary variables
 !
@@ -334,67 +328,10 @@ module Radiation
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar + maux) :: f
+      real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
       real :: nr1,nr2
       integer :: l12
-!
-      select case(initrad)
-
-      case('zero', '0') 
-         f(:,:,:,iQrad     ) = 1.
-      case('gaussian-noise','1'); call gaunoise(amplee,f,iQrad)
-      case('equil','2'); call init_equil(f)
-      case ('cos', '3')
-         f(:,:,:,iQrad) = -amplee*(cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)-1)
-      case ('step', '4')
-         l12=(l1+l2)/2
-         f(1    :l12,:,:,iQrad) = 1.
-         f(l12+1: mx,:,:,iQrad) = 2.
-      case ('substep', '5')
-         l12=(l1+l2)/2
-         nr1=1.
-         nr2=2.
-         f(1    :l12-2,:,:,iQrad) = nr1
-         f(l12-1      ,:,:,iQrad) = ((nr1+nr2)/2+nr1)/2
-         f(l12+0      ,:,:,iQrad) = (nr1+nr2)/2
-         f(l12+1      ,:,:,iQrad) = ((nr1+nr2)/2+nr2)/2
-         f(l12+2: mx  ,:,:,iQrad) = nr2
-      case ('lamb', '6')
-         f(:,:,:,iQrad) = 2+(sin(2*pi*xx)*sin(2*pi*zz))
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'No such such value for initrad: ', trim(initrad)
-        call stop_it("")
-      endselect
-!
-!  Pertubations
-!
-      select case(pertee)
-         
-      case('none', '0') 
-      case('left','1')
-         l12=(l1+l2)/2
-         f(l1:l12,m1:m2,n1:n2,iQrad) = ampl_pert*f(l1:l12,m1:m2,n1:n2,iQrad)
-      case('whole','2')
-         f(:,m1:m2,n1:n2,iQrad) = ampl_pert*f(:,m1:m2,n1:n2,iQrad)
-      case('ent','3') 
-         !
-         !  For perturbing the entropy after haveing found the 
-         !  equilibrium between radiation and entropy.
-         !
-         f(:,m1:m2,n1:n2,ient) = ampl_pert
-         f(:,m1:m2,n1:n2,ilnrho) = ampl_pert
-      case default
-         !
-         !  Catch unknown values
-         !
-         if (lroot) print*, 'No such such value for pertee: ', trim(pertee)
-         call stop_it("")
-         
-      endselect
 !
       if(ip==0) print*,yy !(keep compiler quiet)
     endsubroutine init_rad
