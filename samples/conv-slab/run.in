@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.5 2002-07-21 21:34:59 dobler Exp $',
+  cvsid='$Id: run.in,v 1.6 2002-08-02 20:26:44 brandenb Exp $',
   ip=14,
   nt=1000, it1=50, isave=200, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
@@ -25,7 +25,7 @@
   gravz=-1.
 /
 &entropy_run_pars
-  cheat=0., wheat=0.1, cool=15., wcool=0.2,
+  Luminosity=0., wheat=0.1, cool=15., wcool=0.2,
   hcond0=8.e-3
 /
 
