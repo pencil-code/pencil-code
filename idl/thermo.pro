@@ -23,39 +23,42 @@ Tref = cs20/gamma1
 lnrhoref = alog(rho0)
 ssref = 0.
 zo = [z2,ztop]
-if (isothtop eq 0) then begin   ; polytropic top layer
-  beta = gamma/gamma1*gravz/(mpoly2+1)
-  if (top[0] ge 0) then begin
-    Tinit[top] = Tref + beta*(z[top]-ztop)
-    lnrhoinit[top] = lnrhoref + mpoly2*alog(1.+beta*(z[top]-ztop)/Tref)
+zint = zref                     ; position of top/unstable layer interface
+
+if (top[0] ge 0) then begin
+  zint = z2 < ztop
+  if (isothtop eq 0) then begin ; polytropic top layer
+    beta = gamma/gamma1*gravz/(mpoly2+1)
+    Tinit[top] = Tref + beta*(z[top]-zref)
+    lnrhoinit[top] = lnrhoref + mpoly2*alog(1.+beta*(z[top]-zref)/Tref)
     ssinit[top] = ssref $
                   + (1-mpoly2*(gamma-1))/gamma $
-                    * alog(1.+beta*(z[top]-ztop)/Tref)
-    lnrhoref = lnrhoref + mpoly2*alog(1.+beta*(z2-ztop)/Tref)
+                    * alog(1.+beta*(z[top]-zref)/Tref)
+    zint = zrefz2 < ztop
+    lnrhoref = lnrhoref + mpoly2*alog(1.+beta*(zint-zref)/Tref)
     ssref = ssref $
-            + (1-mpoly2*(gamma-1))/gamma * alog(1.+beta*(z2-ztop)/Tref)
-    Tref = Tref + beta*(z2-ztop)
-  endif
-endif else begin                ; isothermal top layer
-  beta = 0.
-  if (top[0] ge 0) then begin 
+            + (1-mpoly2*(gamma-1))/gamma * alog(1.+beta*(zint-zref)/Tref)
+    Tref = Tref + beta*(zint-zref)
+  endif else begin              ; isothermal top layer
+    beta = 0.
     Tinit[top] = Tref
-    lnrhoinit[top] = lnrhoref + gamma/gamma1*gravz*(z[top]-ztop)/Tref
-    ssinit[top] = ssref - gravz*(z[top]-ztop)/Tref
-    lnrhoref = lnrhoref + gamma/gamma1*gravz*(z2-ztop)/Tref
-    ssref = ssref  - gravz*(z2-ztop)/Tref
+    lnrhoinit[top] = lnrhoref + gamma/gamma1*gravz*(z[top]-zref)/Tref
+    ssinit[top] = ssref - gravz*(z[top]-zref)/Tref
+    lnrhoref = lnrhoref + gamma/gamma1*gravz*(z2-zref)/Tref
+    ssref = ssref  - gravz*(zint-zref)/Tref
     Tref = Tref
-  endif
-endelse
+  endelse
+endif
+
 ;
 stab = where((z le z2) and (z ge z1))
 if (stab[0] ge 0) then begin
   beta = gamma/gamma1*gravz/(mpoly0+1)
-  Tinit[stab] = Tref + beta*(z[stab]-z2)
-  lnrhoinit[stab] = lnrhoref + mpoly0*alog(1.+beta*(z[stab]-z2)/Tref)
+  Tinit[stab] = Tref + beta*(z[stab]-zint)
+  lnrhoinit[stab] = lnrhoref + mpoly0*alog(1.+beta*(z[stab]-zint)/Tref)
   ssinit[stab] = ssref $
                  + (1-mpoly0*(gamma-1))/gamma $
-                   * alog(1.+beta*(z[stab]-z2)/Tref)
+                   * alog(1.+beta*(z[stab]-zint)/Tref)
 endif
 ;
 unstab = where(z le z1)
