@@ -2,7 +2,7 @@
                       g95-x86_64-internal-compiler-error
                      ------------------------------------
 
-$Id: README,v 1.1 2004-11-02 21:33:48 dobler Exp $
+$Id: README,v 1.2 2004-11-02 21:39:40 dobler Exp $
 
 
 1. Symptoms:
@@ -24,9 +24,10 @@ $Id: README,v 1.1 2004-11-02 21:33:48 dobler Exp $
 
 3. Platform:
    Gentoo, Kernel 2.6.7-gentoo-r11, AMD Athlon(tm) 64 Processor 3000+
+   g95 version 3.5.0 20040824 (experimental) Oct 18 2004
 
 4. Other compilers tested (OK means problem could not be reproduced):
-   - g95-x86_64-32-linux (downloaded 2-Nov-2004)  OK
+   - g95-x86-linux (version 3.5.0 20040824 (experimental) Oct 18 2004)  OK
 
 5. Workaround:
    Use -O0 flag
