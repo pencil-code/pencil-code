@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.4 2004-02-09 17:54:28 dobler Exp $
+; $Id: wdvelovect.pro,v 1.5 2004-02-20 08:22:53 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -198,10 +198,14 @@ bady:            message, 'Y array has incorrect size.'
 ; wd: regrid data if too many points
 ;
         ;----------  pretend to plot to get plot window size right  -----------
-        if (n_elements(position) le 1) then position=0
-        plot, x, y, /NODATA, /NOERASE, $
-            XSTYLE=4, YSTYLE=4, TITLE='', $
-            POSITION=position
+        if (n_elements(position) lt 4) then begin
+          plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE=''
+        endif else begin
+          plot, x, y, /NODATA, /NOERASE,XSTYLE=4, YSTYLE=4, TITLE='', $
+              POSITION=position
+        endelse
+        ; only now we can extract position
+        position=[!x.window[0],!y.window[0],!x.window[1],!y.window[1]]
         xwidth = !x.window[1] - !x.window[0]
         ywidth = !y.window[1] - !y.window[0]
         case n_elements(maxvec) of
@@ -310,7 +314,7 @@ bady:            message, 'Y array has incorrect size.'
           if (xrange[0] eq xrange[1])  then xrange=[x_b0,x_b1]
           if (n_elements(yrange) le 1) then yrange=[y_b0,y_b1]
           if (yrange[0] eq yrange[1])  then yrange=[y_b0,y_b1]
-            plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
+          plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
               color=color, xrange=xrange, yrange=yrange, POSITION=position, $
               _EXTRA = extra
 ;         endif else begin
