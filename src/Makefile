@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.89 2002-08-26 10:33:49 nilshau Exp $
+### $Id: Makefile,v 1.90 2002-09-05 16:33:37 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -161,7 +161,7 @@ equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 initcond.o:  initcond.f90 cdata.o random_nr.o
-timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
+timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
