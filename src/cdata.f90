@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.237 2004-06-22 10:16:17 bingert Exp $
+! $Id: cdata.f90,v 1.238 2004-07-02 10:09:10 brandenb Exp $
 
 module Cdata
 
@@ -22,7 +22,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.
   real, dimension (3) :: alpha,beta,dt_beta
-  real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0
+  real :: cdt=0.4,cdtv=0.3,cdts=1.0,cdtr=1.0
   real :: cdtvDim
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
@@ -121,7 +121,7 @@ module Cdata
   logical :: ldensity_fixed=.false., lentropy=.false., lentropy_fixed=.false.
   logical :: lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
-  logical :: lmaxadvec_sum=.false.,old_cdtv=.true.
+  logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
   logical :: lgrav=.false., lgravx=.false., lgravz=.false., lgravr=.false.
