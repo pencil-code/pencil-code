@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.23 2002-07-29 23:39:51 brandenb Exp $
+! $Id: forcing.f90,v 1.24 2002-08-18 12:04:40 brandenb Exp $
 
 module Forcing
 
@@ -44,7 +44,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.23 2002-07-29 23:39:51 brandenb Exp $")
+           "$Id: forcing.f90,v 1.24 2002-08-18 12:04:40 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -172,6 +172,196 @@ module Forcing
     endsubroutine forcing_irro
 !***********************************************************************
     subroutine forcing_hel(f)
+!
+!  add helical forcing function, using a set of precomputed wavevectors
+!
+!  10-apr-00/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use Sub
+      use Hydro
+!
+      real :: phase,ffnorm
+      real, save :: kav
+      real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx
+      real, dimension (mz) :: tmpz
+      real, dimension (mx,my,mz,mvar) :: f
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      complex, dimension (3) :: coef
+      integer, parameter :: mk=3000
+      integer, dimension(mk), save :: kkx,kky,kkz
+      integer, save :: ifirst,nk
+      integer :: ik,j,jf
+      real :: kx0,kx,ky,kz,k2,k
+      real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+!
+      if (ifirst==0) then
+        if (lroot) print*,'helical forcing; opening k.dat'
+        open(9,file='k.dat')
+        read(9,*) nk,kav
+        if (lroot) print*,'average k=',kav
+        if(nk.gt.mk) then
+          if (lroot) print*,'dimension mk in forcing_hel is insufficient'
+          print*,'nk=',nk,'mk=',mk
+          call mpifinalize
+        end if
+        read(9,*) (kkx(ik),ik=1,nk)
+        read(9,*) (kky(ik),ik=1,nk)
+        read(9,*) (kkz(ik),ik=1,nk)
+        close(9)
+      endif
+      ifirst=ifirst+1
+!
+!  generate random coefficients -1 < fran < 1
+!  ff=force*Re(exp(i(kx+phase)))
+!  |k_i| < akmax
+!
+      call random_number(fran)
+      phase=pi*(2*fran(1)-1.)
+      ik=nk*.9999*fran(2)+1
+      if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+!
+      kx0=kkx(ik)
+      ky=kky(ik)
+      kz=kkz(ik)
+!
+!  in the shearing sheet approximation, kx = kx0 - St*k_y.
+!  Here, St=-deltay/Lx
+!
+      if (Sshear==0.) then
+        kx=kx0
+      else
+        kx=kx0+ky*deltay/Lx
+      endif
+!
+      if(headt.or.ip<5) print*, 'kx0,kx,ky,kz=',kx0,kx,ky,kz
+      k2=kx**2+ky**2+kz**2
+      k=sqrt(k2)
+!
+!  pick e1 if kk not parallel to ee1. ee2 else.
+!
+      if((ky.eq.0).and.(kz.eq.0)) then
+        ex=0; ey=1; ez=0
+      else
+        ex=1; ey=0; ez=0
+      endif
+!
+!  k.e
+!
+      kde=kx*ex+ky*ey+kz*ez
+!
+!  k x e
+!
+      kex=ky*ez-kz*ey
+      key=kz*ex-kx*ez
+      kez=kx*ey-ky*ex
+!
+!  k x (k x e)
+!
+      kkex=ky*kez-kz*key
+      kkey=kz*kex-kx*kez
+      kkez=kx*key-ky*kex
+!
+!  ik x (k x e) + i*phase
+!
+!  Normalise ff; since we don't know dt yet, we finalize this
+!  within timestep where dt is determined and broadcast.
+!
+!  This does already include the new sqrt(2) factor (missing in B01).
+!  So, in order to reproduce the 0.1 factor mentioned in B01
+!  we have to set force=0.07.
+!
+      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
+      if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force/ffnorm*sqrt(dt)
+!
+!  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
+!  case one needs to scale by 2pi/Lx, etc.
+!
+      fx=exp(cmplx(0.,2*pi/Lx*kx*x+phase))*fact
+      fy=exp(cmplx(0.,2*pi/Ly*ky*y))
+      fz=exp(cmplx(0.,2*pi/Lz*kz*z))
+!
+!  possibly multiply forcing by z-profile
+!
+      if (height_ff/=0.) then
+        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
+        tmpz=(z/height_ff)**2
+        fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
+!  possibly multiply forcing by sgn(z) and radial profile
+!
+      if (r_ff/=0.) then
+        if (lroot .and. ifirst==1) &
+             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+        !
+        ! only z-dependent part can be done here; radial stuff needs to go
+        ! into the loop
+        !
+        tmpz = tanh(z/width_ff)
+        fz = fz*tmpz
+      endif
+!
+      if (ip.le.5) print*,'fx=',fx
+      if (ip.le.5) print*,'fy=',fy
+      if (ip.le.5) print*,'fz=',fz
+!
+!  prefactor
+!
+      sig=relhel
+      coef(1)=cmplx(k*kex,sig*kkex)
+      coef(2)=cmplx(k*key,sig*kkey)
+      coef(3)=cmplx(k*kez,sig*kkez)
+      if (ip.le.5) print*,'coef=',coef
+!
+! loop the two cases separately, so we don't check for r_ff during
+! each loop cycle which could inhibit (pseudo-)vectorisation
+!
+      if (r_ff == 0) then       ! no radial profile
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,jf) = &
+                   f(l1:l2,m,n,jf)+real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
+        enddo
+      else                      ! with radial profile
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            sig = relhel*tmpz(n)
+            coef(1)=cmplx(k*kex,sig*kkex)
+            coef(2)=cmplx(k*key,sig*kkey)
+            coef(3)=cmplx(k*kez,sig*kkez)
+            do m=m1,m2
+              radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+              f(l1:l2,m,n,jf) = &
+                   f(l1:l2,m,n,jf) + real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
+        enddo
+      endif
+!
+      if (ip.le.12) print*,'forcing OK'
+!
+    endsubroutine forcing_hel
+!***********************************************************************
+    subroutine forcing_hel_noshear(f)
 !
 !  add helical forcing function, using a set of precomputed wavevectors
 !
@@ -349,7 +539,7 @@ module Forcing
 !
       if (ip.le.12) print*,'forcing OK'
 !
-    endsubroutine forcing_hel
+    endsubroutine forcing_hel_noshear
 !***********************************************************************
     subroutine forcing_roberts(f)
 !

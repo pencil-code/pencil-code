@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.5 2002-08-16 21:23:48 brandenb Exp $
+! $Id: shear.f90,v 1.6 2002-08-18 12:04:40 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.5 2002-08-16 21:23:48 brandenb Exp $")
+           "$Id: shear.f90,v 1.6 2002-08-18 12:04:40 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -90,5 +90,34 @@ module Shear
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,uy0**2)
 !
     end subroutine shearing
+!***********************************************************************
+    subroutine advance_shear
+!
+!  advance shear distance, deltay, using dt. Using t instead introduces
+!  significant errors when nt = t/dt exceeds ~100,000 steps.
+!  This formulation works also when Sshear is changed during the run.
+!
+! 18-aug-02/axel: incorporated from nompicomm.f90
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+!  Works currently only when Sshear is not positive
+!
+      if (Sshear>0.) then
+        if(lroot) print*,'Note: must use non-positive values of Sshear'
+        call stop_it("")
+      endif
+!
+!  Make sure deltay is in the range 0 <= deltay < Ly (assuming Sshear<0).
+!
+      deltay=deltay-Sshear*Lx*dt
+      deltay=deltay-int(deltay/Ly)*Ly
+!
+!  print identifier
+!
+      if (headtt.or.ldebug) print*,'advance_shear: deltay=',deltay
+!
+    end subroutine advance_shear
 !***********************************************************************
   end module Shear

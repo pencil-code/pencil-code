@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.76 2002-08-03 23:16:37 dobler Exp $
+! $Id: run.f90,v 1.77 2002-08-18 12:04:40 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.76 2002-08-03 23:16:37 dobler Exp $")
+             "$Id: run.f90,v 1.77 2002-08-18 12:04:40 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -159,6 +159,7 @@
           !
           call rk_2n(f,df)
           count = count + 1     !  reliable loop count even for premature exit
+          if (lshear) call advance_shear
           if (lforcing) call addforce(f)
           if(lout) call write_xyaverages
           if(lout) call write_zaverages

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.29 2002-06-24 18:37:50 dobler Exp $
+! $Id: io_dist.f90,v 1.30 2002-08-18 12:04:40 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -77,7 +77,15 @@ contains
       read(1) a
       if (ip<=8) print*,'read ',file
       if (mode==1) then
-        read(1) t,x,y,z,dx,dy,dz
+!
+!  check whether we want to read deltay from snapshot
+!
+        if (lshear) then
+          read(1) t,x,y,z,dx,dy,dz,deltay
+        else
+          read(1) t,x,y,z,dx,dy,dz
+        endif
+!
         if (ip<=3) print*,'ip,x',ip,x
         if (ip<=3) print*,'y',y
         if (ip<=3) print*,'z',z
@@ -114,7 +122,7 @@ contains
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
       open(91,file=file,form='unformatted')
       write(91) a
-      write(91) t,x,y,z,dx,dy,dz
+      write(91) t,x,y,z,dx,dy,dz,deltay
       close(91)
     endsubroutine output_vect
 !***********************************************************************
@@ -135,7 +143,7 @@ contains
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
       open(91,file=file,form='unformatted')
       write(91) a
-      write(91) t,x,y,z,dx,dy,dz
+      write(91) t,x,y,z,dx,dy,dz,deltay
       close(91)
     endsubroutine output_scal
 !***********************************************************************
@@ -210,7 +218,7 @@ contains
 !
       open(1,file=file,form='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
-      write(1) t,x,y,z,dx,dy,dz
+      write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
     endsubroutine outpus
 !***********************************************************************

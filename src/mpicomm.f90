@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.35 2002-08-16 21:23:48 brandenb Exp $
+! $Id: mpicomm.f90,v 1.36 2002-08-18 12:04:40 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -33,7 +33,6 @@ module Mpicomm
   real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
   real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
   real, dimension (nghost,my,mz,mvar) :: fahi, falo, fbhi, fblo, fao, fbo ! For shear
-  real :: deltay ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
@@ -380,21 +379,16 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
-      double precision :: frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltaydy, frak, c1, c2, c3, c4, c5, c6
       integer :: i, ystep
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
 !
-!  Shear is now given by the parameter Sshear (independent of Omega)
-!
-      deltay=-Sshear*Lx*t
-!
 !  Sixth order interpolation along the y-direction
 !
-      deltay=deltay-int(deltay/Ly)*Ly
-      deltay=deltay/dy
-      displs=int(deltay)
+      deltaydy=deltay/dy
+      displs=int(deltaydy)
       if (nprocy==1) then
-         frak=deltay-displs
+         frak=deltaydy-displs
          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
@@ -493,8 +487,8 @@ module Mpicomm
          fa(:,m2+1:2*my-2*nghost,:,:) = fahi(:,m1:my,:,:)
          fb(:,1:m2,:,:) = fblo(:,1:m2,:,:)
          fb(:,m2+1:2*my-2*nghost,:,:) = fbhi(:,m1:my,:,:)
-         displs = modulo(int(deltay),ny)
-         frak = deltay - int(deltay)
+         displs = modulo(int(deltaydy),ny)
+         frak = deltaydy - int(deltaydy)
          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
