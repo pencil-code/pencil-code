@@ -1,7 +1,8 @@
 #
 #  this should be sourced each time you log in;
-#  You may want to execute this in your .cshrc
-#  Wolfgang, could this be made shell-independent?
+#  You may or may not want to put the lins
+#    source $HOME/f90/pencil_modular/sourceme.csh
+#  into your .cshrc
 #
 set cdpath = ( ../  ../../ ../../../ ~/ )
 set path=(. ../bin ../../bin ../../../bin ../../../../bin $HOME/bin $path)
