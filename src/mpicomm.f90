@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.124 2004-08-27 12:08:31 ajohan Exp $
+! $Id: mpicomm.f90,v 1.125 2004-09-12 16:31:31 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -986,6 +986,17 @@ module Mpicomm
       call MPI_REDUCE(fmax_tmp, fmax, nreduce, MPI_REAL, MPI_MAX, root, &
                       MPI_COMM_WORLD, ierr)
     endsubroutine mpireduce_max
+!***********************************************************************
+    subroutine mpireduce_min(fmin_tmp,fmin,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmin_tmp,fmin
+!
+!  calculate total minimum for each array element and return to root
+!
+      call MPI_REDUCE(fmin_tmp, fmin, nreduce, MPI_REAL, MPI_MIN, root, &
+                      MPI_COMM_WORLD, ierr)
+    endsubroutine mpireduce_min
 !***********************************************************************
     subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
 !
