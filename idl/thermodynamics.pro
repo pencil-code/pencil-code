@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.7 2003-08-11 17:50:15 mee Exp $
+;  $Id: thermodynamics.pro,v 1.8 2003-08-20 19:42:46 mee Exp $
 
 if (not lionization) then begin
   print,'Using simple equation of state...'
@@ -10,7 +10,7 @@ endif else begin
   if (lionization_fixed) then begin 
     print,'Using fixed ionisation equation of state...'
     seedarray=fltarr(nx)
-    seedarray[*]=par.yH0
+    seedarray[*]=yH0
     yyH=spread(spread(seedarray,1,ny),2,nz)
   end else begin
     print,'Using full ionisation equation of state...'

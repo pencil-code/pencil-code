@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.9 2003-08-15 18:38:22 brandenb Exp $
+;  $Id: readstartpars.pro,v 1.10 2003-08-20 19:42:46 mee Exp $
 ;
 ;  Read startup parameters
 ;
@@ -36,6 +36,9 @@ if (cpar gt 0) then begin
   if (lmagnetic) then begin
     eta=par2.eta
     b_ext=par2.b_ext
+  endif
+  if (lionization_fixed) then begin
+    yH0=par2.yH0
   endif
 endif else begin
   if (quiet le 4) then print, 'Note: the file ', pfile,' does not yet exist.'

@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.1 2003-08-02 15:38:25 mee Exp $
+; $Id: pc_read_ts.pro,v 1.2 2003-08-20 19:42:46 mee Exp $
 ;
 ;  Read time_series.dat
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-02 15:38:25 $
-;  $Revision: 1.1 $
+;  $Date: 2003-08-20 19:42:46 $
+;  $Revision: 1.2 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -12,6 +12,46 @@
 ;  REQUIRES: input_table.pro (WD)
 ;  
 ;
+;
+function parse_tsheader, hline
+;
+;  Split header line into the individual variable names.
+;
+  line = strmid(hline,strpos(hline,'#')+1)
+  labels = ['']
+  ;
+  ; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
+  ; obsoleted after 5.2..), so we do this manually:
+  ;
+  while (line ne '') do begin
+    repeat begin
+      line = strmid(line,1)     ; remove first character
+    endrep until (strmid(line,0,1) ne '-')
+    endlb = strpos(line,'-')
+    labels = [labels, strmid(line,0,endlb)]
+    line = strmid(line,endlb)
+  endwhile
+  ;
+  ;  eliminate empty labels
+  ;
+  good = where(labels ne '')
+  return, labels[good]
+end
+; ---------------------------------------------------------------------- ;
+function list_idx, label, list
+;
+;  Return index if label is contained in list, else 0
+;
+  return, (where(list eq label))[0]
+end
+; ---------------------------------------------------------------------- ;
+function in_list, label, list
+;
+;  Return 1 if label is contained in list, else 0
+;
+  return, (list_idx(label,list)+1) ne 0
+end
+; ---------------------------------------------------------------------- ;
 pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom,ssm=ssm, $
                  object=object, $ 
                  datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
@@ -134,44 +174,5 @@ if keyword_set(PRINT) then begin
     print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_params.pro'
 endif
 
-end
-;
-function parse_tsheader, hline
-;
-;  Split header line into the individual variable names.
-;
-  line = strmid(hline,strpos(hline,'#')+1)
-  labels = ['']
-  ;
-  ; strsplit() is not available in IDL prior to 5.3 (and str_sep() was
-  ; obsoleted after 5.2..), so we do this manually:
-  ;
-  while (line ne '') do begin
-    repeat begin
-      line = strmid(line,1)     ; remove first character
-    endrep until (strmid(line,0,1) ne '-')
-    endlb = strpos(line,'-')
-    labels = [labels, strmid(line,0,endlb)]
-    line = strmid(line,endlb)
-  endwhile
-  ;
-  ;  eliminate empty labels
-  ;
-  good = where(labels ne '')
-  return, labels[good]
-end
-; ---------------------------------------------------------------------- ;
-function list_idx, label, list
-;
-;  Return index if label is contained in list, else 0
-;
-  return, (where(list eq label))[0]
-end
-; ---------------------------------------------------------------------- ;
-function in_list, label, list
-;
-;  Return 1 if label is contained in list, else 0
-;
-  return, (list_idx(label,list)+1) ne 0
 end
 ; ---------------------------------------------------------------------- ;
