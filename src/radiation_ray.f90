@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.62 2004-09-12 19:01:48 theine Exp $
+! $Id: radiation_ray.f90,v 1.63 2004-09-23 21:56:05 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -30,7 +30,7 @@ module Radiation
   real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
-  real :: dtau_thresh
+  real :: dtau_thresh1,dtau_thresh2
   real :: arad
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
@@ -116,7 +116,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.62 2004-09-12 19:01:48 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.63 2004-09-23 21:56:05 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -181,7 +181,8 @@ module Radiation
 !  relative errors for (emdtau1, emdtau2) will be
 !  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
 !
-      dtau_thresh=1.6*epsilon(dtau_thresh)**0.25
+      dtau_thresh1=-log(epsilon(dtau_thresh1))
+      dtau_thresh2=1.6*epsilon(dtau_thresh2)**0.25
 !
 !  calculate arad for LTE source function
 !
@@ -523,13 +524,18 @@ module Radiation
         dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
-        emdtau_m=exp(-dtau_m)
-        if (dtau_m>dtau_thresh) then
+        if (dtau_m>dtau_thresh1) then
+          emdtau_m=0.0
+          emdtau1=1.0
+          emdtau2=-1.0
+        elseif (dtau_m<dtau_thresh2) then
+          emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
+          emdtau_m=1-emdtau1
+          emdtau2=-dtau_m**2*(0.5+0.33333333*dtau_m)
+        else
+          emdtau_m=exp(-dtau_m)
           emdtau1=1-emdtau_m
           emdtau2=emdtau_m*(1+dtau_m)-1
-        else
-          emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
-          emdtau2=-dtau_m**2/2+dtau_m**3/3
         endif
         tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
         Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau_m &
@@ -571,10 +577,12 @@ module Radiation
         tau_tot_yz=tau(llstop,m1:m2,n1:n2)
         Qrad0_yz=0
         tau0_yz=0
-        where (tau_tot_yz>dtau_thresh)
-          emtau1_tot_yz=1-exp(-tau_tot_yz)
+        where (tau_tot_yz>dtau_thresh1)
+          emtau1_tot_yz=1.0
+        elsewhere (tau_tot_yz<dtau_thresh2)
+          emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-0.33333333*tau_tot_yz))
         elsewhere
-          emtau1_tot_yz=tau_tot_yz-tau_tot_yz**2/2+tau_tot_yz**3/6
+          emtau1_tot_yz=1-exp(-tau_tot_yz)
         endwhere
         Qrad0_yz=Qrad_tot_yz/emtau1_tot_yz*exp(-tau0_yz)+Qrad0_yz
         Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad0_yz
@@ -595,10 +603,12 @@ module Radiation
                                            Qrad0_zx,tau0_zx, &
                                            Qrad_tot_zx,tau_tot_zx)
         endif
-        where (tau_tot_zx>dtau_thresh)
-          emtau1_tot_zx=1-exp(-tau_tot_zx)
+        where (tau_tot_zx>dtau_thresh1)
+          emtau1_tot_zx=1.0
+        elsewhere (tau_tot_zx<dtau_thresh2)
+          emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
         elsewhere
-          emtau1_tot_zx=tau_tot_zx-tau_tot_zx**2/2+tau_tot_zx**3/6
+          emtau1_tot_zx=1-exp(-tau_tot_zx)
         endwhere
         Qrad0_zx=Qrad_tot_zx/emtau1_tot_zx*exp(-tau0_zx)+Qrad0_zx
         Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad0_zx
@@ -619,10 +629,12 @@ module Radiation
                                            Qrad0_xy,tau0_xy, &
                                            Qrad_tot_xy,tau_tot_xy)
         endif
-        where (tau_tot_xy>dtau_thresh)
-          emtau1_tot_xy=1-exp(-tau_tot_xy)
+        where (tau_tot_xy>dtau_thresh1)
+          emtau1_tot_xy=1.0
+        elsewhere (tau_tot_xy<dtau_thresh2)
+          emtau1_tot_xy=tau_tot_xy*(1-0.5*tau_tot_xy*(1-0.33333333*tau_tot_xy))
         elsewhere
-          emtau1_tot_xy=tau_tot_xy-tau_tot_xy**2/2+tau_tot_xy**3/6
+          emtau1_tot_xy=1-exp(-tau_tot_xy)
         endwhere
         Qrad0_xy=Qrad_tot_xy/emtau1_tot_xy*exp(-tau0_xy)+Qrad0_xy
         Qrad0(l1:l2,m1:m2,nnstart-nrad)=Qrad0_xy
