@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.230 2003-10-30 10:55:55 ajohan Exp $
+! $Id: entropy.f90,v 1.231 2003-10-30 14:21:59 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.230 2003-10-30 10:55:55 ajohan Exp $")
+           "$Id: entropy.f90,v 1.231 2003-10-30 14:21:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -271,7 +271,7 @@ module Entropy
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f,T0)
-        case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:)+3.14159)
+        case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
@@ -1253,8 +1253,8 @@ endif
 !      
       if(lsinus_heat) then 
         heat = heat + TT/rho1*( &
-            chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) - 3.14159) - &
-            chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) - 3.14159)**2)
+            chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) + pi) - &
+            chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) + pi)**2)
       endif
 !
 !  add to entropy equation
