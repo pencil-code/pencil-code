@@ -1,0 +1,249 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   auto-test
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   12-Aug-2002
+# CVS: $Id: auto-test,v 1.1 2002-08-13 10:34:22 dobler Exp $
+# Description:
+#   Test compilation and results on a set of sample directories to
+#   validate the pencil code. Uses Perl because I started to do this with
+#   the Test/Test::Harness module and because we need to do pattern
+#   matching to extract the relevant output lines.
+
+use strict;
+use Cwd;
+use Getopt::Long;
+use vars qw{ %failed $ntests $test_status };
+
+
+# ---------------------------------------------------------------------- #
+# Test the following subdirs of samples/ :
+my @sampdir = qw( conv-slab conv-slab-flat );
+# Test the following subdirs of runs/ :
+my @runsdir = qw( forced/hel1 rings/rings1 );
+# ---------------------------------------------------------------------- #
+
+my $tmpdir = '/var/tmp/pencil-tmp';
+my $res;
+my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
+my (%opts);			# variables written by GetOptions
+(my $cmdname = $0) =~ s{.*/}{};
+my $debug = 0;
+my $help = 0;
+
+my $usage =
+"Usage:  $cmdname [options]
+  Test compilation and results on a set of sample directories to
+  validate the pencil code. Uses Perl because we need to do pattern matching
+  to extract the relevant output lines.
+Options:
+  -h, --help            \tShow usage overview
+  -c, --compile-only    \tTest compilation only
+  -nr, --norun          \tTest compilation only";
+
+## Process command line options
+GetOptions(\%opts,
+	   qw( -h   --help
+	            --debug
+               -c   --compile-only
+	       -nr  --norun
+                             ));
+
+if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
+if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
+if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
+if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+
+
+# Make sure we are in the top directory and have the right PATH
+die "Need to set environment variable PENCIL_HOME\n" 
+    unless (defined($ENV{PENCIL_HOME}));
+my $topdir = "$ENV{PENCIL_HOME}";
+chdir $topdir;
+$ENV{PATH} .= ":$ENV{PENCIL_HOME}/bin";
+
+# Process dirs in samples/ directory
+for my $d (@sampdir) {
+    test_rundir("$topdir/samples/$d");
+}
+# Process dirs in runs/ directory
+if (-d "$topdir/runs") {
+    for my $d (@runsdir) {
+	test_rundir("$topdir/runs/$d");
+    }
+} else {
+    print "Not checking in $topdir/runs : no such directory\n";
+}
+
+
+# ---------------------------------------------------------------------- #
+sub my_ok {
+# Similar to Test's and Test::Harness' ok() function: consider success if
+# first two argumets are equal, otherwise report a problem and print the
+# third argument (which should normally contain the output from the shell
+# calls that we are normally testing here).
+# Args #4 and #5 are the current run directory and the phase (compilation,
+# starting, running) we are in.
+
+    my $arg1 = shift;
+    my $arg2 = shift;
+    my $mesg = (shift || "<No diagnostics>"); 
+    chomp($mesg);
+    my $dir = shift;
+    my $phase = shift;
+
+    # Allow for calls like `ok(0)' or `ok(1)':
+    if (!defined($arg2)) {
+	$arg2 = $arg1 ? $arg1 : 1;
+    }
+    if ($arg1 eq $arg2) {
+	print "  ok\n"
+    } else {
+	print "  not ok:\n  $mesg\n";
+	$test_status = 1;
+	# report only first failure:
+	$failed{$dir} = $phase unless defined($failed{$dir});
+    }
+}
+
+sub test_shell_cmd {
+    my $cmd = shift;
+    my $dir = ( shift || "<Unknown directory>");
+    my $phase = ( shift || "<Unkonwn phase>");
+
+    my $res = `$cmd 2>&1`;
+    chomp($res);
+    my_ok($?,0,$res,$dir,$phase); # $? = 0 means success
+    $res;			# Return output so we can analyze it if desired
+}
+
+sub test_compile {
+# Test compilation only
+    if ($t_comp) {
+	my $dir = shift;
+	print "    Compiling..";
+	test_shell_cmd('cd src; make',$dir,"compilation");
+    }
+}
+
+sub test_start {
+# Test starting only
+    if ($t_start) {
+	my $dir = shift;
+	print "    Starting..";
+	test_shell_cmd('start.csh',$dir,"starting");
+    }
+}
+
+sub test_run {
+# Test running only (does not analyze output, but returns it)
+    if ($t_run) {
+	my $dir = shift;
+	print "    Running..";
+	test_shell_cmd('run.csh',$dir,"running");	# returns the output
+	my_ok(0,0,"",$dir,"running");
+    }
+}
+
+sub test_results {
+# Analyze results from code
+    if ($t_res) {
+	my $dir = shift;
+	print "    Validating results..";
+	print "    [Not yet implemented]";    
+	my_ok(0,0,"",$dir,"results");
+    }
+}
+
+sub test_rundir {
+# Test compilation, starting, running and results on 
+    my $dir = shift;
+    my $created_tmp = 0;
+
+    $test_status = 0;		#  so far, everything is OK
+
+    # Go to directory and identify it
+    if (! -d $dir) {
+	print STDERR "No such directory: $dir\n";
+	return;
+    }
+    chdir $dir;
+    print "\n", cwd(), ":\n";
+    $ntests++;
+
+    # Make sure we have everything we need
+    if (! defined(-e 'src/run.f90')) { # has `lnsrc' been run yet?
+	my $res = `lnsrc 2>&1`;
+	if ($?) {
+	    print "    Problems running lnsrc:\n", $res;
+	}
+    }
+
+    # Test compilation
+    test_compile($dir);
+    return if ($test_status);
+
+    # Ensure we have a tmp directory and test starting and running
+    if (! -d 'tmp') {
+	if (-l 'tmp') {
+	    print "  tmp is file or empty link;\n"
+		. "  removing and generating tmp -> $tmpdir\n";
+	    system("rm", "tmp");
+	}
+	else
+	{
+	    print "    No tmp directory; generating tmp -> $tmpdir\n";
+	}
+	system("mkdir -p $tmpdir; ln -s $tmpdir tmp");
+	$created_tmp = 1;
+    }
+    test_start($dir);
+    goto cleanup if ($test_status);
+    # we only get here if compiling and starting was OK
+    test_run($dir);
+    return if ($test_status);
+
+    # need to check the output here..
+    test_results($dir);
+
+    # Clean up if necessary
+  cleanup:
+    if ($created_tmp) {
+	system("rm", "tmp");
+	system("rm", "-r", "$tmpdir");
+    }
+}
+
+
+END {
+    if (!$help) {
+	print "\n" . "-" x 70 . "\n";
+	if (%failed) {
+	    print "Failed ", scalar(keys %failed),
+	      " test(s) out of $ntests:\n";
+	    while (my ($dir,$phase) = each %failed) {
+		print "  $dir ($phase)\n";
+	    }
+	} else {
+	    print "All $ntests tests succeeded.\n"
+	    }
+	print "\n";
+    }
+}
+
+# End of file auto-test
