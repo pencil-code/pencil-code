@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.76 2003-05-07 10:15:05 brandenb Exp $
+! $Id: register.f90,v 1.77 2003-05-20 14:45:11 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -180,7 +180,7 @@ module Register
 !      call initialize_dustvelocity
 !      call initialize_dustdensity
       call initialize_gravity
-      call initialize_interstellar
+      call initialize_interstellar(lstart)
       call initialize_shear
       call initialize_viscosity
 !

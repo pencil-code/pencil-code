@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.14 2003-01-29 07:11:50 brandenb Exp $
+! $Id: interstellar.f90,v 1.15 2003-05-20 14:45:11 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.14 2003-01-29 07:11:50 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.15 2003-05-20 14:45:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -78,7 +78,7 @@ module Interstellar
 !
     endsubroutine register_interstellar
 !***********************************************************************
-    subroutine initialize_interstellar()
+    subroutine initialize_interstellar(lstart)
 !
 !  Perform any post-parameter-read initialization eg. set derived 
 !  parameters
@@ -92,31 +92,35 @@ module Interstellar
       use Sub, only: inpui,inpup
 !
       logical, save :: first=.true.
+      logical :: lstart
       logical :: exist
 
       if (first) then
          if (lroot.and.ip<14) then
             print*, 'initialize_interstellar: reading seed file'
-            print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+            print*, 'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
          endif
-         call inpui(trim(directory)//'/seed.dat',seed,nseed)
-         call random_seed_wrapper(put=seed(1:nseed))
+         if (.not. lstart) then
+            call inpui(trim(directory)//'/seed.dat',seed,nseed)
+            call random_seed_wrapper(put=seed(1:nseed))
+         endif
 !
          inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
          if (exist) then 
-           if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
-           call inpup(trim(datadir)//'/interstellar.dat',  &
-                                     interstellarsave,ninterstellarsave)
-           t_next_SNI=interstellarsave(1)
-           if (lroot.and.ip<14) &
-             print*, 'initialize_interstellar: t_next_SNI',t_next_SNI
+            if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
+            call inpup(trim(directory)//'/interstellar.dat',  &
+                 interstellarsave,ninterstellarsave)
+            t_next_SNI=interstellarsave(1)
+            if (lroot.and.ip<14) &
+                 print*, 'initialize_interstellar: t_next_SNI',t_next_SNI
          else
-           interstellarsave(1)=t_next_SNI
+            interstellarsave(1)=t_next_SNI
          endif
       endif
+
       if (lroot.and.ip<14) then
-        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-        print*,'initialize_interstellar: finished'
+         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+         print*,'initialize_interstellar: finished'
       endif
 !
     endsubroutine initialize_interstellar
@@ -208,7 +212,7 @@ module Interstellar
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
     call check_SNI (f,l_SNI)
-    call check_SNII(f,l_SNI)
+!    call check_SNII(f,l_SNI)
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -276,54 +280,54 @@ module Interstellar
 !  NB: currently no 'nzskip' mechanism to prevent SNII occurring near
 !   top or bottom of box.  Non-trivial to implement with nprocz > 1 -- and
 !   shouldn't be a real problem, as mass near boundaries should be low.
-      mass_cloud=0.0
-      do n=n1,n2
-        do m=m1,m2
-          lnrho(:)=f(l1:l2,m,n,ilnrho)
-          rho(:)=exp(lnrho(:))
-          ss(:)=f(l1:l2,m,n,ient)
-          TT(:)=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss(:))/gamma1*cp1
-          rho_cloud(:)=0.0
-          where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
-                                              rho_cloud(:)=rho(:)
-          mass_cloud=mass_cloud+sum(rho_cloud(:))
-        enddo
-      enddo
-      fsum1_tmp=(/ mass_cloud /)
-      !print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
-      call mpireduce_sum(fsum1_tmp,fsum1,1) 
-      call mpibcast_real(fsum1,1)
-      mass_cloud_dim=fsum1(1)*(dx*dy*dz)*tosolarMkpc3
-      !print*,'check_SNII, iproc,fsum1:',iproc,fsum1(1)
-! need convert to dimensional units, for rate/probability calculation only. 
-! don't overwrite mass_cloud (on individual processors), as it's re-used.
-      if (lroot .and. ip < 14) &
-         print*,'check_SNII, mass_cloud_dim:',mass_cloud_dim
-!
-      freq_SNII=frac_heavy*frac_converted*mass_cloud_dim/mass_SN/tau_cloud
-      prob_SNII=freq_SNII*dt
-      rate_SNII=freq_SNII*1e-3/Lxyz(1)/Lxyz(2)
-      if (lroot) call random_number_wrapper(franSN)   
-      call mpibcast_real(franSN,1)
-      if (lroot .and. ip < 14) &
-        print*,'check_SNII, rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
-      if (franSN(1) <= prob_SNII) then
-!  position_SNII needs the mass_clouds for each processor;  
-!   communicate and store them here, to avoid recalculation.
-        mass_cloud_byproc(:)=0.0
-! use non-root broadcasts for the communication...
-        do icpu=1,ncpus
-          fmpi1=mass_cloud
-          call mpibcast_real_nonroot(fmpi1,1,icpu-1)
-          mass_cloud_byproc(icpu)=fmpi1(1)
-        enddo  
-        if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
-        call position_SNII(f,mass_cloud_byproc)
-        call explode_SN(f,2)
-      endif
+       mass_cloud=0.0
+       do n=n1,n2
+           do m=m1,m2
+             lnrho(:)=f(l1:l2,m,n,ilnrho)
+             rho(:)=exp(lnrho(:))
+             ss(:)=f(l1:l2,m,n,ient)
+             TT(:)=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss(:))/gamma1*cp1
+             rho_cloud(:)=0.0
+             where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
+                  rho_cloud(:)=rho(:)
+             mass_cloud=mass_cloud+sum(rho_cloud(:))
+          enddo
+       enddo
+       fsum1_tmp=(/ mass_cloud /)
+       !print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
+       call mpireduce_sum(fsum1_tmp,fsum1,1) 
+       call mpibcast_real(fsum1,1)
+       mass_cloud_dim=fsum1(1)*(dx*dy*dz)*tosolarMkpc3
+       !print*,'check_SNII, iproc,fsum1:',iproc,fsum1(1)
+       ! need convert to dimensional units, for rate/probability calculation only. 
+       ! don't overwrite mass_cloud (on individual processors), as it's re-used.
+       if (lroot .and. ip < 14) &
+            print*,'check_SNII, mass_cloud_dim:',mass_cloud_dim
+       !
+       freq_SNII=frac_heavy*frac_converted*mass_cloud_dim/mass_SN/tau_cloud
+       prob_SNII=freq_SNII*dt
+       rate_SNII=freq_SNII*1e-3/Lxyz(1)/Lxyz(2)
+       if (lroot) call random_number_wrapper(franSN)   
+       call mpibcast_real(franSN,1)
+       if (lroot .and. ip < 14) &
+            print*,'check_SNII, rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
+       if (franSN(1) <= prob_SNII) then
+          !  position_SNII needs the mass_clouds for each processor;  
+          !   communicate and store them here, to avoid recalculation.
+          mass_cloud_byproc(:)=0.0
+          ! use non-root broadcasts for the communication...
+          do icpu=1,ncpus
+             fmpi1=mass_cloud
+             call mpibcast_real_nonroot(fmpi1,1,icpu-1)
+             mass_cloud_byproc(icpu)=fmpi1(1)
+          enddo
+          if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
+          call position_SNII(f,mass_cloud_byproc)
+          call explode_SN(f,2)
+       endif
     endif
-!
-    endsubroutine check_SNII
+    !
+  endsubroutine check_SNII
 !***********************************************************************
     subroutine position_SNI(f)
 !
