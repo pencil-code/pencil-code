@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2002-11-14 19:03:12 $
-;;;  $Revision: 1.1 $
+;;;  $Date: 2002-12-03 07:56:57 $
+;;;  $Revision: 1.2 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -105,8 +105,8 @@ if (in_list('t',labels)) then begin
   for i=0,ncols-1 do begin      ; collect all non-special variables
     if (not in_list(labels[i], ['it','t','dt','urms','brms'])) then $
         idxlist = [idxlist, list_idx(labels[i],labels)]
-    print, strtrim(i,2), ' ', labels[i], $
-        in_list(labels[i], ['it','t','dt','urms','brms'])
+;    print, strtrim(i,2), ' ', labels[i], $
+;        in_list(labels[i], ['it','t','dt','urms','brms'])
   endfor
   idxlist = [list_idx('brms',labels),idxlist]
   idxlist = [list_idx('urms',labels),idxlist]
@@ -122,6 +122,7 @@ if (in_list('t',labels)) then begin
         message, 'There was a problem executing <' + pcmd + '>', /INFO
   endfor
   restore_state
+  print, "Type   help,ts,/STRUCT   for a full list of available slots"
 endif else begin
   message, "Odd data: cannot find time `t' in time series"
 endelse
