@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.29 2002-07-04 16:52:37 dobler Exp $
+! $Id: mpicomm.f90,v 1.30 2002-07-05 13:08:07 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -278,6 +278,8 @@ module Mpicomm
 !***********************************************************************
     subroutine finalise_isendrcv_bdry(f)
 !
+      use Cdata, only: bcy1,bcy2,bcz1,bcz2
+!
 !  Make sure the communications initiated with initiate_isendrcv_bdry are
 !  finished and insert the just received boundary values.
 !   Receive requests do not need to (and on OSF1 cannot) be explicitly
@@ -287,6 +289,7 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: f
       character (len=160) :: errmesg
+      integer :: j
 !
 !  1. wait until data received
 !  2. set ghost zones
@@ -297,8 +300,16 @@ module Mpicomm
       if (nprocy>1) then
         call MPI_WAIT(irecv_rq_fromuppy,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
-        f(l1:l2, 1:m1-1,n1:n2,:)=lbufyi  !!(set lower buffer)
-        f(l1:l2,m2+1:my,n1:n2,:)=ubufyi  !!(set upper buffer)
+        do j=1,mvar
+           if (ipy /= 0 .OR. bcy1(j)=='p') then
+              f(l1:l2, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
+           endif
+           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+              f(l1:l2,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+           endif
+        enddo
+  !      f(l1:l2, 1:m1-1,n1:n2,:)=lbufyi  !!(set lower buffer)
+  !      f(l1:l2,m2+1:my,n1:n2,:)=ubufyi  !!(set upper buffer)
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
       endif
@@ -308,8 +319,16 @@ module Mpicomm
       if (nprocz>1) then
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
-        f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
-        f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
+        do j=1,mvar
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
+           endif
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
+           endif
+        enddo
+        !f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
+        !f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
       endif
@@ -321,10 +340,24 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRlu,irecv_stat_Flu,ierr)
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
-        f(l1:l2, 1:m1-1, 1:n1-1,:)=llbufi  !!(set ll corner)
-        f(l1:l2,m2+1:my, 1:n1-1,:)=ulbufi  !!(set ul corner)
-        f(l1:l2,m2+1:my,n2+1:mz,:)=uubufi  !!(set uu corner)
-        f(l1:l2, 1:m1-1,n2+1:mz,:)=lubufi  !!(set lu corner)
+        do j=1,mvar
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              if (ipy /= 0 .OR. bcy1(j)=='p') then 
+                 f(l1:l2, 1:m1-1, 1:n1-1,:)=llbufi  !!(set ll corner)
+              endif
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
+                 f(l1:l2,m2+1:my, 1:n1-1,:)=ulbufi  !!(set ul corner)
+              endif
+           endif
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+                 f(l1:l2,m2+1:my,n2+1:mz,:)=uubufi  !!(set uu corner)
+              endif
+              if (ipy /= 0 .OR. bcy1(j)=='p') then
+                 f(l1:l2, 1:m1-1,n2+1:mz,:)=lubufi  !!(set lu corner)
+              endif
+           endif
+        enddo
         call MPI_WAIT(isend_rq_TOll,isend_stat_Tll,ierr)
         call MPI_WAIT(isend_rq_TOul,isend_stat_Tul,ierr)
         call MPI_WAIT(isend_rq_TOuu,isend_stat_Tuu,ierr)
