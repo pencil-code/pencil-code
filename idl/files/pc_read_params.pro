@@ -1,15 +1,17 @@
-pro pc_read_grid,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,lentropy=lentropy, $
-                 lmagnetic=lmagnetic, lradiation=lradiation,lpscalar=lpscalar, lforcing=lforcing, $
-                 lshear=lshear, $
-                 cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1, $
-                 z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz, $
-                 mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
-                 object=object, $
-                 datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+; $Id: pc_read_params.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+;
+;
+;  Read params.nml
+;
+pro pc_read_params,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,lentropy=lentropy, $
+                   lmagnetic=lmagnetic, lradiation=lradiation,lpscalar=lpscalar, lforcing=lforcing, $
+                   lshear=lshear, $
+                   cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1, $
+                   z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz, $
+                   mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
+                   object=object, $
+                   datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
   COMMON pc_precision, zero, one
-;
-;  Read grid.dat
-;
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "

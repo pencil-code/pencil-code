@@ -1,9 +1,11 @@
-pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, $
-                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
-  COMMON pc_precision, zero, one
+; $Id: pc_read_grid.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+;
 ;
 ;  Read grid.dat
 ;
+pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, $
+                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+  COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "

@@ -1,3 +1,8 @@
+; $Id: pc_set_precision.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+;
+;
+;  Read ensure 'zero' and 'one' are set in the pc_precision common block.
+;
 pro pc_set_precision, precision=precision
   COMMON pc_precision, zero, one
 

@@ -1,3 +1,7 @@
+; $Id: pc_read_dim.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+;
+;  Read dim.dat
+;
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  nx=nx, ny=ny, nz=nz, $
                  precision=precision, $
