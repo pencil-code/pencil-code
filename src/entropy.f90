@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.66 2002-06-17 20:06:40 dobler Exp $
+! $Id: entropy.f90,v 1.67 2002-06-18 16:26:45 dobler Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.66 $", &
-           "$Date: 2002-06-17 20:06:40 $")
+           "$Revision: 1.67 $", &
+           "$Date: 2002-06-18 16:26:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -391,7 +391,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
 !  check maximum diffusion from thermal diffusion
 !
-      maxdiffus=amax1(maxdiffus,chi)
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi)
 !
     endsubroutine calc_heatcond
 !***********************************************************************

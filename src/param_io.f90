@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $ 
+! $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $ 
 
 module Param_IO
 
@@ -8,6 +8,7 @@ module Param_IO
 !  Using this module is also a compact way of referring to all physics
 !  modules at once.
 !
+  use Timestep
   use Hydro
   use Forcing
   use Gravity
@@ -54,7 +55,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $
+!   $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -107,7 +108,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.25 2002-06-17 20:05:29 dobler Exp $
+!   $Id: param_io.f90,v 1.26 2002-06-18 16:26:45 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -150,9 +151,14 @@ module Param_IO
 !
 !  timestep
 !
-      ldt = (dt/=0.)
-      if (.not. ldt .and. lroot .and. ip<14) &
-           print*,'timestep based on CFL cond; cdt=',cdt
+      ldt = (dt==0.)            ! need to calculate dt dynamically?
+      if (lroot .and. ip<14) then
+        if (ldt) then
+          print*,'timestep based on CFL cond; cdt=',cdt
+        else
+          print*, 'absolute timestep dt=', dt
+        endif
+      endif
 !
     endsubroutine read_runpars
 !***********************************************************************

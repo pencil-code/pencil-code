@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.27 2002-06-17 20:06:40 dobler Exp $
+! $Id: hydro.f90,v 1.28 2002-06-18 16:26:45 dobler Exp $
 
 module Hydro
 
@@ -63,8 +63,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.27 $", &
-           "$Date: 2002-06-17 20:06:40 $")
+           "$Revision: 1.28 $", &
+           "$Date: 2002-06-18 16:26:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -259,7 +259,7 @@ module Hydro
 !
 !  maximum squared avection speed
 !
-      maxadvec2=amax1(maxadvec2,u2)
+      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
 !
 !  >> Wolfgang, could you please reinstate this if you still need it?
 !  >> Your old material is now in the damping routine below.

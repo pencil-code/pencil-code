@@ -1,8 +1,10 @@
-! $Id: timestep.f90,v 1.12 2002-06-17 20:05:29 dobler Exp $
+! $Id: timestep.f90,v 1.13 2002-06-18 16:26:45 dobler Exp $
 
 module Timestep
 
   implicit none
+
+  integer :: itorder=3
 
   contains
 
@@ -53,19 +55,18 @@ module Timestep
           ds=0.
         else
           lfirst=.false.
-          df=alpha(i)*df  !(this could be subsumed into pde, but could be dangerous!)
+          df=alpha(i)*df  !(could be subsumed into pde, but that could be dangerous!)
           ds=alpha(i)*ds
         endif
         call pde(f,df)
         ds=ds+1.
 !
-!  if we are in the first step we need to calculate timestep
-!  This can only be done using UUmax which was calculated in pde.
-!  This only be done if we are on the root processor.
-!  Then need to broadcast dt to all processors.
+!  If we are in the first step we need to calculate timestep dt.
+!  This is done here because it uses UUmax which was calculated in pde.
+!  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.lroot) then
-          if (.not. ldt) dt = cdt*dxmin/UUmax
+          if (ldt) dt = cdt*dxmin/UUmax
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         call mpibcast_real(dt,1)

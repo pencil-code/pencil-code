@@ -136,7 +136,7 @@ cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o $(IO).o
-param_io.o:  param_io.f90 $(physics)
+param_io.o:  param_io.f90 timestep.o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
