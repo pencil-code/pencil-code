@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.40 2003-06-14 18:07:38 theine Exp $
+! $Id: ionization.f90,v 1.41 2003-06-15 05:39:21 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -59,7 +59,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.40 2003-06-14 18:07:38 theine Exp $")
+           "$Id: ionization.f90,v 1.41 2003-06-15 05:39:21 brandenb Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -178,7 +178,7 @@ module Ionization
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT,ee)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -196,6 +196,7 @@ module Ionization
       real, dimension (nx), intent(in) :: lnrho,ss
       real, dimension (nx), intent(out) :: cs2,cp1tilde,TT1
       real, dimension (nx), optional, intent(in) :: yH,TT
+      real, dimension (nx), optional, intent(out) :: ee
       real, dimension (nx) :: f,dlnTT_dy,dfdy,dlnTT_dlnrho
       real, dimension (nx) :: dfdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dfdss,dydss,dlnPdss
@@ -224,6 +225,10 @@ module Ionization
       TT1=1./TT
       cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
       cp1tilde=dlnPdss/dlnPdlnrho
+!
+      if (ldiagnos) then
+        if(present(ee)) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      endif
 !
     endsubroutine thermodynamics
 !***********************************************************************

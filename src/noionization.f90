@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.21 2003-06-14 18:07:38 theine Exp $
+! $Id: noionization.f90,v 1.22 2003-06-15 05:39:21 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -58,7 +58,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.21 2003-06-14 18:07:38 theine Exp $")
+           "$Id: noionization.f90,v 1.22 2003-06-15 05:39:21 brandenb Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -133,7 +133,7 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT,ee)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -150,6 +150,7 @@ module Ionization
 !
       real, dimension (nx), intent(in) :: lnrho,ss
       real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde
+      real, dimension (nx), intent(out), optional :: ee
       real, dimension (nx), intent(in), optional :: yH,TT
       logical :: ldummy
 !
@@ -159,6 +160,10 @@ module Ionization
       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       cp1tilde=1.
+!
+      if (ldiagnos) then
+        if(present(ee)) ee=cs2/(gamma1*gamma)
+      endif
 !
     endsubroutine thermodynamics
 !***********************************************************************

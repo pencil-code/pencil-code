@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.164 2003-06-14 18:07:38 theine Exp $
+! $Id: entropy.f90,v 1.165 2003-06-15 05:39:21 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.164 2003-06-14 18:07:38 theine Exp $")
+           "$Id: entropy.f90,v 1.165 2003-06-15 05:39:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -442,9 +442,9 @@ module Entropy
       if (lionization) then
         yH=f(l1:l2,m,n,iyH)
         TT=f(l1:l2,m,n,iTT)
-        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH=yH,TT=TT)
+        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH=yH,TT=TT,ee=ee)
       else
-        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde) 
+        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee=ee)
       endif
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
