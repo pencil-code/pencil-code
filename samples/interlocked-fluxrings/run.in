@@ -3,8 +3,8 @@
 !  run parameters for interlocked magnetic flux rings
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.21 2004-04-07 10:36:33 theine Exp $'
-  nt=10, it1=2, cdt=0.4, cdtv=0.08, isave=50, itorder=3,
+  cvsid='$Id: run.in,v 1.22 2004-07-02 10:08:16 brandenb Exp $'
+  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=50, itorder=3,
   tmax = 50.
   dsnap=50, dvid=0.6,
   ip=14

@@ -3,10 +3,10 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.8 2004-05-25 11:51:38 dobler Exp $',
+  cvsid='$Id: run.in,v 1.9 2004-07-02 10:08:17 brandenb Exp $',
   ip=13,
   nt=50, it1=20, isave=200, itorder=3,
-  cdt=0.4, cdtv=0.08, dtmin=1e-6,
+  cdt=0.4, cdtv=0.3, dtmin=1e-6,
   dsnap=2., d2davg=.5, ! time intervals for writing snapshots and phi-averages
   dvid=1000., slice_position='m' ! time interval and position for slices
   bcx = 'a','s','s','a2','sT','a','s','s',

@@ -3,8 +3,8 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.25 2004-04-07 10:36:32 theine Exp $',
-  nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
+  cvsid='$Id: run.in,v 1.26 2004-07-02 10:08:16 brandenb Exp $',
+  nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen='system'
   random_gen='min_std'
