@@ -1,16 +1,11 @@
 ### Makefile for modular pencil code
 
-LIBSIG=-L$(HOME)/f90/lib
-LDMPI=-lmpi
-MPICOMM=nompicomm
-GLOBAL=global_rr
-GRAVITY=grav_r
-FORCING=noforcing
-ENTROPY=entropy
-MAGNETIC=magnetic
-IO=io_dist
+## Include settings local to run directory
+include Makefile.local
 
-CFLAGS=-O3 -DFUNDERSC=1
+## Default settings
+FC=f90
+CFLAGS=$(CFLAGS) -DFUNDERSC=1
 
 ### Begin machine dependent
 
