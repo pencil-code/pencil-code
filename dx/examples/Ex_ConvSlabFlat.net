@@ -1,5 +1,5 @@
 //
-// time: Tue Dec  3 02:12:58 2002
+// time: Tue Dec  3 02:46:58 2002
 //
 // version: 3.1.2 (format), 4.2.0 (DX)
 //
@@ -12,14 +12,14 @@ include "ReadVariable.net"
 include "ConditionalDataPoints.net"
 //
 // MODULE main
-// page assignment: BField	order=5, windowed=0, showing=0
-// page assignment: BoundingBox	order=3, windowed=0, showing=0
-// page assignment: Convergence	order=7, windowed=0, showing=0
-// page assignment: Density	order=4, windowed=0, showing=0
-// page assignment: Main	order=1, windowed=0, showing=1
-// page assignment: ReadVars	order=2, windowed=0, showing=0
-// page assignment: Velocity	order=6, windowed=0, showing=0
-// workspace: width = 603, height = 371
+// page assignment: BoundingBox	order=4, windowed=0, showing=0
+// page assignment: Convergence	order=8, windowed=0, showing=0
+// page assignment: Density	order=5, windowed=0, showing=0
+// page assignment: Entropy	order=6, windowed=0, showing=1
+// page assignment: Main	order=2, windowed=0, showing=0
+// page assignment: ReadVars	order=3, windowed=0, showing=0
+// page assignment: Velocity	order=7, windowed=0, showing=0
+// workspace: width = 372, height = 614
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
@@ -33,8 +33,8 @@ macro main(
     // input[6]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[7]: defaulting = 0, visible = 0, type = 16777217, value = { 1 20 1 1 20 1 }
     // page group: ReadVars
-    // vcr[1]: min = 1, max = 20, beg = 1, end = 20, cur = 1, inc = 1, loop = on, step = off, pal = on
-    // window: position = (0.0127,0.0742), size = 0.2734x0.1042
+    // vcr[1]: min = 1, max = 20, beg = 1, end = 20, cur = 17, inc = 1, loop = on, step = off, pal = off
+    // window: position = (0.1035,0.1341), size = 0.2734x0.1042
     //
     main_Sequencer_1_in_3 = @frame;
 main_Sequencer_1_out_1[cache: 2] = 
@@ -83,8 +83,8 @@ main_Compute_5_out_1 =
     ) [instance: 5, cache: 1];
     // 
     // node Isosurface[1]: x = 104, y = 237, inputs = 6, label = Isosurface
-    // input[2]: defaulting = 0, visible = 0, type = 5, value = 1.002
-    // input[3]: defaulting = 1, visible = 1, type = 1, value = 1
+    // input[2]: defaulting = 1, visible = 0, type = 5, value = 1.002
+    // input[3]: defaulting = 0, visible = 1, type = 1, value = 6
     // page group: Density
     //
 main_Isosurface_1_out_1 = 
@@ -133,35 +133,25 @@ main_ReadVariable_2_out_1 =
     //
 velocity = main_ReadVariable_2_out_1;
     // 
-    // node Receiver[9]: x = 122, y = 15, inputs = 1, label = velocity
+    // node Receiver[9]: x = 123, y = 12, inputs = 1, label = velocity
     // page group: Velocity
     //
 main_Receiver_9_out_1[cache: 0] = velocity;
     // 
-    // node DivCurl[1]: x = 217, y = 110, inputs = 2, label = DivCurl
-    // page group: Velocity
-    //
-main_DivCurl_1_out_1,
-main_DivCurl_1_out_2 = 
-    DivCurl(
-    main_Receiver_9_out_1,
-    main_DivCurl_1_in_2
-    ) [instance: 1, cache: 1];
-    // 
-    // node ConditionalDataPoints[1]: x = 52, y = 250, inputs = 4, label = ConditionalDataPoints
-    // input[3]: defaulting = 0, visible = 1, type = 32, value = "mag(vorticity)>.4"
-    // input[4]: defaulting = 0, visible = 1, type = 32, value = "vorticity"
+    // node ConditionalDataPoints[1]: x = 51, y = 249, inputs = 4, label = ConditionalDataPoints
+    // input[3]: defaulting = 0, visible = 1, type = 32, value = "mag(velocity)>.01"
+    // input[4]: defaulting = 0, visible = 1, type = 32, value = "velocity"
     // page group: Velocity
     //
 main_ConditionalDataPoints_1_out_1 = 
     ConditionalDataPoints(
     main_Receiver_9_out_1,
-    main_DivCurl_1_out_2,
+    main_Receiver_9_out_1,
     main_ConditionalDataPoints_1_in_3,
     main_ConditionalDataPoints_1_in_4
     ) [instance: 1, cache: 1];
     // 
-    // node AutoGlyph[3]: x = 122, y = 322, inputs = 7, label = AutoGlyph
+    // node AutoGlyph[3]: x = 176, y = 381, inputs = 7, label = AutoGlyph
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "spiffy"
     // input[3]: defaulting = 0, visible = 1, type = 5, value = .50
     // input[6]: defaulting = 1, visible = 1, type = 5, value = NULL
@@ -178,79 +168,6 @@ main_AutoGlyph_3_out_1 =
     main_AutoGlyph_3_in_6,
     main_AutoGlyph_3_in_7
     ) [instance: 3, cache: 1];
-    // 
-    // node ReadVariable[4]: x = 459, y = 229, inputs = 3, label = ReadVariable
-    // input[1]: defaulting = 0, visible = 1, type = 32, value = "aa"
-    // input[3]: visible = 0
-    // page group: ReadVars
-    //
-main_ReadVariable_4_out_1 = 
-    ReadVariable(
-    main_ReadVariable_4_in_1,
-    main_Sequencer_1_out_1,
-    main_ReadVariable_4_in_3
-    ) [instance: 4, cache: 1];
-    // 
-    // node Transmitter[7]: x = 421, y = 317, inputs = 1, label = magnetic_vector_potential
-    // page group: ReadVars
-    //
-magnetic_vector_potential = main_ReadVariable_4_out_1;
-    // 
-    // node Receiver[8]: x = 105, y = 17, inputs = 1, label = magnetic_vector_potential
-    // page group: BField
-    //
-main_Receiver_8_out_1[cache: 0] = magnetic_vector_potential;
-    // 
-    // node DivCurl[2]: x = 49, y = 135, inputs = 2, label = DivCurl
-    // page group: BField
-    //
-main_DivCurl_2_out_1,
-main_DivCurl_2_out_2 = 
-    DivCurl(
-    main_Receiver_8_out_1,
-    main_DivCurl_2_in_2
-    ) [instance: 2, cache: 1];
-    // 
-    // node Compute[4]: x = 268, y = 174, inputs = 2, label = Compute
-    // input[1]: defaulting = 0, visible = 0, type = 32, value = "mag($0)"
-    // page group: BField
-    // expression: value = mag(field)
-    // name[2]: value = field
-    //
-main_Compute_4_out_1 = 
-    Compute(
-    main_Compute_4_in_1,
-    main_DivCurl_2_out_2
-    ) [instance: 4, cache: 1];
-    // 
-    // node ConditionalDataPoints[2]: x = 115, y = 296, inputs = 4, label = ConditionalDataPoints
-    // input[3]: defaulting = 0, visible = 1, type = 32, value = "x>0.001"
-    // input[4]: defaulting = 1, visible = 0, type = 32, value = "x"
-    // page group: BField
-    //
-main_ConditionalDataPoints_2_out_1 = 
-    ConditionalDataPoints(
-    main_DivCurl_2_out_2,
-    main_Compute_4_out_1,
-    main_ConditionalDataPoints_2_in_3,
-    main_ConditionalDataPoints_2_in_4
-    ) [instance: 2, cache: 1];
-    // 
-    // node AutoGlyph[4]: x = 62, y = 399, inputs = 7, label = AutoGlyph
-    // input[2]: defaulting = 0, visible = 1, type = 32, value = "arrow2D"
-    // input[3]: defaulting = 0, visible = 1, type = 5, value = 2.0
-    // page group: BField
-    //
-main_AutoGlyph_4_out_1 = 
-    AutoGlyph(
-    main_ConditionalDataPoints_2_out_1,
-    main_AutoGlyph_4_in_2,
-    main_AutoGlyph_4_in_3,
-    main_AutoGlyph_4_in_4,
-    main_AutoGlyph_4_in_5,
-    main_AutoGlyph_4_in_6,
-    main_AutoGlyph_4_in_7
-    ) [instance: 4, cache: 1];
     // 
     // node Receiver[10]: x = 84, y = 31, inputs = 1, label = lnrho
     // page group: BoundingBox
@@ -344,7 +261,7 @@ Density = main_Collect_7_out_1;
     //
 main_Receiver_6_out_1[cache: 0] = Density;
     // 
-    // node Color[2]: x = 194, y = 395, inputs = 5, label = Color
+    // node Color[2]: x = 248, y = 454, inputs = 5, label = Color
     // input[2]: defaulting = 0, visible = 1, type = 32, value = "orange"
     // input[3]: defaulting = 0, visible = 1, type = 5, value = 0.75
     // page group: Velocity
@@ -358,7 +275,7 @@ main_Color_2_out_1 =
     main_Color_2_in_5
     ) [instance: 2, cache: 1];
     // 
-    // node Transmitter[2]: x = 233, y = 480, inputs = 1, label = Velocity_Field
+    // node Transmitter[2]: x = 287, y = 539, inputs = 1, label = Velocity_Field
     // page group: Velocity
     //
 Velocity_Field = main_Color_2_out_1;
@@ -368,31 +285,22 @@ Velocity_Field = main_Color_2_out_1;
     //
 main_Receiver_2_out_1[cache: 0] = Velocity_Field;
     // 
-    // node Color[3]: x = 180, y = 473, inputs = 5, label = Color
-    // input[2]: defaulting = 0, visible = 1, type = 32, value = "green"
-    // input[3]: defaulting = 0, visible = 1, type = 5, value = 0.75
-    // page group: BField
-    //
-main_Color_3_out_1 = 
-    Color(
-    main_AutoGlyph_4_out_1,
-    main_Color_3_in_2,
-    main_Color_3_in_3,
-    main_Color_3_in_4,
-    main_Color_3_in_5
-    ) [instance: 3, cache: 1];
-    // 
-    // node Transmitter[1]: x = 263, y = 552, inputs = 1, label = Magnetic_Field_Vectors
-    // page group: BField
-    //
-Magnetic_Field_Vectors = main_Color_3_out_1;
-    // 
-    // node Receiver[5]: x = 402, y = 59, inputs = 1, label = Magnetic_Field_Vectors
+    // node Receiver[5]: x = 402, y = 59, inputs = 1, label = Entropy
     // page group: Main
     //
-main_Receiver_5_out_1[cache: 0] = Magnetic_Field_Vectors;
+main_Receiver_5_out_1[cache: 0] = Entropy;
     // 
-    // node Transmitter[10]: x = 319, y = 196, inputs = 1, label = velocity_divergence
+    // node DivCurl[1]: x = 217, y = 110, inputs = 2, label = DivCurl
+    // page group: Velocity
+    //
+main_DivCurl_1_out_1,
+main_DivCurl_1_out_2 = 
+    DivCurl(
+    main_Receiver_9_out_1,
+    main_DivCurl_1_in_2
+    ) [instance: 1, cache: 1];
+    // 
+    // node Transmitter[10]: x = 291, y = 210, inputs = 1, label = velocity_divergence
     // page group: Velocity
     //
 velocity_divergence = main_DivCurl_1_out_1;
@@ -418,7 +326,7 @@ main_Isosurface_2_out_1 =
     ) [instance: 2, cache: 1];
     // 
     // node Color[4]: x = 179, y = 333, inputs = 5, label = Color
-    // input[2]: defaulting = 0, visible = 1, type = 32, value = "magenta"
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "cyan"
     // input[3]: defaulting = 0, visible = 1, type = 5, value = 0.75
     // page group: Convergence
     //
@@ -462,24 +370,67 @@ main_Collect_5_out_1 =
     main_Receiver_12_out_1
     ) [instance: 5, cache: 1];
     // 
-    // node Describe[1]: x = 306, y = 177, inputs = 2, label = Describe
-    // page group: Convergence
+    // node ReadVariable[4]: x = 459, y = 229, inputs = 3, label = ReadVariable
+    // input[1]: defaulting = 0, visible = 1, type = 32, value = "ss"
+    // input[3]: visible = 0
+    // page group: ReadVars
     //
-    Describe(
-    main_Receiver_11_out_1,
-    main_Describe_1_in_2
-    ) [instance: 1, cache: 1];
+main_ReadVariable_4_out_1 = 
+    ReadVariable(
+    main_ReadVariable_4_in_1,
+    main_Sequencer_1_out_1,
+    main_ReadVariable_4_in_3
+    ) [instance: 4, cache: 1];
+    // 
+    // node Transmitter[7]: x = 421, y = 317, inputs = 1, label = entropy
+    // page group: ReadVars
+    //
+entropy = main_ReadVariable_4_out_1;
+    // 
+    // node Receiver[8]: x = 105, y = 17, inputs = 1, label = entropy
+    // page group: Entropy
+    //
+main_Receiver_8_out_1[cache: 0] = entropy;
+    // 
+    // node Isosurface[3]: x = 134, y = 130, inputs = 6, label = Isosurface
+    // input[2]: defaulting = 0, visible = 0, type = 5, value = -0.01
+    // input[3]: defaulting = 1, visible = 1, type = 1, value = 1
+    // page group: Entropy
+    //
+main_Isosurface_3_out_1 = 
+    Isosurface(
+    main_Receiver_8_out_1,
+    main_Isosurface_3_in_2,
+    main_Isosurface_3_in_3,
+    main_Isosurface_3_in_4,
+    main_Isosurface_3_in_5,
+    main_Isosurface_3_in_6
+    ) [instance: 3, cache: 1];
+    // 
+    // node Color[3]: x = 180, y = 473, inputs = 5, label = Color
+    // input[2]: defaulting = 0, visible = 1, type = 32, value = "red"
+    // input[3]: defaulting = 0, visible = 1, type = 5, value = 0.75
+    // page group: Entropy
+    //
+main_Color_3_out_1 = 
+    Color(
+    main_Isosurface_3_out_1,
+    main_Color_3_in_2,
+    main_Color_3_in_3,
+    main_Color_3_in_4,
+    main_Color_3_in_5
+    ) [instance: 3, cache: 1];
     // 
     // node Image[1]: x = 237, y = 309, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.488396 0.607753 0.408742]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-29.1089 12.6907 34.4841]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 25.0394
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 764
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.586
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.0774431 0.958956 -0.272774]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 30.0001
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.65339 -0.664414 0.682007]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-13.4133 11.6371 13.7696]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 3.12038
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 893
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.549
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.0863404 0.766561 -0.636341]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 8.10109
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -488,10 +439,10 @@ main_Collect_5_out_1 =
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[29]: defaulting = 1, visible = 0, type = 3, value = 0
-    // input[41]: defaulting = 0, visible = 0, type = 32, value = "none"
+    // input[41]: defaulting = 0, visible = 0, type = 32, value = "panzoom"
     // page group: Main
     // depth: value = 16
-    // window: position = (0.0703,0.2148), size = 0.7598x0.6393
+    // window: position = (0.0693,0.2044), size = 0.8857x0.6953
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -548,34 +499,21 @@ main_Image_1_out_3 =
     main_Image_1_in_48,
     main_Image_1_in_49
     ) [instance: 1, cache: 1];
+    // 
+    // node Transmitter[1]: x = 263, y = 552, inputs = 1, label = entropy_surface
+    // page group: Entropy
     //
-    // decorator Annotate	pos=(50,94) size=114x28 style(Label), value = <NULL>
-    // annotation user_begin: 14
-    // annotation user: Magnetic Field
-    // annotation user_end: <NULL>
-    // page group: BField
+entropy_surface = main_Color_3_out_1;
     //
-    // decorator Annotate	pos=(221,248) size=111x28 style(Label), value = <NULL>
-    // annotation user_begin: 14
-    // annotation user: Field Strength
+    // decorator Annotate	pos=(50,94) size=67x28 style(Label), value = <NULL>
+    // annotation user_begin: 7
+    // annotation user: Entropy
     // annotation user_end: <NULL>
-    // page group: BField
-    //
-    // decorator Annotate	pos=(1,229) size=192x28 style(Label), value = <NULL>
-    // annotation user_begin: 25
-    // annotation user: Magnetic Vector Potential
-    // annotation user_end: <NULL>
-    // page group: BField
+    // page group: Entropy
     //
     // decorator Annotate	pos=(104,146) size=68x28 style(Label), value = <NULL>
     // annotation user_begin: 8
     // annotation user: Velocity
-    // annotation user_end: <NULL>
-    // page group: Velocity
-    //
-    // decorator Annotate	pos=(161,199) size=71x28 style(Label), value = <NULL>
-    // annotation user_begin: 9
-    // annotation user: Vorticity
     // annotation user_end: <NULL>
     // page group: Velocity
     //
@@ -619,8 +557,8 @@ main_Transmitter_6_out_1 = NULL;
 main_Receiver_7_out_1 = NULL;
 main_Compute_5_in_1 = "exp($0)";
 main_Compute_5_out_1 = NULL;
-main_Isosurface_1_in_2 = 1.002;
-main_Isosurface_1_in_3 = NULL;
+main_Isosurface_1_in_2 = NULL;
+main_Isosurface_1_in_3 = 6;
 main_Isosurface_1_in_4 = NULL;
 main_Isosurface_1_in_5 = NULL;
 main_Isosurface_1_in_6 = NULL;
@@ -641,11 +579,8 @@ main_ReadVariable_2_in_3 = NULL;
 main_ReadVariable_2_out_1 = NULL;
 main_Transmitter_8_out_1 = NULL;
 main_Receiver_9_out_1 = NULL;
-main_DivCurl_1_in_2 = NULL;
-main_DivCurl_1_out_1 = NULL;
-main_DivCurl_1_out_2 = NULL;
-main_ConditionalDataPoints_1_in_3 = "mag(vorticity)>.4";
-main_ConditionalDataPoints_1_in_4 = "vorticity";
+main_ConditionalDataPoints_1_in_3 = "mag(velocity)>.01";
+main_ConditionalDataPoints_1_in_4 = "velocity";
 main_ConditionalDataPoints_1_out_1 = NULL;
 main_AutoGlyph_3_in_2 = "spiffy";
 main_AutoGlyph_3_in_3 = .50;
@@ -654,25 +589,6 @@ main_AutoGlyph_3_in_5 = NULL;
 main_AutoGlyph_3_in_6 = NULL;
 main_AutoGlyph_3_in_7 = NULL;
 main_AutoGlyph_3_out_1 = NULL;
-main_ReadVariable_4_in_1 = "aa";
-main_ReadVariable_4_in_3 = NULL;
-main_ReadVariable_4_out_1 = NULL;
-main_Transmitter_7_out_1 = NULL;
-main_Receiver_8_out_1 = NULL;
-main_DivCurl_2_in_2 = NULL;
-main_DivCurl_2_out_2 = NULL;
-main_Compute_4_in_1 = "mag($0)";
-main_Compute_4_out_1 = NULL;
-main_ConditionalDataPoints_2_in_3 = "x>0.001";
-main_ConditionalDataPoints_2_in_4 = NULL;
-main_ConditionalDataPoints_2_out_1 = NULL;
-main_AutoGlyph_4_in_2 = "arrow2D";
-main_AutoGlyph_4_in_3 = 2.0;
-main_AutoGlyph_4_in_4 = NULL;
-main_AutoGlyph_4_in_5 = NULL;
-main_AutoGlyph_4_in_6 = NULL;
-main_AutoGlyph_4_in_7 = NULL;
-main_AutoGlyph_4_out_1 = NULL;
 main_Receiver_10_out_1 = NULL;
 main_ShowBox_1_out_1 = NULL;
 main_Tube_1_in_2 = 0.1;
@@ -712,13 +628,10 @@ main_Color_2_in_5 = NULL;
 main_Color_2_out_1 = NULL;
 main_Transmitter_2_out_1 = NULL;
 main_Receiver_2_out_1 = NULL;
-main_Color_3_in_2 = "green";
-main_Color_3_in_3 = 0.75;
-main_Color_3_in_4 = NULL;
-main_Color_3_in_5 = NULL;
-main_Color_3_out_1 = NULL;
-main_Transmitter_1_out_1 = NULL;
+main_Receiver_5_in_1 = NULL;
 main_Receiver_5_out_1 = NULL;
+main_DivCurl_1_in_2 = NULL;
+main_DivCurl_1_out_1 = NULL;
 main_Transmitter_10_out_1 = NULL;
 main_Receiver_11_out_1 = NULL;
 main_Isosurface_2_in_2 = -0.03;
@@ -727,7 +640,7 @@ main_Isosurface_2_in_4 = NULL;
 main_Isosurface_2_in_5 = NULL;
 main_Isosurface_2_in_6 = NULL;
 main_Isosurface_2_out_1 = NULL;
-main_Color_4_in_2 = "magenta";
+main_Color_4_in_2 = "cyan";
 main_Color_4_in_3 = 0.75;
 main_Color_4_in_4 = NULL;
 main_Color_4_in_5 = NULL;
@@ -737,7 +650,22 @@ main_Collect_8_out_1 = NULL;
 main_Transmitter_9_out_1 = NULL;
 main_Receiver_12_out_1 = NULL;
 main_Collect_5_out_1 = NULL;
-main_Describe_1_in_2 = NULL;
+main_ReadVariable_4_in_1 = "ss";
+main_ReadVariable_4_in_3 = NULL;
+main_ReadVariable_4_out_1 = NULL;
+main_Transmitter_7_out_1 = NULL;
+main_Receiver_8_out_1 = NULL;
+main_Isosurface_3_in_2 = -0.01;
+main_Isosurface_3_in_3 = NULL;
+main_Isosurface_3_in_4 = NULL;
+main_Isosurface_3_in_5 = NULL;
+main_Isosurface_3_in_6 = NULL;
+main_Isosurface_3_out_1 = NULL;
+main_Color_3_in_2 = "red";
+main_Color_3_in_3 = 0.75;
+main_Color_3_in_4 = NULL;
+main_Color_3_in_5 = NULL;
+main_Color_3_out_1 = NULL;
 macro Image(
         id,
         object,
@@ -1053,12 +981,12 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X16,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [0.488396 0.607753 0.408742];
-main_Image_1_in_6 = [-29.1089 12.6907 34.4841];
-main_Image_1_in_7 = 25.0394;
-main_Image_1_in_8 = 764;
-main_Image_1_in_9 = 0.586;
-main_Image_1_in_10 = [0.0774431 0.958956 -0.272774];
+main_Image_1_in_5 = [-0.65339 -0.664414 0.682007];
+main_Image_1_in_6 = [-13.4133 11.6371 13.7696];
+main_Image_1_in_7 = 3.12038;
+main_Image_1_in_8 = 893;
+main_Image_1_in_9 = 0.549;
+main_Image_1_in_10 = [0.0863404 0.766561 -0.636341];
 main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
@@ -1088,7 +1016,7 @@ main_Image_1_in_37 = NULL;
 main_Image_1_in_38 = NULL;
 main_Image_1_in_39 = NULL;
 main_Image_1_in_40 = NULL;
-main_Image_1_in_41 = "none";
+main_Image_1_in_41 = "panzoom";
 main_Image_1_in_42 = NULL;
 main_Image_1_in_43 = NULL;
 main_Image_1_in_44 = NULL;
