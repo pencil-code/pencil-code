@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.104 2002-10-25 05:24:57 brandenb Exp $
+! $Id: cdata.f90,v 1.105 2002-10-25 09:13:23 dobler Exp $
 
 module Cdata
 
@@ -69,7 +69,9 @@ module Cdata
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-  character (len=120) :: datadir='data',directory,directory_snap=''
+  character (len=120) :: datadir='data' ! default; may be overwritten in
+                                        ! Register.initialize()
+  character (len=120) :: directory='',directory_snap=''
   character (len=120) :: cvsid='[No CVS Id given]'
 
 endmodule Cdata

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.72 2002-10-25 07:49:43 brandenb Exp $ 
+! $Id: param_io.f90,v 1.73 2002-10-25 09:13:23 dobler Exp $ 
 
 module Param_IO
 
@@ -50,7 +50,7 @@ module Param_IO
 !***********************************************************************
     subroutine get_datadir(dir)
 !
-!  read datadir from file, or set default value
+!  Overwrite datadir from datadir.in, if that exists
 !
 !   2-oct-02/wolf: coded
 !  25-oct-02/axel: default is taken from cdata.f90 where it's defined
