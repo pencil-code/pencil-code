@@ -11,25 +11,10 @@
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
 echo `uname -a`
+set hn = `hostname`
 if ($mpi) then
   echo "Running under MPI"
   set mpirunops = ''
-
-  # Compaq has `dmpirun' instead of `mpirun'; some mpiruns have specail path
-  set hn = `hostname`
-#echo hostname:
-#echo $hn
-#which lamboot
-#which hboot
-#locate hboot
-
-#setenv PATH ${PATH}:/usr/local/lib/LAM/bin
-
-#foreach host (`cat $PBS_NODEFILE`)
-#  /usr/bin/rsh $host 'echo $PATH'
-#  /usr/bin/rsh $host 'which hboot'
-#end
-
   if ($hn =~ mhd*.st-and.ac.uk) then
     echo "St Andrews machine"
     set mpirun = "dmpirun"
