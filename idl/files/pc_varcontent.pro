@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.2 2004-05-06 17:11:50 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.3 2004-05-10 17:04:44 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param
 COMPILE_OPT IDL2,HIDDEN
 
@@ -13,8 +13,19 @@ default,datadir,'data'
 cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/index.pro'
 spawn, cmd, result
 res = flatten_strings(result) 
+
+;res=''
+;get_lun,indexfile
+;openr,indexfile,datadir+'/index.pro'
+
+;repeat begin
+;readf,indexfile,res
 if (execute(res) ne 1) then $
     message, 'There was a problem with index.pro', /INFO
+;endrep until eof(indexfile)
+
+;close,indexfile
+;free_lun,indexfile
 
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
@@ -62,8 +73,8 @@ varcontent=REPLICATE({varcontent_all, variable:'UNKNOWN', $
 ;Predefine some variable types used regularly
 INIT_3VECTOR     = 'fltarr(mx,my,mz,3)*one'
 INIT_3VECTOR_LOC = 'fltarr(mxloc,myloc,mzloc,3)*one'
-INIT_SCALAR     = 'fltarr(mx,my,mz)*one'
-INIT_SCALAR_LOC = 'fltarr(mxloc,myloc,mzloc)*one'
+INIT_SCALAR      = 'fltarr(mx,my,mz)*one'
+INIT_SCALAR_LOC  = 'fltarr(mxloc,myloc,mzloc)*one'
 
 ; For EVERY POSSIBLE variable in a var file, store a
 ; description of the variable in an indexed array of structures
@@ -126,58 +137,38 @@ varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
-for idust=0,n_elements(iuud)-1 do begin
+dustcount=n_elements(iuud) 
+varcontent[iuud[0]].variable = 'Dust velocity  (uud)'
+varcontent[iuud[0]].idlvar   = 'uud'
+varcontent[iuud[0]].idlinit  = 'fltarr(mx,my,mz,3,'+str(dustcount)+')' 
+varcontent[iuud[0]].idlvarloc= 'uud_loc'
+varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')'
+varcontent[iuud[0]].skip     = (dustcount * 3) - 1
 
-  sidust = strtrim(string(idust),2)
 
-  varcontent[iuud[idust]].variable = 'Dust velocity ' + sidust + $
-      ' (uud' + sidust + ')'
-  varcontent[iuud[idust]].idlvar   = 'uud'+sidust
-  varcontent[iuud[idust]].idlinit    = INIT_3VECTOR
-  varcontent[iuud[idust]].idlvarloc= 'uud'+sidust+'_loc'
-  varcontent[iuud[idust]].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[iuud[idust]].skip     = 2
-endfor
+dustcount=n_elements(ind)
+varcontent[ind[0]].variable = 'Dust number density (nd)'
+varcontent[ind[0]].idlvar   = 'nd'
+varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[ind[0]].idlvarloc= 'nd_loc'
+varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[ind[0]].skip     = dustcount - 1
 
-for idust=0,n_elements(ind)-1 do begin
-  
-  sidust = strtrim(string(idust),2)
+dustcount=n_elements(imd)
+varcontent[imd[0]].variable = 'Dust density (md)'
+varcontent[imd[0]].idlvar   = 'md'
+varcontent[imd[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[imd[0]].idlvarloc= 'md_loc'
+varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[imd[0]].skip     = dustcount - 1
 
-  varcontent[ind[idust]].variable = 'Dust number density ' + sidust + $
-      ' (nd'+sidust+')'
-  varcontent[ind[idust]].idlvar   = 'nd'+sidust
-  varcontent[ind[idust]].idlinit    = INIT_SCALAR
-  varcontent[ind[idust]].idlvarloc= 'nd'+sidust+'_loc'
-  varcontent[ind[idust]].idlinitloc = INIT_SCALAR_LOC
-
-endfor
-
-for idust=0,n_elements(imd)-1 do begin
-  
-  sidust = strtrim(string(idust),2)
-
-  varcontent[imd[idust]].variable = 'Dust density ' + sidust + $
-      ' (md'+sidust+')'
-  varcontent[imd[idust]].idlvar   = 'md'+sidust
-  varcontent[imd[idust]].idlinit    = INIT_SCALAR
-  varcontent[imd[idust]].idlvarloc= 'md'+sidust+'_loc'
-  varcontent[imd[idust]].idlinitloc = INIT_SCALAR_LOC
-
-endfor
-
-for idust=0,n_elements(imi)-1 do begin
-  
-  sidust = strtrim(string(idust),2)
-
-  varcontent[imi[idust]].variable = 'Ice density ' + sidust + $
-      ' (mi'+sidust+')'
-  varcontent[imi[idust]].idlvar   = 'mi'+sidust
-  varcontent[imi[idust]].idlinit    = INIT_SCALAR
-  varcontent[imi[idust]].idlvarloc= 'mi'+sidust+'_loc'
-  varcontent[imi[idust]].idlinitloc = INIT_SCALAR_LOC
-
-endfor
-
+dustcount=n_elements(imi)
+varcontent[imi[0]].variable = 'Ice density (mi)'
+varcontent[imi[0]].idlvar   = 'mi'
+varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[imi[0]].idlvarloc= 'mi_loc'
+varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[imi[0]].skip     = dustcount - 1
 
 varcontent[igg].variable = 'Gravitational acceleration (gg)'
 varcontent[igg].idlvar   = 'gg'
