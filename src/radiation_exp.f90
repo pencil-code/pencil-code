@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.87 2003-08-08 09:37:02 theine Exp $
+! $Id: radiation_exp.f90,v 1.88 2003-08-08 13:48:36 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.87 2003-08-08 09:37:02 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.88 2003-08-08 13:48:36 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -281,12 +281,12 @@ module Radiation
       llstart=l1; llstop=l2; lsign=1
       mmstart=m1; mmstop=m2; msign=1
       nnstart=n1; nnstop=n2; nsign=1
-      if (lrad>0) then; llstart=l1; llstop=mx; lsign= 1; endif
-      if (lrad<0) then; llstart=l2; llstop= 1; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=my; msign= 1; endif
-      if (mrad<0) then; mmstart=m2; mmstop= 1; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=mz; nsign= 1; endif
-      if (nrad<0) then; nnstart=n2; nnstop= 1; nsign=-1; endif
+      if (lrad>0) then; llstart=l1; llstop=l2+lrad; lsign= 1; endif
+      if (lrad<0) then; llstart=l2; llstop=l1+lrad; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=m2+mrad; msign= 1; endif
+      if (mrad<0) then; mmstart=m2; mmstop=m1+mrad; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=n2+nrad; nsign= 1; endif
+      if (nrad<0) then; nnstart=n2; nnstop=n1+nrad; nsign=-1; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -527,7 +527,7 @@ module Radiation
 !  initialize position array in ghost zones
 !
       if (lrad/=0) then
-        do l=llstop-lsign*radx0+lsign,llstop,lsign
+        do l=llstop-2*lrad+lsign,llstop-lrad,lsign
         do m=mmstart,mmstop
         do n=nnstart,nnstop
           raysteps=(l-llstart)/lrad
@@ -542,7 +542,7 @@ module Radiation
 !
       if (mrad/=0) then
         do l=llstart,llstop
-        do m=mmstop-msign*rady0+msign,mmstop,msign
+        do m=mmstop-2*mrad+msign,mmstop-mrad,msign
         do n=nnstart,nnstop
           raysteps=(m-mmstart)/mrad
           if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
@@ -557,7 +557,7 @@ module Radiation
       if (nrad/=0) then
         do l=llstart,llstop
         do m=mmstart,mmstop
-        do n=nnstop-nsign*radz0+nsign,nnstop,nsign
+        do n=nnstop-2*nrad+nsign,nnstop-nrad,nsign
           raysteps=(n-nnstart)/nrad
           if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
           if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
