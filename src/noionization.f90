@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.43 2003-08-04 16:11:17 mee Exp $
+! $Id: noionization.f90,v 1.44 2003-08-04 16:19:14 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.43 2003-08-04 16:11:17 mee Exp $")
+           "$Id: noionization.f90,v 1.44 2003-08-04 16:19:14 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -147,11 +147,11 @@ module Ionization
         lnTTlnrho=dlnPdlnrho-1.
 
 ! Handle degenerate cases in yH0 and xHe
-        if (xHe .ne. 0.) yH0_term=yH*(2.*log(yH)-lnrho_e-lnrho_p)
-        if (yH0 .ne. 1.) one_yH0_term=(1.-yH)*(log(1.-yH)-lnrho_H)
+        if (yH0 .ne. 0.) yH0_term=yH0*(2.*log(yH0)-lnrho_e-lnrho_p)
+        if (yH0 .ne. 1.) one_yH0_term=(1.-yH0)*(log(1.-yH0)-lnrho_H)
         if (xHe .ne. 0.) xHe_term=xHe*(log(xHe)-lnrho_He)
 
-        lnTT0=log(TT_ion)+(2./3.)*(
+        lnTT0=log(TT_ion)+(2./3.)*( &
                               (one_yH0_term + yH0_term + xHe_term) &
                               / (1.+yH0+xHe) - 2.5)
         
