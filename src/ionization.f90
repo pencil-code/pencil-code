@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.109 2003-10-02 17:01:06 theine Exp $
+! $Id: ionization.f90,v 1.110 2003-10-07 08:34:35 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.109 2003-10-02 17:01:06 theine Exp $")
+           "$Id: ionization.f90,v 1.110 2003-10-07 08:34:35 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -750,7 +750,10 @@ module Ionization
 !  test
 !
       if(radcalc_test) then
-        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
+        if(lroot.and.ip<12) print*,'radcalc: using simple profiles for testing'
+	!
+	! Periodic profiles
+	!
         kx=2*pi/Lx
         ky=2*pi/Ly
         kz=2*pi/Lz
@@ -760,6 +763,12 @@ module Ionization
         kaprho=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
                  *spread(spread(cos(2*ky*y),1,mx),3,mz) &
                  *spread(spread(cos(2*kz*z),1,mx),2,my)
+        !
+	! kaprho=const and S = tau^n
+	!
+!        kaprho = 1.e2
+!        Srad = spread(spread((z*kaprho(1,1,1))**3,1,mx),2,my)
+!
         return
       endif
 !
