@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.104 2002-11-27 16:33:31 theine Exp $ 
+! $Id: sub.f90,v 1.105 2002-11-28 08:53:12 dobler Exp $ 
 
 module Sub 
 
@@ -1536,11 +1536,19 @@ module Sub
       !
       !  write string
       !
-      write(*,fmt) "CVS: ", &
-           trim(rcsfile), &
-           revision(1:vw), &
-           author(1:aw), &
-           date(1:dw)
+      if (index(cvsid, "$") == 1) then ! starts with `$' --> CVS line
+        write(*,fmt) "CVS: ", &
+             trim(rcsfile), &
+             revision(1:vw), &
+             author(1:aw), &
+             date(1:dw)
+      else                      ! not a CVS line; maybe `[No ID given]'
+        write(*,fmt) "CVS: ", &
+             '???????', &
+             '', &
+             '', &
+             cvsid(1:dw)
+      endif
       !write(*,'(A)') '123456789|123456789|123456789|123456789|123456789|12345'
       !write(*,'(A)') '         1         2         3         4         5'
 !
