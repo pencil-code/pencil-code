@@ -40,8 +40,6 @@ module Mpicomm
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
-!! Moved to Cdata to save lots of `use Mpicomm':
-!  logical :: lroot              ! is this the root process?
   logical, dimension (ny*nz) :: necessary=.false.
   character (LEN=12) :: directory
 
