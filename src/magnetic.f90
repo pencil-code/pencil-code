@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.84 2002-09-11 17:38:14 brandenb Exp $
+! $Id: magnetic.f90,v 1.85 2002-09-21 14:16:37 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.84 2002-09-11 17:38:14 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.85 2002-09-21 14:16:37 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -185,6 +185,7 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use IO
       use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
