@@ -1,0 +1,50 @@
+/* Mutual dependencies for the pencil_modular code.
+   Run this through
+     dot -Tps structure.dot -o struct.ps
+   to obtain a PostScript graph. dot is part of AT&T's `graphviz'
+   package.
+ */
+digraph G {
+
+  /* Top directory */
+  node [shape=ellipse];
+  { pencil_modular }
+
+  /* */
+  node [shape=ellipse];
+  { rank=same; src; idl_dx; doc; bin; runs }
+
+  idl_dx [label="idl | dx"];
+
+  pencil_modular -> src;
+  pencil_modular -> idl_dx;
+  pencil_modular -> bin;
+  pencil_modular -> doc;
+  pencil_modular -> runs;
+
+  runs->gravz;
+  runs->spher;
+  runs->rings;
+  runs->kinematic;
+
+  /* src directory */
+  node [shape=box];
+  { Makefile; startrun; scheme; equ; physics; }
+
+  startrun [label="start, run"];
+  scheme   [label="timestep, deriv"];
+  physics  [label="\nhydro | hohydro\ndensity | nodensity\nentropy | noentropy\ngrav_z | grav_r | nograv\nmagnetic | nomagnetic\n\n"];
+
+  src->Makefile->startrun->scheme->equ->physics [dir=none];
+
+  gravz->vconv1->entro1 [dir=none];
+  rings->rings1 [dir=none];
+  spher->spher1->spher2->spher3 [dir=none];
+  kinematic->abc [dir=none];
+
+  entro1->src1;
+  src1 [shape=ellipse, label="src"];
+  src1->src_local;
+  src_local[label="\nMakefile.local\ncparam.local\n\n"];
+
+}
