@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.4 2002-11-05 18:08:43 tarek Exp $
+#  $Id: mkdatadir,v 1.5 2002-11-13 18:35:27 ngrs Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -9,7 +9,7 @@
 #  machine, so you may need to add your particular
 #  machine name below
 #
-echo $cwd > .tmp
+echo $cwd >! .tmp
 #
 #  in the following if block one can add more machines
 #  where workspace can be allocated.
@@ -33,7 +33,7 @@ else
 endif
 #echo $str
 #
-sed -e $str .tmp > .scr
+sed -e $str .tmp >! .scr
 cat .scr
 mkdir -p `cat .scr`
 ln -s `cat .scr` data

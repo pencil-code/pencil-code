@@ -45,7 +45,7 @@ endif
 # Run run.x
 date
 echo "$mpirun $mpirunops $npops $run_x"
-echo $mpirun $mpirunops $npops $run_x >>run_command.log
+echo $mpirun $mpirunops $npops $run_x >! run_command.log
 time $mpirun $mpirunops $npops $run_x
 date
 
