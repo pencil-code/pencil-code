@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.7 2003-10-10 20:26:28 brandenb Exp $
+;  $Id: varcontent.pro,v 1.8 2003-10-16 12:44:27 mee Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -156,10 +156,10 @@ if (par.lwrite_aux ne 0) then begin
     varcontent[iyH].idlvarloc  = 'yH_loc'
     varcontent[iyH].idlinitloc = INIT_SCALAR_LOC
 
-    varcontent[ishock].variable = 'Shock characteristic (nu_shock)'
-    varcontent[ishock].idlvar   = 'nu_shock'
+    varcontent[ishock].variable = 'Shock Profile (shock)'
+    varcontent[ishock].idlvar   = 'shock'
     varcontent[ishock].idlinit    = INIT_SCALAR
-    varcontent[ishock].idlvarloc= 'nu_shock_loc'
+    varcontent[ishock].idlvarloc= 'shock_loc'
     varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
 end
 
