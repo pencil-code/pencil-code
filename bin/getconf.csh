@@ -10,6 +10,7 @@
 # Are we running the MPI version?
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
+echo `uname -a`
 if ($mpi) then
   echo "Running under MPI"
   set mpirunops = ''
