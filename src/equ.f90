@@ -176,7 +176,7 @@ module Equ
         orms=sqrt(fsum(2))
         ourms=sqrt(fsum(3))
         divurms=sqrt(fsum(4))
-        rmean=sqrt(fsum(5))
+        rmean=fsum(5)
         rrms=sqrt(fsum(6))
 !
       endif
@@ -275,8 +275,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.24 $", &
-           "$Date: 2002-03-28 18:51:49 $")
+           "$Revision: 1.25 $", &
+           "$Date: 2002-04-05 07:25:42 $")
 !
 !  initiate communication
 !
