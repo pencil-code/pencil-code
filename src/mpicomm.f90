@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.62 2002-10-30 05:44:38 brandenb Exp $
+! $Id: mpicomm.f90,v 1.63 2002-10-30 15:04:13 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -61,6 +61,9 @@ module Mpicomm
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
   logical, dimension (ny*nz) :: necessary=.false.
+
+  real, dimension(mx*my*mz) :: buffer
+  integer :: sbuffer = mx*my*mz*4
 
   contains
 
@@ -219,6 +222,11 @@ module Mpicomm
           imn=imn+1
         enddo
       enddo
+!
+!  Attach buffer space for buffered send --- this is for testing transp()
+!  only and will hopefully not be necessary in the long run
+!
+      call MPI_BUFFER_ATTACH(buffer, sbuffer, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
@@ -692,9 +700,23 @@ if (var=='y') then
           partner=px+ipz*nprocy
           if(ip<=6) print*,'MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
           send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
-          call MPI_ISEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,isend_rq_y,ierr)
-          call MPI_IRECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,irecv_rq_y,ierr)
-          call MPI_WAIT(irecv_rq_y,stat,ierr)
+!         call MPI_ISEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,isend_rq_y,ierr)
+!         call MPI_IRECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,irecv_rq_y,ierr)
+!         call MPI_WAIT(irecv_rq_y,stat,ierr)
+!
+!  Experimental: use buffered send; do _all_ sends before starting to receive
+!
+          call MPI_BSEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+        endif
+      enddo
+!
+!  Now receive what has been sent by other procs
+!
+      do px=0,nprocy-1
+        if(px/=ipy) then
+          partner=px+ipz*nprocy
+          call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+!
           a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
         endif
       enddo
@@ -730,9 +752,20 @@ elseif (var=='z') then
         if(px/=ipz) then
           partner=ipy+px*nprocy
           send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
-          call MPI_ISEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,isend_rq_z,ierr)
-          call MPI_IRECV(recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,irecv_rq_z,ierr)
-          call MPI_WAIT(irecv_rq_z,stat,ierr)
+!          call MPI_ISEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,isend_rq_z,ierr)
+!          call MPI_IRECV(recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,irecv_rq_z,ierr)
+!
+!  Experimental: use buffered send; do _all_ sends before starting to receive
+!
+          call MPI_BSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+        endif
+      enddo
+!
+       do px=0,nprocz-1
+        if(px/=ipz) then
+          partner=ipy+px*nprocy
+          send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
+          call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
           a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
         endif
       enddo
