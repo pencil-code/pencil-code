@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.49 2002-07-19 12:41:35 dobler Exp $
+! $Id: hydro.f90,v 1.50 2002-07-19 13:01:12 dobler Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.49 2002-07-19 12:41:35 dobler Exp $")
+           "$Id: hydro.f90,v 1.50 2002-07-19 13:01:12 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -306,6 +306,8 @@ module Hydro
 !
       intent(in) :: f,rho1
       intent(out) :: df,uu,glnrho,divu,u2
+!
+!  identify module and boundary conditions
 !
       if (headtt.or.ldebug) print*,'SOLVE duu_dt'
       if (headtt) then
