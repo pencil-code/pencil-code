@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.12 2004-12-06 12:08:13 ajohan Exp $
+; $Id: pc_magic_var.pro,v 1.13 2004-12-25 14:41:26 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-12-06 12:08:13 $
-;  $Revision: 1.12 $
+;  $Date: 2004-12-25 14:41:26 $
+;  $Revision: 1.13 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -80,10 +80,20 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
       tags[iv]=variables[iv]
       variables[iv]='curl(curl(aa))'
 
+    ; Vorticity
+    endif else if variables[iv] eq 'oo' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='curl(uu)'
+
     ; Divergence of velocity
     endif else if variables[iv] eq 'divu' then begin
       tags[iv]=variables[iv]
       variables[iv]='div(uu)'
+
+    ; Advection
+    endif else if variables[iv] eq 'adv' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='0.5*grad(dot2(uu))-cross(uu,curl(uu))'
 
     ; Modulus of velocity
     endif else if variables[iv] eq 'u2' then begin
