@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.62 2003-02-23 07:49:34 brandenb Exp $
+! $Id: register.f90,v 1.63 2003-02-25 20:50:03 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -134,7 +134,12 @@ module Register
         m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy
       endif
-      print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+!
+!  print parameters in code units, but only when used
+!
+      if (lionization.or.lradiation.or.linterstellar) then
+        print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+      endif
 !
 !  set gamma1, cs20, and lnrho0
 !  (used currently for non-dimensional equation of state)

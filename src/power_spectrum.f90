@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -283,7 +283,7 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,im,in,ivec
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.30 2003-02-25 20:50:03 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -336,12 +336,9 @@ module  power_spectrum
   !  integration over shells
   !
   if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do ikx=1,nx
-     do m=1,ny
-        do n=1,nz
-           k=abs(kx(ikx))
-           spectrum(k+1)=spectrum(k+1)+a1(ikx,m,n)**2+b1(ikx,m,n)**2
-        enddo
+  do m=1,ny
+     do n=1,nz
+        spectrum=spectrum+a1(1:nx/2,m,n)**2+b1(1:nx/2,m,n)**2
      enddo
   enddo
   !
@@ -351,7 +348,8 @@ module  power_spectrum
   call mpireduce_sum(spectrum,spectrum_sum,nk)
   !
   !  on root processor, write global result to file
-  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  don't need to multiply by 1/2 to get \int E(k) dk = (1/2) <u^2>
+  !  because we have only taken the data for positive values of kx.
   !
   if (ivec .eq. 1) str='x_x.dat'
   if (ivec .eq. 2) str='y_x.dat'
@@ -362,7 +360,6 @@ module  power_spectrum
   if (iproc==root) then
      if (ip<10) print*,'Writing power spectra of variable',sp &
           ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
-     spectrum_sum=.5*spectrum_sum
      open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
      write(1,*) t
      write(1,'(1p,8e10.2)') spectrum_sum
