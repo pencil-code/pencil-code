@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.75 2002-11-05 16:42:38 dobler Exp $
+! $Id: hydro.f90,v 1.76 2002-11-09 06:33:33 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -40,6 +40,8 @@ module Hydro
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
+  integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
+  integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
 
   contains
@@ -77,7 +79,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.75 2002-11-05 16:42:38 dobler Exp $")
+           "$Id: hydro.f90,v 1.76 2002-11-09 06:33:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -423,6 +425,18 @@ module Hydro
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
+!
+!  this doesn't need to be as frequent (check later)
+!
+        if (i_uxmz/=0.or.i_uxmxy/=0) ux=uu(:,1)
+        if (i_uymz/=0.or.i_uymxy/=0) uy=uu(:,2)
+        if (i_uzmz/=0.or.i_uzmxy/=0) uz=uu(:,3)
+        if (i_uxmz/=0) call zsum_mn_name(ux,i_uxmz)
+        if (i_uymz/=0) call zsum_mn_name(uy,i_uymz)
+        if (i_uzmz/=0) call zsum_mn_name(uz,i_uzmz)
+        if (i_uxmxy/=0) call xysum_mn_name(ux,i_uxmxy)
+        if (i_uymxy/=0) call xysum_mn_name(uy,i_uymxy)
+        if (i_uzmxy/=0) call xysum_mn_name(uz,i_uzmxy)
         !
         !  mean momenta
         !
@@ -592,7 +606,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      integer :: iname
+      integer :: iname,inamez,ixy
       logical :: lreset
 !
 !  reset everything in case of reset
@@ -602,6 +616,7 @@ module Hydro
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
       endif
 !
@@ -620,8 +635,27 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
         call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'umx',i_umx)
+        call parse_name(iname,cname(iname),cform(iname),'umy',i_umy)
+        call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
         call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uxmz',i_uxmz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uymz',i_uymz)
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'uzmz',i_uzmz)
+      enddo
+!
+!  check for those quantities for which we want z-averages
+!
+      do ixy=1,nnamexy
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uxmxy',i_uxmxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uymxy',i_uymxy)
+        call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',i_uzmxy)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -637,6 +671,9 @@ module Hydro
       write(3,*) 'i_ruxm=',i_ruxm
       write(3,*) 'i_ruym=',i_ruym
       write(3,*) 'i_ruzm=',i_ruzm
+      write(3,*) 'i_umx=',i_umx
+      write(3,*) 'i_umy=',i_umy
+      write(3,*) 'i_umz=',i_umz
       write(3,*) 'i_Marms=',i_Marms
       write(3,*) 'i_Mamax=',i_Mamax
       write(3,*) 'nname=',nname
@@ -644,8 +681,89 @@ module Hydro
       write(3,*) 'iux=',iux
       write(3,*) 'iuy=',iuy
       write(3,*) 'iuz=',iuz
+      write(3,*) 'i_uxmz=',i_uxmz
+      write(3,*) 'i_uymz=',i_uymz
+      write(3,*) 'i_uzmz=',i_uzmz
+      write(3,*) 'i_uxmxy=',i_uxmxy
+      write(3,*) 'i_uymxy=',i_uymxy
+      write(3,*) 'i_uzmxy=',i_uzmxy
 !
     endsubroutine rprint_hydro
+!***********************************************************************
+    subroutine calc_mflow
+!
+!  calculate mean flow field from xy- or z-averages
+!
+!   8-nov-02/axel: adapted from calc_mfield
+!
+      use Cdata
+      use Sub
+!
+      logical,save :: first=.true.
+      real, dimension(nx) :: uymx,uzmx
+      real, dimension(ny,nprocy) :: uxmy,uzmy
+      real :: umx,umy,umz
+      integer :: l,j
+!
+!  Magnetic energy in vertically averaged field
+!  The uymxy and uzmxy must have been calculated,
+!  so they are present on the root processor.
+!
+        if (i_umx/=0) then
+          if(i_uymxy==0.or.i_uzmxy==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
+            if(first) print*,"      We proceed, but you'll get umx=0"
+            umx=0.
+          else
+            do l=1,nx
+              uymx(l)=sum(fnamexy(l,:,:,i_uymxy))/(ny*nprocy)
+              uzmx(l)=sum(fnamexy(l,:,:,i_uzmxy))/(ny*nprocy)
+            enddo
+            umx=sqrt(sum(uymx**2+uzmx**2)/nx)
+          endif
+          call save_name(umx,i_umx)
+        endif
+!
+!  similarly for umy
+!
+        if (i_umy/=0) then
+          if(i_uxmxy==0.or.i_uzmxy==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
+            if(first) print*,"      We proceed, but you'll get umy=0"
+            umy=0.
+          else
+            do j=1,nprocy
+            do m=1,ny
+              uxmy(m,j)=sum(fnamexy(:,m,j,i_uzmxy))/nx
+              uzmy(m,j)=sum(fnamexy(:,m,j,i_uzmxy))/nx
+            enddo
+            enddo
+            umy=sqrt(sum(uxmy**2+uzmy**2)/(ny*nprocy))
+          endif
+          call save_name(umy,i_umy)
+        endif
+!
+!  Magnetic energy in horizontally averaged field
+!  The uxmz and uymz must have been calculated,
+!  so they are present on the root processor.
+!
+        if (i_umz/=0) then
+          if(i_uxmz==0.or.i_uymz==0) then
+            if(first) print*
+            if(first) print*,"NOTE: to get umz, uxmz and uymz must also be set in xyaver"
+            if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
+            if(first) print*,"      We proceed, but you'll get umz=0"
+            umz=0.
+          else
+            umz=sqrt(sum(fnamez(:,:,i_uxmz)**2+fnamez(:,:,i_uymz)**2)/(nz*nprocz))
+          endif
+          call save_name(umz,i_umz)
+        endif
+!
+      first = .false.
+    endsubroutine calc_mflow
 !***********************************************************************
 
 endmodule Hydro

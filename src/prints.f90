@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.32 2002-10-09 14:05:31 mee Exp $
+! $Id: prints.f90,v 1.33 2002-11-09 06:33:33 brandenb Exp $
 
 module Print
 
@@ -41,6 +41,7 @@ module Print
         if (i_it/=0)  call save_name(float(it-1),i_it)
         if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
         if (lmagnetic) call calc_mfield
+        if (lhydro)    call calc_mflow
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop
