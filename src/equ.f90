@@ -159,22 +159,18 @@ module Equ
       enddo
       nmax_count=imax_count
       nsum_count=isum_count
-print*,'diagnostics, nmax_count, nsum_count=',nmax_count, nsum_count
-print*,'diagnostics; fname=',fname(1)
-print*,'fsum=',fsum_tmp(1:nsum_count)
-print*,'fmax=',fmax_tmp(1:nmax_count)
 !
 !  communicate over all processors
 !
-print*,'entered reduce'
       call mpireduce_max(fmax_tmp,fmax,nmax_count)
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
 !
 !  the result is present only on the root processor
 !
-print*,'entered reduce2, nw, ncpus=',nw,ncpus
+print*,'bef: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
       if(lroot) then
         fsum=fsum/(nw*ncpus)
+print*,'aft: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
 !
 !  sort back into original array
 !  need to take sqare root if |itype|=2
@@ -184,7 +180,6 @@ print*,'entered reduce2, nw, ncpus=',nw,ncpus
       isum_count=0
       do iname=1,nname
         if(itype_name(iname)<0) then
-print*,'iname,itype_name(iname)=',iname,itype_name(iname)
           imax_count=imax_count+1
           if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
           if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
@@ -351,8 +346,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.34 $", &
-           "$Date: 2002-05-04 12:41:52 $")
+           "$Revision: 1.35 $", &
+           "$Date: 2002-05-04 12:55:19 $")
 !
 !  initialize counter for calculating and communicating print results
 !

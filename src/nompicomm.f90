@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.19 2002-05-04 12:34:55 dobler Exp $
+! $Id: nompicomm.f90,v 1.20 2002-05-04 12:55:19 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -24,7 +24,6 @@ module Mpicomm
   integer :: iproc,root=0
   integer :: ipx=0,ipy=0,ipz=0
   logical, dimension (nx*ny) :: necessary=.false.
-!  logical :: lroot=.true.       ! is this the root process?
 
   contains
 
