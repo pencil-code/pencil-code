@@ -4,26 +4,26 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.70 2002-07-25 14:02:32 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.71 2002-07-26 12:10:01 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
 %     latex manual; makeindex manual; latex manual
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
 %     \code:     use the line \code{call remove\_file()}
-%     \kbd:      type \kbd{M-x comment-region}
+%     \kbd:      type \kbd{M-x comment-region}                              %AB: key bindings?
 %     \key:      press \key{F1}
-%     \samp:     \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+%     \samp:     \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}           %AB: sample??
 %     \var:      is determined by \var{ivisc}
 %     \env:      this sets \env{CVSROOT}
 %     \file:     written to \file{~/tmp/var.dat}
-%     \command:  use \command{rm -f *} at your own risk
+%     \command:  use \command{rm -f *} at your own risk                     %AB: this isn't used anywhere!?!
 %     \option:   use CVS with the option \option{-q}
 %     \dfn:      A \dfn{definition} is a specification sufficiently obfuscated
 %                to be misunderstood 
-%     \acronym:  should we call the code \acronym{PROMPT}?
+%     \acronym:  should we call the code \acronym{PROMPT}?                  %AB: this isn't used anywhere!?!
 %     \url:      \url{http://www.nowhere.net/second_page.html}
-%     \email:    \email{nobody@nowhere.nil}
+%     \email:    \email{nobody@nowhere.nil}                                 %AB: this isn't used anywhere!?! (because we used url)
 %
 
 \ifx\pdfoutput\undefined        % not running pdflatex
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.70 $ $}
+\date{\today,~ $ $Revision: 1.71 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.70 $ $}
+  \emph{\today,~ $ $Revision: 1.71 $ $}
 
 
 \end{center}
@@ -613,7 +613,7 @@ This is on purpose to avoid cluttering of your environment: you can
 source the file as often as you like (in your shell startup script, then
 manually and in addition in some script you have written), without
 thinking twice.
-If, however, at the first sourcing, the setting of \env{PENCIL_HOME} was
+If, however, at the first souring, the setting of \env{PENCIL_HOME} was
 wrong, this mechanism would keep you from ever adding the right directory
 to your \env{PATH}.
 In this case, you need to first undefine the environment variable
@@ -636,7 +636,7 @@ This is accomplished by the script \file{lnsrc}, which is located in
 \file{\$PENCIL_HOME/bin} and is thus now in your executable path.
 
 For concreteness, let us assume you want to use \file{samples/conv-slab}
-as your \dfn{run directory}, i.\,e~you want to run a three-layer slab model
+as your \dfn{run directory}, i.e.\ you want to run a three-layer slab model
 of solar convection.
 You then do the following:
 \begin{alltt}
@@ -3057,7 +3057,7 @@ $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
   \quad\mbox{for \var{grav_profile='const'}},
 \end{equation}
 and
-\begin{equation}\label{zinfty}
+\begin{equation}\label{zinfty2}
   z_\infty^2
   = z_{\rm ref}^2
     + (m{+}1) \frac{c_{\rm s0}^2}{{\textstyle\frac{1}{2}}\gamma\Omega^2}
@@ -3090,7 +3090,7 @@ Box units: measure length in units of $d$.
 Can increase stratification by increasing $g_z$ to
 $g_{\max}$, which can be obtained by putting $z_{\rm top}=z_\infty$
 in (\ref{zinfty}), so
-\begin{equation}\label{zinfty}
+\begin{equation}\label{gmax}
   g_{\max}=\frac{m{+}1}{\gamma}\,\frac{c_{\rm s0}^2}{z_{\rm top}-z_{\rm ref}}.
 \end{equation}
 For $m=1$, $\gamma=5/3$, $z_{\rm top}=1$, and $z_{\rm ref}=0$, for
@@ -3193,7 +3193,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.70 2002-07-25 14:02:32 dobler Exp $ $}
+$ $Id: manual.tex,v 1.71 2002-07-26 12:10:01 brandenb Exp $ $}
 
 
 \end{document}
