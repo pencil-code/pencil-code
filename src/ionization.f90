@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.36 2003-05-29 07:48:14 brandenb Exp $
+! $Id: ionization.f90,v 1.37 2003-06-13 21:33:55 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -10,11 +10,6 @@ module Ionization
   use Density
 
   implicit none
-
-  ! global array for yH (very useful to avoid double calculation and
-  ! to allow output along with file), but could otherwise be avoided.
-  ! kappa and TT also now here
-  real, dimension (mx,my,mz) :: yyH=0.5
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,fHe,mu
@@ -39,6 +34,7 @@ module Ionization
     subroutine register_ionization()
 !
 !   2-feb-03/axel: adapted from Interstellar module
+!   13-jun-03/tobi: re-adapted from visc_shock module
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -49,18 +45,24 @@ module Ionization
       if (.not. first) call stop_it('register_ionization called twice')
       first = .false.
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_ionization'
-      endif
+      iion = mvar + naux +1
+      naux = naux + 1 
+
+      !if ((ip<=8) .and. lroot) then
+        print*, 'register_ionization: ionization nvar = ', nvar
+        print*, 'iion = ', iion
+      !endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.36 2003-05-29 07:48:14 brandenb Exp $")
+           "$Id: ionization.f90,v 1.37 2003-06-13 21:33:55 theine Exp $")
+!
+!  Check we arn't registering too many auxilliary variables
 !
       if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_ionization: nvar > mvar')
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('Register_ionization: naux > maux')
       endif
 !
     endsubroutine register_ionization
@@ -106,11 +108,11 @@ module Ionization
 !
 !  calculate degree of ionization
 !
-!   5-apr-03/axel: coded wrapper routine to set yyH array
+!   13-jun-03/tobi: coded
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar), intent(in) :: f
+      real, dimension (mx,my,mz,mvar) :: f
       real :: lnrho,ss,yH
       integer :: l
 !
@@ -120,9 +122,9 @@ module Ionization
       do l=l1,l2
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
-         yH=yyH(l,m,n)
+         yH=f(l,m,n,iion)
          call rtsafe(lnrho,ss,yH)
-         yyH(l,m,n)=yH
+         f(l,m,n,iion)=yH
       enddo
       enddo
       enddo
@@ -143,56 +145,14 @@ module Ionization
 !
 !  identifier
 !
-      if(headtt.and.ip<10) print*,'output_ionization',yyH(4,4,4)
-      if(output_yH) write(lun) yyH
+      !if(headtt.and.ip<10) print*,'output_ionization',yyH(4,4,4)
+      !if(output_yH) write(lun) yyH
 !
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine calc_TT(TT_mn,save)
-!
-!  Save/restore quantity in array (to avoid recalculation)
-!
-!  26-apr-03/axel: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz), save :: TT
-      real, dimension(nx), intent(inout) :: TT_mn
-      logical, optional, intent(in) :: save
-!
-      if (present(save)) then
-        TT(l1:l2,m,n)=TT_mn
-      else
-        TT_mn=TT(l1:l2,m,n)
-      endif
-!
-    endsubroutine calc_TT
-
-!***********************************************************************
-    subroutine calc_kappa(kappa_mn,save)
-!
-!  Save/restore quantity in array (to avoid recalculation)
-!
-!  26-apr-03/axel: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz), save :: kappa
-      real, dimension(nx), intent(inout) :: kappa_mn
-      logical, optional, intent(in) :: save
-!
-      if (present(save)) then
-        kappa(l1:l2,m,n)=kappa_mn
-      else
-        kappa_mn=kappa(l1:l2,m,n)
-      endif
-!
-    endsubroutine calc_kappa
-
-!***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde, &
-      Temperature,InternalEnergy,IonizationFrac)
+    subroutine thermodynamics(lnrho,ss,yH,cs2,TT1,cp1tilde, &
+      Temperature,InternalEnergy)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -201,6 +161,8 @@ module Ionization
 !  in general: cp1tilde=dlnPdS/dlnPdlnrho
 !
 !   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument
 !
       use Cdata
       use General
@@ -209,7 +171,6 @@ module Ionization
       logical, save :: first=.true.
       real, dimension (nx), intent(out), optional :: Temperature
       real, dimension (nx), intent(out), optional :: InternalEnergy
-      real, dimension (nx), intent(out), optional :: IonizationFrac
       real, dimension (nx) :: lnrho,ss,yH,ee,cs2,TT1,cp1tilde
       real, dimension (nx) :: dlnPdlnrho,dlnPdss,TT,rho,lnTT
       real :: ss0=-5.5542
@@ -245,7 +206,6 @@ module Ionization
 !
       if(present(Temperature)) Temperature=TT
       if(present(InternalEnergy)) InternalEnergy=ee
-      if(present(IonizationFrac)) IonizationFrac=yH
 !
       first = .false.
     endsubroutine thermodynamics
@@ -255,19 +215,16 @@ module Ionization
 !   calculates thermodynamic quantities under partial ionization
 !
 !   28-mar-03/tobi: added kappa
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss
+      real, dimension(nx),intent(in)   :: lnrho,ss,yH
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
       real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
       real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
       real, dimension(nx)              :: dydlnrho,dydss
-      real, dimension(nx),intent(out)  :: yH
-!
-!  initialize yH from global yyH array
-!
-      yH=yyH(l1:l2,m,n)
 !
 !  equation of state
 !

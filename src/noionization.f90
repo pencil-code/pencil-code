@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.18 2003-06-13 09:28:58 nilshau Exp $
+! $Id: noionization.f90,v 1.19 2003-06-13 21:33:55 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -81,8 +81,8 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde, &
-      Temperature,InternalEnergy,IonizationFrac)
+    subroutine thermodynamics(lnrho,ss,yH,cs2,TT1,cp1tilde, &
+      Temperature,InternalEnergy)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -99,8 +99,7 @@ module Ionization
 !
       real, dimension (nx), intent(out), optional :: Temperature
       real, dimension (nx), intent(out), optional :: InternalEnergy
-      real, dimension (nx), intent(out), optional :: IonizationFrac
-      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde,yH
+      real, dimension (nx) :: lnrho,ss,yH,cs2,TT1,cp1tilde
       real, dimension (nx) :: TT,dlnPdlnrho,dlnPdss,rho,ee
 !
 !  calculate cs2, 1/T, and cp1tilde
@@ -118,7 +117,6 @@ module Ionization
         if(present(InternalEnergy)) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
         if(present(Temperature)) Temperature=TT
         if(present(InternalEnergy)) InternalEnergy=ee
-        if(present(IonizationFrac)) IonizationFrac=yH
       else
 !
 !  if ionization turned off, continue assuming cp=1
@@ -130,7 +128,6 @@ module Ionization
         cp1tilde=1.
         if(present(Temperature)) Temperature=cs2/gamma1
         if(present(InternalEnergy)) InternalEnergy=cs2/(gamma*gamma1)
-        if(present(IonizationFrac)) IonizationFrac=0.
      endif
 !
     endsubroutine thermodynamics
@@ -141,17 +138,11 @@ module Ionization
 !
 !   29-may-03/axel: coded replacement routine for fixed radiation
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss
+      real, dimension(nx),intent(in)   :: lnrho,ss,yH
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
       double precision, dimension(nx)  :: lnTT_  ! lnTT_=log(TT/TT_ion)
-      real, dimension(nx),intent(out)  :: yH
       double precision :: fHelogfHe
-!
-!  initialize yH from global yyH array
-!  set equal to yH0, but limit within 1e-5 and 1-1e-5
-!
-      yH=amin1(amax1(yH0,1e-5),1.-1e-5)
 !
 !  EOS: p=(1+yH+f)*rho*s0*T
 !
