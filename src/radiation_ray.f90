@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.3 2003-03-25 15:37:26 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.4 2003-03-25 17:13:49 brandenb Exp $
 
 module Radiation
 
@@ -48,7 +48,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.3 2003-03-25 15:37:26 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.4 2003-03-25 17:13:49 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -97,8 +97,12 @@ module Radiation
       use Cdata
       use Sub
 !
+      integer, parameter :: radx0=1,rady0=1,radz0=1
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: Intensity
+      real, dimension (mx,my,nghost,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
+      real, dimension (nghost,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
+      real, dimension (mx,nghost,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
       real :: frac
       integer :: lrad,mrad,nrad,rad2
       integer :: directions=2  !(at the moment)
@@ -131,9 +135,13 @@ write(28) Source
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if(rad2>0 .and. rad2<=rad2max) then 
+          !call (Intensity,Intensity_boundary)
           call transfer(f,Intensity,lrad,mrad,nrad)
 write(28) Intensity
           Qrad=Qrad+frac*Intensity
+          Intensity_xy(:,:,:,lrad,mrad,nrad)=Intensity(:,:,1:nghost)
+          Intensity_yz(:,:,:,lrad,mrad,nrad)=Intensity(1:nghost,:,:)
+          Intensity_zx(:,:,:,lrad,mrad,nrad)=Intensity(:,1:nghost,:)
         endif
       enddo
       enddo
