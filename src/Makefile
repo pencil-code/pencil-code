@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.159 2003-03-25 17:33:41 nilshau Exp $
+### $Id: Makefile,v 1.160 2003-03-27 10:51:39 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -27,6 +27,7 @@ DUSTDENSITY  = nodustdensity
 INTERSTELLAR = nointerstellar
 IONIZATION   = noionization
 STRUCT_FUNC  = nostruct_func
+INITCOND_SPEC= noinitcond_spec
 
 GRAVITY      = nograv
 FORCING      = noforcing
