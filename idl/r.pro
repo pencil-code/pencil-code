@@ -9,6 +9,10 @@
 ;
 ;  read data
 ;
+if (n_elements(xx) le 0) then
+  message, "You need to run start.pro first: use `.rnew start'"
+endif
+;
 default, datadir, 'tmp'
 default, file, 'var.dat'
 ;
