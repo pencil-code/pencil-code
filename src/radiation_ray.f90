@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.11 2003-04-02 05:22:26 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.12 2003-04-02 07:46:53 brandenb Exp $
 
 module Radiation
 
@@ -59,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.11 2003-04-02 05:22:26 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.12 2003-04-02 07:46:53 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -206,6 +206,8 @@ module Radiation
       enddo
       enddo
       enddo
+print*,'Srad(4,4,:)=',Srad(4,4,:)
+print*,'Qrad(4,4,:)=',Qrad(4,4,:)
  write(28) Qrad,Srad
 !
     endsubroutine radtransfer
@@ -290,8 +292,8 @@ module Radiation
 !  Add radiative cooling
 !
 if(nocooling) return
-      do n=1,mz
-      do m=1,my
+      do n=n1,n2
+      do m=m1,m2
         rho=exp(f(l1:l2,m,n,ilnrho))
         df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
                            +4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.5 2003-04-02 07:34:04 theine Exp $
+! $Id: feautrier.f90,v 1.6 2003-04-02 07:46:53 brandenb Exp $
 
 module Radiation
 
@@ -15,6 +15,7 @@ module Radiation
 !
 !  default values for one pair of vertical rays
 !
+  logical :: nocooling=.false.
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -27,7 +28,7 @@ module Radiation
        radx,rady,radz,rad2max
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max
+       radx,rady,radz,rad2max,nocooling
 
   contains
 
@@ -53,7 +54,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.5 2003-04-02 07:34:04 theine Exp $")
+           "$Id: feautrier.f90,v 1.6 2003-04-02 07:46:53 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -148,8 +149,11 @@ module Radiation
 !
       call source_function(f)
       Qrad=-Srad
-!
       Qrad=Qrad+feautrier(f)
+print*,'Srad(4,4,:)=',Srad(4,4,:)
+print*,'Qrad(4,4,:)=',Qrad(4,4,:)
+ write(28) Qrad,Srad
+!
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -165,10 +169,14 @@ module Radiation
 !
 !  Add radiative cooling
 !
-      do n=1,mz
-      do m=1,my
+      do n=n1,n2
+      do m=m1,m2
+if(nocooling) then
+print*,'4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)=',4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n),n
+else
         df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
                            +4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)
+endif
       enddo
       enddo
 !
