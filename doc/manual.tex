@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.214 2003-11-20 16:43:57 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.215 2003-11-20 16:46:39 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -75,11 +75,6 @@
 
 \usepackage[bf,sf,small,nonindentfirst]{titlesec}
 
-\usepackage[dvipdfm]{hyperref}  % load after titlesec, or else (with dvipdfm)
-                                % the \section links are one or two pages off
-%\usepackage{makeidx}
-\usepackage{index}      % Allow for multiple indexes (load after hyperref)
-
 \newcommand{\sectionbreak}{\clearpage} % starts new page for new section
 \titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
 %\titlespacing{\subsubsection}{0pt}{*1}{*-1}
@@ -106,6 +101,12 @@
 %\setmargrb{20mm}{25mm}{20mm}{15mm}
 \usepackage[hmargin=20mm,top=25mm,bottom=15mm,twosideshift=3mm]{geometry}
 \usepackage{multicol}
+
+%% Load hyperref after titlesec, or else (with dvipdfm) the \section links
+%% are one or two pages off
+\usepackage[dvipdfm]{hyperref}
+%\usepackage{makeidx}
+\usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
 \renewcommand{\textfraction}{0}
 \renewcommand{\bottomfraction}{1}
@@ -348,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}
+%\date{$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}
 
 % ====================================================================== %
 
@@ -383,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}\\
+  \emph{$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3399,7 +3400,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-20 16:46:39 $ $,~ $ $Revision: 1.215 $ $}
 
 \section{Timings}
 
@@ -6020,7 +6021,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.214 2003-11-20 16:43:57 dobler Exp $ $}
+$ $Id: manual.tex,v 1.215 2003-11-20 16:46:39 dobler Exp $ $}
 
 
 \end{document}
