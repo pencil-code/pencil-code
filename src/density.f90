@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.64 2002-11-24 13:14:59 mee Exp $
+! $Id: density.f90,v 1.65 2002-12-09 12:44:07 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.64 2002-11-24 13:14:59 mee Exp $")
+           "$Id: density.f90,v 1.65 2002-12-09 12:44:07 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -588,9 +588,10 @@ module Density
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6,k_B=0.0144
-      real :: rho,lnrho,pp,pp0      !,ss0
-      real, dimension(2) :: fmax    !,fmax_tmp
-!      integer :: iprocbot,iproctop
+      real :: rho,lnrho,pp,pp0 
+      real, dimension(2) :: fmpi2
+!      real, dimension(1) :: fmpi1
+      integer :: iproctop
 !
       if (lroot) print*,'Ferriere density profile'
 !
@@ -631,52 +632,30 @@ module Density
           f(l1:l2,m,n,ient)=alog(gamma*pp/cs20)/gamma +                   &
                                      gamma1/gamma*lnrho0 - lnrho
 !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
-!  for simplicity, calculate cs2bot on root processor, and set cs2top=cs2bot
-!   (below) -- ok since profile is symmetric)
           if (n == n1 .and. m == m1) cs2bot=gamma*pp/rho
-!!  alternatively...  (if mpireduce_max used below)
-!!          if (n == n2 .and. m == m1) cs2top=gamma*pp/rho
-!!!  alternatively can calculate on appropriate processors and broadcast.
-!!!   nb: if doing this would need to define mpibcast_real_nonroot in mpicomm 
-!!!    and (dummy) in nompicomm.
-!!!          if (n == n1 .and. m == m1) then      ! only calculate once
-!!          iprocbot=0                       ! iproc=ipz*nprocy+ipy; ipz=0,ipy=0
-!!            if (iproc == iprocbot) cs2bot=gamma*pp/rho
-!!            !call mpibcast_real(cs2bot,1)  ! this case could use mpibcast_real
-!!            ierr=0
-!!            call MPI_BCAST(cs2bot,1,MPI_REAL,iprocbot,MPI_COMM_WORLD,ierr)
-!!            if (lroot) &
-!!              print*, 'ferriere: cs2bot=',cs2bot,'ierr=',ierr
-!!          endif
-!!          if (n == n2 .and. m == m1) then
-!!            iproctop=(nprocz-1)*nprocy     ! ipz=nprocz-1,ipy=0
-!!            if (iproc == iproctop) cs2top=gamma*pp/rho
-!!            ierr=0
-!!            call MPI_BCAST(cs2top,1,MPI_REAL,iproctop,MPI_COMM_WORLD,ierr)
-!!            if (lroot) &
-!!              print*, 'ferriere: cs2top=',cs2top,'ierr=',ierr
-!!          endif
+          if (n == n2 .and. m == m1) cs2top=gamma*pp/rho
         endif
        enddo
       enddo
 !
 !  broadcast cs2bot, top
-      if (lentropy) then
-        cs2top=cs2bot          
-        fmax=(/ cs2bot, cs2top /)
-        call mpibcast_real(fmax,2)
-        cs2bot=fmax(1); cs2top=fmax(2)
-      endif
-!      if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
-!!  or use reduce_max to get global cs2bot, cs2top (ok since max at boundaries)
-!      if(lentropy) then
-!        fmax_tmp=(/ cs2bot, cs2top /)
-!        call mpireduce_max(fmax_tmp,fmax,2)
-!        call mpibcast_real(fmax,2)
-!        cs2bot=fmax(1); cs2top=fmax(2)
-!      endif
-!      if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
+      if (lentropy) then
+!  just use symmetry to set cs2top=cs2bot, and broadcast from root
+        cs2top=cs2bot
+        fmpi2=(/ cs2bot, cs2top /)
+        call mpibcast_real(fmpi2,2)
+        cs2bot=fmpi2(1); cs2top=fmpi2(2)
+!!  or do directly from the right processor
+!        fmpi1=(/ cs2bot /)
+!        call mpibcast_real(fmpi1,1)    ! this case can use mpibcast_real
+!        cs2bot=fmpi1(1)
+!        iproctop=(nprocz-1)*nprocy     ! ipz=nprocz-1,ipy=0
+!        fmpi1=(/ cs2top /)
+!        call mpibcast_real_nonroot(fmpi1,1,iproctop)
+!        cs2top=fmpi1(1)
+      endif
+      if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere
 !***********************************************************************
