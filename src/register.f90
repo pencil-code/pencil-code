@@ -51,6 +51,7 @@ module Register
 !
       use Cdata
       use Mpicomm, only: lroot,stop_it
+      use Sub
 !
       logical, save :: first=.true.
 !
@@ -72,7 +73,10 @@ module Register
 !
 !  identify version number
 !
-      print*, '$Id: register.f90,v 1.7 2002-01-17 09:59:47 dobler Exp $'
+      if (lroot) call cvs_id( &
+           "$RCSfile: register.f90,v $", &
+           "$Revision: 1.8 $", &
+           "$Date: 2002-01-17 11:42:43 $")
 !
 !
       if (nvar > mvar) then

@@ -28,9 +28,13 @@
         call siginit
         call signonbrutal
 !
-!  identify version and register modules
+!  identify version
 !
-        print*,'$Id: run.f90,v 1.7 2002-01-17 10:02:52 dobler Exp $'
+        if (lroot) call cvs_id( &
+             "$RCSfile: run.f90,v $", &
+             "$Revision: 1.8 $", &
+             "$Date: 2002-01-17 11:42:43 $")
+!
         call initialize         ! register modules, etc.
 !
 !  ix,iy,iz are indices for checking variables at some selected point
@@ -83,7 +87,6 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.7 2002-01-17 10:02:52 dobler Exp $'
         endif
 !
 !  do loop in time

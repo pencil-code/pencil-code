@@ -978,5 +978,24 @@ module Sub
 !
     endsubroutine wmax
 !***********************************************************************
+    subroutine cvs_id(rcsfile, revision, date)
 !
+!  print CVS Revision info in a compact, yet structured form
+!  17-jan-02/wolf: coded
+!
+
+      character (len=*) :: rcsfile, revision, date
+      integer :: rcsflen, revlen, datelen
+
+      rcsflen=len(rcsfile)
+      revlen =len(revision)
+      datelen=len(date)
+      write(*,'(A,A,T28," version ",A,T50," of ",A)') "CVS: ", &
+           rcsfile(10:rcsflen-3), &
+           revision(10:revlen-1), &
+           date(8:datelen-1)
+!
+endsubroutine cvs_id
+!***********************************************************************
+
 endmodule Sub

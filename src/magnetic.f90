@@ -40,7 +40,10 @@ module Magnetic
 !
 !  identify version number
 !
-      print*, '$Id: magnetic.f90,v 1.4 2002-01-17 09:59:47 dobler Exp $'
+      if (lroot) call cvs_id( &
+           "$RCSfile: magnetic.f90,v $", &
+           "$Revision: 1.5 $", &
+           "$Date: 2002-01-17 11:42:43 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -26,9 +26,13 @@
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz,rr
 !
-!  identify version and register modules
+!  identify version
 !
-        print*,'$Id: start.f90,v 1.8 2002-01-17 10:02:52 dobler Exp $'
+        if (lroot) call cvs_id( &
+             "$RCSfile: start.f90,v $", &
+             "$Revision: 1.9 $", &
+             "$Date: 2002-01-17 11:42:43 $")
+!
         call initialize         ! register modules, etc.
 !
 !  read input parameter (by each processor)

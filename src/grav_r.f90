@@ -19,6 +19,7 @@ module Gravity
 !
       use Cdata
       use Mpicomm
+      use Sub
 !
       logical, save :: first=.true.
 !
@@ -27,7 +28,10 @@ module Gravity
 !
 !  identify version number
 !
-      print*, '$Id: grav_r.f90,v 1.3 2002-01-17 09:59:47 dobler Exp $'
+      if (lroot) call cvs_id( &
+           "$RCSfile: grav_r.f90,v $", &
+           "$Revision: 1.4 $", &
+           "$Date: 2002-01-17 11:42:43 $")
 !
       lgrav = .true.
       lgravz = .false.

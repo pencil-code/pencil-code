@@ -27,7 +27,10 @@ module Gravity
 !
 !  identify version number
 !
-      print*, '$Id: grav_z.f90,v 1.3 2002-01-17 09:59:47 dobler Exp $'
+      if (lroot) call cvs_id( &
+           "$RCSfile: grav_z.f90,v $", &
+           "$Revision: 1.4 $", &
+           "$Date: 2002-01-17 11:42:43 $")
 !
       lgrav = .true.
       lgravz = .true.

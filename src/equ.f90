@@ -218,7 +218,10 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.9 2002-01-09 23:28:14 dobler Exp $'
+      if (headtt) call cvs_id( &
+           "$RCSfile: equ.f90,v $", &
+           "$Revision: 1.10 $", &
+           "$Date: 2002-01-17 11:42:43 $")
 !
 !  initiate communication
 !
