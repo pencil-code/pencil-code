@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.198 2004-09-18 07:54:29 brandenb Exp $ 
+! $Id: sub.f90,v 1.199 2004-09-22 12:55:52 ajohan Exp $ 
 
 module Sub 
 
@@ -1334,7 +1334,7 @@ module Sub
 !***********************************************************************
     subroutine del6v(f,k,del6f)
 !
-!  calculate del2 of a vector, get vector
+!  calculate del6 of a vector, get vector
 !  28-oct-97/axel: coded
 !  24-apr-03/nils: adapted from del2v
 !
