@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.78 2002-07-22 08:51:44 dobler Exp $
+! $Id: cdata.f90,v 1.79 2002-07-22 18:16:03 dobler Exp $
 
 module Cdata
 
@@ -24,13 +24,6 @@ module Cdata
   real :: o2m,om2,oum
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
-
-! These are parameters of Entropy, but appear in Boundcond and (worse) in
-! wparam (Sub) as well, so they need to be declared here
-!AB: Are you sure this cannot be avoided?? It is no longer in Boundcond!!
-  real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
-  integer:: isothtop=0
-
   real :: Omega=0.,qshear=0.
 
   integer, dimension(mseed) :: seed=0

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.100 2002-07-22 17:55:34 dobler Exp $
+! $Id: entropy.f90,v 1.101 2002-07-22 18:16:03 dobler Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.100 2002-07-22 17:55:34 dobler Exp $")
+           "$Id: entropy.f90,v 1.101 2002-07-22 18:16:03 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -426,7 +426,7 @@ module Entropy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
-      hcond=(1.-1./gamma)*(mpoly+1.)*Fheat
+      hcond=gamma1/gamma*(mpoly+1.)*Fheat
       if(headtt) print*,'calc_heatcond_simple: hcond in ', &
            minval(hcond), maxval(hcond)
 !
