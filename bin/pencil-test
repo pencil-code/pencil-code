@@ -46,13 +46,18 @@ my $usage = "Usage:
 die $usage if (! @ARGV);
 
 ## Print header
+my $date = scalar localtime();
 if ($html) {
     print <<"END_HEAD";
 <html>
 <head></head>
 <body>
 
+$date
+<p>
 END_HEAD
+} else {
+    print "$date\n\n";
 }
 
 ## Run test(s)
