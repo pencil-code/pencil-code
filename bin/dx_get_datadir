@@ -1,0 +1,20 @@
+#!/bin/csh
+#
+# Name:   dx_get_datadir
+# Author: ajwm (A.J.Mee@ncl.ac.uk)
+# Date:   02-12-2002
+# CVS: $Id: dx_get_datadir,v 1.1 2002-12-02 21:16:26 mee Exp $
+# Description:
+#   Read in a datadir.in if it exists and output the contents
+#   For reading into DX
+#
+#   02-dec-02/tony: coded
+#
+# ---------------------------------------------------------------------- #
+if (-e datadir.in) then
+  cat datadir.in
+else
+  echo 'data'
+endif
+echo 1
+echo 2

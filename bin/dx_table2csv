@@ -1,0 +1,14 @@
+#!/bin/csh
+#
+# Name:   dx_table2csv
+# Author: ajwm (A.J.Mee@ncl.ac.uk)
+# Date:   02-12-2002
+# CVS: $Id: dx_table2csv,v 1.1 2002-12-02 21:16:26 mee Exp $
+# Description:
+#   Read in a time_series.dat file and output a CSV version
+#   For reading into DX
+#
+#   02-dec-02/tony: coded
+#
+# ---------------------------------------------------------------------- #
+ sed -e 's/^#-*//; s/^[ ]*//g; s/-*$//g; s/E-/negexp/g ;s/--*/,/g; s/[ ][ ]*/,/g; s/negexp/E-/g' $1
