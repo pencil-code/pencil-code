@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.266 2004-02-13 16:20:59 ajohan Exp $
+! $Id: entropy.f90,v 1.267 2004-02-17 11:41:14 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.266 2004-02-13 16:20:59 ajohan Exp $")
+           "$Id: entropy.f90,v 1.267 2004-02-17 11:41:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1283,7 +1283,7 @@ endif
 !  Vertical case:
 !  Heat at bottom, cool top layers
 !
-      if (lgravz) then
+      if (lgravz .and. (luminosity .ne. 0. .or. cool .ne. 0.)) then
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !
