@@ -22,12 +22,16 @@ digraph G {
   pencil_modular -> doc;
   pencil_modular -> runs;
 
-  runs->gravz;
-  runs->spher;
-  runs->rings;
-  runs->kinematic;
+  runs->gravz    ->entro1;
+  runs->spher    ->spher1;
+  runs->rings    ->rings1;
+  runs->kinematic->abc;
 
-  /* src directory */
+  gravz->vconv1;
+  spher->spher2;
+
+
+  /* Switch default to boxed (for files) */
   node [shape=box];
   { Makefile; startrun; scheme; equ; physics; }
 
@@ -35,16 +39,21 @@ digraph G {
   scheme   [label="timestep, deriv"];
   physics  [label="\nhydro | hohydro\ndensity | nodensity\nentropy | noentropy\ngrav_z | grav_r | nograv\nmagnetic | nomagnetic\n\n"];
 
-  src->Makefile->startrun->scheme->equ->physics [dir=none];
+  src->Makefile->startrun->scheme->equ->physics [dir=none,weight=5];
 
-  gravz->vconv1->entro1 [dir=none];
-  rings->rings1 [dir=none];
-  spher->spher1->spher2->spher3 [dir=none];
-  kinematic->abc [dir=none];
 
-  entro1->src1;
+  vconv1->src1[weight=5];
   src1 [shape=ellipse, label="src"];
-  src1->src_local;
+  src1->src_local[weight=5];
   src_local[label="\nMakefile.local\ncparam.local\n\n"];
 
+
+  /* Indicate links from src to runs/gravz/vconv1/src*/
+  Makefile -> src1 [style=dashed];
+  startrun -> src1 [style=dashed];
+  scheme   -> src1 [style=dashed];
+  equ      -> src1 [style=dashed];
+  physics  -> src1 [style=dashed];
+
+  { rank = same; startrun; src1 }
 }
