@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.130 2003-04-26 09:21:07 brandenb Exp $
+! $Id: run.f90,v 1.131 2003-05-25 21:06:15 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.130 2003-04-26 09:21:07 brandenb Exp $")
+             "$Id: run.f90,v 1.131 2003-05-25 21:06:15 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -214,7 +214,7 @@
           if (linterstellar) call check_SN(f)
           !
           !  in regular intervals, calculate certain averages
-          !  and do other output.
+          !  and do other output
           !
           if(lout) call write_xyaverages()
           if(lout.and.lwrite_zaverages) call write_zaverages()

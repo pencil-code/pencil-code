@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.4 2003-05-22 17:31:33 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -14,7 +14,7 @@ module Pscalar
 
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   character (len=40) :: tensor_pscalar_file
-  logical :: nopscalar=.false.
+  logical :: nopscalar=.false.,reinitalize_lncc=.false.
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
@@ -29,7 +29,8 @@ module Pscalar
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
+       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
+       reinitalize_lncc
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
@@ -66,7 +67,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.4 2003-05-22 17:31:33 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,15 +76,80 @@ module Pscalar
 !
     endsubroutine register_pscalar
 !***********************************************************************
-    subroutine initialize_pscalar()
+    subroutine initialize_pscalar(f)
 !
 !  Perform any necessary post-parameter read initialization
-! 
+!  Since the passive scalar is often used for diagnostic purposes
+!  one may want to reinitialize it to its initial distribution.
 !
 !  24-nov-02/tony: coded
 !
-      ! dummy
+      real, dimension (mx,my,mz,mvar) :: f
+!
+!  set to zero and then call the same initial condition
+!  that was used in start.csh
+!
+      if(reinitalize_lncc) then
+        f(:,:,:,ilncc)=0.
+        call init_lncc_simple(f)
+      endif
+!
     endsubroutine initialize_pscalar
+!***********************************************************************
+    subroutine init_lncc_simple(f)
+!
+!  initialise passive scalar field; called from start.f90
+!
+!   6-jul-2001/axel: coded
+!
+      use Cdata
+      use Mpicomm
+      use Density
+      use Sub
+      use Initcond
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+!  identify module
+!
+      if (lroot) print*,'init_lncc_simple; initlncc=',initlncc
+!
+      select case(initlncc)
+        case('zero'); f(:,:,:,ilncc)=0.
+        case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
+        case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
+        case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
+        case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
+        case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
+        case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
+        case('parabola-x'); call parabola(ampllncc,f,ilncc,kx=kx_lncc)
+        case('parabola-y'); call parabola(ampllncc,f,ilncc,ky=ky_lncc)
+        case('parabola-z'); call parabola(ampllncc,f,ilncc,kz=kz_lncc)
+        case('gaussian-noise'); call gaunoise(ampllncc,f,ilncc,ilncc)
+        case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
+        case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
+        case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
+        case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
+        case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
+        case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
+        case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
+      endselect
+!
+!  superimpose something else
+!
+      select case(initlncc2)
+        case('wave-x'); call wave(ampllncc2,f,ilncc,ky=5.)
+      endselect
+!
+!  add floor value if cc_min is set
+!
+      if(cc_min/=0.) then
+        lncc_min=alog(cc_min)
+        if(lroot) print*,'set floor value for cc; cc_min=',cc_min
+        f(:,:,:,ilncc)=amax1(lncc_min,f(:,:,:,ilncc))
+      endif
+!
+    endsubroutine init_lncc_simple
 !***********************************************************************
     subroutine init_lncc(f,xx,yy,zz)
 !

@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.4 2003-05-20 15:06:42 mee Exp $
+! $Id: nopscalar.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -41,18 +41,23 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.4 2003-05-20 15:06:42 mee Exp $")
+           "$Id: nopscalar.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
-    subroutine initialize_pscalar()
+    subroutine initialize_pscalar(f)
 !
 !  Perform any necessary post-parameter read initialization
-! 
+!  Dummy routine
 !
 !  24-nov-02/tony: coded
 !
-      ! dummy
+      real, dimension (mx,my,mz,mvar) :: f
+!
+!  set to zero and then call the same initial condition
+!  that was used in start.csh
+!
+      if(ip==0) print*,'f=',f
     endsubroutine initialize_pscalar
 !***********************************************************************
     subroutine init_lncc(f,xx,yy,zz)

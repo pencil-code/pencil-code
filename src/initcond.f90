@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.39 2003-05-22 17:31:33 brandenb Exp $ 
+! $Id: initcond.f90,v 1.40 2003-05-25 21:06:15 brandenb Exp $ 
 
 module Initcond 
  
@@ -75,7 +75,7 @@ module Initcond
         if (ampl==0) then
           if (lroot) print*,'ampl=0 in hat; kx=',k
         else
-          if (lroot) print*,'hat: kx,i=',k,i
+          if (lroot) print*,'hat: kx,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-x**2)),2,my),3,mz)
         endif
       endif
@@ -88,7 +88,7 @@ module Initcond
         if (ampl==0) then
           if (lroot) print*,'ampl=0 in hat; ky=',k
         else
-          if (lroot) print*,'hat: ky,i=',k,i
+          if (lroot) print*,'hat: ky,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-y**2)),1,mx),3,mz)
         endif
       endif
@@ -101,7 +101,7 @@ module Initcond
         if (ampl==0) then
           if (lroot) print*,'ampl=0 in hat; kz=',k
         else
-          if (lroot) print*,'hat: kz,i=',k,i
+          if (lroot) print*,'hat: kz,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-z**2)),1,mx),2,my)
         endif
       endif
