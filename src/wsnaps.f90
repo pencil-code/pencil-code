@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.16 2003-01-10 14:00:27 nilshau Exp $
+! $Id: wsnaps.f90,v 1.17 2003-01-13 18:47:45 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -125,11 +125,11 @@ contains
          if (vec_spec) call power(a,'a')
          if (ab_spec)  call powerhel(a,'mag')
          if (ou_spec)  call powerhel(a,'kin')
-         if (lsfu)     call structure(a,'u')
-         if (lsfb)     call structure(a,'b')
-         if (lsfz1)    call structure(a,'z1')
-         if (lsfz2)    call structure(a,'z2')
-         if (lpdf)     call structure(a,'pdf')
+         if (lsfu)     call structure(a,'u   ')
+         if (lsfb)     call structure(a,'b   ')
+         if (lsfz1)    call structure(a,'z1  ')
+         if (lsfz2)    call structure(a,'z2  ')
+         if (lpdf)     call structure(a,'pdf ')
       endif
 !
     endsubroutine powersnap
