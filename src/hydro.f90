@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.179 2004-07-09 22:54:18 nilshau Exp $
+! $Id: hydro.f90,v 1.180 2004-07-11 18:30:07 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -125,7 +125,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.179 2004-07-09 22:54:18 nilshau Exp $")
+           "$Id: hydro.f90,v 1.180 2004-07-11 18:30:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -578,6 +578,10 @@ module Hydro
           if (n.eq.iz)  oo_xy(:,m-m1+1,j)=oo(:,j)
           if (n.eq.iz2) oo_xy2(:,m-m1+1,j)=oo(:,j)
         enddo
+        u2_yz(m-m1+1,n-n1+1)=u2(ix-l1+1)
+        if (m.eq.iy)  u2_xz(:,n-n1+1)=u2
+        if (n.eq.iz)  u2_xy(:,m-m1+1)=u2
+        if (n.eq.iz2) u2_xy2(:,m-m1+1)=u2
         o2_yz(m-m1+1,n-n1+1)=o2(ix-l1+1)
         if (m.eq.iy)  o2_xz(:,n-n1+1)=o2
         if (n.eq.iz)  o2_xy(:,m-m1+1)=o2
