@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.78 2003-09-06 11:06:08 ajohan Exp $ 
+! $Id: initcond.f90,v 1.79 2003-09-06 17:39:33 ajohan Exp $ 
 
 module Initcond 
  
@@ -569,7 +569,7 @@ module Initcond
       real :: gamma,cs20,gamma1,eps2,radius2,width
       real :: lnrhosum_box,lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
-      integer :: i,j,k
+      integer :: k
 !
 !  calculate sigma
 !
@@ -656,13 +656,7 @@ module Initcond
 !
 !  Use average density of box as unit density
 !
-      do i=l1,l2
-        do j=m1,m2
-          do k=n1,n2
-            lnrhosum_thisbox = lnrhosum_thisbox + f(i,j,k,ilnrho)
-          enddo
-        enddo
-      enddo
+      lnrhosum_thisbox = sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
       if (ip<14) &
         print*,'planet_hc: iproc,lnrhosum_thisbox=',iproc,lnrhosum_thisbox
 !
