@@ -3,11 +3,11 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.5 2004-07-10 16:43:44 brandenb Exp $'
+  cvsid='$Id: start.in,v 1.6 2004-08-26 19:43:26 mee Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   bcz = 's','s','a','a2','sT'
-  xyz0=-0.25,-0.25,-0.25
-  xyz1=+0.25,+0.25,+0.25
+  xyz0=-0.125,-0.125,-0.125
+  xyz1=+0.125,+0.125,+0.125
   lperi=T,T,F
   lwrite_aux=T
   !lcalc_cp=T
