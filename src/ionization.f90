@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.37 2003-06-13 21:33:55 theine Exp $
+! $Id: ionization.f90,v 1.38 2003-06-14 15:37:22 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -45,18 +45,19 @@ module Ionization
       if (.not. first) call stop_it('register_ionization called twice')
       first = .false.
 !
-      iion = mvar + naux +1
+      iyH = mvar + naux +1
+      itemp 
       naux = naux + 1 
 
       !if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
-        print*, 'iion = ', iion
+        print*, 'iyH = ', iyH
       !endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.37 2003-06-13 21:33:55 theine Exp $")
+           "$Id: ionization.f90,v 1.38 2003-06-14 15:37:22 theine Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -102,7 +103,6 @@ module Ionization
       endif
 
     endsubroutine initialize_ionization
-
 !***********************************************************************
     subroutine ionfrac(f)
 !
@@ -122,9 +122,9 @@ module Ionization
       do l=l1,l2
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
-         yH=f(l,m,n,iion)
+         yH=f(l,m,n,iyH)
          call rtsafe(lnrho,ss,yH)
-         f(l,m,n,iion)=yH
+         f(l,m,n,iyH)=yH
       enddo
       enddo
       enddo

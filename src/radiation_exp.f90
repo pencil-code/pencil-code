@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.2 2003-06-13 21:33:55 theine Exp $
+! $Id: radiation_exp.f90,v 1.3 2003-06-14 15:37:22 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.2 2003-06-13 21:33:55 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.3 2003-06-14 15:37:22 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -86,7 +86,7 @@ module Radiation
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         yH=f(l1:l2,m,n,iion)
+         yH=f(l1:l2,m,n,iyH)
          call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa)
          Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
          chi(l1:l2,m,n)=kappa*exp(lnrho)
