@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.127 2003-10-24 13:17:31 dobler Exp $
+! $Id: hydro.f90,v 1.128 2003-10-29 20:37:37 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -43,13 +43,15 @@ module Hydro
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
+  logical :: ldamp_fade=.false.
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0
+       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
+       ldamp_fade
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -98,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.127 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: hydro.f90,v 1.128 2003-10-29 20:37:37 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -680,8 +682,13 @@ module Hydro
         if ((dampu .ne. 0.) .and. (t < tdamp)) then
           ! damp motion provided t<tdamp
           if (dampu > 0) then
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                    - dampu*f(l1:l2,m,n,iux:iuz)
+            if (ldamp_fade) then
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                      - (tdamp-t)/tdamp*dampu*f(l1:l2,m,n,iux:iuz)
+            else
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                      - dampu*f(l1:l2,m,n,iux:iuz)
+            endif
           else 
             if (dt > 0) then    ! dt known and good
               df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
