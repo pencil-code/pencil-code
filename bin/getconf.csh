@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.45 2003-01-30 21:34:59 dobler Exp $
+# $Id: getconf.csh,v 1.46 2003-04-02 12:24:50 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -142,6 +142,19 @@ else # no MPI
   if ($hn == rasmussen) then
     echo "Use options for Rasmussen"
     limit stacksize unlimited
+  else if ($hn =~ s[0-9]*p[0-9]*) then
+    echo "Batch job: non-MPI single processor run on Horseshoe cluster"
+    set nodelist = `cat $PBS_NODEFILE`
+    cat $PBS_NODEFILE > lamhosts
+    lamboot -v lamhosts
+    echo "lamnodes:"
+    lamnodes
+    set mpirunops =
+    set mpirun = 
+    set start_x = $SCRATCH_DIR/start.x
+    set run_x = $SCRATCH_DIR/run.x
+  endif
+
   endif
 
 endif
