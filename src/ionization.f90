@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.16 2003-03-28 20:29:30 brandenb Exp $
+! $Id: ionization.f90,v 1.17 2003-03-28 20:48:06 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.16 2003-03-28 20:29:30 brandenb Exp $")
+           "$Id: ionization.f90,v 1.17 2003-03-28 20:48:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -69,9 +69,6 @@ module Ionization
 !
       use Cdata
       use General
-!
-      logical, save :: first=.true.
-      logical :: exist
 !
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
@@ -110,7 +107,7 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: dlnPdlnrho,dlnPdss,yH,TT,rho,ee,lnTT
       real :: ss0=-5.5542
 !
@@ -158,7 +155,7 @@ module Ionization
 !
       real, dimension(nx),intent(in)   :: lnrho,ss,yH
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
-                           intent(out) :: dlnPdlnrho,dlnPdss,TT,nH_
+                           intent(out) :: dlnPdlnrho,dlnPdss,TT
       real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
       real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
@@ -213,7 +210,7 @@ module Ionization
          yH(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
          yHlast(i)=yH(i)
       enddo    
-    end function ionfrac
+    endsubroutine ionfrac
 !***********************************************************************
     function rtsafe(lnrho,ss,yHlast)
 !
