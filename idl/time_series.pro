@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.10 2003-07-02 19:02:41 brandenb Exp $
+;  $Id: time_series.pro,v 1.11 2003-07-12 23:56:15 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -20,8 +20,14 @@ if defined(i_dt) ne 0 then dt=reform(a(i_dt-1,*))
 if defined(i_urms) ne 0 then urms=reform(a(i_urms-1,*))
 if defined(i_umax) ne 0 then umax=reform(a(i_umax-1,*))
 if defined(i_u2m) ne 0 then u2m=reform(a(i_u2m-1,*))
+if defined(i_ux2m) ne 0 then ux2m=reform(a(i_ux2m-1,*))
+if defined(i_uy2m) ne 0 then uy2m=reform(a(i_uy2m-1,*))
+if defined(i_uz2m) ne 0 then uz2m=reform(a(i_uz2m-1,*))
 if defined(i_um2) ne 0 then um2=reform(a(i_um2-1,*))
 if defined(i_b2m) ne 0 then b2m=reform(a(i_b2m-1,*))
+if defined(i_bx2m) ne 0 then bx2m=reform(a(i_bx2m-1,*))
+if defined(i_by2m) ne 0 then by2m=reform(a(i_by2m-1,*))
+if defined(i_bz2m) ne 0 then bz2m=reform(a(i_bz2m-1,*))
 if defined(i_orms) ne 0 then orms=reform(a(i_orms-1,*))
 if defined(i_epsK) ne 0 then epsK=reform(a(i_epsK-1,*))
 if defined(i_epsM) ne 0 then epsM=reform(a(i_epsM-1,*))
