@@ -1,6 +1,7 @@
-/* Mutual dependencies for the pencil_modular code.
+/*                               -*-c-*-
+   Mutual dependencies for the pencil_modular code.
    Run this through
-     dot -Tps structure.dot -o struct.ps
+     dot -Tps structure.dot -o struct.eps
    to obtain a PostScript graph.
    `dot' is part of AT&T's `graphviz' package.
  */
@@ -13,7 +14,7 @@ digraph G {
 
   /* */
   node [shape=ellipse];
-  { rank=same; src; idl_dx; doc; bin; runs; samples }
+  { rank=same; src; idl_dx; doc; bin; samples }
 
   idl_dx [label="idl | dx"];
 
@@ -21,9 +22,10 @@ digraph G {
   pencil_modular -> idl_dx;
   pencil_modular -> bin;
   pencil_modular -> doc;
-  pencil_modular -> runs;
+/*    pencil_modular -> runs; */
   pencil_modular -> samples;
 
+/*
   runs->gravz    ->entro1;
   runs->spher    ->spher1;
   runs->rings    ->rings1;
@@ -31,7 +33,14 @@ digraph G {
 
   gravz->vconv1;
   spher->spher2;
+*/
 
+  samples->conv_slab;
+  samples->conv_slab_flat;
+  samples->dot_dot_dot;
+  conv_slab      [shape=ellipse, label="conv-slab"];
+  conv_slab_flat [shape=ellipse, label="conv-slab-flat"];
+  dot_dot_dot    [shape=ellipse, label="..."];
 
   /* Switch default to boxed (for files) */
   node [shape=box];
@@ -44,7 +53,8 @@ digraph G {
   src->Makefile->startrun->scheme->equ->physics [dir=none,weight=5];
 
 
-  vconv1->src1[weight=5];
+/*    vconv1->src1[weight=5]; */
+  conv_slab->src1[weight=5];
   src1 [shape=ellipse, label="src"];
   src1->src_local[weight=5];
   src_local[label="\nMakefile.local\ncparam.local\n\n"];
