@@ -1,10 +1,19 @@
-\input texinfo   @c -*-texinfo-*-
+\input gsl-header.texi @c -*-texinfo-*-
+
+@c @cropmarks
+@afourpaper
+@c @paperbackbook
+@c @set publish
+@raggedbottom
 
 @c %**start of header
 
 @setfilename manual
 @settitle Installing and Using the MHD Code
+@finalout
+@ifset publish
 @setchapternewpage odd
+@end ifset
 
 @c Merge all indices into one:
 @syncodeindex vr cp
@@ -12,46 +21,131 @@
 
 @c %**end of header
 
+@dircategory Scientific software
+@direntry
+* MHD-code: (manual).                   MHD code manual
+@end direntry
+
+@include version-ref.texi
+@set MHDcode @i{MHD code}
+
 @ifinfo
-This file documents the basic usage of the MHD code.
+This file documents the basic usage of the @value{MHDcode}.
 
-Copyright 2002 Axel Brandenburg & Wolfgang Dobler
+Copyright (C) 2001--2002 Axel Brandenburg, Wolfgang Dobler.
 
-Permission is granted to ... (?)
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled ``GNU
+Free Documentation License''.
+
+@ignore
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+@end ignore
+
+@ignore
+Permission is granted to process this file through TeX and print the
+results, provided the printed document carries copying permission
+notice identical to this one except for the removal of this paragraph
+(this paragraph not being relevant to the printed manual).
+
+@end ignore
+
+@ignore
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation approved
+by the original authors.
+@end ignore
 @end ifinfo
 
 @titlepage
 @title Installing and Using the MHD Code
 @subtitle A very preliminary manual
 @author Axel Brandenburg & Wolfgang Dobler
+@subtitle Edition @value{EDITION}, for code version @value{VERSION}
+@subtitle @value{UPDATED}
+
+@author Axel Brandenburg
+@sp 1
+
+@author Wolfgang Dobler
+@email{Wolfgang.Dobler@@kis.uni-freiburg.de}
 
 @page
 @vskip 0pt plus 1filll
-Copyright @copyright{} 2002 Axel Brandenburg & Wolfgang Dobler
 
-Published by ... [nobody]
+Copyright @copyright{} 2001--2002 Axel Brandenburg, Wolfgang Dobler 
 
-Permission is granted to ... (?)
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.1
+or any later version published by the Free Software Foundation;
+with no Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.
+A copy of the license is included in the section entitled ``GNU
+Free Documentation License''.
+
+@ignore
+Permission is granted to make and distribute verbatim copies of
+this manual provided the copyright notice and this permission notice
+are preserved on all copies.
+
+Permission is granted to copy and distribute modified versions of this
+manual under the conditions for verbatim copying, provided that the entire
+resulting derived work is distributed under the terms of a permission
+notice identical to this one.
+
+Permission is granted to copy and distribute translations of this manual
+into another language, under the above conditions for modified versions,
+except that this permission notice may be stated in a translation approved
+by the original authors.
+@end ignore
 @end titlepage
 
-@node Top, Overview, , (dir)
+@contents
 
 @ifinfo
-This document describes how to set up and get started with the MHD code.
+@node Top, Introduction, (dir), (dir)
+@top MHD code
+@end ifinfo
 
-This document applies to the current version of the code, but is likely to
-never be quite up-to-date.
+
+@ifinfo
+This file documents the @value{MHD}, a high-order finite difference code
+for compressible hydrodynamical and magnetohydrodynamical problems.
+The documentation corresponds to version
+@value{VERSION}.
+
 @end ifinfo
 
 @menu
-* Copying::          Your rights and freedoms.
-* First Chapter::    Getting the code
-* Second Chapter::   Setting the code up
-* Third Chapter::    Equations
-* Fourth Chapter::   Using the code
+* Introduction::
+* Obtaining the Code::
+* Getting Started::
+* Equations::
+* Using the Code::
+* Index::
 @end menu
 
-@node    First Chapter, Second Chapter, top,      top
+
+@c ====================================================================== c@
+
+@node    Introduction, Obtaining the Code, top,      top
+@comment node-name,     next,           previous, up
+@chapter Introduction
+
+
+@c ====================================================================== c@
+
+@node    Obtaining the Code, Getting Started, Introduction, top
 @comment node-name,     next,           previous, up
 @chapter Obtaining the Code
 @cindex CVS (obtaining the code)
@@ -69,8 +163,11 @@ You proceed as follows:
 @item Set your environment variable @env{CVSROOT} (you probably want to
   put this into your @file{.cshrc} or @file{.profile} setup files):
 @example
-csh>  setenv CVSROOT :pserver:anonymous@@norserv.nordita.dk:/home/brandenb/CVS
-[or]
+csh>  setenv CVSROOT \
+      :pserver:anonymous@@norserv.nordita.dk:/home/brandenb/CVS
+@end example
+(all in one line, without the backslash) or
+@example
 sh>  CVSROOT :pserver:anonymous@@norserv.nordita.dk:/home/brandenb/CVS
 sh>  export CVSROOT
 @end example
@@ -78,7 +175,7 @@ sh>  export CVSROOT
 @item Log in:
 @example
 unix>  cvs login
-cvs pasword: ......
+cvs pasword: ........
 @end example
 
 @item Go to wherever you want the code:
@@ -96,7 +193,22 @@ This creates a subdirectory @file{mhd} of your current directory
 @end enumerate
 
 
-@chapter The equations
+@c ====================================================================== c@
+
+@node  Getting Started, Equations, Obtaining the code, top
+@comment node-name,     next,           previous, up
+@chapter Getting Started
+@cindex Getting started
+
+To get yourself started, you should run the comvection example which is
+provided as the default configuration of the code.
+
+
+@c ====================================================================== c@
+
+@node  Equations, Using the Code, Getting Started, top
+@comment node-name,     next,           previous, up
+@chapter The Equations
 @cindex Equations
 
 The equations solved by the MHD code are basically the standard
@@ -104,11 +216,91 @@ compressible MHD equations. However, the modular structure allows to
 implement different versions of the MHD equations, as well as to switch
 some of the equations off.
 
+@menu
+* Continuity equation::              
+* Equation of motion::  
+* Induction equation::     
+* Entropy equation::  
+@end menu
+
+@c ---------------------------------------------------------------------- c@
+@node Continuity equation
+@section Continuity equation
+
+@tex
+\beforedisplay
+$$
+\eqalign{
+  {D\ln\varrho\over Dt} & = - \hbox{div}\; {\bf u}, \cr
+}
+$$
+\afterdisplay
+@end tex
+@ifinfo
+@example
+D\ln\rho / Dt  =  - div uu
+@end example
+@end ifinfo
+
+
+@c ---------------------------------------------------------------------- c@
+@node Equation of motion
+@section Equation of motion
+
+@tex
+\beforedisplay
+$$
+\eqalign{
+  {D{\bf u}\over Dt}
+  & = - c_{\rm s}^2\,\hbox{grad}\left({s\over c_p} + \ln\varrho \right)
+      - \hbox{grad}\;\Phi
+      + {{\bf j}\times{\bf B}\over\varrho}
+      + \nu\left(\Delta{\bf u}
+                 + {1\over3}\hbox{grad}\;\hbox{div}\;{\bf u}\right)
+      , \cr
+}
+$$
+\afterdisplay
+@end tex
+@ifinfo
+@example
+D uu / Dt  =  -c_s^2 grad (s/c_p + \ln\rho) - grad \Phi
+              + (jj x BB)/\rho + \nu (\Delta uu + 1/3 grad div uu)
+@end example
+@end ifinfo
+
+
+@c ---------------------------------------------------------------------- c@
+@node Induction equation
+@section Induction equation
+
+@tex
+\beforedisplay
+$$
+\eqalign{
+  {\partial{\bf A}\over \partial t}
+  & = - {\bf u}\times{\bf B} + \eta\mu_0{\bf j}, \cr
+}
+$$
+\afterdisplay
+@end tex
+@ifinfo
+@example
+\partial AA / \partial t  =  uu x BB + \eta\mu_0 jj
+@end example
+@end ifinfo
+
+
+@c ---------------------------------------------------------------------- c@
+@node Entropy equation
+@section Entropy equation
+
+
 @cindex entropy
 @cindex thermodynamics
 The current thermodynamics module @file{entropy} formulates the thermal
-part of the physics in terms of @emph{entropy} @math{$s$}, rather than thermal
-energy $e$, which you may be more familiar with.
+part of the physics in terms of @emph{entropy} @math{s}, rather than thermal
+energy @math{e}, which you may be more familiar with.
 Thus the two fundamental thermodynamical variables are @math{\ln\varrho}
 and @math{s}.
 The reason for this choice of variables is that entropy is the natural
@@ -116,6 +308,58 @@ physical variable for (at least) convection processes: the sign of the
 entropy gradient determines convective (in)stability, the
 @emph{Rayleigh number} is proportional to the entropy gradient, etc.
 
+@tex
+\beforedisplay
+$$
+\eqalign{
+  \varrho T {D s/c_p\over Dt}
+  & = {\cal H} - {\cal C}
+      + \hbox{div}(\lambda\;\hbox{grad} T)
+       + \mu_0{\bf j}^2 + 2\varrho\nu{\sf S}^2, \cr
+}
+$$
+\afterdisplay
+@end tex
+@ifinfo
+@example
+\rho T  D s/c_p / Dt  =  H - C + div(\lambda grad T) + \mu_0 jj^2 + 2\rho\nu S^2
+@end example
+@end ifinfo
+
+
+@c ====================================================================== c@
+
+@node  Using the Code, Index, Equations, top
+@comment node-name,     next,           previous, up
+@chapter Using the Code
+
+Here's how to use the code \ldots
+
+@menu
+* Modules::
+* Parameters::
+@end menu
+
+@c ---------------------------------------------------------------------- c@
+@node Modules
+@cindex Modules
+@section Modules
+
+
+@c ---------------------------------------------------------------------- c@
+@node Parameters
+@cindex Parameters
+@section Parameters
+
+
+@c ====================================================================== c@
+
+
+@comment htmlhelp: @bye
+
+@iftex
+@normalbottom
+@end iftex
 
 
 @node Index, Top
@@ -123,5 +367,21 @@ entropy gradient determines convective (in)stability, the
 @unnumbered Index
 
 @printindex cp
+@ifset publish
+@comment final page must be blank for printed version
+@headings off
+@page
+@*
+@page
+@*
+@page
+@*
+@page
+@*
+@end ifset
+@bye
+
 
 @c End of file
+
+
