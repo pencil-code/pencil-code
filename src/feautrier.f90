@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.1 2003-04-01 21:23:58 theine Exp $
+! $Id: feautrier.f90,v 1.2 2003-04-01 22:12:47 theine Exp $
 
 module Radiation
 
@@ -12,7 +12,6 @@ module Radiation
   implicit none
 
   real, dimension(mx,my,mz) :: Qrad,Srad,kappa
-  integer :: lrad,mrad,nrad
 !
 !  default values for one pair of vertical rays
 !
@@ -54,7 +53,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.1 2003-04-01 21:23:58 theine Exp $")
+           "$Id: feautrier.f90,v 1.2 2003-04-01 22:12:47 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -68,7 +67,7 @@ module Radiation
 !
 !  calculate source function
 !
-! 24-mar-03/axel+tobi: coded
+!  24-mar-03/axel+tobi: coded
 !
       use Cdata
       use Ionization
@@ -85,7 +84,7 @@ module Radiation
          ss=f(l1:l2,m,n,ient)
          yH=ionfrac(lnrho,ss)
          call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
-         Srad(l1:l2,m,n)=sigmaB*TT/pi
+         Srad(l1:l2,m,n)=sigmaB*TT**4/pi
          kappa(l1:l2,m,n)=kappa_
       enddo
       enddo
@@ -93,6 +92,12 @@ module Radiation
     endsubroutine source_function
 !***********************************************************************
     subroutine feautrier(f,Prad)
+!
+!  Solves the transfer equation using Feautrier's method
+!  At the moment for vertical rays only
+!
+!  01-apr/tobi: coded
+!
       use Cdata
       use General
 
@@ -100,6 +105,7 @@ module Radiation
       real, dimension(mx,my,mz) :: Prad
       real, dimension(nz) :: kaprho,tau,Srad_,Prad_
       real, dimension(nz) :: a,b,c
+      integer :: lrad,mrad,nrad
 
       do lrad=l1,l2
       do mrad=m1,m2
@@ -154,7 +160,7 @@ module Radiation
 !
 !  calculate source function
 !
-! 25-mar-03/axel+tobi: coded
+!  25-mar-03/axel+tobi: coded
 !
       use Cdata
 !

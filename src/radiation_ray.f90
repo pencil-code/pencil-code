@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.8 2003-04-01 20:07:35 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.9 2003-04-01 22:12:47 theine Exp $
 
 module Radiation
 
@@ -16,8 +16,7 @@ module Radiation
   real, dimension (radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
   real, dimension (mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
   real, dimension (mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
-  real, dimension (mx,my,mz) :: Qrad,Source
-  real :: arad=0.,kappa=0.
+  real, dimension (mx,my,mz) :: Qrad,Source,kappa=1.
 !
 !  default values for one pair of vertical rays
 !
@@ -30,10 +29,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       kappa,arad,radx,rady,radz,rad2max
+       radx,rady,radz,rad2max
 
   namelist /radiation_run_pars/ &
-       kappa,arad,radx,rady,radz,rad2max
+       radx,rady,radz,rad2max
 
   contains
 
@@ -59,7 +58,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.8 2003-04-01 20:07:35 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.9 2003-04-01 22:12:47 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -112,12 +111,12 @@ module Radiation
 !  Use the thermodynamics module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !
-      do n=n1,n2
-      do m=m1,m2
+      do n=1,mz
+      do m=1,my
         ss=f(l1:l2,m,n,ient)
         lnrho=f(l1:l2,m,n,ilnrho)
         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature=TT)
-        Source(l1:l2,m,n)=arad*TT**4
+        Source(l1:l2,m,n)=sigmaB*TT**4/pi
       enddo
       enddo
 !
@@ -265,7 +264,7 @@ module Radiation
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
         lnrhom=0.5*(f(l,m,n,ilnrho)+f(l-lrad,m-mrad,n-nrad,ilnrho))
-        dtau05=0.5*kappa*exp(lnrhom)*dlength
+        dtau05=0.5*kappa(l,m,n)*exp(lnrhom)*dlength
         fnew=1.+dtau05
         fold=1.-dtau05
         Intensity(l,m,n)=(fold*Intensity(l-lrad,m-mrad,n-nrad) &
@@ -292,7 +291,8 @@ module Radiation
       do n=1,mz
       do m=1,my
         rho=exp(f(l1:l2,m,n,ilnrho))
-        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+kappa*rho*Qrad(l1:l2,m,n)
+        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+                           +4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)
       enddo
       enddo
 !

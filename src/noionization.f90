@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.7 2003-03-29 11:14:32 brandenb Exp $
+! $Id: noionization.f90,v 1.8 2003-04-01 22:12:47 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -87,5 +87,34 @@ module Ionization
       endif
 !
     endsubroutine thermodynamics
+!***********************************************************************
+    subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
+!
+!   calculates thermodynamic quantities under partial ionization
+!
+!   28-mar-03/tobi: added kappa
+!
+      real, dimension(nx),intent(in)   :: lnrho,ss,yH
+      real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
+                           intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
+      real                             :: ss0=-5.5542,kap=1.
+
+      if (present(dlnPdlnrho)) dlnPdlnrho=gamma
+      if (present(dlnPdss)) dlnPdss=gamma1
+      if (present(TT)) TT=exp(gamma1*(lnrho+ss-ss0))
+      if (present(kappa)) kappa=kap
+    endsubroutine ioncalc
+!***********************************************************************
+    function ionfrac(lnrho,ss)
+!
+!   calculates the ionization fraction along the pencil
+!
+!   28-mar-03/tobi: coded
+!
+      real, dimension(nx), intent(in)  :: lnrho,ss
+      real, dimension(nx)              :: ionfrac
+
+      ionfrac=0.
+    endfunction ionfrac
 !***********************************************************************
 endmodule ionization

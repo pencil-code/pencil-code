@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.23 2003-04-01 21:23:58 theine Exp $
+! $Id: ionization.f90,v 1.24 2003-04-01 22:12:47 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.23 2003-04-01 21:23:58 theine Exp $")
+           "$Id: ionization.f90,v 1.24 2003-04-01 22:12:47 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,7 +161,7 @@ module Ionization
 !
       real, dimension(nx),intent(in)   :: lnrho,ss,yH
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
-                           intent(out) :: dlnPdlnrho,dlnPdss,TT
+                           intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
       real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
       real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
