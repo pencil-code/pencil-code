@@ -30,6 +30,7 @@ IO=io_dist
 #FC=f95
 #FFLAGS=-O3
 #LDMPI=
+#FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen)
 #FC=pgf90	#(Norhpc)
 #FFLAGS=-O2 -Minfo 	#(Norhpc)
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
