@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.1 2002-11-28 02:07:00 mee Exp $
+; $Id: pc_read_var.pro,v 1.2 2002-11-28 22:55:00 tarek Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 02:07:00 $
-;  $Revision: 1.1 $
+;  $Date: 2002-11-28 22:55:00 $
+;  $Revision: 1.2 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -64,7 +64,7 @@ default,varfile,'var.dat'
 pc_read_dim,mx=mx,my=my,mz=mz,precision=precision,datadir=datadir,proc=proc,QUIET=QUIET 
 ; and check pc_precision is set!                                                    
 pc_set_precision,precision=precision
-pc_read_params,object=params,datadir=datadir,QUIET=QUIET 
+pc_read_param,object=params,datadir=datadir,QUIET=QUIET 
 
 ;
 ; Initialize / set default returns for ALL variables

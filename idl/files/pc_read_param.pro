@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.1 2002-11-28 02:07:00 mee Exp $
+; $Id: pc_read_param.pro,v 1.2 2002-11-28 22:54:59 tarek Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 02:07:00 $
-;  $Revision: 1.1 $
+;  $Date: 2002-11-28 22:54:59 $
+;  $Revision: 1.2 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -168,13 +168,13 @@ if (found gt 0) then begin
         mpoly2=object.mpoly2 & isothtop=object.isothtop
     endif
 endif else begin
-    message, 'Warning: cannot find file ', filename
+    message, 'Warning: cannot find file '+ filename
 endelse
 
 ; If requested print a summary
 if keyword_set(PRINT) then begin
     print, 'For GLOBAL calculation domain:'
-    print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_params.pro'
+    print, '    NO SUMMARY INFORMATION CONFIGURED - edit pc_read_param.pro'
 endif
 
 end
