@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.165 2003-06-12 20:59:57 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.166 2003-06-13 14:27:31 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-12 20:59:57 $ $,~ $ $Revision: 1.165 $ $}
+\date{$ $Date: 2003-06-13 14:27:31 $ $,~ $ $Revision: 1.166 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-12 20:59:57 $ $,~ $ $Revision: 1.165 $ $}
+  \emph{$ $Date: 2003-06-13 14:27:31 $ $,~ $ $Revision: 1.166 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2632,7 +2632,8 @@ shock viscosity.
 
 \subsection{Radiative transfer}
 
-This module is still quite experimental (as of June 2003).
+This module (\file{radiation-exp.f90} or \file{radiation-ray.f90}) is
+still quite experimental (as of June 2003).
 
 The basic equation for radiative transfer is
 \begin{equation} \label{radiative-transfer}
@@ -2643,34 +2644,6 @@ where
   \tau \equiv \int\limits_0^s \chi(s') \, ds'
 \end{equation}
 is the optical depth ($s$ is the geometrical coordinate along the ray).
-
-A formal solution of Eq.~(\ref{radiative-transfer}) is given by
-\begin{equation}
-  I(\tau) = I_0(\tau) e^{-\tau}
-            + \int\limits_0^\tau e^{-(\tau-\tau')} S(\tau')\,d\tau' \; .
-\end{equation}
-Using a generalisation of the trapezoidal rule,
-\begin{equation}
-  \int\limits_0^{\tau} e^{-(\tau-\tau')} f(\tau')\,d\tau'
-  \approx (1{-}e^{-\tau}) f(\tau)
-          - \frac{1 - e^{-\tau}(1{+}\tau)}{\tau}[f(\tau)-f(0)]
-  \; ,
-\end{equation}
-which is exact for linear functions $S(\tau)$, we discretize this as
-\begin{eqnarray}
-  I_{k+1} &=& I_k e^{-\delta\tau}
-              + (1{-}e^{-\delta\tau}) S_{k+1}
-              - \frac{1 - e^{-\delta\tau}(1+\delta\tau)}{\delta\tau}
-                (S_{k+1}-S_k) \; , \\
-          &=& I_k e^{-\delta\tau}
-              + (1{-}e^{-\delta\tau}) S_{k}
-              + \frac{e^{-\delta\tau}-1+\delta\tau}{\delta\tau}
-                (S_{k+1}-S_k) \; ,
-\end{eqnarray}
-where
-\begin{equation}
-  \delta\tau = \frac{\chi_k{+}\chi_{k+1}}{2} \delta x \; .
-\end{equation}
 
 
 % ---------------------------------------------------------------------- %
@@ -3851,12 +3824,12 @@ horizontal sections for time $t=50$.
 
 % ====================================================================== %
 
-\section{Details about the numerical scheme}
+\section{Numerical methods}
 
 \subsection{Sixth-order spatial derivatives}
 \index{6th-order derivatives}
 \label{S-6th-order}
-
+[To be written]
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
@@ -3948,6 +3921,51 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
   \end{tabular}
 \end{table}
 
+
+\subsection{Radiative transfer}
+\index{Radiative transfer}
+\label{S-radi-trans}
+
+A formal solution of Eq.~(\ref{radiative-transfer}) is given by
+\begin{equation}
+  I(\tau) = I_0(\tau) e^{-\tau}
+            + \int\limits_0^\tau e^{-(\tau-\tau')} S(\tau')\,d\tau' \; .
+\end{equation}
+Using a generalisation of the trapezoidal rule,
+\begin{eqnarray}
+  \int\limits_0^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
+  &\approx& \int\limits_0^\infty e^{-(\tau-\tau')}
+              \left[ f(0) + \frac{f(\tau){-}f(0)}{\tau}\,\tau'
+              \right] \; d\tau'\\
+  &=&       (1{-}e^{-\tau}) f(\tau)
+          - \frac{1 - e^{-\tau}(1{+}\tau)}{\tau}[f(\tau)-f(0)]
+  \; ,
+\end{eqnarray}
+which is exact for linear functions $S(\tau)$, we discretize this as
+\begin{eqnarray}
+  I_{k+1} &=& I_k e^{-\delta\tau}
+              + (1{-}e^{-\delta\tau}) S_{k+1}
+              - \frac{1 - e^{-\delta\tau}(1+\delta\tau)}{\delta\tau}
+                (S_{k+1}-S_k) \; , \\
+          &=& I_k e^{-\delta\tau}
+              + (1{-}e^{-\delta\tau}) S_{k}
+              + \frac{e^{-\delta\tau}-1+\delta\tau}{\delta\tau}
+                (S_{k+1}-S_k) \; .
+\end{eqnarray}
+Here the simplest way to calculate $\delta\tau$ is
+\begin{equation}
+  \delta\tau = \frac{\chi_k{+}\chi_{k+1}}{2} \, \delta x \; ;
+\end{equation}
+more accurate alternatives are
+\begin{equation}
+  \delta\tau = \sqrt{\chi_k\chi_{k+1}} \, \delta x
+\end{equation}
+or
+\begin{equation}
+  \delta\tau
+  = \frac{\chi_{k+1}-\chi_k}{\ln\frac{\chi_{k+1}}{\ln\chi_k}} \, \delta x
+\end{equation}
+Equation 
 
 % ====================================================================== %
 
@@ -5089,7 +5107,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.165 2003-06-12 20:59:57 dobler Exp $ $}
+$ $Id: manual.tex,v 1.166 2003-06-13 14:27:31 dobler Exp $ $}
 
 
 \end{document}
