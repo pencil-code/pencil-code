@@ -3,9 +3,9 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.26 2004-07-02 10:08:16 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.27 2004-07-24 04:52:13 brandenb Exp $',
   nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=10, itorder=3,
-  dsnap=50, dvid=0.5,
+  dsnap=50, dvid=0.2,
   random_gen='system'
   random_gen='min_std'
   random_gen='nr_f90'
@@ -20,6 +20,9 @@
 /
 &magnetic_run_pars
   eta=5e-3,
+/
+&pscalar_run_pars
+  pscalar_diff=1e-3
 /
 &viscosity_run_pars
   nu=5e-3

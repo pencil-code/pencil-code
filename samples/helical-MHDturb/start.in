@@ -3,7 +3,7 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.19 2004-04-07 10:36:32 theine Exp $',
+  cvsid='$Id: start.in,v 1.20 2004-07-24 04:52:13 brandenb Exp $',
   random_gen='system'
   random_gen='min_std'
   random_gen='nr_f90'
@@ -16,4 +16,7 @@
 &magnetic_init_pars
   initaa='Beltrami-y', amplaa=-0.01  !(+ve amplaa means now positive helicity)
   initaa='gaussian-noise', amplaa=1e-4
+/
+&pscalar_init_pars
+  initlncc='wave-z', ampllncc=1e-0
 /

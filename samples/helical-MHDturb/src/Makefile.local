@@ -13,5 +13,6 @@ ENTROPY=noentropy
 MAGNETIC=magnetic
 HYDRO=hydro
 DENSITY=density
+PSCALAR=pscalar_nolog
 IO=io_dist
 
