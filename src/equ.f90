@@ -20,7 +20,7 @@ module Equ
       read(1,*) tinit,tdamp,dampu
       read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
-      read(1,*) cs0,nu,ivisc
+      read(1,*) cs0,nu,ivisc,cdtv
       read(1,*) hcond0,hcond1,hcond2,whcond
       read(1,*) cdiffrho
       read(1,*) gravz
@@ -58,7 +58,7 @@ module Equ
         print*, 'tinit,tdamp,dampu=', tinit,tdamp,dampu
         print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
-        print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
+        print*, 'cs0,nu,ivisc,cdtv=', cs0,nu,ivisc,cdtv
         print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
@@ -73,7 +73,7 @@ module Equ
 !
     endsubroutine cprint
 !***********************************************************************
-    subroutine calc_UUmax
+    subroutine calc_UUmax_viscmax
 !
 !  calculate diagnostic quantities
 !   2-sep-01/axel: coded
@@ -82,17 +82,21 @@ module Equ
       use Cdata
       use Sub
 !
-      real, dimension(1) :: fmax_tmp,fmax
+      real, dimension(2) :: fmax_tmp,fmax
 !
 !  communicate over all processors
 !  the result is present only on the root processor
 !  need to take sqare root; reassemble using old names
 !
       fmax_tmp(1)=UUmax
-      call mpireduce_max(fmax_tmp,fmax,1)
-      if(lroot) UUmax=sqrt(fmax(1))
+      fmax_tmp(2)=viscmax
+      call mpireduce_max(fmax_tmp,fmax,2)
+      if(lroot) then
+        UUmax=sqrt(fmax(1))
+        viscmax=fmax(2)
+      endif
 !
-    endsubroutine calc_uumax
+    endsubroutine calc_UUmax_viscmax
 !***********************************************************************
     subroutine diagnostic
 !
@@ -229,7 +233,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
-      real, dimension(nx) :: rho,rho1,nurho1,cs2,del2lam
+      real, dimension(nx) :: rho,rho1,nurho1,cs2,chi,diff,del2lam
       real, dimension(nx) :: r,pdamp
       real :: diffrho
       integer :: i,j
@@ -239,13 +243,17 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-02-14 14:35:03 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-02-14 20:31:19 $")
 !
 !  initiate communication
 !
       call initiate_isendrcv_bdry(f)
       diffrho = cdiffrho*dxmin*cs0
+!
+!  initialise a few quantities to zero (just to be sure)
+!
+      viscmax = 0.
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -295,7 +303,7 @@ module Equ
 !
 !  entropy equation
 !
-        if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2)
+        if (lentropy) call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
 !
 !  momentum equation (forcing is now done in timestep)
 !
@@ -359,7 +367,12 @@ module Equ
 !  Calculate maximum advection speed for timestep; needs to be done at
 ! every step
 !
-        if (lfirst.and.ldt) call max_mn(u2+cs2,UUmax)
+        if (lfirst.and.ldt) then
+          diff = nu
+          if (lentropy)  diff = max(diff, chi)
+          call max_mn(u2+cs2,UUmax)
+          call max_mn(diff,viscmax)
+        endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !
@@ -394,7 +407,7 @@ module Equ
 !  diagnostic quantities
 !  calculate maximum speed for time step
 !
-      if (lfirst.and.ldt) call calc_uumax
+      if (lfirst.and.ldt) call calc_UUmax_viscmax
       if (lfirst.and.lout) call diagnostic
 !
     endsubroutine pde

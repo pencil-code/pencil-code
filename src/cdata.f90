@@ -15,7 +15,7 @@ module Cdata
   real :: DD,nu,cmu,cnu2,cdiffrho,hcond0,hcond1,hcond2,whcond
   real :: t_diag,rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
   real :: orms,omax,o2max,ourms,oumax
-  real :: UUmax,cdt,x0,y0,z0,Lx,Ly,Lz
+  real :: UUmax,viscmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,z3
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
   real :: urand,cheat,wheat,cool,wcool

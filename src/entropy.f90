@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-02-14 14:35:03 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-02-14 20:31:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -78,7 +78,7 @@ module Entropy
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2)
+    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,chi)
 !
 !  calculate right hand side of entropy equation
 !
@@ -93,11 +93,11 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho,gpprho,gss,g1,g2,glhc
-      real, dimension (nx) :: divu,rho1,cs2
+      real, dimension (nx) :: divu,rho1,cs2,chi
       real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
       real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g1_g2
       real, dimension (nx) :: ss,lnrho,TT1,lambda
-      real, dimension (nx) :: chi,heat,prof
+      real, dimension (nx) :: heat,prof
       real :: ssref
       integer :: i,j
 !

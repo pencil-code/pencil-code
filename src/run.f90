@@ -29,15 +29,15 @@
 !     
 !  initialize MPI
 !
-        call siginit
-        call signonbrutal
+!        call siginit
+!        call signonbrutal
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.13 $", &
-             "$Date: 2002-02-14 14:35:03 $")
+             "$Revision: 1.14 $", &
+             "$Date: 2002-02-14 20:31:19 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -63,9 +63,9 @@
         call parse_bc(bcy,bcy1,bcy2)
         call parse_bc(bcz,bcz1,bcz2)
         if (lroot) then
-          print*, 'bcx1,bcx2=', bcx1," : ",bcx2
-          print*, 'bcy1,bcy2=', bcy1," : ",bcy2
-          print*, 'bcz1,bcz2=', bcz1," : ",bcz2
+          print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
+          print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
+          print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
         endif
 !
 !  timestep

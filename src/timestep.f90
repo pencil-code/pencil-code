@@ -19,7 +19,7 @@ module Timestep
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (3) :: alpha,beta,dt_beta
-      real :: ds
+      real :: ds,dtu,dtv
       integer :: i,j
 !
 !HPF$ ALIGN (:,:,:,*) WITH tmpl :: f,df
@@ -62,7 +62,11 @@ module Timestep
 !  Then need to broadcast dt to all processors.
 !
         if (lfirst.and.lroot) then
-          if (ldt) dt=cdt*amin1(dx,dy,dz)/UUmax
+          if (ldt) then
+            dtu = cdt*dxmin/UUmax
+            dtv = cdtv*dxmin**2/viscmax
+            dt = min(dtu,dtv)
+          endif
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         call mpibcast_real(dt,1)
