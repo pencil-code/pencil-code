@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.43 2003-11-05 15:47:58 theine Exp $
+! $Id: radiation_ray.f90,v 1.44 2003-11-06 16:54:10 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -35,13 +35,14 @@ module Radiation
   integer :: llstart,llstop,lsign
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
-  integer :: l
+  integer :: ipystart,ipystop,ipzstart,ipzstop
+  logical :: lperiodic_ray,lperiodic_ray1,lperiodic_ray2,lperiodic_ray3
 !
 !  default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: nocooling=.false.,test_radiation=.false.,l2ndorder=.true.
+  logical :: nocooling=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -50,12 +51,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,test_radiation, &
-       bc_rad,l2ndorder
+       radx,rady,radz,rad2max,bc_rad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,test_radiation,nocooling, &
-       bc_rad,l2ndorder
+       radx,rady,radz,rad2max,bc_rad,nocooling
 
   contains
 
@@ -66,14 +65,18 @@ module Radiation
 !
 !  24-mar-03/axel+tobi: coded
 !
-      use Cdata
-      use Mpicomm
-      use Sub
+      use Cdata, only: iQrad,nvar,naux,aux_var,aux_count,lroot
+      use Cdata, only: lradiation,lradiation_ray
+      use Sub, only: cvs_id
+      use Mpicomm, only: stop_it
 !
       logical, save :: first=.true.
 !
-      if(.not. first) call stop_it('register_radiation called twice')
-      first = .false.
+      if (first) then
+        first = .false.
+      else
+        call stop_it('register_radiation called twice')
+      endif
 !
       lradiation=.true.
       lradiation_ray=.true.
@@ -90,7 +93,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.43 2003-11-05 15:47:58 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.44 2003-11-06 16:54:10 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -116,9 +119,9 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
 !
-      use Cdata
-      use Sub
-      use Mpicomm
+      use Cdata, only: lroot
+      use Sub, only: parse_bc_rad
+      use Mpicomm, only: stop_it
 !
 !  check that the number of rays does not exceed maximum
 !
@@ -159,7 +162,7 @@ module Radiation
 !
 !  calculate weights
 !
-      weight=1./ndir
+      weight=1.0/ndir
 !
       if (lroot) print*,'initialize_radiation: ndir=',ndir
 !
@@ -168,10 +171,6 @@ module Radiation
       if (lroot) print*,'initialize_radiation: bc_rad=',bc_rad
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
       if (lroot) print*,'initialize_radiation: bc_rad1,bc_rad2=',bc_rad1,bc_rad2
-!
-!  info about numerical scheme in subroutine Qintr
-!
-      if (lroot) print*,'initialize_radiation: l2ndorder=',l2ndorder
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -185,9 +184,8 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata
-      use Ionization
-      use Io
+      use Cdata, only: ldebug,headt,iQrad
+      use Ionization, only: radcalc
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
 !
@@ -207,10 +205,14 @@ module Radiation
 !
       do idir=1,ndir
 !
-        call Qintr(f)
-        call Qperi()
-        call Qcomm(f)
-        call Qrev(f)
+        call Qintrinsic
+!
+        if (lperiodic_ray) then
+          call Qperiodic_ray
+        else
+          call Qcommunicate
+          call Qrevision
+        endif
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
@@ -218,7 +220,7 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
-    subroutine Qintr(f)
+    subroutine Qintrinsic
 !
 !  Integration radiation transfer equation along rays
 !
@@ -228,25 +230,29 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added amax1(dtau,dtaumin) construct
 !
-      use Cdata
-      use General
-      use Io
+      use Cdata, only: ldebug,headt,dx,dy,dz
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real :: dlength,dtau,emdtau,tau_term
+      real :: dlength,emdtau
       real :: Srad1st,Srad2nd,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
-      real :: dtau01,dtau12,dSdtau01,dSdtau12
+      integer :: l,m,n
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qintr'
+      if(ldebug.and.headt) print*,'Qintrinsic'
 !
 !  get direction components
 !
       lrad=dir(idir,1)
       mrad=dir(idir,2)
       nrad=dir(idir,3)
+!
+!  are we dealing with a periodic ray?
+!
+      lperiodic_ray1=bc_rad1(1)=='p'.and.bc_rad2(1)=='p'.and.mrad==0.and.nrad==0
+      lperiodic_ray1=bc_rad1(2)=='p'.and.bc_rad2(2)=='p'.and.nrad==0.and.lrad==0
+      lperiodic_ray1=bc_rad1(3)=='p'.and.bc_rad2(3)=='p'.and.lrad==0.and.mrad==0
+      lperiodic_ray=lperiodic_ray1.or.lperiodic_ray2.or.lperiodic_ray3
 !
 !  line elements
 !
@@ -257,12 +263,12 @@ module Radiation
       llstart=l1; llstop=l2; lsign=+1
       mmstart=m1; mmstop=m2; msign=+1
       nnstart=n1; nnstop=n2; nsign=+1
-      if (lrad>0) then; llstart=l1; llstop=l2+1; lsign=+1; endif
-      if (lrad<0) then; llstart=l2; llstop=l1-1; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=m2+1; msign=+1; endif
-      if (mrad<0) then; mmstart=m2; mmstop=m1-1; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=n2+1; nsign=+1; endif
-      if (nrad<0) then; nnstart=n2; nnstop=n1-1; nsign=-1; endif
+      if (lrad>0) then; llstart=l1; llstop=l2; lsign=+1; endif
+      if (lrad<0) then; llstart=l2; llstop=l1; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=m2; msign=+1; endif
+      if (mrad<0) then; mmstart=m2; mmstop=m1; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
+      if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -275,12 +281,6 @@ module Radiation
       do m=mmstart,mmstop,msign
       do n=nnstart,nnstop,nsign
 !
-        !dtau_m=exp((5*lnchi(l-lrad,m-mrad,n-nrad) &
-        !            +8*lnchi(l     ,m     ,n     ) &
-        !            -1*lnchi(l+lrad,m+mrad,n+nrad))/12)*dlength
-        !dtau_p=exp((5*lnchi(l+lrad,m+mrad,n+nrad) &
-        !            +8*lnchi(l     ,m     ,n     ) &
-        !            -1*lnchi(l-lrad,m-mrad,n-nrad))/12)*dlength
         dtau_m=exp((lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n))/2)*dlength
         dtau_p=exp((lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad))/2)*dlength
         dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
@@ -303,9 +303,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine Qintr
+    endsubroutine Qintrinsic
 !***********************************************************************
-    subroutine Qperi()
+    subroutine Qperiodic_ray
 !
 !  calculate boundary intensities for rays parallel to a coordinate
 !  axis with periodic boundary conditions
@@ -420,275 +420,112 @@ module Radiation
 !
       endif
 !
-    endsubroutine Qperi
+    endsubroutine Qperiodic_ray
 !***********************************************************************
-    subroutine Qcomm(f)
+    subroutine Qcommunicate
 !
-!  Integration radioation transfer equation along rays
+!  set boundary intensities or receive from neighboring processors
 !
-!  This routine is called after the communication part
-!  The true boundary intensities I0 are now known and
-!    the correction term I0*exp(-tau) is added
-!  16-jun-03/axel+tobi: coded
+!  11-jul-03/tobi: coded
 !
-      use Cdata
+      use Mpicomm, only: ipy,nprocy,ipz,nprocz
+      use Mpicomm, only: radboundary_zx_recv,radboundary_zx_send
+      use Mpicomm, only: radboundary_xy_recv,radboundary_xy_send
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(my,mz) :: Qrad0_yz
+      real, dimension(mx,mz) :: Qrad0_zx
+      real, dimension(mx,my) :: Qrad0_xy
+      integer :: raysteps
+      integer :: l,m,n
 !
-!  identifier
+!  determine start and stop processors
 !
-      if(ldebug.and.headt) print*,'Qcomm'
+      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
+      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
+      if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
+      if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
 !
-!  receive boundary values
+!  set boundary values
 !
-      call receive_heating_rate(f)
+      if (lrad/=0) then
+        call radboundary_yz_set(Qrad0_yz)
+        Qrad0(llstart-lrad,mmstart-mrad:mmstop:msign,nnstart-nrad:nnstop:nsign) &
+    =Qrad0_yz(             mmstart-mrad:mmstop:msign,nnstart-nrad:nnstop:nsign)
+      endif
+!
+      if (mrad/=0) then
+        if (ipy==ipystart) call radboundary_zx_set(Qrad0_zx)
+        if (ipy/=ipystart) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
+        Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad,nnstart-nrad:nnstop:nsign) &
+    =Qrad0_zx(llstart-lrad:llstop:lsign,             nnstart-nrad:nnstop:nsign)
+      endif
+!
+      if (nrad/=0) then
+        if (ipz==ipzstart) call radboundary_xy_set(Qrad0_xy)
+        if (ipz/=ipzstart) call radboundary_xy_recv(nrad,idir,Qrad0_xy)
+        Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstart-nrad) &
+    =Qrad0_xy(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign             )
+      endif
 !
 !  propagate boundary values
 !
-      call propagate_heating_rate()
-!
-!  send boundary values
-!
-      call send_heating_rate()
-!
-    endsubroutine Qcomm
-!***********************************************************************
-    subroutine Qcomm_new(f)
-!
-!  set boundary intensities or receive from neighboring processors
-!
-!  11-jul-03/tobi: coded
-!
-      use Cdata
-      use Mpicomm
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(mx,my) :: Qrad0_xy
-!
-!  yz plane
-!
-      if (lrad>0) then
-        call radboundary_yz_set(Qrad0_yz)
-        Qrad0(l1-1,:,:)=Qrad0_yz
-      endif
-!
-      if (lrad<0) then
-        call radboundary_yz_set(Qrad0_yz)
-        Qrad0(l2+1,:,:)=Qrad0_yz
-      endif
-!
-!  zx plane
-!
-      if (mrad>0) then
-        if (ipy==0) call radboundary_zx_set(Qrad0_zx)
-        if (ipy/=0) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-        Qrad0(:,m1-1,:)=Qrad0_zx
-        if (ipy/=nprocy-1) then
-          call propagate_heating_rate
-          call radboundary_zx_send(mrad,idir,Qrad0_zx)
-        endif
-      endif
-!
-      if (mrad<0) then
-        if (ipy==nprocy-1) call radboundary_zx_set(Qrad0_zx)
-        if (ipy/=nprocy-1) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-        Qrad0(:,m2+1,:)=Qrad0_zx
-        if (ipy/=0) then
-          call propagate_heating_rate
-          call radboundary_zx_send(mrad,idir,Qrad0_zx)
-        endif
-      endif
-!
-!  xy plane
-!
-      if (nrad>0) then
-        if (ipz==0) call radboundary_xy_set(Qrad0_xy)
-        if (ipz/=0) call radboundary_xy_recv(mrad,idir,Qrad0_xy)
-        Qrad0(:,:,n1-1)=Qrad0_xy
-        if (ipz/=nprocz-1) then
-          call propagate_heating_rate
-          call radboundary_xy_send(mrad,idir,Qrad0_xy)
-        endif
-      endif
-!
-      if (nrad<0) then
-        if (ipz==nprocz-1) call radboundary_xy_set(Qrad0_xy)
-        if (ipz/=nprocz-1) call radboundary_xy_recv(mrad,idir,Qrad0_xy)
-        Qrad0(:,:,n2+1)=Qrad0_xy
-        if (ipz/=0) then
-          call propagate_heating_rate
-          call radboundary_xy_send(mrad,idir,Qrad0_xy)
-        endif
-      endif
-!
-    endsubroutine Qcomm_new
-!***********************************************************************
-    subroutine receive_heating_rate(f)
-!
-!  set boundary intensities or receive from neighboring processors
-!
-!  11-jul-03/tobi: coded
-!
-      use Cdata
-      use Mpicomm
-!
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(mx,my) :: Qrad0_xy
-!
-!  identifier
-!
-      if(ldebug.and.headt) print*,'receive_heating_rate'
-!
-!  yz boundary plane
-!
-      if (lrad>0) then
-        call radboundary_yz_set(Qrad0_yz)
-        Qrad0(l1-1,:,:)=Qrad0_yz
-      endif
-      if (lrad<0) then
-        call radboundary_yz_set(Qrad0_yz)
-        Qrad0(l2+1,:,:)=Qrad0_yz
-      endif
-!
-!  zx boundary plane
-!
-      if (mrad>0) then
-        if (ipy==0) call radboundary_zx_set(Qrad0_zx)
-        if (ipy/=0) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-        Qrad0(:,m1-1,:)=Qrad0_zx
-      endif
-      if (mrad<0) then
-        if (ipy==nprocy-1) call radboundary_zx_set(Qrad0_zx)
-        if (ipy/=nprocy-1) call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-        Qrad0(:,m2+1,:)=Qrad0_zx
-      endif
-!
-!  xy boundary plane
-!
-      if (nrad>0) then
-        if (ipz==0) call radboundary_xy_set(Qrad0_xy)
-        if (ipz/=0) call radboundary_xy_recv(nrad,idir,Qrad0_xy)
-        Qrad0(:,:,n1-1)=Qrad0_xy
-      endif
-      if (nrad<0) then
-        if (ipz==nprocz-1) call radboundary_xy_set(Qrad0_xy)
-        if (ipz/=nprocz-1) call radboundary_xy_recv(nrad,idir,Qrad0_xy)
-        Qrad0(:,:,n2+1)=Qrad0_xy
-      endif
-!
-    endsubroutine receive_heating_rate
-!***********************************************************************
-    subroutine propagate_heating_rate(lset,mset,nset)
-!
-!  In order to communicate the correct boundary intensities for each ray
-!  to the next processor, we need to know the corresponding boundary
-!  intensities of this one.
-!
-!  03-jul-03/tobi: coded
-!
-      use Cdata, only: lroot,ldebug,headt
-!
-      integer :: m,n,raysteps
-      integer, optional :: lset,mset,nset
-!
-!  identifier
-!
-      if(ldebug.and.headt) print*,'propagate_heating_rate'
-!
-!  initialize position array in ghost zones
-!
       if (lrad/=0) then
-        do l=llstop-2*lrad+lsign,llstop-lrad,lsign
-        do m=mmstart,mmstop
-        do n=nnstart,nnstop
-          raysteps=(l-llstart)/lrad
-          if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
-          if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
-          raysteps=raysteps+1
-          Qrad0(l,m,n)=Qrad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
-        enddo
+        do m=mmstart,mmstop,msign
+        do n=nnstart,nnstop,nsign
+          raysteps=(llstop-llstart)/lrad
+          if (mrad/=0) raysteps=min(raysteps,(mmstop-m)/mrad)
+          if (nrad/=0) raysteps=min(raysteps,(nnstop-n)/nrad)
+          Qrad0(llstart+lrad*raysteps,m+mrad*raysteps,n+nrad*raysteps) &
+           =Qrad0(llstart-lrad,m-mrad,n-nrad)
         enddo
         enddo
       endif
 !
       if (mrad/=0) then
-        do m=mmstop-2*mrad+msign,mmstop-mrad,msign
-        do n=nnstart,nnstop
-        do l=llstart,llstop
-          raysteps=(m-mmstart)/mrad
-          if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
-          if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
-          raysteps=raysteps+1
-          Qrad0(l,m,n)=Qrad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
-        enddo
+        do n=nnstart,nnstop,nsign
+        do l=llstart,llstop,lsign
+          raysteps=(mmstop-mmstart)/mrad
+          if (nrad/=0) raysteps=min(raysteps,(nnstop-n)/nrad)
+          if (lrad/=0) raysteps=min(raysteps,(llstop-l)/lrad)
+          Qrad0(l+lrad*raysteps,mmstart+mrad*raysteps,n+nrad*raysteps) &
+           =Qrad0(l-lrad,mmstart-mrad,n-nrad)
         enddo
         enddo
       endif
 !
       if (nrad/=0) then
-        do n=nnstop-2*nrad+nsign,nnstop-nrad,nsign
-        do l=llstart,llstop
-        do m=mmstart,mmstop
-          raysteps=(n-nnstart)/nrad
-          if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
-          if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
-          raysteps=raysteps+1
-          Qrad0(l,m,n)=Qrad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
-        enddo
+        do l=llstart,llstop,lsign
+        do m=mmstart,mmstop,msign
+          raysteps=(nnstop-nnstart)/nrad
+          if (lrad/=0) raysteps=min(raysteps,(llstop-l)/lrad)
+          if (mrad/=0) raysteps=min(raysteps,(mmstop-m)/mrad)
+          Qrad0(l+lrad*raysteps,m+mrad*raysteps,nnstart+nrad*raysteps) &
+           =Qrad0(l-lrad,m-mrad,nnstart-nrad)
         enddo
         enddo
       endif
 !
-    endsubroutine propagate_heating_rate
-!***********************************************************************
-    subroutine send_heating_rate()
+!  send boundary values
 !
-!  send boundary intensities to neighboring processors
-!
-!  11-jul-03/tobi: coded
-!
-      use Cdata
-      use Mpicomm
-!
-      real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(mx,my) :: Qrad0_xy
-!
-!  identifier
-!
-      if(ldebug.and.headt) print*,'send_heating_rate'
-!
-!  zx boundary plane
-!
-      if (mrad>0.and.ipy/=nprocy-1) then
-        Qrad0_zx=Qrad0(:,m2,:)*exp(-tau(:,m2,:))+Qrad(:,m2,:)
+      if (mrad/=0.and.ipy/=ipystop) then
+        Qrad0_zx(llstart-lrad:llstop:lsign,       nnstart-nrad:nnstop:nsign) &
+          =Qrad0(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign) &
+       *exp(-tau(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign)) &
+           +Qrad(llstart-lrad:llstop:lsign,mmstop,nnstart-nrad:nnstop:nsign)
         call radboundary_zx_send(mrad,idir,Qrad0_zx)
       endif
 !
-      if (mrad<0.and.ipy/=0) then
-        Qrad0_zx=Qrad0(:,m1,:)*exp(-tau(:,m1,:))+Qrad(:,m1,:)
-        call radboundary_zx_send(mrad,idir,Qrad0_zx)
-      endif
-!
-!  xy boundary plane
-!
-      if (nrad>0.and.ipz/=nprocz-1) then
-        Qrad0_xy=Qrad0(:,:,n2)*exp(-tau(:,:,n2))+Qrad(:,:,n2)
+      if (nrad/=0.and.ipz/=ipzstop) then
+        Qrad0_xy(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign       ) &
+          =Qrad0(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop) &
+       *exp(-tau(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop)) &
+           +Qrad(llstart-lrad:llstop:lsign,mmstart-mrad:mmstop:msign,nnstop)
         call radboundary_xy_send(nrad,idir,Qrad0_xy)
       endif
 !
-      if (nrad<0.and.ipz/=0) then
-        Qrad0_xy=Qrad0(:,:,n1)*exp(-tau(:,:,n1))+Qrad(:,:,n1)
-        call radboundary_xy_send(nrad,idir,Qrad0_xy)
-      endif
-!
-    end subroutine send_heating_rate
+    endsubroutine Qcommunicate
 !***********************************************************************
-    subroutine Qrev(f)
+    subroutine Qrevision
 !
 !  This routine is called after the communication part
 !  The true boundary intensities I0 are now known and
@@ -696,13 +533,13 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata
+      use Cdata, only: ldebug,headt
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
+      integer :: l,m,n
 !
 !  identifier
 !
-      if(ldebug.and.headt) print*,'Qrev'
+      if(ldebug.and.headt) print*,'Qrevision'
 !
 !  do the ray...
 !
@@ -715,7 +552,7 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine Qrev
+    endsubroutine Qrevision
 !***********************************************************************
     subroutine radboundary_yz_set(Qrad0_yz)
 !
@@ -723,11 +560,7 @@ module Radiation
 !
 !   6-jul-03/axel: coded
 !
-      use Cdata
-      use Mpicomm
-!
       real, dimension(my,mz) :: Qrad0_yz
-      real, dimension(ny,nz) :: tau_yz,emtau1_yz
 !
 !--------------------
 !  lower x-boundary
@@ -741,21 +574,10 @@ module Radiation
           Qrad0_yz=-Srad(l1-1,:,:)
         endif
 !
-! periodic boundary consition (currently only implemented for
-! rays parallel to an axis
+! periodic boundary consition
 !
         if (bc_rad1(1)=='p') then
-          if (mrad==0.and.nrad==0) then
-            tau_yz=tau(l2,m1:m2,n1:n2)
-            where (tau_yz>dtau_thresh)
-              emtau1_yz=1-exp(-tau_yz)
-            elsewhere
-              emtau1_yz=tau_yz-tau_yz**2/2+tau_yz**3/6
-            end where
-            Qrad0_yz(m1:m2,n1:n2)=Qrad(l2,m1:m2,n1:n2)/emtau1_yz
-          else
-            Qrad0_yz=Qrad(l2,:,:)
-          endif
+          Qrad0_yz=Qrad(l2,:,:)
         endif
 !
 ! set intensity equal to source function
@@ -782,17 +604,7 @@ module Radiation
 ! rays parallel to an axis
 !
         if (bc_rad2(1)=='p') then
-          if (mrad==0.and.nrad==0) then
-            tau_yz=tau(l1,m1:m2,n1:n2)
-            where (tau_yz>dtau_thresh)
-              emtau1_yz=1-exp(-tau_yz)
-            elsewhere
-              emtau1_yz=tau_yz-tau_yz**2/2+tau_yz**3/6
-            end where
-            Qrad0_yz(m1:m2,n1:n2)=Qrad(l1,m1:m2,n1:n2)/emtau1_yz
-          else
-            Qrad0_yz=Qrad(l1,:,:)
-          endif
+          Qrad0_yz=Qrad(l1,:,:)
         endif
 !
 ! set intensity equal to source function
@@ -811,11 +623,9 @@ module Radiation
 !
 !   6-jul-03/axel: coded
 !
-      use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,mz) :: Qrad0_zx
-      real, dimension(nx,nz) :: tau_zx,emtau1_zx
 !
 !--------------------
 !  lower y-boundary
@@ -829,25 +639,14 @@ module Radiation
           Qrad0_zx=-Srad(:,m1-1,:)
         endif
 !
-! periodic boundary consition (currently only implemented for
-! rays parallel to an axis
+! periodic boundary consition (currently not implemented for
+! multiple processors in the y-direction)
 !
         if (bc_rad1(2)=='p') then
           if (nprocy>1) then
-            call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-          else
-            if (lrad==0.and.nrad==0) then
-              tau_zx=tau(l1:l2,m2,n1:n2)
-              where (tau_zx>dtau_thresh)
-                emtau1_zx=1-exp(-tau_zx)
-              elsewhere
-                emtau1_zx=tau_zx-tau_zx**2/2+tau_zx**3/6
-              end where
-              Qrad0_zx(l1:l2,n1:n2)=Qrad(l1:l2,m2,n1:n2)/emtau1_zx
-            else
-              Qrad0_zx=Qrad(:,m2,:)
-            endif
+            call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
           endif
+          Qrad0_zx=Qrad(:,m2,:)
         endif
 !
 ! set intensity equal to source function
@@ -870,25 +669,14 @@ module Radiation
           Qrad0_zx=-Srad(:,m2+1,:)
         endif
 !
-! periodic boundary consition (currently only implemented for
-! rays parallel to an axis
+! periodic boundary consition (currently not implemented for
+! multiple processors in the y-direction)
 !
         if (bc_rad2(2)=='p') then
           if (nprocy>1) then
-            call radboundary_zx_recv(mrad,idir,Qrad0_zx)
-          else
-            if (lrad==0.and.nrad==0) then
-              tau_zx=tau(l1:l2,m1,n1:n2)
-              where (tau_zx>dtau_thresh)
-                emtau1_zx=1-exp(-tau_zx)
-              elsewhere
-                emtau1_zx=tau_zx-tau_zx**2/2+tau_zx**3/6
-              end where
-              Qrad0_zx(l1:l2,n1:n2)=Qrad(l1:l2,m1,n1:n2)/emtau1_zx
-            else
-              Qrad0_zx=Qrad(:,m1,:)
-            endif
+            call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
           endif
+          Qrad0_zx=Qrad(:,m1,:)
         endif
 !
 ! set intensity equal to source function
@@ -907,11 +695,9 @@ module Radiation
 !
 !   6-jul-03/axel: coded
 !
-      use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
 !
       real, dimension(mx,my) :: Qrad0_xy
-      real, dimension(nx,ny) :: tau_xy,emtau1_xy
 !
 !--------------------
 !  lower z-boundary
@@ -925,24 +711,14 @@ module Radiation
           Qrad0_xy=-Srad(:,:,n1-1)
         endif
 !
-!  periodic boundary consition
+! periodic boundary consition (currently not implemented for
+! multiple processors in the z-direction)
 !
         if (bc_rad1(3)=='p') then
           if (nprocz>1) then
-            call radboundary_xy_recv(nrad,idir,Qrad0_xy)
-          else
-            if (lrad==0.and.mrad==0) then
-              tau_xy=tau(l1:l2,m1:m2,n2)
-              where (tau_xy>dtau_thresh)
-                emtau1_xy=1-exp(-tau_xy)
-              elsewhere
-                emtau1_xy=tau_xy-tau_xy**2/2+tau_xy**3/6
-              end where
-              Qrad0_xy(l1:l2,m1:m2)=Qrad(l1:l2,m1:m2,n2)/emtau1_xy
-            else
-              Qrad0_xy=Qrad(:,:,n2)
-            endif
+            call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
           endif
+          Qrad0_xy=Qrad(:,:,n2)
         endif
 !
 !  set intensity equal to source function
@@ -965,25 +741,14 @@ module Radiation
           Qrad0_xy=-Srad(:,:,n2+1)
         endif
 !
-! periodic boundary consition (currently only implemented for
-! rays parallel to an axis
+! periodic boundary consition (currently not implemented for
+! multiple processors in the z-direction)
 !
         if (bc_rad2(3)=='p') then
           if (nprocz>1) then
-            call radboundary_xy_recv(nrad,idir,Qrad0_xy)
-          else
-            if (lrad==0.and.mrad==0) then
-              tau_xy=tau(l1:l2,m1:m2,n1)
-              where (tau_xy>dtau_thresh)
-                emtau1_xy=1-exp(-tau_xy)
-              elsewhere
-                emtau1_xy=tau_xy-tau_xy**2/2+tau_xy**3/6
-              end where
-              Qrad0_xy(l1:l2,m1:m2)=Qrad(l1:l2,m1:m2,n1)/emtau1_xy
-            else
-              Qrad0_xy=Qrad(:,:,n1)
-            endif
+            call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
           endif
+          Qrad0_xy=Qrad(:,:,n1)
         endif
 !
 ! set intensity equal to source function
