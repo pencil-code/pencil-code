@@ -6,7 +6,7 @@
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   18-Aug-2000
 ;;;  Version: 1.37
-;;;  CVS: $Revision: 1.4 $
+;;;  CVS: $Revision: 1.5 $
 ;;;
 ;;;  Description:
 ;;;   Given either a 3d array on a 2d grid (e.g. B(0:64,0:64,15,0:3)),
@@ -101,7 +101,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
 
   pmulti0 = !p.multi
 
-  default, ps_col_min, 80
+  default, ps_col_min, 0
   default, bits, 8
   default, perm, [0,1,2]
   default, debug, 0
@@ -302,7 +302,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
                     /grid), $
         xpos, ypos, $
         XSIZE=sx, YSIZE=sy, $
-        BOTTOM=1, $
+        BOTTOM=PS_COL_MIN, $
         ABSOLUT=absolut
   ENDIF ELSE BEGIN
     IF ((NOT true_color) AND (NOT keep_ct)) THEN  $

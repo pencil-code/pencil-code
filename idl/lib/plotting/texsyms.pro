@@ -78,6 +78,7 @@ function texsyms, DEVICE=device
               omega_c     : '!7W!X' , $
     ; other symbols
               cdot        : '!6·!X' , $
+              mid         : '!6|!X' , $
               Im          : '!7Á!X' , $
               Re          : '!7Â!X' , $
               sqrt        : '!7Ö!X' , $
@@ -142,6 +143,7 @@ function texsyms, DEVICE=device
               omega_c     : '!7X!X' , $
     ; other symbols
               cdot        : '!6·!X',   $
+              mid         : '!3|!X' ,  $
               Im          : '!15I!X',  $
               Re          : '!15R!X',  $
               sqrt        : '!9r!X',   $

@@ -8,7 +8,7 @@
 ;;;
 ;;;  Description:
 ;;;   A variant of TVSCL that accepts the keyword BOTTOM in addition
-;;;   to TOP and.
+;;;   to TOP.
 ;;;   With ABSOLUT set, scale symmetric around zero, so a value of
 ;;;   zero gets always the middlemost colour.
 
