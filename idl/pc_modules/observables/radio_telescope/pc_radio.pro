@@ -207,9 +207,14 @@ endelse
       faraday_depth=faraday_depth +                      $
           c2*lambda^2*n_e[l1:l2,m1:m2,n1+k]*bb[l1:l2,m1:m2,n1+k,2]*dz
 
-; Angle = 2 * intrinsic polatisation angle + faraday_depth
 
-      angle[*,*,k]=2.0*atan(bb[l1:l2,m1:m2,n1+k,1],bb[l1:l2,m1:m2,n1+k,0]) + !pi + faraday_depth
+      
+; Angle = 2 * intrinsic polatisation angle + faraday_depth
+      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1],bb[l1:l2,m1:m2,n1+k,0])
+      pnts=where(intr_angle lt 0.,siz)
+      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]+!pi
+     
+      angle[*,*,k]=2.0*intr_angle  + faraday_depth
     endfor
 ;
 ;   *  Calculate the Q and U by summing along the line of sight
@@ -232,15 +237,16 @@ endif
 ;
 ; Polarization angle
 ;
-  polarization_angle=0.5*atan(U,Q)
+  polarization_angle=atan(U,Q)
   pnts=where(polarization_angle lt 0.,siz)
   if siz gt 0 then polarization_angle[pnts]=polarization_angle[pnts]+!pi
+;  polarization_angle=polarization_angle-0.5*!pi ;Don't bother... Will only have to add it back on later.
 
 ;   So at this point we have the observed angle of polarisation
 ;   for the E-vector
-;AJWM OR DO WE???
-;
-  polarization_angle=polarization_angle + 0.5*!pi
+;AJWM OR DO WE??? 
+;AJWM... Not if we calculate it as above!! 
+;  polarization_angle=polarization_angle + 0.5*!pi
 
 ; Polarized intensity
   P_I=sqrt(Q^2 + U^2)
