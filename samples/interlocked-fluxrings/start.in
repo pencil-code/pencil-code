@@ -1,4 +1,5 @@
-!                                  -*-f90-*-
+$Id: start.in,v 1.14 2002-06-08 08:09:16 brandenb Exp $
+!
 ! Initialisation parameters
 !
 &init_pars

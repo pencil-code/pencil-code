@@ -1,23 +1,16 @@
-40,5,-.4,10,3,		nt,it1,dt,isave,iorder
-2.,.2,0e-2,1e-6,	dsnap,dvid,dforce,dtmin
-0.,0.,0.,		tinit,tdamp,dampu
-0.,1.2,0.2,		dampuext,rdamp,wdamp
-14,,,,			ip,ix,iy,iz
-,0e-2,0,0.08,		cs,nu,ivisc,cdtv
-0.,			cdiffrho,
--0.1,			gravz
-p,p,p,p,p,p,p,p,	bcx
-p,p,p,p,p,p,p,p,	bcy
-p,p,p,p,p,p,p,p,	bcz
-'(i8,f11.5,1p,50(e10.3," "))',	form1
-&magnetic_run_pars
-  eta=0., B_ext=0.,0.,0.,
+$Id: run.in,v 1.10 2002-06-08 08:09:16 brandenb Exp $
+!
+!  run parameters for forced helical MHD turbulence
+!
+&run_pars
+  nt=100, it1=10, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
+  dsnap=50, dvid=0.5,
 /
-
-# Nomenclature for boundary conditions:
-#   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
-#   p      : periodic
-#   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
-#   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
-
-# tinit    -- initial time for smoothly switching on heating, etc
+&hydro_run_pars
+  nu=0., ivisc=0,
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  eta=0.,
+/
