@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.29 2003-10-06 15:24:08 theine Exp $
+! $Id: radiation_ray.f90,v 1.30 2003-10-06 20:38:36 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -90,7 +90,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.29 2003-10-06 15:24:08 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.30 2003-10-06 20:38:36 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -201,7 +201,7 @@ module Radiation
         call Qintr(f)
         call Qperi()
         call Qcomm(f)
-        call Qrev(f)
+!        call Qrev(f)
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
@@ -236,6 +236,7 @@ module Radiation
       real :: Srad1st,Srad2nd,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       real :: dtau01,dtau12,dSdtau01,dSdtau12
+      real :: thresh
       character(len=4) :: idir_str
 !
 !  identifier
@@ -296,12 +297,17 @@ module Radiation
             Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
             emdtau=exp(-dtau_m)
             emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-            if (dtau_m>1e-5) then
+            thresh = 1.6*epsilon(dtau_m)**0.25 ! experimentally determined
+                                               ! optimum; relative errors
+                                               ! for (emdtau1, emdtau2) will be
+                                               ! (1e-6, 1.5e-4) for floats,
+                                               ! (3e-13, 1e-8) for doubles
+            if (dtau_m>thresh) then
               emdtau1=1-emdtau
               emdtau2=emdtau*(1+dtau_m)-1
             else
               emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
-              emdtau2=-dtau_m**2/2+dtau_m**3/3-dtau_m**4/8
+              emdtau2=-dtau_m**2/2+dtau_m**3/3
             endif
             Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                        -Srad1st*emdtau1-Srad2nd*emdtau2
