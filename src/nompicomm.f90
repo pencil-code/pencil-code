@@ -200,95 +200,77 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
-    subroutine send_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine radcomm_yz_send(lrad,radx0,Ibuf_yz,tag_yz)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!  29-jun-03/axel: coded
+      integer :: lrad,radx0,tag_yz
+      real, dimension(radx0,my,mz) :: Ibuf_yz
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,isend_xy,radx0,rady0,radz0
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-!
-    endsubroutine send_Irad0_xy
+    endsubroutine radcomm_yz_send
 !***********************************************************************
-    subroutine recv_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+    subroutine radcomm_yz_recv(lrad,radx0,Ibuf_yz,tag_yz)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!  29-jun-03/axel: coded
+      integer :: lrad,radx0,tag_yz
+      real, dimension(radx0,my,mz) :: Ibuf_yz
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,irecv_xy,radx0,rady0,radz0
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-!
-    endsubroutine recv_Irad0_xy
+    endsubroutine radcomm_yz_recv
 !***********************************************************************
-    subroutine send_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+    subroutine radcomm_zx_send(mrad,rady0,Ibuf_zx,tag_zx)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!   1-jul-03/axel: adapted from send_Irad0_xy
+      integer :: mrad,rady0,tag_zx
+      real, dimension(mx,rady0,mz) :: Ibuf_zx
 !
-      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
-      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
-!
-    endsubroutine send_Irad0_yz
+    endsubroutine radcomm_zx_send
 !***********************************************************************
-    subroutine recv_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
+    subroutine radcomm_zx_recv(mrad,rady0,Ibuf_zx,tag_zx)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!   1-jul-03/axel: adapted from recv_Irad0_xy
+      integer :: mrad,rady0,tag_zx
+      real, dimension(mx,rady0,mz) :: Ibuf_zx
 !
-      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
-      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
-!
-    endsubroutine recv_Irad0_yz
+    endsubroutine radcomm_zx_recv
 !***********************************************************************
-    subroutine send_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+    subroutine radcomm_xy_send(nrad,radz0,Ibuf_xy,tag_xy)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!   1-jul-03/axel: adapted from send_Irad0_xy
+      integer :: nrad,radz0,tag_xy
+      real, dimension(mx,my,radz0) :: Ibuf_xy
 !
-      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
-      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
-!
-    endsubroutine send_Irad0_zx
+    endsubroutine radcomm_xy_send
 !***********************************************************************
-    subroutine recv_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
+    subroutine radcomm_xy_recv(nrad,radz0,Ibuf_xy,tag_xy)
 !
-!  send intensities
+!   2-jul-03/tony: dummy created
 !
-!   1-jul-03/axel: adapted from recv_Irad0_xy
+      integer :: nrad,radz0,tag_xy
+      real, dimension(mx,my,radz0) :: Ibuf_xy
 !
-      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
-      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
 !
-!  buffer size
+!ajwm NEED SOME DUMMY STUFF
 !
-      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
-!
-    endsubroutine recv_Irad0_zx
+    endsubroutine radcomm_xy_recv
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
