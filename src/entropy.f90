@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.306 2004-05-01 14:07:54 ajohan Exp $
+! $Id: entropy.f90,v 1.307 2004-05-12 17:41:48 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.306 2004-05-01 14:07:54 ajohan Exp $")
+           "$Id: entropy.f90,v 1.307 2004-05-12 17:41:48 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -827,7 +827,7 @@ module Entropy
       call getmu(mu)
       kpc = 3.086D21 / unit_length
       rhoscale = m_H * mu * unit_length**3
-      print *,'rhoscale: ',rhoscale, mu
+!      print *,'rhoscale: ',rhoscale, mu
       T_c=T_c_cgs/unit_temperature
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature

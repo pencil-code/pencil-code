@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.93 2004-04-17 16:29:18 ajohan Exp $
+! $Id: interstellar.f90,v 1.94 2004-05-12 17:41:48 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -84,6 +84,8 @@ module Interstellar
 
   ! Should maybe be nondimensionalised
   real :: tau_cloud=2e-2 
+  real :: rho_SN_min=1. 
+  real :: TT_SN_max=2.E5 
   real, parameter :: rho_min=1.e-6
   !real, parameter :: tosolarMkpc3=1.483e7
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
@@ -119,7 +121,7 @@ module Interstellar
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
-      h_SNI, h_SNII, SNI_area_rate
+      h_SNI, h_SNII, SNI_area_rate, rho_SN_min, TT_SN_max
 
   contains
 
@@ -146,7 +148,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.93 2004-04-17 16:29:18 ajohan Exp $")
+           "$Id: interstellar.f90,v 1.94 2004-05-12 17:41:48 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -244,8 +246,8 @@ module Interstellar
       if (lroot.and. (.not. lstarting)) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
          write(1,'("#",2A)')  &
-          '---it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-------', &
-          '----z_SN-----------rho_SN---------EE_SN-----l_SN--m_SN--n_SN-----'
+          '---it-----t----------itype---iproc------x-----------y-------', &
+          '----z-----------rho--TT----EE-----l--m--n-----'
          close(1)
       endif
 
@@ -385,7 +387,10 @@ module Interstellar
 !
     l_SNI=.false.
     if (t >= t_next_SNI) then
-       call position_SNI(f)
+       rho_SN=-1.
+       do while ((rho_SN .lt. rho_SN_min) .or. (TT_SN .gt. TT_SN_max))
+         call position_SNI(f)
+       enddo
        call explode_SN(f,1)
        !  pre-determine time for next SNI
      !  if (lroot) then
@@ -750,6 +755,8 @@ find_SN: do n=n1,n2
       use Cdata
       use Mpicomm
       use Ionization
+      use Sub, only: update_snaptime
+      use Slices, only: tvid, nvid
       !
       real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
       integer, intent(in) :: itype_SN
@@ -764,11 +771,26 @@ find_SN: do n=n1,n2
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
       real, dimension(nx) ::  lnrho, ss, yH, lnTT, TT, rho_old, ee_old
+      character (len=4) :: ch
 
       logical :: lmove_mass=.false.
       integer :: idim
           
-      !
+      ! If slices are following the SN explosions then set the slice position
+      ! and take a snapshot now.
+      if (slice_position=='S') then
+        ix=l_SN
+        iy=m_SN
+        iz=n_SN
+        iz2=n2
+        lwrite_slice_xy2=(ipz_SN==ipz)
+        lwrite_slice_xy=(ipz_SN==ipz)
+        lwrite_slice_xz=(ipy_SN==ipy)
+        lwrite_slice_yz=.true.
+        ! And do a snapshot immediately! 
+        call update_snaptime(trim(datadir)//'/tvid.dat',tvid,nvid,dvid,t,lvid,ch,ENUM=.false.)
+      endif
+!      !
       !  identifier
       !
       if(lroot.and.ip<12) print*,'explode_SN: itype_SN=',itype_SN
@@ -902,8 +924,8 @@ print*,ee_SN,rho_SN,c_SN
      
       if (lroot) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-         write(1,'(1i6,1p,1e11.3,0p,2i10,"    ",1p,5e15.7,0p,3i5)')  &
-                          it,t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,l_SN,m_SN,n_SN
+         write(1,'(1i6,1p,1e11.3,0p,2i10,"    ",1p,6e15.7,0p,3i5)')  &
+                          it,t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN,EE_SN,l_SN,m_SN,n_SN
          close(1)
       endif
       

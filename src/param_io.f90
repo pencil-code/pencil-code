@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.172 2004-04-26 16:05:16 dobler Exp $ 
+! $Id: param_io.f90,v 1.173 2004-05-12 17:41:48 mee Exp $ 
 
 module Param_IO
 
@@ -48,7 +48,6 @@ module Param_IO
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lread_oldsnap=.false.,lread_oldsnap_nomag=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
-  character (len=1) :: slice_position='p'
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -482,7 +481,7 @@ module Param_IO
 !  although setting ix, iy, iz, iz2 by hand will overwrite this.
 !  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
 !
-      if (slice_position=='p') then
+      if (slice_position=='p' .or. slice_position=='S') then
         if (ix<0)  ix=l1
         if (iy<0)  iy=m1
         if (iz<0)  iz=n1

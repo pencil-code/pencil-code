@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.40 2004-03-17 11:47:01 mee Exp $
+! $Id: slices.f90,v 1.41 2004-05-12 17:41:48 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -26,6 +26,8 @@ module Slices
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,o2_yz,b2_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
+  real :: tvid
+  integer :: nvid
 
   contains
 
@@ -44,8 +46,7 @@ module Slices
 !
       use Sub
 !
-      real, save :: tvid
-      integer, save :: ifirst=0,nvid
+      integer, save :: ifirst=0
 !
       character (len=4) :: ch
       character (len=130) :: file

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.221 2004-04-30 09:30:49 ajohan Exp $
+! $Id: cdata.f90,v 1.222 2004-05-12 17:41:48 mee Exp $
 
 module Cdata
 
@@ -72,6 +72,7 @@ module Cdata
   integer, dimension(ndustspec) :: iuud,iudx,iudy,iudz,ind,imd,imi
   logical, dimension(3) :: lperi,lshift_origin
   character (len=labellen) ::fft_switch='fftpack'
+  character (len=1) :: slice_position='p'
 !
 !  coordinates of the point where some quantities can be printed
 !  for now, these points only apply to the root processor.
