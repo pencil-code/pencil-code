@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.231 2004-10-26 00:53:30 dobler Exp $
+! $Id: magnetic.f90,v 1.232 2004-10-26 06:31:51 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.231 2004-10-26 00:53:30 dobler Exp $")
+           "$Id: magnetic.f90,v 1.232 2004-10-26 06:31:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -724,7 +724,8 @@ module Magnetic
           if (i_jm2/=0) call max_mn_name(j2,i_jm2)
           if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
-          if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
+          if (i_epsM/=0 .and. iresistivity /= 'hyper3') &
+              call sum_mn_name(eta*j2,i_epsM)
           if (i_epsM_LES/=0) call sum_mn_name(eta_smag*j2,i_epsM_LES)
         endif
         !
