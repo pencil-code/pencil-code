@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.83 2002-07-22 17:58:33 dobler Exp $
+### $Id: Makefile,v 1.84 2002-08-02 21:47:57 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -60,18 +60,17 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #LDMPI=
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
-#FC=ifc	#(Nq[0-9]+)
-#FC=/home/brandenb/bin/f95 #(Nq[0-9]+)
-#FC=pgf90 #(Nq[0-9]+)
+#FC=pgf90 #(nq0)
+#FC=/usr/bin/mpif77 #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
 #FFLAGS=-O # (Samos)
 ##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
-#FFLAGS=-O3 -static #(Nq[0-9]+)
+#FFLAGS=-fast -DPGF90 #(nq0)
+#FFLAGS=-O3 -static #(nq0)
 #FFLAGS=-fast -lm #(erland|igor|tycho)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
-#FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
-#LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
+##LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nq0)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC) -O4 -dusty
