@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.108 2004-04-04 19:52:30 theine Exp $
+! $Id: noionization.f90,v 1.109 2004-04-06 08:03:47 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.108 2004-04-04 19:52:30 theine Exp $')
+           '$Id: noionization.f90,v 1.109 2004-04-06 08:03:47 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -404,6 +404,7 @@ module Ionization
       endif
 !
       if (present(lnchi)) then
+        lnchi=0
         call stop_it("eoscalc: sorry,no Hminus opacity with noionization")
       endif
 !
