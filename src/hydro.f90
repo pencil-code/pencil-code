@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.39 2002-07-04 10:10:55 nilshau Exp $
+! $Id: hydro.f90,v 1.40 2002-07-04 14:53:45 dobler Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.39 2002-07-04 10:10:55 nilshau Exp $")
+           "$Id: hydro.f90,v 1.40 2002-07-04 14:53:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,14 +110,14 @@ module Hydro
         !
         !  sound wave (should be consistent with density module)
         !
-        print*,'x-wave in uu; ampluu=',ampluu
+        if (lroot) print*,'x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(xx)
 
       case('shock-tube', '13')
         !
         !  shock tube test (should be consistent with density module)
         !
-        print*,'init_hydro: polytopic standing shock'
+        if (lroot) print*,'init_hydro: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthuu))
         f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
 
@@ -125,7 +125,7 @@ module Hydro
         !
         !  blob-like velocity perturbations (bullets)
         !
-        print*,'init_hydro: velocity blobs'
+        if (lroot) print*,'init_hydro: velocity blobs'
         !f(:,:,:,iux)=f(:,:,:,iux)+ampluu*exp(-(xx**2+yy**2+(zz-1.)**2)/widthuu)
         f(:,:,:,iuz)=f(:,:,:,iuz)-ampluu*exp(-(xx**2+yy**2+zz**2)/widthuu)
 
@@ -133,7 +133,7 @@ module Hydro
         !
         !  circularly polarised Alfven wave in x direction
         !
-        print*,'init_hydro: circular Alfven wave -> x'
+        if (lroot) print*,'init_hydro: circular Alfven wave -> x'
         f(:,:,:,iuy) = ampluu*sin(kx_uu*xx)
         f(:,:,:,iuz) = ampluu*cos(kx_uu*xx)
 
@@ -201,7 +201,8 @@ module Hydro
         endif
       endif
 !
-      if (ip==1) print*,yy,zz !(to keep compiler from complaining)
+      if (ip==1) print*,'Ignore these:', &
+           minval(yy),maxval(zz) !(keep compiler from complaining)
     endsubroutine init_hydro
 !***********************************************************************
     subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)

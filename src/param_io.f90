@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.35 2002-07-04 10:10:55 nilshau Exp $ 
+! $Id: param_io.f90,v 1.36 2002-07-04 14:53:45 dobler Exp $ 
 
 module Param_IO
 
@@ -120,7 +120,7 @@ module Param_IO
 !  set debug logical (easier to use than the combination of ip and lroot)
 !
       ldebug=lroot.and.(ip<7)
-      print*,'ldebug,ip=',ldebug,ip
+      if (lroot) print*,'ldebug,ip=',ldebug,ip
 !
 !  Write data to file for IDL
 !
