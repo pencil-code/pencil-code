@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.60 2004-06-30 04:38:12 theine Exp $
+! $Id: radiation_ray.f90,v 1.61 2004-09-08 18:07:57 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -48,7 +48,7 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: lcooling=.true.,lrad_debug=.false.
+  logical :: lcooling=.true.,lrad_debug=.false.,lrad_timing=.false.
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
 
   character :: lrad_str,mrad_str,nrad_str
@@ -63,14 +63,14 @@ module Radiation
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad, &
+       Srad_const,amplSrad,radius_Srad,lrad_timing, &
        lnchi_const,ampllnchi,radius_lnchi, &
        lintrinsic,lcommunicate,lrevision
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
-       Srad_const,amplSrad,radius_Srad, &
+       Srad_const,amplSrad,radius_Srad,lrad_timing, &
        lnchi_const,ampllnchi,radius_lnchi, &
        lintrinsic,lcommunicate,lrevision,lcooling
 
@@ -115,7 +115,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.60 2004-06-30 04:38:12 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.61 2004-09-08 18:07:57 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -299,9 +299,11 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad
+      use Cdata, only: ldebug,headt,iQrad,nt,it,itsub,itorder,nx,ny,nz
+      use Mpicomm, only: mpiwtime
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
+      double precision :: timer=0.0,tmp
 !
 !  identifier
 !
@@ -315,6 +317,10 @@ module Radiation
 !  initialize heating rate
 !
       f(:,:,:,iQrad)=0
+!
+!  Get MPI time before the transfer equation is solved
+!
+      if (lrad_timing) tmp=mpiwtime()
 !
 !  loop over rays
 !
@@ -337,6 +343,17 @@ module Radiation
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
       enddo
+!
+!  Add time difference to total timer.
+!  At the last timestep print out wall clock time per timestep,
+!  meshpoint and raydirection.
+!
+      if (lrad_timing) then
+        timer=timer+mpiwtime()-tmp
+        if (it==nt.and.itsub==itorder) then
+          print*,'RAD_TIMING:',real(timer*1e9/(nx*ny*nz*itorder*ndir*nt))
+        endif
+      endif
 !
     endsubroutine radtransfer
 !***********************************************************************
