@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.152 2003-08-02 22:09:36 theine Exp $
+! $Id: equ.f90,v 1.153 2003-08-12 20:47:40 mee Exp $
 
 module Equ
 
@@ -220,9 +220,9 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 
-      if (headtt.or.ldebug) print*,'ENTER: pde'
+      if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.152 2003-08-02 22:09:36 theine Exp $")
+           "$Id: equ.f90,v 1.153 2003-08-12 20:47:40 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -242,7 +242,7 @@ module Equ
 !  3. y- and z-boundaries
 !
       call boundconds_x(f)
-      if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
+      if (ldebug) print*,'pde: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       if (early_finalize) call finalise_isendrcv_bdry(f)
 !
@@ -351,9 +351,9 @@ module Equ
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
           facheat=dxmin/cdt
-!         if(ip<=14) print*,'facheat,maxheating(1)=',facheat,maxheating(1)
-!         if(ip<=14) print*,'maxadvec2(1),fac=',maxadvec2(1),fac
-!         if(ip<=14) print*,'maxdiffus(1),UUmax,dxmin=',maxdiffus(1),UUmax,dxmin
+! if(ip<=14) print*,'pde: facheat,maxheating(1)=',facheat,maxheating(1)
+! if(ip<=14) print*,'pde: maxadvec2(1),fac=',maxadvec2(1),fac
+! if(ip<=14) print*,'pde: maxdiffus(1),UUmax,dxmin=',maxdiffus(1),UUmax,dxmin
           call max_mn((facheat*maxheating)+ &
                sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
         endif

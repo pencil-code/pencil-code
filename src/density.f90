@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.107 2003-08-08 17:21:59 theine Exp $
+! $Id: density.f90,v 1.108 2003-08-12 20:47:40 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -63,18 +63,18 @@ module Density
       nvar = nvar+1             ! added 1 variable
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_density:  nvar = ', nvar
-        print*, 'ilnrho = ', ilnrho
+        print*, 'register_density: nvar = ', nvar
+        print*, 'register_density: ilnrho = ', ilnrho
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.107 2003-08-08 17:21:59 theine Exp $")
+           "$Id: density.f90,v 1.108 2003-08-12 20:47:40 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_hydro: nvar > mvar')
+        call stop_it('register_density: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -138,13 +138,14 @@ module Density
       lnrho_right = alog(rho_right)
       select case(initlnrho)
 
-      case('zero', '0'); if(lroot) print*,'zero lnrho'
+      case('zero', '0'); if(lroot) print*,'init_lnrho: zero lnrho'
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
       case('isothermal'); call isothermal_density(f)
       case('stratification'); call stratification(amplrho,f,xx,yy,zz)
       case('polytropic_simple'); call polytropic_simple(f)
-      case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
+      case('hydrostatic-z', '1'); print*, &
+                              'init_lnrho: use polytropic_simple instead!'
       case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')
       case('yjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'y')
       case('zjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'z')
@@ -164,8 +165,10 @@ module Density
         !
         !  density jump (for shocks)
         !
-        if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
-        if (lroot) print*,'density jump; widthlnrho=',widthlnrho
+        if (lroot) print*, &
+               'init_lnrho: density jump; rho_left,right=',rho_left,rho_right
+        if (lroot) print*, &
+               'init_lnrho: density jump; widthlnrho=',widthlnrho
         prof=.5*(1.+tanh(zz/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+alog(rho_left/rho_right)*prof
 
@@ -174,7 +177,7 @@ module Density
         !  hydrostatic density stratification for isentropic atmosphere
         !
         if (lgravz) then
-          if (lroot) print*,'vertical density stratification'
+          if (lroot) print*,'init_lnrho: vertical density stratification'
           !        f(:,:,:,ilnrho)=-zz
           ! isentropic case:
           !        zmax = -cs20/gamma1/gravz
@@ -193,7 +196,7 @@ module Density
         !
         if (lgravr) then
           if (lroot) print*, &
-               'radial density stratification (assumes s=const)'
+               'init_lnrho: radial density stratification (assumes s=const)'
 !ajwm - here's the init call that needs sorting!
           call initialize_gravity()     ! get coefficients cpot(1:5)
 
@@ -214,7 +217,8 @@ module Density
         !
         !  piecewise polytropic for stellar convection models
         !
-        if (lroot) print*,'piecewise polytropic vertical stratification (lnrho)'
+        if (lroot) print*, &
+           'init_lnrho: piecewise polytropic vertical stratification (lnrho)'
         ! top region
 
         cs2int = cs0**2
@@ -240,7 +244,8 @@ module Density
         !
         !  piecewise polytropic for accretion discs
         !
-        if (lroot) print*,'piecewise polytropic disc stratification (lnrho)'
+        if (lroot) print*, &
+             'init_lnrho: piecewise polytropic disc stratification (lnrho)'
         ! bottom region
 
         cs2int = cs0**2
@@ -271,7 +276,8 @@ module Density
         !  polytropic stratification
         !  cs0, rho0 and ss0=0 refer to height z=zref
         !
-        if (lroot) print*,'polytropic vertical stratification (lnrho)'
+        if (lroot) print*, &
+                  'init_lnrho: polytropic vertical stratification (lnrho)'
         !
         cs20 = cs0**2
         cs2int = cs20
@@ -290,21 +296,21 @@ module Density
         !
         !  sound wave (should be consistent with hydro module)
         !
-        if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
+        if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=lnrho_const+ampllnrho*sin(kx_lnrho*xx)
 
       case('sound-wave2')
         !
         !  sound wave (should be consistent with hydro module)
         !
-        if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
+        if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=lnrho_const+ampllnrho*cos(kx_lnrho*xx)
 
       case('shock-tube', '13')
         !
         !  shock tube test (should be consistent with hydro module)
         !  
-        if (lroot) print*,'polytopic standing shock'
+        if (lroot) print*,'init_lnrho: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+(alog(rho_right)-alog(rho_left))*prof
 
@@ -312,7 +318,7 @@ module Density
         !
         !  sin profile in x and y
         !  
-        if (lroot) print*,'lnrho: sin(x)*sin(y)'
+        if (lroot) print*,'init_lnrho: lnrho=sin(x)*sin(y)'
         f(:,:,:,ilnrho) = &
              alog(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
 
@@ -320,7 +326,7 @@ module Density
         !
         !  sin profile in x and y, but in rho, not ln(rho)
         !  
-        if (lroot) print*,'rho: sin(x)*sin(y)'
+        if (lroot) print*,'init_lnrho: rho=sin(x)*sin(y)'
         f(:,:,:,ilnrho) = &
              alog(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
 
@@ -328,7 +334,7 @@ module Density
         !
         !  linear profile in kk.xxx
         !  
-        if (lroot) print*,'lnrho: linear profile'
+        if (lroot) print*,'init_lnrho: linear profile'
         f(:,:,:,ilnrho) = alog(rho0) &
              + ampllnrho*(kx_lnrho*xx+ky_lnrho*yy+kz_lnrho*zz) &
                / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
@@ -367,7 +373,8 @@ module Density
         !
         !  Catch unknown values
         !
-        if (lroot) print*,'No such value for initlnrho: ', trim(initlnrho)
+        if (lroot) print*, &
+              'init_lnrho: No such value for initlnrho: ', trim(initlnrho)
         call stop_it("")
 
       endselect
@@ -375,13 +382,14 @@ module Density
 !  sanity check
 !
       if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
-        STOP "INIT_LNRHO: Imaginary density values"
+        STOP "init_lnrho: Imaginary density values"
       endif
 !
 !  check that cs2bot,cs2top are ok
 !
       if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
-      if(lroot) print*,'e.g. for ionization runs: cs2bot,cs2top not yet set' 
+      if(lroot) print*, &
+          'init_lnrho: e.g. for ionization runs: cs2bot,cs2top not yet set' 
 !
 !  Add some structures to the lnrho initialized above
 !
@@ -521,7 +529,7 @@ module Density
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE dlnrho_dt'
+      if (headtt.or.ldebug) print*,'dlnrho_dt: SOLVE dlnrho_dt'
       if (headtt) call identify_bcs('lnrho',ilnrho)
 !
 !  define lnrho; calculate density gradient and avection term
@@ -567,7 +575,7 @@ module Density
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_density: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ekintot',i_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
@@ -611,7 +619,7 @@ module Density
 !
 !  Stratification depends on the gravity potential
 !
-      if (lroot) print*,'isothermal stratification'
+      if (lroot) print*,'isothermal_density: isothermal stratification'
       do n=n1,n2
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot)
@@ -694,7 +702,8 @@ module Density
       !-- if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
       if(zinfty<amin1(ztop,zgrav)) then
         if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
-        call stop_it('rho and cs2 will vanish within domain')
+        call stop_it( &
+                 'polytropic_simply: rho and cs2 will vanish within domain')
       endif
 !
       ggamma=1.+1./mpoly
@@ -746,7 +755,7 @@ module Density
 !      real, dimension(1) :: fmpi1
 !      integer :: iproctop
 !
-      if (lroot) print*,'Ferriere density profile'
+      if (lroot) print*,'ferriere: Ferriere density profile'
 !
 !  first define reference values of pp, cs2, at midplane.  
 !  pressure is set to 6 times thermal pressure, this factor roughly
@@ -827,7 +836,7 @@ module Density
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_lnrho_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -841,8 +850,10 @@ module Density
 !  bottom boundary
 !
       case('bot')
-        if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (ldebug) print*, &
+                 'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, &
+                 'bc_lnrho_temp_z: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
@@ -862,8 +873,10 @@ module Density
 !  top boundary
 !
       case('top')
-        if (ldebug) print*,'set z top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (ldebug) print*, &
+                    'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*, &
+                    'bc_lnrho_temp_z: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
@@ -881,7 +894,7 @@ module Density
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+        if(lroot) print*,"bc_lnrho_temp_z: invalid argument"
         call stop_it("")
       endselect
 !
@@ -902,7 +915,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_lnrho_pressure_z: cs20,cs0=',cs20,cs0
 !
 !  Constant pressure, i.e. antisymmetric
 !  This assumes that the entropy is already set (ie density _must_ register
@@ -985,7 +998,7 @@ module Density
         enddo
 !
       case default
-        if(lroot) print*,"invalid argument for 'bc_lnrho_pressure_z'"
+        if(lroot) print*,"bc_lnrho_pressure_z: invalid argument"
         call stop_it("")
       endselect
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.188 2003-08-10 10:02:50 brandenb Exp $
+! $Id: entropy.f90,v 1.189 2003-08-12 20:47:40 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -81,18 +81,18 @@ module Entropy
       nvar = nvar+1
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_ent:  nvar = ', nvar
-        print*, 'iss = ', iss
+        print*, 'register_entropy: nvar = ', nvar
+        print*, 'register_entropy: iss = ', iss
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.188 2003-08-10 10:02:50 brandenb Exp $")
+           "$Id: entropy.f90,v 1.189 2003-08-12 20:47:40 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_ent: nvar > mvar')
+        call stop_it('register_entropy: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -134,7 +134,8 @@ module Entropy
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-              if (lroot) print*, 'Calculated Fbot = ', Fbot
+              if (lroot) print*, &
+                      'initialize_entropy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
             endif
@@ -153,7 +154,8 @@ module Entropy
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
-              if (lroot) print*, 'Calculated Fbot = ', Fbot
+              if (lroot) print*, &
+                      'initialize_entropy: Calculated Fbot = ', Fbot
             else
               Fbot=0.
             endif
@@ -221,12 +223,12 @@ module Entropy
           !
           !  ss = const.
           !
-          if (lroot) print*,'isentropic stratification'
+          if (lroot) print*,'init_ss: isentropic stratification'
           ! ss0=alog(-gamma1*gravz*zinfty)/gamma
-          ! print*,'isentropic stratification; ss=',ss0
+          ! print*,'init_ss: isentropic stratification; ss=',ss0
           f(:,:,:,iss)=0.
           if (ampl_ss/=0.) then
-            print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            print*,'init_ss: put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
             tmp=xx**2+yy**2+zz**2
             f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
           !f(:,:,:,iss)=f(:,:,:,iss)+ampl_ss*exp(-tmp/radius_ss**2)
@@ -236,7 +238,7 @@ module Entropy
           !
           !  linear profile of ss, centered around ss=0.
           !
-          if (lroot) print*,'linear entropy profile'
+          if (lroot) print*,'init_ss: linear entropy profile'
           f(:,:,:,iss) = grads0*zz
 
         case('piecew-poly', '4')
@@ -244,7 +246,8 @@ module Entropy
           !  piecewise polytropic convection setup
           !  cs0, rho0 and ss0=0 refer to height z=zref
           !
-          if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
+          if (lroot) print*, &
+                 'init_ss: piecewise polytropic vertical stratification (ss)'
           !
 !         !  override hcond1,hcond2 according to polytropic equilibrium
 !         !  solution
@@ -272,7 +275,7 @@ module Entropy
           !  piecewise polytropic convective disc
           !  cs0, rho0 and ss0=0 refer to height z=zref
           !
-          if (lroot) print*,'piecewise polytropic disc (ss)'
+          if (lroot) print*,'init_ss: piecewise polytropic disc'
           !
 !         !  override hcond1,hcond2 according to polytropic equilibrium
 !         !  solution
@@ -281,7 +284,7 @@ module Entropy
 !         hcond2 = (mpoly2+1.)/(mpoly0+1.)
 !         if (lroot) &
 !              print*, &
-!              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+!        'init_ss: Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
           ztop = xyz0(3)+Lxyz(3)
           cs2int = cs0**2
@@ -302,7 +305,7 @@ module Entropy
           !  polytropic stratification
           !  cs0, rho0 and ss0=0 refer to height z=zref
           !
-          if (lroot) print*,'polytropic vertical stratification (ss)'
+          if (lroot) print*,'init_ss: polytropic vertical stratification'
           !
           cs20 = cs0**2
           ss0 = 0.              ! reference value ss0 is zero
@@ -319,7 +322,7 @@ module Entropy
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'No such value for initss: ', trim(initss)
+          if (lroot) print*,'init_ss: No such value for initss: ', trim(initss)
           call stop_it("")
 
       endselect
@@ -338,6 +341,7 @@ module Entropy
 
 !
 !  Add perturbation(s)
+
 !
 !      if (lgravz)
 
@@ -350,7 +354,7 @@ module Entropy
         !
         !  hexagonal perturbation
         !
-        if (lroot) print*,'adding hexagonal perturbation to ss'
+        if (lroot) print*,'init_ss: adding hexagonal perturbation to ss'
         f(:,:,:,iss) = f(:,:,:,iss) &
                         + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
                                     *cos(0.5*khor_ss*yy) &
@@ -361,7 +365,7 @@ module Entropy
         !
         !  Catch unknown values
         !
-        if (lroot) print*,'No such value for pertss:', pertss
+        if (lroot) print*,'init_ss: No such value for pertss:', pertss
         call stop_it("")
 
       endselect
@@ -397,7 +401,7 @@ module Entropy
            call potential(x(l1:l2),y(m),z(n),pot)
 !        if (lionization_fixed) then
            call isothermal_density_ion(pot,tmp)
-!print*,minval(tmp),maxval(tmp)
+!print*,'isothermal_entropy: ',minval(tmp),maxval(tmp)
            f(l1:l2,m,n,ilnrho)=lnrho0+tmp/TT0
            f(l1:l2,m,n,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(l1:l2,m,n,ilnrho)+2.5)  &
@@ -410,7 +414,7 @@ module Entropy
            if (yH0.ne.1.) f(l1:l2,m,n,iss) = &
                 f(l1:l2,m,n,iss) - ((1.-yH0)*log(1.-yH0) * ss_ion)
 
-!print*,minval(f(l1:l2,m,n,iss)),maxval(f(l1:l2,m,n,iss))
+!print*,'isothermal_entropy: ',minval(f(l1:l2,m,n,iss)),maxval(f(l1:l2,m,n,iss))
         else
           f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
                   ! + other terms for sound speed not equal to cs_0
@@ -574,7 +578,7 @@ module Entropy
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
 !  entropy gradient: needed for advection and pressure gradient
@@ -596,8 +600,10 @@ module Entropy
 !  use sound speed in Courant condition
 !
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
-      if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
-      if (headtt) print*,'entropy (but not used with ionization): cs20=',cs20
+      if (ip<8.and.lroot.and.imn==1) print*, &
+                        'dss_dt: maxadvec2,cs2=',maxadvec2,cs2
+      if (headtt) print*, &
+                 'dss_dt: entropy (but not used with ionization): cs20=',cs20
 !
 !  subtract pressure gradient term in momentum equation
 !
@@ -714,12 +720,13 @@ module Entropy
 !  add heat conduction to entropy equation
 !
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-      if (headtt) print*,'calc_heatcond_simple: added thdiff'
+      if (headtt) print*,'calc_heatcond_constchi: added thdiff'
 !
 !  shock entropy diffusivity
 !
       if(chi_shock/=0.) then
-        if(lroot.and.ip<16) print*,'use shock diffusion'
+        if(lroot.and.ip<16) print*, &
+                      'calc_heatcond_constchi: use shock diffusion'
         call dot_mn(glnP,gss,g2)
         thdiff = thdiff + chi_t*(del2ss+g2)
       endif
@@ -873,7 +880,7 @@ module Entropy
 !
       if(headtt) then
         print*,'calc_heatcond: hcond0=',hcond0
-        if (lgravz) print*,'Fbot=',Fbot
+        if (lgravz) print*,'calc_heatcond: Fbot=',Fbot
       endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
@@ -911,9 +918,10 @@ module Entropy
 !
       if (chi_t/=0.) then
         if (headtt) then
-          print*,'"turbulent" entropy diffusion: chi_t=',chi_t
+          print*,'calc_headcond: "turbulent" entropy diffusion: chi_t=',chi_t
           if (hcond0 /= 0) then
-            print*,"WARNING: hcond0 and chi_t combined don't seem to make sense"
+            print*, "calc_heatcond: WARNING ", &
+                  "- hcond0 and chi_t combined don't seem to make sense"
           endif
         endif
 !        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss)+chi_t*del2ss
@@ -923,25 +931,25 @@ module Entropy
 !  check for NaNs initially
 !
       if (headt .and. (hcond0 /= 0)) then
-        if (notanumber(glhc))      print*,'NaNs in glhc'
-        if (notanumber(rho1))      print*,'NaNs in rho1'
-        if (notanumber(hcond))     print*,'NaNs in hcond'
-        if (notanumber(chix))       print*,'NaNs in chix'
-        if (notanumber(del2ss))    print*,'NaNs in del2ss'
-        if (notanumber(del2lnrho)) print*,'NaNs in del2lnrho'
-        if (notanumber(glhc))      print*,'NaNs in glhc'
-        if (notanumber(1/hcond))   print*,'NaNs in 1/hcond'
-        if (notanumber(glnT))      print*,'NaNs in glnT'
-        if (notanumber(glnThcond)) print*,'NaNs in glnThcond'
-        if (notanumber(g2))        print*,'NaNs in g2'
-        if (notanumber(thdiff))    print*,'NaNs in thdiff'
+        if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
+        if (notanumber(rho1))      print*,'calc_heatcond: NaNs in rho1'
+        if (notanumber(hcond))     print*,'calc_heatcond: NaNs in hcond'
+        if (notanumber(chix))      print*,'calc_heatcond: NaNs in chix'
+        if (notanumber(del2ss))    print*,'calc_heatcond: NaNs in del2ss'
+        if (notanumber(del2lnrho)) print*,'calc_heatcond: NaNs in del2lnrho'
+        if (notanumber(glhc))      print*,'calc_heatcond: NaNs in glhc'
+        if (notanumber(1/hcond))   print*,'calc_heatcond: NaNs in 1/hcond'
+        if (notanumber(glnT))      print*,'calc_heatcond: NaNs in glnT'
+        if (notanumber(glnThcond)) print*,'calc_heatcond: NaNs in glnThcond'
+        if (notanumber(g2))        print*,'calc_heatcond: NaNs in g2'
+        if (notanumber(thdiff))    print*,'calc_heatcond: NaNs in thdiff'
         !
         !  most of these should trigger the following trap
         !
         if (notanumber(thdiff)) then
 
-print*, 'm,n,y(m),z(n)=',m,n,y(m),z(n)
-call stop_it('NaNs in thdiff')
+print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
+call stop_it('calc_heatcond: NaNs in thdiff')
 endif
       endif
 
@@ -1038,7 +1046,8 @@ endif
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
         case default
-          if (lroot) print*,'No such value for cooltype: ', trim(cooltype)
+          if (lroot) print*, &
+               'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
           call stop_it("")
         endselect
       endif
@@ -1207,7 +1216,7 @@ endif
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
@@ -1219,7 +1228,7 @@ endif
       case('strange-bot')
         if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
-             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
+             call stop_it("bc_ss_flux: Inconsistent boundary conditions 1.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n1,iss) &
                        - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
@@ -1270,7 +1279,7 @@ endif
       case('top')
         if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
         if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
-             call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
+             call stop_it("bc_ss_flux: Inconsistent boundary conditions 2.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n2,iss) &
                        - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
@@ -1283,7 +1292,7 @@ endif
                + f(:,:,n2-i,iss)
         enddo
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+        if(lroot) print*,"bc_ss_flux: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1308,7 +1317,7 @@ endif
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
 !  This assumes that the density is already set (ie density must register
@@ -1324,7 +1333,7 @@ endif
 !
       case('bot')
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
+          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
         if (lionization.or.lionization_fixed) then
 !AB: currently, lionization=.true. regardless of lionization_fixed,
 !AB: so ".or.lionization_fixed" is obsolete
@@ -1332,11 +1341,12 @@ endif
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n1-nghost:n1,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
                 -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
-print*,"Bottom CONSTANT TEMPERATURE"
+print*,"bc_ss_temp_old: Bottom CONSTANT TEMPERATURE"
         else
-          if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
+          if (ldebug) print*, &
+                  'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
           if (cs2bot<=0. .and. lroot) &
-                print*,'BOUNDCONDS: cannot have cs2bot<=0'
+                print*,'bc_ss_temp_old: cannot have cs2bot<=0'
             tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + alog(cs2bot/cs20)) / gamma
             f(:,:,n1,iss) = tmp_xy
@@ -1349,15 +1359,17 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('top')
         if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
+          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
         if (lionization_fixed) then
            f(:,:,n2:n2+nghost,iss) = ((1. + yH0 + xHe) &
                 * (1.5*log(TT0/TT_ion)+lnrho_e-f(:,:,n2:n2+nghost,ilnrho)+2.5)  &
                 +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
                 -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
         else
-          if (ldebug) print*,'set top temperature: cs2top=',cs2top
-          if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+          if (ldebug) print*, &
+                     'bc_ss_temp_old: set top temperature - cs2top=',cs2top
+          if (cs2top<=0. .and. lroot) print*, &
+                     'bc_ss_temp_old: cannot have cs2top<=0'
   !       if (bcz1(ilnrho) /= "a2") &
   !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
@@ -1368,7 +1380,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
           enddo
         endif
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_old'"
+        if(lroot) print*,"bc_ss_temp_old: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1390,7 +1402,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1404,8 +1416,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (ldebug) print*,'set x bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (ldebug) print*, &
+                   'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, &
+                   'bc_ss_temp_x: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1416,8 +1430,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (ldebug) print*,'set x top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (ldebug) print*, &
+                       'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*, &
+                       'bc_ss_temp_x: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1426,7 +1442,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_x'"
+        if(lroot) print*,"bc_ss_temp_x: invalid argument"
         call stop_it("")
       endselect
       
@@ -1449,7 +1465,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_y, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1463,8 +1479,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (ldebug) print*,'set y bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (ldebug) print*, &
+                   'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, &
+                   'bc_ss_temp_y: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1475,8 +1493,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (ldebug) print*,'set y top temperature: cs2top=',cs2top
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (ldebug) print*, &
+                     'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*, &
+                     'bc_ss_temp_y: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1485,7 +1505,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_y'"
+        if(lroot) print*,"bc_ss_temp_y: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1507,7 +1527,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real :: tmp
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_temp_z, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
 !
 !  Constant temperature/sound speed for entropy, i.e. antisymmetric
 !  ln(cs2) relative to cs2top/cs2bot.
@@ -1522,10 +1542,12 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('bot')
        if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_temp_z: NOT IMPLEMENTED FOR IONISATION CASE")
        else
-        if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (ldebug) print*, &
+                   'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*, &
+                   'bc_ss_temp_z: cannot have cs2bot<=0'
         tmp = 2/gamma*alog(cs2bot/cs20)
         f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
@@ -1538,9 +1560,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('top')
        if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_temp_z NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_temp_z: NOT IMPLEMENTED FOR IONISATION CASE")
        else
-        if (ldebug) print*,'set z top temperature: cs2top=',cs2top
+        if (ldebug) print*, &
+                     'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
         f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
@@ -1550,7 +1573,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
         enddo
        endif
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+        if(lroot) print*,"bc_ss_temp_z: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1570,7 +1593,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1583,7 +1606,8 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (cs2bot<=0. .and. lroot) print*, &
+                        'bc_ss_stemp_x: cannot have cs2bot<=0'
         do i=1,nghost
           f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
                + gamma1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
@@ -1592,14 +1616,15 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (cs2top<=0. .and. lroot) print*, &
+                        'bc_ss_stemp_x: cannot have cs2top<=0'
         do i=1,nghost
           f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
                + gamma1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_x'"
+        if(lroot) print*,"bc_ss_stemp_x: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1619,7 +1644,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1632,7 +1657,8 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  bottom boundary
 !
       case('bot')
-        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        if (cs2bot<=0. .and. lroot) print*, &
+                       'bc_ss_stemp_y: cannot have cs2bot<=0'
         do i=1,nghost
           f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
                + gamma1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
@@ -1641,17 +1667,19 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !  top boundary
 !
       case('top')
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (cs2top<=0. .and. lroot) print*, &
+                       'bc_ss_stemp_y: cannot have cs2top<=0'
         do i=1,nghost
           f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
                + gamma1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
         enddo
 
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_y'"
+        if(lroot) print*,"bc_ss_stemp_y: invalid argument"
         call stop_it("")
       endselect
 !
+
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
     subroutine bc_ss_stemp_z(f,topbot)
@@ -1669,7 +1697,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
-      if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
+      if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
 !
 !  Symmetric temperature/sound speed for entropy.
 !  This assumes that the density is already set (ie density _must_ register
@@ -1683,9 +1711,10 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('bot')
         if (lionization.or.lionization_fixed) then
-          call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
+          call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
         else
-          if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+          if (cs2bot<=0. .and. lroot) print*, &
+                                  'bc_ss_stemp_z: cannot have cs2bot<=0'
           do i=1,nghost
              f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
                   + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
@@ -1696,16 +1725,17 @@ print*,"Bottom CONSTANT TEMPERATURE"
 !
       case('top')
        if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_stemp_z NOT IMPLEMENTED FOR IONISATION CASE")
+        call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
        else
-        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        if (cs2top<=0. .and. lroot) print*, &
+                 'bc_ss_stemp_z: cannot have cs2top<=0'
          do i=1,nghost
            f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
                 + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
         endif
       case default
-        if(lroot) print*,"invalid argument for 'bc_ss_stemp_z'"
+        if(lroot) print*,"bc_ss_stemp_z: invalid argument"
         call stop_it("")
       endselect
 !
@@ -1758,7 +1788,7 @@ print*,"Bottom CONSTANT TEMPERATURE"
               +log(cs2_2d))
       enddo
     case default
-       if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+       if(lroot) print*,"bc_ss_energy: invalid argument"
         call stop_it("")
     endselect
 

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.8 2003-08-12 09:42:26 ajohan Exp $
+! $Id: dustdensity.f90,v 1.9 2003-08-12 20:47:40 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -41,7 +41,7 @@ module Dustdensity
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_dustdensity called twice')
+      if (.not. first) call stop_it('register_dustdensity: called twice')
       first = .false.
 !
       ldustdensity = .true.
@@ -50,18 +50,18 @@ module Dustdensity
       nvar = nvar+1             ! added 1 variable
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_dnesity:  nvar = ', nvar
-        print*, 'ilnrhod = ', ilnrhod
+        print*, 'register_dustdensity: nvar = ', nvar
+        print*, 'register_dustdensity: ilnrhod = ', ilnrhod
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.8 2003-08-12 09:42:26 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.9 2003-08-12 20:47:40 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_hydro: nvar > mvar')
+        call stop_it('register_dustdensity: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -111,16 +111,16 @@ module Dustdensity
       lnrhod0=alog(rhod0)
       select case(initlnrhod)
 
-      case('zero'); if(lroot) print*,'zero lnrhod'
+      case('zero'); if(lroot) print*,'init_lnrhod: zero lnrhod'
       case('const_rhod'); f(:,:,:,ilnrhod)=alog(rhod_const)
       case('const_lnrhod'); f(:,:,:,ilnrhod)=lnrhod_const
       case('frac_of_gas_loc')
         if (dust_to_gas_ratio .lt. 0.) &
-            call stop_it("Negative dust_to_gas_ratio!")
+            call stop_it("init_lnrhod: Negative dust_to_gas_ratio!")
         f(:,:,:,ilnrhod)=alog(dust_to_gas_ratio)+f(:,:,:,ilnrho)
       case('frac_of_gas_glo')
         if (dust_to_gas_ratio .lt. 0.) &
-            call stop_it("Negative dust_to_gas_ratio!")
+            call stop_it("init_lnrhod: Negative dust_to_gas_ratio!")
         do i=1,mx
           do j=1,my
             f(i,j,:,ilnrhod) = &
@@ -131,7 +131,8 @@ module Dustdensity
         !
         !  Catch unknown values
         !
-        if (lroot) print*,'No such value for initlnrhod: ', trim(initlnrhod)
+        if (lroot) print*, &
+              'init_lnrhod: No such value for initlnrhod: ', trim(initlnrhod)
         call stop_it("")
 
       endselect
@@ -139,7 +140,7 @@ module Dustdensity
 !  sanity check
 !
       if (notanumber(f(:,:,:,ilnrhod))) then
-        STOP "INIT_LNRHO: Imaginary dustdensity values"
+        STOP "init_lnrhod: Imaginary dustdensity values"
       endif
 !
       if(ip==0) print*,xx,yy,zz ! keep compiler quiet
@@ -167,7 +168,7 @@ module Dustdensity
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE dlnrhod_dt'
+      if (headtt.or.ldebug) print*,'dlnrhod_dt: SOLVE dlnrhod_dt'
       if (headtt) call identify_bcs('lnrhod',ilnrhod)
 !
 !  define lnrhod; calculate dustdensity gradient and avection term
@@ -218,7 +219,7 @@ module Dustdensity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhodm',i_rhodm)
       enddo

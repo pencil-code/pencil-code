@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.13 2003-08-08 17:44:42 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.14 2003-08-12 20:47:40 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -48,7 +48,7 @@ module Dustvelocity
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_dustvelocity called twice')
+      if (.not. first) call stop_it('register_dustvelocity: called twice')
       first = .false.
 !
       ldustvelocity = .true.
@@ -60,18 +60,18 @@ module Dustvelocity
       nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_hydro:  nvar = ', nvar
-        print*, 'iudx,iudy,iudz = ', iudx,iudy,iudz
+        print*, 'register_dustvelocity:  nvar = ', nvar
+        print*, 'register_dustvelocity: iudx,iudy,iudz = ', iudx,iudy,iudz
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.13 2003-08-08 17:44:42 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.14 2003-08-12 20:47:40 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_dustvelocity: nvar > mvar')
+        call stop_it('register_dustvelocity: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -118,18 +118,19 @@ module Dustvelocity
 !
       select case(inituud)
 
-      case('zero', '0'); if(lroot) print*,'zero dust velocity'
+      case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
       case('follow_gas'); f(:,:,:,iudx:iudz)=f(:,:,:,iux:iuz)
       case('Beltrami-x'); call beltrami(ampluud,f,iuud,kx=kx_uud)
       case('Beltrami-y'); call beltrami(ampluud,f,iuud,ky=ky_uud)
       case('Beltrami-z'); call beltrami(ampluud,f,iuud,kz=kz_uud)
       case('sound-wave'); f(:,:,:,iudx)=ampluud*sin(kx_uud*xx)
-        print*,'iudx,ampluud,kx_uud=',iudx,ampluud,kx_uud
+        print*,'init_uud: iudx,ampluud,kx_uud=',iudx,ampluud,kx_uud
       case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'No such such value for inituu: ', trim(inituud)
+        if (lroot) print*, &
+                   'init_uud: No such such value for inituu: ', trim(inituud)
         call stop_it("")
 
       endselect
@@ -165,7 +166,7 @@ module Dustvelocity
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE duud_dt'
+      if (headtt.or.ldebug) print*,'duud_dt: SOLVE duud_dt'
       if (headtt) then
         call identify_bcs('udx',iudx)
         call identify_bcs('udy',iudy)
@@ -179,8 +180,8 @@ module Dustvelocity
 !
 !  calculate velocity gradient matrix
 !
-      if (lroot .and. ip < 5) &
-          print*,'call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=',m,n,iudx,iudz,ud2
+      if (lroot .and. ip < 5) print*, &
+        'duud_dt: call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=',m,n,iudx,iudz,ud2
       call gij(f,iuud,udij)
       divud=udij(:,1,1)+udij(:,2,2)+udij(:,3,3)
 !
@@ -197,7 +198,7 @@ module Dustvelocity
 !
 !  advection term
 !
-      if (ldebug) print*,'call multmv_mn(udij,uud,udgud)'
+      if (ldebug) print*,'duud_dt: call multmv_mn(udij,uud,udgud)'
       call multmv_mn(udij,uud,udgud)
       df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)-udgud
 !
@@ -207,12 +208,13 @@ module Dustvelocity
 !
       if (Omega/=0.) then
         if (theta==0) then
-          if (headtt) print*,'add Coriolis force; Omega=',Omega
+          if (headtt) print*,'duud_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega
           df(l1:l2,m,n,iudx)=df(l1:l2,m,n,iudx)+c2*uud(:,2)
           df(l1:l2,m,n,iudy)=df(l1:l2,m,n,iudy)-c2*uud(:,1)
         else
-          if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
+          if (headtt) print*, &
+                        'duud_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iudx)=df(l1:l2,m,n,iudx)+c2*uud(:,2)
@@ -241,7 +243,8 @@ module Dustvelocity
         do j=1,3; fac(:,j)=beta*rhod1; enddo
         df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-fac*(uud-uu)
       else
-        call stop_it("Both tau_d and beta specified. Please specify only one!")
+        call stop_it( &
+          "duud_dt: Both tau_d and beta specified. Please specify only one!")
       endif
 !
 !  add drag force on gas (if Mdust_to_Mgas is large enough)
@@ -260,7 +263,8 @@ module Dustvelocity
 !
 !  maximum squared advection speed
 !
-      if (headtt.or.ldebug) print*,'hydro: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2)
+      if (headtt.or.ldebug) print*, &
+           'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,ud2)
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -268,7 +272,8 @@ module Dustvelocity
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
       if (ldiagnos) then
-        if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
+        if (headtt.or.ldebug) print*, &
+                      'duud_dt: Calculate maxima and rms values...'
         if (i_udrms/=0) call sum_mn_name(ud2,i_udrms,lsqrt=.true.)
         if (i_udmax/=0) call max_mn_name(ud2,i_udmax,lsqrt=.true.)
         if (i_ud2m/=0) call sum_mn_name(ud2,i_ud2m)
@@ -343,7 +348,7 @@ module Dustvelocity
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(lroot.and.ip<14) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ud2m',i_ud2m)
         call parse_name(iname,cname(iname),cform(iname),'udm2',i_udm2)
