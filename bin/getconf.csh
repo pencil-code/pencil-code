@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.58 2003-08-13 12:15:50 dobler Exp $
+# $Id: getconf.csh,v 1.59 2003-08-14 05:19:16 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -133,7 +133,7 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
 else if ($hn == rasmussen) then
   echo "Use options for Rasmussen"
   limit stacksize unlimited
-  set mpirun = ''
+  set mpirun = 'mpirun'
   set mpirunops = ''
   set npops = ''
   set ncpus = 1
