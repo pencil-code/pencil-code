@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.48 2003-08-25 17:36:49 mee Exp $
+! $Id: interstellar.f90,v 1.49 2003-08-25 17:42:03 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.48 2003-08-25 17:36:49 mee Exp $")
+           "$Id: interstellar.f90,v 1.49 2003-08-25 17:42:03 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -771,8 +771,8 @@ find_SN: do n=n1,n2
       
 
       EE_SN=0. !; EE_SN2=0.
-open(1,file=trim(datadir)//'/testsn.dat',position='append')
-write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
+!open(1,file=trim(datadir)//'/testsn.dat',position='append')
+!write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
       do n=n1,n2
          do m=m1,m2
             call proximity_SN()
@@ -802,14 +802,14 @@ write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_
             call perturb_energy(lnrho_new, &
                  ((ee_old*rho_old)+deltaEE)/exp(lnrho_new),ss_new,TT_new)
             call thermodynamics(lnrho_new,ss_new,yH_old,TT_new,ee=ee_new)
-write (1,'(f8.0, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') n,deltarho,rho_old,exp(lnrho_new),TT_old,TT_new,ss_old,ss_new,deltaEE,ee_old,ee_new
+!write (1,'(f8.0, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') n,deltarho,rho_old,exp(lnrho_new),TT_old,TT_new,ss_old,ss_new,deltaEE,ee_old,ee_new
 
             if (lmove_mass) f(l1:l2,m,n,ilnrho)=lnrho_new
             f(l1:l2,m,n,iss)=ss_new
 
        enddo
       enddo
-      
+ !close(1)     
 
       ! Sum and share diagnostics etc. amongst processors
       fmpi2_tmp=(/ mass_gain, EE_SN /)
