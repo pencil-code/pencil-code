@@ -30,6 +30,9 @@ else
 endif
 #
 cd src
+#
+#  LINK all *.f90 and the Makefile to local src directory
+#
 set n=0
 foreach file (../$srcdir/*.f90 ../$srcdir/Makefile ../$srcdir/*.c)
   if (-e $file) then
@@ -44,6 +47,24 @@ foreach file (../$srcdir/*.f90 ../$srcdir/Makefile ../$srcdir/*.c)
     echo "No such file: $file"
   endif
 end
+#
+#  COPY all *.local files into local src directory
+#
+set n=0
+foreach file (../$srcdir/*.local)
+  if (-e $file) then
+    if (! -e $file:t) then
+      cp $file .
+    else
+      # echo "$file:t already exists"
+      set n=`expr $n + 1`
+      set existf=$file:t
+    endif
+  else
+    echo "No such file: $file"
+  endif
+end
+#
 if ($n == 1) echo "$existf already exists in src"
 if ($n > 1) echo "$n files already exist in src"
 
