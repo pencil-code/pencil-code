@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.232 2004-03-04 07:53:49 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.233 2004-03-05 14:20:37 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}
+%\date{$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}\\
+  \emph{$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3786,7 +3786,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}
 
 \section{Timings}
 
@@ -5919,6 +5919,14 @@ the latest set of parameters, you need to look at the code.
                  If \var{hcond1} or \var{hcond2} are not set, they are
                  calculated according to the polytropic indices of the
                  initial profile, $K\propto m{+}1$. \\
+  \var{lcalc_heatcond_constchi} [F]
+               & flag for assuming thermal diffusivity
+                 $\chi=K/(c_p\varrho)=\const$, rather than $K=\const$
+                 (which is the default).
+                 \emph{This is currently only correct with
+                 \file{noionization.f90}}. \\
+  \var{chi} [$0.$]
+               & value of $\chi$ when \code{lcalc_heatcond_constchi=T}. \\
   \var{widthss} [start]
                & width of transition region between layers.
                  See start parameters, p.~\pageref{mpoly012-init}. \\
@@ -6534,7 +6542,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.232 2004-03-04 07:53:49 dobler Exp $ $}
+$ $Id: manual.tex,v 1.233 2004-03-05 14:20:37 dobler Exp $ $}
 
 
 \end{document}
