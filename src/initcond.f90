@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.53 2003-06-20 13:12:50 ajohan Exp $ 
+! $Id: initcond.f90,v 1.54 2003-06-20 20:31:49 ajohan Exp $ 
 
 module Initcond 
  
@@ -505,7 +505,7 @@ module Initcond
       real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius,rbound
       real :: gamma,eps2,radius2,width
-      real :: gamma1,zinfty2,cs20,hh0
+      real :: gamma1,zinfty2,cs20
       integer :: i,j,k
 !
 !  calculate sigma
@@ -547,21 +547,21 @@ module Initcond
 !  xi=1 inside vortex, and 0 outside
 !
      if (delta2 .eq. 0.) then    ! Pressure-less solution for eps=0.5
-      hh=0.5*Omega**2*zz**2+hh0  ! and delta2=0
+      hh=0.5*Omega**2*zz**2      ! and delta2=0
       r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2))
       xi=1./(exp((1./width)*(r_ell-rbound))+1.)
     else
       rr2=xx**2+eps2*yy**2+zz**2/delta2
-      hh=+.5*delta2*Omega**2*(radius2-rr2)
-      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2)+delta2*zz**2)
-      xi=1./(exp((1./width)*(r_ell-rbound))+1.)   
+      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2))!+delta2*zz**2)
+      xi=1./(exp((1./width)*(r_ell-rbound))+1.)
+      hh(:,:,n2)=+.5*delta2*Omega**2*(radius2 - &
+          xx(:,:,n2)**2-eps2*yy(:,:,n2)**2)*xi(:,:,n2)+1.   
     endif
 
     if(nz.eq.1) then
       print*,'warning: does not work for nz=1!'
     else
       print*,"with entropy: integrate hot corona"
-      hh(:,:,n2)=1.  !(initial condition)
       f(:,:,:,ient)=-alog(ampl)*xi
       do n=n2-1,n1,-1
         delS=f(:,:,n+1,ient)-f(:,:,n,ient)
@@ -612,7 +612,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell
-      real :: gamma1,zinfty2,cs20,hh0,hhmin
+      real :: gamma1,zinfty2,ztop,cs20,hh0,hhmin
       integer :: i,j,k
 !
 !  calculate sigma
@@ -646,6 +646,8 @@ module Initcond
         zinfty2=impossible
       endif
       print*,'planet: gamma,zinfty2=',gamma,zinfty2
+
+      ztop=z(n2)
 !
 !  Cylinder vortex 3-D solution (b_ell along x, a_ell along y)
 !
@@ -662,7 +664,7 @@ module Initcond
 !  Calculate enthalpy inside vortex
 !
         hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
-             -0.5*Omega**2*zz**2 + hh0
+             -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
 !
 !  Calculate enthalpy outside vortex
 !
@@ -670,7 +672,8 @@ module Initcond
           do j=1,my
             do k=1,mz
               if(r_ell(i,j,k) .gt. 1) then
-                hh(i,j,k) = -0.5*Omega**2*zz(i,j,k)**2 + hh0
+                hh(i,j,k) = &
+                    -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
               endif
             enddo
           enddo
