@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.143 2003-11-20 21:48:39 brandenb Exp $ 
+! $Id: param_io.f90,v 1.144 2003-11-23 21:59:37 brandenb Exp $ 
 
 module Param_IO
 
@@ -46,7 +46,6 @@ module Param_IO
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
-  logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lread_oldsnap=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
   !

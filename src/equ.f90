@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.166 2003-11-23 16:15:05 brandenb Exp $
+! $Id: equ.f90,v 1.167 2003-11-23 21:59:37 brandenb Exp $
 
 module Equ
 
@@ -179,13 +179,13 @@ module Equ
 !
 !  communicate over all processors
 !  the result is only present on the root processor
-!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1:1)
+!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1)
 !
       if(nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*(nz+1)*nprocz)
         if(lroot) then
           do i=1,nnamerz
-            fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,i),2,nz)
+            fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,1),2,nz)
           enddo
         endif
       endif
@@ -231,12 +231,17 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.166 2003-11-23 16:15:05 brandenb Exp $")
+           "$Id: equ.f90,v 1.167 2003-11-23 21:59:37 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
       ldiagnos=lfirst.and.lout
+      l2davgfirst=lfirst.and.l2davg
+!
+!  record times for diagnostic and 2d average output
+!
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
+      if (l2davgfirst) t2davgfirst=t !(2-D averages are for THIS time)
 !
 !  need to finalize communication early either for test purposes, or
 !  when radiation transfer of global ionization is calculated.
@@ -279,16 +284,19 @@ module Equ
 !  coordinates are needed frequently
 !  --- but not for isotropic turbulence; and there are many other
 !  circumstances where this is not needed.
+!  Note: cylindrical radius currently only needed for phi-averages.
 !
         x_mn = x(l1:l2)
         y_mn = spread(y(m),1,nx)
         z_mn = spread(z(n),1,nx)
-        rcyl_mn = sqrt(x_mn**2+y_mn**2) ! Needed for phi-averages
-        r_mn    = sqrt(x_mn**2+y_mn**2+z_mn**2)
+        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
 !
 !  calculate profile for phi-averages if needed
 !
-        if (ldiagnos .and. (nnamerz>0)) call calc_phiavg_profile()
+        if (l2davgfirst.and.lwrite_phiaverages) then
+          call calc_phiavg_profile()
+          call calc_phiavg_unitvects()
+        endif
 !
 !  for each pencil, accumulate through the different routines
 !  maximum diffusion, maximum advection (keep as nx-array)
@@ -410,8 +418,13 @@ module Equ
       if (ldiagnos) then
         call diagnostic
         call xyaverages_z
-        call zaverages_xy
-        call phiaverages_rz
+      endif
+!
+!  2-D averages
+!
+      if (l2davgfirst) then
+        if (lwrite_zaverages) call zaverages_xy
+        if (lwrite_phiaverages) call phiaverages_rz
       endif
 !
     endsubroutine pde

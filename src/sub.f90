@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.145 2003-11-22 20:59:35 dobler Exp $ 
+! $Id: sub.f90,v 1.146 2003-11-23 21:59:37 brandenb Exp $ 
 
 module Sub 
 
@@ -231,8 +231,10 @@ module Sub
 !
 !  Initialize to zero, including other parts of the rz-array
 !  which are later merged with an mpi reduce command.
+!  Each processor needs only reset it's own slot.
+!  Each y-processors needs to do this separately.
 !
-      if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
+      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
@@ -277,6 +279,33 @@ module Sub
       enddo
 !
     endsubroutine calc_phiavg_profile
+!***********************************************************************
+    subroutine calc_phiavg_unitvects()
+!
+!  Calculate unit vectors for phi-averaging for given pencil
+!
+!  23-nov-03/axel: coded
+!
+      use Cdata
+!
+      real, dimension (nx) :: rcyl_mn1
+!
+!  pomega and 1/pomega
+!
+      rcyl_mn = sqrt(x_mn**2+y_mn**2) ! Needed for phi-averages
+      rcyl_mn1=1./amax1(rcyl_mn,epsi)
+!
+!  pomega unit vector
+!
+      pomx=+x_mn*rcyl_mn1
+      pomy=+y_mn*rcyl_mn1
+!
+!  phi unit vector
+!
+      phix=-y_mn*rcyl_mn1
+      phiy=+x_mn*rcyl_mn1
+!
+    endsubroutine calc_phiavg_unitvects
 !***********************************************************************
     subroutine max_mn(a,res)
 !

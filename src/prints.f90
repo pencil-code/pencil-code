@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.53 2003-11-23 16:15:05 brandenb Exp $
+! $Id: prints.f90,v 1.54 2003-11-23 21:59:37 brandenb Exp $
 
 module Print
 
@@ -7,6 +7,8 @@ module Print
   use Magnetic
 
   implicit none
+
+  character (len=4) :: ch2davg
 
   contains
 
@@ -172,6 +174,33 @@ module Print
 !
     endsubroutine write_1daverages
 !***********************************************************************
+    subroutine write_2daverages_prepare()
+!
+!  Prepare l2davg for writing 2D averages.
+!  This needs to be done in the beginning of each time step, so
+!  the various routines know that they need to calculate averages.
+!
+!  23-nov-03/axel: adapted from write_2daverages and wvid_prepare
+!
+      use Param_IO
+!
+      real, save :: t2davg
+      integer, save :: n2davg
+      logical, save :: first=.true.
+      character (len=135) :: file
+!
+      file=trim(datadir)//'/t2davg.dat'
+      if (first) then
+        call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
+      endif
+      first = .false.
+!
+!  This routine sets l2davg=T whenever its time to write 2D averages
+!
+      call update_snaptime(file,t2davg,n2davg,d2davg,t,l2davg,ch2davg,ENUM=.true.)
+!
+    endsubroutine write_2daverages_prepare
+!***********************************************************************
     subroutine write_2daverages()
 !
 !  Write 2d averages (z-averages, phi-averages, .., i.e. quantities that
@@ -184,25 +213,11 @@ module Print
 !
       use Param_IO
 !
-      real, save :: t2davg
-      integer, save :: n2davg
-      logical, save :: first=.true.
-      logical :: lnow
-      character (len=4) :: ch
-      character (len=135) :: file
-!
-      file=trim(datadir)//'/t2davg.dat'
-      if (first) then
-        call read_snaptime(trim(file),t2davg,n2davg,d2davg,t)
-      endif
-      first = .false.
-      !
-      call update_snaptime(file,t2davg,n2davg,d2davg,t,lnow,ch,ENUM=.true.)
-      if (lnow.and.lroot) then
-        if (lwrite_zaverages)   call write_zaverages(ch)
-        if (lwrite_phiaverages) call write_phiaverages(ch)
+      if (l2davg.and.lroot) then
+        if (lwrite_zaverages)   call write_zaverages(ch2davg)
+        if (lwrite_phiaverages) call write_phiaverages(ch2davg)
         !
-        if(ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch
+        if(ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch2davg
       endif
 !
     endsubroutine write_2daverages
@@ -263,13 +278,14 @@ module Print
       character (len=1024) :: labels
 !
 !  write result; normalization is already done in phiaverages_rz
+!  Note: the z-array is only written for root processor (not so important!)
 !
       if(lroot.and.nnamerz>0) then
         call safe_character_assign(fname, &
                                    trim(datadir)//'/averages/PHIAVG'//trim(ch))
         open(1,FILE=fname,FORM='unformatted')
         write(1) nrcyl,n2-n1+1,nprocz,nnamerz ! sizes (just in case) 
-        write(1) t,rcyl,z(n1:n2),drcyl,dz
+        write(1) t2davgfirst,rcyl,z(n1:n2),drcyl,dz
         write(1) fnamerz(:,1:nz,:,1:nnamerz)
 !
 !  write labels at the end of file

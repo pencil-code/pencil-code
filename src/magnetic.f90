@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.149 2003-11-13 12:39:28 theine Exp $
+! $Id: magnetic.f90,v 1.150 2003-11-23 21:59:37 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -68,7 +68,7 @@ module Magnetic
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
   integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
-  integer :: i_b2mphi=0
+  integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
 
   contains
 
@@ -104,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.149 2003-11-13 12:39:28 theine Exp $")
+           "$Id: magnetic.f90,v 1.150 2003-11-23 21:59:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -283,7 +283,6 @@ module Magnetic
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
@@ -332,6 +331,24 @@ module Magnetic
         if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
         if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
+      endif
+!
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      if (l2davgfirst) then
+        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+        bx=bb(:,1)
+        by=bb(:,2)
+        bz=bb(:,3)
+        if (i_brmphi/=0) call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
+        if (i_bpmphi/=0) call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
+        if (i_bzmphi/=0) call phisum_mn_name_rz(bz,i_bzmphi)
+        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+        if (i_jbmphi/=0) then
+          call dot_mn(jj,bb,jb)
+          call phisum_mn_name_rz(jb,i_jbmphi)
+        endif
       endif
 !
 !  write B-slices for output in wvid in run.f90
@@ -707,7 +724,8 @@ module Magnetic
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
-        i_b2mphi=0; i_uxjm=0; i_ujxbm=0
+        i_uxjm=0; i_ujxbm=0
+        i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -772,7 +790,11 @@ module Magnetic
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi',i_brmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi',i_bpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi',i_bzmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',i_b2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi',i_jbmphi)
       enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored
@@ -829,7 +851,11 @@ module Magnetic
         write(3,*) 'i_bxmxy=',i_bxmxy
         write(3,*) 'i_bymxy=',i_bymxy
         write(3,*) 'i_bzmxy=',i_bzmxy
+        write(3,*) 'i_brmphi=',i_brmphi
+        write(3,*) 'i_bpmphi=',i_bpmphi
+        write(3,*) 'i_bzmphi=',i_bzmphi
         write(3,*) 'i_b2mphi=',i_b2mphi
+        write(3,*) 'i_jbmphi=',i_jbmphi
       endif
 !
     endsubroutine rprint_magnetic

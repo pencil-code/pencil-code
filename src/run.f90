@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.165 2003-11-15 19:09:02 brandenb Exp $
+! $Id: run.f90,v 1.166 2003-11-23 21:59:37 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.165 2003-11-15 19:09:02 brandenb Exp $")
+             "$Id: run.f90,v 1.166 2003-11-23 21:59:37 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -216,6 +216,7 @@
           !  This allows pde to prepare some of the data
           !
           if (lwrite_slices) call wvid_prepare()
+          if (lwrite_2daverages) call write_2daverages_prepare()
           !
           !  time advance
           !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.180 2003-11-15 19:46:12 brandenb Exp $
+! $Id: cdata.f90,v 1.181 2003-11-23 21:59:37 brandenb Exp $
 
 module Cdata
 
@@ -37,7 +37,7 @@ module Cdata
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve
   real :: nu=0.,cmu,cnu2,nud
-  real :: tdiagnos,dtu
+  real :: tdiagnos,t2davgfirst,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
@@ -78,13 +78,14 @@ module Cdata
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
   integer :: ilabel_integrate=3,ilabel_surf=4
   integer :: nr_directions=1
-  integer, parameter :: mname=100,mnamev=100,mnamez=20,mnamexy=6,mnamerz=6
+  integer, parameter :: mname=100,mnamev=100,mnamez=20,mnamexy=6,mnamerz=20
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
+  real, dimension (nx) :: pomx,pomy,phix,phiy
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
@@ -100,10 +101,12 @@ module Cdata
 
   logical :: lstart=.false., lrun=.false.
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
-  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
-  logical :: lspecial=.false., lwrite_slices=.false., old_cdtv=.true.
+  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false., old_cdtv=.true.
+  logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
+  logical :: l2davg,l2davgfirst
+  logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
