@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.245 2004-04-12 19:29:31 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.246 2004-04-12 19:35:04 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -372,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}
+%\date{$ $Date: 2004-04-12 19:35:04 $ $,~ $ $Revision: 1.246 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}\\
+  \emph{$ $Date: 2004-04-12 19:35:04 $ $,~ $ $Revision: 1.246 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4046,6 +4046,10 @@ in any routine that \cmd{use}s the module \name{Cdata}.
   \var{headtt}
                & \code{= (lfirst .and. lroot)}:
                  true only during very first time-substep on root processor. \\
+  \var{lfirstpoint}
+               & true only when the very first pencil for a given
+                 time-substep is processed, i.\,e.~for the first set of
+                 $(\var{m},\var{n})$, which is probably $(3,3)$ . \\ 
   \var{lout}
                & true when diagnostic output is about to be written. \\
 \bottomrule
@@ -4104,7 +4108,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-04-12 19:29:31 $ $,~ $ $Revision: 1.245 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-04-12 19:35:04 $ $,~ $ $Revision: 1.246 $ $}
 
 \section{Timings}
 
@@ -7079,7 +7083,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.245 2004-04-12 19:29:31 dobler Exp $ $}
+$ $Id: manual.tex,v 1.246 2004-04-12 19:35:04 dobler Exp $ $}
 
 
 \end{document}
