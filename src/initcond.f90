@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.100 2004-03-21 17:34:00 snod Exp $ 
+! $Id: initcond.f90,v 1.101 2004-03-22 18:31:20 brandenb Exp $ 
 
 module Initcond 
  
@@ -1259,6 +1259,31 @@ module Initcond
 !
       if (ip==1) print*,xx,yy
     endsubroutine hfluxlayer
+!***********************************************************************
+    subroutine vfluxlayer(ampl,f,i,xx,yy,zz,xflayer,width)
+!
+!  Vertical flux layer (for vector potential)
+!
+!  22-mar-04/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,xflayer,width
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'hfluxlayer: set variable to zero; i=',i
+      else
+        if (lroot) print*,'hfluxlayer: horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'hfluxlayer: ampl,width=',ampl,width
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=-ampl*tanh((xx-xflayer)/width)
+      endif
+!
+      if (ip==1) print*,xx,yy
+    endsubroutine vfluxlayer
 !***********************************************************************
     subroutine halfcos_x(ampl,f,i,xx,yy,zz)
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.180 2004-03-22 17:40:50 snod Exp $
+! $Id: magnetic.f90,v 1.181 2004-03-22 18:31:20 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -29,7 +29,7 @@ module Magnetic
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
-  real :: radius=.1,epsilonaa=1e-2,widthaa=.5,z0aa=0.
+  real :: radius=.1,epsilonaa=1e-2,widthaa=.5,x0aa=0.,z0aa=0.
   real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
@@ -49,7 +49,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
+       radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss
 
@@ -117,7 +117,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.180 2004-03-22 17:40:50 snod Exp $")
+           "$Id: magnetic.f90,v 1.181 2004-03-22 18:31:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -183,6 +183,7 @@ module Magnetic
       case('diffrot'); call diffrot(amplaa,f,iay,xx,yy,zz)
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
+      case('ver-fluxlayer'); call vfluxlayer(amplaa,f,iaa,xx,yy,zz,x0aa,widthaa)
       case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
       case('halfcos-Bx'); call halfcos_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
