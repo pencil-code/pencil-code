@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.32 2002-08-02 07:09:09 brandenb Exp $
+; $Id: r.pro,v 1.33 2002-08-02 23:33:13 nilshau Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -27,6 +27,8 @@ if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
 if (ldensity)   then lnrho = fltarr(mx,my,mz  )*one
 if (lentropy)   then ss    = fltarr(mx,my,mz  )*one
 if (lmagnetic)  then aa    = fltarr(mx,my,mz,3)*one
+if (lradiation) then ff    = fltarr(mx,my,mz,3)*one
+if (lradiation) then ee    = fltarr(mx,my,mz  )*one
 if (lpscalar )  then lncc  = fltarr(mx,my,mz  )*one
 ;
 ;  Read startup parameters
@@ -44,7 +46,7 @@ if (cpar gt 0) then begin
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
-    Luminosity=par2.Luminosity & wheat=par2.wheat
+    luminosity=par2.luminosity & wheat=par2.wheat
     cool=par2.cool & wcool=par2.wcool
     Fbot=par2.Fbot
   endif
@@ -64,6 +66,9 @@ openr,1, datadir+'/'+file, /F77
   end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
     print,'hydro without entropy, but with magnetic field'
     readu,1,uu,lnrho,aa
+  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and ie ne 0 then begin
+    print,'hydro with entropy, density and radiation'
+    readu,1,uu,lnrho,ss,ee,ff
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
     print,'hydro with entropy, but no magnetic field'
     readu,1,uu,lnrho,ss
@@ -82,6 +87,9 @@ openr,1, datadir+'/'+file, /F77
   end else if iuu eq 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
     print,'just density (probably just good for tests)'
     readu,1,lnrho
+  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and ie ne 0 then begin
+    print,'just radiation
+    readu,1,ee,ff
   end else begin
     print,'not prepared...'
   end
@@ -113,6 +121,13 @@ if (ldensity) then $
 if (lentropy) then $
     print, FORMAT=fmt, 'ss     =', $
       minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+if (lradiation) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'ff_'+xyz[j]+'   =', $
+      minmax(ff(*,*,*,j)), mean(ff(*,*,*,j),/DOUBLE), rms(ff(*,*,*,j),/DOUBLE)
+if (lradiation) then $
+    print, FORMAT=fmt, 'ee     =', $
+      minmax(ee), mean(ee,/DOUBLE), rms(ee,/DOUBLE)
 if (lmagnetic) then begin
     for j=0,2 do $
       print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
