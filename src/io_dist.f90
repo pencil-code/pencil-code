@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.32 2002-09-21 16:35:50 dobler Exp $
+! $Id: io_dist.f90,v 1.33 2002-09-24 17:35:17 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -63,10 +63,13 @@ contains
 !***********************************************************************
     subroutine register_io()
 !
-!  dummy routine
+!  dummy routine, generates separate directory for each directory.
+!  VAR#-files are written to the directory directory_snap which will
+!  be the same as directory, unless specified otherwise.
+!
 !  20-sep-02/wolf: coded
 !
-      use Cdata, only: iproc,directory
+      use Cdata, only: iproc,directory,directory_snap
       use General
       use Sub
       use Mpicomm, only: lroot,stop_it
@@ -79,13 +82,15 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.32 2002-09-21 16:35:50 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.33 2002-09-24 17:35:17 brandenb Exp $")
 
 !
 !  set directory name for the output (one subdirectory for each processor)
+!  set directory_snap to directory if not already initialized.
 !
       call chn(iproc,chproc)
       directory='tmp/proc'//chproc
+      directory_snap=directory
 !
     endsubroutine register_io
 !***********************************************************************

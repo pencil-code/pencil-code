@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.84 2002-09-24 11:31:35 dobler Exp $
+! $Id: run.f90,v 1.85 2002-09-24 17:35:17 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.84 2002-09-24 11:31:35 dobler Exp $")
+             "$Id: run.f90,v 1.85 2002-09-24 17:35:17 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -184,7 +184,7 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          call wsnap(trim(directory)//'/VAR',f,.true.)
+          call wsnap(trim(directory_snap)//'/VAR',f,.true.)
           call wvid(trim(directory))
           !
           !  save snapshot every isnap steps in case the run gets interrupted

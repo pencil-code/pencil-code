@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.89 2002-09-24 11:17:07 nilshau Exp $
+! $Id: cdata.f90,v 1.90 2002-09-24 17:35:17 brandenb Exp $
 
 module Cdata
 
@@ -71,7 +71,7 @@ module Cdata
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-  character (len=12) :: directory
+  character (len=12) :: directory,directory_snap
   character (len=120) :: cvsid='[No CVS Id given]'
 
 endmodule Cdata

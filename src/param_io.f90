@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.52 2002-09-24 11:17:07 nilshau Exp $ 
+! $Id: param_io.f90,v 1.53 2002-09-24 17:35:17 brandenb Exp $ 
 
 module Param_IO
 
@@ -30,6 +30,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
+       directory_snap, &
        bcx,bcy,bcz, &
        ttransient
  
