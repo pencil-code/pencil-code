@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.100 2003-09-29 15:06:42 dobler Exp $
+! $Id: ionization.f90,v 1.101 2003-09-29 16:59:03 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -38,14 +38,14 @@ module Ionization
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
-  real :: xHe=0.1
+  real :: xHe=0.1,yHacc=1e-5
   logical :: lionstat=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,lionstat
+  namelist /ionization_init_pars/ xHe,yHacc,lionstat
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,lionstat
+  namelist /ionization_run_pars/ xHe,yHacc,lionstat
 
   contains
 
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.100 2003-09-29 15:06:42 dobler Exp $")
+           "$Id: ionization.f90,v 1.101 2003-09-29 16:59:03 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -214,9 +214,9 @@ module Ionization
          ss=f(l,m,n,iss)
          yH=f(l,m,n,iyH)
          call rtsafe(lnrho,ss,yH,iter)
+         f(l,m,n,iyH)=yH
          maxiter=max(iter,maxiter)
          avgiter=avgiter+iter
-         f(l,m,n,iyH)=yH
          lnTT_=(2./3.)*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                            +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
                            +xHe_term)/(1.+yH+xHe) &
@@ -248,8 +248,7 @@ module Ionization
       real,intent(in) :: lnrho,ee
       real, intent(out) :: ss,TT,yH
 
-      yH=0.5
-
+      yH=0.5*min(ee/ee_ion,1.0)
       call rtsafe_ee(lnrho,ee,yH)
       
       TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
@@ -269,9 +268,11 @@ module Ionization
       real, dimension(nx) ,intent(out) :: ss,TT,yH
       integer :: l
 
-      yH=0.5
+      yH=0.5*min(ee(1)/ee_ion,1.0)
+      call rtsafe_ee(lnrho(1),ee(1),yH(1))
 
-      do l=1,nx 
+      do l=2,nx 
+        yH(l)=yH(l-1)
         call rtsafe_ee(lnrho(l),ee(l),yH(l))
       enddo
 
@@ -292,7 +293,6 @@ module Ionization
       real, intent(out) :: ss,TT,yH
 
       yH=0.5
-
       call rtsafe_pp(lnrho,pp,yH)
       
       TT=pp/((1.+yH+xHe)*ss_ion*exp(lnrho))
@@ -313,9 +313,11 @@ module Ionization
       real, dimension(nx) ,intent(out) :: ss,TT,yH
       integer :: l
 
-      yH=0.5
+      yH(1)=0.5
+      call rtsafe_pp(lnrho(1),pp(1),yH(1))
 
-      do l=1,nx 
+      do l=2,nx 
+        yH(l)=yH(l-1)
         call rtsafe_pp(lnrho(l),pp(l),yH(l))
       enddo
 
@@ -512,13 +514,12 @@ module Ionization
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=1e-5
       integer              :: i
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 !
-      yHmax=1-2*epsilon(yH)
-      yHmin=2*tiny(yH)
+      yHmax=1-2*epsilon(yHacc)
+      yHmin=2*tiny(yHacc)
       dyH=1
       dyHold=dyH
       call saha(yH,lnrho,ss,f,df)
@@ -577,19 +578,15 @@ module Ionization
       real, intent (in)    :: lnrho,ee
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=1e-5
       integer              :: i
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 !
-      yHmax=min(ee/ee_ion,1.)*(1-2*epsilon(yH))
-      yHmin=2*tiny(yH)
+      yHmax=min(ee/ee_ion,1.0)*(1-2*epsilon(yHacc))
+      yH=min(yH,yHmax)
+      yHmin=2*tiny(yHacc)
       dyH=1
       dyHold=dyH
-      yH=min(yH,yHmax)
-!      yH=max(yH,yHmin)  ! not needed
-
-!write(0,*) '----------------------------------------------'
       call saha_ee(yH,lnrho,ee,f,df)
       do i=1,maxit
         if (present(iter)) iter=i ! checking with present() avoids segfault
@@ -628,7 +625,6 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 !
-!write(0,*) 'ee/ee_ion,yH=',ee/ee_ion,yH
       lnTT_=log(ee/ee_ion-yH)-log(1.5*(1.+yH+xHe))
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
@@ -644,13 +640,12 @@ module Ionization
       real, intent (in)    :: lnrho,pp
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=1e-5
       integer              :: i
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 !
-      yHmax=1-2*epsilon(yH)
-      yHmin=2*tiny(yH)
+      yHmax=1-2*epsilon(yHacc)
+      yHmin=2*tiny(yHacc)
       dyH=1
       dyHold=dyH
       call saha_pp(yH,lnrho,pp,f,df)
