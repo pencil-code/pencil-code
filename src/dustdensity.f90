@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.123 2004-09-08 13:49:19 ajohan Exp $
+! $Id: dustdensity.f90,v 1.124 2004-09-22 13:06:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -26,12 +26,13 @@ module Dustdensity
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd0=1.
   real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
   real :: scaleHd=1.
-  character (len=labellen) :: initnd='zero'
+  character (len=labellen) :: initnd='zero',idiffd='simplified'
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.,ludstickmax=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: lupw_ndmdmi=.false.,lupw_ndmi_1st=.false.,ldustnulling=.false.
   logical :: lnd_turb_diff=.false.,lmd_turb_diff=.false.,lmi_turb_diff=.false.
   logical :: ldeltaud_thermal=.true., ldeltaud_turbulent=.true.
+  logical :: ldiffusion_dust=.true.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, scaleHd, &
@@ -43,7 +44,7 @@ module Dustdensity
       rhod0, nd_diff, md_diff, mi_diff, ldustgrowth, &
       ldustcoagulation, lcalcdkern, supsatfac, ldustcontinuity, &
       lupw_ndmdmi, lupw_ndmi_1st, ldustnulling, ludstickmax, &
-      lnd_turb_diff, lmd_turb_diff, lmi_turb_diff
+      idiffd, lnd_turb_diff, lmd_turb_diff, lmi_turb_diff
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ndmt,i_rhodmt,i_rhoimt,i_ssrm,i_ssrmax
@@ -118,7 +119,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.123 2004-09-08 13:49:19 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.124 2004-09-22 13:06:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,17 +181,21 @@ module Dustdensity
       if (ldustgrowth .and. .not. lpscalar) &
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar')
-
-      if (lroot .and. nx*ny /= 1) print*,'initialize_dustdensity: WARNING -'// &
-          'dust equations only tested in one dimension (z).'
+!
+!  Turn off diffusion if zero diffusion coefficient
+!
+      if (maxval(nd_diff) == 0. .and. .not. lnd_turb_diff) then
+        ldiffusion_dust=.false.
+      else
 !
 !  Copy diffusion coefficient from input file to whole array
 !
-      do k=1,ndustspec
-        nd_diff_arr(:,k) = nd_diff(k)
-        if (lmdvar) md_diff_arr(:,k) = md_diff(k)
-        if (lmice)  mi_diff_arr(:,k) = mi_diff(k)
-      enddo
+        do k=1,ndustspec
+          nd_diff_arr(:,k) = nd_diff(k)
+          if (lmdvar) md_diff_arr(:,k) = md_diff(k)
+          if (lmice)  mi_diff_arr(:,k) = mi_diff(k)
+        enddo
+      endif
 !
 !  Special coagulation equation test cases require initialization of kernel
 !
@@ -362,6 +367,7 @@ module Dustdensity
       real, dimension (nx,ndustspec) :: nd,divud
       real, dimension (nx) :: del2nd,del2md,del2mi,del2lnrho,gndglnrho,gnd2
       real, dimension (nx) :: udgnd,udgmd,rho,rho1,TT1,cs2,cc,cc1,mfluxcond
+      real, dimension (nx) :: fdiffd,del6nd
       integer :: k
 !
       intent(in)  :: uud,divud
@@ -404,32 +410,67 @@ module Dustdensity
 !  Loop over dust layers
 !
       do k=1,ndustspec
-        if (lnd_turb_diff) nd_diff_arr(:,k) = nu_turb/(1.+Omega/tausd1(:,k))
-        if (lmdvar .and. lmd_turb_diff) md_diff_arr(:,k) = nu_turb
-        if (lmice  .and. lmi_turb_diff) mi_diff_arr(:,k) = nu_turb
 !
-!  Diffusion terms from drhod/dt = div(D*rho*grad(rhod/rho))
+!  Add diffusion on dust
 !
-        if (maxval(nd_diff_arr(:,k)) /= 0.) then
-          call del2(f,ind(k),del2nd)
-          if (.not. lmdvar) then
+        if (ldiffusion_dust) then
+!
+!  Get diffusion coefficient from parametrised turbulence
+!
+          if (lnd_turb_diff) nd_diff_arr(:,k) = nu_turb/(1.+Omega/tausd1(:,k))
+          if (lmdvar .and. lmd_turb_diff) md_diff_arr(:,k) = nu_turb
+          if (lmice  .and. lmi_turb_diff) mi_diff_arr(:,k) = nu_turb
+!
+!  Different diffusion types
+!
+          select case (idiffd)
+
+          case ('simplified')
+!
+!  Diffusion terms from dnd/dt = div(D*grad(nd))
+!
+            call del2(f,ind(k),del2nd)
+            call grad(f,ind(k),gnd(:,:,k))
+            if (ldustdensity_log) then
+              call dot2_mn(gnd(:,:,k),gnd2)
+              fdiffd = nd_diff_arr(:,k)*(del2nd + gnd2)
+            else
+              fdiffd = nd_diff_arr(:,k)*del2nd
+            endif
+
+          case ('dust-to-gas-ratio')
+!
+!  Diffusion terms from dnd/dt = div(D*rho*grad(nd/rho))
+!
+            call del2(f,ind(k),del2nd)
             call grad(f,ilnrho,glnrho)
             call del2(f,ilnrho,del2lnrho)
             call grad(f,ind(k),gnd(:,:,k))
             call dot_mn(gnd(:,:,k),glnrho,gndglnrho)
             if (ldustdensity_log) then
               call dot2_mn(gnd(:,:,k),gnd2)
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
-                  nd_diff_arr(:,k)*(del2nd + gnd2)! - gndglnrho - del2lnrho)
+              fdiffd = nd_diff_arr(:,k)*(del2nd + gnd2 - gndglnrho - del2lnrho)
             else
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
-                  nd_diff_arr(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
+              fdiffd = nd_diff_arr(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
             endif
-          else
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
-                nd_diff_arr(:,k)*del2nd
-          endif
+
+          case ('hyper6')
+!
+!  Hyper diffusion
+!
+            call del6(f,ind(k),del6nd)
+            fdiffd = nd_diff_arr(:,k)*del6nd
+
+          case default
+
+            call stop_it("dndmd_dt: No such diffusion type")
+
+          endselect
+
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + fdiffd
+
         endif
+        
         if (lmdvar .and. maxval(md_diff_arr(:,k)) /= 0.) then
           call del2(f,imd(k),del2md)
           df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff_arr(:,k)*del2md
