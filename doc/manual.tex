@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.78 2002-08-13 06:52:14 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -28,7 +28,7 @@
 %     \command,
 %     \cmd:     A command line:
 %                   use \command{rm -f *} at your own risk
-%     \option:  An option (command line or simialr):
+%     \option:  An option (command line or similar):
 %                   use CVS with the option \option{-q}
 %     \dfn:     A definition:
 %                   a \dfn{definition} is a specification sufficiently
@@ -219,7 +219,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.77 $ $}
+\date{\today,~ $ $Revision: 1.78 $ $}
 
 % ====================================================================== %
 
@@ -248,7 +248,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.77 $ $}
+  \emph{\today,~ $ $Revision: 1.78 $ $}
 
 
 \end{center}
@@ -620,7 +620,7 @@ Apart from the \env{PATH} variable, the environment variable
 
 \paragraph{Note 1}
 The \code{<IDL_DEFAULT>} meachnism does not work for IDL versions 5.2 or
-older. In this case, you will have to edit the path manually, ora adapt
+older. In this case, you will have to edit the path manually, or adapt
 the \file{sourceme} scripts.
 
 \paragraph{Note 2}
@@ -1854,9 +1854,9 @@ the latest information, you should have a look at the code.
                    $\Fv_{\rm visc}=\nu\Laplace\uv$
                  \item[\code{'rho_nu-const'}] -- viscous force for
                    $\mu\equiv\varrho\nu=\const$,
-                   $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv)$
+                   $\Fv_{\rm visc}=(\mu/\varrho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$
                  \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
-                   $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv
+                   $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
                     + 2\mathsf{S}\cdot\grad\ln\varrho)$
                  \end{description}
                  \\
@@ -1932,12 +1932,14 @@ the latest information, you should have a look at the code.
   \var{cool} [$0.$], \\
   \var{wcool} [$0.1$]
                & strength and width of cooling region. \\
-  \var{rcool} [$1.$], \\
+  \var{rcool} [$1.$]
                & radius of cooling region: cool for
-                 $|\xv| \ge \mbox{\var{rcool}}$.
+                 $|\xv| \ge \mbox{\var{rcool}}$.\\
   \var{Fbot} [start]
-               & heat flux for boundary condition \option{c1}.
-                 For polytropic atmospheres calculated by \cmd{start.x}. \\
+               & heat flux for bottom boundary condition \option{c1}.
+                 For polytropic atmospheres, if \var{Fbot} is not set, it will
+                 be calculated from the value of \var{hcond0} in \cmd{start.x},
+                 provided the entropy boundary condition is set to \option{c1}. \\
   \var{chi_t} [$0.$]
                & entropy diffusion coefficient for diffusive term
                  $\partial s/\partial t = \ldots + \chi_{\rm t}\Laplace s$
@@ -3223,7 +3225,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $ $}
+$ $Id: manual.tex,v 1.78 2002-08-13 06:52:14 brandenb Exp $ $}
 
 
 \end{document}
@@ -3245,7 +3247,7 @@ $ $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $ $}
 % LocalWords:  stdout oum zaver bxmz bymz nl timestr lp ip ip iper iperx ztop
 % LocalWords:  hcond whcond mpoly isothtop ampl init urand cs nt dt cdt CFL bc
 % LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
-% LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho Fheat tvid
+% LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid
 % LocalWords:  wcool iforce relhel tsnap hystrostatic isothermality initaa jbm
 % LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
 % LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
@@ -3265,7 +3267,7 @@ $ $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $ $}
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
 % LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
 % LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid ke
-% LocalWords:  nygrid nzgrid ccc widthss ttrans brandenb Nils Pariev tcsh ls ln
-% LocalWords:  cincinnatus CEST mx mz lnrho pf pararellism nprocy ncpus nprocz
+% LocalWords:  nygrid nzgrid ccc widthss brandenb Nils Pariev tcsh ls ln
+% LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz
 % LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB
 % LocalWords:  ttransient
