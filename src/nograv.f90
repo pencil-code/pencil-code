@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.4 2002-06-01 02:56:21 brandenb Exp $
+! $Id: nograv.f90,v 1.5 2002-06-03 14:59:48 dobler Exp $
 
 module Gravity
 
@@ -11,8 +11,8 @@ module Gravity
   implicit none
 
   integer :: dummy              ! We cannot define empty namelists
-  namelist /grav_z_init_pars/ dummy
-  namelist /grav_z_run_pars/  dummy
+  namelist /grav_init_pars/ dummy
+  namelist /grav_run_pars/  dummy
 
   contains
 
@@ -37,8 +37,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nograv.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-06-03 14:59:48 $")
 !
       lgrav = .false.
       lgravz = .false.

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.12 2002-06-03 07:02:21 brandenb Exp $
+! $Id: hydro.f90,v 1.13 2002-06-03 14:59:48 dobler Exp $
 
 module Hydro
 
@@ -59,8 +59,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-06-03 07:02:21 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-06-03 14:59:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,8 +148,7 @@ module Hydro
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-!AB: we supply y(m), but seem to expect array??
-!AB:      call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
 !          call potential(rr,pot) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
 

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.10 2002-06-01 02:56:21 brandenb Exp $
+! $Id: grav_z.f90,v 1.11 2002-06-03 14:59:48 dobler Exp $
 
 module Gravity
 
@@ -11,10 +11,10 @@ module Gravity
 
   implicit none
 
-  namelist /grav_z_init_pars/ &
+  namelist /grav_init_pars/ &
        z1,z2,ztop,gravz
 
-  namelist /grav_z_run_pars/ &
+  namelist /grav_run_pars/ &
        gravz
 
   contains
@@ -39,8 +39,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-06-03 14:59:48 $")
 !
       lgrav = .true.
       lgravz = .true.

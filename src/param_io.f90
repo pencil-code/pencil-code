@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.5 2002-06-03 07:02:21 brandenb Exp $ 
+! $Id: param_io.f90,v 1.6 2002-06-03 14:59:48 dobler Exp $ 
 module Param_IO
 
 !
@@ -34,7 +34,7 @@ module Param_IO
                      read(1,NML=init_pars         )
       if (lhydro)    read(1,NML=hydro_init_pars   )
       ! forcing needs no init parameters
-      if (lgravz)    read(1,NML=grav_z_init_pars  )
+      if (lgrav)     read(1,NML=grav_init_pars  )
       if (lentropy)  read(1,NML=entropy_init_pars )
       if (lmagnetic) read(1,NML=magnetic_init_pars)
       close(1)
@@ -45,7 +45,7 @@ module Param_IO
                        write(*,NML=init_pars         )
         if (lhydro   ) write(*,NML=hydro_init_pars   )
         ! forcing needs no init parameters
-        if (lgravz)    write(*,NML=grav_z_init_pars  )
+        if (lgrav)     write(*,NML=grav_init_pars  )
         if (lentropy ) write(*,NML=entropy_init_pars )
         if (lmagnetic) write(*,NML=magnetic_init_pars)
       endif
@@ -76,7 +76,7 @@ module Param_IO
                      read(1,NML=run_pars         )
       if (lhydro   ) read(1,NML=hydro_run_pars )
       if (lforcing ) read(1,NML=forcing_run_pars )
-      if (lgravz   ) read(1,NML=grav_z_run_pars  )
+      if (lgrav    ) read(1,NML=grav_run_pars  )
       if (lentropy ) read(1,NML=entropy_run_pars )
       if (lmagnetic) read(1,NML=magnetic_run_pars)
       close(1)
@@ -131,7 +131,7 @@ module Param_IO
                        write(*,NML=run_pars         )
         if (lhydro   ) write(*,NML=hydro_run_pars   )
         if (lforcing ) write(*,NML=forcing_run_pars )
-        if (lgravz   ) write(*,NML=grav_z_run_pars  )
+        if (lgrav    ) write(*,NML=grav_run_pars  )
         if (lentropy ) write(*,NML=entropy_run_pars )
         if (lmagnetic) write(*,NML=magnetic_run_pars)
       endif
@@ -153,7 +153,7 @@ module Param_IO
                        write(1,NML=init_pars         )
         if (lhydro   ) write(1,NML=hydro_init_pars   )
         ! no input parameters for forcing
-        if (lgravz   ) write(1,NML=grav_z_init_pars  )
+        if (lgrav    ) write(1,NML=grav_init_pars  )
         if (lentropy ) write(1,NML=entropy_init_pars )
         if (lmagnetic) write(1,NML=magnetic_init_pars)
         ! The following parameters need to be communicated to IDL
@@ -176,7 +176,7 @@ module Param_IO
                        read(1,NML=init_pars         )
         if (lhydro   ) read(1,NML=hydro_init_pars   )
 !??     if (lforcing ) read(1,NML=forcing_init_pars )
-        if (lgravz   ) read(1,NML=grav_z_init_pars  )
+        if (lgrav    ) read(1,NML=grav_init_pars  )
         if (lentropy ) read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
         close(1)
@@ -204,7 +204,7 @@ module Param_IO
                        write(1,NML=run_pars         )
         if (lhydro   ) write(1,NML=hydro_run_pars   )
         if (lforcing ) write(1,NML=forcing_run_pars )
-        if (lgravz   ) write(1,NML=grav_z_run_pars  )
+        if (lgrav    ) write(1,NML=grav_run_pars  )
         if (lentropy ) write(1,NML=entropy_run_pars )
         if (lmagnetic) write(1,NML=magnetic_run_pars)
       endif
