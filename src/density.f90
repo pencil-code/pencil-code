@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.84 2003-05-29 07:48:14 brandenb Exp $
+! $Id: density.f90,v 1.85 2003-05-30 16:08:19 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -36,7 +36,7 @@ module Density
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_ekin=0,i_rhom=0
+  integer :: i_ekin=0,i_rhom=0,i_totekin=0
 
   contains
 
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.84 2003-05-29 07:48:14 brandenb Exp $")
+           "$Id: density.f90,v 1.85 2003-05-30 16:08:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -460,19 +460,21 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ekin=0; i_rhom=0
+        i_ekin=0; i_rhom=0; i_totekin=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'totekin',i_totekin)
         call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
+      write(3,*) 'i_totekin=',i_totekin
       write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.137 2003-05-30 15:56:15 mee Exp $
+! $Id: equ.f90,v 1.138 2003-05-30 16:08:19 mee Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.137 2003-05-30 15:56:15 mee Exp $")
+           "$Id: equ.f90,v 1.138 2003-05-30 16:08:19 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -352,6 +352,7 @@ module Equ
             ! if(lhydro) then
             rho=exp(f(l1:l2,m,n,ilnrho))
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
+            if (i_totekin/=0) call integrate_mn_name(.5*rho*u2,i_totekin)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
           endif
           !
