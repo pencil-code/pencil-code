@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.21 2003-02-19 09:11:56 nilshau Exp $
+! $Id: wsnaps.f90,v 1.22 2003-04-05 19:05:07 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -26,6 +26,7 @@ contains
       use Cdata
       use Mpicomm
       use Boundcond
+      use Radiation
       use Sub
       use Io
 !
@@ -57,7 +58,9 @@ contains
         call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call update_ghosts(a)
-          call output(chsnap//ch,a,mvar)
+          call output(chsnap//ch,a,mvar,noclose=.true.)
+          call output_radiation(lun_output)
+          close(lun_output)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
         endif
 !

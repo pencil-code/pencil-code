@@ -1,4 +1,7 @@
-! $Id: feautrier.f90,v 1.9 2003-04-03 12:23:31 theine Exp $
+! $Id: feautrier.f90,v 1.10 2003-04-05 19:05:07 brandenb Exp $
+
+!!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
+!!!  or it may be combined with radiation_ray.
 
 module Radiation
 
@@ -15,7 +18,7 @@ module Radiation
 !
 !  default values for one pair of vertical rays
 !
-  logical :: nocooling=.false.
+  logical :: nocooling=.false.,output_Qrad=.false.
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -28,7 +31,7 @@ module Radiation
        radx,rady,radz,rad2max
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,nocooling
+       radx,rady,radz,rad2max,nocooling,output_Qrad
 
   contains
 
@@ -54,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.9 2003-04-03 12:23:31 theine Exp $")
+           "$Id: feautrier.f90,v 1.10 2003-04-05 19:05:07 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -187,6 +190,24 @@ module Radiation
       enddo
 !
     endsubroutine radiative_cooling
+!***********************************************************************
+    subroutine output_radiation(lun)
+!
+!  Optional output of derived quantities along with VAR-file
+!
+!   5-apr-03/axel: coded
+!
+      use Cdata
+!
+      integer, intent(in) :: lun
+!
+!  identifier
+!
+!     if(lroot.and.headt) print*,'output_radiation'
+!
+      if(output_Qrad) write(lun) Qrad
+!
+    endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.50 2003-01-15 17:08:38 mee Exp $
+! $Id: io_dist.f90,v 1.51 2003-04-05 19:05:07 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -22,6 +22,8 @@ module Io
     module procedure output_pencil_scal
   endinterface
 
+  ! define unique logical unit number for output calls
+  integer :: lun_output=91
 
   !
   ! Interface to external C function(s).
@@ -80,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.50 2003-01-15 17:08:38 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.51 2003-04-05 19:05:07 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -153,7 +155,7 @@ contains
       if (lserial_io) call end_serialize()
     endsubroutine input
 !***********************************************************************
-    subroutine output_vect(file,a,nn)
+    subroutine output_vect(file,a,nn,noclose)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for vector field
@@ -163,21 +165,28 @@ contains
       use Mpicomm, only: start_serialize,end_serialize
 !
       integer :: nn
+      logical :: close=.true.
+      logical, intent(in), optional :: noclose
       real, dimension (mx,my,mz,nn) :: a
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
       !
       if (lserial_io) call start_serialize()
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z,dx,dy,dz,deltay
-      close(91)
+      open(lun_output,file=file,form='unformatted')
+      write(lun_output) a
+      write(lun_output) t,x,y,z,dx,dy,dz,deltay
+!
+!  wsnap closes file itself, because it may append other quantities
+!
+      if(present(noclose)) close=.not.noclose
+      if(close) close(lun_output)
+!
       if (lserial_io) call end_serialize()
 !
     endsubroutine output_vect
 !***********************************************************************
-    subroutine output_scal(file,a,nn)
+    subroutine output_scal(file,a,nn,noclose)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for scalar field
@@ -187,16 +196,23 @@ contains
       use Mpicomm, only: lroot,stop_it,start_serialize,end_serialize
 !
       integer :: nn
+      logical :: close=.true.
+      logical, intent(in), optional :: noclose
       real, dimension (mx,my,mz) :: a
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
       if (lserial_io) call start_serialize()
-      open(91,file=file,form='unformatted')
-      write(91) a
-      write(91) t,x,y,z,dx,dy,dz,deltay
-      close(91)
+      open(lun_output,file=file,form='unformatted')
+      write(lun_output) a
+      write(lun_output) t,x,y,z,dx,dy,dz,deltay
+!
+!  wsnap closes file itself, because it may append other quantities
+!
+      if(present(noclose)) close=.not.noclose
+      if(close) close(lun_output)
+!
       if (lserial_io) call end_serialize()
     endsubroutine output_scal
 !***********************************************************************

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.163 2003-04-04 16:47:16 anders Exp $
+### $Id: Makefile,v 1.164 2003-04-05 19:05:07 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -234,7 +234,7 @@ initcond.o:  initcond.f90 cdata.o general.o
 kepvor.o : kepvor.f90 cdata.o general.o
 noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
-wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o
+wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o $(RADIATION).o
 #
 $(MPICOMM).o:      $(MPICOMM).f90 cdata.o general.o $(FFT).o 
 $(GLOBAL).o:       $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
@@ -244,7 +244,7 @@ $(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
 $(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC) $(GLOBAL).o  $(VISCOSITY).o $(HYDRO).o $(IO).o slices.o $(INTERSTELLAR).o $(IONIZATION).o
 $(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC) $(DENSITY).o slices.o $(FFT).o $(GRAVITY).o
-$(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC) $(DENSITY).o
+$(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC) $(DENSITY).o $(IONIZATION).o
 $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC) $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC) $(GRAVITY).o slices.o
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC)
