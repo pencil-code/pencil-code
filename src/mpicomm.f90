@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.87 2003-07-01 18:46:34 brandenb Exp $
+! $Id: mpicomm.f90,v 1.88 2003-07-02 17:14:33 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -572,6 +572,128 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
+    subroutine radcomm_yz_send(lrad,radx0,Ibuf_yz,tag_yz)
+!
+!  send intensities in x direction
+!  (At the moment we have only one processor in x, so this doesn't do anything)
+!
+!   2-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: lrad,radx0,nbuf_yz,idest,tag_yz
+      real, dimension(radx0,my,mz) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+      if(lrad>0 .and. ipx/=nprocx-1) then
+         !  initiate send
+         call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+                     MPI_COMM_WORLD,isend_yz,ierr)
+         !  finalize straight away
+         call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_yz_send
+!***********************************************************************
+    subroutine radcomm_yz_recv(lrad,radx0,Ibuf_yz,tag_yz)
+!
+!  receive intensities from x direction
+!  (At the moment we have only one processor in x, so this doesn't do anything)
+!
+!   2-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: lrad,radx0,nbuf_yz,idest,tag_yz
+      real, dimension(radx0,my,mz) :: Ibuf_yz
+!
+!  buffer size
+!
+      nbuf_yz=radx0*my*mz
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+      if(lrad>0 .and. ipx==0) then
+         !call "lower boundary"
+         Ibuf_yz=0.0 !(for the time being)
+      elseif(lrad<0 .and. ipx==nprocx-1) then
+         !call "upper boundary"
+         Ibuf_yz=0.0 !(for the time being)
+      else
+         print*,'Oops: we have only one processor in x'
+         idest=ipx-sign(1,lrad)
+         !  initiate receive
+         call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
+                     MPI_COMM_WORLD,irecv_yz,ierr)
+         !  finalize straight away
+         call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_yz_recv
+!***********************************************************************
+    subroutine radcomm_zx_send(mrad,rady0,Ibuf_zx,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from send_Irad0_xy
+!
+      integer :: mrad,rady0,nbuf_zx,idest,tag_zx
+      real, dimension(mx,rady0,mz) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+      if(mrad>0 .and. ipy/=nprocy-1) then
+         !  initiate send
+         call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+                        MPI_COMM_WORLD,isend_zx,ierr)
+         !  finalize straight away
+         call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_zx_send
+!***********************************************************************
+    subroutine radcomm_zx_recv(mrad,rady0,Ibuf_zx,tag_zx)
+!
+!  send intensities
+!
+!   1-jul-03/axel: adapted from recv_Irad0_xy
+!
+      integer :: mrad,rady0,nbuf_zx,idest,tag_zx
+      real, dimension(mx,rady0,mz) :: Ibuf_zx
+!
+!  buffer size
+!
+      nbuf_zx=mx*rady0*mz
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+print*,'radcomm_zx_recv: mrad,ipy,nprocy=',mrad,ipy,nprocy
+      if(mrad>0 .and. ipy==0) then
+         !call "lower boundary"
+         Ibuf_zx=0.7 !(for the time being)
+      elseif(mrad<0 .and. ipy==nprocy-1) then
+         !call "upper boundary"
+         Ibuf_zx=0. !(for the time being)
+      else
+         idest=ipy-sign(mrad,1)
+         !  initiate receive
+         call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
+                        MPI_COMM_WORLD,irecv_zx,ierr)
+         !  finalize straight away
+         call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_zx_recv
+!***********************************************************************
     subroutine radcomm_xy_send(nrad,radz0,Ibuf_xy,tag_xy)
 !
 !  send intensities
@@ -593,7 +715,6 @@ module Mpicomm
          call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                         MPI_COMM_WORLD,isend_xy,ierr)
          !  finalize straight away
-         !
          call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
       endif
 !
@@ -622,7 +743,7 @@ module Mpicomm
          !call "upper boundary"
          Ibuf_xy=0. !(for the time being)
       else
-         idest=ipz-sign(nrad,1)
+         idest=ipz-sign(1,nrad)
          !  initiate receive
          call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
@@ -631,150 +752,6 @@ module Mpicomm
       endif
 !
     endsubroutine radcomm_xy_recv
-!***********************************************************************
-    subroutine send_Irad0_xy(Ibuf_xy,idest,radx0,rady0,radz0,tag_xy)
-!
-!  send intensities
-!
-!  29-jun-03/axel: coded
-!
-      integer :: nbuf_xy,idest,tag_xy,radx0,rady0,radz0
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
-!
-!  buffer size
-!
-      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-!
-!  initiate send
-!
-      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
-                     MPI_COMM_WORLD,isend_xy,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
-!
-    endsubroutine send_Irad0_xy
-!***********************************************************************
-    subroutine recv_Irad0_xy(Ibuf_xy,idest,radx0,rady0,radz0,tag_xy)
-!
-!  send intensities
-!
-!  29-jun-03/axel: coded
-!
-      integer :: nbuf_xy,idest,tag_xy,radx0,rady0,radz0
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
-!
-!  buffer size
-!
-      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
-!
-!  initiate receive
-!
-      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
-                     MPI_COMM_WORLD,irecv_xy,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
-!
-    endsubroutine recv_Irad0_xy
-!***********************************************************************
-    subroutine send_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
-!
-!  send intensities
-!
-!   1-jul-03/axel: adapted from send_Irad0_xy
-!
-      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
-      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
-!
-!  buffer size
-!
-      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
-!
-!  initiate send
-!
-      call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
-                     MPI_COMM_WORLD,isend_yz,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
-!
-    endsubroutine send_Irad0_yz
-!***********************************************************************
-    subroutine recv_Irad0_yz(Ibuf_yz,idest,radx0,rady0,radz0,tag_yz)
-!
-!  send intensities
-!
-!   1-jul-03/axel: adapted from recv_Irad0_xy
-!
-      integer :: nbuf_yz,idest,tag_yz,radx0,rady0,radz0
-      real, dimension(radx0,my,mz,radx0,-rady0:rady0,-radz0:radz0) :: Ibuf_yz
-!
-!  buffer size
-!
-      nbuf_yz=radx0*my*mz*radx0*(2*rady0+1)*(2*radz0+1)
-!
-!  initiate receive
-!
-      call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,tag_yz, &
-                     MPI_COMM_WORLD,irecv_yz,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
-!
-    endsubroutine recv_Irad0_yz
-!***********************************************************************
-    subroutine send_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
-!
-!  send intensities
-!
-!   1-jul-03/axel: adapted from send_Irad0_xy
-!
-      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
-      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
-!
-!  buffer size
-!
-      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
-!
-!  initiate send
-!
-      call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
-                     MPI_COMM_WORLD,isend_zx,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
-!
-    endsubroutine send_Irad0_zx
-!***********************************************************************
-    subroutine recv_Irad0_zx(Ibuf_zx,idest,radx0,rady0,radz0,tag_zx)
-!
-!  send intensities
-!
-!   1-jul-03/axel: adapted from recv_Irad0_xy
-!
-      integer :: nbuf_zx,idest,tag_zx,radx0,rady0,radz0
-      real, dimension(mx,rady0,mz,-radx0:radx0,rady0,-radz0:radz0) :: Ibuf_zx
-!
-!  buffer size
-!
-      nbuf_zx=mx*rady0*mz*(2*radx0+1)*rady0*(2*radz0+1)
-!
-!  initiate receive
-!
-      call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,tag_zx, &
-                     MPI_COMM_WORLD,irecv_zx,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
-!
-    endsubroutine recv_Irad0_zx
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
