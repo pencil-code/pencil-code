@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.114 2002-08-03 22:32:41 dobler Exp $
+! $Id: entropy.f90,v 1.115 2002-08-04 17:29:38 brandenb Exp $
 
 module Entropy
 
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.114 2002-08-03 22:32:41 dobler Exp $")
+           "$Id: entropy.f90,v 1.115 2002-08-04 17:29:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -401,9 +401,13 @@ module Entropy
         !
         !  calculate Fbot if it has not been set in run.in
         !
-        if ((Fbot==impossible) .and. (bcz1(ient)=='c1')) then
-          Fbot = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-          if (lroot) print*, 'Calculated Fbot = ', Fbot
+        if (Fbot==impossible) then
+          if (bcz1(ient)=='c1') then
+            Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+            if (lroot) print*, 'Calculated Fbot = ', Fbot
+          else
+            Fbot=0.
+          endif
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.76 2002-07-29 09:13:22 brandenb Exp $
+! $Id: magnetic.f90,v 1.77 2002-08-04 17:29:38 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.76 2002-07-29 09:13:22 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.77 2002-08-04 17:29:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -121,8 +121,7 @@ module Magnetic
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=1.)
       case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz, &
                                             radius,epsilonaa)
-      case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz, &
-                                               z0aa,widthaa)
+      case('hor-fluxlayer'); call hlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
