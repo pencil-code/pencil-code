@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.58 2002-07-19 01:01:27 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.59 2002-07-19 13:02:35 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -182,7 +182,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.58 $ $}
+\date{\today,~ $ $Revision: 1.59 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.58 $ $}
+  \emph{\today,~ $ $Revision: 1.59 $ $}
 
 
 \end{center}
@@ -664,21 +664,20 @@ You are now ready to start the code:
   Non-MPI version
   Thu Jul 18 16:25:20 CEST 2002
      src/start.x
-  CVS: hydro.f90          v. 1.47         (dobler    ) 2002/07/16 08:29:44
+  CVS: hydro.f90          v. 1.48         (dobler    ) 2002/07/19 10:26:01
   {\sl{}[\ldots]}
-  CVS: start.in           v. 1.14         (dobler    ) 2002/07/09 18:38:17
+  CVS: start.in           v. 1.2          (dobler    ) 2002/07/19 10:23:57
    mx,my,mz=          38          38          38
    
-   Adding random uu fluctuations
+   uu: up-down
    piecewise polytropic vertical stratification (lnrho)
    init_lnrho: cs2bot,cs2top=   1.450000      0.3333330    
    piecewise polytropic vertical stratification (ss)
    Note: mpoly{1,2} override hcond{1,2} to    2.000000      0.5000000    
    
-  0.030u 0.010s 0:00.08 50.0\%     0+0k 0+0io 122pf+0w
+  0.060u 0.000s 0:00.24 25.0\%     0+0k 0+0io 126pf+0w
   
-  Thu Jul 18 16:25:21 CEST 2002
-
+  Fri Jul 19 13:04:38 CEST 2002
 \end{alltt}
 This runs \file{src/start.x} to construct an initial condition based on
 the parameters set in \file{start.in}.
@@ -735,27 +734,27 @@ The relevant part of the code's output looks like\\
 \bigskip
 \begin{small}
 \begin{alltt}
- ---it------t--------dt--------urms------umax------rhom------ssm-------dtc----
-      0     0.00  7.603E-03   0.04939   0.08525  14.47076  -0.44601  4.21E-01
-     50     0.37  7.423E-03   0.00585   0.02033  14.47033  -0.44748  4.11E-01
-    100     0.74  7.520E-03   0.00597   0.01676  14.47050  -0.44789  4.17E-01
-    150     1.11  7.220E-03   0.00604   0.01696  14.47026  -0.44677  4.00E-01
-    200     1.47  7.093E-03   0.00412   0.01111  14.46917  -0.44648  3.93E-01
-    250     1.82  7.094E-03   0.00323   0.00880  14.46890  -0.44717  3.93E-01
-    300     2.18  7.094E-03   0.00293   0.00676  14.47013  -0.44768  3.93E-01
-    350     2.53  7.025E-03   0.00285   0.00693  14.47027  -0.44765  3.89E-01
-    400     2.88  6.943E-03   0.00233   0.00628  14.47022  -0.44772  3.85E-01
-    450     3.23  6.932E-03   0.00280   0.00901  14.46989  -0.44807  3.84E-01
-    500     3.57  6.927E-03   0.00280   0.00782  14.46906  -0.44796  3.84E-01
-    550     3.92  6.827E-03   0.00235   0.00675  14.46849  -0.44750  3.78E-01
-    600     4.26  6.770E-03   0.00202   0.00648  14.46838  -0.44798  3.75E-01
-    650     4.60  6.908E-03   0.00274   0.00714  14.46884  -0.44949  3.83E-01
-    700     4.95  6.992E-03   0.00175   0.00707  14.46894  -0.45078  3.88E-01
-    750     5.29  6.980E-03   0.00245   0.00865  14.46868  -0.45115  3.87E-01
-    800     5.64  6.899E-03   0.00400   0.01146  14.46840  -0.45052  3.82E-01
-    850     5.98  6.771E-03   0.00410   0.01369  14.46800  -0.44956  3.75E-01
-    900     6.32  6.687E-03   0.00352   0.01527  14.46770  -0.44909  3.71E-01
-    950     6.65  6.687E-03   0.00347   0.01641  14.46781  -0.44927  3.71E-01
+  ---it------t--------dt--------urms------umax------rhom------ssm-------dtc----
+       0     0.00  7.603E-03   0.00633   0.09560   14.4708  -0.44601  4.21E-01
+      50     0.38  7.596E-03   0.00599   0.04438   14.4707  -0.44753  4.21E-01
+     100     0.76  7.581E-03   0.00679   0.03343   14.4704  -0.44775  4.20E-01
+     150     1.13  7.254E-03   0.00647   0.02703   14.4701  -0.44667  4.02E-01
+     200     1.49  7.119E-03   0.00498   0.01818   14.4692  -0.44667  3.95E-01
+     250     1.85  7.103E-03   0.00409   0.01724   14.4692  -0.44729  3.94E-01
+     300     2.20  7.048E-03   0.00381   0.01391   14.4700  -0.44763  3.91E-01
+     350     2.55  7.047E-03   0.00362   0.01344   14.4702  -0.44770  3.91E-01
+     400     2.90  6.948E-03   0.00321   0.01262   14.4702  -0.44771  3.85E-01
+     450     3.24  6.902E-03   0.00333   0.01419   14.4697  -0.44795  3.83E-01
+     500     3.59  6.938E-03   0.00324   0.01327   14.4690  -0.44792  3.85E-01
+     550     3.93  6.853E-03   0.00292   0.01326   14.4685  -0.44760  3.80E-01
+     600     4.27  6.795E-03   0.00284   0.01267   14.4685  -0.44814  3.77E-01
+     650     4.62  6.913E-03   0.00330   0.01107   14.4688  -0.44960  3.83E-01
+     700     4.96  6.983E-03   0.00276   0.01323   14.4689  -0.45079  3.87E-01
+     750     5.31  6.977E-03   0.00347   0.01322   14.4687  -0.45108  3.87E-01
+     800     5.66  6.882E-03   0.00469   0.01428   14.4683  -0.45043  3.81E-01
+     850     6.00  6.747E-03   0.00483   0.01424   14.4680  -0.44953  3.74E-01
+     900     6.33  6.669E-03   0.00463   0.01382   14.4678  -0.44917  3.70E-01
+     950     6.67  6.686E-03   0.00488   0.01599   14.4679  -0.44937  3.71E-01
 \end{alltt}
 \end{small}
 \bigskip
@@ -768,9 +767,9 @@ and lists
 \item the rms velocity \var{urms}$=\sqrt{\left<\uv^2\right>}$;
 \item the maximum velocity \var{umax}$=\max |\uv|$;
 \item the mean density \var{rhom}$=\left<\varrho\right>$;
-\item the mean entropy \var{ssm}$=\left<s/c_p\right>$;
+\item the mean entropy \var{ssm}$=\left<s\right>/c_p$;
 \item the time step in units of the acoustic Courant step
-  \var{dtc}$=\delta t/[\min(\delta x,\delta y,\delta z)\,cs0]$.
+  \var{dtc}$=\delta t/({\cs}_0\,\delta x_{\rm min})$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
 \file{print.in}, see Sec.~\ref{diagnostic-IO}.
@@ -790,7 +789,7 @@ corresponds to the state after 1000 time steps.
     [width=1\textwidth,keepaspectratio]%
     {pvert1}
   \caption{Like in Fig.~\ref{Fig-pvert0}, but after 1000 time steps at
-    time $t=6.99$.
+    time $t=7.0$.
     The dashed lines represents the initial condition.
   }
   \label{Fig-pvert1}
@@ -985,7 +984,7 @@ according to the iterative procedure
 \end{equation}
 For a three-step scheme we have $i=1,...,3$.
 In order to advance the variable $u$ from $u^{(n)}$ at time $t^{(n)}$
-to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta h$ we set in \Eq{iterform0}
+to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta t$ we set in \Eq{iterform0}
 \begin{equation}
   u_0=u^{(n)}
   \quad\mbox{and, after the last step,}\quad
@@ -1015,24 +1014,29 @@ simple test problems where an analytic solution was known.
 \begin{table}[htb]
   \centering
   \caption{
-    Possible coefficients for different $2N$-type third-order Runge-Kutta
+    Coefficients for different $2N$-type third-order Runge-Kutta
     schemes.
+    The coefficients $c_i$ (which are determined by the $\alpha_i$,
+    $\beta_i$) give the time for each substep,
+    $t_i = t_0 + c_i \delta t$
     }\label{T-2N-RK3}
   \vspace{12pt}
-  \begin{tabular}{l@{\quad}l@{\quad}ccccccccc}
+  \begin{tabular}{l@{\quad}ccc@{\quad}cc@{\quad}ccc}
     \toprule
-    scheme            & \multicolumn{3}{c}{intermediate fractions of $\delta t$}
-                                      & $\alpha_2$
-                                                 & $\alpha_3$
-                                                            & $\beta_1$
-                                                                    &$\beta_2$
-                                                                            & $\beta_3$\\
+    scheme            & $c_1$
+                            & $c_2$
+                                    & $c_3$
+                                              & $\alpha_2$
+                                                         & $\alpha_3$
+                                                                    & $\beta_1$
+                                                                            &$\beta_2$
+                                                                                    & $\beta_3$\\
     \midrule
-    symmetric         & 0 & 1/3 & 2/3   &  $-2/3$  &   $-1$   & $1/3$ &  $1$  & $1/2$ \\
+    symmetric         & $0$ & $1/3$ & $2/3$   &  $-2/3$  &   $-1$   & $1/3$ &  $1$  & $1/2$ \\
     {}[predictor/corrector]
-                      & 0 & 1/2 & 1     &  $-1/4$  &  $-4/3$  & $1/2$ & $2/3$ & $1/2$ \\
-    inhomogeneous     & 0 & 15/32 & 4/9 & $-17/32$ & $-32/27$ & $1/4$ & $8/9$ & $3/4$ \\
-    Williamson (1980) & 0 & 4/9 & 15/32 &  $-5/9$  &$-153/128$& $1/3$ &$15/16$& $8/15$\\
+                      & $0$ & $1/2$ & $1$     &  $-1/4$  &  $-4/3$  & $1/2$ & $2/3$ & $1/2$ \\
+    inhomogeneous     & $0$ & $15/32$ & $4/9$ & $-17/32$ & $-32/27$ & $1/4$ & $8/9$ & $3/4$ \\
+    Williamson (1980) & $0$ & $4/9$ & $15/32$ &  $-5/9$  &$-153/128$& $1/3$ &$15/16$& $8/15$\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -2874,16 +2878,16 @@ samples of the code.
 
 % ---------------------------------------------------------------------- %
 
-\subsubsection{Three-layered convection model}
+\subsection{Three-layered convection model}
 
 In Sect.~\ref{S-getting-started} we have shown the early stages of the
 convection model located in \file{samples/conv-slab}.
 To arrive at fully developed convection, you will need to run the code for
 a larger number of time steps.
 Figure~\ref{Fig-pvert2} shows the vertical profiles of four basic
-quantities at time $t=100$.
+quantities at time $t=50$.
 Figure~\ref{Fig-evol} shows the time evolution of rms and maximum
-velocity for the model for $0<t<100$.
+velocity for the model for $0<t<50$.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -2891,7 +2895,7 @@ velocity for the model for $0<t<100$.
   \includegraphics%
     [width=1\textwidth,keepaspectratio]%
     {pvert2}
-  \caption{Like in Fig.~\ref{Fig-pvert0}, but at time $t=100$.
+  \caption{Like in Fig.~\ref{Fig-pvert0}, but at time $t=50$.
   }
   \label{Fig-pvert2}
 \end{figure}
@@ -2913,7 +2917,7 @@ velocity for the model for $0<t<100$.
 % ---------------------------------------------------------------------- %
 
 Figures~\ref{Fig-hsection2} and \ref{Fig-vsection2} show vertical and
-horizontal sections for time $t=100$.
+horizontal sections for time $t=50$.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -2921,7 +2925,7 @@ horizontal sections for time $t=100$.
   \includegraphics%
     [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
     {hsect2}
-  \caption{Horizontal section $z=0.352$ at $t=100$.
+  \caption{Horizontal section $z=0.352$ at $t=50$.
     Left: velocity field.
     Right: entropy (color coded) and density (isocontours).
     Plots of this type can be produced by running the IDL scripts
@@ -2937,7 +2941,7 @@ horizontal sections for time $t=100$.
   \includegraphics%
     [width=0.8\textwidth,height=0.65\textheight,keepaspectratio]%
     {vsect2}
-  \caption{Vertical section $y=0.516$ at $t=100$.
+  \caption{Vertical section $y=0.516$ at $t=50$.
     Left: velocity field.
     Right: entropy (color coded) and density (isocontours).
     Plots of this type can be produced by running the IDL scripts
@@ -2955,7 +2959,7 @@ horizontal sections for time $t=100$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.58 2002-07-19 01:01:27 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.59 2002-07-19 13:02:35 dobler Exp $ $}
 
 
 \end{document}
