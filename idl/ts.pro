@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-02-06 19:36:34 $
-;;;  $Revision: 1.3 $
+;;;  $Date: 2003-11-07 13:10:01 $
+;;;  $Revision: 1.4 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -78,7 +78,7 @@ ncols = n_elements(labels)
 ;
 data = input_table(tsfile)
 if ((size(data))[1] ne ncols) then begin
-  message, /INFO, 'Inconsistency: label numer different from column number'
+  message, /INFO, 'Inconsistency: label number different from column number'
 endif
 ;
 ;  assemble the data
@@ -116,9 +116,10 @@ if (in_list('t',labels)) then begin
   !x.title='!8t!X'
   for i=0,nplots-1 do begin
     lab = labels[idxlist[i]]
-    if ((lab eq 'brms') or (lab eq 'bmax')) then ylog=',/YLOG' else ylog=''
+    if ((lab eq 'brms') or (lab eq 'bmax') or (lab eq 'urms') or (lab eq 'umax')) then ylog=',/YLOG' else ylog=''
+    yrange=',YRANGE=minmax(ts.'+lab+'[1:*])>1.e-4*max(ts.'+lab+'), YSTYLE=3'
     !y.title = '!3'+lab+'!X'
-    pcmd = 'plot, ts.t, ts.'+lab+ylog
+    pcmd = 'plot, ts.t, ts.'+lab+ylog+yrange
     if (execute(pcmd) ne 1) then $
         message, 'There was a problem executing <' + pcmd + '>', /INFO
   endfor
