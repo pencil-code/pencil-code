@@ -15,8 +15,8 @@ save_state
 !p.multi = [0,2,2]
 
 
-cmd_load = "grep -E 'run.x|lam-flatd1' data/proc{[0-9],[0-9][0-9],[0-9][0-9][0-9]}/top.log | sed 's/^[^:]*://' | awk '{print $9}' | head -115"
-cmd_mem  = "grep -E 'run.x|lam-flatd1' data/proc{[0-9],[0-9][0-9],[0-9][0-9][0-9]}/top.log | sed 's/^[^:]*://' | awk '{print $10}' | head -115"
+cmd_load = "grep -E 'run.x|lam-flatd1' data/proc{[0-9],[0-9][0-9],[0-9][0-9][0-9]}/top.log | sed 's/^[^:]*://' | awk '{print $9}' | head -315"
+cmd_mem  = "grep -E 'run.x|lam-flatd1' data/proc{[0-9],[0-9][0-9],[0-9][0-9][0-9]}/top.log | sed 's/^[^:]*://' | awk '{print $10}' | head -315"
 
 spawn, cmd_load, loadstr
 load = float(loadstr)
