@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.59 2002-07-03 16:44:39 dobler Exp $
+! $Id: magnetic.f90,v 1.60 2002-07-04 06:42:33 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.59 2002-07-03 16:44:39 dobler Exp $")
+           "$Id: magnetic.f90,v 1.60 2002-07-04 06:42:33 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,6 +114,7 @@ module Magnetic
         !
         !  Gaussian noise
         !
+        if (lroot) print*,'init_aa: aa=0'
         f(:,:,:,iax:iaz) = 0.
 
       case('gaussian-noise', '10')
@@ -190,10 +191,9 @@ module Magnetic
         !
         !  circularly polarised Alfven wave in x direction
         !
-        print*,'init_aa: circular Alfven wave -> x'
-        f(:,:,:,iax) = amplaa2
-        f(:,:,:,iay) = amplaa*sin(kx_aa*xx)
-        f(:,:,:,iaz) = amplaa*cos(kx_aa*xx)
+        if (lroot) print*,'init_aa: circular Alfven wave -> x'
+        f(:,:,:,iay) = amplaa/kx_aa*sin(kx_aa*xx)
+        f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*xx)
 
       case default
         !
