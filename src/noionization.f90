@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.71 2003-10-12 22:13:17 mee Exp $
+! $Id: noionization.f90,v 1.72 2003-10-16 15:04:26 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -93,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.71 2003-10-12 22:13:17 mee Exp $")
+           "$Id: noionization.f90,v 1.72 2003-10-16 15:04:26 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -177,7 +177,6 @@ module Ionization
     endsubroutine ioncalc
 !***********************************************************************
     subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
-      use Mpicomm, only: stop_it
       
       real, intent(in) :: lnrho,EE
       real, intent(out) :: ss,TT,yH
@@ -188,7 +187,6 @@ module Ionization
     end subroutine perturb_energy_point
 !***********************************************************************
     subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
-      use Mpicomm, only: stop_it
       
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,TT,yH
