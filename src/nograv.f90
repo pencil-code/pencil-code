@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.37 2004-07-05 22:19:50 theine Exp $
+! $Id: nograv.f90,v 1.38 2004-09-20 08:02:32 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -28,7 +28,7 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0=0.,r0_pot=0.
+  real :: g0=0.,r0_pot=0.,kx_gg=1.,ky_gg=1.,kz_gg=1.
   integer :: n_pot=10
   character (len=labellen) :: grav_profile='const'  !(used by Density)
   logical :: lnumerical_equilibrium=.false.
@@ -62,7 +62,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.37 2004-07-05 22:19:50 theine Exp $")
+           "$Id: nograv.f90,v 1.38 2004-09-20 08:02:32 ajohan Exp $")
 !
       lgrav = .false.
       lgravz = .false.
