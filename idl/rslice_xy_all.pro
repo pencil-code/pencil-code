@@ -1,9 +1,9 @@
-pro rslice_xy_all,file
+pro rslice_xy_all,file,plane
 ;
-; $Id: rslice_xy_all.pro,v 1.1 2002-08-22 13:49:09 nilshau Exp $
+; $Id: rslice_xy_all.pro,v 1.2 2002-08-23 07:15:21 nilshau Exp $
 ;
 ; This program reads video snapshots from all the processors
-; in the xy plane.
+; in the xy or xz plane.
 ;
 ;
 dummy=''
@@ -29,32 +29,48 @@ close,1
 ;
 nx=nnx-nghostx*2
 ny=nny-nghosty*2
+nz=nnz-nghostz*2
 ;
+; Setting the right plane
+;
+if (plane EQ 'xy') then begin
+  grid=ny
+  nprocgrid=nprocy
+  deltaproc=1
+  print,'Showing the xy-plane'
+endif else begin
+  grid=nz
+  nprocgrid=nprocz
+  deltaproc=nprocy
+  print,'Showing the xz-plane'
+endelse 
+
 t=0.
-xy_slice=fltarr(nx,ny)
-slice_glob=fltarr(nx,ny*nprocy)
+loc_slice=fltarr(nx,grid)
+slice_glob=fltarr(nx,grid*nprocgrid)
 ;
-for i=1,nprocy do begin
-  j=i-1
+for i=1,nprocgrid do begin
+  j=fix((i-1)*deltaproc)
   close,i
+  print,'Reading tmp/proc'+str(j)+'/'+file
   openr,i,'tmp/proc'+str(j)+'/'+file,/f77
 end
 ;
 while not eof(1) do begin
-  for i=1,nprocy do begin
+  for i=1,nprocgrid do begin
     ;
-    ystart=(i-1)*ny
-    ystop =i*ny-1
-    readu,i,xy_slice,t
-      slice_glob(*,ystart:ystop)=xy_slice
+    start=(i-1)*grid
+    stop =i*grid-1
+    readu,i,loc_slice,t
+      slice_glob(*,start:stop)=loc_slice
   end
-  print,t,min(xy_slice),max(xy_slice)
+  print,t,min(slice_glob),max(slice_glob)
   tvscl,slice_glob
 ;  surface,slice_glob
   wait,.1
 end
 ;
-for i=1,nprocy do begin
+for i=1,nprocgrid do begin
   close,i
 end
 ;
