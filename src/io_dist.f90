@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.64 2003-08-20 04:54:51 brandenb Exp $
+! $Id: io_dist.f90,v 1.65 2003-08-29 16:12:15 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.64 2003-08-20 04:54:51 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.65 2003-08-29 16:12:15 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -336,14 +336,28 @@ contains
       use Mpicomm, only: stop_it
 !
       real :: tdummy
+      integer :: iostat
       character (len=*) :: file
 !
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
-      read(1,end=999) Lx,Ly,Lz
+      read(1,IOSTAT=iostat) Lx,Ly,Lz
 !
-997   dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
+!  give notification if Lx is not read in
+!  This should only happen when reading in old data files
+!  We should keep this for the time being
+!
+      if (iostat /= 0) then
+        if (iostat < 0) then
+          print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
+        else
+          print*, 'rgrid: IOSTAT=', iostat
+          call stop_it("rgrid: I/O error")
+        endif
+      endif
+!
+      dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
       dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
 !
 !  debug output
@@ -358,15 +372,9 @@ contains
 !
       if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
-!  give notification if Lx is not read in
-!  This should only happen when reading in old data files
-!  We should keep this for the time being
+      if(ip==0) print*,tdummy  !(keep compiler quiet)
 !
-      goto 998
-999   print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
-      goto 997
-!
-998 endsubroutine rgrid
+    endsubroutine rgrid
 !***********************************************************************
     subroutine wtime(file,tau)
 !
