@@ -1,0 +1,8 @@
+it(F10.0)
+t(F10.3)
+dt(1pE11.3)
+urms(1pE12.3)
+umax(F10.5)
+ssm(F10.5)
+rhom(F10.5)
+dtc(F10.5)
