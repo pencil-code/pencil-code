@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.62 2004-06-12 11:01:15 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.63 2004-06-13 13:15:58 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.62 2004-06-12 11:01:15 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.63 2004-06-13 13:15:58 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -553,13 +553,13 @@ module Dustvelocity
                     1/dt_beta(itsub)*(uu(l,3) - uud(l,3,k) - &
                     tausd1(l,k)**(-1)*Omega**2*z(n))
               else
-                df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                    df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
+                df(3+l,m,n,iudx(k):iudz(k)) = df(3+l,m,n,iudx(k):iudz(k)) - &
+                    tausd13(l,k)*(uud(l,:,k)-uu(l,:))
               endif
             enddo
           else
-            df(l1:l2,m,n,iudx(k):iudz(k)) = &
-                df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
+            df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) - &
+                tausd13*(uud(:,:,k)-uu)
           endif
 !
 !  Add drag force on gas (back-reaction)
