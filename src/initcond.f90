@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.57 2003-06-26 10:45:26 ajohan Exp $ 
+! $Id: initcond.f90,v 1.58 2003-07-11 16:23:17 brandenb Exp $ 
 
 module Initcond 
  
@@ -479,7 +479,7 @@ module Initcond
 !
 !  read mean stratification and write into array
 !
-      open(19,file='stratification.dat')
+      open(19,file=trim(directory)//'/stratification.ascii')
       do n=1,mz
         read(19,*) ztmp,lnrho0(n),SS0(n)
         if(ip<5) print*,ztmp,lnrho0(n),SS0(n)
