@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.121 2002-09-19 07:35:08 brandenb Exp $
+! $Id: entropy.f90,v 1.122 2002-09-21 18:15:26 dobler Exp $
 
 module Entropy
 
@@ -67,7 +67,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.121 2002-09-19 07:35:08 brandenb Exp $")
+           "$Id: entropy.f90,v 1.122 2002-09-21 18:15:26 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -487,6 +487,7 @@ module Entropy
       use Cdata
       use Mpicomm
       use Sub
+      use IO
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
