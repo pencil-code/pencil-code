@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.221 2003-10-23 17:03:42 ngrs Exp $
+! $Id: entropy.f90,v 1.222 2003-10-24 11:04:30 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -100,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.221 2003-10-23 17:03:42 ngrs Exp $")
+           "$Id: entropy.f90,v 1.222 2003-10-24 11:04:30 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -216,10 +216,12 @@ module Entropy
       endif
 !
 !   make sure all relevant parameters are set for spherical shell problems
+!
     select case(initss)
       case('geo-kws')
         if (lroot) print*,'initialize_entropy: reset sound speed for spherical shell problem'
         cs20 = cs0**2
+!
     endselect
 !
     endsubroutine initialize_entropy
