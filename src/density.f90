@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.51 2002-09-27 16:38:10 brandenb Exp $
+! $Id: density.f90,v 1.52 2002-10-02 06:45:17 brandenb Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.51 2002-09-27 16:38:10 brandenb Exp $")
+           "$Id: density.f90,v 1.52 2002-10-02 06:45:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,7 +92,7 @@ module Density
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
-      real :: lnrhoint,cs2int,pot0
+      real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: zbot,ztop
 !
 !  define bottom and top height
@@ -108,14 +108,16 @@ module Density
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
-      lnrho0 = alog(rho0)
+      lnrho0      = alog(rho0)
+      lnrho_left  = alog(rho_left)
+      lnrho_right = alog(rho_right)
       select case(initlnrho)
 
       case('zero', '0'); f(:,:,:,ilnrho)=0.
       case('isothermal'); call isothermal(f)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
-      case('xjump'); call jump(f,ilnrho,alog(rho_left),alog(rho_right),widthlnrho,'x')
+      case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')
       case('gaussian-noise'); call gaunoise(ampllnrho,f,ilnrho,ilnrho)
       case('gaussian-noise-x')
         !

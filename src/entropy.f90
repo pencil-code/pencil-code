@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.125 2002-09-30 05:51:49 brandenb Exp $
+! $Id: entropy.f90,v 1.126 2002-10-02 06:45:17 brandenb Exp $
 
 module Entropy
 
@@ -11,7 +11,7 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
+  real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
@@ -23,7 +23,7 @@ module Entropy
   ! input parameters
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
-       mpoly0,mpoly1,mpoly2,isothtop, &
+       ss_left,ss_right,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss
 
   ! run parameters
@@ -68,7 +68,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.125 2002-09-30 05:51:49 brandenb Exp $")
+           "$Id: entropy.f90,v 1.126 2002-10-02 06:45:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,6 +101,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,ient) = 0.
         case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,.5)
         case('isothermal'); if(lroot) print*,'init_ent: isotherm set in density'
+        case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
 
