@@ -15,7 +15,6 @@
 #
 # Work in submit directory (SGE):
 #$ -cwd
-#$ -masterq copson.q  -m bes -M A.J.Mee@ncl.ac.uk -cwd -v MPE_LOG_FORMAT=SLOG -V
 
 # Work in submit directory (PBS):
 if ($?PBS_O_WORKDIR) then
