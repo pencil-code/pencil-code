@@ -13,7 +13,7 @@ set trailbline =  "^[^#]*=.*$trailblank"
 
 if ($#argv < 1) set argv=( '-' )
 
-if { grep -q "$trailbline" $* } then
+if { grep "$trailbline" $* >& /dev/null } then
   echo "WARNING: Found trailing space(s) in (${*})"
   echo "WARNING: --- this can cause weird failures of 'make'."
   echo "WARNING: --- Affected lines:"
