@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.200 2004-06-22 12:30:27 ajohan Exp $
+! $Id: magnetic.f90,v 1.201 2004-06-27 15:11:11 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.200 2004-06-22 12:30:27 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.201 2004-06-27 15:11:11 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1318,7 +1318,7 @@ module Magnetic
 !***********************************************************************
     subroutine alfvenz_rot(ampl,f,iuu,iaa,zz,kz,O)
 !
-!  Alfven wave propagating in the z-direction
+!  Alfven wave propagating in the z-direction (with Coriolis force)
 !  ux = cos(kz-ot), for B0z=1 and rho=1.
 !  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
 !
@@ -1339,10 +1339,14 @@ module Magnetic
 !
       print*,'alfvenz_rot: Alfven wave with rotation; O,kz=',O,kz
       fac=-O+sqrt(O**2+kz**2)
-      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)*fac/kz
-      f(:,:,:,iuu+1)=-ampl*sin(kz*zz)*fac/kz
-      f(:,:,:,iaa+0)=-ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+      !f(:,:,:,iuu+0)=+ampl*cos(kz*zz)*fac/kz
+      !f(:,:,:,iuu+1)=-ampl*sin(kz*zz)*fac/kz
+      !f(:,:,:,iaa+0)=-ampl*cos(kz*zz)
+      !f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+      f(:,:,:,iuu+0)=-ampl*sin(kz*zz)*fac/kz
+      f(:,:,:,iuu+1)=-ampl*cos(kz*zz)*fac/kz
+      f(:,:,:,iaa+0)=+ampl*sin(kz*zz)/kz
+      f(:,:,:,iaa+1)=+ampl*cos(kz*zz)/kz
 !
     endsubroutine alfvenz_rot
 !***********************************************************************
