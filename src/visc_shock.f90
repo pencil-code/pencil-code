@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.16 2003-03-25 17:55:33 mee Exp $
+! $Id: visc_shock.f90,v 1.17 2003-04-10 10:07:13 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -46,20 +46,20 @@ module Viscosity
       naux = naux + 1 
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: constant viscosity nvar = ', nvar
+        print*, 'register_viscosity: shock viscosity nvar = ', nvar
         print*, 'ishock = ', ishock
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.16 2003-03-25 17:55:33 mee Exp $")
+           "$Id: visc_shock.f90,v 1.17 2003-04-10 10:07:13 mee Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('Register_viscosity: naux > maux')
+        call stop_it('register_viscosity: naux > maux')
       endif
 
     endsubroutine register_viscosity
@@ -72,6 +72,8 @@ module Viscosity
          lneed_sij=.true.
          lneed_glnrho=.true.
  !     endif
+
+        if (headtt) print*,'viscosity: nu=',nu,', nu_shock=',nu_shock
 
     endsubroutine initialize_viscosity
 !***********************************************************************
