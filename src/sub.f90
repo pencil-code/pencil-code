@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.178 2004-05-07 13:52:18 ajohan Exp $ 
+! $Id: sub.f90,v 1.179 2004-05-07 13:53:01 ajohan Exp $ 
 
 module Sub 
 
@@ -1691,7 +1691,7 @@ module Sub
 !***********************************************************************
     subroutine gradf_upw1st(f,uu,k,gradf)
 !
-!  Do advection-type term u.grad f_k.
+!  Do advection-type term u.grad f_k for upwind 1st order der scheme.
 !
       use Cdata
       use Deriv
