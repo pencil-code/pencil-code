@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.40 2003-11-17 13:43:18 theine Exp $
+! $Id: ionization_fixed.f90,v 1.41 2003-11-19 16:41:51 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -22,23 +22,13 @@ module Ionization
   implicit none
 
   interface eoscalc              ! Overload the `thermodynamics' function
-    module procedure eoscalc_pencil   ! explicit f implicit m,n
+    module procedure eoscalc_farray   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explocit lnrho, ss
   end interface
 
   interface getentropy                      ! Overload subroutine ionput
     module procedure getentropy_pencil      ! (dummy routines here --
     module procedure getentropy_point       !  used in noionization.)
-  end interface
-
-  interface perturb_energy              ! Overload subroutine perturb_energy
-    module procedure perturb_energy_pencil
-    module procedure perturb_energy_point
-  end interface
-
-  interface perturb_mass                ! Overload subroutine perturb_energy
-    module procedure perturb_mass_pencil
-    module procedure perturb_mass_point
   end interface
 
   ! Constants use in calculation of thermodynamic quantities
@@ -93,7 +83,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.40 2003-11-17 13:43:18 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.41 2003-11-19 16:41:51 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -284,19 +274,7 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,lnTT,yH)
-      real,intent(in) :: lnrho,ee
-      real, intent(out) :: ss,lnTT,yH
-      real :: TT
-!
-        yH=yH0
-        lnTT=log(TT)
-        TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
-        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
-!      
-    end subroutine perturb_energy_point
-!***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,lnTT,yH)
+    subroutine perturb_energy(lnrho,ee,ss,lnTT,yH)
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,lnTT,yH
       real, dimension(nx) :: TT
@@ -306,27 +284,9 @@ module Ionization
         lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
 !
-    end subroutine perturb_energy_pencil
+    end subroutine perturb_energy
 !***********************************************************************
-    subroutine perturb_mass_point(lnrho,pp,ss,lnTT,yH)
-      real,intent(in) :: lnrho,pp
-      real, intent(out) :: ss,lnTT,yH
-      real :: TT
-!      real :: yH,K
-!
-        TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
-        lnTT=log(TT)
-        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
-        yH=yH0
-!        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
-!              (3. * (1.+yH0+xHe) * ss_ion )
-!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-!        yH=2./(1.+sqrt(1.+4./K))
-!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
-!
-    end subroutine perturb_mass_point
-!***********************************************************************
-    subroutine perturb_mass_pencil(lnrho,pp,ss,lnTT,yH)
+    subroutine perturb_mass(lnrho,pp,ss,lnTT,yH)
       real, dimension(nx), intent(in) :: lnrho,pp
       real, dimension(nx), intent(out) :: ss,lnTT,yH
       real, dimension(nx) :: TT
@@ -342,7 +302,7 @@ module Ionization
 !        yH=2./(1.+sqrt(1.+4./K))
 !        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !
-    end subroutine perturb_mass_pencil
+    end subroutine perturb_mass
 !***********************************************************************
     subroutine getdensity(EE,lnTT,yH,rho)
 
@@ -429,7 +389,7 @@ module Ionization
 !
     endsubroutine temperature_gradient
 !***********************************************************************
-    subroutine eoscalc_pencil(f,yH,lnTT,ee,pp)
+    subroutine eoscalc_farray(f,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -466,9 +426,9 @@ module Ionization
         if (i_TTm/=0) call sum_mn_name(TT,i_TTm)
       endif
 !
-    endsubroutine eoscalc_pencil
+    endsubroutine eoscalc_farray
 !***********************************************************************
-    subroutine eoscalc_point(lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(vars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -480,18 +440,50 @@ module Ionization
 !
       use Cdata
 !
-      real, intent(in) :: lnrho,ss
+      character(len=*) :: vars
+      real, intent(in) :: var1,var2
+      real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
-      real :: lnTTi,TT
+      real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
 !
-      lnTTi=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-      TT=exp(lnTTi)
-!
-      if (present(yH))       yH=yH0
-      if (present(lnTT))     lnTT=lnTTi
-      if (present(ee))       ee=1.5*(1+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      if (present(pp))       pp=(1+yH0+xHe)*exp(lnrho)*TT*ss_ion
+      select case (vars)
+
+      case ('lnrho|ss')
+        lnrho_=var1
+        ss_=var1
+        lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
+        TT_=exp(lnTT_)
+        rho_=exp(lnrho_)
+        ee_=1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
+
+      case ('lnrho|ee')
+        lnrho_=var1
+        ee_=var2
+        TT_=(2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
+        lnTT_=log(TT_)
+        ss_=(lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        rho_=exp(lnrho_)
+        pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
+
+      case ('lnrho|pp')
+        lnrho_=var1
+        pp_=var2
+        rho_=exp(lnrho_)
+        TT_=pp_/((1+yH0+xHe)*ss_ion*rho_)
+        lnTT_=log(TT_)
+        ss_=(lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        ee_=1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+
+     end select
+
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=yH0
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_point
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.92 2003-11-17 19:19:39 brandenb Exp $
+! $Id: noionization.f90,v 1.93 2003-11-19 16:41:51 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -27,16 +27,6 @@ module Ionization
   interface getentropy
     module procedure getentropy_pencil
     module procedure getentropy_point
-  end interface
-
-  interface perturb_energy              ! Overload subroutine perturb_energy
-    module procedure perturb_energy_pencil
-    module procedure perturb_energy_point
-  end interface
-
-  interface perturb_mass                ! Overload subroutine perturb_energy
-    module procedure perturb_mass_pencil
-    module procedure perturb_mass_point
   end interface
 
   ! secondary parameters calculated in initialize
@@ -86,7 +76,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.92 2003-11-17 19:19:39 brandenb Exp $")
+           "$Id: noionization.f90,v 1.93 2003-11-19 16:41:51 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -200,17 +190,7 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,lnTT,yH)
-      
-      real, intent(in) :: lnrho,EE
-      real, intent(out) :: ss,lnTT,yH
-
-      ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
-      lnTT=log(gamma*cp1*ee)
-      yH=impossible
-    end subroutine perturb_energy_point
-!***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,lnTT,yH)
+    subroutine perturb_energy(lnrho,ee,ss,lnTT,yH)
       
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,lnTT,yH
@@ -218,22 +198,9 @@ module Ionization
       ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
       lnTT=log(gamma*cp1*ee)
       yH=impossible
-    end subroutine perturb_energy_pencil
+    end subroutine perturb_energy
 !***********************************************************************
-    subroutine perturb_mass_point(lnrho,pp,ss,lnTT,yH)
-      use Mpicomm, only: stop_it
-      
-      real, intent(in) :: lnrho,pp
-      real, intent(out) :: ss,lnTT,yH
-
-      call stop_it("perturb_mass_point: NOT IMPLEMENTED IN NO IONIZATION")
-      ss=0.
-      lnTT=1.
-      yH=impossible
-      if (ip==0) print*,lnrho,pp
-    end subroutine perturb_mass_point
-!***********************************************************************
-    subroutine perturb_mass_pencil(lnrho,pp,ss,lnTT,yH)
+    subroutine perturb_mass(lnrho,pp,ss,lnTT,yH)
       use Mpicomm, only: stop_it
       
       real, dimension(nx), intent(in) :: lnrho,pp
@@ -244,7 +211,7 @@ module Ionization
       lnTT=1.
       yH=impossible
       if (ip==0) print*,lnrho,pp
-    end subroutine perturb_mass_pencil
+    end subroutine perturb_mass
 !***********************************************************************
     subroutine getdensity(EE,lnTT,yH,rho)
       use Mpicomm, only: stop_it
@@ -357,14 +324,14 @@ module Ionization
       lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
 !
       if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
-      if (present(yH)) yH=0
+      if (present(yH)) yH=impossible
       if (present(lnTT)) lnTT=lnTTi
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
       if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
 !
     endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine eoscalc_point(lnrho,ss,yH,lnTT,ee,pp)
+    subroutine eoscalc_point(vars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
 !
 !   Calculate thermodynamical quantities
 !
@@ -377,17 +344,47 @@ module Ionization
       use Cdata
       use Mpicomm, only: stop_it
 !
-      real, intent(in) :: lnrho,ss
-      real, intent(out), optional :: yH,lnTT,ee,pp
-      real :: lnTTi
-!
-      lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+      character(len=*) :: vars
+      real, intent(in) :: var1,var2
+      real, intent(out), optional :: lnrho,ss
+      real, intent(out), optional :: yH,lnTT
+      real, intent(out), optional :: ee,pp
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_
 !
       if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
-      if (present(yH)) yH=0
-      if (present(lnTT)) lnTT=lnTTi
-      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+!
+      select case (vars)
+
+      case ('lnrho|ss')
+        lnrho_=var1
+        ss_=var1
+        lnTT_=lnTT0+gamma*ss_+gamma1*(lnrho_-lnrho0)
+        ee_=cs20*exp(gamma*ss_+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+
+      case ('lnrho|ee')
+        lnrho_=var1
+        ee_=var2
+        ss_=(log(ee_*gamma*gamma1/cs20)-gamma1*(lnrho_-lnrho0))/gamma
+        lnTT_=log(gamma*cp1*ee_)
+        pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
+
+      case ('lnrho|pp')
+        call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+        lnrho_=var1
+        pp_=var2
+        lnTT_=1
+        ss_=0
+        ee_=0
+
+      end select
+!
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=impossible
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_point
 !***********************************************************************
