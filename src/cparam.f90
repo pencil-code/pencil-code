@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.22 2002-07-09 12:57:55 dobler Exp $
+! $Id: cparam.f90,v 1.23 2002-07-16 21:35:22 dobler Exp $
 
 module Cparam
 
@@ -37,7 +37,7 @@ module Cparam
   integer, parameter :: mreduce=6
   integer :: ip=14
 !
-!  length of strings for boundary conditions and lables a la initss, initaa 
+!  length of strings for boundary conditions and labels a la initss, initaa 
 !
   integer, parameter :: bclen=3,labellen=25
 !

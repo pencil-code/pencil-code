@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.33 2002-07-16 08:29:44 dobler Exp $
+! $Id: density.f90,v 1.34 2002-07-16 21:35:22 dobler Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.33 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: density.f90,v 1.34 2002-07-16 21:35:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -88,7 +88,7 @@ module Density
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
-      real :: lnrhoint,cs2int
+      real :: lnrhoint,cs2int,pot0
 !
 !  Set default values for sound speed at top and bottom.
 !  These may be updated in one of the following initialization routines.
@@ -98,6 +98,7 @@ module Density
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
+      lnrho0 = alog(rho0)
       select case(initlnrho)
 
       case('zero', '0'); f(:,:,:,ilnrho)=0.
@@ -140,19 +141,25 @@ module Density
             STOP "INIT_HYDRO: Imaginary density values"
           endif
         endif
+
+      case ('hydrostatic-r')
+        !
+        !  hydrostatic radial density stratification for isentropic (or
+        !  isothermal) sphere
         !
         if (lgravr) then
           if (lroot) print*, &
-               'radial density stratification (assumes s=const) -- NEEDS TO BE FIXED'
-          call potential(x(l1:l2),y(m),z(n),pot) ! gravity potential
+               'radial density stratification (assumes s=const) -- FIXME'
+          call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
-
-          ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
-          if (gamma /= 1) then
-            lnrho0 = alog(cs20/gamma)/gamma1
-            f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
+          !
+          ! rho0, cs0 are the values in the centre, pot0
+          !
+          if (gamma /= 1) then  ! isentropic
+            f(:,:,:,ilnrho) = lnrho0 &
+                              + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
           else                  ! isothermal
-            f(:,:,:,ilnrho) = alog(rho0)
+            f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
           endif
         endif
 
@@ -254,6 +261,12 @@ module Density
 
       endselect
 !
+!  sanity check
+!
+      if (notanumber(f(:,:,:,ilnrho))) then
+        STOP "INIT_HYDRO: Imaginary density values"
+      endif
+!
 !  check that cs2bot,cs2top are ok
 !
       if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
@@ -270,7 +283,8 @@ module Density
           +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
       endselect
 !
-      if(ip==0) print*,prof,yy  ! keep compiler quiet
+      if(ip==0) print*, yy(1,1,1) ! keep compiler quiet
+!
     endsubroutine init_lnrho
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
@@ -489,7 +503,7 @@ module Density
 !  To maintain continuity with respect to the isothermal case,
 !  one may want to specify cs20 (=1), and so zinfty is calculated from that.
 !  On the other hand, for polytropic atmospheres it may be more
-!  physical to specify zinfty (=1), ie the top of the polyytopic atmosphere.
+!  physical to specify zinfty (=1), ie the top of the polytropic atmosphere.
 !  This is done if zinfty is different from 0.
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho

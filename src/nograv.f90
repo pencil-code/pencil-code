@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.12 2002-07-08 19:28:14 brandenb Exp $
+! $Id: nograv.f90,v 1.13 2002-07-16 21:35:22 dobler Exp $
 
 module Gravity
 
@@ -10,8 +10,13 @@ module Gravity
 
   implicit none
 
+  interface potential
+    module procedure potential_global
+    module procedure potential_penc
+  endinterface
+
   real :: z1,z2,zref,gravz,zinfty  !(used by Entropy and Density)
-  character (len=30) :: grav_profile='const'  !(used by Density)
+  character (len=labellen) :: grav_profile='const'  !(used by Density)
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
@@ -39,7 +44,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.12 2002-07-08 19:28:14 brandenb Exp $")
+           "$Id: nograv.f90,v 1.13 2002-07-16 21:35:22 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -78,7 +83,24 @@ module Gravity
       if(ip==0) print*,f,df  !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential(xmn,ymn,zmn,pot,grav,rmn)
+    subroutine potential_global(xx,yy,zz,pot,pot0)
+!
+!  gravity potential
+!  28-mar-02/axel: adapted from grav_z
+!
+      use Cdata, only: mx,my,mz,lroot
+!
+      real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
+      real, optional :: pot0
+!
+      if (lroot) print*,'potential: should not have been called'
+      pot = 0.
+      pot0 = 0.
+!
+      if(ip==0) print*,xx(1,1,1),yy(1,1,1),zz(1,1,1)
+    endsubroutine potential_global
+!***********************************************************************
+    subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
@@ -87,14 +109,16 @@ module Gravity
 !
       real, dimension (nx) :: xmn,pot
       real :: ymn,zmn
+      real, optional :: pot0
       real, optional, dimension (nx) :: rmn
       real, optional, dimension (nx,3) :: grav
 !
       if (lroot) print*,'potential: should not have been called'
       pot = 0.
+      pot0 = 0.
 !
       if(ip==0) print*,xmn,ymn,zmn,rmn,grav
-    endsubroutine potential
+    endsubroutine potential_penc
 !***********************************************************************
 
 endmodule Gravity

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.69 2002-07-16 08:29:44 dobler Exp $
+! $Id: magnetic.f90,v 1.70 2002-07-16 21:35:22 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.69 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: magnetic.f90,v 1.70 2002-07-16 21:35:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -607,7 +607,7 @@ module Magnetic
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
-          call potential(fz,f2,f3,-1)
+          call potential_field(fz,f2,f3,-1)
           f(l1:l2,m1:m2,1:n1,iax+j)=fz
         enddo
         !
@@ -625,7 +625,7 @@ module Magnetic
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
-          call potential(fz,f2,f3,+1)
+          call potential_field(fz,f2,f3,+1)
           f(l1:l2,m1:m2,n2:mz,iax+j)=fz
         enddo
         !
@@ -639,7 +639,7 @@ module Magnetic
 !
       endsubroutine bc_aa_pot
 !***********************************************************************
-      subroutine potential(fz,f2,f3,irev)
+      subroutine potential_field(fz,f2,f3,irev)
 !
 !  solves the potential field boundary condition;
 !  fz is the boundary layer, and f2 and f3 are the next layers inwards.
@@ -702,7 +702,7 @@ module Magnetic
         if(irev==-1) fz(:,:,nghost-i+1) = g1r/(nx*ny)  ! Renormalize
       enddo
 !
-    endsubroutine potential
+    endsubroutine potential_field
 !***********************************************************************
       subroutine potentdiv(fz,f2,f3,irev)
 !

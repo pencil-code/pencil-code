@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.56 2002-07-15 14:04:36 nilshau Exp $
+! $Id: start.f90,v 1.57 2002-07-16 21:35:22 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.56 2002-07-15 14:04:36 nilshau Exp $")
+             "$Id: start.f90,v 1.57 2002-07-16 21:35:22 dobler Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -97,8 +97,6 @@
         zz=spread(spread(z,1,mx),2,my)
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
-!        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
-!AB: why is it commented out? Do you plan to move to grav_r?
 !
 !  different initial conditions
 !  initialize all variables to zero;

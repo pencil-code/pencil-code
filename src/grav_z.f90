@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.19 2002-07-16 08:29:44 dobler Exp $
+! $Id: grav_z.f90,v 1.20 2002-07-16 21:35:22 dobler Exp $
 
 module Gravity
 
@@ -6,23 +6,46 @@ module Gravity
 !  (The full star geometry is currently in grav_r, but in may well
 !  be possible to migrate it in here.)
 
+  use cparam
+
   implicit none
+
+  interface potential
+    module procedure potential_global
+    module procedure potential_penc
+  endinterface
 
 !  zref is the height where rho=rho0 and cs2=cs20.
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
   real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty
-  character (len=30) :: grav_profile='const'
+  character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
 !  atmosphere with constant gravity, the potential goes to zero at
 !  some position which is referred to as "zinfty".
 
-!AB: Wolfgang, you should explain here the meaning of z1 and z2,
+!  For initlnrho='piecew-poly', z1 and z2 are the interfaces between the
+!  three layers of different polytropic exponent:
+!
+!      z
+!      ^
+!      |  m = m2 (top layer)
+!      |
+!  z2  +
+!      |
+!      |  m = m0 (unstable [main] layer)
+!      |
+!  z1  +
+!      |
+!      |  m = m1 (stable bottom layer)
+!      |
+!
 
 !AB: Nils, could you have a look how in galactic physics (Binney & Tremaine)
-!AB: the coefficient in front of .5*z^2 is called (vertical epicyclic frequency?)
+!AB: the coefficient in front of .5*z^2 is called (vertical epicyclic
+!AB: frequency?)
 !AB: We should introduce that instead of keeping a double meaning of gravz.
 
   namelist /grav_init_pars/ &
@@ -55,7 +78,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.19 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: grav_z.f90,v 1.20 2002-07-16 21:35:22 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -104,10 +127,28 @@ module Gravity
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz*z(n)
       endif
 !
-      if(ip==0) print*,f !(keep compiler quiet)
+      if(ip==0) print*,f(1,1,1,1) !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential(xmn,ymn,zmn,pot,grav,rmn)
+    subroutine potential_global(xx,yy,zz,pot,pot0)
+!
+!  gravity potential
+!  16-jul-02/wolf: coded
+!
+      use Cdata, only: mx,my,mz
+      use Mpicomm
+!
+      real, dimension (mx,my,mz) :: xx,yy,zz, pot
+      real, optional :: pot0
+!
+      call stop_it("potential_global in grav_z not implemented")
+!
+      if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
+           pot(1,1,1) !(keep compiler quiet)
+!
+    endsubroutine potential_global
+!***********************************************************************
+    subroutine potential_penc(xmn,ymn,zmn,pot,pot0,grav,rmn)
 !
 !  gravity potential
 !  21-jan-02/wolf: coded
@@ -117,6 +158,7 @@ module Gravity
 !
       real, dimension (nx) :: xmn,pot,r
       real :: ymn,zmn
+      real, optional :: pot0
       real, optional, dimension (nx) :: rmn
       real, optional, dimension (nx,3) :: grav
       logical, save :: first=.true.
@@ -134,13 +176,15 @@ module Gravity
       select case(grav_profile)
         case('const')
           pot=-gravz*(zmn-zinfty)
-          if(present(grav)) then
+          if (present(pot0)) pot0 = gravz*zinfty ! potential at z=0
+          if (present(grav)) then
             grav(:,1:2)=0.
             grav(:,3)=gravz
           endif
         case('linear')
           pot=-.5*gravz*(zmn**2-zinfty**2)
-          if(present(grav)) then
+          if (present(pot0)) pot0 = .5*gravz*zinfty**2 ! potential at z=0
+          if (present(grav)) then
             grav(:,1:2)=0.
             grav(:,3)=gravz*zmn
           endif
@@ -152,13 +196,14 @@ module Gravity
           endif
           !(not implemented yet; just laying out the idea)
           pot=.5*gravz*r**2/(1.+r**4)
-          if(present(grav)) then
+          if (present(pot0)) pot0 = 0. ! potential at z=0
+          if (present(grav)) then
             grav(:,1:3)=0.
           endif
       endselect
       first=.false.
 !
-    endsubroutine potential
+    endsubroutine potential_penc
 !***********************************************************************
 
 endmodule Gravity

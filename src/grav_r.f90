@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.20 2002-07-16 17:20:57 dobler Exp $
+! $Id: grav_r.f90,v 1.21 2002-07-16 21:35:22 dobler Exp $
 
 module Gravity
 
@@ -10,21 +10,26 @@ module Gravity
 
   implicit none
 
+  interface potential
+    module procedure potential_global
+    module procedure potential_penc
+  endinterface
+
+
   ! coefficients for potential
-! Solar case:
-!  real, dimension (5) :: cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
-! M5 dwarf:
-  real, dimension (5) :: cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
-! Simple model potential:
-!  real, dimension (5) :: cpot = (/ 1., 0., 0., 1., 0. /)
-! No potential:
-!  real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
+  real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
 
-  real :: z1,z2,zref,gravz ! used by Entropy and Density
+  character (len=labellen) :: ipotential
 
-  real :: dummy
-  namelist /grav_init_pars/ dummy
-  namelist /grav_run_pars/  dummy
+  ! variables for compatibility with grav_z (used by Entropy and Density):
+  real :: z1,z2,zref,gravz,zinfty
+  character (len=labellen) :: grav_profile='const'
+
+  namelist /grav_init_pars/ ipotential
+
+  namelist /grav_run_pars/  ipotential
+
+
 
   contains
 
@@ -46,10 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id( &
-           "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-07-16 17:20:57 $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.21 2002-07-16 21:35:22 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -71,6 +73,52 @@ module Gravity
 !
 !
     endsubroutine init_grav
+!***********************************************************************
+    subroutine setup_grav()
+!
+!  Set up some variables for gravity, in particular set cpot according to
+!  the value of ipotential.
+!  Needed by both start.f90 and run.f90
+!
+!  16-jul-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+!
+!  set coefficients for potential (coefficients a0, a2, a3, b2, b3)
+!  for the rational approximation
+!
+!              a_0   +   a_2 r^2 + a_3 r^3
+!    Phi(r) = ---------------------------------------
+!               1    +   b_2 r^2 + b_3 r^3 + a_3 r^4
+!
+      select case(ipotential)
+
+        case ('zero')           ! zero potential
+          cpot = 0.
+
+        case ('solar')          ! solar case
+          cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
+
+        case ('M5-dwarf')       ! M5 dwarf
+          cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
+
+        case ('simple')         ! simple potential for tests
+          cpot =  (/ 1., 0., 0., 1., 0. /)
+
+        case ('simple-2')       ! another simple potential for tests
+          cpot =  (/ 1., 1., 0., 1., 1. /)
+
+        case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*, 'No such value for ipotential: ', trim(ipotential)
+        call stop_it("")
+
+      endselect
+!
+    endsubroutine setup_grav
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !
@@ -110,27 +158,56 @@ if (headt .and. lfirst) call output_pencil('tmp/proc0/gg.dat',gg,3)
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential(xmn,ymn,zmn,rmn, pot)
+    subroutine potential_global(xx,yy,zz, pot,pot0)
 !    subroutine potential(rr, pot)
 !
-!  gravity potential
-!  21-jan-02/wolf: coded
+!  gravity potential; version called by init_hydro, which operates on
+!  full global coordinate arrays
 !
-      use Cdata, only: nx,ny,nz,gravz
+!  16-jul-02/wolf: coded
+!
+      use Cdata, only: mx,my,mz
       use Sub, only: poly
 !
-      real, dimension (nx,1,1) :: xmn,rmn, pot
+      real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
+      real, optional :: pot0
+!
+!  remove this if you are sure rr is already calculated elsewhere      
+!
+      rr=sqrt(xx**2+yy**2+zz**2)
+
+      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
+              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
+!
+      if (present(pot0)) then
+        pot0 = cpot(1)            ! potential at r=0
+      endif
+!
+    endsubroutine potential_global
+!***********************************************************************
+    subroutine potential_penc(xmn,ymn,zmn, pot,pot0, grav,rmn)
+!
+!  gravity potential. The grav/rmn stuff is currently not used
+!
+!  21-jan-02/wolf: coded
+!
+      use Cdata, only: nx,ny,nz
+      use Sub, only: poly
+!
+      real, dimension (nx) :: xmn, pot
       real :: ymn,zmn
-!      real, dimension (mx,my,mz) :: rr,pot
+      real, optional :: pot0
+      real, optional, dimension (nx) :: rmn
+      real, optional, dimension (nx,3) :: grav
+!      
+      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
+              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
 !
-!       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
-!             / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
+      if (present(pot0)) then
+        pot0 = cpot(1)            ! potential at r=0
+      endif
 !
-      
-       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
-             / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
-!
-    endsubroutine potential
+    endsubroutine potential_penc
 !***********************************************************************
 
 endmodule Gravity
