@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $
+! $Id: radiation_ray_periodic.f90,v 1.9 2005-02-18 17:49:44 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.9 2005-02-18 17:49:44 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -404,6 +404,7 @@ module Radiation
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+      print*,'dlength=',dlength
 !
 !  set optical depth and intensity initially to zero
 !
@@ -715,7 +716,7 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,pi,dx,dy,dz
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
       use Mpicomm, only: stop_it
       use Ionization, only: eoscalc
       use IO, only: output
@@ -746,18 +747,21 @@ module Radiation
       case ('cos')
         if (lfirst) then
           Srad=Srad_const &
-              +amplSrad*spread(spread(cos(x)**2,2,my),3,mz) &
-                       *spread(spread(cos(y)**2,1,mx),3,mz) &
-                       *spread(spread(cos(z)**2,1,mx),2,my)
+              +amplSrad*spread(spread(cos((x-pi/2)/2)**2,2,my),3,mz) &
+                       *spread(spread(cos((y-pi/2)/2)**2,1,mx),3,mz) &
+                       *spread(spread(cos((z-pi/2)/2)**2,1,mx),2,my)
           lfirst=.false.
         endif
-        call output('Srad.dat',Srad,1)
 
       case default
         call stop_it('no such source function type: '//&
                      trim(source_function_type))
 
       end select
+
+      if (lrad_debug) then
+        call output(trim(directory_snap)//'/Srad.dat',Srad,1)
+      endif
 
     endsubroutine source_function
 !***********************************************************************
@@ -767,7 +771,7 @@ module Radiation
 !
 !  03-apr-04/tobi: coded
 !
-      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz
+      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz,pi,directory_snap
       use Ionization, only: eoscalc
       use Mpicomm, only: stop_it
       use IO, only: output
@@ -806,18 +810,21 @@ module Radiation
       case ('cos')
         if (lfirst) then
           lnchi=lnchi_const &
-               +ampllnchi*spread(spread(cos(x)**2,2,my),3,mz) &
-                         *spread(spread(cos(y)**2,1,mx),3,mz) &
-                         *spread(spread(cos(z)**2,1,mx),2,my)
+               +ampllnchi*spread(spread(cos((x-pi/2)/2)**2,2,my),3,mz) &
+                         *spread(spread(cos((y-pi/2)/2)**2,1,mx),3,mz) &
+                         *spread(spread(cos((z-pi/2)/2)**2,1,mx),2,my)
           lfirst=.false.
         endif
-        call output('lnchi.dat',lnchi,1)
 
 
       case default
         call stop_it('no such opacity type: '//trim(opacity_type))
 
       endselect
+
+      if (lrad_debug) then
+        call output(trim(directory_snap)//'/lnchi.dat',lnchi,1)
+      endif
 
     endsubroutine opacity
 !***********************************************************************
