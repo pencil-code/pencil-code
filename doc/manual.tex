@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.48 2002-07-14 21:16:40 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.49 2002-07-14 21:25:02 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -184,7 +184,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.48 $ $}
+\date{\today,~ $ $Revision: 1.49 $ $}
 
 % ====================================================================== %
 
@@ -213,7 +213,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.48 $ $}
+  \emph{\today,~ $ $Revision: 1.49 $ $}
 
 
 \end{center}
@@ -2147,15 +2147,11 @@ What is the problem?
 \ldots there is a problem with \var{mvar}:
 \begin{Verbatim}
 make start.x run.x
-make[1]: Entering directory `/home/brandenb/pencil/runs/gravz/conv0/src'
-f95 -O4 -u -Wc,-malign-double    -c cparam.f90
 f95 -O4 -u -Wc,-malign-double    -c cdata.f90
 Error: cdata.f90, line 71: Implicit type for MVAR
        detected at MVAR@)
 [f95 terminated - errors found by pass 1]
 make[1]: *** [cdata.o] Error 2
-make[1]: Leaving directory `/home/brandenb/pencil/runs/gravz/conv0/src'
-make: *** [code] Error 2
 \end{Verbatim}
 
 \medskip
@@ -2163,7 +2159,7 @@ make: *** [code] Error 2
 {\em
   Check and make sure that \file{mkcparam} (directory
   \file{\$PENCIL_HOME/bin}) is in your path.
-  It this doesn't help, there may be an {\it empty} \file{cparam.inc}
+  If this doesn't help, there may be an {\it empty} \file{cparam.inc}
   file in your \file{src} directory. Remove \file{cparam.inc} and try again.
   (Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
     I just added \file{\rm *.inc} to the \file{Makefile}.}
@@ -2225,7 +2221,7 @@ ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2001);
 \bibitem{Ref-4} Brandenburg, A., Dobler, W., Astron. Astrophys. 369, 329 (2001)
 \bibitem{SH88} Stanescu, D., Habashi, W. G., J. Comp. Phys. 143, 674 (1988)
 \bibitem{KR80} Krause, F., R\"adler, K.-H., Mean-Field
-Magneto\-hy- dro\-dy\-na\-mics and Dynamo Theory,
+Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory,
 Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 \bibitem{Ref-2} Brandenburg, A., Astrophys. J. 550, 824 (2001)
 
@@ -2505,7 +2501,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.48 2002-07-14 21:16:40 dobler Exp $ $}
+$ $Id: manual.tex,v 1.49 2002-07-14 21:25:02 dobler Exp $ $}
 
 
 \end{document}
