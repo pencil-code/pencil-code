@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.79 2002-08-13 08:25:35 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.80 2002-08-13 12:23:04 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -221,7 +221,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.79 $ $}
+\date{\today,~ $ $Revision: 1.80 $ $}
 
 % ====================================================================== %
 
@@ -250,7 +250,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.79 $ $}
+  \emph{\today,~ $ $Revision: 1.80 $ $}
 
 
 \end{center}
@@ -621,7 +621,7 @@ Apart from the \env{PATH} variable, the environment variable
 \texttt{./idl:../idl:+\$PENCIL_HOME/bin:./tmp:<IDL_DEFAULT>} .
 
 \paragraph{Note 1}
-The \code{<IDL_DEFAULT>} meachnism does not work for IDL versions 5.2 or
+The \code{<IDL_DEFAULT>} mechanism does not work for IDL versions 5.2 or
 older. In this case, you will have to edit the path manually, or adapt
 the \file{sourceme} scripts.
 
@@ -960,13 +960,24 @@ but in order to encapsulate individual applications, the code is compiled
 separately for each run in a local \file{src} directory below the
 individual run directory, like e.g.~\file{samples/conv-slab/src}.
 
+It may be a good idea to keep your own runs also under \var{cvs}, but
+this would usually be a different repository. On the machine where you
+are running the code you may want to check in out in your \file{pencil-code}
+directory. In our case we have our own runs in a repository called
+\file{pencil-runs}, so we say
+\begin{alltt}
+  \prompt{brandenb@fe1:/home/brandenb> } cd $PENCIL_HOME
+  \prompt{brandenb@fe1:/home/brandenb/pencil-code> } cvs co -d runs pencil-runs
+\end{alltt}
+In our case, \file{runs} contains individual run directories, grouped in
 The directory \file{runs} contains individual run directories, grouped in
 classes (like \file{spher} for spherical calculations, or \file{kinematic}
 for kinematic dynamo simulations.
 The current list of classes is
 \begin{verbatim}
-  gravz/      forced/     OLD/      old/
-  buoy_tube/  kinematic/  1d-tests/ rings/
+   4 1d-tests/     4 OLD/           4 convstar/     4 forced/        4 radiation/
+   4 2d-tests/     4 README         4 disc/         4 kinematic/     4 rings/
+   4 CVS/          4 buoy_tube/     4 discont/      4 pass_only/     4 slab_conv/
 \end{verbatim}
 The directory \file{forced/} contains some forced turbulence runs (both
 magnetic and nonmagnetic);
@@ -3227,7 +3238,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.79 2002-08-13 08:25:35 dobler Exp $ $}
+$ $Id: manual.tex,v 1.80 2002-08-13 12:23:04 brandenb Exp $ $}
 
 
 \end{document}
