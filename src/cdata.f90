@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.209 2004-02-18 08:15:05 dobler Exp $
+! $Id: cdata.f90,v 1.210 2004-03-02 13:12:07 mee Exp $
 
 module Cdata
 
@@ -35,7 +35,7 @@ module Cdata
   double precision :: unit_mass,unit_energy,unit_time,unit_flux
   
   double precision :: k_B,m_p,m_e,m_H,m_He,eV,hbar, &
-                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+                      chiH,chiH_,sigmaH_,sigmaSB,kappa_es, kpc
 
   ! magnetic permeability
   real :: mu0=1., mu01=0.

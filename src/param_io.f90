@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.163 2004-02-27 16:01:39 ajohan Exp $ 
+! $Id: param_io.f90,v 1.164 2004-03-02 13:12:07 mee Exp $ 
 
 module Param_IO
 
@@ -41,6 +41,7 @@ module Param_IO
   ! unclear source (probably just guessing?)
   double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
   double precision, parameter :: kappa_es_cgs=3.4d-1       ! [cm^2/g]
+  double precision, parameter :: kpc_cgs=3.086d+21         ! [cm]
 
   ! run parameters
   real :: tmax=1e33,awig=1.
