@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.134 2002-10-20 18:20:46 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.135 2002-10-31 12:32:08 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -192,9 +192,6 @@
 \newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
-\newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
-\newcommand{\env}[1]{\code{#1}\index[var]{#1}}
-%\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
 %\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
 %\newcommand{\cite}[1]{}
 \newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
@@ -202,14 +199,24 @@
 \newcommand{\email}[1]{\code{#1}}
 
 %\newcommand{\command}[1]{\code{#1}\index{#1}}
+%\newcommand{\env}[1]{\code{#1}\index[var]{#1}}
 %\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
 %\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
+%\newcommand{\option}[1]{`\code{#1}'\index{Option #1@Option \emph{`#1'}}}
+%\newcommand{\var}[1]{\textsl{#1}\index[var]{#1@\emph{#1}}\/}
 \makeatletter
 \newcommand{\command}[2][]{%
   \def\index@{#1}%
   \code{#2}%
   \ifx\index@\@empty\index{#2@\emph{#2}}%
   \else\index{#1@\emph{#1}}%
+  \fi%
+}
+\newcommand{\env}[2][]{%
+  \def\index@{#1}%
+  \code{#2}%
+  \ifx\index@\@empty\index[var]{#2}%
+  \else\index[var]{#1}%
   \fi%
 }
 \newcommand{\file}[2][]{%
@@ -219,6 +226,13 @@
   \else\index[file]{#1@\texttt{#1}}%
   \fi%
 }
+\newcommand{\name}[2][]{%
+  \def\index@{#1}%
+  \textsl{#2\/}%
+  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
+  \else\index{#1}%
+  \fi%
+}
 \newcommand{\option}[2][]{%
   \def\index@{#1}%
   `\code{#2}'%
@@ -226,11 +240,11 @@
   \else\index{Option #1@Option \emph{`#1'}}%
   \fi%
 }
-\newcommand{\name}[2][]{%
+\newcommand{\var}[2][]{%
   \def\index@{#1}%
   \textsl{#2\/}%
-  \ifx\index@\@empty\index{#2@\MakeUppercase #2}%
-  \else\index{#1}%
+  \ifx\index@\@empty\index[var]{#2@\emph{#2}}%
+  \else\index[var]{#1@\emph{#1}}%
   \fi%
 }
 \makeatother
@@ -319,7 +333,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.134 $ $}
+\date{\today,~ $ $Revision: 1.135 $ $}
 
 % ====================================================================== %
 
@@ -352,7 +366,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.134 $ $}
+  \emph{\today,~ $ $Revision: 1.135 $ $}
 
   \vspace{\stretch{3}}
 
@@ -617,7 +631,7 @@ This includes all problems in
   continue to use it.\footnote{%
     In that case you'd say
     \code{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
-    assuming that \var[USER]{\$USER} is the userid registered in the original
+    assuming that \env[USER]{\$USER} is the userid registered in the original
     repository. The content of this repository is copied automatically every
     hour to the anonymous cvs repository.}
 
@@ -1171,7 +1185,7 @@ have changed names or other input convections.}
 The subdirectory \file[src/]{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
 \file{cparam.local}), together with links to
-all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
+all the \file[*.f90]{.f90} and \file[*.c]{.c} files and the \file{Makefile} in the top
 \file[src/]{src} directory (these links are set up by the script
 \cmd{setup-src}).
 
@@ -1196,7 +1210,7 @@ functions for your convenience.
 If you do not want to source one of these files, you need to make sure
 your \name{IDL} path is set appropriately (provided you want to use
 \name{IDL}) and you will need to address the scripts from
-\file[bin/]{bin} with their explicit path name, or adjust your \var{PATH}
+\file[bin/]{bin} with their explicit path name, or adjust your \env{PATH}
 manually.
 
 
@@ -1517,7 +1531,7 @@ the kinetic helicity \var{oum}
 (that is $\left<\vekt{\omega}\cdot\uv\right>$) in the last column with the
 default format \verb|(1pe10.2)|.\footnote{
   Note that immediately after a format that uses the modifier \code{1p},
-  on should switch back to \code{0p}, since otherwise the following numbers
+  one should switch back to \code{0p}, since otherwise the following numbers
   printed with \code{f} formats will be one order of magnitude off.
   This is the sad heritage of some more obscure Fortran I/O features.
 }
@@ -1721,7 +1735,7 @@ distributed random noise of amplitude $10^{-4}$.
 
 
 The run parameters for \file{samples/helical-MHDturb} are
-\begin{verbatim}
+\begin{alltt}
   &run_pars
     cvsid='\${}Id:\$',                 \textsl{! identify version of start.in}
     nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=20, itorder=3,
@@ -1739,7 +1753,7 @@ The run parameters for \file{samples/helical-MHDturb} are
   &magnetic_run_pars
     eta=5e-3,
   / 
-\end{verbatim}
+\end{alltt}
 Here we run for \var{nt}$=10$ timesteps, every second step, we write a
 line of diagnostic output; we require the time step to keep the advective
 \name{Courant number} $\le 0.4$ and the diffusive \name{Courant number}
@@ -3332,13 +3346,16 @@ a random phase. On dimensional grounds the normalization factor
 is chosen to be
 $N=f_0 c_{\rm s}(kc_{\rm s}/\delta t)^{1/2}$, where $f_0$ is a
 nondimensional factor, $k=|\kv|$, and $\delta t$ is the length of
-the timestep. We focus on the case where $|\kv|$ is around 5, and
+the timestep.
+The $\delta t^{-1/2}$ dependence ensures that the forcing is
+delta-correlated in time.
+We focus on the case where $|\kv|$ is around 5, and
 select at each timestep randomly one of the 228 possible vectors in
 $4.5<|\kv|<5.5$. We force the system with eigenfunctions of the curl
 operator,
 \begin{equation}
 \fv_{\kv}={\kv\times(\kv\times\ev)-i\sigma|\kv|(\kv\times\ev)
-\over\sqrt{1+\sigma^2}\kv^2\sqrt{1-(\kv\cdot\ev)^2/\kv^2}},
+\over\sqrt{1+\sigma^2}\;\kv^2\sqrt{1-(\kv\cdot\ev)^2/\kv^2}},
 \end{equation}
 where $\ev$ is an arbitrary unit vector needed in order
 to generate a vector $\kv\times\ev$ that is perpendicular
@@ -3360,7 +3377,9 @@ and reduces to the simpler form
 \begin{equation}
 \fv_{\kv}=\left(\kv\times\ev\right)/\sqrt{\kv^2-(\kv\cdot\ev)^2}.
 \end{equation}
-For $0<\sigma<1$, the forcing function has fractional helicity;
+For $0<\sigma<1$, the forcing function has fractional helicity;'footnote{
+  WD: fractional helicity $\sigma$?
+}
 see Sect.~4.5 of Ref.~\cite{BDS02}.
 
 % ---------------------------------------------------------------------- %
@@ -4451,7 +4470,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.134 2002-10-20 18:20:46 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.135 2002-10-31 12:32:08 dobler Exp $ $}
 
 
 \end{document}
