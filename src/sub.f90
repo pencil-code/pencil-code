@@ -741,8 +741,13 @@ module Sub
 !
       if(present(mxout)) then; mxout1=mxout; else; mxout1=mx; endif
       if(present(myout)) then; myout1=myout; else; myout1=my; endif
-      if(present(mzout)) then; mzout1=mzout; else; myout1=mz; endif
+      if(present(mzout)) then; mzout1=mzout; else; mzout1=mz; endif
 !
+write(0,*) "File = ", file
+if (present(mxout)) write(0,*) "  mxout = ", mxout
+if (present(myout)) write(0,*) "  myout = ", myout
+if (present(mzout)) write(0,*) "  mzout = ", mzout
+write(0,*) "    m[x-z]out1 = ", mxout1,myout1,mzout1
       open(1,file=file)
       write(1,'(4i7)') mxout1,myout1,mzout1,mvar
 !
