@@ -5,7 +5,7 @@
 ;  non-helical) forcing of the velocity field
 ;
 ;  Author: axel
-;  CVS: $Id: generate_kvectors.pro,v 1.3 2002-07-10 16:06:49 dobler Exp $
+;  CVS: $Id: generate_kvectors.pro,v 1.4 2002-07-10 16:11:18 dobler Exp $
 ;
 ; Wave vectors are located in a subvolume of the box
 ;   -kmax <= kk:=(kx,ky,kz) <= kmax
@@ -65,6 +65,7 @@ kav=kav/n
 ;
 ;  write result
 ;
+print, 'writing ' + strtrim(n,2) + ' wave vectors; kav = ' + strtrim(kav,2)
 close,1
 openw,1,'k.dat'
 printf,1,n,kav
