@@ -1,0 +1,124 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   adapt-mkfile
+# Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+# Date:   27-May-2000
+# Version: 0.21
+# Description:
+#   Transform a makefile with machine-dependent information into one that
+#   is adapted to the machine we're running on.
+# Syntax:
+# - The source file is copied from input to output and only the block
+#   between $start_tag and $end_tag (currently `### Begin machine dependent'
+#   and `### End machine dependent') is processed.
+# - The tags in the `## <OS>:' lines are matched against the output
+#   from `uname -s'.
+# - An empty line closes the block referring to your machine
+#   if a line ends in `#(<HOST>)', it is only activated for this host,
+#    even if <OS> matches
+# - <HOST> can contain any Perl regular expression and will be matched
+#   against the output from `uname -n`. Thus, `mhd.'  will match mhd0,
+#   mhd1, mhd2, .. Alternatively, you can put something like
+#   `#(mhd0|mhd1)'
+# - An example is probably best to illustrate how an input file can look
+#   like:
+
+# ### Begin machine dependent
+# 
+# ## IRIX64:
+# #FC=f90
+# #FFLAGS= -64 -O3 -C -macro_expand  #(Antares)
+# #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
+# 
+# ## Linux:
+# #FC=f95
+# #FFLAGS= -O4 -C -gline -Wc,-malign-double
+# 
+# ## SunOS:
+# FC=pghpf
+# FFLAGS= -Msmp -O4		#(Lomond)
+# 
+# ### End machine dependent
+
+use strict;
+
+my ($infile,$outfile,$progname);
+my ($activate,$hosttag);
+my $start_tag = '^\s*###\s*begin\s*machine\s*dependent';
+my $end_tag =   '^\s*###\s*end\s*machine\s*dependent';
+
+my $os = `uname -s`; chomp($os);
+my $host = `uname -n`; chomp($host);
+my $myostag = "\#\#\\s$os:\\s*\$"; # Beginning..
+my $end_ostag = '^\s*$';	# and end of block for my OS
+my $anyhosttag = '\#\s*\(.*\)\s*$'; # ' Any explicit #(host) entry
+
+($progname = $0) =~ s|.*/||;
+my $usage = "Usage:  $progname [file1 [file2]]
+Processes the makefile file1 (or stdin) and writes the locally adapted
+makefile to file2 (or stdout).
+"  ;
+my $message = "
+# Caution:
+#   This file has been created from `" . ($ARGV[0] || '<stdin>') . 
+    "' and will be overwritten the
+#   next time `$progname' is called. If you're about to make non-trivial
+#   changes, you probably want to edit the master file instead.\n";
+
+# Process arguments
+if ((@ARGV > 0) && ($ARGV[0] =~ /^(-h|--help)/)) {
+    die $usage;
+}
+$infile = ($ARGV[0] || '-');
+$outfile = ($ARGV[1] || '- ');
+if ($infile eq $outfile) {
+    die "$progname: Input and output files must differ.\n";
+}
+open(INPUT,"< $infile") || die "Can't open $infile for reading";
+open(OUTPUT,"> $outfile") || die "Can't open $outfile for writing";
+
+# Process loop
+Process: while (<INPUT>) {
+    if ((/^\s*$/ || /$start_tag/i) && $message) { # Issue message once
+	$_ = $message . $_;
+	$message = '';
+    }
+    if (/$start_tag/i .. /$end_tag/i) {	# Modify only between these tags
+	if (/$myostag/i .. /$end_ostag/i) { # Directives for the given OS
+	    $activate = 1;
+	    if (/$anyhosttag/i) {
+		# Extract the host tag (retaining the outer brackets):
+		$hosttag = ($_ =~ /\#\s*(\(.*\))\s*$/)[0];
+		if ($host !~ /$hosttag/i) { $activate = 0; }
+	    }
+	} else {		# Different OS
+	    $activate = 0;
+	}
+	# Uncomment singly commented lines
+	if ($activate) {
+	    $_ =~ s/^\s*\#([^\#\n])/$1/;
+	} else {		# Wrong OS or host ==> comment out
+	                        # uncommented lines
+	    $_ =~ s/^(\s*[^\#\n])/\#$1/m;
+	}
+    }
+    print OUTPUT $_;
+}
+
+
+# End of file adapt-mkfile
