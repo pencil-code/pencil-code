@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.29 2004-04-06 11:53:32 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.30 2004-04-16 14:35:04 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -59,7 +59,7 @@ use Getopt::Long;
 my $line;
 my $dust_string='1*4';
 my $lmdvar='.false.';
-my $lrhoice='.false.';
+my $lmice ='.false.';
 my ($maux,$mvar,$ndustspec,$mvar_per_dust) = (0) x 4;
 
 (my $cmdname = $0) =~ s{.*/}{};
@@ -100,7 +100,7 @@ if ($ndustspec >= 1) {
   $mvar = $mvar + $ndustspec*$mvar_per_dust;
   }
 if ($mvar_per_dust >= 5) {$lmdvar = '.true.';}
-if ($mvar_per_dust == 6) {$lrhoice = '.true.';}
+if ($mvar_per_dust == 6) {$lmice  = '.true.';}
 
 
 ## Write output
@@ -114,7 +114,7 @@ print OUT <<"EOF";
 
 integer, parameter :: mvar=$mvar, maux=$maux
 integer, parameter :: ndustspec=$ndustspec
-logical, parameter :: lmdvar=$lmdvar, lrhoice=$lrhoice
+logical, parameter :: lmdvar=$lmdvar, lmice=$lmice
 
 EOF
 
