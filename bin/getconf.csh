@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.109 2004-02-25 13:07:46 mee Exp $
+# $Id: getconf.csh,v 1.110 2004-03-04 13:12:47 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -182,14 +182,16 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv LANG en_US
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
-          || ($hn =~ master) || ($hn =~ node*) ) then
+          || ($hn =~ master) || ($hn =~ node*) \
+	  || ($hn =~ ns0*) ) then
   if ($mpi) then
     # Choose appropriate mpirun version (LAM vs. MPICH)
     if (`fgrep -c lam_mpi src/start.x` > 0) then # lam
       set mpirun = /usr/lib/lam/bin/mpirun
       set mpirunops = "-c2c -O"
-    else if (`fgrep -c MPICHX src/start.x` > 0) then # mpich
-      set mpirun = /usr/lib/mpich/bin/mpirun
+    else if (`egrep -c 'MPICHX|MPICH_DEBUG_ERRS' src/start.x` > 0) then # mpich
+      if (-x /usr/lib/mpich/bin/mpirun) set mpirun=/usr/lib/mpich/bin/mpirun
+      if (-x /opt/mpich/bin/mpirun) set mpirun=/opt/mpich/bin/mpirun
       if ($?SGE_O_WORKDIR) then	# sge job
 	set mpirunops = "-nolocal -machinefile $SGE_O_WORKDIR/machines-$JOB_NAME-$JOB_ID"
       else			# interactive run

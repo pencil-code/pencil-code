@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.32 2004-03-04 09:40:57 dobler Exp $
+### $Id: Makefile.src,v 1.33 2004-03-04 13:12:47 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -129,7 +129,7 @@ pFFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
-#LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
+#LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
@@ -145,7 +145,7 @@ pFFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin|davey[1-2])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
-#FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)  
+#FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 #FC=ifort #(cosmo)
 #CC=icc #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
@@ -215,17 +215,20 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 # -Mpencil.map
 
 ## Generic rules:
-.SUFFIXES: .f90 .mod
+.SUFFIXES:			# get rid of that annoying Modula rule
+.SUFFIXES: .f .f90 .c .o
 
 .f.o:
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f 
-#$(FCCLEANER)
+
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
-#$(FCCLEANER)
-.mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
-#$(FCCLEANER)
+
+#.mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
+# [wd 03-mar-2004: commented out since on Ns0 the .mod files are sometimes
+# slightly newer than the .o, which causes lots of unnecessary recompilation]
+#	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
+
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
 
