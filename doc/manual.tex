@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.137 2002-11-14 19:03:57 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.138 2002-11-26 15:01:44 ngrs Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -333,7 +333,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.137 $ $}
+\date{\today,~ $ $Revision: 1.138 $ $}
 
 % ====================================================================== %
 
@@ -366,7 +366,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.137 $ $}
+  \emph{\today,~ $ $Revision: 1.138 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2589,6 +2589,45 @@ What is the problem?
   \file{Makefile}).
 }
 
+\subsubsection{Internal compiler error with Compaqs/Dec fortran}
+\ldots the Dec fortran optimiser has occasional problems with \var{nompicomm.f90}:
+\begin{Verbatim}
+  make start.x run.x read_videofiles.x
+  f90  -fast -O5 -tune ev6 -arch ev6  -c cparam.f90
+  f90  -fast -O5 -tune ev6 -arch ev6  -c cdata.f90
+  f90  -fast -O5 -tune ev6 -arch ev6  -c general.f90
+  f90  -fast -O5 -tune ev6 -arch ev6  -c deriv.f90
+  f90  -fast -O5 -tune ev6 -arch ev6  -c nofft.f90
+  f90  -fast -O5 -tune ev6 -arch ev6  -c nompicomm.f90
+  otal vm  2755568 	otal vm  2765296 	otal vm  2775024 	
+  otal vm  2784752 	otal...
+  Assertion failure:  Compiler internal error - please submit problem r...
+    GEM ASSERTION, Compiler internal error - please submit problem report
+  Fatal error in: /usr/lib/cmplrs/fort90_540/decfort90 Terminated 
+  *** Exit 3
+  Stop.
+  *** Exit 1
+  Stop.
+\end{Verbatim}
+
+\medskip
+
+{\em
+  The occurrence of this problem depends upon the gridsize;
+  and the problem never seems to occur with \file{mpicomm.f90},
+  except when \var{ncpus=1}.
+  The problem can be avoided by switching off the loop transformation 
+  optisation (part of the -O5 optimisation), via:
+  \begin{Verbatim}
+    #OPTFLAGS=-fast -O5 -notransform_loops
+  \end{Verbatim}
+  This has not been made standard in \file{Makefile}, 
+  as it can cause some slowdown: e.g.
+  %a increase of time/timestep/meshpoint from 2.67 to 289 microsec,
+  an increase from 2.67 to 289 ${\mu\rm s}/{\rm pt\;\;step}$,
+  for the \file{runs/forced/hel128f}, 
+  with \var{nxgrid=nygrid=nzgrid=128}, \var{ncpus=16},  \var{nt=100}.
+}
 
 % ---------------------------------------------------------------------- %
 
@@ -4498,7 +4537,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.137 2002-11-14 19:03:57 dobler Exp $ $}
+$ $Id: manual.tex,v 1.138 2002-11-26 15:01:44 ngrs Exp $ $}
 
 
 \end{document}
