@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.96 2004-05-25 12:21:39 ajohan Exp $
+! $Id: dustdensity.f90,v 1.97 2004-05-26 08:58:01 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.96 2004-05-25 12:21:39 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.97 2004-05-26 08:58:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -414,10 +414,18 @@ module Dustdensity
           if (i_rhodmt /= 0) then
             if (lfirstpoint .and. k /= 1) then
               lfirstpoint = .false.
-              call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
+              if (lmdvar) then
+                call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
+              else
+                call sum_mn_name(md(k)*nd(:,k),i_rhodmt)
+              endif
               lfirstpoint = .true.
             else
-              call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
+              if (lmdvar) then
+                call sum_mn_name(f(l1:l2,m,n,imd(k))*nd(:,k),i_rhodmt)
+              else
+                call sum_mn_name(md(k)*nd(:,k),i_rhodmt)
+              endif
             endif
           endif
           if (i_rhoimt /= 0) then
