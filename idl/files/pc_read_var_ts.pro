@@ -1,17 +1,18 @@
-; $Id: pc_read_var_ts.pro,v 1.1 2003-10-13 13:56:49 ajohan Exp $
+; $Id: pc_read_var_ts.pro,v 1.2 2003-10-15 13:04:13 ajohan Exp $
 ;
 ;   Get time series for various parameters from data snapshots
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2003-10-13 13:56:49 $
-;  $Revision: 1.1 $
+;  $Date: 2003-10-15 13:04:13 $
+;  $Revision: 1.2 $
 ;
 ;  10-oct-03/anders: coded (coding layout adapted from Tony)
 ;  13-oct-03/anders: renamed from pc_get_ts.pro
 ;  
-pro pc_get_ts,t_arr=t_arr,array=array,snap_start=snap_start,snap_end=snap_end, $
-              datadir=datadir,proc=proc,type=type, $
-              HELP=HELP,QUIET=QUIET
+pro pc_read_var_ts,t_arr=t_arr,array=array, $
+                   snap_start=snap_start,snap_end=snap_end, $
+                   datadir=datadir,proc=proc,type=type, $
+                   HELP=HELP,QUIET=QUIET
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
