@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.8 2002-10-05 12:07:53 dobler Exp $
+# $Id: nl2idl,v 1.9 2002-10-05 12:49:33 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -57,10 +57,11 @@ Options:
   --function=<func> \tName the IDL function <func> (default is `$funcname')
   -m
   --minimize        \tMinimize strings by trimming trailing whitespace
-  -v <var>
-  --var=<var>       \tInstead of a function file, write a single line
-                    \tassigning the structure to variable <var>. Useful
-                    \tif you EXECUTE the corresponding string in IDL
+  -1
+  --one-line        \tInstead of a function file, write a single line
+                    \trepresenting the structure. Useful if you use
+                    \tEXECUTE to assign the resulting structure to an IDL
+                    \tvariable
   --version         \tWrite version number of $cmdname and exit
 ";
 
@@ -70,13 +71,13 @@ GetOptions(\%opts,
 	            --debug
                -f=s --function=s
 	       -m   --minimize
-               -v=s --var=s
+               -1   --one-line
 	            --version
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
-my $varname = ($opts{'v'} || $opts{'var'} || '');
+my $oneline = ($opts{'1'} || $opts{'one-line'} || 0);
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 if ($debug) {
     foreach my $opt (keys(%opts)) {
@@ -86,7 +87,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.8 2002-10-05 12:07:53 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.9 2002-10-05 12:49:33 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -96,8 +97,8 @@ my $infile = ($ARGV[0] || '-');
 
 ## Some comments and the function definition header
 my $idl='';
-if ($varname) {
-    $idl .= "$varname = { ";
+if ($oneline) {
+    $idl .= "{ ";
 } else {
     $idl .= <<"HEADER";
 ;
@@ -157,7 +158,7 @@ foreach my $nl (keys %nlists) {
 	} else {
 	    ($br0,$br1) = ("", "");
 	}
-	if ($varname) {
+	if ($oneline) {
 	    $idl .= "$var: $br0" . join(", ", @$val) . "$br1, ";
 	} else {
 	    my $varstr = sprintf("%-10s", $var);
@@ -166,7 +167,7 @@ foreach my $nl (keys %nlists) {
     }
 }
 
-if ($varname) {
+if ($oneline) {
     ## Replace last comma by closing brace and finish
     substr($idl,-2) = " }";
 } else {
