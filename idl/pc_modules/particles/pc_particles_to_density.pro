@@ -1,11 +1,13 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.1 2005-01-26 10:18:07 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.2 2005-01-30 09:57:07 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
 ;  Author: Anders Johansen
 ;
 function pc_particles_to_density, xxp, x, y, z
+
+npar=0L
 
 npar=n_elements(xxp[*,0])
 nx=n_elements(x)
@@ -17,7 +19,7 @@ distx=fltarr(nx)
 disty=fltarr(ny)
 distz=fltarr(nz)
 
-for k=0,npar-1 do begin
+for k=0L,npar-1 do begin
 
   for l=0,nx-1 do begin
     distx[l]=abs(xxp[k,0]-x[l])
@@ -34,7 +36,7 @@ for k=0,npar-1 do begin
   endfor
   iz=where( distz eq min(distz) )
 
-  np[ix,iy,iz]=np[ix,iy,iz]+1.0
+  np[ix[0],iy[0],iz[0]]=np[ix[0],iy[0],iz[0]]+1.0
 
 endfor
 
