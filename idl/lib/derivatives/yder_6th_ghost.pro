@@ -21,10 +21,15 @@ endif else begin
   dy2=spread(spread(1./(60.*yprim),0,nx),2,nz)
 endelse
 ;
+if m2 gt m1 then begin
   d[*,m1:m2,*]=dy2*(+45.*(f[*,m1+1:m2+1,*]-f[*,m1-1:m2-1,*])$
                      -9.*(f[*,m1+2:m2+2,*]-f[*,m1-2:m2-2,*])$
                         +(f[*,m1+3:m2+3,*]-f[*,m1-3:m2-3,*])$
       )
+endif else begin
+  d[*,m1:m2,*]=0.
+endelse
+
 ;
 return,d
 end

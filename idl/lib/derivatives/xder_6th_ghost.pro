@@ -26,11 +26,16 @@ s=size(f)
 if s[0] eq 1 then begin
 end else if s[0] eq 2 then begin
 end else if s[0] eq 3 then begin
+;
+if l2 gt l1 then begin
   d[l1:l2,*,*]=dx2*(+45.*(f[l1+1:l2+1,*,*]-f[l1-1:l2-1,*,*])$
                      -9.*(f[l1+2:l2+2,*,*]-f[l1-2:l2-2,*,*])$
                         +(f[l1+3:l2+3,*,*]-f[l1-3:l2-3,*,*])$
         )
-end
+endif else begin
+  d[l1:l2,*,*]=0.
+endelse
+endif
 ;
 return,d
 end
