@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.84 2002-07-04 06:43:50 dobler Exp $
+! $Id: entropy.f90,v 1.85 2002-07-04 21:46:47 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.84 2002-07-04 06:43:50 dobler Exp $")
+           "$Id: entropy.f90,v 1.85 2002-07-04 21:46:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -618,29 +618,28 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine bc_ss(f,errmesg)
+    subroutine bc_ss(f)
 !
 !  boundary condition for entropy
 !
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
 !
+      use Mpicomm, only: stop_it
       use Cdata
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
-      character (len=*) :: errmesg
 !
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
-      errmesg=""
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !
         if (bcz1(ient) == "c1") then
           if (bcz1(ilnrho) /= "a2") &
-               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 1."
+               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
           tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                    * exp(-gamma*f(:,:,n1,ient) &
                          - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
@@ -656,7 +655,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
         if (bcz2(ient) == "c1") then
           if (bcz2(ilnrho) /= "a2") &
-               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 2."
+               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
           tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                    * exp(-gamma*f(:,:,n2,ient) &
                          - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
@@ -684,7 +683,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
           if (cs2bot==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2bot=0'
           if (bcz1(ilnrho) /= "a2") &
-               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
+               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
           tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                    + alog(cs2bot/cs20)) / gamma
           f(:,:,n1,ient) = tmp_xy
@@ -697,7 +696,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           if (ldebug) print*,'set top temperature: cs2top=',cs2top
           if (cs2top==0..and.lroot) print*,'BOUNDCONDS: cannot have cs2top=0'
           if (bcz1(ilnrho) /= "a2") &
-               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
+               call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                    + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy

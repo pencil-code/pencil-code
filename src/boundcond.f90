@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.16 2002-07-04 14:57:11 dobler Exp $
+! $Id: boundcond.f90,v 1.17 2002-07-04 21:46:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -17,16 +17,9 @@ module Boundcond
   contains
 
 !***********************************************************************
-    subroutine boundconds(f,errmesg)
+    subroutine boundconds(f)
 !
 !  Physical boundary conditions except for periodic stuff.
-!  If errmesg is set to a non-empty string, the calling routine will call
-!  stop_it(errmesg).
-!
-!  Wolfgang: it is now called from wsnap and equ!!
-!  OLD> This deferred abort mechanism is necessary because
-!  OLD> Boundcond is used by Mpicomm, so we cannot call stop_it (from Mpicomm)
-!  OLD> here.
 !
       use Cdata
       use Entropy
@@ -35,9 +28,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: fder,cs2_2d
       integer :: i,j
-      character (len=*) :: errmesg
 !
-      errmesg=""
       if(ldebug) print*,'ENTER: boundconds'
 !
 !  Boundary conditions in x
@@ -72,7 +63,7 @@ module Boundcond
               if (lroot) &
                    print*, "No such boundary condition bcx1 = ", &
                            bcx1(j), " for j=", j
-              STOP
+              call stop_it("")
             endselect
           endif
           !
@@ -97,7 +88,7 @@ module Boundcond
               if (lroot) &
                    print*, "No such boundary condition bcx2 = ", &
                            bcx2(j), " for j=", j
-              STOP
+              call stop_it("")              
             endselect
           endif
         enddo
@@ -128,7 +119,7 @@ module Boundcond
             if (lroot) &
                  print*, "No such boundary condition bcy1 = ", &
                          bcy1(j), " for j=", j
-            STOP
+            call stop_it("")
           endselect
         endif
         !
@@ -152,7 +143,7 @@ module Boundcond
             if (lroot) &
                  print*, "No such boundary condition bcy2 = ", &
                          bcy2(j), " for j=", j
-            STOP
+            call stop_it("")
           endselect
         endif
       enddo
@@ -211,7 +202,7 @@ module Boundcond
             if (lroot) &
                  print*, "No such boundary condition bcz1 = ", &
                          bcz1(j), " for j=", j
-            STOP
+            call stop_it("")
           endselect
         endif
         !
@@ -263,13 +254,13 @@ module Boundcond
             if (lroot) &
                  print*, "No such boundary condition bcz2 = ", &
                          bcz2(j), " for j=", j
-            STOP
+              call stop_it("")
           endselect
         endif
       enddo
 !
-      if (lentropy)  call bc_ss(f,errmesg)
-      if (lmagnetic) call bc_aa(f,errmesg)
+      if (lentropy)  call bc_ss(f)
+      if (lmagnetic) call bc_aa(f)
 !
     endsubroutine boundconds
 !***********************************************************************

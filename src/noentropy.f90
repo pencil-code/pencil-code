@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.23 2002-06-25 14:58:47 dobler Exp $
+! $Id: noentropy.f90,v 1.24 2002-07-04 21:46:47 dobler Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.23 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: noentropy.f90,v 1.24 2002-07-04 21:46:47 dobler Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -164,16 +164,15 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine bc_ss(f,errmesg)
+    subroutine bc_ss(f)
 !
 !  dummy routine for entropy boundary condition
 !
 !  12-jun-2002/axel: coded
 !
       real, dimension (mx,my,mz,mvar) :: f
-      character (len=*) :: errmesg
 !
-      if (ip==0) print*,f,errmesg
+      if (ip==1) print*,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss
 !***********************************************************************
 

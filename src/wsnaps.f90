@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.1 2002-06-12 09:46:03 brandenb Exp $
+! $Id: wsnaps.f90,v 1.2 2002-07-04 21:46:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -32,7 +32,6 @@ contains
       character (len=4) :: ch
       character (len=9) :: file
       character (len=*) :: chsnap
-      character (len=160) :: errmesg
       logical lsnap,llabel
       integer, save :: ifirst,nsnap
       real, save :: tsnap
@@ -57,7 +56,7 @@ contains
         call out2 (file,tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call initiate_isendrcv_bdry(a)
-          call boundconds(a,errmesg); if (errmesg/="") call stop_it(trim(errmesg))
+          call boundconds(a)
           call finalise_isendrcv_bdry(a)
           call output(chsnap//ch,a,mvar)
         endif
@@ -66,7 +65,7 @@ contains
 !
       else
         call initiate_isendrcv_bdry(a)
-        call boundconds(a,errmesg); if (errmesg/="") call stop_it(trim(errmesg))
+        call boundconds(a)
         call finalise_isendrcv_bdry(a)
         call output(chsnap,a,mvar)
       endif

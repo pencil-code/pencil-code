@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.61 2002-07-04 14:52:07 dobler Exp $
+! $Id: magnetic.f90,v 1.62 2002-07-04 21:46:47 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.61 2002-07-04 14:52:07 dobler Exp $")
+           "$Id: magnetic.f90,v 1.62 2002-07-04 21:46:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -186,6 +186,14 @@ module Magnetic
                        spread(spread(sin(4*y),1,mx),3,mz)*&
                        spread(spread(cos(2*z),1,mx),2,my)
         if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
+
+      case('crazy-2')
+        !
+        !  another crazy initial condition for testing the cross
+        !  derivatives xder(zder(Az))
+        !
+        f(:,:,:,iay) = sin(xx)*sin(yy)
+        if (lroot) print*, 'Az=sin(x)*sin(z) for debugging purposes'
 
       case('Alfven-circ-x')
         !
@@ -636,27 +644,26 @@ module Magnetic
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine bc_aa(f,errmesg)
+    subroutine bc_aa(f)
 !
 !  Potential field boundary condition for magnetic vector potential
 !
 !  14-jun-2002/axel: adapted from similar 
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j
-      character (len=*) :: errmesg
-!
-      errmesg=""
 !
 !  pontential field condition at the bottom
 !
         if (bcz1(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the bottom'
-          if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
+          if (nprocy/=1) &
+               call stop_it("potential field: doesn't work yet with nprocy/=1")
           do j=0,1
             f2=f(l1:l2,m1:m2,n1+1,iax+j)
             f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -674,7 +681,8 @@ module Magnetic
 !
         if (bcz2(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the top'
-          if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
+          if (nprocy/=1) &
+               call stop_it("potential field: doesn't work yet with nprocy/=1")
           do j=0,1
             f2=f(l1:l2,m1:m2,n2-1,iax+j)
             f3=f(l1:l2,m1:m2,n2-2,iax+j)

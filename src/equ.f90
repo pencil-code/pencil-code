@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.72 2002-07-04 10:10:55 nilshau Exp $
+! $Id: equ.f90,v 1.73 2002-07-04 21:46:47 dobler Exp $
 
 module Equ
 
@@ -113,6 +113,7 @@ module Equ
         call mpireduce_sum(fnamez,fsumz,nnamez*nz*nprocz)
         if(lroot) fnamez=fsumz/(nx*ny*nprocy)
       endif
+
 !
     endsubroutine xyaverages
 !***********************************************************************
@@ -205,7 +206,6 @@ module Equ
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
       integer :: j
-      character (len=160) :: errmesg
 !
 !  print statements when they are first executed
 !
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.72 2002-07-04 10:10:55 nilshau Exp $")
+           "$Id: equ.f90,v 1.73 2002-07-04 21:46:47 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -224,7 +224,7 @@ module Equ
 !
       if (ldebug) print*,'bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      call boundconds(f,errmesg); if (errmesg/="") call stop_it(trim(errmesg))
+!      call boundconds(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -233,7 +233,10 @@ module Equ
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) call finalise_isendrcv_bdry(f)
+        if (necessary(imn)) then
+          call finalise_isendrcv_bdry(f)
+          call boundconds(f)
+        endif
 !
 !  coordinates are needed all the time
 !  (but not for isotropic turbulence!)
