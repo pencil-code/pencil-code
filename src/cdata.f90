@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.63 2002-07-04 10:10:55 nilshau Exp $
+! $Id: cdata.f90,v 1.64 2002-07-04 14:52:07 dobler Exp $
 
 module Cdata
 
@@ -46,7 +46,7 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname,nnamez,nnamexy
+  integer :: nname=0,nnamez=0,nnamexy=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
   integer, parameter :: mname=100,mnamez=20,mnamexy=5
   integer, dimension (mname) :: itype_name

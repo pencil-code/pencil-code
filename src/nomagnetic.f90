@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $
+! $Id: nomagnetic.f90,v 1.18 2002-07-04 14:52:07 dobler Exp $
 
 module Magnetic
 
@@ -16,7 +16,7 @@ module Magnetic
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-  integer :: i_bxmxy,i_bymxy,i_bzmxy
+  integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
 
   contains
 
@@ -41,7 +41,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.18 2002-07-04 14:52:07 dobler Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************
