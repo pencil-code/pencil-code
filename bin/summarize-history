@@ -1,0 +1,152 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   summarize-history
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   03-Nov-2002
+# Description:
+#    Evaluate `params.log' and print a history of changes.
+
+use strict;
+use File::Temp qw/tempfile/;
+
+my $parfile = "data/params.log"; # Default parameter file
+#my $diff = "diff";		 # Shell `diff' function to use
+my $diff = "sdiff";		# Shell `diff' function to use
+my @diff_opts = qw/-s -w78 -W/;	# Options for $diff
+my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
+
+
+my $log;
+
+
+(my $progname = $0) =~ s|.*/||;
+my $usage="Usage:  $progname [<params_file>]
+Evaluate <params_file> (default is `$parfile') and print a history
+of changes.
+";
+
+if ((@ARGV > 0) && ($ARGV[0] =~ /^(-h|--help)/)) {
+    die $usage;
+}
+
+$parfile = $ARGV[0] || $parfile;
+
+## Read whole file and split contents by separator line
+{
+    local $/=undef;
+    open (LOG,"< $parfile") or die "Can't open file `$parfile'\n";
+    $log = <LOG>;
+    close LOG;
+}
+my @entries = split(/^\s*#\s*---------------------------------*\s*$/m,$log);
+## Drop empty entries..
+@entries = grep /\S/, @entries;
+## ..and emtpy lines
+@entries = map { s/^\s*\n//gm; $_ } @entries;
+
+## Drop the startup parameters
+if ($entries[0] =~ /^\s*#\s*Initializing/) {
+    shift @entries;
+} else {
+    warn "First entry doesn't look like output from start.x..\n";
+}
+
+## Are there at least two entries to be cmpared?
+if (@entries < 2) {
+    print "Nothing to do\n";
+    exit 0;
+}
+
+## Open temporary files (will be automaticalle removed at exit)
+my ($tmp1,$tmpname1) = tempfile("blaXXXXX", UNLINK => 0);
+my ($tmp2,$tmpname2) = tempfile("blubXXXXX", UNLINK => 0);
+## Markers to make header lines different, so they are always printed by
+## diff:
+my ($mark1,$mark2) = (".",":");
+
+my $sepline = "-" x 70;
+print "$sepline\n";
+chomp $entries[0];
+print $tmp1 "" . canonical(shift(@entries)) . "\n";
+close($tmp1);
+while (@entries) {
+    # Exchange the file handles to recycle the old $tmp1 for next comparison
+    ($tmp1,$tmpname1,$mark1, $tmp2,$tmpname2,$mark2)
+      = ($tmp2,$tmpname2,$mark2, $tmp1,$tmpname1,$mark1);
+    # (Re-)open file $tmp1 and write next entry
+    open($tmp1,">$tmpname1");
+    chomp $entries[0];
+    print $tmp1 "" . canonical(shift(@entries)), "\n" ;
+    close($tmp1);
+
+    # Do the diff
+    system("$diff", @diff_opts, "$tmpname2", "$tmpname1");
+    print "$sepline\n";
+}
+
+# ---------------------------------------------------------------------- #
+
+sub canonical {
+    # Return $line (a Fortran namelist) in a canonicalized form; basically
+    # split it along (roughly guessed) separators between variables.
+    my $line = shift;
+    my ($head,$vars);
+
+    if ($line =~ /^((?:\s*#[^\n]*\n)*)(.*)/s) {
+	($head,$vars) = ($1,$2);
+	# Normalize and add marker, so diff will print all header lines
+	chomp($head);
+	$head =~ s/(^\s*#)/$1$mark1/gm;
+
+#	print STDERR "HEAD:<$head>\n";
+#	print STDERR "VARS:<", substr($vars,0,50),">\n";
+
+	$vars =~ s/\n//g;	# join namelist stuff
+	# Separate different namelists by newlines:
+	$vars =~ s{(/?)\s*(\&$id)}{\n$1\n$2\n}g; # `.. / &next_nl var=val ..'
+	$vars =~ s{/\s*$}{\n/};	# Final `/'
+
+	# Pretty-print the special `impossible' value (needs to be adapted
+	# for different output formats used by different compilers)
+	$vars =~ s/3\.90850*[EeDd]\+?0?37/<impossible>/g;
+
+	# Now split between variables and splice in newlines
+	my @vars = split_vars($vars);
+	join("\n",$head,@vars);
+    } else {
+	printf STDERR "Something fishy with entry (no header or so):\n";
+	my $quoted = $line;
+	$quoted =~ s/\n/\\n/g;
+	$quoted =~ s/\s\s+/ /g;
+	printf STDERR "  " . substr("$quoted",0,70) . " [..]\n";
+	"";
+    }
+}
+
+sub split_vars {
+    # Split $line into individual assignments `var=val', separated by a
+    # newline from the following assignment.
+
+    my $line = shift;
+    $line =~ s/,?\s?($id\s*=)/\n$1/g;
+
+    $line;
+}
+
+
+# End of file summarize-history
