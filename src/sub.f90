@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.138 2003-11-10 10:58:28 dobler Exp $ 
+! $Id: sub.f90,v 1.139 2003-11-10 11:34:47 dobler Exp $ 
 
 module Sub 
 
@@ -2560,6 +2560,7 @@ module Sub
         write(11,*) 'values(6) = ', values(6)
         write(11,*) 'values(7) = ', values(7)
         close(11)
+      endif
 !
 !  END OF TEMPORARY DEBUGGING STUFF
 !
