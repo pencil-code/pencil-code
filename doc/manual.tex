@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.127 2002-10-08 18:17:24 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.128 2002-10-08 20:49:06 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.127 $ $}
+\date{\today,~ $ $Revision: 1.128 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.127 $ $}
+  \emph{\today,~ $ $Revision: 1.128 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1886,7 +1886,15 @@ For example, suppose you have the variables
 in \file{time_series.dat} and want to plot $u_{\rm rms}(t)$.
 Just start gnuplot and type
 \begin{alltt}
-  \prompt{gnuplot> } plot "data/time_series.dat" using (\$2):(\$4) with lines
+  \prompt{gnuplot> } plot "data/time_series.dat" using 2:4 with lines
+\end{alltt}
+If you work over a slow line and want to see both  $u_{\rm rms}(t)$ and
+$u_{\rm max}(t)$, use ASCII graphics:
+\begin{alltt}
+  \prompt{gnuplot> } set term dump
+  \prompt{gnuplot> } set logscale y
+  \prompt{gnuplot> } plot "data/time_series.dat" using 2:4 title "urms", \bs
+  \prompt{gnuplot> }      "data/time_series.dat" using 2:5 title "umax"
 \end{alltt}
 
 
@@ -4191,7 +4199,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.127 2002-10-08 18:17:24 dobler Exp $ $}
+$ $Id: manual.tex,v 1.128 2002-10-08 20:49:06 dobler Exp $ $}
 
 
 \end{document}
