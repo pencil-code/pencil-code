@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.2 2002-11-19 14:58:58 ngrs Exp $
+! $Id: nointerstellar.f90,v 1.3 2002-11-19 21:51:02 mee Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -29,24 +29,24 @@ module Interstellar
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_interstellar called twice')
+      if (.not. first) call stop_it('register_nointerstellar called twice')
       first = .false.
 !
-      linterstellar = .true.
+      linterstellar = .false.
 !
-      if ((ip<=8) .and. lroot) then
-        print*, 'Register_lncc'
-      endif
+!      if ((ip<=8) .and. lroot) then
+!        print*, 'Register_nointerstellar'
+!      endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.2 2002-11-19 14:58:58 ngrs Exp $")
+           "$Id: nointerstellar.f90,v 1.3 2002-11-19 21:51:02 mee Exp $")
 !
-      if (nvar > mvar) then
-        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_interstellar: nvar > mvar')
-      endif
+!      if (nvar > mvar) then
+!        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
+!        call stop_it('Register_nointerstellar: nvar > mvar')
+!      endif
 !
     endsubroutine register_interstellar
 !***********************************************************************
