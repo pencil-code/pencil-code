@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.59 2003-07-12 22:58:02 brandenb Exp $ 
+! $Id: initcond.f90,v 1.60 2003-07-16 10:44:52 ajohan Exp $ 
 
 module Initcond 
  
@@ -566,6 +566,7 @@ module Initcond
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
 !
       print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
+
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  calculate density, depending on what gamma is
@@ -641,13 +642,18 @@ module Initcond
 !
 !  xi is 1 inside vortex and 0 outside
 !
+      !hh=+.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)
+      !xi=.5+.5*tanh(hh/width)
+
       xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
       if(lroot) print*,'planet: width,rbound', width,rbound
 !
 !  Calculate enthalpy inside vortex
 !
       hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
-           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2
+           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
+
+
 !
 !  Calculate enthalpy outside vortex
 !
@@ -656,23 +662,11 @@ module Initcond
           do k=1,mz
             if(r_ell(i,j,k) .gt. 1) then
               hh(i,j,k) = &
-                   -0.5*Omega**2*zz(i,j,k)**2 + hh0!0.5*Omega**2*ztop**2 + hh0
+                   -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
             endif
           enddo
         enddo
       enddo
-
-      if (lentropy) then
-
-        f(:,:,:,ient)=-7*xi(:,:,:)
-        !hh(:,:,n2)=1.
-   
-        !print*,"with entropy: integrate hot corona"
-        !do n=n2-1,n1,-1
-        !  delS=f(:,:,n+1,ient)-f(:,:,n,ient)
-        !  hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
-        !enddo
-      endif
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
