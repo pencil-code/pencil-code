@@ -1,0 +1,22 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for magnetic flux rings
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2004-04-26 15:41:25 dobler Exp $'
+  xyz0 = , , 0.
+  ! Lxyz =  6.28.,   6.28.,  6.28.
+  lperi = T,    T,   F
+  bcx = 'p' ,'p' ,'p','p', 'p', 'p', 'p'
+  bcy = 'p' ,'p' ,'p','p', 'p', 'p', 'p'
+  bcz = 'a2','a2','a','a2','a2','a2','a2'
+/
+&hydro_init_pars
+/
+&density_init_pars
+  gamma=1.
+/
+&magnetic_init_pars
+  initaa='fluxrings', amplaa=1e-0
+  fring1=1e-0, Iring1=0., Rring1=1.6, wr1=0.3,
+    axisr1=0.,1.,0., dispr1=0.,0.,0.,
+/

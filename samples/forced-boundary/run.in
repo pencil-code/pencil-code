@@ -1,0 +1,22 @@
+!                     -*-f90-*-   (for emacs)
+!  run parameters for boundary forcing of magnetic arc
+!
+&run_pars
+  ip=14
+  cvsid='$Id: run.in,v 1.1 2004-04-26 15:41:25 dobler Exp $'
+  nt=100, it1=20, isave=100
+  cdt=0.4, cdtv=0.80, itorder=3,
+  dsnap=1., dvid=0.5,
+  bcx = 'p'   ,'p'   ,'p'  ,'p', 'p',   'p',   'p'
+  bcy = 'p'   ,'p'   ,'p'  ,'p', 'p',   'p',   'p'
+  bcz = 'g:s' ,'g:s' ,'g:a','a2','fB:s','fB:s','s:a'
+  force_lower_bound='uxy_sin-cos'
+  /
+&hydro_run_pars
+  nu=1.e-3,
+/
+&density_run_pars
+/
+&magnetic_run_pars
+  eta=1.e-3,
+/
