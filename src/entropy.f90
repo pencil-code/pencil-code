@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.82 2002-07-02 20:08:44 dobler Exp $
+! $Id: entropy.f90,v 1.83 2002-07-03 15:05:50 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.82 2002-07-02 20:08:44 dobler Exp $")
+           "$Id: entropy.f90,v 1.83 2002-07-03 15:05:50 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -341,7 +341,7 @@ module Entropy
 !  thermal conduction
 !
       if ((hcond0 /= 0) .or. (chi_t /= 0)) &
-           call calc_heatcond(f,df,rho1,glnrho,gss)      
+           call calc_heatcond(f,df,rho1,glnrho,gss)
 !
 !  heating/cooling
 !
@@ -428,7 +428,7 @@ module Entropy
 !
 !  check for NaNs initially
 !
-      if (headt) then
+      if (headt .and. (hcond0 /= 0)) then
         if (notanumber(glhc))      print*,'NaNs in glhc'
         if (notanumber(rho1))      print*,'NaNs in rho1'
         if (notanumber(hcond))     print*,'NaNs in hcond'
@@ -457,8 +457,10 @@ module Entropy
       if (headtt) print*,'calc_heatcond: added thdiff'
 !
 !  check maximum diffusion from thermal diffusion
+!  NB: With heat conduction, the second-order term for entropy is
+!    gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi)
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
 !
     endsubroutine calc_heatcond
 !***********************************************************************

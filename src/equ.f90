@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.70 2002-07-02 18:38:48 dobler Exp $
+! $Id: equ.f90,v 1.71 2002-07-03 15:05:50 dobler Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.70 2002-07-02 18:38:48 dobler Exp $")
+           "$Id: equ.f90,v 1.71 2002-07-03 15:05:50 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -316,7 +316,7 @@ module Equ
 !
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
-          call max_mn(sqrt(maxadvec2)+fac*maxdiffus,UUmax)
+          call max_mn(sqrt(maxadvec2)+(fac*maxdiffus)**2,UUmax)
         endif
 !
 !  calculate density diagnostics: mean density
