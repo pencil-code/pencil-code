@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.56 2003-08-19 21:39:56 mee Exp $
+! $Id: noionization.f90,v 1.57 2003-08-20 04:54:51 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -75,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.56 2003-08-19 21:39:56 mee Exp $")
+           "$Id: noionization.f90,v 1.57 2003-08-20 04:54:51 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -138,7 +138,6 @@ module Ionization
       
       real, intent(in) :: lnrho,EE
       real, intent(out) :: ss,TT
-      real :: yH,K
 
       call stop_it("perturb_energy_point: NOT IMPLEMENTED IN NO IONIZATION")
       ss=0.
@@ -151,7 +150,6 @@ module Ionization
       
       real, dimension(nx), intent(in) :: lnrho,EE
       real, dimension(nx), intent(out) :: ss,TT
-      real, dimension(nx) :: yH,K
 
       call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
       ss=0.
@@ -197,7 +195,6 @@ module Ionization
 !
       tmp=pot
 !
-
     end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
@@ -226,6 +223,7 @@ module Ionization
       real, intent(out) :: yH,TT
 !
       TT=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
+      yH=0.
 !
     endsubroutine ionget_point
 !***********************************************************************
@@ -251,6 +249,7 @@ module Ionization
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
 !
+      if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_pencil
 !***********************************************************************
     subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
@@ -275,6 +274,7 @@ module Ionization
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
 !
+      if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
 !***********************************************************************
 endmodule ionization

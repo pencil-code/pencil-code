@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.195 2003-08-19 21:39:55 mee Exp $
+! $Id: entropy.f90,v 1.196 2003-08-20 04:54:51 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -90,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.195 2003-08-19 21:39:55 mee Exp $")
+           "$Id: entropy.f90,v 1.196 2003-08-20 04:54:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -396,7 +396,6 @@ module Entropy
       use Ionization
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: tmp, pot
 !
       if (lionization.or.lionization_fixed) &
        call stop_it("isothermal_entropy: NOT IMPLEMENTED FOR IONIZATION CASES")
@@ -639,7 +638,7 @@ module Entropy
 !
       if (linterstellar) &
         call calc_heat_cool_interstellar(df,rho1,TT,TT1,yH)
-!
+        !
 !  possibility of entropy relaxation in exterior region
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
