@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.74 2002-06-24 17:56:19 dobler Exp $
+! $Id: entropy.f90,v 1.75 2002-06-24 18:04:22 dobler Exp $
 
 module Entropy
 
@@ -61,8 +61,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.74 $", &
-           "$Date: 2002-06-24 17:56:19 $")
+           "$Revision: 1.75 $", &
+           "$Date: 2002-06-24 18:04:22 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -295,7 +295,7 @@ module Entropy
       ss=f(l1:l2,m,n,ient)
       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
-      if (ip<10.and.lroot) print*,'maxadvec2,cs2=',maxadvec2,cs2
+      if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*,'entropy: cs20=',cs20
 !
 !  subtract pressure gradient term in momentum equation
