@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.49 2002-06-16 20:35:03 dobler Exp $
+! $Id: run.f90,v 1.50 2002-06-17 16:34:56 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -30,22 +30,22 @@
         logical :: stop=.false.,reload=.false.
         real :: Wall_clock_time
 !
-!  initialize MPI (currently disabled; didn't work)
-!
-!!      call siginit
-!!      call signonbrutal
-!
 !  initialize MPI and register physics modules
 !  (must be done before lroot can be used, for example)
 !
         call initialize
 !
+!  initialize MPI (currently disabled; didn't work)
+!
+        call siginit
+        call signonbrutal
+!
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.49 $", &
-             "$Date: 2002-06-16 20:35:03 $")
+             "$Revision: 1.50 $", &
+             "$Date: 2002-06-17 16:34:56 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
