@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.22 2003-10-13 09:00:36 dobler Exp $
+# CVS: $Id: mkcparam,v 1.23 2003-10-13 11:48:52 mee Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -48,8 +48,6 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # !***************************************************************
 #
 # ---------------------------------------------------------------------- #
-my $Identi = '[a-zA-Z0-9_]'; # module names must consist of these
-my $IDENTI = '[A-Z0-9_]';    # Make vars for modules must consist of these
 my $mvar_declaration = '\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)';
 my $maux_declaration = '\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)';
 # ---------------------------------------------------------------------- #
@@ -58,9 +56,10 @@ use strict;
 use Getopt::Long;
 
 my $line;
-my %mkvars;
-my %modcounts;
-my %auxmodcounts;
+my $maux=0;
+my $mvar=0;
+my $found_mvar=0;
+my $found_maux=0;
 
 (my $cmdname = $0) =~ s{.*/}{};
 my $usage =
@@ -90,44 +89,24 @@ my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 
 # Cycle through files (later files will overwrite effect of earlier files)
-foreach my $infile (@ARGV) {
-    open(INPUT,"< $infile") || die "Can't open $infile for reading";
-    # Cycle through lines in file
-    line: while (defined($line=<INPUT>)) {
-	# Only definitions of uppercase Make variables are interesting:
-	next line
-	  unless ($line =~ /^\s*($IDENTI+)\s*=\s*($Identi+)\s*(\#.*)?$/);
-	$mkvars{$1}=$2;		# store in hash
-    }
-}
-
-## Now extract `?VAR CONTRIBUTION' info from *.f90
-my $maux=0;
-my $mvar=0;
-my $found_mvar=0;
-my $found_maux=0;
-foreach my $VAR (keys %mkvars) {
-    my $infile = "$mkvars{$VAR}.f90";
-    next unless (-e $infile);
-
+  foreach my $infile (@ARGV) {
+# Now extract `?VAR CONTRIBUTION' info from each file
     open(INPUT,"< $infile") || warn "Can't open $infile for reading";
-    # Cycle through lines in file
+# Reset the counters
     $found_mvar=0;
     $found_maux=0;
+# Cycle through lines in file
     while (defined($line=<INPUT>) && !($found_mvar && $found_maux)  ) {
-	# Only definitions of Make variables are interesting:
-	if ($line =~ /$mvar_declaration/) {
+	  if ($line =~ /$mvar_declaration/) {
 	    $mvar = $mvar + $1;
 	    $found_mvar = 1;
-	    #print "$line";
-	}
-	if ($line =~ /$maux_declaration/) {
+	  }
+	  if ($line =~ /$maux_declaration/) {
 	    $maux = $maux + $1;
 	    $found_maux = 1;
-	    #print "$line";
-	}
+	  }
     }
-}
+  }
 
 ## ..and write output
 print OUT <<"EOF";
