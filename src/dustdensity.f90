@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.92 2004-05-21 10:28:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.93 2004-05-21 11:45:24 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -21,14 +21,15 @@ module Dustdensity
   implicit none
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
-  real, dimension(ndustspec) :: cdiffnd=0
+  real, dimension(ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
-  real :: cdiffnd_all, mdave0=1., adpeak=5e-4
+  real :: mdave0=1., adpeak=5e-4
   real :: supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero'
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: lupw_ndmdmi=.false.,lupw_ndmi_1st=.false.,ldustnulling=.false.
+  logical :: lnd_turb_diff=.false.,lmd_turb_diff=.false.,lmi_turb_diff=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
@@ -36,10 +37,10 @@ module Dustdensity
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity
 
   namelist /dustdensity_run_pars/ &
-      rhod0, cdiffnd, cdiffnd_all, ldustgrowth, &
+      rhod0, nd_diff, md_diff, mi_diff, ldustgrowth, &
       ldustcoagulation, lcalcdkern, supsatfac, ldustcontinuity, &
-      lupw_ndmdmi, lupw_ndmi_1st, ldustnulling
-      
+      lupw_ndmdmi, lupw_ndmi_1st, ldustnulling, &
+      lnd_turb_diff, lmd_turb_diff, lmi_turb_diff
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ndmt,i_rhodmt,i_rhoimt,i_ssrm,i_ssrmax
@@ -113,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.92 2004-05-21 10:28:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.93 2004-05-21 11:45:24 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -198,21 +199,6 @@ module Dustdensity
         lcalcdkern = .false.
 
       endselect
-!
-!  If *_all set, make all empty *(:) = *_all
-!
-      if (cdiffnd_all /= 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: cdiffnd_all=',cdiffnd_all
-        do i=1,ndustspec
-          if (cdiffnd(i) == 0.) cdiffnd(i) = cdiffnd_all
-        enddo
-      endif
-!
-!  Need 1/(super saturation factor) in runs
-!
-      supsatfac1 = 1/supsatfac
-      if (lroot) print*, 'initialize_dustdensity: supsatfac =', supsatfac
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
@@ -346,9 +332,8 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: udgnd,udgmd,gnd2,del2nd,rho,rho1,TT1,cs2,cc,cc1
-      real, dimension (nx) :: mfluxcond
-      real :: diffnd
+      real, dimension (nx) :: del2nd,del2md,del2mi
+      real, dimension (nx) :: udgnd,udgmd,rho,rho1,TT1,cs2,cc,cc1,mfluxcond
       integer :: k
 !
       intent(in)  :: uud,divud
@@ -387,16 +372,23 @@ module Dustdensity
 !  Loop over dust layers
 !
       do k=1,ndustspec
+        if (lnd_turb_diff)              nd_diff(k) = nu_turb
+        if (lmdvar .and. lmd_turb_diff) md_diff(k) = nu_turb
+        if (lmice  .and. lmi_turb_diff) mi_diff(k) = nu_turb
 !
-!  Mass diffusion, in units of dxmin*cs0
+!  Diffusion terms
 !
-        if (cdiffnd(k) /= 0.) then
-          diffnd=cdiffnd(k)*dxmin*cs0
+        if (nd_diff(k) /= 0.) then
           call del2(f,ind(k),del2nd)
-          call dot2_mn(gnd(:,:,k),gnd2)
-          df(l1:l2,m,n,ind(k)) = &
-              df(l1:l2,m,n,ind(k)) + diffnd*(del2nd+nd(:,k)*gnd2)
-          call max_for_dt(diffnd,maxdiffus)
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(k)*del2nd
+        endif
+        if (lmdvar .and. md_diff(k) /= 0.) then
+          call del2(f,imd(k),del2md)
+          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) + md_diff(k)*del2md
+        endif
+        if (lmice .and. mi_diff(k) /= 0.) then
+          call del2(f,imi(k),del2mi)
+          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) + mi_diff(k)*del2mi
         endif
 !
 !  Diagnostic output
