@@ -5,7 +5,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg
 ;
-; $Id: rvid_plane.pro,v 1.10 2004-04-27 14:38:33 ngrs Exp $
+; $Id: rvid_plane.pro,v 1.11 2004-05-24 19:06:46 mee Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -17,7 +17,6 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
 ;  Typical calling sequence
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
 ;
-default,proc,0
 default,ix,-1
 default,iy,-1
 default,ps,0
@@ -38,8 +37,8 @@ default,zoom,1.0
 default,dimfile,'dim.dat'
 default,varfile,'var.dat'
 ;
-if keyword_set(proc) then begin
-  file_slice=datadir+'/proc0/slice_'+field+'.'+extension
+if n_elements(proc) ne 0 then begin
+  file_slice=datadir+'/proc'+str(proc)+'/slice_'+field+'.'+extension
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
@@ -90,7 +89,11 @@ if keyword_set(shell) then begin
   readstring=''
   ;
   for i=0,ncpus-1 do begin        ; read data from individual files
-    datalocdir=datadir+'/proc'+strtrim(i,2)
+    if n_elements(proc) ne 0 then begin
+      datalocdir=datadir+'/proc'+str(proc)
+    endif else begin
+      datalocdir=datadir+'/proc'+strtrim(i,2)
+    endelse
     ; read processor position
     dummy=''
     ipx=0L &ipy=0L &ipz=0L
