@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.164 2003-11-30 18:22:47 theine Exp $
+! $Id: magnetic.f90,v 1.165 2003-12-10 14:47:20 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -111,7 +111,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.164 2003-11-30 18:22:47 theine Exp $")
+           "$Id: magnetic.f90,v 1.165 2003-12-10 14:47:20 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -263,7 +263,7 @@ module Magnetic
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
-      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb,del6A,fres
+      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb,del6A,fres,del4A
       real, dimension (nx,3) :: geta
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -423,10 +423,14 @@ module Magnetic
       case ('eta-const')
         fres=eta*del2A
         etatotal_max=eta
-      case ('hyper6')
+      case ('hyper3')
         call del6v(f,iaa,del6A)
         fres=eta*del6A
         etatotal_max=eta
+      case ('hyper2')
+        call del4v(f,iaa,del4A)
+        fres=eta*del4A
+        etatotal_max=eta  
       case ('shell')
         call eta_shell(eta_mn,geta)
         call div(f,iaa,divA)

@@ -1,4 +1,4 @@
-! $Id: visc_hyper3.f90,v 1.3 2003-11-28 09:56:28 theine Exp $
+! $Id: visc_hyper3.f90,v 1.4 2003-12-10 14:47:20 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -20,7 +20,7 @@ module Viscosity
 
   implicit none
 
-  character (len=labellen) :: ivisc=''
+  character (len=labellen) :: ivisc='hyper3'
   real :: maxeffectivenu
   logical :: lvisc_first=.false.
 
@@ -29,7 +29,7 @@ module Viscosity
   namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, lvisc_first
+  namelist /viscosity_run_pars/ nu, lvisc_first,ivisc
  
   contains
 
@@ -51,18 +51,18 @@ module Viscosity
       lviscosity = .true.
       lvisc_hyper3 = .true.
 !
-      ihyper3 = mvar + naux + 1
+      ihyper = mvar + naux + 1
       naux = naux + 3 
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: hyper3 viscosity nvar = ', nvar
-        print*, 'ihyper3 = ', ihyper3
+        print*, 'ihyper = ', ihyper
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper3.f90,v 1.3 2003-11-28 09:56:28 theine Exp $")
+           "$Id: visc_hyper3.f90,v 1.4 2003-12-10 14:47:20 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -96,7 +96,7 @@ module Viscosity
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
 !
-!  Writes ihyper3 to index.pro file
+!  Writes ihyper to index.pro file
 !
 !  24-nov-03/tony: adapted from rprint_ionization
 !
@@ -125,7 +125,7 @@ module Viscosity
 !
       if (present(lwrite)) then
         if (lwrite) then
-          write(3,*) 'ihyper3=',ihyper3
+          write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
         endif
       endif
@@ -140,6 +140,7 @@ module Viscosity
 !  24-nov-03/nils: coded
 !
       use IO
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: tmp
@@ -148,16 +149,25 @@ module Viscosity
 !
 !  calculate grad4 grad div u
 !
-      call divgrad_2nd(f,tmp,iux)
-      f(:,:,:,ihyper3:ihyper3+2)=tmp
-      call del2v_2nd(f,tmp,ihyper3)
-      f(:,:,:,ihyper3:ihyper3+2)=tmp
-      call del2v_2nd(f,tmp,ihyper3)
-      f(:,:,:,ihyper3:ihyper3+2)=tmp
+      if (ivisc .eq. 'hyper3') then
+        call divgrad_2nd(f,tmp,iux)
+        f(:,:,:,ihyper:ihyper+2)=tmp
+        call del2v_2nd(f,tmp,ihyper)
+        f(:,:,:,ihyper:ihyper+2)=tmp
+        call del2v_2nd(f,tmp,ihyper)
+        f(:,:,:,ihyper:ihyper+2)=tmp
+      elseif (ivisc .eq. 'hyper2') then
+        call divgrad_2nd(f,tmp,iux)
+        f(:,:,:,ihyper:ihyper+2)=tmp
+        call del2v_2nd(f,tmp,ihyper)
+        f(:,:,:,ihyper:ihyper+2)=tmp
+      else
+        call stop_it('visc_hyper:no such ivisc')          
+      endif
 !
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
-      !maxeffectivenu = maxval(f(:,:,:,ihyper3))*nu
+      !maxeffectivenu = maxval(f(:,:,:,ihyper))*nu
 !
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -206,21 +216,34 @@ module Viscosity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: hyper
-      real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock
+      real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock,del4u
       real, dimension (nx) :: rho1,divu,shock
 !
       intent (out) :: df
 !
-!  viscous force:nu*(del6u+del4*graddivu/3)
-!  (Assuming rho*nu=const)
 !
       if (nu /= 0.) then
-        hyper=f(l1:l2,m,n,ihyper3:ihyper3+2)/3.
-        if (headtt) print*,'viscous force: nu*(del6u+del4*graddivu/3)'
-        call del6v(f,iuu,del6u)
-        fvisc=nu*(del6u+hyper)
-        maxdiffus=amax1(maxdiffus,nu)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+        if (ivisc .eq. 'hyper3') then
+          !  viscous force:nu*(del6u+del4*graddivu/3)
+          !  (Assuming rho*nu=const)
+          hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
+          if (headtt) print*,'viscous force: nu*(del6u+del4*graddivu/3)'
+          call del6v(f,iuu,del6u)
+          fvisc=nu*(del6u+hyper)
+          maxdiffus=amax1(maxdiffus,nu)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+        elseif (ivisc .eq. 'hyper2') then
+          !  viscous force:nu*(del4u+del2*graddivu/3)
+          !  (Assuming rho*nu=const)
+          hyper=f(l1:l2,m,n,ihyper:ihyper+2)/3.
+          if (headtt) print*,'viscous force: nu*(del4u+del2*graddivu/3)'
+          call del4v(f,iuu,del4u)
+          fvisc=nu*(del4u+hyper)
+          maxdiffus=amax1(maxdiffus,nu)
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+        else
+          call stop_it('visc_hyper:no such ivisc')  
+        endif
       else ! (nu=0)
         if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
       endif

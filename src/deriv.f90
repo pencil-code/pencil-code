@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.10 2003-08-12 20:47:40 mee Exp $
+! $Id: deriv.f90,v 1.11 2003-12-10 14:47:20 nilshau Exp $
 
 module Deriv
 
@@ -248,6 +248,82 @@ module Deriv
       endif
 !
     endsubroutine der6
+!***********************************************************************
+    subroutine der4(f,k,df,j,ignoredx,upwind)
+!
+!  Calculate 4th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!
+!   8-jul-02/wolf: coded
+!   9-dec-03/nils: adapted from der6
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df
+      real :: fac
+      integer :: j,k
+      logical, optional :: ignoredx,upwind
+      logical :: igndx,upwnd
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dx**4
+          endif
+          df=fac*(-56.* f(l1:l2,m,n,k) &
+                  +39.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                  -12.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                  +    (f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dy**4
+          endif
+          df=fac*(-56.* f(l1:l2,m  ,n,k) &
+                  +39.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                  -12.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                  +    (f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dz*4
+          endif
+          df=fac*(-56.* f(l1:l2,m,n  ,k) &
+                  +39.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                  -12.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                  +    (f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der4
 !***********************************************************************
     subroutine derij(f,k,df,i,j)
 !

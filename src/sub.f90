@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.150 2003-11-25 15:29:29 brandenb Exp $ 
+! $Id: sub.f90,v 1.151 2003-12-10 14:47:20 nilshau Exp $ 
 
 module Sub 
 
@@ -1177,6 +1177,31 @@ module Sub
 !
     endsubroutine del6v
 !***********************************************************************
+    subroutine del4v(f,k,del4f)
+!
+!  calculate del4 of a vector, get vector
+!  09-dec-03/nils: adapted from del6v
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: del4f
+      real, dimension (nx) :: tmp
+      integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del4f
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+        call del4(f,k1+i,tmp)
+        del4f(:,i)=tmp
+      enddo
+!
+    endsubroutine del4v
+!***********************************************************************
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl)
 !
 !  calculates a number of second derivative expressions of a vector
@@ -1376,6 +1401,30 @@ module Sub
       del6f = d6fdx + d6fdy + d6fdz
 !
     endsubroutine del6
+!***********************************************************************
+    subroutine del4(f,k,del4f)
+!
+!  calculate del4 (defined here as d^4/dx^4 + d^4/dy^4 + d^4/dz^4, rather
+!  than del2^3) of a scalar for hyperdiffusion
+!  8-jul-02/wolf: coded
+!  9-dec-03/nils: adapted from del6
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,k
+      intent(out) :: del4f
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: del4f,d4fdx,d4fdy,d4fdz
+      integer :: k
+!
+      call der4(f,k,d4fdx,1)
+      call der4(f,k,d4fdy,2)
+      call der4(f,k,d4fdz,3)
+      del4f = d4fdx + d4fdy + d4fdz
+!
+    endsubroutine del4
 !***********************************************************************
     subroutine del6_nodx(f,k,del6f)
 !
