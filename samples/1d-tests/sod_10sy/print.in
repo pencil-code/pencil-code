@@ -1,0 +1,8 @@
+it(i8)
+t(f8.2)
+urms(1pe11.3)
+ekin(0pf10.6)
+eth(0pf10.6)
+ruxm(0pf10.6)
+rhom(0pf10.6)
+ssm(0pf10.6)

@@ -1,0 +1,20 @@
+!                     -*-f90-*-   (for emacs)
+!  Runtime parameters for shocktube problem
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2003-05-27 14:32:29 ngrs Exp $'
+  nt=20000, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
+  dsnap=20., dvid=.02,tmax=2.4,
+  bcy = 'a','s','s','s','s'
+/
+&hydro_run_pars
+/
+&density_run_pars
+  cdiffrho=0.,  !(mass diffusion not currently used)
+/
+&entropy_run_pars
+  lcalc_heatcond_constchi=T,chi=5e-4
+/
+&viscosity_run_pars
+  nu=0.002, nu_shock=3.5
+/
