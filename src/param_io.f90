@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.119 2003-07-30 14:40:28 dobler Exp $ 
+! $Id: param_io.f90,v 1.120 2003-08-02 05:52:02 brandenb Exp $ 
 
 module Param_IO
 
@@ -135,13 +135,9 @@ module Param_IO
       logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
-!  set default values
-!  AB: they should not be overwritten at this point
-!  AB: I will remove this at some future point
+!  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
 !
-      !bcx(1:nvar)='p'
-      !bcy(1:nvar)='p'
-      !bcz(1:nvar)='p'
+      if (lshear) bcx(1:nvar)='she'
 !
 !  open namelist file
 !
@@ -325,18 +321,8 @@ module Param_IO
       character (len=*), optional :: annotation
       character (len=30) :: label='[none]'
 !
-!  set default values
-!  AB: they should not be overwritten at this point
-!  AB: I will remove this at some future point
+!  set default to shearing sheet if lshear=.true. (even when Sshear==0.)
 !
-      !bcx(1:nvar)='p'
-      !bcy(1:nvar)='p'
-      !bcz(1:nvar)='p'
-!
-!  set default to shearing sheet if lshear=.true.
-!  AB: (even when Sshear==0.)
-!
-      !! if (lshear .AND. Sshear/=0) bcx(1:nvar)='she'
       if (lshear) bcx(1:nvar)='she'
 !
 !  open namelist file
@@ -538,14 +524,16 @@ module Param_IO
       if(lroot.and.ip<5) print*,'check_consistency_of_lperi: called from ',label
 !
 !  make the warnings less dramatic looking, if we are only in start
+!  and exit this routine altogether if, in addition, ip > 13.
 !
+      if(label=='read_startpars'.and.ip>13) return
       if(label=='read_startpars') lwarning=.false.
 !
 !  check x direction
 !
       j=1
-      if(any(bcx=='p').and..not.lperi(j).or.&
-         any(bcx/='p').and.lperi(j)) &
+      if(any(bcx=='p'.or. bcx=='she').and..not.lperi(j).or.&
+         any(bcx/='p'.and.bcx/='she').and.lperi(j)) &
            call warning_lperi(lwarning,bcx,lperi,j)
 !
 !  check y direction
@@ -567,7 +555,8 @@ module Param_IO
 !
       if (lroot .and. (.not. lwarning)) then
         if(label=='read_startpars') then
-          print*,'[The above lperi warning is most probably meaningless]'
+          print*,'[bad BCs in start.in only affects post-processing' &
+               //' of start data, not the run]'
         else
           print*,'check_consistency_of_lperi: you better stop and check!'
           print*,'------------------------------------------------------'
