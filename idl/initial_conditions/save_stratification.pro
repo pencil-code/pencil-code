@@ -1,20 +1,22 @@
-pro,save_stratification,z,lnrho,ss,zresolution=zresolution,filename=filename
+pro save_stratification,z,lnrho,ss,zresolution=zresolution,filename=filename
 
 default,filename,'stratification.dat'
 
 if keyword_set(zresolution) then begin
+  zout=congrid(reform(z,n_elements(z)),zresolution,1,1)
+  lnrhoout=congrid(reform(lnrhoout,n_elements(lnrhoout)),zresolution,1,1)
+  ssout=congrid(ss,zresolution,1,1)
+end else begin
   zout=z
   lnrhoout=lnrho
   ssout=ss
   zresolution=(size(z))[1]
-end else begin
-  zout=rebin(zout,zresolution)
-  lnrhoout=rebin(lnrhoout,zresolution)
-  ssout=rebin(ssout,zresolution)
 end
 
 get_lun,lun
 openw,lun,filename
-for i=1,zresolution do printf,lun,zout[i],lnrhoout[i],ssout[i]
+for i=0,zresolution-1 do printf,lun,zout[i],lnrhoout[i],ssout[i]
 close,lun
 free_lun,lun
+
+end
