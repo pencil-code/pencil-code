@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.132 2003-11-01 10:50:00 theine Exp $
+! $Id: hydro.f90,v 1.133 2003-11-06 13:51:07 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -101,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.132 2003-11-01 10:50:00 theine Exp $")
+           "$Id: hydro.f90,v 1.133 2003-11-06 13:51:07 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,7 +132,7 @@ module Hydro
 !  
 !  r_int and r_ext override rdampint and rdampext if both are set
 ! 
-   if (dampuint /= 0.0) then        
+   if (dampuint /= 0.0) then 
      if (r_int > epsi) then
        rdampint = r_int
      elseif (rdampint <= epsi) then
@@ -670,7 +670,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: pdamp
-      real :: zbot,ztop,xi,prof
+      real :: zbot,ztop
       integer :: i
 !  
 !  warn about the damping term
