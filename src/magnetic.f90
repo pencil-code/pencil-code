@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.128 2003-08-28 15:23:15 mee Exp $
+! $Id: magnetic.f90,v 1.129 2003-09-04 12:58:04 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -48,7 +48,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
-  integer :: i_aybym2=0,i_exaym2=0.
+  integer :: i_aybym2=0,i_exaym2=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.128 2003-08-28 15:23:15 mee Exp $")
+           "$Id: magnetic.f90,v 1.129 2003-09-04 12:58:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
