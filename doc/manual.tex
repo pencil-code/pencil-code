@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.235 2004-03-12 15:22:54 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.236 2004-03-17 18:24:55 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}
+%\date{$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}\\
+  \emph{$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3331,6 +3331,7 @@ this info.
 %%%
 \subsubsection{When compiling with MPI on a Linux system, the linker
   complains:}
+\label{Sec-underscore-problem}
 \begin{Verbatim}
   mpicomm.o: In function `mpicomm_mpicomm_init_':
   mpicomm.o(.text+0x36): undefined reference to `mpi_init_'
@@ -3373,16 +3374,30 @@ What is the problem?
 \medskip
 
 {\em
-  One of the variables for \name{make} has not been set, so
-  \name{make} expands it to the empty string.
-  Most probably you forgot to specify a module in
-  \file[Makefile.local]{src/Makefile.local}.
-  One possibility is that you have upgraded
-  from an older version of the code that did not have some of the modules
-  the new version has.
+  There are two possibilities:
+  \begin{enumerate}
+  \item One of the variables for \name{make} has not been set, so
+    \name{make} expands it to the empty string.
+    Most probably you forgot to specify a module in
+    \file[Makefile.local]{src/Makefile.local}.
+    One possibility is that you have upgraded
+    from an older version of the code that did not have some of the modules
+    the new version has.
   
-  Compare your \file[Makefile.local]{src/Makefile.local} to one of the
-  examples that work.
+    Compare your \file[Makefile.local]{src/Makefile.local} to one of the
+    examples that work.
+
+  \item One of the variables for \name{make} has a space appended to it,
+    e.\,g.~if you use the line
+    \begin{quote}
+      \upshape\ttfamily
+      MPICOMM = mpicomm_\textvisiblespace
+    \end{quote}
+    (see \S~\ref{Sec-underscore-problem}) with a trailing blank, you will
+    encounter this error message.
+    Remove the blank.
+    
+  \end{enumerate}
 }
 
 
@@ -3887,7 +3902,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-12 15:22:54 $ $,~ $ $Revision: 1.235 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-17 18:24:55 $ $,~ $ $Revision: 1.236 $ $}
 
 \section{Timings}
 
@@ -6041,12 +6056,25 @@ the latest set of parameters, you need to look at the code.
                  If \var{hcond1} or \var{hcond2} are not set, they are
                  calculated according to the polytropic indices of the
                  initial profile, $K\propto m{+}1$. \\
+  \var{iheatcond} [\code{'K-const'}]
+               & select type of heat conduction.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`K-const'}]   (constant heat conductivity),
+                 \item[\code{`chi-const'}] (constant thermal diffusivity),
+                 \item[\code{`simple'}]    (somehow simpler version for
+                   polytropic stratification [?]),
+                 \item[\code{`magnetic'}]  (heat conduction by electrons
+                   in magnetic field -- currently still experimental).
+                 \end{description}
+                 \\
   \var{lcalc_heatcond_constchi} [F]
                & flag for assuming thermal diffusivity
                  $\chi=K/(c_p\varrho)=\const$, rather than $K=\const$
                  (which is the default).
                  \emph{This is currently only correct with
-                 \file{noionization.f90}}. \\
+                 \file{noionization.f90}}.
+                 Superseeded by \var{iheatcond}. \\
   \var{chi} [$0.$]
                & value of $\chi$ when \code{lcalc_heatcond_constchi=T}. \\
   \var{widthss} [start]
@@ -6058,7 +6086,7 @@ the latest set of parameters, you need to look at the code.
   \var{luminosity} [$0.$], \\
   \var{wheat} [$0.1$]
                & strength and width of heating region. \\
-  \var{cooltype} ['Temp']
+  \var{cooltype} [\code{'Temp'}]
                & type of cooling; \emph{currently only implemented for
                  spherical geometry}.
                  Currently valid choices are
@@ -6777,7 +6805,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.235 2004-03-12 15:22:54 dobler Exp $ $}
+$ $Id: manual.tex,v 1.236 2004-03-17 18:24:55 dobler Exp $ $}
 
 
 \end{document}
