@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.38 2004-02-18 16:56:38 ajohan Exp $
+! $Id: dustdensity.f90,v 1.39 2004-02-24 14:15:23 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.38 2004-02-18 16:56:38 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.39 2004-02-24 14:15:23 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -541,7 +541,7 @@ module Dustdensity
         call eoscalc_pencil &
             (ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*epsmon*mu/mumon
-        ppsat = 1.013e6*exp(-5940*TT1+15.6)
+        ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
         mfluxcond = vth*epsmon*rho*(1-supsatratio1)
@@ -575,7 +575,7 @@ module Dustdensity
         TT = exp(lnTT)
         if (it .eq. 1) call getmu(mu)
         ppmon = pp*epsmon*mu/mumon
-        ppsat = 1.013e6*exp(-5940/TT+15.6)
+        ppsat = 6.035e12*exp(-5938/TT)
         vth = (3*k_B*TT/mmon)**0.5
         supsatratio1 = ppsat/ppmon
         !print*, n, minval(ppmon), maxval(ppmon), minval(ppsat), maxval(ppsat), minval(supsatratio1), maxval(supsatratio1)
