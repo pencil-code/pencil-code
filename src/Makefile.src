@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.42 2004-03-24 11:21:38 mee Exp $
+### $Id: Makefile.src,v 1.43 2004-03-26 13:17:41 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -245,7 +245,7 @@ read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
 read_vectorfiles_deps=cparam.o cdata.o general.o
 read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
-TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
+TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c read_videofiles.f90
 
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
