@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.44 2002-07-11 12:51:17 dobler Exp $
+! $Id: hydro.f90,v 1.45 2002-07-12 04:23:43 vpariev Exp $
 
 module Hydro
 
@@ -12,12 +12,12 @@ module Hydro
 
   ! init parameters
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=0., ky_uu=0., kz_uu=0.
-  real :: uu_left=1.,uu_right=1.
+  real :: uu_left=1.,uu_right=1.,uu_lower=1.,uu_upper=1.
   character (len=labellen) :: inituu='zero'
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
-       uu_left,uu_right,kx_uu,ky_uu,kz_uu
+       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu
 
   ! run parameters
   real, dimension (nx,3,3) :: sij
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.44 2002-07-11 12:51:17 dobler Exp $")
+           "$Id: hydro.f90,v 1.45 2002-07-12 04:23:43 vpariev Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,7 +92,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
-      integer :: i
+      integer :: i,j,k
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !
@@ -155,6 +155,32 @@ module Hydro
         if (lroot) print*,'constant y-velocity'
         f(:,:,:,iuy) = ampluu
 
+      case('tang-discont-z')
+        !
+        !  tangential discontinuity: velocity is directed along x,
+        !  ux=uu_lower for z<0 and ux=uu_upper for z>0. This can
+        !  be set up together with 'rho-jump' in density.
+        !
+        if (lroot) print*,'tangential discontinuity of uux at z=0'
+        if (lroot) print*,'uu_lower=',uu_lower,' uu_upper=',uu_upper
+        do i=1,mx
+           do j=1,my
+              do k=1,mz        
+        if(zz(i,j,k).le.0.) then 
+        f(i,j,k,iux)=uu_lower
+        else
+        f(i,j,k,iux)=uu_upper
+        endif
+        enddo
+        enddo
+        enddo
+!  Add some random noise to see the development of instability
+        call random_number(r)
+        call random_number(p)
+        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
+!        tmp=exp(-zz**2*10.)*cos(4.*xx)
+        f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
+  
       case default
         !
         !  Catch unknown values
