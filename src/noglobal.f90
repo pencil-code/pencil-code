@@ -1,4 +1,4 @@
-! $Id: noglobal.f90,v 1.3 2002-07-18 23:09:50 dobler Exp $
+! $Id: noglobal.f90,v 1.4 2004-06-07 19:52:37 theine Exp $
 
 module Global
 
@@ -28,7 +28,7 @@ module Global
 !
       real, dimension(nx,3) :: var
       integer :: m,n
-      character (len=labellen) ::label
+      character (len=*) :: label
 !
       if (ip == 0) print*, var(1,1),m,n,label ! keep compiler quiet
 !
@@ -44,7 +44,7 @@ module Global
 !
       real, dimension(nx) :: var
       integer :: m,n
-      character (len=labellen) ::label
+      character (len=*) :: label
 !
       if (ip == 0) print*, var(1),m,n,label ! keep compiler quiet
 !
@@ -60,7 +60,7 @@ module Global
 !
       real, dimension(nx,3) :: var
       integer :: m,n
-      character (len=labellen) ::label
+      character (len=*) :: label
 !
       if (ip == 0) print*, var(1,1),m,n,label ! keep compiler quiet
 !
@@ -76,7 +76,7 @@ module Global
 !
       real, dimension(nx) :: var
       integer :: m,n
-      character (len=labellen) ::label
+      character (len=*) :: label
 !
       if (ip == 0) print*, var(1),m,n,label ! keep compiler quiet
 !
