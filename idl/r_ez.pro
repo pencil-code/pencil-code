@@ -27,10 +27,7 @@ readu,1,t,x,y,z,dx,dy,dz
 close,1
 print,'t=',t
  
-@tmp/hydro
-@tmp/density
-@tmp/entropy
-@tmp/magnetic
+@tmp/index
 
 ;  calculate bb
 if iax ne 0 then bb=curl(f(*,*,*,iax-1:iaz-1))

@@ -24,7 +24,10 @@ if defined(i_ssm) ne 0 then ssm=reform(a(i_ssm-1,*))
 if defined(i_eth) ne 0 then eth=reform(a(i_eth-1,*))
 if defined(i_ekin) ne 0 then ekin=reform(a(i_ekin-1,*))
 if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
+if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
+if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
+if defined(i_uxuxBm) ne 0 then uxuxBm=reform(a(i_uxuxBm-1,*))
 ;
 pmulti = !p.multi
 ;

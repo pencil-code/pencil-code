@@ -12,6 +12,7 @@ xxx=x(l1:l2)
 yyy=y(m1:m2)
 zzz=z(n1:n2)
 ;
+ff=f(l1:l2,m1:m2,n1:n2,*)
 if (iuu ne 0) then uuu=f(l1:l2,m1:m2,n1:n2,iux-1:iuz-1)
 if (ilnrho ne 0) then llnrho=f(l1:l2,m1:m2,n1:n2,ilnrho-1)
 if (ient ne 0) then sss=f(l1:l2,m1:m2,n1:n2,ient-1)
