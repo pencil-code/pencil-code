@@ -54,8 +54,11 @@ if (! -d "$datadir") then
 endif
 
 # Create list of subdirectories
-set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
-foreach dir ($subdirs)
+#set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
+#foreach dir ($subdirs)
+@ i = 0
+while ( $i < $ncpus )
+  set dir="data/proc$i" 
   # Make sure a sufficient number of subdirectories exist
   if (! -e $dir) then
     mkdir $dir
@@ -69,7 +72,9 @@ foreach dir ($subdirs)
       end
     #endif
   endif
+  @ i++
 end
+
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
