@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.26 2002-09-07 06:05:13 brandenb Exp $
+! $Id: forcing.f90,v 1.27 2002-09-07 20:12:47 brandenb Exp $
 
 module Forcing
 
@@ -10,8 +10,9 @@ module Forcing
   implicit none
 
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
-  real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.
+  real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   integer :: kfountain=5
+  logical :: lwork_ff=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
   integer :: dummy              ! We cannot define empty namelists
@@ -20,7 +21,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,kfountain,fountain, &
-       dforce,radius_ff,k1_ff,slope_ff
+       dforce,radius_ff,k1_ff,slope_ff,work_ff
 
   contains
 
@@ -44,7 +45,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.26 2002-09-07 06:05:13 brandenb Exp $")
+           "$Id: forcing.f90,v 1.27 2002-09-07 20:12:47 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -60,6 +61,21 @@ module Forcing
       call random_seed(put=seed(1:nseed))
 !
     endsubroutine forcing_run_hook
+!***********************************************************************
+    subroutine param_check_forcing
+!
+!  check whether we want constant forcing at each timestep,
+!  in which case lwork_ff is set to true.
+!
+      use Cdata
+!
+      if(work_ff/=0.) then
+        force=1.
+        lwork_ff=.true.
+        if(lroot) print*,'reset force=1., because work_ff is set'
+      endif
+!
+    endsubroutine param_check_forcing
 !***********************************************************************
     subroutine addforce(f)
 !
@@ -197,7 +213,7 @@ module Forcing
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf
-      real :: kx0,kx,ky,kz,k2,k
+      real :: kx0,kx,ky,kz,k2,k,force_ampl
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
 !
       if (ifirst==0) then
@@ -224,7 +240,7 @@ module Forcing
       call random_number(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
-      if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+      if(ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
       kx0=kkx(ik)
       ky=kky(ik)
@@ -333,12 +349,13 @@ module Forcing
 ! each loop cycle which could inhibit (pseudo-)vectorisation
 !
       if (r_ff == 0) then       ! no radial profile
+        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
         do j=1,3
           jf=j+iux-1
           do n=n1,n2
             do m=m1,m2
-              f(l1:l2,m,n,jf) = &
-                   f(l1:l2,m,n,jf)+real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) &
+                +force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
             enddo
           enddo
         enddo
@@ -363,6 +380,58 @@ module Forcing
       if (ip.le.12) print*,'forcing OK'
 !
     endsubroutine forcing_hel
+!***********************************************************************
+    subroutine calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
+!
+!  calculates the coefficient for a forcing that satisfies
+!  <rho*u*f> = constant.
+!
+!   7-sep-02/axel: coded
+!
+      use Cdata
+      use Sub
+      use Hydro
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: rho,udotf
+      real, dimension (1) :: fsum_tmp,fsum
+      complex, dimension (mx) :: fx
+      complex, dimension (my) :: fy
+      complex, dimension (mz) :: fz
+      complex, dimension (3) :: coef
+      real :: rho_uu_ff,force_ampl
+      integer :: j
+!
+      rho_uu_ff=0.
+      do n=n1,n2
+        do m=m1,m2
+          rho=exp(f(l1:l2,m,n,ilnrho))
+          uu=f(l1:l2,m,n,iux:iuz)
+          udotf=0.
+          do j=1,3
+            udotf=udotf+uu(:,j)*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+          enddo
+          rho_uu_ff=rho_uu_ff+sum(rho*udotf)
+        enddo
+      enddo
+!
+!  on different processors, this result needs to be communicated
+!  to other processors
+!
+      fsum_tmp(1)=rho_uu_ff
+      call mpireduce_sum(fsum_tmp,fsum,1)
+      if(lroot) rho_uu_ff=rho_uu_ff/(nw*ncpus)
+      call mpibcast_real(rho_uu_ff,1)
+!
+!  scale forcing function
+!  but do this only when rho_uu_ff>0.; neveral allow it to change sign
+!
+      if(headt) print*,'divide forcing function by rho_uu_ff=',rho_uu_ff
+      force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
+!
+    endsubroutine calc_force_ampl
 !***********************************************************************
     subroutine forcing_hel_noshear(f)
 !

@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.6 2002-07-21 21:34:59 dobler Exp $
+! $Id: noforcing.f90,v 1.7 2002-09-07 20:12:47 brandenb Exp $
 
 module Forcing
 
@@ -7,8 +7,8 @@ module Forcing
   use Cdata
 
   implicit none
-
   integer :: dummy              ! We cannot define empty namelists
+ 
   namelist /forcing_init_pars/ dummy
   namelist /forcing_run_pars/  dummy
 
@@ -34,7 +34,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.6 2002-07-21 21:34:59 dobler Exp $")
+           "$Id: noforcing.f90,v 1.7 2002-09-07 20:12:47 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -51,6 +51,12 @@ module Forcing
       call random_seed(put=seed(1:nseed))
 !
     endsubroutine forcing_run_hook
+!***********************************************************************
+    subroutine param_check_forcing
+!
+!  dummy routine
+!
+    endsubroutine param_check_forcing
 !***********************************************************************
     subroutine addforce(df)
 !

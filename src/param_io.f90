@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.49 2002-08-26 10:33:49 nilshau Exp $ 
+! $Id: param_io.f90,v 1.50 2002-09-07 20:12:47 brandenb Exp $ 
 
 module Param_IO
 
@@ -219,10 +219,12 @@ module Param_IO
       endif
 !
 !  set gamma1, cs20, and lnrho0
+!  general parameter checks (and possible adjustments)
 !
       gamma1=gamma-1.
       cs20=cs0**2
       lnrho0=alog(rho0)
+      if(lforcing) call param_check_forcing
 !
 !  calculate shear flow velocity; if Sshear is not given
 !  then Sshear=-qshear*Omega is calculated.
