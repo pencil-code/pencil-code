@@ -11,6 +11,7 @@
 ;;;   - Does not require `reform' on data[*,0,*]
 ;;;   - Does coloured filling by default
 ;;;   - Can overplot the grid
+;;;   - Can add colorbar
 ;;;
 ;;;   New keywords:
 ;;;     /GRID     --  overplot the grid points
@@ -19,9 +20,9 @@
 ;;;
 
 pro contourfill, z, x, y, $
-                 NLEVELS=nlevels, FILL=fill, GRID=grid, $
+                 NLEVELS=nlevels, LEVELS=levels, FILL=fill, GRID=grid, $
                  COLORBAR=colbar, DEBUG=debug, $
-                 _EXTRA=_extra
+                 C_COLORS=c_colors, _EXTRA=_extra
 
   default, nlevels, 60
   default, fill, 1
@@ -70,7 +71,11 @@ pro contourfill, z, x, y, $
   if (colbar eq 1) then !y.margin = ymarg + [3,0]
   if (colbar eq 2) then !x.margin = xmarg + [0,8]
 
-  contour, array, x, y, NLEVELS=nlevels, FILL=fill, _EXTRA=_extra
+  ;; non-trivial to keep IDL from using very first or very last color:
+  ;; currently doesn't work for z-logarithmic plots
+  default, levels, linspace(minmax(array),ghost=1)
+
+  contour, array, x, y, LEVELS=levels, FILL=fill, _EXTRA=_extra
 ;
   if (keyword_set(grid)) then begin
     if (debug ne 0) then print,'s = ', s
