@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.106 2003-10-06 14:26:19 mcmillan Exp $
+! $Id: hydro.f90,v 1.107 2003-10-06 14:37:47 ngrs Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -31,7 +31,7 @@ module Hydro
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
-  real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,dampuext=0.,dampuint=0.,rdampext=1.2,rdampint=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
@@ -90,7 +90,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.106 2003-10-06 14:26:19 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.107 2003-10-06 14:37:47 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
