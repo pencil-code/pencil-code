@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.51 2004-07-08 12:01:48 ajohan Exp $
+! $Id: wsnaps.f90,v 1.52 2004-09-22 09:41:43 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -55,10 +55,10 @@ contains
 !
 !  Reset snapshot time to zero if requested
 !
-      if (lresettsnap) then
-        tsnap=0.  !  aj: only correct if 1/dsnap is an integer
-        lresettsnap=.false.
-      endif
+        if (lresettsnap) then
+          tsnap=0.  !  aj: only correct if 1/dsnap is an integer
+          lresettsnap=.false.
+        endif
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in read_snaptime, but only available to root processor
@@ -87,6 +87,7 @@ contains
         call calc_viscosity(a)
         call update_ghosts(a)
         call output(chsnap,a,msnap)
+        if (present(flist)) call log_filename_to_file(chsnap,flist)
       endif
 !
     endsubroutine wsnap

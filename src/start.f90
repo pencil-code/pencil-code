@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.141 2004-09-02 00:05:38 dobler Exp $
+! $Id: start.f90,v 1.142 2004-09-22 09:41:43 ajohan Exp $
 !
 !***********************************************************************
       program start
@@ -62,7 +62,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.141 2004-09-02 00:05:38 dobler Exp $")
+             "$Id: start.f90,v 1.142 2004-09-22 09:41:43 ajohan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -258,8 +258,8 @@
 !  write to disk
 !
         if (lwrite_ic) then
-          call wsnap( &
-               trim(directory_snap)//'/VAR0',f,mvar_io,ENUM=.false.)
+          call wsnap(trim(directory_snap)//'/VAR0',f,mvar_io, &
+              ENUM=.false.,FLIST='varN.list')
         endif
 !
 !  The option lnowrite writes everything except the actual var.dat file
