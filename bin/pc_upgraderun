@@ -1,0 +1,77 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl 
+# line 17
+
+# Name:   pc_upgraderun
+# Author: Antony Mee (A.J.Mee@ncl.ac.uk)
+# $Date: 2004-04-02 03:21:09 $
+# $Revision: 1.1 $
+# Description:
+#   Transform and validate run.in/start.in/Makefile.local files from older
+#   pencil-code incarnations to the current version.
+
+use strict;
+my $backup = ".bak";
+
+print "File: $ARGV[0]\n";
+$outfile = $ARGV[0] ;
+$infile = $infile.".bak";
+
+open(INPUT,"< $infile") || die "Can't open $infile for reading";
+open(OUTPUT,"> $outfile") || die "Can't open $outfile for writing";
+
+if ($outfile =~ /Makefile\.local/) { 
+  upgrade_Makefile_local() };
+if ($outfile =~ /run\.in/)         { 
+  upgrade_run_in() 
+};
+if ($outfile =~ /start\.in/)       { 
+  upgrade_start_in() 
+};
+
+sub make_backup {
+  my ($outfile,$infile)=shift;
+
+  system("cp $outfile $infile") == 0 
+     or z
+}
+
+sub upgrade_Makefile_local {
+    while (<>) {
+      s/IONIZATION(\s*=)/EOS$1/; 
+      s/(=\s*)ionization/$1eos_ionization/; 
+      s/(=\s*)ionization/$1eos_ionization/; 
+      s/(=\s*)noionization/$1eos_idealgas/;
+    } continue {
+      print or die "-p destination: $!\n";
+    }
+}
+
+sub upgrade_start_in {
+# create eos_init_pars
+# if present, move lcalc_cp from entropy_init_pars into eos_init_pars
+# if present, move gamma, rho0 and cs0 to eos_init_pars
+}
+
+sub upgrade_run_in {
+# if present, move nu and ivisc from hydro_run_pars into viscosity_run_pars
+# create eos_run_pars
+# create viscosity_run_pars
+# if present, move lcalc_cp from entropy_run_pars into eos_run_pars
+# correctly order the pars blocks
+# if present, remove old_cdtv=F, else insert old_cdtv=T
+}
+
