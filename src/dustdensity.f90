@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.107 2004-06-27 15:13:29 ajohan Exp $
+! $Id: dustdensity.f90,v 1.108 2004-07-01 11:39:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -116,7 +116,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.107 2004-06-27 15:13:29 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.108 2004-07-01 11:39:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,8 +236,9 @@ module Dustdensity
       case('firsttwo')
         print*, 'init_nd: All dust particles in first and second bin.'
         f(:,:,:,ind) = 0.
-        f(:,:,:,ind(1)) = nd00/2
-        f(:,:,:,ind(2)) = nd00/2
+        do k=1,2
+          f(:,:,:,ind(k)) = nd00/2
+        enddo
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
         print*,'init_nd: Initial dust distribution of MRN77'
         do k=1,ndustspec
