@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.201 2003-07-29 15:17:45 dobler Exp $
+### $Id: Makefile,v 1.202 2003-07-30 08:11:46 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -108,7 +108,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
 #FC=ifc #(nl6|mmtf|nl19|hamlet)
 #FC=f95 #(karbala)
-#FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
@@ -116,7 +116,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
-#F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4)
+#FFLAGS= -fast -lm -Nscampi   #(monolith)
+#F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
@@ -128,7 +129,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
-#F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4)
+#F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17)
 
 
