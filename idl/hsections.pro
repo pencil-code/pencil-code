@@ -23,8 +23,8 @@ sz3 = '!8z=!6'+strtrim(z[nz3],2)
 save_state
 !p.multi = [0,3,2]
 !p.charsize = 1.8
-!x.title = '!8x'
-!y.title = '!8y'
+!x.title = '!8x!X'
+!y.title = '!8y!X'
 
 tit = '!17u!6 at '
 plot_3d_vect, uu[*,*,nz1,*],x,y, /KEEP, TITLE=tit+sz1+'!X'

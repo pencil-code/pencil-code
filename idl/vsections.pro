@@ -23,8 +23,8 @@ sy3 = '!8y=!6'+strtrim(y[ny3],2)
 save_state
 !p.multi = [0,3,2]
 !p.charsize = 1.8
-!x.title = '!8x'
-!y.title = '!8z'
+!x.title = '!8x!X'
+!y.title = '!8z!X'
 
 tit = '!17u!6 at '
 plot_3d_vect, uu[*,ny1,*,*],x,z, PERM=[0,2,1], /KEEP, TITLE=tit+sy1+'!X'
