@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.80 2003-04-09 13:22:50 brandenb Exp $
+! $Id: start.f90,v 1.81 2003-04-09 13:31:32 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.80 2003-04-09 13:22:50 brandenb Exp $")
+             "$Id: start.f90,v 1.81 2003-04-09 13:31:32 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -112,6 +112,15 @@
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
 !
+!  Seed for random number generator to be used in forcing.f90. Have to
+!  have the same on each  processor as forcing is applied in (global)
+!  Beltrami modes.
+!  This has to come before initialize_modules, because that module
+!  reads in the seed fields again.
+!
+        seed(1) = 1812
+        call outpui(trim(directory)//'/seed.dat',seed,nseed)
+!
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
@@ -166,13 +175,6 @@
 !  Do this late enough, so init_entropy etc. can adjust them
 !
         call wparam()
-!
-!  Seed for random number generator to be used in forcing.f90. Have to
-!  have the same on each  processor as forcing is applied in (global)
-!  Beltrami modes.
-!
-        seed(1) = 1812
-        call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
         if (lroot) print*
