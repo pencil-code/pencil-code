@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.56 2002-06-09 21:14:19 brandenb Exp $
+! $Id: entropy.f90,v 1.57 2002-06-10 07:34:36 brandenb Exp $
 
 module Entropy
 
@@ -57,8 +57,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.56 $", &
-           "$Date: 2002-06-09 21:14:19 $")
+           "$Revision: 1.57 $", &
+           "$Date: 2002-06-10 07:34:36 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,7 +161,7 @@ module Entropy
     if(ip==0) print*,xx,yy  !(to keep compiler quiet)
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -180,12 +180,12 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,sij2 !,del2ss,del2lnrho
-      real, dimension (nx) :: lnrho,ss,cs2,TT1
+      real, dimension (nx) :: ugss,sij2        !(later,below) ,del2ss,del2lnrho
+      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
 !     real, dimension (nx) :: heat
       integer :: i,j,ju
 !
-      intent(in) :: f,uu,sij,glnrho
+      intent(in) :: f,uu,sij,glnrho,rho1
       intent(out) :: df,cs2,TT1
 !
 !  entropy gradient: needed for advection and pressure gradient
@@ -224,7 +224,11 @@ module Entropy
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1 ok'
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
+      if (ivisc==2 .or. ivisc==0) then
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
+      elseif (ivisc==1) then
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
+      endif
 !
 !  Heat conduction / entropy diffusion
 !

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.59 2002-06-09 12:16:19 brandenb Exp $
+! $Id: equ.f90,v 1.60 2002-06-10 07:34:36 brandenb Exp $
 
 module Equ
 
@@ -192,8 +192,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.59 $", &
-           "$Date: 2002-06-09 12:16:19 $")
+           "$Revision: 1.60 $", &
+           "$Date: 2002-06-10 07:34:36 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -233,7 +233,7 @@ module Equ
 !
         call duu_dt(f,df,uu,divu,sij,uij,u2)
         call dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
-        call dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
+        call dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
 !
 !  Add gravity, if present
 !
