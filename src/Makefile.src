@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.16 2004-01-06 17:56:43 dobler Exp $
+### $Id: Makefile.src,v 1.17 2004-01-10 17:38:40 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -135,16 +135,18 @@ FCCLEANER=
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
-#FFLAGS=-O3 -xW -vec_report0 #(cosmo)
+#FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 #(barilko)
-#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|cosmo)
+#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin|davey[1-2])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11|wormhole)  
-#FC=mpif77 #(cosmo)
+#FC=ifort #(cosmo)
+#CC=icc #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11|wormhole)
 #LDMPI= # (Samos|fire|sandin)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
+#CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(cosmo)
 #F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
