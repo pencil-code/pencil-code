@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.12 2003-12-07 08:42:14 brandenb Exp $
+! $Id: nopscalar.f90,v 1.13 2004-02-27 09:40:54 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -18,7 +18,7 @@ module Pscalar
 
   implicit none
 
-  real :: rhoccm=0., cc2m=0., gcc2m=0.
+  real :: rhoccm=0., cc2m=0., gcc2m=0., eps_ctog=0.
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /pscalar_init_pars/ dummy
@@ -56,7 +56,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.12 2003-12-07 08:42:14 brandenb Exp $")
+           "$Id: nopscalar.f90,v 1.13 2004-02-27 09:40:54 ajohan Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
