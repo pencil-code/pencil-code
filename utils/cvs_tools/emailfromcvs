@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   emailfromcvs
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Started:   17-Feb-2004
-# CVS: $Id: emailfromcvs,v 1.1 2004-02-18 08:32:30 dobler Exp $
+# CVS: $Id: emailfromcvs,v 1.2 2004-02-18 08:38:49 dobler Exp $
 # Usage:
 #   emailfromcvs cvs_user_id subject to_addr_1 <to_addr_2> .....
 # Description:
@@ -43,11 +43,13 @@ my $cvsid = shift;
 my $subject= shift;
 my $to = join (",",@ARGV);
 my $from = "";
-# my $mailprog = "/usr/sbin/sendmail -t";
-my $mailprog = "cat";
+my $mailprog = "/usr/sbin/sendmail -t";
+# my $mailprog = "cat";
 my $cvsemailfile = "/home/mee/bin/axelcvsIRL";
+# my $cvsemailfile = "/home/dobler/f90/pencil-code/www/axelcvsIRL";
 
-open(CVSEMAIL,"<$cvsemailfile");
+open(CVSEMAIL,"< $cvsemailfile")
+    or die "Cannot open $cvsemailfile for reading\n";
 while (<CVSEMAIL>) {
     chop;
     my ($id, $addr, $irl) = split(/:/, $_);
@@ -61,7 +63,7 @@ while (<CVSEMAIL>) {
 close(CVSEMAIL);
 
 my @message=<STDIN>;
-open(MAIL,"| $mailprog");
+open(MAIL,"| $mailprog") or die "Cannot start $mailprog\n";
 print MAIL "To: $to\n";
 print MAIL "From: $from\n";
 print MAIL "Subject: $subject\n\n";
