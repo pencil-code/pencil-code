@@ -17,17 +17,24 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.24 2003-12-07 11:13:13 brandenb Exp $
+# Started:   06-Jul-2002
+# CVS: $Id: mkcparam,v 1.25 2004-01-28 16:47:40 dobler Exp $
+# Usage:
+#   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
-#   Going through the input files, check for lines of the sort
-#     MAGNETIC=magnetic
-#   and calculate the number mvar of variables and maux of variables 
-#   accordingly.
+#   Check the headers (everything before the first non-comment non-empty
+#   line) of input files for lines of the sort
+#     ! MVAR CONTRIBUTION 3
+#     ! MAUX CONTRIBUTION 1
+#     ! NDUSTSPEC CONTRIBUTION 17
+#   and accumulate the numbers mvar, maux, ndustspecs, etc from these.
 #
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/cparam.inc .
-#
+# Example:
+#     mkcparam entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
+
+# History:
 #   30-nov-02/tony: Modified to use makefile lines where the Make variable
 #                   and module name differ by more than just case
 #                     e.g.   VISCOSITY=visc_shock
@@ -38,43 +45,21 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                   Fortran files should contain a block like the
 #                   following at the top to declare any contribution
 #                   they make to the f-array.
-# !** AUTOMATIC CPARAM.INC GENERATION ****************************
-# ! Declare (for generation of cparam.inc) the number of f array
-# ! variables and auxiliary variables added by this module
-# !
-# ! MVAR CONTRIBUTION 0
-# ! MAUX CONTRIBUTION 1
-# !
-# !***************************************************************
 #
+
 # ---------------------------------------------------------------------- #
-my $mvar_declaration = '\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)';
-my $maux_declaration = '\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)';
+my $mvar_decl      = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_decl      = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $ndustspec_decl = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+)\s*$';
 # ---------------------------------------------------------------------- #
 
 use strict;
 use Getopt::Long;
 
 my $line;
-my $maux=0;
-my $mvar=0;
-my $found_mvar=0;
-my $found_maux=0;
+my ($maux,$mvar,$ndustspec) = (0) x 3;
 
 (my $cmdname = $0) =~ s{.*/}{};
-my $usage =
-"Usage:  $cmdname <file1> [<file2> [..]] [-o outfile]\n
-Going through the input files, check for lines of the sort
-! MVAR CONTRIBUTION 0
-or
-! MAUX CONTRIBUTION 1
-and calculate the number mvar of variables accordingly. Output is written
-as a Fortran program that can be included by cparam.f90.
-E.g.
-  $cmdname entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
-will generate a file appropriate for code using given source files
-only.";
-
 
 ## Process command line
 my (%opts);	# Variables written by GetOptions
@@ -83,30 +68,29 @@ GetOptions(\%opts,
 	       -o=s --output=s
                                ));
 
-die "$usage\n" if ((@ARGV == 0) || $opts{h} || $opts{help});
+die usage() if ((@ARGV == 0) || $opts{h} || $opts{help});
 
 my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 
 # Cycle through files (later files will overwrite effect of earlier files)
-  foreach my $infile (@ARGV) {
+file: foreach my $infile (@ARGV) {
 # Now extract `?VAR CONTRIBUTION' info from each file
-    open(INPUT,"< $infile") || warn "Can't open $infile for reading";
-# Reset the counters
-    $found_mvar=0;
-    $found_maux=0;
-# Cycle through lines in file
-    while (defined($line=<INPUT>) && !($found_mvar && $found_maux)  ) {
-	  if ($line =~ /$mvar_declaration/) {
-	    $mvar = $mvar + $1;
-	    $found_mvar = 1;
-	  }
-	  if ($line =~ /$maux_declaration/) {
-	    $maux = $maux + $1;
-	    $found_maux = 1;
-	  }
+    unless (open(INPUT,"< $infile")) {
+	warn "Can't open $infile for reading";
+	next file;
     }
-  }
+# Cycle through all lines up to first non-empty non-comment line in file
+    line: while (defined($line=<INPUT>)) {
+	next line if ($line =~ /^\s*$/); # ignore empty lines
+	last line if ($line !~ /^\s*!/); # done if non-comment line
+	extract_decl($line,$mvar_decl     ,\$mvar     );
+	extract_decl($line,$maux_decl     ,\$maux     );
+	extract_decl($line,$ndustspec_decl,\$ndustspec);
+
+    }
+}
+
 
 ## ..and write output
 print OUT <<"EOF";
@@ -118,6 +102,39 @@ print OUT <<"EOF";
 !
 
 integer, parameter :: mvar=$mvar, maux=$maux
+! integer, parameter :: ndustspec=$ndustspec
+
 EOF
+
+# ---------------------------------------------------------------------- #
+sub extract_decl{
+## Extract declaration of contribution to mvar and similar
+    my $line = shift;
+    my $regexp = shift;
+    my $counter_ref = shift;
+
+    if ($line =~ /$regexp/) {
+	$$counter_ref += $1;
+    }
+}
+
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+    $_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
 
 # End of file mkcparam
