@@ -1,12 +1,15 @@
-$Id: README,v 1.1 2002-07-02 05:02:11 brandenb Exp $
+$Id: README,v 1.2 2002-09-04 04:37:22 brandenb Exp $
 
 files currently in this directory
 
-   4 CVS/	       4 getconf.csh     4 new*         4 start.csh*     4 x*
-   0 README	       8 gpgrowth*      12 nl2idl*      4 timestr*
-   4 adapt-mkfile*     4 lnsrc*          4 run.csh*     4 tst.csh*
+   4 CVS/                4 cvsci_run*      8 mkdotin*      4 run.csh*       4 x*
+   4 README              4 getconf.csh     4 mkinpars*     4 setup-src*
+   4 adapt-mkfile*       8 gpgrowth*       4 new*          4 start.csh*
+   8 auto-test*          4 local*         12 nl2idl*       4 timestr*
+   4 cvs-add-rundir*     4 mkcparam*       4 own-risk*     4 tst.csh*
 
-lnsrc: is to called from the corresponding run directory to link
+setup-src (formerly lnsrc):
+       is to be called from the corresponding run directory to link
        the source code into the src subdirectory. It also links
        the getconf.csh, run.csh, and start.in files into the run
        directory. When done, go into src and say "make".
@@ -24,3 +27,5 @@ new: produces a new run directory similar to another one.
      run directory rings1b. You still need to compile the code
      in the corresponding run directory.
 
+cvsci_run: used to check in a standard set of file that are frequently
+     used for post-processing purposes (including n.dat and index.pro)

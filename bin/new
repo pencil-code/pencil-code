@@ -15,7 +15,7 @@ cd src
 #
 cp ../../$1/src/*.local .
 cd ..
-$PENCIL_HOME/bin/lnsrc
+$PENCIL_HOME/bin/setup-src
 #
 #  copy some files into new directory
 #
