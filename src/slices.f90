@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.37 2003-12-08 18:41:17 ajohan Exp $
+! $Id: slices.f90,v 1.38 2003-12-29 17:14:14 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -78,7 +78,7 @@ module Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
-      character(len=4) :: sidust
+      character(len=4) :: sdust
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
       integer :: inamev,idust
@@ -138,35 +138,35 @@ module Slices
 !
       case ('uud')
 !        do idust=1,ndustspec
-!          call chn(idust,sidust)
-!          if (idust .eq. 1) sidust = ''
+!          call chn(idust,sdust)
+!          if (idust .eq. 1) sdust = ''
 !          uud_yz=f(ix,m1:m2,n1:n2,iudx(idust):iudz(idust))
 !          uud_xz=f(l1:l2,iy,n1:n2,iudx(idust):iudz(idust))
 !          uud_xy=f(l1:l2,m1:m2,iz,iudx(idust):iudz(idust))
 !          uud_xy2=f(l1:l2,m1:m2,iz2,iudx(idust):iudz(idust))
-!          call wslice(path//'udx'//trim(sidust)//'.yz', &
+!          call wslice(path//'udx'//trim(sdust)//'.yz', &
 !              uud_yz(:,:,1),x(ix),ny,nz)
-!          call wslice(path//'udy'//trim(sidust)//'.yz', &
+!          call wslice(path//'udy'//trim(sdust)//'.yz', &
 !              uud_yz(:,:,2),x(ix),ny,nz)
-!          call wslice(path//'udz'//trim(sidust)//'.yz', &
+!          call wslice(path//'udz'//trim(sdust)//'.yz', &
 !              uud_yz(:,:,3),x(ix),ny,nz)
-!          call wslice(path//'udx'//trim(sidust)//'.xz', &
+!          call wslice(path//'udx'//trim(sdust)//'.xz', &
 !              uud_xz(:,:,1),y(iy),nx,nz)
-!          call wslice(path//'udy'//trim(sidust)//'.xz', &
+!          call wslice(path//'udy'//trim(sdust)//'.xz', &
 !              uud_xz(:,:,2),y(iy),nx,nz)
-!          call wslice(path//'udz'//trim(sidust)//'.xz', &
+!          call wslice(path//'udz'//trim(sdust)//'.xz', &
 !              uud_xz(:,:,3),y(iy),nx,nz)
-!          call wslice(path//'udx'//trim(sidust)//'.xy', &
+!          call wslice(path//'udx'//trim(sdust)//'.xy', &
 !              uud_xy(:,:,1),z(iz),nx,ny)
-!          call wslice(path//'udy'//trim(sidust)//'.xy', &
+!          call wslice(path//'udy'//trim(sdust)//'.xy', &
 !              uud_xy(:,:,2),z(iz),nx,ny)
-!          call wslice(path//'udz'//trim(sidust)//'.xy', &
+!          call wslice(path//'udz'//trim(sdust)//'.xy', &
 !              uud_xy(:,:,3),z(iz),nx,ny)
-!          call wslice(path//'udx'//trim(sidust)//'.Xy', &
+!          call wslice(path//'udx'//trim(sdust)//'.Xy', &
 !              uud_xy2(:,:,1),z(iz2),nx,ny)
-!          call wslice(path//'udy'//trim(sidust)//'.Xy', &
+!          call wslice(path//'udy'//trim(sdust)//'.Xy', &
 !              uud_xy2(:,:,2),z(iz2),nx,ny)
-!          call wslice(path//'udz'//trim(sidust)//'.Xy', &
+!          call wslice(path//'udz'//trim(sdust)//'.Xy', &
 !              uud_xy2(:,:,3),z(iz2),nx,ny)
 !        enddo
 !
@@ -186,19 +186,19 @@ module Slices
 !
       case ('lnrhod')
 !        do idust=1,ndustspec
-!          call chn(idust,sidust)
-!          if (idust .eq. 1) sidust = ''
+!          call chn(idust,sdust)
+!          if (idust .eq. 1) sdust = ''
 !          lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod(idust))
 !          lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod(idust))
 !          lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod(idust))
 !          lnrhod_xy2=f(l1:l2,m1:m2,iz2,ilnrhod(idust))
-!          call wslice(path//'lnrhod'//trim(sidust)//'.yz', &
+!          call wslice(path//'lnrhod'//trim(sdust)//'.yz', &
 !              lnrhod_yz,x(ix),ny,nz)
-!          call wslice(path//'lnrhod'//trim(sidust)//'.xz', &
+!          call wslice(path//'lnrhod'//trim(sdust)//'.xz', &
 !              lnrhod_xz,y(iy),nx,nz)
-!          call wslice(path//'lnrhod'//trim(sidust)//'.xy', &
+!          call wslice(path//'lnrhod'//trim(sdust)//'.xy', &
 !              lnrhod_xy,z(iz),nx,ny)
-!          call wslice(path//'lnrhod'//trim(sidust)//'.Xy', &
+!          call wslice(path//'lnrhod'//trim(sdust)//'.Xy', &
 !              lnrhod_xy2,z(iz2),nx,ny)
 !        enddo
 ! 
