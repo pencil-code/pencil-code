@@ -1,7 +1,6 @@
 &run_pars
-  ip=14,
   nt=100, it1=5, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
-  dsnap=200., dvid=0.2,
+  dsnap=10., dvid=0.5,
 /
 &hydro_run_pars
   nu=1e-2, ivisc=0,
@@ -10,4 +9,7 @@
 /
 &forcing_run_pars
   iforce=2, force=0.07, relhel=1.,
+/
+&magnetic_run_pars
+  eta=1e-2,
 /

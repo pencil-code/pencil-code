@@ -8,3 +8,6 @@
 &density_init_pars
   gamma=1.
 /
+&magnetic_init_pars
+  initaa=1,amplaa=2e-2
+/
