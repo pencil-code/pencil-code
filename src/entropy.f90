@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.130 2002-11-12 07:33:40 brandenb Exp $
+! $Id: entropy.f90,v 1.131 2002-11-12 16:07:58 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.130 2002-11-12 07:33:40 brandenb Exp $")
+           "$Id: entropy.f90,v 1.131 2002-11-12 16:07:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -869,7 +869,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
@@ -964,7 +964,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
@@ -1025,7 +1025,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1082,7 +1082,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1139,7 +1139,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real :: tmp
       integer :: i
 !
@@ -1196,7 +1196,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1245,7 +1245,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
@@ -1294,7 +1294,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1343,7 +1343,7 @@ endif
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real, dimension (mx,my) :: cs2_2d
       integer :: i
 !

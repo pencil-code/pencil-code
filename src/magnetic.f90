@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.95 2002-11-12 07:33:40 brandenb Exp $
+! $Id: magnetic.f90,v 1.96 2002-11-12 16:07:58 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.95 2002-11-12 07:33:40 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.96 2002-11-12 16:07:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -733,7 +733,7 @@ module Magnetic
       use Mpicomm, only: stop_it
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       real, dimension (nx,ny) :: f2,f3
       real, dimension (nx,ny,nghost+1) :: fz
       integer :: j

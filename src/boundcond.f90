@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.35 2002-11-12 15:48:02 dobler Exp $
+! $Id: boundcond.f90,v 1.36 2002-11-12 16:07:58 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -384,7 +384,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension(:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -410,14 +410,14 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !
       select case(topbot)
 
       case('bot')               ! bottom boundary
-         if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
+        if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
 
       case('top')               ! top boundary
         if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
@@ -436,7 +436,7 @@ module Boundcond
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: j
       character (len=3) :: topbot
 !
@@ -468,7 +468,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension(:,:,:,:) :: f
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -513,7 +513,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -558,7 +558,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -607,7 +607,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension(:,:,:,:) :: f
       real, dimension (mx,my) :: fder
       integer :: i,j
 !
@@ -650,7 +650,7 @@ module Boundcond
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension(:,:,:,:) :: f
       real, dimension (my,mz) :: fder
       integer :: i,j
 !
@@ -686,7 +686,7 @@ module Boundcond
       use Hydro
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension(:,:,:,:) :: f
       real :: ampl_osc,frec
       integer :: i,pnts=10,j
 !

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.25 2002-10-03 07:59:22 dobler Exp $
+! $Id: nomagnetic.f90,v 1.26 2002-11-12 16:07:59 dobler Exp $
 
 module Magnetic
 
@@ -45,7 +45,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.25 2002-10-03 07:59:22 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.26 2002-11-12 16:07:59 dobler Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -127,7 +127,7 @@ module Magnetic
 !  14-jun-2002/axel: adapted from similar
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (:,:,:,:) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_aa_pot
