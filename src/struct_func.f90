@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.13 2003-01-21 19:17:57 nilshau Exp $
+! $Id: struct_func.f90,v 1.14 2003-01-24 01:04:51 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -47,6 +47,7 @@ module struct_func
   integer, dimension (ny,nz) :: i_du1,i_du2
   integer :: l,ll,j,q,direction,ll1,ll2
   integer :: i,ivec,lb_ll,separation,exp1,exp2
+  integer(8) :: ndiv
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
   character (len=*) :: variabl
@@ -86,8 +87,9 @@ module struct_func
   !  Setting some variables depending on wether we want to
   !  calculate pdf or structure functions.
   !
-  if (variabl .eq. 'pdf') then 
+  if (variabl .eq. 'pdfu') then 
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+     filetowrite='/pdfu-'
      pdf_max= 1.  !(for the time being; assumes |u|<1)
      pdf_min=-pdf_max
      dx_du=(pdf_max-pdf_min)/n_pdf
@@ -97,7 +99,43 @@ module struct_func
      p_du=0.
      llpdf=.true.
      llsf=.false.
-  endif
+  elseif (variabl .eq. 'pdfb') then 
+     vect=b_vec
+     filetowrite='/pdfb-'
+     pdf_max= 1.  !(for the time being; assumes |u|<1)
+     pdf_min=-pdf_max
+     dx_du=(pdf_max-pdf_min)/n_pdf
+     do l=1,n_pdf
+        x_du(l)=(l-.5)*dx_du+pdf_min
+     enddo
+     p_du=0.
+     llpdf=.true.
+     llsf=.false.
+elseif (variabl .eq. 'pdfz1') then
+   filetowrite='/pdfz1-'
+     vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
+     pdf_max= 1.  !(for the time being; assumes |u|<1)
+     pdf_min=-pdf_max
+     dx_du=(pdf_max-pdf_min)/n_pdf
+     do l=1,n_pdf
+        x_du(l)=(l-.5)*dx_du+pdf_min
+     enddo
+     p_du=0.
+     llpdf=.true.
+     llsf=.false.
+elseif (variabl .eq. 'pdfz2') then
+     vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
+     filetowrite='/pdfz2-'
+     pdf_max= 1.  !(for the time being; assumes |u|<1)
+     pdf_min=-pdf_max
+     dx_du=(pdf_max-pdf_min)/n_pdf
+     do l=1,n_pdf
+        x_du(l)=(l-.5)*dx_du+pdf_min
+     enddo
+     p_du=0.
+     llpdf=.true.
+     llsf=.false.
+endif
   !
   !  Beginning the loops
   !
@@ -172,7 +210,8 @@ module struct_func
   !
   if(llsf) then
      call mpireduce_sum(sf,sf_sum,imax*qmax*3)  !Is this safe???
-     sf_sum=sf_sum/(nw*ncpus*2)
+     ndiv=nw*ncpus*2
+     sf_sum=sf_sum/ndiv
      !sf_sum(imax,:,:)=2*sf_sum(imax,:,:)
   endif
   !
@@ -182,8 +221,8 @@ module struct_func
      call chn(ivec,var)
      if(llpdf) then
         if (ip<10) print*,'Writing pdf of variable',var &
-             ,'to ',trim(datadir)//'/pdf-'//trim(var)//'.dat'
-        open(1,file=trim(datadir)//'/pdf-'//trim(var) &
+             ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
+        open(1,file=trim(datadir)//trim(filetowrite)//trim(var) &
              //'.dat',position='append')
         write(1,*) t,n_pdf
         write(1,'(1p,8e10.2)') p_du_sum(:,:,:)
