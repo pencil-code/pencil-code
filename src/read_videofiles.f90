@@ -1,10 +1,11 @@
-! $Id: read_videofiles.f90,v 1.14 2003-12-07 08:42:14 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.15 2004-03-26 13:13:19 dobler Exp $
 
 !***********************************************************************
       program rvid_box
 !
-!  read slices that are necessary to construct the
-!  four files used by rvid_box.pro
+!  read and combine slices from individual processor directories daata
+!  /procN, write them to data/, where the can be used by used by
+!  rvid_box.pro
 !
 !  13-nov-02/axel: coded
 !
@@ -196,7 +197,7 @@
       logical :: eof
       real :: t,pos
 !
-      if(it==1) open(lun,file=file,form='unformatted')
+      if(it==1) open(lun,file=file,status='old',form='unformatted')
 
       pos=0.  ! By default (i.e. if missing from record)
       read(lun,end=999,err=998) a,t,pos
