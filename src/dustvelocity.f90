@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.88 2004-10-29 13:40:40 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.89 2004-10-30 15:22:46 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -111,7 +111,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.88 2004-10-29 13:40:40 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.89 2004-10-30 15:22:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,7 +167,7 @@ module Dustvelocity
 !
 !  Only calculate rate-of-strain tensor if necessary
 !
-      if (iviscd == 'nud-const' .or. iviscd == 'hyper3_nud-const' &
+      if ((iviscd=='nud-const' .or. iviscd=='hyper3_nud-const') &
           .and. lviscosity_dust .and. ldustdensity) lneed_sdij=.true.
 !
 !  Turn off all dynamical terms in duud/dt if short stopping time approximation
@@ -523,6 +523,7 @@ module Dustvelocity
           select case (iviscd)
 
           case ('nud-const')
+
             do j=1,3
               do i=1,3
                 sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
@@ -537,6 +538,11 @@ module Dustvelocity
                 sdij(:,i,j)=udij5(:,i,j)
               enddo
             enddo
+
+          case default
+
+            print*, 'duud_dt: No rate-of-strain tensor matches iviscd=',iviscd
+            call stop_it('')
 
           endselect
 
@@ -636,21 +642,6 @@ module Dustvelocity
               fviscd=nud(k)*(del2ud+1/3.*graddivud)
             endif
 
-          case('hyper3_nud-const')
-!
-!  Viscous force: nud*(del6ud+S*glnnd)
-!
-            if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S*glnnd)'
-            call del6v(f,iuud(k),del6ud)
-            call grad(f,ind(k),glnnd)
-            if (.not. ldustdensity_log) then
-              do i=1,3
-                glnnd(:,i)=glnnd(:,i)/nd
-              enddo
-            endif
-            call multmv_mn(sdij,glnnd,sdglnnd)
-            fviscd=nud(k)*(del6ud+sdglnnd)
-
           case('hyper3_simplified')
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
@@ -659,7 +650,7 @@ module Dustvelocity
             call del6v(f,iuud(k),del6ud)
             fviscd=nud(k)*del6ud
 
-          case('hyper3_simplified2')
+          case('hyper3_rhod_nud-const')
 !
 !  Viscous force: mud/rhod*del6ud
 !
@@ -670,8 +661,25 @@ module Dustvelocity
               fviscd(:,i)=mudrhod1*del6ud(:,i)
             enddo
 
+          case('hyper3_nud-const')
+!
+!  Viscous force: nud*(del6ud+S.glnnd), where S_ij=d^5 ud_i/dx_j^5
+!
+            if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S.glnnd)'
+            call del6v(f,iuud(k),del6ud)
+            call grad(f,ind(k),glnnd)
+            if (.not. ldustdensity_log) then
+              do i=1,3
+                glnnd(:,i)=glnnd(:,i)/nd
+              enddo
+            endif
+            call multmv_mn(sdij,glnnd,sdglnnd)
+            fviscd=nud(k)*(del6ud+sdglnnd)
+
           case default
-            call stop_it("duud_dt: No such dust viscosity type")
+
+            if (lroot) print*, 'No such such value for iviscd: ', trim(iviscd)
+            call stop_it('duud_dt')
 
           endselect
 
