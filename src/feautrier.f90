@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.19 2003-04-11 19:04:24 brandenb Exp $
+! $Id: feautrier.f90,v 1.20 2003-04-22 17:24:17 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.19 2003-04-11 19:04:24 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.20 2003-04-22 17:24:17 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -254,6 +254,7 @@ module Radiation
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real :: formfactor=0.5
 !
 !  Add radiative cooling
 !
@@ -263,7 +264,7 @@ module Radiation
             df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
                               +4.*pi*kappa(l1:l2,m,n) &
                                *Qrad(l1:l2,m,n) &
-                               /TT(l1:l2,m,n)
+                               /TT(l1:l2,m,n)*formfactor
          endif
       enddo
       enddo

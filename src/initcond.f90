@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.33 2003-04-09 13:22:50 brandenb Exp $ 
+! $Id: initcond.f90,v 1.34 2003-04-22 17:24:17 brandenb Exp $ 
 
 module Initcond 
  
@@ -62,7 +62,7 @@ module Initcond
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
-!  wavenumber k, helicity H=ampl (can be either sign)
+!  wavenumber k
 !
 !  set x-wave
 !
@@ -101,6 +101,57 @@ module Initcond
       endif
 !
     endsubroutine wave
+!***********************************************************************
+    subroutine wave_uu(ampl,f,i,kx,ky,kz)
+!
+!  sinusoidal wave
+!
+!  14-apr-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.
+!
+!  wavenumber k
+!
+!  set x-wave
+!
+      if (present(kx)) then
+        k=kx
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kx=',k
+        else
+          if (lroot) print*,'wave: kx,i=',k,i
+          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*x),2,my),3,mz)*f(:,:,:,iux))
+        endif
+      endif
+!
+!  set y-wave
+!
+      if (present(ky)) then
+        k=ky
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; ky=',k
+        else
+          if (lroot) print*,'wave: ky,i=',k,i
+          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*y),1,mx),3,mz)*f(:,:,:,iuy))
+        endif
+      endif
+!
+!  set z-wave
+!
+      if (present(kz)) then
+        k=kz
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kz=',k
+        else
+          if (lroot) print*,'new wave: kz,i=',k,i,iuz
+          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*z),1,mx),2,my)*f(:,:,:,iuz))
+        endif
+      endif
+!
+    endsubroutine wave_uu
 !***********************************************************************
     subroutine jump(f,i,fleft,fright,width,dir)
 !

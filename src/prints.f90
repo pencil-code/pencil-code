@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.38 2003-02-03 21:17:08 dobler Exp $
+! $Id: prints.f90,v 1.39 2003-04-22 17:24:17 brandenb Exp $
 
 module Print
 
@@ -49,6 +49,7 @@ module Print
       use Sub
       use Hydro
       use Magnetic
+      use Pscalar
       use General, only: safe_character_assign
 !
       logical,save :: first=.true.
@@ -67,6 +68,7 @@ module Print
         if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
         if (lmagnetic) call calc_mfield
         if (lhydro)    call calc_mflow
+        if (lpscalar)  call calc_mpscalar
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop

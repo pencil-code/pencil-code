@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.104 2003-04-09 13:22:50 brandenb Exp $ 
+! $Id: param_io.f90,v 1.105 2003-04-22 17:24:17 brandenb Exp $ 
 
 module Param_IO
 
@@ -30,19 +30,19 @@ module Param_IO
   ! physical constants, taken from:
   ! http://www.astro.wisc.edu/~dolan/constants.html
 
-  real, parameter :: hbar_cgs=1.0545726663d-27 ! [erg*s]
-  real, parameter :: k_B_cgs=1.38065812d-16    ! [erg/K]
-  real, parameter :: m_p_cgs=1.672623110d-24   ! [g]
-  real, parameter :: m_e_cgs=9.109389754d-28   ! [g]
-  real, parameter :: eV_cgs=1.602177250d-12    ! [erg]
-  real, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
-  real, parameter :: sigmaSB_cgs=5.607d-5           ! [erg/cm^2/s/K^4]
+  double precision, parameter :: hbar_cgs=1.0545726663d-27 ! [erg*s]
+  double precision, parameter :: k_B_cgs=1.38065812d-16    ! [erg/K]
+  double precision, parameter :: m_p_cgs=1.672623110d-24   ! [g]
+  double precision, parameter :: m_e_cgs=9.109389754d-28   ! [g]
+  double precision, parameter :: eV_cgs=1.602177250d-12    ! [erg]
+  double precision, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  double precision, parameter :: sigmaSB_cgs=5.607d-5      ! [erg/cm^2/s/K^4]
 
   ! run parameters
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
-  logical :: lwrite_zaverages=.false.
+  logical :: lwrite_zaverages=.false.,lread_oldsnap=.false.
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -52,7 +52,7 @@ module Param_IO
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density, &
-       random_gen,lserial_io, &
+       random_gen,lserial_io,lread_oldsnap, &
        bcx,bcy,bcz
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &

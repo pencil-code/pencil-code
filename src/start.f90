@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.83 2003-04-10 06:58:24 brandenb Exp $
+! $Id: start.f90,v 1.84 2003-04-22 17:24:17 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.83 2003-04-10 06:58:24 brandenb Exp $")
+             "$Id: start.f90,v 1.84 2003-04-22 17:24:17 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -123,9 +123,16 @@
 !
 !  different initial conditions
 !  initialize all variables to zero;
+!
+        if(lread_oldsnap) then
+          print*,'read old snapshot file'
+          call input(trim(directory_snap)//'/var.dat',f,mvar,1)
+        else
+          f = 0.
+        endif
+!
 !  the following init routines do then only need to add to f.
 !
-        f = 0.
         if (lroot) print* !(empty line)
         call init_gg   (f,xx,yy,zz)
         call init_uu   (f,xx,yy,zz)

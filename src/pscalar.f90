@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.16 2002-11-24 13:14:59 mee Exp $
+! $Id: pscalar.f90,v 1.17 2003-04-22 17:24:17 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -29,7 +29,7 @@ module Pscalar
        pscalar_diff,nopscalar,tensor_pscalar_diff
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_rhoccm=0,i_ccmax=0
+  integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
 
   contains
 
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.16 2002-11-24 13:14:59 mee Exp $")
+           "$Id: pscalar.f90,v 1.17 2003-04-22 17:24:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,6 +101,9 @@ module Pscalar
         case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
         case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
         case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
+        case('propto-ux'); call wave_uu(ampllncc,f,ilncc,kx=kx_lncc)
+        case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
+        case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
         case('tang-discont-z')
            print*,'init_lncc: widthlncc=',widthlncc
         prof=.5*(1.+tanh(zz/widthlncc))
@@ -129,7 +132,7 @@ module Pscalar
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glncc,glnrho
-      real, dimension (nx) :: cc,rho,uglncc,diff_op,del2lncc
+      real, dimension (nx) :: lncc,cc,rho,uglncc,diff_op,del2lncc
 !
       intent(in)  :: f,uu,glnrho
       intent(out) :: df
@@ -174,10 +177,12 @@ module Pscalar
 !  diagnostics
 !
       if (ldiagnos) then
-        cc=exp(f(l1:l2,m,n,ilncc))
+        lncc=f(l1:l2,m,n,ilncc)
+        cc=exp(lncc)
         rho=exp(f(l1:l2,m,n,ilnrho))
         if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
+        if (i_lnccmz/=0) call xysum_mn_name_z(lncc,i_lnccmz)
       endif
 !
     endsubroutine dlncc_dt
@@ -190,14 +195,14 @@ module Pscalar
 !
       use Sub
 !
-      integer :: iname
+      integer :: iname,inamez
       logical :: lreset
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rhoccm=0; i_ccmax=0
+        i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -205,15 +210,54 @@ module Pscalar
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',i_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',i_ccmax)
+        call parse_name(iname,cname(iname),cform(iname),'lnccm',i_lnccm)
+      enddo
+!
+!  check for those quantities for which we want xy-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'lnccmz',i_lnccmz)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       write(3,*) 'i_rhoccm=',i_rhoccm
       write(3,*) 'i_ccmax=',i_ccmax
+      write(3,*) 'i_lnccm=',i_lnccm
+      write(3,*) 'i_lnccmz=',i_lnccmz
       write(3,*) 'ilncc=',ilncc
 !
     endsubroutine rprint_pscalar
+!***********************************************************************
+    subroutine calc_mpscalar
+!
+!  calculate mean magnetic field from xy- or z-averages
+!
+!  14-apr-03/axel: adaped from calc_mfield
+!
+      use Cdata
+      use Sub
+!
+      logical,save :: first=.true.
+      real :: lnccm
+!
+!  Magnetic energy in horizontally averaged field
+!  The bxmz and bymz must have been calculated,
+!  so they are present on the root processor.
+!
+      if (i_lnccm/=0) then
+        if (i_lnccmz==0) then
+          if(first) print*
+          if(first) print*,"NOTE: to get lnccm, lnccmz must also be set in xyaver"
+          if(first) print*,"      We proceed, but you'll get lnccm=0"
+          lnccm=0.
+        else
+          lnccm=sqrt(sum(fnamez(:,:,i_lnccmz)**2)/(nz*nprocz))
+        endif
+        call save_name(lnccm,i_lnccm)
+      endif
+!
+    endsubroutine calc_mpscalar
 !***********************************************************************
     subroutine tensor_diff(f,df,tensor_pscalar_diff,glncc)
 !

@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.2 2002-11-24 13:14:59 mee Exp $
+! $Id: nopscalar.f90,v 1.3 2003-04-22 17:24:17 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -16,7 +16,7 @@ module Pscalar
   namelist /pscalar_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ccm=0,i_ccmax=0
+  integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
 
   contains
 
@@ -42,7 +42,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.2 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nopscalar.f90,v 1.3 2003-04-22 17:24:17 brandenb Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -106,16 +106,21 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ccm=0; i_ccmax=0
+        i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
       endif
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ccm=',i_ccm
+      write(3,*) 'i_rhoccm=',i_rhoccm
       write(3,*) 'i_ccmax=',i_ccmax
+      write(3,*) 'i_lnccm=',i_lnccm
+      write(3,*) 'i_lnccmz=',i_lnccmz
       write(3,*) 'ilncc=',ilncc
 !
     endsubroutine rprint_pscalar
+!***********************************************************************
+    subroutine calc_mpscalar
+    endsubroutine calc_mpscalar
 !***********************************************************************
 
 endmodule Pscalar
