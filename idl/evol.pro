@@ -5,10 +5,15 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   12-Nov-2001
-;;;  $Id: evol.pro,v 1.10 2002-10-06 07:23:18 brandenb Exp $
+;;;  $Id: evol.pro,v 1.11 2003-08-08 18:09:25 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Time evolution (from time_series.dat).
+
+print,'WARNING: This routine is considered obsolete and will disappear soon'
+print,'         unless you convince me [wd] that you need it'
+print,'         Please use ts.pro instead'
+print
 
 default, nfile, datatopdir + '/time_series.dat'
 
