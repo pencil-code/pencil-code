@@ -113,11 +113,6 @@ module Mpicomm
         enddo
       enddo
 !
-!  produce a directory name for the output
-!
-      call chn(iproc,chproc)
-      directory='tmp/proc'//chproc
-!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f)
