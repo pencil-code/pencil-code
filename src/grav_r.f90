@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.44 2003-10-09 12:44:17 dobler Exp $
+! $Id: grav_r.f90,v 1.45 2003-10-09 13:03:21 mcmillan Exp $
 
 module Gravity
 
@@ -56,7 +56,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.44 2003-10-09 12:44:17 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.45 2003-10-09 13:03:21 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -79,8 +79,6 @@ module Gravity
       use Mpicomm
       use Global
 !
-      integer :: jmn
-
       real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
       real :: g_int,g_ext
