@@ -54,6 +54,9 @@ if (! -d "$datadir") then
 endif
 
 # Create list of subdirectories
+# If the file NOERASE exists, the old directories are not erased
+#   (start.x also knows then that var.dat is not created)
+#
 #set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
 #foreach dir ($subdirs)
 @ i = 0
@@ -66,17 +69,22 @@ while ( $i < $ncpus )
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
     set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/*.info $dir/slice*`
-    #if ($list != "") then
+    if (! -e NOERASE) then
       foreach rmfile ($list)
         if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
       end
-    #endif
+    endif
   endif
   @ i++
 end
 
-if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
-rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
+# Clean up previous runs
+if (! -e NOERASE) then
+  if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \
+      mv $datadir/time_series.dat $datadir/time_series.`timestr`
+  rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
+        $datadir/averages/* >& /dev/null
+endif
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
 if ($local_binary) then
