@@ -1,8 +1,8 @@
-$Id: start.in,v 1.15 2002-06-18 09:16:24 dobler Exp $
-!
-! Initialisation parameters
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
+cvsid='$Id: start.in,v 1.16 2002-06-18 16:23:55 dobler Exp $'
 /
 &hydro_init_pars
 /
