@@ -8,19 +8,21 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
-#
-#  distribute var.dat from the server to the various nodes
-#
-set nodelist = `cat $PBS_NODEFILE`
-set i=0
-foreach node ($nodelist)
-  rcp tmp/proc$i/var.dat ${node}:/scratch
-  set i=`expr $i + 1`
-  echo 'i=' $i
-end
-
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
+
+#
+#  On Horseshoe, distribute var.dat from the server to the various nodes
+#
+if ($hn =~ s[0-9]*p[0-9]*) then
+  set nodelist = `cat $PBS_NODEFILE`
+  set i=0
+  foreach node ($nodelist)
+    rcp tmp/proc$i/var.dat ${node}:/scratch
+    set i=`expr $i + 1`
+    echo 'i=' $i
+  end
+endif
 
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
