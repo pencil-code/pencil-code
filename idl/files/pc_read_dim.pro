@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.13 2004-05-07 14:38:29 mee Exp $
+; $Id: pc_read_dim.pro,v 1.14 2004-09-24 09:00:50 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 14:38:29 $
-;  $Revision: 1.13 $
+;  $Date: 2004-09-24 09:00:50 $
+;  $Revision: 1.14 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -144,14 +144,18 @@ l1 = nghostx & l2 = mx-nghostx-1
 m1 = nghosty & m2 = my-nghosty-1
 n1 = nghostz & n2 = mz-nghostz-1
 
-nxgrid=nx*nprocx
-nygrid=ny*nprocy
-nzgrid=nz*nprocz
-
-mxgrid = nxgrid + (2 * nghostx)
-mygrid = nygrid + (2 * nghosty)
-mzgrid = nzgrid + (2 * nghostz)
-
+if (n_elements(proc) ne 1) then begin
+  nxgrid=nx
+  nygrid=ny
+  nzgrid=nz
+  mxgrid = nxgrid + (2 * nghostx)
+  mygrid = nygrid + (2 * nghosty)
+  mzgrid = nzgrid + (2 * nghostz)
+endif else begin
+; The specific processors don't know the global array
+  nxgrid=0L & nygrid=0L & nzgrid=0L
+  mxgrid=0L & mygrid=0L & mzgrid=0L
+endelse
 
 
 precision = (strtrim(precision,2))        ; drop leading zeros
