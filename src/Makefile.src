@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.46 2004-04-08 19:38:12 mee Exp $
+### $Id: Makefile.src,v 1.47 2004-04-08 21:24:01 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -108,7 +108,8 @@ FCCLEANER=
 #FC=mpif90 # (Samos|fire|copson)
 #FFLAGS=-gm -fast -Mvect # (copson)
 #LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (nw43) 
-#FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
+#FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
+#FC=/usr/lib/lam/bin/mpif95 -i_dynamic #(Cincinnatus)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 ##FC=ifc_6.0 -i_dynamic #(nw46|nq1)
@@ -241,8 +242,6 @@ start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
 run_deps_f90=$(comm_deps) equ.o timestep.o
 run_deps=$(run_deps_f90) $(DEBUG).o
-validate_deps=$(comm_deps) $(DEBUG).o 
-validate=validate.o $(validate_deps)
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
@@ -275,7 +274,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x validate.x $(FCCLEANER)
+	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x $(FCCLEANER)
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
@@ -283,15 +282,11 @@ start.x: $(start) Makefile.local
 run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
-validate.x: $(validate) Makefile.local
-	$(LD) $(LDFLAGS) $(validate) $(LDMPI) $(LIBSIG) -o validate.x 
-
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
-	$(LD) $(LDFLAGS) $(validate) $(LDMPI) $(LIBSIG) -o validate.x 
 #shorthand for this
 l:
 	$(MAKE) linkonly
@@ -356,7 +351,6 @@ read_vectorfiles.x: $(read_vectorfiles)
 ## ---------------------------------------------------------------------- #
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
-validate.o:  validate.f90 $(validate_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
 read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
