@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.3 2003-08-13 15:30:07 mee Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.4 2003-10-06 14:27:50 mcmillan Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -32,11 +32,21 @@ module Hydro
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
+! geodynamo
+!       original line replaced and split in two
   namelist /hydro_run_pars/ &
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
-       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
+       tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
+       frec_ux,ampl_osc_ux, &
        tau_damp_ruxm,tau_damp_ruym
+! end geodynamo
+
+!  namelist /hydro_run_pars/ &
+!       nu,ivisc, &            !ajwm - kept for backward comp. should 
+!       Omega,theta, &         ! remove and use viscosity_run_pars only
+!       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
+!       tau_damp_ruxm,tau_damp_ruym
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -83,7 +93,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.3 2003-08-13 15:30:07 mee Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.4 2003-10-06 14:27:50 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
