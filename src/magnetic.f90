@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.78 2002-08-16 21:23:48 brandenb Exp $
+! $Id: magnetic.f90,v 1.79 2002-08-17 08:40:22 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.78 2002-08-16 21:23:48 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.79 2002-08-17 08:40:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,12 +182,14 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr, uxuxB
       real, dimension (nx,3) :: del2A
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real :: tmp,eta_out1
+      integer :: j
 !
 !  identify module and boundary conditions
 !
@@ -223,6 +225,20 @@ module Magnetic
         if (i_bymxy/=0) call xysum_mn_name(by,i_bymxy)
         if (i_bzmxy/=0) call xysum_mn_name(bz,i_bzmxy)
       endif
+!
+!  possibility of writing B-slices
+!
+        if (n.eq.iz) then
+          do j=1,3
+            bb_xy(:,m-m1+1,j)=bb(:,j)
+          enddo
+        endif
+!
+        if (m.eq.iy) then
+          do j=1,3
+            bb_xz(:,n-n1+1,j)=bb(:,j)
+          enddo
+        endif
 !
 !  possibility to add external field
 !

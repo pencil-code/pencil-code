@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.93 2002-08-11 03:28:59 brandenb Exp $
+! $Id: equ.f90,v 1.94 2002-08-17 08:40:21 brandenb Exp $
 
 module Equ
 
@@ -165,6 +165,12 @@ module Equ
         open(45,file=chdir//'/uz.xz',form='unformatted')
         open(46,file=chdir//'/lnrho.xz',form='unformatted')
         open(47,file=chdir//'/ss.xz',form='unformatted')
+        open(51,file=chdir//'/bx.xy',form='unformatted')
+        open(52,file=chdir//'/by.xy',form='unformatted')
+        open(53,file=chdir//'/bz.xy',form='unformatted')
+        open(54,file=chdir//'/bx.xz',form='unformatted')
+        open(55,file=chdir//'/by.xz',form='unformatted')
+        open(56,file=chdir//'/bz.xz',form='unformatted')
         call out1 (trim(file),tvid,nvid,dvid,t)
         ifirst=1
       else
@@ -177,6 +183,12 @@ module Equ
           write(45) uu_xz(:,:,3),t
           write(46) lnrho_xz(:,:),t
           write(47) ss_xz(:,:),t
+          write(51) bb_xy(:,:,1),t
+          write(52) bb_xy(:,:,2),t
+          write(53) bb_xy(:,:,3),t
+          write(54) bb_xz(:,:,1),t
+          write(55) bb_xz(:,:,2),t
+          write(56) bb_xz(:,:,3),t
         endif
       endif
     endsubroutine wvid
@@ -215,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.93 2002-08-11 03:28:59 brandenb Exp $")
+           "$Id: equ.f90,v 1.94 2002-08-17 08:40:21 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
