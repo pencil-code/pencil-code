@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.106 2002-10-02 20:11:14 dobler Exp $
+### $Id: Makefile,v 1.107 2002-10-04 10:13:14 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -154,6 +154,7 @@ general.o:   general.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
+fft.o:	     fft.f cdata.o
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 timestep.o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics)

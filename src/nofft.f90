@@ -2,11 +2,14 @@
 !
 !  dummy routine for fft.f
 !
+        use cdata
+!
       real :: a,b
       integer :: ntot,n,nspan,isn
       logical, save :: first=.true.
 !
       if(first) then
+        lfft=.false.
         print*
         print*,'fft is needed (eg for potential field bc)'
         print*,'you MUST use FFT=fft in Makefile.local'

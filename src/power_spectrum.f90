@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.5 2002-10-02 20:11:14 dobler Exp $
+! $Id: power_spectrum.f90,v 1.6 2002-10-04 10:13:14 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -36,7 +36,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.5 2002-10-02 20:11:14 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.6 2002-10-04 10:13:14 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -70,6 +70,10 @@ module  power_spectrum
   !  Doing the Fourier transform
   !
   call transform(a1,a2,a3,b1,b2,b3)
+  !
+  !    Stopping the run if FFT=nofft
+  !
+  if (.NOT. lfft) call stop_it( 'You need FFT=fft in Makefile.local in order to get dynamical power spectrum')
   !
   !  define wave vector
   !

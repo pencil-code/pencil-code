@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.97 2002-10-04 09:21:42 brandenb Exp $
+! $Id: cdata.f90,v 1.98 2002-10-04 10:13:14 nilshau Exp $
 
 module Cdata
 
@@ -64,7 +64,7 @@ module Cdata
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos
   logical :: lwrite_ic=.false.,lnowrite=.false.
-  logical :: lroot=.true.,ldebug=.false.
+  logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
   logical :: lfirstpoint
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
