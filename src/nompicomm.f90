@@ -390,7 +390,7 @@ subroutine transform_fftpack(a_re,a_im)
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data
 !
-!  27-oct-02/axel: adapted from transform
+!  27-oct-02/axel: adapted from transform_i, for fftpack
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax

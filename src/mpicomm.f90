@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.60 2002-10-27 19:38:11 brandenb Exp $
+! $Id: mpicomm.f90,v 1.61 2002-10-28 07:08:25 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -829,24 +829,32 @@ end subroutine transform_i
 !***********************************************************************
 subroutine transform_fftpack(a_re,a_im)
 !
-!  Subroutine to do fourier transform
-!  The routine overwrites the input data
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data.
+!  This version works currently only when nxgrid=nygrid=nzgrid!
+!  The length of the work arrays for ffts is therefore always nx.
 !
-!  22-oct-02/axel+tarek: adapted from transform
+!  27-oct-02/axel: adapted from transform_i, for fftpack
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax
-  complex,dimension(ny) :: ay
-  complex,dimension(nz) :: az
   real,dimension(4*nx+15) :: wsavex
-  real,dimension(4*ny+15) :: wsavey
-  real,dimension(4*nz+15) :: wsavez
   integer :: l,m,n
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+!  check whether nxgrid=nygrid=nzgrid
+!
+  if(nxgrid/=nygrid .or. nxgrid/=nzgrid) then
+    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
+    call stop_it("must have nxgrid=nygrid=nzgrid!")
+  endif
+!
+!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+!
   call cffti(nx,wsavex)
-  do m=1,ny
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
   do n=1,nz
+  do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
     call cfftf(nx,ax,wsavex)
     a_re(:,m,n)=real(ax)
@@ -856,27 +864,30 @@ subroutine transform_fftpack(a_re,a_im)
   call transp(a_re,'y')
   call transp(a_im,'y')
 !
+!  The length of the array in the y-direction is nx
+!  (remember: nxgrid=nygrid=nzgrid!)
+!
   if(lroot .AND. ip<10) print*,'doing FFTpack in y'
-  call cffti(ny,wsavey)
-  do l=1,nx
   do n=1,nz
-    ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-    call cfftf(ny,ay,wsavey)
-    a_re(l,:,n)=real(ay)
-    a_im(l,:,n)=aimag(ay)
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
   enddo
   enddo
   call transp(a_re,'z')
   call transp(a_im,'z')
 !
+!  The length of the array in the z-direction is also nx
+!
   if(lroot .AND. ip<10) print*,'doing FFTpack in z'
-  call cffti(nz,wsavez)
-  do l=1,nx
+  do n=1,nz
   do m=1,ny
-    az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    call cfftf(nz,az,wsavez)
-    a_re(l,m,:)=real(az)
-    a_im(l,m,:)=aimag(az)
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
   enddo
   enddo
 !
