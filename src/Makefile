@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.255 2003-10-31 14:03:43 theine Exp $
+### $Id: Makefile,v 1.256 2003-10-31 16:36:59 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -148,7 +148,7 @@ LDONLYFLAGS=
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
-#FC=ifc -I/addon/shared/lam/include #(giga[0-9]*)  
+#FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 
 ## Darwin:
