@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.29 2002-08-14 20:23:26 nilshau Exp $
+! $Id: boundcond.f90,v 1.30 2002-09-21 16:35:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -378,30 +378,29 @@ module Boundcond
       !  used to calculate the boundary points. This will probably
       !  only be used for ln(rho)
       !
-    select case(topbot)
+      select case(topbot)
 !
 ! Bottom boundary
 !
-    case('bot')
-       do i=1,nghost
+      case('bot')
+        do i=1,nghost
           fder=(-3*f(l1-i+1,:,:,j)+4*f(l1-i+2,:,:,j)&
                -f(l1-i+3,:,:,j))/(2*dx)
           f(l1-i,:,:,j)=f(l1-i+2,:,:,j)-2*dx*fder
-       end do
-    case('top')
-       do i=1,nghost
+        enddo
+      case('top')
+        do i=1,nghost
           fder=(3*f(l2+i-1,:,:,j)-4*f(l2+i-2,:,:,j)&
                +f(l2+i-3,:,:,j))/(2*dx)
           f(l2+i,:,:,j)=f(l2+i-2,:,:,j)+2*dx*fder
-       end do
-    case default
-       if(lroot) print*,"invalid argument for 'bc_db_x'"
-    endselect
+        enddo
+      case default
+        if(lroot) print*,"invalid argument for 'bc_db_x'"
+      endselect
 !
-  end subroutine bc_db_x
+    endsubroutine bc_db_x
 !***********************************************************************
-    subroutine  bc_osc_x(f,topbot,j)
-!
+    subroutine bc_osc_x(f,topbot,j)
 !
 !  12-aug-02/nils: coded
 !  14-aug-02/nils: moved to boundcond
@@ -416,24 +415,43 @@ module Boundcond
       integer :: i,pnts=10,j
 !
       if (j==ilnrho) then
-         ampl_osc=ampl_osc_lnrho
-         frec=frec_lnrho
+        ampl_osc=ampl_osc_lnrho
+        frec=frec_lnrho
       elseif (j==iux) then
-         ampl_osc=ampl_osc_ux
-         frec=frec_ux
+        ampl_osc=ampl_osc_ux
+        frec=frec_ux
       else
-         if(lroot) print*,"invalid argument for 'bc_osc_x'"
+        if(lroot) print*,"invalid argument for 'bc_osc_x'"
       endif
 !         
       if (topbot=='bot') then
-         do i=1,pnts
-            f(i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(i)*mx/(Lx*pnts))
-         enddo
+        do i=1,pnts
+          f(i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(i)*mx/(Lx*pnts))
+        enddo
       else
-         do i=1,pnts
-            f(mx+1-i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
-         enddo
+        do i=1,pnts
+          f(mx+1-i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
+        enddo
       endif
-      end subroutine  bc_osc_x
+    endsubroutine bc_osc_x
 !*********************************************************************** 
+    subroutine update_ghosts(a)
+!
+!  update all ghost zones of a
+!  21-sep-02/wolf: extracted from wsnaps
+!
+      use Cparam
+      use Mpicomm
+!
+      real, dimension (mx,my,mz,mvar) :: a
+!
+      call boundconds_x(a)
+      call boundconds_y(a)
+      call boundconds_z(a)
+      call initiate_isendrcv_bdry(a)
+      call finalise_isendrcv_bdry(a)
+!
+    endsubroutine update_ghosts
+!***********************************************************************
+
 endmodule Boundcond

@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.7 2002-07-11 12:25:31 nilshau Exp $
+! $Id: wsnaps.f90,v 1.8 2002-09-21 16:35:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -55,22 +55,15 @@ contains
 !
         call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
-          call boundconds_x(a)
-          call boundconds_y(a)
-          call boundconds_z(a)
-          call initiate_isendrcv_bdry(a)
-          call finalise_isendrcv_bdry(a)
+          call update_ghosts(a)
           call output(chsnap//ch,a,mvar)
         endif
 !
-!  write snapshot without label
-!
       else
-        call boundconds_x(a)
-        call boundconds_y(a)
-        call boundconds_z(a)
-        call initiate_isendrcv_bdry(a)
-        call finalise_isendrcv_bdry(a)
+!
+!  write snapshot without label (typically, var.dat)
+!
+        call update_ghosts(a)
         call output(chsnap,a,mvar)
       endif
 !

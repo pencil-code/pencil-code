@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.61 2002-09-21 14:05:53 dobler Exp $
+! $Id: start.f90,v 1.62 2002-09-21 16:35:50 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.61 2002-09-21 14:05:53 dobler Exp $")
+             "$Id: start.f90,v 1.62 2002-09-21 16:35:50 dobler Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -119,7 +119,10 @@
 !  to overwrite an existing var.dat
 !
         if (lwrite_ic) call output(trim(directory)//'/VAR0',f,mvar)
-        if (.not.lnowrite) call output(trim(directory)//'/var.dat',f,mvar)
+        if (.not.lnowrite) then
+          call output(trim(directory)//'/var.dat',f,mvar)
+          call wtime(trim(directory)//'/time.dat',t)
+        endif
         call wdim(trim(directory)//'/dim.dat')
 !
 !  also write full dimensions to tmp/ :

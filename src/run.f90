@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.80 2002-09-21 14:05:53 dobler Exp $
+! $Id: run.f90,v 1.81 2002-09-21 16:35:50 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -24,6 +24,7 @@
         use Print
         use Timestep
         use Wsnaps
+        use Boundcond
 !
         implicit none
 !
@@ -46,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.80 2002-09-21 14:05:53 dobler Exp $")
+             "$Id: run.f90,v 1.81 2002-09-21 16:35:50 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -80,6 +81,7 @@
 !
         if (ip<=6.and.lroot) print*,'reading var files'
         call input(trim(directory)//'/var.dat',f,mvar,1)
+        call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)
 !
 !  read coordinates
@@ -113,6 +115,11 @@
           call system_clock(count=time1)
           count = 0
         endif
+!
+!  update ghost zones, so rprint works corrected for at the first
+!  time step even if we didn't read ghost zones
+!
+        call update_ghosts(f)
 !
 !  do loop in time
 !
@@ -198,6 +205,7 @@
 !  dvar is written for analysis purposes only
 !
         call wsnap(trim(directory)//'/var.dat',f,.false.)
+        call wtime(trim(directory)//'/time.dat',t)
         if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
 !
 !  write seed parameters (only if forcing is turned on)

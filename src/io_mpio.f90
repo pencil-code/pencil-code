@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.3 2002-09-21 14:05:52 dobler Exp $
+! $Id: io_mpio.f90,v 1.4 2002-09-21 16:35:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.3 2002-09-21 14:05:52 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.4 2002-09-21 16:35:50 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -226,8 +226,8 @@ contains
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
-      real, dimension (mx,my,mz,nn) :: a
       integer :: nn
+      real, dimension (mx,my,mz,nn) :: a
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
@@ -454,7 +454,7 @@ contains
 !  Write processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: dx,dy,dz
+      use Cdata, only: directory,dx,dy,dz
 !
       character (len=*) :: file ! not used
 !
@@ -467,6 +467,7 @@ contains
       if (lroot) then
         open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
         write(1) dx,dy,dz
+        close(1)
       endif
 !
     endsubroutine wgrid
@@ -476,7 +477,7 @@ contains
 !  Read processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: dx,dy,dz
+      use Cdata, only: directory,dx,dy,dz
 !
       real :: tdummy
       integer :: i
@@ -493,6 +494,7 @@ contains
 !
       open(1,FILE=trim(directory)//'/dxyz.dat',FORM='unformatted')
       read(1) dx,dy,dz
+      close(1)
 !
 !  reconstruct ghost values
 !
@@ -506,7 +508,50 @@ contains
         z(n2+i) = z(n2) + i*dz        
       enddo
 !
+      dxmax=max(dx,dy,dz)
+      dxmin=min(dx,dy,dz)
+      Lx=dx*nx*nprocx
+      Ly=dy*ny*nprocy
+      Lz=dz*nz*nprocz
+!
+      if (ip<=4) print*
+      if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
+!
     endsubroutine rgrid
+!***********************************************************************
+    subroutine wtime(file,tau)
+!
+!  Write t to file
+!  21-sep-02/wolf: coded
+!
+      use Mpicomm, only: lroot
+!
+      real :: tau
+      character (len=*) :: file
+!
+      if (lroot) then
+        open(1,FILE=file,FORM='unformatted')
+        write(1) tau
+        close(1)
+      endif
+!
+    endsubroutine wtime
+!***********************************************************************
+    subroutine rtime(file,tau)
+!
+!  Read t from file
+!  21-sep-02/wolf: coded
+!
+      use Mpicomm, only: lroot
+!
+      real :: tau
+      character (len=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) tau
+      close(1)
+!
+    endsubroutine rtime
 !***********************************************************************
 
 endmodule Io

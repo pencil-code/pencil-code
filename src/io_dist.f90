@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.31 2002-09-21 14:05:52 dobler Exp $
+! $Id: io_dist.f90,v 1.32 2002-09-21 16:35:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -79,7 +79,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.31 2002-09-21 14:05:52 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.32 2002-09-21 16:35:50 dobler Exp $")
 
 !
 !  set directory name for the output (one subdirectory for each processor)
@@ -118,17 +118,16 @@ contains
         if (ip<=3) print*,'y',y
         if (ip<=3) print*,'z',z
 !
-!  assume uniform mesh; use the first two *interior* points
-!  to calculate mesh spacing
-!
-        dxmax=max(dx,dy,dz)
-        dxmin=min(dx,dy,dz)
-        Lx=dx*nx*nprocx
-        Ly=dy*ny*nprocy
-        Lz=dz*nz*nprocz
-!
-        if (ip<=4) print*
-        if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
+!  assume uniform mesh;
+!  commented out, since this is now done in rgrid
+!        dxmax=max(dx,dy,dz)
+!        dxmin=min(dx,dy,dz)
+!        Lx=dx*nx*nprocx
+!        Ly=dy*ny*nprocy
+!        Lz=dz*nz*nprocz
+!!
+!        if (ip<=4) print*
+!        if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
         if (ip<=8) print*,'pi,nu=',pi,nu
       endif
 !
@@ -270,7 +269,7 @@ contains
 !  Read processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x,y,z,dx,dy,dz
+      use Cdata
 !
       real :: tdummy
       character (len=*) :: file
@@ -279,7 +278,48 @@ contains
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
 !
+      dxmax=max(dx,dy,dz)
+      dxmin=min(dx,dy,dz)
+      Lx=dx*nx*nprocx
+      Ly=dy*ny*nprocy
+      Lz=dz*nz*nprocz
+!
+      if (ip<=4) print*
+      if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
+!
     endsubroutine rgrid
+!***********************************************************************
+    subroutine wtime(file,tau)
+!
+!  Write t to file
+!  21-sep-02/wolf: coded
+!
+      use Mpicomm, only: lroot
+!
+      real :: tau
+      character (len=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      write(1) tau
+      close(1)
+!
+    endsubroutine wtime
+!***********************************************************************
+    subroutine rtime(file,tau)
+!
+!  Read t from file
+!  21-sep-02/wolf: coded
+!
+      use Mpicomm, only: lroot
+!
+      real :: tau
+      character (len=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) tau
+      close(1)
+!
+    endsubroutine rtime
 !***********************************************************************
 
 endmodule Io
