@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.24 $", &
-           "$Date: 2002-02-22 20:04:10 $")
+           "$Revision: 1.25 $", &
+           "$Date: 2002-02-23 15:59:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -72,15 +72,15 @@ use IO
           f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
                               + grads0 * zz
         case(4)               ! piecewise polytropic
-ss0 = 0.
+          ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           ! top region
           beta = gravz/(mpoly2+1)*gamma/gamma1
           f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
-                          * alog(1 + beta*(zz-ztop)/cs2top)
+                          * alog(1 + beta*(zz-ztop)/cs20)
           ! unstable region
           ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-                  * alog(1 + beta*(z2-ztop)/cs2top)
-          cs2int = cs2top + beta*(z2-ztop) ! cs2 at layer interface z=z2
+                  * alog(1 + beta*(z2-ztop)/cs20)
+          cs2int = cs20 + beta*(z2-ztop) ! cs2 at layer interface z=z2
           beta = gravz/(mpoly0+1)*gamma/gamma1
           tmp = ssint + (1-mpoly0*gamma1)/gamma &
                         * alog(1 + beta*(zz-z2)/cs2int)
@@ -91,7 +91,7 @@ ss0 = 0.
           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
           ! bottom (stable) region
           ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
-                        * alog(1 + beta*(z1-z2)/cs2int)
+                          * alog(1 + beta*(z1-z2)/cs2int)
           cs2int = cs2int + beta*(z1-z2) ! cs2 at layer interface z=z1
           beta = gravz/(mpoly1+1)*gamma/gamma1
           tmp = ssint + (1-mpoly1*gamma1)/gamma &

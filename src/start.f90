@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.16 $", &
-             "$Date: 2002-02-22 20:04:10 $")
+             "$Revision: 1.17 $", &
+             "$Date: 2002-02-23 15:59:48 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -47,7 +47,6 @@
         read(1,*) mpoly0,mpoly1,mpoly2
         read(1,*) ampl,init,urand
         read(1,*) cs0,gamma,rho0,gravz,grads0
-        read(1,*) cs2top
         close(1)
 !
 !  output on the console, but only when root processor
@@ -61,8 +60,7 @@
           print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
           print*, 'mpoly0,mpoly1,mpoly2=', mpoly0,mpoly1,mpoly2
           print*, 'ampl,init,urand=', ampl,init,urand
-          print*, 'cs0,gamma,gravz,grads0=', cs0,gamma,gravz,grads0
-          print*, 'cs2top=', cs2top 
+          print*, 'cs0,gamma,rho0,gravz,grads0=', cs0,gamma,rho0,gravz,grads0
         endif
 !
 !  override hcond1,hcond2 according to polytropic equilibrium solution

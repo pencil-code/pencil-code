@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-01-25 08:04:47 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-02-23 15:59:48 $")
 !
 !
       if (nvar > mvar) then
@@ -100,8 +100,10 @@ module Register
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot
+      real, dimension (mz) :: stp
       real :: ampl
       real :: zmax,lnrho0
+      real :: beta,lnrhoint,cs2int
       integer :: init,i
 !
       select case(init)
@@ -147,6 +149,32 @@ module Register
         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
                      spread(spread(sin(3*y),1,mx),3,mz)* &
                      spread(spread(cos(1*z),1,mx),2,my)
+      case(4)               ! piecewise polytropic
+        ! top region
+        beta = gravz/(mpoly2+1)*gamma/gamma1
+        f(:,:,:,ilnrho) = mpoly2*alog(1 + beta*(zz-ztop)/cs20)
+        ! unstable region
+        lnrhoint =  mpoly2*alog(1 + beta*(z2-ztop)/cs20)
+        ! (lnrho at layer interface z=z2)
+        cs2int = cs20 + beta*(z2-ztop) ! cs2 at layer interface z=z2
+        beta = gravz/(mpoly0+1)*gamma/gamma1
+        tmp = lnrhoint + mpoly0*alog(1 + beta*(zz-z2)/cs2int)
+        ! smoothly blend the solutions for the two regions:
+        stp = step(z,z2,whcond)
+        p = spread(spread(stp,1,mx),2,my)
+
+        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
+        ! bottom (stable) region
+        lnrhoint = lnrhoint + mpoly0*alog(1 + beta*(z1-z2)/cs2int)
+        cs2int = cs2int + beta*(z1-z2) ! cs2 at layer interface z=z1
+        beta = gravz/(mpoly1+1)*gamma/gamma1
+        tmp = lnrhoint + mpoly1*alog(1 + beta*(zz-z1)/cs2int)
+        ! smoothly blend the solutions for the two regions:
+        stp = step(z,z1,whcond)
+        p = spread(spread(stp,1,mx),2,my)
+        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
+        ! Fix origin of log density
+        f(:,:,:,ilnrho) = f(:,:,:,ilnrho) + alog(rho0)
       case default
         if (lroot) print*,'Initialising everything to zero'
       endselect
