@@ -1,6 +1,6 @@
-! $Id: interstellar.f90,v 1.7 2002-12-09 19:31:59 ngrs Exp $
+! $Id: interstellar.f90,v 1.8 2002-12-10 00:50:51 ngrs Exp $
 
-!  This modules solves contains ISM and SNe routines.
+!  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
 
 module Interstellar
@@ -14,6 +14,8 @@ module Interstellar
   real :: x_SN,y_SN,z_SN,rho_SN,ampl_SN=5.0
   real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
   real :: tau_cloud=2e-2
+  integer, parameter :: ninterstellarsave=1
+  real, dimension(ninterstellarsave) :: interstellarsave
   real, parameter :: rho_crit=1.,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
@@ -34,7 +36,8 @@ module Interstellar
   integer :: iproc_SN,ipy_SN,ipz_SN
 
   ! input parameters
-  integer :: dummy
+ 
+  integer :: dummy 
   namelist /interstellar_init_pars/ dummy
 
   ! run parameters
@@ -60,13 +63,13 @@ module Interstellar
       linterstellar = .true.
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_lncc'
+        print*, 'Register_interstellar'
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.7 2002-12-09 19:31:59 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.8 2002-12-10 00:50:51 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -80,8 +83,32 @@ module Interstellar
 !  Perform any post-parameter-read initialization eg. set derived 
 !  parameters
 !
-!  24-nov-02/tony: coded - dummy
+!  24-nov-02/tony: coded
 !
+!  read parameters from seed.dat and interstellar.dat
+!
+      use Cdata
+      use General
+      use Sub, only: inpui,inpup
+!
+      logical, save :: first=.true.
+      logical :: exist
+
+      if (first) then
+         if (lroot.and.ip<14) print*, 'reading seed file'
+         call inpui(trim(directory)//'/seed.dat',seed,nseed)
+         call random_seed_wrapper(put=seed(1:nseed))
+!
+         inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
+         if (exist) then 
+           call inpup(trim(datadir)//'/interstellar.dat',  &
+                                     interstellarsave,ninterstellarsave)
+           t_next_SNI=interstellarsave(1)
+         else
+           interstellarsave(1)=t_next_SNI
+         endif
+      endif
+
     endsubroutine initialize_interstellar
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(df,rho1,TT1)
@@ -158,14 +185,11 @@ module Interstellar
 !
     use Cdata
 !
-    real, dimension(mx,my,mz,mvar) :: f,df
+    real, dimension(mx,my,mz,mvar) :: f
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
                                !(may not be worth keeping)
 !
-!  NB: If SN implemented via df, then f should be intent(in).
-!      Old code modified (ee,rho) ~ f directly, however.
     intent(inout) :: f
-    !intent(inout) :: f,df
 !
 !  identifier  
 !
@@ -205,6 +229,7 @@ module Interstellar
         call random_number_wrapper(fran1)   
         t_next_SNI=t_next_SNI + (1.0 + 0.4*(fran1(1)-0.5)) * t_interval_SNI
         print*,'Next SNI at time: ',t_next_SNI
+        interstellarsave=(/ t_next_SNI /)
       endif
       call mpibcast_real(t_next_SNI,1)
       l_SNI=.true.
@@ -296,7 +321,7 @@ module Interstellar
 !        mass_cloud_byproc=fmax
         if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
         call position_SNII(f,mass_cloud_byproc)
-!        call explode_SN(f,2)
+        call explode_SN(f,2)
       endif
     endif
 !
@@ -541,7 +566,8 @@ find_SN: do n=n1,n2
     real :: TT_limit=1.e7,ee_limit
 !    real :: TT_limit=1.e2,ee_limit     ! make weaker, for debugging...
     integer :: itype_SN,l,mshift,il,im,in
-    integer :: point_width=4
+    !integer :: point_width=4
+    integer :: point_width=8
 !
     intent(in) :: itype_SN
     intent(inout) :: f
@@ -639,11 +665,7 @@ find_SN: do n=n1,n2
 !  create low-density cavity
           lnrho(:)=lnrho(:) + (lnrho_SN_new-lnrho_SN)*profile_SN(:)
           rho(:)=exp(lnrho(:))
-!  change f or df (depending on how SN are to be implemented)
-!fdf
           f(l1:l2,m,n,ilnrho)=lnrho(:)
-!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) +                   &
-!                                (lnrho_SN_new-lnrho_SN)*profile_SN(:)
           mass=mass + sum(rho_old(:,im,in))
           mass_cavity=mass_cavity + sum(rho(:))
         enddo
@@ -678,14 +700,7 @@ find_SN: do n=n1,n2
                  (profile_shell_outer(:) - profile_shell_inner(:))
           mass_check=mass_check + c_shell *                             &
                  sum(profile_shell_outer(:) - profile_shell_inner(:))
-!  change f or df (depending on how SN are to be implemented)
-!fdf
          f(l1:l2,m,n,ilnrho)=alog(rho(:))
-!          dlnrho(:)=0.0
-!          where (profile_shell_outer(:) - profile_shell_inner(:) /= 0.)     &
-!            dlnrho(:)=alog(c_shell *                                        &
-!                         (profile_shell_outer(:) - profile_shell_inner(:)))
-!          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho) + dlnrho(:)
         enddo
       enddo
       fsum1_tmp=(/ mass_check /)
@@ -712,18 +727,12 @@ find_SN: do n=n1,n2
         EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
         dss(:)=dee(:)/TT(:)*cp1               ! dss non-dimensional
 !  Remember to allow for changes in rho if mass  was relocated.
-!  change f or df (depending on how SN are to be implemented)
 !ngrs: disbable cavity for now, to check weak explosions
 !        if (TT_SN_new < TT_limit) then
         if (.false.) then     ! remove cavity option, for debug
-!fdf
           f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient)*rho_old(:,im,in)/rho(:)
-!          df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) +                           &
-!              f(l1:l2,m,n,ient)*(rho_old(:,im,in)/rho(:)-1.)
         endif
-!fdf
         f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + dss(:)
-!        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) + dss(:) 
       enddo
     enddo
     fsum1_tmp=(/ EE_SN /)

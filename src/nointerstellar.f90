@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.4 2002-11-24 13:14:59 mee Exp $
+! $Id: nointerstellar.f90,v 1.5 2002-12-10 00:50:51 ngrs Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -8,6 +8,9 @@ module Interstellar
   use Cdata
 
   implicit none
+
+  integer, parameter :: ninterstellarsave=1
+  real, dimension(ninterstellarsave) :: interstellarsave
 
   ! input parameters
   integer :: dummy
@@ -41,7 +44,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.4 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nointerstellar.f90,v 1.5 2002-12-10 00:50:51 ngrs Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,16 +78,16 @@ module Interstellar
 !
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
-    subroutine check_SN(f,df)
+    subroutine check_SN(f)
 !
 !  dummy routine for checking for SNe (interstellar)
 !
     use Cdata
 !
-    real, dimension(mx,my,mz,mvar) :: f,df
+    real, dimension(mx,my,mz,mvar) :: f
 !
 ! (to keep compiler quiet)
-      if (ip==0) print*,'SN check',f(1,1,1,1),df(1,1,1,1)
+      if (ip==0) print*,'SN check',f(1,1,1,1)
 !
     endsubroutine check_SN
 

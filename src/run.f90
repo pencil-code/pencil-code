@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.120 2002-12-09 19:31:08 ngrs Exp $
+! $Id: run.f90,v 1.121 2002-12-10 00:50:51 ngrs Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.120 2002-12-09 19:31:08 ngrs Exp $")
+             "$Id: run.f90,v 1.121 2002-12-10 00:50:51 ngrs Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -227,7 +227,7 @@
           if(lout) call prints()
           !
           !  Setting ialive=1 can be useful on flaky machines!
-          !  Earch processor writes it's processor number (if it is alive!)
+          !  Each processor writes it's processor number (if it is alive!)
           !  Set ialive=0 to fully switch this off
           !
           if (ialive /= 0) then
@@ -294,9 +294,16 @@
 !
 !  write seed parameters (only if forcing is turned on)
 !
-        if (lforcing) then
+        if (lforcing .or. linterstellar) then
           call random_seed_wrapper(get=seed(1:nseed))
           call outpui(trim(directory)//'/seed.dat',seed,nseed)
+        endif
+!
+!  write interstellar parameters (that must be saved between runs)
+!
+        if (linterstellar) then
+          call outpup(trim(datadir)//'/interstellar.dat',  &
+                                   interstellarsave,ninterstellarsave)
         endif
 !
 !  print wall clock time and time per step and processor
