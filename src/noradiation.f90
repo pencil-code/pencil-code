@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.3 2002-07-18 13:31:28 brandenb Exp $
+! $Id: noradiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $
 
 
 module Radiation
@@ -12,7 +12,8 @@ module Radiation
   namelist /radiation_run_pars/  dummyuu
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_frms=0,i_fmax=0,i_Erms=0,i_Emax=0
+  integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
+  integer :: i_Egas_rms=0,i_Egas_max=0
 
   contains
 
@@ -35,7 +36,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.3 2002-07-18 13:31:28 brandenb Exp $")
+           "$Id: noradiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $")
 !
     endsubroutine register_rad
 !***********************************************************************
@@ -85,8 +86,10 @@ module Radiation
 !
       write(3,*) 'i_frms=',i_frms
       write(3,*) 'i_fmax=',i_fmax
-      write(3,*) 'i_Erms=',i_Erms
-      write(3,*) 'i_Emax=',i_Emax
+      write(3,*) 'i_Erad_rms=',i_Erad_rms
+      write(3,*) 'i_Erad_max=',i_Erad_max
+      write(3,*) 'i_Egas_rms=',i_Egas_rms
+      write(3,*) 'i_Egas_max=',i_Egas_max
       write(3,*) 'nname=',nname
       write(3,*) 'ie=',ie
       write(3,*) 'ifx=',ifx

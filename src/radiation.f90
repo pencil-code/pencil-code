@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.3 2002-07-19 12:41:35 dobler Exp $
+! $Id: radiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -15,23 +15,28 @@ module Radiation
 
   real :: c_gam=100
   real :: opas=1e-8
-  real :: mbar=1.67e-24  !mbar*m_unit in to not get to big numbers
-  real :: k_B=3.99e-25      !k_B*m_unit in to not get to big numbers
-  real :: a_SB=5.3e8
-  real :: kappa_es=4e4
+  real :: mbar=1.  !mbar*m_unit in to not get to big numbers
+  real :: k_B=1.      !k_B*m_unit in to not get to big numbers
+  real :: a_SB=1.
+  real :: kappa_es=0
+  real :: amplee=0
 
   ! init parameteres
-  character (len=labellen) :: initrad='zero'
+  character (len=labellen) :: initrad='equil'
+
+  ! run parameters
+  character (len=labellen) :: flim='tanhr'
 
   ! input parameters
   namelist /radiation_init_pars/ &
-       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB
+       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB,amplee
   ! run parameters
   namelist /radiation_run_pars/ &
-       c_gam,opas,kappa_es,mbar,k_B,a_SB
+       c_gam,opas,kappa_es,mbar,k_B,a_SB,flim
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_frms=0,i_fmax=0,i_Erms=0,i_Emax=0
+  integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
+  integer :: i_Egas_rms=0,i_Egas_max=0
 
   contains
 
@@ -68,7 +73,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.3 2002-07-19 12:41:35 dobler Exp $")
+           "$Id: radiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,6 +92,7 @@ module Radiation
       use Cdata
       use Mpicomm
       use Sub
+      use Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
@@ -96,6 +102,8 @@ module Radiation
       case('zero', '0') 
          f(:,:,:,ifx:ifz) = 0.
          f(:,:,:,ie     ) = 1.
+      case('gaussian-noise','1'); call gaunoise(amplee,f,iE)
+      case('equil','2'); call init_equil(f)
       case default
         !
         !  Catch unknown values
@@ -112,19 +120,19 @@ module Radiation
 !
 !  13-Dec-01/nils: coded
 !  15-Jul-02/nils: adapted from pencil_mpi
+!  30-Jul-02/nils: moved calculation of 1. and 2. moment to other routine
 !
       use Sub
       use Cdata
       use Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: gradE,uu,tmp,n_vec
+      real, dimension (nx,3) :: gradE,uu,n_vec
       real, dimension (nx,3,3) :: uij, P_tens,f_mat,n_mat
       real, dimension (nx) :: E_rad,divu,rho1,source,Edivu,ugradE,divF
-      real, dimension (nx) :: graduP,cooling,lgamma,RF,DFF,absgradE
-      real, dimension (nx) :: f_sc,kappa_abs,kappa,E_gas,TT1,f2
+      real, dimension (nx) :: graduP,cooling
+      real, dimension (nx) :: kappa_abs,kappa,E_gas,TT1,f2
       real :: gamma1,gamma
-      integer :: i,j
 !
 !  identify module and boundary conditions
 !
@@ -136,26 +144,148 @@ module Radiation
         call identify_bcs('fz',ifz)
       endif
 !
+!  some abbreviations and physical quantities
+!
       gamma1=gamma-1
       E_rad=f(l1:l2,m,n,iE)
       E_gas=1.5*k_B/(rho1*mbar*TT1)
-      if (opas == 0) then
-         kappa_abs=0
-      else
-         kappa_abs=opas*(1./rho1)**(9./2)*E_gas**(-7./2)
-      endif
+      kappa_abs=opas*(1./rho1)**(9./2)*E_gas**(-7./2)
+      source=a_SB*TT1**(-4)
+      kappa=kappa_abs+kappa_es
+      cooling=(source-E_rad)*c_gam*kappa_abs/rho1
+!
+!  calculating some values needed for momentum equation
+!
       Edivu=E_rad*divu
       call grad(f,iE,gradE)
       call dot_mn(uu,gradE,ugradE)
       call div(f,iff,divF)
-      source=a_SB*TT1**(-4)
-      kappa=kappa_abs+kappa_es
-      lgamma=rho1/kappa
-      cooling=(source-E_rad)*c_gam*kappa_abs/rho1
-      call dot2_mn(gradE,absgradE)
-      absgradE=sqrt(absgradE)
-      RF=lgamma*absgradE/E_rad
-      DFF=(9+RF**2)**(-0.5)
+!
+!  Flux-limited diffusion app.
+!
+      call flux_limiter(rho1,kappa,gradE,E_rad,P_tens)
+!
+!  calculate graduP
+!
+      call multmm_sc_mn(P_tens,uij,graduP)
+!
+!  calculate dE/dt
+!
+      df(l1:l2,m,n,iE)=df(l1:l2,m,n,iE)-ugradE-divF-graduP+cooling
+!
+!  add (kappa F)/c to momentum equation
+!
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+kappa*f(l1:l2,m,n,iFx)/c_gam
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+kappa*f(l1:l2,m,n,iFy)/c_gam
+      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+kappa*f(l1:l2,m,n,iFz)/c_gam
+!
+!  add cooling to entropy equation
+!
+      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-(source-E_rad)*kappa_abs*c_gam*TT1
+!
+!  Calculate diagnostic values
+!
+      if (ldiagnos) then
+        f2=f(l1:l2,m,n,ifx)**2+f(l1:l2,m,n,ify)**2+f(l1:l2,m,n,ifz)**2
+        if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
+        if (i_frms/=0) call sum_mn_name(f2,i_frms,lsqrt=.true.)
+        if (i_fmax/=0) call max_mn_name(f2,i_fmax,lsqrt=.true.)
+        if (i_erad_rms/=0) call sum_mn_name(E_rad,i_erad_rms)
+        if (i_erad_max/=0) call max_mn_name(E_rad,i_erad_max)
+        if (i_egas_rms/=0) call sum_mn_name(E_gas,i_egas_rms)
+        if (i_egas_max/=0) call max_mn_name(E_gas,i_egas_max)   
+      endif
+!
+!  Calculate UUmax for use in determinationof time step length
+!
+      if (UUmax>c_gam) call stop_it('Speed of light too small')
+      UUmax=max(UUmax,c_gam)
+!
+    end subroutine de_dt
+!*******************************************************************
+    subroutine rprint_radiation(lreset)
+!
+!  reads and registers print parameters relevant for radiative part
+!
+!  16-jul-02/nils: adapted from rprint_hydro
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_frms=0; i_fmax=0; i_Erad_rms=0; i_Erad_max=0
+        i_Egas_rms=0; i_Egas_max=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'frms',i_frms)
+        call parse_name(iname,cname(iname),cform(iname),'fmax',i_fmax)
+        call parse_name(iname,cname(iname),cform(iname),'Erad_rms',i_Erad_rms)
+        call parse_name(iname,cname(iname),cform(iname),'Erad_max',i_Erad_max)
+        call parse_name(iname,cname(iname),cform(iname),'Egas_rms',i_Egas_rms)
+        call parse_name(iname,cname(iname),cform(iname),'Egas_max',i_Egas_max)
+      enddo
+!
+!  write column where which radiative variable is stored
+!
+      write(3,*) 'i_frms=',i_frms
+      write(3,*) 'i_fmax=',i_fmax
+      write(3,*) 'i_Erad_rms=',i_Erad_rms
+      write(3,*) 'i_Erad_max=',i_Erad_max
+      write(3,*) 'i_Egas_rms=',i_Egas_rms
+      write(3,*) 'i_Egas_max=',i_Egas_max
+      write(3,*) 'nname=',nname
+      write(3,*) 'ie=',ie
+      write(3,*) 'ifx=',ifx
+      write(3,*) 'ify=',ify
+      write(3,*) 'ifz=',ifz
+!
+    endsubroutine rprint_radiation
+!***********************************************************************
+    subroutine flux_limiter(rho1,kappa,gradE,E_rad,P_tens)
+!
+!  This subroutine uses the flux limited diffusion approximation
+!  and calculates the flux limiter and P_tens
+!
+!  30-jul-02/nils: coded
+!
+      use Sub
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3) :: gradE,n_vec,tmp
+      real, dimension (nx,3,3) :: P_tens,f_mat,n_mat
+      real, dimension (nx) :: E_rad,rho1,exp2
+      real, dimension (nx) :: lgamma,RF,DFF,absgradE
+      real, dimension (nx) :: f_sc,kappa,E_gas,var1
+      integer :: i,j
+!
+
+      if (flim=='tanhr') then
+         call dot2_mn(gradE,absgradE)
+         var1=kappa*E_rad/(rho1*absgradE)
+         exp2=exp(-2/var1)
+         DFF=var1*((1+exp2)/(1-exp2)-var1)
+      elseif (flim=='simple') then
+         lgamma=rho1/kappa
+         call dot2_mn(gradE,absgradE)
+         absgradE=sqrt(absgradE)
+         RF=lgamma*absgradE/E_rad
+         DFF=(9+RF**2)**(-0.5)
+      elseif (flim=='isotropic') then
+         DFF=1./3.
+      else
+         print*,'There are no such flux-limiter:', flim
+      end if
       f_sc=DFF+DFF**2*RF**2
       call multvs_mn(gradE,1./absgradE,n_vec)
       call multvv_mat_mn(n_vec,n_vec,n_mat)
@@ -185,89 +315,42 @@ module Radiation
          enddo
       endif
 !
-!  calculate graduP
-!
-      call multmm_sc_mn(P_tens,uij,graduP)
-!
 !  calculate the flux
 !
-      call multvs_mn(gradE,-DFF*lgamma*c_gam,tmp)
+      call multvs_mn(gradE,-DFF*rho1*c_gam/kappa,tmp)
       f(l1:l2,m,n,ifx:ifz)=tmp
+
+    end subroutine flux_limiter
+!***********************************************************************
+    subroutine init_equil(f)
 !
-!  calculate dE/dt
+!  Routine for calculating equilibrium solution of radiation
 !
-      df(l1:l2,m,n,iE)=df(l1:l2,m,n,iE)-ugradE-divF-graduP+cooling
-!
-!  add (kappa F)/c to momentum equation
-!
-      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+kappa*f(l1:l2,m,n,iFx)/c_gam
-      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+kappa*f(l1:l2,m,n,iFy)/c_gam
-      df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+kappa*f(l1:l2,m,n,iFz)/c_gam
-!
-!  add cooling to entropy equation
-!
-!      print*,maxval(df(l1:l2,m,n,ient)),maxval(cooling*rho1*TT1/(cpour))
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-(source-E_rad)*kappa_abs*c_gam*TT1
-!
-!  Calculate diagnostic values
-!
-      if (ldiagnos) then
-        f2=f(l1:l2,m,n,ifx)**2+f(l1:l2,m,n,ify)**2+f(l1:l2,m,n,ifz)**2
-        if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
-        if (i_frms/=0) call sum_mn_name(f2,i_frms,lsqrt=.true.)
-        if (i_fmax/=0) call max_mn_name(f2,i_fmax,lsqrt=.true.)
-        if (i_erms/=0) call sum_mn_name(E_rad,i_erms)
-        if (i_emax/=0) call max_mn_name(E_rad,i_emax)
-      endif
-!
-!  Calculate UUmax for use in determinationof time step length
-!
-      if (UUmax>c_gam) call stop_it('Speed of light too small')
-      UUmax=max(UUmax,c_gam)
-!
-    end subroutine de_dt
-!*******************************************************************
-    subroutine rprint_radiation(lreset)
-!
-!  reads and registers print parameters relevant for radiative part
-!
-!  16-jul-02/nils: adapted from rprint_hydro
+!  18-jul-02/nils: coded
 !
       use Cdata
-      use Sub
+      use Density, only:cs20, lnrho0,gamma
 !
-      integer :: iname
-      logical :: lreset
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: cs2,lnrho,gamma1,TT1,source
+      integer :: i,j
 !
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-      if (lreset) then
-        i_frms=0; i_fmax=0; i_Erms=0; i_Emax=0
-      endif
-!
-!  iname runs through all possible names that may be listed in print.in
-!
-      if(lroot.and.ip<14) print*,'run through parse list'
-      do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'frms',i_frms)
-        call parse_name(iname,cname(iname),cform(iname),'fmax',i_fmax)
-        call parse_name(iname,cname(iname),cform(iname),'Erms',i_Erms)
-        call parse_name(iname,cname(iname),cform(iname),'Emax',i_Emax)
+      gamma1=gamma-1
+      do i=m1,m2
+         do j=n1,n2
+            lnrho=f(l1:l2,m,n,ilnrho)
+            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(l1:l2,m,n,ient))
+            TT1=gamma1/cs2
+            source=a_SB*TT1**(-4)
+            f(l1:l2,i,j,ie) = source
+         enddo
       enddo
 !
-!  write column where which radiative variable is stored
-!
-      write(3,*) 'i_frms=',i_frms
-      write(3,*) 'i_fmax=',i_fmax
-      write(3,*) 'i_Erms=',i_Erms
-      write(3,*) 'i_Emax=',i_Emax
-      write(3,*) 'nname=',nname
-      write(3,*) 'ie=',ie
-      write(3,*) 'ifx=',ifx
-      write(3,*) 'ify=',ify
-      write(3,*) 'ifz=',ifz
-!
-    endsubroutine rprint_radiation
+    end subroutine init_equil
 !***********************************************************************
+
 end module Radiation
+
+
+
+
