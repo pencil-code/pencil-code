@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2004-02-23 09:23:43 $
-# $Revision: 1.16 $
+# $Date: 2004-02-23 11:01:40 $
+# $Revision: 1.17 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -28,7 +28,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -h, --help          -- Help
 #   -H, --html          -- Write output as elementary HTML (mostly <pre>)
 #   -u, --update        -- `cvs update' before compiling
-#   -U, --UPDATE        -- `cvs update; cvs update -d samples' before compiling
+#   -U, --up-d-samples  -- `cvs update; cvs update -d samples' before compiling
 #   -c, --clean         -- `make cleann' before compiling
 #   -m <emaillist>,
 #   --mail=<emaillist>  -- Specify who to send mail to if tests fail
@@ -55,7 +55,7 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	       -H   --html
 	       -u   --update
-	       -U   --UPDATE
+	       -U   --up-d-samples
 	       -c   --clean
                -m=s --mail=s
 	       -p=s --postproc=s
