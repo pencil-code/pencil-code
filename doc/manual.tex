@@ -4,26 +4,44 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.71 2002-07-26 12:10:01 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.72 2002-07-27 13:09:48 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
 %     latex manual; makeindex manual; latex manual
 %   Macros for files, variables, etc (list loosely adopted from texinfo):
-%     \code:     use the line \code{call remove\_file()}
-%     \kbd:      type \kbd{M-x comment-region}                              %AB: key bindings?
-%     \key:      press \key{F1}
-%     \samp:     \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}           %AB: sample??
-%     \var:      is determined by \var{ivisc}
-%     \env:      this sets \env{CVSROOT}
-%     \file:     written to \file{~/tmp/var.dat}
-%     \command:  use \command{rm -f *} at your own risk                     %AB: this isn't used anywhere!?!
-%     \option:   use CVS with the option \option{-q}
-%     \dfn:      A \dfn{definition} is a specification sufficiently obfuscated
-%                to be misunderstood 
-%     \acronym:  should we call the code \acronym{PROMPT}?                  %AB: this isn't used anywhere!?!
-%     \url:      \url{http://www.nowhere.net/second_page.html}
-%     \email:    \email{nobody@nowhere.nil}                                 %AB: this isn't used anywhere!?! (because we used url)
+%
+%     \code:    A fragment of code:
+%                   use the line \code{call remove\_file()}
+%     \kbd:     Keyboard input:
+%                   type \kbd{M-x comment-region}
+%     \key:     A key  or key combination on your keyboard:
+%                   press \key{F1} of \key{C-h}
+%     \samp:    Sample input (?)
+%                   \samp{a}, \samp{e}, \samp{i}, \samp{o}, \samp{u}
+%     \var:     A variable:
+%                   is determined by \var{ivisc}
+%     \env:     An environment variable:
+%                   this sets \env{CVSROOT}
+%     \file:    A file or directory name:
+%                   written to \file{~/tmp/var.dat}
+%     \command,
+%     \cmd:     A command line:
+%                   use \command{rm -f *} at your own risk
+%     \option:  An option (command line or simialr):
+%                   use CVS with the option \option{-q}
+%     \dfn:     A definition:
+%                   a \dfn{definition} is a specification sufficiently
+%                   obfuscated to be misunderstood 
+%     \acronym: An acronym (hardly ever used here):
+%                   should we call the code \acronym{PROMPT}?
+%     \url:     A url:
+%                   \url{http://www.nowhere.net/second_page.html}
+%     \email:   An email address:
+%                   \email{nobody@nowhere.nil}
+%AB: this isn't used anywhere!?! (because we used url)
+%WD: may at some point change this to \email, but currently it doesn't
+%    matter
 %
 
 \ifx\pdfoutput\undefined        % not running pdflatex
@@ -201,7 +219,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.71 $ $}
+\date{\today,~ $ $Revision: 1.72 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +248,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.71 $ $}
+  \emph{\today,~ $ $Revision: 1.72 $ $}
 
 
 \end{center}
@@ -357,7 +375,7 @@ too little information.
 Its major aim is to give you an idea of the way the code is organized, so
 you can more efficiently \emph{read the source code}.
 For many enhancements you would like to add, you can follow the
-lines of other variables, functions, diagnostics, equations etc.~ which we
+lines of other variables, functions, diagnostics, equations etc.~which we
 have already implemented.
 Remember: \cmd{grep} is one of your best friends when you want to
 understand how certain variables or functions are used in the code.
@@ -447,16 +465,13 @@ you can access it via anonymous CVS access.
 
 \begin{enumerate}
 \item Download the tarball from
-  \path{http://www.nordita.dk/~brandenb/pencil-code/download/pencil_modular.tgz}
+  \path{http://www.nordita.dk/~brandenb/pencil-code/download/pencil-code.tgz}
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
-  \prompt{unix> } mv pencil_modular.tgz somewhere/; cd somewhere
-  \prompt{unix> } gunzip pencil_modular.tgz
-  \prompt{unix> } tar xf pencil_modular.tar \
+  \prompt{unix> } mv pencil-code.tgz somewhere/; cd somewhere
+  \prompt{unix> } gunzip pencil-code.tgz
+  \prompt{unix> } tar xf pencil-code.tar \
   \end{alltt}
-\item {}[Optional:] Rename the directory \file{pencil_modular} to \file{mhd}
-  if you want to be consistent with the notation used throughout this
-  manual.
 \end{enumerate}
 
 % ---------------------------------------------------------------------- %
@@ -470,7 +485,7 @@ you can access it via anonymous CVS access.
   Alternatively, just copy the executable from a binary compatible
   machine.
 
-\item Get the password for anonymous \name{CVS} access to the pencil code
+\item Get the password for anonymous \name{CVS} access to the pencil code.
 \footnote{In future, this should work automatically, to allow new users
 to just look into the code without hassle}
 
@@ -503,7 +518,7 @@ to just look into the code without hassle}
   \prompt{unix> } cvs checkout pencil-code \
   \end{alltt} 
   This creates a subdirectory \file{somewhere/pencil-code} and populates it with
-  the pencil-code's subdirectories.
+  the pencil code's subdirectories.
 
 \end{enumerate}
 
@@ -525,7 +540,7 @@ Here is the upgrading procedure:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file{somewhere/mhd} \
+  \prompt{unix> } cd \file{somewhere/pencil-code} \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
@@ -548,7 +563,7 @@ this by:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
-  \prompt{unix> } cd \file{somewhere/mhd} \
+  \prompt{unix> } cd \file{somewhere/pencil-code} \
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
@@ -563,7 +578,7 @@ this by:
 \label{S-getting-started}
 
 To get yourself started, you should run one or several examples which are
-provided in one of the runs/sample subdirectories.
+provided in one of the \file{samples/} subdirectories.
 
 You will only be able to fully assess the numerical solutions if you
 visualize them with \name{IDL}, \name{DX} or other tools (see
@@ -601,13 +616,18 @@ Apart from the \env{PATH} variable, the environment variable
 \texttt{./idl:../idl:+\$PENCIL_HOME/bin:./tmp:<IDL_DEFAULT>} .
 
 \paragraph{Note 1}
-If you  don't want to rely on the \file{sourceme.\{c,\}sh} scripts' (quite
+The \code{<IDL_DEFAULT>} meachnism does not work for IDL versions 5.2 or
+older. In this case, you will have to edit the path manually, ora adapt
+the \file{sourceme} scripts.
+
+\paragraph{Note 2}
+If you  don't want to rely on the \file{sourceme} scripts' (quite
 heuristic) ability to correctly identify the code's main directory, you
 can set the environment variable \env{PENCIL_HOME} explicitly before you
 run the source command.
 
-\paragraph{Note 2}
-The second time you source \file{sourceme.\{c,\}sh}, it will not add
+\paragraph{Note 3}
+The second time you source \file{sourceme}, it will not add
 anything to your \env{PATH} variable.
 This is on purpose to avoid cluttering of your environment: you can
 source the file as often as you like (in your shell startup script, then
@@ -866,13 +886,14 @@ to see how \file{getconf.csh} makes its decisions.
 
 \subsection{A second test}
 
-Now you are ready to compile and run a simple example (periodic,
-isothermal, non-forced MHD) where the physics is already nontrivial.
+We will add other simple examples (periodic, isothermal, non-forced MHD)
+where the physics is already nontrivial.
+The following is not available yet.
 
 \subsubsection{Interlocked flux rings}
 
 \begin{alltt}
-  \prompt{unix> } cd somewhere/mhd
+  \prompt{unix> } cd somewhere/pencil-code
   \prompt{unix> } source sourceme.csh \quad\#(to put pencil-code/bin into your path)
   \prompt{unix> } cd runs/sample/rings
   \prompt{unix> } lnsrc \quad\#(from \file{../../../bin}, which by now should be in your path)
@@ -925,14 +946,14 @@ Under \file{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
   CVS/    bin/  bugs/         doc/
-  dx/     idl/  runs/         src/
+  dx/     idl/  samples/      src/
   README  TODO  sourceme.csh  sourceme.sh
 \end{verbatim}
 
 Almost all of the source code is contained in the directory \file{src/},
 but in order to encapsulate individual applications, the code is compiled
 separately for each run in a local \file{src} directory below the
-individual run directory, like e.g.~\file{runs/gravz/vconv1/src}.
+individual run directory, like e.g.~\file{samples/conv-slab/src}.
 
 The directory \file{runs} contains individual run directories, grouped in
 classes (like \file{spher} for spherical calculations, or \file{kinematic}
@@ -949,7 +970,7 @@ magnetic and nonmagnetic);
 initial condition, for example);
 and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
-The file \file{runs/README} will contain an up-to-date list and
+The file \file{samples/README} will contain an up-to-date list and
 short description of the individual classes.
 
 The subdirectory \file{src} of each run directory contains a few local
@@ -3193,7 +3214,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.71 2002-07-26 12:10:01 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.72 2002-07-27 13:09:48 dobler Exp $ $}
 
 
 \end{document}

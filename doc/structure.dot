@@ -1,5 +1,5 @@
 /*                               -*-c-*-
-   Mutual dependencies for the pencil_modular code.
+   Mutual dependencies for the pencil-code
    Run this through
      dot -Tps structure.dot -o struct.eps
    to obtain a PostScript graph.
@@ -10,7 +10,9 @@ digraph G {
 
   /* Top directory */
   node [shape=ellipse];
-  { pencil_modular }
+  { pencilcode}
+
+  pencilcode [ label="pencil-code"];
 
   /* */
   node [shape=ellipse];
@@ -18,12 +20,12 @@ digraph G {
 
   idl_dx [label="idl | dx"];
 
-  pencil_modular -> src;
-  pencil_modular -> idl_dx;
-  pencil_modular -> bin;
-  pencil_modular -> doc;
-/*    pencil_modular -> runs; */
-  pencil_modular -> samples;
+  pencilcode -> src;
+  pencilcode -> idl_dx;
+  pencilcode -> bin;
+  pencilcode -> doc;
+/*    pencilcode -> runs; */
+  pencilcode -> samples;
 
 /*
   runs->gravz    ->entro1;
