@@ -199,12 +199,9 @@ contains
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: ndim =', ndim
 !
-!       call output_stenciled_c(file, a, ndim, &
-!                               imn, mm(imn), nn(imn), t, &
-!                               nx, ny, nz, nghost, len(file))
-      call output_stenciled_c("tmp/proc0/glhc.dat", a, ndim, &
-                              imn, mm(imn), nn(imn), t, &
-                              nx, ny, nz, nghost, 18)
+       call output_stenciled_c(file, a, ndim, &
+                               imn, mm(imn), nn(imn), t, &
+                               nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_stenc_vect
 !***********************************************************************
