@@ -1,4 +1,5 @@
 function pc_radio_beamsmooth,var,beam_width_arcseconds,dx=dx,dy=dy,nsigma=nsigma,xmin=xmin,ymin=ymin,dist_to_obj=dist_to_obj
+;FORWARD_FUNCTION filter_image
 ;
 ;  Take A and smooth with gaussian of (HPBW) beam_width;  the array B is used to
 ;  store the smmothed A until all calculations are done.  beam_width should be 
@@ -23,6 +24,8 @@ default,ymin,0.
 ; so providing the units of dx and dist_to_object are identical we are good !
 ;
   beam_width=beam_width_arcseconds*dist_to_obj*one_arcsec
+  return, filter_image( var, FWHM = beam_width, /ALL )
+
 ;    units are pc by default; for kpc specify length_unit=1000.0
 ;
 ;    bundle the beam/weighting stuff into constants
@@ -130,6 +133,7 @@ if not keyword_set(TEST) then begin
   n_cr=dot2(bb)
 
   length_unit=units.length/3.086D18
+  length_unit=1.
 endif else begin
 
 
@@ -220,8 +224,8 @@ endelse
 
 if (HPBW gt 0.) then begin
   for nl=0,n_elements(lambdas)-1 do begin
-    Q[*,*,nl]=pc_radio_beamsmooth(Q[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
-    U[*,*,nl]=pc_radio_beamsmooth(U[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
+    Q[*,*,nl]=pc_radio_beamsmooth(Q[*,*,nl],HPBW,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
+    U[*,*,nl]=pc_radio_beamsmooth(U[*,*,nl],HPBW,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object/length_unit)
   endfor
 endif
 
@@ -251,7 +255,7 @@ endif
 
 ; Line of sight averaged B Field
   bb_los=fltarr(nx,ny,3)
-  for i=0,nz-1 do bb_los = bb_los + data.bb[l1:l2,m1:m2,i,*]
+  for i=0,nz-1 do bb_los = bb_los + bb[l1:l2,m1:m2,i,*]
   bb_los=bb_los/nz
 
 ;wind=0
