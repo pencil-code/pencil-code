@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.90 2003-09-17 13:54:11 dobler Exp $
+# $Id: getconf.csh,v 1.91 2003-09-18 15:11:45 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -357,6 +357,7 @@ if ($debug) then
   echo '$NODELIST     = ' "<$NODELIST>"
   echo '$SSH          = ' "<$SSH>"
   echo '$SCP          = ' "<$SCP>"
+  echo '$PARENT_PID   = ' "<$PARENT_PID>"
 endif
 
 exit

@@ -98,7 +98,7 @@ else
     end
 
     if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
-      echo "No parent process -- exiting"
+      echo "No parent process (pid $PARENT_PI) -- exiting"
       exit 1
     endif
 
