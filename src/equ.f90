@@ -154,7 +154,7 @@ module Equ
           fmax_tmp(imax_count)=fname(iname)
         elseif(itype_name(iname)>0) then
           isum_count=isum_count+1
-          fsum_tmp(imax_count)=fname(iname)
+          fsum_tmp(isum_count)=fname(iname)
         endif
       enddo
       nmax_count=imax_count
@@ -350,8 +350,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.30 $", &
-           "$Date: 2002-05-04 09:11:59 $")
+           "$Revision: 1.31 $", &
+           "$Date: 2002-05-04 12:04:25 $")
 !
 !  initialize counter for calculating and communicating print results
 !
