@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.47 2003-10-12 22:13:17 mee Exp $
+! $Id: grav_r.f90,v 1.48 2003-10-17 13:05:08 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.47 2003-10-12 22:13:17 mee Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.48 2003-10-17 13:05:08 nilshau Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -189,10 +189,12 @@ module Gravity
           g_ext = g0/r_ext**2
           where (r_mn >= r_ext) 
             g_r=g_ext
-          elsewhere (r_mn > r_int)
-            g_r=g0/r_mn
           elsewhere
-            g_r=g_int
+            where (r_mn > r_int)
+              g_r=g0/r_mn
+            elsewhere
+              g_r=g_int
+            endwhere
           endwhere
 ! end geodynamo
         endif
