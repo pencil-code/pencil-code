@@ -1,4 +1,4 @@
-  ! $Id: dustvelocity.f90,v 1.76 2004-09-06 10:01:47 ajohan Exp $
+  ! $Id: dustvelocity.f90,v 1.77 2004-09-06 12:12:59 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -107,7 +107,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.76 2004-09-06 10:01:47 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.77 2004-09-06 12:12:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -430,7 +430,7 @@ module Dustvelocity
       real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
       real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
-      integer :: i,j,k,l,nn
+      integer :: i,j,k,l
 !
       intent(in) :: uu,rho1
       intent(out) :: df,divud,ud2
@@ -448,10 +448,10 @@ module Dustvelocity
 !
       if (ldustvelocity_shorttausd .and. lfirstpoint) then
         do k=1,ndustspec
-          do nn=1,mz
-            f(:,:,nn,iudx(k)) = f(:,:,nn,iux)
-            f(:,:,nn,iudy(k)) = f(:,:,nn,iuy)
-            f(:,:,nn,iudz(k)) = f(:,:,nn,iuz) - tausd(k)*gravz*sin(kz_gg*z(nn))
+          do i=1,mz
+            f(:,:,i,iudx(k)) = f(:,:,i,iux)
+            f(:,:,i,iudy(k)) = f(:,:,i,iuy)
+            f(:,:,i,iudz(k)) = f(:,:,i,iuz) - tausd(k)*gravz*sin(kz_gg*z(i))
           enddo
         enddo
       endif
