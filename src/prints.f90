@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.27 2002-08-04 23:15:00 brandenb Exp $
+! $Id: prints.f90,v 1.28 2002-08-05 23:31:44 dobler Exp $
 
 module Print
 
@@ -82,7 +82,7 @@ module Print
 !  append to diagnostics file
 !
         open(1,file='tmp/n.dat',position='append')
-        if(first) write(1,'(" ",A)') trim(legend)
+        if(first) write(1,'("#",A)') trim(legend)
         !write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
         write(1,'(a)') trim(line)

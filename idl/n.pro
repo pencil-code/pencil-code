@@ -6,7 +6,8 @@
 print,'nname=',nname
 ;
 filen='tmp/n.dat'
-a=rtable(filen,nname)
+;a=rtable(filen,nname)
+a=input_table(filen)
 if defined(i_t) ne 0 then tt=reform(a(i_t-1,*))
 if defined(i_it) ne 0 then it=reform(a(i_it-1,*))
 if defined(i_dt) ne 0 then dt=reform(a(i_dt-1,*))
@@ -44,7 +45,7 @@ if i_um2 ne 0 then oplot,tt,sqrt(um2),line=1
 if i_brms ne 0 then plot,tt,brms,TITLE='B-field'
 if i_bm2 ne 0 then oplot,tt,sqrt(bm2),line=1
 ;
-!p.multi=pmulti
+!p.multi=[0,pmulti[1:*]]
 
 ;!p.multi=0
 ;save,file='hydro.sav',t,jmax2,j2m,bmax2,b2m
