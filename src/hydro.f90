@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.151 2004-03-09 16:53:29 brandenb Exp $
+! $Id: hydro.f90,v 1.152 2004-03-10 11:53:41 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.151 2004-03-09 16:53:29 brandenb Exp $")
+           "$Id: hydro.f90,v 1.152 2004-03-10 11:53:41 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -590,7 +590,7 @@ module Hydro
         !
         !  things related to vorticity
         !
-        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0 .or. lvid) then
+        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0 .or. i_ox2m/=0 .or. i_oy2m/=0 .or. i_oz2m/=0 .or. lvid) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
