@@ -1,0 +1,20 @@
+#!/bin/csh
+set CWD=$cwd
+mkdir $2
+cd $2
+#
+$HOME/bin/mktmpw2
+mkdir src
+cd src
+#
+#  use previous src directory
+#
+cp ../../$1/src/*.local .
+cd ..
+../../../bin/lnsrc
+#
+#  copy some files into new directory
+#
+cd ../$1
+cp *.in k.dat ../$2
+#
