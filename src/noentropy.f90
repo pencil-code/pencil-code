@@ -1,9 +1,14 @@
 module Entropy
 
+  !
+  ! isothermal case; almost nothing to do
+  !
+
   use Cparam
 
   implicit none
 
+  real    :: cs2
   integer :: ient
 
   contains
@@ -29,8 +34,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.3 $", &
-           "$Date: 2002-05-03 16:09:22 $")
+           "$Revision: 1.4 $", &
+           "$Date: 2002-05-03 17:47:45 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -47,6 +52,8 @@ module Entropy
       real, dimension (mz) :: stp
       real :: ampl,beta1,cs2int,ssint
       integer :: init
+!
+      cs2 = cs20                ! Once and forever
 !
     endsubroutine init_ent
 !***********************************************************************
