@@ -1,8 +1,10 @@
 #!/bin/csh
-###                       start.csh
-###                      -----------
-### Run src/start.x (initialising f for src/run.x) with certain
-### parameters.
+###                       start_run.csh
+###                      --------------
+### Run first src/start.x (initialising f for src/run.x) with certain
+### parameters, and then src/run.x
+### On Beowulf clusters with local scratch discs one saves this way
+### the overhead associated with copying to and from that disk.
 #
 # run.csh -- driver for time stepping
 #
