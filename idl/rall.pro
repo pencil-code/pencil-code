@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.27 2003-04-29 12:46:51 nilshau Exp $
+;;;  $Id: rall.pro,v 1.28 2003-05-31 09:44:43 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -117,6 +117,14 @@ if (lpscalar) then begin
   lncc = fltarr(mx,my,mz)*one
   lncc_loc = fltarr(mxloc,myloc,mzloc)*one
 endif
+if (ldustvelocity) then begin
+  uud = fltarr(mx,my,mz,3)*one
+  uud_loc = fltarr(mxloc,myloc,mzloc,3)*one
+endif
+if (ldustdensity) then begin
+  lnrhod = fltarr(mx,my,mz)*one
+  lnrhod_loc = fltarr(mxloc,myloc,mzloc)*one
+endif
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
   tag='proc'+str(i)
@@ -134,28 +142,31 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   close,1
   openr,1, datadir+'/'+varfile, /F77
     ;
-    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc eq 0 then begin
+    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='MHD with entropy'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 and ilncc eq 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 and ilncc eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='hydro without entropy, but with magnetic field'
       readu,1,uu_loc,lnrho_loc,aa_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc ne 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 and ilncc ne 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='hydro with entropy, magnetic field, and passive scalar'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc,lncc_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc eq 0 and iaa eq 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 and iuud ne 0 and ilnrhod ne 0 then begin
+      id='hydro with entropy and dust velocity and dust density, but no magnetic field'
+      readu,1,uu_loc,lnrho_loc,ss_loc,uud_loc,lnrhod_loc
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc eq 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='hydro with no entropy and no magnetic field'
       readu,1,uu_loc,lnrho_loc
-    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc ne 0 and iaa eq 0 then begin
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and ilncc ne 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='hydro with passive scalar and no entropy and no magnetic field'
       readu,1,uu_loc,lnrho_loc,lncc_loc
-    end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
+    end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='just velocity (Burgers)'
       readu,1,uu_loc
-    end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
+    end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 and iuud eq 0 and ilnrhod eq 0 then begin
       id='just magnetic ffield (kinematic)'
       readu,1,aa_loc
     end else begin
@@ -218,6 +229,10 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       aa_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
   if (ilncc ne 0) then lncc[i0x:i1x,i0y:i1y,i0z:i1z]   = $
       lncc_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
+  if (iuud ne 0) then uud[i0x:i1x,i0y:i1y,i0z:i1z,*]   = $
+      uud_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
+  if (ilnrhod ne 0) then lnrhod[i0x:i1x,i0y:i1y,i0z:i1z]   = $
+      lnrhod_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
 endfor
 print
 ;
@@ -247,6 +262,13 @@ if (lmagnetic) then $
 if (lpscalar) then $
     print, FORMAT=fmt, 'lncc   =', $
       minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
+if (ldustvelocity) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'uud_'+xyz[j]+'   =', $
+      minmax(uud(*,*,*,j)), mean(uud(*,*,*,j),/DOUBLE), rms(uud(*,*,*,j),/DOUBLE)
+if (ldustdensity) then $
+    print, FORMAT=fmt, 'lnrhod  =', $
+      minmax(lnrhod), mean(lnrhod,/DOUBLE), rms(lnrhod,/DOUBLE)
 
 print,'t = ',t
 
