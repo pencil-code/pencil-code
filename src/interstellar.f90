@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.9 2002-12-10 13:35:07 brandenb Exp $
+! $Id: interstellar.f90,v 1.10 2002-12-10 16:55:30 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.9 2002-12-10 13:35:07 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.10 2002-12-10 16:55:30 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -572,10 +572,10 @@ find_SN: do n=n1,n2
     real :: cnorm_SN=1.5484             ! (int exp(-r^6) 4\pi r^2 dr)^(1/3)
     real :: profile_check
     real :: TT_limit=1.e7,ee_limit
-!    real :: TT_limit=1.e2,ee_limit     ! make weaker, for debugging...
+!    real :: TT_limit=1.e2,ee_limit     ! make weaker, for debug
     integer :: itype_SN,l,mshift,il,im,in
-    !integer :: point_width=4
-    integer :: point_width=8
+!    integer :: point_width=4
+    integer :: point_width=8            ! make larger, for debug
 !
     intent(in) :: itype_SN
     intent(inout) :: f
@@ -584,7 +584,7 @@ find_SN: do n=n1,n2
 !
     if(headtt) print*,'explode_SN'
 !
-    width_SN=point_width*dx
+    width_SN=point_width*dxmin
     width_shell_outer=2.0*width_SN
     width_shell_inner=1.5*width_SN
     c_SN=ampl_SN/(cnorm_SN*width_SN)**3      !normalision for SN profile
@@ -642,7 +642,6 @@ find_SN: do n=n1,n2
          enddo
       enddo
     enddo
-    !write(99) dr2_SN  ! looks OK in idl...
 !
 !  Now deal with energy injection, and (if nec.) mass relocation
 !
