@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.1 2002-07-06 21:26:34 dobler Exp $
+# CVS: $Id: mkcparam,v 1.2 2002-07-08 05:48:58 brandenb Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -50,7 +50,7 @@ Going through the input files, check for lines of the sort
 and calculate the number mvar of variables accordingly. Output is written
 as a Fortran program that can be included by cparam.f90.
 E.g.
-  $cmdname src/Makefile src/Makefile.local > src/cparqam.inc
+  $cmdname src/Makefile src/Makefile.local > src/cparam.inc
 will generate a file that takes into account that Makefile.local overwrites
 settings from Makefile.";
 

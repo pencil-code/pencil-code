@@ -1,5 +1,15 @@
-#cat src/check.head
-#cat check
-#(date;cat check;echo "") >>SPEED
+#
+#  The script prints the header (legend) and the
+#  last few lines of the n.dat file.
+#
+echo ""
+cat tmp/legend.dat
 tail tmp/n.dat
+#
+#  This script also appends the last line of
+#  the n.dat file at this moment to the SPEED file.
+#  It is called that way because it allows you,
+#  among other things, to assess easily the speed
+#   of the simulation.
+#
 (date;tail -1 tmp/n.dat;echo "") >>SPEED
