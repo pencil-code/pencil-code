@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.283 2004-03-15 05:32:42 brandenb Exp $
+! $Id: entropy.f90,v 1.284 2004-03-18 16:15:59 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
        lshear_heat, nu_turb
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_dtc=0,i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
+  integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
   integer :: i_dtchi=0
   integer :: i_ssmphi=0
 
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.283 2004-03-15 05:32:42 brandenb Exp $")
+           "$Id: entropy.f90,v 1.284 2004-03-18 16:15:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1022,12 +1022,9 @@ module Entropy
       if(ldiagnos) then
         if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
         rho=exp(lnrho)
-        if(i_eth/=0) then
-          call sum_mn_name(rho*ee,i_eth)
-        endif
-        if(i_ethtot/=0) then
-          call integrate_mn_name(rho*ee,i_ethtot)
-        endif
+        if(i_eth/=0) call sum_mn_name(rho*ee,i_eth)
+        if(i_ethtot/=0) call integrate_mn_name(rho*ee,i_ethtot)
+        if(i_ethdivum/=0) call sum_mn_name(rho*ee*divu,i_ethdivum)
         if(i_ssm/=0) call sum_mn_name(ss,i_ssm)
         if(i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
@@ -1648,7 +1645,7 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_dtc=0; i_eth=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
+        i_dtc=0; i_eth=0; i_ethdivum=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
         i_dtchi=0
         i_ssmphi=0
       endif
@@ -1659,6 +1656,7 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
         call parse_name(iname,cname(iname),cform(iname),'dtchi',i_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',i_ethtot)
+        call parse_name(iname,cname(iname),cform(iname),'ethdivum',i_ethdivum)
         call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
@@ -1676,6 +1674,7 @@ endif
         write(3,*) 'i_dtc=',i_dtc
         write(3,*) 'i_dtchi=',i_dtchi
         write(3,*) 'i_ethtot=',i_ethtot
+        write(3,*) 'i_ethdivum=',i_ethdivum
         write(3,*) 'i_eth=',i_eth
         write(3,*) 'i_ssm=',i_ssm
         write(3,*) 'i_ugradpm=',i_ugradpm
