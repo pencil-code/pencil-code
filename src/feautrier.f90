@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.10 2003-04-05 19:05:07 brandenb Exp $
+! $Id: feautrier.f90,v 1.11 2003-04-05 19:31:35 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -15,10 +15,10 @@ module Radiation
   implicit none
 
   real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
+  logical :: nocooling=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
 !
-  logical :: nocooling=.false.,output_Qrad=.false.
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.10 2003-04-05 19:05:07 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.11 2003-04-05 19:31:35 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************

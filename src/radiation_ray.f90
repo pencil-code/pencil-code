@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.12 2003-04-02 07:46:53 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.13 2003-04-05 19:31:35 brandenb Exp $
 
 module Radiation
 
@@ -11,16 +11,17 @@ module Radiation
 
   implicit none
 
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
+  logical :: nocooling=.false.,output_Qrad=.false.
+
   integer :: directions
   integer, parameter :: radx0=3,rady0=3,radz0=3
   real, dimension (radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
   real, dimension (mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
   real, dimension (mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
-  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
 !
 !  default values for one pair of vertical rays
 !
-  logical :: nocooling=.false.
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -33,7 +34,7 @@ module Radiation
        radx,rady,radz,rad2max
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,nocooling
+       radx,rady,radz,rad2max,nocooling,output_Qrad
 
   contains
 
@@ -59,7 +60,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.12 2003-04-02 07:46:53 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.13 2003-04-05 19:31:35 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -301,6 +302,24 @@ if(nocooling) return
       enddo
 !
     endsubroutine radiative_cooling
+!***********************************************************************
+    subroutine output_radiation(lun)
+!
+!  Optional output of derived quantities along with VAR-file
+!
+!   5-apr-03/axel: coded
+!
+      use Cdata
+!
+      integer, intent(in) :: lun
+!
+!  identifier
+!
+!     if(lroot.and.headt) print*,'output_radiation'
+!
+      if(output_Qrad) write(lun) Qrad
+!
+    endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !
