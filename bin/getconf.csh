@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.116 2004-04-29 13:28:42 ajohan Exp $
+# $Id: getconf.csh,v 1.117 2004-05-13 06:41:03 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -329,6 +329,17 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
       set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
       set mpirunops = "-local -machinefile hostfile"
      set local_disc=0
+  endif
+
+else if ($hn =~ obelix) then
+  echo "Obelix Cluster - Calgary"
+  set local_disc = 0
+  set one_local_disc = 0
+  if ($?PBS_NODEFILE) then
+    cp $PBS_NODEFILE lamhosts
+    lamboot -v lamhosts
+    set booted_lam = 1
+    set mpirun = /opt/intel/compiler70/lam/bin/mpirun
   endif
 
 else if ($hn == rasmussen) then
