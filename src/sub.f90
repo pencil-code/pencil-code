@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.120 2003-06-18 13:14:15 dobler Exp $ 
+! $Id: sub.f90,v 1.121 2003-06-30 05:15:17 brandenb Exp $ 
 
 module Sub 
 
@@ -1450,8 +1450,8 @@ module Sub
         write(lun,*) tout,nout
         write(lun,*) 'NOTE: this file is written automatically (out2, sub.f90).'
         write(lun,*) 'The value above give time and number of *next* snapshot.'
-        write(lun,*) 'Currently, these values are only read in the beginning.'
-        write(lun,*) 'You can change these numbers by hand.'
+        write(lun,*) 'These values are only being read once in the beginning.'
+        write(lun,*) 'You may adapt these numbers by hand (eg after a crash).'
         close(lun)
       else
         lout=.false.

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.25 2003-06-29 22:07:38 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.26 2003-06-30 05:15:17 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.25 2003-06-29 22:07:38 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.26 2003-06-30 05:15:17 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -318,10 +318,10 @@ module Radiation
       use Cdata
       use Mpicomm
 !
-      integer :: tag_xyp,tag_xym
+      integer :: tag_xyp=101,tag_xym=102
       integer :: lrad,mrad,nrad,rad2
       logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Iradcomm_xy
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
 !  Identifier
 !
@@ -349,18 +349,18 @@ module Radiation
         !
         !  receive from previous processor
         !
-        if (first) print*,'radtransfer_comm: receive_Irad0_xyp, ipz-1=',ipz-1
-        call receive_Irad0_xy(Iradcomm_xy,ipz-1,radx0,rady0,radz0,tag_xyp)
-        Irad0_xy(:,:,:,:,:,1:radz)=Iradcomm_xy(:,:,:,:,:,1:radz)
+        if (first) print*,'radtransfer_comm: receive_Irad0_xyp, zuneigh=',zuneigh,tag_xyp
+        call receive_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
+        Irad0_xy(:,:,:,:,:,1:radz)=Ibuf_xy(:,:,:,:,:,1:radz)
       endif
 !
-!  send Iradcomm_xy to ipz+1
+!  send Ibuf_xy to ipz+1
 !
       if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: send_Irad0_xyp, ipz+1=',ipz+1
-        Iradcomm_xy=Irad_xy(:,:,:,:,:,1:radz) &
+        if (first) print*,'radtransfer_comm: send_Irad0_xyp, zuneigh=',zuneigh,tag_xyp
+        Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
                   +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
-        call send_Irad0_xy(Iradcomm_xy,ipz+1,radx0,rady0,radz0,tag_xyp)
+        call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
       endif
 !
 !  downward ray
@@ -380,18 +380,18 @@ module Radiation
         !
         !  receive from previous processor
         !
-        if (first) print*,'radtransfer_comm: receive_Irad0_xym, ipz+1=',ipz+1
-        call receive_Irad0_xy(Iradcomm_xy,ipz+1,radx0,rady0,radz0,tag_xym)
-        Irad0_xy(:,:,:,:,:,-radz:-1)=Iradcomm_xy
+        if (first) print*,'radtransfer_comm: receive_Irad0_xym, zuneigh=',zuneigh,tag_xym
+        call receive_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
+        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy
       endif
 !
-!  send Iradcomm_xy to ipz-1
+!  send Ibuf_xy to ipz-1
 !
       if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: send_Irad0_xym, ipz-1=',ipz-1
-        Iradcomm_xy=Irad_xy(:,:,:,:,:,-radz:-1) &
+        if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
+        Ibuf_xy=Irad_xy(:,:,:,:,:,-radz:-1) &
                   +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
-        call send_Irad0_xy(Iradcomm_xy,ipz-1,radx0,rady0,radz0,tag_xym)
+        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
       endif
 !
 !  side boundaries : initially I=0

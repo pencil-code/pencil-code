@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.80 2003-06-29 22:07:38 brandenb Exp $
+! $Id: mpicomm.f90,v 1.81 2003-06-30 05:15:17 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -72,6 +72,7 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
+  integer :: isend_xy,irecv_xy
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
@@ -573,7 +574,7 @@ module Mpicomm
 !
 !  29-jun-03/axel: coded
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,isend_xy,radx0,rady0,radz0
+      integer :: nbuf_xy,ipz_dest,tag_xy,radx0,rady0,radz0
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
 !  buffer size
@@ -582,8 +583,11 @@ module Mpicomm
 !
 !  initiate and finalize straight away
 !
+print*,'send_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
       call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy,MPI_COMM_WORLD,isend_xy,ierr)
+print*,'send_Irad0_xy: wait(1), err=',ierr,isend_xy
       call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
+print*,'send_Irad0_xy: wait(2), err=',ierr,isend_xy
 !
     endsubroutine send_Irad0_xy
 !***********************************************************************
@@ -593,7 +597,7 @@ module Mpicomm
 !
 !  29-jun-03/axel: coded
 !
-      integer :: nbuf_xy,ipz_dest,tag_xy,irecv_xy,radx0,rady0,radz0
+      integer :: nbuf_xy,ipz_dest,tag_xy,radx0,rady0,radz0
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
 !
 !  buffer size
@@ -602,8 +606,11 @@ module Mpicomm
 !
 !  initiate and finalize straight away
 !
+print*,'receive_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
       call MPI_IRECV(Ibuf_xy,nbufy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
+print*,'receive_Irad0_xy: wait(1), err=',ierr,irecv_xy
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
+print*,'receive_Irad0_xy: wait(2), err=',ierr,irecv_xy
 !
     endsubroutine receive_Irad0_xy
 !***********************************************************************
