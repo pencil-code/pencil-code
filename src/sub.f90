@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.81 2002-07-29 09:13:22 brandenb Exp $ 
+! $Id: sub.f90,v 1.82 2002-08-18 15:13:55 brandenb Exp $ 
 
 module Sub 
 
@@ -165,7 +165,7 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint
 !
       real, dimension (nx) :: a
       real :: res
@@ -185,7 +185,7 @@ module Sub
 !
 !   17-dec-01/wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint
 !
       real, dimension (nx) :: a
       real :: res
@@ -205,7 +205,7 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint
 !
       real, dimension (nx) :: a
       real :: res
@@ -225,7 +225,7 @@ module Sub
 !
 !   1-apr-01/axel+wolf: coded
 !
-      use Cdata
+      use Cdata, only: nx,lfirstpoint
 !
       real, dimension (nx) :: a2
       real :: res
@@ -237,6 +237,26 @@ module Sub
       endif
 !
     endsubroutine rms2_mn
+!***********************************************************************
+    subroutine sum_mn(a,res)
+!
+!  successively calculate the sum over all points of a, where a is supplied
+!  at each call. This routine initializes counter when lfirstpoint=.true.
+!
+!   1-apr-01/axel+wolf: coded
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      real :: res
+!
+      if (lfirstpoint) then
+        res=sum(a)
+      else
+        res=res+sum(a)
+      endif
+!
+    endsubroutine sum_mn
 !***********************************************************************
     subroutine exps(a,b)
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.56 2002-08-14 20:23:26 nilshau Exp $
+! $Id: hydro.f90,v 1.57 2002-08-18 15:13:54 brandenb Exp $
 
 module Hydro
 
@@ -25,14 +25,17 @@ module Hydro
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
+  real :: tau_damp_uym=0.
   namelist /hydro_run_pars/ &
        nu,ivisc, &
        Omega,theta, &
-       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux
+       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
+       tau_damp_uym
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_uxm=0,i_uym=0,i_uzm=0
 
   contains
 
@@ -69,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.56 2002-08-14 20:23:26 nilshau Exp $")
+           "$Id: hydro.f90,v 1.57 2002-08-18 15:13:54 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -303,7 +306,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,fvisc,glnrho,sglnrho,del2u,graddivu
-      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1
+      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,ux,uy,uz
       real :: c2,s2
       integer :: i,j
 !
@@ -444,6 +447,10 @@ module Hydro
 !
       if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
 !
+!  add the possibility of removing a mean flow in the y-direction
+!
+      if (tau_damp_uym/=0.) call damp_uym(f,df)
+!
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !  The length of the timestep is not known here (--> moved to prints.f90)
@@ -454,6 +461,15 @@ module Hydro
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
+        !
+        !  mean velocities
+        !
+        if (i_uxm/=0) then; ux=uu(:,1); call sum_mn_name(ux,i_uxm); endif
+        if (i_uym/=0) then; uy=uu(:,2); call sum_mn_name(uy,i_uym); endif
+        if (i_uzm/=0) then; uz=uu(:,3); call sum_mn_name(uz,i_uzm); endif
+        !
+        !  things related to vorticity
+        !
         if (i_oum/=0 .or. i_o2m/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
@@ -474,6 +490,42 @@ module Hydro
       endif
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine damp_uym(f,df)
+!
+!  Damps mean uy velocity, uym, to zero.
+!  This can be useful in situations where a mean flow is generated.
+!
+!  18-aug-02/axel: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension(nx) :: uy
+      real :: tau_damp_uym1
+      real, save :: uym=0.,uy_sum=0.
+!
+!  at the beginning of each timestep we calculate uym
+!  using the sum of uy over all meshpoints, uy_sum,
+!  that was calculated at the end of the previous step.
+!  This result is only known on the root processor and
+!  needs to be broadcasted.
+!
+      if(lfirstpoint) then
+        if(lroot) then
+          uym=uy_sum/(nw*ncpus)
+          call mpibcast_real(uym,1)
+        endif
+      endif
+!
+      uy=f(l1:l2,m,n,iuy)
+      call sum_mn(uy,uy_sum)
+      tau_damp_uym1=1./tau_damp_uym
+      df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_uym1*uym
+!
+    endsubroutine damp_uym
 !***********************************************************************
     subroutine udamping(f,df)
 !
@@ -538,6 +590,7 @@ module Hydro
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
+        i_uxm=0; i_uym=0; i_uzm=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -552,6 +605,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
         call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
+        call parse_name(iname,cname(iname),cform(iname),'uxm',i_uxm)
+        call parse_name(iname,cname(iname),cform(iname),'uym',i_uym)
+        call parse_name(iname,cname(iname),cform(iname),'uzm',i_uzm)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -564,6 +620,9 @@ module Hydro
       write(3,*) 'i_umax=',i_umax
       write(3,*) 'i_orms=',i_orms
       write(3,*) 'i_omax=',i_omax
+      write(3,*) 'i_uxm=',i_uxm
+      write(3,*) 'i_uym=',i_uym
+      write(3,*) 'i_uzm=',i_uzm
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux
