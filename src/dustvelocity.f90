@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.46 2004-04-12 09:59:59 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.47 2004-04-12 13:17:02 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -23,12 +23,13 @@ module Dustvelocity
 
   ! init parameters
   real, dimension(ndustspec,ndustspec) :: scolld
+  real, dimension(nx,ndustspec) :: tausd1
   real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
-  real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
-  real :: mmon,mumon,surfmon,Eyoung,gsurften,vstcst
+  real :: nud_all=0.,betad_all=0.,tausd_all=0.
+  real :: mmon,mumon,surfmon,Eyoung,gsurften,ustcst
   double precision :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
@@ -107,7 +108,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.46 2004-04-12 09:59:59 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.47 2004-04-12 13:17:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,7 +143,7 @@ module Dustvelocity
       use Mpicomm, only: stop_it
       use Pscalar, only: unit_rhocc
 !
-      integer :: i,j
+      integer :: k,l
 !
 !  Output grain mass discretization type
 !
@@ -163,7 +164,7 @@ module Dustvelocity
             print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
 !  Surface tension and Young's modulus for sticking velocity
-!            
+!
         gsurften = 370. ! erg cm^-2 
         Eyoung   = 7e10 ! dyn cm^-2
         
@@ -183,16 +184,16 @@ module Dustvelocity
 !
 !  Constant used in determination of sticking velocity
 !
-      vstcst = 2*9.6 * gsurften**(5/3.) * Eyoung**(-2/3.)
+      ustcst = sqrt(2*9.6 * gsurften**(5/3.) * Eyoung**(-2/3.))
 !
 !  Dust physics parameters
 !
       if (ad0 .ne. 0.) md0 = 4/3.*pi*ad0**3*rhods/unit_md
 
-      do i=1,ndustspec
-        mdminus(i) = md0*deltamd**(i-1)
-        mdplus(i)  = md0*deltamd**i
-        md(i) = 0.5*(mdminus(i)+mdplus(i))
+      do k=1,ndustspec
+        mdminus(k) = md0*deltamd**(k-1)
+        mdplus(k)  = md0*deltamd**k
+        md(k) = 0.5*(mdminus(k)+mdplus(k))
       enddo
 
       if (ndustspec == 1) md(1) = md0
@@ -225,7 +226,11 @@ module Dustvelocity
         case ('epstein_var')
           rhodsad1 = 1./(rhods*ad)
         case ('epstein_cst')
-          tausd1 = 1./tausd(i)
+          do k=1,ndustspec
+            do l=1,nx
+              tausd1(l,k) = 1./tausd(k)
+            enddo
+          enddo
 
         endselect
       endif
@@ -235,24 +240,24 @@ module Dustvelocity
       if (nud_all .ne. 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: nud_all=',nud_all
-        do i=1,ndustspec
-          if (nud(i) == 0.) nud(i)=nud_all
+        do k=1,ndustspec
+          if (nud(k) == 0.) nud(k)=nud_all
         enddo
       endif
 !      
       if (betad_all .ne. 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: betad_all=',betad_all
-        do i=1,ndustspec
-          if (betad(i) == 0.) betad(i) = betad_all
+        do k=1,ndustspec
+          if (betad(k) == 0.) betad(k) = betad_all
         enddo
       endif
 !
       if (tausd_all .ne. 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: tausd_all=',tausd_all
-        do i=1,ndustspec
-          if (tausd(i) == 0.) tausd(i) = tausd_all
+        do k=1,ndustspec
+          if (tausd(k) == 0.) tausd(k) = tausd_all
         enddo
       endif
 !
@@ -260,8 +265,8 @@ module Dustvelocity
         if (lroot .and. ip<6) &
             print*, &
                 'initialize_dustvelocity: lfeedback_gas_all=',lfeedback_gas_all
-        do i=1,ndustspec
-          lfeedback_gas(i) = .false.
+        do k=1,ndustspec
+          lfeedback_gas(k) = .false.
         enddo
       endif
     endsubroutine initialize_dustvelocity
@@ -333,7 +338,7 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real, dimension (nx) :: rho,cs2,rhod,tausd1,cp1tilde
+      real, dimension (nx) :: rho,cs2,rhod,cp1tilde
       integer :: k
 !
 !  inituud corresponds to different initializations of uud (called from start).
@@ -353,8 +358,8 @@ module Dustvelocity
                 rho = exp(f(l1:l2,m,n,ilnrho))
                 rhod = f(l1:l2,m,n,ind(k))*md(k)
                 call pressure_gradient(f,cs2,cp1tilde)
-                call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
-                f(l1:l2,m,n,iudz(k)) = -tausd1**(-1)*Omega**2*z(n)
+                call get_stoppingtime(f,rho,cs2,rhod,k)
+                f(l1:l2,m,n,iudz(k)) = -tausd1(:,k)**(-1)*Omega**2*z(n)
               enddo
             enddo
           enddo
@@ -416,7 +421,7 @@ module Dustvelocity
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,ood,del2ud,tausd13,tausg13
       real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
-      real, dimension (nx) :: csrho,tausd1,tausg1
+      real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,k,l
 !
@@ -507,19 +512,19 @@ module Dustvelocity
 !  Stopping time of dust is calculated in get_stoppingtime
 !
         if (ldustdrag) then
-          call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
+          call get_stoppingtime(f,rho,cs2,rhod,k)
 !
 !  Add drag force on dust. If taus << dt, set udx = ux, udy=uy, udz=udz(term)
 !
-          do i=1,3; tausd13(:,i) = tausd1; enddo
+          do i=1,3; tausd13(:,i) = tausd1(:,k); enddo
 
           if (draglaw == 'epstein_var') then
             do l=1,nx
-              if (tausd1(l) > 1./(3*dt)) then
+              if (tausd1(l,k) > 1./(3*dt)) then
                 f(l1-1+l,m,n,iudx(k)) = f(l1-1+l,m,n,iux)
                 f(l1-1+l,m,n,iudy(k)) = f(l1-1+l,m,n,iuy)
                 f(l1-1+l,m,n,iudz(k)) = f(l1-1+l,m,n,iuz) - &
-                    tausd1(l)**(-1)*Omega**2*z(n)
+                    tausd1(l,k)**(-1)*Omega**2*z(n)
               else
                 df(l1:l2,m,n,iudx(k):iudz(k)) = &
                     df(l1:l2,m,n,iudx(k):iudz(k)) - tausd13*(uud(:,:,k)-uu)
@@ -533,7 +538,7 @@ module Dustvelocity
 !  Add drag force on gas (back-reaction)
 !
           if (lfeedback_gas(k)) then
-            tausg1 = rhod*tausd1*rho1
+            tausg1 = rhod*tausd1(:,k)*rho1
             do i=1,3; tausg13(:,i) = tausg1; enddo
             df(l1:l2,m,n,iux:iuz) = &
                 df(l1:l2,m,n,iux:iuz) - tausg13*(uu-uud(:,:,k))
@@ -658,7 +663,7 @@ module Dustvelocity
 !
     endsubroutine get_dustcrosssection
 !***********************************************************************
-    subroutine get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
+    subroutine get_stoppingtime(f,rho,cs2,rhod,k)
 !
 !  Calculate stopping time depending on choice of drag law
 !
@@ -666,7 +671,7 @@ module Dustvelocity
       use Mpicomm, only: stop_it
       
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: rho,rhod,csrho,cs2,tausd1
+      real, dimension (nx) :: rho,rhod,csrho,cs2
       integer :: k
 !
       select case(draglaw)
@@ -674,10 +679,10 @@ module Dustvelocity
       case ('epstein_cst')
         ! Do nothing, initialized in initialize_dustvelocity
       case ('epstein_cst_b')
-        tausd1 = betad(k)/rhod
+        tausd1(:,k) = betad(k)/rhod
       case ('epstein_var')
-        csrho  = sqrt(cs2)*rho
-        tausd1 = csrho*rhodsad1(k)
+        csrho       = sqrt(cs2)*rho
+        tausd1(:,k) = csrho*rhodsad1(k)
       case default
         call stop_it("get_stoppingtime: No valid drag law specified.")
 

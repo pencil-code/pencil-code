@@ -1,7 +1,7 @@
-! $Id: dustdensity.f90,v 1.58 2004-04-12 09:59:59 ajohan Exp $
+! $Id: dustdensity.f90,v 1.59 2004-04-12 13:17:01 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
-!  It contains dnd_dt and init_nd, among other auxiliary routines.
+!  It contains dndrhod_dt and init_nd, among other auxiliary routines.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.58 2004-04-12 09:59:59 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.59 2004-04-12 13:17:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -307,7 +307,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dnd_dt(f,df,rho1,TT1,uud,divud,gnd)
+    subroutine dndrhod_dt(f,df,rho1,TT1,cs2,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -323,7 +323,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: ugnd,gnd2,del2nd,rho,rho1,TT1
+      real, dimension (nx) :: ugnd,gnd2,del2nd,rho,rho1,TT1,cs2
       real, dimension (ndustspec) :: mice
       real :: diffnd
       integer :: k
@@ -333,13 +333,13 @@ module Dustdensity
 !
 !  identify module and boundary conditions
 !
-      if (headtt  .or. ldebug)  print*,'dnd_dt: SOLVE dnd_dt'
+      if (headtt  .or. ldebug)  print*,'dndrhod_dt: SOLVE dnd_dt,drhod_dt'
       if (headtt)               call identify_bcs('nd',ind(1))
       if (lmdvar  .and. headtt) call identify_bcs('rhod',irhod(1))
       if (lrhoice .and. headtt) call identify_bcs('rhoi',irhoi(1))
 !
 !  Recalculate grain masses from nd and rhod
-!
+! 
       if (lmdvar .and. itsub == 1) then
         call calc_grainmass(f)
 !
@@ -377,7 +377,7 @@ module Dustdensity
 !
 !  Calculate kernel of coagulation equation
 !
-      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,TT1)
+      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,TT1,cs2)
 !
 !  Dust coagulation due to sticking
 !
@@ -461,7 +461,7 @@ module Dustdensity
 !
       enddo
 !
-    endsubroutine dnd_dt
+    endsubroutine dndrhod_dt
 !***********************************************************************
     subroutine calc_grainmass(f)
 !
@@ -515,7 +515,7 @@ module Dustdensity
         elseif (i_targ == 0) then
           !if (lkeepinitnd) then
           !  print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
-          !  call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
+          !  call stop_it('dndrhod_dt: WARNING: Dust grains lost to gas!')
           !endif
           f(l1:l2,m,n,ilncc) = &
               f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
@@ -612,22 +612,23 @@ module Dustdensity
 !
     endsubroutine get_mfluxcond
 !***********************************************************************
-    subroutine coag_kernel(f,TT1)
+    subroutine coag_kernel(f,TT1,cs2)
 !
 !  Calculate mass flux of condensing monomers
 !
       use Cdata
       use Sub
+      use Entropy, only: nu_turb
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu
-      real, dimension (nx) :: TT1,udiudj,ul0
-      real :: tl0
-      real :: alphaSS=0.
+      real, dimension (nx) :: TT1,cs2,udiudj,ul0
+      real :: tl0,alphaSS,ust
       integer :: i,j,l
 !
       tl0 = 1/Omega
-      ul0 = 0.   !alphaSS*sqrt(cs2)
+      alphaSS = exp(-27.0466)*nu_turb**0.623236
+      ul0 = alphaSS*sqrt(cs2)
       do i=1,ndustspec
         do j=i,ndustspec
           call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
@@ -636,16 +637,18 @@ module Dustdensity
           deltaud_therm = &
               sqrt( 8*k_B/(pi*TT1)*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
           deltaud_turbu = &
-              ul0*3*tausd(j)/(tausd(i)+tausd(j))*(tausd(j)/tl0)**0.5
+              ul0*3/(tausd1(:,j)/tausd1(:,i)+1.)*(1/(tl0*tausd1(:,j)))**0.5
           deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
 !
 !  Stick only when relative velocity below sticking velocity
 !
           do l=1,nx
-            if (deltaud(l) >= sqrt( vstcst*(ad(i)*ad(j)/(ad(i)+ad(j)))**(4/3.)/&
-                (md(i)*md(j))/(md(i)+md(j))) ) deltaud(l) = 0.
+            ust = ustcst * (ad(i)*ad(j)/(ad(i)+ad(j)))**(2/3.) * &
+                ((md(i)+md(j))/(md(i)*md(j)*unit_md))**(1/2.) 
+            if (deltaud(l) >= ust) then
+              deltaud(l) = 0.
+            endif
           enddo
-
           dkern(:,i,j) = scolld(i,j)*deltaud
           dkern(:,j,i) = dkern(:,i,j)
         enddo
