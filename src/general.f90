@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.17 2003-04-03 12:11:31 theine Exp $
+! $Id: general.f90,v 1.18 2003-04-03 12:13:48 theine Exp $
 
 module General
 
@@ -421,16 +421,16 @@ module General
       real, dimension(:), intent(in) :: a,b,c,r
       real, dimension(:), intent(out) :: u
       real, dimension(size(b)) :: gam
-      logical, intent(out) :: err
+      logical, intent(out), optional :: err
       integer :: n,j
       real :: bet
 
-      err=.false.
+      if (present(err)) err=.false.
       n=size(b)
       bet=b(1)
       if (bet.eq.0.) then
          print*,'tridag_ser: Error at code stage 1'
-         err=.true.
+         if (present(err)) err=.true.
       endif
 
       u(1)=r(1)/bet
@@ -439,7 +439,7 @@ module General
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag_ser: Error at code stage 2'
-            err=.true.
+            if (present(err)) err=.true.
          endif
          u(j)=(r(j)-a(j-1)*u(j-1))/bet
       end do
