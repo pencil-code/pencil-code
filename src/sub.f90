@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.180 2004-05-25 12:20:52 ajohan Exp $ 
+! $Id: sub.f90,v 1.181 2004-05-27 11:04:48 ajohan Exp $ 
 
 module Sub 
 
@@ -2701,7 +2701,7 @@ module Sub
 !
       endfunction notanumber_4
 !***********************************************************************
-      subroutine nan_inform(f,msg,lnan)
+      subroutine nan_inform(f,msg,lstop)
 !
 !  Check input array (f or df) for NaN, -Inf, Inf, and output location in
 !  array.
@@ -2709,11 +2709,12 @@ module Sub
 !  30-apr-04/anders: coded
 !
         use Cdata
+        use Mpicomm, only: stop_it
 !        
         real, dimension(:,:,:,:) :: f
         character (len=*) :: msg
         integer :: i,j,k,kk
-        logical, optional :: lnan
+        logical, optional :: lstop
 !
         do i=l1,l2
           do j=m1,m2
@@ -2726,7 +2727,7 @@ module Sub
                   print*,'nan_inform: t, it, itsub   = ', t, it, itsub
                   print*,'nan_inform: l, m, n, iproc = ', i, j, k, iproc
                   print*,'----------------------------'
-                  if (present(lnan)) lnan = .true.
+                  if (present(lstop) .and. lstop) call stop_it('nan_stop')
                 endif
               enddo
             enddo
@@ -2734,24 +2735,6 @@ module Sub
         enddo
 !
       endsubroutine nan_inform
-!***********************************************************************
-      subroutine nan_stop(f,msg)
-!
-!  Check input array (f or df) for NaN, -Inf, Inf. Stop if found.
-!
-!  30-apr-04/anders: coded
-!
-        use Mpicomm, only: stop_it
-!
-        real, dimension(:,:,:,:) :: f
-        character (len=*) :: msg
-        integer :: i,j,k,kk
-        logical :: lnan=.false.
-!
-        call nan_inform(f,msg,lnan)
-        if (lnan) call stop_it('nan_stop')
-!
-      endsubroutine nan_stop
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !
