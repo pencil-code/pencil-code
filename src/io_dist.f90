@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.28 2002-06-24 17:56:19 dobler Exp $
+! $Id: io_dist.f90,v 1.29 2002-06-24 18:37:50 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -22,34 +22,41 @@ module Io
     module procedure output_pencil_scal
   endinterface
 
+
   !
   ! Interface to external C function(s).
   ! Need to have two different C functions in order to have F90
   ! interfaces, since a pencil can be either a 1-d or a 2-d array.
   !
-  interface output_penciled_vect_c
-    subroutine output_penciled_vect_c(filename,pencil,&
-                                      ndim,i,iy,iz,t, &
-                                      nx,ny,nz,nghost,fnlen)
-      use Cdata, only: mx
-      real,dimension(mx,*) :: pencil
-      real :: t
-      integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-      character (len=*) :: filename
-    endsubroutine output_penciled_vect_c
-  endinterface
+!   interface output_penciled_vect_c
+!     subroutine output_penciled_vect_c(filename,pencil,&
+!                                       ndim,i,iy,iz,t, &
+!                                       nx,ny,nz,nghost,fnlen)
+!       use Cdata, only: mx
+!       real,dimension(mx,*) :: pencil
+!       real :: t
+!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
+!       character (len=*) :: filename
+!     endsubroutine output_penciled_vect_c
+!   endinterface
+!   !
+!   interface output_penciled_scal_c
+!     subroutine output_penciled_scal_c(filename,pencil,&
+!                                       ndim,i,iy,iz,t, &
+!                                       nx,ny,nz,nghost,fnlen)
+!       use Cdata, only: mx
+!       real,dimension(mx) :: pencil
+!       real :: t
+!       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
+!       character (len=*) :: filename
+!     endsubroutine output_penciled_scal_c
+!   endinterface
   !
-  interface output_penciled_scal_c
-    subroutine output_penciled_scal_c(filename,pencil,&
-                                      ndim,i,iy,iz,t, &
-                                      nx,ny,nz,nghost,fnlen)
-      use Cdata, only: mx
-      real,dimension(mx) :: pencil
-      real :: t
-      integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
-      character (len=*) :: filename
-    endsubroutine output_penciled_scal_c
-  endinterface
+  !  Still not possible with the NAG compiler (`No specific match for
+  !  reference to generic OUTPUT_PENCILED_SCAL_C')
+  !
+  external output_penciled_scal_c
+  external output_penciled_vect_c
 
 contains
 
