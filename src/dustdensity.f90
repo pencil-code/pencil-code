@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.41 2004-02-26 07:42:10 ajohan Exp $
+! $Id: dustdensity.f90,v 1.42 2004-02-26 16:01:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -27,12 +27,12 @@ module Dustdensity
   real :: mmon,mumon,surfmon,supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero', dust_chemistry='ice'
   logical :: ldustnucleation=.false.,ldustgrowth=.true.,ldustcoagulation=.true.
-  logical :: lcalcdkern=.true.
+  logical :: lcalcdkern=.true.,lkeepinitnd=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, dust_chemistry, ldustnucleation, ldustgrowth, ldustcoagulation, &
-      lcalcdkern, supsatfac
+      lcalcdkern, supsatfac, lkeepinitnd
 
   namelist /dustdensity_run_pars/ &
       rhod0, cdiffnd, cdiffnd_all, ldustnucleation, ldustgrowth, &
@@ -40,7 +40,7 @@ module Dustdensity
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_rhodm
+  integer :: i_rhodm,i_ssratm,i_ssratmax
   integer, dimension(ndustspec) :: i_ndm=0
 
   contains
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.41 2004-02-26 07:42:10 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.42 2004-02-26 16:01:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -223,6 +223,7 @@ module Dustdensity
  
       case('zero'); if(lroot) print*,'init_nd: zero nd'
       case('first')
+        print*, 'init_nd: All dust particles in first bin.'
         f(:,:,:,ind) = 0.
         f(:,:,:,ind(1)) = nd00
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
@@ -334,14 +335,12 @@ module Dustdensity
 !  Recalculate grain masses from nd and rhod
 !
       if (lmdvar .and. itsub .eq. 1) then
-        deltand(:,:)   = 0.
-        deltarhod(:,:) = 0.
-        do k=1,ndustspec
 !
 !  Set small negative values to zero (give negative mass)
-!          
-          if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
-          if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
+!         
+        if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
+        if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
+        do k=1,ndustspec
           if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
@@ -350,15 +349,15 @@ module Dustdensity
         enddo
 !
 !  Check for grain mass interval overflows
-!      
+!
         do k=1,ndustspec
           i_targ = -1
-          if (md(k) .ge. mdplus(k)) then
-            do j=k+1,ndustspec+1
+          if (md(k) .ge. mdplus(k)) then      ! Gone to higher mass bin
+            do j=k+1,ndustspec+1 
               i_targ = j
               if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
             enddo
-          elseif (md(k) .lt. mdminus(k)) then
+          elseif (md(k) .lt. mdminus(k)) then ! Gone to lower mass bin
             do j=k-1,0,-1
               i_targ = j
               if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
@@ -369,20 +368,38 @@ module Dustdensity
             deltarhod(:,i_targ) = deltarhod(:,i_targ) + f(l1:l2,m,n,irhod(k))
             deltand(:,k)        = deltand(:,k) - f(l1:l2,m,n,ind(k))
             deltarhod(:,k)      = deltarhod(:,k) - f(l1:l2,m,n,irhod(k))
-            md(k) = 0.5*(mdminus(k)+mdplus(k))
           elseif (i_targ .eq. 0) then
             print*, 'dnd_dt: WARNING: Dust grains lost to gas!'
+            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
             deltand(:,k) = deltand(:,k) - f(l1:l2,n,m,ind(k))
             deltarhod(:,k) = deltarhod(:,k) - f(l1:l2,n,m,irhod(k))
-            md(k) = 0.5*(mdminus(k)+mdplus(k))
           elseif (i_targ .eq. ndustspec+1) then
             call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
         f(l1:l2,m,n,ind)   = f(l1:l2,m,n,ind)   + deltand(:,:)
         f(l1:l2,m,n,irhod) = f(l1:l2,m,n,irhod) + deltarhod(:,:)
+        deltand   = 0.
+        deltarhod = 0.
+!
+!  Must redo calculation of grain mass
+!        
+        do k=1,ndustspec
+          if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
+          if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
+          if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
+            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
+          else
+            md(k) = 0.5*(mdminus(k)+mdplus(k))
+          endif
+        enddo
+!
+!  Recalculate surface and cross section
+!
+        if (ldustgrowth) call get_dustsurface
+        if (ldustcoagulation .and. lcalcdkern) call get_dustcrosssection
       endif
 !
 !  Abbreviations
@@ -409,8 +426,12 @@ module Dustdensity
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
-            df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+            if (dndfac(1) .lt. 0. .and. lkeepinitnd) then
+              ! Do nothing when mass is set to decrease below initial
+            else
+              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
+              df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+            endif
           else
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)/md(k)
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + dndfac
@@ -529,6 +550,7 @@ module Dustdensity
       use Cdata
       use Mpicomm, only: stop_it
       use Ionization, only: getmu,eoscalc_pencil,ilnrho_ss
+      use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: mfluxcond,rho,TT1,pp,ppmon,ppsat,vth,epsmon
@@ -546,7 +568,12 @@ module Dustdensity
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
+
         mfluxcond = vth*epsmon*rho*(1-supsatratio1)
+        if (ldiagnos) then
+          if (i_ssratm/=0) call sum_mn_name(1/supsatratio1(:),i_ssratm)
+          if (i_ssratmax/=0) call max_mn_name(1/supsatratio1(:),i_ssratmax)
+        endif
 
       case default
         call stop_it("get_mfluxcond: No valid dust chemistry specified.")
@@ -580,7 +607,6 @@ module Dustdensity
         ppsat = 6.035e12*exp(-5938/TT)
         vth = (3*k_B*TT/mmon)**0.5
         supsatratio1 = ppsat/ppmon
-        !print*, n, minval(ppmon), maxval(ppmon), minval(ppsat), maxval(ppsat), minval(supsatratio1), maxval(supsatratio1)
         nofluxcond = vth*epsmon*rho/mmon*(1-supsatratio1)
 
         if (supsatfac1 .ne. 1.) then
@@ -667,9 +693,13 @@ module Dustdensity
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhodm',i_rhodm)
+        call parse_name(iname,cname(iname),cform(iname),'ssratm',i_ssratm)
+        call parse_name(iname,cname(iname),cform(iname),'ssratmax',i_ssratmax)
       enddo
       if (lwr) then
         if (i_rhodm .ne. 0) write(3,*) 'i_rhodm=',i_rhodm
+        if (i_ssratm .ne. 0) write(3,*) 'i_ssratm=',i_ssratm
+        if (i_ssratmax .ne. 0) write(3,*) 'i_ssratmax=',i_ssratmax
       endif
 !
 !  Write dust index in short notation
