@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.33 2003-12-01 21:00:10 theine Exp $
+! $Id: slices.f90,v 1.34 2003-12-06 13:52:21 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -74,12 +74,14 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !
       use Sub
+      use General
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
+      character(len=4) :: sidust
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
-      integer :: inamev
+      integer :: inamev,idust
 !
 !  Loop over slices
 !
@@ -135,22 +137,38 @@ module Slices
 !  Dust velocity
 !
       case ('uud')
-        uud_yz=f(ix,m1:m2,n1:n2,iudx:iudz)
-        uud_xz=f(l1:l2,iy,n1:n2,iudx:iudz)
-        uud_xy=f(l1:l2,m1:m2,iz,iudx:iudz)
-        uud_xy2=f(l1:l2,m1:m2,iz2,iudx:iudz)
-        call wslice(path//'udx.yz',uud_yz(:,:,1),x(ix),ny,nz)
-        call wslice(path//'udy.yz',uud_yz(:,:,2),x(ix),ny,nz)
-        call wslice(path//'udz.yz',uud_yz(:,:,3),x(ix),ny,nz)
-        call wslice(path//'udx.xz',uud_xz(:,:,1),y(iy),nx,nz)
-        call wslice(path//'udy.xz',uud_xz(:,:,2),y(iy),nx,nz)
-        call wslice(path//'udz.xz',uud_xz(:,:,3),y(iy),nx,nz)
-        call wslice(path//'udx.xy',uud_xy(:,:,1),z(iz),nx,ny)
-        call wslice(path//'udy.xy',uud_xy(:,:,2),z(iz),nx,ny)
-        call wslice(path//'udz.xy',uud_xy(:,:,3),z(iz),nx,ny)
-        call wslice(path//'udx.Xy',uud_xy2(:,:,1),z(iz2),nx,ny)
-        call wslice(path//'udy.Xy',uud_xy2(:,:,2),z(iz2),nx,ny)
-        call wslice(path//'udz.Xy',uud_xy2(:,:,3),z(iz2),nx,ny)
+!        do idust=1,dustlayers
+!          call chn(idust,sidust)
+!          if (idust .eq. 1) sidust = ''
+!          uud_yz=f(ix,m1:m2,n1:n2,iudx(idust):iudz(idust))
+!          uud_xz=f(l1:l2,iy,n1:n2,iudx(idust):iudz(idust))
+!          uud_xy=f(l1:l2,m1:m2,iz,iudx(idust):iudz(idust))
+!          uud_xy2=f(l1:l2,m1:m2,iz2,iudx(idust):iudz(idust))
+!          call wslice(path//'udx'//trim(sidust)//'.yz', &
+!              uud_yz(:,:,1),x(ix),ny,nz)
+!          call wslice(path//'udy'//trim(sidust)//'.yz', &
+!              uud_yz(:,:,2),x(ix),ny,nz)
+!          call wslice(path//'udz'//trim(sidust)//'.yz', &
+!              uud_yz(:,:,3),x(ix),ny,nz)
+!          call wslice(path//'udx'//trim(sidust)//'.xz', &
+!              uud_xz(:,:,1),y(iy),nx,nz)
+!          call wslice(path//'udy'//trim(sidust)//'.xz', &
+!              uud_xz(:,:,2),y(iy),nx,nz)
+!          call wslice(path//'udz'//trim(sidust)//'.xz', &
+!              uud_xz(:,:,3),y(iy),nx,nz)
+!          call wslice(path//'udx'//trim(sidust)//'.xy', &
+!              uud_xy(:,:,1),z(iz),nx,ny)
+!          call wslice(path//'udy'//trim(sidust)//'.xy', &
+!              uud_xy(:,:,2),z(iz),nx,ny)
+!          call wslice(path//'udz'//trim(sidust)//'.xy', &
+!              uud_xy(:,:,3),z(iz),nx,ny)
+!          call wslice(path//'udx'//trim(sidust)//'.Xy', &
+!              uud_xy2(:,:,1),z(iz2),nx,ny)
+!          call wslice(path//'udy'//trim(sidust)//'.Xy', &
+!              uud_xy2(:,:,2),z(iz2),nx,ny)
+!          call wslice(path//'udz'//trim(sidust)//'.Xy', &
+!              uud_xy2(:,:,3),z(iz2),nx,ny)
+!        enddo
 !
 !  Logarithmic density
 !
@@ -167,14 +185,22 @@ module Slices
 !  Logarithmic dust density
 !
       case ('lnrhod')
-        lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod)
-        lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod)
-        lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod)
-        lnrhod_xy2=f(l1:l2,m1:m2,iz2,ilnrhod)
-        call wslice(path//'lnrhod.yz',lnrhod_yz,x(ix),ny,nz)
-        call wslice(path//'lnrhod.xz',lnrhod_xz,y(iy),nx,nz)
-        call wslice(path//'lnrhod.xy',lnrhod_xy,z(iz),nx,ny)
-        call wslice(path//'lnrhod.Xy',lnrhod_xy2,z(iz2),nx,ny)
+!        do idust=1,dustlayers
+!          call chn(idust,sidust)
+!          if (idust .eq. 1) sidust = ''
+!          lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod(idust))
+!          lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod(idust))
+!          lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod(idust))
+!          lnrhod_xy2=f(l1:l2,m1:m2,iz2,ilnrhod(idust))
+!          call wslice(path//'lnrhod'//trim(sidust)//'.yz', &
+!              lnrhod_yz,x(ix),ny,nz)
+!          call wslice(path//'lnrhod'//trim(sidust)//'.xz', &
+!              lnrhod_xz,y(iy),nx,nz)
+!          call wslice(path//'lnrhod'//trim(sidust)//'.xy', &
+!              lnrhod_xy,z(iz),nx,ny)
+!          call wslice(path//'lnrhod'//trim(sidust)//'.Xy', &
+!              lnrhod_xy2,z(iz2),nx,ny)
+!        enddo
 !
 !  Entropy
 !

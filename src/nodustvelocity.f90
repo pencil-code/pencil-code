@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $
+! $Id: nodustvelocity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -28,6 +28,8 @@ module Dustvelocity
   integer :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0,i_udmy=0,i_udmz=0
   integer :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer :: i_divud2m=0,i_epsKd=0
+  integer :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0
+  integer, parameter :: dustlayers=1
 
   contains
 
@@ -53,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nodustvelocity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -102,6 +104,38 @@ module Dustvelocity
 !
       if(ip==0) print*,f,df,uu,uud,divud,ud2,udij  !(keep compiler quiet)
     endsubroutine duud_dt
+!***********************************************************************
+    subroutine duud_dt_grav(f,df)
+!
+!  add duu/dt according to gravity
+!
+!  6-dec-03/anders: copied from duu_dt_grav
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      if(ip==0) print*,f,df !(keep compiler quiet)
+!
+    endsubroutine duud_dt_grav
+!***********************************************************************
+    subroutine shearingdust(f,df)
+!
+!  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
+!
+!  6-dec-03/anders: Copied from shearing
+!
+      use Cparam
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      if(ip==0) print*,f,df !(keep compiler quiet)
+!
+    end subroutine shearingdust
 !***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
 !

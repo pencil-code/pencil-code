@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.48 2003-10-24 13:17:31 dobler Exp $
+! $Id: grav_z.f90,v 1.49 2003-12-06 13:52:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,7 +33,6 @@ module Gravity
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   real :: g0
-  logical :: lgravzd=.true.
   character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -58,14 +57,14 @@ module Gravity
 !
   namelist /grav_init_pars/ &
        z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top,lgravzd
+       lnrho_bot,lnrho_top,ss_bot,ss_top
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
        zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top,lgravzd
+       lnrho_bot,lnrho_top,ss_bot,ss_top
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -91,7 +90,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.48 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: grav_z.f90,v 1.49 2003-12-06 13:52:21 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -132,6 +131,7 @@ module Gravity
 ! 28-jun-02/axel: added 'linear' gravity profile
 ! 28-jul-02/axel: added 'const_zero' gravity profile
 !  1-jun-03/axel: dust velocity added
+!  3-dec-03/anders: removed dust gravity to duud_dt_grav
 !
       use Cdata
       use Sub
@@ -143,7 +143,6 @@ module Gravity
       real :: nu_epicycle2
 !
       intent(in)  :: f
-      if (headtt) print*,'duu_dt_grav: lgravzd=', lgravzd
 !
 !  different gravity profiles
 !
@@ -151,8 +150,6 @@ module Gravity
         if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
         if(lhydro) &
             df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
-        if(ldustvelocity .and. lgravzd) &
-            df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)+gravz
 !
 !  linear gravity profile (for accretion discs)
 !
@@ -162,8 +159,6 @@ module Gravity
         if (z(n)<=zgrav) then
           if(lhydro) &
               df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
-          if(ldustvelocity .and. lgravzd) &
-              df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)+gravz
         endif
 !
 !  linear gravity profile (for accretion discs)
@@ -176,8 +171,6 @@ module Gravity
         if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
         if(lhydro) &
             df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) -nu_epicycle2*z(n)
-        if(ldustvelocity .and. lgravzd) &
-            df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)-nu_epicycle2*z(n)
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
@@ -188,9 +181,6 @@ module Gravity
 !AB: As it is now, it can never make much sense.
         if(lhydro) &
             df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
-            -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
-        if(ldustvelocity .and. lgravzd) &
-            df(l1:l2,m,n,iudz) = df(l1:l2,m,n,iudz) & 
             -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
         if(lroot) print*,'duu_dt_grav: no gravity profile given'

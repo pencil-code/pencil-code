@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.11 2003-10-17 07:13:58 brandenb Exp $
+! $Id: shear.f90,v 1.12 2003-12-06 13:52:21 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.11 2003-10-17 07:13:58 brandenb Exp $")
+           "$Id: shear.f90,v 1.12 2003-12-06 13:52:21 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -100,18 +100,6 @@ module Shear
           if (headtt) print*,'Sure you want Sshear with finite theta??'
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
-        endif
-      endif
-!
-! Same for dust velocity
-!
-      if (ldustvelocity) then
-        if (theta==0) then
-          df(l1:l2,m,n,iudy)=df(l1:l2,m,n,iudy)-Sshear*f(l1:l2,m,n,iudx)
-        else
-          if (headtt) print*,'Sure you want Sshear with finite theta??'
-          df(l1:l2,m,n,iudy)=df(l1:l2,m,n,iudy)&
-               -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx)
         endif
       endif
 !

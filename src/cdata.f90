@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.195 2003-12-04 23:44:01 snod Exp $
+! $Id: cdata.f90,v 1.196 2003-12-06 13:52:21 ajohan Exp $
 
 module Cdata
 
@@ -57,10 +57,9 @@ module Cdata
   integer, dimension(mseed) :: seed=0
   integer :: nseed=0
   integer :: nvar,naux,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,iss=0
-  integer :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0,igg=0,igx=0,igy=0,igz=0
+  integer :: igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper3=0
-  integer :: ilnecr=0
   integer :: iecr=0
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
@@ -144,6 +143,7 @@ module Cdata
   logical :: test_nonblocking=.false.,onedall=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
+  logical :: cc_pdf=.false.
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
 
