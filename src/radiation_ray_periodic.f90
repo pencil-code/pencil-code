@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.9 2005-02-18 17:49:44 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.10 2005-02-18 18:09:38 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.9 2005-02-18 17:49:44 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.10 2005-02-18 18:09:38 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -404,7 +404,6 @@ module Radiation
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
-      print*,'dlength=',dlength
 !
 !  set optical depth and intensity initially to zero
 !
