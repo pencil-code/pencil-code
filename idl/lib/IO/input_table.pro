@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2004-06-21 16:28:29 $
-;;; $Revision: 1.9 $
+;;; $Date: 2004-06-21 16:39:38 $
+;;; $Revision: 1.10 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -87,7 +87,7 @@ function input_table, filename, $
       message, "Is your shell clean? `bash -c /bin/true' and `csh -c /bin/true' should produce no output", /INFO 
       print, 'Trying to proceed anyway..'
     endif
-    N_lines = long(ans_lines-1)
+    N_lines = long(ans(ans_lines-1))
   endelse
 
   ;; Open the file
