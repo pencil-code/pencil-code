@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.11 2002-12-09 19:28:34 mee Exp $
+! $Id: visc_shock.f90,v 1.12 2002-12-11 17:32:17 ngrs Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.11 2002-12-09 19:28:34 mee Exp $")
+           "$Id: visc_shock.f90,v 1.12 2002-12-11 17:32:17 ngrs Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -207,7 +207,7 @@ module Viscosity
 !
 !  check for degeneracy
 !
-      if (nygrid/=1) then
+      if (nzgrid/=1) then
          if (mz.ge.5) then
             maxf(:,:,1     ) = amax1(f(:,:,1     ),  &
                                      f(:,:,2     ),  &
@@ -265,7 +265,7 @@ module Viscosity
 !
 !  check for degeneracy
 !
-      if (nygrid/=1) then
+      if (nxgrid/=1) then
          if (mx.ge.3) then
             smoothf(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
                                              f(2     ,:,:))
