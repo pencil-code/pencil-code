@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.192 2004-02-06 15:13:49 bingert Exp $
+! $Id: equ.f90,v 1.193 2004-02-10 10:24:19 bingert Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.192 2004-02-06 15:13:49 bingert Exp $")
+           "$Id: equ.f90,v 1.193 2004-02-10 10:24:19 bingert Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -250,7 +250,7 @@ module Equ
       if (l2davgfirst) t2davgfirst=t !(2-D averages are for THIS time)
 !
 !  need to finalize communication early either for test purposes, or
-!  when radiation transfer of global ionization is calculated.
+!  when radiation transfer of global ionization is calculatearsd.
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.lionization.or.lradiation_ray
@@ -469,23 +469,22 @@ module Equ
 
      subroutine calculate_some_vars(f,rho1,bb)
 !
-!   Calculation of rho1
+!   Calculation of some variables used by routines later at time
 !
 !   06-febr-04/bing: coded
 !
-
-       use Sub
        use Magnetic
+       use Density
 
-       real, dimension (mx,my,mz,mvar+maux) :: f       
+       real, dimension (mx,my,mz,mvar+maux) :: f
        real, dimension (nx) :: rho1
        real, dimension (nx,3) :: bb
 
-
+       intent(in)  :: f
        intent(out) :: rho1,bb
        
        if (ldensity) then
-          rho1=exp(-f(l1:l2,m,n,ilnrho))  
+          call calculate_vars_rho(f,rho1)
        else
           rho1=1.               ! Default for nodensity.f90
        endif

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $
+! $Id: density.f90,v 1.149 2004-02-10 10:24:19 bingert Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 1
-! MAUX CONTRIBUTION 0
+! MAUX CONTRIBUTION 01
 !
 !***************************************************************
 
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: density.f90,v 1.149 2004-02-10 10:24:19 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -520,6 +520,22 @@ module Density
       if(ip==0) print*, yy(1,1,1) ! keep compiler quiet
 !
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine calculate_vars_rho(f,rho1)
+!
+!   Calculation of rho1
+!
+!   08-febr-04/bing: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (nx) :: rho1
+
+      intent(in) :: f
+      intent(out) :: rho1
+ 
+      rho1=exp(-f(l1:l2,m,n,ilnrho))  
+      
+    endsubroutine calculate_vars_rho
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)

@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $
+! $Id: nodensity.f90,v 1.21 2004-02-10 10:24:19 bingert Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -52,7 +52,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $")
+           "$Id: nodensity.f90,v 1.21 2004-02-10 10:24:19 bingert Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -81,6 +81,24 @@ module Density
 !
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine calculate_vars_rho(f,rho1)
+!
+!   Calculation of rho1
+!   dummy routine
+!
+!   09-febr-04/bing: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (nx) :: rho1
+
+      intent(in) :: f
+      intent(out) :: rho1
+ 
+      if(ip==0) rho1=1              !(keep compiler quiet) 
+      if(ip==0) print*,f(1,1,1,1)   !(keep compiler quiet)
+      
+    endsubroutine calculate_vars_rho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !
