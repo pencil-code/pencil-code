@@ -1,10 +1,13 @@
-! $Id: nomagnetic.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.21 2002-07-08 20:49:12 dobler Exp $
 
 module Magnetic
 
   use Cparam
 
   implicit none
+
+  character(len=40) :: kinflow=''
+  real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /magnetic_init_pars/ dummy
@@ -41,7 +44,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.20 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.21 2002-07-08 20:49:12 dobler Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************
