@@ -1,8 +1,17 @@
-! $Id: timestep.f90,v 1.18 2003-10-01 10:41:07 theine Exp $
+! $Id: timestep.f90,v 1.19 2004-03-18 15:01:35 theine Exp $
 
 module Timestep
 
+  use Cparam
+
   implicit none
+
+!
+! DOCUMENT ME
+!
+  real, dimension(mx) :: border_prof_x
+  real, dimension(my) :: border_prof_y
+  real, dimension(mz) :: border_prof_z
 
 ! integer :: itorder=3
 
@@ -76,7 +85,8 @@ module Timestep
         do j=1,mvar
         do n=n1,n2
         do m=m1,m2
-          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j)
+          f(l1:l2,m,n,j)=f(l1:l2,m,n,j)+dt_beta(itsub)*df(l1:l2,m,n,j) &
+                        *border_prof_x(l1:l2)*border_prof_y(m)*border_prof_z(n)
         enddo
         enddo
         enddo
@@ -85,6 +95,48 @@ module Timestep
 !
     endsubroutine rk_2n
 !***********************************************************************
+    subroutine border_profiles()
+!
+! DOCUMENT ME
+!
+      use Cdata
+
+      real, dimension(nx) :: xi
+      real, dimension(ny) :: eta
+      real, dimension(nz) :: zeta
+      real :: border_width,lborder,uborder
+
+      if (border_frac(1)>0) then
+        border_width=border_frac(1)*Lxyz(1)/2
+        lborder=xyz0(1)+border_width
+        uborder=xyz1(1)-border_width
+        xi=1-max(x(l1:l2)-uborder,lborder-x(l1:l2),0.0)/border_width
+        border_prof_x(l1:l2)=xi**2*(3-2*xi)
+      else
+        border_prof_x(l1:l2)=1
+      endif
+
+      if (border_frac(1)>0) then
+        border_width=border_frac(2)*Lxyz(2)/2
+        lborder=xyz0(2)+border_width
+        uborder=xyz1(2)-border_width
+        eta=1-max(y(m1:m2)-uborder,lborder-y(m1:m2),0.0)/border_width
+        border_prof_y(m1:m2)=eta**2*(3-2*eta)
+      else
+        border_prof_y(m1:m2)=1
+      endif
+
+      if (border_frac(1)>0) then
+        border_width=border_frac(3)*Lxyz(3)/2
+        lborder=xyz0(3)+border_width
+        uborder=xyz1(3)-border_width
+        zeta=1-max(z(n1:n2)-uborder,lborder-z(n1:n2),0.0)/border_width
+        border_prof_z(n1:n2)=zeta**2*(3-2*zeta)
+      else
+        border_prof_z(n1:n2)=1
+      endif
+
+    endsubroutine border_profiles
+!***********************************************************************
 
 endmodule Timestep
-

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.127 2004-01-05 11:54:52 dobler Exp $
+! $Id: start.f90,v 1.128 2004-03-18 15:01:35 theine Exp $
 !
 !***********************************************************************
       program start
@@ -46,7 +46,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.127 2004-01-05 11:54:52 dobler Exp $")
+             "$Id: start.f90,v 1.128 2004-03-18 15:01:35 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -92,7 +92,8 @@
 !        if (.not. exist) &
 !             call stop_it('Need directory <' // trim(directory_snap) // '>')
 !
-        if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0
+        where (Lxyz == impossible) Lxyz=xyz1-xyz0
+        where (xyz1 == impossible) xyz1=xyz0+Lxyz
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !

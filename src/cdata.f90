@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.212 2004-03-14 17:07:44 mee Exp $
+! $Id: cdata.f90,v 1.213 2004-03-18 15:01:35 theine Exp $
 
 module Cdata
 
@@ -27,6 +27,8 @@ module Cdata
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: ttransient=0.
   real, dimension (2) :: fran1,fran2
+
+  real, dimension(3) :: border_frac=0
 
   !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
@@ -155,7 +157,6 @@ module Cdata
 
   character (len=10), dimension(maux) :: aux_var
   integer :: aux_count=1
-
 
 
 endmodule Cdata

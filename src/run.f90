@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.169 2004-01-30 16:49:01 dobler Exp $
+! $Id: run.f90,v 1.170 2004-03-18 15:01:35 theine Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.169 2004-01-30 16:49:01 dobler Exp $")
+             "$Id: run.f90,v 1.170 2004-03-18 15:01:35 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -164,6 +164,10 @@
 !  save spectrum snapshot
 !
         if (dspec/=impossible) call powersnap(f)
+!
+!  DOCUMENT ME
+!
+        call border_profiles()
 !
 !  do loop in time
 !
