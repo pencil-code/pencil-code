@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.215 2004-07-23 15:16:25 mcmillan Exp $
+! $Id: magnetic.f90,v 1.216 2004-07-30 18:06:50 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -52,14 +52,13 @@ module Magnetic
   logical :: lB_ext_pot=.false.
   logical :: lee_ext=.false.,lbb_ext=.false.,ljj_ext=.false.
   logical :: lforce_free_test=.false.
-  ! dgm: for switching on magnetic field after time tpert_aa
-  real :: tpert_aa=0.,pertampl_aa=0.
-  logical :: lzero_aa=.false.,lpert_aa=.false.
-  character (len=labellen) :: pert_aa='gaussian-noise'
   character (len=40) :: kinflow=''
   real :: nu_ni,nu_ni1,hall_term,alpha_effect
   real :: displacement_gun=0.
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
+  ! dgm: for perturbing magnetic field when reading NON-magnetic snapshot
+  real :: pertamplaa=0.
+  character (len=labellen) :: pertaa='zero'
 
   namelist /magnetic_init_pars/ &
        B_ext, &
@@ -69,7 +68,7 @@ module Magnetic
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r, &
        mu_ext_pot,lB_ext_pot,lforce_free_test, &
-       ampl_B0,lzero_aa
+       ampl_B0
 
   ! run parameters
   real :: eta=0.,height_eta=0.,eta_out=0.
@@ -86,7 +85,7 @@ module Magnetic
        rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
-       lzero_aa,lpert_aa,pert_aa,pertampl_aa,tpert_aa
+       pertaa,pertamplaa
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -145,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.215 2004-07-23 15:16:25 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.216 2004-07-30 18:06:50 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,12 +181,6 @@ module Magnetic
 !
       if (reinitalize_aa) then
         f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
-      endif
-!
-!  make sure initial magnetic field is consistent with lzero_aa=T
-!
-      if (lzero_aa) then
-        initaa='zero'
       endif
 !
     endsubroutine initialize_magnetic
@@ -317,6 +310,26 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
+    subroutine pert_aa(f)
+!
+!   perturb magnetic field when reading old NON-magnetic snapshot
+!   called from run.f90
+!   30-july-2004/dave: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!
+      xx=spread(spread(x,2,my),3,mz)
+      yy=spread(spread(y,1,mx),3,mz)
+      zz=spread(spread(z,1,mx),2,my)
+      initaa=pertaa
+      amplaa=pertamplaa
+      call init_aa(f,xx,yy,zz)
+!
+    endsubroutine pert_aa
+!***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
 !
 !  magnetic field evolution
@@ -359,7 +372,6 @@ module Magnetic
       real, dimension (nx) :: b2b13
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
       real, dimension (nx) :: ufres,rufres,etatotal,pp
-      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j
 !
@@ -375,19 +387,6 @@ module Magnetic
         call identify_bcs('Ay',iay)
         call identify_bcs('Az',iaz)
       endif
-!
-!  dgm: switch on magnetic field after time tpert_aa
-!
-      if (t>tpert_aa .and. lpert_aa) then
-        xx=spread(spread(x,2,my),3,mz)
-        yy=spread(spread(y,1,mx),3,mz)
-        zz=spread(spread(z,1,mx),2,my)
-        initaa=pert_aa
-        amplaa=pertampl_aa
-        call init_aa(f,xx,yy,zz)
-        lpert_aa=.false.
-      endif
-
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
@@ -615,11 +614,6 @@ module Magnetic
 !  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
-!
-!  For 'non-magnetic run' that carries magnetic variables
-!  f(:,:,:,iax:iaz)
-!
-      if (lzero_aa) df(l1:l2,m,n,iax:iaz)=0.
 !
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.

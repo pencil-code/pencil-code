@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.191 2004-07-25 15:33:02 brandenb Exp $
+! $Id: run.f90,v 1.192 2004-07-30 18:06:50 mcmillan Exp $
 !
 !***********************************************************************
       program run
@@ -31,6 +31,7 @@
         use Interstellar
         use Dustvelocity, only: init_uud
         use Dustdensity, only: init_nd
+        use Magnetic, only: pert_aa
 !
         implicit none
 !
@@ -55,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.191 2004-07-25 15:33:02 brandenb Exp $")
+             "$Id: run.f90,v 1.192 2004-07-30 18:06:50 mcmillan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -122,7 +123,9 @@
             do ivar=iaz+1,mvar
               f(:,:,:,ivar)=f(:,:,:,ivar-3)
             enddo
-            f(:,:,:,iax:iaz)=0.
+! dgm
+            f(:,:,:,iax:iaz)=0. 
+            call pert_aa(f)
           endif
 !
 !  read data without passive scalar into new run with passive scalar

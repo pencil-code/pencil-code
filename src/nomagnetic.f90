@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.47 2004-05-31 15:43:02 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.48 2004-07-30 18:06:50 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.47 2004-05-31 15:43:02 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.48 2004-07-30 18:06:50 mcmillan Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -85,6 +85,20 @@ module Magnetic
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_aa
+!***********************************************************************
+    subroutine pert_aa(f)
+!
+!   perturb magnetic field when reading old NON-magnetic snapshot
+!   called from run.f90
+!   30-july-2004/dave: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+!
+      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+    endsubroutine pert_aa
 !***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
 !
