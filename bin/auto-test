@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.10 2002-09-04 04:37:22 brandenb Exp $
+# CVS: $Id: auto-test,v 1.11 2002-09-21 18:14:49 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -74,7 +74,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.10 2002-09-04 04:37:22 brandenb Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.11 2002-09-21 18:14:49 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
@@ -229,8 +229,8 @@ sub test_rundir {
 				# the code
     if (! -d 'tmp') {
 	if (-l 'tmp') {
-	    print "  tmp is file or empty link;\n"
-		. "  removing and generating tmp -> $tmpdir\n";
+	    print "        tmp is file or empty link;\n"
+		. "        removing and generating tmp -> $tmpdir\n";
 	    system("rm", "tmp");
 	}
 	else
