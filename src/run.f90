@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.72 2002-07-23 16:06:09 dobler Exp $
+! $Id: run.f90,v 1.73 2002-07-24 14:54:35 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.72 2002-07-23 16:06:09 dobler Exp $")
+             "$Id: run.f90,v 1.73 2002-07-24 14:54:35 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -116,17 +116,22 @@
 !  do loop in time
 !
         Time_loop: do it=1,nt
+
           lout=mod(it-1,it1).eq.0
           if (lout) then
-            inquire(FILE="STOP", EXIST=stop) !(exit DO loop if the file `STOP' exists)
+            !
+            ! exit DO loop if file `STOP' exists
+            !
+            inquire(FILE="STOP", EXIST=stop)
             if (stop.or.t>tmax) then
               if (lroot.and.stop) write(0,*) "done: found STOP file"
               if (lroot.and.t>tmax) write(0,*) "done: t > tmax"
               exit Time_loop
             endif
-!
-!  Re-read parameters if a file `RELOAD' has appeared
-!
+            !
+            !  re-read parameters if file `RELOAD' exists; then remove
+            !  the file
+            !
             inquire(FILE="RELOAD", EXIST=reload)
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
@@ -137,21 +142,21 @@
               reload = .false.
             endif
           endif
-!
-!  remove wiggles in lnrho in sporadic time intervals
-!  Necessary if the Reynolds number is large.
-!  iwig=500 is a typical value. For iwig=0 no action is taken.
-!  (These two queries must come separately on compaq machines.)
-!
+          !
+          !  remove wiggles in lnrho in sporadic time intervals
+          !  Necessary if the Reynolds number is large.
+          !  iwig=500 is a typical value. For iwig=0 no action is taken.
+          !  (These two queries must come separately on compaq machines.)
+          !
           if (iwig/=0) then
             if (mod(it,iwig).eq.0) then
               call rmwig(f,df,ilnrho)
               !call rmwig(f,df,ilnrho,explog=.true.)
             endif
           endif
-!
-!  time advance
-!
+          !
+          !  time advance
+          !
           call rk_2n(f,df)
           count = count + 1     !  reliable loop count even for premature exit
           if (lforcing) call addforce(f)
@@ -165,20 +170,19 @@
           endif
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
-!
-!  save snapshot every isnap steps in case the run gets interrupted
-!
+          !
+          !  save snapshot every isnap steps in case the run gets interrupted
+          !
           if (isave /= 0) then
             if (mod(it,isave)==0) &
                  call wsnap(trim(directory)//'/var.dat',f,.false.)
           endif
           headt=.false.
-!          if (it>=nt) exit Time_loop
-!          if (dt < dtmin) then
           if ((it < nt) .and. (dt < dtmin)) then
             write(0,*) 'Time step has become too short: dt = ', dt
             exit Time_loop
           endif
+
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
 !
