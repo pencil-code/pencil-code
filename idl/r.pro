@@ -9,7 +9,7 @@
 ;
 ;  read data
 ;
-if (n_elements(xx) le 0) then begin
+if (n_elements(started) le 0) then begin
   message, "You need to run start.pro first: use `.rnew start'"
 endif
 ;
@@ -17,7 +17,7 @@ default, datadir, 'tmp'
 default, file, 'var.dat'
 ;
 uu  = fltarr(nx,ny,nz,3)*one
-lam = fltarr(nx,ny,nz)*one
+lnrho = fltarr(nx,ny,nz)*one
 ent = fltarr(nx,ny,nz)*one
 aa  = fltarr(nx,ny,nz,3)*one
 ;
@@ -49,9 +49,9 @@ endelse
 close,1
 openr,1, datadir+'/'+file, /F77
 if nvar eq 8 then begin
-  readu,1, uu, lam, ent, aa
+  readu,1, uu, lnrho, ent, aa
 end else if nvar eq 7 then begin
-  readu,1, uu, lam, aa
+  readu,1, uu, lnrho, aa
 end
 readu,1, t, x, y, z
 close,1
@@ -67,8 +67,8 @@ print, ' var        minval         maxval            mean           rms'
 for j=0,2 do $
     print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
     minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-print, FORMAT=fmt, 'lam  =', $
-    minmax(lam), mean(lam,/DOUBLE), rms(lam,/DOUBLE)
+print, FORMAT=fmt, 'lnrho  =', $
+    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
 print, FORMAT=fmt, 'ent  =', $
     minmax(ent), mean(ent,/DOUBLE), rms(ent,/DOUBLE)
 for j=0,2 do $

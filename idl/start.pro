@@ -80,7 +80,6 @@ endelse
 ;
 ;  Read grid
 ;
-xx=fltarr(nx,ny,nz)*one & yy=xx & zz=xx
 t=zero
 x=fltarr(nx)*one & y=fltarr(ny)*one & z=fltarr(nz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
@@ -96,11 +95,6 @@ endif else begin
   print, 'Warning: cannot find file ', gfile
 endelse
 ;
-print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
-xx = spread(x, [1,2], [ny,nz])
-yy = spread(y, [0,2], [nx,nz])
-zz = spread(z, [0,1], [nx,ny])
-;
 ;  set boundary values for physical (sub)domain
 ;
 l1=3 & l2=nx-4
@@ -109,6 +103,5 @@ n1=3 & n2=nz-4
 ;
 print, '..done'
 ;
+started=1
 END
-
-; End of file

@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.21 $", &
-             "$Date: 2002-05-01 18:16:12 $")
+             "$Revision: 1.22 $", &
+             "$Date: 2002-05-02 16:11:19 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -85,11 +85,11 @@
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  iper{x,y,z} indicate periodicity of given direction
 !
-        if (iperx /= 0) then; dx = Lx/nx; else; dx = Lx/(nx-1); endif
-        if (ipery /= 0) then; dy = Ly/ny; else; dy = Ly/(ny-1); endif
-        if (iperz /= 0) then; dz = Lz/nz; else; dz = Lz/(nz-1); endif
+        if (iperx /= 0) then; dx = Lx/nxgrid; else; dx = Lx/(nxgrid-1); endif
+        if (ipery /= 0) then; dy = Ly/nygrid; else; dy = Ly/(nygrid-1); endif
+        if (iperz /= 0) then; dz = Lz/nzgrid; else; dz = Lz/(nzgrid-1); endif
 
-        do i=1,mx; x(i)=x0+(i-nghost-1       )*dx; enddo
+        do i=1,mx; x(i)=x0+(i-nghost-1+ipx*nx)*dx; enddo
         do i=1,my; y(i)=y0+(i-nghost-1+ipy*ny)*dy; enddo
         do i=1,mz; z(i)=z0+(i-nghost-1+ipz*nz)*dz; enddo
 !
