@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.18 2003-12-29 17:28:41 ajohan Exp $
+;  $Id: varcontent.pro,v 1.19 2004-01-04 14:12:54 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -122,7 +122,7 @@ for idust=0,n_elements(ind)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[ind(idust)].variable = 'Dust log number density ' + sidust + $
+  varcontent[ind(idust)].variable = 'Dust number density ' + sidust + $
       ' (nd'+sidust+')'
   varcontent[ind(idust)].idlvar   = 'nd'+sidust
   varcontent[ind(idust)].idlinit    = INIT_SCALAR
@@ -131,6 +131,18 @@ for idust=0,n_elements(ind)-1 do begin
 
 endfor
 
+for idust=0,n_elements(irhod)-1 do begin
+  
+  sidust = strtrim(string(idust),2)
+
+  varcontent[irhod(idust)].variable = 'Dust density ' + sidust + $
+      ' (nd'+sidust+')'
+  varcontent[irhod(idust)].idlvar   = 'rhod'+sidust
+  varcontent[irhod(idust)].idlinit    = INIT_SCALAR
+  varcontent[irhod(idust)].idlvarloc= 'rhod'+sidust+'_loc'
+  varcontent[irhod(idust)].idlinitloc = INIT_SCALAR_LOC
+
+endfor
 varcontent[igg].variable = 'Gravitational acceleration (gg)'
 varcontent[igg].idlvar   = 'gg'
 varcontent[igg].idlinit    = INIT_3VECTOR
