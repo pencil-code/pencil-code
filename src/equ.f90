@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.203 2004-04-26 16:05:16 dobler Exp $
+! $Id: equ.f90,v 1.204 2004-04-28 14:43:54 ajohan Exp $
 
 module Equ
 
@@ -238,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.203 2004-04-26 16:05:16 dobler Exp $")
+           "$Id: equ.f90,v 1.204 2004-04-28 14:43:54 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -255,6 +255,14 @@ module Equ
 !  This could in principle be avoided (but it not worth it now)
 !
       early_finalize=test_nonblocking.or.lionization.or.lradiation_ray
+!
+!  Check for dust grain mass interval overflows
+!  (should consider having possibility for all modules to fiddle with the
+!   f array before boundary conditions are sent)
+!
+      if (ldustdensity .and. lmdvar .and. itsub == 1) then
+        do m=m1,m2; do n=n1,n2; call redist_mdbins(f); enddo; enddo
+      endif
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:

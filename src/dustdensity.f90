@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.71 2004-04-23 13:16:22 ajohan Exp $
+! $Id: dustdensity.f90,v 1.72 2004-04-28 14:43:54 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -100,7 +100,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.71 2004-04-23 13:16:22 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.72 2004-04-28 14:43:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -325,6 +325,7 @@ module Dustdensity
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd,gmi
       real, dimension (nx,ndustspec) :: nd,divud
       real, dimension (nx) :: udgnd,udgmd,udgmi,gnd2,del2nd,rho,rho1,TT1,cs2
+      real, dimension (nx) :: mfluxcond,dmifac
       real, dimension (ndustspec) :: mice
       real :: diffnd
       integer :: k
@@ -341,20 +342,12 @@ module Dustdensity
 !
 !  Abbreviations
 !
-      do k=1,ndustspec
-        nd(:,k) = f(l1:l2,m,n,ind(k))
-      enddo
+      nd  = f(l1:l2,m,n,ind)
       rho = exp(f(l1:l2,m,n,ilnrho))
-!
-!  Check for grain mass interval overflows
-!
-      if (lmdvar .and. itsub == 1) then
-        call redist_mdbins(f,rho1,nd)
-      endif
 !
 !  Dust growth due to condensation on grains
 !
-      if (ldustgrowth) call dust_condensation(f,df,rho,rho1,TT1,nd)
+      if (ldustgrowth) call dust_condensation(f,df,rho,rho1,TT1,nd,mfluxcond)
 !
 !  Calculate kernel of coagulation equation
 !
@@ -393,11 +386,21 @@ module Dustdensity
               f(l1:l2,m,n,ind(k))*divud(:,k)
           if (lmice) then
             if (z(n) > 0.) then 
-              df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - &
-                  uud(:,3,k)*(f(l1:l2,m,n+1,imi(k))-f(l1:l2,m,n,imi(k)))/dz
+              dmifac = uud(:,3,k)*(f(l1:l2,m,n+1,imi(k))-f(l1:l2,m,n,imi(k)))/dz
+              if (mfluxcond(1) > 0.) then
+                df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - dmifac
+              else
+                df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
+                    rho1(:)*dmifac(:)*nd(:,k)*unit_md
+              endif
             else
-              df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - &
-                  uud(:,3,k)*(f(l1:l2,m,n,imi(k))-f(l1:l2,m,n-1,imi(k)))/dz
+              dmifac = uud(:,3,k)*(f(l1:l2,m,n,imi(k))-f(l1:l2,m,n-1,imi(k)))/dz
+              if (mfluxcond(1) > 0.) then
+                df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - dmifac
+              else
+                df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
+                    rho1(:)*dmifac(:)*nd(:,k)*unit_md
+              endif
             endif
           endif
         endif
@@ -467,7 +470,7 @@ module Dustdensity
 !
     endsubroutine dndmd_dt
 !***********************************************************************
-    subroutine redist_mdbins(f,rho1,nd)
+    subroutine redist_mdbins(f)
 !
 !  Redistribute dust number density and dust density in mass bins
 !
@@ -475,9 +478,10 @@ module Dustdensity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ndustspec) :: nd
-      real, dimension (nx) :: rho1
       real, dimension (ndustspec) :: ndnew,mdnew,minew
       integer :: j,k,i_targ,l
+
+      nd(:,:) = f(l1:l2,m,n,ind)
 !
 !  Loop over pencil
 !
@@ -517,7 +521,8 @@ module Dustdensity
                 ndnew(i_targ)*minew(i_targ))/(nd(l,k) + ndnew(i_targ))
             ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
           elseif (i_targ == 0) then        !  Underflow below lower boundary
-            f(3+l,m,n,ilncc) = f(3+l,m,n,ilncc) + nd(l,k)*md(k)*unit_md*rho1(l)
+            f(3+l,m,n,ilncc) = f(3+l,m,n,ilncc) + &
+                nd(l,k)*md(k)*unit_md*exp(-f(l,m,n,ilnrho))
           endif
         enddo
         f(3+l,m,n,ind(:)) = ndnew(:)
@@ -527,7 +532,7 @@ module Dustdensity
 !
     endsubroutine redist_mdbins
 !***********************************************************************
-    subroutine dust_condensation (f,df,rho,rho1,TT1,nd)
+    subroutine dust_condensation (f,df,rho,rho1,TT1,nd,mfluxcond)
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
@@ -554,21 +559,25 @@ module Dustdensity
         if (lmdvar) md(:) = f(3+l,m,n,imd(:))
         if (lmice)  mi(:) = f(3+l,m,n,imi(:))
         do k=1,ndustspec
-          dmdfac = surfd(k)*mfluxcond(l)
+          dmdfac = surfd(k)*mfluxcond(l)/unit_md
           if (lmice) then
-            if (dmdfac < 0. .and. mi(k)*nd(l,k) <= 1.0) then
-              ! Do nothing when there is no ice in the dust grains
+            if (dmdfac < 0.) then
+              f(3+l,m,n,imd(k)) = f(3+l,m,n,imd(k)) - f(3+l,m,n,imi(k))
+              f(3+l,m,n,imi(k)) = 0.
+              f(3+l,m,n,ilncc)  = f(3+l,m,n,ilncc) - &
+                  rho1(l)*f(3+l,m,n,imi(k))*nd(l,k)*unit_md
             elseif (nd(l,k) > 0.) then
-              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac/unit_md
-              df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc)  - rho1(l)*dmdfac*nd(l,k)
-              df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac/unit_md
+              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
+              df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
+              df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc) - &
+                   rho1(l)*dmdfac*nd(l,k)*unit_md
             endif
           else
             if (dmdfac < 0. .and. f(3+l,m,n,ilncc) >= 0.99*eps_ctog &
                 .and. lkeepinitnd) then
               ! Do nothing when dust mass is set to decrease below initial
             elseif (nd(l,k) >= 0.) then
-              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac/unit_md
+              df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
               df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc)  - rho1(l)*dmdfac*nd(l,k)
             endif
           endif
