@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.28 2003-06-16 09:19:22 nilshau Exp $
+! $Id: feautrier.f90,v 1.29 2003-06-19 11:31:05 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.28 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: feautrier.f90,v 1.29 2003-06-19 11:31:05 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -214,17 +214,17 @@ module Radiation
       do mrad=m1,m2
       do lrad=l1,l2
          kaprho_=kaprho(lrad,mrad,n1:n2)
-         !!tau=spline_integral_double(z,kaprho_)
-         tau=z(n1:n2)
+         tau=spline_integral_double(z,kaprho_)
+         !tau=z(n1:n2)
          Srad_=Srad(lrad,mrad,n1:n2)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
 !
-         !b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
-         !c(1)=-2./(tau(2)-tau(1))**2
+         b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
+         c(1)=-2./(tau(2)-tau(1))**2
 !
-         b(1)=1.+3./(tau(2)-tau(1))
-         c(1)=-4./(tau(2)-tau(1))
+         !b(1)=1.+3./(tau(2)-tau(1))
+         !c(1)=-4./(tau(2)-tau(1))
 !
 !  lower boundary: P=S
 !
@@ -275,8 +275,7 @@ module Radiation
       if(lroot.and.headt) print*,'radtransfer'
 !
       call radcalc(f)
-      !f(:,:,:,iQrad)=-Srad+feautrier_double(f)
-      f(:,:,:,iQrad)=+Srad+feautrier_double(f)
+      f(:,:,:,iQrad)=-Srad+feautrier_double(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
