@@ -68,7 +68,9 @@ endif
 rerun:
 
 # Clean up control and data files
-rm -f STOP RELOAD RERUN NEWDIR fort.20
+# NB. Don't remove NEWDIR it may have been put there on purpose so as
+#     to catch a crash and run something else instead.
+rm -f STOP RELOAD RERUN fort.20
 
 # On machines with local scratch directory, initialize automatic
 # background copying of snapshots back to the data directory.
