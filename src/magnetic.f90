@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.184 2004-04-10 04:24:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.185 2004-04-20 13:31:35 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -118,7 +118,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.184 2004-04-10 04:24:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.185 2004-04-20 13:31:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,7 +164,7 @@ module Magnetic
       use Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz)      :: xx,yy,zz,tmp,prof
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2,fact
       real :: beq2
@@ -175,6 +175,9 @@ module Magnetic
       case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
+      case('gaussian-noise-rprof')
+        tmp=sqrt(xx**2+yy**2+zz**2)
+        call gaunoise_rprof(amplaa,tmp,prof,f,iax,iaz)
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)

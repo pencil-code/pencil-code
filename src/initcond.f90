@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.105 2004-03-27 13:43:14 theine Exp $ 
+! $Id: initcond.f90,v 1.106 2004-04-20 13:31:35 dobler Exp $ 
 
 module Initcond 
  
@@ -14,9 +14,16 @@ module Initcond
 
   implicit none
 
-  interface gaunoise            ! Overload the `set_random' function
+  interface gaunoise            ! Overload the `gaunoise' function
     module procedure gaunoise_vect
     module procedure gaunoise_scal
+    module procedure gaunoise_prof_vect
+    module procedure gaunoise_prof_scal
+  endinterface
+
+  interface gaunoise_rprof      ! Overload the `gaunoise_rprof' function
+    module procedure gaunoise_rprof_vect
+    module procedure gaunoise_rprof_scal
   endinterface
 
   contains
@@ -1484,7 +1491,106 @@ module Initcond
         if (lroot) print*,'gaunoise_scal: variable i=',i
       endif
 !
+!  Wouldn't the following be equivalent (but clearer)?
+!
+!  call gaunoise_vect(ampl,f,i,i)
+!
+!
     endsubroutine gaunoise_scal
+!***********************************************************************
+    subroutine gaunoise_prof_vect(ampl,f,i1,i2)
+!
+!  Add Gaussian (= normally distributed) white noise for variables i1:i2
+!  with amplitude profile AMPL.
+!
+! 18-apr-04/wolf: adapted from gaunoise_vect
+!
+      integer :: i,i1,i2
+      real, dimension (mx,my,mz) :: r,p,tmp,ampl
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_VECT: i1,i2=',i1,i2
+      do i=i1,i2
+        if (modulo(i-i1,2)==0) then
+          call random_number_wrapper(r)
+          call random_number_wrapper(p)
+          tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+        else
+          tmp=sqrt(-2*alog(r))*cos(2*pi*p)
+        endif
+        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
+        if (lroot) print*,'gaunoise_vect: variable i=',i
+      enddo
+!
+    endsubroutine gaunoise_prof_vect
+!***********************************************************************
+    subroutine gaunoise_prof_scal(ampl,f,i)
+!
+!  Add Gaussian (= normally distributed) white noise for variable i with
+!  amplitude profile AMPL.
+!
+! 18-apr-04/wolf: coded
+!
+      real, dimension (mx,my,mz) :: ampl
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i
+!
+      if ((ip<=8).and.lroot) print*,'GAUNOISE_PROF_SCAL: i=',i
+      call gaunoise_prof_vect(ampl,f,i,i)
+!
+    endsubroutine gaunoise_prof_scal
+!***********************************************************************
+    subroutine gaunoise_rprof_vect(ampl,rr,prof,f,i1,i2)
+!
+!  Add Gaussian noise within r_int < r < r_ext.
+!  Use PROF as buffer variable so we don't need to allocate a large
+!  temporary.
+!
+!  18-apr-04/wolf: coded
+!
+      use Sub, only: cubic_step
+!
+      real, dimension (mx,my,mz) :: rr,prof
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl,dr
+      integer :: i1,i2,i
+!
+      intent(in) :: ampl,rr,i1,i2
+      intent(out) :: prof,f
+!
+!  set up profile
+!
+      dr = r_ext-max(0.,r_int)
+      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+      if (r_int>0.) then
+        prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
+      endif
+      prof = ampl*prof
+!
+      call gaunoise(prof,f,i1,i2)
+!
+    endsubroutine gaunoise_rprof_vect
+!***********************************************************************
+    subroutine gaunoise_rprof_scal(ampl,rr,prof,f,i)
+!
+!  Add Gaussian noise within r_int < r < r_ext.
+!  Use PROF as buffer variable so we don't need to allocate a large
+!  temporary.
+!
+!  18-apr-04/wolf: coded
+!
+      real, dimension (mx,my,mz) :: rr,prof
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl
+      integer :: i1,i2,i
+!
+      intent(in) :: ampl,rr,i
+      intent(out) :: prof,f
+!
+      call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
+!
+    endsubroutine gaunoise_rprof_scal
 !***********************************************************************
     subroutine trilinear(ampl,f,ivar,xx,yy,zz)
 !

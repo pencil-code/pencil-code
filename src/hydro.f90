@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.160 2004-04-13 10:56:24 dobler Exp $
+! $Id: hydro.f90,v 1.161 2004-04-20 13:31:35 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -110,7 +110,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.160 2004-04-13 10:56:24 dobler Exp $")
+           "$Id: hydro.f90,v 1.161 2004-04-20 13:31:35 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -195,6 +195,9 @@ module Hydro
       case('gaussian-noise-y'); call gaunoise(ampluu,f,iuy)
       case('gaussian-noise-z'); call gaunoise(ampluu,f,iuz)
       case('gaussian-noise-xy'); call gaunoise(ampluu,f,iux,iuy)
+      case('gaussian-noise-rprof')
+        tmp=sqrt(xx**2+yy**2+zz**2)
+        call gaunoise_rprof(ampluu,tmp,prof,f,iux,iuz)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
                      call jump(f,iuy,uy_left,uy_right,widthuu,'x')
       case('Beltrami-x'); call beltrami(ampluu,f,iuu,kx=kx_uu)
@@ -555,8 +558,8 @@ module Hydro
         if (i_dtu/=0)    call max_mn_name(sqrt(u2)/dxmin/cdt,i_dtu,l_dt=.true.)
         if (i_urms/=0)   call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0)   call max_mn_name(u2,i_umax,lsqrt=.true.)
-        if (i_uzrms/=0)  call sum_mn_name(uu(:,3),i_uzrms,lsqrt=.true.)
-        if (i_uzmax/=0)  call max_mn_name(uu(:,3),i_uzmax,lsqrt=.true.)
+        if (i_uzrms/=0)  call sum_mn_name(uu(:,3)**2,i_uzrms,lsqrt=.true.)
+        if (i_uzmax/=0)  call max_mn_name(uu(:,3)**2,i_uzmax,lsqrt=.true.)
         if (i_rumax/=0)  call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)
         if (i_u2m/=0)    call sum_mn_name(u2,i_u2m)
         if (i_um2/=0)    call max_mn_name(u2,i_um2)

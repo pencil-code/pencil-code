@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.174 2004-04-13 12:34:30 dobler Exp $ 
+! $Id: sub.f90,v 1.175 2004-04-20 13:31:35 dobler Exp $ 
 
 module Sub 
 
@@ -100,6 +100,11 @@ module Sub
     module procedure max_for_dt_nx_nx
     module procedure max_for_dt_1_nx
     module procedure max_for_dt_1_1_1_nx
+  endinterface
+
+  interface cubic_step
+    module procedure cubic_step_mn
+    module procedure cubic_step_global
   endinterface
 
 !ajwm Commented pending a C replacement
@@ -2489,6 +2494,53 @@ module Sub
       der_step = 0.5/(width*cosh(arg)**2)
 !
       endfunction der_step
+!***********************************************************************
+      function cubic_step_mn(x,x0,width,shift)
+!
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Optional argument SHIFT shifts center:
+!  for shift=1. the interval is [x0    ,x0+2*w],
+!  for shift=-1. it is          [x0-2*w,x0    ].
+!
+!  18-apr-04/wolf: coded
+!
+        real, dimension(:) :: x
+        real, dimension(size(x,1)) :: cubic_step_mn,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_step_mn = 0.5 + 0.25*xi*(3.-xi**2)
+!
+      endfunction cubic_step_mn
+!***********************************************************************
+      function cubic_step_global(x,x0,width,shift)
+!
+!  Smooth unit step function with cubic (smooth) transition over [x0-w,x0+w]. 
+!  Optional argument SHIFT shifts center:
+!  for shift=1. the interval is [x0    ,x0+2*w],
+!  for shift=-1. it is          [x0-2*w,x0    ].
+!
+!  18-apr-04/wolf: coded
+!
+        use Cdata, only: mx,my,mz
+!
+        real, dimension(mx,my,mz) :: x,cubic_step_global,xi
+        real :: x0,width
+        real, optional :: shift
+        real :: relshift=0.
+!
+        if (present(shift)) relshift=shift
+        xi = (x-x0-shift*width)/width
+        xi = max(xi,-1.)
+        xi = min(xi, 1.)
+        cubic_step_global = 0.5 + 0.25*xi*(3.-xi**2)
+!
+      endfunction cubic_step_global
 !***********************************************************************
       function notanumber_0(f)
 !
