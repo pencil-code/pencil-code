@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.77 2002-11-02 08:49:58 brandenb Exp $ 
+! $Id: param_io.f90,v 1.78 2002-11-02 16:37:36 dobler Exp $ 
 
 module Param_IO
 
@@ -72,6 +72,8 @@ module Param_IO
     subroutine get_snapdir(dir)
 !
 !  Read directory_snap from data/directory_snap, if that exists
+!  wd: I think we should unify these into a subroutine
+!      `overwrite_string_from_file(dir,file,label[optional])'
 !
 !   2-nov-02/axel: adapted from get_datadir
 !
