@@ -12,6 +12,8 @@
 
 ;;; Unfinished..
 
+@symbols
+
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; relative to absolute min and max of
                                 ; colour-represented data

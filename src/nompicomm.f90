@@ -44,7 +44,8 @@ module Mpicomm
       lmpicomm = .false.
       iproc=root
 !
-!  produce index-array the the sequence of points to be worked through first
+!  produce index-array for the sequence of points to be worked through.
+!  Trivial here, since no communication.
 !
       imn=1
       do n=n1,n2
@@ -70,7 +71,10 @@ module Mpicomm
 !  but in this dummy routine this is done in finalise_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j
+      real, dimension (mx,my) :: tmp_xy
+      real, dimension (7) :: lnrho
+      real :: dlnrho
+      integer :: i,j,k
 !
 !  Boundary conditions in x
 !
@@ -168,18 +172,14 @@ module Mpicomm
         case ('p')              ! periodic
           f(:,:, 1:n1-1,j) = f(:,:,n2i:n2,j)
         case ('s')              ! symmetry
-          do i=1,nghost
-            f(:,:,n1-i,j) = f(:,:,n1+i,j)
-          enddo
+          do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
         case ('a')              ! antisymmetry
           f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost
-            f(:,:,n1-i,j) = -f(:,:,n1+i,j)
-          enddo
+          do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
         case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost
-            f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j)
-          enddo
+          do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
+        case ('c1')             ! complex (processed in its own routine)
+          ! handled below
         case default
           if (lroot) &
                print*, "No such boundary condition bcz1 = ", &
@@ -193,18 +193,15 @@ module Mpicomm
         case ('p')              ! periodic
           f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
         case ('s')              ! symmetry
-          do i=1,nghost
-            f(:,:,n2+i,j) = f(:,:,n2-i,j)
-          enddo
+          do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
         case ('a')              ! antisymmetry
           f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep.of initial cond.)
-          do i=1,nghost
-            f(:,:,n2+i,j) = -f(:,:,n2-i,j)
-          enddo
+          do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
         case ('a2')             ! antisymmetry relative to boundary value
-          do i=1,nghost
-            f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j)
-          enddo
+          do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
+        case ('c1')             ! complex (processed in its own routine)
+        case ('c2')             ! complex (processed in its own routine)
+          ! handled below
         case default
           if (lroot) &
                print*, "No such boundary condition bcz2 = ", &
@@ -212,6 +209,52 @@ module Mpicomm
           STOP
         endselect
       enddo
+!
+!  Do the `c1' boundary condition (constant heat flux) for entropy.
+!
+      if (bcz1(ient) == "c1") then
+        if (bcz1(ilnrho) /= "a2") &
+             call stop_it("Inconsistent boundary conditions 1.")
+        tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                 * exp(-gamma*f(:,:,n1,ient) - gamma1*f(:,:,n1,ilnrho))
+        tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
+        do i=1,nghost
+          f(:,:,n1-i,ient) = &
+               (2*i*dx*tmp_xy &
+                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
+               )/gamma &
+               + f(:,:,n1+i,ient)
+        enddo
+      endif
+!
+      if (bcz2(ient) == "c1") then
+        if (bcz2(ilnrho) /= "a2") &
+             call stop_it("Inconsistent boundary conditions 2.")
+        tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                 * exp(-gamma*f(:,:,n2,ient) - gamma1*f(:,:,n2,ilnrho))
+        tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
+        do i=1,nghost
+          f(:,:,n2+i,ient) = &
+               (-2*i*dx*tmp_xy &
+                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
+               )/gamma &
+               + f(:,:,n2-i,ient)
+        enddo
+      endif
+!
+!  Do the `c2' boundary condition (fixed temperature/sound speed) for
+!  entropy and density.
+!  NB: Sound speed is set to cs0, so this is mostly useful for top boundary.  
+!
+      if (bcz2(ient) == "c2") then
+        if (bcz1(ilnrho) /= "a2") &
+             call stop_it("Inconsistent boundary conditions 4.")
+        tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+        f(:,:,n2,ient) = tmp_xy
+        do i=1,nghost
+          f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+        enddo
+      endif
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************

@@ -119,8 +119,9 @@ module Mpicomm
              yuneigh, zuneigh
       endif
 !
-!  produce index-array the the sequence of points to be worked through first
-!  inner box
+!  produce index-array for the sequence of points to be worked through:
+!  first inner box (while communication of ghost values takes place),
+!  then boundary zones.
 !
       imn=1
       do n=n1i+1,n2i-1

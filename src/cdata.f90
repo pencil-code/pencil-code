@@ -20,7 +20,7 @@ module Cdata
   real :: UUmax,viscmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,ztop
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
-  real :: urand,cheat,wheat,cool,wcool
+  real :: urand,cheat,wheat,cool,wcool,Fheat
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
 
   integer, dimension (2) :: seed

@@ -26,6 +26,7 @@
 !        real :: time1,time2     ! cpu_time can measure longer times than
                                 ! system clock, but takes 15 seconds to
                                 ! calibrate at startup with Intel F95
+        logical :: stop
 !     
 !  initialize MPI
 !
@@ -36,8 +37,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.15 $", &
-             "$Date: 2002-02-15 16:16:40 $")
+             "$Revision: 1.16 $", &
+             "$Date: 2002-02-28 20:31:06 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -118,7 +119,13 @@
         Time_loop: do it=1,nt
           if (ip.le.10) print*,'it=',it
           lout=mod(it-1,it1).eq.0
-          if (lout) call cread
+          if (lout) then
+            call cread          ! Re-read configuration
+            inquire(FILE="STOP", EXIST=stop)! Exit DO loop if the file
+                                            ! `STOP' exists
+            if (stop) exit Time_loop
+          endif
+
           if (iforce==1) call forcing1
           if (iforce==2) call forcing2
 !

@@ -9,33 +9,43 @@
 ;;;  Description:
 ;;;   Time evolution (from n.dat).
 
-default, up_to_date, 0
 default, nfile, datatopdir + '/n.dat'
 
-if (not up_to_date) then begin
+default, oldfile, ''
+default, oldmtime, 0
+
+close,1
+openr,1,nfile
+fs = fstat(1)
+close,1
+mtime = fs.mtime
+
+;; Re-read file only if it has changed
+if ((nfile ne oldfile) or (mtime gt oldmtime)) then begin
+  print,'Reading data'
   data = input_table(nfile)
+  oldmtime = mtime
+  oldfile = nfile
 endif
 
-up_to_date = 1
-
-tt = data[1,*]
+tt = reform(data[1,*])
 ;
-urms = data[2,*]
-umax = data[3,*]
+urms = reform(data[2,*])
+umax = reform(data[3,*])
 ;
-divurms = data[11,*]
-divumax = data[12,*]
+divurms = reform(data[11,*])
+divumax = reform(data[12,*])
 ;
-rmean = data[8,*]
-rrms  = data[9,*]
-rmax  = data[10,*]
+rmean = reform(data[8,*])
+rrms  = reform(data[9,*])
+rmax  = reform(data[10,*])
 
 save_state
 
 !p.multi=[0,2,2]
 
 ;; Velocity
-yr = minmax([umax,urms])
+yr = minmax([0,umax,urms])
 plot, tt, urms, $
     YRANGE=yr, YSTYLE=3, $
     TITLE='!6Velocity!X', $
@@ -55,7 +65,7 @@ plot, tt, divurms, $
 oplot, tt, divumax, LINE=2
 
 ;; ln rho
-yr = minmax([rmean,rmax,rrms])
+yr = minmax([0,rmean,rmax,rrms])
 plot, tt, rrms, $
     YRANGE=yr, YSTYLE=3, $
     TITLE='!6log-density!X', $

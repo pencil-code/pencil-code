@@ -60,8 +60,8 @@ bx_ext=(by_ext=(bz_ext=zero))
 pfile=datatopdir+'/'+'param.dat'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Reading grid.dat..'
-  openr,1, datatopdir+'/'+'param.dat', /F77
+  print, 'Reading param.dat..'
+  openr,1, pfile, /F77
   readu,1, x0,y0,z0,Lx,Ly,Lz
   readu,1, cs0,gamma,gamma1
   readu,1, gravz,rho0,grads0

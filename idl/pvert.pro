@@ -9,15 +9,23 @@
 ;;;  Description:
 ;;;   Plot vertical profiles of uz, lnrho and entropy.
 
+default, pvert_layout, [0,2,2]
+default, single, 0              ; set to one for plotting one single profile
+
 nign = 3                        ; Number of close-to-bdry points to ignore
 
 save_state
 
-!p.multi = [0,3,1]
-!p.charsize = 1.6
+!p.multi = pvert_layout
+
+if (!d.name eq 'X') then begin
+  !p.charsize = 1. + (max(!p.multi)-1)*0.3
+endif
+
 !y.title = '!8z!X'
 
-for ivar = 0,2 do begin
+for ivar = 0,3 do begin
+
   case ivar of
     0: begin
       var = lam
@@ -31,18 +39,39 @@ for ivar = 0,2 do begin
       var = ent
       title = 'Entropy'
     end
+    3: begin
+      var = gamma/gamma1*exp(gamma*ent+gamma1*lam)
+      title = 'Temperature'
+    end
   endcase
+
+  xr = minmax(var)
+  if ((ivar eq 3) and (n_elements(Tinit) gt 0)) then xr = minmax([xr,Tinit])
   plot, z, z, /NODATA, $
-      XRANGE=minmax(var), XSTYLE=3, $
+      XRANGE=xr, XSTYLE=3, $
       YRANGE=minmax(z), YSTYLE=3,  $
       TITLE=title
-  for ix=nign,nx-nign-1 do begin
-    for iy=nign,ny-nign-1 do begin
-      oplot, var[ix,iy,*], z
+  if (not single) then begin
+    for ix=nign,nx-nign-1 do begin
+      for iy=nign,ny-nign-1 do begin
+        oplot, var[ix,iy,*], z
+      endfor
     endfor
-    ophline, [z[3], z[nz-4]]
-    if (ivar eq 1) then opvline
-  endfor
+  endif else begin              ; short version for finit-sized PostScript
+    oplot, var[nx/2,ny/2,*], z
+  endelse
+  ophline, [z0,z1,z2,ztop]
+  if (ivar eq 1) then opvline
+
+;; overplot initial temperature profile
+  if (ivar eq 3) then begin
+    if (n_elements(Tinit) le 0) then begin
+      message, 'No Tinit -- you should run thermo.pro', /INFO
+    endif else begin
+      oplot, Tinit, z, LINE=2, COLOR=130, THICK=2
+    endelse
+  endif
+
 endfor
 
 restore_state

@@ -814,6 +814,24 @@ module Sub
 !
     endsubroutine rparam
 !***********************************************************************
+    subroutine wparam2 ()
+!
+!  Write runtime parameters for IDL
+!  21-jan-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+!
+      if (lroot) then
+        open(1,FILE='tmp/param2.dat',FORM='unformatted')
+        write(1) cs0,nu
+        write(1) hcond0,hcond1,hcond2,whcond
+        write(1) cheat,wheat,cool,wcool
+        write(1) Fheat
+      endif
+!
+    endsubroutine wparam2
+!***********************************************************************
     subroutine out1 (file,tout,nout,dtout,t)
 !
       use Mpicomm

@@ -11,6 +11,7 @@ module Equ
 !  14-sep-01/axel: inserted from run.f90
 !
       use Cdata
+      use Sub, only: wparam2
 !
       logical, optional :: print
 !
@@ -25,6 +26,7 @@ module Equ
       read(1,*) cdiffrho
       read(1,*) gravz
       read(1,*) cheat,wheat,cool,wcool
+      read(1,*) Fheat
       read(1,*) iforce,force,relhel
       read(1,*) bcx
       read(1,*) bcy
@@ -33,7 +35,13 @@ module Equ
       close(1)
       cs20=cs0**2 !(goes into cdata module)
       ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
-
+!
+!  Write data to file for IDL
+!
+      call wparam2()
+!
+!  Give online feedback if called with the PRINT optional argument
+!
       if (present(print) .and. print) then
         call cprint()
       endif
@@ -63,6 +71,7 @@ module Equ
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
         print*, 'cheat,wheat,cool,wcool=', cheat,wheat,cool,wcool
+        print*, 'Fheat=', Fheat
         print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'bcx=', bcx
         print*, 'bcy=', bcy
@@ -243,8 +252,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-02-15 16:16:40 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-02-28 20:31:06 $")
 !
 !  initiate communication
 !

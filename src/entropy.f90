@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.27 $", &
-           "$Date: 2002-02-25 17:55:16 $")
+           "$Revision: 1.28 $", &
+           "$Date: 2002-02-28 20:31:06 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,10 +231,7 @@ use IO
         ! cooling profile; maximum = 1
         ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*z(n2)
         prof = spread(exp(-0.5*((z(n2)-z(n))/wcool)**2), 1, l2-l1+1)
-if (headt) then
-  call output_stenc(trim(directory)//'/cool.dat',prof,1)
-endif
-        heat = heat - cool*prof*(f(l1:l2,m,n,ient)-ssref)
+        heat = heat - cool*prof*(cs2-cs20)/cs20
       endif
 !
 !  Spherical case:
