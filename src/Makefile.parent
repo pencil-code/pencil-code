@@ -4,4 +4,5 @@ clean:
 	cd src; make clean
 cleann:
 	cd src; make cleann
-
+qeoclean:
+	rm -f start.csh.o[0-9]* start.csh.e[0-9]* run.csh.o[0-9]* run.csh.e[0-9]*
