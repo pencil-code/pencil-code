@@ -58,38 +58,44 @@ if (! -d "$datadir") then
 endif
 
 # Create list of subdirectories
-set subdirs = ("$datadir/allprocs" "$datadir/averages" "$datadir/idl")
-set procdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
+set subdirs = ("allprocs" "averages" "idl")
+set procdirs = \
+    `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"proc";' 'i; }' | bc`
 foreach dir ($procdirs $subdirs)
   # Make sure a sufficient number of subdirectories exist
-  if (! -e $dir) then
-    mkdir $dir
+  set ddir = "$datadir/$dir"
+  if (! -e $ddir) then
+    mkdir $ddir
   else
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list=`/bin/ls $dir/VAR* $dir/TAVG* $dir/*.dat $dir/*.info $dir/slice*`
+    set list = \
+        `/bin/ls $ddir/VAR* $ddir/TAVG* $ddir/*.dat $ddir/*.info $ddir/slice*`
     #if ($list != "") then
       foreach rmfile ($list)
-        if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
+        if ($rmfile != $ddir/var.dat) rm -f $rmfile >& /dev/null
       end
     #endif
   endif
-  # Create directories on local scratch disk if necessary
-  #if ($local_disc) then
-  #  if (! -e $localdir) then
-  #    mkdir $dir
-  #  else
-  #    # Clean up
-  #    rm -f $localdir/VAR* $localdir/var.dat >& /dev/null
-  #  endif
-  #endif
 end
-if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
+
+# Create directories on local scratch disk if necessary
+if ($local_disc) then
+  echo "Creating directory structure on scratch disc(s)"
+  foreach host ($NODELIST)
+    $SSH $host "cd $SCRATCH_DIR; mkdir $procdirs $subdirs" 
+  end
+endif
+
+# Clean up previous runs
+if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \
+    mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro \
       $datadir/averages/* >& /dev/null
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
-if ($local_disc) then
+if ($local_binary) then
+  echo "Copying start.x to $SCRATCH_DIR"
   cp src/start.x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
@@ -103,7 +109,7 @@ date
 
 # If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
-  echo "copy var.dat back to the data directory"
+  echo "Copying var.dat back to data directory"
   copy-snapshots -v var.dat
 endif
 

@@ -112,11 +112,11 @@ rm -f STOP RELOAD fort.20
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >& copy-snapshots.log &
-echo "ls check beforehand src/run.x $SCRATCH_DIR"
-ls -lt src/run.x $SCRATCH_DIR
+  echo "ls before copying src/run.x to $SCRATCH_DIR"
+  ls -lt src/run.x $SCRATCH_DIR
   cp src/run.x $SCRATCH_DIR
-echo "ls check afterwards src/run.x $SCRATCH_DIR"
-ls -lt src/run.x $SCRATCH_DIR
+  echo "ls after copying src/run.x to $SCRATCH_DIR"
+  ls -lt src/run.x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
 

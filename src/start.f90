@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.112 2003-08-08 11:55:03 dobler Exp $
+! $Id: start.f90,v 1.113 2003-08-14 10:27:47 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -42,7 +42,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.112 2003-08-08 11:55:03 dobler Exp $")
+             "$Id: start.f90,v 1.113 2003-08-14 10:27:47 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -194,6 +194,7 @@
                trim(directory_snap)//'/VAR0',f,mvar_io,ENUM=.false.)
         endif
         if (.not.lnowrite) then
+print*,'START: writing to ' // trim(directory_snap)//'/var.dat'
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif

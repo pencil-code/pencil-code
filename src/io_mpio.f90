@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.23 2003-08-13 15:30:07 mee Exp $
+! $Id: io_mpio.f90,v 1.24 2003-08-14 10:27:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.23 2003-08-13 15:30:07 mee Exp $")
+           "$Id: io_mpio.f90,v 1.24 2003-08-14 10:27:47 dobler Exp $")
 !
 !  consistency check
 !
@@ -154,12 +154,16 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir,directory,directory_snap
+      use Cdata, only: datadir,directory,datadir_snap,directory_snap
       use General
       use Mpicomm, only: iproc
 !
+      if ((datadir_snap == '') .or. (index(datadir_snap,'allprocs')>0)) then
+        datadir_snap = datadir
+      endif
+!
       call safe_character_assign(directory, trim(datadir)//'/allprocs')
-      if (directory_snap == '') directory_snap = directory
+      call safe_character_assign(directory_snap,trim(datadir_snap)//'/allprocs')
 !
     endsubroutine directory_names
 !***********************************************************************

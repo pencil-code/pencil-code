@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.62 2003-08-13 15:30:07 mee Exp $
+! $Id: io_dist.f90,v 1.63 2003-08-14 10:27:47 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.62 2003-08-13 15:30:07 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.63 2003-08-14 10:27:47 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -97,14 +97,11 @@ contains
 !
 !  02-oct-2002/wolf: coded
 !
-      use Cdata, only: datadir,directory,directory_snap
-      use Mpicomm, only: iproc
+      use Cdata, only: datadir,directory,datadir_snap,directory_snap
+      use Mpicomm, only: iproc,stop_it
       use General, only: chn, safe_character_assign
 !
       character (len=5) :: chproc=''
-!
-      call chn(iproc,chproc)
-      call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
 !
 !  check whether directory_snap contains `/proc0' -- if so, revert to the
 !  default name.
@@ -112,9 +109,14 @@ contains
 !  will be written to param.nml as 'data/proc0', but this should in fact
 !  be data/procN on processor N.
 !
-      if ((directory_snap == '') .or. (index(directory_snap,'proc0')>0)) then
-        directory_snap = directory
+      if ((datadir_snap == '') .or. (index(datadir_snap,'proc0')>0)) then
+        datadir_snap = datadir
       endif
+!
+      call chn(iproc,chproc)
+      call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
+      call safe_character_assign(directory_snap, &
+                                            trim(datadir_snap)//'/proc'//chproc)
 !
     endsubroutine directory_names
 !***********************************************************************
