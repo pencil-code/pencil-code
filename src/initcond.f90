@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.77 2003-08-29 16:16:02 dobler Exp $ 
+! $Id: initcond.f90,v 1.78 2003-09-06 11:06:08 ajohan Exp $ 
 
 module Initcond 
  
@@ -560,11 +560,15 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  26-Jul-03/anders: Revived from June 1 version
 !
+      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
       real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
-      real :: gamma,cs20,gamma1,eps2,radius2,width,lnrhosum_box,rho0
+      real :: gamma,cs20,gamma1,eps2,radius2,width
+      real :: lnrhosum_box,lnrhosum_thisbox,rho0
+      real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
       integer :: i,j,k
 !
 !  calculate sigma
@@ -652,15 +656,34 @@ module Initcond
 !
 !  Use average density of box as unit density
 !
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            lnrhosum_box = lnrhosum_box + f(i,j,k,ilnrho)
+      do i=l1,l2
+        do j=m1,m2
+          do k=n1,n2
+            lnrhosum_thisbox = lnrhosum_thisbox + f(i,j,k,ilnrho)
           enddo
         enddo
       enddo
-      rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      if (ip < 14) print*,'planet_hc: rho0=',rho0
+      if (ip<14) &
+        print*,'planet_hc: iproc,lnrhosum_thisbox=',iproc,lnrhosum_thisbox
+!
+!  Must put sum_thisbox in 1-dimensional array 
+!
+      lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
+!
+!  Add sum_thisbox up for all processors, deliver to root
+!
+      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox,1)
+      if (lroot .and. ip<14) &
+        print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
+!
+!  Calculate <rho> and send to all processors
+!      
+      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
+      call mpibcast_real_scl(rho0,1)
+      if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
+!
+!  Multiply density by rho0 (divide by <rho>)
+!      
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !
     endsubroutine planet_hc
@@ -671,7 +694,7 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
-     use Sub
+    use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
