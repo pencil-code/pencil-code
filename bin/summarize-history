@@ -73,8 +73,8 @@ if (@entries < 2) {
 }
 
 ## Open temporary files (will be automaticalle removed at exit)
-my ($tmp1,$tmpname1) = tempfile("blaXXXXX", UNLINK => 0);
-my ($tmp2,$tmpname2) = tempfile("blubXXXXX", UNLINK => 0);
+my ($tmp1,$tmpname1) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
+my ($tmp2,$tmpname2) = tempfile("/tmp/summarize_history_XXXXXX", UNLINK => 1);
 ## Markers to make header lines different, so they are always printed by
 ## diff:
 my ($mark1,$mark2) = (".",":");
