@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.45 2004-02-11 14:58:39 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.46 2004-02-11 19:25:59 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -24,6 +24,7 @@ module Ionization
   interface eoscalc              ! Overload the `thermodynamics' function
     module procedure eoscalc_farray   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explocit lnrho, ss
+    module procedure eoscalc_pencil
   end interface
 
   interface getentropy                      ! Overload subroutine ionput
@@ -87,7 +88,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.45 2004-02-11 14:58:39 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.46 2004-02-11 19:25:59 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -495,6 +496,70 @@ module Ionization
       if (present(pp)) pp=pp_
 !
     endsubroutine eoscalc_point
+!***********************************************************************
+    subroutine eoscalc_pencil(ivars,var1,var2,lnrho,ss,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!
+      use Cdata
+!
+      integer, intent(in) :: ivars
+      real, dimension(nx), intent(in) :: var1,var2
+      real, dimension(nx), intent(out), optional :: lnrho,ss
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
+!
+      select case (ivars)
+
+      case (ilnrho_ss)
+        lnrho_ = var1
+        ss_    = var2
+        lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
+        TT_    = exp(lnTT_)
+        rho_   = exp(lnrho_)
+        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+
+      case (ilnrho_ee)
+        lnrho_ = var1
+        ee_    = var2
+        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
+        lnTT_  = log(TT_)
+        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        rho_   = exp(lnrho_)
+        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+
+      case (ilnrho_pp)
+        lnrho_ = var1
+        pp_    = var2
+        rho_   = exp(lnrho_)
+        TT_    = pp_/((1+yH0+xHe)*ss_ion*rho_)
+        lnTT_  = log(TT_)
+        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+
+      case (ilnrho_lnTT)
+        lnrho_ = var1
+        lnTT_  = var2
+        ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
+
+     end select
+
+      if (present(lnrho)) lnrho=lnrho_
+      if (present(ss)) ss=ss_
+      if (present(yH)) yH=yH0
+      if (present(lnTT)) lnTT=lnTT_
+      if (present(ee)) ee=ee_
+      if (present(pp)) pp=pp_
+!
+    endsubroutine eoscalc_pencil
 !***********************************************************************
     subroutine read_ionization_init_pars(unit,iostat)
       integer, intent(in) :: unit
