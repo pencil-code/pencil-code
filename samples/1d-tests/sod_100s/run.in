@@ -1,0 +1,21 @@
+!
+!  sample file for 1-D sound wave
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2003-05-27 14:12:48 ngrs Exp $'
+  nt=200000, it1=50, cdt=0.1, cdtv=0.4, isave=50, itorder=3,
+  dsnap=20., dvid=.02,tmax=1.5,
+  bcx = 'a','s','s','s','s'
+/
+&hydro_run_pars
+/
+&density_run_pars
+  cdiffrho=0.,  !(mass diffusion not currently used)
+/
+&entropy_run_pars
+  lcalc_heatcond_constchi=T,chi=1.5e-4
+/
+&viscosity_run_pars
+  nu=0.002, nu_shock=3.5  !(propagates too fast, 6 instead of 5.5)
+  nu=0.001, nu_shock=3.25
+/
