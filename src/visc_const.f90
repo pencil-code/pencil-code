@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.33 2004-07-13 11:04:31 nilshau Exp $
+! $Id: visc_const.f90,v 1.34 2004-07-15 18:36:16 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -60,7 +60,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.33 2004-07-13 11:04:31 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.34 2004-07-15 18:36:16 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -259,20 +259,18 @@ module Viscosity
 !NILS: visc_LES
 !NILS: such that we can use that module for possible other large eddy 
 !NILS: simulations aswell?
+!AB: visc_LES sounds good, although I would wait with renaming modules.
+!AB: Some LES may require more memory, and should be in a separate module.
+!AB: Thus, visc_smagorinsky is ok for the time being.
+!AB: But we can still keep the smagorinsky_simplified in visc_const.
           !
           !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
           !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
           !
           if (headtt) print*,'viscous force: Smagorinsky'
           if(ldensity) then
-!AB: below, SS12 is really sij*sij, right? So why not call it sij2?
-!NILS: Renamed SS12 into sij2
             call multm2_mn(sij,sij2)
             SS12=sqrt(2*sij2)
-!AB: Nils, is this correct? Shouldn't C_smag be outside the parenthesis?
-!NILS: Following Pope (page 587) it is correct as it is.
-!AB: Also, shouldn't there be a square root on SS12?
-!NILS: You are right. I have fixed this bug in the above line.
             nu_smag=(C_smag*dxmax)**2.*SS12
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
