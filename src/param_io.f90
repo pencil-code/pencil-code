@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.142 2003-11-15 19:46:12 brandenb Exp $ 
+! $Id: param_io.f90,v 1.143 2003-11-20 21:48:39 brandenb Exp $ 
 
 module Param_IO
 
@@ -459,10 +459,10 @@ module Param_IO
         endif
       endif
 !  
-!  make sure ix,iy,iz are not outside the boundaries
+!  make sure ix,iy,iz,iz2 are not outside the boundaries
 !
-      ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2)
-      ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1)
+      ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
+      ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries
