@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.101 2002-07-22 18:16:03 dobler Exp $
+! $Id: entropy.f90,v 1.102 2002-07-22 19:51:49 dobler Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.101 2002-07-22 18:16:03 dobler Exp $")
+           "$Id: entropy.f90,v 1.102 2002-07-22 19:51:49 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -595,6 +595,8 @@ endif
 !  identifier
 !
       if(headtt) print*,'calc_heat_cool: lgravz=',lgravz
+!
+!  define bottom and top height
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.40 2002-07-22 18:16:03 dobler Exp $
+! $Id: density.f90,v 1.41 2002-07-22 19:51:49 dobler Exp $
 
 module Density
 
@@ -66,7 +66,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.40 2002-07-22 18:16:03 dobler Exp $")
+           "$Id: density.f90,v 1.41 2002-07-22 19:51:49 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -91,6 +91,12 @@ module Density
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0
+      real :: zbot,ztop
+!
+!  define bottom and top height
+!
+      zbot=xyz0(3)
+      ztop=xyz0(3)+Lxyz(3)
 !
 !  Set default values for sound speed at top and bottom.
 !  These may be updated in one of the following initialization routines.
@@ -176,7 +182,7 @@ module Density
         cs2int = cs0**2
         lnrhoint = lnrho0
         f(:,:,:,ilnrho) = lnrho0 ! just in case
-        call polytropic_lnrho_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+        call polytropic_lnrho_z(f,mpoly2,zz,tmp,zref,z2,ztop+Lz, &
                             isothtop,cs2int,lnrhoint)
           ! unstable layer
         call polytropic_lnrho_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,lnrhoint)
@@ -185,11 +191,11 @@ module Density
         !
         !  calculate cs2bot and cs2top for run.x (boundary conditions)
         !
-        cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(z(n1)-z0  )
+        cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(zbot-z0  )
         if (isothtop /= 0) then
           cs2top = cs20
         else
-          cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(z(n2)-zref)
+          cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(ztop-zref)
         endif
 
       case ('polytropic', '5')
@@ -209,8 +215,8 @@ module Density
         !
         !  calculate cs2bot and cs2top for run.x (boundary conditions)
         !
-        cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(z(n1)-zref)
-        cs2top = cs20 + gamma*gravz/(mpoly0+1)*(z(n2)-zref)
+        cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(zbot-zref)
+        cs2top = cs20 + gamma*gravz/(mpoly0+1)*(ztop-zref)
 
       case('sound-wave', '11')
         !
