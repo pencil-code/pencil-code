@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.7 2002-11-30 17:26:38 mee Exp $
+# CVS: $Id: mkcparam,v 1.8 2002-11-30 17:35:04 mee Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -27,9 +27,14 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/cparam.inc .
-
+#
+#   30-nov-02/tony: Modified to use makefile lines where the Make variable
+#                   and module name differ by more than just case
+#                     e.g.   VISCOSITY=visc_shock
+#                   Also count maux variables too.
+#
 # ---------------------------------------------------------------------- #
-my %modules = ( # names of modules to consider
+my %modules = ( # module_name { option => contribution to mvar, ...}, ...
 	        HYDRO     => { hydro     => 3, nohydro     => 0 },
 	        DENSITY   => { density   => 1, nodensity   => 0 },
 	        ENTROPY   => { entropy   => 1, noentropy   => 0 },
@@ -37,7 +42,7 @@ my %modules = ( # names of modules to consider
 		RADIATION => { radiation => 5, noradiation => 0 },
 		PSCALAR   => { pscalar   => 1, nopscalar   => 0 },
 	      );
-my %auxmodules = ( # module_name => contribution to maux
+my %auxmodules=(# module_name { option => contribution to mvar, ...}, ...
 		   VISCOSITY => { visc_shock => 1, visc_const => 0 }
 	      );
 my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
