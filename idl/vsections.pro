@@ -76,17 +76,17 @@ endelse
 
 contourfill, ent[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levent
 var = reform(lam[*,ny1,*])
-contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 opcircles, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levent
 var = reform(lam[*,ny2,*])
-contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 opcircles, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levent
 var = reform(lam[*,ny3,*])
-contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
+contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 opcircles, 1., LINE=2, THICK=2
 
 wget
