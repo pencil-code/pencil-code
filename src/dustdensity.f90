@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.64 2004-04-17 09:19:36 ajohan Exp $
+! $Id: dustdensity.f90,v 1.65 2004-04-17 10:06:41 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.64 2004-04-17 09:19:36 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.65 2004-04-17 10:06:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -615,11 +615,14 @@ module Dustdensity
       use Cdata
       use Sub
       use Entropy, only: nu_turb
+      use Mpicomm
       use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss
       use Viscosity, only: nu_mol
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: TT1,cs2
+      real, dimension (1) :: cs_sum_thisproc_arr,cs_sum_allprocs_arr
+      real :: cs_sum_thisproc
       real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
       real :: ust,pp0,pp1,pp2,cs2p,cp1tilde,cs_sum
       real :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
@@ -631,11 +634,32 @@ module Dustdensity
       if (m == m1 .and. n == n1 .and. itsub == 1) then
         do i=n1,n2
           call pressure_gradient(f(l1,m,i,ilnrho),f(l1,m,i,iss),cs2p,cp1tilde)
-          cs_sum = cs_sum + sqrt(cs2p)
+          cs_sum_thisproc = cs_sum_thisproc + sqrt(cs2p)
         enddo
-        cs_ave = cs_sum/nz
+!
+!  Must put into array
+!
+        cs_sum_thisproc_arr = (/ cs_sum_thisproc /)
+!
+!  Get sum of cs_sum_thisproc_arr on all procs
+!
+        call mpireduce_sum(cs_sum_thisproc_arr,cs_sum_allprocs_arr,1)
+!
+!  Calculate average cs
+!        
+        if (lroot) cs_ave = cs_sum_allprocs_arr(1)/nzgrid
+!
+!  Send to all procs
+!          
+        call mpibcast_real_scl(cs_ave,1)
+!
+!  Need mid-plane pressure for scale height calculation
+!        
         call eoscalc_point &
             (ilnrho_ss,f(l1,m,nz/2+3,ilnrho),f(l1,m,nz/2+3,iss),pp=pp0)
+!
+!  Find scale height and calculate turbulence properties
+!            
         do i=nz/2+3,n2
           pp2 = pp1
           call eoscalc_point &
