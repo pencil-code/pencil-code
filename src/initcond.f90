@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.18 2002-11-05 16:42:39 dobler Exp $ 
+! $Id: initcond.f90,v 1.19 2002-11-09 16:42:17 brandenb Exp $ 
 
 module Initcond 
  
@@ -614,6 +614,7 @@ module Initcond
 !
       f(:,:,:,ivar) = tmp
 !
+      if(ip==0) print*,ampl  !(to keep compiler quiet)
     endsubroutine trilinear
 !***********************************************************************
 

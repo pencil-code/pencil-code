@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.93 2002-10-27 19:38:11 brandenb Exp $
+! $Id: magnetic.f90,v 1.94 2002-11-09 16:42:17 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.93 2002-10-27 19:38:11 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.94 2002-11-09 16:42:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -477,6 +477,7 @@ module Magnetic
 !  calculate mean magnetic field from xy- or z-averages
 !
 !  19-jun-02/axel: moved from print to here
+!   9-nov-02/axel: corrected bxmy(m,j); it used bzmy instead!
 !
       use Cdata
       use Sub
@@ -518,7 +519,7 @@ module Magnetic
           else
             do j=1,nprocy
             do m=1,ny
-              bxmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
+              bxmy(m,j)=sum(fnamexy(:,m,j,i_bxmxy))/nx
               bzmy(m,j)=sum(fnamexy(:,m,j,i_bzmxy))/nx
             enddo
             enddo

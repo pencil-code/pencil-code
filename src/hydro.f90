@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.76 2002-11-09 06:33:33 brandenb Exp $
+! $Id: hydro.f90,v 1.77 2002-11-09 16:42:17 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -79,7 +79,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.76 2002-11-09 06:33:33 brandenb Exp $")
+           "$Id: hydro.f90,v 1.77 2002-11-09 16:42:17 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -695,13 +695,14 @@ module Hydro
 !  calculate mean flow field from xy- or z-averages
 !
 !   8-nov-02/axel: adapted from calc_mfield
+!   9-nov-02/axel: allowed mean flow to be compressible
 !
       use Cdata
       use Sub
 !
       logical,save :: first=.true.
-      real, dimension(nx) :: uymx,uzmx
-      real, dimension(ny,nprocy) :: uxmy,uzmy
+      real, dimension(nx) :: uxmx,uymx,uzmx
+      real, dimension(ny,nprocy) :: uxmy,uymy,uzmy
       real :: umx,umy,umz
       integer :: l,j
 !
@@ -717,10 +718,11 @@ module Hydro
             umx=0.
           else
             do l=1,nx
+              uxmx(l)=sum(fnamexy(l,:,:,i_uxmxy))/(ny*nprocy)
               uymx(l)=sum(fnamexy(l,:,:,i_uymxy))/(ny*nprocy)
               uzmx(l)=sum(fnamexy(l,:,:,i_uzmxy))/(ny*nprocy)
             enddo
-            umx=sqrt(sum(uymx**2+uzmx**2)/nx)
+            umx=sqrt(sum(uxmx**2+uymx**2+uzmx**2)/nx)
           endif
           call save_name(umx,i_umx)
         endif
@@ -736,11 +738,12 @@ module Hydro
           else
             do j=1,nprocy
             do m=1,ny
-              uxmy(m,j)=sum(fnamexy(:,m,j,i_uzmxy))/nx
+              uxmy(m,j)=sum(fnamexy(:,m,j,i_uxmxy))/nx
+              uymy(m,j)=sum(fnamexy(:,m,j,i_uymxy))/nx
               uzmy(m,j)=sum(fnamexy(:,m,j,i_uzmxy))/nx
             enddo
             enddo
-            umy=sqrt(sum(uxmy**2+uzmy**2)/(ny*nprocy))
+            umy=sqrt(sum(uxmy**2+uymy**2+uzmy**2)/(ny*nprocy))
           endif
           call save_name(umy,i_umy)
         endif
@@ -750,14 +753,16 @@ module Hydro
 !  so they are present on the root processor.
 !
         if (i_umz/=0) then
-          if(i_uxmz==0.or.i_uymz==0) then
+          if(i_uxmz==0.or.i_uymz==0.or.i_uzmz==0) then
             if(first) print*
             if(first) print*,"NOTE: to get umz, uxmz and uymz must also be set in xyaver"
             if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
             if(first) print*,"      We proceed, but you'll get umz=0"
             umz=0.
           else
-            umz=sqrt(sum(fnamez(:,:,i_uxmz)**2+fnamez(:,:,i_uymz)**2)/(nz*nprocz))
+            umz=sqrt(sum(fnamez(:,:,i_uxmz)**2 &
+                        +fnamez(:,:,i_uymz)**2 &
+                        +fnamez(:,:,i_uzmz)**2)/(nz*nprocz))
           endif
           call save_name(umz,i_umz)
         endif
