@@ -77,7 +77,7 @@ help,smoothed
       
 end
  
-pro pc_radio,object=object,lambdas=lambdas,dim=dim,param=param,data=data,units=units,test=test,HPBW=HPBW
+pro pc_radio,object=object,lambdas=lambdas,dim=dim,param=param,data=data,units=units,test=test,HPBW=HPBW,_extra=e
 ;  * We require output from simulation: rho, Bx, By, Bz, 
 ;    ionization frac (optional)
 ;  * Need to know the size of such arrays at compile time(?), then read the 
@@ -106,10 +106,10 @@ pro pc_radio,object=object,lambdas=lambdas,dim=dim,param=param,data=data,units=u
   default,p,.75
 
 if not keyword_set(TEST) then begin
-  if (n_elements(dim) ne 1) then pc_read_dim,object=dim
-  if (n_elements(param) ne 1) then pc_read_param,object=param,dim=dim
-  if (n_elements(units) ne 1) then pc_units,object=units,dim=dim,param=param
-  if (n_elements(data) ne 1) then pc_read_var,object=data,variables=['curl(aa)','exp(lnrho)'],tags=['bb','rho'],dim=dim,param=param
+  if (n_elements(dim) ne 1) then pc_read_dim,object=dim,_extra=e
+  if (n_elements(param) ne 1) then pc_read_param,object=param,dim=dim,_extra=e
+  if (n_elements(units) ne 1) then pc_units,object=units,dim=dim,param=param,_extra=e
+  if (n_elements(data) ne 1) then pc_read_var,object=data,variables=['curl(aa)','exp(lnrho)'],tags=['bb','rho'],dim=dim,param=param,_extra=e
 
   default,distance_to_object,0.100
 
