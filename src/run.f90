@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.63 2002-07-10 08:35:29 dobler Exp $
+! $Id: run.f90,v 1.64 2002-07-10 14:12:35 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -38,13 +38,13 @@
 !  call signal handler (for compaq machine only)
 !  currently disabled; want to put as include file
 !
-!       call siginit
-!       call signonbrutal
+       call siginit
+       call signonbrutal
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.63 2002-07-10 08:35:29 dobler Exp $")
+             "$Id: run.f90,v 1.64 2002-07-10 14:12:35 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -141,12 +141,12 @@
 !  iwig=500 is a typical value. For iwig=0 no action is taken.
 !  (These two queries must come separately on compaq machines.)
 !
-        if (iwig/=0) then
-          if (mod(it,iwig).eq.0) then
-            call rmwig(f,df,ilnrho)
-            !call rmwig(f,df,ilnrho,explog=.true.)
+          if (iwig/=0) then
+            if (mod(it,iwig).eq.0) then
+              call rmwig(f,df,ilnrho)
+              !call rmwig(f,df,ilnrho,explog=.true.)
+            endif
           endif
-        endif
 !
 !  time advance
 !
@@ -156,14 +156,18 @@
           if(lout) call write_xyaverages
           if(lout) call write_zaverages
           if(lout) call prints
-          call outpui(trim(directory)//'/alive.info',spread(it,1,1),1) !(all procs alive?)
+          if (ialive /= 0) then ! set ialive=0 to fully switch this off
+            if (mod(it,ialive)==0) &
+                 call outpui(trim(directory)//'/alive.info', &
+                 spread(it,1,1) ,1) !(all procs alive?)
+          endif
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
           if (isave /= 0) then
-            if (mod(it,isave).eq.0) &
+            if (mod(it,isave)==0) &
                  call wsnap(trim(directory)//'/var.dat',f,.false.)
           endif
           headt=.false.
