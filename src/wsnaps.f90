@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.18 2003-01-13 19:00:57 mee Exp $
+! $Id: wsnaps.f90,v 1.19 2003-01-20 16:38:05 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -89,12 +89,15 @@ contains
       use Struct_func
 !
       real, dimension (mx,my,mz,mvar) :: a
+      real, dimension (nx,ny,nz) :: b_vec
       character (len=135) :: file
       character (len=4) :: ch
       logical :: lspec,llwrite_only=.false.,ldo_all
       logical, optional :: lwrite_only
       integer, save :: ifirst,nspec
       real, save :: tspec
+      integer :: ivec,im,in
+      real, dimension (nx) :: bb 
 !
 !  set llwrite_only
 !
@@ -125,11 +128,27 @@ contains
          if (vec_spec) call power(a,'a')
          if (ab_spec)  call powerhel(a,'mag')
          if (ou_spec)  call powerhel(a,'kin')
-         if (lsfu)     call structure(a,'u')
-         if (lsfb)     call structure(a,'b')
-         if (lsfz1)    call structure(a,'z1')
-         if (lsfz2)    call structure(a,'z2')
-         if (lpdf)     call structure(a,'pdf')
+         !
+         !  Doing structure functions
+         !
+         do ivec=1,3
+            if (lsfb .or. lsfz1 .or. lsfz2) then
+               do n=n1,n2
+                  do m=m1,m2
+                     call curli(a,iaa,bb,ivec)
+                     im=m-nghost
+                     in=n-nghost
+                     b_vec(:,im,in)=bb
+                  enddo
+               enddo
+               b_vec=b_vec/sqrt(exp(a(l1:l2,m1:m2,n1:n2,ilnrho)))
+            endif
+            if (lsfu)     call structure(a,ivec,b_vec,'u')
+            if (lsfb)     call structure(a,ivec,b_vec,'b')
+            if (lsfz1)    call structure(a,ivec,b_vec,'z1')
+            if (lsfz2)    call structure(a,ivec,b_vec,'z2')
+            if (lpdf)     call structure(a,ivec,b_vec,'pdf')
+         enddo
       endif
 !
     endsubroutine powersnap
