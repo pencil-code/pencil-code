@@ -1,21 +1,19 @@
-# Makefile for transforming pictures to
+# Makefile for transforming EPS pictures to PDF
 
 
 .SUFFIXES: .eps .pdf
 
 .eps.pdf:
 	epstopdf $?
-#.dvi.pdf:
-#	dvipdf $*.dvi $*.pdf
-
-epsfiles = $(wildcard *.eps)
 
 # ------------------
 
 default: pdf
 
 
-pdf: $(epsfiles:.eps=.pdf)
+pdf: *.eps
+	epstopdf_all $?
+
 
 # Clean up
 clean:

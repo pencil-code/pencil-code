@@ -1,0 +1,13 @@
+#!/bin/csh
+
+# Name:   epstopdf_all
+# Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+# Date:   29-Aug-2002
+# Description:
+#   Run epstopdf on all input files
+
+foreach f ($*)
+  epstopdf $f
+end
+
+# End of file epstopdf_all
