@@ -1,7 +1,9 @@
-! $Id: entropy.f90,v 1.146 2002-12-13 18:46:30 brandenb Exp $
+! $Id: temperature.f90,v 1.1 2002-12-13 18:46:30 brandenb Exp $
 
-!  This module takes care of entropy (initial condition
-!  and time advance)
+!  This module replaces the entropy module by using lnT as dependent
+!  variable. For a perfect gas with constant coefficients (no ionization)
+!  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
+!  At a later point we may want to rename the module Entropy into Energy
 
 module Entropy
 
@@ -13,6 +15,7 @@ module Entropy
 
   implicit none
 
+  integer :: ilnTT=0
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
@@ -25,11 +28,11 @@ module Entropy
   real :: FbotKbot=impossible,Kbot=impossible
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
-  character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
+  character (len=labellen) :: initlnTT='nothing',cooltype='Temp'
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
+       initlnTT,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss, thermal_background, thermal_peak, thermal_scaling
 
@@ -51,7 +54,7 @@ module Entropy
 !  initialise variables which should know that we solve an entropy
 !  equation: ient, etc; increase nvar accordingly
 !
-!  6-nov-01/wolf: coded
+! 13-dec-02/axel+tobi: coded
 !
       use Cdata
       use Mpicomm
@@ -64,18 +67,18 @@ module Entropy
 !
       lentropy = .true.
 !
-      ient = nvar+1             ! index to access entropy
+      ilnTT = nvar+1             ! index to access entropy
       nvar = nvar+1
 !
       if ((ip<=8) .and. lroot) then
         print*, 'Register_ent:  nvar = ', nvar
-        print*, 'ient = ', ient
+        print*, 'ilnTT = ', ilnTT
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.146 2002-12-13 18:46:30 brandenb Exp $")
+           "$Id: temperature.f90,v 1.1 2002-12-13 18:46:30 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,9 +133,9 @@ module Entropy
 !***********************************************************************
     subroutine init_ss_or_lnTT(f,xx,yy,zz)
 !
-!  initialise entropy; called from start.f90
-!  07-nov-2001/wolf: coded
-!  24-nov-2002/tony: renamed for consistancy (i.e. init_[variable name]) 
+!  initialise lnTT; called from start.f90
+!
+!  13-dec-2002/axel+tobi: adapted from init_ss_or_lnTT
 !
       use Cdata
       use Mpicomm
@@ -142,148 +145,29 @@ module Entropy
       use Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
-      real :: cs2int,ssint
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      select case(initss)
+      select case(initlnTT)
         case('nothing'); if(lroot) print*,'init_ss_or_lnTT: nothing'
-        case('zero', '0'); f(:,:,:,ient) = 0.
-        case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,0.)
-        case('isothermal'); if(lroot) print*,'init_ss_or_lnTT: isotherm set in density'
-        case('Ferriere'); if(lroot) print*,'init_ss_or_lnTT: Ferriere set in density'
-        case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
-        case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
-        case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
-
-      case('sedov') 
-        if (lroot) print*,'init_ss_or_lnTT: sedov - thermal background with gaussian energy burst'
-         call blob(thermal_peak,f,ient,radius_ss,0.,0.,0.)
-         f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
-   
-      case('isobaric')
-        !
-        !  ss = - ln(rho/rho0)
-        !
-        if (lroot) print*,'init_ss_or_lnTT: isobaric stratification'
-        f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
-
-      case('isentropic', '1')
-        !
-        !  ss = const.
-        !
-        if (lroot) print*,'isentropic stratification'
-        ! ss0=alog(-gamma1*gravz*zinfty)/gamma
-        ! print*,'isentropic stratification; ss=',ss0
-        f(:,:,:,ient)=0.
-        if (ampl_ss/=0.) then
-          print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-          tmp=xx**2+yy**2+zz**2
-          f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
-          !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
-        endif
-
-      case('linprof', '2')
-        !
-        !  linear profile of ss, centered around ss=0.
-        !
-        if (lroot) print*,'linear entropy profile'
-        f(:,:,:,ient) = grads0*zz
-
-      case('piecew-poly', '4')
-        !
-        !  piecewise polytropic convection setup
-        !  cs0, rho0 and ss0=0 refer to height z=zref
-        !
-        if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
-        !
-!         !  override hcond1,hcond2 according to polytropic equilibrium
-!         !  solution
-!         !
-!         hcond1 = (mpoly1+1.)/(mpoly0+1.)
-!         hcond2 = (mpoly2+1.)/(mpoly0+1.)
-!         if (lroot) &
-!              print*, &
-!              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
-        !
-        cs2int = cs0**2
-        ss0 = 0.              ! reference value ss0 is zero
-        ssint = ss0
-        f(:,:,:,ient) = 0.    ! just in case
-        ! top layer
-        call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
-                             isothtop,cs2int,ssint)
-        ! unstable layer
-        call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
-        ! stable layer
-        call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
-
-      case('polytropic', '5')
-        !
-        !  polytropic stratification
-        !  cs0, rho0 and ss0=0 refer to height z=zref
-        !
-        if (lroot) print*,'polytropic vertical stratification (ss)'
-        !
-        cs20 = cs0**2
-        ss0 = 0.              ! reference value ss0 is zero
-        f(:,:,:,ient) = ss0   ! just in case
-        cs2int = cs20
-        ssint = ss0
-        ! only one layer
-        call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
-        ! reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work
-        mpoly1 = mpoly0
-        mpoly2 = mpoly0
-
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*,'No such value for initss: ', trim(initss)
-        call stop_it("")
-
+        case('zero', '0'); f(:,:,:,ilnTT) = 0.
+        case default
+          !
+          !  Catch unknown values
+          !
+          if (lroot) print*,'No such value for init_ss_or_lnTT: ', trim(initlnTT)
+          call stop_it("")
       endselect
 
 !      endif
 !
       if (lgravr) then
-          f(:,:,:,ient) = -0.
+          f(:,:,:,ilnTT) = -0.
       endif
-
 !
-!  Add perturbation(s)
-!
-!      if (lgravz)
-
-      select case (pertss)
-
-      case('zero', '0')
-        ! Don't perturb
-
-      case ('hexagonal', '1')
-        !
-        !  hexagonal perturbation
-        !
-        if (lroot) print*,'adding hexagonal perturbation to ss'
-        f(:,:,:,ient) = f(:,:,:,ient) &
-                        + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
-                                    *cos(0.5*khor_ss*yy) &
-                                   + cos(khor_ss*yy) &
-                                  ) * cos(pi*zz)
-
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*,'No such value for pertss:', pertss
-        call stop_it("")
-
-      endselect
-!
-      if(ip==0) print*,xx,yy  !(to keep compiler quiet)
+      if(ip==0) print*,xx,yy,zz  !(to keep compiler quiet)
 !
     endsubroutine init_ss_or_lnTT
 !***********************************************************************
@@ -343,9 +227,9 @@ module Entropy
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
+!  DlnTT/Dt = -gamma1*divu + gamma*TT1*RHS
 !
-!  17-sep-01/axel: coded
-!   9-jun-02/axel: pressure gradient added to du/dt already here
+!  13-dec-02/axel+tobi: adapted from entropy
 !
       use Cdata
       use Mpicomm
@@ -355,28 +239,29 @@ module Entropy
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,uglnrho, divu
-      real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
+      real, dimension (nx,3) :: uu,glnrho,glnTT
+      real, dimension (nx) :: uglnTT,uglnrho,divu
+      real, dimension (nx) :: lnrho,lnTT,ss,rho1,cs2,TT1
+      real :: lnTT0
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho1,lnrho
+      intent(in) :: f,uu,glnrho,rho1,lnrho,divu
       intent(out) :: df,cs2,TT1
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE dss_or_dlnTT_dt'
-      if (headtt) call identify_bcs('ss',ient)
+      if (headtt.or.ldebug) print*,'SOLVE dlnTT_dt'
+      if (headtt) call identify_bcs('lnTT',ient)
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
-      call grad(f,ient,gss)
+      call grad(f,ilnTT,glnTT)
 !
 !  sound speed squared
 !  include in maximum advection speed (for timestep)
 !
-      ss=f(l1:l2,m,n,ient)
-      cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
+      lnTT=f(l1:l2,m,n,ilnTT)
+      cs2=gamma1*exp(lnTT)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
       if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*,'entropy: cs20=',cs20
@@ -386,57 +271,35 @@ module Entropy
       if (lhydro) then
         do j=1,3
           ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+gss(:,j))
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-(cs2/gamma)*(glnrho(:,j)+glnTT(:,j))
         enddo
       endif
 !
-!  advection term
+!  advection term and PdV-work
 !
-      call dot_mn(uu,gss,ugss)
-
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
+      call dot_mn(uu,glnTT,uglnTT)
+      df(l1:l2,m,n,ilnTT) = df(l1:l2,m,n,ilnTT) - uglnTT - gamma1*divu
 !
 !  calculate 1/T (in units of cp)
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !
-      TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-      if (headtt) print*,'dss_or_dlnTT_dt: TT1(1)=',TT1(1)
-
+      TT1=exp(-lnTT)
+      if (headtt) print*,'dlnTT_dt: TT1(1)=',TT1(1)
+!
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
-
-!
-!  thermal conduction
-!
-      if (lcalc_heatcond_simple) then
-        call calc_heatcond_simple(f,df,rho1,glnrho,gss)
-      elseif (lcalc_heatcond_constchi) then
-        call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
-      else
-        !if ((hcond0 /= 0) .or. (chi_t /= 0)) &  !!(AB: needed?)
-        call calc_heatcond(f,df,rho1,glnrho,gss)
-      endif
-!
-!  heating/cooling
-!
-      if ((luminosity /= 0) .or. (cool /= 0)) &
-           call calc_heat_cool(f,df,rho1,cs2,TT1)
-!
-!ngrs: switch off for debug
-!      if (linterstellar) &
-!        call calc_heat_cool_interstellar(df,rho1,TT1)
-!
-!  possibility of entropy relaxation in exterior region
-!
-      if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
 !
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
+        if (i_ssm/=0) then
+          lnTT0=alog(cs20/gamma1)
+          ss=( (lnTT-lnTT0) - gamma1*(lnrho-lnrho0) )
+          call sum_mn_name(ss,i_ssm)
+        endif
         if (i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
-          call sum_mn_name(cs2*(uglnrho+ugss),i_ugradpm)
+          call sum_mn_name((cs2/gamma)*(uglnrho+uglnTT),i_ugradpm)
         endif
       endif
 !
@@ -795,7 +658,7 @@ endif
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname
-      write(3,*) 'ient=',ient
+      write(3,*) 'ilnTT=',ilnTT
 !
     endsubroutine rprint_entropy
 !***********************************************************************

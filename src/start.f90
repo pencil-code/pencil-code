@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.72 2002-11-24 13:14:59 mee Exp $
+! $Id: start.f90,v 1.73 2002-12-13 18:46:30 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.72 2002-11-24 13:14:59 mee Exp $")
+             "$Id: start.f90,v 1.73 2002-12-13 18:46:30 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -121,7 +121,7 @@
         call init_gg   (f,xx,yy,zz)
         call init_uu   (f,xx,yy,zz)
         call init_lnrho(f,xx,yy,zz)
-        call init_ss   (f,xx,yy,zz)
+        call init_ss_or_lnTT (f,xx,yy,zz)
         call init_aa   (f,xx,yy,zz)
         call init_rad  (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)
