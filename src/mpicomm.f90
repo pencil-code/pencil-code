@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.103 2003-08-04 01:50:24 theine Exp $
+! $Id: mpicomm.f90,v 1.104 2003-08-04 02:16:35 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -78,9 +78,18 @@ module Mpicomm
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer :: ierr
   integer :: nprocs
+!
+!  mpi tags
+!
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
+!  mpi tags for radiation
+!  the values for those have to differ by a number greater than maxdir=190
+!  in order to have unique tags for each boundary and each direction
+  integer, parameter :: Itag_yz=100,Itag_zx=300,Itag_xy=500
+  integer, parameter :: tautag_yz=700,tautag_zx=900,tautag_xy=1100
+!
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
@@ -104,8 +113,6 @@ module Mpicomm
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
-  integer, parameter :: Itag_yz=301,Itag_zx=302,Itag_xy=303
-  integer, parameter :: tautag_yz=401,tautag_zx=402,tautag_xy=403
 
   contains
 
@@ -527,13 +534,13 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radboundary_zx_recv(rady0,mrad,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_recv(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !  receive intensities from neighboring processor in y
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: rady0,mrad
+      integer :: rady0,mrad,idir
       real, dimension(mx,rady0,mz) :: Ibuf_zx
       real, dimension(mx,rady0,mz), optional :: taubuf_zx
       integer :: nbuf_zx,isource
@@ -553,24 +560,24 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Ibuf_zx,nbuf_zx,MPI_REAL,isource,Itag_zx, &
+      call MPI_RECV(Ibuf_zx,nbuf_zx,MPI_REAL,isource,Itag_zx+idir, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
-      call MPI_RECV(taubuf_zx,nbuf_zx,MPI_REAL,isource,tautag_zx, &
+      call MPI_RECV(taubuf_zx,nbuf_zx,MPI_REAL,isource,tautag_zx+idir, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv(radz0,nrad,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !  receive intensities from neighboring processor in z
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: radz0,nrad
+      integer :: radz0,nrad,idir
       real, dimension(mx,my,radz0) :: Ibuf_xy
       real, dimension(mx,my,radz0), optional :: taubuf_xy
       integer :: nbuf_xy,isource
@@ -590,24 +597,24 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Ibuf_xy,nbuf_xy,MPI_REAL,isource,Itag_xy, &
+      call MPI_RECV(Ibuf_xy,nbuf_xy,MPI_REAL,isource,Itag_xy+idir, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
-      call MPI_RECV(taubuf_xy,nbuf_xy,MPI_REAL,isource,tautag_xy, &
+      call MPI_RECV(taubuf_xy,nbuf_xy,MPI_REAL,isource,tautag_xy+idir, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_zx_send(rady0,mrad,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_send(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !  send intensities to neighboring processor in y
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: rady0,mrad
+      integer :: rady0,mrad,idir
       real, dimension(mx,rady0,mz) :: Ibuf_zx
       real, dimension(mx,rady0,mz), optional :: taubuf_zx
       integer :: nbuf_zx,idest
@@ -620,31 +627,31 @@ module Mpicomm
 !
       nbuf_zx=mx*rady0*mz
 !
-!  source
+!  destination
 !
       if (mrad>0) idest=yuneigh
       if (mrad<0) idest=ylneigh
 !
 !  initiate send for the intensity
 !
-      call MPI_SEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+      call MPI_SEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx+idir, &
                      MPI_COMM_WORLD,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
-      call MPI_SEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
+      call MPI_SEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx+idir, &
                      MPI_COMM_WORLD,ierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radboundary_xy_send(radz0,nrad,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_send(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !  send intensities to neighboring processor in z
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: radz0,nrad
+      integer :: radz0,nrad,idir
       real, dimension(mx,my,radz0) :: Ibuf_xy
       real, dimension(mx,my,radz0), optional :: taubuf_xy
       integer :: nbuf_xy,idest
@@ -657,20 +664,20 @@ module Mpicomm
 !
       nbuf_xy=mx*my*radz0
 !
-!  source
+!  destination
 !
       if (nrad>0) idest=zuneigh
       if (nrad<0) idest=zlneigh
 !
 !  initiate send for the intensity
 !
-      call MPI_SEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+      call MPI_SEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy+idir, &
                      MPI_COMM_WORLD,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
-      call MPI_SEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
+      call MPI_SEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy+idir, &
                      MPI_COMM_WORLD,ierr)
 !
     endsubroutine radboundary_xy_send
