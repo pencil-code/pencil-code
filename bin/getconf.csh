@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.71 2003-08-30 13:28:39 dobler Exp $
+# $Id: getconf.csh,v 1.72 2003-08-30 17:01:24 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -25,7 +25,7 @@ if (-e "LOCK") then
   echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
   echo "rm LOCK"
   # exit                        # won't work in a sourced file
-  kill $$			# full-featured suicide
+  kill -KILL $$			# full-featured suicide
 endif
 
 # Are we running the MPI version?
