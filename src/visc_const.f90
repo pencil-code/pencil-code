@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.31 2004-07-10 15:33:04 brandenb Exp $
+! $Id: visc_const.f90,v 1.32 2004-07-10 20:19:30 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -60,7 +60,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.31 2004-07-10 15:33:04 brandenb Exp $")
+           "$Id: visc_const.f90,v 1.32 2004-07-10 20:19:30 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -216,14 +216,11 @@ module Viscosity
           !  -- the correct expression for rho*nu=const (=rho0*nu)
           !
           if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          if (.not.ldensity) &
-               print*, "ldensity better be .true. for ivisc='rho_nu-const'"
           murho1=(nu*rho0)*rho1  !(=mu/rho)
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3
             fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
           enddo
-!          call max_for_dt(murho1,maxdiffus)
           diffus_nu=max(diffus_nu,murho1*dxyz_2)
 
         case('nu-const')
@@ -236,12 +233,10 @@ module Viscosity
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            diffus_nu=max(diffus_nu,nu*dxyz_2)
-!            call max_for_dt(nu,maxdiffus)
           else
-            if(lfirstpoint) &
-                 print*,"ldensity better be .true. for ivisc='nu-const'"
+            fvisc=nu*(del2u+1./3.*graddivu)
           endif
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
 
         case ('hyper6')
           !

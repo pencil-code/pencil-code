@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.25 2004-06-11 08:07:35 ajohan Exp $
+! $Id: nodensity.f90,v 1.26 2004-07-10 20:19:30 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,6 +17,7 @@ module Density
   implicit none
 
   real :: cs2cool=0.
+  real :: b_ell=1., rbound=1.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
 
   integer :: dummy           ! We cannot define empty namelists
@@ -50,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.25 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: nodensity.f90,v 1.26 2004-07-10 20:19:30 brandenb Exp $")
 !
 !ajwm Necessary? added incase
       gamma=1.
@@ -64,11 +65,20 @@ module Density
 !
 !  24-nov-02/tony: coded 
 !
+  use Cdata, only: lentropy
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       logical :: lstarting
 !
+!  in the force-free model, there is no pressure gradient
+!  (but allow for the possibility of pressure gradients from entropy)
+!
+      if (.not.lentropy) then
+        cs0=0.
+        cs20=0.
+      endif
+!
       if (ip == 0) print*,f,lstarting ! keep compiler quiet
-!      
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
@@ -98,10 +108,12 @@ module Density
 
       intent(in) :: f
       intent(out) :: rho1
- 
-      if(ip==0) rho1=1              !(keep compiler quiet) 
+!
+!  set rho1=1 (useful for so-called force-free model)
+!
+      rho1=1.
+!     
       if(ip==0) print*,f(1,1,1,1)   !(keep compiler quiet)
-      
     endsubroutine calculate_vars_rho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
