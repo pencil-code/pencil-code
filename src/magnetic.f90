@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.120 2003-08-08 17:41:07 brandenb Exp $
+! $Id: magnetic.f90,v 1.121 2003-08-12 16:33:17 christer Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -26,6 +26,7 @@ module Magnetic
   integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
+  real :: alpha_effect
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
@@ -40,7 +41,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext, &
+       eta,B_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms
@@ -88,7 +89,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.120 2003-08-08 17:41:07 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.121 2003-08-12 16:33:17 christer Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -221,6 +222,7 @@ module Magnetic
 !   1-may-02/wolf: adapted for pencil_modular
 !  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
 !   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
+!  12-aug-03/christer: added alpha effect
 !
       use Cdata
       use Sub
@@ -342,6 +344,13 @@ module Magnetic
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
       !call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
+!
+!  add alpha effect if alpha_effect /= 0
+!      
+      if(alpha_effect/=0.) then
+         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+alpha_effect*bb
+      endif
+
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
 !  Note that eta_out is total eta in halo (not eta_out+eta)
