@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.10 2003-11-02 04:02:02 theine Exp $
+;  $Id: varcontent.pro,v 1.11 2003-11-25 09:26:32 nilshau Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -168,6 +168,13 @@ if (par.lwrite_aux ne 0) then begin
     varcontent[ishock].idlinit    = INIT_SCALAR
     varcontent[ishock].idlvarloc= 'shock_loc'
     varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
+
+    varcontent[ihyper3].variable = 'Hyper diffusion (hyper3)'
+    varcontent[ihyper3].idlvar   = 'hyper3'
+    varcontent[ihyper3].idlinit    = INIT_3VECTOR
+    varcontent[ihyper3].idlvarloc= 'hyper3_loc'
+    varcontent[ihyper3].idlinitloc = INIT_3VECTOR_LOC
+    varcontent[ihyper3].skip  = 2
 end
 
 ; ZERO out default 'should never be used' definition

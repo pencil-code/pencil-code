@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.56 2003-08-12 22:34:18 mee Exp $
+;;; $Id: start.pro,v 1.57 2003-11-25 09:26:32 nilshau Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -156,6 +156,7 @@ if (cpar gt 0) then begin
   lionization=par.lionization
   lionization_fixed=par.lionization_fixed
   lvisc_shock=par.lvisc_shock
+  lvisc_hyper3=par.lvisc_hyper3
   lpscalar  = par.lpscalar
   ldustvelocity = par.ldustvelocity
   ldustdensity = par.ldustdensity
