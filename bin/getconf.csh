@@ -48,9 +48,10 @@ if ($mpi) then
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
     #  is that the right place??
-    echo "are we here on the Nordita cluster?"
+    echo "Use options for the Nordita cluster"
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts
+    #cat ~/lam-bhost.def > lamhosts
     lamboot -v lamhosts
     echo "lamndodes:"
     lamnodes
@@ -58,7 +59,7 @@ if ($mpi) then
     set mpirunops = "-O -c2c"
   else if ($hn =~ s*p*) then
     #  is that the right place??
-    echo "are we here on the fe1 cluster?"
+    echo "Use options for the Horseshoe cluster"
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts
     lamboot -v lamhosts

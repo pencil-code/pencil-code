@@ -9,7 +9,13 @@
 # qsub -l nodes=nq1+nq2+nq3+nq4,mem=1gb,cput=24:00:00 -q p-long run.csh
 # qsub -l nodes=4 -q p-long run.csh
 # qsub -l nodes=nq1+nq2+nq3+nq4 -q p-long run.csh
-# qsub -l ncpus=4,nodes=nq1+nq2 -q p-long run.csh
+# qsub -l nodes=nq1+nq2+nq3 -q p-long run.csh
+# qsub -l ncpus=2,nodes=nq1+nq2 -q p-long run.csh
+# qsub -l nodes=nq1+nq2 -q p-long run.csh
+# qsub -l nodes=nq2 -q p-long run.csh
+# qsub -l ncpus=4 -q p-long run.csh
+# qsub -l nodes=4 -q p-long run.csh
+# qsub -l ncpus=4,nodes=nq3+nq4 -q p-long run.csh
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel run.csh
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
 # qsub -l nodes=8,walltime=20:00:00 -q workq run.csh
