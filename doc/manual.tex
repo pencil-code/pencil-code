@@ -177,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.32 $ $}
+\date{\today,~ $ $Revision: 1.33 $ $}
 
 % ====================================================================== %
 
@@ -206,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.32 $ $}
+  \emph{\today,~ $ $Revision: 1.33 $ $}
 
 
 \end{center}
@@ -1097,14 +1097,21 @@ Example: passive scalar.
 
 \section{Timings}
 
-\begin{table}[htb]\caption{
-Here we give the wall clock time per mesh point (excluding the ghost zones)
-and per full 3-stage time step. The Compaq (mhd) machine has 4 processors per note,
-so the memory consumption is given per node. For example, a $256^3$ MHD run without
-entropy evolution requires 241 Mb per node. So the size per processor is
-241/4 Mb = 60 Mb.
-}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
-proc(s)& machine          &  $\mu$s/pt/step
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Wall clock time per mesh point (excluding the ghost zones)
+      and per full 3-stage time step.
+      The Compaq (mhd) machine has 4 processors per node, so the memory
+      consumption is given per node.
+      For example, a $256^3$ MHD run without entropy evolution requires 241 Mb
+      per node. So the size per processor is 241/4 Mb = 60 Mb.
+      }
+    \label{Ttimescale}
+    \begin{small}
+      \begin{tabular}{lccccccc}
+proc(s)& machine          &  $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}
+                             \rule[-2.8ex]{0pt}{5pt}$
                                  & resol.\ & what         & Size/proc
                                                                    & when/who \\
 \hline
@@ -1129,7 +1136,10 @@ proc(s)& machine          &  $\mu$s/pt/step
 32    & Origin3000 (ukaff)& 0.34 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
 32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro &        & (20-may-02/AB)\\
 64    & Origin3000 (ukaff)& 0.17 & $512^3$ & magn/noentro &        & (21-may-02/AB)\\
-\label{Ttimescale}\end{tabular}}\end{table}
+      \end{tabular}
+    \end{small}
+  \end{center}
+\end{table}
 
 Below we quote the wall clock time per mesh point (including the ghost zones)
 and per full 3-stage time step.
@@ -1154,7 +1164,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \begin{description}
 
 \item[Compilation stops with the cryptic error message]{\bfseries \ 
-    
+
     \begin{Verbatim}
 f95  -O3 -u -c .f90.f90
 Error : Could not open sourcefile .f90.f90
@@ -1165,7 +1175,7 @@ make[1]: *** [.f90.o] Error 1
     What is the problem?}
   \medskip
 
-
+  {\em
   One of the variables for the \file{makefile} has not been set, so
   \cmd{make} expands it to the empty string.
   Most probably you forgot to specify a module in
@@ -1175,7 +1185,25 @@ make[1]: *** [.f90.o] Error 1
   
   Compare your \file{src/Makefile.local} to one of the examples that
   work.
+  }
 
+\item[Start.pro doesn't work:]{\bfseries \
+
+    \begin{Verbatim}
+Reading grid.dat..
+Reading param.nml..
+% Expression must be a structure in this context: PAR.
+% Execution halted at:  $MAIN$            104
+/usr/home/brandenb/f90/pencil_modular/runs/forced/hel1/../../../idl/start.pro
+    \end{Verbatim}
+    }
+    \medskip
+
+    {\em
+    You don't have the subdirectory \file{tmp} in your IDL \var{!path}
+    variable. Make sure you source \file{sourceme.csh}/\file{sourceme.sh}
+    or set a sufficient IDL path otherwise.
+    }
 
 \end{description}
 
@@ -1223,7 +1251,7 @@ make[1]: *** [.f90.o] Error 1
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.32 2002-06-20 20:04:45 dobler Exp $ $}
+$ $Id: manual.tex,v 1.33 2002-06-24 19:09:39 dobler Exp $ $}
 
 
 \end{document}
