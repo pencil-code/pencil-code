@@ -1,3 +1,9 @@
+; $Id: pc_magic_var.pro,v 1.6 2004-07-10 19:02:41 brandenb Exp $
+;
+;  Purpose:
+;
+;  Example:
+;
 pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
   default, datadir, 'data'
