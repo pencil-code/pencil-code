@@ -1,0 +1,18 @@
+#!/bin/sh
+# make tarball of data directory and secure copy to $1 
+# tarek  Nov 26  2002
+
+
+file=`pwd`
+file=${file##*/}'_data.t'
+
+tar -vcf $file data/
+gzip -v -S "gz"   $file
+
+file=${file}gz
+
+echo $file
+scp $file  $1
+
+rm -i $file 
+
