@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.278 2004-12-06 10:09:07 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.279 2004-12-22 01:42:59 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}
+%\date{$ $Date: 2004-12-22 01:42:59 $ $,~ $ $Revision: 1.279 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}\\
+  \emph{$ $Date: 2004-12-22 01:42:59 $ $,~ $ $Revision: 1.279 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1139,8 +1139,12 @@ This step requires some input from you, but you only have to do this once
 for each machine you want to run the code on.
 See Sect.~\ref{adapt-mkfile} for a description of the steps you need to
 take here.
-(If you are lucky and use compilers similar to the ones we have, you may
-be able to skip this step; but blame yourself if things don't compile, then.)
+
+\paragraph{Note:} If you are lucky and use compilers similar to the ones
+we have, you may be able to skip this step; but blame yourself if things
+don't compile, then.
+If not, you can run \cmd{make} with explicit flags, see
+Sec.~\ref{S-make-flags} and in particular Table~\ref{Tab-make-flags}.
 
 
 \subsubsection{Running \cmd{make}}
@@ -1725,6 +1729,7 @@ a line containing \code{\#(onsager|Janus)} will be activated on both,
 \name{Janus} and \name{Onsager}.
 
 \paragraph{Note 2}
+\label{S-make-flags}
 If you want to experiment with compiler flags, or if you
 want to get things running without setting up the machine-dependent
 section of the \file{Makefile}, you can set \name{make} variables at the
@@ -1734,6 +1739,34 @@ command line in the usual manner:
 \end{alltt}
 will use the compiler \cmd{f90} and the flags
 \option[-fast]{-fast -u} for both compilation and linking.
+Table~\ref{Tab-make-flags} summarizes flags we use for common compilers.
+
+\begin{table}
+  \centering
+  \caption{Compiler flags for common compilers.
+    Note that some combinations of OS and compiler require much more
+    elaborate settings; also, if you use MPI, you will have to set
+    \texttt{LDMPI}.}
+  \label{Tab-make-flags}
+  \begin{tabular}{llll}
+  \toprule
+    \emph{Compiler}       & \texttt{FC}    & \texttt{FFLAGS}                     & \texttt{CFLAGS} \\
+  \midrule
+    \emph{Linux defaults} & \texttt{f95}   & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=1}\\
+    Intel ifort           & \texttt{ifort} & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=1}\\
+    Absoft                & \texttt{f90}   & \texttt{-O3 -YEXT_NAMES=LCS}        & \texttt{-O3 -DFUNDERSC=0}\\
+    Portland group        & \texttt{pgf90} & \texttt{-O4}                        & \texttt{-O3 -DFUNDERSC=1}\\
+    Gnu F95               & \texttt{g95}   & \texttt{-O3 -fno-second-underscore} & \texttt{-O3 -DFUNDERSC=1}\\
+                          & \texttt{g95}   & \texttt{-O3}                        & \texttt{-O3 -DFUNDERSC=2}\\
+  \midrule
+    IRIX Mips             & \texttt{f90}   & \texttt{-64 -O3 -mips4}             & \texttt{-O3 -64 -DFUNDERSC=1}\\
+  \midrule
+    Compaq                & \texttt{f90}   & \texttt{-fast -O5 }                 & \texttt{-O3 -DFUNDERSC=1}\\
+  \midrule
+    IBM                   & \texttt{xlf90} & \texttt{-qsuffix=f=f90 -O5 -w}      & \texttt{-O3 -DFUNDERSC=0}\\
+  \bottomrule
+  \end{tabular}
+\end{table}
 
 
 % ---------------------------------------------------------------------- %
@@ -4659,7 +4692,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-12-22 01:42:59 $ $,~ $ $Revision: 1.279 $ $}
 
 \section{Timings}
 
@@ -6282,7 +6315,7 @@ modules.
   \end{longtable}
 %  \end{tabular}
   \end{small}
-\end{center}                                
+\end{center}
 %\end{table}
 % ---------------------------------------------------------------------- %
 
@@ -7740,7 +7773,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.278 2004-12-06 10:09:07 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.279 2004-12-22 01:42:59 dobler Exp $ $}
 
 
 \end{document}
