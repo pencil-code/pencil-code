@@ -43,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-05-02 14:43:27 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-05-02 16:29:42 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -107,6 +107,9 @@ module Magnetic
           yy1 = -   sp*xx +    cp*yy          - shift(2)
           zz1 =  st*cp*xx + st*sp*yy + ct*zz  - shift(3)
           call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
+print*, 'tmpv_x: ', minval(tmpv(:,:,:,1)), maxval(tmpv(:,:,:,1))
+print*, 'tmpv_y: ', minval(tmpv(:,:,:,2)), maxval(tmpv(:,:,:,2))
+print*, 'tmpv_z: ', minval(tmpv(:,:,:,3)), maxval(tmpv(:,:,:,3))
           tmpv = tmpv*fring
           ! calculate D*tmpv
           f(:,:,:,iax) = f(:,:,:,iax) &
@@ -215,11 +218,23 @@ module Magnetic
 !
 !  current ring (to twist the B-lines)
 !
-      tmp = tmp*2 + zz**2 + width**2
+print*
+print*, 'tmp [1]: ', minval(tmp), maxval(tmp), sum(tmp)
+print*, 'tmp**2: ', minval(tmp**2), maxval(tmp**2), sum(tmp**2)
+print*, 'zz: ', minval(zz), maxval(zz)
+print*, 'width: ', width
+
+      tmp = tmp**2 + zz**2 + width**2
+print*, 'tmp [2]: ', minval(tmp), maxval(tmp), sum(tmp)
       tmp = Iring*alog(tmp)     ! Now the A_phi component
       phi = atan2(yy,xx)
+
+print*, 'tmp [3]: ', minval(tmp), maxval(tmp), sum(tmp)
+print*, 'phi: ', minval(phi), maxval(phi)
       vv(:,:,:,1) = - tmp*sin(phi)
       vv(:,:,:,2) =   tmp*cos(phi)
+print*, 'vv_x: ', minval(vv(:,:,:,1)), maxval(vv(:,:,:,1)),sum(vv(:,:,:,1))
+print*, 'vv_y: ', minval(vv(:,:,:,2)), maxval(vv(:,:,:,2)),sum(vv(:,:,:,2))
 !
     endsubroutine norm_ring
 !***********************************************************************
