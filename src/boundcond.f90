@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.43 2003-06-17 22:52:39 dobler Exp $
+! $Id: boundcond.f90,v 1.44 2003-06-19 07:19:26 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -255,6 +255,10 @@ module Boundcond
                 call bc_db_z(f,topbot,j) 
               case ('ce')       ! complex
                 if (j==ient) call bc_ss_energy(f,topbot)
+              case ('e1')       ! extrapolation
+                call bc_extrap_2_1(f,topbot,j)
+              case ('e2')       ! extrapolation
+                call bc_extrap_2_2(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
               case default
                 if (lroot) &
@@ -569,6 +573,72 @@ module Boundcond
       endselect
 !
     endsubroutine bc_onesided_z
+!***********************************************************************
+    subroutine bc_extrap_2_1(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 1 further degree
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,:,n1-1,j)=0.25*(  9*f(:,:,n1,j)- 3*f(:,:,n1+1,j)- 5*f(:,:,n1+2,j)+ 3*f(:,:,n1+3,j))
+        f(:,:,n1-2,j)=0.05*( 81*f(:,:,n1,j)-43*f(:,:,n1+1,j)-57*f(:,:,n1+2,j)+39*f(:,:,n1+3,j))
+        f(:,:,n1-3,j)=0.05*(127*f(:,:,n1,j)-81*f(:,:,n1+1,j)-99*f(:,:,n1+2,j)+73*f(:,:,n1+3,j))
+
+      case('top')               ! top boundary
+        f(:,:,n2+1,j)=0.25*(  9*f(:,:,n2,j)- 3*f(:,:,n2-1,j)- 5*f(:,:,n2-2,j)+ 3*f(:,:,n2-3,j))
+        f(:,:,n2+2,j)=0.05*( 81*f(:,:,n2,j)-43*f(:,:,n2-1,j)-57*f(:,:,n2-2,j)+39*f(:,:,n2-3,j))
+        f(:,:,n2+3,j)=0.05*(127*f(:,:,n2,j)-81*f(:,:,n2-1,j)-99*f(:,:,n2-2,j)+73*f(:,:,n2-3,j))
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_extrap_2_1
+!***********************************************************************
+    subroutine bc_extrap_2_2(f,topbot,j)
+!
+!  Extrapolation boundary condition.
+!  Correct for polynomials up to 2nd order, determined 2 further degrees
+!  of freedom by minimizing L2 norm of coefficient vector.
+!
+!   19-jun-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        f(:,:,n1-1,j)=0.2  *(  9*f(:,:,n1,j)                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j))+ 3*f(:,:,n1+4,j))
+        f(:,:,n1-2,j)=0.2  *( 15*f(:,:,n1,j)- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j))+ 7*f(:,:,n1+4,j))
+        f(:,:,n1-3,j)=1./7.*(157*f(:,:,n1,j)-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j))+87*f(:,:,n1+4,j))
+
+      case('top')               ! top boundary
+        f(:,:,n2+1,j)=0.2  *(  9*f(:,:,n2,j)                 -  4*f(:,:,n2-2,j)- 3*f(:,:,n2-3,j))+ 3*f(:,:,n2-4,j))
+        f(:,:,n2+2,j)=0.2  *( 15*f(:,:,n2,j)- 2*f(:,:,n2-1,j)-  9*f(:,:,n2-2,j)- 6*f(:,:,n2-3,j))+ 7*f(:,:,n2-4,j))
+        f(:,:,n2+3,j)=1./7.*(157*f(:,:,n2,j)-33*f(:,:,n2-1,j)-108*f(:,:,n2-2,j)-68*f(:,:,n2-3,j))+87*f(:,:,n2-4,j))
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_extrap_2_2
 !***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
