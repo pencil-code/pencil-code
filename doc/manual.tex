@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.75 2002-08-02 21:24:11 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.76 2002-08-03 20:52:13 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -219,7 +219,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.75 $ $}
+\date{\today,~ $ $Revision: 1.76 $ $}
 
 % ====================================================================== %
 
@@ -248,7 +248,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.75 $ $}
+  \emph{\today,~ $ $Revision: 1.76 $ $}
 
 
 \end{center}
@@ -2105,11 +2105,14 @@ $u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
   $\ln\varrho$ and $s$: constant heat flux through the
   boundary
 \item[\option{c2}] special boundary condition for
-  $\ln\varrho$ and $s$: constant temperature at the
-  boundary
+  $s$: constant temperature at the boundary --- requires boundary
+  condition \code{a2} for $\ln\varrho$
+\item[\option{cT}] special boundary condition for
+  $s$: constant temperature at the boundary (for arbitrarily set
+  $\ln\varrho$)
 \item[\option{ce}] special boundary condition for
-  $s$: constant temperature at the boundary for
-  arbitrarily set $\ln\varrho$
+  $s$: set temperature in ghost points to value on boundary (for
+  arbitrarily set $\ln\varrho$)
 \item[\option{db}] low-order one-sided derivatives (``no
     boundary condition'') for density
 \end{description}
@@ -3217,7 +3220,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.75 2002-08-02 21:24:11 dobler Exp $ $}
+$ $Id: manual.tex,v 1.76 2002-08-03 20:52:13 dobler Exp $ $}
 
 
 \end{document}
