@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.196 2004-02-18 16:56:38 ajohan Exp $
+! $Id: equ.f90,v 1.197 2004-02-20 19:08:38 nilshau Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.196 2004-02-18 16:56:38 ajohan Exp $")
+           "$Id: equ.f90,v 1.197 2004-02-20 19:08:38 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -427,7 +427,9 @@ module Equ
 !
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
 !
-!  set diagnostic for case with hyper viscosity
+!  in case of lvisc_hyper=true epsK is calculated for the whole array 
+!  at not just for one pencil, it must therefore be added outside the
+!  m,n loop.
 !      
       if (lvisc_hyper .and. ldiagnos) fname(i_epsK)=epsK_hyper
 !
