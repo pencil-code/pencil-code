@@ -1,4 +1,4 @@
-!  $Id: noinitcond_spec.f90,v 1.1 2003-03-27 10:51:39 brandenb Exp $
+!  $Id: noinitcond_spec.f90,v 1.2 2003-04-04 16:31:45 anders Exp $
 !
 !  Substitute routines for vortex_solve.f90
 !
@@ -9,12 +9,15 @@ module Initcond_spec
   contains
 
 !***********************************************************************
-    subroutine special_ic(f,xx,yy,zz,a_ell,b_ell,xi0,gamma,cs20)
+    subroutine kepvor(f,xx,yy,zz,a_ell,b_ell,xi0,gamma,cs20,hh0)
 !
+      use Cdata
+      use General
+
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: a_ell, b_ell, xi0
+      real :: a_ell, b_ell, xi0, hh0
       real :: gamma,cs20
-    endsubroutine special_ic
+    endsubroutine kepvor
 
 end module Initcond_spec
