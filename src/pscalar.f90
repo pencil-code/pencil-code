@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.43 2004-05-12 17:27:07 ajohan Exp $
+! $Id: pscalar.f90,v 1.44 2004-05-18 11:14:55 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -35,9 +35,10 @@ module Pscalar
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
   real :: rhoccm=0., cc2m=0., gcc2m=0.
+  logical :: lpscalar_turb_diff=.false.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
+       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lpscalar_turb_diff
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
@@ -78,7 +79,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.43 2004-05-12 17:27:07 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.44 2004-05-18 11:14:55 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,6 +183,7 @@ module Pscalar
 !   6-jul-02/axel: coded
 !
       use Sub
+      use Hydro, only: nu_turb
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -220,7 +222,9 @@ module Pscalar
 !
 !  diffusion operator
 !
+        if (lpscalar_turb_diff) pscalar_diff=nu_turb
         if (pscalar_diff/=0.) then
+          print*, iproc, pscalar_diff
           if(headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
           call dot_mn(glncc+glnrho,glncc,diff_op)
           call del2(f,ilncc,del2lncc)
