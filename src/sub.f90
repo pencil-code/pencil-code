@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.87 2002-10-04 14:38:52 dobler Exp $ 
+! $Id: sub.f90,v 1.88 2002-10-04 17:31:08 dobler Exp $ 
 
 module Sub 
 
@@ -1813,6 +1813,31 @@ module Sub
       endif
 !
     endsubroutine get_nseed
+!***********************************************************************
+    function date_time_string()
+!
+!  return current date and time as a string
+!  4-oct-02/wolf: coded
+!
+      character (len=20) :: date_time_string
+      integer, dimension(8) :: values
+      character (len=3), dimension(12) :: month = &
+           (/ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', &
+              'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
+!
+print*, 'BEFORE ====================='
+      call date_and_time(VALUES=values)
+print*, 'MIDDLE ====================='
+print*, 'VALUES = ', values
+!
+      write(date_time_string,'(I2,"-",A3,"-",I4," ",I2,":",I2,":",I2)') &
+           values(3), month(values(3)), values(1), &
+           values(5), values(6), values(7)
+print*, date_time_string
+print*, 'AFTER ======================'
+
+!
+    endfunction date_time_string
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !
