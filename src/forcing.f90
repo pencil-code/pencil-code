@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.53 2003-10-07 08:22:24 brandenb Exp $
+! $Id: forcing.f90,v 1.54 2003-10-08 18:17:38 brandenb Exp $
 
 module Forcing
 
@@ -54,7 +54,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.53 2003-10-07 08:22:24 brandenb Exp $")
+           "$Id: forcing.f90,v 1.54 2003-10-08 18:17:38 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -100,7 +100,7 @@ module Forcing
 !  vertical profiles for amplitude and helicity of the forcing
 !  default is constant profiles for rms velocity and helicity.
 !
-      if (zff_ampl==0) then
+      if (zff_ampl==0. .and. zff_hel==0.) then
         profz_ampl=1.
         profz_hel=1.
       else
