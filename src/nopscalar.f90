@@ -1,10 +1,10 @@
-! $Id: nopscalar.f90,v 1.7 2003-10-12 22:13:17 mee Exp $
+! $Id: nopscalar.f90,v 1.8 2003-10-20 16:27:21 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -50,7 +50,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.7 2003-10-12 22:13:17 mee Exp $")
+           "$Id: nopscalar.f90,v 1.8 2003-10-20 16:27:21 dobler Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************

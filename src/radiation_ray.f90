@@ -1,11 +1,11 @@
-! $Id: radiation_ray.f90,v 1.35 2003-10-12 22:13:17 mee Exp $
+! $Id: radiation_ray.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
@@ -101,7 +101,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.35 2003-10-12 22:13:17 mee Exp $")
+           "$Id: radiation_ray.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !

@@ -1,11 +1,11 @@
-! $Id: dustdensity.f90,v 1.10 2003-10-12 22:13:17 mee Exp $
+! $Id: dustdensity.f90,v 1.11 2003-10-20 16:27:20 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -66,7 +66,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.10 2003-10-12 22:13:17 mee Exp $")
+           "$Id: dustdensity.f90,v 1.11 2003-10-20 16:27:20 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

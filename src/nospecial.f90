@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $
+! $Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $
 
 !  This module provide a way for users to specify custom (i.e. not in the standard Pencil Code)
 !  physics, diagnostics etc. 
@@ -29,7 +29,7 @@
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -108,11 +108,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $")
+           "$Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 

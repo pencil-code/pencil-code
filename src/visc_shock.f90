@@ -1,11 +1,11 @@
-! $Id: visc_shock.f90,v 1.28 2003-10-16 12:50:25 mee Exp $
+! $Id: visc_shock.f90,v 1.29 2003-10-20 16:27:21 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 1
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.28 2003-10-16 12:50:25 mee Exp $")
+           "$Id: visc_shock.f90,v 1.29 2003-10-20 16:27:21 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

@@ -1,11 +1,11 @@
-! $Id: density.f90,v 1.125 2003-10-20 11:25:26 mcmillan Exp $
+! $Id: density.f90,v 1.126 2003-10-20 16:27:20 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 1
 ! MAUX CONTRIBUTION 0
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.125 2003-10-20 11:25:26 mcmillan Exp $")
+           "$Id: density.f90,v 1.126 2003-10-20 16:27:20 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

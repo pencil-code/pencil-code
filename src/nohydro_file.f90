@@ -1,8 +1,8 @@
-! $Id: nohydro_file.f90,v 1.10 2003-10-14 07:02:24 nilshau Exp $
+! $Id: nohydro_file.f90,v 1.11 2003-10-20 16:27:21 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -50,8 +50,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2003-10-14 07:02:24 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2003-10-20 16:27:21 $")
 !
     endsubroutine register_hydro
 !***********************************************************************

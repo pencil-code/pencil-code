@@ -1,8 +1,8 @@
-! $Id: grav_z.f90,v 1.45 2003-10-18 20:43:34 brandenb Exp $
+! $Id: grav_z.f90,v 1.46 2003-10-20 16:27:20 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -91,7 +91,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.45 2003-10-18 20:43:34 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.46 2003-10-20 16:27:20 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.

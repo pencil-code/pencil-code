@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.139 2003-10-16 17:13:00 brandenb Exp $
+! $Id: magnetic.f90,v 1.140 2003-10-20 16:27:20 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -7,7 +7,7 @@
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
@@ -101,7 +101,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.139 2003-10-16 17:13:00 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.140 2003-10-20 16:27:20 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

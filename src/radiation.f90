@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.28 2003-10-12 22:13:17 mee Exp $
+! $Id: radiation.f90,v 1.29 2003-10-20 16:27:21 dobler Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -8,7 +8,7 @@
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 5
 ! MAUX CONTRIBUTION 0
@@ -91,7 +91,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.28 2003-10-12 22:13:17 mee Exp $")
+           "$Id: radiation.f90,v 1.29 2003-10-20 16:27:21 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

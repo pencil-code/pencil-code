@@ -1,10 +1,10 @@
-! $Id: ionization_fixed.f90,v 1.25 2003-10-18 19:47:10 theine Exp $
+! $Id: ionization_fixed.f90,v 1.26 2003-10-20 16:27:20 dobler Exp $
 
 !  Dummy routine for noionization
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
-! variables and auxilliary variables added by this module
+! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
 ! MAUX CONTRIBUTION 0
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.25 2003-10-18 19:47:10 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.26 2003-10-20 16:27:20 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
