@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.10 2003-12-06 14:25:50 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.10 2003-12-06 14:25:50 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -156,6 +156,7 @@ module Dustvelocity
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'dustlayers=', dustlayers
         write(3,*) 'i_ud2m=',i_ud2m
         write(3,*) 'i_udm2=',i_udm2
         write(3,*) 'i_od2m=',i_od2m
