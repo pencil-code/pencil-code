@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.30 2002-07-05 13:08:07 nilshau Exp $
+! $Id: mpicomm.f90,v 1.31 2002-07-11 12:37:34 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -308,8 +308,6 @@ module Mpicomm
               f(l1:l2,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
-  !      f(l1:l2, 1:m1-1,n1:n2,:)=lbufyi  !!(set lower buffer)
-  !      f(l1:l2,m2+1:my,n1:n2,:)=ubufyi  !!(set upper buffer)
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppy,isend_stat_tu,ierr)
       endif
@@ -327,8 +325,6 @@ module Mpicomm
               f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
            endif
         enddo
-        !f(l1:l2,m1:m2, 1:n1-1,:)=lbufzi  !!(set lower buffer)
-        !f(l1:l2,m1:m2,n2+1:mz,:)=ubufzi  !!(set upper buffer)
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
         call MPI_WAIT(isend_rq_touppz,isend_stat_tu,ierr)
       endif
@@ -474,7 +470,7 @@ module Mpicomm
       real, dimension (nghost,2*my-2*nghost,mz,mvar) :: fa, fb
       integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
       integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb
-      integer :: m2long
+      integer :: m2long,i
       double precision :: frak, c1, c2, c3, c4, c5, c6
 !
 !  Sliding periodic boundary conditions in x
@@ -514,6 +510,18 @@ module Mpicomm
               +c4*fb(:,m1+displs+1:m2+displs+1,:,:) &
               +c5*fb(:,m1+displs+2:m2+displs+2,:,:) &
               +c6*fb(:,m1+displs+3:m2+displs+3,:,:) 
+!
+!  Filling also the x-y corners in order to avoid only zeros at these corners.
+!  One should acctually have communicated with an extra processor in order to
+!  fill these corners with the right values, but this does not seem to be 
+!  necessary.
+!
+         do i=1,nghost
+            f(1:l1-1,i,:,:)=f(1:l1-1,m1+nghost-i,:,:)
+            f(1:l1-1,m2+i,:,:)=f(1:l1-1,m2-i+1,:,:)
+            f(l2+1:mx,i,:,:)=f(l2+1:mx,m1+nghost-i,:,:)
+            f(l2+1:mx,m2+i,:,:)=f(l2+1:mx,m2-i+1,:,:)
+         end do
 !
 !  need to wait till buffer is empty before re-using it again
 !
