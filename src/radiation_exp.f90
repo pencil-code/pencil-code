@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.23 2003-06-29 12:09:11 theine Exp $
+! $Id: radiation_exp.f90,v 1.24 2003-06-29 16:52:25 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.23 2003-06-29 12:09:11 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.24 2003-06-29 16:52:25 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -123,17 +123,6 @@ module Radiation
       enddo
       enddo
       print*,'initialize_radiation: directions=',directions
-!
-!  side boundaries : initially I=0
-!
-      do nrad=-radz,radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        Irad0_yz(:,:,:,lrad,mrad,nrad)=0
-        Irad0_zx(:,:,:,lrad,mrad,nrad)=0
-      enddo
-      enddo
-      enddo
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -318,26 +307,16 @@ module Radiation
 !
     endsubroutine intensity1
 !***********************************************************************
-    subroutine radtransfer2(f)
-!
-!  Integration radioation transfer equation along rays
-!
-!  This routine is called after the communication part
-!  The true boundary intensities I0 are now known and
-!    the correction term I0*exp(-tau) is added
-!  16-jun-03/axel+tobi: coded
+    subroutine radtransfer_comm()
 !
       use Cdata
-      use Sub
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: Irad0,Irad
-      real :: frac
       integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
 !
-!  identifier
+!  Identifier
 !
-      if(lroot.and.headt) print*,'radtransfer2'
+      if (first) print*,'radtransfer_comm'
 !
 !  bottom boundary (rays point upwards): I=S
 !
@@ -358,6 +337,55 @@ module Radiation
       enddo
       enddo
       enddo
+!
+!  side boundaries : initially I=0
+!
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if (rad2>0 .and. rad2<=rad2max) then 
+           if (first) then
+              Irad0_yz(:,:,:,lrad,mrad,nrad)=0
+              Irad0_zx(:,:,:,lrad,mrad,nrad)=0
+              first=.false.
+           else
+              Irad0_yz(:,:,:,lrad,mrad,nrad) &
+                =Irad0_yz(:,:,:,lrad,mrad,nrad) &
+                 *exp(-tau_yz(:,:,:,lrad,mrad,nrad)) &
+                 +Irad_yz(:,:,:,lrad,mrad,nrad)
+              Irad0_zx(:,:,:,lrad,mrad,nrad) &
+                =Irad0_zx(:,:,:,lrad,mrad,nrad) &
+                 *exp(-tau_zx(:,:,:,lrad,mrad,nrad)) &
+                 +Irad_zx(:,:,:,lrad,mrad,nrad)
+           endif
+        endif
+      enddo
+      enddo
+      enddo
+!
+    endsubroutine radtransfer_comm
+!***********************************************************************
+    subroutine radtransfer2(f)
+!
+!  Integration radioation transfer equation along rays
+!
+!  This routine is called after the communication part
+!  The true boundary intensities I0 are now known and
+!    the correction term I0*exp(-tau) is added
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz) :: Irad0,Irad
+      real :: frac
+      integer :: lrad,mrad,nrad,rad2
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'radtransfer2'
 !
 !  calculate weights
 !
@@ -384,20 +412,6 @@ module Radiation
           !
           call intensity2(lrad,mrad,nrad,Irad0,Irad)
           f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
-          !
-          !  safe boundary values for next processor (or opposite boundary)
-          !
-          !  This needs to be done in the communication part and not here
-          !
-          Irad0_xy(:,:,:,lrad,mrad,nrad) &
-            =Irad0_xy(:,:,:,lrad,mrad,nrad)*exp(-tau_xy(:,:,:,lrad,mrad,nrad)) &
-             +Irad_xy(:,:,:,lrad,mrad,nrad)
-          Irad0_yz(:,:,:,lrad,mrad,nrad) &
-            =Irad0_yz(:,:,:,lrad,mrad,nrad)*exp(-tau_yz(:,:,:,lrad,mrad,nrad)) &
-             +Irad_yz(:,:,:,lrad,mrad,nrad)
-          Irad0_zx(:,:,:,lrad,mrad,nrad) &
-            =Irad0_zx(:,:,:,lrad,mrad,nrad)*exp(-tau_zx(:,:,:,lrad,mrad,nrad)) &
-             +Irad_zx(:,:,:,lrad,mrad,nrad)
         endif
       enddo
       enddo

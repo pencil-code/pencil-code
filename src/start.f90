@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.101 2003-06-27 21:47:11 theine Exp $
+! $Id: start.f90,v 1.102 2003-06-29 16:52:25 theine Exp $
 !
 !***********************************************************************
       program start
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.101 2003-06-27 21:47:11 theine Exp $")
+             "$Id: start.f90,v 1.102 2003-06-29 16:52:25 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -152,7 +152,7 @@
         endif
         if(lradiation_ray) then
           call radtransfer1(f)
-          ! call radtransfer_comm
+          call radtransfer_comm()
           call radtransfer2(f)
         endif
 !

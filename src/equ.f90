@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.146 2003-06-27 21:47:11 theine Exp $
+! $Id: equ.f90,v 1.147 2003-06-29 16:52:25 theine Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.146 2003-06-27 21:47:11 theine Exp $")
+           "$Id: equ.f90,v 1.147 2003-06-29 16:52:25 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -253,7 +253,7 @@ module Equ
       if(lionization) call ioncalc(f)
       if(lradiation_ray) then
         call radtransfer1(f)
-        ! call radtransfer_comm
+        call radtransfer_comm()
         call radtransfer2(f)
       endif
 !
