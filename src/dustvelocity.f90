@@ -1,4 +1,4 @@
-  ! $Id: dustvelocity.f90,v 1.75 2004-08-28 12:11:27 ajohan Exp $
+  ! $Id: dustvelocity.f90,v 1.76 2004-09-06 10:01:47 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -31,20 +31,21 @@ module Dustvelocity
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst
   real :: unit_md
-  logical, dimension(ndustspec) :: lfeedback_gas=.true.
+  logical, dimension(ndustspec) :: lfeedback_gas=.false.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
+  logical :: ldustvelocity_shorttausd=.false.
   character (len=labellen) :: inituud='zero',iviscd='simplified'
   character (len=labellen) :: draglaw='epstein_cst'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 
   namelist /dustvelocity_init_pars/ &
        rhods, md0, ad0, ad1, deltamd, draglaw, ampluud, inituud, &
-       dust_chemistry, dust_geometry, tausd
+       dust_chemistry, dust_geometry, tausd, ldustvelocity_shorttausd
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
        nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
-       ldustdrag, lfeedback_gas, lfeedback_gas_all
+       ldustdrag, lfeedback_gas, lfeedback_gas_all, ldustvelocity_shorttausd
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
@@ -106,7 +107,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.75 2004-08-28 12:11:27 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.76 2004-09-06 10:01:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -418,6 +419,7 @@ module Dustvelocity
       use IO
       use Mpicomm, only: stop_it
       use Density, only: cs0
+      use Gravity, only: gravz,kz_gg
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -428,19 +430,31 @@ module Dustvelocity
       real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
       real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
-      integer :: i,j,k,l
+      integer :: i,j,k,l,nn
 !
       intent(in) :: uu,rho1
       intent(out) :: df,divud,ud2
 !
 !  identify module and boundary conditions
 !
-        if (headtt.or.ldebug) print*,'duud_dt: SOLVE duud_dt'
-        if (headtt) then
-          call identify_bcs('udx',iudx(1))
-          call identify_bcs('udy',iudy(1))
-          call identify_bcs('udz',iudz(1))
-        endif
+      if (headtt.or.ldebug) print*,'duud_dt: SOLVE duud_dt'
+      if (headtt) then
+        call identify_bcs('udx',iudx(1))
+        call identify_bcs('udy',iudy(1))
+        call identify_bcs('udz',iudz(1))
+      endif
+!
+!  Short stopping time approximation
+!
+      if (ldustvelocity_shorttausd .and. lfirstpoint) then
+        do k=1,ndustspec
+          do nn=1,mz
+            f(:,:,nn,iudx(k)) = f(:,:,nn,iux)
+            f(:,:,nn,iudy(k)) = f(:,:,nn,iuy)
+            f(:,:,nn,iudz(k)) = f(:,:,nn,iuz) - tausd(k)*gravz*sin(kz_gg*z(nn))
+          enddo
+        enddo
+      endif
 !
 !  Abbreviations
 !
@@ -462,122 +476,100 @@ module Dustvelocity
         endif
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
-!  calculate velocity gradient matrix
+!  Calculate velocity gradient matrix
 !
-        if (lroot .and. ip < 5) print*, &
-          'duud_dt: call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=' &
-          ,m,n,iudx(k),iudz(k),ud2(:,k)
+        if (lroot .and. ip < 5) &
+            print*, 'duud_dt: call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=', &
+            m,n,iudx(k),iudz(k),ud2(:,k)
         call gij(f,iuud(k),udij)
         divud(:,k) = udij(:,1,1) + udij(:,2,2) + udij(:,3,3)
 !
-!  calculate rate of strain tensor
+!  Dynamical terms
 !
-        if (lneed_sdij) then
-          do j=1,3
-             do i=1,3
-              sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
-            enddo
-            sdij(:,j,j)=sdij(:,j,j)-.333333*divud(:,i)
-          enddo
-        endif
+        if (.not. ldustvelocity_shorttausd) then
 !
-!  advection term
+!  Advection term
 !
-        if (ldebug) print*,'duud_dt: call multmv_mn(udij,uud,udgud)'
-        call multmv_mn(udij,uud(:,:,k),udgud)
-        df(l1:l2,m,n,iudx(k):iudz(k)) = &
-            df(l1:l2,m,n,iudx(k):iudz(k)) - udgud
+          if (ldebug) print*,'duud_dt: call multmv_mn(udij,uud,udgud)'
+          call multmv_mn(udij,uud(:,:,k),udgud)
+          df(l1:l2,m,n,iudx(k):iudz(k)) = &
+              df(l1:l2,m,n,iudx(k):iudz(k)) - udgud
 !
 !  Coriolis force, -2*Omega x ud
 !  Omega=(-sin_theta, 0, cos_theta)
 !  theta corresponds to latitude
 !
-        if (Omega/=0.) then
-          if (theta==0) then
-            if (headtt .and. k == 1) &
-                print*,'duud_dt: add Coriolis force; Omega=',Omega
-            c2=2*Omega
-            df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + &
-                c2*uud(:,2,k)
-            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - &
-                c2*uud(:,1,k)
-          else
-            if (headtt .and. k == 1) print*, &
-                'duud_dt: Coriolis force; Omega,theta=',Omega,theta
-            c2=2*Omega*cos(theta*pi/180.)
-            s2=2*Omega*sin(theta*pi/180.)
-            df(l1:l2,m,n,iudx(k)) = &
-                df(l1:l2,m,n,iudx(k)) + c2*uud(:,2,k)
-            df(l1:l2,m,n,iudy(k)) = &
-                df(l1:l2,m,n,iudy(k)) - c2*uud(:,1,k) + s2*uud(:,3,k)
-            df(l1:l2,m,n,iudz(k)) = &
-                df(l1:l2,m,n,iudz(k))                 + s2*uud(:,2,k)
+          if (Omega/=0.) then
+            if (theta==0) then
+              if (headtt .and. k == 1) &
+                  print*,'duud_dt: add Coriolis force; Omega=',Omega
+              c2=2*Omega
+              df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + &
+                  c2*uud(:,2,k)
+              df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - &
+                  c2*uud(:,1,k)
+            else
+              if (headtt .and. k == 1) print*, &
+                  'duud_dt: Coriolis force; Omega,theta=',Omega,theta
+              c2=2*Omega*cos(theta*pi/180.)
+              s2=2*Omega*sin(theta*pi/180.)
+              df(l1:l2,m,n,iudx(k)) = &
+                  df(l1:l2,m,n,iudx(k)) + c2*uud(:,2,k)
+              df(l1:l2,m,n,iudy(k)) = &
+                  df(l1:l2,m,n,iudy(k)) - c2*uud(:,1,k) + s2*uud(:,3,k)
+              df(l1:l2,m,n,iudz(k)) = &
+                  df(l1:l2,m,n,iudz(k))                 + s2*uud(:,2,k)
+            endif
           endif
-        endif
 !
 !  calculate viscous and drag force
 !
 !  add dust diffusion (mostly for numerical reasons) in either of
 !  the two formulations (ie with either constant betad or constant tausd)
 !
-        call del2v(f,iuud(k),del2ud)
+          call del2v(f,iuud(k),del2ud)
 !
 !  Stopping time of dust is calculated in get_stoppingtime
 !
-        if (ldustdrag) then
-          call get_stoppingtime(f,rho,cs2,rhod,k)
+          if (ldustdrag) then
+            call get_stoppingtime(f,rho,cs2,rhod,k)
 !
 !  Add drag force on dust. If taus << dt, set udx = ux, udy=uy, udz=udz(term)
 !
-          do i=1,3; tausd13(:,i) = tausd1(:,k); enddo
-
-          if (draglaw == 'epstein_var') then
-            do l=1,nx
-              if (tausd1(l,k) > 1./(3*dt_beta(itsub))) then
-                df(3+l,m,n,iudx(k)) = df(3+l,m,n,iux) + &
-                    1/dt_beta(itsub)*(uu(l,1) - uud(l,1,k))
-                df(3+l,m,n,iudy(k)) = df(3+l,m,n,iuy) + &
-                    1/dt_beta(itsub)*(uu(l,2) - uud(l,2,k))
-                df(3+l,m,n,iudz(k)) = df(3+l,m,n,iuz) + &
-                    1/dt_beta(itsub)*(uu(l,3) - uud(l,3,k) - &
-                    tausd1(l,k)**(-1)*Omega**2*z(n))
-              else
-                df(3+l,m,n,iudx(k):iudz(k)) = df(3+l,m,n,iudx(k):iudz(k)) - &
-                    tausd13(l,k)*(uud(l,:,k)-uu(l,:))
-              endif
-            enddo
-          else
+            do i=1,3; tausd13(:,i) = tausd1(:,k); enddo
             df(l1:l2,m,n,iudx(k):iudz(k)) = df(l1:l2,m,n,iudx(k):iudz(k)) - &
                 tausd13*(uud(:,:,k)-uu)
-          endif
 !
 !  Add drag force on gas (back-reaction)
 !
-          if (lfeedback_gas(k)) then
-            tausg1 = rhod*tausd1(:,k)*rho1
-            do i=1,3; tausg13(:,i) = tausg1; enddo
-            df(l1:l2,m,n,iux:iuz) = &
-                df(l1:l2,m,n,iux:iuz) - tausg13*(uu-uud(:,:,k))
-          endif
-        endif  ! if (ldustdrag)
+            if (lfeedback_gas(k)) then
+              tausg1 = rhod*tausd1(:,k)*rho1
+              do i=1,3; tausg13(:,i) = tausg1; enddo
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - &
+                  tausg13*(uu-uud(:,:,k))
+            endif
+          endif  ! if (ldustdrag)
 !
 !  Add viscosity on dust
 !
-        select case (iviscd)
+          select case (iviscd)
 
-        case ('simplified')
-          df(l1:l2,m,n,iudx(k):iudz(k)) = &
-              df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
+          case ('simplified')
+            df(l1:l2,m,n,iudx(k):iudz(k)) = &
+                df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
 
-        case('hyper6')
-          call del6v(f,iuud(k),del6ud)
-          df(l1:l2,m,n,iudx(k):iudz(k)) = &
-              df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del6ud
+          case('hyper6')
+            call del6v(f,iuud(k),del6ud)
+            df(l1:l2,m,n,iudx(k):iudz(k)) = &
+                df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del6ud
 
-        endselect
+          endselect
+!          
+        endif   ! if (.not. ldustvelocity_shorttausd)
 !
 !  ``uud/dx'' for timestep
 !
+ 
         if (lfirst.and.ldt) then
           advec_uud=max(advec_uud,abs(uud(:,1,k))*dx_1(l1:l2)+ &
                                   abs(uud(:,2,k))*dy_1(  m  )+ &
@@ -663,7 +655,7 @@ module Dustvelocity
           endif
         endif
 !
-!  End loop over dust layers
+!  End loop over dust species
 !
       enddo
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.248 2004-07-24 14:33:08 ajohan Exp $
+! $Id: cdata.f90,v 1.249 2004-09-06 10:01:47 ajohan Exp $
 
 module Cdata
 
@@ -23,7 +23,7 @@ module Cdata
   real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi
   real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
-  real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor
+  real, dimension (nx,3,3) :: sij     ! rate-of-strain tensor
 
   real, parameter :: pi=3.14159265358979324D0
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0)
@@ -160,7 +160,6 @@ module Cdata
   ! variables to allow modules to share 'precalculated' stuff
   ! when necessary (set in module initialize functions)
   logical :: lneed_sij=.false., lneed_glnrho=.false.
-  logical :: lneed_sdij=.false.
 
   logical :: lfirstpoint=.false.,llastpoint=.false.
   logical :: vel_spec=.false.,mag_spec=.false.,uxj_spec=.false.,vec_spec=.false.
