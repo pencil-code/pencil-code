@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.7 2002-08-15 08:47:29 brandenb Exp $ 
+! $Id: initcond.f90,v 1.8 2002-08-15 19:09:06 nilshau Exp $ 
 
 module Initcond 
  
@@ -203,15 +203,15 @@ module Initcond
 !
 !  calculate psi, hh, and h0
 !
-      h0=ampl**(gamma-1.)-zz**2/delta2
-      h0=0.
+!      h0=ampl**(gamma-1.)-zz**2/delta2
+!      h0=0.
       rr2=xx**2+eps2*yy**2  !+zz**2/Rz**2
-      hh=+.5*delta2*Omega**2*amax1(radius2-rr2,h0)
+      hh=+.5*delta2*Omega**2*(radius2-rr2)
 !
 !  limit dynamical range to 1:100
 !
       hmax=maxval(hh)
-      hmin=0.3*hmax
+      hmin=ampl**(gamma-1)*hmax
       hh=amax1(hh,hmin)
 !
       if (gamma<=1.) print*,'must have gamma>1 for planet solution'
@@ -219,7 +219,8 @@ module Initcond
       do i=l1,l2
         do j=m1,m2
           rad2=x(i)**2+eps2*y(j)**2
-          if (rad2<radius2) then
+!          if (rad2<radius2) then
+          if (hh(i,j,4)>hmin) then
             f(i,j,:,iux)=   eps2*sigma *Omega*yy(i,j,:)
             f(i,j,:,iuy)=(qshear-sigma)*Omega*xx(i,j,:)
           else
