@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.11 2003-04-05 19:31:35 brandenb Exp $
+! $Id: feautrier.f90,v 1.12 2003-04-05 21:22:33 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.11 2003-04-05 19:31:35 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.12 2003-04-05 21:22:33 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -194,6 +194,7 @@ module Radiation
     subroutine output_radiation(lun)
 !
 !  Optional output of derived quantities along with VAR-file
+!  Called from wsnap
 !
 !   5-apr-03/axel: coded
 !
@@ -203,8 +204,7 @@ module Radiation
 !
 !  identifier
 !
-!     if(lroot.and.headt) print*,'output_radiation'
-!
+      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
       if(output_Qrad) write(lun) Qrad
 !
     endsubroutine output_radiation

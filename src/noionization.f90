@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.8 2003-04-01 22:12:47 theine Exp $
+! $Id: noionization.f90,v 1.9 2003-04-05 21:22:33 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -9,6 +9,9 @@ module Ionization
   use Density
 
   implicit none
+
+  ! global ionization parameter for yH (here a scalar set to 0)
+  real :: yyH=0.
 
   !  These parameters are used if lionization were .true.
   real :: lnTT_ion,lnrho_ion,ss_ion
@@ -33,6 +36,14 @@ module Ionization
 !***********************************************************************
     subroutine initialize_ionization()
     endsubroutine initialize_ionization
+!***********************************************************************
+    subroutine ionization_degree(f)
+      real, dimension (mx,my,mz,mvar), intent(in) :: f
+    endsubroutine ionization_degree
+!***********************************************************************
+    subroutine output_ionization(lun)
+      integer, intent(in) :: lun
+    endsubroutine output_ionization
 !***********************************************************************
     subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
 !

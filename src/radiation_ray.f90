@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.13 2003-04-05 19:31:35 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.14 2003-04-05 21:22:33 brandenb Exp $
 
 module Radiation
 
@@ -60,7 +60,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.13 2003-04-05 19:31:35 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.14 2003-04-05 21:22:33 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -306,6 +306,7 @@ if(nocooling) return
     subroutine output_radiation(lun)
 !
 !  Optional output of derived quantities along with VAR-file
+!  Called from wsnap
 !
 !   5-apr-03/axel: coded
 !

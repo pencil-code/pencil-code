@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.25 2003-04-02 09:03:54 theine Exp $
+! $Id: ionization.f90,v 1.26 2003-04-05 21:22:33 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -11,6 +11,10 @@ module Ionization
 
   implicit none
 
+  ! global array for yH (very useful to avoid double calculation and
+  ! to allow output along with file), but could otherwise be avoided.
+  real, dimension (mx,my,mz) :: yyH
+
   !  secondary parameters calculated in initialize
   real :: m_H
   real :: TT_ion,lnrho_ion,ss_ion,chiH
@@ -18,14 +22,14 @@ module Ionization
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
-  logical :: lionization=.true.
+  logical :: lionization=.true.,output_yH=.false.
   character (len=labellen) :: cionization='hydrogen'
 
   ! input parameters
   namelist /ionization_init_pars/ cionization
 
   ! run parameters
-  namelist /ionization_run_pars/  cionization
+  namelist /ionization_run_pars/  cionization,output_yH
 
   contains
 
@@ -50,7 +54,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.25 2003-04-02 09:03:54 theine Exp $")
+           "$Id: ionization.f90,v 1.26 2003-04-05 21:22:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -91,6 +95,47 @@ module Ionization
       endif
 
     endsubroutine initialize_ionization
+
+!***********************************************************************
+    subroutine ionization_degree(f)
+!
+!  calculate degree of ionization
+!
+!   5-apr-03/axel: coded wrapper routine to set yyH array
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar), intent(in) :: f
+      real, dimension (nx) :: lnrho,ss
+!
+      do n=n1,n2
+      do m=m1,m2
+        lnrho=f(l1:l2,m,n,ilnrho)
+        ss=f(l1:l2,m,n,ient)
+        yyH(l1:l2,m,n)=ionfrac(lnrho,ss)
+      enddo
+      enddo
+!
+    endsubroutine ionization_degree
+
+!***********************************************************************
+    subroutine output_ionization(lun)
+!
+!  Optional output of derived quantities along with VAR-file
+!  Called from wsnap
+!
+!   5-apr-03/axel: coded
+!
+      use Cdata
+!
+      integer, intent(in) :: lun
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'output_ionization',yyH(4,4,4)
+      if(output_yH) write(lun) yyH
+!
+    endsubroutine output_ionization
 
 !***********************************************************************
     subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)

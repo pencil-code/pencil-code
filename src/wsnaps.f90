@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.22 2003-04-05 19:05:07 brandenb Exp $
+! $Id: wsnaps.f90,v 1.23 2003-04-05 21:22:33 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -22,11 +22,13 @@ contains
 !
 !  30-sep-97/axel: coded
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
+!   5-apr-03/axel: possibility for additional (hard-to-get) output 
 !
       use Cdata
       use Mpicomm
       use Boundcond
       use Radiation
+      use Ionization
       use Sub
       use Io
 !
@@ -59,8 +61,6 @@ contains
         if (lsnap) then
           call update_ghosts(a)
           call output(chsnap//ch,a,mvar,noclose=.true.)
-          call output_radiation(lun_output)
-          close(lun_output)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
         endif
 !
@@ -69,8 +69,14 @@ contains
 !  write snapshot without label (typically, var.dat)
 !
         call update_ghosts(a)
-        call output(chsnap,a,mvar)
+        call output(chsnap,a,mvar,noclose=.true.)
       endif
+!
+!  before closing, add possible extra (hard-to-get) output
+!
+      call output_radiation(lun_output)
+      call output_ionization(lun_output)
+      close(lun_output)
 !
     endsubroutine wsnap
 !***********************************************************************

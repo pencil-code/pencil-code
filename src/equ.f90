@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.131 2003-03-31 14:04:07 brandenb Exp $
+! $Id: equ.f90,v 1.132 2003-04-05 21:22:33 brandenb Exp $
 
 module Equ
 
@@ -191,6 +191,7 @@ module Equ
       use Entropy
       use Magnetic
       use Radiation
+      use Ionization
       use Pscalar
       use Dustvelocity
       use Dustdensity
@@ -198,6 +199,7 @@ module Equ
       use IO
       use Shear
 !
+      logical :: early_finalize
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,udij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod
@@ -210,12 +212,18 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.131 2003-03-31 14:04:07 brandenb Exp $")
+           "$Id: equ.f90,v 1.132 2003-04-05 21:22:33 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
       ldiagnos=lfirst.and.lout
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
+!
+!  need to finalize communication early either for test purposes, or
+!  when radiation transfer of global ionization is calculated.
+!  This could in principle be avoided (but it not worth it now)
+!
+      early_finalize=test_nonblocking.and.lionization.and.lradiation_ray
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:
@@ -226,10 +234,12 @@ module Equ
       call boundconds_x(f)
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
-      if (test_nonblocking) call finalise_isendrcv_bdry(f)
+      if (early_finalize) call finalise_isendrcv_bdry(f)
 !
+!  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
+      if(lionization) call ionization_degree(f)
       if(lradiation_ray) call radtransfer(f)
 !
 !  do loop over y and z
@@ -241,7 +251,7 @@ module Equ
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then ! make sure all ghost points are set
-          if (.not.test_nonblocking) call finalise_isendrcv_bdry(f)
+          if (.not.early_finalize) call finalise_isendrcv_bdry(f)
           call boundconds_y(f)
           call boundconds_z(f)
         endif
