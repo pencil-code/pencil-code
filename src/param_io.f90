@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.123 2003-08-05 03:53:29 brandenb Exp $ 
+! $Id: param_io.f90,v 1.124 2003-08-05 13:40:13 theine Exp $ 
 
 module Param_IO
 
@@ -13,6 +13,7 @@ module Param_IO
   use General
   use Hydro
   use Entropy
+  use Density
   use Magnetic
   use Pscalar
   use Dustvelocity
