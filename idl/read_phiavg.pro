@@ -16,7 +16,7 @@
 ;;;  Slots of returned structure:
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
-;;;       z        FLOAT Array[nz]    ; coordinate
+;;;       z        FLOAT Array[nz]    ; coordinate (only for root proc)
 ;;;       nprocz   LONG               ; number of processors in z
 ;;;       nvars    LONG               ; number of variables
 ;;;       <var1>   FLOAT Array[nr,nz] ; first averaged variable
@@ -79,7 +79,7 @@ function read_phiavg, file, $
     print,'z in '   , minmax(z)
   endif
 
-  vars = fltarr(nr,nz,nprocz,nvars)
+  vars = fltarr(nr,nz*nprocz,nvars)
   readu, 1, vars
   if (debug) then print, 'vars in ', minmax(vars)
 
@@ -104,7 +104,7 @@ function read_phiavg, file, $
       ' labels, but nvars=', + strtrim(nvars,2)
   def = '{t: t, rcyl: rcyl, z: z, nvars: nvars, labels: labels'
   for i=0, nvars-1 do begin
-    def = def + ', ' + labels[i] + ': vars[*,*,*,'+strtrim(i,2)+']'
+    def = def + ', ' + labels[i] + ': vars[*,*,'+strtrim(i,2)+']'
   endfor
   def = def + '}'
   if (debug) then print, 'def = ', def
