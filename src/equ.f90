@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.106 2002-11-14 12:46:56 dobler Exp $
+! $Id: equ.f90,v 1.107 2002-11-19 14:58:58 ngrs Exp $
 
 module Equ
 
@@ -167,6 +167,7 @@ module Equ
       use Magnetic
       use Radiation
       use Pscalar
+      use Interstellar
       use Boundcond
       use IO
       use Shear
@@ -183,7 +184,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.106 2002-11-14 12:46:56 dobler Exp $")
+           "$Id: equ.f90,v 1.107 2002-11-19 14:58:58 ngrs Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -310,6 +311,13 @@ module Equ
         lfirstpoint=.false.
       enddo
       if (lradiation) f(:,:,:,idd)=DFF_new
+!
+!  Check for SNe, and updates df (for rho and entropy), if appropriate
+!  (Subroutines are in interstellar.f90)
+!
+      if (linterstellar .and. lfirst) then
+        call check_SN(f,df)
+      endif        
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

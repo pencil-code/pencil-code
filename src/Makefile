@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.127 2002-11-19 14:12:22 mee Exp $
+### $Id: Makefile,v 1.128 2002-11-19 14:58:58 ngrs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -64,7 +64,8 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 ## OSF1:
 #FC=f90 #(Mhd.)
 #OPTFLAGS=
-#OPTFLAGS=-fast -O5
+#OPTFLAGS=-fast -O5 -notransform_loops
+#OPTFLAGS=-fast -O5 
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #F77=$(FC)
 #LIBSIG=-lsig
@@ -153,7 +154,7 @@ code:
 	make start.x run.x read_videofiles.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(INTERSTELLAR).o
+physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o #fft_nr.o
 start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
@@ -201,7 +202,7 @@ $(GLOBAL).o:       $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(SHEAR).o:	   $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
+$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o $(INTERSTELLAR).o
 $(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(DENSITY).o slices.o $(FFT).o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DENSITY).o
 $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o

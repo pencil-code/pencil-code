@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.138 2002-11-19 14:12:22 mee Exp $
+! $Id: entropy.f90,v 1.139 2002-11-19 14:58:58 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -8,6 +8,7 @@ module Entropy
   use Cparam
   use Cdata
   use Hydro
+  use Interstellar
 
   implicit none
 
@@ -34,8 +35,7 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
-       chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       linterstellar 
+       chi,lcalc_heatcond_constchi,lmultilayer,Kbot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0,i_ugradpm=0
@@ -72,7 +72,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.138 2002-11-19 14:12:22 mee Exp $")
+           "$Id: entropy.f90,v 1.139 2002-11-19 14:58:58 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,7 +383,7 @@ module Entropy
            call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
       if (linterstellar) &
-           call calc_heat_cool_interstellar(f,df,rho1,cs2,TT1)
+        call calc_heat_cool_interstellar(df,rho1,TT1)
 !
 !  possibility of entropy relaxation in exterior region
 !
@@ -741,77 +741,6 @@ endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
 !
     endsubroutine calc_heat_cool
-!***********************************************************************
-    subroutine calc_heat_cool_interstellar(f,df,rho1,cs2,TT1)
-!
-!  adapted from calc_heat_cool
-!
-!  02-jul-02/wolf: coded
-!
-      use Cdata
-      use Mpicomm
-      use Density, only : rho0
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx) :: rho1,cs2,TT1
-      real, dimension (nx) :: rho,TT,heat,cool
-      real :: TTunits=27.8,Lambdaunits=3.29e-18
-      real :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
-      real, dimension(6) ::                                                 &
-        coolT=(/ 500.,     2000.,    8000.,    1.e5,    4.e7,     1.e9 /),  &
-        coolH=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /),  &
-        coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
-      integer :: i,l
-!
-      intent(in) :: f,rho1,cs2
-      intent(out) :: df
-!
-!  identifier
-!
-      if(headtt) print*,'calc_heat_cool_interstellar'
-!
-!  define T in K, for calculation of both UV heating and rad. cooling
-!
-      !TT=TTunits*cs2/gamma1          ! should be identical...
-      TT=TTunits/TT1 
-      rho=1.0/rho1
-!
-!  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993
-!  cooling is Lambda*rho^2, with (eq 7)
-!     Lambda=coolH(i)*TT*coolB(i),   for coolT(i) <= T < coolT(i+1)
-!  nb: our coefficients coolH(i) differ from those in Rosen et al. by
-!   factor (mu mp)^2, with mu=1.2, since Rosen works in number density, n.
-!   (their cooling = Lambda*n^2,  rho=mu mp n.)
-!  The factor Lambdaunits converts from cgs units to code units.
-!  We've increased coolT(1), to avoid creating gas too cold to resolve.
-!
-      cool=0.0
-      do l=l1,l2
-        do i=1,5
-          if (coolT(i) <= TT(l) .and. TT(l) < coolT(i+1)) then
-            cool(l)=cool(l) + Lambdaunits*rho(l)*coolH(i)*TT(l)**coolB(i)
-          endif
-        end do
-      end do
-!
-!  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
-!  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
-!  nb: need rho0 from density_[init/run]_pars, if i want to implement
-!      the the arm/interarm scaling.
-!
-      heat=rhoUV*(rho0/1.38)**1.4*Lambdaunits*coolH(3)*TUV**coolB(3)*   &
-                               0.5*(1.0+tanh(cUV*(T0UV-TT)))
-!      heat=rhoUV*Lambdaunits*coolH(3)*TUV**coolB(3)*         &
-!                               0.5*(1.0+tanh(cUV*(T0UV-TT)))
-!
-!  heat and cool were calculated in terms of de/dt [~ erg/g/s], 
-!  so rho1 factor not needed to get ds/dt [~ erg/g/s/K] in the following:
-!
-      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*(heat - cool)
-!
-      if(ip==0) print*,cs2,f
-    endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
     subroutine calc_tau_ss_exterior(f,df)
 !
@@ -1440,7 +1369,7 @@ endif
       do i=1,nghost
          f(:,:,n1-i,ient)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
-      end do
+      enddo
 
 !
 ! Top boundary
@@ -1453,7 +1382,7 @@ endif
       do i=1,nghost
          f(:,:,n2+i,ient)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
               +log(cs2_2d))
-      end do
+      enddo
     case default
        if(lroot) print*,"invalid argument for 'bc_ss_flux'"
         call stop_it("")
@@ -1461,9 +1390,4 @@ endif
 
     end subroutine bc_ss_energy
 !***********************************************************************
-
 endmodule Entropy
-
-
-
-
