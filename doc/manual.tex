@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.218 2003-11-22 20:46:49 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.219 2003-11-24 08:29:51 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}
+%\date{$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}\\
+  \emph{$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1638,8 +1638,29 @@ file:
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Video files and slices}
+\label{S-slices}
+
+\name{Video files} and \name{slice files} are used interchangeably.
+The output interval is given by \var{dvid} in code time units.
+The quantities to be written should be entered into the file \file{video.in}.
+The slice position is set in \name{run_pars} and can be either
+\var{slice_position='p'} (default, for periphery) or
+\var{slice_position='m'} (for middle of the box).
+Afterwards, one runs \file{src/read_videofiles.x} interactively
+in the run directory. This procedure assembles the right files from
+the different processors from \file{data/proc}$N$/ and puts them
+into \file{data/}.
+Note: remember to delete unused slices \cmd{rm data/proc*/slice*}.
+For visualization, you can use the idl procedure, e.g.\ as
+\file{rvid_box,'lnrho',amin=-.1,amax=.1}.
+It accepts the \file{/png} argument for writing png files for making videos.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Averages}
 \label{S-averages}
+\index{Averages}
 
 \subsubsection{Horizontal averages}
 \label{S-hor-averages}
@@ -1647,9 +1668,11 @@ See Secs.~\ref{diagnostic-IO}, \ref{S-new-hor-averages} and
 \ref{S-other-averages} for how to use horizontal averages [we should
 reorganize this material].
 
-
 \subsubsection{Azimuthal averages}
 \label{S-phi-averages}
+\index{Azimuthal averages}
+\index{Toroidal averages}
+
 Azimuthal averages are controlled by the file \file{phiaver.in}, which
 currently supports the quantities listed in Sect.~\ref{S-phiaver.in-params}.
 For example, if \file{phiaver.in} contains the single line
@@ -1682,6 +1705,9 @@ demonstrates how to read and visualize azimuthal averages in \name{IDL}.
 
 \subsubsection{Time averages}
 \label{S-time-averages}
+\index{Averages}
+\index{Time averages}
+
 Time averages need to be prepared in the file
 \file[ctimeavg.local]{src/ctimeavg.local}, since they use extra memory.
 They are controlled by the averaging time $\tau_{\rm avg}$ (set
@@ -3509,6 +3535,9 @@ annoying error messages that one gets, when running e.g. ".r rall" after
 a new variable has been introduced in "idl/varcontent.pro". Ever so
 often there's a new variable that can't be found in my param2.nml --
 this time is was IECR, IGG, and ILNTT that I had to circumvent...
+\\
+
+\medskip
 
 {\bf A}:
 The simplest solution is to say
@@ -3528,7 +3557,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}
 
 \section{Timings}
 
@@ -3611,6 +3640,7 @@ application on your specific hardware.
    4 & fe1   & 6.35 &  $64\times128\times64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
    4 & fe1   & 2.09 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
+   4 & fe1   & 1.45 & $128^3$ & magn/noentro & giga   &  9-oct-02 & AB \\
    4 & fe1   & 7.55 & $16^2{\times}512$                                  
                      & nomagn/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
    4 & fe1   & 5.48 & $16^2{\times}512$                                  
@@ -5879,9 +5909,22 @@ possible inputs to the file \file{phiaver.in}.
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 %
 \midrule
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
+\midrule
+  \var{urmphi} & $\left<u_\varpi\right>_\varphi$ [cyl.\ polar coords $(\varpi,\varphi,z)$]\\
+  \var{upmphi} & $\left<u_\varphi\right>_\varphi$ \\
+  \var{uzmphi} & $\left<u_z\right>_\varphi$ \\
+  \var{u2mphi} & $\left<\uv^2\right>_\varphi$ \\
+  \var{oumphi} & $\left<\omv\cdot\uv\right>_\varphi$ \\
+%
+\midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
-  \var{b2mphi} & $\left<\Bv^2\right>$ \\
+  \var{brmphi} & $\left<B_\varpi\right>_\varphi$ [cyl.\ polar coords $(\varpi,\varphi,z)$]\\
+  \var{bpmphi} & $\left<B_\varphi\right>_\varphi$ \\
+  \var{bzmphi} & $\left<B_z\right>_\varphi$ \\
+  \var{b2mphi} & $\left<\Bv^2\right>_\varphi$ \\
+  \var{jbmphi} & $\left<\Jv\cdot\Bv\right>_\varphi$ \\
 %
 \bottomrule
 \end{longtable}
@@ -6184,7 +6227,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.218 2003-11-22 20:46:49 dobler Exp $ $}
+$ $Id: manual.tex,v 1.219 2003-11-24 08:29:51 brandenb Exp $ $}
 
 
 \end{document}

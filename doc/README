@@ -1,4 +1,4 @@
-$Id: README,v 1.6 2003-11-15 19:03:25 brandenb Exp $
+$Id: README,v 1.7 2003-11-24 08:29:51 brandenb Exp $
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,
@@ -20,4 +20,7 @@ can lead to problems. As root, edit the file texmf.cnf as follows:
 
 < max_strings = 15000
 > max_strings = 30000
+
+< pool_size = 125000
+> pool_size = 250000
 
