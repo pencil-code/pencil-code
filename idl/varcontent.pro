@@ -72,24 +72,24 @@ varcontent[ilnrhod].idlinit    = INIT_SCALAR
 varcontent[ilnrhod].idlvarloc= 'lnrhod_loc'
 varcontent[ilnrhod].idlinitloc = INIT_SCALAR_LOC
 
-if (par2.lwrite_aux ne 0) then begin
+if (par.lwrite_aux ne 0) then begin
     varcontent[iQrad].variable = 'Radiation (Qrad)'
     varcontent[iQrad].idlvar   = 'Qrad'
     varcontent[iQrad].idlinit    = INIT_SCALAR
     varcontent[iQrad].idlvarloc= 'Qrad_loc'
     varcontent[iQrad].idlinitloc = INIT_SCALAR_LOC
     
-    varcontent[iSrad].variable = 'Radiation (Srad)'
-    varcontent[iSrad].idlvar   = 'Srad'
-    varcontent[iSrad].idlinit    = INIT_SCALAR
-    varcontent[iSrad].idlvarloc= 'Srad_loc'
-    varcontent[iSrad].idlinitloc = INIT_SCALAR_LOC
+    ;varcontent[iSrad].variable = 'Radiation (Srad)'
+    ;varcontent[iSrad].idlvar   = 'Srad'
+    ;varcontent[iSrad].idlinit    = INIT_SCALAR
+    ;varcontent[iSrad].idlvarloc= 'Srad_loc'
+    ;varcontent[iSrad].idlinitloc = INIT_SCALAR_LOC
     
-    varcontent[ikappa].variable = 'Radiation (kappa)'
-    varcontent[ikappa].idlvar   = 'kappa'
-    varcontent[ikappa].idlinit    = INIT_SCALAR
-    varcontent[ikappa].idlvarloc= 'kappa_loc'
-    varcontent[ikappa].idlinitloc = INIT_SCALAR_LOC
+    ;varcontent[ikappa].variable = 'Radiation (kappa)'
+    ;varcontent[ikappa].idlvar   = 'kappa'
+    ;varcontent[ikappa].idlinit    = INIT_SCALAR
+    ;varcontent[ikappa].idlvarloc= 'kappa_loc'
+    ;varcontent[ikappa].idlinitloc = INIT_SCALAR_LOC
     
 ; May need special condition as can be maux or mvar variable?
     varcontent[iTT].variable   = 'Temperature (TT)'

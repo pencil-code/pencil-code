@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.32 2003-06-24 11:25:04 dobler Exp $
+;;;  $Id: rall.pro,v 1.33 2003-06-30 14:08:59 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -58,6 +58,8 @@ nzloc=mzloc-2*nghostz
 ;
 default, dataopdir, 'data'
 default, varfile, 'var.dat'
+default, ldustvelocity, 0
+default, ldustdensity, 0
 ;
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)
 xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
