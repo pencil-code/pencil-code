@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.24 2003-08-09 19:47:27 mee Exp $
+;  $Id: extra.pro,v 1.25 2003-08-13 06:04:58 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -46,18 +46,21 @@ if (iqrad ne 0) then SSrad=sigmaSB*TTT^4/!pi
 if (iqrad ne 0) then kaprho=.25*exp(2*llnrho-lnrho_e_)*(TT_ion_/TTT)^1.5 $
                             *exp(TT_ion_/TTT)*yyH*(1.-yyH)*kappa0
 ;
-if (iuu ne 0) then for j=0,2 do print,sqrt(mean(uu(*,*,*,j)^2))
+if (iuu ne 0) then for j=0,2 do print,'j,ujrms=',j,sqrt(mean(uu(*,*,*,j)^2))
 if (iuu ne 0) then print
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
 if (iaa ne 0) then begin
   default,b_ext,[0.,0.,0.]
+  for j=0,2 do print,'j,Bjrms=',j,sqrt(mean(bb(*,*,*,j)^2))
   for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+b_ext(j)
   bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
   bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
   bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
+  print
   print,'bmx,bmy,bmz=',bmx,bmy,bmz
+  print
 end
 ;
 ;  calculate vertical averages
