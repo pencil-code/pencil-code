@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.217 2003-10-21 17:47:10 mee Exp $
+! $Id: entropy.f90,v 1.218 2003-10-22 13:17:15 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -26,7 +26,7 @@ module Entropy
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: T_int,T_ext,cs2_int,cs2_ext
+  real :: TT_int,TT_ext,cs2_int,cs2_ext
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.217 2003-10-21 17:47:10 mee Exp $")
+           "$Id: entropy.f90,v 1.218 2003-10-22 13:17:15 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +128,8 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz
+      use Density, only: cs0,cs20
+      use Ionization, only: get_soundspeed
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -214,6 +216,14 @@ module Entropy
 !
         endif
       endif
+!
+!   make sure all relevant parameters are set for spherical shell problems
+    select case(initss)
+      case('geo-kws')
+        if (lroot) print*,'initialize_entropy: reset sound speed for spherical shell problem'
+        call get_soundspeed(T0,cs20)
+        cs0 = sqrt(cs20)
+    endselect
 !
     endsubroutine initialize_entropy
 !***********************************************************************
@@ -551,22 +561,20 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: Temp,yH
       real :: beta1
-!     real :: ss_ext,ss_int
 !
       beta1 = g0/(mpoly+1)
       call get_soundspeed(T0,cs20)
 
       if (initss=='geo-kws') then
 !       temperatures at shell boundaries
-        T_ext = T0
-        T_int = 1+beta1*(1/r_int-1)
+        TT_ext = T0
+        TT_int = 1+beta1*(1/r_int-1)
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
-        !cs2_ext = T_ext*cp*gamma1
-        call get_soundspeed(T_ext,cs2_ext)
-        !cs2_int = T_int*cp*gamma1
-        call get_soundspeed(T_int,cs2_int)
-!       corresponding values for entropy 
+        !cs2_ext = TT_ext*cp*gamma1
+        call get_soundspeed(TT_ext,cs2_ext)
+        !cs2_int = TT_int*cp*gamma1
+        call get_soundspeed(TT_int,cs2_int)
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
@@ -578,9 +586,9 @@ module Entropy
           z_mn = spread(z(n),1,nx)
           r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
 
-          where (r_mn >= r_ext) Temp = T_ext
+          where (r_mn >= r_ext) Temp = TT_ext
           where (r_mn < r_ext .AND. r_mn > r_int) Temp = 1+beta1*(1/r_mn-1)
-          where (r_mn <= r_int) Temp = T_int
+          where (r_mn <= r_int) Temp = TT_int
           call ionput(f,yH,Temp)
         enddo 
       endif
