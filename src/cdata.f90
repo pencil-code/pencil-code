@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.251 2004-09-12 09:49:34 brandenb Exp $
+! $Id: cdata.f90,v 1.252 2004-09-16 14:45:58 ajohan Exp $
 
 module Cdata
 
@@ -141,7 +141,10 @@ module Cdata
   logical :: lmaxadvec_sum=.false.,old_cdtv=.false.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lwrite_slice_xy2,lwrite_slice_xy,lwrite_slice_xz,lwrite_slice_yz
-  logical :: lgrav=.false., lgravx=.false., lgravz=.false., lgravr=.false.
+  logical :: lgrav=.false.,lgravx=.false.,lgravy=.false.,lgravz=.false.
+  logical :: lgravr=.false.,lgravr_gas=.false.,lgravr_dust=.false.
+  logical :: lgravx_gas=.false.,lgravy_gas=.false.,lgravz_gas=.false.
+  logical :: lgravx_dust=.false.,lgravy_dust=.false.,lgravz_dust=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: l2davg,l2davgfirst
   logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
