@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.36 2002-06-06 15:06:39 brandenb Exp $
+! $Id: magnetic.f90,v 1.37 2002-06-07 14:37:04 brandenb Exp $
 
 module Magnetic
 
@@ -13,11 +13,12 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0.
+  real :: amplaa=0., radius=.1, epsilon_nonaxi=1e-2
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
+       radius,epsilon_nonaxi, &
        initaa,amplaa
 
   ! run parameters
@@ -68,8 +69,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.36 $", &
-           "$Date: 2002-06-06 15:06:39 $")
+           "$Revision: 1.37 $", &
+           "$Date: 2002-06-07 14:37:04 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -108,6 +109,11 @@ module Magnetic
       elseif (initaa==1) then
         call beltrami(amplaa,f,iaa)
 !
+!  Horizontal flux tube
+!
+      elseif (initaa==2) then
+        call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilon_nonaxi)
+!
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
 !    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
@@ -116,7 +122,7 @@ module Magnetic
 !  theta around y.
 !  The array was already initialized to zero before calling this routine.
 !
-      elseif (initaa==2) then
+      elseif (initaa==12) then
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then

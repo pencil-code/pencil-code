@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.51 2002-06-06 07:09:35 brandenb Exp $ 
+! $Id: sub.f90,v 1.52 2002-06-07 14:37:04 brandenb Exp $ 
 
 module Sub 
 
@@ -1447,6 +1447,34 @@ module Sub
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine htube(ampl,f,i,xx,yy,zz,radius,epsilon_nonaxi)
+!
+!  Horizontal flux tube
+!
+!   7-jun-02/axel+vladimir: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real :: ampl,radius,epsilon_nonaxi
+!
+!  set Beltrami field
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        tmp=exp(-(xx**2+zz**2)/radius)*(1.+epsilon_nonaxi*sin(yy))
+        if ((ip<=8).and.lroot) print*,'horizontal flux tube: i=',i
+        f(:,:,:,i  )=+zz*ampl*tmp
+        f(:,:,:,i+1)=0.
+        f(:,:,:,i+2)=-xx*ampl*tmp
+      endif
+!
+    endsubroutine htube
 !***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !
