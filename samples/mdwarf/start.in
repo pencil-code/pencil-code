@@ -3,11 +3,12 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2003-06-15 07:12:32 dobler Exp $',
+  cvsid='$Id: start.in,v 1.2 2003-07-30 10:08:06 dobler Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size
   lperi =  F  , F  , F,         ! periodic direction?
+  random_gen='nr_f90'
 /
 &hydro_init_pars
   inituu='zero',
