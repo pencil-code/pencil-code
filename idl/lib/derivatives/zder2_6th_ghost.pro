@@ -19,14 +19,21 @@ if lequidist[2] then begin
   dz2=1./(180.*(z[4]-z[3])^2)
 endif else begin
   d1=zder(f)
-  dz2=spread(spread(1./(180.*zprim^2),0,nx),1,ny)-d1*spread(spread(zprim2/zprim^2,0,nx),1,ny)
+; check if divide by zero:  
+  tt = where(zprim eq 0)
+  if (tt[0] ne -1) then  zprim[tt] = 1e-10 
+  tt = where(zprim2 eq 0)
+  if (tt[0] ne -1) then  zprim2[tt] = 1e-10
+;
+  dz2=spread(spread(1./(180.*zprim^2),0,nx),1,ny)
+  dd =d1*spread(spread(zprim2/zprim^2,0,nx),1,ny)
 endelse
 ;
   d[*,*,n1:n2]=dz2*(-490.*f[*,*,n1:n2]$
                    +270.*(f[*,*,n1-1:n2-1]+f[*,*,n1+1:n2+1])$
                     -27.*(f[*,*,n1-2:n2-2]+f[*,*,n1+2:n2+2])$
                      +2.*(f[*,*,n1-3:n2-3]+f[*,*,n1+3:n2+3])$
-      )
-;
+                   )
+  d=d-dd
 return,d
 end

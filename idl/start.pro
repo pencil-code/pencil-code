@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.65 2004-06-03 17:10:11 mee Exp $
+;;; $Id: start.pro,v 1.66 2004-06-14 07:52:42 bingert Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -14,6 +14,7 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
+common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
 forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
@@ -101,11 +102,14 @@ x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gfile=datadir+'/'+'grid.dat'
 dummy=findfile(gfile, COUNT=cgrid)
+dummy2=zero
 if (cgrid gt 0) then begin
   if (quiet le 2) then print, 'Reading grid.dat..'
   openr,1, gfile, /F77
   readu,1, t,x,y,z
   readu,1, dx,dy,dz
+  readu,1, dummy2,dummy2,dummy2 ; instead of Lx,Ly,Lz
+  point_lun,-1,pos              ; to read non equidistant stuff below 
   close,1
 endif else begin
   if (quiet le 4) then print, 'Warning: cannot find file ', gfile
@@ -175,6 +179,7 @@ if (cpar gt 0) then begin
   lentropy  = par.lentropy
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
+  lequidist = par.lequidist
   lionization=safe_get_tag(par,'lionization',DEFAULT=safe_get_tag(par,'leos_ionization',DEFAULT=0))
   lionization_fixed=safe_get_tag(par,'lionization_fixed',DEFAULT=safe_get_tag(par,'leos_fixed_ionization',DEFAULT=0))
   lvisc_shock=par.lvisc_shock
@@ -186,6 +191,16 @@ if (cpar gt 0) then begin
   lshear    = par.lshear
   lradiation_fld = par.lradiation_fld
   ;
+  if (any(not lequidist)) then begin
+    openr,1,gfile,/F77
+    point_lun,1,pos
+    xprim=fltarr(mx)*zero & yprim=fltarr(my)*zero & zprim=fltarr(mz)*zero
+    xprim2=fltarr(mx)*zero & yprim2=fltarr(my)*zero & zprim2=fltarr(mz)*zero
+    readu,1, xprim,  yprim,  zprim
+    readu,1, xprim2, yprim2, zprim2
+    close,1
+  endif
+;
   if (ldensity) then begin
     if (not lionization) then begin
     cs0=par.cs0 & rho0=par.rho0

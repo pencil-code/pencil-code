@@ -18,6 +18,8 @@ l1=3 & l2=nx-4
 if lequidist[0] then begin
   dx2=1./(60.*(x[4]-x[3]))
 endif else begin
+  tt = where(xprim eq 0)
+  if (tt[0] ne -1) then  xprim[tt] = 1
   dx2=spread(spread(1./(60.*xprim),1,ny),2,nz)
 endelse
 

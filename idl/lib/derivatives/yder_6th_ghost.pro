@@ -15,9 +15,11 @@ s=size(f) & d=make_array(size=s)
 ;
 m1=3 & m2=ny-4
 ;
-if lequidist[2] then begin
+if lequidist[1] then begin
   dy2=1./(60.*(y[4]-y[3]))
 endif else begin
+  tt = where(yprim eq 0)
+  if (tt[0] ne -1) then  yprim[tt] = 1 
   dy2=spread(spread(1./(60.*yprim),0,nx),2,nz)
 endelse
 ;
