@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.122 2003-08-13 15:30:07 mee Exp $
+! $Id: magnetic.f90,v 1.123 2003-08-14 05:17:32 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -89,7 +89,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.122 2003-08-13 15:30:07 mee Exp $")
+           "$Id: magnetic.f90,v 1.123 2003-08-14 05:17:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -507,7 +507,6 @@ module Magnetic
 !  calculate bthresh as a certain fraction of brms
 !
       bthresh=bthresh_scl*bthresh_per_brms*brms
-print*,'calc_bthresh: brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
     endsubroutine calc_bthresh
 !***********************************************************************
