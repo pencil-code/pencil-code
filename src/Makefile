@@ -1,9 +1,10 @@
-### $Id: Makefile,v 1.236 2003-09-02 18:17:49 theine Exp $
+### $Id: Makefile,v 1.237 2003-09-04 09:05:57 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
+PENCIL_MKFILE= makefile
 LIBSIG=
 LDMPI=-lmpi
 
@@ -59,6 +60,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ### Begin machine dependent
 
 ## IRIX64:
+## SGI
 #FC=f90
 #FFLAGS= -64 -O3 -mips4
 #FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(gridur|embla|balder|sander|antares)
@@ -79,6 +81,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## OSF1:
+## Compaq/HP alpha
 #FC=f95 #(Mhd.)
 #FC=f90 #(Mhd.)
 #OPTFLAGS=-fast -O5 
@@ -88,8 +91,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LIBSIG=-lsig
 
 ## Linux:
-## The -tpp7 flag leads to a 10% speedup on nl6
-#
+PENCIL_MKFILE=makefile
 #FC=f95
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
@@ -141,8 +143,13 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 
+## Darwin:
+## Mac OSX
+#PENCIL_MKFILE=makefile.darwin
+#FC=f95
 
 ## SunOS:
+## Sun
 #FC=f90
 #FC=pghpf #(Lomond)
 #FFLAGS=-O4
@@ -153,10 +160,12 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F77=$(FC)
 
 ## UNICOS/mk:
+## Cray T3E
 #FC=f90
 #FFLAGS=-O3 -em
 
 ## HI-UX/MPP:
+## Hitachi
 #FC=mpif90
 #F77=$(FC)
 #FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
@@ -165,11 +174,13 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
 
 ## SUPER-UX:
+## NEC
 #FC=f90 -I/usr/include
 #F77=$(FC)
 #FFLAGS=-C hopt
 
 ## AIX:
+## IBM
 #CFLAGS=-O3 -DFUNDERSC=0
 ##-------------------
 ## USE NON MP COMPILERS FOR INTERACTIVE RUNNING 
@@ -222,12 +233,12 @@ TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: makefile cparam.inc code
+default: $(PENCIL_MKFILE) cparam.inc code
 
 pacx: pacx-makefile cparam.inc code
 
-makefile: Makefile
-	adapt-mkfile Makefile makefile
+ $(PENCIL_MKFILE): Makefile
+	adapt-mkfile Makefile $(PENCIL_MKFILE)
 pacx-makefile: Makefile
 	pacx-adapt-mkfile Makefile pacx-makefile
 	cp pacx-makefile makefile
@@ -241,7 +252,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	make start.x run.x read_videofiles.x read_vectorfiles.x
+	make -f $(PENCIL_MKFILE) start.x run.x read_videofiles.x read_vectorfiles.x
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
@@ -256,7 +267,7 @@ linkonly:
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
-	make linkonly
+	make -f $(PENCIL_MKFILE) linkonly
 
 # Needed for the underscore trick:
 mpicomm_.f90:      mpicomm.f90
@@ -294,7 +305,7 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f makefile TAGS mpicomm_.f90
+	rm -f makefile makefile.darwin TAGS mpicomm_.f90
 
 ## ---------------------------------------------------------------------- #
 ## Code targets
