@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.322 2004-08-24 00:22:40 mee Exp $
+! $Id: entropy.f90,v 1.323 2004-08-24 18:04:19 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.322 2004-08-24 00:22:40 mee Exp $")
+           "$Id: entropy.f90,v 1.323 2004-08-24 18:04:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -532,7 +532,7 @@ module Entropy
           !
           if (lroot) print*,'init_ss: No such value for initss(' &
                            //trim(iinit_str)//'): ',trim(initss(iinit))
-          call stop_it(" ")
+          call stop_it("")
 
       endselect
 
@@ -585,7 +585,7 @@ module Entropy
         !  Catch unknown values
         !
         if (lroot) print*,'init_ss: No such value for pertss:', pertss
-        call stop_it(" ")
+        call stop_it("")
 
       endselect
 !
@@ -1171,7 +1171,7 @@ module Entropy
          if (lroot) then
             print*,'dss_dt: No such value iheatcond = ', trim(iheatcond)
             print*,'[Cryptic old comment: dss_dt: no calc_heatcond, may need chi_shock]'
-            call stop_it(" ")
+            call stop_it("")
          endif
       endselect
 !
@@ -1795,7 +1795,7 @@ module Entropy
         case default
           if (lroot) print*, &
                'calc_heat_cool: No such value for cooltype: ', trim(cooltype)
-          call stop_it(" ")
+          call stop_it("")
         endselect
       endif
 !
