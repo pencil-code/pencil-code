@@ -1,0 +1,13 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for disc run
+!
+&init_pars
+ip=14
+  cvsid='$Id: start.in,v 1.1 2003-10-09 17:58:35 brandenb Exp $'
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&cosmicray_init_pars
+/
