@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.104 2004-02-16 14:27:36 mee Exp $
+# $Id: getconf.csh,v 1.105 2004-02-17 13:20:43 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -260,7 +260,7 @@ else if ($hn =~ giga*) then
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
   if ($?PE) then                            # Are we running under SGE?   
-    if ($PE =~ gm2) then                    # Using Myrinet?
+    if ($PE =~ gm) then                    # Using Myrinet?
       setenv SSH rsh
       setenv SCP rcp
       cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > hostfile
