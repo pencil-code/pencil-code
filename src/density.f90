@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.101 2003-06-20 15:56:53 ajohan Exp $
+! $Id: density.f90,v 1.102 2003-06-26 14:37:39 torkel Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.101 2003-06-20 15:56:53 ajohan Exp $")
+           "$Id: density.f90,v 1.102 2003-06-26 14:37:39 torkel Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,6 +231,36 @@ module Density
           cs2top = cs20
         else
           cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(ztop-zref)
+        endif
+
+      case ('piecew-disc', '41')
+        !
+        !  piecewise polytropic for accretion discs
+        !
+        if (lroot) print*,'piecewise polytropic disc stratification (lnrho)'
+        ! bottom region
+
+        cs2int = cs0**2
+        lnrhoint = lnrho0
+        f(:,:,:,ilnrho) = lnrho0 ! just in case
+        call polytropic_lnrho_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
+                            0,cs2int,lnrhoint)
+          ! unstable layer
+        call polytropic_lnrho_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,lnrhoint)
+          ! stable layer (top)
+        call polytropic_lnrho_disc(f,mpoly2,zz,tmp,z2,ztop,ztop, &
+                                   isothtop,cs2int,lnrhoint)
+        !
+        !  calculate cs2bot and cs2top for run.x (boundary conditions)
+        !
+        !cs2bot = cs2int + gamma/gamma1*gravz*nu_epicycle**2/(mpoly2+1)* &
+        !         (zbot**2-z0**2)/2.
+        cs2bot = cs0**2
+        if (isothtop /= 0) then
+          cs2top = cs20
+        else
+          cs2top = cs20 + gamma/gamma1*gravz*nu_epicycle**2/(mpoly0+1)* &
+                  (ztop**2-zref**2)/2.
         endif
 
       case ('polytropic', '5')
@@ -413,6 +443,59 @@ module Density
       f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
 !
     endsubroutine polytropic_lnrho_z
+!***********************************************************************
+    subroutine polytropic_lnrho_disc( &
+         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)
+!
+!  Implement a polytropic profile in a disc. If this routine is
+!  called several times (for a piecewise polytropic atmosphere), on needs
+!  to call it from bottom (middle of disc) upwards.
+!
+!  zint    -- height of (previous) interface, where cs2int and lnrhoint
+!             are set
+!  zbot    -- z at top of layer (name analogous with polytropic_lnrho_z)
+!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
+!             with new profile (for z<zblend)
+!  isoth   -- flag for isothermal stratification;
+!  lnrhoint -- value of lnrho at the interface, i.e. at the zint on entry,
+!             at the zbot on exit
+!  cs2int  -- same for cs2
+!
+!  24-jun-03/ulf:  coded
+!
+      use Sub, only: step
+      use Gravity, only: gravz, nu_epicycle
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: tmp,p,zz
+      real, dimension (mz) :: stp
+      real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint,nu_epicycle2
+      integer :: isoth
+!
+      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+      nu_epicycle2 = nu_epicycle**2
+      if (isoth /= 0) then ! isothermal layer
+        beta1 = 0.
+        tmp = gamma*gravz*nu_epicycle2/cs2int*(zz**2-zint**2)/2.
+        lnrhoint = lnrhoint + gamma*gravz*nu_epicycle2/cs2int* &
+                   (zbot**2-zint**2)/2.
+      else
+        beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
+        tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly*alog(tmp)
+        lnrhoint = lnrhoint + mpoly*alog(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
+      endif
+      cs2int = cs2int + beta1*(zbot**2-zint**2)/2. ! cs2 at layer interface (bottom)
+      !
+      ! smoothly blend the old value (above zblend) and the new one (below
+      ! zblend) for the two regions:
+      !
+      stp = step(z,zblend,widthlnrho)
+      p = spread(spread(stp,1,mx),2,my)
+      f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
+!
+    endsubroutine polytropic_lnrho_disc
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
 !

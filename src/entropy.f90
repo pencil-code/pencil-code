@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.174 2003-06-24 16:28:41 theine Exp $
+! $Id: entropy.f90,v 1.175 2003-06-26 14:37:39 torkel Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -84,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.174 2003-06-24 16:28:41 theine Exp $")
+           "$Id: entropy.f90,v 1.175 2003-06-26 14:37:39 torkel Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +181,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
-      real :: cs2int,ssint
+      real :: cs2int,ssint,zbot,ztop
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
@@ -266,6 +266,36 @@ module Entropy
           call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
           ! stable layer
           call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+
+        case('piecew-disc', '41')
+          !
+          !  piecewise polytropic convective disc
+          !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          if (lroot) print*,'piecewise polytropic disc (ss)'
+          !
+!         !  override hcond1,hcond2 according to polytropic equilibrium
+!         !  solution
+!         !
+!         hcond1 = (mpoly1+1.)/(mpoly0+1.)
+!         hcond2 = (mpoly2+1.)/(mpoly0+1.)
+!         if (lroot) &
+!              print*, &
+!              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+        !
+          ztop = xyz0(3)+Lxyz(3)
+          cs2int = cs0**2
+          ss0 = 0.              ! reference value ss0 is zero
+          ssint = ss0
+          f(:,:,:,ient) = 0.    ! just in case
+          ! bottom (middle) layer
+          call polytropic_ss_disc(f,mpoly1,zz,tmp,zref,z1,z1, &
+                               0,cs2int,ssint)
+          ! unstable layer
+          call polytropic_ss_disc(f,mpoly0,zz,tmp,z1,z2,z2,0,cs2int,ssint)
+          ! stable layer (top)
+          call polytropic_ss_disc(f,mpoly2,zz,tmp,z2,ztop,ztop,&
+                               isothtop,cs2int,ssint)
 
         case('polytropic', '5')
           !
@@ -416,6 +446,62 @@ module Entropy
       f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_z
+!***********************************************************************
+    subroutine polytropic_ss_disc( &
+         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
+!
+!  Implement a polytropic profile in ss for a disc. If this routine is
+!  called several times (for a piecewise polytropic atmosphere), on needs
+!  to call it from bottom (middle of disc) to top.
+!
+!  zint    -- z at bottom of layer
+!  zbot    -- z at top of layer (naming convention follows polytropic_ss_z)
+!  zblend  -- smoothly blend (with width widthss) previous ss (for z>zblend)
+!             with new profile (for z<zblend)
+!  isoth   -- flag for isothermal stratification;
+!  ssint   -- value of ss at interface, i.e. at the bottom on entry, at the
+!             top on exit
+!  cs2int  -- same for cs2
+!
+!  24-jun-03/ulf:  coded
+!
+      use Sub, only: step
+      use Gravity, only: gravz, nu_epicycle
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: tmp,p,zz
+      real, dimension (mz) :: stp
+      real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint, nu_epicycle2
+      integer :: isoth
+!
+      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+      nu_epicycle2 = nu_epicycle**2
+      if (isoth /= 0) then ! isothermal layer
+        beta1 = 0.
+        tmp = ssint - gamma1*gravz*nu_epicycle2*(zz**2-zint**2)/cs2int/2.
+        ssint = -gamma1*gravz*nu_epicycle2*(zbot**2-zint**2)/cs2int/2. 
+              ! ss at layer interface
+      else
+        beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
+        tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = ssint + (1-mpoly*gamma1)/gamma &
+                      * alog(tmp)
+        ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
+                        * alog(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
+      endif
+      cs2int = cs2int + beta1*(zbot**2-zint**2)/2. 
+             ! cs2 at layer interface (bottom)
+
+      !
+      ! smoothly blend the old value (above zblend) and the new one (below
+      ! zblend) for the two regions:
+      !
+      stp = step(z,zblend,widthss)
+      p = spread(spread(stp,1,mx),2,my)
+      f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+!
+    endsubroutine polytropic_ss_disc
 !***********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
