@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.55 2003-08-21 09:21:40 ajohan Exp $
+! $Id: boundcond.f90,v 1.56 2003-08-26 16:40:36 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -50,6 +50,7 @@ module Boundcond
       use Entropy
       use Magnetic
       use Radiation
+      use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j,k,ip_ok
@@ -136,6 +137,7 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
+      use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: j,k,ip_ok
@@ -201,7 +203,8 @@ module Boundcond
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
-      use Entropy
+      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,chi, &
+                         lmultilayer,lcalc_heatcond_constchi
       use Magnetic
       use Density
       use Ionization
@@ -247,7 +250,8 @@ module Boundcond
               case ('1s')       ! one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
-                if (j==iss) call bc_ss_flux(f,topbot)
+                if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Fbot,FbotKbot,chi, &
+                                  lmultilayer,lcalc_heatcond_constchi)
                 if (j==iaa)  call bc_aa_pot(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)

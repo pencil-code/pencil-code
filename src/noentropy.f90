@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.41 2003-08-04 17:56:02 mee Exp $
+! $Id: noentropy.f90,v 1.42 2003-08-26 16:40:36 mee Exp $
 
 module Entropy
 
@@ -18,6 +18,11 @@ module Entropy
 
   ! run parameters
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
+  real :: hcond0=0.
+  real :: Fbot=impossible,hcond1=impossible
+  real :: FbotKbot=impossible,chi=impossible
+  logical :: lmultilayer=.true.
+  logical :: lcalc_heatcond_constchi=.false.
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0,i_ugradpm=0
@@ -44,7 +49,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.41 2003-08-04 17:56:02 mee Exp $")
+           "$Id: noentropy.f90,v 1.42 2003-08-26 16:40:36 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -186,111 +191,4 @@ module Entropy
 !
     endsubroutine gradloghcond
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_flux
-!***********************************************************************
-    subroutine bc_ss_temp_old(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_temp_old
-!***********************************************************************
-    subroutine bc_ss_temp_x(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_temp_x
-!***********************************************************************
-    subroutine bc_ss_temp_y(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_temp_y
-!***********************************************************************
-    subroutine bc_ss_temp_z(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_temp_z
-!***********************************************************************
-    subroutine bc_ss_stemp_x(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_stemp_x
-!***********************************************************************
-    subroutine bc_ss_stemp_y(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_stemp_y
-!***********************************************************************
-    subroutine bc_ss_stemp_z(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-!  12-jun-2002/axel: coded
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_stemp_z
-!***********************************************************************
-    subroutine bc_ss_energy(f,topbot)
-!
-!  dummy routine for entropy boundary condition
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine bc_ss_energy
-!***********************************************************************
-
 endmodule Entropy
