@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.24 2004-01-29 10:55:50 ajohan Exp $
+! $Id: dustdensity.f90,v 1.25 2004-01-29 13:53:01 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.24 2004-01-29 10:55:50 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.25 2004-01-29 13:53:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,6 +264,11 @@ module Dustdensity
 !  Check for grain mass interval overflows
 !      
       if (lmdvar) then
+        do k=1,ndustspec
+          if (f(l1,m,n,ind(k)) .ne. 0) then
+            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
+          endif
+        enddo
         forall (i=1:ndustspec, md(i) .lt. mdminus(i) .or. md(i) .ge. mdplus(i))
           forall (k=1:ndustspec, md(i) .ge. mdminus(k) &
               .and. md(i) .lt. mdplus(k))
@@ -273,11 +278,6 @@ module Dustdensity
             f(l1:l2,m,n,irhod(i))= 0.
           endforall
         endforall
-        do k=1,ndustspec
-          if (f(l1,m,n,irhod(k)) .ne. 0. .and. f(l1,m,n,ind(k)) .ne. 0.) then
-            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
-          endif
-        enddo
       endif
 !
 !  Abbreviations
@@ -305,23 +305,25 @@ module Dustdensity
       do i=1,ndustspec
         do j=i,ndustspec
           dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
-          df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
-          df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
-          if (lmdvar) then
-            forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
-                .and. md(i) + md(j) .lt. mdplus(k)) 
-              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - dndfac
-              df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
-              df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
-              df(l1:l2,m,n,irhod(k)) = &
-                  df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
-            endforall
-          else
-            forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
-                .and. md(i) + md(j) .lt. mdplus(k)) 
-              df(l1:l2,m,n,ind(k)) = &
-                  df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
-            endforall
+          if (minval(dndfac) .ne. 0.) then
+            df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
+            df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
+            if (lmdvar) then
+              forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
+                  .and. md(i) + md(j) .lt. mdplus(k)) 
+                df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - dndfac
+                df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
+                df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
+                df(l1:l2,m,n,irhod(k)) = &
+                    df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
+              endforall
+            else
+              forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
+                  .and. md(i) + md(j) .lt. mdplus(k)) 
+                df(l1:l2,m,n,ind(k)) = &
+                    df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
+              endforall
+            endif
           endif
         enddo
       enddo
