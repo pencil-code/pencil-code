@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.7 2003-11-10 23:00:12 theine Exp $
+### $Id: Makefile.src,v 1.8 2003-11-11 12:41:21 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -53,7 +53,6 @@ FFLAGS=
 F90FLAGS=
 F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
-LDONLYFLAGS=
 FCCLEANER=
 
 ## The following block (`Begin/End machine dependent') specifies compilers
@@ -193,10 +192,9 @@ FCCLEANER=
 #CFLAGS=-O3 -DFUNDERSC=0
 #F77=xlf
 #FC=xlf90
-#FFLAGS=-I/usr/lpp/ppe.poe/include -O5 -qstrict
+#FFLAGS=-I/usr/lpp/ppe.poe/include -O5 -w
 #F90FLAGS=-qsuffix=f=f90
-#LDONLYFLAGS=-qipa
-#LDMPI=-L/usr/lpp/ppe.poe/lib -lmpi
+#LDMPI=-F:mpxlf90
 
 ### End machine dependent
 
@@ -264,16 +262,16 @@ code:
 	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x $(FCCLEANER)
 
 start.x: $(start) Makefile.local
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x 
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
 	$(MAKE) linkonly
@@ -284,8 +282,8 @@ mpicomm_.f90:      mpicomm.f90
 # Shortcut for debugging radiation:
 rad:
 	ifc -c radiation_exp.f90
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 # Remove all build files, but keep executables
 # (misleading name..)
@@ -322,10 +320,10 @@ cleann: clean
 ## ---------------------------------------------------------------------- #
 
 read_videofiles.x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(read_videofiles) -o read_videofiles.x 
+	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
 
 read_vectorfiles.x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
+	$(LD) $(LDFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
 
 ## ---------------------------------------------------------------------- #
 ## Dependencies
