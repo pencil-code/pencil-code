@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.89 2003-11-12 17:33:51 ajohan Exp $ 
+! $Id: initcond.f90,v 1.90 2003-11-13 14:40:27 ajohan Exp $ 
 
 module Initcond 
  
@@ -888,47 +888,67 @@ module Initcond
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
-      integer :: i,j,k,izmid
+      integer :: i,j,k,izmid,hr_q,mz_hr,izmid_hr
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rho,TT_til
-      real, dimension (mx,my,mz) :: dPhidx,dPhidz,I_int,dPdx
-      real :: gamma,TT_til0,alpha_TT,rho0,beta_rho
+      real, dimension (mx,my,mz) :: xx,yy,zz,I_int,rho,TT_til,dlnrhodx
+      real, dimension (1000*mz) :: z_hr,I_int_z,TT_til_hr,dPhidz_hr
+      real :: gamma,TT_til0,alpha_TT,rho0,beta_rho,dz_hr
       character (len=labellen):: t_fct_type,rhomid_fct_type
-!
-      izmid=mz/2
-!
-!  The potential is Omega**2*( -r0^2 + r0*xx - xx^2 + 0.5*zz^2 )
-!
-      dPhidx = -3*Omega**2*xx    ! Including centrifugal force
-      dPhidz =    Omega**2*zz
 !
 !  Temperature
 !
       select case(t_fct_type)
         case('linear_z')
           TT_til = TT_til0 + alpha_TT * abs(zz)
+          TT_til_hr = TT_til0 + alpha_TT * abs(z_hr)
+!
+!  Need high resolution in z to calculate integral
+!
+          hr_q     = 1000
+          mz_hr    = hr_q*mz
+!
+!  Index number of mid-plane
+!
+          izmid    = mz/2
+          izmid_hr = mz_hr/2
+!
+!  Calculate high resolution z array
+!      
+          dz_hr = (zz(1,1,mz)-zz(1,1,1))/mz_hr
+          z_hr(1)=zz(1,1,1)
+          do i=2,mz_hr; z_hr(i)=z_hr(i-1)+dz_hr; enddo
+!
+!  The potential is Omega**2*( -r0^2 + r0*xx - xx^2 + 0.5*zz^2 )
+!
+          dPhidz_hr = Omega**2*z_hr
+!
+!  Integral for calculating hydrostatic equlibrium density
+!
+          I_int_z(izmid_hr:mz_hr) = spline_integral(z_hr(izmid_hr:mz_hr), &
+              1/TT_til_hr(izmid_hr:mz_hr)*dPhidz_hr(izmid_hr:mz_hr))
+          I_int_z(izmid_hr:1:-1) = spline_integral(z_hr(izmid_hr:1:-1), &
+              1/TT_til_hr(izmid_hr:1:-1)*dPhidz_hr(izmid_hr:1:-1))
+          print*,I_int_z(1),I_int_z(mz_hr)
+!
+!  Put high resolution integral back into normal resolution array
+!
+          do i=1,mx
+            do j=1,my
+              do k=1,mz
+                I_int(i,j,k) = I_int_z(hr_q*(k-1)+1)
+              enddo
+            enddo
+          enddo
       endselect
 !
 !  Density in the mid-plane
 !
       select case(rhomid_fct_type)
         case ('linear_x')
-          rho(:,:,izmid) = rho0 + beta_rho * xx(:,:,izmid)
+          f(:,:,izmid,ilnrho) = alog(rho0 + beta_rho * xx(:,:,izmid))
       endselect
 !
-!  Integral for calculating hydrostatic equlibrium density
-!
-      do i=1,mx
-        do j=1,my
-          I_int(i,j,izmid:mz)   = spline_integral(zz(i,j,izmid:mz), &
-              1/TT_til(i,j,izmid:mz)*dPhidz(i,j,izmid:mz))
-          I_int(i,j,izmid:1:-1) = spline_integral(zz(i,j,izmid:1:-1), &
-              1/TT_til(i,j,izmid:-1)*dPhidz(i,j,izmid:1:-1))
-        enddo
-      enddo
-!
 !  Solution to hydrostatic equlibrium in the z-direction
-!  Note: spline_integral is not very efficient compared to trapezoidal rule
 !
       do k=1,mz
         f(:,:,k,ilnrho) = f(:,:,izmid,ilnrho) - &
@@ -936,18 +956,17 @@ module Initcond
       enddo
 
       rho = exp(f(:,:,:,ilnrho))
-      
-      do j=1,mx
-        do k=1,my
-          dPdx(:,j,k) = &
-              spline_derivative(xx(:,j,k),rho(:,j,k)*TT_til(:,j,k))
+     
+      do j=0,my
+        do k=0,mz
+          dlnrhodx(:,j,k) = spline_derivative(xx(:,j,k),f(:,j,k,ilnrho))
         enddo
       enddo
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
+!  (potential term vansihes when velocities measured relative to -1.5 O x.
 !
-      f(:,:,:,iuy) = 1/(2*Omega)* &
-          ( 1/rho(:,:,:) * dPdx(:,:,:) + dPhidx(:,:,:) ) + qshear*Omega*xx
+      f(:,:,:,iuy) = 1/(2*Omega)*TT_til*dlnrhodx(:,:,:)
 !
 !  Entropy is calculated from temperature and density ( P = T~*rho )
 !
