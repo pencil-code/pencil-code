@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.2 2004-04-28 08:48:33 brandenb Exp $ 
+! $Id: param_io.f90,v 1.3 2004-04-28 09:35:25 dobler Exp $ 
 
 module Param_IO
 
@@ -16,7 +16,11 @@ module Param_IO
 !
 !  open namelist file
 !
-  namelist /magnetic_run_pars/ eta
+
+!
+!  Ukaff bug workaround: uncomment following line
+!
+!  namelist /magnetic_run_pars/ eta
 
       open(1,file='run.in',form='formatted')
 

@@ -2,7 +2,7 @@
                            ukaff-namelist-bug
                           --------------------
 
-$Id: README,v 1.3 2002-06-12 21:04:24 brandenb Exp $
+$Id: README,v 1.4 2004-04-28 09:35:25 dobler Exp $
 
 
 1. Symptoms:
@@ -43,6 +43,13 @@ $Id: README,v 1.3 2002-06-12 21:04:24 brandenb Exp $
    - Compaq F95 (Tru64)  OK
    - Sun F95    (SunOS)  OK
 
-4. Original date:
+5. Original date:
 
   Wed Jun 12 18:19:51 BST 2002
+
+6. Workaround:
+   Move the namelist declaration
+
+      namelist /magnetic_run_pars/ eta
+ 
+   from magnetic.f90 to param_io.f90

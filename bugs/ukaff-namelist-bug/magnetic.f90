@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.3 2004-04-28 08:48:33 brandenb Exp $
+! $Id: magnetic.f90,v 1.4 2004-04-28 09:35:25 dobler Exp $
 
 module Magnetic
 
@@ -12,6 +12,11 @@ module Magnetic
 
   ! run parameters
   real :: eta=0.
+
+!
+!  Ukaff bug workaround: comment out following line:
+!  
+  namelist /magnetic_run_pars/ eta
 
 
   contains
