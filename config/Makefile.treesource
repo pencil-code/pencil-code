@@ -1,4 +1,4 @@
-### $Id: Makefile.treesource,v 1.1 2003-08-14 20:50:15 mee Exp $
+### $Id: Makefile.treesource,v 1.2 2003-08-25 12:42:20 mee Exp $
 ### Machine Specific Makefile for modular pencil code
 ### 
 ### The appropriate Makefile will be chosen from the config tree and included during at compile time 
@@ -57,6 +57,7 @@ include ../Makefile
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)  
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
+#LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(ns0)
 #FC=ifc #(nl6|mmtf|nl19|hamlet|nw46)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FC=f95 #(karbala)

@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   
 # Author: 
 # Date:   14-Aug-2003
-# CVS: $Id: build-tree,v 1.1 2003-08-14 20:50:15 mee Exp $
+# CVS: $Id: build-tree,v 1.2 2003-08-25 12:42:20 mee Exp $
 # Description:
 #
 #   DESCRIPTION
@@ -95,12 +95,12 @@ my %systems  = ( # os { machine, machine, ... }, ...
 while (my ($OS) = each %systems) {
     my $OS_lc=lc($OS);
     #print $OS;
-    system("mkdir -p $OS_lc");
-    system("adapt-and-clean -o=$OS Makefile.treesource $OS_lc/Makefile");
+    system("mkdir -p $OS");
+    system("adapt-and-clean -o=$OS Makefile.treesource $OS/Makefile");
     while (my ($host) = each %{$systems{$OS}}) {
         my $host_lc=lc($host);
-	system("mkdir -p $OS_lc\/$host_lc");
-        system("adapt-and-clean -o=$OS -h=$host Makefile.treesource $OS_lc/$host_lc/Makefile");
+	system("mkdir -p $OS\/$host");
+        system("adapt-and-clean -o=$OS -h=$host Makefile.treesource $OS/$host/Makefile");
     }
 }
 
