@@ -25,7 +25,8 @@
 %\usepackage[T1]{fontenc}
 %\usepackage{ae}                 % To get good PDF with the T1 encoding
 \usepackage{newcent,helvet}
-\renewcommand{\ttdefault}{cmtt}
+\renewcommand{\ttdefault}{cmtt} % Courier is too broad
+\usepackage{amsmath}
 
 \usepackage{makeidx}
 
@@ -112,6 +113,7 @@
 %% Maths operators
 % \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
 % \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
+\newcommand{\atanh} {\mathop{\rm atanh}\nolimits}
 % \newcommand{\sgn}    {\mathop{\rm sgn}\nolimits}
 \newcommand{\grad}    {\mathop{\rm grad}\nolimits}
 \newcommand{\Div}     {\mathop{\rm div}\nolimits}
@@ -146,6 +148,7 @@
 \newcommand{\gv}            {\vekt{g}}
 
 \newcommand{\Heat}          {{\cal H}}
+\newcommand{\Heavi}         {\theta}
 
 \newcommand{\jv}            {\vekt{j}}
 
@@ -169,7 +172,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.11 $ $}
+\date{\today,~ $ $Revision: 1.12 $ $}
 
 % ====================================================================== %
 
@@ -198,7 +201,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.11 $ $}
+  \emph{\today,~ $ $Revision: 1.12 $ $}
 
 
 \end{center}
@@ -793,7 +796,72 @@ Not all parameters are used for a given scenario.
 \end{itemize}
 
 
+
+% ====================================================================== %
+
+\section{Some specific initial conditions}
+
 % ---------------------------------------------------------------------- %
+\subsection{Magnetic flux rings}
+This initial condition sets up two interlocked thin magnetic tori
+(i.\,e.~thin, torus-shaped magnetic flux tubes).
+One torus of radius $R$ lying in the plane $z=0$ can be described by the
+vector potential
+\begin{equation} \label{Av-flux-ring-cyl}
+  \Av = 
+  \Phi_{\rm m}
+  \begin{pmatrix}
+    0\\ 0\\ -\Heavi(r{-}R) \delta(z)
+  \end{pmatrix} \; ,
+\end{equation}
+resulting in a magnetic field
+\begin{equation}
+  \Bv = 
+  \Phi_{\rm m}
+  \begin{pmatrix}
+    0\\ \delta(r{-}R) \delta(z)\\ 0
+  \end{pmatrix} \; .
+\end{equation}
+Here $\Phi_{\rm m}$ is the magnetic flux through the tube,
+$\Heavi(x)$ denotes the Heaviside function, and
+\begin{equation} \label{Heavi-Dirac}
+ \delta(x) = \Heavi'(x)
+\end{equation}
+is Dirac's delta function.
+
+Any smoothed versions of $\Heavi(x)$ and $\delta(x)$ will do, as long as
+the consistency condition (\ref{Heavi-Dirac}) is satisfied.
+E.\,g.~the pairs
+\begin{equation}
+  \delta_\varepsilon(x)
+  = \frac{1}{\sqrt{2\pi\varepsilon^2}} e^{-\frac{x^2}{2\varepsilon^2}} \; ,
+  \quad
+  \Heavi_\varepsilon(x)
+  = \frac{1}{2} \left( 1 + \erf\frac{x}{\sqrt{2}\varepsilon} \right)
+\end{equation}
+or
+\begin{equation}
+  \delta_\varepsilon(x)
+  = \frac{1}{2\varepsilon}\frac{1}{\cosh^2\frac{x}{\varepsilon}} \; ,
+  \quad
+  \Heavi_\varepsilon(x)
+  = \frac{1}{2} \left( 1 + \tanh\frac{x}{\varepsilon} \right)
+\end{equation}
+are quite popular.
+
+In Cartesian coordinates, the vector potential (\ref{Av-flux-ring-cyl})
+takes the form
+\begin{equation} \label{Av-flux-ring-cart}
+  \Av =
+  \Phi_{\rm m}
+  \begin{pmatrix}
+    0\\ 0\\ -\Heavi \left( \sqrt{x^2{+}y^2}{-}R \right) \delta(z)
+  \end{pmatrix} \; .
+\end{equation}
+
+
+% ====================================================================== %
+
 \section{How to put new things into the code}
 
 The best is to write a new module that takes care of everything.
@@ -804,13 +872,16 @@ to other cases (needed for regular tests of the code and for future
 releases) it is important to supply also a corresponding dummy routine,
 whose name will start with `no'.
 
-% ---------------------------------------------------------------------- %
+% ====================================================================== %
+
 \section{Frequently asked questions}
 
 \begin{itemize}
 \item {\it What's so cool about the fort.20 file?}
 \item 
 \end{itemize}
+
+% ====================================================================== %
 
 \section{Timings}
 
@@ -871,7 +942,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.11 2002-03-28 18:51:49 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.12 2002-04-29 19:58:49 dobler Exp $ $}
 
 
 \end{document}
