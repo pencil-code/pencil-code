@@ -172,7 +172,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.13 $ $}
+\date{\today,~ $ $Revision: 1.14 $ $}
 
 % ====================================================================== %
 
@@ -201,7 +201,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.13 $ $}
+  \emph{\today,~ $ $Revision: 1.14 $ $}
 
 
 \end{center}
@@ -898,6 +898,17 @@ whose name will start with `no'.
 
 \section{Timings}
 
+\begin{table}[htb]\caption{
+Here we give the wall clock time per mesh point (excluding the ghost zones)
+and per full 3-stage time step.
+}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
+proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & when/who \\
+\hline
+1     & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro & (20-may-02/AB)\\
+16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro & (20-may-02/AB)\\
+32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro & (20-may-02/AB)\\
+\label{Ttimescale}\end{tabular}}\end{table}
+
 Below we quote the wall clock time per mesh point (including the ghost zones)
 and per full 3-stage time step.
 
@@ -956,7 +967,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.13 2002-05-01 13:04:27 dobler Exp $ $}
+$ $Id: manual.tex,v 1.14 2002-05-20 06:37:39 brandenb Exp $ $}
 
 
 \end{document}
