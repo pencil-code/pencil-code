@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.52 2003-07-07 10:19:53 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.53 2003-07-07 11:53:22 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,8 +14,8 @@ module Radiation
 !
   implicit none
 !
-  character (len=2*bclen+1), dimension(3) :: bc_rad
-  character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
+  character (len=2*bclen+1), dimension(3) :: bc_rad=''
+  character (len=bclen), dimension(3) :: bc_rad1='',bc_rad2=''
   integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
   real, dimension(mx,my,mz,3) :: pos
@@ -86,7 +86,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.52 2003-07-07 10:19:53 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.53 2003-07-07 11:53:22 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
