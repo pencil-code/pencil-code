@@ -12,8 +12,6 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
-echo $path
-
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
