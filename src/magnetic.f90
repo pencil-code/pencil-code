@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.63 2002-07-05 06:28:40 brandenb Exp $
+! $Id: magnetic.f90,v 1.64 2002-07-05 17:34:10 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -11,7 +11,7 @@ module Magnetic
 
   implicit none
 
-  character(len=labellen) :: initaa='zero'
+  character(len=labellen) :: initaa='zero',initaa2='zero'
 
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
@@ -28,7 +28,7 @@ module Magnetic
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,widthaa, &
-       initaa,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
+       initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
        lpress_equil
 
   ! run parameters
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.63 2002-07-05 06:28:40 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.64 2002-07-05 17:34:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,91 +110,17 @@ module Magnetic
 !
       select case(initaa)
 
-      case('zero', '0')
-        !
-        !  Gaussian noise
-        !
-        if (lroot) print*,'init_aa: aa=0'
-        f(:,:,:,iax:iaz) = 0.
-
-      case('gaussian-noise', '10')
-        !
-        !  Gaussian noise
-        !
-        call gaunoise(amplaa,f,iax,iaz)
-
-      case('Beltrami-z', 'beltrami-z', '1')
-        !
-        !  Beltrami field
-        !
-        call beltrami(amplaa,f,iaa)
-
-      case('Beltrami-x', 'beltrami-x', '11')
-        !
-        !  One more Beltrami field
-        !
-        call beltrami_x(amplaa,f,iaa)
-
-      case('Beltrami-y', 'beltrami-y', '12')
-        !
-        !  Yet another Beltrami field
-        !
-        call beltrami_y(amplaa,f,iaa)
-
-      case('hor-fluxtube', '2')
-        !
-        !  Horizontal flux tube
-        !
-        call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
-
-      case('hor-fluxlayer', '22')
-        !
-        !  Horizontal flux layer
-        !
-        call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
-
-      case('uniform-Bx', '23')
-        !
-        !  Horizontal flux layer
-        !
-        call uniform_x(amplaa,f,iaa,xx,yy,zz)
-
-      case('Bz(x)', '3')
-        !
-        !  Vertical field, Bz=coskx
-        !
-        call vfield(amplaa,f,iaa,xx)
-
-      case('fluxrings', '4')
-        !
-        !  Magnetic flux rings
-        !
-        call fluxrings(f,iaa,xx,yy,zz)
-
-      case('crazy', '5')
-        !
-        !  some other (crazy) initial condition
-        !  (was useful to initialize all points with finite values)
-        !
-        f(:,:,:,iax) = spread(spread(sin(2*x),2,my),3,mz)*&
-                       spread(spread(sin(3*y),1,mx),3,mz)*&
-                       spread(spread(cos(1*z),1,mx),2,my)
-        f(:,:,:,iay) = spread(spread(sin(5*x),2,my),3,mz)*&
-                       spread(spread(sin(1*y),1,mx),3,mz)*&
-                       spread(spread(cos(2*z),1,mx),2,my)
-        f(:,:,:,iaz) = spread(spread(sin(3*x),2,my),3,mz)*&
-                       spread(spread(sin(4*y),1,mx),3,mz)*&
-                       spread(spread(cos(2*z),1,mx),2,my)
-        if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
-
-      case('crazy-2')
-        !
-        !  another crazy initial condition for testing the cross
-        !  derivatives xder(zder(Az))
-        !
-        f(:,:,:,iay) = sin(xx)*sin(yy)
-        if (lroot) print*, 'Az=sin(x)*sin(z) for debugging purposes'
-
+      case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+      case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
+      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,kx=1.)
+      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,ky=1.)
+      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,kz=1.)
+      case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
+      case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
+      case('uniform-Bx', '23'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
+      case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
+      case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
+      case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -210,6 +136,14 @@ module Magnetic
         if (lroot) print*, 'No such such value for initaa: ', trim(initaa)
         call stop_it("")
 
+      endselect
+!
+!  superimpose something else
+!
+      select case(initaa2)
+        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,kx=kx_aa)
+        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,ky=ky_aa)
+        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,kz=kz_aa)
       endselect
 !
 !  allow for pressure equilibrium (for isothermal tube)

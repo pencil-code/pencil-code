@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.69 2002-07-02 17:03:23 nilshau Exp $ 
+! $Id: sub.f90,v 1.70 2002-07-05 17:34:10 brandenb Exp $ 
 
 module Sub 
 
@@ -1553,83 +1553,103 @@ module Sub
 !
       endsubroutine remove_file
 !***********************************************************************
-    subroutine beltrami_x(ampl,f,i)
+    subroutine beltrami(ampl,f,i,kx,ky,kz)
 !
-!  x-dependent Beltrami field as initial condition
-!
-!  19-jun-02/axel: coded
-!
-      use Cdata
-!
-      integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
-      real :: ampl
-!
-!  set Beltrami field
-!
-      if (ampl==0) then
-        f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
-      else
-        if (lroot) print*,'set x-dependent Betrami field for variable i=',i
-        f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*spread(spread(cos(x),2,my),3,mz)
-        f(:,:,:,i+2)=ampl*spread(spread(sin(x),2,my),3,mz)
-      endif
-!
-    endsubroutine beltrami_x
-!***********************************************************************
-    subroutine beltrami_y(ampl,f,i)
-!
-!  x-dependent Beltrami field as initial condition
+!  Beltrami field (as initial condition)
 !
 !  19-jun-02/axel: coded
+!   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
 !
       use Cdata
 !
-      integer :: i
+      integer :: i,j
       real, dimension (mx,my,mz,mvar) :: f
-      real :: ampl
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.,fac
 !
-!  set Beltrami field
+!  wavenumber k, helicity H=ampl (can be either sign)
 !
-      if (ampl==0) then
-        f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
-      else
-        if (lroot) print*,'set y-dependent Betrami field for variable i=',i
-        f(:,:,:,i  )=ampl*spread(spread(sin(y),1,mx),3,mz)
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=ampl*spread(spread(cos(y),1,mx),3,mz)
+!  set x-dependent Beltrami field
+!
+      if (present(kx)) then
+        k=kx; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in Beltrami field; kx=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'Beltrami field (pos-hel): kx,i1,i2=',k,i+1,i+2
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x),2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x),2,my),3,mz)
+        elseif (ampl<0) then
+          if (lroot) print*,'Beltrami field (neg-hel): kx,i1,i2=',k,i+1,i+2
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x),2,my),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x),2,my),3,mz)
+        endif
       endif
 !
-    endsubroutine beltrami_y
-!***********************************************************************
-    subroutine beltrami(ampl,f,i)
+!  set y-dependent Beltrami field
 !
-!  z-dependent Beltrami field as initial condition
+      if (present(ky)) then
+        k=ky; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in Beltrami field; ky=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'Beltrami field (pos-hel): ky,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y),1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y),1,mx),3,mz)
+        elseif (ampl<0) then
+          if (lroot) print*,'Beltrami field (neg-hel): ky,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y),1,mx),3,mz)
+          j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y),1,mx),3,mz)
+        endif
+      endif
 !
-!  26-may-02/axel: coded
+!  set z-dependent Beltrami field
 !
-      use Cdata
-!
-      integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
-      real :: ampl
-!
-!  set Beltrami field
-!
-      if (ampl==0) then
-        f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
-      else
-        if (lroot) print*,'set z-dependent Betrami field for variable i=',i
-        f(:,:,:,i  )=ampl*spread(spread(cos(z),1,mx),2,my)
-        f(:,:,:,i+1)=ampl*spread(spread(sin(z),1,mx),2,my)
-        f(:,:,:,i+2)=0.
+      if (present(kz)) then
+        k=kz; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in Beltrami field; kz=',k
+        elseif (ampl>0) then
+          if (lroot) print*,'Beltrami field (pos-hel): kz,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z),1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z),1,mx),2,my)
+        elseif (ampl<0) then
+          if (lroot) print*,'Beltrami field (neg-hel): kz,i=',k,i
+          j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z),1,mx),2,my)
+          j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z),1,mx),2,my)
+        endif
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine crazy(ampl,f,i)
+!
+!  A crazy initial condition
+!  (was useful to initialize all points with finite values)
+!
+!  19-may-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+      if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
+      j=j; f(:,:,:,j)=f(:,:,:,j)+ampl*&
+        spread(spread(sin(2*x),2,my),3,mz)*&
+        spread(spread(sin(3*y),1,mx),3,mz)*&
+        spread(spread(cos(1*z),1,mx),2,my)
+      j=i+1; f(:,:,:,j)=f(:,:,:,j)+ampl*&
+        spread(spread(sin(5*x),2,my),3,mz)*&
+        spread(spread(sin(1*y),1,mx),3,mz)*&
+        spread(spread(cos(2*z),1,mx),2,my)
+      j=j+2; f(:,:,:,j)=f(:,:,:,j)+ampl*&
+        spread(spread(sin(3*x),2,my),3,mz)*&
+        spread(spread(sin(4*y),1,mx),3,mz)*&
+        spread(spread(cos(2*z),1,mx),2,my)
+!
+    endsubroutine crazy
 !***********************************************************************
     subroutine htube(ampl,f,i,xx,yy,zz,radius,epsilon_nonaxi)
 !

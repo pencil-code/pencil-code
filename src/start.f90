@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.48 2002-07-03 15:27:36 dobler Exp $
+! $Id: start.f90,v 1.49 2002-07-05 17:34:10 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,7 +31,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.48 2002-07-03 15:27:36 dobler Exp $")
+             "$Id: start.f90,v 1.49 2002-07-05 17:34:10 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -89,9 +89,11 @@
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
 !        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
-!AB: what's the plan here? move to grav_r?
+!AB: why is it commented out? Do you plan to move to grav_r?
 !
 !  different initial conditions
+!  initialize all variables to zero;
+!  the following init routines do then only need to add to f.
 !
         f = 0.
         if (lroot) print* !(empty line)
