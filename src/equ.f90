@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.214 2004-06-09 10:20:47 ajohan Exp $
+! $Id: equ.f90,v 1.215 2004-06-09 11:44:35 ajohan Exp $
 
 module Equ
 
@@ -260,7 +260,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.214 2004-06-09 10:20:47 ajohan Exp $")
+           "$Id: equ.f90,v 1.215 2004-06-09 11:44:35 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -530,7 +530,6 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-
      subroutine calculate_some_vars(f,rho1,bb)
 !
 !   Calculation of some variables used by routines later at time
@@ -547,7 +546,7 @@ module Equ
        intent(in)  :: f
        intent(out) :: rho1,bb
        
-       if (ldensity) then
+       if (ldensity .or. ldensity_fixed) then
           call calculate_vars_rho(f,rho1)
        else
           rho1=1.               ! Default for nodensity.f90
