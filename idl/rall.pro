@@ -55,14 +55,14 @@ default, file, 'var.dat'
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)
 uu    = fltarr(mx,my,mz,3)*one
 lnrho = fltarr(mx,my,mz)*one
-if (lentropy) then ss = fltarr(mx,my,mz)*one
-if (lmagnetic) then aa = fltarr(mx,my,mz,3)*one
+if (ient ne 0) then ss = fltarr(mx,my,mz)*one
+if (iaa ne 0) then aa = fltarr(mx,my,mz,3)*one
 ;
 xloc = fltarr(mxloc) & yloc = fltarr(myloc) & zloc = fltarr(mzloc)
 uu_loc = fltarr(mxloc,myloc,mzloc,3)*one
 lnrho_loc = fltarr(mxloc,myloc,mzloc)*one
-if (lentropy) then ss_loc = fltarr(mxloc,myloc,mzloc)*one
-if (lmagnetic) then aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
+if (ient ne 0) then ss_loc = fltarr(mxloc,myloc,mzloc)*one
+if (iaa ne 0) then aa_loc = fltarr(mxloc,myloc,mzloc,3)*one
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
   datadir=datatopdir+'/proc'+strtrim(i,2)
@@ -78,10 +78,26 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   ; read data
   close,1
   openr,1, datadir+'/'+file, /F77
-  if (lentropy and lmagnetic) then readu,1, uu_loc, lnrho_loc, ss_loc, aa_loc
-  if ((not lentropy) and lmagnetic) then readu,1, uu_loc, lnrho_loc, aa_loc
-  if (lentropy and not lmagnetic)   then readu,1, uu_loc, lnrho_loc, ss_loc
-  if ((not lentropy) and (not lmagnetic)) then readu,1, uu_loc, lnrho_loc
+    ;
+    if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
+      print,'MHD with entropy'
+      readu,1,uu,lnrho,ss,aa
+    end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
+      print,'hydro with entropy, but no magnetic field'
+      readu,1,uu,lnrho,ss
+    end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+      print,'hydro with no entropy and no magnetic field'
+      readu,1,uu,lnrho
+    end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
+      print,'just velocity (Burgers)'
+      readu,1,uu
+    end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
+      print,'just magnetic ffield (kinematic)
+      readu,1,aa
+    end else begin
+      print,'not prepared...'
+    end
+    ;
   readu,1, t, xloc, yloc, zloc
   close,1
   ;
@@ -120,9 +136,9 @@ for i=0,ncpus-1 do begin        ; read data from individual files
       uu_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
   lnrho[i0x:i1x,i0y:i1y,i0z:i1z]   = $
       lnrho_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
-  if (lentropy) then ss[i0x:i1x,i0y:i1y,i0z:i1z]   = $
+  if (ient ne 0) then ss[i0x:i1x,i0y:i1y,i0z:i1z]   = $
       ss_loc[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc]
-  if (lmagnetic) then aa [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
+  if (iaa ne 0) then aa [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
       aa_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
 endfor
 ;
