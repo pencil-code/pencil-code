@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.2 2004-01-07 19:02:11 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.3 2004-01-08 09:20:29 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.2 2004-01-07 19:02:11 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.3 2004-01-08 09:20:29 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -169,7 +169,7 @@ module Viscosity
 !
 ! find heating term (yet it only works for ivisc='hyper3')
 !
-      if (lout .and. (itsub.eq.itorder)) then
+      if (ldiagnos) then
         if (ivisc .eq. 'hyper3') then
           sij2=0
           do i=1,2

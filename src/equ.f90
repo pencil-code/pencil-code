@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.186 2003-12-29 17:12:52 ajohan Exp $
+! $Id: equ.f90,v 1.187 2004-01-08 09:20:29 nilshau Exp $
 
 module Equ
 
@@ -67,6 +67,9 @@ module Equ
 !
       call mpireduce_max(fmax_tmp,fmax,nmax_count)
       call mpireduce_sum(fsum_tmp,fsum,nsum_count)
+!
+
+
 !
 !  the result is present only on the root processor
 !
@@ -234,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.186 2003-12-29 17:12:52 ajohan Exp $")
+           "$Id: equ.f90,v 1.187 2004-01-08 09:20:29 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -427,6 +430,10 @@ module Equ
       enddo
 !
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
+!
+!  set diagnostic for case with hyper viscosity
+!      
+      if (lvisc_hyper .and. ldiagnos) fname(i_epsK)=epsK_hyper
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

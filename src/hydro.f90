@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.144 2004-01-07 19:02:11 nilshau Exp $
+! $Id: hydro.f90,v 1.145 2004-01-08 09:20:29 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -106,7 +106,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.144 2004-01-07 19:02:11 nilshau Exp $")
+           "$Id: hydro.f90,v 1.145 2004-01-08 09:20:29 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -575,10 +575,15 @@ module Hydro
 !
 !  mean heating term
 !
-        if (i_epsK/=0 .and. (.not. lvisc_hyper)) then
-          rho=exp(f(l1:l2,m,n,ilnrho))
-          call multm2_mn(sij,sij2)
-          call sum_mn_name(2*nu*rho*sij2,i_epsK)
+        if (i_epsK/=0) then
+          if (.not. lvisc_hyper) then
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            call multm2_mn(sij,sij2)
+            call sum_mn_name(2*nu*rho*sij2,i_epsK)
+          else
+            ! In this case the calculation is done in visc_hyper.f90
+            itype_name(i_epsK)=ilabel_sum
+          endif
         endif
 !
 !  this doesn't need to be as frequent (check later)
