@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.28 2002-06-11 17:54:48 brandenb Exp $
+! $Id: nompicomm.f90,v 1.29 2002-06-12 09:02:24 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -133,7 +133,7 @@ module Mpicomm
     subroutine finalise_isendrcv_bdry(f)
 !
       use General
-      use Boundcond
+!--   use Boundcond
 !??   use Entropy
 !
 !  apply boundary conditions
@@ -143,8 +143,8 @@ module Mpicomm
 !
 !  Boundary conditions
 !
-      call boundconds(f,errmesg)
-      if (errmesg /= "") call stop_it(trim(errmesg))
+!     call boundconds(f,errmesg)
+!     if (errmesg /= "") call stop_it(trim(errmesg))
 !
 !  treat entropy boundary condition separately
 !

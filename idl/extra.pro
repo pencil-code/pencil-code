@@ -1,3 +1,6 @@
+gamma=5./3.
+gamma1=gamma-1.
+;
 print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [my,mz])
 yy = spread(y, [0,2], [mx,mz])
@@ -16,8 +19,9 @@ ooo=oo(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then aaa=aa(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
+if (ilnrho ne 0) then llnrho=lnrho(l1:l2,m1:m2,n1:n2)
 if (ient ne 0) then sss=ss(l1:l2,m1:m2,n1:n2)
-llnrho=lnrho(l1:l2,m1:m2,n1:n2)
+if (ient ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
 ;

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.59 2002-06-11 17:54:48 brandenb Exp $
+! $Id: entropy.f90,v 1.60 2002-06-12 09:02:24 brandenb Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.59 $", &
-           "$Date: 2002-06-11 17:54:48 $")
+           "$Revision: 1.60 $", &
+           "$Date: 2002-06-12 09:02:24 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -480,6 +480,8 @@ module Entropy
 !***********************************************************************
     subroutine bc_ss(f,errmesg)
 !
+!  boundary condition for entropy
+!
 !  23-jan-2002/wolf: coded
 !
       use Cdata
@@ -528,11 +530,13 @@ module Entropy
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for
 !  entropy and density.
 !  NB: Sound speed is set to cs0, so this is mostly useful for top boundary.  
+!  Sound speed at the top, cs2top, is currently an input parameter
 !
         if (bcz2(ient) == "c2") then
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
-          tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy
           do i=1,nghost
             f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)

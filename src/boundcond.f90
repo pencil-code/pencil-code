@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.5 2002-06-02 07:51:39 brandenb Exp $
+! $Id: boundcond.f90,v 1.6 2002-06-12 09:02:24 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -24,6 +24,7 @@ module Boundcond
 !  here.
 !
       use Cdata
+      use Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
@@ -191,6 +192,8 @@ module Boundcond
           endselect
         endif
       enddo
+!
+      if (lentropy) call bc_ss(f,errmesg)
 !
     endsubroutine boundconds
 !***********************************************************************

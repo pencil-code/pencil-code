@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.23 2002-06-11 17:54:48 brandenb Exp $
+! $Id: mpicomm.f90,v 1.24 2002-06-12 09:02:24 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -187,7 +187,8 @@ module Mpicomm
 !
 !  left and right hand boxes
 !  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
-!  instead of just m2i, to make sure the case ny=1 works ok.
+!  instead of just m2i, to make sure the case ny=1 works ok, and
+!  also that the same m is not set in both loops.
 !
       do n=n1,n2
         do m=m1,min(m1i,m2)

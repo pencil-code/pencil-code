@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $ 
+! $Id: param_io.f90,v 1.17 2002-06-12 09:02:24 brandenb Exp $ 
 
 module Param_IO
 
@@ -18,12 +18,13 @@ module Param_IO
 
   ! run parameters
   real :: tmax=1e33
+  integer :: iwig=500
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
-       dsnap,dvid,dtmin,tmax, &
+       dsnap,dvid,dtmin,tmax,iwig, &
        bcx,bcy,bcz
  
   contains
@@ -53,7 +54,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $
+!   $Id: param_io.f90,v 1.17 2002-06-12 09:02:24 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -78,7 +79,7 @@ module Param_IO
 !
       use Sub, only: parse_bc
 !
-      character(len=80) Id
+!--   character(len=80) Id
       logical, optional :: print
       integer :: i
 !
@@ -106,7 +107,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.16 2002-06-11 08:45:51 dobler Exp $
+!   $Id: param_io.f90,v 1.17 2002-06-12 09:02:24 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !

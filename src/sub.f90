@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.53 2002-06-07 17:50:45 brandenb Exp $ 
+! $Id: sub.f90,v 1.54 2002-06-12 09:02:24 brandenb Exp $ 
 
 module Sub 
 
@@ -1539,5 +1539,28 @@ module Sub
       print*,'set gaussian noise: variable i=',i
 !
     endsubroutine gaunoise_scal
+!***********************************************************************
+      subroutine rmwig(f)
+!
+!  There is no diffusion acting on the density, and wiggles in
+!  lnrho are not felt in the momentum equation at all (zero gradient).
+!  Thus, in order to keep lnrho smooth one needs to smooth lnrho
+!  in sporadic time intervals.
+!
+!  11-Jul-01/axel: adapted from similar version in f77 code
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx,my,mz,mvar) :: f
+!
+!  copy
+!
+      print*,'remove wiggles in lnrho, t=',t
+      tmp=f(:,:,:,ilnrho)
+      call smooth_3d(tmp,1)
+      f(:,:,:,ilnrho)=tmp
+!
+    endsubroutine rmwig
 
 endmodule Sub

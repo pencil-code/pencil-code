@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.38 2002-06-10 13:07:14 brandenb Exp $
+! $Id: start.f90,v 1.39 2002-06-12 09:02:24 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -24,6 +24,7 @@
         integer :: i
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
+        real :: x00,y00,z00
 !
         call initialize         ! register modules, etc.
 !
@@ -31,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.38 $", &
-             "$Date: 2002-06-10 13:07:14 $")
+             "$Revision: 1.39 $", &
+             "$Date: 2002-06-12 09:02:24 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -69,15 +70,15 @@
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  lperi indicate periodicity of given direction
 !
-        if (lperi(1)) then; dx = Lx/nxgrid; else; dx = Lx/(nxgrid-1); endif
-        if (lperi(2)) then; dy = Ly/nygrid; else; dy = Ly/(nygrid-1); endif
-        if (lperi(3)) then; dz = Lz/nzgrid; else; dz = Lz/(nzgrid-1); endif
+        if (lperi(1)) then; dx = Lx/nxgrid; x00=x0+.5*dx; else; dx = Lx/(nxgrid-1); x00=x0; endif
+        if (lperi(2)) then; dy = Ly/nygrid; y00=y0+.5*dy; else; dy = Ly/(nygrid-1); y00=y0; endif
+        if (lperi(3)) then; dz = Lz/nzgrid; z00=z0+.5*dz; else; dz = Lz/(nzgrid-1); z00=z0; endif
 !
 !  set x,y,z arrays
 !
-        do i=1,mx; x(i)=x0+(i-nghost-1+ipx*nx)*dx; enddo
-        do i=1,my; y(i)=y0+(i-nghost-1+ipy*ny)*dy; enddo
-        do i=1,mz; z(i)=z0+(i-nghost-1+ipz*nz)*dz; enddo
+        do i=1,mx; x(i)=x00+(i-nghost-1+ipx*nx)*dx; enddo
+        do i=1,my; y(i)=y00+(i-nghost-1+ipy*ny)*dy; enddo
+        do i=1,mz; z(i)=z00+(i-nghost-1+ipz*nz)*dz; enddo
 !
 !  write grid.dat file
 !

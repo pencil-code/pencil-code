@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.60 2002-06-10 07:34:36 brandenb Exp $
+! $Id: equ.f90,v 1.61 2002-06-12 09:02:24 brandenb Exp $
 
 module Equ
 
@@ -177,6 +177,7 @@ module Equ
       use Gravity
       use Entropy
       use Magnetic
+      use Boundcond
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -185,6 +186,7 @@ module Equ
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
       integer :: j
+      character (len=160) :: errmesg
 !
 !  print statements when they are first executed
 !
@@ -192,17 +194,19 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.60 $", &
-           "$Date: 2002-06-10 07:34:36 $")
+           "$Revision: 1.61 $", &
+           "$Date: 2002-06-12 09:02:24 $")
 !
 !  initialize counter for calculating and communicating print results
 !
       ldiagnos=lfirst.and.lout
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
-!  initiate communication
+!  initiate communication and do boundary conditions
 !
       call initiate_isendrcv_bdry(f)
+      call boundconds(f,errmesg)
+      if (errmesg /= "") call stop_it(trim(errmesg))
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
