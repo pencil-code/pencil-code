@@ -80,8 +80,8 @@ if ($local_disc) then
   copy-snapshots -v var.dat
 endif
 
-# Change permissions for DX General Importer shell script
-chmod +x $datadir/*.dxsh
+# Link DX General Importer shell script to data directory
+ln -s $PENCIL_HOME/bin/var.general.dxsh $datadir
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
