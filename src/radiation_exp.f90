@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.33 2003-07-01 14:19:21 theine Exp $
+! $Id: radiation_exp.f90,v 1.34 2003-07-01 14:50:28 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.33 2003-07-01 14:19:21 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.34 2003-07-01 14:50:28 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -360,16 +360,104 @@ module Radiation
 !
     endsubroutine radtransfer_comm
 !***********************************************************************
-    subroutine radtransfer_comm_xyp
+    subroutine radtransfer_comm_yzp
 !
-!  upward ray:
-!  (starting this is optimal when ipz < nprocz/2;
-!  otherwise we better start the other way around)
+!  rays where the x-direction is positive 
 !
       use Cdata
       use Mpicomm
 !
-      integer :: tag_xyp=101
+      integer :: tag_yzp=201
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_yz
+!
+!  send Ibuf_yz to ipz+1
+!
+      if(ipz/=nprocz-1) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_yzp=',zuneigh,tag_yzp
+        Ibuf_yz=Irad_yz(:,:,:,:,:,1:radz) &
+                  +Irad0_yz(:,:,:,:,:,1:radz)*exp(-tau_yz(:,:,:,:,:,1:radz))
+        call send_Irad0_yz(Ibuf_yz,zuneigh,radx0,rady0,radz0,tag_yzp)
+      endif
+!
+    endsubroutine radtransfer_comm_yzp
+!***********************************************************************
+    subroutine radtransfer_comm_yzm
+!
+!  rays where the x-direction is negative 
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_yzm=202
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_yz
+!
+!  send Ibuf_yz to ipz-1
+!
+      if(ipz/=0) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_yzm=',zuneigh,tag_yzm
+        Ibuf_yz(:,:,:,:,:,1:radz)=Irad_yz(:,:,:,:,:,-radz:-1) &
+                  +Irad0_yz(:,:,:,:,:,-radz:-1)*exp(-tau_yz(:,:,:,:,:,-radz:-1))
+        call send_Irad0_yz(Ibuf_yz,zlneigh,radx0,rady0,radz0,tag_yzm)
+      endif
+    endsubroutine radtransfer_comm_yzm
+!***********************************************************************
+    subroutine radtransfer_comm_zxp
+!
+!  rays where the y-direction is positive 
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_zxp=203
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_zx
+!
+!  send Ibuf_zx to ipz+1
+!
+      if(ipz/=nprocz-1) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_zxp=',zuneigh,tag_zxp
+        Ibuf_zx=Irad_zx(:,:,:,:,:,1:radz) &
+                  +Irad0_zx(:,:,:,:,:,1:radz)*exp(-tau_zx(:,:,:,:,:,1:radz))
+        call send_Irad0_zx(Ibuf_zx,zuneigh,radx0,rady0,radz0,tag_zxp)
+      endif
+!
+    endsubroutine radtransfer_comm_zxp
+!***********************************************************************
+    subroutine radtransfer_comm_zxm
+!
+!  rays where the y-direction is negative 
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_zxm=204
+      integer :: lrad,mrad,nrad,rad2
+      logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_zx
+!
+!  send Ibuf_zx to ipz-1
+!
+      if(ipz/=0) then
+        if (first) print*,'radtransfer_comm: zuneigh,tag_zxm=',zuneigh,tag_zxm
+        Ibuf_zx(:,:,:,:,:,1:radz)=Irad_zx(:,:,:,:,:,-radz:-1) &
+                  +Irad0_zx(:,:,:,:,:,-radz:-1)*exp(-tau_zx(:,:,:,:,:,-radz:-1))
+        call send_Irad0_zx(Ibuf_zx,zlneigh,radx0,rady0,radz0,tag_zxm)
+      endif
+    endsubroutine radtransfer_comm_zxm
+!***********************************************************************
+    subroutine radtransfer_comm_xyp
+!
+!  rays where the z-direction is positive 
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_xyp=205
       integer :: lrad,mrad,nrad,rad2
       logical, save :: first=.true.
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
@@ -408,13 +496,12 @@ module Radiation
 !***********************************************************************
     subroutine radtransfer_comm_xym
 !
-!  downward ray
-!  start at the top
+!  rays where the z-direction is negative 
 !
       use Cdata
       use Mpicomm
 !
-      integer :: tag_xym=102
+      integer :: tag_xym=206
       integer :: lrad,mrad,nrad,rad2
       logical, save :: first=.true.
       real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
