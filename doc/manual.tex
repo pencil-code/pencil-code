@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.121 2002-10-03 19:30:03 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.122 2002-10-04 06:31:11 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.121 $ $}
+\date{\today,~ $ $Revision: 1.122 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.121 $ $}
+  \emph{\today,~ $ $Revision: 1.122 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1523,8 +1523,11 @@ Here is a list of the more important ones.
   Supposed to be started in the background before \file{run.x} is invoked.
   Specific to a Beowulf cluster in Odense.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
-\item[cvsci_run] \footnote{WD: Need to see which one we keep:
-    cvs-add-rundir or cvsci_run}
+\item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
+  the \file{*.in} and \file{src/*.local} files. It also checks in the files
+  \file{data/n.dat} and \file{data/index.pro} for subsequent processing in
+  \name{IDL} on another machine. This is particularly useful if collaborators
+  want to check each others runs.
 \item[getconf.csh] See \S~\ref{start-run-getconf}
 \item[gpgrowth] Plot simple time evolution with Gnuplot's ASCII graphics
   for fast orientation via a slow modem line.
@@ -1537,7 +1540,9 @@ Here is a list of the more important ones.
   based on \file{Makefile} and \file{Makefile.local}.
 \item[mkinpars] Wrapper around \item{mkdotin} --- needs proper
   documentation.
-\item[new] ???
+\item[new] Generates a new run directory from an old one. The new one contains
+  a copy of the old \file{*.local} files, runs \cmd{setup-src}, and
+  makes also a copy of the old \file{*.in} and \file{k.dat} files.
 \item[nl2idl] Transform a Fortran \name{namelist} (normally the files
   \file{param.nml}, \file{param2.nml} written by the code) into an
   \name{IDL} structure.
@@ -1552,7 +1557,10 @@ Here is a list of the more important ones.
   \S~\ref{start-run-getconf}
 \item[timestr] Generate a unique time string that can be appended to file
   names from shell scripts through the backtick mechanism
-\item[x] ???
+\item[x] Check the execution of the current run: prints legend and the last
+ few lines of the \file{n.dat} file. It also appends this result to a file
+ called \file{SPEED}, which contains also the current wall clock time, so
+ you can work out the speed of the code (without being affected by i/o time).
 \end{description}
 
 \vspace{5cm}
@@ -2076,7 +2084,7 @@ and $\nu$ is then replaced by $\mu/\varrho$, which is no longer constant.
 
 If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
 viscous term is used.
-This visocus operator is not physically consistent (linear and angular
+This viscous operator is not physically consistent (linear and angular
 momentum conservation is violated for compressible media), but for weakly
 compressible flows (Mach numbers less than 10\%), there is little
 difference to the full one.
@@ -3428,7 +3436,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                    velocity is directed along $x$, jump is at $z=0$),
                  \item[\code{`Fourier-trunc'}] (truncated Fourier series),
                  \item[\code{`up-down'}] (flow upwards in one spot,
-                   downwards in another; not soneloidal).
+                   downwards in another; not solenoidal).
                  \end{description}
                  \\
   \var{ampluu} [$0.$]
@@ -3545,10 +3553,11 @@ double precision, $\varepsilon\approx10^{-15}$.
                    stratification for convection),
                  \item[\code{`polytropic'}] (polytropic stratification,
                    polytropic exponent is \var{mpoly0}),
-                 \item[\code{`blob'}] (???),
+                 \item[\code{`blob'}] (puts a gaussian blob in entropy for
+                   buoyancy experiments; see Ref.~\cite{BH01} for details)
                  \item[\code{`xjump'}] (jump in $x$ direction),
-                 \item[\code{`hor-fluxtube'}] (???),
-                 \item[\code{`hor-tube'}] (???).
+                 \item[\code{`hor-tube'}] (horizontal flux tube in entropy,
+                   oriented in the $y$-direction).
                  \end{description}
                  \\
   \var{pertss} [\code{'zero'}]
@@ -3598,7 +3607,8 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
                  \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
                  \item[\code{`hor-fluxtube'}] (horizontal flux tube),
-                 \item[\code{`hor-tube'}] (???),
+                 \item[\code{`hor-tube'}] (horizontal flux tube in $\Bv$,
+                   oriented in the $y$-direction).
                  \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
                  \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
                  \item[\code{`uniform-By'}] (uniform field in $y$ direction),
@@ -3609,9 +3619,10 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`Alfven-circ-x'}] (circularly polarized
                    Alfvén wave).
                  \item[\code{`sinxsinz'}] ($\sin x \sin z$),
-                 \item[\code{`Alfven-z'}] (???),
-                 \item[\code{`Alfvenz-rot'}] (???),
-                 \item[\code{`Alfven-test'}] (???),
+                 \item[\code{`Alfven-z'}] (Alfv\'en wave traveling in the
+                   $z$-direction; this also sets the velocity),
+                 \item[\code{`Alfvenz-rot'}] (same as \code{`Alfven-z'}, but
+                   with rotation),
                  \item[\code{`Alfven-circ-x'}] (circularly polarised
                    Alfven wave in x direction),
                  \item[\code{`'}] (),
@@ -3667,9 +3678,9 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`wave-x'}] (wave in $x$ direction),
                  \item[\code{`wave-y'}] (wave in $y$ direction),
                  \item[\code{`wave-z'}] (wave in $z$ direction),
-                 \item[\code{`tang-discont-z'}] (???),
-                 \item[\code{`hor-fluxtube'}] (???),
-                 \item[\code{`hor-tube'}] (???).
+                 \item[\code{`tang-discont-z'}] (Kelvin-Helmholtz instability),
+                 \item[\code{`hor-tube'}] (horizontal tube in concentration;
+                  used as a marker for magnetic flux tubes).
                  \end{description}
                  \\
   \var{initlncc2} [\code{'zero'}]
@@ -4075,27 +4086,35 @@ possible inputs to the \file{print.in} file.
   \emph{J. Comp. Phys.} \textbf{35}, 48 (1980)
 \bibitem{NS90} Nordlund, \AA., Stein, R. F.,
   \emph{Comput. Phys. Commun.} \textbf{59}, 119 (1990)
-\bibitem{BNST95} Brandenburg, A., et al.,
-  \emph{Astrophys. J.} \textbf{446}, 741 (1995)
-\bibitem{Ref-3} Brandenburg, A., et al.,
-  \emph{J. Fluid Mech.} \textbf{306}, 325 (1996)
-%\bibitem{NR} Press, W., Flannery, B., Teukolsky, S. \& Vetterling, W. 1988
-%Numerical Recipes, Cambridge University Press.
+\bibitem{BNST95} Brandenburg, A., Nordlund, \AA., Stein, R. F.,
+  \& Torkelsson, U.
+  \emph{Astrophys. J.} \textbf{446}, 741--754 (1995)
+  ``Dynamo-generated turbulence and large scale magnetic fields
+in a Keplerian shear flow''
+\bibitem{Ref-3} Brandenburg, A., Jennings, R. L., Nordlund, \AA.,
+Rieutord, M., Stein, R. F., \& Tuominen, I.
+  \emph{J. Fluid Mech.} \textbf{306}, 325--352 (1996)
+  ``Magnetic structures in a dynamo simulation''
 \bibitem{NR} Press, W., Teukolsky, S., Vetterling, W., \& Flannery, B.,
-  \emph{Numerical Recipes in Fortran 90}, Cambridge (1988)
+  \emph{Numerical Recipes in Fortran 90}, Cambridge (1988???)
 \bibitem{Ref-1} Brandenburg, A., in \emph{Advances in non-linear dynamos},
-  ed. A. Ferriz-Mas \& M. N\'u\~nez Jim\'enez (2002);
+  ed.\ A.\ Ferriz-Mas \& M.\ N\'u\~nez Jim\'enez (2002);
   \url{http://arXiv.org/abs/astro-ph/0109497}
 \bibitem{Ref-4} Brandenburg, A., Dobler, W.,
-  \emph{Astron. Astrophys.} \textbf{369}, 329 (2001)
+  \emph{Astron. Astrophys.} \textbf{369}, 329--338 (2001)
+  ``Large scale dynamos with helicity loss through boundaries''
 \bibitem{SH88} Stanescu, D., Habashi, W. G.,
   \emph{J. Comp. Phys.} \textbf{143}, 674 (1988)
 \bibitem{KR80} Krause, F., R\"adler, K.-H.,
   \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
   Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 \bibitem{Ref-2} Brandenburg, A.,
-  \emph{Astrophys. J.} \textbf{550}, 824 (2001)
-
+  \emph{Astrophys. J.} \textbf{550}, 824--840 (2001)
+  ``The inverse cascade and nonlinear alpha-effect in simulations
+of isotropic helical hydromagnetic turbulence''
+\bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.
+  \emph{Astron. Astrophys.} \textbf{370}, 1092--1102 (2001)
+  ``Evolution of highly buoyant thermals in a stratified layer''
 \end{thebibliography}
 
 
@@ -4109,7 +4128,7 @@ possible inputs to the \file{print.in} file.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.121 2002-10-03 19:30:03 dobler Exp $ $}
+$ $Id: manual.tex,v 1.122 2002-10-04 06:31:11 brandenb Exp $ $}
 
 
 \end{document}
