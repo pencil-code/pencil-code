@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.173 2003-11-02 04:00:18 theine Exp $
+! $Id: cdata.f90,v 1.174 2003-11-03 03:50:07 brandenb Exp $
 
 module Cdata
 
@@ -43,7 +43,7 @@ module Cdata
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
   real :: Omega=0.,qshear=0.,Sshear=impossible
-  real :: deltay=0. !(for shear, now also used in forcing and output)
+  real :: deltay=0. !(for shear; also used in forcing and output)
 
   integer, dimension(mseed) :: seed=0
   integer :: nseed=0

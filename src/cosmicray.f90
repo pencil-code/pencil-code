@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.16 2003-10-29 17:23:50 mee Exp $
+! $Id: cosmicray.f90,v 1.17 2003-11-03 03:50:07 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -37,10 +37,11 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
+  logical :: simplified_cosmicray_tensor=.false.
 
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
-       gammacr, lnegl
+       gammacr,simplified_cosmicray_tensor,lnegl
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -76,7 +77,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.16 2003-10-29 17:23:50 mee Exp $")
+           "$Id: cosmicray.f90,v 1.17 2003-11-03 03:50:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -311,23 +312,25 @@ module CosmicRay
       b1=1./amax1(tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
-!  calculate first H_i
-!
-      do i=1,3
-        hhh(:,i)=0.
-        do j=1,3
-          tmpj(:)=0.
-          do k=1,3
-            tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
-          enddo
-          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
-        enddo
-      enddo
-      call multsv_mn(b1,hhh,hhh)
-!
+!  calculate first H_i (unless we use simplified_cosmicray_tensor)
 !  dot H with ecr gradient
 !
-      call dot_mn(hhh,gecr,tmp)
+      if(simplified_cosmicray_tensor) then
+        tmp=0.
+      else
+        do i=1,3
+          hhh(:,i)=0.
+          do j=1,3
+            tmpj(:)=0.
+            do k=1,3
+              tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
+            enddo
+            hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
+          enddo
+        enddo
+        call multsv_mn(b1,hhh,hhh)
+        call dot_mn(hhh,gecr,tmp)
+      endif
 !
 !  calculate Hessian matrix of ecr, dot with bi*bj, and add into tmp
 !
