@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.17 2003-10-18 20:44:13 brandenb Exp $
+;  $Id: time_series.pro,v 1.18 2003-11-02 05:13:31 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -19,6 +19,7 @@ if defined(i_it) ne 0 then it=reform(a(i_it-1,*))
 if defined(i_dt) ne 0 then dt=reform(a(i_dt-1,*))
 if defined(i_urms) ne 0 then urms=reform(a(i_urms-1,*))
 if defined(i_umax) ne 0 then umax=reform(a(i_umax-1,*))
+if defined(i_udmax) ne 0 then udmax=reform(a(i_udmax-1,*))
 if defined(i_u2m) ne 0 then u2m=reform(a(i_u2m-1,*))
 if defined(i_ux2m) ne 0 then ux2m=reform(a(i_ux2m-1,*))
 if defined(i_uy2m) ne 0 then uy2m=reform(a(i_uy2m-1,*))
@@ -99,7 +100,7 @@ pmulti = !p.multi
 ;
 if (((i_urms or i_um2) ne 0) and ((i_brms or i_bm2) ne 0)) then $
     !p.multi=[0,1,2]
-if i_urms ne 0 then plot,tt,urms,yst=0,TITLE='Velocity'
+if i_urms ne 0 then plot_io,tt,urms,yst=0,TITLE='Velocity'
 if i_um2 ne 0 then oplot,tt,sqrt(um2),line=1
 if i_brms ne 0 then plot_io,tt,brms,TITLE='B-field'
 if i_bm2 ne 0 then oplot,tt,sqrt(bm2),line=1
