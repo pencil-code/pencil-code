@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.191 2003-08-13 08:23:25 dobler Exp $
+! $Id: entropy.f90,v 1.192 2003-08-15 17:14:19 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -29,6 +29,7 @@ module Entropy
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
   real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
+  real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.
   real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
@@ -51,6 +52,7 @@ module Entropy
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
+       tauheat_buffer,TTheat_buffer,zheat_buffer, &
        heat_uniform,lupw_ss
 
   ! other variables (needs to be consistent with reset list below)
@@ -88,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.191 2003-08-13 08:23:25 dobler Exp $")
+           "$Id: entropy.f90,v 1.192 2003-08-15 17:14:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -646,6 +648,7 @@ module Entropy
       if ((luminosity /= 0) .or. &
           (cool /= 0) .or. &
           (tauheat_coronal /= 0) .or. &
+          (tauheat_buffer /= 0) .or. &
           (heat_uniform /= 0)) &
         call calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
 !
@@ -1064,6 +1067,16 @@ endif
       if(tauheat_coronal/=0.) then
         TTref=(z(n)-ztop)/(zheat_coronal-ztop)*TTheat_coronal
         heat=heat+amax1(0.,ss*(TTref-TT)/(rho1*tauheat_coronal))
+      endif
+!
+!  add heating and cooling to a reference temperature in a buffer
+!  zone at the z boundaries	
+!  assume a linearly increasing reference profile, TTref
+!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!
+      if(tauheat_buffer/=0.) then
+        TTref=0.5*(1.+tanh(abs(z(n))-(ztop-zheat_buffer)))*TTheat_buffer
+        heat=heat+ss*(TTref-TT)/(rho1*tauheat_buffer)
       endif
 !
 !  add to entropy equation
