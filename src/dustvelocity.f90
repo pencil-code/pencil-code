@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.66 2004-07-03 02:13:13 theine Exp $
+! $Id: dustvelocity.f90,v 1.67 2004-07-06 15:41:19 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.66 2004-07-03 02:13:13 theine Exp $")
+           "$Id: dustvelocity.f90,v 1.67 2004-07-06 15:41:19 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,7 @@ module Dustvelocity
         case ('epstein_cst')
           do k=1,ndustspec
             do l=1,nx
-              tausd(k) = tausd0*ad(k)/ad0
+              tausd(k) = tausd0*ad(k)/ad(1)
               tausd1(l,k) = 1./tausd(k)
             enddo
           enddo
