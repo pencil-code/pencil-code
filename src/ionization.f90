@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.141 2003-11-19 11:27:15 theine Exp $
+! $Id: ionization.f90,v 1.142 2003-11-19 12:37:29 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -118,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.141 2003-11-19 11:27:15 theine Exp $")
+           "$Id: ionization.f90,v 1.142 2003-11-19 12:37:29 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -520,28 +520,25 @@ module Ionization
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
       real, dimension(nx) :: lnrho,yH,lnTT
-      real, dimension(nx) :: R,dlnTTdy,dRdy,dlnTTdlnrho
-      real, dimension(nx) :: dRdlnrho,dydlnrho
-      real, dimension(nx) :: dlnTTdss,dRdss,dydss,TT1
+      real, dimension(nx) :: TT1,fractions1
+      real, dimension(nx) :: R,dlnTTdy,dRdy
+      real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho
       integer :: j
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
       TT1=exp(-lnTT)
+      fractions1=1/(1+yH+xHe)
 !
       R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH)-2*log(yH)
-      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)/(1+yH+xHe)
+      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)*fractions1
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
-      dlnTTdlnrho=(2.0/3.0)
-      dRdlnrho=(2.0/3.0)*TT_ion*TT1
-      dydlnrho=-dRdlnrho/dRdy
-      dlnTTdss=(2.0/3.0)/((1+yH+xHe)*ss_ion)
-      dRdss=(1+dRdlnrho)/((1+yH+xHe)*ss_ion)
-      dydss=-dRdss/dRdy
+      dlnTTdydRdy=dlnTTdy/dRdy
+      dlnTTdlnrho=(2.0/3.0)*(1-TT_ion*TT1*dlnTTdydRdy)
       do j=1,3
-        glnTT(:,j)=(dlnTTdlnrho+dlnTTdy*dydlnrho)*glnrho(:,j) &
-                  +(dlnTTdss+   dlnTTdy*dydss   )*gss(:,j)
+        glnTT(:,j)=dlnTTdlnrho*glnrho(:,j) &
+                 +(dlnTTdlnrho-dlnTTdydRdy)*gss(:,j)*fractions1*ss_ion1
       enddo
 !
     endsubroutine temperature_gradient
