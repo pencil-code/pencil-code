@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.110 2003-10-07 14:20:10 mee Exp $
+! $Id: hydro.f90,v 1.111 2003-10-08 11:02:15 theine Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -91,7 +91,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.110 2003-10-07 14:20:10 mee Exp $")
+           "$Id: hydro.f90,v 1.111 2003-10-08 11:02:15 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,6 +152,7 @@ module Hydro
       case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
+      case('gaussian-noise-xy'); call gaunoise(ampluu,f,iux,iuy)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
                      call jump(f,iuy,uy_left,uy_right,widthuu,'x')
       case('Beltrami-x'); call beltrami(ampluu,f,iuu,kx=kx_uu)

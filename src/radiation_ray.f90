@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.32 2003-10-07 16:50:39 theine Exp $
+! $Id: radiation_ray.f90,v 1.33 2003-10-08 11:02:15 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -18,9 +18,10 @@ module Radiation
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   integer, parameter :: radx0=1,rady0=1,radz0=1
   integer, parameter :: maxdir=190  ! 7^3 - 5^3 - 3^3 - 1^3 = 190
-  real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad,kaprho,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
+  real :: dtau_thresh
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
   integer :: llstart,llstop,lsign
@@ -34,15 +35,15 @@ module Radiation
   integer, parameter :: idtau_m=1,idtau_p=2
   integer, parameter :: idSdtau_m=3,idSdtau_p=4
   integer, parameter :: iSrad1st=5,iSrad2nd=6
-  integer, parameter :: iemtau=7,iQrad1=8
+  integer, parameter :: itau=7,iQrad1=8
   integer, parameter :: iemdtau1=9,iemdtau2=10
 !
 !  default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: nocooling=.false.,test_radiation=.false.,lkappa_es=.false.
-  logical :: l2ndorder=.true.,lupwards=.true.,lrad_debug=.false.
+  logical :: nocooling=.false.,test_radiation=.false.
+  logical :: l2ndorder=.true.,lrad_debug=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -51,12 +52,12 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,test_radiation,lkappa_es, &
-       bc_rad,l2ndorder,lupwards,lrad_debug
+       radx,rady,radz,rad2max,test_radiation, &
+       bc_rad,l2ndorder,lrad_debug
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,test_radiation,lkappa_es,nocooling, &
-       bc_rad,l2ndorder,lupwards,lrad_debug
+       radx,rady,radz,rad2max,test_radiation,nocooling, &
+       bc_rad,l2ndorder,lrad_debug
 
   contains
 
@@ -91,7 +92,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.32 2003-10-07 16:50:39 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.33 2003-10-08 11:02:15 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -148,6 +149,15 @@ module Radiation
 !
       ndir=idir-1
 !
+!  determine when terms like  exp(-dtau)-1  are to be evaluated
+!  as a power series 
+! 
+!  experimentally determined optimum
+!  relative errors for (emdtau1, emdtau2) will be
+!  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
+!
+      dtau_thresh=1.6*epsilon(dtau_thresh)**0.25
+!
 !  calculate weights
 !
       weight=1./ndir
@@ -162,7 +172,7 @@ module Radiation
 !
 !  info about numerical scheme in subroutine Qintr
 !
-      print*,'initialize_radiation: l2ndorder,lupwards=',l2ndorder,lupwards
+      print*,'initialize_radiation: l2ndorder=',l2ndorder
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -237,7 +247,6 @@ module Radiation
       real :: Srad1st,Srad2nd,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       real :: dtau01,dtau12,dSdtau01,dSdtau12
-      real :: thresh
       character(len=4) :: idir_str
 !
 !  identifier
@@ -266,14 +275,9 @@ module Radiation
       if (nrad>0) then; nnstart=n1; nnstop=n2+nrad; nsign= 1; endif
       if (nrad<0) then; nnstart=n2; nnstop=n1+nrad; nsign=-1; endif
 !
-!  determine start and stop positions
-!
-      if (lrad_debug) then
-      endif
-!
 !  set optical depth and intensity initially to zero
 !
-      emtau=1
+      tau=0
       Qrad=0
 !
 !  loop over all meshpoints
@@ -284,87 +288,54 @@ module Radiation
 !
         if (l2ndorder) then
 !
-          if (lupwards) then
-!
-            !dtau_m=(5*kaprho(l-lrad,m-mrad,n-nrad) &
-                   !+8*kaprho(l     ,m     ,n     ) &
-                   !-1*kaprho(l+lrad,m+mrad,n+nrad))*dlength/12
-            !dtau_p=(5*kaprho(l+lrad,m+mrad,n+nrad) &
-                   !+8*kaprho(l     ,m     ,n     ) &
-                   !-1*kaprho(l-lrad,m-mrad,n-nrad))*dlength/12
-            dtau_m=exp((5*alog(kaprho(l-lrad,m-mrad,n-nrad)) &
-                       +8*alog(kaprho(l     ,m     ,n     )) &
-                       -1*alog(kaprho(l+lrad,m+mrad,n+nrad)))/12)*dlength
-            dtau_p=exp((5*alog(kaprho(l+lrad,m+mrad,n+nrad)) &
-                       +8*alog(kaprho(l     ,m     ,n     )) &
-                       -1*alog(kaprho(l-lrad,m-mrad,n-nrad)))/12)*dlength
-            dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
-            dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
-            Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
-            Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
-            emdtau=exp(-dtau_m)
-            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-            thresh = 1.6*epsilon(dtau_m)**0.25 ! experimentally determined
-                                               ! optimum; relative errors
-                                               ! for (emdtau1, emdtau2) will be
-                                               ! (1e-6, 1.5e-4) for floats,
-                                               ! (3e-13, 1e-8) for doubles
-            if (dtau_m>thresh) then
-              emdtau1=1-emdtau
-              emdtau2=emdtau*(1+dtau_m)-1
-            else
-              emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
-              emdtau2=-dtau_m**2/2+dtau_m**3/3
-            endif
-            Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
-                       -Srad1st*emdtau1-Srad2nd*emdtau2
-            if (lrad_debug) then
-              temp(l,m,n,idtau_m)=dtau_m
-              temp(l,m,n,idtau_p)=dtau_p
-              temp(l,m,n,idSdtau_m)=dSdtau_m
-              temp(l,m,n,idSdtau_p)=dSdtau_p
-              temp(l,m,n,iSrad1st)=Srad1st
-              temp(l,m,n,iSrad2nd)=Srad2nd
-              temp(l,m,n,iemdtau1)=emdtau1
-              temp(l,m,n,iemdtau2)=emdtau2
-            endif
-!
+          !dtau_m=(5*kaprho(l-lrad,m-mrad,n-nrad) &
+                 !+8*kaprho(l     ,m     ,n     ) &
+                 !-1*kaprho(l+lrad,m+mrad,n+nrad))*dlength/12
+          !dtau_p=(5*kaprho(l+lrad,m+mrad,n+nrad) &
+                 !+8*kaprho(l     ,m     ,n     ) &
+                 !-1*kaprho(l-lrad,m-mrad,n-nrad))*dlength/12
+          dtau_m=exp((5*alog(kaprho(l-lrad,m-mrad,n-nrad)) &
+                     +8*alog(kaprho(l     ,m     ,n     )) &
+                     -1*alog(kaprho(l+lrad,m+mrad,n+nrad)))/12)*dlength
+          dtau_p=exp((5*alog(kaprho(l+lrad,m+mrad,n+nrad)) &
+                     +8*alog(kaprho(l     ,m     ,n     )) &
+                     -1*alog(kaprho(l-lrad,m-mrad,n-nrad)))/12)*dlength
+          dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
+          dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
+          Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
+          Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+          emdtau=exp(-dtau_m)
+          if (dtau_m>dtau_thresh) then
+            emdtau1=1-emdtau
+            emdtau2=emdtau*(1+dtau_m)-1
           else
-!
-            dtau01=(5*kaprho(l-0*lrad,m-0*mrad,n-0*nrad) &
-                   +8*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
-                     -kaprho(l-2*lrad,m-2*mrad,n-2*nrad))*dlength/12
-            dtau12=(5*kaprho(l-1*lrad,m-1*mrad,n-1*nrad) &
-                   +8*kaprho(l-2*lrad,m-2*mrad,n-2*nrad) &
-                     -kaprho(l-3*lrad,m-3*mrad,n-3*nrad))*dlength/12
-            dSdtau01=(Srad(l-0*lrad,m-0*mrad,n-0*nrad) &
-                     -Srad(l-1*lrad,m-1*mrad,n-1*nrad))/dtau01
-            dSdtau12=(Srad(l-1*lrad,m-1*mrad,n-1*nrad) &
-                     -Srad(l-2*lrad,m-2*mrad,n-2*nrad))/dtau12
-            Srad1st=(dSdtau01*dtau12+dSdtau12*dtau01)/(dtau01+dtau12)
-            Srad2nd=2*(dSdtau01-dSdtau12)/(dtau01+dtau12)
-            emdtau=exp(-dtau01)
-            emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-            if (dtau01>1e-5) then
-              emdtau1=1-emdtau
-            else
-              emdtau1=dtau01-dtau01**2/2
-            endif
-            Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau-Srad2nd*dtau01 &
-                       +(Srad2nd-Srad1st)*emdtau1
-!
+            emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
+            emdtau2=-dtau_m**2/2+dtau_m**3/3
+          endif
+          tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
+          Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
+                     -Srad1st*emdtau1-Srad2nd*emdtau2
+          if (lrad_debug) then
+            temp(l,m,n,idtau_m)=dtau_m
+            temp(l,m,n,idtau_p)=dtau_p
+            temp(l,m,n,idSdtau_m)=dSdtau_m
+            temp(l,m,n,idSdtau_p)=dSdtau_p
+            temp(l,m,n,iSrad1st)=Srad1st
+            temp(l,m,n,iSrad2nd)=Srad2nd
+            temp(l,m,n,iemdtau1)=emdtau1
+            temp(l,m,n,iemdtau2)=emdtau2
           endif
 !
         else
 !
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           emdtau=exp(-dtau)
-          emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
-          if (dtau>1e-5) then
+          if (dtau>dtau_thresh) then
             tau_term=(1-emdtau)/dtau
           else
             tau_term=1-dtau/2+dtau**2/6
           endif
+          tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau
           Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +tau_term*(Srad(l-lrad,m-mrad,n-nrad)-Srad(l,m,n))
 !
@@ -375,7 +346,7 @@ module Radiation
       enddo
 !
       if (lrad_debug) then
-        temp(:,:,:,iemtau)=emtau
+        temp(:,:,:,itau)=tau
         temp(:,:,:,iQrad1)=Qrad
         call chn(idir,idir_str)
         call output(trim(directory)//'/rad_debug'//trim(idir_str)//'.dat',temp,10)
@@ -393,9 +364,10 @@ module Radiation
       use Cdata
       use Mpicomm
 !
-      real, dimension(radx0,my,mz) :: Qrad0_yz,emtau0_yz
-      real, dimension(mx,rady0,mz) :: Qrad0_zx,emtau0_zx
-      real, dimension(mx,my,radz0) :: Qrad0_xy,emtau0_xy
+      real, dimension(mx,rady0,mz) :: Qrad0_zx
+      real, dimension(nx,rady0,nz) :: tau0_zx,emtau01_zx
+      real, dimension(mx,my,radz0) :: Qrad0_xy
+      real, dimension(nx,ny,radz0) :: tau0_xy,emtau01_xy
 !
 !  y-direction
 !
@@ -404,18 +376,21 @@ module Radiation
         if (mrad>0) then
           if (ipy==0) then
             Qrad0_zx=0
-            emtau0_zx=1
+            tau0_zx=0
           else
-            call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx,emtau0_zx)
+            call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx,tau0_zx)
           endif
-          Qrad0_zx=Qrad0_zx*emtau(:,m2-rady0+1:m2,:) &
-                            +Qrad(:,m2-rady0+1:m2,:)
-          emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
+          tau0_zx=tau0_zx+tau(l1:l2,m2-rady0+1:m2,n1:n2)
+          Qrad0_zx=Qrad0_zx*exp(-tau(:,m2-rady0+1:m2,:))+Qrad(:,m2-rady0+1:m2,:)
           if (ipy/=nprocy-1) then
-            call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx,emtau0_zx)
+            call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx,tau0_zx)
           else
-            Qrad0_zx(l1:l2,:,n1:n2)=Qrad0_zx(l1:l2,:,n1:n2) &
-                               /(1-emtau0_zx(l1:l2,:,n1:n2))
+            where (tau0_zx>dtau_thresh)
+              emtau01_zx=1-exp(-tau0_zx)
+            elsewhere
+              emtau01_zx=tau0_zx-tau0_zx**2/2+tau0_zx**3/6
+            endwhere
+            Qrad0_zx(l1:l2,:,n1:n2)=Qrad0_zx(l1:l2,:,n1:n2)/emtau01_zx
             call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx)
           endif 
         endif
@@ -423,18 +398,21 @@ module Radiation
         if (mrad<0) then
           if (ipy==nprocy-1) then
             Qrad0_zx=0
-            emtau0_zx=1
+            tau0_zx=0
           else
-            call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx,emtau0_zx)
+            call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx,tau0_zx)
           endif
-          Qrad0_zx=Qrad0_zx*emtau(:,m1:m1+rady0-1,:) &
-                            +Qrad(:,m1:m1+rady0-1,:)
-          emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
+          tau0_zx=tau0_zx+tau(l1:l2,m1:m1+rady0-1,n1:n2)
+          Qrad0_zx=Qrad0_zx*exp(-tau(:,m1:m1+rady0-1,:))+Qrad(:,m1:m1+rady0-1,:)
           if (ipy/=0) then
-            call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx,emtau0_zx)
+            call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx,tau0_zx)
           else
-            Qrad0_zx(l1:l2,:,n1:n2)=Qrad0_zx(l1:l2,:,n1:n2) &
-                               /(1-emtau0_zx(l1:l2,:,n1:n2))
+            where (tau0_zx>dtau_thresh)
+              emtau01_zx=1-exp(-tau0_zx)
+            elsewhere
+              emtau01_zx=tau0_zx-tau0_zx**2/2+tau0_zx**3/6
+            endwhere
+            Qrad0_zx(l1:l2,:,n1:n2)=Qrad0_zx(l1:l2,:,n1:n2)/emtau01_zx
             call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx)
           endif 
         endif
@@ -448,18 +426,21 @@ module Radiation
         if (nrad>0) then
           if (ipz==0) then
             Qrad0_xy=0
-            emtau0_xy=1
+            tau0_xy=0
           else
-            call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy,emtau0_xy)
+            call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy,tau0_xy)
           endif
-          Qrad0_xy=Qrad0_xy*emtau(:,:,n2-radz0+1:n2) &
-                            +Qrad(:,:,n2-radz0+1:n2)
-          emtau0_xy=emtau0_xy*emtau(:,:,n2-radz0+1:n2)
+          tau0_xy=tau0_xy+tau(l1:l2,m1:m2,n2-radz0+1:n2)
+          Qrad0_xy=Qrad0_xy*exp(-tau(:,:,n2-radz0+1:n2))+Qrad(:,:,n2-radz0+1:n2)
           if (ipz/=nprocz-1) then
-            call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy,emtau0_xy)
+            call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy,tau0_xy)
           else
-            Qrad0_xy(l1:l2,m1:m2,:)=Qrad0_xy(l1:l2,m1:m2,:) &
-                               /(1-emtau0_xy(l1:l2,m1:m2,:))
+            where (tau0_xy>dtau_thresh)
+              emtau01_xy=1-exp(-tau0_xy)
+            elsewhere
+              emtau01_xy=tau0_xy-tau0_xy**2/2+tau0_xy**3/6
+            end where
+            Qrad0_xy(l1:l2,m1:m2,:)=Qrad0_xy(l1:l2,m1:m2,:)/emtau01_xy
             call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy)
           endif 
         endif
@@ -467,18 +448,21 @@ module Radiation
         if (nrad<0) then
           if (ipz==nprocz-1) then
             Qrad0_xy=0
-            emtau0_xy=1
+            tau0_xy=0
           else
-            call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy,emtau0_xy)
+            call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy,tau0_xy)
           endif
-          Qrad0_xy=Qrad0_xy*emtau(:,:,n1:n1+radx0-1) &
-                            +Qrad(:,:,n1:n1+radx0-1)
-          emtau0_xy=emtau0_xy*emtau(:,:,n1:n1+radx0-1)
+          tau0_xy=tau0_xy+tau(l1:l2,m1:m2,n1:n1+radx0-1)
+          Qrad0_xy=Qrad0_xy*exp(-tau(:,:,n1:n1+radx0-1))+Qrad(:,:,n1:n1+radx0-1)
           if (ipz/=0) then
-            call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy,emtau0_xy)
+            call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy,tau0_xy)
           else
-            Qrad0_xy(l1:l2,m1:m2,:)=Qrad0_xy(l1:l2,m1:m2,:) &
-                               /(1-emtau0_xy(l1:l2,m1:m2,:))
+            where (tau0_xy>dtau_thresh)
+              emtau01_xy=1-exp(-tau0_xy)
+            elsewhere
+              emtau01_xy=tau0_xy-tau0_xy**2/2+tau0_xy**3/6
+            end where
+            Qrad0_xy(l1:l2,m1:m2,:)=Qrad0_xy(l1:l2,m1:m2,:)/emtau01_xy
             call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy)
           endif 
         endif
@@ -659,14 +643,14 @@ module Radiation
 !
       if (mrad>0.and.ipy/=nprocy-1) then
         Qrad0_zx=Qrad0(:,m2-rady0+1:m2,:) &
-                *emtau(:,m2-rady0+1:m2,:) &
+             *exp(-tau(:,m2-rady0+1:m2,:)) &
                  +Qrad(:,m2-rady0+1:m2,:)
         call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx)
       endif
 !
       if (mrad<0.and.ipy/=0) then
         Qrad0_zx=Qrad0(:,m1:m1+rady0-1,:) &
-                *emtau(:,m1:m1+rady0-1,:) &
+             *exp(-tau(:,m1:m1+rady0-1,:)) &
                  +Qrad(:,m1:m1+rady0-1,:)
         call radboundary_zx_send(rady0,mrad,idir,Qrad0_zx)
       endif
@@ -675,14 +659,14 @@ module Radiation
 !
       if (nrad>0.and.ipz/=nprocz-1) then
         Qrad0_xy=Qrad0(:,:,n2-radz0+1:n2) &
-                *emtau(:,:,n2-radz0+1:n2) &
+             *exp(-tau(:,:,n2-radz0+1:n2)) &
                  +Qrad(:,:,n2-radz0+1:n2)
         call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy)
       endif
 !
       if (nrad<0.and.ipz/=0) then
         Qrad0_xy=Qrad0(:,:,n1:n1+radz0-1) &
-                *emtau(:,:,n1:n1+radz0-1) &
+             *exp(-tau(:,:,n1:n1+radz0-1)) &
                  +Qrad(:,:,n1:n1+radz0-1)
         call radboundary_xy_send(radz0,nrad,idir,Qrad0_xy)
       endif
@@ -711,7 +695,7 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
           Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
-          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*emtau(l,m,n)
+          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
       enddo
       enddo
       enddo
@@ -728,6 +712,7 @@ module Radiation
       use Mpicomm
 !
       real, dimension(radx0,my,mz) :: Qrad0_yz
+      real, dimension(radx0,ny,nz) :: tau_yz,emtau1_yz
 !
 !--------------------
 !  lower x-boundary
@@ -746,8 +731,13 @@ module Radiation
 !
         if (bc_rad1(1)=='p') then
           if (mrad==0.and.nrad==0) then
-            Qrad0_yz(:,m1:m2,n1:n2)=Qrad(l2-radx0+1:l2,m1:m2,n1:n2) &
-                               /(1-emtau(l2-radx0+1:l2,m1:m2,n1:n2))
+            tau_yz=tau(l2-radx0+1:l2,m1:m2,n1:n2)
+            where (tau_yz>dtau_thresh)
+              emtau1_yz=1-exp(-tau_yz)
+            elsewhere
+              emtau1_yz=tau_yz-tau_yz**2/2+tau_yz**3/6
+            end where
+            Qrad0_yz(:,m1:m2,n1:n2)=Qrad(l2-radx0+1:l2,m1:m2,n1:n2)/emtau1_yz
           else
             Qrad0_yz=Qrad(l2-radx0+1:l2,:,:)
           endif
@@ -778,8 +768,13 @@ module Radiation
 !
         if (bc_rad2(1)=='p') then
           if (mrad==0.and.nrad==0) then
-            Qrad0_yz(:,m1:m2,n1:n2)=Qrad(l1:l1+radx0-1,m1:m2,n1:n2) &
-                               /(1-emtau(l1:l1+radx0-1,m1:m2,n1:n2))
+            tau_yz=tau(l1:l1+radx0-1,m1:m2,n1:n2)
+            where (tau_yz>dtau_thresh)
+              emtau1_yz=1-exp(-tau_yz)
+            elsewhere
+              emtau1_yz=tau_yz-tau_yz**2/2+tau_yz**3/6
+            end where
+            Qrad0_yz(:,m1:m2,n1:n2)=Qrad(l1:l1+radx0-1,m1:m2,n1:n2)/emtau1_yz
           else
             Qrad0_yz=Qrad(l1:l1+radx0-1,:,:)
           endif
@@ -805,6 +800,7 @@ module Radiation
       use Mpicomm
 !
       real, dimension(mx,rady0,mz) :: Qrad0_zx
+      real, dimension(nx,rady0,nz) :: tau_zx,emtau1_zx
 !
 !--------------------
 !  lower y-boundary
@@ -826,8 +822,13 @@ module Radiation
             call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx)
           else
             if (lrad==0.and.nrad==0) then
-              Qrad0_zx(l1:l2,:,n1:n2)=Qrad(l1:l2,m2-rady0+1:m2,n1:n2) &
-                                 /(1-emtau(l1:l2,m2-rady0+1:m2,n1:n2))
+              tau_zx=tau(l1:l2,m2-rady0+1:m2,n1:n2)
+              where (tau_zx>dtau_thresh)
+                emtau1_zx=1-exp(-tau_zx)
+              elsewhere
+                emtau1_zx=tau_zx-tau_zx**2/2+tau_zx**3/6
+              end where
+              Qrad0_zx(l1:l2,:,n1:n2)=Qrad(l1:l2,m2-rady0+1:m2,n1:n2)/emtau1_zx
             else
               Qrad0_zx=Qrad(:,m2-rady0+1:m2,:)
             endif
@@ -862,8 +863,13 @@ module Radiation
             call radboundary_zx_recv(rady0,mrad,idir,Qrad0_zx)
           else
             if (lrad==0.and.nrad==0) then
-              Qrad0_zx(l1:l2,:,n1:n2)=Qrad(l1:l2,m1:m1+rady0-1,n1:n2) &
-                                 /(1-emtau(l1:l2,m1:m1+rady0-1,n1:n2))
+              tau_zx=tau(l1:l2,m1:m1+rady0-1,n1:n2)
+              where (tau_zx>dtau_thresh)
+                emtau1_zx=1-exp(-tau_zx)
+              elsewhere
+                emtau1_zx=tau_zx-tau_zx**2/2+tau_zx**3/6
+              end where
+              Qrad0_zx(l1:l2,:,n1:n2)=Qrad(l1:l2,m1:m1+rady0-1,n1:n2)/emtau1_zx
             else
               Qrad0_zx=Qrad(:,m1:m1+rady0-1,:)
             endif
@@ -893,6 +899,7 @@ module Radiation
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,radz0) :: Qrad0_xy
+      real, dimension(nx,ny,radz0) :: tau_xy,emtau1_xy
       real, dimension(mx,my,radz0) :: kaprho_xy,Srad_xy,TT_xy,yH_xy,H_xy
 !
 !--------------------
@@ -924,8 +931,13 @@ module Radiation
             call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy)
           else
             if (lrad==0.and.mrad==0) then
-              Qrad0_xy(l1:l2,m1:m2,:)=Qrad(l1:l2,m1:m2,n2-radz0+1:n2) &
-                                 /(1-emtau(l1:l2,m1:m2,n2-radz0+1:n2))
+              tau_xy=tau(l1:l2,m1:m2,n2-radz0+1:n2)
+              where (tau_xy>dtau_thresh)
+                emtau1_xy=1-exp(-tau_xy)
+              elsewhere
+                emtau1_xy=tau_xy-tau_xy**2/2+tau_xy**3/6
+              end where
+              Qrad0_xy(l1:l2,m1:m2,:)=Qrad(l1:l2,m1:m2,n2-radz0+1:n2)/emtau1_xy
             else
               Qrad0_xy=Qrad(:,:,n2-radz0+1:n2)
             endif
@@ -970,8 +982,13 @@ module Radiation
             call radboundary_xy_recv(radz0,nrad,idir,Qrad0_xy)
           else
             if (lrad==0.and.mrad==0) then
-              Qrad0_xy(l1:l2,m1:m2,:)=Qrad(l1:l2,m1:m2,n1:n1+radz0-1) &
-                                 /(1-emtau(l1:l2,m1:m2,n1:n1+radz0-1))
+              tau_xy=tau(l1:l2,m1:m2,n1:n1+radz0-1)
+              where (tau_xy>dtau_thresh)
+                emtau1_xy=1-exp(-tau_xy)
+              elsewhere
+                emtau1_xy=tau_xy-tau_xy**2/2+tau_xy**3/6
+              end where
+              Qrad0_xy(l1:l2,m1:m2,:)=Qrad(l1:l2,m1:m2,n1:n1+radz0-1)/emtau1_xy
             else
               Qrad0_xy=Qrad(:,:,n1:n1+radz0-1)
             endif
@@ -1075,7 +1092,7 @@ module Radiation
       write (1,*) 'idtau_m=',idtau_m-1,' & idtau_p=',idtau_p-1
       write (1,*) 'idSdtau_m=',idSdtau_m-1,' & idSdtau_p=',idSdtau_p-1
       write (1,*) 'iSrad1st=',iSrad1st-1,' & iSrad2nd=',iSrad2nd-1
-      write (1,*) 'iemtau=',iemtau-1,' & iQrad=',iQrad1-1
+      write (1,*) 'itau=',itau-1,' & iQrad=',iQrad1-1
       write (1,*) 'iemdtau1=',iemdtau1-1,' & iemdtau2=',iemdtau2-1
       write (1,*) "openr,1,'"//trim(directory)//"/rad_debug.dat',/f77"
       write (1,*) "temp=fltarr(mx,my,mz,2)"
@@ -1094,7 +1111,7 @@ module Radiation
         write (1,*) "dSdtau_p"//trim(i_str)//"=temp[*,*,*,idSdtau_p]"
         write (1,*) "Srad1st"//trim(i_str)//"=temp[*,*,*,iSrad1st]"
         write (1,*) "Srad2nd"//trim(i_str)//"=temp[*,*,*,iSrad2nd]"
-        write (1,*) "emtau"//trim(i_str)//"=temp[*,*,*,iemtau]"
+        write (1,*) "tau"//trim(i_str)//"=temp[*,*,*,itau]"
         write (1,*) "Qrad"//trim(i_str)//"=temp[*,*,*,iQrad]"
         write (1,*) "emdtau1"//trim(i_str)//"=temp[*,*,*,iemdtau1]"
         write (1,*) "emdtau2"//trim(i_str)//"=temp[*,*,*,iemdtau2]"

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.83 2003-09-30 12:02:19 brandenb Exp $ 
+! $Id: initcond.f90,v 1.84 2003-10-08 11:02:15 theine Exp $ 
 
 module Initcond 
  
@@ -524,6 +524,8 @@ module Initcond
 !
 !   8-apr-03/axel: coded
 !
+      use Mpicomm
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (mz) :: lnrho0,SS0
@@ -537,7 +539,12 @@ module Initcond
       if(exist) then
         open(19,file='stratification.dat')
       else
-        open(19,file=trim(directory)//'/stratification.ascii')
+        inquire(file=trim(directory)//'/stratification.ascii',exist=exist)
+        if(exist) then
+          open(19,file=trim(directory)//'/stratification.ascii')
+        else
+          call stop_it('stratification: *** error *** - no input file')
+        endif
       endif
 !
 !  read data
