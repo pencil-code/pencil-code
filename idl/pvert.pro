@@ -10,9 +10,27 @@
 ;;;   Plot vertical profiles of uz, lnrho and entropy.
 
 default, pvert_layout, [0,2,2]
-default, single, 0              ; set to one for plotting one single profile
+default, nprofs, 10              ; set to N for only N profiles, 0 for all
 
 nign = 3                        ; Number of close-to-bdry points to ignore
+
+;
+; construct vector of vertical pencils to plot
+;
+Nxmax = nx-2*nign
+Nymax = ny-2*nign
+Nmax = Nxmax*Nymax
+if ((nprofs le 0) or (nprofs gt Nmax)) then nprofs = Nmax
+ixp=[[nx/2]] & iyp=[[ny/2]]     ; case nprofs=1
+if (nprofs gt 1) then begin
+  Nxp = sqrt(nprofs+1e-5)*Nxmax/Nymax
+  Nyp = sqrt(nprofs+1e-5)*Nymax/Nxmax
+  Nxyp = Nxp*Nyp
+  ixp = nign + spread( indgen(Nxp)*Nxmax/Nxp, 1, Nyp )
+  iyp = nign + spread( indgen(Nyp)*Nymax/Nyp, 0, Nxp )
+  ixp = floor(ixp)
+  iyp = floor(iyp)
+endif
 
 save_state
 
@@ -56,15 +74,11 @@ for ivar = 0,3 do begin
       XRANGE=xr, XSTYLE=3, $
       YRANGE=minmax(z), YSTYLE=3,  $
       TITLE=title
-  if (not single) then begin
-    for ix=nign,nx-nign-1 do begin
-      for iy=nign,ny-nign-1 do begin
-        oplot, var[ix,iy,*], z
-      endfor
+  for ix=0,(size(ixp))[1]-1 do begin
+    for iy=0,(size(ixp))[2]-1 do begin
+      oplot, var[ixp[ix,iy],iyp[ix,iy],*], z
     endfor
-  endif else begin              ; short version for finit-sized PostScript
-    oplot, var[nx/2,ny/2,*], z
-  endelse
+  endfor
   ophline, [z0,z1,z2,ztop]
   if (ivar eq 1) then opvline
 
