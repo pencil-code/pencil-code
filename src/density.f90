@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.153 2004-03-24 11:21:39 mee Exp $
+! $Id: density.f90,v 1.154 2004-03-26 10:46:52 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.153 2004-03-24 11:21:39 mee Exp $")
+           "$Id: density.f90,v 1.154 2004-03-26 10:46:52 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -521,10 +521,17 @@ module Density
       select case(initlnrho2)
 
       case('addblob')
-        !
+
         if (lroot) print*,'init_lnrho: add blob'
         f(:,:,:,ilnrho)=f(:,:,:,ilnrho) &
           +ampllnrho*exp(-(xx**2+yy**2+zz**2)/radius_lnrho**2)
+
+      case default
+
+        if (lroot) print*,'init_lnrho: No such value for initlnrho2: ', &
+                          trim(initlnrho2)
+        call stop_it("")
+
       endselect
 !
       if(ip==0) print*, yy(1,1,1) ! keep compiler quiet

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.287 2004-03-25 17:26:03 bingert Exp $
+! $Id: entropy.f90,v 1.288 2004-03-26 10:46:52 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -47,12 +47,12 @@ module Entropy
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond=.false.,lcalc_heatcond_constchi=.false.
   logical :: lupw_ss=.false.
-  character (len=labellen) :: initss='nothing',pertss='zero'
+  character (len=labellen) :: initss='nothing',initss2='nothing',pertss='zero'
   character (len=labellen) :: cooltype='Temp',iheatcond='K-const'
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
+       initss,initss2,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.287 2004-03-25 17:26:03 bingert Exp $")
+           "$Id: entropy.f90,v 1.288 2004-03-26 10:46:52 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -527,6 +527,23 @@ module Entropy
         !  Catch unknown values
         !
         if (lroot) print*,'init_ss: No such value for pertss:', pertss
+        call stop_it("")
+
+      endselect
+!
+!  Add some structures to the entropy initialized above
+!
+      select case(initss2)
+
+      case('addblob')
+
+        if (lroot) print*,'init_ss: add blob'
+        f(:,:,:,iss)=f(:,:,:,iss) &
+          +ampl_ss*exp(-(xx**2+yy**2+zz**2)/radius_ss**2)
+
+      case default
+
+        if (lroot) print*,'init_ss: No such value for initss2: ', trim(initss2)
         call stop_it("")
 
       endselect
