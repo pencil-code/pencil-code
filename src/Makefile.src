@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.89 2004-10-01 18:05:40 snod Exp $
+### $Id: Makefile.src,v 1.90 2004-10-12 23:40:06 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -72,7 +72,8 @@ FCCLEANER=
 ## SGI
 #FC=f90
 #FFLAGS= -64 -O3 -mips4
-#FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(gridur|embla|balder|sander|antares)
+#FFLAGS= -auto_use mpi_interface -64 -O3 -macro_expand  #(gridur|embla|balder)
+#FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(sander|antares)
 #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -64 -O3 -auto_use mpi_interface -mips4 #(ukaff|origin)
