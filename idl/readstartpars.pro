@@ -1,7 +1,9 @@
-;  $Id: readstartpars.pro,v 1.14 2004-04-10 18:56:36 dobler Exp $
+;  $Id: readstartpars.pro,v 1.15 2004-06-03 17:10:11 mee Exp $
 ;
 ;  Read startup parameters
 ;
+forward_function safe_get_tag
+
 pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
@@ -36,8 +38,9 @@ if (cpar gt 0) then begin
   if (lhydro) then begin
     nu=par2.nu
   endif
+
   if (ldensity) then begin
-    cs0=par2.cs0
+    cs0=safe_get_tag(par2,'cs0')
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
