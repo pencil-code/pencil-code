@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.173 2004-06-12 06:07:37 brandenb Exp $
+! $Id: hydro.f90,v 1.174 2004-06-12 11:21:21 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.173 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: hydro.f90,v 1.174 2004-06-12 11:21:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -523,7 +523,7 @@ module Hydro
 !   7-jun-03/axel: modified to turn off diffrot for x>0 (recycle use of rdampint)
 !
       if (tau_diffrot1/=0) then
-        if (rdampint>0) then
+        if (wdamp/=0.) then
           pdamp=1.-step(x_mn,rdampint,wdamp) ! outer damping profile
         else
           pdamp=1.
