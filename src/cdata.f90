@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.214 2004-03-27 13:43:14 theine Exp $
+! $Id: cdata.f90,v 1.215 2004-04-04 10:36:31 theine Exp $
 
 module Cdata
 
@@ -17,7 +17,8 @@ module Cdata
 
   real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor
 
-  real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
+  real, parameter :: pi=3.14159265358979324D0
+  real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.
   real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0

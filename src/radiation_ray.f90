@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.55 2004-03-27 13:43:14 theine Exp $
+! $Id: radiation_ray.f90,v 1.56 2004-04-04 10:36:31 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -31,6 +31,7 @@ module Radiation
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
   real :: dtau_thresh
+  real :: arad
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
   integer :: llstart,llstop,lsign
@@ -38,12 +39,17 @@ module Radiation
   integer :: nnstart,nnstop,nsign
   integer :: ipystart,ipystop,ipzstart,ipzstop
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
+  character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
+  real :: kappa_cst=1.0
+  real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
+  real :: lnchi_const=1.0,ampllnchi=1.0,radius_lnchi=1.0
 !
 !  default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: nocooling=.false.,lrad_debug=.false.
+  logical :: lcooling=.true.,lrad_debug=.false.
+  logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
 
   character :: lrad_str,mrad_str,nrad_str
   character(len=3) :: raydirection_str
@@ -55,10 +61,18 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,bc_rad,lrad_debug
+       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
+       source_function_type,opacity_type, &
+       Srad_const,amplSrad,radius_Srad, &
+       lnchi_const,ampllnchi,radius_lnchi, &
+       lintrinsic,lcommunicate,lrevision
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,bc_rad,nocooling,lrad_debug
+       radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
+       source_function_type,opacity_type, &
+       Srad_const,amplSrad,radius_Srad, &
+       lnchi_const,ampllnchi,radius_lnchi, &
+       lintrinsic,lcommunicate,lrevision,lcooling
 
   contains
 
@@ -97,7 +111,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.55 2004-03-27 13:43:14 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.56 2004-04-04 10:36:31 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -123,7 +137,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !  03-jul-03/tobi: position array added
 !
-      use Cdata, only: lroot
+      use Cdata, only: lroot,sigmaSB,pi,datadir
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
 !
@@ -157,12 +171,16 @@ module Radiation
 !
 !  determine when terms like  exp(-dtau)-1  are to be evaluated
 !  as a power series 
-! 
+!
 !  experimentally determined optimum
 !  relative errors for (emdtau1, emdtau2) will be
 !  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
 !
       dtau_thresh=1.6*epsilon(dtau_thresh)**0.25
+!
+!  calculate arad for LTE source function
+!
+      arad=SigmaSB/pi
 !
 !  calculate weights
 !
@@ -178,6 +196,89 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
+    subroutine source_function(f)
+!
+!  calculates source function
+!
+!  03-apr-04/tobi: coded
+!
+      use Cdata, only: m,n,ilnTT,x,y,z
+      use Mpicomm, only: stop_it
+
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: lnTT
+      logical, save :: lfirst=.true.
+
+      select case (source_function_type)
+
+      case ('LTE')
+        do n=1,mz
+        do m=1,my
+          lnTT=f(:,m,n,ilnTT)
+          Srad(:,m,n)=arad*exp(4*lnTT)
+        enddo
+        enddo
+
+      case ('blob')
+        if (lfirst) then
+          Srad=Srad_const &
+              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
+                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
+                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
+          lfirst=.false.
+        endif
+
+      case default
+        call stop_it('no such source function type: '//&
+                     trim(source_function_type))
+
+      end select
+
+    endsubroutine source_function
+!***********************************************************************
+    subroutine opacity(f)
+!
+!  calculates opacity
+!
+!  03-apr-04/tobi: coded
+!
+      use Cdata, only: m,n,ilnrho,x,y,z
+      use Ionization, only: Hminus_opacity
+      use Mpicomm, only: stop_it
+
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: lnrho
+      logical, save :: lfirst=.true.
+
+      select case (opacity_type)
+
+      case ('Hminus')
+        call Hminus_opacity(f,lnchi)
+
+      case ('kappa_cst')
+        do n=1,mz
+        do m=1,my
+          lnrho=f(:,m,n,ilnrho)
+          lnchi(:,m,n)=log(kappa_cst)+lnrho
+        enddo
+        enddo
+
+      case ('blob')
+        if (lfirst) then
+          lnchi=lnchi_const &
+               +ampllnchi*spread(spread(exp(-(x/radius_lnchi)**2),2,my),3,mz) &
+                         *spread(spread(exp(-(y/radius_lnchi)**2),1,mx),3,mz) &
+                         *spread(spread(exp(-(z/radius_lnchi)**2),1,mx),2,my)
+          lfirst=.false.
+        endif
+
+      case default
+        call stop_it('no such opacity type: '//trim(opacity_type))
+
+      endselect
+
+    endsubroutine opacity
+!***********************************************************************
     subroutine radtransfer(f)
 !
 !  Integration radioation transfer equation along rays
@@ -189,7 +290,6 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt,iQrad
-      use Ionization, only: radcalc
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
 !
@@ -199,7 +299,8 @@ module Radiation
 !
 !  calculate source function and opacity
 !
-      call radcalc(f,lnchi,Srad)
+      call source_function(f)
+      call opacity(f)
 !
 !  initialize heating rate
 !
@@ -211,15 +312,17 @@ module Radiation
 !
         call raydirection
 !
-        call Qintrinsic
+        if (lintrinsic) call Qintrinsic
 !
-        if (lperiodic_ray) then
-          call Qperiodic_ray
-        else
-          call Qcommunicate
+        if (lcommunicate) then
+          if (lperiodic_ray) then
+            call Qperiodic_ray
+          else
+            call Qcommunicate
+          endif
         endif
 !
-        call Qrevision
+        if (lrevision) call Qrevision
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
@@ -306,7 +409,6 @@ module Radiation
       use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap
       use IO, only: output
 !
-      real, dimension(mx) :: dtau,emdtau,Qrad_term
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p,emdtau_m
       integer :: l,m,n
@@ -329,32 +431,27 @@ module Radiation
 !
       do n=nnstart,nnstop,nsign
       do m=mmstart,mmstop,msign
-!
-        do l=llstart,llstop,lsign 
-          dtau_m=sqrt(exp(lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n)))*dlength
-          dtau_p=sqrt(exp(lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad)))*dlength
-          dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
-          dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
-          Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
-          Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
-          emdtau_m=exp(-dtau_m)
-          if (dtau_m>dtau_thresh) then
-            emdtau1=1-emdtau_m
-            emdtau2=emdtau_m*(1+dtau_m)-1
-          else
-            emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
-            emdtau2=-dtau_m**2/2+dtau_m**3/3
-          endif
-          dtau(l)=dtau_m
-          emdtau(l)=emdtau_m
-          Qrad_term(l)=Srad1st*emdtau1+Srad2nd*emdtau2
-        enddo
-!
-        do l=llstart,llstop,lsign 
-          tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau(l)
-          Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau(l)-Qrad_term(l)
-        enddo
-!
+      do l=llstart,llstop,lsign 
+
+        dtau_m=sqrt(exp(lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n)))*dlength
+        dtau_p=sqrt(exp(lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad)))*dlength
+        dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
+        dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
+        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
+        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+        emdtau_m=exp(-dtau_m)
+        if (dtau_m>dtau_thresh) then
+          emdtau1=1-emdtau_m
+          emdtau2=emdtau_m*(1+dtau_m)-1
+        else
+          emdtau1=dtau_m-dtau_m**2/2+dtau_m**3/6
+          emdtau2=-dtau_m**2/2+dtau_m**3/3
+        endif
+        tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
+        Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau_m &
+                   -Srad1st*emdtau1-Srad2nd*emdtau2
+
+      enddo
       enddo
       enddo
 
@@ -701,7 +798,7 @@ module Radiation
 !
 !  Add radiative cooling
 !
-      if(.not. nocooling) then
+      if(lcooling) then
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
             + 4*pi*exp(lnchi(l1:l2,m,n)-lnrho)*TT1*Qrad
       endif

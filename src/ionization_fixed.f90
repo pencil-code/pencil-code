@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.55 2004-03-31 11:17:02 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.56 2004-04-04 10:36:31 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -52,17 +52,13 @@ module Ionization
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  real :: yH0=0.,xHe=0.1,xH2=0.,kappa_cst=1.
-  logical :: radcalc_test=.false.
-  character (len=labellen) :: opacity_type='ionized_H'
+  real :: yH0=0.,xHe=0.1,xH2=0.
 
   ! input parameters
-  namelist /ionization_init_pars/ yH0,xHe,xH2,opacity_type,kappa_cst, &
-      radcalc_test
+  namelist /ionization_init_pars/ yH0,xHe,xH2
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst, &
-      radcalc_test
+  namelist /ionization_run_pars/ yH0,xHe,xH2
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -106,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.55 2004-03-31 11:17:02 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.56 2004-04-04 10:36:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -146,7 +142,6 @@ module Ionization
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      if(headtt) print*,'initialize_ionization: assume cp is not 1, yH0=',yH0
       mu1yHxHe=1.+3.97153*xHe  
       TT_ion=chiH/k_B
       lnTT_ion=log(chiH/k_B)
@@ -164,6 +159,7 @@ module Ionization
       Srad0=sigmaSB*TT_ion**4/pi
 !
       if(lroot) then
+        print*,'initialize_ionization: assume cp is not 1, yH0=',yH0
         print*,'initialize_ionization: reference values for ionization'
         print*,'initialize_ionization: TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
       endif
@@ -211,9 +207,9 @@ module Ionization
                 TT_ion,ss_ion,kappa0
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
-        if (opacity_type .eq. 'kappa_cst') &
-            print*, 'initialize_ionization: kappa_cst=',kappa_cst 
       endif
+!
+!  write scale non-free constants to file; to be read by idl
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
@@ -226,8 +222,7 @@ module Ionization
         write (1,*) 'lnrho_e_=',lnrho_e_
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
-        write (1,*) 'kappa0=',kappa0
-        write (1,*) 'Srad0=',Srad0
+        write (1,*) 'lnchi0=',lnchi0
         write (1,*) 'lnTTss=',lnTTss
         write (1,*) 'lnTTlnrho=',lnTTlnrho
         write (1,*) 'lnTT0=',lnTT0
@@ -646,67 +641,37 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       write(unit,NML=ionization_run_pars)
     endsubroutine write_ionization_run_pars
 !***********************************************************************
-    subroutine radcalc(f,lnchi,Srad)
+    subroutine Hminus_opacity(f,lnchi)
 !
-!  calculate source function and opacity
+!  calculate Hminus opacity
 !
 !  24-mar-03/axel+tobi: coded
 !
       use Cdata
-!
+      use Mpicomm, only: stop_it
+
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
-      real, dimension(mx) :: lnrho,ss,yH,lnTT,TT
-      real :: kx,ky,kz
-!
-!  test
-!
-      if(radcalc_test) then
-        if(lroot.and.ip<12) print*,'radcalc: put Srad=kaprho=1 (as a test)'
-        kx=2*pi/Lx
-        ky=2*pi/Ly
-        kz=2*pi/Lz
-        Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
-                   *spread(spread(cos(ky*y),1,mx),3,mz) &
-                   *spread(spread(cos(kz*z),1,mx),2,my)
-        lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
-                 *spread(spread(cos(2*ky*y),1,mx),3,mz) &
-                 *spread(spread(cos(2*kz*z),1,mx),2,my)
-        return
+      real, dimension(mx,my,mz), intent(out) :: lnchi
+      real, dimension(mx) :: lnrho,ss,yH,lnTT
+
+      if (yH0<tini.or.yH0>(1-epsi)) then
+        call stop_it("Hminus_opacity: yH0 must not be too close to 0 or 1")
       endif
-!
-!  no test
-!
+
       do n=1,mz
-        do m=1,my
-!
-          lnrho=f(:,m,n,ilnrho)
-          ss=f(:,m,n,iss)
-          yH=yH0
-          lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-          TT=exp(lnTT)
-!
-!  calculate source function
-!
-          Srad(:,m,n)=Srad0*(TT/TT_ion)**4
-!
-!  calculate opacity
-!
-          select case(opacity_type)
+      do m=1,my
 
-          case ('kappa_cst')
-            lnchi(:,m,n) = log(kappa_cst)+lnrho
+        lnrho=f(:,m,n,ilnrho)
+        ss=f(:,m,n,iss)
+        yH=yH0
+        lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+        lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
+                   +TT_ion_*exp(-lnTT)+log(yH)+log(1-yH)+lnchi0
 
-          case ('ionized_H')
-            lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                +TT_ion_/TT+log(yH)+log(1-yH)+lnchi0
-
-          endselect
-!
-        enddo
       enddo
-!
-    endsubroutine radcalc
+      enddo
+
+    endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.161 2004-03-30 07:56:48 theine Exp $
+! $Id: ionization.f90,v 1.162 2004-04-04 10:36:31 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -34,7 +34,7 @@ module Ionization
   
   public :: ioncalc, ioninit 
 ! For radiation calculations 
-  public :: radcalc, scale_height_xy 
+  public :: scale_height_xy,Hminus_opacity
 ! Boundary conditions
   public :: bc_ss_flux,bc_ss_temp_old,bc_ss_energy
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z
@@ -64,7 +64,7 @@ module Ionization
   
   !  secondary parameters calculated in initialize
   real :: TT_ion,lnTT_ion,TT_ion_,lnTT_ion_
-  real :: ss_ion,ee_ion,kappa0,lnchi0,Srad0,xHe_term,ss_ion1
+  real :: ss_ion,ee_ion,kappa0,lnchi0,xHe_term,ss_ion1,Srad0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
@@ -74,13 +74,12 @@ module Ionization
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
-  logical :: radcalc_test=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe,yMetals,yHacc,radcalc_test
+  namelist /ionization_init_pars/ xHe,yMetals,yHacc
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe,yMetals,yHacc,radcalc_test
+  namelist /ionization_run_pars/ xHe,yMetals,yHacc
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -131,7 +130,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.161 2004-03-30 07:56:48 theine Exp $")
+           "$Id: ionization.f90,v 1.162 2004-04-04 10:36:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -205,7 +204,7 @@ module Ionization
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
 !
-!  write ionization parameters to file; to be read by idl
+!  write scale non-free constants to file; to be read by idl
 !
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
@@ -972,7 +971,7 @@ module Ionization
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine radcalc(f,lnchi,Srad)
+    subroutine Hminus_opacity(f,lnchi)
 !
 !  calculate source function and opacity
 !
@@ -981,54 +980,43 @@ module Ionization
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx,my,mz), intent(out) :: lnchi,Srad
-      real, dimension(mx) :: lnrho,yH,lnTT,TT
-      real :: kx,ky,kz
+      real, dimension(mx,my,mz), intent(out) :: lnchi
+      real, dimension(mx) :: lnrho,yH,lnTT
+      !real :: kx,ky,kz
 !
 !  test
 !
-      if(radcalc_test) then
-        if(lroot.and.ip<12) print*,'radcalc: using simple profiles for testing'
+      !if(radcalc_test) then
+        !if(lroot.and.ip<12) print*,'radcalc: using simple profiles for testing'
         !
         ! Periodic profiles
         !
-        kx=2*pi/Lx
-        ky=2*pi/Ly
-        kz=2*pi/Lz
-        Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
-                   *spread(spread(cos(ky*y),1,mx),3,mz) &
-                   *spread(spread(cos(kz*z),1,mx),2,my)
-        lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
-                *spread(spread(cos(2*ky*y),1,mx),3,mz) &
-                *spread(spread(cos(2*kz*z),1,mx),2,my)
+        !kx=2*pi/Lx
+        !ky=2*pi/Ly
+        !kz=2*pi/Lz
+        !Srad=1.+.02*spread(spread(cos(kx*x),2,my),3,mz) &
+                   !*spread(spread(cos(ky*y),1,mx),3,mz) &
+                   !*spread(spread(cos(kz*z),1,mx),2,my)
+        !lnchi=2.+spread(spread(cos(2*kx*x),2,my),3,mz) &
+                !*spread(spread(cos(2*ky*y),1,mx),3,mz) &
+                !*spread(spread(cos(2*kz*z),1,mx),2,my)
 !
-        return
-      endif
-!
-!  no test
-!
+        !return
+      !endif
+
       do n=1,mz
       do m=1,my
-!
+
          lnrho=f(:,m,n,ilnrho)
          yH=f(:,m,n,iyH)
          lnTT=f(:,m,n,ilnTT)
-         TT=exp(lnTT)
-!
-!  calculate source function
-!
-         Srad(:,m,n)=Srad0*(TT/TT_ion)**4
-!
-!  calculate opacity
-!
          lnchi(:,m,n)=2*lnrho-lnrho_e_+1.5*(lnTT_ion_-lnTT) &
-                      +TT_ion_/TT+log(yH+yMetals)+log(1-yH)+lnchi0
+                      +TT_ion_*exp(-lnTT)+log(yH+yMetals)+log(1-yH)+lnchi0
 
-!
       enddo
       enddo
 !
-    endsubroutine radcalc
+    endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine scale_height_xy(radz0,nrad,f,H_xy)
 !

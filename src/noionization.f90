@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.106 2004-03-24 11:21:39 mee Exp $
+! $Id: noionization.f90,v 1.107 2004-04-04 10:36:31 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.106 2004-03-24 11:21:39 mee Exp $')
+           '$Id: noionization.f90,v 1.107 2004-04-04 10:36:31 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -608,6 +608,26 @@ module Ionization
       if (ip==0) print*,f,T0,rho0
 !
     endsubroutine isothermal_lnrho_ss
+!***********************************************************************
+    subroutine Hminus_opacity(f,lnchi)
+!
+!  dummy routine
+!
+!  03-apr-2004/tobi: coded
+!
+      use Mpicomm, only: stop_it
+
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx,my,mz), intent(out) :: lnchi
+
+      call stop_it("opacity_type='Hminus' may not be used with noionization")
+
+      if (ip==0) then
+        lnchi=0
+        print*,f
+      endif
+
+    endsubroutine Hminus_opacity
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
