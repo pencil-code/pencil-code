@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.52 2002-07-16 15:27:58 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.53 2002-07-17 08:49:02 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -184,7 +184,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.52 $ $}
+\date{\today,~ $ $Revision: 1.53 $ $}
 
 % ====================================================================== %
 
@@ -213,7 +213,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.52 $ $}
+  \emph{\today,~ $ $Revision: 1.53 $ $}
 
 
 \end{center}
@@ -1176,7 +1176,7 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{zref} [$0.$]
                & \label{zref-init}%
                  reference height where in the initial stratification
-                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
+                 $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\varrho=\ln\varrho_0$.\\
   \var{gravz} [$-1.$]
                & vertical gravity component $g_z$.\\
   \var{grav_profile} \\{}
@@ -2040,120 +2040,6 @@ are referred to as \var{bmy} and \var{bmx}, respectively.
 the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
 rather big file \file{tmp/zaverages.dat}.
 
-% ====================================================================== %
-
-\section{Timings}
-
-In Table~\ref{Ttimescale} we list the results of timings of the code on
-different machines.
-Shown is (among other quantities) the wall clock time per mesh point
-(excluding the ghost zones) and per full 3-stage time step.
-
-As these results were assembled during the development phase of the code
-(that hasn't really finished yet\ldots), you may not get the same numbers,
-but they should give some orientation of what to expect for you specific
-application on your specific hardware.
-Not that the timer currently used will overflow on some machines (after
-about 50 minutes), so you should not blindly trust the timings given by
-the code.
-
-
-% ---------------------------------------------------------------------- %
-\begin{table}[htb]
-  \begin{center}
-    \caption{
-      Wall clock time per mesh point (excluding the ghost zones)
-      and per full 3-stage time step.
-      The Mhd machine has 4 processors per node sharing memory;
-      for easier comparison, we list the memory per CPU (i.\,e.~memory per
-      node, divided by 4).
-    }
-    \label{Ttimescale}
-    \begin{small}
-    \begin{tabular}{rllrlrll}
-    \toprule
-   \mcc{proc(s)}
-     & \mcc{machine}
-             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
-                    & \mcc{resol.} 
-                              & \mcc{what}
-                                             & \mcc{mem./proc}
-                                                      & \mcc{when}&\mcc{who}\\
-    \midrule
-   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
-   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
-   1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
-   1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
-   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
-   4 & Nq[0-3]
-             & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
-   4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
-   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
-   8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
-   8 & Kabul & 1.25 & $64^2{\times}128$                                  
-                              & nomagn/entro &        & 11-jul-02 & WD \\
-   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
-   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
-  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
-  16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
-  16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
-  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
-  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
-  32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
-  32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
-  64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
-    \bottomrule
-    \end{tabular}
-    \end{small}
-  \end{center}
-\end{table}
-% ---------------------------------------------------------------------- %
-
-The machines we have used can be characterized as follows:
-\begin{description}
-\item[Nl3:] 500\,MHz Pentium??? single CPU;
-  ??? memory;
-  RedHat Linux 6.2 ???
-\item[Nq0:] 931\,MHz Pentium III single CPU;
-  RedHat Linux 7.3;
-  0.5\,GB memory
-\item[Nq{[1-4]}:] 869\,MHz Pentium III dual-CPU cluster;
-  RedHat Linux 7.3;
-  0.77\,GB memory per (dual) node
-\item[Nq{[5-6]}:] 1.2\,GHz Athlon dual-CPU cluster;
-  RedHat Linux 7.3;
-  1\,GB memory per (dual) node
-\item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
-  1\,GB memory per (dual) node;
-  Gigabit ethernet;
-  SuSE Linux 8.0;
-  LAM-MPI
-\item[Ukaff:] SGI Origin 3000;
-  400\,MHz IP35 CPUs;
-  IRIX 6.5;
-  native MPI
-\item[Mhd:] EV6 Compaq cluster with 4 CPUs per node;
-  4\,;GB memory per node (i.\,e.~1\,GB per CPU)
-  OSF1 4.0;
-  native MPI
-\end{description}
-
-%WD: The following should be in table or is outdated (???):
-
-%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
-%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
-%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
-%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
-%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
-%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
-
-%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
-%7288 with 32x32x64 (single processor, linux)
-%print,38*38*71.*8.*2.*4./1e6
-
-
 
 % ====================================================================== %
 
@@ -2530,7 +2416,7 @@ where (currently) the parameter \var{gravz} is used in place of
 $-\Omega^2$; this form of the gravitational potential is commonly used for
 accretion discs.
 
-The value of $z_\infty$ is determined such that $\rho=\rho_0$ and
+The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
 values of $\gamma$ and the polytropic index $m$ (see below).
 
@@ -2539,7 +2425,7 @@ values of $\gamma$ and the polytropic index $m$ (see below).
 Here we want $c_{\rm s}=c_{\rm s0}=\mbox{const}$.
 Using \code{initlnrho='isothermal'} means
 \begin{equation} \label{constgrav-lnrho-init}
-  \ln\frac{\rho}{\rho_0}
+  \ln\frac{\varrho}{\varrho_0}
   = -\gamma \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
 The entropy is then initialized to
@@ -2547,22 +2433,22 @@ The entropy is then initialized to
   \frac{s}{c_{\rm p}}
   = (\gamma{-}1) \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
-In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
+In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose $z_\infty=z_{\rm ref}$.
 
 \subsubsection{Polytropic atmosphere}
 
-For a polytropic equation of state, $p=K\rho^\Gamma$, where generally
+For a polytropic equation of state, $p=K\varrho^\Gamma$, where generally
 $\Gamma\neq\gamma$, we can write
 \begin{equation}
   -\nab h+T\nab s
-  = -\frac{1}{\rho}\nab p
-  = -\nab\left(\frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}\right)
+  = -\frac{1}{\varrho}\nab p
+  = -\nab\left(\frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}\right)
 \equiv-\nab\tilde{h},
 \end{equation}
 where we have introduced a pseudo enthalpy $\tilde{h}$ as
 \begin{equation}
-  \tilde{h} = \frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}
+  \tilde{h} = \frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}
   =\left[\left(1-\frac{1}{\gamma}\right)
     \left/\left(1-\frac{1}{\Gamma}\right)\right.\right]\,h\; .
 \end{equation}
@@ -2575,15 +2461,15 @@ index $m=1/(\Gamma{-}1)$. Thus, $\Gamma=1+1/m$, and
 \end{equation}
 
 This is consistent with a fixed entropy dependence,
-where $s$ only depends on $\rho$ like
+where $s$ only depends on $\varrho$ like
 \begin{equation}
   \frac{s}{c_{\rm p}} = \left( \frac{\Gamma}{\gamma} - 1 \right)
-                        \ln\frac{\rho}{\rho_0} \; ,
+                        \ln\frac{\varrho}{\varrho_0} \; ,
 \end{equation}
 and implies that
 \begin{equation}
   \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
-  = (\Gamma{-}1) \ln\frac{\rho}{\rho_0} \; .
+  = (\Gamma{-}1) \ln\frac{\varrho}{\varrho_0} \; .
 \end{equation}
 
 For hydrostatic equilibrium we require
@@ -2600,7 +2486,7 @@ Using $c_{\rm s}^2=(\gamma{-}1)h$ together with (\ref{hhtilde}) we find
 \begin{equation}
   c_{\rm s}^2 = -\frac{\gamma}{m{+}1}\,\Phi.
 \end{equation}
-In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
+In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
   z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{-\gamma g_z}
@@ -2624,7 +2510,7 @@ Thus, when using \var{initlnrho='polytropic\_simple'}\footnote{
 \end{equation}
 and so the stratification is given by
 \begin{equation}
-  \ln\frac{\rho}{\rho_0}
+  \ln\frac{\varrho}{\varrho_0}
   = m \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
   %
   \frac{s}{c_{\rm p}}
@@ -2661,7 +2547,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.52 2002-07-16 15:27:58 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.53 2002-07-17 08:49:02 dobler Exp $ $}
 
 
 \end{document}
