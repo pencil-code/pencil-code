@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.63 2002-10-30 15:04:13 dobler Exp $
+! $Id: mpicomm.f90,v 1.64 2002-10-30 18:00:04 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -6,8 +6,28 @@
 
 !!! Module with MPI stuff
 
-! NB: This was previously called mpicommyz.f90 and distributes in the y-
-! and z-direction
+!  Data layout for each processor (`-' marks ghost points, `+' real
+!  points of the processor shown)
+!
+!         n = 1     - - - - - - - . - - - - - - -
+!             2     - - - - - - - . - - - - - - -
+!             3     - - - - - - - . - - - - - - -
+!             . n1  - - - + + + + . + + + + - - -
+!             . .   - - - + + + + . + + + + - - -
+!             . .   - - - + + + + . + + + + - - -
+!             . .   - - - + + + + . + + + + - - -
+!                   . . . . . . . . . . . . . . . .
+!             . .   - - - + + + + . + + + + - - -
+!             . .   - - - + + + + . + + + + - - -
+!             . .   - - - + + + + . + + + + - - -
+!             . n2  - - - + + + + . + + + + - - -
+!             .     - - - - - - - . - - - - - - -
+!             .     - - - - - - - . - - - - - - -
+!             mz    - - - - - - - . - - - - - - -
+!                        
+!                         m1. . .   . . . m2
+!               m = 1 2 3 . . . .   . . . . . . my
+!                           
 
 module Mpicomm
 
@@ -16,7 +36,7 @@ module Mpicomm
 
   implicit none
 
-  interface mpibcast_real		! Overload the `mpibcast_real' function
+  interface mpibcast_real               ! Overload the `mpibcast_real' function
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
   endinterface
@@ -26,7 +46,7 @@ module Mpicomm
   endinterface
 
   include 'mpif.h'
- 
+
   integer, parameter :: nbufx_gh=my*mz*nghost*mvar ! For shear
   integer, parameter :: nbufy=nx*nz*nghost*mvar
   integer, parameter :: nbufz=nx*ny*nghost*mvar
@@ -61,9 +81,6 @@ module Mpicomm
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
   logical, dimension (ny*nz) :: necessary=.false.
-
-  real, dimension(mx*my*mz) :: buffer
-  integer :: sbuffer = mx*my*mz*4
 
   contains
 
@@ -223,11 +240,6 @@ module Mpicomm
         enddo
       enddo
 !
-!  Attach buffer space for buffered send --- this is for testing transp()
-!  only and will hopefully not be necessary in the long run
-!
-      call MPI_BUFFER_ATTACH(buffer, sbuffer, ierr)
-!
     endsubroutine mpicomm_init
 !***********************************************************************
     subroutine initiate_isendrcv_bdry(f)
@@ -318,7 +330,7 @@ module Mpicomm
            if (ipy /= 0 .OR. bcy1(j)=='p') then
               f(l1:l2, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
            endif
-           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
               f(l1:l2,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
@@ -332,10 +344,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
         do j=1,mvar
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+           if (ipz /= 0 .OR. bcz1(j)=='p') then
               f(l1:l2,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
               f(l1:l2,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
@@ -351,16 +363,16 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
         do j=1,mvar
-           if (ipz /= 0 .OR. bcz1(j)=='p') then 
-              if (ipy /= 0 .OR. bcy1(j)=='p') then 
+           if (ipz /= 0 .OR. bcz1(j)=='p') then
+              if (ipy /= 0 .OR. bcy1(j)=='p') then
                  f(l1:l2, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
               endif
               if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
                  f(l1:l2,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
               endif
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
                  f(l1:l2,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
               endif
               if (ipy /= 0 .OR. bcy1(j)=='p') then
@@ -424,7 +436,7 @@ module Mpicomm
               +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2)
       else
 !
-!  With more than one CPU in the y-direction it will become necessary to 
+!  With more than one CPU in the y-direction it will become necessary to
 !  interpolate over data from two different CPUs.  Likewise two different
 !  CPUs will require data from this CPU.
 !
@@ -435,40 +447,40 @@ module Mpicomm
          nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
          fao = f(l1:l1i,:,:,:)
          fbo = f(l2i:l2,:,:,:)
-         if (lastya/=iproc) then 
-            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr) 
-         end if
+         if (lastya/=iproc) then
+            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
+         endif
          if (nextyb==iproc) then
             fbhi=fao
          else
             call MPI_IRECV(fbhi,nbufx_gh,MPI_REAL,nextyb,tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
-         end if
-         if (nextya/=iproc) then 
+         endif
+         if (nextya/=iproc) then
             call MPI_ISEND(fao,nbufx_gh,MPI_REAL,nextya,tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
-         end if
+         endif
          if (lastyb==iproc) then
             fblo=fao
-         else               
+         else
             call MPI_IRECV(fblo,nbufx_gh,MPI_REAL,lastyb,tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
-         end if
-         if (lastyb/=iproc) then 
+         endif
+         if (lastyb/=iproc) then
             call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,lastyb,tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
-         end if
+         endif
          if (nextya==iproc) then
             fahi=fbo
-         else               
+         else
             call MPI_IRECV(fahi,nbufx_gh,MPI_REAL,nextya,tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
-         end if
-         if (nextyb/=iproc) then 
+         endif
+         if (nextyb/=iproc) then
             call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,nextyb,tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
-         end if
+         endif
          if (lastya==iproc) then
             falo=fbo
-         else               
+         else
             call MPI_IRECV(falo,nbufx_gh,MPI_REAL,lastya,tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
-         end if
-      end if
-    end subroutine initiate_shearing
+         endif
+      endif
+    endsubroutine initiate_shearing
 !***********************************************************************
     subroutine finalise_shearing(f)
 !
@@ -496,7 +508,7 @@ module Mpicomm
          if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
 !
 ! reading communicated information into f
-!   
+!
          deltay_dy=deltay/dy
          m2long = 2*my-3*nghost
          fa(:,1:m2,:,:) = falo(:,1:m2,:,:)
@@ -516,17 +528,17 @@ module Mpicomm
               +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,:) &
               +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,:) &
               +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,:) &
-              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,:) 
+              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,:)
          f(l2+1:mx,m1:m2,:,:) = c1*fb(:,m1+displs-2:m2+displs-2,:,:) &
               +c2*fb(:,m1+displs-1:m2+displs-1,:,:) &
               +c3*fb(:,m1+displs:m2+displs,:,:) &
               +c4*fb(:,m1+displs+1:m2+displs+1,:,:) &
               +c5*fb(:,m1+displs+2:m2+displs+2,:,:) &
-              +c6*fb(:,m1+displs+3:m2+displs+3,:,:) 
+              +c6*fb(:,m1+displs+3:m2+displs+3,:,:)
 !
 !  Filling also the x-y corners in order to avoid only zeros at these corners.
 !  One should acctually have communicated with an extra processor in order to
-!  fill these corners with the right values, but this does not seem to be 
+!  fill these corners with the right values, but this does not seem to be
 !  necessary.
 !
          do i=1,nghost
@@ -534,7 +546,7 @@ module Mpicomm
             f(1:l1-1,m2+i,:,:)=f(1:l1-1,m2-i+1,:,:)
             f(l2+1:mx,i,:,:)=f(l2+1:mx,m1+nghost-i,:,:)
             f(l2+1:mx,m2+i,:,:)=f(l2+1:mx,m2-i+1,:,:)
-         end do
+         enddo
 !
 !  need to wait till buffer is empty before re-using it again
 !
@@ -543,7 +555,7 @@ module Mpicomm
          if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
          if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
 !
-       end subroutine finalise_shearing
+       endsubroutine finalise_shearing
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
@@ -637,7 +649,7 @@ module Mpicomm
 !  6-nov-01/wolf: coded
 !
       character (len=*) :: msg
-!      
+!
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
       STOP
@@ -670,121 +682,130 @@ module Mpicomm
         call stop_it('Inconsistency: nxgrid/=nygrid.or.nygrid/=nzgrid')
       endif
 !
-!  Calculate the size of packages.
-!  Packages used for the y-transpose have the same size in y and z.
-!  Packages used for the z-transpose have the same size in z and x.
+!  Calculate the size of buffers.
+!  Buffers used for the y-transpose have the same size in y and z.
+!  Buffers used for the z-transpose have the same size in z and x.
 !
-      sendc_y=ny*ny*nz
-      recvc_y=ny*ny*nz
-      sendc_z=nz*ny*nz
-      recvc_z=nz*ny*nz
+      sendc_y=ny*ny*nz; recvc_y=sendc_y
+      sendc_z=nz*ny*nz; recvc_z=sendc_z
 !
 !  Doing x-y transpose if var='y'
 !
-if (var=='y') then
+      if (var=='y') then
 !
 !  Send information to different processors (x-y transpose)
 !  Divide x-range in as many intervals as we have processors in y.
-!  The index px counts through all of them.
-!  Different partner labels for different z-planes.
-!  Example: ipy=0, ipz=0, then partner=1,2,3, ..., nprocy-1.
+!  The index px counts through all of them; partner is the index of the
+!  processor we need to communicate with. Thus, px is the ipy of partner,
+!  but at the same time the x index of the given block.
+!
+!  Example: ipy=1, ipz=0, then partner=0,2,3, ..., nprocy-1.
+!
+!
+!        ... |
+!          3 |  D  E  F  /
+!          2 |  B  C  /  F'
+!  ipy=    1 |  A  /  C' E'
+!          0 |  /  A' B' D'
+!            +--------------
+!        px=    0  1  2  3 ..
+!
+
+!        ipy
 !         ^
-!  C D    | ipy
+!  C D    |
 !  A B    |      --> px
 !
-!  if px=1, then send block B to block C on partner=1
-!  at the same time, ipy=0 receives from partner=1 and put to B.
+!  if ipy=1,px=0, then exchange block A with A' on partner=0
+!  if ipy=1,px=2, then exchange block C' with C on partner=2
 !
-      do px=0,nprocy-1
-        if(px/=ipy) then
-          partner=px+ipz*nprocy
-          if(ip<=6) print*,'MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
-          send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
-!         call MPI_ISEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,isend_rq_y,ierr)
-!         call MPI_IRECV(recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,irecv_rq_y,ierr)
-!         call MPI_WAIT(irecv_rq_y,stat,ierr)
+!  The following communication patterns is kind of self-regulated. It
+!  avoids deadlock, because there will always be at least one matching
+!  pair of processors; the others will have to wait until their partner
+!  posts the corresponding request.
+!    Doing send and recv together for a given pair of processors
+!  (although in an order that avoids deadlocking) allows us to get away
+!  with only send_buf and recv_buf as buffers
 !
-!  Experimental: use buffered send; do _all_ sends before starting to receive
-!
-          call MPI_BSEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
-        endif
-      enddo
-!
-!  Now receive what has been sent by other procs
-!
-      do px=0,nprocy-1
-        if(px/=ipy) then
-          partner=px+ipz*nprocy
-          call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
-!
-          a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
-        endif
-      enddo
+        do px=0,nprocy-1
+          if(px/=ipy) then
+            partner=px+ipz*nprocy ! = iproc + (px-ipy)
+            if(ip<=6) print*,'MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
+            send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
+            if (px<ipy) then      ! above diagonal: send first, receive then
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+            elseif (px>ipy) then  ! below diagonal: receive first, send then
+              call MPI_RECV (recv_buf_y,recvc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
+            endif
+            a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
+          endif
+        enddo
 !
 !  Transposing the received data (x-y transpose)
 !  Example:
 !
-!  |12 13 14 15|      | 6  7 14 15|      | 3  7 11 15|
-!  | 8  9 10 11|      | 2  3 10 11|      | 2  6 10 14|
-!  |-----------|  ->  |-----------|  ->  |-----------|
-!  | 4  5  6  7|      | 4  5 12 13|      | 1  5  9 13|
-!  | 0  1  2  3|      | 0  1  8  9|      | 0  4  8 12|
+!  |12 13 | 14 15|      | 6  7 | 14 15|      | 3  7 | 11 15|
+!  | 8  9 | 10 11|      | 2  3 | 10 11|      | 2  6 | 10 14|
+!  |------+------|  ->  |------+------|  ->  |------+------|
+!  | 4  5 |  6  7|      | 4  5 | 12 13|      | 1  5 |  9 13|
+!  | 0  1 |  2  3|      | 0  1 |  8  9|      | 0  4 |  8 12|
 !     original          2x2 blocks         each block
 !                       transposed         transposed
 !
-      do px=0,nprocy-1
-        do i=1,ny
-          do j=i+1,ny
-            tmp_z=a(i+px*ny,j,:)
-            a(i+px*ny,j,:)=a(j+px*ny,i,:)
-            a(j+px*ny,i,:)=tmp_z
+        do px=0,nprocy-1
+          do i=1,ny
+            do j=i+1,ny
+              tmp_z=a(i+px*ny,j,:)
+              a(i+px*ny,j,:)=a(j+px*ny,i,:)
+              a(j+px*ny,i,:)=tmp_z
+            enddo
           enddo
         enddo
-      enddo
 !
 !  Doing x-z transpose if var='z'
 !
-elseif (var=='z') then
+      elseif (var=='z') then
 !
 !  Send information to different processors (x-z transpose)
-!
-       do px=0,nprocz-1
-        if(px/=ipz) then
-          partner=ipy+px*nprocy
-          send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
-!          call MPI_ISEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,isend_rq_z,ierr)
-!          call MPI_IRECV(recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,irecv_rq_z,ierr)
-!
-!  Experimental: use buffered send; do _all_ sends before starting to receive
-!
-          call MPI_BSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
-        endif
-      enddo
-!
-       do px=0,nprocz-1
-        if(px/=ipz) then
-          partner=ipy+px*nprocy
-          send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
-          call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
-          a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
-        endif
-      enddo
+!  See the discussion above for why we use this communication pattern
+        do px=0,nprocz-1
+          if(px/=ipz) then
+            partner=ipy+px*nprocy ! = iproc + (px-ipz)*nprocy
+            send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
+            if (px<ipz) then      ! above diagonal: send first, receive then
+              call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+            elseif (px>ipz) then  ! below diagonal: receive first, send then
+              call MPI_RECV (recv_buf_z,recvc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,stat,ierr)
+              call MPI_SSEND(send_buf_z,sendc_z,MPI_REAL,partner,ztag,MPI_COMM_WORLD,ierr)
+            endif
+            a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
+          endif
+        enddo
 !
 !  Transposing the received data (x-z transpose)
-!      
-      do px=0,nprocz-1
-        do i=1,nz
-          do j=i+1,nz
-            tmp_y=a(i+px*nz,:,j)
-            a(i+px*nz,:,j)=a(j+px*nz,:,i)
-            a(j+px*nz,:,i)=tmp_y
+!
+        do px=0,nprocz-1
+          do i=1,nz
+            do j=i+1,nz
+              tmp_y=a(i+px*nz,:,j)
+              a(i+px*nz,:,j)=a(j+px*nz,:,i)
+              a(j+px*nz,:,i)=tmp_y
+            enddo
           enddo
         enddo
-      enddo
 !
-endif
+      else
+        if (lroot) print*,'TRANSP: No clue what var=', var, 'is supposed to mean'
+      endif
 !
- end subroutine transp
+!  Synchronize; not strictly necessary, so Axel will prabably remove it..
+!
+      call mpibarrier()
+!
+    endsubroutine transp
 !***********************************************************************
 subroutine transform(a1,a2,a3,b1,b2,b3)
 !
@@ -795,7 +816,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !  05-nov-02/axel: added normalization factor
 !
   real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
-  
+
   ! Doing the x field
   if(lroot .AND. ip<10) print*,'doing fft of x-component'
   call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
@@ -805,7 +826,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
   call transp(a1,'z')
   call transp(b1,'z')
   call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
-  
+
   ! Doing the y field
   if(lroot .AND. ip<10) print*,'doing fft of y-component'
   call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
@@ -815,7 +836,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
   call transp(a2,'z')
   call transp(b2,'z')
   call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
-  
+
   ! Doing the z field
   if(lroot .AND. ip<10) print*,'doing fft of z-component'
   call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
@@ -830,9 +851,9 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !
   a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
   b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finnished'
+  if(lroot .AND. ip<10) print*,'fft has finished'
 !
-end subroutine transform
+endsubroutine transform
 !***********************************************************************
 subroutine transform_i(a_re,a_im)
 !
@@ -842,7 +863,7 @@ subroutine transform_i(a_re,a_im)
 !  22-oct-02/axel+tarek: adapted from transform
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
-  
+
   if(lroot .AND. ip<10) print*,'doing three FFTs'
   call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
   call transp(a_re,'y')
@@ -856,9 +877,9 @@ subroutine transform_i(a_re,a_im)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finnished'
+  if(lroot .AND. ip<10) print*,'fft has finished'
 !
-end subroutine transform_i
+endsubroutine transform_i
 !***********************************************************************
 subroutine transform_fftpack(a_re,a_im)
 !
@@ -928,9 +949,9 @@ subroutine transform_fftpack(a_re,a_im)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finnished'
+  if(lroot .AND. ip<10) print*,'fft has finished'
 !
-end subroutine transform_fftpack
+endsubroutine transform_fftpack
 !***********************************************************************
 subroutine transform_nr(a_re,a_im)
 !
@@ -987,8 +1008,8 @@ subroutine transform_nr(a_re,a_im)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finnished'
+  if(lroot .AND. ip<10) print*,'fft has finished'
 !
-end subroutine transform_nr
+endsubroutine transform_nr
 !***********************************************************************
 endmodule Mpicomm

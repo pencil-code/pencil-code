@@ -300,7 +300,7 @@ module Mpicomm
       integer :: i,j
       character :: var
 !
-      print*,'transp for single processor'
+      if (ip<10) print*,'transp for single processor'
 !
 !  Doing x-y transpose if var='y'
 !
