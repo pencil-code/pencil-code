@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.4 2003-02-04 10:52:36 theine Exp $
+! $Id: ionization.f90,v 1.5 2003-02-04 13:15:08 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -49,7 +49,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.4 2003-02-04 10:52:36 theine Exp $")
+           "$Id: ionization.f90,v 1.5 2003-02-04 13:15:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -103,10 +103,23 @@ module Ionization
 !
 !  if ionization turned off, continue assuming cp=1
 !
-        if(headtt) print*,'thermodynamics: assume cp=1'
-        cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
-        TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-        cp1tilde=1.
+!       if(headtt) print*,'thermodynamics: assume cp=1'
+!
+!  old case: cp=1
+!  
+!       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
+!       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
+!       cp1tilde=1.
+!
+!  new case: cp-cv=1, ie cp=2.5
+!
+        if(headtt) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
+        dlnPdlnrho=gamma
+        dlnPdS=gamma1
+        logTT=gamma1*(lnrho+ss-ss0)
+        cs2=kB_over_mp*exp(logTT)*dlnPdlnrho
+        TT1=exp(-logTT)                              ! /c_p ?
+        cp1tilde=dlnPdS/dlnPdlnrho
       endif
 !
     endsubroutine thermodynamics
