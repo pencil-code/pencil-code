@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.167 2004-05-19 10:47:34 ajohan Exp $
+! $Id: ionization.f90,v 1.168 2004-10-27 14:21:47 ajohan Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -135,7 +135,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.167 2004-05-19 10:47:34 ajohan Exp $")
+           "$Id: ionization.f90,v 1.168 2004-10-27 14:21:47 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -320,7 +320,11 @@ module Ionization
 !
       do n=1,mz
       do m=1,my
-        lnrho=f(:,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=alog(f(:,m,n,ilnrho))
+        else
+          lnrho=f(:,m,n,ilnrho)
+        endif
         ss=f(:,m,n,iss)
         yH=0.5*(yHmax-yHmin)
         call rtsafe_pencil(lnrho,ss,yH)
@@ -348,7 +352,11 @@ module Ionization
 !
       do n=1,mz
       do m=1,my
-        lnrho=f(:,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=alog(f(:,m,n,ilnrho))
+        else
+          lnrho=f(:,m,n,ilnrho)
+        endif
         ss=f(:,m,n,iss)
         yH=f(:,m,n,iyH)
         call rtsafe_pencil(lnrho,ss,yH)
@@ -456,7 +464,7 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,lnrho,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -473,7 +481,6 @@ module Ionization
       real, dimension(nx) :: dRdlnrho,dydlnrho,dlnPPdlnrho,fractions,fractions1
       real, dimension(nx) :: dlnTTdss,dRdss,dydss,dlnPPdss,TT1
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
       TT1=exp(-lnTT)
@@ -546,7 +553,11 @@ module Ionization
       real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho,dlnTTdss
       integer :: j
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
+      if (ldensity_nolog) then
+        lnrho=alog(f(l1:l2,m,n,ilnrho))
+      else  
+        lnrho=f(l1:l2,m,n,ilnrho)
+      endif
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
       TT1=exp(-lnTT)
@@ -582,7 +593,11 @@ module Ionization
       real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho,dlnTTdss
       integer :: i,j
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
+      if (ldensity_nolog) then
+        lnrho=alog(f(l1:l2,m,n,ilnrho))
+      else
+        lnrho=f(l1:l2,m,n,ilnrho)
+      endif
       yH=f(l1:l2,m,n,iyH)
       lnTT=f(l1:l2,m,n,ilnTT)
       TT1=exp(-lnTT)
@@ -1107,7 +1122,11 @@ module Ionization
       do n=n1,n2
       do m=m1,m2
 !
-        lnrho=f(l1:l2,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=alog(f(l1:l2,m,n,ilnrho))
+        else
+          lnrho=f(l1:l2,m,n,ilnrho)
+        endif
 !
         K=exp(lnrho_e-lnrho-TT_ion/T0)*(T0/TT_ion)**1.5
         sqrtK=sqrt(K)

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.127 2004-10-26 08:27:49 ajohan Exp $
+! $Id: dustdensity.f90,v 1.128 2004-10-27 14:21:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -120,7 +120,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.127 2004-10-26 08:27:49 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.128 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -348,7 +348,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
+    subroutine dndmd_dt(f,df,rho,rho1,TT1,cs2,cc,cc1,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -371,7 +371,7 @@ module Dustdensity
       real, dimension (nx) :: fdiffd,del6nd
       integer :: k
 !
-      intent(in)  :: uud,divud
+      intent(in)  :: f,rho,rho1,TT1,cs2,uud,divud,cc,cc1
       intent(out) :: df,gnd
 !
 !  identify module and boundary conditions
@@ -388,7 +388,6 @@ module Dustdensity
       else
         nd  = f(l1:l2,m,n,ind)
       endif
-      rho = exp(f(l1:l2,m,n,ilnrho))
 !
 !  Continuity equations for nd, md and mi.
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.232 2004-10-26 06:31:51 ajohan Exp $
+! $Id: magnetic.f90,v 1.233 2004-10-27 14:21:47 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.232 2004-10-26 06:31:51 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.233 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,7 +337,7 @@ module Magnetic
 !
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
 !
 !  magnetic field evolution
 !

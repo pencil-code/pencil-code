@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.23 2004-06-11 17:19:11 mcmillan Exp $
+! $Id: grav_self.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -87,7 +87,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.23 2004-06-11 17:19:11 mcmillan Exp $")
+           "$Id: grav_self.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -131,7 +131,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho1)
+    subroutine duu_dt_grav(f,df,uu,rho)
 !
 !  advance pseudo selfgravity and add to duu/dt
 !
@@ -143,10 +143,11 @@ module Gravity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,gg,curlgg,curlcurlgg,quench
-      real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2,udotg,g2
+      real, dimension (nx) :: rho,curlgg2,divgg,divgg2,udotg,g2
       integer :: j
 !
-      intent(in)  :: f
+      intent(in) :: f,uu,rho
+      intent(out) :: df
 !
 !  different gravity profiles
 !
@@ -155,7 +156,6 @@ module Gravity
 !  advance gravity, dg/dt = 4pi*G*rho*uu
 !  Note that 4pi*G = "grav_const"
 !
-      rho=1./rho1
       do j=0,2
         df(l1:l2,m,n,igg+j)=df(l1:l2,m,n,igg+j)+grav_const*rho*uu(:,1+j)
       enddo

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.256 2004-09-28 14:17:38 ajohan Exp $
+! $Id: cdata.f90,v 1.257 2004-10-27 14:21:46 ajohan Exp $
 
 module Cdata
 
@@ -135,6 +135,7 @@ module Cdata
 
   logical :: lstart=.false., lrun=.false.
   logical :: lhydro=.false., lhydro_fixed=.false., ldensity=.false.
+  logical :: ldensity_nolog=.false.
   logical :: ldensity_fixed=.false., lentropy=.false., lentropy_fixed=.false.
   logical :: lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.

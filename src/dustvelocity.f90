@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.85 2004-10-26 08:27:49 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.86 2004-10-27 14:21:47 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -109,7 +109,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.85 2004-10-26 08:27:49 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.86 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -380,7 +380,7 @@ module Dustvelocity
       use Ionization, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: rho,cs2,rhod,cp1tilde
+      real, dimension (nx) :: lnrho,rho,cs2,rhod,cp1tilde
       integer :: k
 !
 !  inituud corresponds to different initializations of uud (called from start).
@@ -397,9 +397,19 @@ module Dustvelocity
           do k=1,ndustspec
             do m=m1,m2
               do n=n1,n2
-                rho = exp(f(l1:l2,m,n,ilnrho))
-                rhod = f(l1:l2,m,n,ind(k))*md(k)
-                call pressure_gradient(f,cs2,cp1tilde)
+                if (ldensity_nolog) then
+                  rho = f(l1:l2,m,n,ilnrho)
+                  lnrho = alog(rho)
+                else
+                  lnrho = f(l1:l2,m,n,ilnrho)
+                  rho = exp(lnrho)
+                endif
+                if (ldustdensity_log) then
+                  rhod = exp(f(l1:l2,m,n,ind(k)))*md(k)
+                else
+                  rhod = f(l1:l2,m,n,ind(k))*md(k)
+                endif
+                call pressure_gradient(f,lnrho,cs2,cp1tilde)
                 call get_stoppingtime(f,rho,cs2,rhod,k)
                 f(l1:l2,m,n,iudz(k)) = -tausd1(:,k)**(-1)*Omega**2*z(n)
               enddo
@@ -419,7 +429,7 @@ module Dustvelocity
 !
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,uud,glnrho,rho1,cs2,JxBr,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho,rho1,glnrho,cs2,JxBr,uud,ud2,divud,udij)
 !
 !  Dust velocity evolution
 !  Calculate duud/dt = - uud.graduud - 2Omega x uud - 1/tausd*(uud-uu)
@@ -441,12 +451,12 @@ module Dustvelocity
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,JxBr,ood,del2ud,graddivud,del6ud,fviscd
       real, dimension (nx,3) :: glnrho,glnnd,sdglnnd,tausd13,tausg13
-      real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
+      real, dimension (nx) :: rho,rho1,cs2,od2,oud,udx,udy,udz,rhod
       real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,k,l
 !
-      intent(in) :: uu,rho1,glnrho,cs2,JxBr
+      intent(in) :: uu,rho,rho1,glnrho,cs2,JxBr
       intent(out) :: df,uud,divud,ud2,udij
 !
 !  Identify module and boundary conditions
@@ -477,7 +487,6 @@ module Dustvelocity
 !
 !  Abbreviations
 !
-      rho = 1/rho1
       do k=1,ndustspec
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
         if (ldustdensity_log) then

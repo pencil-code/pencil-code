@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.15 2004-05-12 17:27:07 ajohan Exp $
+! $Id: nopscalar.f90,v 1.16 2004-10-27 14:21:47 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -56,7 +56,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.15 2004-05-12 17:27:07 ajohan Exp $")
+           "$Id: nopscalar.f90,v 1.16 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -93,7 +93,7 @@ module Pscalar
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine dlncc_dt(f,df,uu,glnrho,cc,cc1)
+    subroutine dlncc_dt(f,df,uu,rho,glnrho,cc,cc1)
 !
 !  magnetic field evolution
 !
@@ -101,16 +101,15 @@ module Pscalar
 !
 !   6-jul-02/axel: coded
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: cc,cc1
+      real, dimension (nx) :: rho,cc,cc1
 !
-      intent(in)  :: f,df,uu,glnrho
+      intent(in)  :: f,df,uu,rho,glnrho
 !
-      if(ip==0) print*,f,df,uu,glnrho,cc,cc1
+      if(ip==0) print*,f,df,uu,rho,glnrho,cc,cc1
+!        
     endsubroutine dlncc_dt
 !***********************************************************************
     subroutine rprint_pscalar(lreset,lwrite)

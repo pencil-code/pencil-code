@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.118 2004-09-14 12:51:28 bingert Exp $
+! $Id: noionization.f90,v 1.119 2004-10-27 14:21:47 ajohan Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.118 2004-09-14 12:51:28 bingert Exp $')
+           '$Id: noionization.f90,v 1.119 2004-10-27 14:21:47 ajohan Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -291,7 +291,7 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,lnrho,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -306,7 +306,6 @@ module Ionization
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
 !
       if (gamma1==0.) call stop_it('pressure_gradient_farray: gamma=1 not allowed w/entropy')
@@ -422,21 +421,23 @@ module Ionization
       integer, intent(in) :: psize
       real, dimension(psize), intent(out), optional :: yH,lnTT,ee,pp,lnchi
       real, dimension(psize) :: lnTT_
-      real, dimension(psize) :: lnrho,ss
+      real, dimension(psize) :: lnrho_,ss
 !
       select case (psize)
 
       case (nx)
-        lnrho=f(l1:l2,m,n,ilnrho)
+        lnrho_=f(l1:l2,m,n,ilnrho)
         if (lentropy) then; ss=f(l1:l2,m,n,iss); else; ss=0; endif
       case (mx)
-        lnrho=f(:,m,n,ilnrho)
+        lnrho_=f(:,m,n,ilnrho)
         if (lentropy) then; ss=f(  :  ,m,n,iss); else; ss=0; endif
       case default
         call stop_it("eoscalc: no such pencil size")
 
       end select
-
+!
+      if (ldensity_nolog) lnrho_=alog(lnrho_)
+!
       if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
 !
@@ -447,16 +448,16 @@ module Ionization
         if (present(lnTT)) lnTT=lnTT_
         !if (present(ee)) ee=cs20*exp(gamma*ss)/gamma1/gamma
         if (present(ee)) ee=cs20*exp(gamma*ss)/gamma
-        if (present(pp)) pp=cs20*exp(gamma*ss+(lnrho-lnrho0))/gamma
+        if (present(pp)) pp=cs20*exp(gamma*ss+(lnrho_-lnrho0))/gamma
 !
 !  ss is indeed the entropy (not lnTT/gamma)
 !
       else
-        lnTT_=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+        lnTT_=lnTT0+gamma*ss+gamma1*(lnrho_-lnrho0)
         if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
         if (present(lnTT)) lnTT=lnTT_
-        if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-        if (present(pp)) pp=cs20*exp(gamma*(ss+lnrho)-gamma1*lnrho0)/gamma
+        if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho_-lnrho0))/gamma1/gamma
+        if (present(pp)) pp=cs20*exp(gamma*(ss+lnrho_)-gamma1*lnrho0)/gamma
       endif
 !
      if (ldiagnos.and.psize==nx) then
@@ -661,7 +662,12 @@ module Ionization
 !
       do n=n1,n2
       do m=m1,m2
-        lnrho=f(l1:l2,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=alog(f(l1:l2,m,n,ilnrho))
+        else
+          lnrho=f(l1:l2,m,n,ilnrho)
+        endif
+!
         ss=-gamma1*(lnrho-lnrho0)/gamma
           !+ other terms for sound speed not equal to cs_0
         f(l1:l2,m,n,iss)=ss+ss_offset

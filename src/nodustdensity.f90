@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.23 2004-07-23 07:44:15 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -51,7 +51,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.23 2004-07-23 07:44:15 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -77,21 +77,21 @@ module Dustdensity
       if(ip==0) print*,f ! keep compiler quiet
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
+    subroutine dndmd_dt(f,df,rho,rho1,TT1,cs2,cc,cc1,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dlnrhod/dt = - u.gradlnrhod - divud
 !
 !  18-mar-03/axel: adapted from dustdensity
 !
-      use Sub
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uud,gnd
-      real, dimension (nx) :: rho1,TT1,cs2,divud,cc,cc1
+      real, dimension (nx) :: rho,rho1,TT1,cs2,divud,cc,cc1
 !
-      if(ip==0) print*,f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd !(keep compiler quiet)
+      if(ip==0) print*,f,df,rho,rho1,TT1,cs2,uud,divud,cc,cc1,gnd
+        !(keep compiler quiet)
+!
     endsubroutine dndmd_dt
 !***********************************************************************
     subroutine redist_mdbins(f)

@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.23 2004-09-20 12:49:28 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.23 2004-09-20 12:49:28 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.24 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -88,7 +88,7 @@ module Dustvelocity
       if (ip==0) print*,f  !(keep compiler quiet)
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,uud,glnrho,rho1,cs2,JxBr,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho,rho1,glnrho,cs2,JxBr,uud,ud2,divud,udij)
 !
 !  velocity evolution
 !  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
@@ -97,17 +97,16 @@ module Dustvelocity
 !  18-mar-03/axel: dummy routine
 !
       use Cdata
-      use Sub
-      use IO
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3) :: uu,uud,glnrho,JxBr
-      real, dimension (nx) :: rho1,cs2,ud2,divud
+      real, dimension (nx) :: rho,rho1,cs2,ud2,divud
 !
-      if(ip==0) print*,f,df,uu,uud,glnrho,JxBr,rho1,cs2,divud,rho1,ud2,udij
+      if(ip==0) print*,f,df,uu,uud,glnrho,JxBr,rho,rho1,cs2,divud,rho1,ud2,udij
       !(keep compiler quiet)
+!
     endsubroutine duud_dt
 !***********************************************************************
     subroutine shearingdust(f,df)

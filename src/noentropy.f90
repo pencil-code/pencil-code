@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.62 2004-07-03 02:13:14 theine Exp $
+! $Id: noentropy.f90,v 1.63 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.62 2004-07-03 02:13:14 theine Exp $")
+           "$Id: noentropy.f90,v 1.63 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -89,9 +89,9 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ss
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+    subroutine dss_dt(f,df,uu,divu,lnrho,rho,rho1,glnrho,cs2,TT1,shock,gshock,bb, bij)
 !
-!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
+!  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-02.
 !  19-may-02/axel: added isothermal pressure gradient
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !
@@ -102,10 +102,10 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: uu,glnrho,gshock,bb
-      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho,shock,rho
+      real, dimension (nx) :: lnrho,rho,rho1,divu,cs2,TT1,uglnrho,shock
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho1,shock,gshock
+      intent(in) :: f,uu,glnrho,rho,rho1,shock,gshock
       intent(out) :: cs2,TT1  !(df is dummy)
 !
 !  sound speed squared and inverse temperature
@@ -113,7 +113,6 @@ module Entropy
 !
       cs2=cs20*exp(gamma1*(lnrho-lnrho0))
       TT1=gamma1/cs2
-
 !
 !  ``cs2/dx^2'' for timestep
 !
@@ -134,7 +133,6 @@ module Entropy
       if (ldiagnos) then
         if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
-          rho=1./rho1
           call dot_mn(uu,glnrho,uglnrho)
           call sum_mn_name(rho*cs2*uglnrho,i_ugradpm)
         endif

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.32 2004-10-03 20:03:24 nilshau Exp $
+! $Id: nohydro.f90,v 1.33 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.32 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: nohydro.f90,v 1.33 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -102,7 +102,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
+    subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -118,7 +118,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: uu,oo,glnrho,gshock
-      real, dimension (nx) :: u2,uz,divu,o2,ou,rho1,shock
+      real, dimension (nx) :: u2,uz,divu,o2,ou,rho,rho1,shock
 !
       if (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
@@ -156,7 +156,7 @@ module Hydro
         if (i_um2/=0)   call max_mn_name(u2,i_um2)
       endif
 !
-      if(ip==0) print*,f,df,glnrho,divu,rho1,u2,uij,shock,gshock
+      if(ip==0) print*,f,df,glnrho,divu,rho,rho1,u2,uij,shock,gshock
                                                !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************

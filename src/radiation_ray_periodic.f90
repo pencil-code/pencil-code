@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.7 2004-10-08 09:23:55 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.7 2004-10-08 09:23:55 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -676,7 +676,7 @@ module Radiation
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
-    subroutine radiative_cooling(f,df,TT1)
+    subroutine radiative_cooling(f,df,lnrho,TT1)
 !
 !  calculate source function
 !
@@ -690,7 +690,6 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: lnrho,Qrad,TT1,Qrad2
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
       Qrad=f(l1:l2,m,n,iQrad)
 !
 !  Add radiative cooling

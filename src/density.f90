@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.175 2004-08-26 19:24:16 dobler Exp $
+! $Id: density.f90,v 1.176 2004-10-27 14:21:46 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -34,8 +34,10 @@ module Density
   real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
   integer :: isothtop=0
   logical :: lupw_lnrho=.false.
+  logical :: ldiffusion_gas=.false.,ldiffusion_shock_gas=.false.
   character (len=labellen), dimension(ninit) :: initlnrho='nothing'
   character (len=labellen) :: strati_type='lnrho_ss',initlnrho2='nothing'
+  character (len=labellen) :: idiff='normal'
   character (len=4) :: iinit_str
   complex :: coeflnrho=0.
 
@@ -46,11 +48,11 @@ module Density
        b_ell,q_ell,hh0,rbound, &
        mpoly,strati_type, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
-       dlnrhobdx,co1_ss,co2_ss,Sigma1,cp
+       dlnrhobdx,co1_ss,co2_ss,Sigma1,cp,idiff,ldensity_nolog
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
-       cs2bot,cs2top,lupw_lnrho,cp
+       cs2bot,cs2top,lupw_lnrho,cp,idiff
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ekin=0,i_rhom=0,i_ekintot=0,i_rhomin=0,i_rhomax=0
   integer :: i_lnrhomphi=0,i_rhomphi=0
@@ -90,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.175 2004-08-26 19:24:16 dobler Exp $")
+           "$Id: density.f90,v 1.176 2004-10-27 14:21:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,7 +154,11 @@ module Density
 !        call initialize_ionization()
       endselect
 !
+      if (diffrho/=0.) ldiffusion_gas=.true.
+      if (diffrho_shock/=0.) ldiffusion_shock_gas=.true.
+!
       if (ip==0) print*,f,lstarting  !(to keep compiler quiet)
+!        
     endsubroutine initialize_density
 !***********************************************************************
     subroutine init_lnrho(f,xx,yy,zz)
@@ -552,12 +558,6 @@ module Density
 
       if (lnothing.and.lroot) print*,'init_lnrho: zero density'
 !
-!  sanity check
-!
-      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
-        STOP "init_lnrho: Imaginary density values"
-      endif
-!
 !  check that cs2bot,cs2top are ok
 !  for runs with ionization or fixed ionization, don't print them
 !
@@ -593,22 +593,42 @@ module Density
 
       endselect
 !
+!  If unlogarithmic density considered, take exp of lnrho resulting from
+!  initlnrho
+!
+      if (ldensity_nolog) f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
+!
+!  sanity check
+!
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
+        STOP "init_lnrho: Imaginary density values"
+      endif
+!
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calculate_vars_rho(f,rho1)
+    subroutine calculate_vars_rho(f,lnrho,rho,rho1)
 !
-!   Calculation of rho1
+!   Calculation of rho and rho1
 !
 !   08-febr-04/bing: coded
+!   27-oct -04/anders: also calculates rho
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx) :: rho1
+      real, dimension (nx) :: lnrho,rho,rho1
 
       intent(in) :: f
-      intent(out) :: rho1
- 
-      rho1=exp(-f(l1:l2,m,n,ilnrho))  
-      
+      intent(out) :: lnrho,rho,rho1
+! 
+      if (ldensity_nolog) then
+        rho=f(l1:l2,m,n,ilnrho)
+        lnrho=exp(f(l1:l2,m,n,ilnrho))
+      else
+        rho=exp(f(l1:l2,m,n,ilnrho))  
+        lnrho=f(l1:l2,m,n,ilnrho)
+      endif
+!
+      rho1=1/rho
+!      
     endsubroutine calculate_vars_rho
 !***********************************************************************
     subroutine polytropic_lnrho_z( &
@@ -790,21 +810,22 @@ module Density
 
     endsubroutine numerical_equilibrium
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
+    subroutine dlnrho_dt(f,df,uu,divu,lnrho,glnrho,shock,gshock)
 !
 !  continuity equation
 !  calculate dlnrho/dt = - u.gradlnrho - divu
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Sub
+      use Mpicomm, only: stop_it
       use Special, only: special_calc_density
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gshock
       real, dimension (nx) :: lnrho,divu,uglnrho,gshockglnrho,glnrho2,shock
-      real, dimension (nx) :: del2lnrho
+      real, dimension (nx) :: fdiff,del2lnrho,del6rho
       integer :: j
 !
       intent(in)  :: f,uu,divu,shock,gshock
@@ -817,38 +838,75 @@ module Density
 !
 !  define lnrho; calculate density gradient and avection term
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
       call grad(f,ilnrho,glnrho)
       call u_dot_gradf(f,ilnrho,glnrho,uu,uglnrho,UPWIND=lupw_lnrho)
 !
 !  continuity equation
 !
-      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
+      if (ldensity_nolog) then
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-lnrho*divu
+      else
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
+      endif
 !
-!  mass diffusion and shock diffusion, in absolute units (similar to nu, chi, and eta)
+!  Calculate del2lnrho and glnrho2 only if needed for diffusion
 !
-      if ((diffrho/=0.) .or. (diffrho_shock/=0.)) then
-      
+      if ((ldiffusion_gas .and. idiff=='normal') .or. ldiffusion_shock_gas) then
         call del2(f,ilnrho,del2lnrho)
         call dot2_mn(glnrho,glnrho2)
-     
-        if (diffrho/=0.) then
-          if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
-          if (lfirst.and.ldt) diffus_diffrho=diffrho*dxyz_2
-        endif
+      endif
 !
-        if (diffrho_shock/=0.) then
-          call dot_mn(gshock,glnrho,gshockglnrho)
-          if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+ &
-            diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
-          if (lfirst.and.ldt) diffus_diffrho=diffrho_shock*shock*dxyz_2
-        endif
+!  Mass diffusion
+!
+      if (ldiffusion_gas) then
 
+        if (headtt) print*,'dlnrho_dt: diffrho=',diffrho
+     
+        select case (idiff)
+
+          case ('normal')
+!
+!  Normal diffusion operator
+!          
+            if (ldensity_nolog) then
+              fdiff=diffrho*del2lnrho
+            else
+              fdiff=diffrho*(del2lnrho+glnrho2)
+            endif
+            if (lfirst.and.ldt) diffus_diffrho=diffrho*dxyz_2
+
+          case ('hyper3')
+!
+!  Hyper diffusion, only mass conserving for nonlogarithmic density
+!
+            if (.not. ldensity_nolog) call stop_it('dlnrho_dt: hyper3 '// &
+                'diffusion only works with nonlogarithmic density!')
+            call del6(f,ilnrho,del6rho)
+            fdiff=diffrho*del6rho
+
+          case default
+
+            call stop_it('dlnrho_dt: No such value for idiff')
+
+        endselect
+!
+!  Add diffusion term to continuity equation
+!
+        df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + fdiff
         if (headtt.or.ldebug) print*,'dlnrho_dt: max(diffus_diffrho) =', &
-                                     maxval(diffus_diffrho)
-
+            maxval(diffus_diffrho)
+      endif
+!
+!  Shock diffusion
+!      
+      if (ldiffusion_shock_gas) then
+        if (ldensity_nolog) call stop_it('dlnrho_dt: shock diffusion only '// &
+            'works with logarithmic density!')
+        call dot_mn(gshock,glnrho,gshockglnrho)
+        if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+ &
+            diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
+        if (lfirst.and.ldt) diffus_diffrho=diffrho_shock*shock*dxyz_2
       endif
 !
 !  add advection of imposed constant gradient of lnrho (called gradlnrho0)
@@ -905,7 +963,7 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
         call parse_name(iname,cname(iname),cform(iname),'rhomin',i_rhomin)
-        call parse_name(iname,cname(iname),cform(iname),'rhomax',i_rhomax)
+          call parse_name(iname,cname(iname),cform(iname),'rhomax',i_rhomax)
       enddo
 !
 !  check for those quantities for which we want phi-averages

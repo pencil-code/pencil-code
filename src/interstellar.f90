@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.99 2004-09-12 09:49:34 brandenb Exp $
+! $Id: interstellar.f90,v 1.100 2004-10-27 14:21:47 ajohan Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -145,7 +145,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.99 2004-09-12 09:49:34 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.100 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -289,7 +289,7 @@ module Interstellar
 !
     endsubroutine initialize_interstellar
 !***********************************************************************
-    subroutine calc_heat_cool_interstellar(df,rho1,TT1,yH)
+    subroutine calc_heat_cool_interstellar(df,rho,rho1,TT1,yH)
 !
 !  This routine calculates and applies the optically thin cooling function
 !  together with UV heating.
@@ -310,8 +310,8 @@ module Interstellar
       use Ionization
 !
       real, dimension (mx,my,mz,mvar), intent(inout) :: df
-      real, dimension (nx), intent(in) :: rho1,TT1,yH
-      real, dimension (nx) :: heat,cool,rho,TT
+      real, dimension (nx), intent(in) :: TT1,yH
+      real, dimension (nx) :: heat,cool,rho,rho1,TT
       real :: norm
       integer :: i
 !
@@ -321,7 +321,6 @@ module Interstellar
 !
 !  rho factor (could perhaps better be calculated in entropy)
 !
-      rho=1./rho1
       TT=1./TT1
 !
 !  define T in K, for calculation of both UV heating and radiative cooling

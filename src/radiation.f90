@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.34 2004-04-30 09:30:50 ajohan Exp $
+! $Id: radiation.f90,v 1.35 2004-10-27 14:21:47 ajohan Exp $
 
 !  Radiation in the fluxlimited-diffusion approximation.
 !  Doesn't work convincingly (and maybe never will). Look at the
@@ -97,7 +97,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.34 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: radiation.f90,v 1.35 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,7 +131,7 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine radiative_cooling(f,df,TT1)
+    subroutine radiative_cooling(f,df,lnrho,TT1)
 !
 !  dummy routine
 !
@@ -141,9 +141,10 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: TT1
+      real, dimension (nx) :: lnrho,TT1
 !
-      if(ip==0) print*,f,df,TT1 !(keep compiler quiet)
+      if(ip==0) print*,f,df,lnrho,TT1 !(keep compiler quiet)
+!
     endsubroutine radiative_cooling
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)

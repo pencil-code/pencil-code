@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.327 2004-09-16 14:52:49 ajohan Exp $
+! $Id: entropy.f90,v 1.328 2004-10-27 14:21:47 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.327 2004-09-16 14:52:49 ajohan Exp $")
+           "$Id: entropy.f90,v 1.328 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1010,7 +1010,7 @@ module Entropy
     if (ip==0) print*,zz
     endsubroutine shock2d
 !**********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+    subroutine dss_dt(f,df,uu,divu,lnrho,rho,rho1,glnrho,cs2,TT1,shock,gshock,bb, bij)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -1032,13 +1032,13 @@ module Entropy
       real, dimension (nx,3,3) :: bij,hss,hlnrho,hlnTT
       real, dimension (nx,3) :: uu,glnrho,gss,gshock,glnTT,bb
       real, dimension (nx) :: ugss,uglnrho,divu,rhs
-      real, dimension (nx) :: lnrho,ss,rho1,cs2,yH,lnTT,TT1,cp1tilde
-      real, dimension (nx) :: rho,ee,shock
+      real, dimension (nx) :: lnrho,ss,rho,rho1,cs2,yH,lnTT,TT1,cp1tilde
+      real, dimension (nx) :: ee,shock
       real :: zbot,ztop,xi,profile_cor
 !     real :: Kperp,Kpara
       integer :: j,ju
 !
-      intent(in)  :: f,uu,glnrho,divu,rho1,lnrho,shock,gshock,bb,bij
+      intent(in)  :: f,uu,glnrho,divu,rho,rho1,lnrho,shock,gshock,bb,bij
       intent(out) :: df,cs2,TT1
 !
 !  identify module and boundary conditions
@@ -1060,7 +1060,7 @@ module Entropy
 !
       ss=f(l1:l2,m,n,iss)
       call eoscalc(f,nx,ee=ee,lnTT=lnTT)
-      call pressure_gradient(f,cs2,cp1tilde)
+      call pressure_gradient(f,lnrho,cs2,cp1tilde)
       call temperature_gradient(f,glnrho,gss,glnTT)
       TT1=exp(-lnTT)
 !
@@ -1196,7 +1196,7 @@ module Entropy
 !  interstellar radiative cooling and UV heating
 !
       if (linterstellar) &
-        call calc_heat_cool_interstellar(df,rho1,TT1,yH)
+        call calc_heat_cool_interstellar(df,rho,rho1,TT1,yH)
 !
 !  possibility of entropy relaxation in exterior region
 !
@@ -1218,7 +1218,6 @@ module Entropy
 !
       if(ldiagnos) then
         if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
-        rho=exp(lnrho)
         if(i_eth/=0) call sum_mn_name(rho*ee,i_eth)
         if(i_ethtot/=0) call integrate_mn_name(rho*ee,i_ethtot)
         if(i_ethdivum/=0) call sum_mn_name(rho*ee*divu,i_ethdivum)

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.65 2004-09-20 12:42:21 ajohan Exp $
+! $Id: grav_z.f90,v 1.66 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -104,7 +104,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.65 2004-09-20 12:42:21 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.66 2004-10-27 14:21:47 ajohan Exp $")
 !
       lgrav =.true.
       lgravz=.true.
@@ -150,7 +150,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho1)
+    subroutine duu_dt_grav(f,df,uu,rho)
 !
 !  add duu/dt according to gravity
 !  (do we need f here?/AB)
@@ -168,11 +168,12 @@ module Gravity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho1
+      real, dimension (nx) :: rho
       real :: nu_epicycle2
       integer :: k
 !
-      intent(in) :: f
+      intent(in) :: f,uu,rho
+      intent(out) :: df
 !
 !  Gravity on the gas and on the dust
 !
@@ -225,7 +226,7 @@ module Gravity
         enddo
       endif
 !
-      if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)
+      if(ip==0) print*,f,uu,rho !(keep compiler quiet)
 !        
     endsubroutine duu_dt_grav
 !***********************************************************************

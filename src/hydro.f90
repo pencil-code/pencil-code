@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.189 2004-10-09 11:17:35 brandenb Exp $
+! $Id: hydro.f90,v 1.190 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.189 2004-10-09 11:17:35 brandenb Exp $")
+           "$Id: hydro.f90,v 1.190 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -395,7 +395,7 @@ module Hydro
 !     if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
+    subroutine duu_dt(f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
 !
 !  velocity evolution
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
@@ -416,13 +416,13 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij,Jij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
-      real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
+      real, dimension (nx) :: u2,divu,o2,ou,rho,rho1,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13,ss12,nu_smag
       real, dimension (nx) :: pdamp,SJ
       real :: c2,s2
       integer :: i,j
 !
-      intent(in) :: f,rho1
+      intent(in) :: f,rho,rho1
       intent(out) :: df,uu,glnrho,divu,u2,shock,gshock
 !
 !  identify module and boundary conditions
@@ -555,8 +555,8 @@ module Hydro
 !
 !  add the possibility of removing a mean flow in the y-direction
 !
-      if (tau_damp_ruxm/=0.) call damp_ruxm(f,df)
-      if (tau_damp_ruym/=0.) call damp_ruym(f,df)
+      if (tau_damp_ruxm/=0.) call damp_ruxm(f,df,rho)
+      if (tau_damp_ruym/=0.) call damp_ruym(f,df,rho)
 !
 !  add pressure gradient (e.g., from gas pressure in discs)
 !
@@ -608,7 +608,7 @@ module Hydro
         if (i_umax/=0)   call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_uzrms/=0)  call sum_mn_name(uu(:,3)**2,i_uzrms,lsqrt=.true.)
         if (i_uzmax/=0)  call max_mn_name(uu(:,3)**2,i_uzmax,lsqrt=.true.)
-        if (i_rumax/=0)  call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)
+        if (i_rumax/=0)  call max_mn_name(u2*rho**2,i_rumax,lsqrt=.true.)
         if (i_u2m/=0)    call sum_mn_name(u2,i_u2m)
         if (i_um2/=0)    call max_mn_name(u2,i_um2)
         if (i_divum/=0)  call sum_mn_name(divu,i_divum)
@@ -648,7 +648,6 @@ module Hydro
               nu_smag=(C_smag*dxmax)**2.*SS12     
               call sum_mn_name(2*nu_smag*rho*sij2,i_epsK_LES)
             endif
-            rho=exp(f(l1:l2,m,n,ilnrho))
             call sum_mn_name(2*nu*rho*sij2,i_epsK)
           else
             ! In this case the calculation is done in visc_hyper.f90
@@ -670,7 +669,6 @@ module Hydro
         !
         !  mean momenta
         !
-        if (i_ruxm+i_ruym+i_ruzm/=0) rho=exp(f(l1:l2,m,n,ilnrho))
         if (i_ruxm/=0) then; ux=uu(:,1); call sum_mn_name(rho*ux,i_ruxm); endif
         if (i_ruym/=0) then; uy=uu(:,2); call sum_mn_name(rho*uy,i_ruym); endif
         if (i_ruzm/=0) then; uz=uu(:,3); call sum_mn_name(rho*uz,i_ruzm); endif
@@ -772,7 +770,7 @@ module Hydro
 !
     endsubroutine calc_othresh
 !***********************************************************************
-    subroutine damp_ruxm(f,df)
+    subroutine damp_ruxm(f,df,rho)
 !
 !  Damps mean x momentum, ruxm, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -811,14 +809,13 @@ module Hydro
       endif
 !
       ux=f(l1:l2,m,n,iux)
-      rho=exp(f(l1:l2,m,n,ilnrho))
       call sum_mn(rho*ux,rux_sum)
       tau_damp_ruxm1=1./tau_damp_ruxm
       df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_ruxm1*ruxm/rho
 !
     endsubroutine damp_ruxm
 !***********************************************************************
-    subroutine damp_ruym(f,df)
+    subroutine damp_ruym(f,df,rho)
 !
 !  Damps mean y momentum, ruym, to zero.
 !  This can be useful in situations where a mean flow is generated.
@@ -851,7 +848,6 @@ module Hydro
       endif
 !
       uy=f(l1:l2,m,n,iuy)
-      rho=exp(f(l1:l2,m,n,ilnrho))
       call sum_mn(rho*uy,ruy_sum)
       tau_damp_ruym1=1./tau_damp_ruym
       df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_damp_ruym1*ruym/rho
@@ -1272,7 +1268,7 @@ module Hydro
       use Viscosity, only: nu_mol
 
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: cs2,cp1tilde
+      real, dimension(nx) ::lnrho,cs2,cp1tilde
       real, dimension(1) :: cs_sum_allprocs_arr,Hp_arr
       real :: cs_sum_thisproc,pp0,pp1,pp2
 !
@@ -1289,7 +1285,12 @@ module Hydro
 !
       do m=m1,m2
         do n=n1,n2
-          call pressure_gradient(f,cs2,cp1tilde)
+          if (ldensity_nolog) then
+            lnrho=alog(f(l1:l2,m,n,ilnrho))
+          else
+            lnrho=f(l1:l2,m,n,ilnrho)
+          endif
+          call pressure_gradient(f,lnrho,cs2,cp1tilde)
           cs_sum_thisproc = cs_sum_thisproc + sum(sqrt(cs2))
         enddo
       enddo

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.54 2004-09-20 12:49:28 ajohan Exp $
+! $Id: nomagnetic.f90,v 1.55 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.54 2004-09-20 12:49:28 ajohan Exp $")
+           "$Id: nomagnetic.f90,v 1.55 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -100,7 +100,7 @@ module Magnetic
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -122,7 +122,7 @@ module Magnetic
 !
       va2=0
 !
-      if(ip==0) bij=0.                                   ! (keep compiler quiet)
+      if(ip==0) then; bij=0.; aij=0.; endif              ! (keep compiler quiet)
       if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb,jj    ! (keep compiler quiet)
       if(ip==0) print*,del2A,graddivA                    ! (keep compiler quiet)
       if(ip==0) print*,shock,gshock                      ! (keep compiler quiet)

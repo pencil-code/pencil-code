@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.5 2004-08-20 16:14:25 dobler Exp $
+! $Id: entropy_const.f90,v 1.6 2004-10-27 14:21:47 ajohan Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.5 2004-08-20 16:14:25 dobler Exp $")
+           "$Id: entropy_const.f90,v 1.6 2004-10-27 14:21:47 ajohan Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -174,7 +174,7 @@ module Entropy
 !
       TT1=0.
       ss=profxss
-      call pressure_gradient(f,cs2,cp1tilde)
+      call pressure_gradient(f,lnrho,cs2,cp1tilde)
       print*, it, m, n, maxval(cs2), maxval(ss)
 !
 !  ``cs2/dx^2'' for timestep

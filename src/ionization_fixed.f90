@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.64 2004-04-19 09:33:37 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.64 2004-04-19 09:33:37 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -374,7 +374,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,lnrho,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -388,7 +388,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       real, dimension(nx), intent(out) :: cs2,cp1tilde
       real, dimension(nx) :: lnrho,ss,lnTT
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
@@ -760,7 +759,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do n=n1,n2
       do m=m1,m2
 !
-        lnrho=f(l1:l2,m,n,ilnrho)
+        if (ldensity_nolog) then
+          lnrho=alog(f(l1:l2,m,n,ilnrho))
+        else
+          lnrho=f(l1:l2,m,n,ilnrho)
+        endif
+!
         ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5) & 
                    -yH_term-one_yH_term-xHe_term)
         f(l1:l2,m,n,iss)=ss
@@ -805,7 +809,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       do m=m1,m2
         do n=n1,n2
-          lnrho=f(l1:l2,m,n,ilnrho)
           lnTT=log(T0)
           call eoscalc_pencil(ilnrho_lnTT,lnrho,lnTT,ss=ss)
           f(l1:l2,m,n,iss) = ss

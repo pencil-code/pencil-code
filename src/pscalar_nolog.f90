@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.35 2004-07-24 07:47:14 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.36 2004-10-27 14:21:47 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -88,7 +88,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.35 2004-07-24 07:47:14 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.36 2004-10-27 14:21:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -237,7 +237,7 @@ module Pscalar
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine dlncc_dt(f,df,uu,glnrho,cc,cc1)
+    subroutine dlncc_dt(f,df,uu,rho,glnrho,cc,cc1)
 !
 !  passive scalar evolution
 !  calculate dc/dt=-uu.gcc + pscaler_diff*[del2cc + glnrho.gcc]
@@ -250,7 +250,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,gcc,glnrho
-      real, dimension (nx) :: cc,rho,ugcc,diff_op,del2cc
+      real, dimension (nx) :: rho,cc,ugcc,diff_op,del2cc
       real, dimension (nx) :: cc1,gcc1,gcc2,dlnccdz
       integer :: j
 !
@@ -323,7 +323,6 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
-        rho=exp(f(l1:l2,m,n,ilnrho))
         call dot2_mn(gcc,gcc2); gcc1=sqrt(gcc2)
         if (i_rhoccm/=0) call sum_mn_name(rho*cc/unit_rhocc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)

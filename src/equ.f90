@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $
+! $Id: equ.f90,v 1.228 2004-10-27 14:21:47 ajohan Exp $
 
 module Equ
 
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: equ.f90,v 1.228 2004-10-27 14:21:47 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -376,31 +376,31 @@ module Equ
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
 !
-        call calculate_some_vars(f,rho1,bb,jj,bij,aij,del2A,graddivA)
+        call calculate_some_vars(f,lnrho,rho,rho1,bb,jj,bij,aij,del2A,graddivA)
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
 !  if their evolution is turned off.
 !
-        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
-        call dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
+        call duu_dt   (f,df,uu,u2,divu,rho,rho1,glnrho,uij,bij,shock,gshock)
+        call dlnrho_dt(f,df,uu,divu,lnrho,glnrho,shock,gshock)
 !
 !  Entropy evolution
 !
-        call dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+        call dss_dt(f,df,uu,divu,lnrho,rho,rho1,glnrho,cs2,TT1,shock,gshock,bb,bij)
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,JxBr,del2A,graddivA,va2,shock,gshock)
+        if (lmagnetic) call daa_dt(f,df,uu,uij,rho1,TT1,bb,bij,aij,jj,JxBr,del2A,graddivA,va2,shock,gshock)
 !
 !  Passive scalar evolution
 !
-        call dlncc_dt(f,df,uu,glnrho,cc,cc1)
+        call dlncc_dt(f,df,uu,rho,glnrho,cc,cc1)
 !
 !  Dust evolution
 !
-        call duud_dt (f,df,uu,uud,glnrho,rho1,cs2,JxBr,divud,ud2,udij)
-        call dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
+        call duud_dt (f,df,uu,rho,rho1,glnrho,cs2,JxBr,uud,ud2,divud,udij)
+        call dndmd_dt(f,df,rho,rho1,TT1,cs2,cc,cc1,uud,divud,gnd)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
@@ -409,7 +409,7 @@ module Equ
 !  duu_dt_grav now also takes care of dust velocity
 !
         if (lgrav) then
-          if (lhydro) call duu_dt_grav(f,df,uu,rho1)
+          if (lhydro) call duu_dt_grav(f,df,uu,rho)
         endif
 !
 !  cosmic ray energy density
@@ -426,7 +426,7 @@ module Equ
 !
 !  Add radiative cooling (for ray method)
 !
-        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,TT1)
+        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,lnrho,TT1)
 !
 !  Add shear if present
 !
@@ -489,7 +489,6 @@ module Equ
           if (ldensity .or. ldensity_fixed) then
             ! Nothing seems to depend on lhydro here:
             ! if(lhydro) then
-            rho=exp(f(l1:l2,m,n,ilnrho))
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_ekintot/=0) call integrate_mn_name(.5*rho*u2,i_ekintot)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
@@ -557,7 +556,7 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-     subroutine calculate_some_vars(f,rho1,bb,jj,bij,aij,del2A,graddivA)
+     subroutine calculate_some_vars(f,lnrho,rho,rho1,bb,jj,bij,aij,del2A,graddivA)
 !
 !   Calculation of some variables used by routines later at time
 !
@@ -567,17 +566,19 @@ module Equ
        use Density
 
        real, dimension (mx,my,mz,mvar+maux) :: f
-       real, dimension (nx) :: rho1
+       real, dimension (nx) :: lnrho,rho,rho1
        real, dimension (nx,3) :: bb,jj,del2A,graddivA
        real, dimension (nx,3,3) :: bij,aij
 
        intent(in)  :: f
-       intent(out) :: rho1,bb,jj,bij,aij,del2A
+       intent(out) :: lnrho,rho,rho1,bb,jj,bij,aij,del2A
 
        if (ldensity .or. ldensity_fixed) then
-          call calculate_vars_rho(f,rho1)
+          call calculate_vars_rho(f,lnrho,rho,rho1)
        else
-          rho1=1.               ! Default for nodensity.f90
+          lnrho=0.                ! Default for nodensity.f90
+          rho=1.
+          rho1=1.
        endif
 
        if (lmagnetic) then

@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.39 2004-09-20 12:42:21 ajohan Exp $
+! $Id: nograv.f90,v 1.40 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -63,7 +63,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.39 2004-09-20 12:42:21 ajohan Exp $")
+           "$Id: nograv.f90,v 1.40 2004-10-27 14:21:47 ajohan Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -94,22 +94,19 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho1)
+    subroutine duu_dt_grav(f,df,uu,rho)
 !
 !  add nothing to duu/dt
 !
 ! 28-mar-02/axel: adapted from grav_z
 !
-      use Cdata
-!      use Mpicomm
-      use Sub
-!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
-      real, dimension (nx) :: rho1
+      real, dimension (nx) :: rho
 !
-      if(ip==0) print*,f,df,uu,rho1  !(keep compiler quiet)
+      if(ip==0) print*,f,df,uu,rho  !(keep compiler quiet)
+!        
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)

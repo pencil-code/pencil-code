@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.26 2004-07-10 20:19:30 brandenb Exp $
+! $Id: nodensity.f90,v 1.27 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.26 2004-07-10 20:19:30 brandenb Exp $")
+           "$Id: nodensity.f90,v 1.27 2004-10-27 14:21:47 ajohan Exp $")
 !
 !ajwm Necessary? added incase
       gamma=1.
@@ -96,7 +96,7 @@ module Density
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine calculate_vars_rho(f,rho1)
+    subroutine calculate_vars_rho(f,lnrho,rho,rho1)
 !
 !   Calculation of rho1
 !   dummy routine
@@ -104,26 +104,25 @@ module Density
 !   09-febr-04/bing: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx) :: rho1
+      real, dimension (nx) :: lnrho,rho,rho1
 
       intent(in) :: f
-      intent(out) :: rho1
+      intent(out) :: lnrho,rho,rho1
 !
 !  set rho1=1 (useful for so-called force-free model)
 !
       rho1=1.
+      rho=1.
+      lnrho=0.
 !     
       if(ip==0) print*,f(1,1,1,1)   !(keep compiler quiet)
     endsubroutine calculate_vars_rho
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
+    subroutine dlnrho_dt(f,df,uu,divu,lnrho,glnrho,shock,gshock)
 !
 !  continuity equation, dummy routine
 !
 !   7-jun-02/axel: adapted from density
-!
-      use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -132,10 +131,10 @@ module Density
 !
 !  will be accessed in noentropy
 !
-      lnrho=0.
       glnrho=0.
 !
       if(ip==0) print*,f,df,uu,divu,shock,gshock
+!
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)

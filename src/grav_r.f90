@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.67 2004-09-16 14:52:49 ajohan Exp $
+! $Id: grav_r.f90,v 1.68 2004-10-27 14:21:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.67 2004-09-16 14:52:49 ajohan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.68 2004-10-27 14:21:47 ajohan Exp $")
 !
       lgrav =.true.
       lgravr=.true.
@@ -232,7 +232,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df,uu,rho1)
+    subroutine duu_dt_grav(f,df,uu,rho)
 !
 !  add duu/dt according to gravity
 !
@@ -247,7 +247,7 @@ module Gravity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gg_mn
       real, dimension (nx,3) :: uu
-      real, dimension (nx) :: g_r,rho1
+      real, dimension (nx) :: g_r,rho
 !
 !  evr is the radial unit vector
 !
@@ -276,7 +276,8 @@ module Gravity
 !
 ! if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
-      if(ip==0) print*,f,uu,rho1  !(to keep compiler quiet)
+      if(ip==0) print*,f,uu,rho  !(to keep compiler quiet)
+!        
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz, pot,pot0)
