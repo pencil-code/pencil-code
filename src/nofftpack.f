@@ -1,3 +1,7 @@
+!  $Id: nofftpack.f,v 1.2 2002-12-09 12:57:34 brandenb Exp $
+!
+!  Dummy routine, to avoid never seeing the compiler warnings from fftpack.
+!
 !***********************************************************************
       SUBROUTINE CFFTF (N,C,WSAVE)
       DIMENSION C(*),WSAVE(*)

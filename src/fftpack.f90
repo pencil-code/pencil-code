@@ -1,3 +1,8 @@
+!  $Id: fftpack.f90,v 1.2 2002-12-09 12:57:34 brandenb Exp $
+!
+!  downloaded from:
+!  http://www.psc.edu/~burkardt/src/fftpack/fftpack.html
+!
 subroutine cfftb ( n, c, wsave )
 !
 !*******************************************************************************
