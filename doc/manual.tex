@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $
+%%  CVS: $Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -74,7 +74,7 @@
 \setlength{\belowcaptionskip}{5pt} % Space after caption
 
 \usepackage[bf,sf,small,nonindentfirst]{titlesec}
-\newcommand{\sectionbreak}{\clearpage}
+%\newcommand{\sectionbreak}{\clearpage} %(AB: starts new page for new section)
 %\titleformat{\subsubsection}{\normalfontitshape}{\thesubsubsection}{.5em}{}
 %\titlespacing{\subsubsection}{0pt}{*1}{*-1}
 \usepackage{fancyhdr}
@@ -301,7 +301,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.107 $ $}
+\date{\today,~ $ $Revision: 1.108 $ $}
 
 % ====================================================================== %
 
@@ -333,7 +333,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.107 $ $}
+  \emph{\today,~ $ $Revision: 1.108 $ $}
 
   \vspace{\stretch{3}}
 
@@ -514,7 +514,7 @@ To use the code, you will need the following:
 
   \item Absolutely needed:
     \begin{itemize}
-    \item F90 or F95 compiler (note that there is the free Intel compiler, ifc)
+    \item F90 or F95 compiler
     \end{itemize}
 
 \item Used heavily (if you don't have one of these, you will need to
@@ -547,32 +547,15 @@ To use the code, you will need the following:
 
 \section{Obtaining the Code}
 
-We refrain from making any `stable releases' available at this point.
 We are still improving the code which enhances functionality.
+To update a code with little effort it is best to use \name{CVS}.
+Occasionally we make a tarball of the current \name{CVS} repository
+available, but with \name{CVS} you can update those too.
+
 A set of test problems (listed in
 \file[auto-test]{\$PENCIL_HOME/bin/auto-test})
 are routinely tested. This set of test problems includes those in
 \file[samples/]{\$PENCIL_HOME/samples}.
-
-%There are two ways to obtain and install the code: If you want to use a
-%stable release, you can download it as a tarball and unpack it.
-%If you prefer to use the latest experimental version,
-%you can access it via anonymous CVS access.
-
-% ---------------------------------------------------------------------- %
-
-%\subsection{Obtaining and unpacking the tarball}
-
-%\begin{enumerate}
-%\item Download the tarball from
-%  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code.tgz}
-%\item Put it into a convenient directory and unpack it:
-%  \begin{alltt}
-%  \prompt{unix> } mv pencil-code.tgz somewhere/; cd somewhere
-%  \prompt{unix> } gunzip pencil-code.tgz
-%  \prompt{unix> } tar xf pencil-code.tar \
-%  \end{alltt}
-%\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
@@ -678,6 +661,22 @@ this by:
   \end{alltt}
 \end{enumerate}
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining and unpacking the tarball}
+
+\begin{enumerate}
+\item Download the tarball from
+  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code_X.tar.gz}
+where X is the release number.
+\item Put it into a convenient directory and unpack it:
+  \begin{alltt}
+  \prompt{unix> } mv pencil-code_X.tar.gz somewhere/; cd somewhere
+  \prompt{unix> } gunzip pencil-code_X.tar.gz
+  \prompt{unix> } tar xf pencil-code_X.tar \
+  \end{alltt}
+\end{enumerate}
+
 
 % ====================================================================== %
 
@@ -700,7 +699,7 @@ Sect.~\ref{S-IDLroutines}).
 The functionality of helper scripts and IDL routines relies on a few
 environment variables being set correctly.
 The simplest way to achieve this is to go to the top directory of the code
-(we will assume here that it is called \file[pencil-code/]{pencil-code}) and source one of
+and source one of
 the two scripts \file{sourceme.csh} or \file{sourceme.sh} (depending on
 the type of shell you are using):
 \begin{alltt}
@@ -1509,7 +1508,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $',
+  cvsid='$Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1536,7 +1535,7 @@ As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $',
+  cvsid='$Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -2326,12 +2325,6 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 % ====================================================================== %
 \appendix
 % ====================================================================== %
-
-\section*{Appendix}
-
-In this appendix we give timing results, discuss in greater detail
-some initial conditions, list all (?) input parameters, and
-discuss some numerical aspects of the code.
 
 \section{Timings}
 
@@ -3660,7 +3653,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.107 2002-09-27 09:42:28 ngrs Exp $ $}
+$ $Id: manual.tex,v 1.108 2002-09-27 16:37:11 brandenb Exp $ $}
 
 
 \end{document}
