@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.98 2003-07-09 14:32:12 theine Exp $
+! $Id: mpicomm.f90,v 1.99 2003-07-10 10:16:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -596,18 +596,14 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
+      call MPI_RECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
                      MPI_COMM_WORLD,irecv_yz,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_yz)) &
-      call MPI_IRECV(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
+      call MPI_RECV(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
                      MPI_COMM_WORLD,irecv_yz,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_yz,irecv_yz_stat,ierr)
 !
     endsubroutine radboundary_yz_recv
 !***********************************************************************
@@ -632,18 +628,14 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+      call MPI_RECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
-      call MPI_IRECV(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
+      call MPI_RECV(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_zx,irecv_zx_stat,ierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
@@ -668,18 +660,14 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+      call MPI_RECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
-      call MPI_IRECV(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
+      call MPI_RECV(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
@@ -705,18 +693,14 @@ module Mpicomm
 !
 !  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
+      call MPI_SEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
                      MPI_COMM_WORLD,isend_yz,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_yz)) &
-      call MPI_ISEND(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
+      call MPI_SEND(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
                      MPI_COMM_WORLD,isend_yz,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_yz,isend_yz_stat,ierr)
 !
     endsubroutine radboundary_yz_send
 !***********************************************************************
@@ -741,18 +725,14 @@ module Mpicomm
 !
 !  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+      call MPI_SEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
                      MPI_COMM_WORLD,isend_zx,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
-      call MPI_ISEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
+      call MPI_SEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
                      MPI_COMM_WORLD,isend_zx,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_zx,isend_zx_stat,ierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -777,18 +757,14 @@ module Mpicomm
 !
 !  initiate send for the intensity
 !
-      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+      call MPI_SEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
                      MPI_COMM_WORLD,isend_xy,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
-      call MPI_ISEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
+      call MPI_SEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
                      MPI_COMM_WORLD,isend_xy,ierr)
-!
-!  finalize straight away
-!
-      call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************

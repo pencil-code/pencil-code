@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.196 2003-07-07 12:35:41 brandenb Exp $
+### $Id: Makefile,v 1.197 2003-07-10 10:16:10 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -303,7 +303,7 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f makefile TAGS
+	rm -f makefile TAGS mpicomm_.f90
 
 # Remove all build files, but keep executables
 run:
