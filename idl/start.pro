@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.68 2004-07-03 04:13:44 dobler Exp $
+;;; $Id: start.pro,v 1.69 2004-07-14 19:26:18 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -172,6 +172,8 @@ if (cpar gt 0) then begin
   unit_temperature=par.unit_temperature
   ;
   default, STRUCT=par, ['lionization','lionization_fixed'],  0L
+  default, STRUCT=par, 'lequidist', [-1L, -1L, -1L]
+  lequidist = par.lequidist
   lhydro    = par.lhydro
   ldensity  = par.ldensity
   lgravz    = par.lgravz
@@ -190,16 +192,16 @@ if (cpar gt 0) then begin
   lshear    = par.lshear
   lradiation_fld = par.lradiation_fld
   ;
-;  if (any(not lequidist)) then begin
-;    openr,1,gfile,/F77
-;    point_lun,1,pos
-;    xprim=fltarr(mx)*zero & yprim=fltarr(my)*zero & zprim=fltarr(mz)*zero
-;    xprim2=fltarr(mx)*zero & yprim2=fltarr(my)*zero & zprim2=fltarr(mz)*zero
-;    readu,1, xprim,  yprim,  zprim
-;    readu,1, xprim2, yprim2, zprim2
-;    close,1
-;  endif
-;
+  if (any(not lequidist)) then begin
+    openr,1,gfile,/F77
+    point_lun,1,pos
+    dx_1=fltarr(mx)*zero & dy_1=fltarr(my)*zero & dz_1=fltarr(mz)*zero
+    dx_tilde=fltarr(mx)*zero& dy_tilde=fltarr(my)*zero& dz_tilde=fltarr(mz)*zero
+    readu,1, dx_1,     dy_1,     dz_1
+    readu,1, dx_tilde, dy_tilde, dz_tilde
+    close,1
+  endif
+  ;
   if (ldensity) then begin
     if (not lionization) then begin
     cs0=par.cs0 & rho0=par.rho0
