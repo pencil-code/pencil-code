@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.98 2003-09-25 10:45:50 dobler Exp $
+! $Id: ionization.f90,v 1.99 2003-09-29 10:59:25 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -33,7 +33,7 @@ module Ionization
   end interface
 
   !  secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHe_term
+  real :: TT_ion,TT_ion_,ss_ion,ee_ion,kappa0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
 
   !  lionization initialized to .true.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.98 2003-09-25 10:45:50 dobler Exp $")
+           "$Id: ionization.f90,v 1.99 2003-09-29 10:59:25 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -124,7 +124,7 @@ module Ionization
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      mu=1.+3.97153*xHe
+      call getmu(mu)
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
@@ -133,20 +133,15 @@ module Ionization
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu
+      ee_ion=ss_ion*TT_ion
       kappa0=sigmaH_/m_H/mu
 !
-      !if (xHe==0.) then
-        !xHe_term=0.
-      !else
-        !xHe_term=xHe*(log(xHe)-lnrho_He)
-      !endif
-!
-      if (xHe>0.) then
+      if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
-      elseif (xHe<0.) then
+      elseif (xHe<0) then
         call stop_it('error (initialize_ionization): xHe lower than zero makes no sense')
       else
-        xHe_term=0.
+        xHe_term=0
       endif
 !
       if(lroot) then
@@ -250,30 +245,17 @@ module Ionization
 !
       use Mpicomm, only: stop_it
       
-      real,intent(in) :: lnrho,EE
+      real,intent(in) :: lnrho,ee
       real, intent(out) :: ss,TT,yH
-      real :: yH_term,one_yH_term
-!
-!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-!        yH=2./(1.+sqrt(1.+4./K))
+
       yH=0.5
+
       call rtsafe_ee(lnrho,ee,yH)
       
-      if (yH>0.) then
-        yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
-      else
-        yH_term=0.
-      endif
-      if (yH<1.) then
-        one_yH_term=(1.-yH)*(log(1.-yH)-lnrho_H)
-      else
-        one_yH_term=0.
-      endif
-      
-      TT=( (ee-yH*ss_ion*TT_ion)) / &
-              (1.5 * (1.+yH+xHe) * ss_ion )
-      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term - &
-                    one_yH_term-xHe_term)*ss_ion
+      TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
+      ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                 -yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                 -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
        
     end subroutine perturb_energy_point
 !***********************************************************************
@@ -285,28 +267,19 @@ module Ionization
       
       real, dimension(nx) ,intent(in) :: lnrho,ee
       real, dimension(nx) ,intent(out) :: ss,TT,yH
-      real, dimension(nx) :: yH_term,one_yH_term
       integer :: l
 
+      yH=0.5
+
       do l=1,nx 
-        yH(l)=0.5
         call rtsafe_ee(lnrho(l),ee(l),yH(l))
-      
-        if (yH(l)>0.) then
-          yH_term(l)=yH(l)*(2*log(yH(l))-lnrho_e-lnrho_p)
-        else
-          yH_term(l)=0.
-        endif
-        if (yH(l)<1.) then
-          one_yH_term(l)=(1.-yH(l))*(log(1.-yH(l))-lnrho_H)
-        else
-          one_yH_term(l)=0.
-        endif
       enddo
-      TT=( (ee-yH*ss_ion*TT_ion)) / &
-            (1.5 * (1.+yH+xHe) * ss_ion )
-      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term- &
-                  one_yH_term-xHe_term)*ss_ion
+
+      TT=(ee-yH*ee_ion)/(1.5*(1.+yH+xHe)*ss_ion)
+      ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                 -yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                 -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
+
     end subroutine perturb_energy_pencil
 !***********************************************************************
     subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
@@ -317,28 +290,15 @@ module Ionization
       
       real,intent(in) :: lnrho,pp
       real, intent(out) :: ss,TT,yH
-      real :: yH_term,one_yH_term
-!
-!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-!        yH=2./(1.+sqrt(1.+4./K))
+
       yH=0.5
+
       call rtsafe_pp(lnrho,pp,yH)
       
-      if (yH>0.) then
-        yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
-      else
-        yH_term=0.
-      endif
-      if (yH<1.) then
-        one_yH_term=(1.-yH)*(log(1.-yH)-lnrho_H)
-      else
-        one_yH_term=0.
-      endif
-      
-      TT=pp / &
-              ((1.+yH+xHe) * ss_ion * exp(lnrho))
-      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term - &
-                    one_yH_term-xHe_term)*ss_ion
+      TT=pp/((1.+yH+xHe)*ss_ion*exp(lnrho))
+      ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                 -yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                 -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
        
     end subroutine perturb_mass_point
 !***********************************************************************
@@ -351,28 +311,19 @@ module Ionization
       
       real, dimension(nx) ,intent(in) :: lnrho,pp
       real, dimension(nx) ,intent(out) :: ss,TT,yH
-      real, dimension(nx) :: yH_term,one_yH_term
       integer :: l
 
+      yH=0.5
+
       do l=1,nx 
-        yH(l)=0.5
         call rtsafe_pp(lnrho(l),pp(l),yH(l))
-      
-        if (yH(l)>0.) then
-          yH_term(l)=yH(l)*(2*log(yH(l))-lnrho_e-lnrho_p)
-        else
-          yH_term(l)=0.
-        endif
-        if (yH(l)<1.) then
-          one_yH_term(l)=(1.-yH(l))*(log(1.-yH(l))-lnrho_H)
-        else
-          one_yH_term(l)=0.
-        endif
       enddo
-      TT= pp / &
-            ((1.+yH+xHe) * ss_ion * exp(lnrho) )
-      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term- &
-                  one_yH_term-xHe_term)*ss_ion
+
+      TT=pp/((1.+yH+xHe)*ss_ion*exp(lnrho))
+      ss=ss_ion*((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5) &
+                 -yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                 -(1.-yH)*(log(1.-yH)-lnrho_H)-xHe_term)
+
     end subroutine perturb_mass_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
@@ -385,7 +336,7 @@ module Ionization
       real, intent(in) :: EE,TT,yH
       real, intent(out) :: rho
 
-      rho = EE / ((1.5*(1.+yH+xHe)*TT + yH*TT_ion) * ss_ion)
+      rho=EE/(1.5*(1.+yH+xHe)*ss_ion*TT+yH*ee_ion)
 
     end subroutine getdensity
 !***********************************************************************
@@ -621,7 +572,7 @@ module Ionization
     subroutine rtsafe_ee(lnrho,ee,yH,iter)
 !
 !   safe newton raphson algorithm (adapted from NR) !
-!   25-aug-03/tony: modified from entropy based routine
+!   09-apr-03/tobi: changed to subroutine
 !
       real, intent (in)    :: lnrho,ee
       real, intent (inout) :: yH
@@ -630,63 +581,39 @@ module Ionization
       integer              :: i
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
-
-      yHmax=min(ee/ss_ion/TT_ion,1.)*(1-2*epsilon(yH))
+!
+      yHmax=min(ee/ee_ion,1-2*epsilon(yH))
       yHmin=2*tiny(yH)
       dyH=1
       dyHold=dyH
-
-!write(0,*) '------------------------------------------------------------'
-!write(0,'(A)') '  ee/ss_ion/TT_ion       yH_         ee-yH_*ss*TT'
-!
-!  return if y is too close to 0 or 1
-!
-      call saha_ee(yHmin,lnrho,ee,fh,df)
-      if (fh.le.0.) then
-         yH=yHmin
-         return
-      endif
-      call saha_ee(yHmax,lnrho,ee,fl,df)
-      if (fl.ge.0.) then
-         yH=yHmax
-         return
-      endif
-!
-!  otherwise find root
-!
-      !
-      !  Make sure the start value (from previous point) is not too large
-      !
-      yH = amin1(yH,yHmax)
-!write(0,*) '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
       call saha_ee(yH,lnrho,ee,f,df)
       do i=1,maxit
-         if (present(iter)) iter=i ! checking with present() avoids segfault
-         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
-              .or.abs(2.*f).gt.abs(dyHold*df)) then
-            dyHold=dyH
-            dyH=.5*(yHmin-yHmax)
-            yH=yHmax+dyH
-            if (yHmax.eq.yH) return
-         else
-            dyHold=dyH
-            dyH=f/df
-            temp=yH
-            yH=yH-dyH
-            if (temp.eq.yH) return
-         endif
-         if (abs(dyH).lt.yHacc) return
-         call saha_ee(yH,lnrho,ee,f,df)
-         if (f.lt.0.) then
-            yHmax=yH
-         else
-            yHmin=yH
-         endif
+        if (present(iter)) iter=i ! checking with present() avoids segfault
+        if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f)>0. &
+             .or.abs(2*f)>abs(dyHold*df)) then
+          dyHold=dyH
+          dyH=0.5*(yHmin-yHmax)
+          yH=yHmax+dyH
+          if (yHmax==yH) return
+        else
+          dyHold=dyH
+          dyH=f/df
+          temp=yH
+          yH=yH-dyH
+          if (temp==yH) return
+        endif
+        if (abs(dyH)<yHacc*yH) return
+        call saha_ee(yH,lnrho,ee,f,df)
+        if (f<0) then
+          yHmax=yH
+        else
+          yHmin=yH
+        endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations',f
+      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
 !
     endsubroutine rtsafe_ee
-!!***********************************************************************
+!***********************************************************************
     subroutine saha_ee(yH,lnrho,ee,f,df)
 !
 !   we want to find the root of f
@@ -696,83 +623,59 @@ module Ionization
       real, intent(in)  :: yH,lnrho,ee
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
-
-      !
-      !  TEMPORARY FIX
-      !  Please think about me and remove me then
-      !
-      real :: yH_
-      !
-      yH_ = amin1(yH,1.-2*epsilon(yH))
-
-!write(0,'(3(" ",1pG16.8))') ee/ss_ion/TT_ion,yH_,ee-yH_*ss_ion*TT_ion
-      lnTT_=log(ee-yH_*ss_ion*TT_ion) -  &
-           log(1.5 * (1.+yH_+xHe) * ss_ion * TT_ion )
-      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH_)-2.*log(yH_)
-      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH_+xHe)
-      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH_)-2./yH_
+!
+      lnTT_=log(ee/ee_ion-yH)-log(1.5*(1.+yH+xHe))
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
 !
     endsubroutine saha_ee
 !***********************************************************************
-    subroutine rtsafe_pp(lnrho,pp,yH)
+    subroutine rtsafe_pp(lnrho,pp,yH,iter)
 !
 !   safe newton raphson algorithm (adapted from NR) !
-!   25-aug-03/tony: modified from entropy based routine
+!   09-apr-03/tobi: changed to subroutine
 !
       real, intent (in)    :: lnrho,pp
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=2*epsilon(1.)
+      real, parameter      :: yHacc=1e-5
       integer              :: i
-      integer, parameter   :: maxit=100
-
+      integer, optional    :: iter
+      integer, parameter   :: maxit=1000
+!
       yHmax=1-2*epsilon(yH)
       yHmin=2*tiny(yH)
-      dyHold=yHmax-yHmin
-      dyH=dyHold
-!
-!  return if y is too close to 0 or 1
-!
-      call saha_pp(yHmin,lnrho,pp,fh,df)
-      if (fh.le.0.) then
-         yH=yHmin
-         return
-      endif
-      call saha_pp(yHmax,lnrho,pp,fl,df)
-      if (fl.ge.0.) then
-         yH=yHmax
-         return
-      endif
-!
-!  otherwise find root
-!
+      dyH=1
+      dyHold=dyH
       call saha_pp(yH,lnrho,pp,f,df)
       do i=1,maxit
-         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
-              .or.abs(2.*f).gt.abs(dyHold*df)) then
-            dyHold=dyH
-            dyH=.5*(yHmin-yHmax)
-            yH=yHmax+dyH
-            if (yHmax.eq.yH) return
-         else
-            dyHold=dyH
-            dyH=f/df
-            temp=yH
-            yH=yH-dyH
-            if (temp.eq.yH) return
-         endif
-         if (abs(dyH).lt.yHacc) return
-         call saha_pp(yH,lnrho,pp,f,df)
-         if (f.lt.0.) then
-            yHmax=yH
-         else
-            yHmin=yH
-         endif
+        if (present(iter)) iter=i ! checking with present() avoids segfault
+        if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f)>0. &
+             .or.abs(2*f)>abs(dyHold*df)) then
+          dyHold=dyH
+          dyH=0.5*(yHmin-yHmax)
+          yH=yHmax+dyH
+          if (yHmax==yH) return
+        else
+          dyHold=dyH
+          dyH=f/df
+          temp=yH
+          yH=yH-dyH
+          if (temp==yH) return
+        endif
+        if (abs(dyH)<yHacc*yH) return
+        call saha_pp(yH,lnrho,pp,f,df)
+        if (f<0) then
+          yHmax=yH
+        else
+          yHmin=yH
+        endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations',f
+      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
 !
     endsubroutine rtsafe_pp
-!!***********************************************************************
+!***********************************************************************
     subroutine saha_pp(yH,lnrho,pp,f,df)
 !
 !   we want to find the root of f
@@ -782,8 +685,8 @@ module Ionization
       real, intent(in)  :: yH,lnrho,pp
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
-
-      lnTT_=log(pp) -  lnrho - log((1.+yH+xHe) * ss_ion * TT_ion )
+!
+      lnTT_=log(pp)-lnrho-log((1.+yH+xHe)*ee_ion)
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
