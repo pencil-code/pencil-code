@@ -1,0 +1,338 @@
+
+function pc_radio_sign,A,B
+
+  n = n_elements(A)
+  ans = 0 * fix(B) 
+
+  id = where( B ge 0, siz )
+  if siz gt 0 then ans[id] = 1
+  id = where( B lt 0, siz )
+  if siz gt 0 then ans[id] = -1
+
+  return, abs(A)*ans
+end
+
+function pc_radio_pol_ang,x,y
+;     returns the intrinsic position of electric vector
+; Minimum value for atan before using approximation.
+  minx_atan=1.E-8
+ 
+  result=(!pi/2.0)+pc_radio_sign(!pi/2.0,x*y)
+  
+  goodpnts=where(abs(x) gt minx_atan,siz)
+  if siz gt 0 then result[goodpnts] = (!pi/2.0)+(atan(y/x))[goodpnts]
+  return,result
+end
+
+function pc_radio_dult,u,q
+  pp=atan(u,q)
+
+  if (u lt (0.0d0)) then pp=pp+(2.0*!pi)
+
+  return,pp/2.0
+end
+
+function pc_radio_beam,r,d
+;real :: r,d,fxln2
+  fxln2=4.0*alog(2.0)
+  return,exp(-((r/d)*(r/d)*fxln2))
+end
+
+function pc_radio_beamsmooth,var,beam_width_arcseconds,dx=dx,dy=dy,nsigma=nsigma,xmin=xmin,ymin=ymin,dist_to_obj=dist_to_obj
+;
+;  Take A and smooth with gaussian of (HPBW) beam_width;  the array B is used to
+;  store the smmothed A until all calculations are done.  beam_width should be 
+;  provided in angular arcseconds, and then recalculated here from the provided 
+;  input / parameters. 
+;
+; require nx,ny,dx,dy(,xmin,ymin ? - maybe not; just need spacing dx,dy)
+;   
+    
+fxln2 = 2.772588722239780 ; = 4*ln(2)
+length_to_skylength_one_arcsec=4.848137e-6
+
+default,nsigma,5.  ; use 5.0\sigma smoothing by default
+default,dx,1.
+default,dy,1.
+default,xmin,0.
+default,ymin,0.
+
+;    get beam_width corresponding to sky_length
+;
+; so providing the units of dx and dist_to_object are identical we are good !
+;
+  beam_width=beam_width_arcseconds*dist_to_obj*length_to_skylength_one_arcsec
+  beam_width=7.81e-3
+  beam_width=beam_width*4.0
+;    units are pc by default; for kpc specify length_unit=1000.0
+;
+  print,beam_width_arcseconds,beam_width,dx,dy
+;    bundle the beam/weighting stuff into constants
+;      
+  gaussian_const= -1.*fxln2/(beam_width^2)
+  gaussian_cutoff2= nsigma*nsigma*beam_width^2
+  gaussian_weighting=fxln2*dx*dy/(!pi*beam_width^2)
+  if ( (beam_width^2) lt (0.25*(dx^2+dy^2)) ) then return,var
+;
+;   do the smoothing
+;  
+  print,'Smoothing to HPBW',beam_width_arcseconds,'"'
+
+  nx=(size(var))[1]
+  ny=(size(var))[2]
+  smoothed=fltarr(nx,ny)  ; Initialize smoothed to be the size of var
+
+
+  for j=0,ny - 1 do begin
+  yy=spread(ymin+(findgen(ny)-j)*dy,0,nx)
+
+  for i=0,nx - 1 do begin
+  xx=spread(xmin+(findgen(nx)-i)*dx,1,ny)
+  rr2=xx^2+yy^2
+  pnts=where(rr2 le gaussian_cutoff2,siz)
+  if siz gt 0 then smoothed[pnts]=smoothed[pnts]+var[pnts]*exp(rr2[pnts]*gaussian_const)
+
+;    for jj=0,(size(var))[2] - 1 do begin
+;      py = dy*(j-jj) 
+;      exp1 = exp(py^2*gaussian_const)
+;    for ii=0,(size(var))[1] - 1 do begin
+;      px = dx*(i-ii)
+;      if (px^2 + py^2) lt gaussian_cutoff2 then begin
+;        exp2 = exp1*exp(px*px*gaussian_const)
+;        smoothed(i,j) = smoothed(i,j) + var(ii,jj) * exp2
+;      endif
+;    endfor
+;    endfor
+
+  endfor
+if ((j mod 10) eq 0) then print,j*100./((size(var))[2] - 1.0),'% complete'
+  endfor
+help,smoothed
+  return,smoothed*gaussian_weighting
+      
+end
+ 
+pro pc_radio,object=object,lambdas=lambdas,dim=dim,param=param,data=data,units=units,test=test,HPBW=HPBW
+;  * We require output from simulation: rho, Bx, By, Bz, 
+;    ionization frac (optional)
+;  * Need to know the size of such arrays at compile time(?), then read the 
+;    data from a named file.
+;  * Need to initialise the following arrays:    
+;    
+;     ___2D______________________ 
+;
+;     Qone, Qtwo, Uone, Utwo
+;
+;     ___3D______________________
+;
+;     (Bx, By, Bz) .or. (B(1:3)), rho, epsilon, faraday_depth (perhaps),
+;     ionization_frac (optional) 
+
+
+;      use parameters
+;      use global_stuff
+@data/pc_constants.pro
+  default,lambdas,[0.035,0.062]
+
+  default,HPBW,0. ; was 15.
+  default,length_unit,1.
+  default,distance_to_object,100.0
+  default,B_scale,1.0
+  default,density_scale,1.0
+; Err... What are these?
+  default,c1,1.               ; Actually a fn of n_cr 
+  default,c2,1.62             ; c2=1.0*2.0*0.81=2*K
+  default,gamma,3.
+  default,p,.75
+
+if not keyword_set(TEST) then begin
+  if (n_elements(dim) ne 1) then pc_read_dim,object=dim
+  if (n_elements(param) ne 1) then pc_read_param,object=param,dim=dim
+  if (n_elements(units) ne 1) then pc_units,object=units,dim=dim,param=param
+  if (n_elements(data) ne 1) then pc_read_var,object=data,variables=['curl(aa)','exp(lnrho)'],tags=['bb','rho'],dim=dim,param=param
+
+  m_H=1.6726D-24
+  mu=param.mu
+  dx=data.dx*(units.length/3.086E18)
+  dy=data.dy*(units.length/3.086E18)
+  dz=data.dz*(units.length/3.086E18)
+  nx=dim.nx
+  ny=dim.ny
+  nz=dim.nz
+  l1=dim.l1
+  l2=dim.l2
+  m1=dim.m1
+  m2=dim.m2
+  n1=dim.n1
+  n2=dim.n2
+  xmin=param.xyz0[0] 
+  ymin=param.xyz0[1] 
+  n_e=data.rho*(units.density/(mu*m_H))
+  bb=data.bb*units.magnetic_field*1E+6
+  n_cr=dot2(bb)
+endif else begin
+
+  nx=150 & ny=150 & nz=10
+  dx=1./128. & dy=1./128. & dz=1.
+  xmin=0. & ymin=0.
+  l1=0 & m1=0 & n1=0
+  l2=nx-1 & m2=ny-1 & n2=nz-1
+  bb=fltarr(nx,ny,nz,3)
+  rho=fltarr(nx,ny,nz)
+  mu=1.0
+  m_H=1.6726
+  Br=0.
+  Bphi=1.
+  for j=m1,m2 do begin
+  for i=l1,l2 do begin
+    xx=(128-i)*1.01
+    yy=(128-j)*1.01
+    phi=atan(yy,xx)
+    if (phi lt (0.0D0)) then phi=phi+(2.0*!pi)
+
+    bb(i,j,*,0)= cos(j*.10)
+    bb(i,j,*,1)= sin(i*.037)
+    bb(i,j,*,2)=0.
+  endfor
+  endfor  
+  n_e=fltarr(nx,ny,nz)
+  n_e[*,*,*]=1.0
+;     n_e=1.0
+;     n_e=n_e*density_scale
+  n_cr=dot2(bb)
+
+endelse
+; ********************************************************
+;
+;
+;
+;    make sure c2 is scaled so that it is in pc...etc..
+;
+  c2=c2*length_unit
+;
+;  rescale density so that it is n_e
+;
+;
+;  make n_cr the numerical value of B^2
+;
+;
+; Prepare some arrays
+  eepsilon = fltarr(nx,ny,nz) 
+  angle = fltarr(nx,ny,nz)
+  Q=fltarr(nx,ny,n_elements(lambdas)) 
+  U=fltarr(nx,ny,n_elements(lambdas))
+  QQ=fltarr(nx,ny) 
+  UU=fltarr(nx,ny)
+;
+;  loop over 2 values of lambda and obtain Q and U for each
+;
+  for nl=0,n_elements(lambdas)-1 do begin
+    lambda=lambdas[nl]
+;    
+;   *  Calculate epsilon, the total synchrotron emissivity
+;
+    eepsilon=(sqrt(bb[l1:l2,m1:m2,n1:n2,0]^2  +  bb[l1:l2,m1:m2,n1:n2,1]^2))^((gamma+1.0)/2.0)
+    eepsilon=eepsilon*(lambda^((gamma-1.0)/2.0))
+    eepsilon=eepsilon*n_cr[l1:l2,m1:m2,n1:n2]*c1       ; c1 ~ 1.0
+;         
+;   *  Calculate the Faraday depth   
+;   *  Calculate the effective local angle ( 2*intrinsic + F)        
+;       
+
+    faraday_depth=fltarr(nx,ny)   ; use a cumulative form of 'depth'
+    faraday_depth[*,*]=0D
+
+    for k=nz-1,0,-1 do begin                ; do the sum for 'depth' backwards to save time
+      faraday_depth=faraday_depth +                      $
+          c2*lambda^2*n_e[l1:l2,m1:m2,n1+k]*bb[l1:l2,m1:m2,n1+k,2]*dz
+
+; Angle = 2 * intrinsic polatisation angle + faraday_depth
+      angle[*,*,k]=2.0*pc_radio_pol_ang(bb[l1:l2,m1:m2,n1+k,0],bb[l1:l2,m1:m2,n1+k,1]) + faraday_depth
+    endfor
+;
+;   *  Calculate the Q and U by summing along the line of sight
+;   
+    Q[*,*,nl]=0D
+    U[*,*,nl]=0D
+    for k=0,nz-1 do begin
+      Q[*,*,nl]=Q[*,*,nl] + p*eepsilon[*,*,k]*cos(angle[*,*,k])*dz
+      U[*,*,nl]=U[*,*,nl] + p*eepsilon[*,*,k]*sin(angle[*,*,k])*dz
+    endfor
+  endfor
+
+if (HPBW gt 0.) then begin
+  for nl=0,n_elements(lambdas)-1 do begin
+    Q[*,*,nl]=pc_radio_beamsmooth(Q[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object)
+    U[*,*,nl]=pc_radio_beamsmooth(U[*,*,nl],15.0,dx=dx,dy=dy,xmin=xmin,ymin=ymin,dist_to_obj=distance_to_object)
+  endfor
+endif
+
+;
+;    polarization angles
+;
+  polarization_angle=0.5*(atan(U/(Q+1e-15)) - (1.0*!pi*(pc_radio_sign(1.0,Q)-1.0)))
+  polarization_angle=0.5*atan(U,Q)
+  pnts=where(polarization_angle lt 0.,siz)
+  if siz gt 0 then polarization_angle[pnts]=polarization_angle[pnts]+0.5*!pi
+;  polarization_angle=polarization_angle+0.5*!pi 
+
+;    check if this is consistent with the old method !!!
+;
+;  do j=1,ny
+;  do i=1,nx 
+;    polarization_angle(i,j,1)=pc_radio_dult(U(i,j,1),Q(i,j,1))
+;    polarization_angle(i,j,2)=pc_radio_dult(U(i,j,2),Q(i,j,2))
+;
+; use the other method for the other lambda ???
+; 
+;  end do
+;  end do
+;
+;   So at this point we have the observed angle of polarisation
+;   for the E-vector
+;
+;  polarization_angle=polarization_angle + 0.5*pi
+;
+;    now it is for B-vector:
+;    should check this with a little routine
+;    we need also the observed PI to make the length of the vectors
+;
+;
+  P_I=sqrt(Q^2 + U^2)
+;  seems to work - now do RM and PI (NOT DONE YET)
+;
+
+  RM=polarization_angle[*,*,1]-polarization_angle[*,*,0]
+  pnts=where(RM gt (!pi/2.0),siz)
+  if siz gt 0 then RM[pnts]=RM[pnts]-!pi
+  pnts=where(RM lt (-!pi/2.0),siz)
+  if siz gt 0 then RM[pnts]=RM[pnts]+!pi
+
+  RM=RM/(lambdas[1]^2-lambdas[0]^2)
+
+;wind=0
+for i=0,(size(lambdas))[1]-1 do begin
+;  window,wind
+;
+;  contour,polarization_angle[*,*,i],nlevels=20,/fill
+  print,minmax(polarization_angle[*,*,i])
+;  wind=wind+1
+;  window,wind
+;  contour,P_I[*,*,i],nlevels=20,/fill
+  print,minmax(P_I[*,*,i])
+;  wind=wind+1
+;  window,wind
+;  contour,Q[*,*,i],nlevels=20,/fill
+  print,minmax(Q[*,*,i])
+;  wind=wind+1
+;  window,wind
+  print,minmax(U[*,*,i])
+;  wind=wind+1
+endfor
+contour,RM,nlevels=64,/fill
+
+object=CREATE_STRUCT(['polarization_angle','polarized_intensity','Q','U','RM','lambda','nlambda'],polarization_angle,P_I,Q,U,RM,lambdas,n_elements(lammbdas))
+
+end
+
+
