@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.99 2002-10-02 20:11:14 dobler Exp $
+! $Id: equ.f90,v 1.100 2002-10-04 09:21:42 brandenb Exp $
 
 module Equ
 
@@ -227,14 +227,14 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.99 2002-10-02 20:11:14 dobler Exp $")
+           "$Id: equ.f90,v 1.100 2002-10-04 09:21:42 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
       ldiagnos=lfirst.and.lout
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
-!  initiate communication and do boundary conditions
+!  initiate (non-blocking) communication and do boundary conditions
 !  need to deals first with x-boundaries
 !
       call boundconds_x(f)
@@ -242,16 +242,18 @@ module Equ
       call boundconds_z(f)
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
+      if (test_nonblocking) call finalise_isendrcv_bdry(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
+!  if test_nonblocking=.true., we communicate immediately as a test.
 !
       lfirstpoint=.true.        ! true for very first m-n loop
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
         if (necessary(imn)) then 
-          call finalise_isendrcv_bdry(f)
+          if (.not.test_nonblocking) call finalise_isendrcv_bdry(f)
         endif
 !
 !  coordinates are needed all the time

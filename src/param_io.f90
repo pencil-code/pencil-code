@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.62 2002-10-02 20:11:14 dobler Exp $ 
+! $Id: param_io.f90,v 1.63 2002-10-04 09:21:42 brandenb Exp $ 
 
 module Param_IO
 
@@ -40,6 +40,7 @@ module Param_IO
        vel_spec,mag_spec,vec_spec, &
        directory_snap,random_gen, &
        lrmwig_full,lrmwig_xyaverage, &
+       test_nonblocking, &
        bcx,bcy,bcz, &
        ttransient
  
