@@ -1,10 +1,10 @@
-### $Id: Makefile,v 1.258 2003-11-01 12:45:19 theine Exp $
+###                          -*-Makefile-*- (for Emacs)
+### $Id: Makefile.src,v 1.1 2003-11-03 09:25:07 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
-PENCIL_MKFILE= makefile.adapted
 LIBSIG=
 LDMPI=-lmpi
 
@@ -97,7 +97,6 @@ LDONLYFLAGS=
 #LIBSIG=-lsig
 
 ## Linux:
-##PENCIL_MKFILE=makefile
 #FC=f95
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
@@ -148,12 +147,11 @@ LDONLYFLAGS=
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
-#FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
+#FC=ifc -I/addon/shared/lam/include #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 
 ## Darwin:
 ## Power Macintosh
-#PENCIL_MKFILE=makefile.darwin
 #FC=f95
 #LDMPI=
 
@@ -243,19 +241,19 @@ TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 # ---------------------------------------------------------------------- #
 ## Symbolic targets
 
-default: $(PENCIL_MKFILE) cparam.inc code
+default: Makefile cparam.inc code
 
 pacx: pacx-makefile cparam.inc code
 
- $(PENCIL_MKFILE): Makefile
-	adapt-mkfile Makefile $(PENCIL_MKFILE)
-pacx-makefile: Makefile
-	pacx-adapt-mkfile Makefile pacx-makefile
-	cp pacx-makefile makefile
+Makefile: Makefile.src
+	adapt-mkfile Makefile.src Makefile
+pacx-makefile: Makefile.src
+	pacx-adapt-mkfile Makefile.src pacx-Makefile
+	cp pacx-Makefile Makefile
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
-cparam.inc: Makefile Makefile.local
-	mkcparam $(physics:.o=.f90) -o cparam.inc
+cparam.inc: Makefile.src Makefile.local
+	${PENCIL_HOME}/bin/mkcparam $(physics:.o=.f90) -o cparam.inc
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
@@ -264,7 +262,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	$(MAKE) -f $(PENCIL_MKFILE) start.x run.x read_videofiles.x read_vectorfiles.x
+	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x 
@@ -279,7 +277,7 @@ linkonly:
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
-	$(MAKE) -f $(PENCIL_MKFILE) linkonly
+	$(MAKE) linkonly
 
 # Needed for the underscore trick:
 mpicomm_.f90:      mpicomm.f90
@@ -317,7 +315,7 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f $(PENCIL_MKFILE) TAGS mpicomm_.f90
+	rm -f Makefile TAGS mpicomm_.f90
 
 ## ---------------------------------------------------------------------- #
 ## Code targets
@@ -330,7 +328,7 @@ read_vectorfiles.x: $(read_vectorfiles)
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
 
 ## ---------------------------------------------------------------------- #
-## Dependancies
+## Dependencies
 ## ---------------------------------------------------------------------- #
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)

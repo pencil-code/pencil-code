@@ -1,10 +1,10 @@
 #!/bin/csh
-#                       setup-src (formerly lnsrc)
-#                      ----------------------------
+#                       setup-src
+#                      -----------
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.16 2003-09-10 16:43:25 brandenb Exp $
+# CVS $Id: setup-src,v 1.17 2003-11-03 09:25:07 dobler Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -51,7 +51,8 @@ cd $src
 #  LINK all *.f90, *.f, and the Makefile to local src directory
 #
 set n=0
-foreach file ($srcdir/*.f90 $srcdir/*.f $srcdir/Makefile $srcdir/*.c $srcdir/.cvsignore)
+foreach file ($srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
+              $srcdir/Makefile.src $srcdir/.cvsignore)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .
@@ -86,4 +87,8 @@ if ($n == 1) then
   echo "$existf already exists in $src"
 endif
 if ($n > 1) echo "$n files already exist in $src"
-
+#
+#  Generate Makefile
+#
+adapt-mkfile Makefile.src Makefile
+rm -f makefile			# for old run directories
