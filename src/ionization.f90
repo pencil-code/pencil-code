@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.147 2003-11-21 11:27:04 theine Exp $
+! $Id: ionization.f90,v 1.148 2003-11-23 13:26:41 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -110,7 +110,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.147 2003-11-21 11:27:04 theine Exp $")
+           "$Id: ionization.f90,v 1.148 2003-11-23 13:26:41 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -677,17 +677,26 @@ module Ionization
 !
       temp=0
 !
-      fractions1=1/(1+yH+xHe)
-      lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
-                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                         +xHe_term)*fractions1+lnrho-2.5)
-      TT1_=exp(-lnTT_)
-      f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
-      df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
+      lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yHl)*(log(1-yHl)-lnrho_H) &
+                         +yHl*(2*log(yHl)-lnrho_e-lnrho_p) &
+                         +xHe_term)/(1+yHl+xHe)+lnrho-2.5)
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1-yHl)-2*log(yHl)
+      where (f<0)
+        yH=yHl
+        temp=yH
+      elsewhere
+        fractions1=1/(1+yH+xHe)
+        lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                           +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                           +xHe_term)*fractions1+lnrho-2.5)
+        TT1_=exp(-lnTT_)
+        f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
+        dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
+        df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
+      endwhere
 !
       do i=1,maxit
-        where (yH/=temp)
+        where (temp/=yH)
           where (((yH-yHl)*df-f)*((yH-yHh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
             dyHold=dyH
             dyH=0.5*(yHl-yHh)
