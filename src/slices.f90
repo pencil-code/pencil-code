@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.38 2003-12-29 17:14:14 ajohan Exp $
+! $Id: slices.f90,v 1.39 2004-01-20 17:19:19 dobler Exp $
 
 !  This module produces slices for animation purposes
 
@@ -78,10 +78,10 @@ module Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character(len=*) :: path
-      character(len=4) :: sdust
+!      character(len=4) :: sdust
       logical, save :: lfirstloop=.true.
       logical :: lnewfile=.true.
-      integer :: inamev,idust
+      integer :: inamev!,idust
 !
 !  Loop over slices
 !
