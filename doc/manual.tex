@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.257 2004-06-30 12:45:09 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.258 2004-07-07 16:28:54 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-06-30 12:45:09 $ $,~ $ $Revision: 1.257 $ $}
+%\date{$ $Date: 2004-07-07 16:28:54 $ $,~ $ $Revision: 1.258 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-06-30 12:45:09 $ $,~ $ $Revision: 1.257 $ $}\\
+  \emph{$ $Date: 2004-07-07 16:28:54 $ $,~ $ $Revision: 1.258 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3873,7 +3873,7 @@ make: *** [code] Error 2
   with \name{CVS} who it was\ldots
 }
 
-%% [wd: I understand this is extremely annoyin, but this has no place
+%% [wd: I understand this is extremely annoying, but this has no place
 %% in a user manual]
 %% {\em
 %%   Somebody ought to fix this, and fast! This can be most annoying\footnote{
@@ -3946,6 +3946,46 @@ Under SunOS, I get an error message like
   we find that the code compiles and works with version
   `Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
   SunOS version `5.8 Generic_108528-11'.
+}
+
+%%%
+\subsubsection{ifort does not complain about errors}
+\index{ifort}
+
+ifort for some reason does not complain about declaring the same variable
+more than once. This is getting very annoying. Does anyone know the
+secret words that will make ifort complain about these errors?
+
+\medskip
+
+tOnY replied:\\
+{\em
+Well that took Google all of about 1 second!
+
+Err...
+  \url{http://zampano.zam.kfa-juelich.de/software/inteldoc/f_qrg/index.htm}
+
+\begin{Verbatim}
+-check all     Default is -check none
+Or are you doing this already?
+
+Perhaps also:
+-stand f95 or -stand f90
+               Compile messages about non-standard
+               Fortran code.
+
+Also Tobi have you tried using
+  -fcommon
+as an optimisation with ifort?
+
+"Tells the compiler to treat common symbols as global de&#64257;nitions and to
+allocate memory for each symbol at compile time. This may permit the compiler
+to use the more efficient GP-relative addressing mode when accessing the
+symbol."
+\end{Verbatim}
+
+I wonder what that does to all those uu, bb... etc. pencils declared in pde?
+Faster memory access perhaps?
 }
 
 % ---------------------------------------------------------------------- %
@@ -4439,7 +4479,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-06-30 12:45:09 $ $,~ $ $Revision: 1.257 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-07-07 16:28:54 $ $,~ $ $Revision: 1.258 $ $}
 
 \section{Timings}
 
@@ -7424,7 +7464,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.257 2004-06-30 12:45:09 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.258 2004-07-07 16:28:54 brandenb Exp $ $}
 
 
 \end{document}
