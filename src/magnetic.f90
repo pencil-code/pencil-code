@@ -1,4 +1,9 @@
-! $Id: magnetic.f90,v 1.44 2002-06-14 04:38:16 brandenb Exp $
+! $Id: magnetic.f90,v 1.45 2002-06-14 06:31:15 brandenb Exp $
+
+!  This modules deals with all aspects of magnetic fields; if no
+!  magnetic fields are invoked, a corresponding replacement dummy
+!  routine is used instead which absorbs all the calls to the
+!  magnetically relevant subroutines listed in here.
 
 module Magnetic
 
@@ -73,8 +78,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.44 $", &
-           "$Date: 2002-06-14 04:38:16 $")
+           "$Revision: 1.45 $", &
+           "$Date: 2002-06-14 06:31:15 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -445,7 +450,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx,ny) :: f1,f2,f3
-      integer :: i,j
+      integer :: i
       character (len=*) :: errmesg
 !
       errmesg=""
@@ -454,13 +459,12 @@ module Magnetic
 !
         if (bcz1(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the bottom'
+          if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
           f2=f(l1:l2,m1:m2,n1+1,iax); f3=f(l1:l2,m1:m2,n1+2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iax)=f1
           f2=f(l1:l2,m1:m2,n1+1,iay); f3=f(l1:l2,m1:m2,n1+2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n1,iay)=f1
           f1=f(l1:l2,m1:m2,n1  ,iax); f2=f(l1:l2,m1:m2,n1  ,iay); call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n1,iaz)=-f1
-          do j=iax,iaz
           do i=1,nghost
-            f(:,:,n1+i,j) = 2*f(:,:,n1,j) - f(:,:,n1-i,j)
-          enddo
+            f(:,:,n1-i,iaz) = 2*f(:,:,n1,iaz) - f(:,:,n1+i,iaz)
           enddo
         endif
 !
@@ -468,13 +472,12 @@ module Magnetic
 !
         if (bcz2(iaa) == "c1") then
           if (headtt) print*,'potential field boundary condition at the top'
+          if (nprocy/=1) errmesg="potential field: doesn't work yet with nprocy/=1"
           f2=f(l1:l2,m1:m2,n2-1,iax); f3=f(l1:l2,m1:m2,n2-2,iax); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iax)=f1
           f2=f(l1:l2,m1:m2,n2-1,iay); f3=f(l1:l2,m1:m2,n2-2,iay); call potential(f1,f2,f3); f(l1:l2,m1:m2,n2,iay)=f1
           f1=f(l1:l2,m1:m2,n2,iax)  ; f2=f(l1:l2,m1:m2,n2,iay)  ; call potentdiv(f1,f2,f3); f(l1:l2,m1:m2,n2,iaz)=-f1
-          do j=iax,iaz
           do i=1,nghost
-            f(:,:,n2+i,j) = 2*f(:,:,n2,j) - f(:,:,n2-i,j)
-          enddo
+            f(:,:,n2+i,iaz) = 2*f(:,:,n2,iaz) - f(:,:,n2-i,iaz)
           enddo
         endif
 !

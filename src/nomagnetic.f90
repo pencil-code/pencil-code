@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.14 2002-06-08 11:17:15 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.15 2002-06-14 06:31:15 brandenb Exp $
 
 module Magnetic
 
@@ -41,8 +41,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-06-08 11:17:15 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-06-14 06:31:15 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -107,6 +107,19 @@ module Magnetic
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic
+!***********************************************************************
+    subroutine bc_aa(f,errmesg)
+!
+!  Dummy routine for potential field boundary condition
+!
+!  14-jun-2002/axel: adapted from similar
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      character (len=*) :: errmesg
+!
+      errmesg=""
+      if (ip==1) print*,f  !(to keep compiler quiet)
+    endsubroutine bc_aa
 !***********************************************************************
 
 endmodule Magnetic
