@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.28 2002-07-08 20:47:21 dobler Exp $
+! $Id: density.f90,v 1.29 2002-07-09 11:39:22 brandenb Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.28 2002-07-08 20:47:21 dobler Exp $")
+           "$Id: density.f90,v 1.29 2002-07-09 11:39:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -110,7 +110,7 @@ module Density
         !  noise, but just x-dependent
         !
         call gaunoise(ampllnrho,f,ilnrho,ilnrho)
-        f(:,:,:,ilnrho) = spread(spread(f(:,ny/2,nz/2,ilnrho),2,my),3,mz)
+        f(:,:,:,ilnrho)=spread(spread(f(:,4,4,ilnrho),2,my),3,mz) !(watch 1-D)
 
       case('rho-jump', '2')
         !

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.22 2002-07-09 10:33:43 dobler Exp $
+! $Id: boundcond.f90,v 1.23 2002-07-09 11:39:22 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -32,7 +32,6 @@ module Boundcond
       use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my) :: fder,cs2_2d
       integer :: i,j
 !
       if(ldebug) print*,'ENTER: boundconds'
@@ -117,7 +116,6 @@ module Boundcond
       use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my) :: fder,cs2_2d
       integer :: i,j
 !
       if(ldebug) print*,'ENTER: boundconds'

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.83 2002-07-09 01:39:31 brandenb Exp $
+! $Id: equ.f90,v 1.84 2002-07-09 11:39:22 brandenb Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.83 2002-07-09 01:39:31 brandenb Exp $")
+           "$Id: equ.f90,v 1.84 2002-07-09 11:39:22 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -403,12 +403,14 @@ module Equ
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       call boundconds_x(f)
+      call boundconds_y(f)
+      call boundconds_z(f)
 !
 !  Check whether we want to smooth on the actual variable, or on exp(f)
 !  The latter can be useful if the variable is lnrho or lncc.
 !
-      if (explog) then
-        f(l1:l2,m1:m2,n1:n2,ivar)=exp(f(l1:l2,m1:m2,n1:n2,ivar))
+      if (present(explog)) then
+        f(:,:,:,ivar)=exp(f(:,:,:,ivar))
         if(lroot) print*,'turns the whole array into exp(f), ivar=',ivar
       endif
 !
@@ -421,8 +423,6 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) then 
           call finalise_isendrcv_bdry(f)
-          call boundconds_y(f)
-          call boundconds_z(f)
         endif
         call del6_nodx(f,ivar,tmp)
         df(l1:l2,m,n,ivar) = 1./64.*tmp
@@ -437,7 +437,7 @@ module Equ
 !  Check whether we want to smooth on the actual variable, or on exp(f)
 !  The latter can be useful if the variable is lnrho or lncc.
 !
-      if (explog) then
+      if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
         if(lroot) print*,'turns the whole array back into alog(f), ivar=',ivar
       endif

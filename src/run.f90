@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.59 2002-07-08 23:34:26 brandenb Exp $
+! $Id: run.f90,v 1.60 2002-07-09 11:39:22 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.59 2002-07-08 23:34:26 brandenb Exp $")
+             "$Id: run.f90,v 1.60 2002-07-09 11:39:22 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -134,6 +134,7 @@
         if (iwig/=0) then
           if (mod(it,iwig).eq.0) then
             call rmwig(f,df,ilnrho)
+            !call rmwig(f,df,ilnrho,explog=.true.)
           endif
         endif
 !
