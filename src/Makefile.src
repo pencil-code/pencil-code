@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.44 2004-04-07 12:21:12 ajohan Exp $
+### $Id: Makefile.src,v 1.45 2004-04-07 13:03:29 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -112,7 +112,7 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 ##FC=ifc_6.0 -i_dynamic #(nw46|nq1)
-#FC=ifort #(nw46|hamlet|ns0|lynx)
+#FC=ifort #(nw*|hamlet|ns0|lynx)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)
@@ -141,7 +141,7 @@ FCCLEANER=
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-O3 #(nw46|nl6|nl11|wormhole|sandin|lynx)
+#FFLAGS=-O3 #(nw*|nl6|nl11|wormhole|sandin|lynx)
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 #(barilko)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole)
@@ -164,7 +164,7 @@ FCCLEANER=
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
-#F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
+#F77FLAGS=-w90 #(nw*|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 
