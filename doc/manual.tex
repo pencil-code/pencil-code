@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.255 2004-06-18 15:59:40 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.256 2004-06-23 17:18:06 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}
+%\date{$ $Date: 2004-06-23 17:18:06 $ $,~ $ $Revision: 1.256 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}\\
+  \emph{$ $Date: 2004-06-23 17:18:06 $ $,~ $ $Revision: 1.256 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1567,6 +1567,7 @@ and edit the \file{cparam.local} for the new resolution.
 
 % ---------------------------------------------------------------------- %
 \subsection{Using a non-equidistant grid}
+\index{mesh, nonuniform}\index{grid, nonuniform}\index{nonuniform grid}
 
 We introduce a non-equidistant grid $z_i$
 (so far this is only implemented for the vertical direction)
@@ -4058,6 +4059,35 @@ Under IRIX, I get
   it was all my fault, but buggy codes are potentially bad for others too.
 }
 
+\subsubsection{auto-test gone mad...?}
+
+{\bf Q}:
+\begin{Verbatim}
+Ever seen this before:
+
+giga01:/home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab> auto-test
+.
+
+/home/pg/n7026413/cvs-src/pencil-code/samples/conv-slab:
+    Compiling..           ok
+        No data directory; generating data -> /var/tmp/pencil-tmp-25318
+    Starting..            ok
+    Running..             ok
+    Validating results..Malformed UTF-8 character (unexpected continuation
+byte 0x80, with no preceding start byte) in split at
+/home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
+Malformed UTF-8 character (unexpected continuation byte 0x80, with no
+preceding start byte) in split at
+/home/pg/n7026413/cvs-src/pencil-code/bin/auto-test line 263.
+\end{Verbatim}
+
+{\bf A}:
+{\em
+The sys admins must have changed something
+I guess because LANG=en_US.UTF-8 now for some reason.
+Put \cmd{LANG=POSIX}.
+}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Visualization}
@@ -4093,7 +4123,6 @@ this time is was IECR, IGG, and ILNTT that I had to circumvent\ldots
 \medskip
 
 {\em
-
 The simplest solution is to say
 \begin{Verbatim}
   touch NOERASE
@@ -4104,6 +4133,28 @@ What it does is that it reruns \code{src/start.x} with a new version of
 the code; this then produces all the necessary auxiliary files, but it
 doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 \file{slice} files.
+}
+
+%%%
+\subsubsection{Something about tag name undefined:}
+
+{\bf Q}:
+In one of my older run directories I can't read the data
+with idl anymore. What should I do? Is says something like
+\begin{Verbatim}
+Reading param.nml..
+% Tag name LEQUIDIST is undefined for structure <Anonymous>.
+% Execution halted at: $MAIN$            182
+  /people/disk2/brandenb/pencil-code/idl/start.pro
+\end{Verbatim}
+
+\medskip
+
+{\bf A}:
+{\em
+Go into \file{data/param.nml}
+and add \code{, LEQUIDIST=T} anywhere in the file, but before the
+last slash, of course.
 }
 
 % ====================================================================== %
@@ -4388,7 +4439,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-06-18 15:59:40 $ $,~ $ $Revision: 1.255 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-06-23 17:18:06 $ $,~ $ $Revision: 1.256 $ $}
 
 \section{Timings}
 
@@ -7368,7 +7419,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.255 2004-06-18 15:59:40 dobler Exp $ $}
+$ $Id: manual.tex,v 1.256 2004-06-23 17:18:06 brandenb Exp $ $}
 
 
 \end{document}
