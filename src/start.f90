@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.128 2004-03-18 15:01:35 theine Exp $
+! $Id: start.f90,v 1.129 2004-03-19 09:50:56 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -46,12 +46,13 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.128 2004-03-18 15:01:35 theine Exp $")
+             "$Id: start.f90,v 1.129 2004-03-19 09:50:56 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
-        xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
-        Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
+        xyz0 = (/       -pi,        -pi,       -pi /) ! first corner
+        xyz1 = (/impossible, impossible, impossible/) ! last corner
+        Lxyz = (/impossible, impossible, impossible/) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
 ! dgm
         lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
@@ -92,11 +93,31 @@
 !        if (.not. exist) &
 !             call stop_it('Need directory <' // trim(directory_snap) // '>')
 !
-        where (Lxyz == impossible) Lxyz=xyz1-xyz0
-        where (xyz1 == impossible) xyz1=xyz0+Lxyz
+
+!
+!  Set box dimensions, make sure Lxyz and xyz1 are in sync.
+!  Box defaults to [-pi,pi] for all directions if none of xyz1 or Lxyz are set
+!
+        do i=1,3
+          if (Lxyz(i) == impossible) then
+            if (xyz1(i) == impossible) then
+              Lxyz(i) = 2*pi    ! default value
+            else
+              Lxyz(i) = xyz1(i)-xyz0(i)
+            endif
+          else                  ! Lxyz was set
+            if (xyz1(i) /= impossible) then ! both Lxyz and xyz1 are set
+              call stop_it('Cannot set Lxyz and xyz1 at the same time')
+            endif
+          endif
+        enddo
+        xyz1=xyz0+Lxyz
+        !
+        !  abbreviations
+        !
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
-!
+
 !  check consistency
 !
         if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
