@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.10 2002-10-09 14:05:31 mee Exp $
+! $Id: general.f90,v 1.11 2002-10-09 14:54:34 dobler Exp $
 
 module General
 
@@ -268,21 +268,20 @@ module General
 !
     endsubroutine chk_time
 !***********************************************************************
-
-!***********************************************************************
     subroutine safe_character_assign(dest,src)
 !
+!  Do character string assignement with check against overflow
 !  08-oct-02/tony: coded
 !
-      character (len=*), intent(IN):: src
-      character (len=*), intent(INOUT):: dest
+      character (len=*), intent(in):: src
+      character (len=*), intent(inout):: dest
       integer :: destLen, srcLen
 
-      destLen = LEN(dest)
-      srcLen = LEN(src)
+      destLen = len(dest)
+      srcLen = len(src)
 
-      if (destLen<srcLen) THEN 
-         PRINT *, &
+      if (destLen<srcLen) then 
+         print *, &
               "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" & 
                //src//"' to '"//dest//"'"
          dest=src(1:destLen)
@@ -291,7 +290,17 @@ module General
       end if
 
     endsubroutine safe_character_assign
-
 !***********************************************************************
+    subroutine safe_character_append(str1,str2)
 !
+!  08-oct-02/wolf: coded
+!
+      character (len=*), intent(inout):: str1
+      character (len=*), intent(in):: str2
+!
+      call safe_character_assign(str1, trim(str1) // str2)
+!
+    endsubroutine safe_character_append
+!***********************************************************************
+
 end module General

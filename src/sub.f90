@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.93 2002-10-09 14:05:31 mee Exp $ 
+! $Id: sub.f90,v 1.94 2002-10-09 14:54:34 dobler Exp $ 
 
 module Sub 
 
@@ -1821,10 +1821,10 @@ module Sub
 !
 !  Write .general file for data explorer (aka DX)
 !  04-oct-02/wolf: coded
-!  08-oct-02/tony: used implementation of safe_character_assign to detect string overflows on concatenation.
+!  08-oct-02/tony: use safe_character_assign() to detect string overflows
 !
       use Cdata
-      use General, only: safe_character_assign
+      use General, only: safe_character_append
 !
       character (len=*) :: file
       character (len=datelen) :: date
@@ -1835,40 +1835,40 @@ module Sub
 !  accumulate a few lines
 !
       if (lhydro    ) then
-        call safe_character_assign(field,   trim(field ) // 'uu, ')
-        call safe_character_assign(struct,  trim(struct) // '3-vector, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
+        call safe_character_append(field,  'uu, '       )
+        call safe_character_append(struct, '3-vector, ' )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
       endif
       if (ldensity  ) then
-        call safe_character_assign(field,   trim(field ) // 'lnrho, ')
-        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
+        call safe_character_append(field,  'lnrho, '    )
+        call safe_character_append(struct, 'scalar, '   )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
       endif
       if (lentropy  ) then
-        call safe_character_assign(field,   trim(field ) // 'ss, ')
-        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
+        call safe_character_append(field,  'ss, '       )
+        call safe_character_append(struct, 'scalar, '   )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
       endif
       if (lmagnetic ) then
-        call safe_character_assign(field,   trim(field ) // 'aa, ')
-        call safe_character_assign(struct,  trim(struct) // '3-vector, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
+        call safe_character_append(field,  'aa, '       )
+        call safe_character_append(struct, '3-vector, ' )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
       endif
       if (lradiation) then
-        call safe_character_assign(field,   trim(field ) // 'e_rad, ff_rad, ')
-        call safe_character_assign(struct,  trim(struct) // 'scalar, 3-vector, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, positions, ')
+        call safe_character_append(field,  'e_rad, ff_rad, '       )
+        call safe_character_append(struct, 'scalar, 3-vector, '    )
+        call safe_character_append(type,   'float, float, '        )
+        call safe_character_append(dep,    'positions, positions, ')
       endif
       if (lpscalar  ) then
-        call safe_character_assign(field,   trim(field ) // 'lncc, ')
-        call safe_character_assign(struct,  trim(struct) // 'scalar, ')
-        call safe_character_assign(type,    trim(type  ) // 'float, ')
-        call safe_character_assign(dep,     trim(dep   ) // 'positions, ')
+        call safe_character_append(field,  'lncc, '     )
+        call safe_character_append(struct, 'scalar, '   )
+        call safe_character_append(type,   'float, '    )
+        call safe_character_append(dep,    'positions, ')
       endif
 !
 !  remove trailing comma
