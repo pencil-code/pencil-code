@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.72 2004-02-26 12:19:06 mee Exp $
+! $Id: interstellar.f90,v 1.73 2004-02-26 14:11:21 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -18,7 +18,8 @@ module Interstellar
   real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
-  real, parameter :: rho_crit=1.,TT_crit=4000.
+ ! real, parameter :: rho_crit=1.,TT_crit=4000.
+  real, parameter :: rho_crit=.6,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
   real, parameter :: rho_min=1.e-6
   
@@ -115,7 +116,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.72 2004-02-26 12:19:06 mee Exp $")
+           "$Id: interstellar.f90,v 1.73 2004-02-26 14:11:21 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -384,14 +385,16 @@ module Interstellar
        mass_cloud=0.0
        do n=n1,n2
            do m=m1,m2
-             lnrho(:)=f(l1:l2,m,n,ilnrho)
-             rho(:)=exp(lnrho(:))
+             rho(:)=exp(f(l1:l2,m,n,ilnrho))
              ss(:)=f(l1:l2,m,n,iss)
 
              call eoscalc(f,yH=yH,lnTT=lnTT)
              TT=exp(lnTT)
 
              rho_cloud(:)=0.0
+             !print*,'min,max TT:  ', min(TT), max(TT)
+             !print*,'min,max rho: ', min(rho), max(rho)
+
              where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
                   rho_cloud(:)=rho(:)
              mass_cloud=mass_cloud+sum(rho_cloud(:))
@@ -419,7 +422,7 @@ module Interstellar
        if (Lxyz(2)/=0.) rate_SNII=rate_SNII/Lxyz(2)
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
-        if (lroot .and. ip < 20) &
+        if (lroot .and. ip < 12) &
              print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
