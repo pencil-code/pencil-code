@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.65 2002-11-12 10:33:10 brandenb Exp $
+! $Id: mpicomm.f90,v 1.66 2002-11-14 12:31:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -48,14 +48,14 @@ module Mpicomm
   include 'mpif.h'
 
   integer, parameter :: nbufx_gh=my*mz*nghost*mvar ! For shear
-  integer, parameter :: nbufy=nx*nz*nghost*mvar
-  integer, parameter :: nbufz=nx*ny*nghost*mvar
-  integer, parameter :: nbufyz=nx*nghost*nghost*mvar
+  integer, parameter :: nbufy=mx*nz*nghost*mvar
+  integer, parameter :: nbufz=mx*ny*nghost*mvar
+  integer, parameter :: nbufyz=mx*nghost*nghost*mvar
 
-  real, dimension (nx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
-  real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
-  real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
-  real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
+  real, dimension (mx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
+  real, dimension (mx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
+  real, dimension (mx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
+  real, dimension (mx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
   real, dimension (nghost,my,mz,mvar) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer, dimension (ny*nz) :: mm,nn
@@ -259,8 +259,8 @@ module Mpicomm
 !  Periodic boundary conditions in y
 !
       if (nprocy>1) then
-        lbufyo=f(l1:l2,m1:m1i,n1:n2,:)  !!(lower y-zone)
-        ubufyo=f(l1:l2,m2i:m2,n1:n2,:)  !!(upper y-zone)
+        lbufyo=f(:,m1:m1i,n1:n2,:)  !!(lower y-zone)
+        ubufyo=f(:,m2i:m2,n1:n2,:)  !!(upper y-zone)
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
@@ -270,8 +270,8 @@ module Mpicomm
 !  Periodic boundary conditions in z
 !
       if (nprocz>1) then
-        lbufzo=f(l1:l2,m1:m2,n1:n1i,:)  !!(lower z-zone)
-        ubufzo=f(l1:l2,m1:m2,n2i:n2,:)  !!(upper z-zone)
+        lbufzo=f(:,m1:m2,n1:n1i,:)  !!(lower z-zone)
+        ubufzo=f(:,m1:m2,n2i:n2,:)  !!(upper z-zone)
         call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
         call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
         call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
@@ -281,10 +281,10 @@ module Mpicomm
 !  The four corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
-        llbufo=f(l1:l2,m1:m1i,n1:n1i,:)
-        ulbufo=f(l1:l2,m2i:m2,n1:n1i,:)
-        uubufo=f(l1:l2,m2i:m2,n2i:n2,:)
-        lubufo=f(l1:l2,m1:m1i,n2i:n2,:)
+        llbufo=f(:,m1:m1i,n1:n1i,:)
+        ulbufo=f(:,m2i:m2,n1:n1i,:)
+        uubufo=f(:,m2i:m2,n2i:n2,:)
+        lubufo=f(:,m1:m1i,n2i:n2,:)
         call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
         call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
         call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
@@ -328,10 +328,10 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromlowy,irecv_stat_fl,ierr)
         do j=1,mvar
            if (ipy /= 0 .OR. bcy1(j)=='p') then
-              f(l1:l2, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
+              f(:, 1:m1-1,n1:n2,j)=lbufyi(:,:,:,j)  !!(set lower buffer)
            endif
-           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-              f(l1:l2,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
+           if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+              f(:,m2+1:my,n1:n2,j)=ubufyi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
         call MPI_WAIT(isend_rq_tolowy,isend_stat_tl,ierr)
@@ -344,11 +344,11 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_fromuppz,irecv_stat_fu,ierr)
         call MPI_WAIT(irecv_rq_fromlowz,irecv_stat_fl,ierr)
         do j=1,mvar
-           if (ipz /= 0 .OR. bcz1(j)=='p') then
-              f(l1:l2,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              f(:,m1:m2, 1:n1-1,j)=lbufzi(:,:,:,j)  !!(set lower buffer)
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
-              f(l1:l2,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              f(:,m1:m2,n2+1:mz,j)=ubufzi(:,:,:,j)  !!(set upper buffer)
            endif
         enddo
         call MPI_WAIT(isend_rq_tolowz,isend_stat_tl,ierr)
@@ -363,20 +363,20 @@ module Mpicomm
         call MPI_WAIT(irecv_rq_FRll,irecv_stat_Fll,ierr)
         call MPI_WAIT(irecv_rq_FRul,irecv_stat_Ful,ierr)
         do j=1,mvar
-           if (ipz /= 0 .OR. bcz1(j)=='p') then
-              if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(l1:l2, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
+           if (ipz /= 0 .OR. bcz1(j)=='p') then 
+              if (ipy /= 0 .OR. bcy1(j)=='p') then 
+                 f(:, 1:m1-1, 1:n1-1,j)=llbufi(:,:,:,j)  !!(set ll corner)
               endif
               if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(l1:l2,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
+                 f(:,m2+1:my, 1:n1-1,j)=ulbufi(:,:,:,j)  !!(set ul corner)
               endif
            endif
-           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then
-              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then
-                 f(l1:l2,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
+           if (ipz /= nprocz-1 .OR. bcz2(j)=='p') then 
+              if (ipy /= nprocy-1 .OR. bcy2(j)=='p') then 
+                 f(:,m2+1:my,n2+1:mz,j)=uubufi(:,:,:,j)  !!(set uu corner)
               endif
               if (ipy /= 0 .OR. bcy1(j)=='p') then
-                 f(l1:l2, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
+                 f(:, 1:m1-1,n2+1:mz,j)=lubufi(:,:,:,j)  !!(set lu corner)
               endif
            endif
         enddo

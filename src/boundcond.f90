@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.37 2002-11-13 09:44:21 brandenb Exp $
+! $Id: boundcond.f90,v 1.38 2002-11-14 12:31:32 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -37,13 +37,14 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_x(f)
 !
-!  Physical boundary conditions in x except for periodic stuff.
-!  For the x-direction, the routine needs to be called immediately;
-!  for the y- and z-directions is needs to be called after all
-!  communication is done, because it needs to overwrite the otherwise
-!  periodic boundary conditions that have already been solved under mpi.
+!  Boundary conditions in x except for periodic part handled by communication.
+!  boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-`corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
+!  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
       use Entropy
@@ -120,13 +121,14 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_y(f)
 !
-!  Physical boundary conditions in y except for periodic stuff.
-!  For the x-direction, the routine needs to be called immediately;
-!  for the y- and z-directions is needs to be called after all
-!  communication is done, because it needs to overwrite the otherwise
-!  periodic boundary conditions that have already been solved under mpi.
+!  Boundary conditions in x except for periodic part handled by communication.
+!  boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-`corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
+!  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
       use Entropy
@@ -185,13 +187,14 @@ module Boundcond
 !***********************************************************************
     subroutine boundconds_z(f)
 !
-!  Physical boundary conditions in z except for periodic stuff.
-!  For the x-direction, the routine needs to be called immediately;
-!  for the y- and z-directions is needs to be called after all
-!  communication is done, because it needs to overwrite the otherwise
-!  periodic boundary conditions that have already been solved under mpi.
+!  Boundary conditions in x except for periodic part handled by communication.
+!  boundconds_x() needs to be called before communicating (because we
+!  communicate the x-ghost points), boundconds_[yz] after communication
+!  has finished (they need some of the data communicated for the edges
+!  (yz-`corners').
 !
 !   8-jul-02/axel: split up into different routines for x,y and z directions
+!  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
       use Entropy
@@ -259,123 +262,6 @@ module Boundcond
       endselect
 !
     endsubroutine boundconds_z
-!***********************************************************************
-    subroutine boundconds_yz_corner(f)
-!
-!  Boundary condition for the yz corners. Needs to be called after the
-!  communication has finished.
-!
-!   12-nov-02/wolf: coded
-!
-      use Cdata
-      use Entropy
-      use Magnetic
-!
-      real, dimension (mx,my,mz,mvar) :: f
-      integer, dimension(2*nghost) :: idy,idz
-      integer :: i,j,k,ip_ok
-      character (len=bclen), dimension(mvar) :: bc12
-      character (len=3) :: topbot
-!
-      if(ldebug) print*,'ENTER: boundconds_y'
-!
-!  Anything to be done?
-!      
-      if ((nygrid == 1) .or. (nzgrid ==1)) then
-        if(headtt) print*,'no y- or z-boundary'
-        return
-        print*, '================== NEVER GOT HERE ====================='
-      endif
-!
-!  Set up array indices for the yz corners
-!
-      do i=1,nghost
-        idy(i)=i; idy(nghost+i)=nghost+ny+i
-        idz(i)=i; idz(nghost+i)=nghost+nz+i
-      enddo
-!
-!  Boundary conditions in y
-!
-      do k=1,2                ! loop over 'bot','top'
-        if (k==1) then
-          topbot='bot'; bc12=bcy1; ip_ok=0
-        else
-          topbot='top'; bc12=bcy2; ip_ok=nprocy-1
-        endif
-        !
-        do j=1,mvar 
-          if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
-          if (ipy == ip_ok) then
-            select case(bc12(j))
-            case ('p')        ! periodic
-              call bc_per_y(f(:,:,idz,:),topbot,j)
-            case ('s')        ! symmetry
-              call bc_sym_y(f(:,:,idz,:),+1,topbot,j)
-            case ('a')        ! antisymmetry
-              call bc_sym_y(f(:,:,idz,:),-1,topbot,j)
-            case ('a2')       ! antisymmetry relative to boundary value
-              call bc_sym_y(f(:,:,idz,:),-1,topbot,j,REL=.true.)
-            case ('cT')       ! constant temp.
-              if (j==ient) call bc_ss_temp_y(f(:,:,idz,:),topbot)
-            case ('sT')       ! symmetric temp.
-              if (j==ient) call bc_ss_stemp_y(f(:,:,idz,:),topbot)
-            case default
-              if (lroot) &
-                   print*, "No such boundary condition bcy1/2 = ", &
-                   bc12(j), " for j=", j
-              call stop_it("")
-            endselect
-          endif
-        enddo
-      enddo
-!
-!  Boundary conditions in z
-!
-      do k=1,2                ! loop over 'bot','top'
-        if (k==1) then
-          topbot='bot'; bc12=bcz1; ip_ok=0
-        else
-          topbot='top'; bc12=bcz2; ip_ok=nprocz-1
-        endif
-        !
-        do j=1,mvar
-          if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
-          if (ipz == ip_ok) then
-            select case(bc12(j))
-            case ('p')        ! periodic
-              call bc_per_z(f(:,idy,:,:),topbot,j)
-            case ('s')        ! symmetry
-              call bc_sym_z(f(:,idy,:,:),+1,topbot,j)
-            case ('a')        ! antisymmetry
-              call bc_sym_z(f(:,idy,:,:),-1,topbot,j)
-            case ('a2')       ! antisymmetry relative to boundary value
-              call bc_sym_z(f(:,idy,:,:),-1,topbot,j,REL=.true.)
-            case ('c1')       ! complex
-              if (j==ient) call bc_ss_flux(f(:,idy,:,:),topbot)
-              if (j==iaa)  call bc_aa_pot(f(:,idy,:,:),topbot)
-            case ('cT')       ! constant temp.
-              if (j==ilnrho) call bc_lnrho_temp_z(f(:,idy,:,:),topbot)
-              if (j==ient)   call bc_ss_temp_z(f(:,idy,:,:),topbot)
-            case ('sT')       ! symmetric temp.
-              if (j==ient) call bc_ss_stemp_z(f(:,idy,:,:),topbot)
-            case ('c2')       ! complex
-              if (j==ient) call bc_ss_temp_old(f(:,idy,:,:),topbot)
-            case ('db')       ! complex
-              call bc_db_z(f(:,idy,:,:),topbot,j) 
-            case ('ce')       ! complex
-              if (j==ient) call bc_ss_energy(f(:,idy,:,:),topbot)
-            case ('')         ! do nothing; assume that everything is set
-            case default
-              if (lroot) &
-                   print*, "No such boundary condition bcz1/2 = ", &
-                   bc12(j), " for j=", j
-              call stop_it("")
-            endselect
-          endif
-        enddo
-      enddo
-!
-    endsubroutine boundconds_yz_corner
 !***********************************************************************
     subroutine bc_per_x(f,topbot,j)
 !
@@ -721,10 +607,11 @@ module Boundcond
 !
       real, dimension (mx,my,mz,mvar) :: a
 !
-      call boundconds(a)
+      call boundconds_x(a)
       call initiate_isendrcv_bdry(a)
       call finalise_isendrcv_bdry(a)
-!!!call boundconds_yz_corner(a)
+      call boundconds_y(a)
+      call boundconds_z(a)
 !
     endsubroutine update_ghosts
 !***********************************************************************

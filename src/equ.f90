@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.104 2002-11-13 09:44:21 brandenb Exp $
+! $Id: equ.f90,v 1.105 2002-11-14 12:31:32 dobler Exp $
 
 module Equ
 
@@ -183,19 +183,20 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.104 2002-11-13 09:44:21 brandenb Exp $")
+           "$Id: equ.f90,v 1.105 2002-11-14 12:31:32 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
       ldiagnos=lfirst.and.lout
       if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
-!  initiate (non-blocking) communication and do boundary conditions
-!  need to deals first with x-boundaries
+!  Initiate (non-blocking) communication and do boundary conditions.
+!  Required order:
+!  1. x-boundaries (x-ghost zones will be communicated)
+!  2. communication
+!  3. y- and z-boundaries
 !
       call boundconds_x(f)
-      call boundconds_y(f)
-      call boundconds_z(f)
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       if (test_nonblocking) call finalise_isendrcv_bdry(f)
@@ -208,8 +209,10 @@ module Equ
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
-        if (necessary(imn)) then 
+        if (necessary(imn)) then ! make sure all ghost points are set
           if (.not.test_nonblocking) call finalise_isendrcv_bdry(f)
+          call boundconds_y(f)
+          call boundconds_z(f)
         endif
 !
 !  coordinates are needed all the time
@@ -503,6 +506,8 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !  Could mend this by exp-ing and log-ing three times, but am reluctant
 !  to do so.
 !
+!  NB: Need to stick to the order x-y-z, or boundconds will be wrong
+!
       call boundconds_x(f)
       call rmwig_1d(f,df,ivar,awig,1) ! x direction
       call boundconds_y(f)
@@ -616,9 +621,7 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !WD: I wouldn't care, since this should be applied quite infrequently
 !
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
-      call boundconds_x(f)
-      call boundconds_y(f)
-      call boundconds_z(f)
+      call boundconds(f)
       call initiate_isendrcv_bdry(f)
 !
 !  Check whether we want to smooth on the actual variable, or on exp(f)
