@@ -500,7 +500,7 @@ Not all parameters are used for a given scenario.
   \var{it1}    & write monitoring output every \var{it1} time steps.\\
   \var{dt}     & time step $\delta t$ if positive,
                  $\delta t/\delta t_{\rm Courant}$ if negative. A typical
-                 value is \code{dt=0.4}. \\
+                 value is \code{dt=-0.4}. \\
   \var{isave}  & update snapshot file \file{var.dat} every \var{isave}
                  time steps. \\
   \var{iorder} & order of time step. Set \code{iorder=1} for Euler
@@ -584,7 +584,7 @@ Not all parameters are used for a given scenario.
                  \begin{description}
                  \item[\option{p}] indicates periodicity
                  \item[\option{a}] indicates antisymmetry w.\,r.\,t.~the
-                   boundary i.\,e.~vanishing value
+                   boundary, i.\,e.~vanishing value
                  \item[\option{s}] indicates symmetry w.\,r.\,t.~the
                    boundary, i.\,e.~vanishing first derivative
                  \item[\option{a2}] indicates antisymmetry w.\,r.\,t.~the
