@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.155 2004-04-06 11:07:19 dobler Exp $
+! $Id: hydro.f90,v 1.156 2004-04-08 15:57:25 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.155 2004-04-06 11:07:19 dobler Exp $")
+           "$Id: hydro.f90,v 1.156 2004-04-08 15:57:25 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -783,7 +783,11 @@ module Hydro
 !  warn about the damping term
 !
         if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
-          print*, 'udamping: Damping velocities until time ', tdamp
+          if (ldamp_fade) then
+            print*, 'udamping: Damping velocities constantly until time ', tdamp
+          else
+            print*, 'udamping: Damping velocities smoothly until time ', tdamp
+          end if
         endif
 !
 !  define bottom and top height
@@ -991,10 +995,6 @@ module Hydro
       enddo
 !
 !  check for those quantities for which we want phi-averages
-!
-!  shorthand uumphi for all three components:
-!
-      call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'urmphi',i_urmphi)
