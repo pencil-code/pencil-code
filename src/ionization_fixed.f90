@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.1 2003-08-08 17:25:14 theine Exp $
+! $Id: ionization_fixed.f90,v 1.2 2003-08-08 17:32:52 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.1 2003-08-08 17:25:14 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.2 2003-08-08 17:32:52 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -150,6 +150,7 @@ module Ionization
       cs2TT=(5./3.)*(1.+yH0+xHe)*ss_ion
       ee0=yH0*ss_ion*TT_ion
       cp1tilde_=(2./5.)/(1.+yH0+xHe)
+      eeTT=1.5*(1.+yH0+xHe)*ss_ion
 !
       yHmin=0.
       yHmax=1.
