@@ -18,22 +18,27 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.6 2002-10-04 18:54:13 dobler Exp $
+# CVS: $Id: mkcparam,v 1.7 2002-11-30 17:26:38 mee Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
-#   and calculate the number mvar of variables accordingly.
+#   and calculate the number mvar of variables and maux of variables 
+#   accordingly.
+#
 #   Output is written as a Fortran program and supposed to end up in the
 #   local file src/cparam.inc .
 
 # ---------------------------------------------------------------------- #
-my %modules = ( # module_name => contribution to mvar
-	        hydro    => 3,
-	        density  => 1,
-	        entropy  => 1,
-	        magnetic => 3,
-		radiation=> 5,
-		pscalar  => 1,
+my %modules = ( # names of modules to consider
+	        HYDRO     => { hydro     => 3, nohydro     => 0 },
+	        DENSITY   => { density   => 1, nodensity   => 0 },
+	        ENTROPY   => { entropy   => 1, noentropy   => 0 },
+	        MAGNETIC  => { magnetic  => 3, nomagnetic  => 0 },
+		RADIATION => { radiation => 5, noradiation => 0 },
+		PSCALAR   => { pscalar   => 1, nopscalar   => 0 },
+	      );
+my %auxmodules = ( # module_name => contribution to maux
+		   VISCOSITY => { visc_shock => 1, visc_const => 0 }
 	      );
 my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
 # ---------------------------------------------------------------------- #
@@ -43,6 +48,7 @@ use Getopt::Long;
 
 my $line;
 my %modcounts;
+my %auxmodcounts;
 
 (my $cmdname = $0) =~ s{.*/}{};
 my $usage =
@@ -75,34 +81,68 @@ foreach my $infile (@ARGV) {
     open(INPUT,"< $infile") || die "Can't open $infile for reading";
     # Cycle through lines in file
   file: while (defined($line=<INPUT>)) {
-	# Only definitions of Make variables are interesting:
-	next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier/);
-	# cycle through module list and check
-      key: while (my ($mod,$count) = each %modules) {
-	    my $MOD = "\U$mod";	# consider only lines of the form
-	                        #   MOD=mod
-                                # with only case differences (this may
-                                # need to be changed at some point)
-	    if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
-		if ($1 eq $mod) { # `mod' is used
-		    $modcounts{$mod} = $modules{$mod}; # overwrite
-                                                       # existing value
-		} else {	# `nomod' is used (or not `mod' in any case)
-		    $modcounts{$mod} = 0;
-		}
-	    }
+      # Only definitions of Make variables are interesting:
+      next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier+/);
+      # cycle through module list and check
+    key: while (my ($MOD) = each %modules) {
+	if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
+	  key2: while (my ($opt, $count) = each %{$modules{$MOD}}) {
+	      if ($1 eq $opt) { # `mod' is used
+		  $modcounts{$MOD}{$opt} = $count; 
+		  # overwrite
+		  # existing value
+	      } else {	# `nomod' is used (or not `mod' in any case)
+		  $modcounts{$MOD}{$opt} = 0;
+	      }
+	  }
 	}
+    }
+      
+      # cycle through auxilliary module list and check
+    key3: while (my ($MOD) = each %auxmodules) {
+	if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
+	  key4: while (my ($opt, $count) = each %{$auxmodules{$MOD}}) {
+	      if ($1 eq $opt) { # `mod' is used
+		  $auxmodcounts{$MOD}{$opt} = $count; 
+		  # overwrite
+		  # existing value
+	      } else {	# `nomod' is used (or not `mod' in any case)
+		  $auxmodcounts{$MOD}{$opt} = 0;
+	      }
+	  }
+	}
+    }
+  }
+}
+
+
+# use Data::Dumper;
+#print Dumper(\%modules,\%modcounts);
+#print Dumper(\%auxmodules,\%auxmodcounts);
+#while (my ($MOD) = each %modules) {
+#		  print $MOD,  "\n"; #, $modules{$MOD}{$opt};
+#	      key2: while (my ($opt, $count) = each %{$modules{$MOD}} ) {
+#  print $MOD, " - ", $opt, " = ", $count, "\n"; #, $modules{$MOD}{$opt};
+#	      }
+#}
+
+## Extract maux..
+my $maux=0;
+while (my ($MOD) = each %auxmodcounts) {
+    foreach( values(%{$auxmodcounts{$MOD}}) ) {
+	$maux += $_;
     }
 }
 
-# use Data::Dumper;
-# print Dumper(\%modules,\%modcounts);
-
 ## Extract mvar..
 my $mvar=0;
-foreach(values(%modcounts)) {
-    $mvar += $_;
+while (my ($MOD) = each %modcounts) {
+    foreach( values(%{$modcounts{$MOD}}) ) {
+	$mvar += $_;
+    }
 }
+
+
 
 ## ..and write output
 print OUT <<"EOF";
@@ -113,7 +153,7 @@ print OUT <<"EOF";
 ! you modify it. It is included by cparam.f90 .
 !
 
-integer, parameter :: mvar=$mvar
+integer, parameter :: mvar=$mvar, maux=$maux
 EOF
 
 # End of file mkcparam
