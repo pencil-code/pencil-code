@@ -1,7 +1,7 @@
-! $Id: entropy_const.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $
+! $Id: entropy_const.f90,v 1.2 2004-06-22 01:52:14 dobler Exp $
 
-!  This module takes care of entropy (initial condition
-!  and time advance)
+!  This module is for systems with a spacially fixed entropy
+!  distribution
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.1 2004-06-09 10:25:20 ajohan Exp $")
+           "$Id: entropy_const.f90,v 1.2 2004-06-22 01:52:14 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
