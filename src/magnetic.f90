@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.197 2004-06-18 05:47:11 brandenb Exp $
+! $Id: magnetic.f90,v 1.198 2004-06-22 04:21:25 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.197 2004-06-18 05:47:11 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.198 2004-06-22 04:21:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,6 +329,7 @@ module Magnetic
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
+      real, dimension (nx) :: hall_ueff2
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: b2b13
@@ -543,6 +544,8 @@ module Magnetic
       if (hall_term/=0.) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*JxB
+        call dot2_mn(uu-hall_term*jj,hall_ueff2)
+        call max_for_dt(hall_ueff2,maxadvec2)
       endif
 !
 !  add alpha effect if alpha_effect /= 0

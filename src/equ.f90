@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.216 2004-06-15 04:59:25 theine Exp $
+! $Id: equ.f90,v 1.217 2004-06-22 04:21:25 brandenb Exp $
 
 module Equ
 
@@ -260,7 +260,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.216 2004-06-15 04:59:25 theine Exp $")
+           "$Id: equ.f90,v 1.217 2004-06-22 04:21:25 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -512,6 +512,12 @@ module Equ
       if (l2davgfirst) then
         if (lwrite_zaverages) call zaverages_xy
         if (lwrite_phiaverages) call phiaverages_rz
+      endif
+!
+!  Note: zaverages_xy are also needed if bmx and bmy are to be calculated
+!
+      if (.not.l2davgfirst.and.(i_bmx+i_bmy)>0) then
+        if (lwrite_zaverages) call zaverages_xy
       endif
 !
     endsubroutine pde
