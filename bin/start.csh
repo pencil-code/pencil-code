@@ -6,14 +6,13 @@
 #
 # run.csh -- driver for time stepping
 #
-##PBS -S /bin/csh -W group_list=UK07001 -q UK07001
 #PBS -S /bin/csh
-#PBS -q workq
-##PBS -l ncpus=4,mem=2mb,walltime=0:00:10
-##PBS -l ncpus=4
-#PBS -l nodes=128
-##PBS -q p-long
-##PBS -l nodes=nq1+nq2
+
+# cut & paste for job submission for PBS
+# qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
+# qsub -l nodes=nq1+nq2+nq3+nq4,mem=1gb,cput=1:00:00 -q p-long start.csh
+# qsub -l ncpus=4,mem=1gb,walltime=0:05:00 -q parallel start.csh
+# qsub -l ncpus=16,mem=1gb,walltime=0:05:00 -q parallel start.csh
 #
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
@@ -65,5 +64,4 @@ date
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
 # bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
