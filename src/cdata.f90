@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.139 2003-04-30 07:45:03 nilshau Exp $
+! $Id: cdata.f90,v 1.140 2003-05-20 14:22:24 pkapyla Exp $
 
 module Cdata
 
@@ -48,6 +48,7 @@ module Cdata
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0, ishock=0
   integer :: nt=0,it1=10
   integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
+  integer :: ilncc=0
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
