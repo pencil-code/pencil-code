@@ -3,6 +3,9 @@
 # run.csh -- driver for time stepping
 #
 #PBS -S /bin/csh
+# For SGE: use csh, work in submit directory:
+#$ -S /bin/csh
+#$ -cwd
 
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
