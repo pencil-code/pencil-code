@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.8 2002-08-06 07:57:46 nilshau Exp $
+! $Id: radiation.f90,v 1.9 2002-08-09 08:15:30 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -20,7 +20,9 @@ module Radiation
   real :: a_SB=1.
   real :: kappa_es=0
   real :: amplee=0
-  real :: left=0
+  real :: ampl_pert=0
+  real :: inflow=2
+  real, dimension(mx,my,mz) :: DFF_new=0
 
   ! init parameteres
   character (len=labellen) :: initrad='equil',pertee='none'
@@ -30,10 +32,10 @@ module Radiation
 
   ! input parameters
   namelist /radiation_init_pars/ &
-       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB,amplee,pertee,left
+       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB,amplee,pertee,ampl_pert
   ! run parameters
   namelist /radiation_run_pars/ &
-       c_gam,opas,kappa_es,mbar,k_B,a_SB,flim
+       c_gam,opas,kappa_es,mbar,k_B,a_SB,flim,inflow
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
@@ -66,6 +68,9 @@ module Radiation
       ifz = iff+2
       nvar = nvar+4             ! added 4 variables
 !
+      idd=nvar+1
+      nvar=nvar+1   !added extra variable due to diffusion coefficient
+!
       if ((ip<=8) .and. lroot) then
         print*, 'Register_rad:  nvar = ', nvar
         print*, 'ie,iff,ifx,ify,ifz = ', ie,iff,ifx,ify,ifz
@@ -74,7 +79,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.8 2002-08-06 07:57:46 nilshau Exp $")
+           "$Id: radiation.f90,v 1.9 2002-08-09 08:15:30 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,7 +102,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
-      real :: taux
+      real :: taux,nr1,nr2
       integer :: l12
 !
       select case(initrad)
@@ -113,6 +118,17 @@ module Radiation
          l12=(l1+l2)/2
          f(1    :l12,:,:,ie) = 1.
          f(l12+1: mx,:,:,ie) = 2.
+      case ('substep', '5')
+         l12=(l1+l2)/2
+         nr1=1.
+         nr2=2.
+         f(1    :l12-2,:,:,ie) = nr1
+         f(l12-1      ,:,:,ie) = ((nr1+nr2)/2+nr1)/2
+         f(l12+0      ,:,:,ie) = (nr1+nr2)/2
+         f(l12+1      ,:,:,ie) = ((nr1+nr2)/2+nr2)/2
+         f(l12+2: mx  ,:,:,ie) = nr2
+      case ('lamb', '6')
+         f(:,:,:,ie) = 2+(sin(2*pi*xx)*sin(2*pi*zz))
       case default
         !
         !  Catch unknown values
@@ -128,7 +144,16 @@ module Radiation
       case('none', '0') 
       case('left','1')
          l12=(l1+l2)/2
-         f(l1:l12,m1:m2,n1:n2,ie) = left*f(l1:l12,m1:m2,n1:n2,ie)
+         f(l1:l12,m1:m2,n1:n2,ie) = ampl_pert*f(l1:l12,m1:m2,n1:n2,ie)
+      case('whole','2')
+         f(:,m1:m2,n1:n2,ie) = ampl_pert*f(:,m1:m2,n1:n2,ie)
+      case('ent','3') 
+         !
+         !  For perturbing the entropy after haveing found the 
+         !  equilibrium between radiation and entropy.
+         !
+         f(:,m1:m2,n1:n2,ient) = ampl_pert
+         f(:,m1:m2,n1:n2,ilnrho) = ampl_pert
       case default
          !
          !  Catch unknown values
@@ -155,8 +180,8 @@ module Radiation
       real, dimension (nx,3) :: gradE,uu,n_vec
       real, dimension (nx,3,3) :: uij, P_tens,f_mat,n_mat
       real, dimension (nx) :: E_rad,divu,rho1,source,Edivu,ugradE,divF
-      real, dimension (nx) :: graduP,cooling
-      real, dimension (nx) :: kappa_abs,kappa,E_gas,TT1,f2
+      real, dimension (nx) :: graduP,cooling,c_entr
+      real, dimension (nx) :: kappa_abs,kappa,E_gas,TT1,f2,divF2
       real :: gamma1,gamma,taux
       integer :: i
 !
@@ -191,11 +216,11 @@ module Radiation
       Edivu=E_rad*divu
       call grad(f,iE,gradE)
       call dot_mn(uu,gradE,ugradE)
+      call div(f,iff,divF)
 !
 !  Flux-limited diffusion app.
 !
-      call flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens)
-      call div(f,iff,divF)
+      call flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens,divF2)
 !
 !  calculate graduP
 !
@@ -242,10 +267,23 @@ module Radiation
         if (i_egas_max/=0) call max_mn_name(E_gas,i_egas_max)   
       endif
 !
-!  Calculate UUmax for use in determinationof time step length
+!  Calculate UUmax for use in determination of time step 
 !
-      if (UUmax>c_gam) call stop_it('Speed of light too small')
-      UUmax=max(UUmax,c_gam)
+      if (lfirst.and.ldt) then
+         !
+         !  Speed of sound
+         !
+         UUmax=max(UUmax,c_gam)
+         !
+         !  Adding extra time step criterion due to the stiffness in the 
+         !  radiative entropy equation
+         !
+         if (lentropy) then
+            c_entr=2*gamma1**4*rho1**(4*gamma1)/(TT1*c_gam*kappa_abs*a_SB*4*gamma)
+            c_entr=dx/c_entr
+            UUmax=max(UUmax,maxval(c_entr))
+         endif
+      endif
 !
     end subroutine de_dt
 !*******************************************************************
@@ -297,7 +335,7 @@ module Radiation
 !
     endsubroutine rprint_radiation
 !***********************************************************************
-    subroutine flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens)
+    subroutine flux_limiter(f,df,rho1,kappa,gradE,E_rad,P_tens,divF)
 !
 !  This subroutine uses the flux limited diffusion approximation
 !  and calculates the flux limiter and P_tens
@@ -308,11 +346,11 @@ module Radiation
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: gradE,n_vec,tmp
+      real, dimension (nx,3) :: gradE,n_vec,tmp,gradDFF
       real, dimension (nx,3,3) :: P_tens,f_mat,n_mat
-      real, dimension (nx) :: E_rad,rho1
-      real, dimension (nx) :: lgamma,RF,DFF,absgradE
-      real, dimension (nx) :: f_sc,kappa,E_gas
+      real, dimension (nx) :: E_rad,rho1,diffus_speed
+      real, dimension (nx) :: lgamma,RF,DFF,absgradE,var1
+      real, dimension (nx) :: f_sc,kappa,E_gas,divF,del2E
       integer :: i,j,teller
 !
 
@@ -379,6 +417,17 @@ module Radiation
       f(l1:l2,m,n,ifx:ifz)=tmp
       df(l1:l2,m,n,ifx:ifz)=0
 !
+      DFF_new(l1:l2,m,n)=DFF*c_gam*rho1/kappa
+      call grad(f,idd,gradDFF) 
+      call del2(f,ie,del2E)
+      call dot_mn(gradDFF,gradE,var1)
+      divF=-f(l1:l2,m,n,idd)*del2E-var1
+!
+!  Time step criterion due to diffusion
+!
+      diffus_speed=4*c_gam*rho1*DFF/(3*kappa*dx)
+      UUmax=max(UUmax,maxval(diffus_speed))
+!
     end subroutine flux_limiter
 !***********************************************************************
     subroutine init_equil(f)
@@ -407,6 +456,63 @@ module Radiation
 !
     end subroutine init_equil
 !***********************************************************************
+    subroutine  bc_ee_inflow_x(f,topbot)
+!
+!  The inflow boundary condition must be improved,
+!  it do not work correctly in this simple form
+!
+!  8-aug-02/nils: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i
+!
+      if (topbot=='bot') then
+         !f(1:l1-1,:,:,ie) = inflow
+         do i=1,nghost
+            f(l1-i,:,:,ie) = 2*inflow - f(l1+i,:,:,ie)
+         enddo
+      else
+         !f(l2+1:mx,:,:,ie) = inflow
+         do i=1,nghost
+            f(l2+i,:,:,ie) = 2*inflow - f(l2-i,:,:,ie)
+         enddo
+      endif
+!
+    end subroutine bc_ee_inflow_x
+!***********************************************************************
+    subroutine  bc_ee_outflow_x(f,topbot)
+!
+!  The outflow boundary condition must be improved,
+!  it do not work correctly in this simple form
+!
+!  8-aug-02/nils: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i
+!
+      if (topbot=='bot') then 
+         do i=1,nghost
+           ! f(i,:,:,ie) = 1 
+            f(l1-i,:,:,ie) = 2*f(l1,:,:,ie) - f(l1+i,:,:,ie)  
+         enddo
+      else
+         do i=1,nghost
+            !f(l2+i,:,:,ie) =  1
+            f(l2+i,:,:,ie) = 2*f(l2,:,:,ie) - f(l2-i,:,:,ie) 
+         enddo
+      endif
+!
+    end subroutine bc_ee_outflow_x
+!***********************************************************************
+
+
+
 
 end module Radiation
 

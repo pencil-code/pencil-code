@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.26 2002-08-03 22:32:41 dobler Exp $
+! $Id: boundcond.f90,v 1.27 2002-08-09 08:15:30 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -30,6 +30,7 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
+      use Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
@@ -68,6 +69,10 @@ module Boundcond
               if (j==ient) call bc_ss_temp_x(f,'bot')
             case ('sT')         ! symmetric temp. (processed in own routine)
               if (j==ient) call bc_ss_stemp_x(f,'bot')
+            case ('in')
+              if (j==ie) call bc_ee_inflow_x(f,'bot')
+            case ('out')
+              if (j==ie) call bc_ee_outflow_x(f,'bot')
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx1 = ", &
@@ -97,10 +102,14 @@ module Boundcond
               if (j==ient) call bc_ss_temp_x(f,'top')
             case ('sT')             ! symmetric temp. (processed in own routine)
               if (j==ient) call bc_ss_stemp_x(f,'top')
+            case ('in')
+               if (j==ie) call bc_ee_inflow_x(f,'top')
+            case ('out')
+               if (j==ie) call bc_ee_outflow_x(f,'bot')
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx2 = ", &
-                           bcx2(j), " for j=", j
+                   bcx2(j), " for j=", j
               call stop_it("")              
             endselect
           endif

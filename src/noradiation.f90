@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $
+! $Id: noradiation.f90,v 1.5 2002-08-09 08:15:30 nilshau Exp $
 
 
 module Radiation
@@ -36,7 +36,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.4 2002-07-30 13:54:22 nilshau Exp $")
+           "$Id: noradiation.f90,v 1.5 2002-08-09 08:15:30 nilshau Exp $")
 !
     endsubroutine register_rad
 !***********************************************************************
@@ -98,5 +98,31 @@ module Radiation
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation
+!***********************************************************************
+    subroutine  bc_ee_inflow_x(f,topbot)
+!
+!  Dummy routine
+!
+!  8-aug-02/nils: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+!
+    end subroutine bc_ee_inflow_x
+!***********************************************************************
+    subroutine  bc_ee_outflow_x(f,topbot)
+!
+!  Dummy routine
+!
+!  8-aug-02/nils: coded
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+!
+    end subroutine bc_ee_outflow_x
 !***********************************************************************
   end module Radiation
