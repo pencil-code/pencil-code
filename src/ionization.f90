@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.95 2003-09-24 13:01:17 dobler Exp $
+! $Id: ionization.f90,v 1.96 2003-09-24 13:28:45 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.95 2003-09-24 13:01:17 dobler Exp $")
+           "$Id: ionization.f90,v 1.96 2003-09-24 13:28:45 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -668,6 +668,19 @@ module Ionization
       real, intent(in)  :: yH,lnrho,ee
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
+
+      !
+      !  TEMPORARY CHECK
+      !  Will slow down ionization stuff
+      !  Please fix and remove me
+      !
+      if (ee-yH*ss_ion*TT_ion < 0) then
+        write(0,'(A)') '@*&# ABORTING: #&*@'
+        write(0,'(A," ",1pG13.6)') '  ee-yH*ss_ion*TT_ion = ', &
+             ee-yH*ss_ion*TT_ion
+        write(0,'(A)') 'BUT MUST BE POSITIVE.'
+        STOP
+      endif
 
       lnTT_=log(ee-yH*ss_ion*TT_ion) -  &
            log(1.5 * (1.+yH+xHe) * ss_ion * TT_ion )
