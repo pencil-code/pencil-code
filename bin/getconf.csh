@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.95 2003-11-19 14:01:28 dobler Exp $
+# $Id: getconf.csh,v 1.96 2003-11-20 12:24:47 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -235,6 +235,7 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   if ($?JOB_ID) then
     if (-e $HOME/.score/ndfile.$JOB_ID) then
       set local_disc=1
+      set one_local_disc=0
     else
       echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
       set local_disc=0
@@ -295,14 +296,17 @@ endif
 if ($mpi) then
   # Some mpiruns need special options
   if ($mpirun =~ *mpirun*) then
+    set nprocpernode = 1
     set npops = "-np $ncpus"
   else if ($mpirun =~ *mpiexec*) then
+    set nprocpernode = 1
     set npops = "-n $ncpus"
   else if ($mpirun =~ *scout*) then
     set nnode = `expr $NSLOTS - 1`
     set nprocpernode = `expr $ncpus / $nnode` 
     set npops = "-nodes=${nnode}x${nprocpernode}"
   else if ($mpirun =~ *poe*) then
+    set nprocpernode = 1
     set npops = "-procs $ncpus"
   else
     echo "getconf.csh: No clue how to tell $mpirun to use $ncpus nodes"
@@ -315,6 +319,7 @@ else # no MPI
   set mpirunops = ''
   set npops = ''
   set ncpus = 1
+  set nprocpernode = 1
 
 endif
 ## End of machine specific settings
@@ -331,10 +336,9 @@ echo "datadir = $datadir"
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
 # Remove file, if not needed, to avoid confusion.
+if (-f $datadir/directory_snap) rm $datadir/directory_snap
 if ($local_disc) then
   echo $SCRATCH_DIR >$datadir/directory_snap
-else
-  if (-f $datadir/directory_snap) rm $datadir/directory_snap
 endif
 
 if ($local_binary) then

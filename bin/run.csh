@@ -53,8 +53,12 @@ if ($local_disc) then
     set i=0
     foreach node ($nodelist)
       echo "i = $i"
-      $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
-      set i=`expr $i + 1`
+      set j=$nprocpernode
+      while ($j != 0)
+        $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
+        set i=`expr $i + 1`
+        set j=`expr $j - 1`
+      end
     end
   endif
 endif
@@ -67,11 +71,11 @@ rm -f STOP RELOAD fort.20
 # and start top command on all procs.
 if ($local_disc) then
   echo "Use local scratch disk"
-  copy-snapshots -v >& copy-snapshots.log &
+  copy-snapshots -v >&! copy-snapshots.log &
 endif
 # Copy output from `top' on run host to a file we can read from login server
 if ($remote_top) then
-  remote-top >& remote-top.log &
+  remote-top >&! remote-top.log &
 endif
 if ($local_binary) then
   echo "ls src/run.x $SCRATCH_DIR before copying:"
