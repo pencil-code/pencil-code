@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.7 2004-05-11 17:43:34 mee Exp $
+; $Id: pc_read_param.pro,v 1.8 2004-05-26 12:41:12 ajohan Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 17:43:34 $
-;  $Revision: 1.7 $
+;  $Date: 2004-05-26 12:41:12 $
+;  $Revision: 1.8 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -84,7 +84,8 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 
 default, datadir, 'data'
-if (n_elements(dim) eq 0) then pc_read_dim,object=dim,quiet=quiet
+if (n_elements(dim) eq 0) then pc_read_dim, datadir=datadir, object=dim, $
+    quiet=quiet
 pc_set_precision,dim=dim,quiet=quiet   ; check precision is set
 precision=dim.precision
 
