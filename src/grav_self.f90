@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.18 2003-11-15 19:09:02 brandenb Exp $
+! $Id: grav_self.f90,v 1.19 2003-11-17 04:21:44 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -48,6 +48,7 @@ module Gravity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
+  integer :: i_epot=0,i_depot=0
 
   contains
 
@@ -83,7 +84,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.18 2003-11-15 19:09:02 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.19 2003-11-17 04:21:44 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -138,8 +139,8 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,curlgg,curlcurlgg
-      real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2
+      real, dimension (nx,3) :: uu,gg,curlgg,curlcurlgg
+      real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2,udotg,g2
       integer :: j
 !
       intent(in)  :: f
@@ -167,9 +168,13 @@ module Gravity
 !
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+f(l1:l2,m,n,igx:igz)
 !
-!  check the degree of non-potential contamination
+!  diagnostics
 !
       if (ldiagnos) then
+        gg=f(l1:l2,m,n,igx:igz)
+!
+!  check the degree of non-potential contamination
+!
         if (i_curlggrms/=0.or.i_curlggmax/=0) then
           call curl(f,igg,curlgg)
           call dot2_mn(curlgg,curlgg2)
@@ -184,8 +189,22 @@ module Gravity
           divgg2=divgg**2
           if (i_divggrms/=0) call sum_mn_name(divgg2,i_divggrms,lsqrt=.true.)
           if (i_divggmax/=0) call max_mn_name(divgg2,i_divggmax,lsqrt=.true.)
-!
         endif
+!
+!  gravitational energy
+!
+        if (i_depot/=0) then
+          call dot2_mn(gg,g2)
+          call sum_mn_name(-.5*g2/grav_const,i_epot)
+        endif
+!
+!  change in gravitational energy
+!
+        if (i_depot/=0) then
+          call dot_mn(uu,gg,udotg)
+          call sum_mn_name(rho*udotg,i_depot)
+        endif
+!
       endif
 !
    endsubroutine duu_dt_grav
@@ -314,6 +333,7 @@ module Gravity
 !
       if (lreset) then
         i_curlggrms=0; i_curlggmax=0; i_divggrms=0; i_divggmax=0
+        i_epot=0; i_depot=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -323,6 +343,8 @@ module Gravity
         call parse_name(iname,cname(iname),cform(iname),'curlggmax',i_curlggmax)
         call parse_name(iname,cname(iname),cform(iname),'divggrms',i_divggrms)
         call parse_name(iname,cname(iname),cform(iname),'divggmax',i_divggmax)
+        call parse_name(iname,cname(iname),cform(iname),'depot',i_depot)
+        call parse_name(iname,cname(iname),cform(iname),'epot',i_epot)
       enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored
@@ -332,6 +354,8 @@ module Gravity
         write(3,*) 'i_curlggmax=',i_curlggmax
         write(3,*) 'i_divggrms=',i_divggrms
         write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'i_depot=',i_depot
+        write(3,*) 'i_epot=',i_epot
         write(3,*) 'igg=',igg
         write(3,*) 'igx=',igx
         write(3,*) 'igy=',igy

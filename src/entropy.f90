@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.242 2003-11-16 13:57:21 theine Exp $
+! $Id: entropy.f90,v 1.243 2003-11-17 04:21:44 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.242 2003-11-16 13:57:21 theine Exp $")
+           "$Id: entropy.f90,v 1.243 2003-11-17 04:21:44 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -861,6 +861,9 @@ module Entropy
 !
 !  Heat conduction for constant value of chi=K/(rho*cp)
 !  This routine also adds in turbulent diffusion, if chi_t /= 0.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi*rho*gradT + chi_t*rho*T*grads
+!  This routine is currently not correct when ionization is used.
 !
 !  29-sep-02/axel: adapted from calc_heatcond_simple
 !
@@ -914,6 +917,10 @@ module Entropy
 !
 !  Adds in shock entropy diffusion. There is potential for
 !  recycling some quantities from previous calculations.
+!  Ds/Dt = ... + 1/(rho*T) grad(flux), where
+!  flux = chi_shock*rho*T*grads
+!  (in comments we say chi_shock, but in the code this is "chi_shock*shock")
+!  This routine should be ok with ionization.
 !
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
 !
@@ -935,12 +942,16 @@ module Entropy
 !
       if(headtt) print*,'calc_heatcond_shock: chi_shock==',chi_shock
 !
+!  calculate terms for shock diffusion
+!  Ds/Dt = ... + chi_shock*[del2ss + (glnchi_shock+glnpp).gss]
 !
       call del2(f,iss,del2ss)
       call dot_mn(gshock,gss,gshockgss)
       call dot_mn(glnTT+glnrho,gss,g2)
 !
 !  shock entropy diffusivity
+!  Write: chi_shock = chi_shock0*shock, and gshock=grad(shock), so
+!  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
       if(chi_shock/=0.) then
         if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
