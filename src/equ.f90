@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.200 2004-04-12 13:17:01 ajohan Exp $
+! $Id: equ.f90,v 1.201 2004-04-13 10:57:32 dobler Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.200 2004-04-12 13:17:01 ajohan Exp $")
+           "$Id: equ.f90,v 1.201 2004-04-13 10:57:32 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -307,12 +307,12 @@ module Equ
 !
 !  general phiaverage quantities -- useful for debugging
 !
-      if (l2davgfirst) then
-        if (i_rcylmphi/=0) call phisum_mn_name_rz(rcyl_mn,i_rcylmphi)
-        if (i_phimphi/=0)  call phisum_mn_name_rz(phi_mn ,i_phimphi)
-        if (i_zmphi/=0)    call phisum_mn_name_rz(z_mn   ,i_zmphi)
-        if (i_rmphi/=0)    call phisum_mn_name_rz(r_mn   ,i_rmphi)
-      endif
+        if (l2davgfirst) then
+          if (i_rcylmphi/=0) call phisum_mn_name_rz(rcyl_mn,i_rcylmphi)
+          if (i_phimphi/=0)  call phisum_mn_name_rz(phi_mn ,i_phimphi)
+          if (i_zmphi/=0)    call phisum_mn_name_rz(z_mn   ,i_zmphi)
+          if (i_rmphi/=0)    call phisum_mn_name_rz(r_mn   ,i_rmphi)
+        endif
 !
 !  for each pencil, accumulate through the different routines
 !  maximum diffusion, maximum advection (keep as nx-array)
