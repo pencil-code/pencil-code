@@ -14,6 +14,7 @@
 
 default: manual.dvi
 
+all: manual.dvi manual.ps.gz manual.pdf
 
 pdffigs:
 	cd figs; make pdf
