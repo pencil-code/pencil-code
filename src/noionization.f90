@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.100 2004-02-20 21:08:23 theine Exp $
+! $Id: noionization.f90,v 1.101 2004-03-02 13:09:51 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -86,7 +86,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.100 2004-02-20 21:08:23 theine Exp $")
+           '$Id: noionization.f90,v 1.101 2004-03-02 13:09:51 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -216,7 +216,7 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,pp
       real, dimension(nx), intent(out) :: ss,lnTT,yH
 
-      call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+      call stop_it('perturb_mass: NOT IMPLEMENTED IN NO IONIZATION')
       ss=0.
       lnTT=1.
       yH=impossible
@@ -229,7 +229,7 @@ module Ionization
       real, intent(in) :: EE,lnTT,yH
       real, intent(out) :: rho
 
-      call stop_it("getdensity: NOT IMPLEMENTED IN NO IONIZATION")
+      call stop_it('getdensity: NOT IMPLEMENTED IN NO IONIZATION')
       !rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
       if (ip==0) print*,EE,lnTT,yH
       rho=0.
@@ -285,7 +285,7 @@ module Ionization
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('pressure_gradient_farray: gamma=1 not allowed w/entropy')
       cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       cp1tilde=1
 !
@@ -305,7 +305,7 @@ module Ionization
       real, intent(in) :: lnrho,ss
       real, intent(out) :: cs2,cp1tilde
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('pressure_gradient_point: gamma=1 not allowed w/entropy')
       cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       cp1tilde=1
 !
@@ -326,7 +326,7 @@ module Ionization
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('temperature_gradient: gamma=1 not allowed w/entropy')
       glnTT=gamma1*glnrho+gamma*gss
 !
       if (ip==0) print*,f !(keep compiler quiet)
@@ -354,7 +354,7 @@ module Ionization
       ss=f(l1:l2,m,n,iss)
       lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
       if (present(lnTT)) lnTT=lnTTi
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
@@ -382,7 +382,7 @@ module Ionization
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,lnTT_,ee_,pp_
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('eoscalc_point: gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
@@ -401,7 +401,7 @@ module Ionization
         pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
-        call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+        call stop_it('eoscalc_point: NOT IMPLEMENTED IN NO IONIZATION')
         lnrho_=var1
         pp_=var2
         lnTT_=1
@@ -439,7 +439,7 @@ module Ionization
       real, dimension(nx), intent(out), optional :: ee,pp
       real, dimension(nx) :: lnrho_,ss_,lnTT_,ee_,pp_
 !
-      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (gamma1==0.) call stop_it('eoscalc_pencil: gamma=1 not allowed w/entropy')
 !
       select case (ivars)
 
@@ -458,7 +458,7 @@ module Ionization
         pp_=cs20*exp(gamma*ss_-gamma1*lnrho0)/gamma
 
       case (ilnrho_pp)
-        call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+        call stop_it('eoscalc_pencil: NOT IMPLEMENTED IN NO IONIZATION')
         lnrho_=var1
         pp_=var2
         lnTT_=1
@@ -671,8 +671,8 @@ module Ionization
               (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
       case default
-        print*,"bc_ss_flux: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_flux: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_flux
@@ -711,8 +711,8 @@ module Ionization
 !  bottom boundary
 !
       case('bot')
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
+        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+          call stop_it('bc_ss_temp_old: Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                 'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) &
@@ -728,14 +728,14 @@ module Ionization
 !  top boundary
 !
       case('top')
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
+        if ((bcz1(ilnrho) /= 'a2') .and. (bcz1(ilnrho) /= 'a3')) &
+          call stop_it('bc_ss_temp_old: Inconsistent boundary conditions 3.')
         if (ldebug) print*, &
                    'bc_ss_temp_old: set top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                    'bc_ss_temp_old: cannot have cs2top<=0'
-  !     if (bcz1(ilnrho) /= "a2") &
-  !          call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
+  !     if (bcz1(ilnrho) /= 'a2') &
+  !          call stop_it('BOUNDCONDS: Inconsistent boundary conditions 4.')
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                  + alog(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
@@ -743,8 +743,8 @@ module Ionization
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
         enddo 
       case default
-        print*,"bc_ss_temp_old: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_temp_old: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_temp_old
@@ -805,8 +805,8 @@ module Ionization
         enddo
 
       case default
-        print*,"bc_ss_temp_x: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_temp_x: invalid argument'
+        call stop_it('')
       endselect
       
 
@@ -869,8 +869,8 @@ module Ionization
         enddo
 
       case default
-        print*,"bc_ss_temp_y: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_temp_y: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_temp_y
@@ -929,8 +929,8 @@ module Ionization
                - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
         enddo
       case default
-        print*,"bc_ss_temp_z: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_temp_z: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_temp_z
@@ -981,8 +981,8 @@ module Ionization
         enddo
 
       case default
-        print*,"bc_ss_stemp_x: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_stemp_x: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_stemp_x
@@ -1033,8 +1033,8 @@ module Ionization
         enddo
 
       case default
-        print*,"bc_ss_stemp_y: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_stemp_y: invalid argument'
+        call stop_it('')
       endselect
 !
 
@@ -1085,8 +1085,8 @@ module Ionization
                 + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
          enddo
       case default
-        print*,"bc_ss_stemp_z: invalid argument"
-        call stop_it("")
+        print*,'bc_ss_stemp_z: invalid argument'
+        call stop_it('')
       endselect
 !
     endsubroutine bc_ss_stemp_z
@@ -1139,8 +1139,8 @@ module Ionization
               +log(cs2_2d))
       enddo
     case default
-      print*,"bc_ss_energy: invalid argument"
-      call stop_it("")
+      print*,'bc_ss_energy: invalid argument'
+      call stop_it('')
     endselect
 
     end subroutine bc_ss_energy
