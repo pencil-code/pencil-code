@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.15 2002-07-08 06:51:51 brandenb Exp $
+! $Id: forcing.f90,v 1.16 2002-07-10 12:36:07 dobler Exp $
 
 module Forcing
 
@@ -9,13 +9,13 @@ module Forcing
   implicit none
 
   integer :: iforce=2,iforce2=0,kfountain=5
-  real :: force=0.,relhel=1.,height_ff=0.,fountain=1.,width_ff=.5
+  real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
-       iforce,force,relhel,height_ff,width_ff, &
+       iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,kfountain,fountain
 
   contains
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.15 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: forcing.f90,v 1.16 2002-07-10 12:36:07 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -150,6 +150,7 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (nx) :: radius,tmpx
       real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,mvar) :: f
       complex, dimension (mx) :: fx
@@ -243,16 +244,29 @@ module Forcing
 !  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
 !  case one needs to scale by 2pi/Lx, etc.
 !
-      fx=exp(cmplx(0.,kx*x+phase))*fact
-      fy=exp(cmplx(0.,ky*y))
-      fz=exp(cmplx(0.,kz*z))
+      fx=exp(cmplx(0.,2*pi/Lx*kx*x+phase))*fact
+      fy=exp(cmplx(0.,2*pi/Ly*ky*y))
+      fz=exp(cmplx(0.,2*pi/Lz*kz*z))
 !
-!  add possibility of z-profile in the forcing
+!  possibly multiply forcing by z-profile
 !
       if (height_ff/=0.) then
-        if (ifirst==1) print*,'forcing_hel: include z-profile'
+        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
         tmpz=(z/height_ff)**2
         fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
+!  possibly multiply forcing by sgn(z) and radial profile
+!
+      if (r_ff/=0.) then
+        if (lroot .and. ifirst==1) &
+             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+        !
+        ! only z-dependent part can be done here; radial stuff needs to go
+        ! into the loop
+        !
+        tmpz = tanh(z/width_ff)
+        fz = fz*tmpz
       endif
 !
       if (ip.le.5) print*,'fx=',fx
@@ -267,14 +281,31 @@ module Forcing
       coef(3)=cmplx(k*float(kez),sig*float(kkez))
       if (ip.le.5) print*,'coef=',coef
 !
-      do j=1,3
-        jf=j+iux-1
-        do n=n1,n2
-        do m=m1,m2
-          f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+      if (r_ff == 0) then
+        ! loop the two cases separately, so we don't check for r_ff during
+        ! each loop cycle which could inhibit (pseudo-)vectorisation
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            do m=m1,m2
+              f(l1:l2,m,n,jf) = &
+                   f(l1:l2,m,n,jf)+real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
         enddo
+      else
+        do j=1,3
+          jf=j+iux-1
+          do n=n1,n2
+            do m=m1,m2
+              radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+              tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+              f(l1:l2,m,n,jf) = &
+                   f(l1:l2,m,n,jf) + real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+            enddo
+          enddo
         enddo
-      enddo
+      endif
 !
       if (ip.le.12) print*,'forcing OK'
 !
