@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.20 2004-04-30 09:30:50 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.21 2004-05-07 13:52:18 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -23,7 +23,7 @@ module Pscalar
 
   character (len=labellen) :: initlncc='zero', initlncc2='zero'
   character (len=40) :: tensor_pscalar_file
-  logical :: nopscalar=.false.,reinitalize_lncc=.false.
+  logical :: nopscalar=.false.,reinitalize_lncc=.false.,lupwind1stcc=.false.
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
@@ -42,7 +42,7 @@ module Pscalar
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0, &
-       reinitalize_lncc
+       reinitalize_lncc,lupwind1stcc
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
@@ -87,7 +87,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.20 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.21 2004-05-07 13:52:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -248,7 +248,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,gcc,glnrho
       real, dimension (nx) :: cc,rho,ugcc,diff_op,del2cc
-      real, dimension (nx) :: cc1,gcc1,gcc2
+      real, dimension (nx) :: cc1,gcc1,gcc2,dlnccdz
       integer :: j
 !
       intent(in)  :: f,uu,glnrho
@@ -268,12 +268,18 @@ module Pscalar
 !  without changing file size and recompiling everything.
 !
       if (.not. nopscalar) then ! i.e. if (pscalar)
-        call grad(f,ilncc,gcc)
-        call dot_mn(uu,gcc,ugcc)
 !
 !  passive scalar equation
 !
-        if(lhydro) df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
+        if(lhydro .and. .not. lupwind1stcc) then
+          call grad(f,ilncc,gcc)
+          call dot_mn(uu,gcc,ugcc)
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
+        else
+          call gradf_upw1st(f,uu,ilncc,gcc)
+          call dot_mn(uu,gcc,ugcc)
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-ugcc
+        endif
 !
 !  diffusion operator
 !

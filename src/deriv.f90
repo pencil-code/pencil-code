@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.12 2004-01-20 14:25:05 dobler Exp $
+! $Id: deriv.f90,v 1.13 2004-05-07 13:52:18 ajohan Exp $
 
 module Deriv
 
@@ -431,6 +431,62 @@ module Deriv
       endif
 !
     endsubroutine derij
+!***********************************************************************
+    subroutine der_upwind1st(f,uu,k,df,j)
+!
+!  First order upwind derivative of variable
+!
+!  Useful for advecting non-logarithmic variables
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: df
+      integer :: j,k,l
+!
+      if (j == 1) then
+        if (nxgrid /= 1) then
+          do l=1,nx
+            if (uu(3+l,1) > 0.) then
+              df(l) = (f(3+l,m,n,k) - f(3+l-1,m,n,k))/dx
+            else
+              df(l) = (f(3+l+1,m,n,k) - f(3+l,m,n,k))/dx
+            endif
+          enddo
+        else
+          df=0.
+          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in x-direction'
+        endif
+      elseif (j == 2) then
+        if (nygrid /= 1) then
+          do l=1,nx
+            if (uu(l,2) > 0.) then
+              df(l) = (f(3+l,m,n,k) - f(3+l,m-1,n,k))/dy
+            else
+              df(l) = (f(3+l,m+1,n,k) - f(3+l,m,n,k))/dy
+            endif
+          enddo
+        else
+          df=0.
+          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in y-direction'
+        endif
+      elseif (j == 3) then
+        if (nzgrid /= 1) then
+          do l=1,nx
+            if (uu(l,3) > 0.) then
+              df(l) = (f(3+l,m,n,k) - f(3+l,m,n-1,k))/dz
+            else
+              df(l) = (f(3+l,m,n+1,k) - f(3+l,m,n,k))/dz
+            endif
+          enddo
+        else
+          df=0.
+          if (ip.le.10) print*, 'der_upwind1st: Degenerate case in z-direction'
+        endif
+      endif
+!
+    endsubroutine der_upwind1st
 !***********************************************************************
 
 

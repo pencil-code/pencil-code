@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.177 2004-04-30 09:30:50 ajohan Exp $ 
+! $Id: sub.f90,v 1.178 2004-05-07 13:52:18 ajohan Exp $ 
 
 module Sub 
 
@@ -1688,6 +1688,26 @@ module Sub
       endif
 !
     endsubroutine u_dot_gradf
+!***********************************************************************
+    subroutine gradf_upw1st(f,uu,k,gradf)
+!
+!  Do advection-type term u.grad f_k.
+!
+      use Cdata
+      use Deriv
+!
+      intent(in) :: f,uu
+      intent(out) :: gradf
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3) :: uu,gradf
+      integer :: j,k
+!
+      do j=1,3
+        call der_upwind1st(f,uu,k,gradf(:,j),j)
+      enddo
+!
+    endsubroutine gradf_upw1st
 !***********************************************************************
     subroutine inpup(file,a,nv)
 !

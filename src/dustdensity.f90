@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.75 2004-05-06 13:10:05 ajohan Exp $
+! $Id: dustdensity.f90,v 1.76 2004-05-07 13:52:18 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -28,16 +28,16 @@ module Dustdensity
   character (len=labellen) :: initnd='zero'
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
-  logical :: lbogusdustder=.false.
+  logical :: lupwind1stdust=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, ldustgrowth, ldustcoagulation, &
-      lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, lbogusdustder
+      lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity
 
   namelist /dustdensity_run_pars/ &
       rhod0, cdiffnd, cdiffnd_all, ldustgrowth, &
-      ldustcoagulation, lcalcdkern, supsatfac, ldustcontinuity, lbogusdustder
+      ldustcoagulation, lcalcdkern, supsatfac, ldustcontinuity, lupwind1stdust
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
@@ -107,7 +107,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.75 2004-05-06 13:10:05 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.76 2004-05-07 13:52:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,6 +164,9 @@ module Dustdensity
       if (ldustgrowth .and. .not. lpscalar) &
           call stop_it('initialize_dustdensity: ' // &
           'Dust growth only works with pscalar_nolog')
+
+      if (nx*ny /= 1) print*,'initialize_dustdensity: WARNING -'// &
+          'dust equations only tested in one dimension (z).'
 !
 !  Special test cases need initialization of kernel
 !
@@ -766,7 +769,7 @@ module Dustdensity
 !***********************************************************************
     subroutine dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
 !
-!  Dust continuity equations
+!  Dust continuity and advective equations
 !
       use Sub
 !
@@ -777,17 +780,23 @@ module Dustdensity
       real, dimension (nx) :: udgnd,udgmd,udgmi,dmifac,rho1,mfluxcond
       integer :: k
 !
-!  Loop over dust layers
+!  Continuity equations
 !
       do k=1,ndustspec
 !
-!  Continuity equations
+!  Regular differentiation scheme
 !
-        if (.not. lbogusdustder) then
+        if (.not. lupwind1stdust) then
           call grad(f,ind(k),gnd(:,:,k))
           call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
               udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+
+          if (lmdvar) then
+            call grad(f,imd(k),gmd(:,:,k))
+            call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
+            df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
+          endif
 
           if (lmice) then
             call grad(f,imi(k),gmi(:,:,k))
@@ -795,40 +804,26 @@ module Dustdensity
             df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
           endif
         else
-          if (z(n) > 0.) then 
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-                uud(:,3,k)*(f(l1:l2,m,n+1,ind(k))-f(l1:l2,m,n,ind(k)))/dz
-          else
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-                uud(:,3,k)*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n-1,ind(k)))/dz
-          endif
+!
+!  Upwind differentiation scheme
+!
+          call gradf_upw1st(f,uud(:,:,k),ind(k),gnd(:,:,k))
+          call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-              f(l1:l2,m,n,ind(k))*divud(:,k)
-          if (lmice) then
-            if (z(n) > 0.) then 
-              dmifac = uud(:,3,k)*(f(l1:l2,m,n+1,imi(k))-f(l1:l2,m,n,imi(k)))/dz
-              if (mfluxcond(1) > 0.) then
-                df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - dmifac
-              else
-                df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
-                    rho1(:)*dmifac(:)*nd(:,k)*unit_md
-              endif
-            else
-              dmifac = uud(:,3,k)*(f(l1:l2,m,n,imi(k))-f(l1:l2,m,n-1,imi(k)))/dz
-              if (mfluxcond(1) > 0.) then
-                df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - dmifac
-              else
-                df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
-                    rho1(:)*dmifac(:)*nd(:,k)*unit_md
-              endif
-            endif
-          endif
-        endif
+              udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
 
-        if (lmdvar) then
-          call grad(f,imd(k),gmd(:,:,k))
-          call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
-          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
+          if (lmdvar) then
+            call gradf_upw1st(f,uud(:,:,k),imd(k),gmd(:,:,k))
+            call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
+            df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
+          endif
+
+          if (lmice) then
+            call gradf_upw1st(f,uud(:,:,k),imi(k),gmi(:,:,k))
+            call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)
+            df(l1:l2,m,n,ilncc) = df(l1:l2,m,n,ilncc) - &
+                rho1(:)*udgmi*nd(:,k)*unit_md
+          endif
         endif
 
       enddo
