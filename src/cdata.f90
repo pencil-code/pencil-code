@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.79 2002-07-22 18:16:03 dobler Exp $
+! $Id: cdata.f90,v 1.80 2002-07-22 18:54:29 dobler Exp $
 
 module Cdata
 
@@ -17,7 +17,7 @@ module Cdata
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttrans=0.
   real :: dx,dy,dz,dxmin,dxmax
-  real :: dsnap=100.,dvid=100.,dtmin=0.
+  real :: dsnap=100.,dvid=100.,dtmin=1.e-6
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max

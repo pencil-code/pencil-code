@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.42 2002-07-22 08:51:44 dobler Exp $ 
+! $Id: param_io.f90,v 1.43 2002-07-22 18:54:29 dobler Exp $ 
 
 module Param_IO
 
@@ -156,10 +156,6 @@ module Param_IO
 !
       ldebug=lroot.and.(ip<7)
       if (lroot) print*,'ldebug,ip=',ldebug,ip
-!
-!  Write data to file for IDL
-!
-      call wparam2()
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.70 2002-07-22 12:49:20 brandenb Exp $
+! $Id: run.f90,v 1.71 2002-07-22 18:54:29 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,13 +45,13 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.70 2002-07-22 12:49:20 brandenb Exp $")
+             "$Id: run.f90,v 1.71 2002-07-22 18:54:29 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
 !
         ix=1+(mx-1)/2; iy=1+(my-1)/2; iz=1+(mz-1)/2
-        dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
+!        dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -92,6 +92,10 @@
 !
         call ss_run_hook()      ! calculate Fheat, ..
         call forcing_run_hook() ! get random seed from file, ..
+!
+!  Write data to file for IDL
+!
+      call wparam2()
 !
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !
