@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.24 2002-07-21 21:34:59 dobler Exp $
+! $Id: cparam.f90,v 1.25 2002-09-05 18:50:12 brandenb Exp $
 
 module Cparam
 
@@ -24,7 +24,7 @@ module Cparam
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
   integer, parameter :: mz=nz+2*nghost,n1=1+nghost,n2=mz-nghost
-  integer, parameter :: mw=mx*my*mz
+  integer, parameter :: mw=mx*my*mz,nwgrid=nxgrid*nygrid*nzgrid
 !
   integer, parameter :: l1i=l1+nghost-1,l2i=l2-nghost+1
   integer, parameter :: m1i=m1+nghost-1,m2i=m2-nghost+1
