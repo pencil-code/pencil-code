@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.101 2003-03-28 22:43:36 brandenb Exp $ 
+! $Id: param_io.f90,v 1.102 2003-04-01 21:23:58 theine Exp $ 
 
 module Param_IO
 
@@ -36,6 +36,7 @@ module Param_IO
   real, parameter :: m_e_cgs=9.109389754d-28   ! [g]
   real, parameter :: eV_cgs=1.602177250d-12    ! [erg]
   real, parameter :: sigmaH_cgs=4.d-17         ! [cm^2]
+  real, parameter :: sigmaB_cgs=5.607d-5           ! [erg/cm^2/s/K^4]
 
   ! run parameters
   real :: tmax=1e33,awig=1.

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.22 2003-03-31 14:04:07 brandenb Exp $
+! $Id: ionization.f90,v 1.23 2003-04-01 21:23:58 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.22 2003-03-31 14:04:07 brandenb Exp $")
+           "$Id: ionization.f90,v 1.23 2003-04-01 21:23:58 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,7 +117,7 @@ module Ionization
 !
       if(cionization=='hydrogen') then
         if(headtt.and.first) print*,'thermodynamics based on hydrogen ionization'
-        call ionfrac(lnrho,ss,yH)
+        yH=ionfrac(lnrho,ss)
         call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
                                  dlnPdss=dlnPdss, &
                                  TT=TT)
@@ -201,7 +201,7 @@ module Ionization
       endif
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine ionfrac(lnrho,ss,yH)
+    function ionfrac(lnrho,ss)
 !
 !   calculates the ionization fraction along the pencil
 !
@@ -209,14 +209,14 @@ module Ionization
 !
       real, dimension(nx), intent(in)  :: lnrho,ss
       real, dimension(nx), save        :: yHlast=.5
-      real, dimension(nx), intent(out) :: yH
+      real, dimension(nx)              :: ionfrac
       integer                          :: i
 
       do i=1,nx
-         yH(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
-         yHlast(i)=yH(i)
-      enddo    
-    endsubroutine ionfrac
+         ionfrac(i)=rtsafe(lnrho(i),ss(i),yHlast(i))
+         yHlast(i)=ionfrac(i)
+      enddo
+    endfunction ionfrac
 !***********************************************************************
     function rtsafe(lnrho,ss,yHlast)
 !

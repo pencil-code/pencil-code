@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.133 2003-03-28 10:40:43 theine Exp $
+! $Id: cdata.f90,v 1.134 2003-04-01 21:23:58 theine Exp $
 
 module Cdata
 
@@ -27,7 +27,7 @@ module Cdata
   !  units
   character (len=3) :: unit_system='cgs'
   real :: unit_length=1.,unit_velocity=1.,unit_density=1.,unit_temperature=1.
-  real :: k_B,m_p,m_e,eV,hbar,sigmaH_
+  real :: k_B,m_p,m_e,eV,hbar,sigmaH_,sigmaB
 
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve

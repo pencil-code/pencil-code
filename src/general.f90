@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.13 2003-04-01 16:11:47 theine Exp $
+! $Id: general.f90,v 1.14 2003-04-01 21:23:58 theine Exp $
 
 module General
 
@@ -306,25 +306,25 @@ module General
 !***********************************************************************
     function spline_derivative(z,f)
 !
+!  computes derivative of a given function using spline interpolation
+!
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !
       implicit none
       real, dimension(:) :: z
-      real, dimension(:,:,:), intent(in) :: f
+      real, dimension(:), intent(in) :: f
       real, dimension(size(z)) :: w1,w2,w3
-      real, dimension(size(f,1),size(f,2),size(f,3)) :: d,spline_derivative
+      real, dimension(size(z)) :: d,spline_derivative
       real :: c
-      integer :: mx,my,mz,j,k
+      integer :: mz,k
 
-      mx=size(f,1)
-      my=size(f,2)
-      mz=size(f,3)
+      mz=size(z)
 
       w1(1)=1./(z(2)-z(1))**2
       w3(1)=-1./(z(3)-z(2))**2
       w2(1)=w1(1)+w3(1)
-      d(:,:,1)=2.*((f(:,:,2)-f(:,:,1))/(z(2)-z(1))**3 &
-                  -(f(:,:,3)-f(:,:,2))/(z(3)-z(2))**3)
+      d(1)=2.*((f(2)-f(1))/(z(2)-z(1))**3 &
+                  -(f(3)-f(2))/(z(3)-z(2))**3)
 !
 ! interior points
 !
@@ -332,27 +332,24 @@ module General
       w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
       w2(2:mz-1)=2.*(w1(2:mz-1)+w3(2:mz-1))
 
-      do j=1,mx
-      do k=1,my
-         d(j,k,2:mz-1)=3.*(w3(2:mz-1)**2*(f(j,k,3:mz)-f(j,k,2:mz-1)) &
-                          +w1(2:mz-1)**2*(f(j,k,2:mz-1)-f(j,k,1:mz-2)))
-      end do
-      end do
+      d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
+           +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
+
 !
 ! last point
 !
       w1(mz)=1./(z(mz-1)-z(mz-2))**2
       w3(mz)=-1./(z(mz)-z(mz-1))**2
       w2(mz)=w1(mz)+w3(mz)
-      d(:,:,mz)=2.*((f(:,:,mz-1)-f(:,:,mz-2))/(z(mz-1)-z(mz-2))**3 &
-                     -(f(:,:,mz)-f(:,:,mz-1))/(z(mz)-z(mz-1))**3)
+      d(mz)=2.*((f(mz-1)-f(mz-2))/(z(mz-1)-z(mz-2))**3 &
+           -(f(mz)-f(mz-1))/(z(mz)-z(mz-1))**3)
 !
 ! eliminate at first point
 !
       c=-w3(1)/w3(2)
       w1(1)=w1(1)+c*w1(2)
       w2(1)=w2(1)+c*w2(2)
-      d(:,:,1)=d(:,:,1)+c*d(:,:,2)
+      d(1)=d(1)+c*d(2)
       w3(1)=w2(1)
       w2(1)=w1(1)
 !
@@ -361,7 +358,7 @@ module General
       c=-w1(mz)/w1(mz-1)
       w2(mz)=w2(mz)+c*w2(mz-1)
       w3(mz)=w3(mz)+c*w3(mz-1)
-      d(:,:,mz)=d(:,:,mz)+c*d(:,:,mz-1)
+      d(mz)=d(mz)+c*d(mz-1)
       w1(mz)=w2(mz)
       w2(mz)=w3(mz)
 !
@@ -370,14 +367,14 @@ module General
       do k=2,mz
          c=-w1(k)/w2(k-1)
          w2(k)=w2(k)+c*w3(k-1)
-         d(:,:,k)=d(:,:,k)+c*d(:,:,k-1)
+         d(k)=d(k)+c*d(k-1)
       end do
 !
 ! backsubstitute
 !
-      d(:,:,mz)=d(:,:,mz)/w2(mz)
+      d(mz)=d(mz)/w2(mz)
       do k=mz-1,1,-1
-         d(:,:,k)=(d(:,:,k)-w3(k)*d(:,:,k+1))/w2(k)
+         d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
       end do
 
       spline_derivative=d
@@ -385,37 +382,68 @@ module General
 !***********************************************************************
     function spline_integral(z,f,q0)
 !
+!  computes integral of a given function using spline interpolation
+!
 !  01-apr-03/tobi: originally coded by Aake Nordlund
 !
       implicit none
       real, dimension(:) :: z
-      real, dimension(:,:,:) :: f
-      real, dimension(size(f,1),size(f,2),size(f,3)) :: df,q,spline_integral
-      real, dimension(size(z)) :: dz
+      real, dimension(:) :: f
+      real, dimension(size(z)) :: df,dz
+      real, dimension(size(z)) :: q,spline_integral
       real, optional :: q0
-      integer :: mx,my,mz,j,k
+      integer :: mz,k
 
-      mx=size(f,1)
-      my=size(f,2)
-      mz=size(f,3)
+      mz=size(z)
 
-      q(:,:,1)=0.
-      if (present(q0)) q(:,:,1)=q0
+      q(1)=0.
+      if (present(q0)) q(1)=q0
       df=spline_derivative(z,f)
       dz(2:mz)=z(2:mz)-z(1:mz-1)
 
-      do j=1,mx
-      do k=1,my
-         q(j,k,2:mz)=.5*dz(2:mz)*(f(j,k,1:mz-1)+f(j,k,2:mz)) &
-             +(1./12.)*dz(2:mz)**2*(df(j,k,1:mz-1)-df(j,k,2:mz))
-      end do
-      end do
+      q(2:mz)=.5*dz(2:mz)*(f(1:mz-1)+f(2:mz)) &
+              +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
 
-      do j=2,mz
-         q(:,:,j)=q(:,:,j)+q(:,:,j-1)
+      do k=2,mz
+         q(k)=q(k)+q(k-1)
       end do
 
       spline_integral=q
     end function spline_integral
+!***********************************************************************
+    subroutine tridag(a,b,c,r,u)
+!
+!  solves tridiagonal system
+!
+!  01-apr/tobi: from numerical recipes
+!
+      implicit none
+      real, dimension(:), intent(in) :: a,b,c,r
+      real, dimension(:), intent(out) :: u
+      real, dimension(size(b)) :: gam
+      integer :: n,j
+      real :: bet
+
+      n=size(b)
+      bet=b(1)
+      if (bet.eq.0.) then
+         print*,'tridag_ser: Error at code stage 1'
+         return
+      endif
+
+      u(1)=r(1)/bet
+      do j=2,n
+         gam(j)=c(j-1)/bet
+         bet=b(j)-a(j-1)*gam(j)
+         if (bet.eq.0.) then
+            print*,'tridag_ser: Error at code stage 2'
+            return
+         endif
+         u(j)=(r(j)-a(j-1)*u(j-1))/bet
+      end do
+      do j=n-1,1,-1
+         u(j)=u(j)-gam(j+1)*u(j+1)
+      end do
+    end subroutine tridag
 !***********************************************************************
 end module General
