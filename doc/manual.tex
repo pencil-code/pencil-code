@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.80 2002-08-13 12:23:04 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.81 2002-08-14 15:34:52 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -221,7 +221,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.80 $ $}
+\date{\today,~ $ $Revision: 1.81 $ $}
 
 % ====================================================================== %
 
@@ -250,7 +250,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.80 $ $}
+  \emph{\today,~ $ $Revision: 1.81 $ $}
 
 
 \end{center}
@@ -1942,6 +1942,16 @@ the latest information, you should have a look at the code.
   \var{luminosity} [$0.$], \\
   \var{wheat} [$0.1$]
                & strength and width of heating region. \\
+  \var{cooltype} ['Temp']
+               & type of cooling; \emph{currently only implemented for
+                 spherical geometry}.
+                 Currently valid choices are
+                 \begin{description}
+                 \item[\code{`Temp'},\code{`cs2'}] (cool temperature
+                   towards $\cs^2=\var{cs2top}$),
+                 \item[\code{`entropy'}] (cool entropy towards $0.$).
+                 \end{description}
+                 \\
   \var{cool} [$0.$], \\
   \var{wcool} [$0.1$]
                & strength and width of cooling region. \\
@@ -3238,7 +3248,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.80 2002-08-13 12:23:04 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.81 2002-08-14 15:34:52 dobler Exp $ $}
 
 
 \end{document}
