@@ -48,7 +48,7 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Sub
+      use Mpicomm, only: lroot,stop_it
 !
       logical, save :: first=.true.
 !
@@ -88,10 +88,10 @@ module Register
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real :: ampl
-      real :: gamma1,zmax
+      real :: dsdz0 = -0.2      ! (1/c_p)ds/dz
+      real :: zmax
       integer :: init
 !
-      gamma1 = gamma-1
       select case(init)
       case(0)               ! random ux (Gaussian distribution)
         if (lroot) print*,'Gaussian-distributed ux'
@@ -102,9 +102,21 @@ module Register
       case(1)               ! density stratification
         if (lroot) print*,'density stratification'
 !        f(:,:,:,ilnrho)=-zz
-        zmax = -cs20/gamma1/gravz
-        print*, 'zmax = ', zmax
-        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
+! isentropic case:
+!        zmax = -cs20/gamma1/gravz
+!        print*, 'zmax = ', zmax
+!        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
+! linear entropy gradient;
+        f(:,:,:,ilnrho) = -dsdz0*zz &
+                          + 1./gamma1*alog( 1 + gamma1*gravz/dsdz0/cs20 &
+                                                *(1-exp(-dsdz0*zz)) )
+call random_number(tmp)
+f(:,:,:,iux) = 0.2*(tmp-0.5)   ! velocity perturbation
+call random_number(tmp)
+f(:,:,:,iuy) = 0.2*(tmp-0.5)   ! velocity perturbation
+call random_number(tmp)
+f(:,:,:,iuz) = 0.2*(tmp-0.5)   ! velocity perturbation
+
       case(2)               ! oblique sound wave
         if (lroot) print*,'oblique sound wave'
         f(:,:,:,ilnrho)=ampl*cos(xx+2*yy)*sqrt(5.)
@@ -124,4 +136,4 @@ module Register
 
 endmodule Register
 
-!!! End of file init.f90
+!!! End of file register.f90

@@ -3,7 +3,7 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=nompicomm
-FORCING=forcing
+FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic
 IO=io_dist
@@ -107,7 +107,7 @@ general.o:   general.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
-$(IO).o:     $(IO).f90 cdata.o
+$(IO).o:     $(IO).f90 $(MPICOMM).o cdata.o
 sub.o:       sub.f90 cdata.o deriv.o $(IO).o $(MPICOMM).o
 register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
 equ.o:       equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o

@@ -172,8 +172,8 @@ module Forcing
 !  Normalise ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
 !
-      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs**3)
-      if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs=',k,kde,ffnorm,kav,dt,cs
+      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
+      if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
 !

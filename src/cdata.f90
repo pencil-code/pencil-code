@@ -9,10 +9,10 @@ module Cdata
   real, dimension (mz) :: z
   real :: t,dt,dx,dy,dz
   real :: dsnap,dvid,dforce
-  real :: cs,cs20,gamma,force,relhel
+  real :: cs0,rho0,cs20,gamma,gamma1,force,relhel
   real :: DD,nu,cmu,cnu2
-  real :: rrms,rmax,urms,umax,divurms,divumax
-  real :: orms,omax,ourms,oumax
+  real :: t_diag,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
+  real :: orms,omax,o2max,ourms,oumax
   real :: UUmax,cdt,pi,Lx,Ly,Lz
   real :: gravz
 

@@ -41,6 +41,7 @@ module Entropy
       endif
 !
       gamma = 1.66666666666666666
+      gamma1 = gamma - 1.
     endsubroutine register_ent
 !***********************************************************************
     subroutine init_ent(f,init,ampl,xx,yy,zz)
@@ -53,9 +54,17 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real :: ampl
+      real :: ss0,dsdz0=-0.2      ! (1/c_p)ds/dz
       integer :: init
 !
-      f(:,:,:,ient) = 0.
+      ss0 = (alog(cs20) - gamma1*alog(rho0) - alog(gamma)) / gamma
+      select case(init)
+      case(1)               ! density stratification
+        f(:,:,:,ient) = (-alog(gamma) + alog(cs20))/gamma &
+                        + dsdz0 * zz
+      case default
+        f(:,:,:,ient) = 0.
+      endselect
 !
     endsubroutine init_ent
 !***********************************************************************
@@ -74,7 +83,6 @@ module Entropy
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,gss,glnrho,gpprho
       real, dimension (nx) :: ugss,thdiff,del2ss,divu,sij2,cs2,ss,lnrho,TT1
-      real :: gamma1
       integer :: i,j
 !
       call grad(f,ient,gss)
@@ -82,10 +90,11 @@ module Entropy
 !
 !  sound speed squared
 !
-      gamma1=gamma-1.
       ss=f(l1:l2,m,n,ient)
       lnrho=f(l1:l2,m,n,ilnrho)
-      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+!  no cs20 if we adopt s[/c_p] = 1/gamma*ln(p) - ln(rho)
+!      cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+      cs2=gamma*exp(gamma1*lnrho+gamma*ss)
 !
 !  pressure gradient term
 !
@@ -123,8 +132,9 @@ module Entropy
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
 !
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-           + 0.1*spread(exp(-((z(n)+1.)/(2*dz))**2), 1,l2-l1+1)
+!      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+!           + .3*spread(exp(-((z(n)+1.)/(2*dz))**2), 1,l2-l1+1) &
+!           * (1. + tanh((t-5.)/3.))
     endsubroutine dss_dt
 !***********************************************************************
 

@@ -27,7 +27,7 @@ module Magnetic
       first = .false.
 !
       lmagnetic = .true.
-!      iaa = nvar+1              ! indices to access aa
+      iaa = nvar+1              ! indices to access aa
       iax = iaa
       iay = iaa+1
       iaz = iaa+2
@@ -80,7 +80,6 @@ module Magnetic
       real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,gss,glnrho,gpprho
       real, dimension (nx) :: ugss,thdiff,del2ss,divu,sij2,cs2,ss,lnrho,TT1
-      real :: gamma1
       integer :: i,j
 !
       call grad(f,ient,gss)
@@ -88,7 +87,6 @@ module Magnetic
 !
 !  sound speed squared
 !
-      gamma1=gamma-1.
       ss=f(l1:l2,m,n,ient)
       lnrho=f(l1:l2,m,n,ilnrho)
       cs2=cs20*exp(gamma1*lnrho+gamma*ss)

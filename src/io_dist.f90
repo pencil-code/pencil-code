@@ -131,7 +131,7 @@ contains
       real, dimension (mx,my,mz,nn) :: a
       character*(*) file
 !
-!      print*,'OUTPUT_VECTOR'
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
       open(91,file=file,form='unformatted')
       write(91) a
       write(91) t,x,y,z
@@ -145,13 +145,14 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
+      use Mpicomm, only: lroot,stop_it
 !
       integer :: nn
       real, dimension (mx,my,mz) :: a
       character*(*) file
 !
-!      print*,'OUTPUT_SCALAR'
-      if (nn /= 1) STOP "OUTPUT called with scalar field, but nn/=1"
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
+      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
       open(91,file=file,form='unformatted')
       write(91) a
       write(91) t,x,y,z

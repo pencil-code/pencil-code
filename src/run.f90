@@ -72,14 +72,14 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.3 2001-11-12 10:47:13 dobler Exp $'
+          print*,'$Id: run.f90,v 1.4 2001-11-23 16:19:59 dobler Exp $'
         endif
 !
 !  do loop in time
 !
         Time_loop: do it=1,nt
           if (ip.le.10) print*,'it=',it
-          lout=mod(it,it1).eq.0
+          lout=mod(it-1,it1).eq.0
           if (lout) call cread
           if (iforce==1) call forcing1
           if (iforce==2) call forcing2
@@ -93,8 +93,13 @@
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
-          if (mod(it,isave).eq.0) &
-               call output(trim(directory)//'/var.dat',f,mvar)
+          if (mod(it,isave).eq.0) then
+!  update ghost zones for var.dat (cheap, since done infrequently)
+            call initiate_isendrcv_bdry(f)
+            call finalise_isendrcv_bdry(f)
+!  write data
+            call output(trim(directory)//'/var.dat',f,mvar)
+          endif
 !
           headt=.false.
           if (it>=nt) exit Time_loop
@@ -104,6 +109,9 @@
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
+!  update ghost zones for var.dat (cheap, since done once
+        call initiate_isendrcv_bdry(f)
+        call finalise_isendrcv_bdry(f)
         call output(trim(directory)//'/var.dat',f,mvar)
         if (ip<=10) call output(trim(directory)//'/dvar.dat',df,mvar)
 !

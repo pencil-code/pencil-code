@@ -30,17 +30,19 @@
 !
         pi=2*asin(1.)
         open(1,FILE='start.in',FORM='formatted')
+        read(1,*) ip
         read(1,*) Lx,Ly,Lz
         read(1,*) ampl,init
-        read(1,*) cs,gravz
+        read(1,*) cs0,rho0,gravz
         close(1)
 !
 !  output on the console, but only when root processor
 !
         if (lroot)then
+          print*, 'ip=', ip
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
           print*, 'ampl,init=', ampl,init
-          print*, 'cs,gravz=', cs,gravz
+          print*, 'cs0,gravz=', cs0,gravz
         endif
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
@@ -58,7 +60,7 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-        cs20=cs**2 ! (goes into cdata module)
+        cs20=cs0**2 ! (goes into cdata module)
 !
 !  different initial conditions
 !

@@ -16,13 +16,13 @@ module Equ
       read(1,*) nt,it1,dt,isave,itorder
       read(1,*) dsnap,dvid,dforce
       read(1,*) ip,ix,iy,iz
-      read(1,*) cs,nu,ivisc
+      read(1,*) cs0,nu,ivisc
       read(1,*) gravz
       read(1,*) iforce,force,relhel
       read(1,*) ibc
       read(1,*) form1
       close(1)
-      cs20=cs**2 !(goes into cdata module)
+      cs20=cs0**2 !(goes into cdata module)
 !  
 !  make sure ix,iy,iz are not outside the boundaries
 !
@@ -42,7 +42,7 @@ module Equ
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
         print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
-        print*, 'cs,nu,ivisc=', cs,nu,ivisc
+        print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
         print*, 'gravz=', gravz
         print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'ibc=', ibc
@@ -84,10 +84,10 @@ module Equ
 !
       real, dimension (mreduce) :: fmax_tmp,fsum_tmp,fmax,fsum
 !
-      fmax_tmp(1)=umax
-      fmax_tmp(2)=omax
+      fmax_tmp(1)=u2max
+      fmax_tmp(2)=o2max
       fmax_tmp(3)=oumax
-      fmax_tmp(4)=divumax
+      fmax_tmp(4)=divu2max
       fmax_tmp(5)=rmax
 !
       fsum_tmp(1)=urms
@@ -137,11 +137,11 @@ module Equ
 !  do this only if we are on the root processor
 !
       if(lroot) then
-        write(6,form1) it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
-        write(20,form1) it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
+        write(6,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
+        write(20,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
         open(3,file='check')
-        write(3,'(a)')'it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax'
-        write(3,form1) it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
+        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax'
+        write(3,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
         close(3)
       endif
 !
@@ -204,7 +204,7 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.4 2001-11-12 13:11:17 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.5 2001-11-23 16:19:57 dobler Exp $'
 !
 !  initiate communication
 !
@@ -288,6 +288,7 @@ module Equ
 !  Calculate maxima and rms values for diagnostic purposes
 !
         if (lfirst.and.lout) then
+          t_diag = t            ! diagnostic quantities are for this time
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -295,16 +296,16 @@ module Equ
           ou=oo(:,1)*uu(:,1)+oo(:,2)*uu(:,2)+oo(:,3)*uu(:,3)
           divu2=divu**2
           rho=exp(f(l1:l2,m,n,ilnrho))
-          call max_mn(u2,umax)
-          call rms_mn(u2,urms)
-          call max_mn(o2,omax)
-          call rms_mn(o2,orms)
-          call max_mn(ou,oumax)
-          call rms_mn(ou,ourms)
-          call max_mn(divu2,divumax)
-          call rms_mn(divu2,divurms)
-          call max_mn(rho,rmax)
-          call rms_mn(rho,rrms)
+          call max_mn (u2,u2max)
+          call rms2_mn(u2,urms)
+          call max_mn (o2,o2max)
+          call rms2_mn(o2,orms)
+          call max_mn (ou,oumax)
+          call rms_mn (ou,ourms)
+          call max_mn (divu2,divu2max)
+          call rms2_mn(divu2,divurms)
+          call max_mn (rho,rmax)
+          call rms_mn (rho,rrms)
         endif
 !
 !  end of loops over m and n

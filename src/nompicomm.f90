@@ -172,5 +172,17 @@ module Mpicomm
     subroutine mpifinalize
     endsubroutine mpifinalize
 !***********************************************************************
+    subroutine stop_it(msg)
+!
+!  Print message and stop
+!  6-nov-01/wolf: coded
+!
+      character*(*) :: msg
+!      
+      if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
+      call mpifinalize
+      STOP
+    endsubroutine stop_it
+!***********************************************************************
 
 endmodule Mpicomm

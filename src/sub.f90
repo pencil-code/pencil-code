@@ -7,47 +7,68 @@ module Sub
   contains
 
 !***********************************************************************
-    subroutine max_mn(u2,res)
+    subroutine max_mn(a,res)
 !
-!  successively calculate maximum of u, where u^2=u2 is supplied
+!  successively calculate maximum of a, where a is supplied
 !  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !
       use Cdata
 !
-      real, dimension (nx) :: u2
+      real, dimension (nx) :: a
       real :: res
 !
 !      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
-        res=maxval(u2)
+        res=maxval(a)
       else
-        res=amax1(res,maxval(u2))
+        res=amax1(res,maxval(a))
       endif
 !
     endsubroutine max_mn
 !***********************************************************************
-    subroutine rms_mn(u2,res)
+    subroutine rms_mn(a,res)
 !
-!  successively calculate rms of u, where u^2=u2 is supplied
+!  successively calculate rms of a, where a is supplied
 !  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !
       use Cdata
 !
-      real, dimension (nx) :: u2
+      real, dimension (nx) :: a
       real :: res
 !
 !      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
-        res=sum(u2)
+        res=sum(a**2)
       else
-        res=res+sum(u2)
+        res=res+sum(a**2)
       endif
 !
     endsubroutine rms_mn
+!***********************************************************************
+    subroutine rms2_mn(a2,res)
+!
+!  successively calculate rms of a, where a2=a^2 is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!   1-apr-01/axel+wolf: coded
+!
+      use Cdata
+!
+      real, dimension (nx) :: a2
+      real :: res
+!
+!      if (m==m1.and.n==n1) then
+      if (lfirstpoint) then
+        res=sum(a2)
+      else
+        res=res+sum(a2)
+      endif
+!
+    endsubroutine rms2_mn
 !***********************************************************************
     subroutine exps(a,b)
 !
@@ -475,20 +496,6 @@ module Sub
 !
 !   endsubroutine del2v_graddiv
 !***********************************************************************
-    subroutine stop_it(msg)
-!
-!  Print message and stop
-!  6-nov-01/wolf: coded
-!
-      use Mpicomm
-!
-      character*(*) :: msg
-!      
-      if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
-      call mpifinalize
-      STOP
-    endsubroutine stop_it
-!***********************************************************************
     subroutine inpup(file,a,nn)
 !
 !  read particle snapshot file
@@ -593,6 +600,7 @@ module Sub
 !  30-sep-97/axel: coded
 !
       use Cdata
+      use Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: a
       character ch*4,file*9,chsnap*(*)
@@ -614,7 +622,12 @@ module Sub
       endif
 !
       call out2 (file,tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
-      if (lsnap) call output(chsnap//ch,a,mvar)
+      if (lsnap) then
+!  update ghost zones for var.dat (cheap, since done infrequently)
+        call initiate_isendrcv_bdry(a)
+        call finalise_isendrcv_bdry(a)
+        call output(chsnap//ch,a,mvar)
+      endif
 !
     endsubroutine wsnap
 !***********************************************************************
