@@ -1,13 +1,18 @@
-;  $Id: thermodynamics.pro,v 1.11 2003-10-09 16:40:59 brandenb Exp $
+;  $Id: thermodynamics.pro,v 1.12 2003-10-09 17:05:42 mee Exp $
 
 xHe=par.xHe
 
 if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
-  cs2=cs20*exp(gamma1*llnrho+gamma*sss)
+
+  if (lcalc_cp) then cp=k_B/(mu*m_H) else cp=1.  
+  TT0=cs20/(cp * gamma1)
+                                                    
+  cs2=cs20*exp(gamma1*(llnrho-lnrho0)+gamma*sss)
   ppp=rho*cs2/gamma
   cp1tilde=1.
   eee=cs2/gamma1
+  TTT=TT0*exp(gamma*sss+gamma1*(llnrho-lnrho0))
 endif else begin
   if (lionization_fixed) then begin 
     print,'Using fixed ionisation equation of state...'
