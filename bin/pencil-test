@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-04-22 08:54:48 $
-# $Revision: 1.10 $
+# $Date: 2003-05-26 14:32:05 $
+# $Revision: 1.11 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -95,7 +95,7 @@ foreach my $host (@ARGV) {
 	print "  $host:\n================\n";
     }
     # Construct and execute remote command
-    my @cmd = ("ssh", "$host");
+    my @cmd = ("ssh", "-n", "$host");
     my $remcmd = '\'cd $PENCIL_HOME';
     if ($update) { $remcmd .= "; cvs update >& /dev/null"};
     $remcmd .= "; ./bin/auto-test -s -t";
@@ -153,8 +153,8 @@ sub usage {
 # ---------------------------------------------------------------------- #
 sub notify_on_error{
 ## Check for errors and send emails
-    my $result = shift;
-    my $host  = shift;
+    my $result = (shift || '');
+    my $host  = (shift || '');
     if ($emails && ($result =~ /^Failed ([0-9]+) test/m)) {
 	my $nerrors = $1;
 	if ($debug) { print STDERR "Checking who to alert by email\n" };
