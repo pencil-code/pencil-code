@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.8 2004-02-20 19:15:42 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.9 2004-05-31 13:25:53 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.8 2004-02-20 19:15:42 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.9 2004-05-31 13:25:53 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -363,7 +363,7 @@ module Viscosity
         if (i_epsK2/=0) then
           call dot_mn(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
           rufvisc=ufvisc/rho1
-          call sum_mn_name(rufvisc,i_epsK2)
+          call sum_mn_name(-rufvisc,i_epsK2)
         endif
       endif
 !
