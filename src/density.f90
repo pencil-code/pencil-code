@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.151 2004-02-14 20:06:36 theine Exp $
+! $Id: density.f90,v 1.152 2004-03-23 15:09:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -29,13 +29,14 @@ module Density
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: b_ell=1., q_ell=5., hh0=0., rbound=1.
-  real :: dlnrhobdx=0.,co1_ss=0.,co2_ss=0.
+  real :: dlnrhobdx=0.,co1_ss=0.,co2_ss=0.,Sigma1=150.
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
+  character (len=labellen) :: strati_type='lnrho_ss'
   complex :: coeflnrho=0.
 
   namelist /density_init_pars/ &
@@ -43,9 +44,9 @@ module Density
        rho_left,rho_right,lnrho_const,cs2bot,cs2top, &
        initlnrho2,radius_lnrho,eps_planet, &
        b_ell,q_ell,hh0,rbound, &
-       mpoly, &
+       mpoly,strati_type, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
-       dlnrhobdx,co1_ss,co2_ss
+       dlnrhobdx,co1_ss,co2_ss,Sigma1
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
@@ -85,7 +86,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.151 2004-02-14 20:06:36 theine Exp $")
+           "$Id: density.f90,v 1.152 2004-03-23 15:09:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,7 +182,8 @@ module Density
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
-      case('stratification'); call stratification(amplrho,f,xx,yy,zz)
+      case('stratification')
+        call stratification(amplrho,f,xx,yy,zz,strati_type)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*, &
                               'init_lnrho: use polytropic_simple instead!'

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.101 2004-03-22 18:31:20 brandenb Exp $ 
+! $Id: initcond.f90,v 1.102 2004-03-23 15:09:14 ajohan Exp $ 
 
 module Initcond 
  
@@ -744,20 +744,23 @@ module Initcond
 !
     endsubroutine sinwave
 !***********************************************************************
-    subroutine stratification(ampl,f,xx,yy,zz)
+    subroutine stratification(ampl,f,xx,yy,zz,strati_type)
 !
 !  read mean stratification from "stratification.dat"
 !
 !   8-apr-03/axel: coded
+!  23-may-04/anders: made structure for other input variables
 !
       use Mpicomm
+      use Ionization, only: eoscalc_point,ilnrho_lnTT
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      integer, parameter :: ntotal=nz*nprocz+6
-      real, dimension (ntotal) :: lnrho0,ss0
+      integer, parameter :: ntotal=nz*nprocz
+      real, dimension (ntotal) :: lnrho0,lnTT0,ss0
       real :: ztmp,ampl
       logical :: exist
+      character (len=labellen) :: strati_type
 !
 !  read mean stratification and write into array
 !  if file is not found in run directory, search under trim(directory)
@@ -776,18 +779,29 @@ module Initcond
 !
 !  read data
 !  first the entire stratification file
+!
+      select case(strati_type)
+      case('lnrho_ss')
+        do n=1,ntotal
+          read(19,*) ztmp,lnrho0(n),ss0(n)
+          if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
+        enddo
+!
+      case('lnrho_lnTT')
+        do n=1,ntotal
+          read(19,*) ztmp,lnrho0(n),lnTT0(n)
+          if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),lnTT0(n)
+          call eoscalc_point(ilnrho_lnTT,lnrho0(n),lnTT0(n),ss=ss0(n))
+        enddo
+      endselect
+!
 !  select the right region for the processor afterwards
 !
-      do n=1,ntotal
-        read(19,*) ztmp,lnrho0(n),ss0(n)
-        if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
+      do n=n1,n2
+        f(:,:,n,ilnrho)=lnrho0(ipz*nz+n-3)
+        f(:,:,n,iss)=ss0(ipz*nz+n-3)
       enddo
-!
-      do n=1,mz
-        f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
-        f(:,:,n,iss)=ss0(ipz*nz+n)
-      enddo
-!
+!      
       close(19)
 !
       if(ip==0) print*,ampl,xx,yy,zz !(to keep compiler quiet)
