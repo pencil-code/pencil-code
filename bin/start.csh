@@ -63,6 +63,7 @@ echo ""
 date
 
 # cut & paste for job submission on the mhd machine
-# bsub -n  4 -q 4cpu12h -o start.`timestr` -e start.`timestr` start.csh
-# bsub -n  8 -q 8cpu12h -o start.`timestr` -e start.`timestr` start.csh
-# bsub -n 16 -q 16cpu8h -o start.`timestr` -e start.`timestr` start.csh
+# bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x

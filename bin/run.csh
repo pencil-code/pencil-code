@@ -40,8 +40,13 @@ time $mpirun $mpirunops $npops src/run.x
 date
 
 # cut & paste for job submission on the mhd machine
+# bsub -n  4 -q 4cpu12h mpijob dmpirun src/run.x
+# bsub -n  8 -q 8cpu12h mpijob dmpirun src/run.x
+# bsub -n 16 -q 16cpu8h mpijob dmpirun src/run.x
+#bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
+# bsub -n  8 -q 8cpu12h -o run.`timestr` -e run.`timestr` run.csh
+# bsub -n 16 -q 16cpu8h -o run.`timestr` -e run.`timestr` run.csh
 # bsub -n  4 -q 4cpu12h -o run.`timestr` run.csh
 # bsub -n  8 -q 8cpu12h -o run.`timestr` run.csh
 # bsub -n 16 -q 16cpu8h -o run.`timestr` run.csh
 # bsub -n  8 -q 8cpu12h -o run.log -w 'exit(123456)' mpijob dmpirun src/run.x
-# bsub -n 16 -q 16cpu8h mpijob dmpirun src/run.x
