@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.72 2003-02-18 15:07:07 dobler Exp $
+! $Id: mpicomm.f90,v 1.73 2003-05-08 16:10:35 tarek Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -938,7 +938,7 @@ subroutine transform_i(a_re,a_im)
 !
 endsubroutine transform_i
 !***********************************************************************
-subroutine transform_fftpack(a_re,a_im)
+subroutine transform_fftpack(a_re,a_im,dummy)
 !
 !  Subroutine to do Fourier transform
 !  The routine overwrites the input data.
@@ -951,6 +951,8 @@ subroutine transform_fftpack(a_re,a_im)
   complex,dimension(nx) :: ax
   real,dimension(4*nx+15) :: wsavex
   integer :: l,m,n
+  integer,optional :: dummy
+
 !
 !  check whether nxgrid=nygrid=nzgrid
 !
