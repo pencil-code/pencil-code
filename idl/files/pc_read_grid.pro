@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.6 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_grid.pro,v 1.7 2004-05-05 17:17:22 mee Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.6 $
+;  $Date: 2004-05-05 17:17:22 $
+;  $Revision: 1.7 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -74,7 +74,9 @@ if (cgrid gt 0) then begin
   readu,file, t,x,y,z
   readu,file, dx,dy,dz
   close,file 
+  FREE_LUN,file
 end else begin
+  FREE_LUN,file
   message, 'ERROR: cannot find file ' + filename
 end
 

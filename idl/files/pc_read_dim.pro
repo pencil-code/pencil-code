@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.8 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_dim.pro,v 1.9 2004-05-05 17:17:22 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.8 $
+;  $Date: 2004-05-05 17:17:22 $
+;  $Revision: 1.9 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -124,6 +124,7 @@ if (found gt 0) then begin
   close,file 
   FREE_LUN,file
 end else begin
+  FREE_LUN,file
   message, 'ERROR: cannot find file ' + filename
 end
 

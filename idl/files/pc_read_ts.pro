@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.12 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_ts.pro,v 1.13 2004-05-05 17:17:22 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.12 $
+;  $Date: 2004-05-05 17:17:22 $
+;  $Revision: 1.13 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -157,10 +157,11 @@ COMPILE_OPT IDL2,HIDDEN
     endrep until ((hashpos ge 0) and (strmid(line,hashpos+1,2) eq '--'))
     point_lun,-file,fileposition
     close,file
+    FREE_LUN,file
   end else begin
+    FREE_LUN,file
     message, 'ERROR: cannot find file ' + fullfilename
   endelse
-  FREE_LUN, file
 
 ;
 ;  read table
