@@ -43,13 +43,22 @@ foreach dir ($subdirs)
     rm -f $dir/*.dat >& /dev/null
     rm -f $dir/*.xy $dir/*.xz >& /dev/null
   endif
+  # Create directories on local scratch disk if necessary
+  if ($local_disc) then
+    if (! -e $localdir) then
+      mkdir $dir
+    else
+      # Clean up
+      rm -f $localdir/VAR* $localdir/var.dat >& /dev/null
+    endif
+  endif
 end
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
-# On Horseshoe cluster, copy executable to /scratch of master node
+# If local disk is used, copy executable to $SCRATCH_DIR of master node
 if ($local_disc) then
-  cp src/start.x /scratch/start.x
+  cp src/start.x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
 
@@ -60,9 +69,9 @@ time $mpirun $mpirunops $npops $start_x
 echo ""
 date
 
-# On Horseshoe cluster, copy var.dat back to the data directory
+# If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
-  echo "Use options for the Horseshoe cluster"
+  echo "copy var.dat back to the data directory"
   copy-snapshots -v var.dat
 endif
 

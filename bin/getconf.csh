@@ -45,16 +45,18 @@ if ($mpi) then
     if ($?PBS_NODEFILE ) then
       set nodelist = `cat $PBS_NODEFILE`
       cat $PBS_NODEFILE > lamhosts
+      set local_disc = 1
     endif
     lamboot -v lamhosts
     echo "lamndodes:"
     lamnodes
     set mpirun = /usr/bin/mpirun
     set mpirunops = "-O -c2c -s n0"
-    setenv SCRATCH_DIR "/var/tmp"
-    set start_x = $SCRATCH_DIR/start.x
-    set run_x = $SCRATCH_DIR/run.x
-    set local_disc = 1
+    if ($local_disc) then
+       setenv SCRATCH_DIR "/var/tmp"
+       set start_x = $SCRATCH_DIR/start.x
+       set run_x = $SCRATCH_DIR/run.x
+    endif
 
   else if ($hn =~ s[0-9]*p[0-9]*) then
     echo "Use options for the Horseshoe cluster"

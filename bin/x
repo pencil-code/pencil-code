@@ -4,7 +4,7 @@
 #
 echo ""
 cat data/legend.dat
-tail data/time_series.dat
+tail data/time_series.dat |grep -v "#"
 #
 #  This script also appends the last line of
 #  the time_series.dat file at this moment to the SPEED file.
