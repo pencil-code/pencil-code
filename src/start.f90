@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.102 2003-06-29 16:52:25 theine Exp $
+! $Id: start.f90,v 1.103 2003-07-02 14:33:35 theine Exp $
 !
 !***********************************************************************
       program start
@@ -15,6 +15,7 @@
         use Mpicomm
         use Sub
         use IO
+        use Radiation
         use Register
         use Global
         use Param_IO
@@ -38,7 +39,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.102 2003-06-29 16:52:25 theine Exp $")
+             "$Id: start.f90,v 1.103 2003-07-02 14:33:35 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -150,11 +151,7 @@
           f(:,:,:,iyH)=0.5
           call ioncalc(f)
         endif
-        if(lradiation_ray) then
-          call radtransfer1(f)
-          call radtransfer_comm()
-          call radtransfer2(f)
-        endif
+        if(lradiation_ray) call radtransfer(f)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.37 2003-07-01 18:46:34 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.38 2003-07-02 14:33:35 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -16,14 +16,15 @@ module Radiation
 !
   !integer, parameter :: radx0=3,rady0=3,radz0=3
   integer, parameter :: radx0=1,rady0=1,radz0=1
-  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_xy,Irad0_xy,tau_xy
-  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_yz,Irad0_yz,tau_yz
-  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_zx,Irad0_zx,tau_zx
+  real, dimension(radx0,my,mz) :: Irad_yz,Irad0_yz,tau_yz
+  real, dimension(mx,rady0,mz) :: Irad_zx,Irad0_zx,tau_zx
+  real, dimension(mx,my,radz0) :: Irad_xy,Irad0_xy,tau_xy
+  integer, dimension(radx0,my,mz,3) :: pos_yz
+  integer, dimension(mx,rady0,mz,3) :: pos_zx
+  integer, dimension(mx,my,radz0,3) :: pos_xy
   real, dimension (mx,my,mz) :: Srad,kaprho
   integer :: directions
+  real :: frac
 !
 !  default values for one pair of vertical rays
 !
@@ -77,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.37 2003-07-01 18:46:34 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.38 2003-07-02 14:33:35 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -166,7 +167,7 @@ module Radiation
 !
     endsubroutine radcalc
 !***********************************************************************
-    subroutine radtransfer1(f)
+    subroutine radtransfer(f)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -180,9 +181,7 @@ module Radiation
       use Sub
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: tau,Irad
-      real :: frac
-      integer :: lrad,mrad,nrad,rad2,i
+      integer :: lrad,mrad,nrad,rad2
 !
 !  identifier
 !
@@ -208,44 +207,74 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-           ! zero boundary conditions
-           tau=0.
-           Irad=0.
-           ! they will be communicated in radtransfer_comm
-           call intensity1(lrad,mrad,nrad,tau,Irad)
-           f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
-          if (lrad<0) then
-             tau_yz (:,:,:,lrad,mrad,nrad)=tau (l1:l1+radx0-1,:,:)
-             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1:l1+radx0-1,:,:)
-          endif
-          if (lrad>0) then
-             tau_yz (:,:,:,lrad,mrad,nrad)=tau (l2-radx0+1:l2,:,:)
-             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2-radx0+1:l2,:,:)
-          endif
-          if (mrad<0) then
-             tau_zx (:,:,:,lrad,mrad,nrad)=tau (:,m1:m1+rady0-1,:)
-             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1:m1+rady0-1,:)
-          endif
-          if (mrad>0) then
-             tau_zx (:,:,:,lrad,mrad,nrad)=tau (:,m2-rady0+1:m2,:)
-             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2-rady0+1:m2,:)
-          endif
-          if (nrad<0) then
-             tau_xy (:,:,:,lrad,mrad,nrad)=tau (:,:,n1:n1+radz0-1)
-             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1:n1+radz0-1)
-          endif
-          if (nrad>0) then
-             tau_xy (:,:,:,lrad,mrad,nrad)=tau (:,:,n2-radz0+1:n2)
-             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2-radz0+1:n2)
-          endif
+        call radtransfer_intr(f,lrad,mrad,nrad)
+        call radtransfer_comm(  lrad,mrad,nrad)
+        call radtransfer_revi(f,lrad,mrad,nrad)
         endif
       enddo
       enddo
       enddo
 !
-    endsubroutine radtransfer1
+    endsubroutine radtransfer
 !***********************************************************************
-    subroutine intensity1(lrad,mrad,nrad,tau,Irad)
+    subroutine radtransfer_intr(f,lrad,mrad,nrad)
+!
+!  Integration radiation transfer equation along rays
+!
+!  This routine is called before the communication part
+!  All rays start with zero intensity
+!
+!  16-jun-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      integer, intent(in) :: lrad,mrad,nrad
+      real, dimension(mx,my,mz) :: tau,Irad
+!
+!  identifier
+!
+      if(lroot.and.headt) print*,'radtransfer_intr'
+!
+!  calculate intrinsic intensity and optical depth
+!
+      call intensity_intr(lrad,mrad,nrad,tau,Irad)
+!
+!  add contribution to the heating rate Q
+!
+      f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
+!
+!  store boundary values for communication
+!
+     if (lrad<0) then
+        tau_yz (:,:,:)=tau (l1:l1+radx0-1,:,:)
+        Irad_yz(:,:,:)=Irad(l1:l1+radx0-1,:,:)
+     endif
+     if (lrad>0) then
+        tau_yz (:,:,:)=tau (l2-radx0+1:l2,:,:)
+        Irad_yz(:,:,:)=Irad(l2-radx0+1:l2,:,:)
+     endif
+     if (mrad<0) then
+        tau_zx (:,:,:)=tau (:,m1:m1+rady0-1,:)
+        Irad_zx(:,:,:)=Irad(:,m1:m1+rady0-1,:)
+     endif
+     if (mrad>0) then
+        tau_zx (:,:,:)=tau (:,m2-rady0+1:m2,:)
+        Irad_zx(:,:,:)=Irad(:,m2-rady0+1:m2,:)
+     endif
+     if (nrad<0) then
+        tau_xy (:,:,:)=tau (:,:,n1:n1+radz0-1)
+        Irad_xy(:,:,:)=Irad(:,:,n1:n1+radz0-1)
+     endif
+     if (nrad>0) then
+        tau_xy (:,:,:)=tau (:,:,n2-radz0+1:n2)
+        Irad_xy(:,:,:)=Irad(:,:,n2-radz0+1:n2)
+     endif
+!
+    endsubroutine radtransfer_intr
+!***********************************************************************
+    subroutine intensity_intr(lrad,mrad,nrad,tau,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -257,8 +286,8 @@ module Radiation
 !
       use Cdata
 !
-      integer :: lrad,mrad,nrad
-      real, dimension(mx,my,mz) :: tau,Irad
+      integer, intent(in) :: lrad,mrad,nrad
+      real, dimension(mx,my,mz), intent(out) :: tau,Irad
       integer :: lstart,lstop,lsgn
       integer :: mstart,mstop,msgn
       integer :: nstart,nstop,nsgn
@@ -269,7 +298,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity1'
+        print*,'intensity_intr'
         first=.false.
       endif
 !
@@ -289,6 +318,11 @@ module Radiation
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
+!
+!  set optical depth and intensity initially to zero
+!
+      tau=0.
+      Irad=0.
 !
 !  loop
 !
@@ -306,237 +340,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity1
+    endsubroutine intensity_intr
 !***********************************************************************
-    subroutine radtransfer_comm()
-!
-!  This routine sets Irad0_xy, Irad0_yz, and Irad0_zx on the
-!  neighboring processors.
-!
-!  29-jun-03/tobi: coded
-!  29-jun-03/axel: added communication calls
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_xyp=101,tag_xym=102
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
-!
-!  Identifier
-!
-      if (first) print*,'radtransfer_comm'
-!
-!  Vertical direction:
-!
-      call radtransfer_comm_xyp
-      call radtransfer_comm_xym
-!
-!  side boundaries : initially I=0
-!
-      do nrad=-radz,radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        rad2=lrad**2+mrad**2+nrad**2
-        if (rad2>0 .and. rad2<=rad2max) then 
-           if (first) then
-              Irad0_yz(:,:,:,lrad,mrad,nrad)=0
-              Irad0_zx(:,:,:,lrad,mrad,nrad)=0
-              first=.false.
-           endif
-           Irad0_yz(:,:,:,lrad,mrad,nrad) &
-             =Irad0_yz(:,:,:,lrad,mrad,nrad) &
-              *exp(-tau_yz(:,:,:,lrad,mrad,nrad)) &
-              +Irad_yz(:,:,:,lrad,mrad,nrad)
-           Irad0_zx(:,:,:,lrad,mrad,nrad) &
-             =Irad0_zx(:,:,:,lrad,mrad,nrad) &
-              *exp(-tau_zx(:,:,:,lrad,mrad,nrad)) &
-              +Irad_zx(:,:,:,lrad,mrad,nrad)
-        endif
-      enddo
-      enddo
-      enddo
-!
-    endsubroutine radtransfer_comm
-!***********************************************************************
-    subroutine radtransfer_comm_yzp
-!
-!  rays where the x-direction is positive 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_yzp=201
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_yz
-!
-!  send Ibuf_yz to ipz+1
-!
-      if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_yzp=',zuneigh,tag_yzp
-        Ibuf_yz=Irad_yz(:,:,:,:,:,1:radz) &
-                  +Irad0_yz(:,:,:,:,:,1:radz)*exp(-tau_yz(:,:,:,:,:,1:radz))
-        call send_Irad0_yz(Ibuf_yz,zuneigh,radx0,rady0,radz0,tag_yzp)
-      endif
-!
-    endsubroutine radtransfer_comm_yzp
-!***********************************************************************
-    subroutine radtransfer_comm_yzm
-!
-!  rays where the x-direction is negative 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_yzm=202
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_yz
-!
-!  send Ibuf_yz to ipz-1
-!
-      if(ipz/=0) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_yzm=',zuneigh,tag_yzm
-        Ibuf_yz(:,:,:,:,:,1:radz)=Irad_yz(:,:,:,:,:,-radz:-1) &
-                  +Irad0_yz(:,:,:,:,:,-radz:-1)*exp(-tau_yz(:,:,:,:,:,-radz:-1))
-        call send_Irad0_yz(Ibuf_yz,zlneigh,radx0,rady0,radz0,tag_yzm)
-      endif
-    endsubroutine radtransfer_comm_yzm
-!***********************************************************************
-    subroutine radtransfer_comm_zxp
-!
-!  rays where the y-direction is positive 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_zxp=203
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_zx
-!
-!  send Ibuf_zx to ipz+1
-!
-      if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_zxp=',zuneigh,tag_zxp
-        Ibuf_zx=Irad_zx(:,:,:,:,:,1:radz) &
-                  +Irad0_zx(:,:,:,:,:,1:radz)*exp(-tau_zx(:,:,:,:,:,1:radz))
-        call send_Irad0_zx(Ibuf_zx,zuneigh,radx0,rady0,radz0,tag_zxp)
-      endif
-!
-    endsubroutine radtransfer_comm_zxp
-!***********************************************************************
-    subroutine radtransfer_comm_zxm
-!
-!  rays where the y-direction is negative 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_zxm=204
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_zx
-!
-!  send Ibuf_zx to ipz-1
-!
-      if(ipz/=0) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_zxm=',zuneigh,tag_zxm
-        Ibuf_zx(:,:,:,:,:,1:radz)=Irad_zx(:,:,:,:,:,-radz:-1) &
-                  +Irad0_zx(:,:,:,:,:,-radz:-1)*exp(-tau_zx(:,:,:,:,:,-radz:-1))
-        call send_Irad0_zx(Ibuf_zx,zlneigh,radx0,rady0,radz0,tag_zxm)
-      endif
-    endsubroutine radtransfer_comm_zxm
-!***********************************************************************
-    subroutine radtransfer_comm_xyp
-!
-!  rays where the z-direction is positive 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_xyp=205
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
-!
-      if(ipz==0) then
-!
-!  bottom boundary (rays point upwards): I=S
-!  (take S from the ghost zones)
-!
-        do nrad=+1,+radz
-        do mrad=-rady,rady
-        do lrad=-radx,radx
-          Irad0_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
-        enddo
-        enddo
-        enddo
-      else
-!
-!  receive from previous processor
-!
-        if (first) print*,'radtransfer_comm: zuneigh,tag_xyp=',zuneigh,tag_xyp
-        call recv_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xyp)
-        Irad0_xy(:,:,:,:,:,1:radz)=Ibuf_xy(:,:,:,:,:,1:radz)
-      endif
-!
-!  send Ibuf_xy to ipz+1
-!
-      if(ipz/=nprocz-1) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_xyp=',zuneigh,tag_xyp
-        Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
-                  +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
-        call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
-      endif
-!
-    endsubroutine radtransfer_comm_xyp
-!***********************************************************************
-    subroutine radtransfer_comm_xym
-!
-!  rays where the z-direction is negative 
-!
-      use Cdata
-      use Mpicomm
-!
-      integer :: tag_xym=206
-      integer :: lrad,mrad,nrad,rad2
-      logical, save :: first=.true.
-      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
-!
-      if(ipz==nprocz-1) then
-!
-!  top boundary (rays point downwards): I=0
-!
-        do nrad=-radz,-1
-        do mrad=-rady,rady
-        do lrad=-radx,radx
-          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
-        enddo
-        enddo
-        enddo
-      else
-!
-!  receive from previous processor
-!
-        if (first) print*,'radtransfer_comm: zuneigh,tag_xym=',zuneigh,tag_xym
-        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
-        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
-      endif
-!
-!  send Ibuf_xy to ipz-1
-!
-      if(ipz/=0) then
-        if (first) print*,'radtransfer_comm: zuneigh,tag_xym=',zuneigh,tag_xym
-        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
-                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
-        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
-      endif
-    endsubroutine radtransfer_comm_xym
-!***********************************************************************
-    subroutine radtransfer_comm2()
+    subroutine radtransfer_comm(lrad,mrad,nrad)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -548,56 +354,45 @@ module Radiation
       use Cdata
       use Sub
 !
+      integer, intent(in) :: lrad,mrad,nrad
       real, dimension(mx,my,mz) :: Irad0
-      integer :: lrad,mrad,nrad,rad2
       integer :: tag_xy=301,tag_yz=302,tag_zx=303
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_comm2'
+      if(lroot.and.headt) print*,'radtransfer_comm'
 !
-!  loop over rays
+!  set ghost zones, data from preceeding processor
 !
-      do nrad=-radz,radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        rad2=lrad**2+mrad**2+nrad**2
-        if (rad2>0 .and. rad2<=rad2max) then 
-          !
-          !  set ghost zones, data from preceeding processor
-          !
-          call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
-          if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
-          if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
-          call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
-          if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
-          if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
-          call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
-          if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:,lrad,mrad,nrad)
-          if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:,lrad,mrad,nrad)
-          !
-          !  propagate boundary values
-          !
-          call intensity_comm2(lrad,mrad,nrad,Irad0)
-          !
-          !  set boundary values for following processor
-          !
-          if (lrad<0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l1:l1+radx0-1,:,:)
-          if (lrad>0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l2-radx0+1:l2,:,:)
-          call radcomm_yz_send(lrad,radx0,Irad_yz,tag_yz)
-          if (mrad<0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m1:m1+rady0-1,:)
-          if (mrad>0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m2-rady0+1:m2,:)
-          call radcomm_zx_send(mrad,rady0,Irad_zx,tag_zx)
-          if (nrad<0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n1:n1+radz0-1)
-          if (nrad>0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n2-radz0+1:n2)
-          call radcomm_xy_send(nrad,radz0,Irad_xy,tag_xy)
-        endif
-      enddo
-      enddo
-      enddo
-    endsubroutine radtransfer_comm2
+      call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
+      if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:)
+      if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:)
+      call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
+      if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:)
+      if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:)
+      call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
+      if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:)
+      if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:)
+      !
+      !  propagate boundary values
+      !
+      call intensity_comm(lrad,mrad,nrad,Irad0)
+      !
+      !  set boundary values for following processor
+      !
+      if (lrad<0) Irad0_yz(:,:,:)=Irad0(l1:l1+radx0-1,:,:)
+      if (lrad>0) Irad0_yz(:,:,:)=Irad0(l2-radx0+1:l2,:,:)
+      call radcomm_yz_send(lrad,radx0,Irad_yz,tag_yz)
+      if (mrad<0) Irad0_zx(:,:,:)=Irad0(:,m1:m1+rady0-1,:)
+      if (mrad>0) Irad0_zx(:,:,:)=Irad0(:,m2-rady0+1:m2,:)
+      call radcomm_zx_send(mrad,rady0,Irad_zx,tag_zx)
+      if (nrad<0) Irad0_xy(:,:,:)=Irad0(:,:,n1:n1+radz0-1)
+      if (nrad>0) Irad0_xy(:,:,:)=Irad0(:,:,n2-radz0+1:n2)
+      call radcomm_xy_send(nrad,radz0,Irad_xy,tag_xy)
+!
+    endsubroutine radtransfer_comm
 !***********************************************************************
-    subroutine intensity_comm2(lrad,mrad,nrad,Irad0)
+    subroutine intensity_comm(lrad,mrad,nrad,Irad0)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -605,8 +400,8 @@ module Radiation
 !
       use Cdata
 !
-      integer :: lrad,mrad,nrad
-      real, dimension(mx,my,mz) :: Irad0
+      integer, intent(in) :: lrad,mrad,nrad
+      real, dimension(mx,my,mz), intent(inout) :: Irad0
       integer :: lstart,lstop,lsgn
       integer :: mstart,mstop,msgn
       integer :: nstart,nstop,nsgn
@@ -616,7 +411,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_comm2'
+        print*,'intensity_comm'
         first=.false.
       endif
 !
@@ -643,9 +438,9 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_comm2
+    endsubroutine intensity_comm
 !***********************************************************************
-    subroutine radtransfer2(f)
+    subroutine radtransfer_revi(f,lrad,mrad,nrad)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -657,47 +452,31 @@ module Radiation
       use Cdata
       use Sub
 !
+      integer, intent(in) :: lrad,mrad,nrad
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: Irad0,Irad
-      real :: frac
-      integer :: lrad,mrad,nrad,rad2
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer2'
+      if(lroot.and.headt) print*,'radtransfer_revi'
 !
-!  calculate weights
+!  set ghost zones, data from next processor (or opposite boundary)
 !
-      frac=1./directions
+      if(lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:)
+      if(lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:)
+      if(mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:)
+      if(mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:)
+      if(nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:)
+      if(nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:)
 !
-!  loop over rays
+!  do the ray, and add corresponding contribution to Q
 !
-      do nrad=-radz,radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        rad2=lrad**2+mrad**2+nrad**2
-        if (rad2>0 .and. rad2<=rad2max) then 
-          !
-          !  set ghost zones, data from next processor (or opposite boundary)
-          !
-          if(lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
-          if(lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
-          if(mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
-          if(mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
-          if(nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:,lrad,mrad,nrad)
-          if(nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:,lrad,mrad,nrad)
-          !
-          !  do the ray, and add corresponding contribution to Q
-          !
-          call intensity2(lrad,mrad,nrad,Irad0,Irad)
-          f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
-        endif
-      enddo
-      enddo
-      enddo
-    endsubroutine radtransfer2
+      call intensity_revi(lrad,mrad,nrad,Irad0,Irad)
+      f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
+!
+    endsubroutine radtransfer_revi
 !***********************************************************************
-    subroutine intensity2(lrad,mrad,nrad,Irad0,Irad)
+    subroutine intensity_revi(lrad,mrad,nrad,Irad0,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -705,8 +484,10 @@ module Radiation
 !
       use Cdata
 !
-      integer :: lrad,mrad,nrad
-      real, dimension(mx,my,mz) :: tau,Irad0,Irad
+      integer, intent(in) :: lrad,mrad,nrad
+      real, dimension(mx,my,mz), intent(inout) :: Irad0
+      real, dimension(mx,my,mz), intent(out) :: Irad
+      real, dimension(mx,my,mz) :: tau
       integer :: lstart,lstop,lsgn
       integer :: mstart,mstop,msgn
       integer :: nstart,nstop,nsgn
@@ -717,7 +498,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity2'
+        print*,'intensity_revi'
         first=.false.
       endif
 !
@@ -738,7 +519,7 @@ module Radiation
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
 !
-!  initialize tau=0
+!  set optical depth initially to zero
 !
       tau=0.
 !
@@ -755,7 +536,7 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity2
+    endsubroutine intensity_revi
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !

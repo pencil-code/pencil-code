@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.16 2003-06-29 17:13:47 brandenb Exp $
+! $Id: noradiation.f90,v 1.17 2003-07-02 14:33:35 theine Exp $
 
 
 module Radiation
@@ -37,11 +37,11 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.16 2003-06-29 17:13:47 brandenb Exp $")
+           "$Id: noradiation.f90,v 1.17 2003-07-02 14:33:35 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
-    subroutine radtransfer1(f)
+    subroutine radtransfer(f)
 !
 !  Integration radioation transfer equation along rays
 !
@@ -53,27 +53,7 @@ module Radiation
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if(ip==0) print*,f !(keep compiler quiet)
-    endsubroutine radtransfer1
-!***********************************************************************
-    subroutine radtransfer_comm()
-!
-! Dummy routine
-!
-    endsubroutine radtransfer_comm
-!***********************************************************************
-    subroutine radtransfer2(f)
-!
-!  Integration radioation transfer equation along rays
-!
-!  24-mar-03/axel+tobi: coded
-!
-      use Cdata
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-!
-      if(ip==0) print*,f !(keep compiler quiet)
-    endsubroutine radtransfer2
+    endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
 !

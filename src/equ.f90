@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.148 2003-06-30 16:52:18 brandenb Exp $
+! $Id: equ.f90,v 1.149 2003-07-02 14:33:35 theine Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.148 2003-06-30 16:52:18 brandenb Exp $")
+           "$Id: equ.f90,v 1.149 2003-07-02 14:33:35 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -250,11 +250,7 @@ module Equ
 !  Radiation transport along rays
 !
       if(lionization) call ioncalc(f)
-      if(lradiation_ray) then
-        call radtransfer1(f)
-        call radtransfer_comm()
-        call radtransfer2(f)
-      endif
+      if(lradiation_ray) call radtransfer(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
