@@ -40,7 +40,7 @@ module Sub
 !  set corresponding entry in itype_name
 !
       itype_name(iname)=ilabel_max
-if (m==10 .and. n==10) print*,'MAX_MN_NAME: itype_name=',itype_name
+if (m==10 .and. n==10) print*,'MAX_MN_NAME: itype_name=',itype_name(1:3)
 !
     endsubroutine max_mn_name
 !***********************************************************************
@@ -66,7 +66,7 @@ if (m==10 .and. n==10) print*,'MAX_MN_NAME: itype_name=',itype_name
 !  set corresponding entry in itype_name
 !
       itype_name(iname)=ilabel_sum
-if (m==10 .and. n==10) print*,'SUM_MN_NAME: itype_name=',itype_name
+if (m==10 .and. n==10) print*,'SUM_MN_NAME: itype_name=',itype_name(1:3)
 !
     endsubroutine sum_mn_name
 !***********************************************************************
