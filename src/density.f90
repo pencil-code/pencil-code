@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.30 2002-07-11 06:56:18 nilshau Exp $
+! $Id: density.f90,v 1.31 2002-07-11 11:07:49 nilshau Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.30 2002-07-11 06:56:18 nilshau Exp $")
+           "$Id: density.f90,v 1.31 2002-07-11 11:07:49 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -466,10 +466,11 @@ module Density
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot)
         tmp=-gamma*pot/cs20
-        f(l1:l2,m,n,ilnrho)=lnrho0-tmp
-        if(lentropy) f(l1:l2,m,n,ient)=gamma1/gamma*tmp
+        f(l1:l2,m,n,ilnrho)=lnrho0+tmp
+        if(lentropy) f(l1:l2,m,n,ient)=-gamma1/gamma*tmp
       enddo
       enddo
+
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
