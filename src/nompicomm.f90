@@ -107,6 +107,20 @@ module Mpicomm
             f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j)
             f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j)
           enddo
+! !!!!  TEMPORARY HACK  !!!!
+! !          f(:,:,n1-3,j) = f(:,:,n1,j)
+! !          f(:,:,n2+3,j) = f(:,:,n2,j)
+!           if (j == 4) then
+!             do i=2,3
+!               f(:,:,n1-i,j) &
+!                    = (288*f(:,:,n1-i+1,j) -171*f(:,:,n1-i+2,j) &
+!                       +40*f(:,:,n1-i+3,j)) / 157.
+!               f(:,:,n2+i,j) &
+!                    = (288*f(:,:,n2+i-1,j) -171*f(:,:,n2+i-2,j) &
+!                       +40*f(:,:,n2+i-3,j)) / 157.
+!             enddo
+!           endif
+! !!!!    END OF HACK   !!!!
         case default
           if (lroot) &
                print*,"No such boundary condition ibc = ", ibc(j), " for j=", j

@@ -26,7 +26,7 @@ module Cparam
 !  use here symbol mreduce, use nreduce in call
 !  u, divu (gives a total of 2)
 !
-  integer, parameter :: mreduce=5
+  integer, parameter :: mreduce=6
   integer :: ip=14
 !
 

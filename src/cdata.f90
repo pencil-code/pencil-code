@@ -7,11 +7,11 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real :: t,dt,dx,dy,dz
+  real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce
   real :: cs0,rho0,cs20,gamma,gamma1,force,relhel
-  real :: DD,nu,cmu,cnu2
-  real :: t_diag,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
+  real :: DD,nu,cmu,cnu2,cdiffrho
+  real :: t_diag,rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
   real :: orms,omax,o2max,ourms,oumax
   real :: UUmax,cdt,pi,Lx,Ly,Lz
   real :: gravz

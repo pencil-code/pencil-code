@@ -28,6 +28,27 @@ module Sub
 !
     endsubroutine max_mn
 !***********************************************************************
+    subroutine mean_mn(a,res)
+!
+!  successively calculate mean of a, where a is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!   17-dec-01/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      real :: res
+!
+!      if (m==m1.and.n==n1) then
+      if (lfirstpoint) then
+        res=sum(a*1.D0)         ! sum at double precision to improve accuracy
+      else
+        res=res+sum(a*1.D0)
+      endif
+!
+    endsubroutine mean_mn
+!***********************************************************************
     subroutine rms_mn(a,res)
 !
 !  successively calculate rms of a, where a is supplied

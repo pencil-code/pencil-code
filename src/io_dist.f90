@@ -26,7 +26,6 @@ contains
       character (LEN=*) :: file
       integer :: nn,mode
       real, dimension (mx,my,mz,nn) :: a
-      real :: dmax
 !
       open(1,file=file,form='unformatted')
       if (ip<=8) print*,'open, mx,my,mz,nn=',mx,my,mz,nn
@@ -41,13 +40,14 @@ contains
 !  assume uniform mesh; use the first two *interior* points
 !  to calculate mesh spacing
 !
-        if (mx.gt.1) dx=x(5)-x(4)
-        if (my.gt.1) dy=y(5)-y(4) 
+        if (mx.gt.1) then; dx=x(5)-x(4); else; dx=0.; endif
+        if (my.gt.1) then; dy=y(5)-y(4); else; dy=0.; endif
         if (mz.gt.1) then; dz=z(5)-z(4); else; dz=0.; endif
-        dmax=max(dx,dy,dz)
+        dxmax=max(dx,dy,dz)
         if (mx.eq.1) dx=dmax
         if (my.eq.1) dy=dmax
         if (mz.eq.1) dz=dmax
+        dxmin=min(dx,dy,dz)
         Lx=dx*mx
         Ly=dy*my
         Lz=dz*mz

@@ -40,7 +40,7 @@ module Entropy
         call stop_it('Register_ent: nvar > mvar')
       endif
 !
-      gamma = 1.66666666666666666
+      gamma = 5./3.
       gamma1 = gamma - 1.
     endsubroutine register_ent
 !***********************************************************************

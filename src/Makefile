@@ -110,10 +110,10 @@ cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 $(IO).o:     $(IO).f90 $(MPICOMM).o cdata.o
-sub.o:       sub.f90 cdata.o deriv.o $(IO).o $(MPICOMM).o
+sub.o:       sub.f90 cdata.o deriv.o general.o $(IO).o $(MPICOMM).o
 register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
-equ.o:       equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o
-timestep.o:  timestep.f90 cdata.o $(FORCING.o) $(MPICOMM).o
+equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(ENTROPY).o $(MPICOMM).o 
+timestep.o:  timestep.f90 cdata.o equ.o $(FORCING.o) $(MPICOMM).o
 #
 $(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
 $(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o

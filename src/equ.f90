@@ -17,6 +17,7 @@ module Equ
       read(1,*) dsnap,dvid,dforce
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc
+      read(1,*) cdiffrho
       read(1,*) gravz
       read(1,*) iforce,force,relhel
       read(1,*) ibc
@@ -43,6 +44,7 @@ module Equ
         print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
+        print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
         print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'ibc=', ibc
@@ -94,7 +96,8 @@ module Equ
       fsum_tmp(2)=orms
       fsum_tmp(3)=ourms
       fsum_tmp(4)=divurms
-      fsum_tmp(5)=rrms
+      fsum_tmp(5)=rmean
+      fsum_tmp(6)=rrms
 !
 !  communicate over all processors
 !
@@ -117,9 +120,10 @@ module Equ
 !
         urms=sqrt(fsum(1))
         orms=sqrt(fsum(2))
-        ourms=fsum(3)
+        ourms=sqrt(fsum(3))
         divurms=sqrt(fsum(4))
-        rrms=fsum(5)
+        rmean=sqrt(fsum(5))
+        rrms=sqrt(fsum(6))
 !
       endif
 !
@@ -137,11 +141,14 @@ module Equ
 !  do this only if we are on the root processor
 !
       if(lroot) then
-        write(6,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
-        write(20,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
+        write( 6,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
+             rmean,rrms,rmax,divurms,divumax
+        write(20,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
+             rmean,rrms,rmax,divurms,divumax
         open(3,file='check')
-        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax'
-        write(3,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
+        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rmean,rrms,rmax,divurms,divumax'
+        write( 3,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
+             rmean,rrms,rmax,divurms,divumax
         close(3)
       endif
 !
@@ -200,17 +207,20 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
-      real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2,rho,rho1,nurho1,cs2
+      real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
+      real, dimension(nx) :: rho,rho1,nurho1,cs2,del2lam
+      real :: diffrho
       integer :: i,j
 !
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.6 2001-12-17 10:17:40 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.7 2001-12-18 08:34:54 dobler Exp $'
 !
 !  initiate communication
 !
       call initiate_isendrcv_bdry(f)
+      diffrho = cdiffrho*dxmin*cs0
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -271,6 +281,13 @@ module Equ
 !
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
 !
+!  mass diffusion
+!
+        if (cdiffrho /= 0.) then
+          call del2(f,ilnrho,del2lam)
+          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho*del2lam
+        endif
+!
 !  write slices for animation
 !
         if (n.eq.iz) then
@@ -306,6 +323,7 @@ module Equ
           call rms_mn (ou,ourms)
           call max_mn (divu2,divu2max)
           call rms2_mn(divu2,divurms)
+          call mean_mn (rho,rmean)
           call max_mn (rho,rmax)
           call rms_mn (rho,rrms)
         endif
