@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.198 2003-12-07 08:42:14 brandenb Exp $
+! $Id: cdata.f90,v 1.199 2003-12-08 18:36:55 ajohan Exp $
 
 module Cdata
 
@@ -45,7 +45,7 @@ module Cdata
 
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve
-  real :: nu=0.,cmu,cnu2,nud
+  real :: nu=0.,cmu,cnu2
   real :: tdiagnos,t2davgfirst
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
