@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.115 2003-11-24 13:20:33 dobler Exp $
+! $Id: register.f90,v 1.116 2003-11-24 16:01:48 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -260,6 +260,7 @@ module Register
       use CosmicRay,    only: rprint_cosmicray
       use Gravity,      only: rprint_gravity
       use Special,      only: rprint_special
+      use Viscosity,    only: rprint_viscosity
 !
       integer :: iname,inamev,inamez,inamexy,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat
@@ -367,6 +368,8 @@ module Register
       call rprint_cosmicray   (lreset,LWRITE=lroot)
       call rprint_gravity     (lreset,LWRITE=lroot)
       call rprint_special     (lreset,LWRITE=lroot)
+      call rprint_viscosity   (lreset,LWRITE=lroot)
+
       if (lroot) close(3)
 !
     endsubroutine rprint_list
@@ -429,8 +432,6 @@ module Register
         write(3,*) 'i_phimphi=',i_phimphi
         write(3,*) 'i_zmphi=',i_zmphi
         write(3,*) 'i_rmphi=',i_rmphi
-!ajwm Not really the correct place to put this...?
-        write(3,*) 'ishock=',ishock
       endif
 !
     endsubroutine rprint_general

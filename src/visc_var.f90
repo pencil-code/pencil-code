@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.14 2003-10-26 21:20:13 theine Exp $
+! $Id: visc_var.f90,v 1.15 2003-11-24 16:01:48 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -58,7 +58,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.14 2003-10-26 21:20:13 theine Exp $")
+           "$Id: visc_var.f90,v 1.15 2003-11-24 16:01:48 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -82,47 +82,45 @@ module Viscosity
       endif
 
     endsubroutine initialize_viscosity
-
-!***********************************************************************
-!    subroutine rprint_viscosity(lreset,lwrite)
-!!
-!!  reads and registers print parameters relevant for compressible part
-!!
-!!   3-may-02/axel: coded
-!!  27-may-02/axel: added possibility to reset list
-!!  19-mar-03/tarek: adapted  fro, rprint_density
-!      use Sub
-!!
-!      integer :: iname
-!      logical :: lreset,lwr
-!      logical, optional :: lwrite
-!!
-!      lwr = .false.
-!      if (present(lwrite)) lwr=lwrite
-!!
-!!  reset everything in case of reset
-!!  (this needs to be consistent with what is defined above!)
-!!
+!*******************************************************************
+    subroutine rprint_viscosity(lreset,lwrite)
+!
+!  Writes ishock to index.pro file
+!
+!  24-nov-03/tony: adapted from rprint_ionization
+!
+      use Cdata
+      use Sub
+! 
+      logical :: lreset
+      logical, optional :: lwrite
+      integer :: iname
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
 !      if (lreset) then
-!        i_nu_var=nu
+!        i_TTm=0
 !      endif
-!!
-!!  iname runs through all possible names that may be listed in print.in
-!!
-!      if(lroot.and.ip<14) print*,'run through parse list'
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
 !      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'nu_var',i_nu_var)
+!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
 !      enddo
-!!
-!!  write column where which viscosity variables stored
-!!
-!      if (lwr) then
-!        write(3,*) 'q_DJO=',q_DJO
-!        write(3,*) 't0_DJO=',t0_DJO
-!      endif
-!!
-!    endsubroutine rprint_viscosity
-
+!
+!  write column where which ionization variable is stored
+!
+      if (present(lwrite)) then
+        if (lwrite) then
+          write(3,*) 'ishock=',ishock
+          write(3,*) 'itest=',0
+        endif
+      endif
+!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !

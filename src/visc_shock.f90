@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.34 2003-11-24 15:21:34 mee Exp $
+! $Id: visc_shock.f90,v 1.35 2003-11-24 16:01:48 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 !
 !***************************************************************
 
@@ -24,6 +24,7 @@ module Viscosity
   character (len=labellen) :: ivisc=''
   integer :: icalculated = -1
   real :: maxeffectivenu
+  integer :: itest
 
   ! input parameters
   integer :: dummy
@@ -52,7 +53,8 @@ module Viscosity
       lvisc_shock = .true.
 !
       ishock = mvar + naux + 1
-      naux = naux + 1 
+      itest = mvar + naux + 2
+      naux = naux + 2
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: shock viscosity nvar = ', nvar
@@ -62,7 +64,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.34 2003-11-24 15:21:34 mee Exp $")
+           "$Id: visc_shock.f90,v 1.35 2003-11-24 16:01:48 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -93,7 +95,46 @@ module Viscosity
         if (headtt.and.lroot) print*,'viscosity: nu=',nu,', nu_shock=',nu_shock
 
     endsubroutine initialize_viscosity
-!***********************************************************************
+!*******************************************************************
+    subroutine rprint_viscosity(lreset,lwrite)
+!
+!  Writes ishock to index.pro file
+!
+!  24-nov-03/tony: adapted from rprint_ionization
+!
+      use Cdata
+      use Sub
+! 
+      logical :: lreset
+      logical, optional :: lwrite
+      integer :: iname
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+!      if (lreset) then
+!        i_TTm=0
+!      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+!      do iname=1,nname
+!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
+!      enddo
+!
+!  write column where which ionization variable is stored
+!
+      if (present(lwrite)) then
+        if (lwrite) then
+          write(3,*) 'ishock=',ishock
+          write(3,*) 'itest=',itest
+        endif
+      endif
+!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_viscosity
+!!***********************************************************************
     subroutine calc_viscosity(f)
 !
 !  calculate viscous heating term for right hand side of entropy equation
@@ -115,6 +156,8 @@ module Viscosity
 !
          call shock_divu(f,f(:,:,:,ishock))
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
+         f(:,:,:,ishock)=.1
+         f(:,:,:,itest)=f(:,:,:,ishock)
 !
 !  take the max over 5 neighboring points and smooth
 !

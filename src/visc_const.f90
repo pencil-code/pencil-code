@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.17 2003-10-26 21:20:13 theine Exp $
+! $Id: visc_const.f90,v 1.18 2003-11-24 16:01:48 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -55,7 +55,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.17 2003-10-26 21:20:13 theine Exp $")
+           "$Id: visc_const.f90,v 1.18 2003-11-24 16:01:48 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -79,7 +79,45 @@ module Viscosity
       endif
 
     endsubroutine initialize_viscosity
-
+!*******************************************************************
+    subroutine rprint_viscosity(lreset,lwrite)
+!
+!  Writes ishock to index.pro file
+!
+!  24-nov-03/tony: adapted from rprint_ionization
+!
+      use Cdata
+      use Sub
+! 
+      logical :: lreset
+      logical, optional :: lwrite
+      integer :: iname
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+!      if (lreset) then
+!        i_TTm=0
+!      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+!      do iname=1,nname
+!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
+!      enddo
+!
+!  write column where which ionization variable is stored
+!
+      if (present(lwrite)) then
+        if (lwrite) then
+          write(3,*) 'ishock=',ishock
+          write(3,*) 'itest=',0
+        endif
+      endif
+!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_viscosity
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
