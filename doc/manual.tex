@@ -1,11 +1,11 @@
-%%%%%%%%%%%%%%%%%%%%%%            -*-LaTeX-*-
+%%%%%%%%%%%%%%%%%%%%%%            -*- mode: reftex -*-
 %%%   manual.tex   %%%
 %%%%%%%%%%%%%%%%%%%%%%
 %%
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.149 2003-02-07 09:54:03 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.150 2003-02-10 14:53:05 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-02-07 09:54:03 $ $,~ $ $Revision: 1.149 $ $}
+\date{$ $Date: 2003-02-10 14:53:05 $ $,~ $ $Revision: 1.150 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-02-07 09:54:03 $ $,~ $ $Revision: 1.149 $ $}
+  \emph{$ $Date: 2003-02-10 14:53:05 $ $,~ $ $Revision: 1.150 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1268,7 +1268,7 @@ choose certain \name{modules}\footnote{%
   although there is some connection, as most of our modules define F90
   modules:
   For example each of the three modules \name{grav_z}, \name{grav_r} and
-  \name{nograv} define a Fortran module \name{Gravity}.
+  \name{nograv} defines a Fortran module \name{Gravity}.
 }, which tell the code whether or not entropy, magnetic fields,
 hydrodynamics, forcing, etc.\ should be invoked.
 For example, the settings for forced turbulent MHD simulations are
@@ -1575,6 +1575,54 @@ At the moment we
 can also output in \file{print.in} the associated mean square value
 of the horizontal field, but this requires that in \file{zaver.in} the
 quantities \code{bxmz} and \code{bymz} are set.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Data files}
+\index{datafiles}
+
+\subsubsection{Snapshot files}
+
+Snapshot files contain the values of all evolving variables and are
+sufficient to restart a run.
+In the case of an MHD simulation with entropy equation, for example, the
+snapshot files will contain the values of velocity, logarithmic density,
+entropy and the magnetic vector potential.
+
+There are two kinds of snapshot files: the current snapshot and permanent
+snapshots, both of which reside in the directory
+\file[data/proc$N$/]{data/proc$N$/}.
+The parameter \var{isav} determines the frequency at which the
+\emph{current snapshot} \file[var.dat]{data/proc$N$/var.dat} is written.
+If you keep this frequency too high, the code will spend a lot of timeon
+I/O, in particular for big large jobs; a too low frequency makes it
+difficult to follow the evolution interactively during test runs.
+
+The \emph{permanent snapshots} \file[VAR$N$]{data/proc*/VAR$N$} are
+written every \var{dsnap} time units.
+These files are numbered consecutively from $N=1$ upwards and for long
+runs they can occupy quite some disk space.
+On the other hand, if after a run you realize that some additional
+quantity $q$ would have been important to print out, these files are the
+only way to reconstruct the time evolution of $q$ without re-running the
+code.
+
+Together with the raw data, the snapshot files contain the current
+time $t$ and some other header information.
+The script \cmd{tsnap} allows you to determine the time $t$ of a snapshot
+file:
+\begin{alltt}
+  \prompt{unix> } tsnap data/proc0/var.dat
+  data/proc0/var.dat:        t = 8.32456
+  \prompt{unix> } tsnap data/proc0/VAR2
+  data/proc0/VAR2:           t = 2.00603     
+\end{alltt}
+
+
+% \subsubsection{Averages}
+% 
+% [To be written]
+
 
 % ---------------------------------------------------------------------- %
 
@@ -2121,9 +2169,7 @@ The basic command sequence for working with a snapshot is:
 You run \file{start.pro} once to initialize (or reinitialize,
 if the mesh size has changed, for example) the fields and read in the
 startup parameters from the code.
-To read in a new snapshot, run \file{r.pro} (or \file{rall.pro}, see below),
-possibly after adjusting the IDL variable \var{file} to a specific snapshot
-file.
+To read in a new snapshot, run \file{r.pro} (or \file{rall.pro}, see below).
 
 If you are running in parallel on several processors,
 the data are scattered over different directories.
@@ -2150,15 +2196,23 @@ them in IDL by \footnote{
   \prompt{IDL> } jj=curl2(aa)
 \end{alltt}
 
-By default one is reading always the latest time corresponding to the file
-\file{var.dat}; if you want to read any earlier snapshots, use (for
-example)
+By default one is reading always the current snapshot
+\file[var.dat]{data/proc$N$/var.dat}; if you want to read one of the
+permanent snapshots, use (for example)
 \begin{alltt}
-  \prompt{IDL> } file='VAR2'
+  \prompt{IDL> } varfile='VAR2'
   \prompt{IDL> } .r r {\sl(or \texttt{.r rall})}
-  \prompt{IDL> } print,t
 \end{alltt}
-and you will get the data for that snapshot.
+See Sect.~\ref{snapshots} for details on permanent snapshots.
+
+With \file{r.pro}, you can switch the part of the domain by changing the
+variable \var{datadir}:
+\begin{alltt}
+  \prompt{IDL> } datadir='data/proc3'
+  \prompt{IDL> } .r r
+\end{alltt}
+will read the data written by processor 3.
+
 
 
 % ---------------------------------------------------------------------- %
@@ -4690,13 +4744,13 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \printindex[default][This index contains options, names, definitions and
-  similar items. Files and variables have their own indexes.]
+  commands. Files and variables have their own indexes.]
 \printindex[file]
 \printindex[var]
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.149 2003-02-07 09:54:03 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.150 2003-02-10 14:53:05 dobler Exp $ $}
 
 
 \end{document}
@@ -4752,4 +4806,4 @@ $ $Id: manual.tex,v 1.149 2003-02-07 09:54:03 brandenb Exp $ $}
 % LocalWords:  convsample Chandrasekhar eqn timestep nonhelical hsection RK pp
 % LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS Gb
 % LocalWords:  HTM BDS Subramanian Nachr ajwm cdts postproc decfort idx Hwwsx
-% LocalWords:  WorkShop convstar jan
+% LocalWords:  WorkShop convstar jan reftex varfile datadir
