@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.3 2002-07-09 23:06:27 brandenb Exp $
+! $Id: shear.f90,v 1.4 2002-08-05 08:02:02 nilshau Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -39,7 +39,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.3 2002-07-09 23:06:27 brandenb Exp $")
+           "$Id: shear.f90,v 1.4 2002-08-05 08:02:02 nilshau Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -64,7 +64,13 @@ module Shear
 !
 !  add shear term, -uy0*df/dy, for all variables
 !
-      uy0=-qshear*Omega*x(l1:l2)
+      if (Omega==0) then 
+         uy0=-qshear*x(l1:l2)
+         if (headtt.or.ldebug) print*,&
+              'shearing: shear without rotation, max(uy0)=',maxval(uy0)
+      else 
+         uy0=-qshear*Omega*x(l1:l2)
+      endif
       do j=1,nvar
         call der(f,j,dfdy,2)
         df(l1:l2,m,n,j)=df(l1:l2,m,n,j)-uy0*dfdy
