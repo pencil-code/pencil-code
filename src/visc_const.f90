@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.32 2004-07-10 20:19:30 brandenb Exp $
+! $Id: visc_const.f90,v 1.33 2004-07-13 11:04:31 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -60,7 +60,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.32 2004-07-10 20:19:30 brandenb Exp $")
+           "$Id: visc_const.f90,v 1.33 2004-07-13 11:04:31 nilshau Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -183,7 +183,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho,gshock
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2
-      real, dimension (nx) :: murho1,rho1,divu,shock,SS12,nu_smag
+      real, dimension (nx) :: murho1,rho1,divu,shock,SS12,nu_smag,sij2
       integer :: i
 
       intent (in) :: f, glnrho, rho1
@@ -253,15 +253,26 @@ module Viscosity
 !AB: Since this involves out-of-pencil derivatives, we may want
 !AB: to have this term optional (smagorinsky_simplified).
 !AB: Maybe the damage from smagorinsky_simplified is minor.
+!NILS: We then need something like the visc_shock or visc_hyper
+!NILS: modules where we allocate some auxilliary chunks of memory.
+!NILS: I guess it would be a good idea to call such a module for example 
+!NILS: visc_LES
+!NILS: such that we can use that module for possible other large eddy 
+!NILS: simulations aswell?
           !
           !  viscous force: nu_smag*(del2u+graddivu/3+2S.glnrho)+2S.gradnu_smag
-          !  where nu_smag=C_smag*dxmax**2*sqrt(SS)
+          !  where nu_smag=(C_smag*dxmax)**2*sqrt(SS)
           !
+          if (headtt) print*,'viscous force: Smagorinsky'
           if(ldensity) then
 !AB: below, SS12 is really sij*sij, right? So why not call it sij2?
-            call multm2_mn(sij,SS12)            
+!NILS: Renamed SS12 into sij2
+            call multm2_mn(sij,sij2)
+            SS12=sqrt(2*sij2)
 !AB: Nils, is this correct? Shouldn't C_smag be outside the parenthesis?
+!NILS: Following Pope (page 587) it is correct as it is.
 !AB: Also, shouldn't there be a square root on SS12?
+!NILS: You are right. I have fixed this bug in the above line.
             nu_smag=(C_smag*dxmax)**2.*SS12
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
@@ -275,7 +286,6 @@ module Viscosity
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='smagorinsky'"
           endif
-          if (headtt) print*,'viscous force: Smagorinsky'
           
         case default
           !
