@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.202 2003-09-12 11:36:38 mee Exp $
+! $Id: entropy.f90,v 1.203 2003-09-12 16:16:20 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -10,6 +10,7 @@ module Entropy
   use Hydro
   use Interstellar
   use Viscosity
+  use Density, only: lcalc_cp
   use Ionization, only: lionization_fixed,xHe
 
   implicit none
@@ -54,7 +55,7 @@ module Entropy
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
-       heat_uniform,lupw_ss
+       heat_uniform, lupw_ss, lcalc_cp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -91,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.202 2003-09-12 11:36:38 mee Exp $")
+           "$Id: entropy.f90,v 1.203 2003-09-12 16:16:20 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -232,7 +233,7 @@ module Entropy
         case('const_ss'); f(:,:,:,iss) = ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f)
-        case('Ferriere'); if(lroot) print*,'init_ss: Ferriere set in density'
+        case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,iss,ss_left,ss_right,widthss,'y')
         case('zjump'); call jump(f,iss,ss_left,ss_right,widthss,'z')
@@ -559,6 +560,106 @@ module Entropy
 !
     endsubroutine polytropic_ss_disc
 !***********************************************************************
+    subroutine ferriere(f)
+!
+!  density profile from K. Ferriere, ApJ 497, 759, 1998,  
+!   eqns (6), (7), (9), (13), (14) [with molecular H, n_m, neglected]
+!   at solar radius.  (for interstellar runs)
+!  entropy is set via pressure, assuming a constant T for each gas component
+!   (cf. eqn 15) and crudely compensating for non-thermal sources.
+!  [an alternative treatment of entropy, based on hydrostatic equilibrium,
+!   might be preferable. This was implemented in serial (in e.g. r1.59)
+!   but abandoned as overcomplicated to adapt for nprocz /= 0.]
+!
+      use Mpicomm
+      use Ionization
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: absz,n_c,n_w,n_i,n_h
+!  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
+!  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
+      real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6 !,k_B=0.0144
+      real :: rho,lnrho,pp,pp0,ss,TT,yH 
+      real, dimension(2) :: fmpi2
+!      real, dimension(1) :: fmpi1
+!      integer :: iproctop
+!
+      if (lroot) print*,'ferriere: Ferriere density and entropy profile'
+!
+!  first define reference values of pp, cs2, at midplane.  
+!  pressure is set to 6 times thermal pressure, this factor roughly
+!  allowing for other sources, as modelled by Ferriere.
+!
+      pp0=6.0*k_B*(rho0/1.38) *                                               &
+       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+      cs20=gamma*pp0/rho0
+      cs0=sqrt(cs20)
+!      ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero  (not needed)
+!
+      do n=n1,n2            ! nb: don't need to set ghost-zones here
+      absz=abs(z(n))
+      do m=m1,m2 
+!  cold gas profile n_c (eq 6)
+        n_c=0.340*(0.859*exp(-min((z(n)/0.127)**2,70.)) +         &
+                   0.047*exp(-min((z(n)/0.318)**2,70.)) +         &
+                   0.094*exp(-min(absz/0.403,70.)))     
+!  warm gas profile n_w (eq 7)
+        n_w=0.226*(0.456*exp(-min((z(n)/0.127)**2,70.)) +         &
+                   0.403*exp(-min((z(n)/0.318)**2,70.)) +         &
+                   0.141*exp(-min(absz/0.403,70.)))
+!  ionized gas profile n_i (eq 9)
+        n_i=0.0237*exp(-absz) + 0.0013* exp(-min(absz/0.150,70.))
+!  hot gas profile n_h (eq 13)
+        n_h=0.00048*exp(-absz/1.5)         
+!  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
+        rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)
+        lnrho=alog(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
+!  define entropy via pressure, assuming fixed T for each component
+        if(lentropy) then
+!  thermal pressure (eq 13)
+          pp=6.0*k_B*(rho0/1.38) *                                        &
+           (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
+           
+          if (lionization) then
+            call perturb_mass(lnrho,pp,ss,TT,yH) 
+            f(l1:l2,m,n,iss)=ss
+            !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
+            if (n == n1 .and. m == m1) cs2bot=0.
+            if (n == n2 .and. m == m1) cs2top=0.
+          else          
+            f(l1:l2,m,n,iss)=alog(gamma*pp/cs20)/gamma +                   &
+                                     gamma1/gamma*lnrho0 - lnrho
+            !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
+            if (n == n1 .and. m == m1) cs2bot=gamma*pp/rho
+            if (n == n2 .and. m == m1) cs2top=gamma*pp/rho
+          endif
+        endif
+       enddo
+      enddo
+!
+!  broadcast cs2bot, top
+!
+      if (lentropy) then
+!  just use symmetry to set cs2top=cs2bot, and broadcast from root
+        cs2top=cs2bot
+        fmpi2=(/ cs2bot, cs2top /)
+        call mpibcast_real(fmpi2,2)
+        cs2bot=fmpi2(1); cs2top=fmpi2(2)
+!!  or do directly from the right processor
+!        fmpi1=(/ cs2bot /)
+!        call mpibcast_real(fmpi1,1)    ! this case can use mpibcast_real
+!        cs2bot=fmpi1(1)
+!        iproctop=(nprocz-1)*nprocy     ! ipz=nprocz-1,ipy=0
+!        fmpi1=(/ cs2top /)
+!        call mpibcast_real_nonroot(fmpi1,1,iproctop)
+!        cs2top=fmpi1(1)
+      endif
+      
+      if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
+!
+    endsubroutine ferriere
+!**********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation

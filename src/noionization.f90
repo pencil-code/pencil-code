@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.67 2003-09-10 17:32:55 brandenb Exp $
+! $Id: noionization.f90,v 1.68 2003-09-12 16:16:20 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -32,14 +32,16 @@ module Ionization
   end interface
 
   ! secondary parameters calculated in initialize
-  real :: TT_ion,TT_ion_,ss_ion,kappa0
-  real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
-  real :: xHe_term,yH_term,one_yH_term
+  !real :: TT_ion,TT_ion_,ss_ion,kappa0
+  !real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  !real :: xHe_term,yH_term,one_yH_term
+  real :: TT0 
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   real :: xHe=0.1
+  real :: cp=1., cp1=1.
 
   ! input parameters
   namelist /ionization_init_pars/ xHe
@@ -76,7 +78,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.67 2003-09-10 17:32:55 brandenb Exp $")
+           "$Id: noionization.f90,v 1.68 2003-09-12 16:16:20 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -89,7 +91,20 @@ module Ionization
 !***********************************************************************
     subroutine initialize_ionization()
 !
+      use Density, only: cs20, gamma1, lcalc_cp
+!
+      real :: mu
+!
       if(ip==0) print*,'initialize_ionization: keeping compiler quiet'
+      call getmu(mu)
+      if (lcalc_cp) then 
+        cp=k_B/(mu*m_H)
+      else
+        cp=1.
+      endif
+
+      cp1=1./cp
+      TT0=cs20/(cp * gamma1)
 !
     endsubroutine initialize_ionization
 !*******************************************************************
@@ -140,11 +155,9 @@ module Ionization
       real, intent(in) :: lnrho,EE
       real, intent(out) :: ss,TT,yH
 
-      call stop_it("perturb_energy_point: NOT IMPLEMENTED IN NO IONIZATION")
-      ss=0.
-      TT=0.
+      ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
+      TT=gamma*cp1*ee
       yH=impossible
-      if (ip==0) print*,lnrho,EE
     end subroutine perturb_energy_point
 !***********************************************************************
     subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
@@ -153,11 +166,9 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,TT,yH
 
-      call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
-      ss=0.
-      TT=0.
+      ss=(log(ee*gamma*gamma1/cs20)-gamma1*(lnrho-lnrho0))/gamma
+      TT=gamma*cp1*ee
       yH=impossible
-      if (ip==0) print*,lnrho,ee
     end subroutine perturb_energy_pencil
 !***********************************************************************
     subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
@@ -223,7 +234,7 @@ module Ionization
       if (size(ss)==mx) ss=f(:,m,n,iss)
 !
       yH=0.
-      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
+      TT=TT0*exp(gamma*ss+gamma1*(lnrho-lnrho0))
 !
     endsubroutine ionget_pencil
 !***********************************************************************
@@ -235,7 +246,7 @@ module Ionization
       real, intent(out) :: yH,TT
 !
       yH=0.
-      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
+      TT=TT0*exp(gamma*ss+gamma1*(lnrho-lnrho0))
 !
     endsubroutine ionget_point
 !***********************************************************************
@@ -260,7 +271,7 @@ module Ionization
       endif
 !
       yH=0.
-      TT=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1
+      TT=TT0*exp(gamma*ss+gamma1*(lnrho-lnrho0))
 !
     endsubroutine ionget_xy
 !***********************************************************************
