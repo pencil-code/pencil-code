@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.13 2003-10-24 13:17:31 dobler Exp $
+! $Id: nohydro_file.f90,v 1.14 2003-11-22 10:12:28 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,6 +24,7 @@ module Hydro
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_Marms=0,i_Mamax=0
+  integer :: i_u2mphi=0,i_oumphi=0
 
   contains
 
@@ -50,8 +51,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2003-10-24 13:17:31 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2003-11-22 10:12:28 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -82,7 +83,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -99,8 +100,8 @@ module Hydro
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: divu,u2,rho1
+      real, dimension (nx,3) :: uu,glnrho,gshock
+      real, dimension (nx) :: divu,u2,rho1,shock
 !
       real, save, dimension (nx,ny,nz,3) :: uuu
       logical, save :: first=.true.
@@ -167,6 +168,7 @@ module Hydro
 !
       if (lreset) then
         i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
+        i_u2mphi=0; i_oumphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -195,6 +197,8 @@ module Hydro
         write(3,*) 'iux=',iux
         write(3,*) 'iuy=',iuy
         write(3,*) 'iuz=',iuz
+        write(3,*) 'i_u2mphi=',i_u2mphi
+        write(3,*) 'i_oumphi=',i_oumphi
       endif
 !
     endsubroutine rprint_hydro

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.136 2003-11-21 01:54:06 brandenb Exp $
+! $Id: hydro.f90,v 1.137 2003-11-22 10:12:28 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -66,6 +66,7 @@ module Hydro
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
   integer :: i_divu2m=0,i_epsK=0
+  integer :: i_u2mphi=0,i_oumphi=0
 
   contains
 
@@ -102,7 +103,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.136 2003-11-21 01:54:06 brandenb Exp $")
+           "$Id: hydro.f90,v 1.137 2003-11-22 10:12:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -531,6 +532,7 @@ module Hydro
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_rumax/=0) call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
+        if (i_u2mphi/=0) call phisum_mn_name_rz(u2,i_u2mphi)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
         if (i_ux2m/=0) then
@@ -600,9 +602,10 @@ module Hydro
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
           !
-          if (i_oum/=0) then
+          if (i_oum/=0.or.i_oumphi/=0) then
             call dot_mn(oo,uu,ou)
-            call sum_mn_name(ou,i_oum)
+            if (i_oum/=0) call sum_mn_name(ou,i_oum)
+            if (i_oumphi/=0) call phisum_mn_name_rz(ou,i_oumphi)
           endif
           !
           if (i_orms/=0.or.i_omax/=0.or.i_o2m/=0) then
@@ -784,7 +787,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy
+      integer :: iname,inamez,ixy,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -804,6 +807,7 @@ module Hydro
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
+        i_u2mphi=0; i_oumphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -856,6 +860,13 @@ module Hydro
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'uzmxy',i_uzmxy)
       enddo
 !
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'u2mphi',i_u2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'oumphi',i_oumphi)
+      enddo
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
@@ -898,6 +909,8 @@ module Hydro
         write(3,*) 'i_uxmxy=',i_uxmxy
         write(3,*) 'i_uymxy=',i_uymxy
         write(3,*) 'i_uzmxy=',i_uzmxy
+        write(3,*) 'i_u2mphi=',i_u2mphi
+        write(3,*) 'i_oumphi=',i_oumphi
       endif
 !
     endsubroutine rprint_hydro
