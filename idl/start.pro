@@ -92,6 +92,8 @@ if (cgrid gt 0) then begin
 endif else begin
   print, 'Warning: cannot find file ', gfile
 endelse
+;
+print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [ny,nz])
 yy = spread(y, [0,2], [nx,nz])
 zz = spread(z, [0,1], [nx,ny])

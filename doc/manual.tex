@@ -44,8 +44,9 @@
 
 \usepackage{graphicx}
 \usepackage{parskip,a4,vmargin}
-\setpapersize{A4}
-\setmargrb{20mm}{15mm}{20mm}{15mm}
+%\setpapersize{A4}  %AB: what if somebody prints it in Santa Barbara?
+%\setmargrb{20mm}{15mm}{20mm}{15mm}
+\setmargrb{20mm}{25mm}{20mm}{15mm}  %AB: just trying to adjust it for here.
 
 \frenchspacing
 \sloppy
@@ -159,9 +160,10 @@
 
 % ---------------------------------------------------------------------- %
 
-\title{{\sffamily\bfseries Installing and Using the MHD code}}
+\title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
+\date{\today,~ $ $Revision: 1.6 $ $}
 
 % ====================================================================== %
 
@@ -177,7 +179,7 @@
 
   \vspace*{3cm}
 
-  {\Large\sffamily\bfseries Installing and Using the MHD code}
+  {\Large\sffamily\bfseries Installing and Using the High-Order MHD MPI code}
 
   \vspace{0.5cm}
 
@@ -190,7 +192,7 @@
 
   \vspace{2cm}
 
-  \emph{\today}
+  \emph{\today,~ $ $Revision: 1.6 $ $}
 
 
 \end{center}
@@ -218,6 +220,67 @@ terms of a permission notice identical to this one.
 \clearpage
 \pagestyle{plain}
 \pagenumbering{roman}
+
+\section*{Foreword}
+
+This code was first developed at the Turbulence Summer school of the
+Helmholtz Institute in Potsdam (2001).
+Often people ask us whether our code is publicly available;
+that's why we decided to make it a bit more user friendly (than it was before)
+and to put it on a public cvs repository.
+
+The code is primarily designed to deal with weakly compressible turbulent
+flows: that's why we use high-order first and second derivatives.
+In order for the code to be easily parallelizable we use explicit
+(as opposed to compact) derivatives.
+Typical targets include driven MHD turbulence in a periodic box,
+convection in a slab with non-periodic upper and lower boundaries,
+a convective star embedded in a box, accretion disc turbulence in
+the sheering sheet approximation, etc.
+
+We use the magnetic vector potential to ensure that the field
+is always divergence-free. At the same time, having the magnetic
+vector potential readily available is a tremendous advantage if
+one wants to monitor the magnetic helicity, for example.
+This code is therefore particularly well suited for all kind of
+dynamo problems.
+
+The code is non-conservative. Instead, conserved quantities should be
+conserved up to the discretization error of the scheme. Fully conservative
+schemes cannot easily deal with large temperature and density contrasts
+and there is no guarantee that a conservative code is more accurate with
+respect to quantities that are not explicitly conserved, such as entropy.
+Magnetic helicity is another important example of a quantity that is to
+our knowledge not guaranteed to be conserved by ordinary conservative
+schemes.
+
+We don't have any immediate plans to implement adaptive mesh refinement
+into the code. The main reason is that this would cause a major technical
+complication. Moreover, turbulence is generically space-filling, so any
+local refinement to smaller scales may not be useful. On the other hand,
+turbulence may well be confined to certain regions in space, so one
+could indeed gain by solving the outer regions with fewer points.
+So we'll keep that in mind.
+
+In order to be cache-efficient and to allow the free use of temporary
+variables without using up lots of memory, we solve the equations along
+pencils in the $x$ direction. Ghost zones are used to implement boundary
+conditions on physical and processor boundaries. The domain can be tiled
+evenly in the $y$ and $z$ directions. MPI calls are used to communicate
+between processors. For testing purposes a dummy version can be invoked
+to run on just one processor (e.g.\ on a laptop).
+
+The various physics is invoked by linking the corresponding modules in the
+Makefile. The main reason for this procedure is to have a convenient way
+of stripping off extra ballast from the code, so it compiles faster and
+uses less memory. It is also a convenient way of changing the physics
+without using switches.
+
+The parameter input file (run.in) is read in regular time intervals
+to one can change parameters during the fly. This can be useful if one
+wants to stop the in a graceful way, if one wants to change the time step,
+the viscosity, or (in forced calculations) the sound speed. Obviously, in
+some cases changing certain parameters on the fly could be totally crazy.
 
 \tableofcontents
 \clearpage
@@ -279,6 +342,8 @@ You proceed as follows:
 To get yourself started, you should run the convection example which is
 provided as the default configuration of the code.
 
+It is absolutely mandatory monitor exactly what one is doing.
+IDL is a very useful tool to inspect the data in a very flexible fashion.
 
 % ====================================================================== %
 
@@ -501,12 +566,16 @@ Not all parameters are used for a given scenario.
   \var{it1}    & write monitoring output every \var{it1} time steps.\\
   \var{dt}     & time step $\delta t$ if positive,
                  $\delta t/\delta t_{\rm Courant}$ if negative. A typical
-                 value is \code{dt=-0.4}. \\
+                 value is \code{dt=-0.4}. Using less can be useful as a
+                 temporary fix until the source of the problem is found.\\
   \var{isave}  & update snapshot file \file{var.dat} every \var{isave}
                  time steps. \\
   \var{iorder} & order of time step. Set \code{iorder=1} for Euler
                  stepping, \code{iorder=3} for the 3rd-order Runge-Kutta
-                 (2$N$) scheme. \\
+                 (2$N$) scheme. \code{iorder=1} is useful for debugging,
+                 because one wants to know what happens after the first
+                 or second step. \code{iorder=2} is also possible, but
+                 not \code{iorder>3}.\\
   \var{dsnap}  & save full snapshots \file{VAR$N$} every \var{dsnap} time
                  units. \\
   \var{dvid}   & write two-dimensional sections for generation of videos
@@ -612,6 +681,28 @@ Not all parameters are used for a given scenario.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
+\section{FAQs}
+
+\begin{itemize}
+\item {\it What's so cool about the fort.20 file?}
+\item 
+\end{itemize}
+
+\section{Timings}
+
+Below we quote the wall clock time per mesh point (including the ghost zones)
+and per full 3-stage time step.
+
+Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
+%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
+%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
+%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
+%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
+%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
+
+Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
+%7288 with 32x32x64 (single processor, linux)
+%print,38*38*71.*8.*2.*4./1e6
 
 % ====================================================================== %
 
@@ -653,6 +744,10 @@ Not all parameters are used for a given scenario.
 % ====================================================================== %
 
 \printindex
+
+\vfill\bigskip\noindent{\tiny\it
+$ $Id: manual.tex,v 1.6 2002-03-21 17:09:59 brandenb Exp $ $}
+
 
 \end{document}
 

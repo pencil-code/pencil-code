@@ -37,8 +37,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.18 $", &
-             "$Date: 2002-03-05 17:43:13 $")
+             "$Revision: 1.19 $", &
+             "$Date: 2002-03-21 17:09:59 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -167,10 +167,13 @@
           call outpui(trim(directory)//'/seed.dat',seed,2)
         endif
 !
+!  print wall clock time and time per step and processor
+!  for diagnostic purposes
+!
         if(lroot) &
              print*,'Wall clock time=',(time2-time1)/real(count_rate), &
                     ' (+/- ', 1./count_rate,')'
-!             print*, 'Wall clock time=', time2-time1
+             print*,'time/step/pt [microsec]=',(time2-time1)/real(count_rate)/(it-1)/mw/1e-6
         call mpifinalize
 !
       endprogram run
