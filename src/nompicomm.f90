@@ -418,6 +418,77 @@ subroutine transform_i(a_re,a_im)
 !
 end subroutine transform_i
 !***********************************************************************
+subroutine transform_cosq(a_re,direction)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data
+!
+!  13-aug-03/axel: adapted from transform_fftpack
+!
+  real,dimension(nx,ny,nz) :: a_re
+  real,dimension(nx) :: ax
+  real,dimension(ny) :: ay
+  real,dimension(nz) :: az
+  real,dimension(4*nx+15) :: wsavex
+  real,dimension(4*ny+15) :: wsavey
+  real,dimension(4*nz+15) :: wsavez
+  logical :: lforward=.true.
+  integer,optional :: direction
+  integer :: l,m,n
+
+  if (present(direction).and. (direction.eq.-1)) lforward=.false.
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x, direction =',direction
+  call cosqi(nx,wsavex)
+  do m=1,ny
+  do n=1,nz
+    ax=a_re(:,m,n)
+    if (lforward) then 
+        call cosqf(nx,ax,wsavex)
+    else 
+        call cosqb(nx,ax,wsavex)
+    endif
+    a_re(:,m,n)=ax
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in y, direction =',direction
+  call cosqi(ny,wsavey)
+  do l=1,nx
+  do n=1,nz
+    ay=a_re(l,:,n)
+    if (lforward) then 
+        call cosqf(ny,ay,wsavey)
+    else 
+        call cosqb(ny,ay,wsavey)
+    endif
+    a_re(l,:,n)=ay
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in z, direction =',direction
+  call cosqi(nz,wsavez)
+  do l=1,nx
+  do m=1,ny
+    az=a_re(l,m,:)
+    if (lforward) then 
+       call cosqf(nz,az,wsavez)
+    else 
+       call cosqb(nz,az,wsavez)
+    endif
+    a_re(l,m,:)=az
+  enddo
+  enddo
+!
+!  Normalize
+!
+
+  if (lforward) then 
+    a_re=a_re/nwgrid
+  endif
+!
+end subroutine transform_cosqpack
+!***********************************************************************
 subroutine transform_fftpack(a_re,a_im,direction)
 !
 !  Subroutine to do Fourier transform

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.42 2003-08-13 15:30:07 mee Exp $
+! $Id: interstellar.f90,v 1.43 2003-08-15 08:58:51 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.42 2003-08-13 15:30:07 mee Exp $")
+           "$Id: interstellar.f90,v 1.43 2003-08-15 08:58:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -433,7 +433,6 @@ module Interstellar
     !   x0,y0,z0 not set (& note that their value also depends on periodicity.) )
     !  The following assumes x, y periodic, z non-periodic (see start.f90)
     Lx=Lxyz(1);       Ly=Lxyz(2);       Lz=Lxyz(3)
-    !dx=Lx/nxgrid;     dy=Ly/nygrid;     dz=Lz/(nzgrid-1)    !already OK
     x0=xyz0(1)+.5*dx; y0=xyz0(2)+.5*dy; z0=xyz0(3)
     
     if (lperi(1)) then; x0=xyz0(1)+.5*dx; else; x0=xyz0(1); endif

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.113 2003-08-14 10:27:47 dobler Exp $
+! $Id: start.f90,v 1.114 2003-08-15 08:58:51 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -42,7 +42,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.113 2003-08-14 10:27:47 dobler Exp $")
+             "$Id: start.f90,v 1.114 2003-08-15 08:58:51 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -110,9 +110,9 @@
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  lperi indicate periodicity of given direction
 !
-        if (lperi(1)) then; dx = Lx/nxgrid; x00=x0+.5*dx; else; dx = Lx/(nxgrid-1); x00=x0; endif
-        if (lperi(2)) then; dy = Ly/nygrid; y00=y0+.5*dy; else; dy = Ly/(nygrid-1); y00=y0; endif
-        if (lperi(3)) then; dz = Lz/nzgrid; z00=z0+.5*dz; else; dz = Lz/(nzgrid-1); z00=z0; endif
+        if (lperi(1)) then; dx=Lx/nxgrid; x00=x0+.5*dx; else; dx=Lx/(nxgrid-1); x00=x0; endif
+        if (lperi(2)) then; dy=Ly/nygrid; y00=y0+.5*dy; else; dy=Ly/(nygrid-1); y00=y0; endif
+        if (lperi(3)) then; dz=Lz/nzgrid; z00=z0+.5*dz; else; dz=Lz/(nzgrid-1); z00=z0; endif
 !
 !  set x,y,z arrays
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.162 2003-08-14 10:27:47 dobler Exp $
+! $Id: cdata.f90,v 1.163 2003-08-15 08:58:51 brandenb Exp $
 
 module Cdata
 
@@ -19,7 +19,7 @@ module Cdata
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
-  real :: dx,dy,dz,dxmin,dxmax,drcyl
+  real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: tsforce=-10., dtforce=10
   real, dimension (2) :: fran1,fran2
@@ -70,7 +70,8 @@ module Cdata
 !  in this section are all the things related to printing
 !
   integer :: nname=0,nnamez=0,nnamexy=0,nnamerz=0
-  integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2,ilabel_integrate=3
+  integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
+  integer :: ilabel_integrate=3,ilabel_surf=4
   integer :: nr_directions=1
   integer, parameter :: mname=100,mnamez=20,mnamexy=6,mnamerz=6
   integer, dimension (mname) :: itype_name

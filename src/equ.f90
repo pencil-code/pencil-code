@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.153 2003-08-12 20:47:40 mee Exp $
+! $Id: equ.f90,v 1.154 2003-08-15 08:58:51 brandenb Exp $
 
 module Equ
 
@@ -36,6 +36,7 @@ module Equ
 !
 !  calculate diagnostic quantities
 !   2-sep-01/axel: coded
+!  14-aug-03/axel: began adding surface integrals
 !
       use Mpicomm
       use Cdata
@@ -94,6 +95,7 @@ module Equ
                   if (nzgrid/=1) dv=dv*dz
                   fname(iname)=fsum(isum_count)*dv
                endif
+               if(itype_name(iname)==+4) fname(iname)=fsum(isum_count)
             endif
          enddo
          !nmax_count=imax_count
@@ -222,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.153 2003-08-12 20:47:40 mee Exp $")
+           "$Id: equ.f90,v 1.154 2003-08-15 08:58:51 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

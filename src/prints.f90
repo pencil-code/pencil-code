@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.46 2003-08-11 18:50:14 dobler Exp $
+! $Id: prints.f90,v 1.47 2003-08-15 08:58:51 brandenb Exp $
 
 module Print
 
@@ -16,9 +16,12 @@ module Print
 !  setup variables needed for output of diagnostic quantities and
 !  averages.
 !
+!  14-aug-03/axel: added dxy, dyz, and dxz
+!
       use Cdata
 !
       integer :: i
+      real :: dxeff,dyeff,dzeff
       logical, save :: first=.true.
 !
       if (first) then
@@ -29,6 +32,21 @@ module Print
         !
         drcyl = dx
         rcyl = (/ ((i-0.5)*drcyl, i=1,nrcyl) /)
+        !
+        !  Calculate the three surface elements.
+        !  Take care of degenerate dimensions.
+        !
+        if(nxgrid==1) then; dxeff=1.; else; dxeff=dx; endif
+        if(nygrid==1) then; dyeff=1.; else; dyeff=dy; endif
+        if(nzgrid==1) then; dzeff=1.; else; dzeff=dz; endif
+        !
+        dsurfxy=dxeff*dyeff
+        dsurfyz=dyeff*dzeff
+        dsurfzx=dzeff*dxeff
+        !
+        !  Calculate the volume element.
+        !
+        dvol=dxeff*dyeff*dzeff
       endif
 !
       first = .false.

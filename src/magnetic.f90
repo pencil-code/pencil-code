@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.123 2003-08-14 05:17:32 brandenb Exp $
+! $Id: magnetic.f90,v 1.124 2003-08-15 08:58:51 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -48,6 +48,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
+  integer :: i_aybym2=0,i_exaym2=0.
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
@@ -89,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.123 2003-08-14 05:17:32 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.124 2003-08-15 08:58:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -262,6 +263,7 @@ module Magnetic
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
+        if (i_aybym2/=0) call sum_mn_name(2*aa(:,2)*bb(:,2),i_aybym2)
         if (i_abm/=0) then
            call dot_mn(aa,bb,ab)
            call sum_mn_name(ab,i_abm)
@@ -336,21 +338,20 @@ module Magnetic
         endif
       endif
 !
-!  calculate uxB and shear term (if shear is on)
+!  calculate uxB+eta*del2A and add to dA/dt
+!  (Note: the linear shear term is added later)
 !
       call cross_mn(uu,bb,uxB)
 !
-!  calculate dA/dt
+!  add to dA/dt
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
-      !call output_pencil(trim(directory)//'/daa1.dat',df(l1:l2,m,n,iax:iaz),3)
 !
 !  add alpha effect if alpha_effect /= 0
 !      
       if(alpha_effect/=0.) then
          df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+alpha_effect*bb
       endif
-
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
 !  Note that eta_out is total eta in halo (not eta_out+eta)
@@ -359,10 +360,10 @@ module Magnetic
         if (headtt) print*,'daa_dt: halo diffusivity; height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
         eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
-        df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-eta_out1*jj
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-eta_out1*jj
       endif
 !
-!  possibility of entropy relaxation in exterior region
+!  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
 !
@@ -405,6 +406,10 @@ module Magnetic
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
           if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
         endif
+        !
+        !  calculate surface integral <2ExA>*dS
+        !
+        if (i_exaym2/=0) call helflux(aa,uxb,jj)
         !
         !  calculate B_ext21
         !
@@ -538,6 +543,37 @@ module Magnetic
 !
     endsubroutine calc_tau_aa_exterior
 !***********************************************************************
+    subroutine helflux(aa,uxb,jj)
+!
+!  magnetic helicity flux (preliminary)
+!
+!  14-aug-03/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3), intent(in) :: aa,uxb,jj
+      real, dimension (nx,3) :: ee
+      real, dimension (nx) :: FHx,FHz
+      real :: FH
+!
+      ee=eta*jj-uxb
+!
+!  calculate magnetic helicity flux in the X and Z directions
+!
+      FHx=-2*ee(:,3)*aa(:,2)*dsurfyz
+      FHz=+2*ee(:,1)*aa(:,2)*dsurfxy
+!
+!  sum up contribution per pencil
+!  and then stuff result into surf_mn_name for summing up all processors.
+!
+      FH=FHx(nx)-FHx(1)
+      if(ipz==0       .and.n==n1) FH=FH-sum(FHz)
+      if(ipz==nprocz-1.and.n==n2) FH=FH+sum(FHz)
+      call surf_mn_name(FH,i_exaym2)
+!
+    endsubroutine helflux
+!***********************************************************************
     subroutine rprint_magnetic(lreset)
 !
 !  reads and registers print parameters relevant for magnetic fields
@@ -556,6 +592,7 @@ module Magnetic
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
+        i_aybym2=0; i_exaym2=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
@@ -567,6 +604,8 @@ module Magnetic
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'aybym2',i_aybym2)
+        call parse_name(iname,cname(iname),cform(iname),'exaym2',i_exaym2)
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',i_ubm)
@@ -617,6 +656,8 @@ module Magnetic
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !
+      write(3,*) 'i_aybym2=',i_aybym2
+      write(3,*) 'i_exaym2=',i_exaym2
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
       write(3,*) 'i_ubm=',i_ubm

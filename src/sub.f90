@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.133 2003-08-12 11:37:59 dobler Exp $ 
+! $Id: sub.f90,v 1.134 2003-08-15 08:58:51 brandenb Exp $ 
 
 module Sub 
 
@@ -82,6 +82,7 @@ module Sub
 !
 !  successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
+!  TODO: for nonperiodic arrays we want to multiply boundary data by 1/2.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
@@ -108,6 +109,32 @@ module Sub
       endif
 !
     endsubroutine sum_mn_name
+!***********************************************************************
+    subroutine surf_mn_name(a,iname)
+!
+!  successively calculate surface integral. This routine assumes
+!  that "a" contains the partial result for each pencil, so here
+!  we just need to add up the contributions from all processors.
+!  Start from zero if lfirstpoint=.true.
+!
+!  14-aug-03/axel: adapted from sum_mn_name
+!
+      use Cdata
+!
+      real, intent(in) :: a
+      integer, intent(in) :: iname
+!
+      if (lfirstpoint) then
+        fname(iname)=a
+      else
+        fname(iname)=fname(iname)+a
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_surf
+!
+    endsubroutine surf_mn_name
 !***********************************************************************
     subroutine integrate_mn_name(a,iname)
 !
