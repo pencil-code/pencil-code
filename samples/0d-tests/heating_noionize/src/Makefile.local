@@ -15,4 +15,4 @@ DENSITY=density
 IO=io_dist
 FFTPACK=nofftpack
 POWER=nopower_spectrum
-IONIZATION=noionization
+IONIZATION=ionization_fixed
