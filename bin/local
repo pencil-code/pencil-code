@@ -38,6 +38,6 @@ echo "Usage:"
 echo "    $cmd_name <file1> [<file2> ..]"
 echo ""
 echo "Replace a link to a file by a copy. Will also work on directories,"
-echo "but only under some unix dialects (Linux in particular)."
+echo "but only under some unix dialects (Linux and OSF1 in particular)."
 
 # End of file local
