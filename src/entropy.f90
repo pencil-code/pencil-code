@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.172 2003-06-19 10:32:15 mee Exp $
+! $Id: entropy.f90,v 1.173 2003-06-24 15:00:01 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -84,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.172 2003-06-19 10:32:15 mee Exp $")
+           "$Id: entropy.f90,v 1.173 2003-06-24 15:00:01 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1032,9 +1032,9 @@ endif
 !
       case('bot')
         if (lmultilayer) then
-          if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
         else
-          if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
         endif
 !       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !

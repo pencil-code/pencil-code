@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.142 2003-06-21 11:02:53 dobler Exp $
+! $Id: run.f90,v 1.143 2003-06-24 15:00:01 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.142 2003-06-21 11:02:53 dobler Exp $")
+             "$Id: run.f90,v 1.143 2003-06-24 15:00:01 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -287,7 +287,7 @@
 !  dvar is written for analysis purposes only
 !
         if(save_lastsnap) then
-          print*, 'Writing final snapshot for t=', t
+          if (lroot) print*, 'Writing final snapshot for t=', t
            if (lwrite_aux) then
               call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
            else
