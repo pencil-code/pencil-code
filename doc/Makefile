@@ -21,8 +21,13 @@ pdffigs:
 manual.dvi: manual.tex
 	if [ -z $TEXINPUTS ]; then TEXINPUTS="./texinputs:"; else TEXINPUTS="./texinputs:$(TEXINPUTS)"; fi; export TEXINPUTS; latex manual; makeindex -s dotted.idxsty manual; makeindex -s dotted.idxsty manual.vidx -o manual.vind; makeindex -s dotted.idxsty manual.fidx -o manual.find; latex manual
 
-manual.pdf: manual.tex pdffigs
-	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
+# manual.pdf: manual.tex pdffigs
+# 	if [ -z $TEXINPUTS ]; then TEXINPUTS=":./texinputs"; else TEXINPUTS="$(TEXINPUTS):./texinputs"; fi; export TEXINPUTS; pdflatex manual; makeindex manual; pdflatex manual
+manual.pdf: manual.dvi
+	dvipdfm -p a4 manual.dvi
+
+manual.ps.gz: manual.ps
+	gzip -f manual.ps
 
 # Clean up
 clean:
