@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.10 2002-09-19 07:36:53 brandenb Exp $
+;  $Id: extra.pro,v 1.11 2002-10-22 13:00:19 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -35,10 +35,18 @@ if (iuu ne 0) then print
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
 if (iaa ne 0) then begin
+  for j=0,2 do bbb(*,*,*,j)=bbb(*,*,*,j)+par2.b_ext(j)
   bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
   bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
   bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
   print,'bmx,bmy,bmz=',bmx,bmy,bmz
+end
+;
+;  calculate vertical averages
+;
+if (ient ne 0) then begin
+  cs2m=haver(cs2) & csm=sqrt(cs2m)
+  rhom=haver(rho)
 end
 ;
 END

@@ -1,13 +1,19 @@
-pro rslice_xy_all,file,plane
+pro rslice_xy_all,file,plane,mpeg=mpeg,itmax=itmax,fmax=fmax,fmin=fmin,nrepeat=nrepeat
 ;
-; $Id: rslice_xy_all.pro,v 1.3 2002-10-02 20:11:14 dobler Exp $
+; $Id: rslice_xy_all.pro,v 1.4 2002-10-22 13:00:19 brandenb Exp $
 ;
 ; This program reads video snapshots from all the processors
-; in the xy or xz plane.
+; in the xy or xz plane, depending on whether plane='xy' or plane='xz'.
 ;
+; if the keyword /mpeg is given, the file movie.mpg is written.
+; itmax is the maximum number of time slices
+; nrepeat is the number of repeated images (to slow down movie)
+;
+default,itmax,10
+default,nrepeat,0
 ;
 dummy=''
-;datatopdir='data'
+datatopdir='data'
 close,1
 openr,1,datatopdir+'/'+'dim.dat'
 readf,1,dummy
@@ -56,7 +62,18 @@ for i=1,nprocgrid do begin
   openr,i,datatopdir+'/proc'+str(j)+'/'+file,/f77
 end
 ;
-while not eof(1) do begin
+;  open MPEG file, if keyword is set
+;
+if keyword_set(mpeg) then begin
+  Nwx=512 & Nwy=512
+  if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
+  mpeg_name = 'movie.mpg'
+  mpegID = mpeg_open([Nwx,Nwy],FILENAME=mpeg_name)
+  itmpeg=0 ;(image counter)
+end
+;
+it=0 ;(image counter)
+while not eof(1) and it le itmax do begin
   for i=1,nprocgrid do begin
     ;
     start=(i-1)*grid
@@ -64,16 +81,36 @@ while not eof(1) do begin
     readu,i,loc_slice,t
       slice_glob(*,start:stop)=loc_slice
   end
-  print,t,min(slice_glob),max(slice_glob)
-  tvscl,slice_glob
-;  surface,slice_glob
+  ffmin=min(slice_glob)
+  ffmax=max(slice_glob)
+  default,fmin,ffmin
+  default,fmax,ffmax
+  image=bytscl(slice_glob,min=fmin,max=fmax)
+  tv,image
+  if keyword_set(mpeg) then begin
+    image = tvrd(true=1)
+    for irepeat=0,nrepeat do begin
+      mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
+      itmpeg=itmpeg+1 ;(counter)
+    end
+    print,itmpeg,t,ffmin,ffmax
+  end else begin
+    print,it,t,ffmin,ffmax
+  end
+  it=it+1 ;(counter)
   wait,.1
 end
 ;
-for i=1,nprocgrid do begin
-  close,i
+;  write & close mpeg file
+;
+if keyword_set(mpeg) then begin
+  print,'Writing MPEG file..'
+  mpeg_save, mpegID, FILENAME=mpeg_name
+  mpeg_close, mpegID
 end
 ;
+;  close all files
+;
+for i=1,nprocgrid do close,i
+;
 END
-
-

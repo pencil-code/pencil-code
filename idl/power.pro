@@ -1,6 +1,6 @@
 PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t
 ;
-;  $Id: power.pro,v 1.10 2002-10-17 13:15:46 nilshau Exp $
+;  $Id: power.pro,v 1.11 2002-10-22 13:00:19 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -17,13 +17,8 @@ default,var1,'u'
 default,var2,'b'
 default,last,1
 ;
-if (var1 eq 'u') then file1='poweru.dat'
-if (var2 eq 'u') then file2='poweru.dat'
-if (var1 eq 'b') then file1='powerb.dat'
-if (var2 eq 'b') then file2='powerb.dat'
-if (var1 eq 'a') then file1='powera.dat'
-if (var2 eq 'a') then file2='powera.dat'
-if (var2 eq '')  then file2=''
+file1='power'+var1+'.dat'
+file2='power'+var2+'.dat'
 ;
 !p.multi=[0,1,1]
 !p.charsize=2
