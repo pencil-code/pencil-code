@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.73 2004-04-19 07:40:33 theine Exp $
+# CVS: $Id: run.csh,v 1.74 2004-04-29 13:28:43 ajohan Exp $
 
 #                       run.csh
 #                      ---------
@@ -46,22 +46,25 @@ if ($local_disc) then
   if ($one_local_disc) then	# one common local disc
     foreach node ($nodelist)
       foreach d (`cd $datadir; ls -d proc* allprocs`)
-	$SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
-	$SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
+        $SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+        $SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
       if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
     end
   else # one local disc per MPI process (Horseshoe, etc);
        # still doesn't cover Copson
-    set i=0
+    set i = -1
     foreach node ($nodelist)
+      set i=`expr $i + 1`
       echo "i = $i"
-      set j=$nprocpernode
-      while ($j != 0)
-        $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
-        $SCP $datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/
-        set i=`expr $i + 1`
-        set j=`expr $j - 1`
+      set j = 0
+      while ($j != $nprocpernode)
+        set k = `expr $nprocpernode \* $i + $j`
+        if ($?notserial_procN) set k = `expr $i + $nnodes \* $j`
+        $SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/
+        echo "$SCP $datadir/proc$k/var.dat ${node}:$SCRATCH_DIR/proc$k/"
+        $SCP $datadir/proc$k/timeavg.dat ${node}:$SCRATCH_DIR/proc$k/
+        set j=`expr $j + 1`
       end
       if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
     end

@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.115 2004-04-19 12:09:45 ngrs Exp $
+# $Id: getconf.csh,v 1.116 2004-04-29 13:28:42 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -37,8 +37,7 @@ endif
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 # Determine number of CPUS
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
-set nprocpernode = 1
-echo $ncpus CPUs
+echo "$ncpus CPUs"
 
 # Location of executables and other default settings; can be overwritten
 # below
@@ -90,6 +89,10 @@ else
   if ($debug) echo "Setting nodelist to ($hn)"
   set nodelist = ("$hn")
 endif
+# Output information about number of cpus per node
+set nnodes = $#nodelist
+set nprocpernode = `expr $ncpus / $nnodes`
+echo "$nnodes nodes, $nprocpernode CPU(s) per node"
 
 ## ------------------------------
 ## Choose machine specific settings
@@ -210,6 +213,7 @@ else if ($hn =~ nq* || $hn =~ ns*) then
     set local_disc = 1
     set one_local_disc = 0
     set local_binary = 0
+    set notserial_procN = 1
   else
     echo "Non-PBS, running on `hostname`"
     echo `hostname` > lamhosts
