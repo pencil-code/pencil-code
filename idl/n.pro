@@ -2,11 +2,7 @@
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
 ;
-@tmp/general
-@tmp/hydro
-@tmp/density
-@tmp/entropy
-@tmp/magnetic
+@tmp/index
 print,'nname=',nname
 ;
 filen='tmp/n.dat'
@@ -14,6 +10,7 @@ a=rtable(filen,nname)
 if defined(i_t) ne 0 then tt=reform(a(i_t-1,*))
 if defined(i_it) ne 0 then it=reform(a(i_it-1,*))
 if defined(i_dt) ne 0 then dt=reform(a(i_dt-1,*))
+if defined(i_urms) ne 0 then urms=reform(a(i_urms-1,*))
 if defined(i_u2m) ne 0 then u2m=reform(a(i_u2m-1,*))
 if defined(i_um2) ne 0 then um2=reform(a(i_um2-1,*))
 if defined(i_b2m) ne 0 then b2m=reform(a(i_b2m-1,*))

@@ -56,11 +56,7 @@ zero = 0*one
 ;
 ;  the following files contain the positions of variables in f
 ;
-@tmp/general
-@tmp/hydro
-@tmp/density
-@tmp/entropy
-@tmp/magnetic
+@tmp/index
 print,'nname=',nname
 ;
 ;  Read grid
