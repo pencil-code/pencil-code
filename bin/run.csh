@@ -2,13 +2,10 @@
 #
 # run.csh -- driver for time stepping
 #
-##PBS -S /bin/csh -W group_list=UK06005 -q UK06005
-##PBS -l ncpus=32,mem=16gb,walltime=200:00:00
-##PBS -l ncpus=1
+#PBS -S /bin/csh -W group_list=UK07001 -q UK07001
+#PBS -l ncpus=64,mem=32gb,walltime=300:00:00
 ##PBS -q p-long
-##PBS -l nodes=nq0+nq4+nq2+nq3
-##PBS -l nodes=nq0
-##PBS -l nodes=nq1+nq2
+##PBS -l nodes=nq1+nq2+nq3+nq4
 
 #setenv PGHPF_HOST -file=$PBS_NODEFILE
 #if ($?PBS_NODEFILE) then
