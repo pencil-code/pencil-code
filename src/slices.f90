@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.35 2003-12-07 08:42:15 brandenb Exp $
+! $Id: slices.f90,v 1.36 2003-12-08 18:37:47 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -137,7 +137,7 @@ module Slices
 !  Dust velocity
 !
       case ('uud')
-!        do idust=1,dustlayers
+!        do idust=1,ndustspec
 !          call chn(idust,sidust)
 !          if (idust .eq. 1) sidust = ''
 !          uud_yz=f(ix,m1:m2,n1:n2,iudx(idust):iudz(idust))
@@ -185,7 +185,7 @@ module Slices
 !  Logarithmic dust density
 !
       case ('lnrhod')
-!        do idust=1,dustlayers
+!        do idust=1,ndustspec
 !          call chn(idust,sidust)
 !          if (idust .eq. 1) sidust = ''
 !          lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod(idust))
