@@ -1,16 +1,21 @@
-; $Id: pc_read_param.pro,v 1.2 2002-11-28 22:54:59 tarek Exp $
+; $Id: pc_read_param.pro,v 1.3 2004-03-22 14:59:23 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 22:54:59 $
-;  $Revision: 1.2 $
+;  $Date: 2004-03-22 14:59:23 $
+;  $Revision: 1.3 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
 ;  REQUIRES: external 'nl2idl' perl script (WD)
 ;  
 ;  
+function param
+; Dummy to keep IDL from complaining. The real param() routine will be
+; compiled below
+end
+;
 pro pc_read_param,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,lentropy=lentropy, $
                   lmagnetic=lmagnetic, lradiation=lradiation,lpscalar=lpscalar, lforcing=lforcing, $
                   lshear=lshear, $
@@ -118,23 +123,31 @@ filename=datadir+'/param.nml'
 dummy = findfile(filename, COUNT=found)
 if (found gt 0) then begin
     IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
-    spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+filename, result
-    ;; Output may be split in 1024-byte blocks (ludicrous; IDL's fault),
-    ;; so join these (joinstr is not available with IDL 5.2):
-    res = flatten_strings(result)
-    ;; For people with an unclean shell: remove everything up to the
-    ;; opening brace:
-    brace = strpos(res,'{')
-    if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-    if (brace ne 0) then begin
-     IF ( not keyword_set(QUIET) ) THEN print, "Your shell produces output when it shouldn't; you'd better"
-        IF ( not keyword_set(QUIET) ) THEN print, "fix your prompt."
-        IF ( not keyword_set(QUIET) ) THEN print, "Trying to clean up the mess.."
-        res = strmid(res,brace)
-    endif
-    ;; Execute the resulting line
-    if (execute('object = '+res) ne 1) then $
-      message, 'There was a problem with '+filename, /INFO
+    spawn, 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done', /SH, result
+    if (strlen(result[0])) le 0 then begin
+      message, "Can't find writeable directory for temporary files"
+    endif else begin
+      tmpdir = result[0]
+    endelse
+    tmpfile = tmpdir+'/param.pro'
+    ;; Write content of param.nml to temporary file:
+    spawn, '$PENCIL_HOME/bin/nl2idl -m '+filename+'> ' $
+         + tmpfile , result
+    ;; Compile that file. Should be easy, but is incredibly awkward, as
+    ;; there is no way in IDL to compile a given file at run-time
+    ;; outside the command line:
+    ;; Save old path and pwd
+    _path = !path
+    cd, tmpdir, CURRENT=_pwd
+    !path = '.:'
+    resolve_routine, 'param', /IS_FUNCTION
+    ;; Restore old path and pwd
+    !path = _path & cd, _pwd
+    ;; Delete temporary file
+    ; file_delete, tmpfile      ; not in IDL <= 5.3
+    spawn, 'rm -f '+tmpfile, /SH
+    object = param()
+
     x0=object.xyz0[0] & y0=object.xyz0[1] & z0=object.xyz0[2]
     Lx=object.Lxyz[0] & Ly=object.Lxyz[1] & Lz=object.Lxyz[2]
                                 ;
@@ -160,7 +173,7 @@ if (found gt 0) then begin
         z1=object.z1 & z2=object.z2
         zref=object.zref
         gravz=object.gravz
-        ztop=z[n2] & z3=ztop
+        ;ztop=object.ztop & z3=object.z3
     endif
                                 ;
     if (lentropy) then begin
