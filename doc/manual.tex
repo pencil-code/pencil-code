@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.277 2004-11-05 22:47:52 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.278 2004-12-06 10:09:07 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-11-05 22:47:52 $ $,~ $ $Revision: 1.277 $ $}
+%\date{$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-11-05 22:47:52 $ $,~ $ $Revision: 1.277 $ $}\\
+  \emph{$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3055,8 +3055,6 @@ CPUs, you need to do the following (in that directory):
   The first line specifies a $4{\times}4$ layout of the data in the $y$
   and $z$ direction.
   The second line increases the resolution of the run because
-%on most architectures you won't gain much by 
-%AB: one almost always gains something
   running a problem as small as $32^3$ on 16 CPUs would be wasteful.
   Even $128^3$ may still be quite small in that respect.
   For performance timings, one should try and keep the size of the
@@ -3083,9 +3081,10 @@ Remember that in order to visualize the full domain with IDL (rather than
 just the domain processed and written by one processor), you need to use
 \file{rall.pro} instead of \file{r.pro}.
 
-
 \subsubsection{Hierarchical networks (e.g.~on Beowulf clusters)}
 \label{Bandwidth}
+\index{bandwidth}
+\index{Beowulf clusters}
 
 On big Beowulf clusters, a group of nodes is often connected with a switch
 of modest speed, and all these groups are connected via a $n$ times
@@ -3104,6 +3103,10 @@ is 17 (!) times slower.
 These results can be understood from the structure of the network, but the
 basic message is to watch out for such effects and to try varying
 \var{nprocy} and \var{nprocz}.
+
+In cases where \code{nygrid}$>$\code{nzgrid} it may be advantageous to
+swap the ordering of processor numbers.
+This can be done by setting \var{lprocz_slowest}=\code{F}.
 
 % ---------------------------------------------------------------------- %
 
@@ -4656,7 +4659,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-11-05 22:47:52 $ $,~ $ $Revision: 1.277 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-12-06 10:09:07 $ $,~ $ $Revision: 1.278 $ $}
 
 \section{Timings}
 
@@ -6335,6 +6338,12 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \var{lperi} specifies whether a direction is considered
                  periodic (in which case the last point is omitted) or not.
                  In all cases, three ghost zones will be added. \\
+  \var{lprocz_slowest} [\code{T}]
+               & if set to \code{F}, the ordering of processor numbers is
+                 changed, so the $z$ processors are now in the inner loop.
+                 Since \var{nprocy}=4 is optimal (see Sect.~\ref{Bandwidth}),
+                 you may want to put \var{lprocz_slowest}=T when
+                 \code{nygrid}$>$\code{nzgrid}.\\
   \var{lwrite_ic} [\code{F}]
                & if set \code{T}, the initial data are written into the
                  file \file{VAR0}. This is generally useful, but doing this
@@ -7731,7 +7740,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.277 2004-11-05 22:47:52 dobler Exp $ $}
+$ $Id: manual.tex,v 1.278 2004-12-06 10:09:07 brandenb Exp $ $}
 
 
 \end{document}
