@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.73 2003-04-04 16:47:16 anders Exp $
+! $Id: density.f90,v 1.74 2003-04-04 17:28:03 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.73 2003-04-04 16:47:16 anders Exp $")
+           "$Id: density.f90,v 1.74 2003-04-04 17:28:03 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -746,7 +746,7 @@ module Density
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
       real :: tmp
-      integer :: i
+      integer :: i,l,m
 !
       if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0
 !
@@ -769,12 +769,23 @@ module Density
       case('bot')
         if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
 !
-!  set first boundary value for entropy, and then ghost points antisymmetrically
-!  set density value such that pressure is constant at the bottom
+!  fix entropy if inflow (uz>0); otherwise leave s unchanged
+!  afterwards extrapolate
 !
         if(lentropy) then
-          f(:,:,n1,ient)=ss_bot
+          do m=m1,m2
+          do l=l1,l2
+            if (f(l,m,n1,iuz)>=0) then
+              f(l,m,n1,ient)=ss_bot
+            else
+              f(l,m,n1,ient)=f(l,m,n1+1,ient)
+            endif
+          enddo
+          enddo
           do i=1,nghost; f(:,:,n1-i,ient)=2*f(:,:,n1,ient)-f(:,:,n1+i,ient); enddo
+!
+!  set density value such that pressure is constant at the bottom
+!
           f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,ient)
         else
           f(:,:,n1,ilnrho)=lnrho_bot
