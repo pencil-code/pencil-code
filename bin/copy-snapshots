@@ -23,7 +23,8 @@ if ($#argv > 0) then
   set varfile = $1
 endif
 
-set targetdir = $PWD/data
+set pwd = `pwd`
+set targetdir = $pwd/data
 set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
 
 if ($debug) then
@@ -50,6 +51,7 @@ if ($?varfile) then		# explicit filename given
     set cmd7 = "$targetdir/"
     set cmd8 = '$f; done'
     set remcmd = "$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
+    if ($debug) echo "Now running <$remcmd>"
     $SSH $node sh -x -c "'$remcmd'"
   end
 
