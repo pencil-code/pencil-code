@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.46 2004-02-11 19:25:59 theine Exp $
+! $Id: ionization_fixed.f90,v 1.47 2004-02-13 09:08:08 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -88,7 +88,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.46 2004-02-11 19:25:59 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.47 2004-02-13 09:08:08 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -750,8 +750,7 @@ module Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
       real, intent(in) :: T0,rho0
-      real :: ss,lnTT
-      integer :: l
+      real, dimension(nx) :: ss
 !
 !  First calculate hydrostatic density stratification when T=T0
 !
@@ -764,12 +763,10 @@ module Ionization
 !
 !  Then calculate entropy as a function of T0 and lnrho
 !
-      do l=l1,l2
-        do m=m1,m2
-          do n=n1,n2
-            call eoscalc_point(ilnrho_lnTT,f(l,m,n,ilnrho),log(T0),ss=ss)
-            f(l,m,n,iss) = ss
-          enddo
+      do m=m1,m2
+        do n=n1,n2
+          call eoscalc_pencil(ilnrho_lnTT,f(l1:l2,m,n,ilnrho),log(T0),ss=ss)
+          f(l1:l2,m,n,iss) = ss
         enddo
       enddo
 !
