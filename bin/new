@@ -1,4 +1,8 @@
 #!/bin/csh
+
+# An obscure script used by noone else than Axel Brandenburg. It won't work
+# for you, since you don't have his `mktmpw2'. So just ignore it
+
 set CWD=$cwd
 mkdir $2
 cd $2
