@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.286 2004-03-24 12:34:19 ajohan Exp $
+! $Id: entropy.f90,v 1.287 2004-03-25 17:26:03 bingert Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -27,7 +27,7 @@ module Entropy
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
-  real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.
+  real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.,Kisotr=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
@@ -62,7 +62,7 @@ module Entropy
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-       chi_t,chi_shock,chi,Kappa0,iheatcond, &
+       chi_t,chi_shock,chi,Kappa0,Kisotr,iheatcond, &
        lcalc_heatcond_simple,lcalc_heatcond,lcalc_heatcond_constchi,&
        tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.286 2004-03-24 12:34:19 ajohan Exp $")
+           "$Id: entropy.f90,v 1.287 2004-03-25 17:26:03 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1100,6 +1100,10 @@ module Entropy
 !
 !  Calculates heat conduction parallel to magnetic field lines     
 !
+!  calculation of    gradient( kappa0 * T^5/2 * b *( b * gradientT))
+!  where b is the unit vector of magnetic field
+!  See: Solar MHD; Priest 1982
+!
 !  10-feb-04/bing: coded
 !
       use Sub
@@ -1114,17 +1118,21 @@ module Entropy
       real, dimension (nx) :: tmp
 
       integer :: i
+
       glnT = gamma*gss + gamma1*glnrho
       TT = cs2/gamma1   
- 
+!
+!   unit vector of magnetic field: bb/bb2
+! 
       call dot2_mn(bb,bb2)
       do i=1,nx
          if (bb2(i) < tiny(1.)) then
-            bb2(i)=3*tiny(1.)**2
-            bb(i,:)=tiny(1.)
+            bb2(i)=3*1e-34
+            bb(i,:)=1e-17
          endif
       enddo
-      bb21 = 1 / bb2        
+
+      bb21 = 1. / bb2        
 
       call dot_mn(bb,glnT,tmp)
             
@@ -1132,37 +1140,51 @@ module Entropy
       c1 = 3.5 * c1
 
       call del2v_etc(f,iaa,gradcurl=gradcurlaa)
-      call multmv_mn_transp(gradcurlaa,bb,c2)
-      call multsv_mn(bb21,c2,c2)
-      call multsv_mn(tmp,c2,c2)
-      c2 = 2 * c2
 
+      call multmv_mn_transp(gradcurlaa,bb,c2)
+
+      call multsv_mn(bb21,c2,c2)
+
+      call multsv_mn(tmp,c2,c2)
+
+      c2 = 2 * c2
+!
+!   calculate (b*grad)*(grad T)
+!
       call g2ij(f,ilnrho,allrho)
       call g2ij(f,iss,allss)
+
       call multmv_mn(allss,bb,c3)
       call multmv_mn(allrho,bb,c4)
+
       c3 = gamma * c3 
       c4 = gamma1 * c4 
-
+!
       call multmv_mn_transp(gradcurlaa,glnT,c5)
 
       c1 = c1 - c2 + c3 + c4 + c5
 
       call dot_mn(c1,bb,thdiff)
-      thdiff = Kappa0 * thdiff * bb21 * rho1 * (TT**2.5)
-      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 
+      thdiff = Kappa0 * thdiff * bb21 * rho1 * (TT**2.5)
+!
+!   Add heat conduction to entropy
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!      
       if (lfirst.and.ldt) then
-         chitotal= Kappa0*rho1*TT**2.5
+         chitotal= Kappa0*rho1*(TT**2.5)
          call max_for_dt(chitotal, maxdiffus)
      endif
-     
+!     
     endsubroutine calc_heatcond_mpara
 !***********************************************************************
     subroutine calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
 !
-!  Calculates heat conduction perpendicular to magnetic field lines     
-!  kapppaPerp << kappaPara  ->  Use of isotropic heat conduction
+!  Calculates isotropic heat conduction: gradient(Kisotr * n^2 / T^0.5 / B^2 * gradient(T))      
+!  Kappa and Chi are not constant !
+!  See: Solar MHD; Priest 1982
+!
 !
 !  24-feb-04/bing: coded
 !
@@ -1175,43 +1197,53 @@ module Entropy
       real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal,del2ss,del2lnrho
 
       real, dimension (nx,3) :: c1
-      real, dimension (nx) :: tmp1,tmp2,tmp3
+      real, dimension (nx) :: tmp1,tmp2,tmp3,tmp4
 
       integer :: i
+
       glnT = gamma*gss + gamma1*glnrho
-
       TT = cs2/gamma1   
-
+!
+!   calculate unit vector of magnetic field: bb/bb2
+!
       call dot2_mn(bb,bb2)
       
       do i=1,nx
          if (bb2(i) < tiny(1.)) then
-            bb2(i)=3*tiny(1.)**2
-            bb(i,:)=tiny(1.)
+            bb2(i)=3*1e-34
+            bb(i,:)=1e-17
          endif
       enddo
-
-      bb21 = 1 / bb2        
+      
+      bb21 = 1. / bb2        
 
       call del2v_etc(f,iaa,gradcurl=gradcurlaa)
       call multmv_mn_transp(gradcurlaa,bb,c1)
+
       call dot_mn(c1,glnT,tmp1)
       
       call dot2_mn(glnT,tmp2)
       
       call del2(f,iss,del2ss)
       call del2(f,ilnrho,del2lnrho)
+      
+      call dot_mn(glnT,glnrho,tmp4)
 
-      tmp3 = gamma*del2ss + gamma1*del2lnrho + 0.5*tmp2 - 2*bb21*tmp1
-
-      thdiff = 2*10**(-31) * Kappa0 * TT**(-0.5) * bb21 * rho1 * tmp3
-       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
-
+      tmp3 = gamma*del2ss + gamma1*del2lnrho + 0.5*tmp2 - 2*bb21*tmp1 + 2*tmp4
+!
+!    Use rho instead of n: wrong dimension
+!      
+      thdiff = Kisotr * TT**(-0.5) * bb21 * tmp3 / rho1
+!
+!   Add heat conduction to entropy
+!
+      df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
+!
       if (lfirst.and.ldt) then
-         chitotal= Kappa0*rho1*TT**2.5
+         chitotal= Kisotr * TT**(-0.5) * bb21 / rho1 
          call max_for_dt(chitotal, maxdiffus)
      endif
-     
+!     
     endsubroutine calc_heatcond_mperp
 !***********************************************************************
     subroutine calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
@@ -1376,6 +1408,7 @@ module Entropy
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
         call del2(f,iss,del2ss)
       endif
+
       if (hcond0 /= 0) then
         if (lgravz) then
           ! For vertical geometry, we only need to calculate this for each
