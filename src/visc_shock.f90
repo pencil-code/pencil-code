@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.39 2003-11-25 15:29:29 brandenb Exp $
+! $Id: visc_shock.f90,v 1.40 2003-11-26 13:58:32 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -67,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.39 2003-11-25 15:29:29 brandenb Exp $")
+           "$Id: visc_shock.f90,v 1.40 2003-11-26 13:58:32 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -147,9 +147,12 @@ module Viscosity
 !  23-nov-02/tony: coded
 !
       use IO
+      use Sub, only: gij
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
+      real, dimension (nx,3,3) :: uij
+!      integer:: mtest,ntest
 !
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
 !
@@ -160,13 +163,23 @@ module Viscosity
 !  calculate (-divu)_+
 !
          call shock_divu(f,f(:,:,:,ishock))
+!mtest=m
+!ntest=n
+!         do m=m1,m2
+!         do n=n1,n2
+!           call gij(f,iuu,uij)
+!           f(l1:l2,m,n,ishock)=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
+!         enddo
+!         enddo
+!
+!n=ntest
+!m=mtest
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
-         !f(:,:,:,ishock)=.1
-         f(:,:,:,itest)=f(:,:,:,ishock)
 !
 !  take the max over 5 neighboring points and smooth
 !
          call shock_max5(f(:,:,:,ishock),tmp)
+f(:,:,:,itest)=tmp
          call shock_smooth(tmp,f(:,:,:,ishock))
 !
 !  scale with dxmin**2
@@ -346,20 +359,23 @@ module Viscosity
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
+ !     integer, ivar
 !
 !  check for degeneracy
 !
+      tmp=f !(:,:,:,ivar)
+  !    f(:,:,:,itest)=f(:,:,:,ivar)
       if (nxgrid/=1) then
          if (mx.ge.3) then
-            smoothf(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
-                                             f(2     ,:,:))
+            smoothf(1     ,:,:) = 0.25 * (3.*tmp(1     ,:,:) +  &
+                                             tmp(2     ,:,:))
 
-            smoothf(2:mx-1,:,:) = 0.25 * (   f(1:mx-2,:,:) + &
-                                          2.*f(2:mx-1,:,:) + &
-                                             f(3:mx  ,:,:))
+            smoothf(2:mx-1,:,:) = 0.25 * (   tmp(1:mx-2,:,:) + &
+                                          2.*tmp(2:mx-1,:,:) + &
+                                             tmp(3:mx  ,:,:))
                                 
-            smoothf(mx    ,:,:) = 0.25 * (   f(mx-1  ,:,:) + &
-                                          3.*f(mx    ,:,:))
+            smoothf(mx    ,:,:) = 0.25 * (   tmp(mx-1  ,:,:) + &
+                                          3.*tmp(mx    ,:,:))
          else
             smoothf=f
          endif
