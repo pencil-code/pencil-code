@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.154 2004-03-26 10:46:52 theine Exp $
+! $Id: density.f90,v 1.155 2004-03-26 13:46:44 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -34,7 +34,7 @@ module Density
   real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
-  character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
+  character (len=labellen) :: initlnrho='nothing',initlnrho2='nothing'
   character (len=labellen) :: strati_type='lnrho_ss'
   complex :: coeflnrho=0.
 
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.154 2004-03-26 10:46:52 theine Exp $")
+           "$Id: density.f90,v 1.155 2004-03-26 13:46:44 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -519,6 +519,10 @@ module Density
 !  Add some structures to the lnrho initialized above
 !
       select case(initlnrho2)
+
+      case('nothing')
+
+        if (lroot.and.ip<=5) print*,"init_lnrho: initlnrho2='nothing'"
 
       case('addblob')
 

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.288 2004-03-26 10:46:52 theine Exp $
+! $Id: entropy.f90,v 1.289 2004-03-26 13:46:44 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.288 2004-03-26 10:46:52 theine Exp $")
+           "$Id: entropy.f90,v 1.289 2004-03-26 13:46:44 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -534,6 +534,10 @@ module Entropy
 !  Add some structures to the entropy initialized above
 !
       select case(initss2)
+
+      case('nothing')
+
+        if (lroot.and.ip<=5) print*,"init_ss: initss2='nothing'"
 
       case('addblob')
 
