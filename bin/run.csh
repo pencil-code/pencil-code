@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.75 2004-07-25 15:56:22 brandenb Exp $
+# CVS: $Id: run.csh,v 1.76 2004-09-01 16:55:44 dobler Exp $
 
 #                       run.csh
 #                      ---------
@@ -141,10 +141,10 @@ endif
 # directory
 if ($local_disc) then
   echo "Copying final var.dat back from local scratch disk"
-  copy-snapshots -v var.dat >&! copy-snapshots2.log
-  copy-snapshots -v dxyz.dat >>& copy-snapshots2.log
+  copy-snapshots -v var.dat     >&! copy-snapshots2.log
+  copy-snapshots -v dxyz.dat    >>& copy-snapshots2.log
   copy-snapshots -v timeavg.dat >>& copy-snapshots2.log
-  copy-snapshots -v crash.dat >>& copy-snapshots2.log
+  copy-snapshots -v crash.dat   >>& copy-snapshots2.log
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`

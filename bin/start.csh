@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.56 2004-07-19 16:38:17 dobler Exp $
+# CVS: $Id: start.csh,v 1.57 2004-09-01 16:55:44 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -116,12 +116,18 @@ set start_status=$status	# save for exit
 echo ""
 date
 
+# Not sure it makes any sense to continue after mpirun had an error:
+if ($status) then
+  echo "Error status $status found -- aborting"
+  exit $start_status
+endif
+
 # If local disk is used, copy var.dat back to the data directory
 if ($local_disc) then
   echo "Copying var.dat back to data directory"
-  copy-snapshots -v var.dat
-  copy-snapshots -v timeavg.dat
-  copy-snapshots -v dxyz.dat
+  copy-snapshots -v var.dat     >&! copy-snapshots.log
+  copy-snapshots -v timeavg.dat >>& copy-snapshots.log
+  copy-snapshots -v dxyz.dat    >>& copy-snapshots.log
 
   if ($remove_scratch_root) then
     rm -rf $SCRATCH_DIR

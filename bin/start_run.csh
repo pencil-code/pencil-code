@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.32 2004-04-03 16:58:27 mee Exp $
+# CVS: $Id: start_run.csh,v 1.33 2004-09-01 16:55:44 dobler Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -109,7 +109,7 @@ if ($local_disc) then
   # We still need to copy (at least one of) the var.dat files back, so
   # the background process copy-snapshots will know how large the snapshots
   # ought to be. Certainly far from elegant..
-  copy-snapshots -v var.dat >& copy-snapshots.log
+  copy-snapshots -v var.dat     >&  copy-snapshots.log
   copy-snapshots -v timeavg.dat >>& copy-snapshots.log
 
   # On machines with local scratch directory, initialize automatic
@@ -144,10 +144,10 @@ date
 # directory
 if ($local_disc) then
   echo "Copying final var.dat back from local scratch disk"
-  copy-snapshots -v var.dat >&! copy-snapshots2.log
-  copy-snapshots -v dxyz.dat >>& copy-snapshots2.log
+  copy-snapshots -v var.dat     >&! copy-snapshots2.log
+  copy-snapshots -v dxyz.dat    >>& copy-snapshots2.log
   copy-snapshots -v timeavg.dat >>& copy-snapshots2.log
-  copy-snapshots -v crash.dat >>& copy-snapshots2.log
+  copy-snapshots -v crash.dat   >>& copy-snapshots2.log
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
