@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.105 2003-10-03 17:41:09 brandenb Exp $
+! $Id: hydro.f90,v 1.106 2003-10-06 14:26:19 mcmillan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -35,11 +35,15 @@ module Hydro
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
+!
+! geodynamo
   namelist /hydro_run_pars/ &
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
-       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
+       tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
+       frec_ux,ampl_osc_ux, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0
+! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -86,7 +90,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.105 2003-10-03 17:41:09 brandenb Exp $")
+           "$Id: hydro.f90,v 1.106 2003-10-06 14:26:19 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -420,7 +424,10 @@ module Hydro
 !
 !  damp motions in some regions for some time spans if desired
 !
-      if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
+! geodynamo
+! addition of dampuint evaluation
+      if ((tdamp /= 0) .or. (dampuext /= 0) .or. (dampuint /= 0)) call udamping(f,df)
+! end geodynamo
 !
 !  adding differential rotation via a frictional term
 !  (should later be moved to a separate routine)
@@ -642,10 +649,23 @@ module Hydro
 !  2. damp motions for r_mn>1
 !
         if (lgravr) then
-          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
+! geodynamo
+! original block
+!          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
+!          do i=iux,iuz
+!            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+!          enddo
+!
+          pdamp = step(r_mn,rdampext,wdamp) ! outer damping profile
           do i=iux,iuz
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo
+
+          pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
+          enddo
+! end geodynamo 
         endif
 !
     endsubroutine udamping
