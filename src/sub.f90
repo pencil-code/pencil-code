@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.103 2002-11-26 19:59:19 mee Exp $ 
+! $Id: sub.f90,v 1.104 2002-11-27 16:33:31 theine Exp $ 
 
 module Sub 
 
@@ -2035,6 +2035,14 @@ module Sub
 !
       close(1)
 !
+!  Write shell script for DX Import module
+!
+      open(2,FILE=file//'.dxsh')
+!
+      write(2,'(A)' ) 'sed -e "s:var.dat:VAR$1:" '//file
+!
+      close(2)
+
     endsubroutine write_dx_general
 !***********************************************************************
     subroutine date_time_string(date)

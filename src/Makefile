@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.131 2002-11-24 18:33:15 brandenb Exp $
+### $Id: Makefile,v 1.132 2002-11-27 16:33:31 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -86,6 +86,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=/usr/bin/mpif77 #(nq0)
 #FC=/home/brandenb/pacx/bin/pacxfc #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
+#FC=ifc #(cosmo)
 #FFLAGS=-O # (Samos)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
 #FFLAGS=-O3 -ipo #PACX #(fe[0-9])
@@ -93,12 +94,13 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O3 -ipo #(fe[0-9])
 #FFLAGS=-O4 -u -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
+#FFLAGS= -O3 -tpp7 -xMKW #(cosmo)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC) -O4
 #F77=$(FC) -O4 -dusty #(nl3|Mephisto)
 #F77=$(FC) -lm  #(tycho|erland)
-#F77=$(FC) -O3 #(Cincinnatus|Owen|Master)
+#F77=$(FC) -O3 #(Cincinnatus|Owen|Master|cosmo)
 
 ## SunOS:
 #FC=pghpf #(Lomond)
