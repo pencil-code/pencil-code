@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.14 2003-12-06 14:12:04 ajohan Exp $
+;  $Id: varcontent.pro,v 1.15 2003-12-07 23:28:28 dobler Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -105,6 +105,7 @@ varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
+default, dustlayers,0
 for idust=1,dustlayers do begin
 
   if (dustlayers gt 1) then begin
