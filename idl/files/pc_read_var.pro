@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.19 2004-05-25 09:19:32 mee Exp $
+; $Id: pc_read_var.pro,v 1.20 2004-05-27 20:26:45 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-25 09:19:32 $
-;  $Revision: 1.19 $
+;  $Date: 2004-05-27 20:26:45 $
+;  $Revision: 1.20 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -85,15 +85,14 @@ COMPILE_OPT IDL2,HIDDEN
     print, "    /HELP: display this usage information, and exit                                        "
     return
   ENDIF
-IF keyword_set(HELP) THEN PRINT, "WARNING: USING EXPERIMENTAL OPTION ASSOC!!"
 ; Default data directory
 
 default, datadir, 'data'
 default,varfile,'var.dat'
 
-  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
 ; Get necessary dimensions, inheriting QUIET
   if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,quiet=quiet
+  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
@@ -327,8 +326,6 @@ if keyword_set(VALIDATE_VARIABLES) then begin
     endif 
   endfor
   testvariable=0
-;  skippedvariables=variables[where(skipvariable eq 1)]
-;  skippedtags=tags[where(skipvariable eq 1)]
   if max(skipvariable) eq 1 then begin
     variables=variables[where(skipvariable eq 0)]
     tags=tags[where(skipvariable eq 0)]
