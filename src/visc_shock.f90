@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.60 2004-07-03 02:13:14 theine Exp $
+! $Id: visc_shock.f90,v 1.61 2004-10-03 20:03:24 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.60 2004-07-03 02:13:14 theine Exp $")
+           "$Id: visc_shock.f90,v 1.61 2004-10-03 20:03:24 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -593,7 +593,7 @@ module Viscosity
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -605,6 +605,7 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
       real, dimension (nx,3) :: gshock
       real, dimension (nx) :: rho1,divu,shock

@@ -1,4 +1,4 @@
-! $Id: visc_smagorinsky.f90,v 1.3 2004-07-23 13:58:32 nilshau Exp $
+! $Id: visc_smagorinsky.f90,v 1.4 2004-10-03 20:03:24 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here smagorinsky viscosity
@@ -67,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_smagorinsky.f90,v 1.3 2004-07-23 13:58:32 nilshau Exp $")
+           "$Id: visc_smagorinsky.f90,v 1.4 2004-10-03 20:03:24 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -284,7 +284,7 @@ module Viscosity
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -296,6 +296,7 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: glnrho,del2u,del6u,graddivu,fvisc,sglnrho
       real, dimension (nx,3) :: gshock,sgradnu_smag
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2,gradnu_smag

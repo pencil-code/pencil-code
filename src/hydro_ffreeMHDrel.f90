@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.17 2004-07-03 02:13:14 theine Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.18 2004-10-03 20:03:24 nilshau Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -101,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.17 2004-07-03 02:13:14 theine Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.18 2004-10-03 20:03:24 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -314,7 +314,7 @@ module Hydro
 !     if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij,shock,gshock)
+    subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij,bij,shock,gshock)
 !
 !  dS/dt = curlB x B +  curlE x E + divE E
 !  where E = (BxS)/B^2

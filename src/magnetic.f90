@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.226 2004-09-28 17:55:14 snod Exp $
+! $Id: magnetic.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.226 2004-09-28 17:55:14 snod Exp $")
+           "$Id: magnetic.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -374,7 +374,7 @@ module Magnetic
       real, dimension (nx) :: hall_ueff2
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
-      real, dimension (nx) :: b2b13
+      real, dimension (nx) :: b2b13,jo,sign_jo
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
       real, dimension (nx) :: ufres,rufres,etatotal,pp
       real :: tmp,eta_out1,B_ext21=1.
@@ -536,6 +536,18 @@ module Magnetic
       case ('Smagorinsky')
         call dot2_mn(jj,J2)
         eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
+        call multsv(eta_smag+eta,del2A,fres)
+        etatotal=eta_smag+eta
+      case ('Smagorinsky_cross')        
+        oo(:,1)=uij(:,3,2)-uij(:,2,3)
+        oo(:,2)=uij(:,1,3)-uij(:,3,1)
+        oo(:,3)=uij(:,2,1)-uij(:,1,2)
+        call dot(jj,oo,jo)
+        sign_jo=1.
+        do i=1,nx 
+          if (jo(i) .lt. 0) sign_jo(i)=-1.
+        enddo
+        eta_smag=(D_smag*dxmax)**2.*sign_jo*sqrt(jo*sign_jo)
         call multsv(eta_smag+eta,del2A,fres)
         etatotal=eta_smag+eta
       case default

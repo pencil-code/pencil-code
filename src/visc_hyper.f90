@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.13 2004-08-13 08:23:23 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.14 2004-10-03 20:03:24 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.13 2004-08-13 08:23:23 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.14 2004-10-03 20:03:24 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -309,7 +309,7 @@ module Viscosity
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
 !
 !  calculate viscous force
 !
@@ -321,6 +321,7 @@ module Viscosity
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: hyper
       real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock,del4u
       real, dimension (nx) :: rho1,divu,shock,ufvisc,rufvisc

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.186 2004-09-28 17:55:14 snod Exp $
+! $Id: hydro.f90,v 1.187 2004-10-03 20:03:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -127,7 +127,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.186 2004-09-28 17:55:14 snod Exp $")
+           "$Id: hydro.f90,v 1.187 2004-10-03 20:03:24 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -394,7 +394,7 @@ module Hydro
 !     if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
 !
 !  velocity evolution
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
@@ -413,7 +413,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13,ss12,nu_smag
@@ -517,7 +517,7 @@ module Hydro
 !
 ! calculate viscous force
 !
-      if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
+      if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
 !
 !  ``uu/dx'' for timestep
 !

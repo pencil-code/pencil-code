@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.31 2004-07-05 22:19:50 theine Exp $
+! $Id: nohydro.f90,v 1.32 2004-10-03 20:03:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -68,7 +68,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.31 2004-07-05 22:19:50 theine Exp $")
+           "$Id: nohydro.f90,v 1.32 2004-10-03 20:03:24 nilshau Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -102,7 +102,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij,bij,shock,gshock)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -116,7 +116,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: uu,oo,glnrho,gshock
       real, dimension (nx) :: u2,uz,divu,o2,ou,rho1,shock
 !
