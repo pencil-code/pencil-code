@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-11-06 11:59:36 $
-# $Revision: 1.8 $
+# $Date: 2004-02-25 12:08:13 $
+# $Revision: 1.9 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -33,7 +33,7 @@ my $start_tag = '^\s*###\s*begin\s*machine\s*dependent';
 my $end_tag =   '^\s*###\s*end\s*machine\s*dependent';
 # Files to include if present (option `-f' may add one)
 my $global_incfile = ($ENV{ADAPT_MKFILE} || "$ENV{HOME}/.adapt-mkfile.inc");
-my @incfiles = ($global_incfile, "./.adapt-mkfile.inc");
+my @incfiles = ($global_incfile, "./.adapt-mkfile.inc", "./adapt-mkfile.inc");
 
 my $os = `uname -s`; chomp($os);
 my $host = `uname -n`; chomp($host);
@@ -64,8 +64,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.8 $';
-    my $date = '$Date: 2003-11-06 11:59:36 $';
+    my $rev = '$Revision: 1.9 $';
+    my $date = '$Date: 2004-02-25 12:08:13 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
@@ -249,9 +249,11 @@ machine dependent>, the contents of the following files will be inserted
 =item 1. F<$ADAPT_MKFILE> if that environment variable exists,
     otherwise F<~/.adapt-mkfile.inc>
 
-=item 2. F<./.adapt-mkfile.inc>
+=item 2. F<./.adapt-mkfile.inc> (deprecated)
 
-=item 3. The file name specified with the B<-f> option
+=item 3. F<./adapt-mkfile.inc> (preferred)
+
+=item 4. The file name specified with the B<-f> option
 
 =back
 
