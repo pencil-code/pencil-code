@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.16 2003-04-02 12:03:14 theine Exp $
+! $Id: general.f90,v 1.17 2003-04-03 12:11:31 theine Exp $
 
 module General
 
@@ -411,7 +411,7 @@ module General
       spline_integral=q
     end function spline_integral
 !***********************************************************************
-    subroutine tridag(a,b,c,r,u)
+    subroutine tridag(a,b,c,r,u,err)
 !
 !  solves tridiagonal system
 !
@@ -421,16 +421,16 @@ module General
       real, dimension(:), intent(in) :: a,b,c,r
       real, dimension(:), intent(out) :: u
       real, dimension(size(b)) :: gam
+      logical, intent(out) :: err
       integer :: n,j
       real :: bet
 
+      err=.false.
       n=size(b)
       bet=b(1)
       if (bet.eq.0.) then
          print*,'tridag_ser: Error at code stage 1'
-         print*,'a(1)=',a(1),'b(1)=',b(1),'c(1)=',c(1), &
-                             'r(1)=',r(1),'u(1)=',u(1)
-         return
+         err=.true.
       endif
 
       u(1)=r(1)/bet
@@ -439,9 +439,7 @@ module General
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
             print*,'tridag_ser: Error at code stage 2'
-            print*,'a(1)=',a(1),'b(1)=',b(1),'c(1)=',c(1), &
-                                'r(1)=',r(1),'u(1)=',u(1)
-            return
+            err=.true.
          endif
          u(j)=(r(j)-a(j-1)*u(j-1))/bet
       end do
