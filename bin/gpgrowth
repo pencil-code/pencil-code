@@ -169,10 +169,12 @@ close SCRIPT;
 # Plot
 if ($term =~ /^tek/) {
     print "\033[?38h\0338";	# switch to TEK mode
+    $| = 1; $| = 0; # flush STDOUT
 }
 system("gnuplot $gpscript");
 if ($term =~ /^tek/) {
     print "\033\003";
+    $| = 1; $| = 0; # flush STDOUT
 }
 
 #unlink $gpscript;
