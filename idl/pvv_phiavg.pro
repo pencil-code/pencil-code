@@ -15,16 +15,24 @@
 ;;;  IF FILENAME doesn't exist, try 'data/FILENAME' and
 ;;;  'data/averages/FILENAME'.
 ;;;  Keywords:
-;;;    BB     -- if set, plot magnetic field bb (default is uu)
-;;;    UU     -- if set, plot velocity field uu (also the default)
-;;;    RADII  -- radii for overplotting circles
-;;;    MARGIN -- margin in x and y (see ASPECT_POS)
-;;;    STAT   -- print some statistics
-;;;    OMEGA  -- angular velocity for getting statistics right
-;;;    MAXVEC -- maximum number of vectors to plot (see WD_VELOVECT)
-;;;    NLINES -- if >0, plot NLINES field lines for the poloidal
-;;;              component instead of arrows
-;;;    QUIET  -- keep quiet
+;;;    BB            -- if set, plot magnetic field bb (default is uu)
+;;;    UU            -- if set, plot velocity field uu (also the default):
+;;;                     poloidal uu as arrows, angular velocity omega as
+;;;                     colour
+;;;    NEGATE        -- if set, negate fields
+;;;    PLOT_UPHI     -- colour-code u_phi, not omega
+;;;    PLOT_LZ       -- colour-code l_z = r*u_phi, not omega
+;;;    RADII         -- radii for overplotting circles
+;;;    MARGIN        -- margin in x and y (see ASPECT_POS)
+;;;    STAT          -- print some statistics
+;;;    OMEGA         -- angular velocity for getting statistics right
+;;;    MAXVEC        -- maximum number of vectors to plot (see WD_VELOVECT)
+;;;    NLINES        -- if >0, plot NLINES field lines for the poloidal
+;;;                     component instead of arrows
+;;;    ABSZERO       -- always use the same color for value zero when
+;;;                     NLINES is set
+;;;    BOTTOMCOLFRAC -- don't use colors below bottomcolfrac*!d.table_size
+;;;    QUIET         -- keep quiet
 ;;;  Examples:
 ;;;    pvv_phiavg                    ; plot uu data from PHIAVG1,
 ;;;    pvv_phiavg, /BB               ; plot bb data from PHIAVG1,
@@ -35,11 +43,15 @@
 ;;;  Advanced example:
 ;;;    avg=tavg_phiavg([800.,1e10])
 ;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20
+;;;    pvv_phiavg, avg, /BB, RADII=par2.r_ext, /STAT, NLINES=20, $
+;;;                /ABSZERO, BOTTOMCOLFRAC=0.3
 
 pro pvv_phiavg, arg, BB=bb, UU=uu, $
-                MARGIN=margin, RADII=radii, OMEGA=omega, $
+                NEGATE=negate, MARGIN=margin, RADII=radii, OMEGA=omega, $
                 CHARSIZE=charsize, MAXVEC=maxvec, $
                 STAT=stat, NLINES=nlines, $
+                PLOT_UPHI=plot_uphi, PLOT_LZ=plot_lz, $
+                ABSZERO=abszero, BOTTOMCOLFRAC=bottomcolfrac, $
                 QUIET=quiet
 
   datatopdir ='data'
@@ -49,12 +61,17 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
   default, arg, avgdir+'/'+phiavgfile
   default, uu, 1
   default, bb, 0
+  default, negate, 0
   default, margin, 0.05
   default, charsize, !p.charsize
   default, maxvec, [20,40]
   default, stat, 0
   default, quiet, 0
   default, nlines, 0
+  default, plot_uphi, 0
+  default, plot_lz, 0
+  default, abszero, 0
+  default, bottomcolfrac, 0
   if (n_elements(omega) eq 0) then begin
     omega = 1.
     noomega = 1
@@ -108,10 +125,23 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     var1 = avg.urmphi
     var2 = avg.uzmphi
     var3 = avg.upmphi
-    var3_plot = var3/spread(avg.rcyl>1.e-20,1,nz) ; plot omega, not u_phi
+    if (plot_uphi ne 0) then begin
+      var3_plot = var3                              ; colour-code u_phi
+    endif else if (plot_lz ne 0) then begin
+      var3_plot = var3*spread(avg.rcyl,1,nz)        ; colour-code L_z=u_phi*r
+    endif else begin
+      var3_plot = var3/spread(avg.rcyl>1.e-20,1,nz) ; colour-code omega=u_phi/r
+    endelse
   endif else begin
     message, 'Need one of UU or BB to be true'
   endelse
+
+  if (negate) then begin
+    var1 = -var1
+    var2 = -var2
+    var3 = -var3
+    var3_plot = -var3_plot
+  endif
 
   pos = aspect_pos((max(avg.z)-min(avg.z))/(max(avg.rcyl)-min(avg.rcyl)), $
                    MARGIN=margin)
@@ -124,11 +154,23 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       pot[*,iiz] = integral(avg.rcyl,avg.rcyl*var2[*,iiz],/accumulate)
     endfor
     ;; 2. Plot
+    ; Set colour range:
+    data_range = minmax(var3_plot)
+    if (abszero) then data_range = [-1,1]*max(abs(data_range))
+    if (bottomcolfrac ne 0) then begin
+      level_bot =   (data_range[0]-bottomcolfrac*data_range[1]) $
+                  / (1.-bottomcolfrac)
+      level_top = data_range[1]
+      levels = linspace([level_bot,level_top], 60/(1-bottomcolfrac), GHOST=0.5)
+    endif else begin
+      levels = linspace(data_range, 60, GHOST=0.5)
+    endelse
     contourfill, var3_plot, $
         avg.rcyl, avg.z, $
         POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
         YRANGE=minmax(avg.z), YSTYLE=1, $
         XTITLE='!8r!X', YTITLE='!8z!X', $
+        LEVELS=levels, $
         CHARSIZE=charsize
     if (nlines gt 0) then begin
       ; linearly spaced

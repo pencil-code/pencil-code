@@ -13,7 +13,7 @@
 ;;;                                      ; directory data/averages
 ;;;   avg = tavg_phiavg(DIR='data/avg2') ; average all PHIAVG files in
 ;;;                                      ; directorydata/avg2
-;;;   avg = tavg_phiavg([2,10])          ; average PHIAVG1 to PHIAVG10
+;;;   avg = tavg_phiavg([2,10])          ; average PHIAVG2 to PHIAVG10
 ;;;   avg = tavg_phiavg([10.,35.])       ; average from time 10. to 35.
 
 ; ---------------------------------------------------------------------- ;
