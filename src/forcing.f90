@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.52 2003-09-19 12:54:38 brandenb Exp $
+! $Id: forcing.f90,v 1.53 2003-10-07 08:22:24 brandenb Exp $
 
 module Forcing
 
@@ -14,6 +14,8 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
+  real :: zff_ampl=0.,zff_hel=0.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=0.
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.
@@ -26,6 +28,7 @@ module Forcing
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
+       zff_ampl,zff_hel, &
        lmagnetic_forcing
 
   contains
@@ -51,7 +54,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.52 2003-09-19 12:54:38 brandenb Exp $")
+           "$Id: forcing.f90,v 1.53 2003-10-07 08:22:24 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -92,6 +95,19 @@ module Forcing
           lwork_ff=.true.
           if(lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
         endif
+      endif
+!
+!  vertical profiles for amplitude and helicity of the forcing
+!  default is constant profiles for rms velocity and helicity.
+!
+      if (zff_ampl==0) then
+        profz_ampl=1.
+        profz_hel=1.
+      else
+        do n=1,mz
+          if(abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
+          if(abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
+        enddo
       endif
 !
     endsubroutine initialize_forcing
@@ -245,7 +261,7 @@ module Forcing
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
-      complex, dimension (3) :: coef
+      real, dimension (3) :: coef1,coef2
       logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
@@ -260,7 +276,7 @@ module Forcing
         read(9,*) nk,kav
         if (lroot) print*,'forcing_hel: average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'forcing_hel: dimension mk in forcing_hel is insufficient'
+          if (lroot) print*,'forcing_hel: mk in forcing_hel is set too small'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -281,7 +297,9 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
-      if(ip<=6) print*,'forcing_hel: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+      if(ip<=6) print*,'forcing_hel: ik,phase=',ik,phase
+      if(ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
+      if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
 !
       kx0=kkx(ik)
       ky=kky(ik)
@@ -343,9 +361,8 @@ module Forcing
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip.le.9) print*,'forcing_hel: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.9) print*,'forcing_hel: k,kde,ffnorm,kav=',k,kde,ffnorm,kav
       if (ip.le.9) print*,'forcing_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
-      !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -361,6 +378,7 @@ module Forcing
       fz=exp(cmplx(0.,kz*k1_ff*z))
 !
 !  possibly multiply forcing by z-profile
+!  (This stuff is now supposed to be done in initialize; keep for now)
 !
       if (height_ff/=0.) then
         if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
@@ -385,12 +403,13 @@ module Forcing
       if (ip.le.5) print*,'forcing_hel: fy=',fy
       if (ip.le.5) print*,'forcing_hel: fz=',fz
 !
-!  prefactor
+!  prefactor; treat real and imaginary parts separately (coef1 and coef2),
+!  so they can be multiplied by different profiles below.
 !
-      coef(1)=cmplx(k*kex,relhel*kkex)
-      coef(2)=cmplx(k*key,relhel*kkey)
-      coef(3)=cmplx(k*kez,relhel*kkez)
-      if (ip.le.5) print*,'forcing_hel: coef=',coef
+      coef1(1)=k*kex; coef2(1)=relhel*kkex
+      coef1(2)=k*key; coef2(2)=relhel*kkey
+      coef1(3)=k*kez; coef2(3)=relhel*kkez
+      if (ip.le.5) print*,'forcing_hel: coef=',coef1,coef2
 !
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
@@ -406,14 +425,15 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !
       if (r_ff == 0) then       ! no radial profile
-        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
+        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,cmplx(coef1,coef2),force_ampl)
         do j=1,3
           if(extent(j)) then
             jf=j+ifff-1
             do n=n1,n2
               do m=m1,m2
-                f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) &
-                  +force_ampl*rho1*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+profz_ampl(n)*force_ampl*rho1 &
+                  *real(cmplx(coef1(j),profz_hel(n)*coef2(j)) &
+                  *fx(l1:l2)*fy(m)*fz(n))
               enddo
             enddo
           endif
@@ -424,14 +444,14 @@ module Forcing
             jf=j+ifff-1
             do n=n1,n2
               sig = relhel*tmpz(n)
-              coef(1)=cmplx(k*kex,sig*kkex)
-              coef(2)=cmplx(k*key,sig*kkey)
-              coef(3)=cmplx(k*kez,sig*kkez)
+              coef1(1)=cmplx(k*kex,sig*kkex)
+              coef1(2)=cmplx(k*key,sig*kkey)
+              coef1(3)=cmplx(k*kez,sig*kkez)
               do m=m1,m2
                 radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
                 tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
-                f(l1:l2,m,n,jf) = &
-                     f(l1:l2,m,n,jf) + rho1*real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*real( &
+                  cmplx(coef1(j),coef2(j))*tmpx*fx(l1:l2)*fy(m)*fz(n))
               enddo
             enddo
           endif
