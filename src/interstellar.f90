@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.19 2003-05-26 16:23:55 mee Exp $
+! $Id: interstellar.f90,v 1.20 2003-05-29 09:17:13 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -77,7 +77,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.19 2003-05-26 16:23:55 mee Exp $")
+           "$Id: interstellar.f90,v 1.20 2003-05-29 09:17:13 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -565,21 +565,25 @@ find_SN: do n=n1,n2
       !
       use Cdata
       use Mpicomm
+      use Ionization
       !
       real, intent(inout), dimension(mx,my,mz,mvar) :: f
       integer, intent(in) :: itype_SN
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: mass_check=0., mass_shell=0., profile_integral
-      real :: EE_SN=0.,rho_SN_new,TT_SN_new,dv
+      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,TT_SN_new,dv
 
       real, parameter :: TT_limit=1.e7
      ! real :: TT_limit=1.e5    ! make weaker, for debug
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! make larger, for debug
-      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old
-      real, dimension(3) :: fmpi3, fmpi3_tmp
+      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old, e_new
+      real, dimension(nx) ::  lnrho_old, ss_old,TT1, cs2, cp1tilde ! not really wanted but sideeffect of
+                                                                   ! using the (No)Ionisation module
+                                                                   ! thermodynamics function
+      real, dimension(4) :: fmpi3, fmpi3_tmp
       integer:: move_mass=0      
           
       !
@@ -594,8 +598,6 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-
-
       TT_SN_new=TT_SN+(c_SN*rho_SN*gamma*cp1)
       if(lroot) print*,'explode_SN - TT_SN, TT_SN_new :',TT_SN,TT_SN_new
 
@@ -630,18 +632,34 @@ find_SN: do n=n1,n2
             ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) - (gamma1/gamma)*ln(1+(\delta rho / rho))
 
             ! Store old values
-            rho_old=exp(f(l1:l2,m,n,ilnrho))
-            e_old = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
-!            rho_old=exp(f(l1:l2,m,n,ilnrho))
+            lnrho_old=f(l1:l2,m,n,ilnrho)
+            rho_old=exp(lnrho_old)
+            ss_old=f(l1:l2,m,n,ient)
+
+            call thermodynamics(lnrho_old,ss_old,cs2,TT1,cp1tilde, InternalEnergy=e_old)
+
+!            cs2=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)
+!            e_new = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
+
+!            if (abs(sum(e_old-e_new)).gt.1.) then
+!               print*,e_old-e_new
+!            endif
 
 !ajwm - 4\pi ??? What's that all about?...
             if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
-            f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + &
-                 ( alog(1.+ (deltaEE / 12.56637061 & 
-                            *(rho_old+deltarho) / e_old))  -  &
-                 (gamma1*alog(1 + deltarho / rho_old) )  &
-                 ) / gamma
+            f(l1:l2,m,n,ient)=ss_old + &
+                 ( alog(1.+ (deltaEE  &                           ! / 12.56637061
+                            *(rho_old+deltarho) / e_old)) ) / gamma  
+            if (move_mass.eq.1) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
+                                          - (gamma1*alog(1 + deltarho / rho_old) )/ gamma
 
+            call thermodynamics(f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,ient),cs2,TT1,cp1tilde,InternalEnergy=e_new)
+
+            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
+
+            if (sum(deltaEE).gt.1.) then
+               print*, sum(e_new*exp(f(l1:l2,m,n,ilnrho))),sum(e_old*rho_old),sum(e_new*exp(f(l1:l2,m,n,ilnrho)))-sum(e_old*rho_old),sum(deltaEE)
+            endif
        enddo
       enddo
        
@@ -653,11 +671,12 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      fmpi3_tmp=(/ mass_check, EE_SN, mass_shell /)
+      fmpi3_tmp=(/ mass_check, EE_SN, mass_shell, EE2_SN /)
       call mpireduce_sum(fmpi3_tmp,fmpi3,3) 
       call mpibcast_real(fmpi3,3)
       mass_check=fmpi3(1)*dv
       EE_SN=fmpi3(2)*dv; 
+      EE2_SN=fmpi3(4)*dv; 
       mass_shell=fmpi3(3)*dv; 
 
 
@@ -670,17 +689,18 @@ find_SN: do n=n1,n2
       !
       if (lroot) then
          open(1,file=trim(datadir)//'/time_series.dat',position='append')
-         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
               '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
-         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,EE2_SN, ')'
+         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
               '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,EE2_SN, ')'
          close(1)
       endif
 
       
     endsubroutine explode_SN
+
 !***********************************************************************
     subroutine calcmassprofileintegral_SN(profile_integral,width_SN)
 !
@@ -751,7 +771,7 @@ find_SN: do n=n1,n2
                     dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
                     + dz_SN**2
             enddo
-            profile_integral =  profile_integral + sum(exp(-min((dr2_SN(:)/width_SN**2)**3, 75.)))
+            profile_integral = profile_integral + sum(exp(-min((dr2_SN(:)/width_SN**2)**3, 75.)))
          enddo
       enddo
     endsubroutine calcmassprofileintegral_SN

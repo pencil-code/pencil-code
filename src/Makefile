@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.178 2003-05-20 18:38:46 mee Exp $
+### $Id: Makefile,v 1.179 2003-05-29 09:17:13 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -253,7 +253,7 @@ $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o 
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
-$(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o #Expected deps!
+$(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(IONIZATION).o #Expected deps!
 $(IONIZATION).o:   $(IONIZATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(IO).o:           $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 #$(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local

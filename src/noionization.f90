@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.15 2003-05-29 07:48:14 brandenb Exp $
+! $Id: noionization.f90,v 1.16 2003-05-29 09:17:13 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -95,6 +95,7 @@ module Ionization
       use Cdata
       use General
       use Sub
+      use Density, only:cs20, lnrho0,gamma
 !
       real, dimension (nx), intent(out), optional :: Temperature
       real, dimension (nx), intent(out), optional :: InternalEnergy
@@ -113,8 +114,11 @@ module Ionization
         TT1=1./TT
         cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
-print*,'ss_ion,TT,dlnPdlnrho=',ss_ion,TT,dlnPdlnrho
-        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+        print*,'ss_ion,TT,dlnPdlnrho=',ss_ion,TT,dlnPdlnrho
+        if(present(InternalEnergy)) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+        if(present(Temperature)) Temperature=TT
+        if(present(InternalEnergy)) InternalEnergy=ee
+        if(present(IonizationFrac)) IonizationFrac=yH
       else
 !
 !  if ionization turned off, continue assuming cp=1
@@ -123,16 +127,16 @@ print*,'ss_ion,TT,dlnPdlnrho=',ss_ion,TT,dlnPdlnrho
         if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-        if(present(Temperature)) Temperature=cs2/gamma1
+
+
         cp1tilde=1.
-        if(ldiagnos) ee=cs2/(gamma*gamma1)
-      endif
+        if(present(Temperature)) Temperature=cs2/gamma1
+        if(present(InternalEnergy)) InternalEnergy=cs2/(gamma*gamma1)
+        if(present(IonizationFrac)) IonizationFrac=0.
+     endif
 !
 !  optional output
 !
-      if(present(Temperature)) Temperature=1./TT1
-      if(present(InternalEnergy)) InternalEnergy=ee
-      if(present(IonizationFrac)) IonizationFrac=0.
 !
 if(headtt) print*,'ss_ion,yH,cs2',ss_ion,yH,cs2
     endsubroutine thermodynamics
