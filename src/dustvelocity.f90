@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.38 2004-02-14 16:53:28 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.39 2004-02-18 16:57:22 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.38 2004-02-14 16:53:28 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.39 2004-02-18 16:57:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -378,18 +378,18 @@ module Dustvelocity
       intent(in) :: uu,rho1
       intent(out) :: df,divud,ud2
 !
-!  Loop over dust layers
-!
-      do k=1,ndustspec
-!
 !  identify module and boundary conditions
 !
         if (headtt.or.ldebug) print*,'duud_dt: SOLVE duud_dt'
         if (headtt) then
-          call identify_bcs('udx',iudx(k))
-          call identify_bcs('udy',iudy(k))
-          call identify_bcs('udz',iudz(k))
+          call identify_bcs('udx',iudx(1))
+          call identify_bcs('udy',iudy(1))
+          call identify_bcs('udz',iudz(1))
         endif
+!
+!  Loop over dust layers
+!
+      do k=1,ndustspec
 !
 !  Abbreviations
 !
