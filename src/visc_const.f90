@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.16 2003-10-20 16:27:21 dobler Exp $
+! $Id: visc_const.f90,v 1.17 2003-10-26 21:20:13 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -20,7 +20,6 @@ module Viscosity
 
   implicit none
 
-  logical :: lvisc_shock=.false.
   character (len=labellen) :: ivisc='nu-const'
 
   ! input parameters
@@ -47,6 +46,7 @@ module Viscosity
       first = .false.
 !
       lviscosity = .true.
+      lvisc_shock=.false.
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: constant viscosity'
@@ -55,7 +55,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.16 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: visc_const.f90,v 1.17 2003-10-26 21:20:13 theine Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
