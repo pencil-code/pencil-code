@@ -1,0 +1,42 @@
+!                               -*-f90-*-   (for emacs)
+!
+! Convection in vertically stratified atmosphere/solar convection zone
+! Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2002-07-18 15:07:32 dobler Exp $',
+  ip=14,
+  nt=1000, it1=50, isave=500, itorder=3,
+  cdt=0.4, cdtv=0.2, dtmin=1e-6, tmax=100.
+  dsnap=20., dvid=0.2,
+  bcx = 'p','p','p', 'p',    'p'
+  bcy = 'p','p','p', 'p',    'p'
+  bcz = 's','s','a','a2','c1:c2'
+/
+&hydro_run_pars
+  nu=4e-3, ivisc=0
+  theta=0. ! direction of angular velocity vector (vertical)
+/
+&density_run_pars
+  cdiffrho=0.
+/
+&grav_run_pars
+  gravz=-1.
+/
+&entropy_run_pars
+  cheat=0., wheat=0.1, cool=15., wcool=0.2,
+
+  ! The following quantities are taken from start.in if we don't
+  ! overwrite them here:
+  ! hcond0=6.e-3, hcond1=1., hcond2=.5, whcond=0.05,
+  ! mpoly0=1., mpoly1=3., mpoly2=0., isothtop=1,
+/
+
+! Nomenclature for boundary conditions:
+!   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
+!   p      : periodic
+!   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
+!   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
+
+! tinit    -- initial time for smoothly switching on heating, etc
+
