@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.96 2003-11-20 12:24:47 mee Exp $
+# $Id: getconf.csh,v 1.97 2003-11-20 15:42:58 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -231,7 +231,7 @@ else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
 #    set mpirun = /opt/score/bin/mpirun
 #    set mpirunops = "-machinefile $PBS_NODEFILE"
 
-  setenv SCRATCH_DIR /scratch
+  setenv SCRATCH_DIR /scratch/$JOB_ID
   if ($?JOB_ID) then
     if (-e $HOME/.score/ndfile.$JOB_ID) then
       set local_disc=1
