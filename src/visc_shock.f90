@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.23 2003-06-16 09:19:22 nilshau Exp $
+! $Id: visc_shock.f90,v 1.24 2003-06-21 04:28:36 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.23 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: visc_shock.f90,v 1.24 2003-06-21 04:28:36 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -74,6 +74,7 @@ module Viscosity
     subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
+!
        use CData
  !     if (nu /= 0. .and. (ivisc=='nu-const')) then
          lneed_sij=.true.
@@ -91,29 +92,42 @@ module Viscosity
 !  23-nov-02/tony: coded
 !
       use IO
-
+!
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
-
+!
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
-
+!
+!  calculate shock viscosity only when nu_shock /=0
+!
       if (nu_shock /= 0.) then
+!
+!  calculate (-divu)_+
+!
          call shock_divu(f,f(:,:,:,ishock))
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
-
- 
+!
+!  take the max over 5 neighboring points and smooth
+!
          call shock_max5(f(:,:,:,ishock),tmp)
-         call shock_smooth(tmp,f(:,:,:,ishock))   
-
+         call shock_smooth(tmp,f(:,:,:,ishock))
+!
+!  scale with dxmin**2
+!
          f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
       else
          f(:,:,:,ishock) = 0.
       end if
-
+!
+!  doesn't need to be calculated again for this time step
+!
       icalculated = it
-
+!
+!  max effective nu is the max of shock viscosity and the ordinary viscosity
+!
       maxeffectivenu = amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
-!ajwm debug onyl line:-
+!
+!ajwm debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_viscosity
 !***********************************************************************
@@ -414,7 +428,7 @@ module Viscosity
 
       if ( icalculated<it ) call calc_viscosity(f)
 !
-!  traceless strainmatrix squared
+!  traceless strain matrix squared
 !
       call multm2_mn(sij,sij2)
 !      if (headtt) print*,'viscous heating: ',ivisc

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.78 2003-06-16 04:41:10 brandenb Exp $
+! $Id: mpicomm.f90,v 1.79 2003-06-21 04:28:36 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -266,8 +266,8 @@ module Mpicomm
 !  Periodic boundary conditions in y
 !
       if (nprocy>1) then
-        lbufyo=f(:,m1:m1i,n1:n2,:)  !!(lower y-zone)
-        ubufyo=f(:,m2i:m2,n1:n2,:)  !!(upper y-zone)
+        lbufyo(:,:,:,1:mvar)=f(:,m1:m1i,n1:n2,1:mvar)  !!(lower y-zone)
+        ubufyo(:,:,:,1:mvar)=f(:,m2i:m2,n1:n2,1:mvar)  !!(upper y-zone)
         call MPI_IRECV(ubufyi,nbufy,MPI_REAL,yuneigh,tolowy,MPI_COMM_WORLD,irecv_rq_fromuppy,ierr)
         call MPI_IRECV(lbufyi,nbufy,MPI_REAL,ylneigh,touppy,MPI_COMM_WORLD,irecv_rq_fromlowy,ierr)
         call MPI_ISEND(lbufyo,nbufy,MPI_REAL,ylneigh,tolowy,MPI_COMM_WORLD,isend_rq_tolowy,ierr)
@@ -277,8 +277,8 @@ module Mpicomm
 !  Periodic boundary conditions in z
 !
       if (nprocz>1) then
-        lbufzo=f(:,m1:m2,n1:n1i,:)  !!(lower z-zone)
-        ubufzo=f(:,m1:m2,n2i:n2,:)  !!(upper z-zone)
+        lbufzo(:,:,:,1:mvar)=f(:,m1:m2,n1:n1i,1:mvar)  !!(lower z-zone)
+        ubufzo(:,:,:,1:mvar)=f(:,m1:m2,n2i:n2,1:mvar)  !!(upper z-zone)
         call MPI_IRECV(ubufzi,nbufz,MPI_REAL,zuneigh,tolowz,MPI_COMM_WORLD,irecv_rq_fromuppz,ierr)
         call MPI_IRECV(lbufzi,nbufz,MPI_REAL,zlneigh,touppz,MPI_COMM_WORLD,irecv_rq_fromlowz,ierr)
         call MPI_ISEND(lbufzo,nbufz,MPI_REAL,zlneigh,tolowz,MPI_COMM_WORLD,isend_rq_tolowz,ierr)
@@ -288,10 +288,10 @@ module Mpicomm
 !  The four corners (in counter-clockwise order)
 !
       if (nprocy>1.and.nprocz>1) then
-        llbufo=f(:,m1:m1i,n1:n1i,:)
-        ulbufo=f(:,m2i:m2,n1:n1i,:)
-        uubufo=f(:,m2i:m2,n2i:n2,:)
-        lubufo=f(:,m1:m1i,n2i:n2,:)
+        llbufo(:,:,:,1:mvar)=f(:,m1:m1i,n1:n1i,1:mvar)
+        ulbufo(:,:,:,1:mvar)=f(:,m2i:m2,n1:n1i,1:mvar)
+        uubufo(:,:,:,1:mvar)=f(:,m2i:m2,n2i:n2,1:mvar)
+        lubufo(:,:,:,1:mvar)=f(:,m1:m1i,n2i:n2,1:mvar)
         call MPI_IRECV(uubufi,nbufyz,MPI_REAL,uucorn,TOll,MPI_COMM_WORLD,irecv_rq_FRuu,ierr)
         call MPI_IRECV(lubufi,nbufyz,MPI_REAL,lucorn,TOul,MPI_COMM_WORLD,irecv_rq_FRlu,ierr)
         call MPI_IRECV(llbufi,nbufyz,MPI_REAL,llcorn,TOuu,MPI_COMM_WORLD,irecv_rq_FRll,ierr)
@@ -452,8 +452,8 @@ module Mpicomm
          lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
          lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
          nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
-         fao = f(l1:l1i,:,:,:)
-         fbo = f(l2i:l2,:,:,:)
+         fao(:,:,:,1:mvar) = f(l1:l1i,:,:,1:mvar)
+         fbo(:,:,:,1:mvar) = f(l2i:l2,:,:,1:mvar)
          if (lastya/=iproc) then
             call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr)
          endif
@@ -530,18 +530,20 @@ module Mpicomm
          c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
          c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
          c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
-         f(1:l1-1,m1:m2,:,:) = c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,:) &
-              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,:) &
-              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,:) &
-              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,:) &
-              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,:) &
-              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,:)
-         f(l2+1:mx,m1:m2,:,:) = c1*fb(:,m1+displs-2:m2+displs-2,:,:) &
-              +c2*fb(:,m1+displs-1:m2+displs-1,:,:) &
-              +c3*fb(:,m1+displs:m2+displs,:,:) &
-              +c4*fb(:,m1+displs+1:m2+displs+1,:,:) &
-              +c5*fb(:,m1+displs+2:m2+displs+2,:,:) &
-              +c6*fb(:,m1+displs+3:m2+displs+3,:,:)
+         f(1:l1-1,m1:m2,:,1:mvar) &
+              =c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,1:mvar) &
+              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,1:mvar) &
+              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,1:mvar) &
+              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,1:mvar) &
+              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,1:mvar) &
+              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,1:mvar)
+         f(l2+1:mx,m1:m2,:,1:mvar) &
+              =c1*fb(:,m1+displs-2:m2+displs-2,:,1:mvar) &
+              +c2*fb(:,m1+displs-1:m2+displs-1,:,1:mvar) &
+              +c3*fb(:,m1+displs  :m2+displs  ,:,1:mvar) &
+              +c4*fb(:,m1+displs+1:m2+displs+1,:,1:mvar) &
+              +c5*fb(:,m1+displs+2:m2+displs+2,:,1:mvar) &
+              +c6*fb(:,m1+displs+3:m2+displs+3,:,1:mvar)
 !
 !  Filling also the x-y corners in order to avoid only zeros at these corners.
 !  One should acctually have communicated with an extra processor in order to
@@ -549,10 +551,10 @@ module Mpicomm
 !  necessary.
 !
          do i=1,nghost
-            f(1:l1-1,i,:,:)=f(1:l1-1,m1+nghost-i,:,:)
-            f(1:l1-1,m2+i,:,:)=f(1:l1-1,m2-i+1,:,:)
-            f(l2+1:mx,i,:,:)=f(l2+1:mx,m1+nghost-i,:,:)
-            f(l2+1:mx,m2+i,:,:)=f(l2+1:mx,m2-i+1,:,:)
+            f(1:l1-1 ,i   ,:,1:mvar)=f(1:l1-1 ,m1+nghost-i,:,1:mvar)
+            f(1:l1-1 ,m2+i,:,1:mvar)=f(1:l1-1 ,m2-i+1     ,:,1:mvar)
+            f(l2+1:mx,i   ,:,1:mvar)=f(l2+1:mx,m1+nghost-i,:,1:mvar)
+            f(l2+1:mx,m2+i,:,1:mvar)=f(l2+1:mx,m2-i+1     ,:,1:mvar)
          enddo
 !
 !  need to wait till buffer is empty before re-using it again
@@ -669,7 +671,6 @@ module Mpicomm
         call MPI_SEND(buf,1,MPI_INTEGER,root,io_succ,MPI_COMM_WORLD,ierr)
       endif
 !
-!call mpibarrier()
     endsubroutine end_serialize
 !***********************************************************************
     subroutine mpibarrier()
