@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.128 2003-08-10 22:12:06 mee Exp $ 
+! $Id: param_io.f90,v 1.129 2003-08-10 23:30:02 mee Exp $ 
 
 module Param_IO
 
@@ -719,7 +719,7 @@ module Param_IO
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lionization, &
-           ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,
+           ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,  &
            lionization_fixed
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
