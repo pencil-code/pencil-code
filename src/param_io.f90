@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.100 2003-03-28 10:40:43 theine Exp $ 
+! $Id: param_io.f90,v 1.101 2003-03-28 22:43:36 brandenb Exp $ 
 
 module Param_IO
 
@@ -333,6 +333,8 @@ module Param_IO
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
+      label='ionization_run_pars'
+      if (lionization  ) read(1,NML=ionization_run_pars    ,ERR=99, IOSTAT=ierr)
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
       label='dustvelocity_run_pars'
