@@ -3,8 +3,8 @@
 ;;;;;;;;;;;;;;;;;
 
 ;;; Author:  wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;; $Date: 2004-09-16 19:18:33 $
-;;; $Revision: 1.2 $
+;;; $Date: 2005-02-04 00:01:33 $
+;;; $Revision: 1.3 $
 
 ;;;   Switch output device to PostScript
 ;;;   Usage:
@@ -35,9 +35,10 @@ pro psa, $
 
   COMMON _ps1,_oldthick,_fname,_olddev
 
-  ;; Lengths (in cm) for LANDSCAPE
+  ;; Lengths (in cm) for LANDSCAPE (use minimum of A4 and letter to
+  ;; make sure this prints correctly)
   paperwidth  = 21.00
-  paperheight = 29.70
+  paperheight = 27.94
   margin = 1.5
   width  = paperwidth-2*margin
   height = paperheight-2*margin

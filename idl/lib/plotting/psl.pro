@@ -11,5 +11,6 @@
 pro psl, $
          _EXTRA=extra
   on_error,2
-  psa, _EXTRA=extra, /LANDSCAPE, XSIZE=23, YSIZE=18
+  psa, _EXTRA=extra, /LANDSCAPE, XSIZE=24.94, YSIZE=18.00
+  ; NB: The current version of psa.pro overwrites the width and height
 end
