@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.94 2002-07-16 08:29:44 dobler Exp $
+! $Id: entropy.f90,v 1.95 2002-07-18 15:09:47 dobler Exp $
 
 module Entropy
 
@@ -61,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.94 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: entropy.f90,v 1.95 2002-07-18 15:09:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -443,7 +443,6 @@ module Entropy
 !
 !  Heat conduction / entropy diffusion
 !
-      if (headtt) print*,'calc_heatcond: lgravz=',lgravz
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
         call del2(f,ient,del2ss)
       endif
