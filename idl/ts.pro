@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2004-01-13 09:05:37 $
-;;;  $Revision: 1.6 $
+;;;  $Date: 2004-07-20 08:47:46 $
+;;;  $Revision: 1.7 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -29,6 +29,7 @@ function parse_tsheader, hline
       line = strmid(line,1)     ; remove first character
     endrep until (strmid(line,0,1) ne '-')
     endlb = strpos(line,'-')
+    if (endlb lt 0) then endlb=strlen(line) ; if no '-' at end of line
     labels = [labels, strmid(line,0,endlb)]
     line = strmid(line,endlb)
   endwhile
