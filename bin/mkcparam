@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.4 2002-07-16 11:25:27 nilshau Exp $
+# CVS: $Id: mkcparam,v 1.5 2002-08-09 08:01:57 nilshau Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -32,7 +32,7 @@ my %modules = ( # module_name => contribution to mvar
 	        density  => 1,
 	        entropy  => 1,
 	        magnetic => 3,
-		radiation=> 4,
+		radiation=> 5,
 		pscalar  => 1,
 	      );
 my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
