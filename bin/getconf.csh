@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.51 2003-05-29 17:58:25 dobler Exp $
+# $Id: getconf.csh,v 1.52 2003-05-30 16:21:43 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -187,8 +187,6 @@ else
   set datadir = "data"
 endif
 echo "datadir = $datadir"
-echo "$datadir :"
-ls -l $datadir/
 
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
