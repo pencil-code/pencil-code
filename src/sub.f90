@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.142 2003-11-21 10:05:44 theine Exp $ 
+! $Id: sub.f90,v 1.143 2003-11-21 18:04:39 dobler Exp $ 
 
 module Sub 
 
@@ -2167,7 +2167,8 @@ module Sub
         real :: f,g
 
         g=f
-        notanumber_0=((f/=g).or.(f==g-sign(1.0,g)*2.0**exponent(g)))
+        notanumber_0 = &
+             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_0
 !***********************************************************************
@@ -2185,7 +2186,8 @@ module Sub
         real, dimension(size(f,1)) :: g
 
         g=f
-        notanumber_1=(any(f/=g).or.any(f==g-sign(1.0,g)*2.0**exponent(g)))
+        notanumber_1 = &
+             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_1
 !***********************************************************************
@@ -2204,7 +2206,9 @@ module Sub
         real, dimension(size(f,1),size(f,2)) :: g
 
         g=f
-        notanumber_2=(any(f/=g).or.any(f==g-sign(1.0,g)*2.0**exponent(g)))
+        notanumber_2 = &
+             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
+
 !
       endfunction notanumber_2
 !***********************************************************************
@@ -2223,7 +2227,8 @@ module Sub
         real, dimension(size(f,1),size(f,2),size(f,3)) :: g
 
         g=f
-        notanumber_3=(any(f/=g).or.any(f==g-sign(1.0,g)*2.0**exponent(g)))
+        notanumber_3 = &
+             ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_3
 !***********************************************************************
