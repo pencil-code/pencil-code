@@ -3,11 +3,11 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2003-10-06 13:54:51 ngrs Exp $',
+  cvsid='$Id: run.in,v 1.5 2003-11-23 21:55:26 brandenb Exp $',
   ip=13,
   nt=100, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.08, dtmin=1e-6,
-  dsnap=2., dvid=1000.,
+  dsnap=2., dvid=1000., d2davg=.5
   ttransient=0.,
   bcx = 'a','s','s','a2','sT','a','s','s',
   bcy = 's','a','s','a2','sT','s','a','s',
