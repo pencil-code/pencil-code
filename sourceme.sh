@@ -49,8 +49,8 @@ if [ -z $_sourceme ]; then	# called for the first time?
   # CDPATH="./:../:../../:../../../:$HOME"
   if [ -d $PENCIL_HOME/bin ]; then
     #  Set shell path
-    if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/bin to PATH"; fi
-    PATH=${PATH}:$PENCIL_HOME/bin
+    if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/{bin,utils} to PATH"; fi
+    PATH=${PATH}:$PENCIL_HOME/bin:$PENCIL_HOME/utils
     #  Set path for DX macros
     DXMACROS="${PENCIL_HOME}/dx/macros${DXMACROS:+:$DXMACROS}"
     #  Set IDL path
