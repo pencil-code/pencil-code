@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2004-03-19 17:17:49 $
-;;;  $Revision: 1.6 $
+;;;  $Date: 2004-05-14 11:59:24 $
+;;;  $Revision: 1.7 $
 ;;;
 ;;;  Description:
 ;;;   Return position [X0, Y0, X1, Y1] (in normalized coordinates) for
@@ -69,7 +69,7 @@ function aspect_pos, ratio, npos, nx, ny, MARGIN=margin, $
   margin = ((margin > 0) < 0.5) ; sanitize values
 
   s = size(ratio)
-  type = s(s(0)+1)
+  type = s[s[0]+1]
   if (type ne 4 and type ne 5) then $
       message, 'Warning: RATIO is not a FLOAT -- may have been rounded.', /INFO
 

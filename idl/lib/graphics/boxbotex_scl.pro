@@ -84,10 +84,10 @@ endif
 
 on_error,2            ;Return to caller if an error occurs
 s = size(imxy)         ;Get size of image
-nx = s(1)
-ny = s(2)
+nx = s[1]
+ny = s[2]
 s = size(imxz)         ;Get size of image
-nz = s(2)
+nz = s[2]
 ;
 if n_elements(amax) eq 0 then begin
   print,'need to specify amin and amax'
