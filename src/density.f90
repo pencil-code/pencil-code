@@ -1,22 +1,23 @@
-! $Id: density.f90,v 1.13 2002-06-18 09:16:58 dobler Exp $
+! $Id: density.f90,v 1.14 2002-06-21 16:34:55 dobler Exp $
 
 module Density
 
   use Cparam
+  use Cdata
 
   implicit none
 
   integer :: initlnrho=0
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20, cs2top, gamma1, zinfty, lnrho0
+          cs20,cs2bot,cs2top,gamma1,zinfty,lnrho0
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
-       rho_left,rho_right,cs2top
+       rho_left,rho_right,cs2bot,cs2top
 
   namelist /density_run_pars/ &
-       cs0,rho0,gamma,cdiffrho,cs2top
+       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_ekin=0,i_rhom=0
@@ -31,7 +32,6 @@ module Density
 !
 !   4-jun-02/axel: adapted from hydro
 !
-      use Cdata
       use Mpicomm, only: lroot,stop_it
       use Sub
 !
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-06-18 09:16:58 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-06-21 16:34:55 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -70,7 +70,6 @@ module Density
 !
 !  7-nov-2001/wolf: coded
 !
-      use Cdata
       use Sub
       use Global
       use Gravity
@@ -164,45 +163,47 @@ module Density
         !
         !  piecewise polytropic for solar convection stuff
         !
-        if (lroot) print*,'piecewise polytropic vertical stratification'
+        if (lroot) print*,'piecewise polytropic vertical stratification (lnrho)'
         ! top region
+
+        cs2int = cs0**2
+        lnrhoint = lnrho0
+        f(:,:,:,ilnrho) = lnrho0 ! just in case
+        call polytropic_lnrho_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+                            isothtop,cs2int,lnrhoint)
+          ! unstable layer
+        call polytropic_lnrho_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,lnrhoint)
+          ! stable layer
+        call polytropic_lnrho_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,lnrhoint)
+        !
+        !  calculate cs2bot and cs2top for run.x (boundary conditions)
+        !
+        cs2bot = cs2int + gamma/gamma1*gravz/(mpoly2+1)*(z(n1)-z0  )
         if (isothtop /= 0) then
-          beta1 = 0.
-          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-zref)
-          ! unstable region
-          lnrhoint =  gamma*gravz/cs20*(z2-zref)
+          cs2top = cs20
         else
-          beta1 = gamma*gravz/(mpoly2+1)
-          tmp = 1 + beta1*(zz-zref)/cs20
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          f(:,:,:,ilnrho) = mpoly2*alog(tmp)
-          ! unstable region
-          lnrhoint =  mpoly2*alog(1 + beta1*(z2-zref)/cs20)
+          cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(z(n2)-zref)
         endif
-        ! (lnrho at layer interface z=z2)
-        cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
-        ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-        beta1 = gamma*gravz/(mpoly0+1)
-        tmp = 1 + beta1*(zz-z2)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly0*alog(tmp)
-        ! smoothly blend the solutions for the two regions:
-        stp = step(z,z2,whcond)
-        p = spread(spread(stp,1,mx),2,my)
-        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
-        ! bottom (stable) region
-        lnrhoint = lnrhoint + mpoly0*alog(1 + beta1*(z1-z2)/cs2int)
-        cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
-        beta1 = gamma*gravz/(mpoly1+1)
-        tmp = 1 + beta1*(zz-z1)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly1*alog(tmp)
-        ! smoothly blend the solutions for the two regions:
-        stp = step(z,z1,whcond)
-        p = spread(spread(stp,1,mx),2,my)
-        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
-        ! Fix origin of log density
-        f(:,:,:,ilnrho) = f(:,:,:,ilnrho) + alog(rho0) 
+
+      case (5)
+        !
+        !  polytropic stratification
+        !  cs0, rho0 and ss0=0 refer to height z=zref
+        !
+        if (lroot) print*,'polytropic vertical stratification (lnrho)'
+        !
+        cs20 = cs0**2
+        cs2int = cs20
+        lnrhoint = lnrho0
+        f(:,:,:,ilnrho) = lnrho0 ! just in case
+        ! only one layer
+        call polytropic_lnrho_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz, &
+             0,cs2int,lnrhoint)
+        !
+        !  calculate cs2bot and cs2top for run.x (boundary conditions)
+        !
+        cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(z(n1)-zref)
+        cs2top = cs20 + gamma*gravz/(mpoly0+1)*(z(n2)-zref)
 
       case(11)
         !
@@ -218,15 +219,66 @@ module Density
         if (lroot) print*,'polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+(alog(rho_right)-alog(rho_left))*prof
-!
-!  set default
-!
+
       case default
+        !
+        !  set default
+        !
         if (lroot) print*,'Default: initializing lnrho to zero'
       endselect
 !
-      if(ip==0) print*,prof,yy
+      if(ip==0) print*,prof,yy  ! keep compiler quiet
+!
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine polytropic_lnrho_z( &
+         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,lnrhoint)
+!
+!  Implement a polytropic profile in ss above zbot. If this routine is
+!  called several times (for a piecewise polytropic atmosphere), on needs
+!  to call it from top to bottom.
+!
+!  zint    -- height of (previous) interface, where cs2int and lnrhoint
+!             are set
+!  zbot    -- z at bottom of layer
+!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
+!             with new profile (for z<zblend)
+!  isoth   -- flag for isothermal stratification;
+!  lnrhoint -- value of lnrho at the interface, i.e. at the zint on entry,
+!             at the zbot on exit
+!  cs2int  -- same for cs2
+!
+      use Sub, only: step
+      use Gravity, only: gravz
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,p,zz
+      real, dimension (mz) :: stp
+      real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
+      integer :: isoth
+!
+      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+      if (isoth /= 0) then ! isothermal layer
+        beta1 = 0.
+        tmp = gamma*gravz/cs2int*(zz-zint)
+        lnrhoint = lnrhoint + gamma*gravz/cs2int*(zbot-zint)
+      else
+        beta1 = gamma*gravz/(mpoly+1)
+        tmp = 1 + beta1*(zz-zint)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly*alog(tmp)
+        lnrhoint = lnrhoint + mpoly*alog(1 + beta1*(zbot-zint)/cs2int)
+      endif
+      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
+      !
+      ! smoothly blend the old value (above zblend) and the new one (below
+      ! zblend) for the two regions:
+      !
+      stp = step(z,zblend,whcond)
+      p = spread(spread(stp,1,mx),2,my)
+      f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
+!
+    endsubroutine polytropic_lnrho_z
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
 !
@@ -235,7 +287,6 @@ module Density
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
-      use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -312,7 +363,6 @@ module Density
 !   3-may-02/axel: coded
 !  27-may-02/axel: added possibility to reset list
 !
-      use Cdata
       use Sub
 !
       integer :: iname

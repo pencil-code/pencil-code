@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.45 2002-06-19 21:23:24 brandenb Exp $
+! $Id: start.f90,v 1.46 2002-06-21 16:34:55 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.45 $", &
-             "$Date: 2002-06-19 21:23:24 $")
+             "$Revision: 1.46 $", &
+             "$Date: 2002-06-21 16:34:55 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -41,16 +41,7 @@
         Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
 !
-!  ?for convection
-!  I find zref=1 very strange as default, so I put 0.
-!
-!--     z1=0.; z2=1.; zref=1.
         z1=0.; z2=1.; zref=0.
-!
-!  this may need to go into hydro;
-!  (maybe should have a separate density module, so we can run burgers)
-!
-        cs0=1; gamma=5./3.; rho0=1.
 !
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, ient, and iaa to disk.

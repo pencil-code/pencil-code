@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.58 2002-06-19 21:23:23 brandenb Exp $
+! $Id: cdata.f90,v 1.59 2002-06-21 16:34:55 dobler Exp $
 
 module Cdata
 
@@ -29,7 +29,7 @@ module Cdata
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in
 ! wparam (Sub) as well, so they need to be declared here
 !AB: Are you sure this cannot be avoided?? It is no longer in Boundcond!!
-  real :: hcond0=0,hcond1=0,hcond2=0,whcond=0
+  real :: hcond0=0,hcond1=0,hcond2=0,whcond=2*epsi
   real :: mpoly0,mpoly1,mpoly2
   real :: cheat,wheat,cool,wcool,Fheat
   integer:: isothtop

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.70 2002-06-20 21:19:02 dobler Exp $
+! $Id: entropy.f90,v 1.71 2002-06-21 16:34:55 dobler Exp $
 
 module Entropy
 
@@ -8,16 +8,17 @@ module Entropy
 
   implicit none
 
-  integer :: initss=0
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.
-  real :: chi_t=0.,ss0=0.
+  real :: chi_t=0.,ss0=0.,khor_ss=1.
+  integer :: initss=0,pertss=0
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,grads0,radius_ss,ampl_ss, &
+       initss,pertss,grads0,radius_ss,ampl_ss, &
        hcond0,hcond1,hcond2,whcond, &
-       mpoly0,mpoly1,mpoly2,isothtop
+       mpoly0,mpoly1,mpoly2,isothtop, &
+       khor_ss
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -60,8 +61,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.70 $", &
-           "$Date: 2002-06-20 21:19:02 $")
+           "$Revision: 1.71 $", &
+           "$Date: 2002-06-21 16:34:55 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -100,8 +101,9 @@ module Entropy
           !
           !  ss = const.
           !
-          !ss0=alog(-gamma1*gravz*zinfty)/gamma
-          !print*,'isentropic stratification; ss=',ss0
+          if (lroot) print*,'isentropic stratification'
+          ! ss0=alog(-gamma1*gravz*zinfty)/gamma
+          ! print*,'isentropic stratification; ss=',ss0
           f(:,:,:,ient)=0.
           if (ampl_ss/=0.) then
             print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
@@ -114,12 +116,15 @@ module Entropy
           !
           !  linear profile of ss, centered around ss=0.
           !
+          if (lroot) print*,'linear entropy profile'
           f(:,:,:,ient) = grads0*zz
 
         case(4)
           !
           !  piecewise polytropic convection setup
           !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
           !
           !  override hcond1,hcond2 according to polytropic equilibrium
           !  solution
@@ -130,71 +135,38 @@ module Entropy
                print*, &
                'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
           !
-          cs20=cs0**2
-          ss0 = 0.
-
-
-!           ! top region
-!           ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-!           if (isothtop /= 0) then ! isothermal top layer
-!             beta1 = 0.
-!             f(:,:,:,ient) = -gamma1*gravz*(zz-zref)/cs20
-!             ! unstable region
-!             ssint = -gamma1*gravz*(z2-zref)/cs20 ! ss at layer interface z=z2
-!           else
-!             beta1 = gamma*gravz/(mpoly2+1)
-!             tmp = 1 + beta1*(zz-zref)/cs20
-!             tmp = max(tmp,epsi)  ! ensure arg to log is positive
-!             f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
-!                             * alog(tmp)
-!             ! unstable region
-!             ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-!                     * alog(1 + beta1*(z2-zref)/cs20)
-!           endif
-!           cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
-          cs2int = cs20
-          ssint = 0.            ! reference value ss0 is zero
-          f(:,:,:,ient) = -1.
-          call polytropic_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+          cs2int = cs0**2
+          ss0 = 0.              ! reference value ss0 is zero
+          ssint = ss0
+          f(:,:,:,ient) = 0.    ! just in case
+          ! top layer
+          call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
                             isothtop,cs2int,ssint)
+          ! unstable layer
+          call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+          ! stable layer
+          call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
 
-
-!           beta1 = gamma*gravz/(mpoly0+1)
-!           tmp = 1 + beta1*(zz-z2)/cs2int
-!           tmp = max(tmp,epsi)  ! ensure arg to log is positive
-!           tmp = ssint + (1-mpoly0*gamma1)/gamma &
-!                         * alog(tmp)
-!           ! smoothly blend the solutions for the two regions:
-!           stp = step(z,z2,whcond)
-!           p = spread(spread(stp,1,mx),2,my)
-!           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
-!           ! bottom (stable) region
-!           ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
-!                           * alog(1 + beta1*(z1-z2)/cs2int)
-!           cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
-          call polytropic_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
-
-
-!           beta1 = gamma*gravz/(mpoly1+1)
-!           tmp = 1 + beta1*(zz-z1)/cs2int
-!           tmp = max(tmp,epsi)  ! ensure arg to log is positive
-!           tmp = ssint + (1-mpoly1*gamma1)/gamma &
-!                         * alog(tmp)
-!           ! smoothly blend the solutions for the two regions:
-!           stp = step(z,z1,whcond)
-!           p = spread(spread(stp,1,mx),2,my)
-!           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
-!           ! Fix origin of entropy
-!           f(:,:,:,ient) = f(:,:,:,ient) + ss0
-
-          call polytropic_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
-
+        case(5)
+          !
+          !  polytropic stratification
+          !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          if (lroot) print*,'polytropic vertical stratification (ss)'
+          !
+          cs20 = cs0**2
+          ss0 = 0.              ! reference value ss0 is zero
+          f(:,:,:,ient) = ss0   ! just in case
+          cs2int = cs20
+          ssint = ss0
+          ! only one layer
+          call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
 
         case default
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'There is no such value for initss:', initss
+          if (lroot) print*,'No such value for initss:', initss
           call stop_it("")
 
         endselect
@@ -204,18 +176,44 @@ module Entropy
       if (lgravr) then
           f(:,:,:,ient) = -0.
       endif
+
+!
+!  Add perturbation(s)
+!
+      select case (pertss)
+
+      case (1)
+        !
+        !  hexagonal perturbation
+        !
+        if (lroot) print*,'adding hexagonal perturbation to ss'
+        f(:,:,:,ient) = f(:,:,:,ient) &
+                        + ampl_ss*(2*cos(sqrt(3.)*0.5*khor_ss*xx) &
+                                    *cos(0.5*khor_ss*yy) &
+                                   + cos(khor_ss*yy) &
+                                  ) * cos(pi*zz)
+
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*,'No such value for pertss:', pertss
+        call stop_it("")
+
+      endselect
 !
     if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine polytropic_z(f,mpoly,zz,tmp,ztop,zbot,zblend,isoth,cs2int,ssint)
+    subroutine polytropic_ss_z( &
+         f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
 !
 !  Implement a polytropic profile in ss above zbot. If this routine is
 !  called several times (for a piecewise polytropic atmosphere), on needs
 !  to call it from top to bottom.
 !
-!  ztop    -- z at top of layer
+!  zint    -- z at top of layer
 !  zbot    -- z at bottom of layer
 !  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
 !             with new profile (for z<zblend)
@@ -230,42 +228,34 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
-      real :: mpoly,ztop,zbot,zblend,beta1,cs2int,ssint
+      real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
       integer :: isoth
 !
       ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
       if (isoth /= 0) then ! isothermal layer
         beta1 = 0.
-print*,'POLY_Z 1.: gamma1,beta1,ssint,cs2int = ', gamma1,beta1,ssint,cs2int
-        tmp = ssint - gamma1*gravz*(zz-ztop)/cs2int
-print*, 'tmp in ', minval(tmp), maxval(tmp)
-        ssint = -gamma1*gravz*(zbot-ztop)/cs2int ! ss at layer interface
+        tmp = ssint - gamma1*gravz*(zz-zint)/cs2int
+        ssint = -gamma1*gravz*(zbot-zint)/cs2int ! ss at layer interface
       else
         beta1 = gamma*gravz/(mpoly+1)
-print*,'POLY_Z 2.: gamma1,beta1,ssint,cs2int = ', gamma1,beta1,ssint,cs2int
-        tmp = 1 + beta1*(zz-ztop)/cs2int
+        tmp = 1 + beta1*(zz-zint)/cs2int
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
                       * alog(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * alog(1 + beta1*(zbot-ztop)/cs2int)
+                        * alog(1 + beta1*(zbot-zint)/cs2int)
       endif
-      cs2int = cs2int + beta1*(zbot-ztop) ! cs2 at layer interface (bottom)
+      cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
 
       !
-      ! smoothly blend the old value (above ztop) and the new one (below
-      ! ztop) for the two regions:
+      ! smoothly blend the old value (above zblend) and the new one (below
+      ! zblend) for the two regions:
       !
       stp = step(z,zblend,whcond)
       p = spread(spread(stp,1,mx),2,my)
       f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
-
-
-print*, 'tmp in ', minval(tmp), maxval(tmp)
-print*, 'ss in ', minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
-
-
-    endsubroutine polytropic_z
+!
+    endsubroutine polytropic_ss_z
 !***********************************************************************
     subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
 !
@@ -425,7 +415,7 @@ print*, 'ss in ', minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
         if (notanumber(glnTlambda))     print*,'NaNs in glnTlambda'
         if (notanumber(g2))     print*,'NaNs in g2'
         if (notanumber(thdiff)) print*,'NaNs in thdiff'
-        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
+!        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
@@ -536,6 +526,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
       endif
 !
     if(ip==0) print*,x,y  !(to keep compiler quiet)
+!
     endsubroutine heatcond
 !***********************************************************************
     subroutine gradloghcond(x,y,z,glhc)
@@ -563,6 +554,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
       endif
 !
     if(ip==0) print*,x,y  !(to keep compiler quiet)
+!
     endsubroutine gradloghcond
 !***********************************************************************
     subroutine bc_ss(f,errmesg)
@@ -577,6 +569,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: tmp_xy
+      real :: height
       integer :: i
       character (len=*) :: errmesg
 !
@@ -623,12 +616,39 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !  density profile,so this is mostly useful for top boundary.  
 !  wd: sound speed is _always_ cs, so what's the point here?
 !
+        if (bcz1(ient) == "c2") then
+          if (bcz1(ilnrho) /= "a2") &
+               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
+          tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
+                   + alog(cs2bot/cs20)) / gamma
+          f(:,:,n1,ient) = tmp_xy
+          do i=1,nghost
+            f(:,:,n1-i,ient) = 2*tmp_xy - f(:,:,n1+i,ient)
+          enddo
+        endif
+!
         if (bcz2(ient) == "c2") then
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
+          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
+                   + alog(cs2top/cs20)) / gamma
+          f(:,:,n2,ient) = tmp_xy
+          do i=1,nghost
+            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+          enddo
+        endif
+!
+!  zinfty stuff.
+!  wd: No clue what zinfty is good for if all we want to specify is a
+!      fixed value of temperature.
+!
+        if (bcz2(ient) == "c3") then
+          if (bcz1(ilnrho) /= "a2") &
+               errmesg = "BOUNDCONDS: Inconsistent boundary conditions 5."
           !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
-          zinfty=zref-cs20/(gamma1*gravz)
-          cs2top=cs20*(1-(ztop-zref)/zinfty)
+          height = zref-cs20/(gamma1*gravz) ! height of atm. above zref
+          zinfty = zref+height
+          cs2top = cs20*(1-(ztop-zref)/height)
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
                    + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy

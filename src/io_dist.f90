@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.25 2002-06-12 09:46:03 brandenb Exp $
+! $Id: io_dist.f90,v 1.26 2002-06-21 16:34:55 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -138,6 +138,10 @@ contains
 !
       if (ip<9.and.lroot) print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
+      if (headt .and. (imn==1)) print*, &
+           'OUTPUT_PENCIL: Writing to ', trim(file), &
+           ' for debugginh -- this may slow things down'
+!
        call output_penciled_c(file, a, ndim, &
                                imn, mm(imn), nn(imn), t, &
                                nx, ny, nz, nghost, len(file))
@@ -162,6 +166,10 @@ contains
       if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_SCAL'
       if (ndim /= 1) &
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
+!
+      if (headt .and. (imn==1)) print*, &
+           'OUTPUT_PENCIL: Writing to ', trim(file), &
+           ' for debugginh -- this may slow things down'
 !
       call output_penciled_c(file, a, ndim, &
                               imn, mm(imn), nn(imn), t, &

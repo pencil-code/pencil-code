@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.7 2002-06-14 04:38:16 brandenb Exp $
+! $Id: boundcond.f90,v 1.8 2002-06-21 16:34:55 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -158,6 +158,7 @@ module Boundcond
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
           case ('c1')             ! complex (processed in its own routine)
+          case ('c2')             ! complex (processed in its own routine)
             ! handled below
           case default
             if (lroot) &
