@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.274 2004-02-24 16:08:37 bingert Exp $
+! $Id: entropy.f90,v 1.275 2004-03-05 15:10:36 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.274 2004-02-24 16:08:37 bingert Exp $")
+           "$Id: entropy.f90,v 1.275 2004-03-05 15:10:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1368,8 +1368,7 @@ module Entropy
             call gradloghcond(x_mn,y_mn,z_mn, glhc)
             z_prev = z_mn(1)
           endif
-        endif
-        if (lgravr) then
+        else
           call heatcond(x_mn,y_mn,z_mn,hcond)
           call gradloghcond(x_mn,y_mn,z_mn, glhc)
         endif
