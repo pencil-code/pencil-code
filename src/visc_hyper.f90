@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.11 2004-07-03 02:13:14 theine Exp $
+! $Id: visc_hyper.f90,v 1.12 2004-07-09 22:50:42 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.11 2004-07-03 02:13:14 theine Exp $")
+           "$Id: visc_hyper.f90,v 1.12 2004-07-09 22:50:42 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -89,9 +89,6 @@ module Viscosity
 !  24-nov-03/nils: adapted from visc_shock
 !
        use Cdata
-!
-       lneed_sij=.false.
-       lneed_glnrho=.false.
 !
         if (headtt.and.lroot) print*,'viscosity: nu=',nu
 
