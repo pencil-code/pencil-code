@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.85 2002-08-29 07:39:14 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.86 2002-08-29 14:11:51 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -218,7 +218,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.85 $ $}
+\date{\today,~ $ $Revision: 1.86 $ $}
 
 % ====================================================================== %
 
@@ -247,7 +247,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.85 $ $}
+  \emph{\today,~ $ $Revision: 1.86 $ $}
 
 
 \end{center}
@@ -963,7 +963,7 @@ are running the code you may want to check in out in your \file{pencil-code}
 directory. In our case we have our own runs in a repository called
 \file{pencil-runs}, so we say
 \begin{alltt}
-  \prompt{brandenb@fe1:/home/brandenb> } cd $PENCIL_HOME
+  \prompt{brandenb@fe1:/home/brandenb> } cd \$PENCIL_HOME
   \prompt{brandenb@fe1:/home/brandenb/pencil-code> } cvs co -d runs pencil-runs
 \end{alltt}
 In our case, \file{runs} contains individual run directories, grouped in
@@ -2791,7 +2791,7 @@ As these results were assembled during the development phase of the code
 (that hasn't really finished yet\ldots), you may not get the same numbers,
 but they should give some orientation of what to expect for you specific
 application on your specific hardware.
-Not that the timer currently used will overflow on some machines (after
+Note that the timer currently used will overflow on some machines (after
 about 50 minutes), so you should not blindly trust the timings given by
 the code.
 
@@ -2802,9 +2802,6 @@ the code.
     \caption{
       Wall clock time per mesh point (excluding the ghost zones)
       and per full 3-stage time step.
-      The Mhd machine has 4 processors per node sharing memory;
-      for easier comparison, we list the memory per CPU (i.\,e.~memory per
-      node, divided by 4).
     }
     \label{Ttimescale}
     \begin{small}
@@ -3042,7 +3039,7 @@ Use \var{grav_profile='linear'} to get
   \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\nu_{\rm g}^2,
 \quad g_z=-\nu_{\rm g}^2z
 \end{equation}
-where $\nu_{\rm g}$ vertical epicyclic frequency. For a keplerian
+where $\nu_{\rm g}$ vertical epicyclic frequency. For a Keplerian
 accretion disc, $\nu_{\rm g}=\Omega$, but not for galactic discs.
 
 The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
@@ -3309,7 +3306,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.85 2002-08-29 07:39:14 dobler Exp $ $}
+$ $Id: manual.tex,v 1.86 2002-08-29 14:11:51 dobler Exp $ $}
 
 
 \end{document}
@@ -3331,7 +3328,7 @@ $ $Id: manual.tex,v 1.85 2002-08-29 07:39:14 dobler Exp $ $}
 % LocalWords:  stdout oum zaver bxmz bymz nl timestr lp ip ip iper iperx ztop
 % LocalWords:  hcond whcond mpoly isothtop ampl init urand cs nt dt cdt CFL bc
 % LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
-% LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid
+% LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid std
 % LocalWords:  wcool iforce relhel tsnap hystrostatic isothermality initaa jbm
 % LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
 % LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
@@ -3351,7 +3348,7 @@ $ $Id: manual.tex,v 1.85 2002-08-29 07:39:14 dobler Exp $ $}
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
 % LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
 % LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid ke
-% LocalWords:  nygrid nzgrid ccc widthss brandenb Nils Pariev tcsh ls ln
-% LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz
-% LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB
-% LocalWords:  ttransient
+% LocalWords:  nygrid nzgrid ccc widthss brandenb Nils Pariev tcsh ls ln rcool
+% LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz cooltype cT
+% LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB Fbot
+% LocalWords:  ttransient fe aug Gridur isentropy Eqs
