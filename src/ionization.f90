@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.67 2003-08-03 15:25:28 theine Exp $
+! $Id: ionization.f90,v 1.68 2003-08-04 15:45:55 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -28,7 +28,7 @@ module Ionization
 
   !  secondary parameters calculated in initialize
   real, parameter :: twothirds=2./3.
-  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHetilde
+  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHe_term
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: yHmin,yHmax
 
@@ -74,7 +74,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.67 2003-08-03 15:25:28 theine Exp $")
+           "$Id: ionization.f90,v 1.68 2003-08-04 15:45:55 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -124,9 +124,9 @@ module Ionization
       kappa0=sigmaH_/m_H/mu
 !
       if (xHe==0.) then
-        xHetilde=0.
+        xHe_term=0.
       else
-        xHetilde=xHe*(log(xHe)-lnrho_He)
+        xHe_term=xHe*(log(xHe)-lnrho_He)
       endif
 !
       if(lroot) then
@@ -198,7 +198,7 @@ module Ionization
          f(l,m,n,iyH)=yH
          lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                            +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                           +xHetilde)/(1.+yH+xHe) &
+                           +xHe_term)/(1.+yH+xHe) &
                           +lnrho-2.5)
          f(l,m,n,iTT)=exp(lnTT_)*TT_ion
       enddo
@@ -272,7 +272,7 @@ module Ionization
       call rtsafe(lnrho,ss,yH)
       lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHetilde)/(1.+yH+xHe) &
+                        +xHe_term)/(1.+yH+xHe) &
                        +lnrho-2.5)
       TT=exp(lnTT_)*TT_ion
 !
@@ -453,7 +453,7 @@ module Ionization
 
       lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHetilde)/(1.+yH+xHe) &
+                        +xHe_term)/(1.+yH+xHe) &
                        +lnrho-2.5)
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=(twothirds*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
