@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.19 2003-10-09 16:35:50 mee Exp $
+# CVS: $Id: mkcparam,v 1.20 2003-10-12 22:13:17 mee Exp $
 # Description:
 #   Going through the input files, check for lines of the sort
 #     MAGNETIC=magnetic
@@ -33,30 +33,24 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #                     e.g.   VISCOSITY=visc_shock
 #                   Also count maux variables too.
 #
+#   12-oct-03/tony: Modified to use in-code declarations of f-array
+#                   contributuions. 
+#                   Fortran files should contain a block like the
+#                   following at the top to declare any contribution
+#                   they make to the f-array.
+# !** AUTOMATIC CPARAM.INC GENERATION ****************************
+# ! Declare (for generation of cparam.inc) the number of f array
+# ! variables and auxilliary variables added by this module
+# !
+# ! MVAR CONTRIBUTION 0
+# ! MAUX CONTRIBUTION 1
+# !
+# !***************************************************************
+#
 # ---------------------------------------------------------------------- #
-my %modules = ( # module_name { option => contribution to mvar, ...}, ...
-	        HYDRO        => { hydro        => 3, nohydro        => 0 ,
-                                  hydro_ffreeMHDrel=> 3},
-	        DENSITY      => { density      => 1, nodensity      => 0 },
-	        ENTROPY      => { entropy      => 1, noentropy      => 0 ,
-                                  temperature  => 1 },
-	        MAGNETIC     => { magnetic     => 3, nomagnetic     => 0 ,
-                                  magnetic_ffreeMHDrel=> 3},
-		RADIATION    => { radiation    => 5, noradiation    => 0 },
-		PSCALAR      => { pscalar      => 1, nopscalar      => 0 ,
-                                  pscalar_nolog=> 1 },
-		DUSTDENSITY  => { dustdensity  => 1, nodustdensity  => 0 },
-		DUSTVELOCITY => { dustvelocity => 3, nodustvelocity => 0 },
-		GRAVITY      => { grav_self    => 3, nograv         => 0 },
-		COSMICRAY    => { cosmicray    => 1, nocosmicray    => 0 },
-	      );
-my %auxmodules=(# module_name { option => contribution to mvar, ...}, ...
-		   VISCOSITY => { visc_shock => 1, visc_const  => 0 },
-		   RADIATION => { feautrier  => 1, noradiation => 0 ,
-				  radiation_ray => 1, radiation_exp => 1},
-		   IONIZATION => { ionization => 2, noionization  => 0 }
-	      );
 my $identifier = "[a-zA-Z0-9_]"; # module names must consist of these
+my $mvar_declaration = "\\s*\\!\\s*MVAR\\s*CONTRIBUTION\\s*([0-9]+)";
+my $maux_declaration = "\\s*\\!\\s*MAUX\\s*CONTRIBUTION\\s*([0-9]+)";
 # ---------------------------------------------------------------------- #
 
 use strict;
@@ -70,13 +64,15 @@ my %auxmodcounts;
 my $usage =
 "Usage:  $cmdname <file1> [<file2> [..]] [-o outfile]\n
 Going through the input files, check for lines of the sort
-  MAGNETIC=magnetic
+! MVAR CONTRIBUTION 0
+or
+! MAUX CONTRIBUTION 1
 and calculate the number mvar of variables accordingly. Output is written
 as a Fortran program that can be included by cparam.f90.
 E.g.
-  $cmdname src/Makefile src/Makefile.local > src/cparam.inc
-will generate a file that takes into account that Makefile.local overwrites
-settings from Makefile.";
+  $cmdname entropy.f90 nomagnetic.f90 hydro.f90 > src/cparam.inc
+will generate a file appropriate for code using given source files
+only.";
 
 
 ## Process command line
@@ -93,72 +89,29 @@ my $outfile = ($opts{o} || $opts{output} || "-");
 open(OUT, "> $outfile") or die "Can't open $outfile for writing";
 
 # Cycle through files (later files will overwrite effect of earlier files)
+my $maux=0;
+my $mvar=0;
+my $found_mvar=0;
+my $found_maux=0;
 foreach my $infile (@ARGV) {
     open(INPUT,"< $infile") || die "Can't open $infile for reading";
     # Cycle through lines in file
-  file: while (defined($line=<INPUT>)) {
+    $found_mvar=0;
+    $found_maux=0;
+  file: while (defined($line=<INPUT>) && !($found_mvar && $found_maux)  ) {
       # Only definitions of Make variables are interesting:
-      next unless ($line =~ /^\s*$identifier+\s*=\s*$identifier+/);
-      # cycle through module list and check
-    key: while (my ($MOD) = each %modules) {
-	if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
-	  key2: while (my ($opt, $count) = each %{$modules{$MOD}}) {
-	      if ($1 eq $opt) { # `mod' is used
-		  $modcounts{$MOD}{$opt} = $count; 
-		  # overwrite
-		  # existing value
-	      } else {	# `nomod' is used (or not `mod' in any case)
-		  $modcounts{$MOD}{$opt} = 0;
-	      }
-	  }
-	}
-    }
-      
-      # cycle through auxilliary module list and check
-    key3: while (my ($MOD) = each %auxmodules) {
-	if ($line =~ /^\s*$MOD\s*=\s*($identifier*)($|\s)/) {
-	  key4: while (my ($opt, $count) = each %{$auxmodules{$MOD}}) {
-	      if ($1 eq $opt) { # `mod' is used
-		  $auxmodcounts{$MOD}{$opt} = $count; 
-		  # overwrite
-		  # existing value
-	      } else {	# `nomod' is used (or not `mod' in any case)
-		  $auxmodcounts{$MOD}{$opt} = 0;
-	      }
-	  }
-	}
+	  if ($line =~ /$mvar_declaration/) {
+        $mvar = $mvar + $1;
+        $found_mvar=-1;
+        #print "$line";
+      }
+      if ($line =~ /$maux_declaration/) {
+        $maux = $maux + $1;
+        $found_maux=-1;
+        #print "$line";
+      }
     }
   }
-}
-
-
-# use Data::Dumper;
-#print Dumper(\%modules,\%modcounts);
-#print Dumper(\%auxmodules,\%auxmodcounts);
-#while (my ($MOD) = each %modules) {
-#		  print $MOD,  "\n"; #, $modules{$MOD}{$opt};
-#	      key2: while (my ($opt, $count) = each %{$modules{$MOD}} ) {
-#  print $MOD, " - ", $opt, " = ", $count, "\n"; #, $modules{$MOD}{$opt};
-#	      }
-#}
-
-## Extract maux..
-my $maux=0;
-while (my ($MOD) = each %auxmodcounts) {
-    foreach( values(%{$auxmodcounts{$MOD}}) ) {
-	$maux += $_;
-    }
-}
-
-## Extract mvar..
-my $mvar=0;
-while (my ($MOD) = each %modcounts) {
-    foreach( values(%{$modcounts{$MOD}}) ) {
-	$mvar += $_;
-    }
-}
-
-
 
 ## ..and write output
 print OUT <<"EOF";

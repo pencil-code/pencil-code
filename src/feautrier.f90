@@ -1,7 +1,16 @@
-! $Id: feautrier.f90,v 1.35 2003-08-13 15:30:07 mee Exp $
+! $Id: feautrier.f90,v 1.36 2003-10-12 22:13:17 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
+!
+!***************************************************************
 
 module Radiation
 
@@ -67,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.35 2003-08-13 15:30:07 mee Exp $")
+           "$Id: feautrier.f90,v 1.36 2003-10-12 22:13:17 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !

@@ -1,9 +1,18 @@
-! $Id: cosmicray.f90,v 1.6 2003-10-10 17:07:59 snod Exp $
+! $Id: cosmicray.f90,v 1.7 2003-10-12 22:13:17 mee Exp $
 
 !  This modules solves the cosmic ray energy density advection difussion equation
 !  it follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation
 !
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 1
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module CosmicRay
 
@@ -64,7 +73,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.6 2003-10-10 17:07:59 snod Exp $")
+           "$Id: cosmicray.f90,v 1.7 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,8 +1,17 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.4 2003-10-06 14:27:50 mcmillan Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.5 2003-10-12 22:13:17 mee Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
 !  where E = (BxS)/B^2
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 3
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Hydro
 
@@ -93,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.4 2003-10-06 14:27:50 mcmillan Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.5 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

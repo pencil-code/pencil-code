@@ -1,5 +1,13 @@
-! $Id: hydro.f90,v 1.113 2003-10-09 16:43:15 ngrs Exp $
+! $Id: hydro.f90,v 1.114 2003-10-12 22:13:17 mee Exp $
 
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 3
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 !  This module takes care of everything related to velocity
 
@@ -91,7 +99,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.113 2003-10-09 16:43:15 ngrs Exp $")
+           "$Id: hydro.f90,v 1.114 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,7 +1,16 @@
-! $Id: ionization.f90,v 1.114 2003-10-09 16:53:36 ngrs Exp $
+! $Id: ionization.f90,v 1.115 2003-10-12 22:13:17 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 1
+!
+!***************************************************************
 
 module Ionization
 
@@ -88,7 +97,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.114 2003-10-09 16:53:36 ngrs Exp $")
+           "$Id: ionization.f90,v 1.115 2003-10-12 22:13:17 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !

@@ -1,9 +1,18 @@
-! $Id: temperature.f90,v 1.7 2003-08-28 08:57:11 mee Exp $
+! $Id: temperature.f90,v 1.8 2003-10-12 22:13:17 mee Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
 !  we have (1-1/gamma) * cp*T = cs02 * exp( (gamma-1)*ln(rho/rho0)-gamma*s/cp )
 !  At a later point we may want to rename the module Entropy into Energy
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 1
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Entropy
 
@@ -79,7 +88,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.7 2003-08-28 08:57:11 mee Exp $")
+           "$Id: temperature.f90,v 1.8 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

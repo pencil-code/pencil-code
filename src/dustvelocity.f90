@@ -1,7 +1,16 @@
-! $Id: dustvelocity.f90,v 1.14 2003-08-12 20:47:40 mee Exp $
+! $Id: dustvelocity.f90,v 1.15 2003-10-12 22:13:17 mee Exp $
 
 
 !  This module takes care of everything related to velocity
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 3
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Dustvelocity
 
@@ -67,7 +76,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.14 2003-08-12 20:47:40 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.15 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,13 @@
-! $Id: nohydro.f90,v 1.14 2003-08-13 06:33:49 brandenb Exp $
+! $Id: nohydro.f90,v 1.15 2003-10-12 22:13:17 mee Exp $
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 0
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Hydro
 
@@ -48,7 +57,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.14 2003-08-13 06:33:49 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.15 2003-10-12 22:13:17 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************

@@ -1,9 +1,18 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.9 2003-08-28 15:23:15 mee Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.10 2003-10-12 22:13:17 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
 !  magnetically relevant subroutines listed in here.
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 3
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Magnetic
 
@@ -90,7 +99,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.9 2003-08-28 15:23:15 mee Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.10 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

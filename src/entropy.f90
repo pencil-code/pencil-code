@@ -1,7 +1,16 @@
-! $Id: entropy.f90,v 1.208 2003-10-10 11:49:04 brandenb Exp $
+! $Id: entropy.f90,v 1.209 2003-10-12 22:13:17 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
+
+!** AUTOMATIC CPARAM.INC GENERATION ****************************
+! Declare (for generation of cparam.inc) the number of f array
+! variables and auxilliary variables added by this module
+!
+! MVAR CONTRIBUTION 1
+! MAUX CONTRIBUTION 0
+!
+!***************************************************************
 
 module Entropy
 
@@ -92,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.208 2003-10-10 11:49:04 brandenb Exp $")
+           "$Id: entropy.f90,v 1.209 2003-10-12 22:13:17 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
