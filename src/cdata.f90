@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.116 2002-12-09 19:28:34 mee Exp $
+! $Id: cdata.f90,v 1.117 2002-12-19 17:17:21 dobler Exp $
 
 module Cdata
 
@@ -13,7 +13,7 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
-  real, dimension (nx,3,3) :: sij  !Rate of Strain tensor
+  real, dimension (nx,3,3) :: sij  ! rate-of-strain tensor
 
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
@@ -48,11 +48,12 @@ module Cdata
 !
   integer :: nname=0,nnamez=0,nnamexy=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
-  integer, parameter :: mname=100,mnamez=20,mnamexy=6
+  integer, parameter :: mname=100,mnamez=20,mnamexy=6,mnamerz=6
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
+  real, dimension (nx/2,nz,nprocz,mnamerz) :: fnamerz
   character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
   character (len=30) :: cnamexy(mnamexy),cformxy(mnamexy)
 
@@ -77,8 +78,8 @@ module Cdata
   logical :: ab_spec=.false.,ou_spec=.false.
   logical :: test_nonblocking=.false.
 
-!  logical, dimension(mvar + maux) :: lsnap ! Flag which variables should be written
-                                             ! To the snapshots
+!  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
+                                             ! to the snapshots
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2

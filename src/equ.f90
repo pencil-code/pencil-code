@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.114 2002-12-13 18:46:30 brandenb Exp $
+! $Id: equ.f90,v 1.115 2002-12-19 17:17:21 dobler Exp $
 
 module Equ
 
@@ -98,8 +98,11 @@ module Equ
     subroutine xyaverages
 !
 !  calculate xy-averages (as functions of z)
-!  NOTE: the whole xy-average is present in one and the same fsumz,
-!  but the result is not complete on any of the processors, unless
+!  NOTE: these averages depend on z, so after summation in x and y they
+!  are still distributed over nprocz CPUs; hence the dimensions of fsumz
+!  (and fnamez).
+!  In other words: the whole xy-average is present in one and the same fsumz,
+!  but the result is not complete on any of the processors before
 !  mpireduce_sum has been called. This procedure is simplest; in
 !  principle one could do this without nprocz in fsumz, but then one
 !  needs complicated communication procedures to collect results first
@@ -128,9 +131,9 @@ module Equ
     subroutine zaverages
 !
 !  calculate z-averages (as functions of x and y)
-!  NOTE: the whole z-average is present in one and the same fsumxy,
-!  but the result is not complete on any of the processors, unless
-!  mpireduce_sum has been called.
+!  NOTE: these averages depend on x and y, so after summation in z they
+!  are still distributed over nprocy CPUs; hence the dimensions of fsumxy
+!  (and fnamexy).
 !
 !  19-jun-02/axel: coded
 !
@@ -149,6 +152,31 @@ module Equ
       endif
 !
     endsubroutine zaverages
+! !***********************************************************************
+!     subroutine phiaverages
+! !
+! !  calculate azimuthal averages (as functions of r_cyl,z)
+! !  NOTE: these averages depend on (r and) z, so after summation they
+! !  are still distributed over nprocz CPUs; hence the dimensions of fsumrz
+! !  (and fnamerz).
+! !
+! !  9-dec-02/wolf: coded
+! !
+!       use Mpicomm
+!       use Cdata
+!       use Sub
+! !
+!       real, dimension (nr,nz,nprocz,mnamerz) :: fsumrz
+! !
+! !  communicate over all processors
+! !  the result is only present on the root processor
+! !
+!       if(nnamerz>0) then
+!         call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrz*nprocz)
+! !        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
+!       endif
+! !
+!     endsubroutine phiaverages
 !***********************************************************************
     subroutine pde(f,df)
 !
@@ -183,7 +211,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.114 2002-12-13 18:46:30 brandenb Exp $")
+           "$Id: equ.f90,v 1.115 2002-12-19 17:17:21 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
