@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.4 2003-07-29 09:43:36 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.5 2003-08-03 15:36:28 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.4 2003-07-29 09:43:36 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.5 2003-08-03 15:36:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -222,7 +222,7 @@ print*,'A0xkxA0=',A0xkxA0
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
-      integer :: j
+      integer :: j,nbthresh
 !
       real, dimension (nx,3,3) :: Bij
       real, dimension (nx,3) :: uu,SS,BB,CC,EE
@@ -381,7 +381,7 @@ print*,'A0xkxA0=',A0xkxA0
             if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
-          call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh)
+          call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh,nbthresh)
         endif
 !
 !  calculate max and rms current density

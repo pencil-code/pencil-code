@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.203 2003-07-30 08:13:41 ajohan Exp $
+### $Id: Makefile,v 1.204 2003-08-03 15:36:28 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -228,6 +228,10 @@ run.x: $(run) Makefile.local
 linkonly:
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+
+#shorthand for this
+l:
+	make linkonly
 
 # here a handy example when debugging radiation:
 rad:

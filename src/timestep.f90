@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.16 2003-06-16 04:41:11 brandenb Exp $
+! $Id: timestep.f90,v 1.17 2003-08-03 15:36:28 brandenb Exp $
 
 module Timestep
 
@@ -27,9 +27,6 @@ module Timestep
       real :: ds
       integer :: i,j
 !
-!HPF$ ALIGN (:,:,:,*) WITH tmpl :: f,df
-!HPF$ SHADOW(0,3,3,0) :: f,df
-!
 !  coefficients for up to order 3
 !
       if (itorder==1) then
@@ -56,7 +53,7 @@ module Timestep
           ds=0.
         else
           lfirst=.false.
-          df=alpha(i)*df  !(could be subsumed into pde, but that could be dangerous!)
+          df=alpha(i)*df  !(could be subsumed into pde, but could be dangerous!)
           ds=alpha(i)*ds
         endif
         call pde(f,df)

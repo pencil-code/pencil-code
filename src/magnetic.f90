@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.116 2003-07-29 09:43:36 brandenb Exp $
+! $Id: magnetic.f90,v 1.117 2003-08-03 15:36:28 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -23,6 +23,7 @@ module Magnetic
   real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
+  real :: bthresh=0.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
 
@@ -41,7 +42,8 @@ module Magnetic
   namelist /magnetic_run_pars/ &
        eta,B_ext, &
        height_eta,eta_out,tau_aa_exterior, &
-       kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
+       kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
+       bthresh
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -86,7 +88,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.116 2003-07-29 09:43:36 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.117 2003-08-03 15:36:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -234,7 +236,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
-      integer :: j
+      integer :: j,nbthresh
 !
       intent(in)  :: f,uu,rho1,TT1,uij
 !
@@ -302,6 +304,7 @@ module Magnetic
             if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
+          call vecout(41,trim(directory_snap)//'/bvec.dat',bb,bthresh,nbthresh)
         endif
 !
 !  possibility to add external field

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.147 2003-07-29 09:43:36 brandenb Exp $
+! $Id: run.f90,v 1.148 2003-08-03 15:36:28 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,16 +44,10 @@
 !
         call register_modules()
 !
-!  call signal handler (for compaq machine only)
-!  currently disabled; want to put as include file
-!
-!!     call siginit
-!!     call signonbrutal
-!
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.147 2003-07-29 09:43:36 brandenb Exp $")
+             "$Id: run.f90,v 1.148 2003-08-03 15:36:28 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -86,8 +80,9 @@
 !
         if (ip<=6.and.lroot) print*,'reading var files'
 !
-!ajwm - no need to read maux variables as they will be calculated
-!       at the first time step...? Even if lwrite_aux is set
+!  no need to read maux variables as they will be calculated
+!  at the first time step -- even if lwrite_aux is set
+!
         call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)

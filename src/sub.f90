@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.127 2003-07-29 15:17:45 dobler Exp $ 
+! $Id: sub.f90,v 1.128 2003-08-03 15:36:28 brandenb Exp $ 
 
 module Sub 
 
@@ -1617,7 +1617,7 @@ module Sub
 !
     endsubroutine out2
 !***********************************************************************
-    subroutine vecout (lun,file,vv,thresh)
+    subroutine vecout (lun,file,vv,thresh,nthresh)
 !
 !  write vectors to disc if their length exceeds thresh
 !
@@ -1629,7 +1629,7 @@ module Sub
       real, dimension(nx,3) :: vv
       real, dimension(nx) :: v2
       real :: thresh,thresh2,dummy=0.
-      integer :: l,lun
+      integer :: l,lun,nthresh
 !
 !  return if thresh=0 (default)
 !
@@ -1640,6 +1640,7 @@ module Sub
       if(lfirstpoint) then
         open(lun,file=file,form='unformatted',position='append')
         write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
+        nthresh=0
       endif
 !
 !  write data
@@ -1647,12 +1648,18 @@ module Sub
       thresh2=thresh**2
       v2=vv(:,1)**2+vv(:,2)**2+vv(:,3)**2
       do l=1,nx
-        if(v2(l)>=thresh2) write(lun) l,m-nghost,n-nghost,vv(l,:)
+        if(v2(l)>=thresh2) then
+          write(lun) l,m-nghost,n-nghost,vv(l,:)
+          nthresh=nthresh+1
+        endif
       enddo
 !
 !  close file
 !
-      if(llastpoint) close(lun)
+      if(llastpoint) then
+        close(lun)
+        if(lroot) print*,'nthresh=',nthresh
+      endif
 !
     endsubroutine vecout
 !***********************************************************************
