@@ -31,17 +31,6 @@ endif else begin
   print, 'No such variable in phi-averages: <', vname,'>'
 endelse
 
-if (any(tag_names(az) eq strupcase(vname))) then begin
-  ;; Extract slot by string vname given above. This is awkward, but
-  ;; that's the price for having the values in a structure
-  if (execute('var = az.'+vname)) then begin
-    contourfill, var, az.rcyl, az.z, $
-        POS=pos, XSTYLE=1, YSTYLE=1, /GRID, $
-        XTITLE='!8r!X', YTITLE='!8z!X', TITLE=vname
-  endif
-endif else begin
-  print, 'No such variable in phi-averages: <', vname,'>'
-endelse
 
 end
 ; End of file phiavg.pro
