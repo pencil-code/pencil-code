@@ -56,9 +56,9 @@ module Gravity
 !
       use Cdata
 !      use Mpicomm
-      use Global
       use Sub
-      use Slices
+      use Global
+!      use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: gg
