@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.183 2004-07-23 09:35:42 nilshau Exp $
+! $Id: hydro.f90,v 1.184 2004-09-12 10:39:28 ponty Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -96,7 +96,7 @@ module Hydro
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
@@ -126,7 +126,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.183 2004-07-23 09:35:42 nilshau Exp $")
+           "$Id: hydro.f90,v 1.184 2004-09-12 10:39:28 ponty Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

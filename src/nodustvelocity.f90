@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.20 2004-07-23 07:44:15 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.21 2004-09-12 10:39:28 ponty Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -42,7 +42,7 @@ module Dustvelocity
 !  18-mar-03/axel: dummy routine
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.20 2004-07-23 07:44:15 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.21 2004-09-12 10:39:28 ponty Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.78 2004-09-12 09:49:34 brandenb Exp $
+! $Id: io_dist.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.78 2004-09-12 09:49:34 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $")
 !
     endsubroutine register_io
 !
@@ -273,7 +273,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: stop_it
 
 !
       integer :: ndim
