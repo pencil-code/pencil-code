@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.41 2003-03-06 14:22:56 brandenb Exp $
+! $Id: forcing.f90,v 1.42 2003-04-08 17:41:31 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.41 2003-03-06 14:22:56 brandenb Exp $")
+           "$Id: forcing.f90,v 1.42 2003-04-08 17:41:31 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -799,6 +799,7 @@ module Forcing
 !
 !  need to multiply by dt (for Euler step).
 !  Define fz with ghost zones, so fz(n) is the correct position
+!  Comment: Brummell et al have a polynomial instead!
 !
       kx=2*pi/Lx
       fx=cos(kx*x(l1:l2))

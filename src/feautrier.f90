@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.13 2003-04-06 17:16:46 theine Exp $
+! $Id: feautrier.f90,v 1.14 2003-04-08 17:41:31 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.13 2003-04-06 17:16:46 theine Exp $")
+           "$Id: feautrier.f90,v 1.14 2003-04-08 17:41:31 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -205,7 +205,7 @@ module Radiation
 !  identifier
 !
       if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
-      if(output_Qrad) write(lun) Qrad
+      if(output_Qrad) write(lun) Qrad,Srad,kappa,TT
 !
     endsubroutine output_radiation
 !***********************************************************************

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.165 2003-04-05 21:31:30 brandenb Exp $
+### $Id: Makefile,v 1.166 2003-04-08 17:41:31 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -267,7 +267,7 @@ TAGS: $(TAG_SOURCE)
 
 # Clean up, but leave makefile and TAGS
 clean:
-	rm -f *.x *.o *.mod *.d *.inc
+	rm -f *.x *.o *.mod *.d *.inc *.il
 	rm -f work.pc work.pcl
 
 # Clean up all
