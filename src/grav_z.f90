@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.52 2004-02-03 14:30:06 ajohan Exp $
+! $Id: grav_z.f90,v 1.53 2004-03-14 16:35:34 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -37,6 +37,16 @@ module Gravity
   character (len=labellen) :: grav_profile='const'
   logical :: lgravzd = .true.
 
+  real, parameter :: g_A_cgs=4.4e-9
+  real, parameter :: g_C_cgs=1.7e-9
+  double precision, parameter :: g_B_cgs=6.172D20
+  double precision, parameter :: g_D_cgs=3.086D21
+
+  real :: g_A
+  real :: g_C
+  double precision :: g_B
+  double precision :: g_D
+  
 !  The gravity potential must always be negative. However, in an plane
 !  atmosphere with constant gravity, the potential goes to zero at
 !  some position which is referred to as "zinfty".
@@ -92,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.52 2004-02-03 14:30:06 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.53 2004-03-14 16:35:34 mee Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -105,6 +115,18 @@ module Gravity
 !  Set up some variables for gravity; do nothing in grav_z
 !  16-jul-02/wolf: coded
 !  22-nov-02/tony: renamed from setup_grav
+      use CData
+      use Mpicomm, only: stop_it
+
+      if (unit_system=='cgs') then
+          g_A = g_A_cgs/unit_velocity*unit_time
+          g_B = g_B_cgs/unit_length
+          g_C = g_C_cgs/unit_velocity*unit_time
+          g_D = g_D_cgs/unit_length
+      else if (unit_system=='cgs') then
+        call stop_it('initialize_gravity: SI unit conversions not inplemented') 
+      endif 
+
 !
     endsubroutine initialize_gravity
 !***********************************************************************
@@ -184,7 +206,9 @@ module Gravity
 !AB: As it is now, it can never make much sense.
         if(lhydro) &
             df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
-            -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
+              -(g_A*z(n)/sqrt(z(n)**2+g_B**2) + g_C*z(n)/g_D)
+            !df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
+            !-331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
         if(lroot) print*,'duu_dt_grav: no gravity profile given'
       endif
@@ -306,12 +330,13 @@ module Gravity
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !
         case('Ferriere')
-          pot=331.5*(4.4*(sqrt(zmn**2+0.2**2)-0.2)+1.7*zmn**2/2.)
-          if (present(pot0)) pot0=331.5*(4.4*(sqrt(0.2**2)-0.2))
+          pot=(g_A*(sqrt(zmn**2+g_B**2)-g_B)+g_C*zmn**2/(2.*g_D))
+      !    pot=(4.4e-9*unit_time*(sqrt(zmn**2+0.2**2)-0.2)+1.7*zmn**2/2.)
+          if (present(pot0)) pot0=(g_A*(sqrt(g_B**2)-g_B))
           if (present(grav)) then
             grav=0.
             if(zmn<=zgrav) grav(:,3)= &
-              -331.5*(4.4*zmn/sqrt(zmn**2+(0.2)**2) + 1.7*zmn)
+              -(g_A*zmn/sqrt(zmn**2+(g_B)**2) + g_C*zmn/g_D)
           endif
 !
 !  radial profile; not currently implemented
