@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.27 2003-10-12 22:13:17 mee Exp $
+! $Id: visc_shock.f90,v 1.28 2003-10-16 12:50:25 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.27 2003-10-12 22:13:17 mee Exp $")
+           "$Id: visc_shock.f90,v 1.28 2003-10-16 12:50:25 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -73,10 +73,10 @@ module Viscosity
 !
 !  Writing files for use with IDL
 !
-      if (naux < maux) aux_var(aux_count)=',visc $'
-      if (naux == maux) aux_var(aux_count)=',visc'
+      if (naux < maux) aux_var(aux_count)=',shock_profile $'
+      if (naux == maux) aux_var(aux_count)=',shock_profile'
       aux_count=aux_count+1
-      write(5,*) 'visc = fltarr(mx,my,mz)*one'
+      write(5,*) 'shock_profile = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_viscosity
 !***********************************************************************
@@ -419,7 +419,7 @@ module Viscosity
     endsubroutine shock_divu
 
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -432,7 +432,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,TT1,cs2
-      real, dimension (nx) :: sij2, divu
+      real, dimension (nx) :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
 
       if ( icalculated<it ) call calc_viscosity(f)
@@ -444,7 +444,7 @@ module Viscosity
 
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1 * &
            (2.*nu*sij2  & 
-           + nu_shock * f(l1:l2,m,n,ishock) * divu**2)
+           + nu_shock * shock * divu**2)
 
       maxheating=amax1(maxheating,df(l1:l2,m,n,iss))
 !
@@ -452,7 +452,7 @@ module Viscosity
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -465,17 +465,21 @@ module Viscosity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
-      real, dimension (nx,3) :: gshock_characteristic
-      real, dimension (nx) :: rho1, divu
+      real, dimension (nx,3) :: gshock
+      real, dimension (nx) :: rho1, divu,shock
 
       intent (in) :: f, glnrho, rho1
-      intent (out) :: df
+      intent (out) :: df,shock,gshock
 
       if ( icalculated<it ) call calc_viscosity(f)
 !
 !  viscosity operator
 !  rho1 is pre-calculated in equ
 !
+
+      shock=f(l1:l2,m,n,ishock)
+      call grad(f,ishock,gshock)
+
       if (nu_shock /= 0.) then
          !
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
@@ -484,12 +488,11 @@ module Viscosity
 !         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
          if(ldensity) then
-            call grad(f(:,:,:,ishock),gshock_characteristic)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(divu,glnrho,fvisc)
             tmp=fvisc +graddivu
-            call multsv_mn(nu_shock*f(l1:l2,m,n,ishock),tmp,fvisc)
-            call multsv_add_mn(fvisc,nu_shock*divu,gshock_characteristic,tmp)
+            call multsv_mn(nu_shock*shock,tmp,fvisc)
+            call multsv_add_mn(fvisc,nu_shock*divu,gshock,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,maxeffectivenu)
          else

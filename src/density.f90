@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.119 2003-10-15 15:39:02 mcmillan Exp $
+! $Id: density.f90,v 1.120 2003-10-16 12:50:25 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.119 2003-10-15 15:39:02 mcmillan Exp $")
+           "$Id: density.f90,v 1.120 2003-10-16 12:50:25 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -558,7 +558,7 @@ module Density
 !
     endsubroutine polytropic_lnrho_disc
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
+    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !
 !  continuity equation
 !  calculate dlnrho/dt = - u.gradlnrho - divu
@@ -570,12 +570,12 @@ module Density
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
+      real, dimension (nx,3) :: uu,glnrho,gshock
+      real, dimension (nx) :: lnrho,divu,uglnrho,gshockglnrho,glnrho2,shock
       real, dimension (nx) :: del2lnrho
       integer :: j
 !
-      intent(in)  :: f,uu,divu
+      intent(in)  :: f,uu,divu,shock,gshock
       intent(out) :: df,glnrho,lnrho
 !
 !  identify module and boundary conditions
@@ -607,9 +607,10 @@ module Density
         endif
 !
         if (diffrho_shock/=0.) then
+          call dot_mn(gshock,glnrho,gshockglnrho)
           if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho_shock*f(l1:l2,m,n,ishock)*(del2lnrho+glnrho2)
-          maxdiffus=amax1(maxdiffus,diffrho_shock*maxval(f(l1:l2,m,n,ishock)))
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
+          maxdiffus=amax1(maxdiffus,diffrho_shock*maxval(shock))
         endif
       endif
 !

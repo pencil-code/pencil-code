@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.209 2003-10-12 22:13:17 mee Exp $
+! $Id: entropy.f90,v 1.210 2003-10-16 12:50:25 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.209 2003-10-12 22:13:17 mee Exp $")
+           "$Id: entropy.f90,v 1.210 2003-10-16 12:50:25 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -669,7 +669,7 @@ module Entropy
 !
     endsubroutine ferriere
 !**********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -688,13 +688,13 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho,gss
+      real, dimension (nx,3) :: uu,glnrho,gss,gshock
       real, dimension (nx) :: ugss,uglnrho,divu
       real, dimension (nx) :: lnrho,ss,yH,TT,rho1,cs2,TT1,cp1tilde
-      real, dimension (nx) :: rho,ee
+      real, dimension (nx) :: rho,ee,shock
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho1,lnrho
+      intent(in) :: f,uu,glnrho,rho1,lnrho,shock,gshock
       intent(out) :: df,cs2,TT1
 !
 !  identify module and boundary conditions
@@ -746,7 +746,7 @@ module Entropy
       TT1=1./TT
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
-      if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
+      if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
 !  thermal conduction
 !
@@ -761,7 +761,7 @@ module Entropy
 !
 !  shock entropy diffusion
 !
-      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss)
+      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss,shock,gshock)
 !
 !  heating/cooling
 !
@@ -859,7 +859,7 @@ module Entropy
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
 !***********************************************************************
-    subroutine calc_heatcond_shock(f,df,rho1,glnrho,gss)
+    subroutine calc_heatcond_shock(f,df,rho1,glnrho,gss,shock,gshock)
 !
 !  Adds in shock entropy diffusion. There is potential for
 !  recycling some quantities from previous calculations.
@@ -873,11 +873,11 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: glnrho,gss,glnT,glnP
-      real, dimension (nx) :: rho1
-      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnP,gshock
+      real, dimension (nx) :: rho1,shock
+      real, dimension (nx) :: thdiff,del2ss,g2
 !
-      intent(in) :: f,glnrho,gss
+      intent(in) :: f,glnrho,gss,shock,gshock
       intent(out) :: df
 !
 !  check that chi is ok
@@ -888,17 +888,14 @@ module Entropy
 !  Note: these routines require revision when ionization turned on
 !
       call del2(f,iss,del2ss)
-      call del2(f,ilnrho,del2lnrho)
-      glnT = gamma*gss + gamma1*glnrho
-      glnP = gamma*gss + gamma*glnrho
-      call dot_mn(glnP,glnT,g2)
+      call dot_mn(gshock,gss,g2)
 !
 !  shock entropy diffusivity
 !
       if(chi_shock/=0.) then
         if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
-        call dot_mn(glnP,gss,g2)
-        thdiff = (chi_t+chi_shock*f(l1:l2,m,n,ishock))*(del2ss+g2)
+!        thdiff = chi_shock*(shock*(del2ss+g2)+g2)
+         call stop_it("calc_heatcond_shock: Errr... Check this first!")
       endif
 !
 !  add heat conduction to entropy equation
@@ -911,7 +908,7 @@ module Entropy
 !  gamma*chi*del2ss
 !
 !  NEED TO FIX THIS
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi_shock*maxval(f(l1:l2,m,n,ishock)))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi_shock*maxval(shock))
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_shock

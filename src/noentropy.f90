@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.45 2003-10-12 22:13:17 mee Exp $
+! $Id: noentropy.f90,v 1.46 2003-10-16 12:50:25 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.45 2003-10-12 22:13:17 mee Exp $")
+           "$Id: noentropy.f90,v 1.46 2003-10-16 12:50:25 mee Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -86,7 +86,7 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ss
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -97,11 +97,11 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho
+      real, dimension (nx,3) :: uu,glnrho,gshock
+      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho,shock
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho1
+      intent(in) :: f,uu,glnrho,rho1,shock,gshock
       intent(out) :: cs2,TT1  !(df is dummy)
 !
 !  sound speed squared and inverse temperature
@@ -132,7 +132,7 @@ module Entropy
         endif
       endif
 !
-      if(ip==1) print*,f,df,uu,divu,rho1  !(compiler)
+      if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset)

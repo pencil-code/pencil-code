@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.6 2003-10-14 07:02:24 nilshau Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.7 2003-10-16 12:50:25 mee Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -100,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.6 2003-10-14 07:02:24 nilshau Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.7 2003-10-16 12:50:25 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -312,7 +312,7 @@ module Hydro
 !     if (ip==0) print*,yy,zz !(keep compiler from complaining)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij)
+    subroutine duu_dt(f,df,uu,glnrho,divS,rho1,u2,uij,shock,gshock)
 !
 !  dS/dt = curlB x B +  curlE x E + divE E
 !  where E = (BxS)/B^2
@@ -328,13 +328,13 @@ module Hydro
       real, dimension (nx,3,3) :: Bij,uij
       real, dimension (nx,3) :: uu,SS,BB,CC,EE,divS,curlS,curlB,del2A,curlE
       real, dimension (nx,3) :: SgB,BgS,BdivS,CxB,curlBxB,curlExE,divEE
-      real, dimension (nx,3) :: glnrho,oo
-      real, dimension (nx) :: u2,B2,B21,divE,ou,o2,sij2,rho1
+      real, dimension (nx,3) :: glnrho,oo,gshock
+      real, dimension (nx) :: u2,B2,B21,divE,ou,o2,sij2,rho1,shock
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
       real :: c2=1,B2min=1e-12
 !
       intent(in) :: f,rho1
-      intent(out) :: df,uu,glnrho,u2,uij
+      intent(out) :: df,uu,glnrho,u2,uij,shock,gshock
 !
 !  identify module and boundary conditions
 !
@@ -431,6 +431,8 @@ module Hydro
 !
       uij=0.
       glnrho=0.
+      shock=0.
+      gshock=0.
 !
     endsubroutine duu_dt
 !***********************************************************************

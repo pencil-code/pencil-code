@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.8 2003-10-12 22:13:17 mee Exp $
+! $Id: visc_var.f90,v 1.9 2003-10-16 12:50:25 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -58,7 +58,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.8 2003-10-12 22:13:17 mee Exp $")
+           "$Id: visc_var.f90,v 1.9 2003-10-16 12:50:25 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -118,7 +118,7 @@ module Viscosity
 !    endsubroutine rprint_viscosity
 
 !***********************************************************************
-    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
+    subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
 !  calculate viscous heating term for right hand side of entropy equation
 !
@@ -131,7 +131,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx)   :: rho1,TT1,cs2
-      real, dimension (nx)   :: sij2, divu
+      real, dimension (nx)   :: sij2, divu, shock
       real, dimension (nx,3) :: glnrho
 !
 !  traceless strainmatrix squared
@@ -151,11 +151,11 @@ module Viscosity
          if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
          call stop_it("") !"
       endselect
-      if(ip==0) print*,f,cs2,divu,glnrho  !(keep compiler quiet)
+      if(ip==0) print*,f,cs2,divu,glnrho,shock  !(keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
-    subroutine calc_viscous_force(f,df,glnrho,divu,rho1)
+    subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
 !
       use Cdata
       use Mpicomm
@@ -168,13 +168,16 @@ module Viscosity
       integer :: i
 
       intent (in) :: f, glnrho, rho1
-      intent (out) :: df
+      intent (out) :: df,shock,gshock
 !
 !  viscosity operator
 !  rho1 is pre-calculated in equ
 !
 !      if (nu /= 0.) then
        
+      shock=0.
+      gshock=0.
+
         select case (ivisc)
         
         case('nu-const')

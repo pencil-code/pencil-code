@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.160 2003-10-10 17:07:59 snod Exp $
+! $Id: equ.f90,v 1.161 2003-10-16 12:50:25 mee Exp $
 
 module Equ
 
@@ -213,9 +213,9 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij
-      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb
+      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
-      real, dimension (nx) :: cs2, TT1 
+      real, dimension (nx) :: cs2, TT1, shock
       real :: fac, facheat
 !
 !  print statements when they are first executed
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.160 2003-10-10 17:07:59 snod Exp $")
+           "$Id: equ.f90,v 1.161 2003-10-16 12:50:25 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -306,9 +306,9 @@ module Equ
 !  They all are needed for setting some variables even
 !  if their evolution is turned off.
 !
-        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij)
-        call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
-        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
+        call dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
+        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock)
         call dlncc_dt (f,df,uu,glnrho)
 !
 !  dust equations

@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.14 2003-10-14 07:02:24 nilshau Exp $
+! $Id: nodensity.f90,v 1.15 2003-10-16 12:50:25 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.14 2003-10-14 07:02:24 nilshau Exp $")
+           "$Id: nodensity.f90,v 1.15 2003-10-16 12:50:25 mee Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -81,7 +81,7 @@ module Density
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
+    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !
 !  continuity equation, dummy routine
 !
@@ -92,15 +92,15 @@ module Density
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,divu
+      real, dimension (nx,3) :: uu,glnrho,gshock
+      real, dimension (nx) :: lnrho,divu,shock
 !
 !  will be accessed in noentropy
 !
       lnrho=0.
       glnrho=0.
 !
-      if(ip==0) print*,f,df,uu,divu
+      if(ip==0) print*,f,df,uu,divu,shock,gshock
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset)
