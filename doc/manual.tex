@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.102 2002-09-23 12:20:40 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.103 2002-09-24 03:09:33 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -297,7 +297,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.102 $ $}
+\date{\today,~ $ $Revision: 1.103 $ $}
 
 % ====================================================================== %
 
@@ -329,7 +329,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.102 $ $}
+  \emph{\today,~ $ $Revision: 1.103 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3360,6 +3360,30 @@ at the top we have
 \begin{equation}\label{cs2top}
 c_{\rm s,top}^2=\gamma\xi_0 gd.
 \end{equation}
+\begin{equation}\label{cs2bot}
+c_{\rm s,bot}^2=\left(\xi_0+{1\over m+1}\right)\gamma gd.
+\end{equation}
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Correspondence between $\xi_0$ and $c_{\rm s,bot}^2$ in single
+      layer polytropes.
+    }
+    \label{Txi0}
+    \begin{tabular}{rr}
+    \toprule
+$\xi_0$ & $c_{\rm s,bot}^2$ \\
+    \midrule
+10.00 & 17.500 \\
+ 0.20 &  1.167 \\
+ 0.10 &  1.000 \\
+ 0.05 &  0.917 \\
+ 0.02 &  0.867 \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
 
 % ---------------------------------------------------------------------- %
 
@@ -3511,7 +3535,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.102 2002-09-23 12:20:40 dobler Exp $ $}
+$ $Id: manual.tex,v 1.103 2002-09-24 03:09:33 brandenb Exp $ $}
 
 
 \end{document}
