@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.136 2004-06-12 06:07:37 brandenb Exp $
+! $Id: register.f90,v 1.137 2004-06-30 17:29:07 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -202,7 +202,12 @@ module Register
 !  (used currently for non-dimensional equation of state)
 !
       gamma1=gamma-1.
-      cs20=cs0**2
+      ! avoid floating overflow if cs0 was not set:
+      if (cs0==impossible) then
+        cs20=impossible
+      else
+        cs20=cs0**2
+      endif
       lnrho0=alog(rho0)
       mu01=1./mu0
 !

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.182 2004-06-22 10:16:17 bingert Exp $ 
+! $Id: param_io.f90,v 1.183 2004-06-30 17:29:07 dobler Exp $ 
 
 module Param_IO
 
@@ -243,7 +243,12 @@ module Param_IO
 !  (At least cs20 needs to be calculated here; in register.f90 is not sufficient!)
 !
 !     gamma1=gamma-1.
-      cs20=cs0**2
+      ! avoid floating overflow if cs0 was not set:
+      if (cs20==impossible) then
+        cs20=impossible
+      else
+        cs20=cs0**2
+      endif
       lnrho0=alog(rho0)
 !
 !  calculate shear flow velocity; if Sshear is not given
