@@ -20,6 +20,8 @@
 \usepackage{newcent,helvet}
 \renewcommand{\ttdefault}{cmtt}
 
+\usepackage{makeidx}
+
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
 \setlength{\belowcaptionskip}{5pt} % Space after caption
@@ -30,7 +32,9 @@
 %\titlespacing{\subsubsection}{0pt}{*1}{*-1}
 \usepackage{fancyhdr}
 \usepackage{fancybox}
-
+\setcounter{tocdepth}{6} % Older versions of fancybox very annoyingly (and
+                         % unnecessarily) resets this and make table of
+                         % contents disappear
 \usepackage{alltt}
 
 \usepackage{graphicx}
@@ -40,6 +44,9 @@
 
 \frenchspacing
 \sloppy
+
+\makeindex
+
 
 %%% Page headings
 \pagestyle{fancy}
@@ -64,19 +71,19 @@
 \newcommand{\kbd}[1]{\texttt{\textsl{#1}\/}}
 \newcommand{\key}[1]{{\setlength{\fboxsep}{1pt}\ovalbox{\sf #1}}}
 \newcommand{\samp}[1]{`\code{#1}'}
-\newcommand{\var}[1]{\textsl{#1}\/}
-\newcommand{\env}[1]{\code{#1}}
+\newcommand{\var}[1]{\textsl{#1}\index{#1}\/}
+\newcommand{\env}[1]{\code{#1}\index{#1}}
 \newcommand{\file}[1]{`\texttt{#1}'}
-\newcommand{\command}[1]{\code{#1}}
+\newcommand{\command}[1]{\code{#1}\index{#1}}
 \newcommand{\cmd}[1]{\command{#1}}
 \newcommand{\option}[1]{`\command{#1}'}
-\newcommand{\dfn}[1]{\textsl{#1}\/}
+\newcommand{\dfn}[1]{\textsl{#1}\index{#1}\/}
 %\newcommand{\cite}[1]{}
-\newcommand{\acronym}[1]{\textsc{#1}}
+\newcommand{\acronym}[1]{\textsc{#1}\index{#1}}
 %\newcommand{\url}[1]{}
 \newcommand{\email}[1]{\code{#1}}
 
-\newcommand{\name}[1]{\textsl{#1}\/}
+\newcommand{\name}[1]{\textsl{#1}\index{#1}\/}
 \newcommand{\Path}[1]{\file{#1}}
 
 %
@@ -206,7 +213,10 @@ terms of a permission notice identical to this one.
 \pagestyle{fancy}
 \pagenumbering{arabic}
 
-\chapter{Obtaining the Code}
+
+% ====================================================================== %
+
+\section{Obtaining the Code}
 
 To obtain the MHD code, you should use \name{CVS} (concurrent version
 system, see \url{http://fill.this.in}).
@@ -257,6 +267,30 @@ You proceed as follows:
 
 To get yourself started, you should run the comvection example which is
 provided as the default configuration of the code.
+
+
+% ====================================================================== %
+
+\section{Code structure}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Directory tree}
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Basic concepts}
+
+
+\subsubsection{Data access in pencils}
+
+
+\subsubsection{Modules}
+
+
+\subsubsection{Localisation (adapt-mkfile)}
+
 
 
 % ====================================================================== %
@@ -348,6 +382,11 @@ is the shear tensor.
     
 % ====================================================================== %
 
+\section{Boundary conditions}
+
+    
+% ====================================================================== %
+
 \section{Using the Code}
 
 Here's how to use the code \ldots
@@ -394,9 +433,7 @@ Here's how to use the code \ldots
 
 % ====================================================================== %
 
-\section{Index}
-
-
+\printindex
 
 \end{document}
 
