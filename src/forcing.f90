@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.69 2004-07-01 15:01:40 brandenb Exp $
+! $Id: forcing.f90,v 1.70 2004-07-02 08:03:26 brandenb Exp $
 
 module Forcing
 
@@ -20,7 +20,7 @@ module Forcing
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(should initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
-  logical :: lmagnetic_forcing=.false.
+  logical :: lmagnetic_forcing=.false.,lscale_kvector_tobox=.false.
   logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
   character (len=labellen) :: iforce_profile='nothing'
@@ -34,7 +34,7 @@ module Forcing
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
-       iforce_profile
+       iforce_profile,lscale_kvector_tobox
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rufm=0
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.69 2004-07-01 15:01:40 brandenb Exp $")
+           "$Id: forcing.f90,v 1.70 2004-07-02 08:03:26 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -328,9 +328,19 @@ module Forcing
       if(ip<=6) print*,'forcing_hel: kx,ky,kz=',kkx(ik),kky(ik),kkz(ik)
       if(ip<=6) print*,'forcing_hel: dt, ifirst=',dt,ifirst
 !
-      kx0=kkx(ik)
-      ky=kky(ik)
-      kz=kkz(ik)
+!  normally we want to use the wavevectors as the are,
+!  but in some cases, e.g. when the box is bigger than 2pi,
+!  we want to rescale k so that k=1 now corresponds to a smaller value.
+!
+      if (lscale_kvector_tobox) then
+        kx0=kkx(ik)*(2.*pi/Lxyz(1))
+        ky=kky(ik)*(2.*pi/Lxyz(2))
+        kz=kkz(ik)*(2.*pi/Lxyz(3))
+      else
+        kx0=kkx(ik)
+        ky=kky(ik)
+        kz=kkz(ik)
+      endif
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
 !  Here, St=-deltay/Lx
