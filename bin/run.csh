@@ -12,6 +12,9 @@
 # qsub -l ncpus=4,nodes=nq1+nq2 -q p-long run.csh
 # qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel run.csh
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
+# qsub -l nodes=8,walltime=20:00:00 -q workq run.csh
+# qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
+# qsub -l nodes=128 -q workq run.csh
 
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
