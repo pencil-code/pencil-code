@@ -5,7 +5,7 @@
 # For SGE: use csh, work in submit directory:
 #$ -S /bin/csh
 #$ -cwd
-##$ -j y -o run.log
+#$ -j y -o run.log
 #
 #PBS -S /bin/csh
 ##PBS -o run.log -j oe
