@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.147 2003-01-30 04:03:09 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.148 2003-02-01 11:53:26 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-01-30 04:03:09 $ $,~ $ $Revision: 1.147 $ $}
+\date{$ $Date: 2003-02-01 11:53:26 $ $,~ $ $Revision: 1.148 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-01-30 04:03:09 $ $,~ $ $Revision: 1.147 $ $}
+  \emph{$ $Date: 2003-02-01 11:53:26 $ $,~ $ $Revision: 1.148 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2750,13 +2750,33 @@ The Dec Fortran optimizer has occasional problems with \file{nompicomm.f90}:
   \begin{Verbatim}
     #OPTFLAGS=-fast -O5 -notransform_loops
   \end{Verbatim}
-  This has not been made standard in \file{Makefile}, 
-  as it can cause some slowdown: e.g.
-  an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
-  for \file{runs/forced/hel128f} 
-  with \code{nxgrid=nygrid=nzgrid=128}, \code{ncpus=16}, \code{nt=100},
-  on the Mhd machine.
+%   This has not been made standard in \file{Makefile}, 
+%   as it can cause some slowdown: e.g.
+%   an increase from 2.67 to 2.89 ${\mu\rm s}\,/\,{\rm pt}\,/\,{\rm step}$,
+%   for \file{runs/forced/hel128f} 
+%   with \code{nxgrid=nygrid=nzgrid=128}, \code{ncpus=16}, \code{nt=100},
+%   on the Mhd machine.
+  This is currently the default compiler setting in \file{Makefile},
+  although it has a measurable performance impact (some 8\% slowdown).
 }
+
+
+\subsubsection{Assertion failure under SunOS}
+Under SunOS, I get an error message like
+\begin{Verbatim}
+  user@sun> f90 -c param_io.f90
+  Assertion failed: at_handle_table[at_idx].tag == VAR_TAG,
+                    file ../srcfw/FWcvrt.c, line 4018
+  f90: Fatal error in f90comp: Abort
+\end{Verbatim}
+
+This is a compiler bug that we find at least with Sun's
+WorkShop Compiler version `5.0 00/05/17 FORTRAN 90 2.0 Patch 107356-05'.
+Upgrade the compiler version (and possibly also the operating system):
+we find that the code compiles and works with version
+`Sun WorkShop 6 update 2 Fortran 95 6.2 Patch 111690-05 2002/01/17' under
+SunOS version `5.8 Generic_108528-11'.
+
 
 % ---------------------------------------------------------------------- %
 
@@ -2788,8 +2808,8 @@ Under IRIX, I get
 
 This is a compiler bug that has been found at least with the MIPSpro F90
 compiler version 7.3.1.3m.
-It has been reported to SGI; we hope that a fixed compiler version will
-appear soon.
+It has been reported to SGI in mid-2002; you should complain to SGI if a
+patch is still not available.
 
 The error comes and goes, depending on the configuration (and possibly
 even the input parameters) you are using.
@@ -4675,7 +4695,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.147 2003-01-30 04:03:09 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.148 2003-02-01 11:53:26 dobler Exp $ $}
 
 
 \end{document}
@@ -4729,5 +4749,6 @@ $ $Id: manual.tex,v 1.147 2003-01-30 04:03:09 brandenb Exp $ $}
 % LocalWords:  logscale oct Nqall ruxm ruym ruzm jm vArms vAmax Massaguer ts ev
 % LocalWords:  openDX Eqn videofiles otal vm OPTFLAGS notransform ifc nov cyl
 % LocalWords:  convsample Chandrasekhar eqn timestep nonhelical hsection RK pp
-% LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS
-% LocalWords:  HTM BDS Subramanian Nachr
+% LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS Gb
+% LocalWords:  HTM BDS Subramanian Nachr ajwm cdts postproc decfort idx Hwwsx
+% LocalWords:  WorkShop convstar jan
