@@ -38,12 +38,14 @@ foreach dir ($subdirs)
     mkdir $dir
   else
     # Clean up
-    rm -f tsnap.dat tvid.dat >& /dev/null
     rm -f $dir/VAR* >& /dev/null
     rm -f $dir/vid* >& /dev/null
+    rm -f $dir/*.dat >& /dev/null
+    rm -f $dir/*.xy $dir/*.xz >& /dev/null
   endif
 end
-if (-e tmp/n.dat) mv tmp/n.dat tmp/n.`timestr`
+if (-e tmp/n.dat && ! -z tmp/n.dat) mv tmp/n.dat tmp/n.`timestr`
+rm -f tmp/*.dat tmp/*.nml tmp/param*.pro tmp/index*.pro >& /dev/null
 
 # Run start.x
 date
