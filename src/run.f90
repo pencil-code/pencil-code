@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.190 2004-07-23 07:46:19 nilshau Exp $
+! $Id: run.f90,v 1.191 2004-07-25 15:33:02 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -55,7 +55,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.190 2004-07-23 07:46:19 nilshau Exp $")
+             "$Id: run.f90,v 1.191 2004-07-25 15:33:02 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -109,10 +109,42 @@
 !          
 !  no need to read maux variables as they will be calculated
 !  at the first time step -- even if lwrite_aux is set
+!  Allow for the possibility to read in files that didn't
+!  have magnetic fields or passive scalar in it.
+!  NOTE: for this to work one has to modify *manually* data/param.nml
+!  by adding an entry for MAGNETIC_INIT_PARS or PSCALAR_INIT_PARS.
 !
-        call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+        if(lread_oldsnap_nomag) then
+          print*,'read old snapshot file (but without magnetic field)'
+          call input(trim(directory_snap)//'/var.dat',f,mvar-3,1)
+          ! shift the rest of the data
+          if (iaz<mvar) then
+            do ivar=iaz+1,mvar
+              f(:,:,:,ivar)=f(:,:,:,ivar-3)
+            enddo
+            f(:,:,:,iax:iaz)=0.
+          endif
+!
+!  read data without passive scalar into new run with passive scalar
+!
+        elseif(lread_oldsnap_nopscalar) then
+          print*,'read old snapshot file (but without passive scalar)'
+          call input(trim(directory_snap)//'/var.dat',f,mvar-1,1)
+          ! shift the rest of the data
+          if (iaz<mvar) then
+            do ivar=ilncc+1,mvar
+              f(:,:,:,ivar)=f(:,:,:,ivar-1)
+            enddo
+            f(:,:,:,ilncc)=0.
+          endif
+        else
+          call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+        endif
+!
+!  read time and global variables (if any)
+!
         call rtime(trim(directory)//'/time.dat',t)
-        call rglobal()      ! Read global variables (if any)
+        call rglobal()
 !
 !  read coordinates
 !

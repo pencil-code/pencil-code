@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.188 2004-07-24 07:47:14 brandenb Exp $ 
+! $Id: param_io.f90,v 1.189 2004-07-25 15:33:02 brandenb Exp $ 
 
 module Param_IO
 
@@ -75,6 +75,7 @@ module Param_IO
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
+       lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
