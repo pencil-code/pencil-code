@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots_exp,v 1.4 2004-09-28 12:26:55 ajohan Exp $
+# CVS: $Id: copy-snapshots_exp,v 1.5 2004-09-29 11:01:45 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -101,57 +101,64 @@ else
     echo "=========  "`date`"  ========="
 ##    
 ## Check for files to copy by diffing the files moved-files.list 
-## and move-me.list in the proc directories
+## and move-me.list in the data directory
 ##
-    set nodenumber=0
-    foreach node ($nodelist)
-      echo "-------------------- Checking proc$nodenumber -------------------"
-      set move_me=$targetdir/proc$nodenumber/move-me.list
-      set source_me=$targetdir/source-me.csh
-      set moved_files=$targetdir/proc$nodenumber/moved-files.list
+    set move_me=$targetdir/move-me.list
+    set eval_me=$targetdir/copy-snapshots-eval-me.csh
+    set moved_files=$targetdir/moved-files.list
 ##
 ## Must make sure that both move-me.list and moved-files.list exist
 ##
-      if (! -e $move_me) touch $move_me
-      if (! -e $moved_files) touch $moved_files
-      echo " ## Comparing $moved_files with $move_me"
-      echo
-      echo "cat $moved_files $move_me | sort | uniq -u"
+    if (! -e $move_me) touch $move_me
+    if (! -e $moved_files) touch $moved_files
+    echo " ## Comparing $moved_files with $move_me"
+    echo
+    echo "cat $moved_files $move_me | sort | uniq -u"
 ##
 ## Only do the diff once (there could be changes in the mean time)
 ##                  
-      set lines=`cat $moved_files $move_me | sort | uniq -u`
-      echo
-      echo $lines
-      echo
+    set lines=`cat $moved_files $move_me | sort | uniq -u`
+    echo
+    echo $lines
+    echo
 ##
 ## Consider all lines as filenames and move them from relevant node
 ##
-      foreach line ($lines)
-        echo $SSH $node \mv -f $line $targetdir/proc$nodenumber/
-        $SSH $node \mv -f $line $targetdir/proc$nodenumber/
+    foreach file ($lines)
+      set i=0            # Node number
+      foreach node ($nodelist)
+        echo "--------------- Moving file $file from node $node ---------------"
+        echo $SSH $node \mv -f $SCRATCH_DIR/proc$i/$file $targetdir/proc$i/
+        $SSH $node \mv -f $SCRATCH_DIR/proc$i/$file $targetdir/proc$i/
 ##
-## Inform moved-files.list that the file has been moved (if successful)
+## Check exit status and output whether move was succesful or not
 ##                        
         if (! $status) then
           echo " copy-snapshots: Move successful (exit status 0)"
-          echo $line >> $moved_files
         else
           echo " copy-snapshots: Could not move file (exit status 1)"
         endif
+        set i=`expr $i + 1`
       end
-      set nodenumber=`expr $nodenumber + 1`
+##
+## Inform moved-files.list that the file has been (attempted) moved
+##                        
+      echo $file >> $moved_files
     end
 ##
-## Execute user supplied script source-me.csh in the data directory.
+## Execute user supplied script copy-snapshots-eval-me.csh in data directory
 ##  
-    if (-e $source_me) then
+    if (-e $eval_me) then
       echo
-      echo cat $source_me
-      cat $source_me
+      echo cat $eval_me
+      cat $eval_me
       echo
-      source $source_me >> $targetdir/source-me.log
-      \mv -f $source_me ${source_me}.used
+##
+## The eval command does not stop the program when encountering an error in
+## the script, as opposed to source and exec.
+##            
+      eval $eval_me >> $targetdir/copy-snapshots-eval-me.log
+      \mv -f $eval_me ${eval_me}.used
     endif
 ##
 ## Break infinite while loop if set to check only once for files to copy
