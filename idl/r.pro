@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.27 2002-07-11 00:30:16 brandenb Exp $
+; $Id: r.pro,v 1.28 2002-07-18 15:09:27 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -35,7 +35,7 @@ pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Generating and reading param2.nml..'
-  spawn, '../../../bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
   resolve_routine, 'param2', /IS_FUNCTION
   par2=param2()
   if (lhydro) then begin

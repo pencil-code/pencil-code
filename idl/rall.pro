@@ -32,7 +32,7 @@ pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Generating and reading param2.nml..'
-  spawn, '../../../bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
   resolve_routine, 'param2', /IS_FUNCTION
   par2=param2()
   if (lhydro) then begin

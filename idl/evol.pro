@@ -24,7 +24,7 @@ s = texsyms()
 ; close,1
 ; mtime = fs.mtime
 ;;; ..so we do this in Perl:
-spawn,"perl -e '@s=stat(""fort.20""); print $s[9]';", res
+spawn,"perl -e '@s=stat(""tmp/n.dat""); print $s[9]';", res
 mtime = ulong64(res[0])
 
 ;; Re-read file only if it has changed

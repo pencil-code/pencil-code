@@ -23,6 +23,12 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @yder2_6th_ghost
 @zder2_6th_ghost
 ;
+;  The following avoids a mysterious bug when using esrg_legend later
+;  (box size was wrong, because lenstr(['a','b']) would be wrong,
+;  because xyout would write all letters onto one posision) ..
+;
+@lenstr
+;
 default, proc, 0
 default, datatopdir, 'tmp'
 default, file, 'var.dat'
@@ -97,7 +103,7 @@ pfile=datatopdir+'/'+'param.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param.nml..'
-  spawn, '../../../bin/nl2idl -f param -m tmp/param.nml > tmp/param.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param -m tmp/param.nml > tmp/param.pro'
   resolve_routine, 'param', /IS_FUNCTION
   par=param()
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
@@ -134,8 +140,6 @@ if (cpar gt 0) then begin
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse
-
-
 
 ;
 print, '..done'

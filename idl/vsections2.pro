@@ -42,7 +42,7 @@ default, show_ghosts, 0
 
 nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
-nsslevs = 60                   ; No of colours
+nsslevs = 60                    ; No of colours
 
 nx1 = 0.25*mx > 4
 nx2 = 0.5*mx
@@ -65,7 +65,7 @@ tit = '!17u!6 at '
 !x.style = 1
 !y.style = 1
 if (show_ghosts) then begin
-  !x.range = [y[0], y[my-1]]    ; No ghost zones
+  !x.range = [y[0], y[my-1]]    ; Include ghost zones
   !y.range = [z[0], z[mz-1]]
 endif else begin
   !x.range = [y[3], y[my-4]]    ; No ghost zones

@@ -43,6 +43,12 @@ save_state
 !p.multi = pvert_layout
 
 if (!d.name eq 'X') then begin
+  red = 130/256.*!d.table_size   ; brick red for color table 5
+endif else begin
+  red = !p.color   ; black for PostScript  
+endelse
+
+if (!d.name eq 'X') then begin
   !p.charsize = 1. + (max(!p.multi)-1)*0.3
 endif
 
@@ -94,16 +100,19 @@ for ivar = 0,3 do begin
         message, 'No Tinit -- you should run thermo.pro', /INFO
   endif else begin
     case ivar of
-      0: oplot, lnrhoinit, z, LINE=2, COLOR=130, THICK=2
+      0: oplot, lnrhoinit, z, LINE=2, COLOR=red, THICK=2
       1: ;nothing to overplot
-      2: oplot, ssinit, z, LINE=2, COLOR=130, THICK=2
-      3: oplot, Tinit, z, LINE=2, COLOR=130, THICK=2
+      2: oplot, ssinit, z, LINE=2, COLOR=red, THICK=2
+      3: oplot, Tinit, z, LINE=2, COLOR=red, THICK=2
     endcase
   endelse
 
 endfor
 
-xyouts, 0.45,0.5, '!8t!6=' + strtrim(t,2), /NORMAL
+if (all(pvert_layout eq [0,2,2])) then begin
+  ; don't know where to place otherwise
+  xyouts, 0.45,0.5, '!8t!6=' + strtrim(t,2), /NORMAL
+endif
 
 restore_state
 
