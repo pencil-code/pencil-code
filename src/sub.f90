@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.112 2003-02-03 21:17:08 dobler Exp $ 
+! $Id: sub.f90,v 1.113 2003-03-06 14:23:57 brandenb Exp $ 
 
 module Sub 
 
@@ -806,6 +806,7 @@ module Sub
     endsubroutine grad_main
 !***********************************************************************
     subroutine grad_other(f,g)
+!
 !  FOR NON 'mvar' variable
 !  calculate gradient of a scalar, get vector
 !  26-nov-02/tony: coded
@@ -819,7 +820,9 @@ module Sub
 !
       intent(in) :: f
       intent(out) :: g
+!
 ! Uses overloaded der routine
+!
       call der(f,tmp,1); g(:,1)=tmp
       call der(f,tmp,2); g(:,2)=tmp
       call der(f,tmp,3); g(:,3)=tmp
