@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.9 2004-05-05 17:17:22 mee Exp $
+; $Id: pc_read_dim.pro,v 1.10 2004-05-06 09:06:17 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:17:22 $
-;  $Revision: 1.9 $
+;  $Date: 2004-05-06 09:06:17 $
+;  $Revision: 1.10 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -117,7 +117,7 @@ if (found gt 0) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
 
   openr,file,filename
-  readf,file,mx,my,mz,mvar
+  readf,file,mx,my,mz,mvar,maux
   readf,file,precision
   readf,file,nghostx,nghosty,nghostz
   readf,file,nprocx,nprocy,nprocz
@@ -150,14 +150,14 @@ precision = strmid(precision,0,1)
 
 
 ; Build structure of all the variables
-object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar', $
+object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar','maux', $
                         'precision', $
                         'nx','ny','nz', $
                         'nghostx','nghosty','nghostz', $
                         'nxgrid','nygrid','nzgrid', $
                         'mxgrid','mygrid','mzgrid', $
                         'nprocx','nprocy','nprocz'], $
-                       mx,my,mz,mw,mvar,precision,nx,ny,nz,nghostx,nghosty,nghostz, $
+                       mx,my,mz,mw,mvar,maux,precision,nx,ny,nz,nghostx,nghosty,nghostz, $
                        nxgrid, nygrid, nzgrid, $
                        mxgrid, mygrid, mzgrid, $
                        nprocx,nprocy,nprocz)
@@ -171,7 +171,7 @@ if keyword_set(PRINT) then begin
       print, 'For GLOBAL calculation domain:'
   endelse
 
-  print, '          (mx,my,mz,mvar) = (',mx,',',my,',',mz,',',mvar,')'
+  print, '     (mx,my,mz,mvar,maux) = (',mx,',',my,',',mz,',',mvar,',',maux,')'
   print, '                       mw = ',mw
   print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
   print, '                precision = ', precision
