@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.104 2002-10-02 09:12:50 dobler Exp $
+### $Id: Makefile,v 1.105 2002-10-02 10:35:47 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -191,4 +191,4 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f makefile TAGS cparam.inc
+	rm -f makefile TAGS
