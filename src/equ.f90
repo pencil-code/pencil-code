@@ -189,8 +189,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
           if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
         elseif(itype_name(iname)>0) then
           isum_count=isum_count+1
-          if(itype_name(iname)==+1) fname(iname)=fsum(imax_count)
-          if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(imax_count))
+          if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)
+          if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(isum_count))
         endif
       enddo
       !nmax_count=imax_count
@@ -350,8 +350,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.32 $", &
-           "$Date: 2002-05-04 12:33:23 $")
+           "$Revision: 1.33 $", &
+           "$Date: 2002-05-04 12:39:41 $")
 !
 !  initialize counter for calculating and communicating print results
 !
