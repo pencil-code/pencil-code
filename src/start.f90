@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.140 2004-08-24 19:13:27 dobler Exp $
+! $Id: start.f90,v 1.141 2004-09-02 00:05:38 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -31,23 +31,38 @@
 !  Although they are not necessary for start.f90, idl may want to read them,
 !  so we define therefore the full array and write it out.
 !
-        integer :: i,ifilter
+        integer :: i,ifilter,stat
         logical :: lnoerase=.false.
 !       logical :: lock=.false.
 !       logical :: exist
-        real, dimension (mx,my,mz,mvar+maux) :: f
-        real, dimension (mx,my,mz,mvar) :: df
-        real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
+!        real, dimension (mx,my,mz,mvar+maux) :: f
+!        real, dimension (mx,my,mz,mvar) :: df
+!        real, dimension (mx,my,mz) :: xx,yy,zz
+        real, allocatable, dimension (:,:,:,:) :: f,df
+        real, allocatable, dimension (:,:,:) :: xx,yy,zz
 !
         lstart = .true.
+!
+!  Allocate large arrays. We need to make them allocatable in order to
+!  avoid segfaults at 128^3 (7 variables) with Intel compiler on 32-bit
+!  Linux boxes. Not clear why they crashed (we _did_ increase stacksize
+!  limits), but they did and now don't. Also, the present approach runs
+!  up to nx=ny=nz=135 (nx=ny=nz=128 if only xx,yy,zz are made
+!  allocatable), but not for even slightly larger grids.
+!
+        allocate(xx(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for xx")
+        allocate(yy(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for yy")
+        allocate(zz(mx,my,mz)          ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for zz")
+        allocate( f(mx,my,mz,mvar+maux),STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for f ")
+        allocate(df(mx,my,mz,mvar)     ,STAT=stat); if (stat>0) call stop_it("Couldn't allocate memory for df")
 !
         call register_modules()         ! register modules, etc.
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.140 2004-08-24 19:13:27 dobler Exp $")
+             "$Id: start.f90,v 1.141 2004-09-02 00:05:38 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
