@@ -18,18 +18,17 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.6 2002-06-17 12:09:46 dobler Exp $
+# $Id: nl2idl,v 1.7 2002-07-06 18:10:45 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
-#   Works for float, integer, character, logical.
+#   Works for float, integer, character, logical (T->-1L, F->0L).
 #   Works on Linux (Intel F95, NAG F95), IRIX, Compaq 
 
 use strict;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
 Getopt::Long::config("bundling");
-
 
 my (%opts);	# Variables written by GetOptions
 my $funcname = "param";		# default name of idl function
@@ -48,7 +47,7 @@ my $line;
 my $debug = 0;
 
 my $usage =
-"Usage:  $cmdname [options] <file1.nml> [<file2.nml> [..]] >> <file.pro>\n
+"Usage:  $cmdname [options] <file1.nml> [<file2.nml> [..]] > <file.pro>\n
 Convert F90 namelists into an idl function that returns an anomymous structure
 containing all the namelist variables.
 Options:
@@ -56,6 +55,8 @@ Options:
   --help            \tShow usage overview
   -f <func>
   --function=<func> \tName the IDL function <func> (default is `$funcname')
+  -m
+  --minimize        \tMinimize strings by trimming trailing whitespace
   --version         \tWrite version number of $cmdname and exit
 ";
 
@@ -64,11 +65,13 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	            --debug
                -f=s --function=s
+	       -m   --minimize
 	            --version
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 if ($debug) {
     foreach my $opt (keys(%opts)) {
 	print "\$opts{$opt} = `$opts{$opt}'\n";
@@ -77,7 +80,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.6 2002-06-17 12:09:46 dobler Exp $' . "\n";
+	'  $Id: nl2idl,v 1.7 2002-07-06 18:10:45 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -88,7 +91,7 @@ my $infile = ($ARGV[0] || '-');
 ## Some comments and the function definition header
 my $idl = <<"HEADER";
 ;
-;  params.pro
+;  $funcname.pro
 ;
 ; Set parameters from Mhd code namelist files (typically param.nml and
 ; param2.nml).
@@ -110,7 +113,7 @@ my $prevlist="";
 open(INPUT,"< $infile") || die "Can't open $infile for reading";
 while (<INPUT>) {
     s/!.*$//;			# remove comments
-    s/\s/ /g;			# normalise whitespace
+    s/[ \t]/ /g;			# normalise whitespace
     if (/$nlstart\s+(.*)/) {		# $1 now contains the namelist name
 	my $nl = "\L$1";
 	if (defined($nlists{$nl}) || ($nl eq $prevlist)) {
@@ -208,10 +211,11 @@ sub parse_nl {
 	        push @{$nl{$var}}, "0L";
 		$line = substr($line,1);
 	    } elsif ($ch =~ /[-+0-9\.]/) { # number
-		$line =~ s/^($numeric)(.*)$/$2/;
+		$line =~ s/^($numeric)[ ,]*(.*)$/$2/;
 		if ($debug) { print "\$nl{$var} <- $1\n" };
 	        push @{$nl{$var}}, $1;
 	    } else {
+		if ($debug) { print "\$line = <$line>\n"};
 		# die "Illegal value \"$ch\[..]\" for $var\n";
 		die "This does not look like a valid namelist file.\n"
 		    . "If it is, please send it to $email,\n"
@@ -223,6 +227,7 @@ sub parse_nl {
     }
     # Sort all entries from %nl into $($_[1]):
     while (my ($var, $val) = each %nl) {
+	if ($minimize) { trim_strings($val) };
 	${$_[1]}{$var} = $val;
     }
 #    $_[1] = \%nl;
@@ -264,19 +269,22 @@ sub expand_line {
 	} else {		# star first
 	    if ($apo == $star+1) { # n*'string'
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*(\'[^\']*\')[ ,](.*)/ );
+		    ( $line =~ /^([^*]*)([0-9]+)\*(\'[^\']*\')[ ,]?(.*)/ );
 	    } elsif ($quo == $star+1) { # n*"string"
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*(\"[^\"]*\")[ ,](.*)/ );
+		    ( $line =~ /^([^*]*)([0-9]+)\*(\"[^\"]*\")[ ,]?(.*)/ );
 	    } else {		# n*<number|T|F>
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*([^ ,]*)[ ,]*(.*)/ );
+		    ( $line =~ /^([^*]*)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
 	    }
-	    $xline .= $pre;
-	    foreach (1..$mul) {
-		$xline .= "$val, ";
+	    if (checkdef("(\$pre,\$mul,\$val,\$post)=",
+			 ($pre,$mul,$val,$post))) {
+		$xline .= $pre;
+		foreach (1..$mul) {
+		    $xline .= "$val, ";
+		}
 	    }
-	    $line = $post;
+	    $line = defined($post) ? $post : "";
 	    if ($debug) {
 		print "\$pre  = <$pre>, \$mul = <$mul>,",
 		      "\$val = <$val>, \$post = <$post>\n";
@@ -291,7 +299,6 @@ sub expand_line {
 }
 
 # ---------------------------------------------------------------------- #
-
 sub merge_nls {
 ## Merge namelists in hash into one hash
 ## %nl is a hash of hashes with array slots:
@@ -320,7 +327,31 @@ sub merge_nls {
     %{$_[0]} = %newl;
 
 }
+# ---------------------------------------------------------------------- #
+sub checkdef {
+## Verify whether every element of a list is defined; otherwise write a
+## warning, together with the values.
+    my $msg=shift;
+    my @list=@_;
 
+    my $nundef = grep { ! defined } @list;
+    if ($nundef) {
+	warn "Undefined elements: $msg <",
+	join("><", map { defined($_) ? "$_" : "undef" } @list),
+	">\n";
+	0;
+    } else {
+	1;
+	}
+}
+# ---------------------------------------------------------------------- #
+sub trim_strings {
+## Given an array reference, trim trailing spaces from each string element
+## (those delimited by ' or "
+    my ($arref) = @_;
+    map { s/\s*([\'\"])$/$1/ } @$arref;
+    @_ = ($arref);
+}
 # ---------------------------------------------------------------------- #
 
 # End of file nl2idl
