@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.25 2002-07-08 20:50:14 dobler Exp $
+! $Id: prints.f90,v 1.26 2002-08-04 08:08:09 dobler Exp $
 
 module Print
 
@@ -65,7 +65,7 @@ module Print
 !  (might want to do only once after each lreset)
 !
         open(1,file='tmp/legend.dat')
-        write(1,*) trim(legend)
+        write(*,'(" ",A)') trim(legend)
         close(1)
 !
 !  put output line into a string and remove spurious dots
