@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.17 2003-10-20 16:27:20 dobler Exp $
+! $Id: dustvelocity.f90,v 1.18 2003-10-21 11:58:01 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -38,6 +38,7 @@ module Dustvelocity
   integer :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
   integer :: i_udxpt=0,i_udypt=0,i_udzpt=0
   integer :: i_udrms=0,i_udmax=0,i_odrms=0,i_odmax=0
+  integer :: i_rdudmax=0
   integer :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0,i_udmy=0,i_udmz=0
   integer :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer :: i_divud2m=0,i_epsKd=0
@@ -77,7 +78,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.17 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.18 2003-10-21 11:58:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -286,6 +287,10 @@ module Dustvelocity
                       'duud_dt: Calculate maxima and rms values...'
         if (i_udrms/=0) call sum_mn_name(ud2,i_udrms,lsqrt=.true.)
         if (i_udmax/=0) call max_mn_name(ud2,i_udmax,lsqrt=.true.)
+        if (i_rdudmax/=0) then
+          rhod=exp(f(l1:l2,m,n,ilnrhod))
+          call max_mn_name(rhod**2*ud2,i_rdudmax,lsqrt=.true.)
+        endif
         if (i_ud2m/=0) call sum_mn_name(ud2,i_ud2m)
         if (i_udm2/=0) call max_mn_name(ud2,i_udm2)
         if (i_divud2m/=0) call sum_mn_name(divud**2,i_divud2m)
@@ -361,6 +366,7 @@ module Dustvelocity
         i_ud2m=0; i_udm2=0; i_oudm=0; i_od2m=0
         i_udxpt=0; i_udypt=0; i_udzpt=0
         i_udrms=0; i_udmax=0; i_odrms=0; i_odmax=0
+        i_rdudmax=0
         i_udmx=0; i_udmy=0; i_udmz=0
         i_divud2m=0; i_epsKd=0
       endif
@@ -375,6 +381,7 @@ module Dustvelocity
         call parse_name(iname,cname(iname),cform(iname),'oudm',i_oudm)
         call parse_name(iname,cname(iname),cform(iname),'udrms',i_udrms)
         call parse_name(iname,cname(iname),cform(iname),'udmax',i_udmax)
+        call parse_name(iname,cname(iname),cform(iname),'rdudmax',i_rdudmax)
         call parse_name(iname,cname(iname),cform(iname),'odrms',i_odrms)
         call parse_name(iname,cname(iname),cform(iname),'odmax',i_odmax)
         call parse_name(iname,cname(iname),cform(iname),'udmx',i_udmx)
@@ -395,6 +402,7 @@ module Dustvelocity
       write(3,*) 'i_oudm=',i_oudm
       write(3,*) 'i_udrms=',i_udrms
       write(3,*) 'i_udmax=',i_udmax
+      write(3,*) 'i_rdudmax=',i_rdudmax
       write(3,*) 'i_odrms=',i_odrms
       write(3,*) 'i_odmax=',i_odmax
       write(3,*) 'i_udmx=',i_udmx

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.121 2003-10-20 16:27:20 dobler Exp $
+! $Id: hydro.f90,v 1.122 2003-10-21 11:58:01 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Hydro
   integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
-  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
+  integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
@@ -98,7 +98,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.121 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: hydro.f90,v 1.122 2003-10-21 11:58:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -491,6 +491,7 @@ module Hydro
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
+        if (i_rumax/=0) call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
@@ -731,7 +732,7 @@ module Hydro
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_uxpt=0; i_uypt=0; i_uzpt=0
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
-        i_ruxm=0; i_ruym=0; i_ruzm=0
+        i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
@@ -756,6 +757,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
         call parse_name(iname,cname(iname),cform(iname),'ruym',i_ruym)
         call parse_name(iname,cname(iname),cform(iname),'ruzm',i_ruzm)
+        call parse_name(iname,cname(iname),cform(iname),'rumax',i_rumax)
         call parse_name(iname,cname(iname),cform(iname),'umx',i_umx)
         call parse_name(iname,cname(iname),cform(iname),'umy',i_umy)
         call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
@@ -800,6 +802,7 @@ module Hydro
       write(3,*) 'i_ruxm=',i_ruxm
       write(3,*) 'i_ruym=',i_ruym
       write(3,*) 'i_ruzm=',i_ruzm
+      write(3,*) 'i_rumax=',i_rumax
       write(3,*) 'i_umx=',i_umx
       write(3,*) 'i_umy=',i_umy
       write(3,*) 'i_umz=',i_umz
