@@ -38,13 +38,13 @@ foreach dir ($subdirs)
     mkdir $dir
   else
     # Clean up
-    # when used with lnowrite=T, for example, we don't want to remove var.dat (axel)
-    echo ">> The data directory is not cleaned up manually  <<"
-    echo ">> make sure undesired files in proc* are removed <<"
-    #rm -f $dir/VAR* >& /dev/null
-    #rm -f $dir/vid* >& /dev/null
-    #rm -f $dir/*.dat >& /dev/null
-    #rm -f $dir/*.xy $dir/*.xz >& /dev/null
+    # when used with lnowrite=T, for example, we don't want to remove var.dat:
+    set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/slice*`
+    if (list != "") then
+      foreach rmfile (list)
+        if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
+      end
+    endif
   endif
   # Create directories on local scratch disk if necessary
   #if ($local_disc) then
