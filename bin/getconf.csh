@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.63 2003-08-14 17:34:22 dobler Exp $
+# $Id: getconf.csh,v 1.64 2003-08-16 11:31:48 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -83,14 +83,16 @@ else if ($hn =~ sleipner) then
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) ) then
-  # Choose appropriate mpirun version (LAM vs. MPICH)
-  if (`fgrep -c lam_mpi src/start.x`> 0) then
-    set mpirun = /usr/lib/lam/bin/mpirun
-    set mpirunops = "-c2c -O"
-  else if (`fgrep -c MPICHX src/start.x`> 0) then
-    set mpirun = /usr/lib/mpich/bin/mpirun
-  else
-    set mpirun 'printf "%s\n" "Cannot find out which mpirun to use"'
+  if ($mpi) then
+    # Choose appropriate mpirun version (LAM vs. MPICH)
+    if (`fgrep -c lam_mpi src/start.x` > 0) then
+      set mpirun = /usr/lib/lam/bin/mpirun
+      set mpirunops = "-c2c -O"
+    else if (`fgrep -c MPICHX src/start.x` > 0) then
+      set mpirun = /usr/lib/mpich/bin/mpirun
+    else
+      set mpirun 'Cannot_find_out_which_mpirun_to_use'
+    endif
   endif
 
 else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
