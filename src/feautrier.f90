@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.15 2003-04-09 13:22:50 brandenb Exp $
+! $Id: feautrier.f90,v 1.16 2003-04-09 17:02:40 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.15 2003-04-09 13:22:50 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.16 2003-04-09 17:02:40 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -134,7 +134,13 @@ module Radiation
 !
          call tridag(a,b,c,Srad_,Prad_,err=err)
          if (err) then
-            print*,'tau=',tau
+            print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
+                            f(lrad,mrad,n2-5:n2,ilnrho)
+            print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
+                         f(lrad,mrad,n2-5:n2,ient)
+            print*,'tau=',tau(1:6),'',tau(n2-n1-5:n2-n1)
+            print*,'kappa=',kappa(lrad,mrad,n1:n1+5),'...', &
+                            kappa(lrad,mrad,n2-5:n2)
             stop
          endif
 !
