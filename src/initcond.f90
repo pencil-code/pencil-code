@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.84 2003-10-08 11:02:15 theine Exp $ 
+! $Id: initcond.f90,v 1.85 2003-10-08 11:43:06 theine Exp $ 
 
 module Initcond 
  
@@ -548,6 +548,10 @@ module Initcond
       endif
 !
 !  read data
+!
+      do n=1,nz*ipz
+        read(19,*) ztmp,lnrho0(n),SS0(n)
+      enddo
 !
       do n=1,mz
         read(19,*) ztmp,lnrho0(n),SS0(n)
