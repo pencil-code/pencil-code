@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.1 2002-09-24 11:17:07 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.2 2002-09-24 13:47:41 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -36,7 +36,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.1 2002-09-24 11:17:07 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.2 2002-09-24 13:47:41 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -48,7 +48,7 @@ module  power_spectrum
   elseif (sp=='b') then
      do n=n1,n2
         do m=m1,m2
-           call curl(f,5,bb)
+           call curl(f,iaa,bb)
            im=m-nghost
            in=n-nghost
            a1(:,im,in)=bb(:,1)
@@ -57,9 +57,9 @@ module  power_spectrum
         enddo
      enddo
   elseif (sp=='a') then
-     a1=f(l1:l2,m1:m2,n1:n2,5)
-     a2=f(l1:l2,m1:m2,n1:n2,6)
-     a3=f(l1:l2,m1:m2,n1:n2,7)
+     a1=f(l1:l2,m1:m2,n1:n2,iax)
+     a2=f(l1:l2,m1:m2,n1:n2,iay)
+     a3=f(l1:l2,m1:m2,n1:n2,iaz)
   else
      print*,'There are no such sp=',sp
   endif
