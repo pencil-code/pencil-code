@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.70 2002-10-07 07:53:19 dobler Exp $
+! $Id: hydro.f90,v 1.71 2002-10-07 17:56:15 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -74,7 +74,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.70 2002-10-07 07:53:19 dobler Exp $")
+           "$Id: hydro.f90,v 1.71 2002-10-07 17:56:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -106,7 +106,7 @@ module Hydro
 !
       select case(inituu)
 
-      case('zero', '0'); f(:,:,:,iux)=0.
+      case('zero', '0'); if(lroot) print*,'zero velocity'
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
