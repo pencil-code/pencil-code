@@ -146,17 +146,17 @@ endif else begin
   rho=fltarr(nx,ny,nz)
   mu=1.0
   m_H=1.6726
+; create a purely azimuthal field
   Br=0.
   Bphi=1.
   for j=m1,m2 do begin
   for i=l1,l2 do begin
-    xx=(128-i)*1.01
-    yy=(128-j)*1.01
+    xx=(i-75)*1.01
+    yy=(j-75)*1.01
     phi=atan(yy,xx)
     if (phi lt (0.0D0)) then phi=phi+(2.0*!pi)
-
-    bb(i,j,*,0)= cos(j*.10)
-    bb(i,j,*,1)= sin(i*.037)
+    bb(i,j,*,0)= Br*cos(phi) - Bphi*sin(phi)
+    bb(i,j,*,1)= Br*sin(phi) + Bphi*cos(phi)
     bb(i,j,*,2)=0.
   endfor
   endfor  
@@ -210,11 +210,11 @@ endelse
 
       
 ; Angle = 2 * intrinsic polatisation angle + faraday_depth
-      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1],bb[l1:l2,m1:m2,n1+k,0])+0.5*!pi
-      pnts=where(intr_angle lt 0.*!pi,siz)
-      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]+!pi
-      pnts=where(intr_angle gt !pi,siz)
-      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]-!pi
+      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1]/bb[l1:l2,m1:m2,n1+k,0]+(1e-9))+0.5*!pi
+;      pnts=where(intr_angle lt 0.*!pi,siz)
+;      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]+!pi
+;      pnts=where(intr_angle gt !pi,siz)
+;      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]-!pi
      
       angle[*,*,k]=2.0*intr_angle  + faraday_depth
     endfor
