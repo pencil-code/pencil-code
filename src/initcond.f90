@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.27 2003-03-11 08:34:55 brandenb Exp $ 
+! $Id: initcond.f90,v 1.28 2003-03-18 14:50:13 brandenb Exp $ 
 
 module Initcond 
  
@@ -276,19 +276,29 @@ module Initcond
 !
       rr2=xx**2+eps2*yy**2+zz**2/delta2
       hh=+.5*delta2*Omega**2*(radius2-rr2)
+      xi=.5+.5*tanh(hh/width)
+!
+    if(nz==1) then
+!
+!  Solution as in the old disc code
+!
+      print*,'special 2-D solution'
+      hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
+      if(lentropy) f(:,:,:,ient)=0.
+    else
 !
 !  add a constant to hh such that hh is "ampl" times in the vortex
 !
       hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
+      hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
+      if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
+    endif
 !
 !  calculate mask function xi, which is 0 outside and 1 inside the vortex
 !  At present, width is not measured in sensible units...
 !
-      xi=.5+.5*tanh(hh/width)
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
-      if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
-      hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
 !
 !  calculate density, depending on what gamma is
 !
