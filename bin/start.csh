@@ -48,13 +48,8 @@ rm -f tmp/*.dat tmp/*.nml tmp/param*.pro tmp/index*.pro >& /dev/null
 
 # Run start.x
 date
-#
-echo sync; sync
-echo ls -lt; ls -lt src/*; ls -lt; ls -lt src/*.x
-wc src/start.x
 echo "$mpirun $mpirunops $npops src/start.x"
 time $mpirun $mpirunops $npops src/start.x
-#
 echo ""
 date
 

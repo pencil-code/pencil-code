@@ -34,14 +34,10 @@ endif
 
 # Run run.x
 date
-#
 echo "$mpirun $mpirunops $npops src/run.x"
 echo $mpirun $mpirunops $npops src/run.x >>run_command.log
 time $mpirun $mpirunops $npops src/run.x
-#
 date
-echo "ls -lt /scratch"
-ls -lt /scratch
 
 # On Horseshoe cluster, copy var.dat back to the data directory
 if ($hn =~ s[0-9]*p[0-9]*) then
