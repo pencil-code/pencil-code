@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.2 2004-05-28 08:50:16 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.3 2004-05-30 13:53:18 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -6,8 +6,9 @@
 ;
 function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
     ppmon=ppmon,ppsat=ppsat,smon=smon,epsd=epsd,lnrho=lnrho,ss=ss,lncc=lncc,$
-    unit_md=unit_md,param=param
+    unit_md=unit_md,param=param,datadir=datadir
 
+  default, datadir, 'data'
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
 
   result=0.
@@ -34,7 +35,7 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
 
   endif else if (keyword_set(cmd)) then begin
  
-    ndustspec = n_elements(ind)
+    ndustspec = 50;n_elements(ind)
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     md=fltarr(ndustspec)
@@ -71,19 +72,19 @@ function pc_dust_aux,nd=nd,md=md,cmd=cmd,mi=mi,ad=ad,fd=fd,cfd=cfd,rhod=rhod, $
 
   endif else if (keyword_set(ppmon)) then begin
 
-    pp = pc_eoscalc(lnrho,ss,/pp)
+    pp = pc_eoscalc(lnrho,ss,datadir=datadir,/pp)
     mu = (1.+3.97153*param.xHe)/(1-param.xH2+param.xHe)
     result = pp*exp(lncc)*mu/mumon
 
   endif else if (keyword_set(ppsat)) then begin
 
-    TT = pc_eoscalc(lnrho,ss,/tt)
+    TT = pc_eoscalc(lnrho,ss,datadir=datadir,/tt)
     result = 6.035e12*exp(-5938./TT)
 
   endif else if (keyword_set(smon)) then begin
 
-    pp = pc_eoscalc(lnrho,ss,/pp)
-    TT = pc_eoscalc(lnrho,ss,/tt)
+    pp = pc_eoscalc(lnrho,ss,datadir=datadir,/pp)
+    TT = pc_eoscalc(lnrho,ss,datadir=datadir,/tt)
     mu = (1.+3.97153*param.xHe)/(1-param.xH2+param.xHe)
     result = pp*lncc*mu/mumon/(6.035e12*exp(-5938./TT))
 
