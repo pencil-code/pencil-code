@@ -65,8 +65,9 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
       lnrho=var1
       ss=var2
-
-      if (param.lcalc_cp) then cp=k_B/(mu*m_H) else cp=1.
+      @data/pc_constants.pro
+      
+      if (param.lcalc_cp) then cp=k_B/(param.mu*m_H) else cp=1.
       cs20=param.cs0^2
       lnrho0=alog(param.rho0)
       gamma=param.gamma
