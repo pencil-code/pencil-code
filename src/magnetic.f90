@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.70 2002-07-16 21:35:22 dobler Exp $
+! $Id: magnetic.f90,v 1.71 2002-07-18 13:31:28 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -45,6 +45,7 @@ module Magnetic
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
+  integer :: i_uxuxBm=0
 
   contains
 
@@ -80,7 +81,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.70 2002-07-16 21:35:22 dobler Exp $")
+           "$Id: magnetic.f90,v 1.71 2002-07-18 13:31:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,7 +181,7 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
+      real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr, uxuxB
       real, dimension (nx,3) :: del2A
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real :: tmp,eta_out1
@@ -298,6 +299,11 @@ module Magnetic
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
         endif
         !
+        if (i_uxuxBm/=0) then
+          call cross_mn(uu,uxB,uxuxB)
+          call sum_mn_name(uxuxB,i_uxuxBm)
+        endif
+        !
       endif
 !
 !  debug output
@@ -335,6 +341,7 @@ module Magnetic
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
+        i_uxuxBm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -352,6 +359,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),'uxuxBm',i_uxuxBm)
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
@@ -387,6 +395,7 @@ module Magnetic
       write(3,*) 'i_jmax=',i_jmax
       write(3,*) 'i_vArms=',i_vArms
       write(3,*) 'i_vAmax=',i_vAmax
+      write(3,*) 'i_uxuxBm=',i_uxuxBm
       write(3,*) 'nname=',nname
       write(3,*) 'iaa=',iaa
       write(3,*) 'iax=',iax

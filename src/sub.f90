@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.77 2002-07-16 11:24:11 nilshau Exp $ 
+! $Id: sub.f90,v 1.78 2002-07-18 13:31:28 brandenb Exp $ 
 
 module Sub 
 
@@ -1422,21 +1422,31 @@ module Sub
       character (len=*) :: cname
       character (len=20) :: noform,cform,cnumber,dash='----------'
       integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
-      integer :: iform1,iform2,length,number,number1,number2
+      integer :: iform0,iform1,iform2,length,number,number1,number2
 !
       intent(in)  :: cname
 !
 !  find position of left bracket to isolate format, cform
 !
+      iform0=index(cname,' ')
       iform1=index(cname,'(')
       iform2=index(cname,')')
-      cform=cname(iform1:iform2)
+!
+!  set format; use default if not given
+!  Here we keep the parenthesis in cform
+!
+      if (iform1>0) then
+        cform=cname(iform1:iform2)
+        length=iform1-1
+      else
+        cform='(1p,e10.2,0p)'
+        length=iform0-1
+      endif
 !
 !  find length of formatted expression, examples: f10.2, e10.3, g12.1
 !  index_1 is the position of the format type (f,e,g), and
 !  index_d is the position of the dot
 !
-      length=iform1-1
       index_e=scan(cform,'eE')
       index_f=scan(cform,'fF')
       index_g=scan(cform,'gG')

@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.13 2002-07-16 21:35:22 dobler Exp $
+! $Id: nograv.f90,v 1.14 2002-07-18 13:31:28 brandenb Exp $
 
 module Gravity
 
@@ -44,7 +44,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.13 2002-07-16 21:35:22 dobler Exp $")
+           "$Id: nograv.f90,v 1.14 2002-07-18 13:31:28 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -90,7 +90,7 @@ module Gravity
 !
       use Cdata, only: mx,my,mz,lroot
 !
-      real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
+      real, dimension (mx,my,mz) :: xx,yy,zz,pot
       real, optional :: pot0
 !
       if (lroot) print*,'potential: should not have been called'

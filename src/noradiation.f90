@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.2 2002-07-16 11:24:11 nilshau Exp $
+! $Id: noradiation.f90,v 1.3 2002-07-18 13:31:28 brandenb Exp $
 
 
 module Radiation
@@ -35,7 +35,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.2 2002-07-16 11:24:11 nilshau Exp $")
+           "$Id: noradiation.f90,v 1.3 2002-07-18 13:31:28 brandenb Exp $")
 !
     endsubroutine register_rad
 !***********************************************************************
@@ -67,7 +67,7 @@ module Radiation
       real, dimension (nx) :: divu
       real :: gamma
 !
-      if(ip==0) print*,f,df,uu,rho1,TT1 !(keep compiler quiet)
+      if(ip==0) print*,f,df,rho1,divu,uu,uij,TT1,gamma !(keep compiler quiet)
     endsubroutine de_dt
 !*******************************************************************
     subroutine rprint_radiation(lreset)
@@ -79,7 +79,6 @@ module Radiation
       use Cdata
       use Sub
 !
-      integer :: iname
       logical :: lreset
 !
 !  write column where which radiative variable is stored
@@ -94,6 +93,7 @@ module Radiation
       write(3,*) 'ify=',ify
       write(3,*) 'ifz=',ifz
 !
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation
 !***********************************************************************
   end module Radiation
