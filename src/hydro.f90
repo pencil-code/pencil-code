@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.180 2004-07-11 18:30:07 brandenb Exp $
+! $Id: hydro.f90,v 1.181 2004-07-14 19:32:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -72,6 +72,7 @@ module Hydro
   integer :: i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_ox2m=0, i_oy2m=0, i_oz2m=0
+  integer :: i_oxm=0, i_oym=0, i_ozm=0
   integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0, i_oxoym=0, i_oxozm=0, i_oyozm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
@@ -125,7 +126,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.180 2004-07-11 18:30:07 brandenb Exp $")
+           "$Id: hydro.f90,v 1.181 2004-07-14 19:32:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -659,7 +660,11 @@ module Hydro
         !
         !  things related to vorticity
         !
-        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0 .or. i_ox2m/=0 .or. i_oy2m/=0 .or. i_oz2m/=0 .or. lvid) then
+        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0 &
+            .or. i_ox2m/=0 .or. i_oy2m/=0 .or. i_oz2m/=0 &
+            .or. i_ox2m/=0 .or. i_oy2m/=0 .or. i_oz2m/=0 &
+            .or. i_oxm/=0 .or. i_oym/=0 .or. i_ozm/=0 &
+            .or. lvid) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -679,6 +684,9 @@ module Hydro
           if (i_ox2m/=0) call sum_mn_name(oo(:,1)**2,i_ox2m)
           if (i_oy2m/=0) call sum_mn_name(oo(:,2)**2,i_oy2m)
           if (i_oz2m/=0) call sum_mn_name(oo(:,3)**2,i_oz2m)
+          if (i_oxm /=0) call sum_mn_name(oo(:,1)   ,i_oxm)
+          if (i_oym /=0) call sum_mn_name(oo(:,2)   ,i_oym)
+          if (i_ozm /=0) call sum_mn_name(oo(:,3)   ,i_ozm)
           if (i_oxoym/=0) call sum_mn_name(oo(:,1)*oo(:,2),i_oxoym)
           if (i_oxozm/=0) call sum_mn_name(oo(:,1)*oo(:,3),i_oxozm)
           if (i_oyozm/=0) call sum_mn_name(oo(:,2)*oo(:,3),i_oyozm)
@@ -994,7 +1002,8 @@ module Hydro
         i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0; i_uxuym=0; i_uxuzm=0; i_uyuzm=0
-        i_ox2m=0; i_oy2m=0; i_oz2m=0; i_oxoym=0; i_oxozm=0; i_oyozm=0
+        i_ox2m=0; i_oy2m=0; i_oz2m=0; i_oxm=0; i_oym=0; i_ozm=0; 
+        i_oxoym=0; i_oxozm=0; i_oyozm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divum=0; i_divu2m=0; i_epsK=0
@@ -1025,6 +1034,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ox2m',i_ox2m)
         call parse_name(iname,cname(iname),cform(iname),'oy2m',i_oy2m)
         call parse_name(iname,cname(iname),cform(iname),'oz2m',i_oz2m)
+        call parse_name(iname,cname(iname),cform(iname),'oxm',i_oxm)
+        call parse_name(iname,cname(iname),cform(iname),'oym',i_oym)
+        call parse_name(iname,cname(iname),cform(iname),'ozm',i_ozm)
         call parse_name(iname,cname(iname),cform(iname),'oxoym',i_oxoym)
         call parse_name(iname,cname(iname),cform(iname),'oxozm',i_oxozm)
         call parse_name(iname,cname(iname),cform(iname),'oyozm',i_oyozm)
@@ -1096,6 +1108,9 @@ module Hydro
         write(3,*) 'i_ox2m=',i_ox2m
         write(3,*) 'i_oy2m=',i_oy2m
         write(3,*) 'i_oz2m=',i_oz2m
+        write(3,*) 'i_oxm=',i_oxm
+        write(3,*) 'i_oym=',i_oym
+        write(3,*) 'i_ozm=',i_ozm
         write(3,*) 'i_oxoym=',i_oxoym
         write(3,*) 'i_oxozm=',i_oxozm
         write(3,*) 'i_oyozm=',i_oyozm
