@@ -3,9 +3,9 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2003-06-15 07:12:32 dobler Exp $',
+  cvsid='$Id: run.in,v 1.2 2003-06-15 07:50:59 dobler Exp $',
   ip=13,
-  nt=10000, it1=50, isave=200, itorder=3,
+  nt=100, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.08, dtmin=1e-6,
   dsnap=2., dvid=1000.,
   ttransient=0.,
@@ -17,7 +17,7 @@
   !iwig=1000
 /
 &hydro_run_pars
-  nu=5.e-4, ivisc='nu-const',
+  nu=10.e-4, ivisc='nu-const',
   dampu=0., tdamp=0.
   dampuext=5, rdamp=1.1, wdamp=0.1,
   Omega=0.2, theta=0. ! amount and direction of angular velocity
@@ -29,8 +29,8 @@
 &grav_run_pars
 /
 &entropy_run_pars
-  hcond0=1.e-3,
-  luminosity=.02, wheat=0.18,
+  hcond0=2.e-3,
+  luminosity=.01, wheat=0.18,
   cooltype='cs2', cs2cool=1.2, cool=5., rcool=1., wcool=0.1,
 /
 &magnetic_run_pars
