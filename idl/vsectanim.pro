@@ -31,9 +31,9 @@ flist = findfile(datadir+"/VAR[0-9]")
 flist = [flist, findfile(datadir+"/VAR[0-9][0-9]")]
 flist = [flist, findfile(datadir+"/VAR[0-9][0-9][0-9]")]
 
-uu  = fltarr(nx,ny,nz,3)*one
-lam = fltarr(nx,ny,nz)*one
-ent = fltarr(nx,ny,nz)*one
+uu    = fltarr(nx,ny,nz,3)*one
+lnrho = fltarr(nx,ny,nz)*one
+ent   = fltarr(nx,ny,nz)*one
 
 save_state
 
@@ -53,7 +53,7 @@ for i=0,n_elements(flist)-1 do begin
 
     close,1
     openr,1, datadir+'/'+file, /F77
-    readu,1, uu, lam, ent
+    readu,1, uu, lnrho, ent
     if (i eq 0) then begin
       readu,1, t, x, y, z       ; Make sure corrdinates are right
     endif else begin
@@ -95,17 +95,17 @@ for i=0,n_elements(flist)-1 do begin
     endelse
 
     contourfill, ent[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levent
-    var = reform(lam[*,ny1,*])
+    var = reform(lnrho[*,ny1,*])
     contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
     opcircles, 1., LINE=2, THICK=2
     ;
     contourfill, ent[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levent
-    var = reform(lam[*,ny2,*])
+    var = reform(lnrho[*,ny2,*])
     contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
     opcircles, 1., LINE=2, THICK=2
     ;
     contourfill, ent[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levent
-    var = reform(lam[*,ny3,*])
+    var = reform(lnrho[*,ny3,*])
     contour, var,x,z, /OVER, LEV=linspace(minmax(var),nrholevs)
     opcircles, 1., LINE=2, THICK=2
 

@@ -69,11 +69,13 @@ for j=0,2 do $
     minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
 print, FORMAT=fmt, 'lnrho  =', $
     minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-print, FORMAT=fmt, 'ent  =', $
-    minmax(ent), mean(ent,/DOUBLE), rms(ent,/DOUBLE)
-for j=0,2 do $
-    print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
-    minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+if (lentropy) then $
+    print, FORMAT=fmt, 'ent  =', $
+      minmax(ent), mean(ent,/DOUBLE), rms(ent,/DOUBLE)
+if (lmagnetic) then $
+    for j=0,2 do $
+      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
+      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 ;

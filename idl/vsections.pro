@@ -100,17 +100,17 @@ endif else begin
 endelse
 
 contourfill, ent[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levent
-var = reform(lam[*,ny1,*])
+var = reform(lnrho[*,ny1,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ent[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levent
-var = reform(lam[*,ny2,*])
+var = reform(lnrho[*,ny2,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ent[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levent
-var = reform(lam[*,ny3,*])
+var = reform(lnrho[*,ny3,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
 _opstuff, [z0,z1,z2,z3], sqrt(1-y[ny3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
