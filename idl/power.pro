@@ -1,7 +1,7 @@
-PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t, $
-  noplot=noplot
+PRO power,var1,var2,last,w,k=k,spec1=spec1,spec2=spec2,i=i,t=t, $
+  noplot=noplot,tmin=tmin,tmax=tmax
 ;
-;  $Id: power.pro,v 1.13 2002-10-23 13:52:12 nilshau Exp $
+;  $Id: power.pro,v 1.14 2002-11-22 18:16:23 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -17,6 +17,9 @@ PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t, $
 default,var1,'u'
 default,var2,'b'
 default,last,1
+default,w,0.1
+default,tmin,0
+default,tmax,1e34
 ;
 ;  plot only when iplot=1 (default)
 ;  can be turned off by using /noplot
@@ -48,6 +51,7 @@ size=2*!pi
 ;
 ;  Calculating some variables
 ;
+first='true'
 nx=mx-nghostx*2
 print,'nx=',nx
 imax=nx/2
@@ -109,15 +113,19 @@ openr,1, datatopdir+'/'+file1
            	if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        	endif
        	if (last eq 0) then begin
- 		xrr=[1,imax]
-		yrr=[globalmin,globalmax]
-		!p.title='t=' + string(time)
-		!y.range=[globalmin,globalmax]
-         	if iplot eq 1 then begin
-                  plot_oo,k,spectrum1
-         	  if (file2 ne '') then oplot,k,spectrum2,col=122
-                end
-         	wait,.2
+		if (time ge tmin) then begin
+			if (time le tmax) then begin
+ 		 		xrr=[1,imax]
+				yrr=[globalmin,globalmax]
+				!p.title='t=' + string(time)
+				!y.range=[globalmin,globalmax]
+         			if iplot eq 1 then begin
+				plot_oo,k,spectrum1
+         			if (file2 ne '') then oplot,k,spectrum2,col=122
+		                end
+         			wait,w
+			endif
+		endif
        	endif
        	i=i+1
     endwhile
