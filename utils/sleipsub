@@ -1,0 +1,49 @@
+#!/bin/csh
+
+#
+# Name: sleipsub
+# Author: theine
+# Date: 3-sep-2003
+# Description:
+#   shell script to easily submit jobs to the sleipner queuing system
+#   execute in the desired run directory
+#   script is customizable via command line, for example:
+#     executable=start.csh sleipsub
+#
+
+#
+# defaults:
+#
+if (! $?job_name) set job_name = `basename $PWD`
+if (! $?job_type) set job_type = parallel
+if (! $?total_tasks) set total_tasks = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+if (! $?class) set class = qexp
+if (! $?environment) set environment = "PENCIL_HOME=$PENCIL_HOME"
+if (! $?executable) set executable = start_run.csh
+if (! $?input) set input = /dev/null
+if (! $?output) set output = \$\(job_name\).\$\(jobid\).out
+if (! $?error) set error = \$\(job_name\).\$\(jobid\).err
+if (! $?notification) set notification = never
+
+#
+# write temporary jobscript
+#
+echo "#\!/bin/sh" > sleipsub.tmp
+echo "# @ job_name = $job_name" >> sleipsub.tmp
+echo "# @ job_type = $job_type" >> sleipsub.tmp
+echo "# @ total_tasks = $total_tasks" >> sleipsub.tmp
+echo "# @ class = $class" >> sleipsub.tmp
+echo "# @ environment = $environment" >> sleipsub.tmp
+echo "# @ executable = $executable" >> sleipsub.tmp
+echo "# @ input = $input" >> sleipsub.tmp
+echo "# @ output = $output" >> sleipsub.tmp
+echo "# @ error =  $error" >> sleipsub.tmp
+echo "# @ notification = $notification" >> sleipsub.tmp
+echo "# @ queue" >> sleipsub.tmp
+
+#
+# submit temporary jobscript and remove it afterwards
+#
+llsubmit sleipsub.tmp && rm sleipsub.tmp
+
+# End of file sleipsub
