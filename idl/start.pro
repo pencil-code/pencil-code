@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.69 2004-07-14 19:26:18 dobler Exp $
+;;; $Id: start.pro,v 1.70 2005-02-09 09:37:20 mee Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -183,7 +183,7 @@ if (cpar gt 0) then begin
   lradiation= par.lradiation
   lionization=par.lionization
   lionization_fixed=par.lionization_fixed
-  lvisc_shock=par.lvisc_shock
+  ;lvisc_shock=par.lvisc_shock
   ;lvisc_hyper3=par.lvisc_hyper3
   lpscalar  = par.lpscalar
   ldustvelocity = par.ldustvelocity
