@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.121 2002-12-10 00:50:51 ngrs Exp $
+! $Id: run.f90,v 1.122 2002-12-28 11:19:20 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.121 2002-12-10 00:50:51 ngrs Exp $")
+             "$Id: run.f90,v 1.122 2002-12-28 11:19:20 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -69,7 +69,6 @@
 !
         call read_runpars()
         call rprint_list(.false.)
-!
 !
 !  print resolution
 !
@@ -283,13 +282,7 @@
 !  save spectrum snapshot
 !
         if(save_lastsnap) then
-          if(dspec /= impossible) then
-            if(vel_spec) call power(f,'u')
-            if(mag_spec) call power(f,'b')
-            if(vec_spec) call power(f,'a')
-            if(ab_spec)  call powerhel(f,'mag')
-            if(ou_spec)  call powerhel(f,'kin')
-          endif
+          if(dspec /= impossible) call powersnap(f)
         endif
 !
 !  write seed parameters (only if forcing is turned on)

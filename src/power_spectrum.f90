@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.25 2002-12-26 16:47:46 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.26 2002-12-28 11:19:20 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -42,7 +42,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.25 2002-12-26 16:47:46 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.26 2002-12-28 11:19:20 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -129,10 +129,6 @@ module  power_spectrum
      write(1,'(1p,8e10.2)') spectrum_sum
      close(1)
   endif
-!
-!  Calculate structure functions if desired
-!
-  if (lsf .or. lpdf) call structure(f)
   !
   endsubroutine power
 !***********************************************************************
@@ -159,7 +155,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.25 2002-12-26 16:47:46 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.26 2002-12-28 11:19:20 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code

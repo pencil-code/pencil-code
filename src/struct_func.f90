@@ -1,6 +1,13 @@
-! $Id: struct_func.f90,v 1.1 2002-12-26 16:47:46 nilshau Exp $
+! $Id: struct_func.f90,v 1.2 2002-12-28 11:19:20 brandenb Exp $
 !
-!  Calculates structure functions
+!  Calculates 2-point structure functions and/or PDFs
+!  and saves them during the run.
+!
+!  For the time being, the structure functions (or PDFs) are
+!  called from power, so the output frequency is set by dspec.
+!
+!  The save files are under data/proc# under the names
+!  sfz1_sum_ or sfz1_sum_transp_ .
 !
 !-----------------------------------------------------------------------
 !   23-dec-02/nils: adapted from postproc/src/struct_func_mpi.f90
@@ -14,7 +21,11 @@ module struct_func
 
 !***********************************************************************
     subroutine structure(f)
-
+!
+!  The following parameters may need to be readjusted:
+!  qmax should be set to the largest moment to be calculated
+!  n_pdf gives the number of bins of the PDF
+!
   use Cdata
   use Sub
   use General
@@ -32,7 +43,7 @@ module struct_func
   real, dimension(n_pdf,imax,3,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz,3) :: i_du
-  integer :: l,ll,j,lstop,llstop,q,direction
+  integer :: l,ll,j,q,direction
   integer :: separation,i,ivec,im,in
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
@@ -60,7 +71,7 @@ module struct_func
   !  calculate pdf or structure functions.
   !
   if (lpdf) then 
-     pdf_max= 1.  !(for the time being)
+     pdf_max= 1.  !(for the time being; assumes |u|<1)
      pdf_min=-pdf_max
      dx_du=(pdf_max-pdf_min)/n_pdf
      do l=1,n_pdf
@@ -172,11 +183,11 @@ module struct_func
   !
   if(lsf) then
      call mpireduce_sum(sf,sf_sum,imax*3*qmax*3)  !Is this safe???
-     sf_sum=sf_sum/(nw*nprocs)
+     sf_sum=sf_sum/(nw*ncpus)
      call mpireduce_sum(sfz1,sfz1_sum,imax*3*qmax*3)  !Is this safe???
-     sfz1_sum=sfz1_sum/(nw*nprocs)
+     sfz1_sum=sfz1_sum/(nw*ncpus)
      call mpireduce_sum(sfz2,sfz2_sum,imax*3*qmax*3)  !Is this safe???
-     sfz2_sum=sfz2_sum/(nw*nprocs)
+     sfz2_sum=sfz2_sum/(nw*ncpus)
   endif
   !
   !  Writing output file
@@ -189,7 +200,7 @@ module struct_func
                 ,'to ',trim(datadir)//'/pdf_'//trim(var)//'.dat'
            open(1,file=trim(datadir)//'/pdf_'//trim(var) &
                 //'.dat',position='append')
-           write(1,*) t
+           write(1,*) t,n_pdf
            write(1,'(1p,8e10.2)') p_du_sum(:,:,j,:)
            write(1,'(1p,8e10.2)') x_du
            close(1)
