@@ -2,8 +2,8 @@
 !  run parameters for interlocked magnetic flux rings
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.17 2002-10-07 09:14:24 dobler Exp $'
-  nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=50, itorder=3, !(do just one timestep)
+  cvsid='$Id: run.in,v 1.18 2002-10-07 13:41:34 dobler Exp $'
+  nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
   dsnap=50, dvid=0.5,
   ip=14
   /
