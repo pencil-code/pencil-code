@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.190 2004-10-27 14:21:47 ajohan Exp $
+! $Id: hydro.f90,v 1.191 2004-10-29 13:40:40 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.190 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: hydro.f90,v 1.191 2004-10-29 13:40:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -443,7 +443,7 @@ module Hydro
 !
       if (lroot .and. ip < 5) &
            print*,'duu_dt: call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
-      call gij(f,iuu,uij)
+      call gij(f,iuu,uij,1)
       call div_mn(uij,divu,uu)
 !
 !  write divu-slices for output in wvid in run.f90

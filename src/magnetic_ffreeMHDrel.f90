@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.29 2004-09-12 07:47:14 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.30 2004-10-29 13:40:40 ajohan Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.29 2004-09-12 07:47:14 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.30 2004-10-29 13:40:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -267,7 +267,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
 !  calculate div and curl of S
 !
-      call gij(f,iuu,Sij)
+      call gij(f,iuu,Sij,1)
       call curl_mn(Sij,curlS)
       call trace_mn(Sij,divS)
 !

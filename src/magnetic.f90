@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.233 2004-10-27 14:21:47 ajohan Exp $
+! $Id: magnetic.f90,v 1.234 2004-10-29 13:40:40 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.233 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.234 2004-10-29 13:40:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -881,7 +881,7 @@ module Magnetic
 !  the vector potential (needed to calculate bb) and bij
 !  (needed for cosmic ray evolution and thermal conduction).
 !
-      call gij(f,iaa,aij)
+      call gij(f,iaa,aij,1)
       call bij_etc(f,iaa,bij,del2A,graddivA)
 !
 !  use aij to calculate bb, and

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.87 2004-10-29 10:07:32 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.88 2004-10-29 13:40:40 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -34,7 +34,7 @@ module Dustvelocity
   real :: unit_md
   logical :: ladvection_dust=.true.,lcoriolisforce_dust=.true.
   logical :: ldragforce_dust=.true.,ldragforce_gas=.false.
-  logical :: lviscosity_dust=.true.,lneed_sdij
+  logical :: lviscosity_dust=.true.,lneed_sdij=.false.
   logical :: ldustvelocity_shorttausd=.false.
   character (len=labellen) :: inituud='zero',iviscd='simplified'
   character (len=labellen) :: draglaw='epstein_cst'
@@ -60,6 +60,7 @@ module Dustvelocity
   integer, dimension(ndustspec) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer, dimension(ndustspec) :: i_divud2m=0,i_epsKd=0
   integer, dimension(ndustspec) :: i_dtud=0,i_dtnud=0
+  integer, dimension(ndustspec) :: i_rdudxm=0,i_rdudym=0,i_rdudzm=0
 
   contains
 
@@ -110,7 +111,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.87 2004-10-29 10:07:32 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.88 2004-10-29 13:40:40 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,8 +167,8 @@ module Dustvelocity
 !
 !  Only calculate rate-of-strain tensor if necessary
 !
-      if (iviscd == 'nud-const' .and. lviscosity_dust .and. ldustdensity) &
-          lneed_sdij=.true.
+      if (iviscd == 'nud-const' .or. iviscd == 'hyper3_nud-const' &
+          .and. lviscosity_dust .and. ldustdensity) lneed_sdij=.true.
 !
 !  Turn off all dynamical terms in duud/dt if short stopping time approximation
 !
@@ -427,8 +428,8 @@ module Dustvelocity
 !
 !  Catch unknown values
 !
-        if (lroot) print*, &
-            'init_uud: No such such value for inituu: ', trim(inituud)
+      case default
+        print*, 'init_uud: No such such value for inituu: ', trim(inituud)
         call stop_it("")
 
       endselect
@@ -452,7 +453,7 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: udij,sdij
+      real, dimension (nx,3,3) :: udij,udij5,sdij
       real, dimension (nx,3,ndustspec) :: uud
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,JxBr,ood,del2ud,graddivud,del6ud,fviscd
@@ -512,18 +513,33 @@ module Dustvelocity
         if (lroot .and. ip < 5) &
             print*, 'duud_dt: call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=', &
             m,n,iudx(k),iudz(k),ud2(:,k)
-        call gij(f,iuud(k),udij)
+        call gij(f,iuud(k),udij,1)
         divud(:,k) = udij(:,1,1) + udij(:,2,2) + udij(:,3,3)
 !
 !  Calculate rate of strain tensor (if needed for viscosity)
 !
         if (lneed_sdij) then
-          do j=1,3
-            do i=1,3
-              sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
+
+          select case (iviscd)
+
+          case ('nud-const')
+            do j=1,3
+              do i=1,3
+                sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
+              enddo
+              sdij(:,j,j)=sdij(:,j,j)-.333333*divud(:,k)
             enddo
-            sdij(:,j,j)=sdij(:,j,j)-.333333*divud(:,k)
-          enddo
+
+          case ('hyper3_nud-const')
+            call gij(f,iuud(k),udij5,5)
+            do i=1,3
+              do j=1,3
+                sdij(:,i,j)=udij5(:,i,j)
+              enddo
+            enddo
+
+          endselect
+
         endif
 !
 !  Advection term
@@ -620,6 +636,21 @@ module Dustvelocity
               fviscd=nud(k)*(del2ud+1/3.*graddivud)
             endif
 
+          case('hyper3_nud-const')
+!
+!  Viscous force: nud*(del6ud+S*glnnd)
+!
+            if (headtt) print*, 'Viscous force (dust): nud*(del6ud+S*glnnd)'
+            call del6v(f,iuud(k),del6ud)
+            call grad(f,ind(k),glnnd)
+            if (.not. ldustdensity_log) then
+              do i=1,3
+                glnnd(:,i)=glnnd(:,i)/nd
+              enddo
+            endif
+            call multmv_mn(sdij,glnnd,sdglnnd)
+            fviscd=nud(k)*(del6ud+sdglnnd)
+
           case('hyper3_simplified')
 !
 !  Viscous force: nud*del6ud (not momentum-conserving)
@@ -650,90 +681,74 @@ module Dustvelocity
 !
 !  ``uud/dx'' for timestep
 !
- 
-        if (lfirst.and.ldt) then
+        if (lfirst .and. ldt) then
           advec_uud=max(advec_uud,abs(uud(:,1,k))*dx_1(l1:l2)+ &
                                   abs(uud(:,2,k))*dy_1(  m  )+ &
                                   abs(uud(:,3,k))*dz_1(  n  ))
           diffus_nud=max(diffus_nud,nud(k)*dxyz_2)
-          if (i_dtud(k)/=0) call max_mn_name(advec_uud/cdt,i_dtud(k),l_dt=.true.)
-          if (i_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,i_dtnud(k),l_dt=.true.)
+          if (i_dtud(k)/=0) &
+              call max_mn_name(advec_uud/cdt,i_dtud(k),l_dt=.true.)
+          if (i_dtnud(k)/=0) &
+              call max_mn_name(diffus_nud/cdtv,i_dtnud(k),l_dt=.true.)
         endif
         if (headtt.or.ldebug) then
           print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
           print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
         endif
 !
-!  Calculate maxima and rms values for diagnostic purposes
-!  (The corresponding things for magnetic fields etc happen inside magnetic etc)
-!  The length of the timestep is not known here (--> moved to prints.f90)
+!  Calculate diagnostic variables
 !
         if (ldiagnos) then
-          if ((headtt.or.ldebug) .and. (ip<6)) print*, &
-              'duud_dt: Calculate maxima and rms values...'
-          if (i_udrms(k)/=0) &
-              call sum_mn_name(ud2(:,k),i_udrms(k),lsqrt=.true.)
-          if (i_udmax(k)/=0) &
-              call max_mn_name(ud2(:,k),i_udmax(k),lsqrt=.true.)
-          if (i_rdudmax(k)/=0) call max_mn_name(rhod**2*ud2(:,k), &
-              i_rdudmax(k),lsqrt=.true.)
+          udx=uud(:,1,k)
+          udy=uud(:,2,k)
+          udz=uud(:,3,k)
+          if ((headtt.or.ldebug) .and. (ip<6)) &
+              print*, 'duud_dt: Calculate diagnostic values...'
+          if (i_udrms(k)/=0) call sum_mn_name(ud2(:,k),i_udrms(k),lsqrt=.true.)
+          if (i_udmax(k)/=0) call max_mn_name(ud2(:,k),i_udmax(k),lsqrt=.true.)
+          if (i_rdudmax(k)/=0) &
+              call max_mn_name(rhod**2*ud2(:,k), i_rdudmax(k),lsqrt=.true.)
           if (i_ud2m(k)/=0) call sum_mn_name(ud2(:,k),i_ud2m(k))
           if (i_udm2(k)/=0) call max_mn_name(ud2(:,k),i_udm2(k))
-          if (i_divud2m(k)/=0) &
-              call sum_mn_name(divud(:,k)**2,i_divud2m(k))
+          if (i_divud2m(k)/=0) call sum_mn_name(divud(:,k)**2,i_divud2m(k))
+          if (i_rdudxm(k)/=0) call sum_mn_name(rhod*udx,i_rdudxm(k))
+          if (i_rdudym(k)/=0) call sum_mn_name(rhod*udy,i_rdudym(k))
+          if (i_rdudzm(k)/=0) call sum_mn_name(rhod*udz,i_rdudzm(k))
+          if (i_udxmz(k)/=0) call xysum_mn_name_z(udx,i_udxmz(k))
+          if (i_udymz(k)/=0) call xysum_mn_name_z(udy,i_udymz(k))
+          if (i_udzmz(k)/=0) call xysum_mn_name_z(udz,i_udzmz(k))
+          if (i_udxmxy(k)/=0) call zsum_mn_name_xy(udx,i_udxmxy(k))
+          if (i_udymxy(k)/=0) call zsum_mn_name_xy(udy,i_udymxy(k))
+          if (i_udzmxy(k)/=0) call zsum_mn_name_xy(udz,i_udzmxy(k))
 !
 !  kinetic field components at one point (=pt)
 !
           if (lroot.and.m==mpoint.and.n==npoint) then
-            if (i_udxpt(k)/=0) call &
-                save_name(uud(lpoint-nghost,1,k),i_udxpt(k))
-            if (i_udypt(k)/=0) call &
-                save_name(uud(lpoint-nghost,2,k),i_udypt(k))
-            if (i_udzpt(k)/=0) call &
-                save_name(uud(lpoint-nghost,3,k),i_udzpt(k))
+            if (i_udxpt(k)/=0) call save_name(uud(lpoint-nghost,1,k),i_udxpt(k))
+            if (i_udypt(k)/=0) call save_name(uud(lpoint-nghost,2,k),i_udypt(k))
+            if (i_udzpt(k)/=0) call save_name(uud(lpoint-nghost,3,k),i_udzpt(k))
           endif
 !
-!  this doesn't need to be as frequent (check later)
-!
-          if (i_udxmz(k)/=0.or.i_udxmxy(k)/=0) udx=uud(:,1,k)
-          if (i_udymz(k)/=0.or.i_udymxy(k)/=0) udy=uud(:,2,k)
-          if (i_udzmz(k)/=0.or.i_udzmxy(k)/=0) udz=uud(:,3,k)
-          if (i_udxmz(k)/=0) &
-              call xysum_mn_name_z(udx(k),i_udxmz(k))
-          if (i_udymz(k)/=0) &
-              call xysum_mn_name_z(udy(k),i_udymz(k))
-          if (i_udzmz(k)/=0) &
-              call xysum_mn_name_z(udz(k),i_udzmz(k))
-          if (i_udxmxy(k)/=0) &
-              call zsum_mn_name_xy(udx(k),i_udxmxy(k))
-          if (i_udymxy(k)/=0) &
-              call zsum_mn_name_xy(udy(k),i_udymxy(k))
-          if (i_udzmxy(k)/=0) &
-              call zsum_mn_name_xy(udz(k),i_udzmxy(k))
-!
-!  things related to vorticity
+!  Things related to vorticity and helicity
 !
           if (i_oudm(k)/=0 .or. i_od2m(k)/=0 .or. &
               i_odmax(k)/=0 .or. i_odrms(k)/=0) then
             ood(:,1)=udij(:,3,2)-udij(:,2,3)
             ood(:,2)=udij(:,1,3)-udij(:,3,1)
             ood(:,3)=udij(:,2,1)-udij(:,1,2)
-!
+            if (i_odrms(k)/=0.or.i_odmax(k)/=0.or.i_od2m(k)/=0) then
+              call dot2_mn(ood,od2)
+              if (i_odrms(k)/=0) call sum_mn_name(od2,i_odrms(k),lsqrt=.true.)
+              if (i_odmax(k)/=0) call max_mn_name(od2,i_odmax(k),lsqrt=.true.)
+              if (i_od2m(k)/=0) call sum_mn_name(od2,i_od2m(k))
+            endif
             if (i_oudm(k)/=0) then
               call dot_mn(ood,uud(:,:,k),oud)
               call sum_mn_name(oud,i_oudm(k))
             endif
 !
-            if (i_odrms(k)/=0.or.i_odmax(k)/=0.or.i_od2m(k)/=0) then
-              call dot2_mn(ood,od2)
-              if (i_odrms(k)/=0) &
-                  call sum_mn_name(od2,i_odrms(k),lsqrt=.true.)
-              if (i_odmax(k)/=0) &
-                  call max_mn_name(od2,i_odmax(k),lsqrt=.true.)
-              if (i_od2m(k)/=0) &
-                  call sum_mn_name(od2,i_od2m(k))
-            endif
           endif
+!          
         endif
 !
 !  End loop over dust species
@@ -832,7 +847,7 @@ module Dustvelocity
         i_dtud=0; i_dtnud=0; i_ud2m=0; i_udm2=0; i_oudm=0; i_od2m=0
         i_udxpt=0; i_udypt=0; i_udzpt=0; i_udrms=0; i_udmax=0; i_odrms=0
         i_odmax=0; i_rdudmax=0; i_udmx=0; i_udmy=0; i_udmz=0; i_divud2m=0
-        i_epsKd=0
+        i_epsKd=0; i_rdudxm=0;i_rdudym=0; i_rdudzm=0;
       endif
 
       call chn(ndustspec,sdustspec)
@@ -853,6 +868,9 @@ module Dustvelocity
         write(3,*) 'i_udrms=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_udmax=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_rdudmax=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rdudxm=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rdudym=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rdudzm=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_odrms=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_odmax=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_udmx=intarr('//trim(sdustspec)//')'
@@ -900,6 +918,12 @@ module Dustvelocity
           call parse_name(iname,cname(iname),cform(iname), &
               'rdudmax'//trim(sdust),i_rdudmax(k))
           call parse_name(iname,cname(iname),cform(iname), &
+              'rdudxm'//trim(sdust),i_rdudxm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'rdudym'//trim(sdust),i_rdudym(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'rdudzm'//trim(sdust),i_rdudzm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
               'odrms'//trim(sdust),i_odrms(k))
           call parse_name(iname,cname(iname),cform(iname), &
               'odmax'//trim(sdust),i_odmax(k))
@@ -945,6 +969,12 @@ module Dustvelocity
               write(3,*) 'i_udmax'//trim(sdust)//'=',i_udmax(k)
           if (i_rdudmax(k) /= 0) &
               write(3,*) 'i_rdudmax'//trim(sdust)//'=',i_rdudmax(k)
+          if (i_rdudxm(k) /= 0) &
+              write(3,*) 'i_rdudxm'//trim(sdust)//'=',i_rdudxm(k)
+          if (i_rdudym(k) /= 0) &
+              write(3,*) 'i_rdudym'//trim(sdust)//'=',i_rdudym(k)
+          if (i_rdudzm(k) /= 0) &
+              write(3,*) 'i_rdudzx'//trim(sdust)//'=',i_rdudzm(k)
           if (i_odrms(k) /= 0) &
               write(3,*) 'i_odrms'//trim(sdust)//'=',i_odrms(k)
           if (i_odmax(k) /= 0) &

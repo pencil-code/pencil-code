@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.201 2004-09-28 15:02:00 dobler Exp $ 
+! $Id: sub.f90,v 1.202 2004-10-29 13:40:39 ajohan Exp $ 
 
 module Sub 
 
@@ -1138,7 +1138,7 @@ module Sub
 !
     endsubroutine cross_0
 !***********************************************************************
-    subroutine gij(f,k,g)
+    subroutine gij(f,k,g,nder)
 !
 !  calculate gradient of a vector, return matrix
 !   3-apr-01/axel+gitta: coded
@@ -1149,7 +1149,7 @@ module Sub
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
-      integer :: i,j,k,k1
+      integer :: i,j,k,k1,nder
 !
       intent(in) :: f,k
       intent(out) :: g
@@ -1157,7 +1157,11 @@ module Sub
       k1=k-1
       do i=1,3
         do j=1,3
-          call der(f,k1+i,tmp,j)
+          if (nder == 1) then
+            call der(f,k1+i,tmp,j)
+          elseif (nder == 5) then
+            call der5(f,k1+i,tmp,j)
+          endif
           g(:,i,j)=tmp
         enddo
       enddo
