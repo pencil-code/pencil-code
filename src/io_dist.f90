@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.49 2003-01-15 13:06:04 mee Exp $
+! $Id: io_dist.f90,v 1.50 2003-01-15 17:08:38 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.49 2003-01-15 13:06:04 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.50 2003-01-15 17:08:38 mee Exp $")
 !
     endsubroutine register_io
 !
@@ -304,23 +304,8 @@ contains
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
 !
-      dxmax=0.
-      dxmin=HUGE(dxmin)
-
-      if (nxgrid/=1) then
-         dxmax=max(dxmax,dx)
-         dxmin=min(dxmin,dx)                  
-      endif
-
-      if (nygrid/=1) then
-         dxmax=max(dxmax,dy)
-         dxmin=min(dxmin,dy)                  
-      endif
-
-      if (nzgrid/=1) then
-         dxmax=max(dxmax,dz)
-         dxmin=min(dxmin,dz)                  
-      endif
+      dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
+      dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
 
       Lx=dx*nx*nprocx
       Ly=dy*ny*nprocy
