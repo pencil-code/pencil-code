@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.12 2003-10-09 17:05:42 mee Exp $
+;  $Id: thermodynamics.pro,v 1.13 2003-10-20 14:22:05 theine Exp $
 
 xHe=par.xHe
 
@@ -21,11 +21,11 @@ endif else begin
     yyH=spread(spread(seedarray,1,ny),2,nz)
     @data/pc_constants
     TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
-    TTT=TT(l1:l2,m1:m2,n1:n2)
+    TTT=reform(TT(l1:l2,m1:m2,n1:n2))
   end else begin
     print,'Using full ionisation equation of state...'
     if (iyH ne 0) then begin
-      yyH=yH(l1:l2,m1:m2,n1:n2)
+      yyH=reform(yH(l1:l2,m1:m2,n1:n2))
     end else begin
       print,"Errr... not implemented calculation of ionization fraction in IDL (yet)"
       stop
@@ -34,7 +34,7 @@ endif else begin
 
 ; Get the temperature, either calculate it or use the one provided
   if (iTT ne 0) then begin
-    TTT=TT(l1:l2,m1:m2,n1:n2)
+    TTT=reform(TT(l1:l2,m1:m2,n1:n2))
   endif else begin
     ; Handle limiting  cases of log terms
     yyH_term=yyH*(2.*alog(yyH)-lnrho_e-lnrho_p)

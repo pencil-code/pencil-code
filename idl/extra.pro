@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.27 2003-10-02 17:07:15 theine Exp $
+;  $Id: extra.pro,v 1.28 2003-10-20 14:22:05 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -20,19 +20,19 @@ if (iaa ne 0) then jj=curl2(aa)
 xxx=x(l1:l2)
 yyy=y(m1:m2)
 zzz=z(n1:n2)
-if (iuu ne 0) then uuu=uu(l1:l2,m1:m2,n1:n2,*)
-if (iuu ne 0) then ooo=oo(l1:l2,m1:m2,n1:n2,*)
-if (iaa ne 0) then aaa=aa(l1:l2,m1:m2,n1:n2,*)
-if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
-if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
+if (iuu ne 0) then uuu=reform(uu(l1:l2,m1:m2,n1:n2,*))
+if (iuu ne 0) then ooo=reform(oo(l1:l2,m1:m2,n1:n2,*))
+if (iaa ne 0) then aaa=reform(aa(l1:l2,m1:m2,n1:n2,*))
+if (iaa ne 0) then bbb=reform(bb(l1:l2,m1:m2,n1:n2,*))
+if (iaa ne 0) then jjj=reform(jj(l1:l2,m1:m2,n1:n2,*))
 ;
 if (ilnrho ne 0) then begin
-  llnrho=lnrho(l1:l2,m1:m2,n1:n2)
+  llnrho=reform(lnrho(l1:l2,m1:m2,n1:n2))
   rho=exp(llnrho)
   if (iss eq 0) then begin
     cs2=cs20*exp(gamma1*llnrho) 
   end else begin
-    sss=ss(l1:l2,m1:m2,n1:n2)
+    sss=reform(ss(l1:l2,m1:m2,n1:n2))
     ; the following gives cs2,cp1tilde,eee,ppp
     @thermodynamics.pro
   end
@@ -41,7 +41,7 @@ if (ilnrho ne 0) then begin
 ;
 end
 ;
-if (iqrad ne 0) then QQrad=Qrad(l1:l2,m1:m2,n1:n2)
+if (iqrad ne 0) then QQrad=reform(Qrad(l1:l2,m1:m2,n1:n2))
 if (iqrad ne 0) then SSrad=Srad0*(TTT/TT_ion)^4
 if (iqrad ne 0) then kaprho=.25*exp(2*llnrho-lnrho_e_)*(TT_ion_/TTT)^1.5 $
                             *exp(TT_ion_/TTT)*yyH*(1.-yyH)*kappa0
@@ -66,7 +66,7 @@ end
 ;  calculate vertical averages
 ;
 if (iss ne 0) then begin
-  if (nz gt 1) then begin
+  if (nz gt 1 and (nx gt 1 or ny gt 1)) then begin
     cs2m=haver(cs2) & csm=sqrt(cs2m)
     rhom=haver(rho)
   end
@@ -75,7 +75,7 @@ end
 ;  passive scalar
 ;
 if (ilncc ne 0) then begin
-  llncc=lncc(l1:l2,m1:m2,n1:n2)
+  llncc=reform(lncc(l1:l2,m1:m2,n1:n2))
   ccc=exp(llncc)
 end
 ;
