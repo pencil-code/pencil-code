@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.75 2002-10-30 05:44:38 brandenb Exp $ 
+! $Id: param_io.f90,v 1.76 2002-11-02 07:16:15 brandenb Exp $ 
 
 module Param_IO
 
@@ -35,12 +35,12 @@ module Param_IO
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
-       directory_snap,random_gen
+       random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
-       directory_snap,random_gen, &
+       random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,test_nonblocking, &
        bcx,bcy,bcz, &
@@ -68,6 +68,26 @@ module Param_IO
       endif
 !
     endsubroutine get_datadir
+!***********************************************************************
+    subroutine get_snapdir(dir)
+!
+!  Read directory_snap from data/directory_snap, if that exists
+!
+!   2-nov-02/axel: adapted from get_datadir
+!
+      character (len=*) :: dir
+      logical :: exist
+!
+!  check for existence of datadir.in
+!
+      inquire(FILE=trim(datadir)//'directory_snap',EXIST=exist)
+      if (exist) then
+        open(1,FILE=trim(datadir)//'directory_snap',FORM='formatted')
+        read(1,*) dir
+        close(1)
+      endif
+!
+    endsubroutine get_snapdir
 !***********************************************************************
     subroutine read_startpars(print,file)
 !

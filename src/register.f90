@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.52 2002-10-25 09:13:23 dobler Exp $
+! $Id: register.f90,v 1.53 2002-11-02 07:16:15 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -65,6 +65,7 @@ module Register
 !  overwrite datadir from datadir.in, if that exists
 !
       call get_datadir(datadir)
+      call get_snapdir(directory_snap)
 !
     endsubroutine initialize
 !***********************************************************************
