@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.99 2003-06-16 04:41:11 brandenb Exp $
+! $Id: start.f90,v 1.100 2003-06-17 07:08:19 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.99 2003-06-16 04:41:11 brandenb Exp $")
+             "$Id: start.f90,v 1.100 2003-06-17 07:08:19 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -114,19 +114,14 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-!  not currently needed.
-!AB Wolfgang, can we take this out?
-!
-!!!!!    rr=sqrt(xx**2+yy**2+zz**2)
-!
-!  Allow modules to do any physics modules do parameter dependent
-!  initialization. And final pre-timestepping setup.
-!  (must be done before need_XXXX can be used, for example)
+!  Parameter dependent initialization of module variables and final
+!  pre-timestepping setup (must be done before need_XXXX can be used, for
+!  example).
 !
         call initialize_modules(f,lstart=.true.)
 !
-!  different initial conditions
-!  initialize all variables to zero;
+!  Initial conditions: read existing snapshot or initialize all variables
+!  to zero
 !
         if(lread_oldsnap) then
           print*,'read old snapshot file'
@@ -136,6 +131,7 @@
         endif
 !
 !  the following init routines do then only need to add to f.
+!  wd: also in the case where we have read in an existing snapshot??
 !
         if (lroot) print* !(empty line)
         call init_gg   (f,xx,yy,zz)
@@ -150,33 +146,34 @@
 !
 !  check whether we want ionization
 !
-       if(lionization) then
-         f(:,:,:,iyH)=0.5
-         call ioncalc(f)
-       endif
-       if(lradiation_ray) call radtransfer(f)
+        if(lionization) then
+          f(:,:,:,iyH)=0.5
+          call ioncalc(f)
+        endif
+        if(lradiation_ray) call radtransfer(f)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat
 !
-       if (lwrite_ic) then
+        if (lwrite_ic) then
           if (lwrite_aux) then
-             call wsnap(trim(directory_snap)//'/VAR0',f,mvar+maux,.false.)
+            call wsnap(trim(directory_snap)//'/VAR0',f,mvar+maux,.false.)
           else
-             call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
+            call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
           endif
-       endif
-       if (.not.lnowrite) then
+        endif
+        if (.not.lnowrite) then
           if (lwrite_aux) then
-             call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
+            call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
           else
-             call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
+            call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
           endif
           call wtime(trim(directory)//'/time.dat',t)
-       endif
-       call wdim(trim(directory)//'/dim.dat')
+        endif
+        call wdim(trim(directory)//'/dim.dat')
+
 !
 !  also write full dimensions to data/ :
 !

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.36 2003-06-16 16:38:27 dobler Exp $
+! $Id: grav_z.f90,v 1.37 2003-06-17 07:08:19 dobler Exp $
 
 module Gravity
 
@@ -80,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.36 2003-06-16 16:38:27 dobler Exp $")
+           "$Id: grav_z.f90,v 1.37 2003-06-17 07:08:19 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -223,36 +223,36 @@ module Gravity
 !  remember, gravz=-1 (at least negative) for z pointing upwards.
 !
       select case(grav_profile)
-        case('const')
+      case('const')
+        pot=-gravz*(zmn-zinfty)
+        if (present(pot0)) pot0 = gravz*zinfty !(potential at z=0)
+        if (present(grav)) then
+          grav(:,1:2)=0.
+          grav(:,3)=gravz
+        endif
+!
+!  gravity is set to zero above z=zgrav
+!
+      case('const_zero')
+        if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+        if(zmn<=zgrav) then
           pot=-gravz*(zmn-zinfty)
-         if (present(pot0)) pot0 = gravz*zinfty !(potential at z=0)
           if (present(grav)) then
             grav(:,1:2)=0.
             grav(:,3)=gravz
           endif
-!
-!  gravity is set to zero above z=zgrav
-!
-        case('const_zero')
+        else
+          pot=-gravz*(zgrav-zinfty)
+          if (present(grav)) grav=0.
+        endif
+        if (present(pot0)) then !(potential at z=0)
           if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-          if(zmn<=zgrav) then
-            pot=-gravz*(zmn-zinfty)
-            if (present(grav)) then
-              grav(:,1:2)=0.
-              grav(:,3)=gravz
-            endif
+          if(0.<=zgrav) then
+            pot0 = gravz*zinfty
           else
-            pot=-gravz*(zgrav-zinfty)
-            if (present(grav)) grav=0.
+            pot0 =-gravz*(zgrav-zinfty)
           endif
-          if (present(pot0)) then !(potential at z=0)
-            if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-            if(0.<=zgrav) then
-              pot0 = gravz*zinfty
-            else
-              pot0 =-gravz*(zgrav-zinfty)
-            endif
-          endif
+        endif
 !
 !  gravity increases linearly with height (for accretion discs)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.168 2003-06-16 09:19:22 nilshau Exp $
+! $Id: entropy.f90,v 1.169 2003-06-17 07:08:19 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.168 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: entropy.f90,v 1.169 2003-06-17 07:08:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -149,6 +149,14 @@ module Entropy
           !  calculate hcond and FbotKbot=Fbot/K
           !  (K=hcond is radiative conductivity)
           !
+          if (Fbot==impossible) then
+            if (bcz1(ient)=='c1') then
+              Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+              if (lroot) print*, 'Calculated Fbot = ', Fbot
+            else
+              Fbot=0.
+            endif
+          endif
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)
           if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
@@ -190,53 +198,53 @@ module Entropy
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
 
-      case('sedov') 
-        if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-         call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
+        case('sedov') 
+          if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+        call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
       !   f(:,:,:,ient) = f(:,:,:,ient) + (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
 
-      case('sedov-dual') 
-        if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-         call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
-         call blob(thermal_peak,f,ient,radius_ss,center2_x,center2_y,center2_z)
+        case('sedov-dual') 
+          if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+        call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
+        call blob(thermal_peak,f,ient,radius_ss,center2_x,center2_y,center2_z)
       !   f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
    
-      case('isobaric')
-        !
-        !  ss = - ln(rho/rho0)
-        !
-        if (lroot) print*,'init_ss: isobaric stratification'
-        f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
+        case('isobaric')
+          !
+          !  ss = - ln(rho/rho0)
+          !
+          if (lroot) print*,'init_ss: isobaric stratification'
+          f(:,:,:,ient) = -(f(:,:,:,ilnrho)-lnrho0)
 
-      case('isentropic', '1')
-        !
-        !  ss = const.
-        !
-        if (lroot) print*,'isentropic stratification'
-        ! ss0=alog(-gamma1*gravz*zinfty)/gamma
-        ! print*,'isentropic stratification; ss=',ss0
-        f(:,:,:,ient)=0.
-        if (ampl_ss/=0.) then
-          print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
-          tmp=xx**2+yy**2+zz**2
-          f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
+        case('isentropic', '1')
+          !
+          !  ss = const.
+          !
+          if (lroot) print*,'isentropic stratification'
+          ! ss0=alog(-gamma1*gravz*zinfty)/gamma
+          ! print*,'isentropic stratification; ss=',ss0
+          f(:,:,:,ient)=0.
+          if (ampl_ss/=0.) then
+            print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
+            tmp=xx**2+yy**2+zz**2
+            f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
           !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
-        endif
+          endif
 
-      case('linprof', '2')
-        !
-        !  linear profile of ss, centered around ss=0.
-        !
-        if (lroot) print*,'linear entropy profile'
-        f(:,:,:,ient) = grads0*zz
+        case('linprof', '2')
+          !
+          !  linear profile of ss, centered around ss=0.
+          !
+          if (lroot) print*,'linear entropy profile'
+          f(:,:,:,ient) = grads0*zz
 
-      case('piecew-poly', '4')
-        !
-        !  piecewise polytropic convection setup
-        !  cs0, rho0 and ss0=0 refer to height z=zref
-        !
-        if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
-        !
+        case('piecew-poly', '4')
+          !
+          !  piecewise polytropic convection setup
+          !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
+          !
 !         !  override hcond1,hcond2 according to polytropic equilibrium
 !         !  solution
 !         !
@@ -246,49 +254,49 @@ module Entropy
 !              print*, &
 !              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
-        cs2int = cs0**2
-        ss0 = 0.              ! reference value ss0 is zero
-        ssint = ss0
-        f(:,:,:,ient) = 0.    ! just in case
-        ! top layer
-        call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
-                             isothtop,cs2int,ssint)
-        ! unstable layer
-        call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
-        ! stable layer
-        call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+          cs2int = cs0**2
+          ss0 = 0.              ! reference value ss0 is zero
+          ssint = ss0
+          f(:,:,:,ient) = 0.    ! just in case
+          ! top layer
+          call polytropic_ss_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+                               isothtop,cs2int,ssint)
+          ! unstable layer
+          call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+          ! stable layer
+          call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
 
-      case('polytropic', '5')
-        !
-        !  polytropic stratification
-        !  cs0, rho0 and ss0=0 refer to height z=zref
-        !
-        if (lroot) print*,'polytropic vertical stratification (ss)'
-        !
-        cs20 = cs0**2
-        ss0 = 0.              ! reference value ss0 is zero
-        f(:,:,:,ient) = ss0   ! just in case
-        cs2int = cs20
-        ssint = ss0
-        ! only one layer
-        call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
-        ! reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work
-        mpoly1 = mpoly0
-        mpoly2 = mpoly0
+        case('polytropic', '5')
+          !
+          !  polytropic stratification
+          !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          if (lroot) print*,'polytropic vertical stratification (ss)'
+          !
+          cs20 = cs0**2
+          ss0 = 0.              ! reference value ss0 is zero
+          f(:,:,:,ient) = ss0   ! just in case
+          cs2int = cs20
+          ssint = ss0
+          ! only one layer
+          call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
+          ! reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work
+          mpoly1 = mpoly0
+          mpoly2 = mpoly0
 
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*,'No such value for initss: ', trim(initss)
-        call stop_it("")
+        case default
+          !
+          !  Catch unknown values
+          !
+          if (lroot) print*,'No such value for initss: ', trim(initss)
+          call stop_it("")
 
       endselect
 
 !      endif
 !
       if (lgravr) then
-          f(:,:,:,ient) = -0.
+        f(:,:,:,ient) = -0.
       endif
 
 !
@@ -1022,7 +1030,11 @@ endif
 !  ===============
 !
       case('bot')
-        if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+        if (lmultilayer) then
+          if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+        else
+          if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+        endif
 !       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
 !  calculate Fbot/(K*cs2)

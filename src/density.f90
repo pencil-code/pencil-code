@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.93 2003-06-16 09:19:22 nilshau Exp $
+! $Id: density.f90,v 1.94 2003-06-17 07:08:19 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.93 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: density.f90,v 1.94 2003-06-17 07:08:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,9 +180,6 @@ module Density
           f(:,:,:,ilnrho) = -grads0*zz &
                             + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
                                                   *(1-exp(-grads0*zz)) )
-          if (notanumber(f(:,:,:,ilnrho))) then
-            STOP "INIT_LNRHO: Imaginary density values"
-          endif
         endif
 
       case ('hydrostatic-r')
@@ -335,7 +332,7 @@ module Density
 !
 !  sanity check
 !
-      if (notanumber(f(:,:,:,ilnrho))) then
+      if (notanumber(f(l1:l2,m1:m2,n1:n2,ilnrho))) then
         STOP "INIT_LNRHO: Imaginary density values"
       endif
 !
@@ -344,8 +341,7 @@ module Density
       if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       if(lroot) print*,'e.g. for ionization runs: cs2bot,cs2top not yet set' 
 !
-!  different initializations of lnrho (called from start).
-!  If initrho does't match, f=0 is assumed (default).
+!  Add some structures to the lnrho initialized above
 !
       select case(initlnrho2)
 

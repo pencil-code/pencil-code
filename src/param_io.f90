@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.111 2003-06-13 09:28:58 nilshau Exp $ 
+! $Id: param_io.f90,v 1.112 2003-06-17 07:08:19 dobler Exp $ 
 
 module Param_IO
 
@@ -564,7 +564,7 @@ module Param_IO
       use Cdata
 !
         open(1,FILE=trim(datadir)//'/param.nml')
-                        read(1,NML=init_pars          )
+                           read(1,NML=init_pars             )
         if (lhydro       ) read(1,NML=hydro_init_pars       )
         if (ldensity     ) read(1,NML=density_init_pars     )
         if (lgrav        ) read(1,NML=grav_init_pars        )
