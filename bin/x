@@ -1,0 +1,5 @@
+#cat src/check.head
+#cat check
+#(date;cat check;echo "") >>SPEED
+tail tmp/n.dat
+(date;tail -1 tmp/n.dat;echo "") >>SPEED
