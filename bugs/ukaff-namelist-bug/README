@@ -1,0 +1,40 @@
+
+                           ukaff-namelist-bug
+                          --------------------
+
+$Id: README,v 1.1 2002-06-12 17:25:17 dobler Exp $
+
+
+1. Symptoms:
+
+  On Ukaff, the attached minimal code should print the following:
+  
+    1.
+    2.
+    3.
+    Finished successfully
+  
+  but in reality crashes with
+  
+    1.
+    2.
+  
+    lib-4001 : UNRECOVERABLE library error 
+    
+    Encountered during a namelist READ from unit 1
+    Fortran unit 1 is connected to a sequential formatted text file: "run.in"
+    IOT Trap
+    Abort
+  
+  Commenting out almost any unused routine in magnetic.f90 or hydro.f90 or
+  even just commenting out variables in these routines makes the code
+  succeed.
+
+2. Command sequence:
+
+  ukaff>  make
+  ukaff>  run.x
+
+3. Original date:
+
+  Wed Jun 12 18:19:51 BST 2002
