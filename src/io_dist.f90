@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.72 2004-06-12 06:07:37 brandenb Exp $
+! $Id: io_dist.f90,v 1.73 2004-06-22 10:16:17 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.72 2004-06-12 06:07:37 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.73 2004-06-22 10:16:17 bingert Exp $")
 !
     endsubroutine register_io
 !
@@ -347,8 +347,8 @@ contains
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
-      write(1) xprim, yprim ,zprim
-      write(1) xprim2,yprim2,zprim2
+      write(1) xiprim, psiprim ,zetaprim
+      write(1) xiprim2,psiprim2,zetaprim2
       close(1)
 !
     endsubroutine wgrid
@@ -359,7 +359,7 @@ contains
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
-!   3-jun-04/bing: added xprim, yprim ,zprim, etc.
+!   3-jun-04/bing: added xiprim, psiprim ,zetaprim, etc.
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -368,14 +368,14 @@ contains
       integer :: iostat
       character (len=*) :: file
 !
-!  if xprim etc is not written, just ignore it
+!  if xiprim etc is not written, just ignore it
 !
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
-      read(1,end=990) xprim, yprim ,zprim
-      read(1) xprim2,yprim2,zprim2
+      read(1,end=990) xiprim, psiprim ,zetaprim
+      read(1) xiprim2,psiprim2,zetaprim2
 990   close(1)
 !
 !  give notification if Lx is not read in

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.236 2004-06-12 10:25:25 brandenb Exp $
+! $Id: cdata.f90,v 1.237 2004-06-22 10:16:17 bingert Exp $
 
 module Cdata
 
@@ -7,9 +7,9 @@ module Cdata
   Use Cparam
 
   integer :: itorder=3
-  real, dimension (mx) :: x,xprim,xprim2
-  real, dimension (my) :: y,yprim,yprim2
-  real, dimension (mz) :: z,zprim,zprim2,zeta_grid
+  real, dimension (mx) :: x,xiprim,xiprim2
+  real, dimension (my) :: y,psiprim,psiprim2
+  real, dimension (mz) :: z,zetaprim,zetaprim2,zeta_grid
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.181 2004-06-18 08:40:33 brandenb Exp $ 
+! $Id: param_io.f90,v 1.182 2004-06-22 10:16:17 bingert Exp $ 
 
 module Param_IO
 
@@ -56,11 +56,13 @@ module Param_IO
   character (len=labellen) :: mips_is_buggy='system'
 
   namelist /init_pars/ &
-       cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin,lwrite_ic,lnowrite, &
+       cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin, &
+       lequidist,coef_grid,zeta_grid0,grid_func, &
+       lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io,lread_oldsnap,lread_oldsnap_nomag, &
        lwrite_aux,lcalc_cp,pretend_lnTT, &
-       lprocz_slowest, lequidist, &
+       lprocz_slowest, &
        bcx,bcy,bcz,r_int,r_ext,mu0
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &

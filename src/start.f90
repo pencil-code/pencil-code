@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.134 2004-06-03 10:30:03 bingert Exp $
+! $Id: start.f90,v 1.135 2004-06-22 10:16:17 bingert Exp $
 !
 !***********************************************************************
       program start
@@ -37,6 +37,7 @@
         real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
+        real, dimension (mz) :: zprim,zprim2
         real :: x00,y00,z00
         real :: c_grid1
 !
@@ -47,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.134 2004-06-03 10:30:03 bingert Exp $")
+             "$Id: start.f90,v 1.135 2004-06-22 10:16:17 bingert Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -188,10 +189,16 @@
             zprim2=0.
           case ('sinh')
             c_grid1=Lz/(sinh(coef_grid(1)*(zeta_grid(n2)-zeta_grid0))- &
-                    sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
+                        sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
             z     =z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
             zprim =c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
-            zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
+            zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid&
+                 &-zeta_grid0))
+            zetaprim=1/zprim
+            zetaprim2=-zprim2/zprim**3
+            if (notanumber(zetaprim))  call stop_it('NaNs in zetaprim')
+            if (notanumber(zetaprim2)) call stop_it('NaNs in zetaprim2')
+!             
           case default
             call stop_it('start: Unknown grid_func for no equidistant z-grid')
           endselect

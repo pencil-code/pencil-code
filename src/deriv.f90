@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.15 2004-06-03 10:30:03 bingert Exp $
+! $Id: deriv.f90,v 1.16 2004-06-22 10:16:17 bingert Exp $
 
 module Deriv
   
@@ -32,11 +32,11 @@ module Deriv
       call der_equidist(f,k,df,j)
       if (.not. lequidist(j)) then
          if (j==1) then
-            df = df * dx / xprim(l1:l2)
+            df = df * dx * xiprim(l1:l2)
          elseif (j==2) then
-            df = df * dy / yprim(m)
+            df = df * dy * psiprim(m)
          elseif (j==3) then
-            df = df * dz / zprim(n)
+            df = df * dz * zetaprim(n)
          endif
       endif
 !
@@ -166,11 +166,11 @@ module Deriv
       if (.not. lequidist(j)) then
          call der_equidist(f,k,df,j)
          if (j==1) then
-            df2 = df2*(dx/xprim(l1:l2))**2 - df*xprim2(l1:l2)*dx/xprim(l1:l2)**3
+            df2 = df2*(dx*xiprim(l1:l2))**2- df*xiprim2(l1:l2)*dx
          elseif (j==2) then
-            df2 = df2*(dy/yprim(m))**2 - df*yprim2(m)*dy/yprim(m)**3
+            df2 = df2*(dy*psiprim(m))**2   - df*psiprim2(m)*dy
          elseif (j==3) then
-            df2 = df2*(dy/zprim(n))**2 - df*zprim2(n)*dz/zprim(n)**3
+            df2 = df2*(dy*zetaprim(n))**2  - df*zetaprim2(n)*dz
          endif
       endif
 
@@ -417,10 +417,6 @@ module Deriv
       real :: fac
       integer :: i,j,k
 !
-      if (.not. lequidist(j) .or. .not. lequidist(i)) then
-        call stop_it('derij: NOT IMPLEMENTED for no equidistant grid')
-      endif
-!      
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
         if (nxgrid/=1.and.nygrid/=1) then
           fac=1./(60.**2*dx*dy)
@@ -443,7 +439,13 @@ module Deriv
                 -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                   -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                      +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
-                 )
+                     )
+          if (.not. lequidist(1)) then
+            df =  df * dz * xiprim(l1:l2)
+          endif
+          if (.not. lequidist(2)) then
+            df =  df * dz * psiprim(m)
+          endif
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in x-direction'
@@ -471,6 +473,12 @@ module Deriv
                   -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                      +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
+          if (.not. lequidist(3)) then
+            df =  df * dz * zetaprim(n)
+          endif
+          if (.not. lequidist(2)) then
+            df =  df * dz * psiprim(m)
+          endif
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in y-direction'
@@ -498,6 +506,12 @@ module Deriv
                   -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                      +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
+          if (.not. lequidist(3)) then
+            df =  df * dz * zetaprim(n)
+          endif 
+          if (.not. lequidist(1)) then
+            df =  df * dz * xiprim(l1:l2)
+          endif
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in z-direction'
