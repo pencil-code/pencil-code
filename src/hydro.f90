@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.80 2002-11-20 19:57:06 mee Exp $
+! $Id: hydro.f90,v 1.81 2002-11-23 21:02:59 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -81,7 +81,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.80 2002-11-20 19:57:06 mee Exp $")
+           "$Id: hydro.f90,v 1.81 2002-11-23 21:02:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -265,7 +265,6 @@ module Hydro
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use Sub
       use IO
 !

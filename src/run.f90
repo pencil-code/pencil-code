@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.114 2002-11-23 19:10:27 brandenb Exp $
+! $Id: run.f90,v 1.115 2002-11-23 21:02:59 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.114 2002-11-23 19:10:27 brandenb Exp $")
+             "$Id: run.f90,v 1.115 2002-11-23 21:02:59 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -105,9 +105,10 @@
 !
       call wparam2()
 !
-!  possible output to check whether mn array is correct
+!  possible debug output (can only be done after "directory" is set)
+!  check whether mn array is correct
 !
-      if(ip<=13) call debug_imn_arrays
+      if(ip<=3) call debug_imn_arrays
 !
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !

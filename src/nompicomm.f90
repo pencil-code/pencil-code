@@ -40,13 +40,14 @@ module Mpicomm
 !  the moment when all communication must be completed.
 !
 !   6-jun-02/axel: generalized to allow for ny=1
+!  23-nov-02/axel: corrected problem with ny=4 or less
 !
       use General
       use Cdata, only: lmpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
-      integer :: m,n
+      integer :: m,n,min_m1i_m2,max_m2i_m1
 !
 !  for single cpu machine, set processor to zero
 !
@@ -98,14 +99,19 @@ module Mpicomm
 !  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1+1)
 !  instead of just m2i, to make sure the case ny=1 works ok, and
 !  also that the same m is not set in both loops.
+!  ALSO: need to make sure the second loop starts not before the
+!  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
+!
+      min_m1i_m2=min(m1i,m2)
+      max_m2i_m1=max(m2i,min_m1i_m2+1)
 !
       do n=n1,n2
-        do m=m1,min(m1i,m2)
+        do m=m1,min_m1i_m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
         enddo
-        do m=max(m2i,m1+1),m2
+        do m=max_m2i_m1,m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1

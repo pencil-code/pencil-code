@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.68 2002-11-19 20:53:33 dobler Exp $
+! $Id: mpicomm.f90,v 1.69 2002-11-23 21:02:59 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -104,11 +104,12 @@ module Mpicomm
 !  15-sep-01/axel: adapted from Wolfgang's version
 !  21-may-02/axel: communication of corners added
 !   6-jun-02/axel: generalized to allow for ny=1
+!  23-nov-02/axel: corrected problem with ny=4 or less
 !
       use General
       use Cdata, only: lmpicomm
 !
-      integer :: i,m,n
+      integer :: m,n,min_m1i_m2,max_m2i_m1
 !
 !  get processor number, number of procs, and whether we are root
 !
@@ -227,14 +228,19 @@ module Mpicomm
 !  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
 !  instead of just m2i, to make sure the case ny=1 works ok, and
 !  also that the same m is not set in both loops.
+!  ALSO: need to make sure the second loop starts not before the
+!  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
+!
+      min_m1i_m2=min(m1i,m2)
+      max_m2i_m1=max(m2i,min_m1i_m2+1)
 !
       do n=n1,n2
-        do m=m1,min(m1i,m2)
+        do m=m1,min_m1i_m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
         enddo
-        do m=max(m2i,m1+1),m2
+        do m=max_m2i_m1,m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1

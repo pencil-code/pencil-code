@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.108 2002-11-23 19:10:27 brandenb Exp $
+! $Id: equ.f90,v 1.109 2002-11-23 21:02:59 brandenb Exp $
 
 module Equ
 
@@ -184,7 +184,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.108 2002-11-23 19:10:27 brandenb Exp $")
+           "$Id: equ.f90,v 1.109 2002-11-23 21:02:59 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -686,8 +686,8 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
       open(1,file=trim(directory)//'/imn_arrays.dat')
       do imn=1,ny*nz
+        if(necessary(imn)) write(1,'(a)') '----necessary=.true.----'
         write(1,'(4i6)') imn,mm(imn),nn(imn)
-        if(necessary(imn)) write(1,'(a)') 'end of inner save part'
       enddo
       close(1)
 !
