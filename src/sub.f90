@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.195 2004-09-11 09:39:57 brandenb Exp $ 
+! $Id: sub.f90,v 1.196 2004-09-12 07:47:14 brandenb Exp $ 
 
 module Sub 
 
@@ -1501,7 +1501,7 @@ module Sub
 !
     endsubroutine del2vi_etc
 !***********************************************************************
-    subroutine bij_etc(f,iref,Bij,del2)
+    subroutine bij_etc(f,iref,Bij,del2,graddiv)
 !
 !  calculate B_i,j = eps_ikl A_l,jk and A_l,kk
 !
@@ -1512,13 +1512,13 @@ module Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: bij
-      real, dimension (nx,3) :: del2
+      real, dimension (nx,3) :: del2,graddiv
       real, dimension (nx) :: tmp
       integer :: iref,iref1,i,j,k,l
       real :: eps
 !
       intent(in) :: f,iref
-      intent(out) :: Bij,del2
+      intent(out) :: Bij,del2,graddiv
 !
 !  reference point of argument
 !
@@ -1530,6 +1530,7 @@ module Sub
       do l=1,3
         call der2(f,iref1+l,tmp,l)
         del2(:,l)=tmp
+        graddiv(:,l)=tmp
       enddo
 !
 !  calculate B_i,j = eps_ikl A_l,jk
@@ -1547,6 +1548,7 @@ module Sub
             del2(:,l)=del2(:,l)+tmp
           else
             call derij(f,iref1+l,tmp,j,k)
+            if(j==l) graddiv(:,k)=graddiv(:,k)+tmp
           endif
           bij(:,i,j)=bij(:,i,j)+eps*tmp
         endif

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.52 2004-09-11 09:39:57 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.53 2004-09-12 07:47:14 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.52 2004-09-11 09:39:57 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.53 2004-09-12 07:47:14 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -100,7 +100,7 @@ module Magnetic
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,del2A,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,graddivA,va2,shock,gshock)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -111,7 +111,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij,aij
-      real, dimension (nx,3) :: uu,bb,del2A,gshock
+      real, dimension (nx,3) :: uu,bb,jj,del2A,graddivA,gshock
       real, dimension (nx) :: rho1,TT1,va2,shock
 !
       intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
@@ -123,11 +123,12 @@ module Magnetic
       va2=0
 !
       if(ip==0) bij=0.                                   ! (keep compiler quiet)
-      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb,del2A ! (keep compiler quiet)
+      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb,jj    ! (keep compiler quiet)
+      if(ip==0) print*,del2A,graddivA                    ! (keep compiler quiet)
       if(ip==0) print*,shock,gshock                      ! (keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A)
+    subroutine calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
 !
 !   Calculation of bb
 !   dummy routine
@@ -136,18 +137,15 @@ module Magnetic
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: bij,aij
-      real, dimension (nx,3) :: bb,del2A
+      real, dimension (nx,3) :: bb,jj,del2A,graddivA
 !
       intent(in)  :: f
-      intent(out) :: bb,bij,aij,del2A
+      intent(out) :: bb,jj,bij,aij,del2A,graddivA
 !
 !  dummy settings
 !
       if (ip==0) print*,f(1,1,1,1) ! (keep compiler quiet)
-      if (ip==0) bb=0.             ! (keep compiler quiet)
-      if (ip==0) bij=0.
-      if (ip==0) aij=0.
-      if (ip==0) del2A=0.
+      bij=0.; aij=0.; bb=0.; jj=0.; del2A=0.; graddivA=0.
 !
     endsubroutine calculate_vars_magnetic
 !***********************************************************************

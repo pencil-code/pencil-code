@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.221 2004-09-11 09:39:57 brandenb Exp $
+! $Id: magnetic.f90,v 1.222 2004-09-12 07:47:14 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.221 2004-09-11 09:39:57 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.222 2004-09-12 07:47:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -330,7 +330,7 @@ module Magnetic
 !
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,del2A,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,graddivA,va2,shock,gshock)
 !
 !  magnetic field evolution
 !
@@ -359,10 +359,9 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij,aij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb,JxBrxB
-      real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
-      real, dimension (nx,3) :: del2A,oo,oxu,uxDxuxb,del6A,fres,del4A
-      real, dimension (nx,3) :: geta
-      real, dimension (nx,3) :: ee_ext,jj_ext
+      real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock,geta
+      real, dimension (nx,3) :: del2A,graddivA,oo,oxu,uxDxuxb,del6A,fres,del4A
+      real, dimension (nx,3) :: ee_ext
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
@@ -379,10 +378,10 @@ module Magnetic
       real, dimension (nx) :: Jij2
       real, dimension (nx) :: bb12,eta_smag
 
-      real, dimension (nx,3) :: graddiva,bglnrho
+      real, dimension (nx,3) :: bglnrho
       real, dimension (nx,3) :: nubglnrho,tmp1,tmp2
 !
-      intent(in)     :: f,uu,rho1,TT1,uij,bij,aij,bb,del2A,shock,gshock
+      intent(in)     :: f,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,shock,gshock
       intent(out)    :: va2
       intent(inout)  :: df     
 !
@@ -411,7 +410,7 @@ module Magnetic
 
         aa=f(l1:l2,m,n,iax:iaz)
 
-        if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
+        if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
@@ -460,23 +459,6 @@ module Magnetic
         if (i_bxmxy/=0) call zsum_mn_name_xy(bx,i_bxmxy)
         if (i_bymxy/=0) call zsum_mn_name_xy(by,i_bymxy)
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
-      endif
-!
-!  calculating the current jj from bij
-!
-!  The following routine also calculates the magnetic field gradient matrix, B_{i,j},
-!   which is needed for cosmic ray evolution.
-!
-      call curl_mn(bij,jj,bb)
-      if (mu01/=1.) jj=mu01*jj
-!
-!  external current (currently for spheromak experiments)
-!
-      if (ljj_ext) then
-        call get_global(ee_ext,m,n,'ee_ext')
-        !call get_global(jj_ext,m,n,'jj_ext')
-        !jj=jj+jj_ext
-        jj=jj-ee_ext*displacement_gun
       endif
 !
 !  calculate Alfven speed
@@ -564,7 +546,8 @@ module Magnetic
             enddo
             call dot2_mn(jj,J2)
             eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
-            call del2v_etc(f,iaa,GRADDIV=graddiva)
+            !AB: Nils, graddivA is now calculated outside this routine
+            !call del2v_etc(f,iaa,GRADDIV=graddiva)
             call multmv_mn(Jij,glnrho,bglnrho)
             call multsv_mn(eta_smag,bglnrho,nubglnrho)
             tmp1=del2A+1./3.*graddiva
@@ -890,7 +873,7 @@ module Magnetic
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A)
+    subroutine calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
 !
 !  Calculation of bb
 !
@@ -905,24 +888,32 @@ module Magnetic
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
       real, dimension (nx,3,3) :: aij,bij
-      real, dimension (nx,3) :: aa,bb,del2A
-      real, dimension (nx,3) :: bb_ext,bb_ext_pot
+      real, dimension (nx,3) :: aa,bb,jj,del2A,graddivA
+      real, dimension (nx,3) :: bb_ext,bb_ext_pot,ee_ext,jj_ext
       real :: B2_ext,c,s
 
       intent(in)  :: f
-      intent(out) :: bb,bij,aij,del2A
+      intent(out) :: bb,jj,bij,aij,del2A,graddivA
 !
 !  The following routines calculates the gradient matrix of
 !  the vector potential (needed to calculate bb) and bij
 !  (needed for cosmic ray evolution and thermal conduction).
 !
       call gij(f,iaa,aij)
-      call bij_etc(f,iaa,bij,del2A)
+      call bij_etc(f,iaa,bij,del2A,graddivA)
 !
-!  use aij to calculate bb
+!  use aij to calculate bb, and
+!  use bij to calculate jj
 !
       aa=f(l1:l2,m,n,iax:iaz)
       call curl_mn(aij,bb,aa)
+      call curl_mn(bij,jj,bb)
+!
+!  in spherical geometry, del2A is best written as graddivA-jj.
+!  After that we can rescale jj by mu01.
+!
+      if (lspherical) del2A=graddivA-jj
+      if (mu01/=1.) jj=mu01*jj
 !
 !  Note; for diagnostics purposes keep copy of original field
 !
@@ -967,6 +958,15 @@ module Magnetic
       if (lbb_ext) then
         call get_global(bb_ext,m,n,'bb_ext')
         bb=bb+bb_ext
+      endif
+!
+!  external current (currently for spheromak experiments)
+!
+      if (ljj_ext) then
+        call get_global(ee_ext,m,n,'ee_ext')
+        !call get_global(jj_ext,m,n,'jj_ext')
+        !jj=jj+jj_ext
+        jj=jj-ee_ext*displacement_gun
       endif
 
     endsubroutine calculate_vars_magnetic

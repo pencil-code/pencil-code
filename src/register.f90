@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.140 2004-09-11 09:39:57 brandenb Exp $
+! $Id: register.f90,v 1.141 2004-09-12 07:47:14 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -255,7 +255,12 @@ module Register
       elseif (coord_system=='spherical') then
         lspherical=.true.
         lcylindric=.false.
-        r1_mn=1./x(l1:l2)
+        if (x(l1)==0.) then
+          r1_mn(2:)=1./x(l1+1:l2)
+          r1_mn(1)=0.
+        else
+          r1_mn=1./x(l1:l2)
+        endif
       endif
 !
 !  DOCUMENT ME

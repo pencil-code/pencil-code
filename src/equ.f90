@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.224 2004-09-11 09:39:56 brandenb Exp $
+! $Id: equ.f90,v 1.225 2004-09-12 07:47:14 brandenb Exp $
 
 module Equ
 
@@ -247,7 +247,7 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij,aij
-      real, dimension (nx,3) :: uu,glnrho,bb,gshock,del2A
+      real, dimension (nx,3) :: uu,glnrho,bb,jj,gshock,del2A,graddivA
       real, dimension (nx,3,ndustspec) :: uud,gnd
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.224 2004-09-11 09:39:56 brandenb Exp $")
+           "$Id: equ.f90,v 1.225 2004-09-12 07:47:14 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -376,7 +376,7 @@ module Equ
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
 !
-        call calculate_some_vars(f,rho1,bb,bij,aij,del2A)
+        call calculate_some_vars(f,rho1,bb,jj,bij,aij,del2A,graddivA)
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
@@ -391,7 +391,7 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,del2A,va2,shock,gshock)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,graddivA,va2,shock,gshock)
 !
 !  Passive scalar evolution
 !
@@ -557,7 +557,7 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-     subroutine calculate_some_vars(f,rho1,bb,bij,aij,del2A)
+     subroutine calculate_some_vars(f,rho1,bb,jj,bij,aij,del2A,graddivA)
 !
 !   Calculation of some variables used by routines later at time
 !
@@ -568,11 +568,11 @@ module Equ
 
        real, dimension (mx,my,mz,mvar+maux) :: f
        real, dimension (nx) :: rho1
-       real, dimension (nx,3) :: bb,del2A
+       real, dimension (nx,3) :: bb,jj,del2A,graddivA
        real, dimension (nx,3,3) :: bij,aij
 
        intent(in)  :: f
-       intent(out) :: rho1,bb,bij,aij,del2A
+       intent(out) :: rho1,bb,jj,bij,aij,del2A
 
        if (ldensity .or. ldensity_fixed) then
           call calculate_vars_rho(f,rho1)
@@ -581,7 +581,7 @@ module Equ
        endif
 
        if (lmagnetic) then
-          call calculate_vars_magnetic(f,bb,bij,aij,del2A)
+          call calculate_vars_magnetic(f,bb,jj,bij,aij,del2A,graddivA)
        else
           bb=0.                 ! Default for nomagnetic.f90
        endif

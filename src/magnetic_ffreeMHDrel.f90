@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.28 2004-09-11 09:39:57 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.29 2004-09-12 07:47:14 brandenb Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.28 2004-09-11 09:39:57 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.29 2004-09-12 07:47:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -240,7 +240,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
       real, dimension (nx,3,3) :: Bij
       real, dimension (nx,3) :: uu,SS,BB,CC,EE
-      real, dimension (nx,3) :: divS,curlS,curlB,curlE,del2S,del2A
+      real, dimension (nx,3) :: divS,curlS,curlB,curlE,del2S,del2A,graddivA
       real, dimension (nx,3) :: SgB,BgS,BdivS,CxE,curlBxB,curlExE,divEE
       real, dimension (nx,3) :: glnrho
       real, dimension (nx) :: B2,B21,E2,divE,divE2,divEE2,ou,o2,sij2
@@ -281,7 +281,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
 !  calculate magnetic field gradient matrix
 !
-      call bij_etc(f,iaa,Bij,del2A)
+      call bij_etc(f,iaa,Bij,del2A,graddivA)
       call curl_mn(Bij,curlB)
 !
 !  calculate 1/bb^2
@@ -493,7 +493,7 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,bij,aij)
+    subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A,graddivA)
 !
 !  calculate bb
 !  possibility to add external field
@@ -506,14 +506,14 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: bij,aij
-      real, dimension (nx,3) :: bb,dummy
+      real, dimension (nx,3) :: bb,del2A,graddivA
 
       
       intent(in)  :: f
-      intent(out) :: bb,bij
+      intent(out) :: bb,bij,del2A,graddivA
 
       call curl(f,iaa,bb)
-      call bij_etc(f,iaa,bij,dummy)
+      call bij_etc(f,iaa,bij,del2A,graddivA)
 !
 !  possibility to add external field
 !  Note; for diagnostics purposes keep copy of original field
