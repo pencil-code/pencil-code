@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.32 2003-06-16 09:19:22 nilshau Exp $
+! $Id: pscalar.f90,v 1.33 2003-07-29 14:25:12 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -63,7 +63,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.32 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: pscalar.f90,v 1.33 2003-07-29 14:25:12 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,7 +337,7 @@ module Pscalar
       real, dimension (nx,3) :: glncc
       real, dimension (nx) :: tmp,scr
       real :: tensor_pscalar_diff
-      integer :: mm,nn,i,j
+      integer :: iy,iz,i,j
       logical, save :: first=.true.
 !
 !  read H and Bunit arrays and keep them in memory
@@ -363,11 +363,11 @@ module Pscalar
 !
 !  dot with bi*bj
 !
-      mm=m-m1+1
-      nn=n-n1+1
+      iy=m-m1+1
+      iz=n-n1+1
       do j=1,3
       do i=1,3
-        tmp=tmp+bunit(:,mm,nn,i)*bunit(:,mm,nn,j)*g(:,i,j)
+        tmp=tmp+bunit(:,iy,iz,i)*bunit(:,iy,iz,j)*g(:,i,j)
       enddo
       enddo
 !

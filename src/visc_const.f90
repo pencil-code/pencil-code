@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.11 2003-06-16 04:41:11 brandenb Exp $
+! $Id: visc_const.f90,v 1.12 2003-07-29 14:25:12 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -46,7 +46,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.11 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: visc_const.f90,v 1.12 2003-07-29 14:25:12 dobler Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -176,7 +176,7 @@ module Viscosity
                  print*,"ldensity better be .true. for ivisc='nu-const'"
           endif
 
-       case ('hyper6')
+        case ('hyper6')
           !
           !  viscous force: nu*del6v
           !
@@ -186,11 +186,11 @@ module Viscosity
           maxdiffus=amax1(maxdiffus,nu)
 
         case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
-        call stop_it('calc_viscous_forcing')
+          !
+          !  Catch unknown values
+          !
+          if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
+          call stop_it('calc_viscous_forcing')
 
         endselect
 
@@ -201,4 +201,6 @@ module Viscosity
 
       if(ip==0) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
+!***********************************************************************
+
 endmodule Viscosity

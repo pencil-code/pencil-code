@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.58 2003-07-09 16:03:43 dobler Exp $
+! $Id: io_dist.f90,v 1.59 2003-07-29 14:25:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.58 2003-07-09 16:03:43 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.59 2003-07-29 14:25:12 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -118,7 +118,7 @@ contains
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine input(file,a,nn,mode)
+    subroutine input(file,a,nv,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  11-apr-97/axel: coded
@@ -127,12 +127,12 @@ contains
       use Mpicomm, only: start_serialize,end_serialize
 !
       character (len=*) :: file
-      integer :: nn,mode
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv,mode
+      real, dimension (mx,my,mz,nv) :: a
 !
       if (lserial_io) call start_serialize()
       open(1,file=file,form='unformatted')
-      if (ip<=8) print*,'open, mx,my,mz,nn=',mx,my,mz,nn
+      if (ip<=8) print*,'open, mx,my,mz,nv=',mx,my,mz,nv
       read(1) a
       if (ip<=8) print*,'read ',file
       if (mode==1) then
@@ -178,7 +178,7 @@ contains
 !
     endsubroutine output_auxiliary
 !***********************************************************************
-    subroutine output_vect(file,a,nn)
+    subroutine output_vect(file,a,nv)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for vector field
@@ -188,11 +188,11 @@ contains
       use Cdata
       use Mpicomm, only: start_serialize,end_serialize
 !
-      integer :: nn
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      if (ip<=8.and.lroot) print*,'output_vect: nn =', nn
+      if (ip<=8.and.lroot) print*,'output_vect: nv =', nv
 !
       if (lserial_io) call start_serialize()
       open(lun_output,file=file,form='unformatted')
@@ -204,7 +204,7 @@ contains
 !
     endsubroutine output_vect
 !***********************************************************************
-    subroutine output_scal(file,a,nn)
+    subroutine output_scal(file,a,nv)
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for scalar field
@@ -214,12 +214,12 @@ contains
       use Cdata
       use Mpicomm, only: lroot,stop_it,start_serialize,end_serialize
 !
-      integer :: nn
+      integer :: nv
       real, dimension (mx,my,mz) :: a
       character (len=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+      if (nv /= 1) call stop_it("OUTPUT called with scalar field, but nv/=1")
       if (lserial_io) call start_serialize()
       open(lun_output,file=file,form='unformatted')
       write(lun_output) a
@@ -238,7 +238,6 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn
 !
       integer :: ndim
       real, dimension (nx,ndim) :: a
@@ -265,7 +264,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn,lroot,stop_it
+      use Mpicomm, only: lroot,stop_it
 
 !
       integer :: ndim
@@ -288,7 +287,7 @@ contains
 !
     endsubroutine output_pencil_scal
 !***********************************************************************
-    subroutine outpus(file,a,nn)
+    subroutine outpus(file,a,nv)
 !
 !  write snapshot file, always write mesh and time, could add other things
 !
@@ -296,9 +295,9 @@ contains
 !
       use Cdata
 !
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
-      real, dimension (mx,my,mz,nn) :: a
+      real, dimension (mx,my,mz,nv) :: a
 !
       open(1,file=file,form='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.20 2003-07-28 16:30:17 dobler Exp $
+! $Id: io_mpio.f90,v 1.21 2003-07-29 14:25:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.20 2003-07-28 16:30:17 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.21 2003-07-29 14:25:12 dobler Exp $")
 !
 !  consistency check
 !
@@ -163,29 +163,29 @@ contains
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine commit_io_type_vect(nn)
+    subroutine commit_io_type_vect(nv)
 !
-!  For a new value of nn, commit MPI types needed for output_vect(). If
-!  called with the same value of nn as the previous time, do nothing.
+!  For a new value of nv, commit MPI types needed for output_vect(). If
+!  called with the same value of nv as the previous time, do nothing.
 !  20-sep-02/wolf: coded
 !
 !      use Cdata
 !
       integer, dimension(4) :: globalsize_v,localsize_v,memsize_v
       integer, dimension(4) :: start_index_v,mem_start_index_v
-      integer,save :: lastnn=-1 ! value of nn at previous call
-      integer :: nn
+      integer,save :: lastnv=-1 ! value of nv at previous call
+      integer :: nv
 
 !
-      if (nn /= lastnn) then
-        if (lastnn > 0) then
+      if (nv /= lastnv) then
+        if (lastnv > 0) then
           ! free old types, so we can re-use them
           call MPI_TYPE_FREE(io_filetype_v, ierr)
           call MPI_TYPE_FREE(io_memtype_v, ierr)
         endif
-        globalsize_v=(/nxgrid,nygrid,nzgrid,nn/)
-        localsize_v =(/nx    ,ny    ,nz    ,nn/)
-        memsize_v   =(/mx    ,my    ,mz    ,nn/)
+        globalsize_v=(/nxgrid,nygrid,nzgrid,nv/)
+        localsize_v =(/nx    ,ny    ,nz    ,nv/)
+        memsize_v   =(/mx    ,my    ,mz    ,nv/)
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -216,7 +216,7 @@ contains
 !
     endsubroutine commit_io_type_vect
 !***********************************************************************
-    subroutine input(file,a,nn,mode)
+    subroutine input(file,a,nv,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  11-apr-97/axel: coded
@@ -225,14 +225,14 @@ contains
       use Mpicomm, only: lroot,stop_it
 !
       character (len=*) :: file
-      integer :: nn,mode                  ,i
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv,mode                  ,i
+      real, dimension (mx,my,mz,nv) :: a
 !
-      if (ip<=8) print*,'INPUT: mx,my,mz,nn=',mx,my,mz,nn
+      if (ip<=8) print*,'INPUT: mx,my,mz,nv=',mx,my,mz,nv
       if (.not. io_initialized) &
            call stop_it("INPUT: Need to call init_io first")
 !
-      call commit_io_type_vect(nn)
+      call commit_io_type_vect(nv)
 !
 !  open file and set view (specify which file positions we can access)
 !
@@ -250,26 +250,26 @@ contains
 !
     endsubroutine input
 !***********************************************************************
-    subroutine output_vect(file,a,nn)
+    subroutine output_vect(file,a,nv)
 !
 !  Write snapshot file; currently without ghost zones and grid.
 !    Looks like we need to commit the MPI type anew each time we are called,
-!  since nn may vary.
+!  since nv may vary.
 !
 !  20-sep-02/wolf: coded
 !
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
-      integer :: nn
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nv =', nv
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
 !
-      call commit_io_type_vect(nn) ! will free old type if new one is needed
+      call commit_io_type_vect(nv) ! will free old type if new one is needed
       !
       !  open file and set view (specify which file positions we can access)
       !
@@ -287,11 +287,11 @@ contains
       !  write meta data (to make var.dat as identical as possible to
       !  what a single-processor job would write with io_dist.f90)
       !
-      call write_record_info(file, nn)
+      call write_record_info(file, nv)
 !
     endsubroutine output_vect
 !***********************************************************************
-    subroutine output_scal(file,a,nn)
+    subroutine output_scal(file,a,nv)
 !
 !  Write snapshot file; currently without ghost zones and grid
 !
@@ -301,13 +301,13 @@ contains
       use Mpicomm, only: lroot,stop_it
 !
       real, dimension (mx,my,mz) :: a
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
 
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+      if (nv /= 1) call stop_it("OUTPUT called with scalar field, but nv/=1")
       !
       !  open file and set view (specify which file positions we can access)
       !
@@ -337,7 +337,6 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn
 !
       integer :: ndim
       real, dimension (nx,ndim) :: a
@@ -364,7 +363,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn,lroot,stop_it
+      use Mpicomm, only: lroot,stop_it
 
 !
       integer :: ndim
@@ -387,7 +386,7 @@ contains
 !
     endsubroutine output_pencil_scal
 !***********************************************************************
-    subroutine outpus(file,a,nn)
+    subroutine outpus(file,a,nv)
 !
 !  write snapshot file, always write mesh and time, could add other things
 !  11-oct-98/axel: adapted
@@ -395,9 +394,9 @@ contains
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
-      real, dimension (mx,my,mz,nn) :: a
+      real, dimension (mx,my,mz,nv) :: a
 !
       call stop_it("OUTPUS doesn't work with io_mpio yet -- but wasn't used anyway")
 !
@@ -407,7 +406,7 @@ contains
       close(1)
     endsubroutine outpus
 !***********************************************************************
-    subroutine write_record_info(file, nn)
+    subroutine write_record_info(file, nv)
 !
 !  Add record markers and time to file, so it looks as similar as
 !  possible/necessary to a file written by io_dist.f90. Currently, we
@@ -417,7 +416,7 @@ contains
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
-      integer :: nn,reclen
+      integer :: nv,reclen
       integer(kind=MPI_OFFSET_KIND) :: fpos
       character (len=*) :: file
 !
@@ -429,7 +428,7 @@ contains
         ! record markers for (already written) data block
         !
         fpos = 0                ! open-record marker
-        reclen = nxgrid*nygrid*nzgrid*nn*4
+        reclen = nxgrid*nygrid*nzgrid*nv*4
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)
         fpos = fpos + reclen+4  ! close-record marker
         call MPI_FILE_WRITE_AT(fhandle,fpos,reclen,1,MPI_INTEGER,status,ierr)

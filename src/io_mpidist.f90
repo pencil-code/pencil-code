@@ -1,4 +1,4 @@
-! $Id: io_mpidist.f90,v 1.1 2003-06-12 02:03:56 mee Exp $
+! $Id: io_mpidist.f90,v 1.2 2003-07-29 14:25:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpidist.f90   !!!
@@ -98,7 +98,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.1 2003-06-12 02:03:56 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.2 2003-07-29 14:25:12 dobler Exp $")
 !
       io_initialized=.true.
 !
@@ -142,19 +142,19 @@ contains
 !
     endsubroutine directory_names
 !***********************************************************************
-    subroutine commit_io_type_vect(nn,a,mode)
+    subroutine commit_io_type_vect(nv,a,mode)
 !
-!  For a new value of nn, commit MPI types needed for output_vect(). If
-!  called with the same value of nn as the previous time, do nothing.
+!  For a new value of nv, commit MPI types needed for output_vect(). If
+!  called with the same value of nv as the previous time, do nothing.
 !  12-jun-03/tony: coded
 !
 !      use Cdata
 !
       integer, dimension(9) :: blen, datatype
       integer (kind=MPI_ADDRESS_KIND), dimension(9) :: disp
-      integer,save :: lastnn=-1, lastmode ! value of nn at previous call
-      real, dimension (mx,my,mz,nn) :: a
-      integer :: nn, mode, mode_vars
+      integer,save :: lastnv=-1, lastmode ! value of nv at previous call
+      real, dimension (mx,my,mz,nv) :: a
+      integer :: nv, mode, mode_vars
       integer (kind=MPI_ADDRESS_KIND) :: a_addr, var_addr
       integer (kind=MPI_ADDRESS_KIND), save :: lasta_addr=-1
 
@@ -163,8 +163,8 @@ contains
 !
       call MPI_GET_ADDRESS(a,a_addr,ierr)
 
-      if (nn /= lastnn .or. a_addr/=lasta_addr .or. mode.ne.lastmode) then
-        if (lastnn > 0) then
+      if (nv /= lastnv .or. a_addr/=lasta_addr .or. mode.ne.lastmode) then
+        if (lastnv > 0) then
           ! free old types, so we can re-use them
           call MPI_TYPE_FREE(io_memtype_v, ierr)
           call MPI_TYPE_FREE(io_filetype_v, ierr)
@@ -174,7 +174,7 @@ contains
         if (lshear) mode_vars=9
         if (mode.eq.0) mode_vars=1
 
-        blen     = (/ mw*nn, 1, mx, my, mz, 1, 1, 1,     1/)
+        blen     = (/ mw*nv, 1, mx, my, mz, 1, 1, 1,     1/)
         datatype(:) = MPI_REAL
         disp(1)=0
         call MPI_GET_ADDRESS(t,var_addr,ierr)
@@ -207,19 +207,19 @@ contains
 !
     endsubroutine commit_io_type_vect
 !***********************************************************************
-    subroutine commit_io_type_scal(nn,a,mode)
+    subroutine commit_io_type_scal(nv,a,mode)
 !
-!  For a new value of nn, commit MPI types needed for output_vect(). If
-!  called with the same value of nn as the previous time, do nothing.
+!  For a new value of nv, commit MPI types needed for output_vect(). If
+!  called with the same value of nv as the previous time, do nothing.
 !  12-jun-03/tony: coded
 !
 !      use Cdata
 !
       integer, dimension(9) :: blen, datatype
       integer (kind=MPI_ADDRESS_KIND), dimension(9) :: disp
-      integer,save :: lastnn=-1, lastmode ! value of nn at previous call
-      real, dimension (mx,my,mz,nn) :: a
-      integer :: nn, mode, mode_vars
+      integer,save :: lastnv=-1, lastmode ! value of nv at previous call
+      real, dimension (mx,my,mz,nv) :: a
+      integer :: nv, mode, mode_vars
       integer (kind=MPI_ADDRESS_KIND) :: a_addr, var_addr
       integer (kind=MPI_ADDRESS_KIND), save :: lasta_addr=-1
 
@@ -228,8 +228,8 @@ contains
 !
       call MPI_GET_ADDRESS(a,a_addr,ierr)
 
-      if (nn /= lastnn .or. a_addr/=lasta_addr .or. mode.ne.lastmode) then
-        if (lastnn > 0) then
+      if (nv /= lastnv .or. a_addr/=lasta_addr .or. mode.ne.lastmode) then
+        if (lastnv > 0) then
           ! free old types, so we can re-use them
           call MPI_TYPE_FREE(io_memtype_s, ierr)
           call MPI_TYPE_FREE(io_filetype_s, ierr)
@@ -239,7 +239,7 @@ contains
         if (lshear) mode_vars=9
         if (mode.eq.0) mode_vars=1
 
-        blen     = (/ mw*nn, 1, mx, my, mz, 1, 1, 1,     1/)
+        blen     = (/ mw*nv, 1, mx, my, mz, 1, 1, 1,     1/)
         datatype(:) = MPI_REAL
         disp(1)=0
         call MPI_GET_ADDRESS(t,var_addr,ierr)
@@ -272,7 +272,7 @@ contains
 !
     endsubroutine commit_io_type_scal
 !***********************************************************************
-    subroutine input(file,a,nn,mode)
+    subroutine input(file,a,nv,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
 !  11-apr-97/axel: coded
@@ -281,14 +281,14 @@ contains
       use Mpicomm, only: lroot,stop_it
 !
       character (len=*) :: file
-      integer :: nn,mode                  ,i
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv,mode                  ,i
+      real, dimension (mx,my,mz,nv) :: a
 !
-      if (ip<=8) print*,'INPUT: mx,my,mz,nn=',mx,my,mz,nn
+      if (ip<=8) print*,'INPUT: mx,my,mz,nv=',mx,my,mz,nv
       if (.not. io_initialized) &
            call stop_it("INPUT: Need to call init_io first")
 !
-      call commit_io_type_vect(nn,a,mode)
+      call commit_io_type_vect(nv,a,mode)
 !
 !  open file and set view (specify which file positions we can access)
 !
@@ -306,27 +306,27 @@ contains
 !
     endsubroutine input
 !***********************************************************************
-    subroutine output_vect(file,a,nn,noclose)
+    subroutine output_vect(file,a,nv,noclose)
 !
 !  write snapshot file; currently without ghost zones and any meta data
 !  like time, etc.
 !    Looks like we nee to commit the MPI type anew each time we are called,
-!  since nn may vary.
+!  since nv may vary.
 !  20-sep-02/wolf: coded
 !
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
       logical, intent(in), optional :: noclose
-      integer :: nn
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nv =', nv
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
 !
-      call commit_io_type_vect(nn,a,1)
+      call commit_io_type_vect(nv,a,1)
       !
       !  open file and set view (specify which file positions we can access)
       !
@@ -343,7 +343,7 @@ contains
 !
     endsubroutine output_vect
 !***********************************************************************
-    subroutine output_scal(file,a,nn,noclose)
+    subroutine output_scal(file,a,nv,noclose)
 !
 !  write snapshot file; currently without ghost zones and any meta data
 !  like time, etc.
@@ -354,17 +354,17 @@ contains
 !
       logical, intent(in), optional :: noclose
       real, dimension (mx,my,mz) :: a
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
 
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (.not. io_initialized) &
            call stop_it("OUTPUT: Need to call init_io first")
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+      if (nv /= 1) call stop_it("OUTPUT called with scalar field, but nv/=1")
 !
 !  open file and set view (specify which file positions we can access)
 !
-      call commit_io_type_scal(nn,a,1)
+      call commit_io_type_scal(nv,a,1)
 
       call MPI_FILE_OPEN(MPI_COMM_SELF, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
@@ -408,7 +408,6 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn
 !
       integer :: ndim
       real, dimension (nx,ndim) :: a
@@ -435,7 +434,7 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: imn,mm,nn,lroot,stop_it
+      use Mpicomm, only: lroot,stop_it
 
 !
       integer :: ndim
@@ -458,7 +457,7 @@ contains
 !
     endsubroutine output_pencil_scal
 !***********************************************************************
-    subroutine outpus(file,a,nn)
+    subroutine outpus(file,a,nv)
 !
 !  write snapshot file, always write mesh and time, could add other things
 !  11-oct-98/axel: adapted
@@ -466,9 +465,9 @@ contains
       use Cdata
       use Mpicomm, only: lroot,stop_it
 !
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
-      real, dimension (mx,my,mz,nn) :: a
+      real, dimension (mx,my,mz,nv) :: a
 !
       call stop_it("OUTPUS doesn't work with io_mpio yet -- but wasn't used anyway")
 !

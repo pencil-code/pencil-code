@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.101 2003-07-15 13:06:38 nilshau Exp $
+! $Id: mpicomm.f90,v 1.102 2003-07-29 14:25:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -9,25 +9,43 @@
 !  Data layout for each processor (`-' marks ghost points, `+' real
 !  points of the processor shown)
 !
-!         n = 1     - - - - - - - . - - - - - - -
-!             2     - - - - - - - . - - - - - - -
-!             3     - - - - - - - . - - - - - - -
-!             . n1  - - - + + + + . + + + + - - -
-!             . .   - - - + + + + . + + + + - - -
-!             . .   - - - + + + + . + + + + - - -
-!             . .   - - - + + + + . + + + + - - -
-!                   . . . . . . . . . . . . . . . 
-!             . .   - - - + + + + . + + + + - - -
-!             . .   - - - + + + + . + + + + - - -
-!             . .   - - - + + + + . + + + + - - -
-!             . n2  - - - + + + + . + + + + - - -
-!             .     - - - - - - - . - - - - - - -
-!             .     - - - - - - - . - - - - - - -
-!             mz    - - - - - - - . - - - - - - -
-!                        
-!                         m1. . .   . . . m2
-!               m = 1 2 3 . . . .   . . . . . . my
-!                           
+!         n = mz        - - - - - - - - - . - - - - - - - - -
+!             .         - - - - - - - - - . - - - - - - - - -
+!             .         - - - - - - - - - . - - - - - - - - -
+!             . n2      - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . . n2i   - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!                       . . . . . . . . . . . . . . . . . . .
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . . n1i   - - - + + + + + + . + + + + + + - - -
+!             . .       - - - + + + + + + . + + + + + + - - -
+!             . n1      - - - + + + + + + . + + + + + + - - -
+!             3         - - - - - - - - - . - - - - - - - - -
+!             2         - - - - - - - - - . - - - - - - - - -
+!         n = 1         - - - - - - - - - . - - - - - - - - -
+!                            
+!                                m1i             m2i
+!                             m1. . . . .   . . . . . m2
+!               m     = 1 2 3 . . . . . .   . . . . . . . . my
+!
+!  Thus, the indices for some important regions are
+!    ghost zones:
+!                        1:nghost (1:m1-1)  and  my-nghost+1:my (m2+1:my)
+!    real points:
+!                        m1:m2
+!    boundary points (which become ghost points for adjacent processors):
+!                        m1:m1i  and  m2i:m2
+!    inner points for periodic bc (where 7-point derivatives are affected
+!    by ghost information alone):
+!                        m1i+1:m2i-1
+!    inner points for general bc (where 7-point derivatives are affected
+!    by ghost information plus boundcond for m1,m2):
+!                        m1i+2:m2i-2
 
 module Mpicomm
 
@@ -58,8 +76,7 @@ module Mpicomm
   real, dimension (mx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
   real, dimension (nghost,my,mz,mvar) :: fahi,falo,fbhi,fblo,fao,fbo ! For shear
   integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
-  integer, dimension (ny*nz) :: mm,nn
-  integer :: ierr,imn
+  integer :: ierr
   integer :: nprocs
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
@@ -87,7 +104,6 @@ module Mpicomm
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
-  logical, dimension (ny*nz) :: necessary=.false.
   integer, parameter :: Itag_yz=301,Itag_zx=302,Itag_xy=303
   integer, parameter :: tautag_yz=401,tautag_zx=402,tautag_xy=403
 
@@ -100,12 +116,6 @@ module Mpicomm
 !  The arrays leftneigh and rghtneigh give the processor numbers
 !  to the left and to the right.
 !
-!  Before the communication has been completed, the nghost=3 layers next
-!  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
-!  In the mean time we can calculate the interior points sufficiently far
-!  away from the boundary points. Here we calculate the order in which
-!  m and n are executed. At one point, necessary(imn)=.true., which is
-!  the moment when all communication must be completed.
 !
 !  20-aug-01/wolf: coded
 !  31-aug-01/axel: added to 3-D
@@ -116,8 +126,6 @@ module Mpicomm
 !
       use General
       use Cdata, only: lmpicomm
-!
-      integer :: m,n,min_m1i_m2,max_m2i_m1
 !
 !  get processor number, number of procs, and whether we are root
 !
@@ -198,62 +206,7 @@ module Mpicomm
            iproc,ipy,ipz, &
            ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
-!  produce index-array for the sequence of points to be worked through:
-!  first inner box (while communication of ghost values takes place),
-!  then boundary zones.
-!
-      imn=1
-      do n=n1i+1,n2i-1
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-      necessary(imn)=.true.
-!
-!  do the lower stripe in the n-direction
-!
-      do n=max(n2i,n1+1),n2
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-!
-!  upper stripe in the n-direction
-!
-      do n=n1,min(n1i,n2)
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-!
-!  left and right hand boxes
-!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
-!  instead of just m2i, to make sure the case ny=1 works ok, and
-!  also that the same m is not set in both loops.
-!  ALSO: need to make sure the second loop starts not before the
-!  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
-!
-      min_m1i_m2=min(m1i,m2)
-      max_m2i_m1=max(m2i,min_m1i_m2+1)
-!
-      do n=n1,n2
-        do m=m1,min_m1i_m2
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-        do m=max_m2i_m1,m2
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
+      call setup_mm_nn()
 !
     endsubroutine mpicomm_init
 !***********************************************************************

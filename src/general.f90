@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.21 2003-06-16 04:41:10 brandenb Exp $
+! $Id: general.f90,v 1.22 2003-07-29 14:25:12 dobler Exp $
 
 module General
 
@@ -22,6 +22,90 @@ module General
 
   contains
 
+!***********************************************************************
+    subroutine setup_mm_nn()
+!
+!  Produce index-array for the sequence of points to be worked through:
+!  Before the communication has been completed, the nghost=3 layers next
+!  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
+!  In the mean time we can calculate the interior points sufficiently far
+!  away from the boundary points. Here we calculate the order in which
+!  m and n are executed. At one point, necessary(imn)=.true., which is
+!  the moment when all communication must be completed.
+!
+      use Cparam
+      use Cdata, only: mm,nn,necessary,lroot
+!
+      integer :: imn,m,n
+      integer :: min_m1i_m2,max_m2i_m1
+!
+      imn=1
+      do n=n1i+2,n2i-2
+        do m=m1i+2,m2i-2
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+      necessary(imn)=.true.
+!
+!  do the upper stripe in the n-direction
+!
+      do n=max(n2i-1,n1+1),n2
+        do m=m1i+2,m2i-2
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+!
+!  lower stripe in the n-direction
+!
+      do n=n1,min(n1i+1,n2)
+        do m=m1i+2,m2i-2
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+!
+!  left and right hand boxes
+!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
+!  instead of just m2i, to make sure the case ny=1 works ok, and
+!  also that the same m is not set in both loops.
+!  ALSO: need to make sure the second loop starts not before the
+!  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
+!
+      min_m1i_m2=min(m1i+1,m2)
+      max_m2i_m1=max(m2i-1,min_m1i_m2+1)
+!
+      do n=n1,n2
+        do m=m1,min_m1i_m2
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+        do m=max_m2i_m1,m2
+          mm(imn)=m
+          nn(imn)=n
+          imn=imn+1
+        enddo
+      enddo
+!
+!  Debugging output to be analysed with $PENCIL_HOME/utils/check-mm-nn.
+!  Uncommenting manually, since we can't use ip here (as it is not yet
+!  read from run.in).
+!
+      if (.false.) then
+        if (lroot) then
+          do imn=1,ny*nz
+            if (necessary(imn)) write(*,'(A)') '==MM==NN==> Necessary'
+            write(*,'(A,I5,I5)') '==MM==NN==> m,n= ', mm(imn), nn(imn)
+          enddo
+        endif
+      endif
+!
+    endsubroutine setup_mm_nn
 !***********************************************************************
     subroutine random_number_wrapper_1(a)
 !

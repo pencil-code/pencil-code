@@ -25,10 +25,7 @@ module Mpicomm
 
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
-
-  integer, dimension (ny*nz) :: mm,nn
-  integer :: ierr,imn
-  logical, dimension (ny*nz) :: necessary=.false.
+  integer :: ierr
 
   contains
 
@@ -50,8 +47,6 @@ module Mpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
-      integer :: m,n,min_m1i_m2,max_m2i_m1
-!
 !  consistency check
 !
       if (ncpus > 1) then
@@ -67,65 +62,7 @@ module Mpicomm
       ipy = 0
       ipz = 0
 !
-!  produce index-array for the sequence of points to be worked through:
-!  first inner box, then boundary zones.
-!  Could be somehow simplified here (no communication), but we need to
-!  update the ghost zones before using them, so it is best to stick to
-!  the same scheme as in Mpicomm.
-!
-      imn=1
-      do n=n1i+1,n2i-1
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-      if (ip < 10) print*,'NOMPICOMM: setting necessary(',imn,') = .true.' 
-      necessary(imn)=.true.
-!
-!  do the lower stripe in the n-direction
-!
-      do n=max(n2i,n1+1),n2
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-!
-!  upper stripe in the n-direction
-!
-      do n=n1,min(n1i,n2)
-        do m=m1i+1,m2i-1
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
-!
-!  left and right hand boxes
-!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1+1)
-!  instead of just m2i, to make sure the case ny=1 works ok, and
-!  also that the same m is not set in both loops.
-!  ALSO: need to make sure the second loop starts not before the
-!  first one ends; therefore max_m2i_m1+1=max(m2i,min_m1i_m2+1).
-!
-      min_m1i_m2=min(m1i,m2)
-      max_m2i_m1=max(m2i,min_m1i_m2+1)
-!
-      do n=n1,n2
-        do m=m1,min_m1i_m2
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-        do m=max_m2i_m1,m2
-          mm(imn)=m
-          nn(imn)=n
-          imn=imn+1
-        enddo
-      enddo
+      call setup_mm_nn()
 !
     endsubroutine mpicomm_init
 !***********************************************************************

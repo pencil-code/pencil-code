@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.125 2003-07-29 09:43:36 brandenb Exp $ 
+! $Id: sub.f90,v 1.126 2003-07-29 14:25:12 dobler Exp $ 
 
 module Sub 
 
@@ -30,7 +30,7 @@ module Sub
 !***********************************************************************
     subroutine save_name(a,iname)
 !
-!  Lists the value of a (must be treated as real) in gname array
+!  Lists the value of a (must be treated as real) in fname array
 !
 !  26-may-02/axel: adapted from max_mn_name
 !
@@ -1341,15 +1341,15 @@ module Sub
 !
     endsubroutine u_dot_gradf
 !***********************************************************************
-    subroutine inpup(file,a,nn)
+    subroutine inpup(file,a,nv)
 !
 !  read particle snapshot file
 !  11-apr-00/axel: adapted from input
 !
       use Cdata
 !
-      integer :: nn
-      real, dimension (nn) :: a
+      integer :: nv
+      real, dimension (nv) :: a
       character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
@@ -1357,15 +1357,15 @@ module Sub
       close(1)
     endsubroutine inpup
 !***********************************************************************
-    subroutine inpui(file,a,nn)
+    subroutine inpui(file,a,nv)
 !
 !  read particle snapshot file
 !  11-apr-00/axel: adapted from input
 !
       use Cdata
 !
-      integer :: nn
-      integer, dimension (nn) :: a
+      integer :: nv
+      integer, dimension (nv) :: a
       character (len=*) :: file
 !
       open(1,file=file,form='formatted')
@@ -1373,15 +1373,15 @@ module Sub
       close(1)
     endsubroutine inpui
 !***********************************************************************
-    subroutine inpuf(file,a,nn)
+    subroutine inpuf(file,a,nv)
 !
 !  read formatted snapshot
 !   5-aug-98/axel: coded
 !
       use Cdata
 !
-      integer :: nn
-      real, dimension (mx,my,mz,nn) :: a
+      integer :: nv
+      real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
       open(1,file=file)
@@ -1392,13 +1392,13 @@ module Sub
 10    format(8e10.3)
     endsubroutine inpuf
 !***********************************************************************
-    subroutine outpup(file,a,nn)
+    subroutine outpup(file,a,nv)
 !
 !  write snapshot file, always write mesh and time, could add other things
 !  11-apr-00/axel: adapted from output
 !
-      integer :: nn
-      real, dimension (nn) :: a
+      integer :: nv
+      real, dimension (nv) :: a
       character (len=*) :: file
 !
       open(1,file=file,form='unformatted')
@@ -1406,13 +1406,13 @@ module Sub
       close(1)
     endsubroutine outpup
 !***********************************************************************
-    subroutine outpui(file,a,nn)
+    subroutine outpui(file,a,nv)
 !
 !  write snapshot file, always write mesh and time, could add other things
 !  11-apr-00/axel: adapted from output
 !
-      integer :: nn
-      integer, dimension (nn) :: a
+      integer :: nv
+      integer, dimension (nv) :: a
       character (len=*) :: file
 !
       open(1,file=file,form='formatted')
@@ -1420,16 +1420,16 @@ module Sub
       close(1)
     endsubroutine outpui
 !***********************************************************************
-    subroutine outpuf(file,a,nn)
+    subroutine outpuf(file,a,nv)
 !
 !  write formatted snapshot, otherwise like output
 !   5-aug-98/axel: coded
 !
       use Cdata
 !
-      integer :: nn
+      integer :: nv
       character (len=*) :: file
-      real, dimension (mx,my,mz,nn) :: a
+      real, dimension (mx,my,mz,nv) :: a
 !
       open(1,file=file)
       write(1,10) a
@@ -1691,7 +1691,7 @@ module Sub
 !
     endsubroutine debugv
 !***********************************************************************
-    subroutine smooth_3d(ff,nn)
+    subroutine smooth_3d(ff,nsmooth)
 !
 !  Smooth scalar vector field FF binomially N times, i.e. with the
 !  binomial coefficients (2*N \above k)/2^{2*N}.
@@ -1702,15 +1702,15 @@ module Sub
       use Cdata
 !
       real, dimension (mx,my,mz) :: ff
-      integer :: j,nn
+      integer :: j,nsmooth
 !
       do j=1,3
-        call smooth_1d(ff,j,nn)
+        call smooth_1d(ff,j,nsmooth)
       enddo
 !
     endsubroutine smooth_3d
 !***********************************************************************
-    subroutine smooth_1d(ff,idir,nn)
+    subroutine smooth_1d(ff,idir,nsmooth)
 !
 !  Smooth scalar vector field FF binomially N times in direction IDIR.
 !  20-apr-99/wolf: coded
@@ -1721,7 +1721,7 @@ module Sub
       use Cdata
 !
       real, dimension (mx,my,mz) :: ff,gg
-      integer :: idir,i,nn
+      integer :: idir,i,nsmooth
 !
 !  don't smooth in directions in which there is no extent
 !
@@ -1729,7 +1729,7 @@ module Sub
       if (idir.eq.2.and.my.lt.3) return
       if (idir.eq.3.and.mz.lt.3) return
 !
-      do i=1,nn
+      do i=1,nsmooth
         gg = ff
         select case (idir)
         case (1)                  ! x direction

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.70 2003-07-15 12:53:17 theine Exp $
+! $Id: radiation_exp.f90,v 1.71 2003-07-29 14:25:12 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.70 2003-07-15 12:53:17 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.71 2003-07-29 14:25:12 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -496,7 +496,7 @@ module Radiation
 !
 !  03-jul-03/tobi: coded
 !
-      use Cdata
+      use Cdata, only: m1,m2,lroot,headt,m,n
 !
       integer :: ll,mm,nn
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.154 2003-07-29 09:43:36 brandenb Exp $
+! $Id: cdata.f90,v 1.155 2003-07-29 14:25:12 dobler Exp $
 
 module Cdata
 
@@ -51,10 +51,16 @@ module Cdata
   integer :: nt=1e6,it1=10
   integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
   integer :: ilncc=0
-  integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
   character (len=labellen) ::fft_switch='fftpack'
+
+!
+!  pencil-related stuff
+!
+  integer :: imn,m,n
+  integer, dimension (ny*nz) :: mm,nn
+  logical, dimension (ny*nz) :: necessary=.false.
 
 !
 !  in this section are all the things related to printing
