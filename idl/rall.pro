@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.26 2002-11-13 17:30:01 brandenb Exp $
+;;;  $Id: rall.pro,v 1.27 2003-04-29 12:46:51 nilshau Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -67,7 +67,7 @@ endelse
 ;
 nprocx=0L & nprocy=0L & nprocz=0L
 close,1
-openr,1,datatopdir+'/'+'dim.dat'
+openr,1,datatopdir+'/'+dimfile
 readf,1,mx,my,mz,nvar
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
@@ -82,7 +82,7 @@ datadir=datatopdir+'/proc0'
 mxloc=0L & myloc=0L & mzloc=0L
 ;
 close,1
-openr,1,datadir+'/'+'dim.dat'
+openr,1,datadir+'/'+dimfile
 readf,1,mxloc,myloc,mzloc
 close,1
 ;
@@ -125,7 +125,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   dummy=''
   ipx=0L &ipy=0L &ipz=0L
   close,1
-  openr,1,datadir+'/dim.dat'
+  openr,1,datadir+'/'+dimfile
   readf,1, dummy
   readf,1, dummy
   readf,1, dummy
