@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.6 2002-05-08 17:47:28 dobler Exp $
+! $Id: prints.f90,v 1.7 2002-05-08 18:16:44 dobler Exp $
 
 module Print
 
@@ -28,18 +28,18 @@ module Print
 !
 !  produce the format
 !
-      fform='(i10,f10.3,1pg10.3,'//cform(1)
+      fform='(i10,f10.3,1pg10.3,0p,'//cform(1)
       do iname=2,nname
         fform=trim(fform)//comma//cform(iname)
       enddo
       fform=trim(fform)//')'
-print*,'PRINTS: form = ',fform
+print*,'PRINTS: form = ',trim(fform)
 print*,'PRINTS: args = ',it-1,t_diag,dt,fname(1:nname)
 !
 !  this needs to be made more sophisticated of course...
 !
       if(lroot) then
-        write(6,fform) it-1,t_diag,dt,fname(1:nname)
+        write(6,trim(fform)) it-1,t_diag,dt,fname(1:nname)
       endif
       first = .false.
 !
