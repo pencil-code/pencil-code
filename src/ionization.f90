@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.38 2003-06-14 15:37:22 theine Exp $
+! $Id: ionization.f90,v 1.39 2003-06-14 16:36:54 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -57,7 +57,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.38 2003-06-14 15:37:22 theine Exp $")
+           "$Id: ionization.f90,v 1.39 2003-06-14 16:36:54 brandenb Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -101,8 +101,29 @@ module Ionization
         print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
         print*,'ss_ion=',ss_ion
       endif
-
     endsubroutine initialize_ionization
+
+!*******************************************************************
+    subroutine rprint_ionization(lreset)
+!
+!  Writes iyH and iTT to index.pro file
+!
+!  14-jun-03/axel: adapted from rprint_radiation
+!
+      use Cdata
+      use Sub
+!  
+      logical :: lreset
+!
+!  write column where which ionization variable is stored
+!
+      write(3,*) 'nname=',nname
+      write(3,*) 'iyH=',iyH
+      write(3,*) 'iTT=',iTT
+!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_ionization
+
 !***********************************************************************
     subroutine ionfrac(f)
 !
