@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.2 2002-05-04 13:50:48 dobler Exp $
+! $Id: hydro.f90,v 1.3 2002-05-04 15:08:29 dobler Exp $
 
 module Hydro
 
@@ -22,15 +22,11 @@ module Hydro
 !
       integer :: iname
 !
-print*, 'RPRINT_HYDRO (before): nname,i_t,i_urms,i_umax=', &
-     nname,i_t,i_urms,i_umax
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'t',i_t)
         call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
       enddo
-print*, 'RPRINT_HYDRO (after): nname,i_t,i_urms,i_umax=', &
-     nname,i_t,i_urms,i_umax
 !
     endsubroutine rprint_hydro
 !***********************************************************************

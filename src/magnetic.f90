@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.17 2002-05-04 14:16:33 dobler Exp $
+! $Id: magnetic.f90,v 1.18 2002-05-04 15:08:29 dobler Exp $
 
 module Magnetic
 
@@ -46,8 +46,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.17 $", &
-           "$Date: 2002-05-04 14:16:33 $")
+           "$Revision: 1.18 $", &
+           "$Date: 2002-05-04 15:08:29 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -219,17 +219,12 @@ module Magnetic
 !
       integer :: iname
 !
-print*, 'RPRINT_MAGNETIC (before): nname,i_brms,i_bmax,i_jrms,i_jmax=', &
-        nname,i_brms,i_bmax,i_jrms,i_jmax
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
         call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
       enddo
-print*, 'RPRINT_MAGNETIC (after): nnanme,i_brms,i_bmax,i_jrms,i_jmax=', &
-        nname,i_brms,i_bmax,i_jrms,i_jmax
-
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

@@ -167,10 +167,8 @@ module Equ
 !
 !  the result is present only on the root processor
 !
-print*,'bef: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
       if(lroot) then
         fsum=fsum/(nw*ncpus)
-print*,'aft: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
 !
 !  sort back into original array
 !  need to take sqare root if |itype|=2
@@ -346,8 +344,8 @@ print*,'aft: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.35 $", &
-           "$Date: 2002-05-04 12:55:19 $")
+           "$Revision: 1.36 $", &
+           "$Date: 2002-05-04 15:13:11 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -539,16 +537,6 @@ print*,'aft: fsum,fmax,lroot=',fsum(1),fmax(1),lroot
         call diagnostic
         !call diagnostic_old !!(should still be intact)
       endif
-if (any(abs(df(l1:l2,m,n,4))> 1e20)) write(0,*) 'Fishy lam'
-do i=5,7
-  if (any(abs(df(l1:l2,m,n,i))> 1e20)) write(0,*) 'Fishy aa'
-enddo
-do i=1,3
-  if (any(abs(df(l1:l2,m,n,i))>1e20)) then
-    write(0,*) 'Fishy uu'
-  endif
-enddo
-
 !
     endsubroutine pde
 !***********************************************************************
