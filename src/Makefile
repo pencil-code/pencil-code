@@ -27,13 +27,14 @@ IO=io_dist
 #LIBSIG=
 
 ## Linux:
-#FC=f95		#(norlap2)
+#FC=f95
+#FFLAGS=-O3
+#LDMPI=
 #FC=pgf90	#(norhpc)
 #FFLAGS=-O2 -Minfo 	#(norhpc)
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #FFLAGS=-O4 -Wc,-malign-double	#(norlap2)
 #LDMPI=-lmpich #(Nq[0-9]+)
-#LDMPI= #(norlap2)
 #MPICOMM=nompicomm#(norlap2)
 #FC=mpif90 # (Samos)
 #FFLAGS=-O # (Samos)
