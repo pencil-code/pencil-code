@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.8 2002-11-13 10:12:24 brandenb Exp $
+! $Id: slices.f90,v 1.9 2002-11-13 22:37:03 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -34,17 +34,21 @@ module Slices
       use Sub
 !
       real, save :: tvid
-      integer, save :: nvid
+      integer, save :: ifirst,nvid
 !
       character (len=4) :: ch
       character (len=130) :: file
 !
 !  Output vid-data in 'tvid' time intervals
-!  Here we read the tvid.dat file every time again.
-!  This allows us to change its content on the fly.
 !
       file = trim(datadir)//'/tvid.dat'
-      call out1 (trim(file),tvid,nvid,dvid,t)
+      if (ifirst==0) then
+        call out1 (trim(file),tvid,nvid,dvid,t)
+        ifirst=1
+      endif
+!
+!  This routine sets lvid=T whenever its time to write a slice
+!
       call out2 (trim(file),tvid,nvid,dvid,t,lvid,ch,.false.)
 !
     endsubroutine wvid_prepare
