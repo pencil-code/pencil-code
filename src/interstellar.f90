@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.92 2004-04-16 17:20:03 mee Exp $
+! $Id: interstellar.f90,v 1.93 2004-04-17 16:29:18 ajohan Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.92 2004-04-16 17:20:03 mee Exp $")
+           "$Id: interstellar.f90,v 1.93 2004-04-17 16:29:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -483,7 +483,7 @@ module Interstellar
           ! use non-root broadcasts for the communication...
           do icpu=1,ncpus
              fmpi1=mass_cloud
-             call mpibcast_real_nonroot(fmpi1,1,icpu-1)
+             call mpibcast_real(fmpi1,1,icpu-1)
              mass_cloud_byproc(icpu)=fmpi1(1)
           enddo
           ! if (lroot.and.ip<14) print*,'check_SNII: mass_cloud_byproc:',mass_cloud_byproc
@@ -726,7 +726,7 @@ find_SN: do n=n1,n2
 !  Broadcast to all processors.
 !
     fmpi5=(/ x_SN, y_SN, z_SN, lnrho_SN, ss_SN /)
-    call mpibcast_real_nonroot(fmpi5,5,iproc_SN)
+    call mpibcast_real(fmpi5,5,iproc_SN)
 
     x_SN=fmpi5(1); y_SN=fmpi5(2); z_SN=fmpi5(3); 
     lnrho_SN=fmpi5(4); ss_SN=fmpi5(5)

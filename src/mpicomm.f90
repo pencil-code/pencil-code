@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.118 2004-04-17 12:28:20 ajohan Exp $
+! $Id: mpicomm.f90,v 1.119 2004-04-17 16:29:17 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -815,47 +815,43 @@ module Mpicomm
       call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,root,MPI_COMM_WORLD,ierr)
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,nbcast_array)
-!
-      integer :: nbcast_array
-      real :: bcast_array
+    subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
 !  is being used when nbcast_array=1 (eg when dt is being communicated)
 !
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,root,MPI_COMM_WORLD,ierr)
+      integer :: nbcast_array
+      real :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
+!
+!  this works for the general case when nbcast_array is not 1
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
-!  this works for the general case when nbcast_array is not 1
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
 !
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,root,MPI_COMM_WORLD,ierr)
+      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
     endsubroutine mpibcast_real_arr
-!***********************************************************************
-    subroutine mpibcast_real_scl_nonroot(bcast_array,nbcast_array,ibcast_proc)
-!
-      integer :: nbcast_array,ibcast_proc
-      real :: bcast_array
-!
-!  this works for the general case when nbcast_array is not 1
-!  and the general case when communication is not nec. from root.
-!
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc,MPI_COMM_WORLD,ierr)
-    endsubroutine mpibcast_real_scl_nonroot
-!***********************************************************************
-    subroutine mpibcast_real_nonroot(bcast_array,nbcast_array,ibcast_proc)
-!
-      integer :: nbcast_array,ibcast_proc
-      real, dimension(nbcast_array) :: bcast_array
-!
-!  this works for the general case when nbcast_array is not 1
-!  and the general case when communication is not nec. from root.
-!
-      call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc,MPI_COMM_WORLD,ierr)
-    endsubroutine mpibcast_real_nonroot
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
 !

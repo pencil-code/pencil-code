@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.66 2004-04-17 12:28:20 ajohan Exp $
+! $Id: dustdensity.f90,v 1.67 2004-04-17 16:29:18 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.66 2004-04-17 12:28:20 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.67 2004-04-17 16:29:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -651,7 +651,7 @@ module Dustdensity
 !
 !  Send to all procs
 !          
-        call mpibcast_real_scl(cs_ave,1)
+        call mpibcast_real(cs_ave,1)
 !
 !  Need mid-plane pressure for scale height calculation
 !
@@ -659,7 +659,7 @@ module Dustdensity
           call eoscalc_point &
               (ilnrho_ss,f(l1,m,n1,ilnrho),f(l1,m,n1,iss),pp=pp0)
         endif
-        call mpibcast_real_scl_nonroot(pp0,1,nprocz/2)
+        call mpibcast_real(pp0,1,nprocz/2)
 !
 !  Find scale height and calculate turbulence properties
 !
@@ -681,11 +681,11 @@ module Dustdensity
 !
 !  Broadcast to all processors from scale height processor
 !
-        call mpibcast_real_scl_nonroot(alphaSS,1,nprocz/2)
-        call mpibcast_real_scl_nonroot(ul0,1,nprocz/2)
-        call mpibcast_real_scl_nonroot(tl0,1,nprocz/2)
-        call mpibcast_real_scl_nonroot(teta,1,nprocz/2)
-        call mpibcast_real_scl_nonroot(ueta,1,nprocz/2)
+        call mpibcast_real(alphaSS,1,nprocz/2)
+        call mpibcast_real(ul0,1,nprocz/2)
+        call mpibcast_real(tl0,1,nprocz/2)
+        call mpibcast_real(teta,1,nprocz/2)
+        call mpibcast_real(ueta,1,nprocz/2)
         tl01 = 1/tl0
         teta1 = 1/teta
       endif

@@ -247,40 +247,26 @@ module Mpicomm
       dummy=ibcast_array
     endsubroutine mpibcast_logical_scl
 !***********************************************************************
-    subroutine mpibcast_real_scl(bcast_array,nbcast_array)
+    subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
       real :: bcast_array,dummy
+      integer, optional :: proc
 !
       if (nbcast_array/=1) stop "problem in mpibcast_real_scl"
       dummy=bcast_array
+      if (ip == 0) print*, proc
     endsubroutine mpibcast_real_scl
 !***********************************************************************
-    subroutine mpibcast_real_arr(bcast_array,nbcast_array)
+    subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array,dummy
+      integer, optional :: proc
 !
       dummy=bcast_array
+      if (ip == 0) print*, proc
     endsubroutine mpibcast_real_arr
-!***********************************************************************
-    subroutine mpibcast_real_scl_nonroot(bcast_array,nbcast_array,ibcast_proc)
-!
-      integer :: nbcast_array,ibcast_proc
-      real :: bcast_array,dummy
-!
-      dummy=bcast_array
-      dummy=ibcast_proc
-    endsubroutine mpibcast_real_scl_nonroot
-!***********************************************************************
-    subroutine mpibcast_real_nonroot(bcast_array,nbcast_array,ibcast_proc)
-!
-      integer :: nbcast_array,ibcast_proc
-      real, dimension(nbcast_array) :: bcast_array,dummy
-!
-      dummy=bcast_array
-      dummy=ibcast_proc
-    endsubroutine mpibcast_real_nonroot
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
 !
