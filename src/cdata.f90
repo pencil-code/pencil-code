@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.240 2004-07-04 03:13:40 theine Exp $
+! $Id: cdata.f90,v 1.241 2004-07-05 20:50:10 theine Exp $
 
 module Cdata
 
@@ -37,7 +37,8 @@ module Cdata
   real :: ttransient=0.
   real, dimension (2) :: fran1,fran2
 
-  real, dimension(3) :: border_frac=0
+  real, dimension(3) :: border_frac=0.0
+  real, dimension(2) :: border_frac_x=0.0,border_frac_y=0.0,border_frac_z=0.0
 
   !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
