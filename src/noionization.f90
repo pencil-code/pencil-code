@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.81 2003-10-22 10:10:41 mcmillan Exp $
+! $Id: noionization.f90,v 1.82 2003-10-23 17:03:42 ngrs Exp $
 
 !  Dummy routine for noionization
 
@@ -21,7 +21,7 @@ module Ionization
 
   interface thermodynamics              ! Overload the `thermodynamics' function
     module procedure thermodynamics_pencil   ! explicit f implicit m,n
-    module procedure thermodynamics_point    ! explocit lnrho, ss
+    module procedure thermodynamics_point    ! explicit lnrho, ss
   end interface
 
   interface ionget
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.81 2003-10-22 10:10:41 mcmillan Exp $")
+           "$Id: noionization.f90,v 1.82 2003-10-23 17:03:42 ngrs Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -104,7 +104,7 @@ module Ionization
 !***********************************************************************
     subroutine initialize_ionization()
 !
-      use Density, only: cs20, gamma1, lcalc_cp
+      use Density, only: cs20, gamma1, lcalc_cp, initlnrho
 !
       real :: mu
 !
@@ -112,6 +112,8 @@ module Ionization
       call getmu(mu)
       if (lcalc_cp) then 
         cp=k_B/(mu*m_H)
+      else if (initlnrho=='geo-kws') then
+        cp=5./3.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
       else
         cp=1.
       endif
@@ -388,6 +390,7 @@ module Ionization
       integer, intent(inout), optional :: iostat
 
       if (ip==0) print*,unit,present(iostat)
+
     endsubroutine read_ionization_init_pars
 !***********************************************************************
     subroutine write_ionization_init_pars(unit)
@@ -395,6 +398,7 @@ module Ionization
 
 !      write(unit,NML=ionization_init_pars)
       if (ip==0) print*,unit
+
     endsubroutine write_ionization_init_pars
 !***********************************************************************
     subroutine read_ionization_run_pars(unit,iostat)
@@ -402,6 +406,7 @@ module Ionization
       integer, intent(inout), optional :: iostat
 
       if (ip==0) print*,unit,present(iostat)
+
     endsubroutine read_ionization_run_pars
 !***********************************************************************
     subroutine write_ionization_run_pars(unit)
@@ -409,6 +414,7 @@ module Ionization
 
 !      write(unit,NML=ionization_run_pars)
       if (ip==0) print*,unit
+
     endsubroutine write_ionization_run_pars
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)

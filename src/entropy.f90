@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.220 2003-10-22 15:29:59 dobler Exp $
+! $Id: entropy.f90,v 1.221 2003-10-23 17:03:42 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -55,7 +55,6 @@ module Entropy
        center1_x, center1_y, center1_z, &
        center2_x, center2_y, center2_z,T0
      
-
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
@@ -101,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.220 2003-10-22 15:29:59 dobler Exp $")
+           "$Id: entropy.f90,v 1.221 2003-10-23 17:03:42 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,7 +128,6 @@ module Entropy
       use Cdata
       use Gravity, only: gravz
       use Density, only: cs0,cs20
-      use Ionization, only: get_soundspeed
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -221,8 +219,7 @@ module Entropy
     select case(initss)
       case('geo-kws')
         if (lroot) print*,'initialize_entropy: reset sound speed for spherical shell problem'
-        call get_soundspeed(T0,cs20)
-        cs0 = sqrt(cs20)
+        cs20 = cs0**2
     endselect
 !
     endsubroutine initialize_entropy
