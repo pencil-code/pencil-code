@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.10 2002-10-02 17:53:41 dobler Exp $
+! $Id: io_mpio.f90,v 1.11 2002-10-25 05:24:57 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -77,7 +77,9 @@ contains
 !
 !  define MPI data types needed for MPI-IO
 !  closely follwing Gropp et al. `Using MPI-2'
+!
 !  20-sep-02/wolf: coded
+!  25-oct-02/axel: removed assignment of datadir; now set in cdata.f90
 !
       use Cdata, only: datadir,directory_snap
       use Sub
@@ -94,7 +96,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.10 2002-10-02 17:53:41 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.11 2002-10-25 05:24:57 brandenb Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -125,7 +127,6 @@ contains
 !  initialize datadir and directory_snap (where var.dat and VAR# go)
 !  -- may be overwritten in *.in parameter file
 !
-      datadir = 'data'
       directory_snap = ''
 !
     endsubroutine register_io

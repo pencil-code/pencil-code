@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.43 2002-10-09 14:05:31 mee Exp $
+! $Id: io_dist.f90,v 1.44 2002-10-25 05:24:57 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.43 2002-10-09 14:05:31 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.44 2002-10-25 05:24:57 brandenb Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -88,7 +88,7 @@ contains
 !
 !  Set up the directory names:
 !  set directory name for the output (one subdirectory for each processor)
-!  if  datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
+!  if datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !
 !  02-oct-2002/wolf: coded
 !

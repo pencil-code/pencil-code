@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.11 2002-10-09 14:54:34 dobler Exp $
+! $Id: general.f90,v 1.12 2002-10-25 05:24:57 brandenb Exp $
 
 module General
 
@@ -271,7 +271,9 @@ module General
     subroutine safe_character_assign(dest,src)
 !
 !  Do character string assignement with check against overflow
+!
 !  08-oct-02/tony: coded
+!  25-oct-02/axel: added tag in output to give name of routine
 !
       character (len=*), intent(in):: src
       character (len=*), intent(inout):: dest
@@ -281,7 +283,7 @@ module General
       srcLen = len(src)
 
       if (destLen<srcLen) then 
-         print *, &
+         print *, "safe_character_assign: ", &
               "RUNTIME ERROR: FORCED STRING TRUNCATION WHEN ASSIGNING '" & 
                //src//"' to '"//dest//"'"
          dest=src(1:destLen)
