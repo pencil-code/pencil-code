@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.170 2004-04-06 11:07:19 dobler Exp $ 
+! $Id: sub.f90,v 1.171 2004-04-08 11:05:47 ajohan Exp $ 
 
 module Sub 
 
@@ -1946,8 +1946,8 @@ module Sub
 !  do while loop to make make sure tt is always larger than tout.
 !  (otherwise slices are written just to catch up with tt.)
 !
-      if (tt.ge.tout) then
-        do while (tt>tout)
+      if (tt >= tout) then
+        do while (tt >= tout)
           tout=tout+abs(dtout)
         enddo
         nout=nout+1
