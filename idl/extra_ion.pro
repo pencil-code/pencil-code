@@ -48,4 +48,18 @@ rho=exp(llnrho)
 yH=yyH(l1:l2,m1:m2,n1:n2)
 TTT=TT(l1:l2,m1:m2,n1:n2)
 
+lnTT_=alog(TTT/TT_ion)
+f=lnrho_ion-llnrho+1.5*lnTT_-exp(-lnTT_)+alog(1.-yH)-2.*alog(yH)
+dlnTT_dy=(alog(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH+fHe)
+dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+
+dlnTT_dlnrho=gamma1
+dfdlnrho=gamma1*exp(-lnTT_)
+dydlnrho=-dfdlnrho/dfdy
+dlnPdlnrho=1.+dydlnrho/(1.+yH+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+
+cs2=ss_ion*TTT*dlnPdlnrho
+
+PPP=(1.+yH+fHe)*rho*ss_ion*TTT
+
 END
