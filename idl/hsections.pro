@@ -10,6 +10,25 @@
 ;;;   Plot velocity, density and entropy field in three horizontal
 ;;;   sections.
 
+; ---------------------------------------------------------------------- ;
+pro _opstuff, r, LGRAVz=lgravz, lgravr=lgravr
+;
+;  Overplot some lines or circles (needed repeatedly). Plot white on
+;  black, so lines can be distinguished on any background
+;
+  hline = 2                     ; line style
+  hcol1 = !p.background         ; color1
+  hcol2 = !p.color              ; color2
+;
+  default, lgravz, 0L
+  default, lgravr, 0L
+  if (lgravr) then begin
+    opcircle, r, LINE=hline, THICK=3, COLOR=hcol1
+    opcircle, r, LINE=hline,          COLOR=hcol2
+  endif
+end
+; ---------------------------------------------------------------------- ;
+
 s = texsyms()
 
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
@@ -21,9 +40,9 @@ nrholevs = 15                   ; No of isolines
 nuulevs = 60                    ; No of colours
 nentlevs = 60                   ; No of colours
 
-nz1 = 0.2*nz > 4
+nz1 = 0.25*nz > 4
 nz2 = 0.5*nz
-nz3 = 0.8*nz < nz-5
+nz3 = 0.75*nz < (nz-5)
 
 sz1 = '!8z!6='+strtrim(z[nz1],2)
 sz2 = '!8z!6='+strtrim(z[nz2],2)
@@ -56,11 +75,11 @@ endif else begin
 endelse
 
 plot_3d_vect, uu[*,*,nz1,*],x,y, /KEEP, TITLE=tit+sz1+'!X', ZRANGE=zruu
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 plot_3d_vect, uu[*,*,nz2,*],x,y, /KEEP, TITLE=tit+sz2+'!X', ZRANGE=zruu
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 plot_3d_vect, uu[*,*,nz3,*],x,y, /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 tit = '!8s!6 and '+s.varrho+'!6 at '
 
@@ -74,17 +93,17 @@ endelse
 contourfill, ent[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levent
 var = reform(lam[*,*,nz1])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ent[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levent
 var = reform(lam[*,*,nz2])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
 contourfill, ent[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levent
 var = reform(lam[*,*,nz3])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircle, 1., LINE=2, THICK=2
+_opstuff, sqrt(1-z[nz3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
 wget
 
@@ -92,3 +111,7 @@ restore_state
 
 end
 ; End of file hsections.pro
+
+
+
+
