@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.264 2004-07-17 04:53:17 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.265 2004-07-17 16:25:28 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-07-17 04:53:17 $ $,~ $ $Revision: 1.264 $ $}
+%\date{$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-07-17 04:53:17 $ $,~ $ $Revision: 1.264 $ $}\\
+  \emph{$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}\\
   \url{http://www.nordita.dk/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4505,7 +4505,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-07-17 04:53:17 $ $,~ $ $Revision: 1.264 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-07-17 16:25:28 $ $,~ $ $Revision: 1.265 $ $}
 
 \section{Timings}
 
@@ -5591,10 +5591,72 @@ the Lorentz force $\Jv\times\Bv$ from a vector potential $\Av$ using
 $-\mu_0\Jv=\nabla^2\Av-\nab\nab\cdot\Av$. This will be important in
 the MHD calculations presented below.
 
-\subsection{Upwind derivatives}
+\subsection{Upwind derivatives and relation to boundary conditions}
 \index{Upwind}
 \label{S-upwind}
-[To be written]
+\newcommand{\Order}[1]{O\left(#1\right)}
+
+%AB: Wolfgang, this is a cut+paste version of your text
+%AB: in kompendien/numerik/FiniteDiff.tex
+%AB: If your checked-in version was not up-to-date, you can overwrite this.
+
+The ``wiggles'' in $\ln\varrho$ in (high-order centred-difference)
+convection simulations are apparently caused by a velocity profile where
+the velocity approaches zero at the boundary.
+This causes the density profile to be squeezed into a boundary layer where
+eventually numerical resolution is insufficient and, for centred
+differences, a spurious Nyquist signal is generated that almost
+instantaneously propagates into the whole box.
+
+This behaviour is hardly influenced by the boundary conditions on
+$\ln\varrho$ at all.
+A solution, however, is to apply upwinded derivative operators.
+The simplest upwind derivative is a finite-difference derivative operator
+where the point furthest downwind is excluded from the stencil.
+For $u>0$, that means that instead of
+\begin{equation}
+  f'_0
+  = \frac{-f_{-3} + 9 f_{-2} - 45 f_{-1} \qquad
+           + 45 f_{1} - 9 f_{2} + f_{3}}
+         {60\,\delta x}
+    - \frac{\delta x^6\,f^{(7)}}{140}
+  = D^{\rm(cent,6)} + \Order{\delta x^6} \; ,
+\end{equation}
+one takes
+\begin{equation}
+  f'_0
+  = \frac{-2 f_{-3} + 15 f_{-2} - 60 f_{-1} + 20 f_{0} + 30 f_{1} - 3 f_{2}}
+         {60\,\delta x}
+    + \frac{\delta x^5\,f^{(6)}}{60}
+  = D^{\rm(up,5)} + \Order{\delta x^5} \; ;
+\end{equation}
+the fourth-order upwind scheme would be
+\begin{equation}
+  f'_0
+  = \frac{-f_{-3} + 6 f_{-2} - 18 f_{-1} + 10 f_{0} + 3 f_{1}}
+         {12\,\delta x}
+    - \frac{\delta x^4\,f^{(5)}}{20}
+  = D^{\rm(up,4)} + \Order{\delta x^4} \; .
+\end{equation}
+
+The effect of upwinding is mostly to stop the Nyquist perturbations from
+spreading away from the boundary.
+With the fourth-order formula they actually hardly ever develop.
+The difference between central and fifth-order upwind derivative is
+\begin{equation}
+  [D^{\rm(up,5)} - D^{\rm(cent,6)}] f_0
+  = \frac{-f_{-3} + 6 f_{-2} - 15 f_{-1} + 20 f_{0}
+          - 15 f_{1} + 6 f_{2} - f_{3}}
+         {60\,\delta x}
+  = -\frac{\delta x^5}{60} f^{(6)}_{\rm 2nd} \; .
+\end{equation}
+In other words, 5th-order upwinding can be represented for any sign of $u$
+as hyper-diffusion:
+\begin{equation}
+  -u f'_{\rm(up,5th)}
+  = -u f'_{\rm(centr,6th)}  + \frac{|u|\delta x^5}{60} f^{(6)} \; .
+\end{equation}
+
 
 \subsection{The 2N-scheme for time-stepping}
 \index{2N-scheme}
@@ -7497,7 +7559,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.264 2004-07-17 04:53:17 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.265 2004-07-17 16:25:28 brandenb Exp $ $}
 
 
 \end{document}
