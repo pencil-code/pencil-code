@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.33 2004-02-17 11:55:48 brandenb Exp $
+;  $Id: extra.pro,v 1.34 2004-02-25 15:27:33 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -80,5 +80,42 @@ if (ilncc ne 0) then begin
   llncc=reform(lncc(l1:l2,m1:m2,n1:n2))
   ccc=exp(llncc)
 end
+
+ndustspec = n_elements(ind)
+if (ind(0) ne 0) then begin
+  deltamd = par.deltamd
+  md0 = par.md0
+  rhods = par.rhods
+  if (irhod(0) ne 0) then begin
+    lmdvar=1
+  endif else begin
+    lmdvar=0
+  endelse
+  md      = fltarr(ndustspec)
+  mdplus  = fltarr(ndustspec)
+  mdminus = fltarr(ndustspec)
+  ad      = fltarr(ndustspec)
+  nd      = fltarr(nx,ny,nz,ndustspec)
+  if (lmdvar) then rhod = fltarr(nx,ny,nz,ndustspec)
+
+  for k=0,ndustspec-1 do begin
+    sdust = strtrim(string(k),2)
+    string = 'nd(*,*,*,'+sdust+') = nd'+sdust+'(l1:l2,m1:m2,n1:n2)'
+    res = execute(string)
+    if (lmdvar) then begin
+      string = 'rhod(*,*,*,'+sdust+') = rhod'+sdust+'(l1:l2,m1:m2,n1:n2)'
+      res = execute(string)
+    endif
+  endfor
+
+  for i=0,ndustspec-1 do begin
+    mdminus(i) = md0*deltamd^i
+    mdplus(i)  = md0*deltamd^(i+1)
+    md(i)      = 0.5*(mdplus(i)+mdminus(i))
+    ad(i)      = (3*md(i)/(4*!pi*rhods))^(1/3.)
+  endfor
+  nnd = reform(nd)
+  if (lmdvar) then rrhod = reform(rhod)
+endif
 ;
 END
