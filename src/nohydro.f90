@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.27 2004-05-18 09:59:18 ajohan Exp $
+! $Id: nohydro.f90,v 1.28 2004-05-25 18:32:18 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -17,7 +17,7 @@ module Hydro
   implicit none
 
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
-  real :: nu_turb=0.
+  real :: nu_turb=0.,nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
   logical :: lcalc_turbulence_pars=.false.
 
   integer :: dummyuu           ! We cannot define empty namelists
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.27 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.28 2004-05-25 18:32:18 mee Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
