@@ -1,4 +1,4 @@
-; $Id: pc_nan_inform.pro,v 1.1 2004-06-11 13:30:16 ajohan Exp $
+; $Id: pc_nan_inform.pro,v 1.2 2004-06-11 16:30:20 dobler Exp $
 pro pc_nan_inform, object=object
 
   vars = tag_names(object)
@@ -8,7 +8,7 @@ pro pc_nan_inform, object=object
     string = 'var = object.'+vars[kk]
     res=execute(string)
 
-    if (mean(finite(var)) ne 1.) then begin
+    if (min(finite(var)) ne 1) then begin
       print, 'NaN or inf found in ', vars[kk]
     endif
 
