@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.281 2004-03-14 13:50:17 ajohan Exp $
+! $Id: entropy.f90,v 1.282 2004-03-14 16:07:25 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.281 2004-03-14 13:50:17 ajohan Exp $")
+           "$Id: entropy.f90,v 1.282 2004-03-14 16:07:25 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -757,17 +757,18 @@ module Entropy
       use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: absz,n_c,n_w,n_i,n_h
+      real, dimension(nx) :: absz,n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real, parameter :: T_c_cgs=500.0,T_w_cgs=8.0e3,T_i_cgs=8.0e3,T_h_cgs=1.0e6 
       real :: T_c,T_w,T_i,T_h
       real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
-      real :: cp1tilde
+      real :: cp1tilde,mu 
 !      real, dimension(nx) :: pp 
       double precision :: pp0 
 !      real, dimension(2) :: fmpi2
       real, dimension(1) :: fmpi1
+      real :: kpc, rhoscale
 !      integer :: iproctop
 !
       if (lroot) print*,'ferriere: Ferriere density and entropy profile'
@@ -776,92 +777,67 @@ module Entropy
 !  pressure is set to 6 times thermal pressure, this factor roughly
 !  allowing for other sources, as modelled by Ferriere.
 !
+      call getmu(mu)
+      kpc = 3.086D21 / unit_length
+      rhoscale = m_H * mu * unit_length**3
+      print *,'rhoscale: ',rhoscale, mu
       T_c=T_c_cgs/unit_temperature
       T_w=T_w_cgs/unit_temperature
       T_i=T_i_cgs/unit_temperature
       T_h=T_h_cgs/unit_temperature
 
-      !pp0=6.0*k_B*(rho0/1.38) *                                               &
-      ! (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
-      pp0=k_B*unit_length**3*                                               &
-       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
-      cs20=gamma*pp0/rho0
-      cs0=sqrt(cs20)
+!      pp0=6.0*k_B*(rho0/1.38) *                                               &
+!       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+!      pp0=k_B*unit_length**3*                                               &
+!       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+!      cs20=gamma*pp0/rho0
+!      cs0=sqrt(cs20)
 !      ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero  (not needed)
 !
       do n=n1,n2            ! nb: don't need to set ghost-zones here
       absz=abs(z(n))
       do m=m1,m2 
 !  cold gas profile n_c (eq 6)
-        n_c=0.340*(0.859*exp(-min((z(n)*kpc/0.127)**2,70.)) +         &
-                   0.047*exp(-min((z(n)*kpc/0.318)**2,70.)) +         &
-                   0.094*exp(-min(absz*kpc/0.403,70.)))     
+        n_c=0.340*(0.859*exp(-(z(n)*kpc/0.127)**2) +         &
+                   0.047*exp(-(z(n)*kpc/0.318)**2) +         &
+                   0.094*exp(-absz*kpc/0.403))     
 !  warm gas profile n_w (eq 7)
-        n_w=0.226*(0.456*exp(-min((z(n)*kpc/0.127)**2,70.)) +         &
-                   0.403*exp(-min((z(n)*kpc/0.318)**2,70.)) +         &
-                   0.141*exp(-min(absz*kpc/0.403,70.)))
+        n_w=0.226*(0.456*exp(-(z(n)*kpc/0.127)**2) +  &
+                   0.403*exp(-(z(n)*kpc/0.318)**2) +  &
+                   0.141*exp(-absz*kpc/0.403))
 !  ionized gas profile n_i (eq 9)
-        n_i=0.0237*exp(-absz*kpc) + 0.0013* exp(-min(absz*kpc/0.150,70.))
+        n_i=0.0237*exp(-absz*kpc) + 0.0013* exp(-absz*kpc/0.150)
 !  hot gas profile n_h (eq 13)
         n_h=0.00048*exp(-absz*kpc/1.5)         
 !  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
-        rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)
+        !rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)*rhoscale
+        rho=(n_c+n_w+n_i+n_h)*rhoscale
         lnrho=alog(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
+
 !  define entropy via pressure, assuming fixed T for each component
         if(lentropy) then
-!  thermal pressure (eq 13)
-          pp=k_B*unit_length**3 *                                        &
-           (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
-           
+!  thermal pressure (eq 15)
+          pp=k_B*unit_length**3 *                                 &
+             (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
+!           
           call eoscalc(ilnrho_pp,lnrho,pp,ss=ss,yH=yH,lnTT=lnTT) 
           call pressure_gradient(lnrho(1),ss(1),cs2bot,cp1tilde)
           call pressure_gradient(lnrho(nx),ss(nx),cs2top,cp1tilde)
-
-          f(l1:l2,m,n,iss)=ss
-        
+!
+          f(l1:l2,m,n,iss)=(n_c+n_w+n_i+n_h)
+!        
           fmpi1=(/ cs2bot /)
           call mpibcast_real_nonroot(fmpi1,1,0)
           cs2bot=fmpi1(1) 
           fmpi1=(/ cs2top /)
-          call mpibcast_real_nonroot(fmpi1,ncpus-1,0)
+          call mpibcast_real_nonroot(fmpi1,1,ncpus-1)
           cs2top=fmpi1(1)
-
-
-!          if (lionization) then
-!           !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
-!           if (n == n1 .and. m == m1) cs2bot=0.
-!           if (n == n2 .and. m == m1) cs2top=0.
-!         else          
-!           !f(l1:l2,m,n,iss)=alog(gamma*pp/cs20)/gamma +                   &
-!           !                         gamma1/gamma*lnrho0 - lnrho
-!           !  calculate cs2bot,top: needed for a2/c2 b.c.s (fixed T)
-!           if (iprocz == nprocz .and. iprocy==1) cs2bot=gamma*pp(1)/rho(1)
-!           if (iprocz == 1      .and. iprocy==1) cs2top=gamma*pp(nx)/rho(nx)
-!         endif
+!
         endif
        enddo
       enddo
-!
-!  broadcast cs2bot, top
-!
-!     if (lentropy) then
-!  just use symmetry to set cs2top=cs2bot, and broadcast from root
-!       cs2top=cs2bot
-!       fmpi2=(/ cs2bot, cs2top /)
-!       call mpibcast_real(fmpi2,2)
-!        fmpi2=(/ cs2bot, cs2top /)
-!        cs2bot=fmpi2(1); cs2top=fmpi2(2)
-!!  or do directly from the right processor
-!        fmpi1=(/ cs2bot /)
-!        call mpibcast_real(fmpi1,1)    ! this case can use mpibcast_real
-!        cs2bot=fmpi1(1)
-!        iproctop=(nprocz-1)*nprocy     ! ipz=nprocz-1,ipy=0
-!        fmpi1=(/ cs2top /)
-!        call mpibcast_real_nonroot(fmpi1,1,iproctop)
-!        cs2top=fmpi1(1)
-!     endif
-      
+!      
       if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere
