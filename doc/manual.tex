@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.273 2004-08-21 18:14:03 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.274 2004-08-21 23:37:09 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}
+%\date{$ $Date: 2004-08-21 23:37:09 $ $,~ $ $Revision: 1.274 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}\\
+  \emph{$ $Date: 2004-08-21 23:37:09 $ $,~ $ $Revision: 1.274 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -471,8 +471,8 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
 \vfill
 
-%Copyright \copyright{} 2001,2002 Wolfgang Dobler \& Axel Brandenburg
-%\bigskip
+Copyright \copyright{} 2001--2004 Wolfgang Dobler \& Axel Brandenburg
+\bigskip
 
 Permission is granted to make and distribute verbatim copies of
 this manual provided the copyright notice and this permission notice
@@ -4654,7 +4654,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-08-21 23:37:09 $ $,~ $ $Revision: 1.274 $ $}
 
 \section{Timings}
 
@@ -5405,7 +5405,7 @@ $\epsilon$ & $\sigma$ & $\delta$ \\
 
 % --------------------------------------------------------------------- %
 
-\subsection{Remeshing}
+\subsection{Remeshing (regridding)}
 \index{Remeshing}
 \label{S-remesh}
 [This should be written up in a better way and put somewhere else.
@@ -5413,7 +5413,7 @@ But currently, remeshing is only available for the Pencil developers
 anyway.]
 
 Suppose you have a directory run_64 with a $64^3$ run (running on
-\var{ny}$\times$\var{nz}=$2\times1$ CPUs) that you want to
+$N_0=$\var{ny}$\times$\var{nz}=$2\times1$ CPUs) that you want to
 continue from \file{VAR1} at $128^3$ (on
 \var{ny}$\times$\var{nz}=$4\times4$ CPUs).
 \begin{enumerate}
@@ -5428,29 +5428,30 @@ continue from \file{VAR1} at $128^3$ (on
   \file{var.dat} (remesh.csh so far only works with \file{var.dat}):
   \begin{alltt}
   \prompt{unix> } cd run_64
-  \prompt{unix> } reprodir -l ../run_64_restart {\sl or } new run_64_restart
-  \prompt{unix> } (cd ../run_64_restart/data ; mkproc-tree 2)
-  \prompt{unix> } restart-new-dir-VAR ../run_64_restart 1
+  \prompt{run_64> } reprodir ../tmp_64 {\sl or } new tmp_64
+  \prompt{run_64> } mkdir -p ../tmp_64/data {\sl or } (cd ../tmp_64/; crtmp)
+  \prompt{run_64> } (cd ../tmp_64/data ; mkproc-tree \(N_0\))
+  \prompt{run_64> } restart-new-dir-VAR ../tmp_64 1
   \end{alltt}
 
 \item Create the new run directory:
   \begin{alltt}
-  \prompt{unix> } cd ../run_64_restart
-  \prompt{unix> } reprodir -l ../run_128 {\sl or } new run_128
-  \prompt{unix> } vi ../run_128/src/cparam.local
+  \prompt{run_64> } cd ../tmp_64
+  \prompt{tmp_64> } reprodir -l ../run_128 {\sl or } new run_128
+  \prompt{tmp_64> } vi ../run_128/src/cparam.local
   {\sl{}# set nxgrid=128, ncpus=16, nprocy=4}
-  \prompt{unix> } (cd ../run_128; crtmp; setup-src; make)
+  \prompt{tmp_64> } (cd ../run_128; crtmp; setup-src; make)
 \end{alltt}
 
 \item Setup and do remeshing
   \begin{alltt}
-  \prompt{unix> } setup-remesh
-  \prompt{unix> } (cd remesh; make)
-  \prompt{unix> } vi remesh/common.local
-  {\sl{}# set muly=2, mulz=4, remesh_par=2}
-  \prompt{unix> } vi remesh.in
-  {\sl{}# Replace line by ../run_128}
-  \prompt{unix> } remesh.csh
+  \prompt{tmp_64> } setup-remesh
+  \prompt{tmp_64> } vi remesh/common.local
+  {\sl{}# set muly=2, mulz=4, remesh\_par=2}
+  \prompt{tmp_64> } (cd remesh; make)
+  \prompt{tmp_64> } vi remesh.in
+  {\sl{}# Replace line by ../run\_128}
+  \prompt{tmp_64> } remesh.csh
   {\sl{}# Answer `yes'}  
   \end{alltt}
 \end{enumerate}
@@ -7722,7 +7723,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.273 2004-08-21 18:14:03 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.274 2004-08-21 23:37:09 dobler Exp $ $}
 
 
 \end{document}
