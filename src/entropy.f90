@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.152 2003-04-10 10:10:36 mee Exp $
+! $Id: entropy.f90,v 1.153 2003-04-27 16:20:14 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -25,6 +25,7 @@ module Entropy
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
+  real :: lambda_cool=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
@@ -42,7 +43,8 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
-       chi,lcalc_heatcond_constchi,lmultilayer,Kbot
+       chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
+       lambda_cool
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0,i_ugradpm=0
@@ -79,7 +81,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.152 2003-04-10 10:10:36 mee Exp $")
+           "$Id: entropy.f90,v 1.153 2003-04-27 16:20:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -435,7 +437,7 @@ module Entropy
 !
 !  heating/cooling
 !
-      if ((luminosity /= 0) .or. (cool /= 0)) &
+      if ((luminosity /= 0) .or. (cool /= 0) .or. (lambda_cool /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
 !ngrs: switch off for debug
@@ -754,6 +756,13 @@ endif
           if (lroot) print*,'No such value for cooltype: ', trim(cooltype)
           call stop_it("")
         endselect
+      endif
+!
+!  overwrite with spatially uniform cooling (as a test)
+!
+      if(lambda_cool/=0) then
+        heat=-lambda_cool/rho1
+        if(headtt) print*,'heat=',heat
       endif
 !
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat

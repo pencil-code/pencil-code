@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.33 2003-04-27 10:49:15 brandenb Exp $
+! $Id: ionization.f90,v 1.34 2003-04-27 16:20:14 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -55,7 +55,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.33 2003-04-27 10:49:15 brandenb Exp $")
+           "$Id: ionization.f90,v 1.34 2003-04-27 16:20:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,7 +142,7 @@ module Ionization
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'output_ionization',yyH(4,4,4)
+      if(headtt.and.ip<10) print*,'output_ionization',yyH(4,4,4)
       if(output_yH) write(lun) yyH
 !
     endsubroutine output_ionization
