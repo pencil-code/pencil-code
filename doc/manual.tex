@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.118 2002-10-02 16:43:06 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.119 2002-10-02 17:29:05 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -315,7 +315,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.118 $ $}
+\date{\today,~ $ $Revision: 1.119 $ $}
 
 % ====================================================================== %
 
@@ -348,7 +348,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.118 $ $}
+  \emph{\today,~ $ $Revision: 1.119 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1690,6 +1690,24 @@ a certain amplitude.
 \bigskip
 
 A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{A comment regarding the viscosity}
+\label{viscosity}
+
+We emphasise that the code works with constant diffusion coefficients
+(viscosity $\nu$, thermal diffusivity $\chi$, magnetic diffusivity $\eta$,
+or passive scalar diffusivity ${\cal D}$). If any of these numbers are
+too small, you would need to have more meshpoints; otherwise the code
+develops wiggles (`ringing') and blows up. A useful criterion is based
+on the mesh Reynolds number based on the maximum velocity,
+\begin{equation}
+  \mbox{Re}_{\rm mesh}=\max(|\uv|)\max(\delta x,\delta y,\delta z)/\nu,
+\end{equation}
+which should not exceed a certain value with can be problem-dependent.
+Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
+Similarly there exist also mesh Peclet and mesh magnetic Reynolds numbers.
 
 % ---------------------------------------------------------------------- %
 
@@ -3074,6 +3092,28 @@ samples of the code.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Sod shock tube problem}
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+	Values on the different sides of the shock.
+    }
+    \label{Tshock1}
+    \begin{tabular}{lll}
+    \toprule
+$\rho$  &  $p$  &  $s$  \\
+    \midrule
+   1.0  &  1.0  &  0.3065  \\
+   0.1  &  0.1  &  1.2275  \\
+   0.01 &  0.01 &  2.1486  \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Three-layered convection model}
 
 In Sect.~\ref{S-getting-started} we have shown the early stages of the
@@ -3979,15 +4019,31 @@ possible inputs to the \file{print.in} file.
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
+  \multicolumn{2}{c}{Module \name{prints.f90}} \\
+\midrule
+  \var{it} & number of time step (since beginning of job only)\\
+  \var{t} & $t$ (since start.csh)\\
+  \var{dt} & $\delta t$ \\
+  \var{dtc} & $\delta t\;c_{\rm s}/\delta x$ \\
+%
+\midrule
   \multicolumn{2}{c}{Module \name{hydro.f90}} \\
 \midrule
   \var{urms} & $\left<\uv^2\right>^{1/2}$ \\
-  \var{umax} & $\max(|uv|)$ \\
+  \var{umax} & $\max(|\uv|)$ \\
+  \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{oum} & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{uxm} & $\left<u_x\right>$ \\
+  \var{uym} & $\left<u_y\right>$ \\
+  \var{uzm} & $\left<u_z\right>$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{density.f90}} \\
 \midrule
   \var{rhom} & $\left<\varrho\right>$ \\
+  \var{eth} & $\left<\varrho e\right>$ \\
+  \var{ekin} & $\left<{1\over2}\varrho\uv^2u_x\right>$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{entropy.f90}} \\
@@ -3999,6 +4055,13 @@ possible inputs to the \file{print.in} file.
 \midrule
   \var{brms} & $\left<\Bv^2\right>^{1/2}$ \\
   \var{bmax} & $\max(|\Bv|)$ \\
+  \var{jrms} & $\left<\jv^2\right>^{1/2}$ \\
+  \var{jmax} & $\max(|\jv|)$ \\
+  \var{abm} & $\left<\Av\cdot\Bv\right>$ \\
+  \var{jbm} & $\left<\jv\cdot\Bv\right>$ \\
+  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ \\
+  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ \\
+  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{pscalar.f90}} \\
@@ -4021,7 +4084,7 @@ possible inputs to the \file{print.in} file.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.118 2002-10-02 16:43:06 dobler Exp $ $}
+$ $Id: manual.tex,v 1.119 2002-10-02 17:29:05 brandenb Exp $ $}
 
 
 \end{document}
