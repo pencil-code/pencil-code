@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.19 2003-04-03 14:56:55 theine Exp $
+! $Id: general.f90,v 1.20 2003-04-11 17:59:31 brandenb Exp $
 
 module General
 
@@ -380,6 +380,83 @@ module General
       spline_derivative=d
     end function spline_derivative
 !***********************************************************************
+    function spline_derivative_double(z,f)
+!
+!  computes derivative of a given function using spline interpolation
+!
+!  01-apr-03/tobi: originally coded by Aake Nordlund
+!  11-apr-03/axel: double precision version
+!
+      implicit none
+      real, dimension(:) :: z
+      double precision, dimension(:), intent(in) :: f
+      double precision, dimension(size(z)) :: w1,w2,w3
+      double precision, dimension(size(z)) :: d,spline_derivative_double
+      double precision :: c
+      integer :: mz,k
+
+      mz=size(z)
+
+      w1(1)=1./(z(2)-z(1))**2
+      w3(1)=-1./(z(3)-z(2))**2
+      w2(1)=w1(1)+w3(1)
+      d(1)=2.*((f(2)-f(1))/(z(2)-z(1))**3 &
+                  -(f(3)-f(2))/(z(3)-z(2))**3)
+!
+! interior points
+!
+      w1(2:mz-1)=1./(z(2:mz-1)-z(1:mz-2))
+      w3(2:mz-1)=1./(z(3:mz)-z(2:mz-1))
+      w2(2:mz-1)=2.*(w1(2:mz-1)+w3(2:mz-1))
+
+      d(2:mz-1)=3.*(w3(2:mz-1)**2*(f(3:mz)-f(2:mz-1)) &
+           +w1(2:mz-1)**2*(f(2:mz-1)-f(1:mz-2)))
+
+!
+! last point
+!
+      w1(mz)=1./(z(mz-1)-z(mz-2))**2
+      w3(mz)=-1./(z(mz)-z(mz-1))**2
+      w2(mz)=w1(mz)+w3(mz)
+      d(mz)=2.*((f(mz-1)-f(mz-2))/(z(mz-1)-z(mz-2))**3 &
+           -(f(mz)-f(mz-1))/(z(mz)-z(mz-1))**3)
+!
+! eliminate at first point
+!
+      c=-w3(1)/w3(2)
+      w1(1)=w1(1)+c*w1(2)
+      w2(1)=w2(1)+c*w2(2)
+      d(1)=d(1)+c*d(2)
+      w3(1)=w2(1)
+      w2(1)=w1(1)
+!
+! eliminate at last point
+!
+      c=-w1(mz)/w1(mz-1)
+      w2(mz)=w2(mz)+c*w2(mz-1)
+      w3(mz)=w3(mz)+c*w3(mz-1)
+      d(mz)=d(mz)+c*d(mz-1)
+      w1(mz)=w2(mz)
+      w2(mz)=w3(mz)
+!
+! eliminate subdiagonal
+!
+      do k=2,mz
+         c=-w1(k)/w2(k-1)
+         w2(k)=w2(k)+c*w3(k-1)
+         d(k)=d(k)+c*d(k-1)
+      end do
+!
+! backsubstitute
+!
+      d(mz)=d(mz)/w2(mz)
+      do k=mz-1,1,-1
+         d(k)=(d(k)-w3(k)*d(k+1))/w2(k)
+      end do
+
+      spline_derivative_double=d
+    end function spline_derivative_double
+!***********************************************************************
     function spline_integral(z,f,q0)
 !
 !  computes integral of a given function using spline interpolation
@@ -410,6 +487,39 @@ module General
 
       spline_integral=q
     end function spline_integral
+!***********************************************************************
+    function spline_integral_double(z,f,q0)
+!
+!  computes integral of a given function using spline interpolation
+!
+!  01-apr-03/tobi: originally coded by Aake Nordlund
+!  11-apr-03/axel: double precision version
+!
+      implicit none
+      real, dimension(:) :: z
+      double precision, dimension(:) :: f
+      real, dimension(size(z)) :: dz
+      double precision, dimension(size(z)) :: df
+      double precision, dimension(size(z)) :: q,spline_integral_double
+      double precision, optional :: q0
+      integer :: mz,k
+
+      mz=size(z)
+
+      q(1)=0.
+      if (present(q0)) q(1)=q0
+      df=spline_derivative_double(z,f)
+      dz(2:mz)=z(2:mz)-z(1:mz-1)
+
+      q(2:mz)=.5*dz(2:mz)*(f(1:mz-1)+f(2:mz)) &
+              +(1./12.)*dz(2:mz)**2*(df(1:mz-1)-df(2:mz))
+
+      do k=2,mz
+         q(k)=q(k)+q(k-1)
+      end do
+
+      spline_integral_double=q
+    end function spline_integral_double
 !***********************************************************************
     subroutine tridag(a,b,c,r,u,err)
 !
@@ -449,5 +559,45 @@ module General
          u(j)=u(j)-gam(j+1)*u(j+1)
       end do
     end subroutine tridag
+!***********************************************************************
+    subroutine tridag_double(a,b,c,r,u,err)
+!
+!  solves tridiagonal system
+!
+!  01-apr/tobi: from numerical recipes
+!  11-apr-03/axel: double precision version
+!
+      implicit none
+      double precision, dimension(:), intent(in) :: a,b,c,r
+      double precision, dimension(:), intent(out) :: u
+      double precision, dimension(size(b)) :: gam
+      logical, intent(out), optional :: err
+      integer :: n,j
+      double precision :: bet
+
+      if (present(err)) err=.false.
+      n=size(b)
+      bet=b(1)
+      if (bet.eq.0.) then
+         print*,'tridag_ser: Error at code stage 1'
+         if (present(err)) err=.true.
+         return
+      endif
+
+      u(1)=r(1)/bet
+      do j=2,n
+         gam(j)=c(j-1)/bet
+         bet=b(j)-a(j-1)*gam(j)
+         if (bet.eq.0.) then
+            print*,'tridag_ser: Error at code stage 2'
+            if (present(err)) err=.true.
+            return
+         endif
+         u(j)=(r(j)-a(j-1)*u(j-1))/bet
+      end do
+      do j=n-1,1,-1
+         u(j)=u(j)-gam(j+1)*u(j+1)
+      end do
+    end subroutine tridag_double
 !***********************************************************************
 end module General

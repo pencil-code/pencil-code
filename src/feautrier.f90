@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.17 2003-04-10 06:58:24 brandenb Exp $
+! $Id: feautrier.f90,v 1.18 2003-04-11 17:59:31 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.17 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.18 2003-04-11 17:59:31 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -102,14 +102,15 @@ module Radiation
 !  At the moment for vertical rays only
 !
 !  01-apr/tobi: coded
+!  11-apr/axel: turned some matrix stuff into double precision
 !
       use Cdata
       use General
 !
       real, dimension(mx,my,mz,mvar) :: f
       real, dimension(mx,my,mz) :: feautrier
-      real, dimension(nz) :: kaprho,tau,Srad_,Prad_
-      real, dimension(nz) :: a,b,c
+      double precision, dimension(nz) :: kaprho,tau,Srad_,Prad_
+      double precision, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
       logical :: err=.false.
 !
@@ -118,7 +119,7 @@ module Radiation
       do mrad=m1,m2
       do lrad=l1,l2
          kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
-         tau=spline_integral(z,kaprho)
+         tau=spline_integral_double(z,kaprho)
          Srad_=Srad(lrad,mrad,n1:n2)
          !print*,'kappa=',kappa(lrad,mrad,n1:n2)
          !print*,'tau=',tau
@@ -141,13 +142,13 @@ module Radiation
 !
 !  solve tri-diagonal matrix, and give detailed error output if problems
 !
-         call tridag(a,b,c,Srad_,Prad_,err=err)
+         call tridag_double(a,b,c,Srad_,Prad_,err=err)
          if (err) then
             print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
                             f(lrad,mrad,n2-5:n2,ilnrho)
             print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
                          f(lrad,mrad,n2-5:n2,ient)
-            print*,'tau=',tau(1:6),'',tau(n2-n1-5:n2-n1)
+            print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
             print*,'kappa=',kappa(lrad,mrad,n1:n1+5),'...', &
                             kappa(lrad,mrad,n2-5:n2)
             stop

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.72 2003-04-10 06:58:24 brandenb Exp $
+! $Id: register.f90,v 1.73 2003-04-11 17:59:31 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -110,7 +110,7 @@ module Register
       use Param_IO
 
       real, dimension(mx,my,mz,mvar) :: f
-      real :: unit_mass,unit_energy,unit_time,unit_flux
+      double precision :: unit_mass,unit_energy,unit_time,unit_flux
       logical :: lstart
 !
 !  Defaults for some logicals; will later be set to true if needed

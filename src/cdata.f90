@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.135 2003-04-01 22:18:30 theine Exp $
+! $Id: cdata.f90,v 1.136 2003-04-11 17:59:31 brandenb Exp $
 
 module Cdata
 
@@ -24,10 +24,10 @@ module Cdata
   real :: tsforce=-10., dtforce=10
   real, dimension (2) :: fran1,fran2
 
-  !  units
+  !  units (need to be in double precision)
   character (len=3) :: unit_system='cgs'
-  real :: unit_length=1.,unit_velocity=1.,unit_density=1.,unit_temperature=1.
-  real :: k_B,m_p,m_e,eV,hbar,sigmaH_,sigmaSB
+  double precision :: unit_length=1.,unit_velocity=1.,unit_density=1.,unit_temperature=1.
+  double precision :: k_B,m_p,m_e,eV,hbar,sigmaH_,sigmaSB
 
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve
