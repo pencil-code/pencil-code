@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.41 2002-11-14 16:31:42 brandenb Exp $
+# $Id: getconf.csh,v 1.42 2002-11-24 18:27:33 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -24,7 +24,7 @@ setenv SCP scp
 
 # choose machine specific settings
 echo `uname -a`
-set hn = `hostname`
+set hn = `uname -n`
 if ($mpi) then
   echo "Running under MPI"
   set mpirunops = ''
@@ -89,6 +89,15 @@ if ($mpi) then
     setenv SSH rsh
     setenv SCP rcp
 
+  else if ($hn == rasmussen) then
+    echo "Use options for Rasmussen"
+    echo "Non-MPI version"
+    limit stacksize unlimited
+    set mpirun = ''
+    set mpirunops = ''
+    set npops = ''
+    set ncpus = 1
+
   else
     echo "Use mpirun as the default option"
     set mpirun = mpirun
@@ -112,6 +121,12 @@ else # no MPI
   set mpirunops = ''
   set npops = ''
   set ncpus = 1
+
+  if ($hn == rasmussen) then
+    echo "Use options for Rasmussen"
+    limit stacksize unlimited
+  endif
+
 endif
 
 # Determine data directory (defaults to `data')

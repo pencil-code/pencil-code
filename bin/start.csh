@@ -12,6 +12,8 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
+echo $path
+
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
@@ -39,12 +41,12 @@ foreach dir ($subdirs)
   else
     # Clean up
     # when used with lnowrite=T, for example, we don't want to remove var.dat:
-    set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/slice*`
-    if (list != "") then
-      foreach rmfile (list)
+    set list=`/bin/ls $dir/VAR* $dir/*.dat $dir/*.info $dir/slice*`
+    #if ($list != "") then
+      foreach rmfile ($list)
         if ($rmfile != $dir/var.dat) rm -f $rmfile >& /dev/null
       end
-    endif
+    #endif
   endif
   # Create directories on local scratch disk if necessary
   #if ($local_disc) then
