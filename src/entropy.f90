@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.324 2004-08-24 18:51:45 dobler Exp $
+! $Id: entropy.f90,v 1.325 2004-08-26 19:17:08 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.324 2004-08-24 18:51:45 dobler Exp $")
+           "$Id: entropy.f90,v 1.325 2004-08-26 19:17:08 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1248,7 +1248,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnP
       real, dimension (nx) :: rho1
-      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2,chitotal
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
 !
       intent(in) :: f,glnrho,gss
       intent(out) :: df
@@ -1306,7 +1306,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: gradcurlaa,allrho,allss
       real, dimension (nx,3) :: glnrho,gss,glnT,bb
-      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal
+      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff
 
       real, dimension (nx,3) :: c1,c2,c3,c4,c5
       real, dimension (nx) :: tmp
@@ -1390,7 +1390,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: gradcurlaa
       real, dimension (nx,3) :: glnrho,gss,glnT,bb
-      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal,del2ss,del2lnrho
+      real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,del2ss,del2lnrho
 
       real, dimension (nx,3) :: c1
       real, dimension (nx) :: tmp1,tmp2,tmp3,tmp4
@@ -1466,7 +1466,6 @@ module Entropy
       real, dimension (nx,3) :: glnrho,gss,gshock,glnTT
       real, dimension (nx) :: rho1,shock
       real, dimension (nx) :: thdiff,del2ss,g2,gshockgss
-      real :: chitotal_max
 !
       intent(in) :: f,glnrho,gss,shock,gshock
       intent(out) :: df
@@ -1522,7 +1521,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond !,glhc
-      real, dimension (nx) :: rho1,chix,chitotal
+      real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
 !
@@ -1578,7 +1577,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
-      real, dimension (nx) :: rho1,chix,chitotal
+      real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
       real :: z_prev=-1.23e20
