@@ -13,6 +13,7 @@
 # Join stderr and stout:
 #$ -j y -o run.log
 #@$-eo
+#@$-o run.log
 #
 # Work in submit directory (SGE):
 #$ -cwd
@@ -76,6 +77,9 @@ rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
 if ($local_binary) then
   cp src/start.x $SCRATCH_DIR
+endif
+# Copy output from `top' on run host to a file we can read from login server
+if ($remote_top) then
   remote-top >& remote-top.log &
 endif
 
@@ -103,6 +107,9 @@ copy-snapshots -v var.dat >& copy-snapshots.log
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >>& copy-snapshots.log &
+endif
+# Copy output from `top' on run host to a file we can read from login server
+if ($remote_top) then
   remote-top >& remote-top.log &
 endif
 if ($local_binary) then
@@ -121,17 +128,24 @@ time $mpirun $mpirunops $npops $run_x $x_ops
 set run_status=$status		# save for exit
 date
 
-# On Horseshoe cluster, copy var.dat back to the data directory
+date
+# On machines with local scratch disc, copy var.dat back to the data
+# directory
 if ($local_disc) then
-  echo "Use local scratch disk"
+  echo "Copying final var.dat back from local scratch disk"
   copy-snapshots -v var.dat
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
-  set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
-  echo "Killing processes $pids"
-  kill $pids
-  sleep 5; kill -KILL $pids      # just to be sure
+  set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed ' s/^ *//' | cut -d ' ' -f 1`
+  echo "Killing processes ${pids}:"
+  foreach p ($pids)  # need to do in a loop, and check for existence, since
+                     # some systems (Hitachi) abort this script when trying
+                     # to kill non-existent processes
+    echo "  pid $p"
+    if ( `ps $p | fgrep -c $p` ) kill -KILL $p
+  end
 endif
+echo "Done killing"
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt

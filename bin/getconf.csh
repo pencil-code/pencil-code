@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.81 2003-09-03 17:30:48 dobler Exp $
+# $Id: getconf.csh,v 1.82 2003-09-04 13:06:40 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -48,8 +48,10 @@ set mpirun = 'mpirun'
 #                    large files like var.dat, VARN, etc.
 # one_local_disc = 1 means one common scratch disc for all processes
 # local_binary   = 1 means copy executable to local scratch area of master node
+# remote_top     = 1 means get `top' output in regular intervals
 set local_disc     = 0
 set one_local_disc = 1		# probably the more common case
+set remote_top     = 0
 set local_binary   = 0
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
@@ -154,9 +156,10 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
       set mpirun = mpirun
     endif
     setenv SCRATCH_DIR /scratch
-    set local_disc = 1
+    set local_disc     = 1
     set one_local_disc = 0
-    set local_binary = 1
+    set remote_top     = 1
+    set local_binary   = 1
     setenv SSH rsh 
     setenv SCP rcp
   else # (no MPI)
@@ -321,6 +324,7 @@ if ($debug) then
   echo '$mpi          = ' "<$mpi>"
   echo '$ncpus        = ' "<$ncpus>"
   echo '$local_disc   = ' "<$local_disc>"
+  echo '$remote_top   = ' "<$remote_top>"
   echo '$local_binary = ' "<$local_binary>"
   echo '$datadir      = ' "<$datadir>"
   echo '$SCRATCH_DIR  = ' "<$SCRATCH_DIR>"
