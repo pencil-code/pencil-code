@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.50 2003-11-23 16:23:09 theine Exp $
+! $Id: radiation_ray.f90,v 1.51 2004-02-24 14:14:50 ajohan Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.50 2003-11-23 16:23:09 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.51 2004-02-24 14:14:50 ajohan Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -666,7 +666,7 @@ module Radiation
 !
     endsubroutine radboundary_xy_set
 !***********************************************************************
-    subroutine radiative_cooling(f,df)
+    subroutine radiative_cooling(f,df,TT1)
 !
 !  calculate source function
 !
@@ -678,25 +678,24 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: lnrho,Qrad,lnTT,Qrad2
+      real, dimension (nx) :: lnrho,Qrad,TT1,Qrad2
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       Qrad=f(l1:l2,m,n,iQrad)
-      lnTT=f(l1:l2,m,n,ilnTT)
 !
 !  Add radiative cooling
 !
       if(.not. nocooling) then
-         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
-                           +4*pi*exp(lnchi(l1:l2,m,n)-lnTT-lnrho)*Qrad
+        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
+            + 4*pi*exp(lnchi(l1:l2,m,n)-lnrho)*TT1*Qrad
       endif
 !
 !  diagnostics
 !
       if(ldiagnos) then
-         Qrad2=f(l1:l2,m,n,iQrad)**2
-         if(i_Qradrms/=0) call sum_mn_name(Qrad2,i_Qradrms,lsqrt=.true.)
-         if(i_Qradmax/=0) call max_mn_name(Qrad2,i_Qradmax,lsqrt=.true.)
+        Qrad2=f(l1:l2,m,n,iQrad)**2
+        if(i_Qradrms/=0) call sum_mn_name(Qrad2,i_Qradrms,lsqrt=.true.)
+        if(i_Qradmax/=0) call max_mn_name(Qrad2,i_Qradmax,lsqrt=.true.)
       endif
 !
     endsubroutine radiative_cooling

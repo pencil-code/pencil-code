@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.197 2004-02-20 19:08:38 nilshau Exp $
+! $Id: equ.f90,v 1.198 2004-02-24 14:14:50 ajohan Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.197 2004-02-20 19:08:38 nilshau Exp $")
+           "$Id: equ.f90,v 1.198 2004-02-24 14:14:50 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -367,7 +367,7 @@ module Equ
 !
 !  Add radiative cooling (for ray method)
 !
-        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df)
+        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df,TT1)
 !
 !  Add shear if present
 !

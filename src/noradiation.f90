@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.23 2003-11-02 04:00:18 theine Exp $
+! $Id: noradiation.f90,v 1.24 2004-02-24 14:14:50 ajohan Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.23 2003-11-02 04:00:18 theine Exp $")
+           "$Id: noradiation.f90,v 1.24 2004-02-24 14:14:50 ajohan Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -75,7 +75,7 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine radiative_cooling(f,df)
+    subroutine radiative_cooling(f,df,TT1)
 !
 !  dummy routine
 !
@@ -85,8 +85,9 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx) :: TT1
 !
-      if(ip==0) print*,f,df !(keep compiler quiet)
+      if(ip==0) print*,f,df,TT1 !(keep compiler quiet)
     endsubroutine radiative_cooling
 !***********************************************************************
     subroutine output_radiation(lun)
