@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.124 2003-02-23 07:41:27 brandenb Exp $
+! $Id: equ.f90,v 1.125 2003-03-11 08:34:55 brandenb Exp $
 
 module Equ
 
@@ -208,7 +208,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.124 2003-02-23 07:41:27 brandenb Exp $")
+           "$Id: equ.f90,v 1.125 2003-03-11 08:34:55 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -569,6 +569,7 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
 !  Remove small scale oscillations (`wiggles') in the x direction from
 !  the ivar component of f (normally lnrho).
+!  df is only used as work array
 !
 !  30-Aug-02/wolf: coded
 !

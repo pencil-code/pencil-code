@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.26 2003-03-06 14:17:58 brandenb Exp $ 
+! $Id: initcond.f90,v 1.27 2003-03-11 08:34:55 brandenb Exp $ 
 
 module Initcond 
  
@@ -230,7 +230,7 @@ module Initcond
 !
     endsubroutine beltrami
 !***********************************************************************
-    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,cs20)
+    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -238,11 +238,10 @@ module Initcond
 !  22-feb032/axel: fixed 3-D background solution for enthalpy
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius
-      real :: gamma,eps2,radius2
+      real :: gamma,eps2,radius2,width
       real :: gamma1,zinfty2,cs20,hh0
-      integer :: l,m,n
 !
 !  calculate sigma
 !
@@ -282,29 +281,21 @@ module Initcond
 !
       hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
 !
-      do n=n1,n2
-        do m=m1,m2
-          do l=l1,l2
-            if (hh(l,m,n)>0.) then
-              f(l,m,n,iux)=   eps2*sigma *Omega*yy(l,m,n)
-              f(l,m,n,iuy)=(qshear-sigma)*Omega*xx(l,m,n)
-              if(lentropy) f(l,m,n,ient)=-alog(ampl)
-              hh(l,m,n)=hh(l,m,n)+hh0
-            else
-              f(l,m,n,iux)=0.
-              f(l,m,n,iuy)=0.
-              if(lentropy) f(l,m,n,ient)=0.
-              hh(l,m,n)=.5*Omega**2*(zinfty2-zz(l,m,n)**2)
-            endif
-if (hh(l,m,n)<0.) print*,l,m,n,hh(l,m,n)
-          enddo
-        enddo
-      enddo
+!  calculate mask function xi, which is 0 outside and 1 inside the vortex
+!  At present, width is not measured in sensible units...
+!
+      xi=.5+.5*tanh(hh/width)
+      f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
+      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
+      if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
+      hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
 !
 !  calculate density, depending on what gamma is
 !
       print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+!
+!  have to use explicit indices here, because ghostzones are not set
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
