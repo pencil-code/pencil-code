@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.44 2002-06-17 20:06:40 dobler Exp $
+! $Id: start.f90,v 1.45 2002-06-19 21:23:24 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.44 $", &
-             "$Date: 2002-06-17 20:06:40 $")
+             "$Revision: 1.45 $", &
+             "$Date: 2002-06-19 21:23:24 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -42,8 +42,10 @@
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
 !
 !  ?for convection
+!  I find zref=1 very strange as default, so I put 0.
 !
-        z1=0.; z2=1.; zref=1.
+!--     z1=0.; z2=1.; zref=1.
+        z1=0.; z2=1.; zref=0.
 !
 !  this may need to go into hydro;
 !  (maybe should have a separate density module, so we can run burgers)

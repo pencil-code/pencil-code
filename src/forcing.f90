@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.12 2002-06-03 07:02:21 brandenb Exp $
+! $Id: forcing.f90,v 1.13 2002-06-19 21:23:23 brandenb Exp $
 
 module Forcing
 
@@ -9,13 +9,13 @@ module Forcing
   implicit none
 
   integer :: iforce=2,iforce2=0,kfountain=5
-  real :: force=0.,relhel=1.,height=pi,fountain=1.
+  real :: force=0.,relhel=1.,height=pi,fountain=1.,widthff=.5
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
-       iforce,force,relhel,height, &
+       iforce,force,relhel,height,widthff, &
        iforce2,kfountain,fountain
 
   contains
@@ -41,8 +41,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-06-03 07:02:21 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-06-19 21:23:23 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -61,6 +61,7 @@ module Forcing
       if(iforce==1) call forcing_irro(f)
       if(iforce==2) call forcing_hel(f)
       if(iforce==3) call forcing_fountain(f)
+      if(iforce==4) call forcing_hshear(f)
 !
 !  add *additional* forcing function
 !
@@ -411,6 +412,40 @@ module Forcing
       enddo
 !
     endsubroutine forcing_fountain
+!***********************************************************************
+    subroutine forcing_hshear(f)
+!
+!  add horizontal shear
+!
+!  19-jun-02/axel+bertil: coded
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: fx
+      real, dimension (mz) :: fz
+      real :: kx,ffnorm
+!
+!  need to multiply by dt (for Euler step).
+!  Define fz with ghost zones, so fz(n) is the correct position
+!
+      kx=2*pi/Lx
+      fx=cos(kx*x(l1:l2))
+      fz=1./cosh(z/widthff)**2
+      ffnorm=force*dt  !(dt for the timestep)
+!
+!  set forcing function
+!
+      do n=n1,n2
+      do m=m1,m2
+        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)
+        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*fx*fz(n)
+        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)
+      enddo
+      enddo
+!
+    endsubroutine forcing_hshear
 !***********************************************************************
 
 endmodule Forcing

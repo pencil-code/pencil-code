@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $ 
+! $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $ 
 
 module Param_IO
 
@@ -8,7 +8,7 @@ module Param_IO
 !  Using this module is also a compact way of referring to all physics
 !  modules at once.
 !
-  use Timestep
+! use Timestep
   use Hydro
   use Forcing
   use Gravity
@@ -55,7 +55,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $
+!   $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -108,7 +108,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.27 2002-06-19 10:39:45 brandenb Exp $
+!   $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !

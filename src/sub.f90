@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.62 2002-06-19 10:39:45 brandenb Exp $ 
+! $Id: sub.f90,v 1.63 2002-06-19 21:23:24 brandenb Exp $ 
 
 module Sub 
 
@@ -1510,6 +1510,62 @@ module Sub
       endif
 !
     endsubroutine htube
+!***********************************************************************
+    subroutine hlayer(ampl,f,i,xx,yy,zz,width)
+!
+!  Horizontal flux tube (for vector potential)
+!
+!  19-jun-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real :: ampl,width
+!
+!  set horizontal flux tubes
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        print*,'horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl,width
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=ampl*tanh(zz/width)
+        f(:,:,:,i+2)=0.
+      endif
+!
+    endsubroutine hlayer
+!***********************************************************************
+    subroutine uniform_x(ampl,f,i,xx,yy,zz)
+!
+!  Horizontal flux tube (for vector potential)
+!
+!  19-jun-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real :: ampl,width
+!
+!  set horizontal flux tubes
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        print*,'horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl,width
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=-ampl*zz
+        f(:,:,:,i+2)=0.
+      endif
+!
+    endsubroutine uniform_x
 !***********************************************************************
     subroutine vfield(ampl,f,i,xx)
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.57 2002-06-19 10:39:45 brandenb Exp $
+! $Id: cdata.f90,v 1.58 2002-06-19 21:23:23 brandenb Exp $
 
 module Cdata
 
@@ -6,6 +6,7 @@ module Cdata
 
   Use Cparam
 
+  integer :: itorder=3
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
@@ -27,7 +28,8 @@ module Cdata
 
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in
 ! wparam (Sub) as well, so they need to be declared here
-  real :: hcond0,hcond1,hcond2,whcond
+!AB: Are you sure this cannot be avoided?? It is no longer in Boundcond!!
+  real :: hcond0=0,hcond1=0,hcond2=0,whcond=0
   real :: mpoly0,mpoly1,mpoly2
   real :: cheat,wheat,cool,wcool,Fheat
   integer:: isothtop

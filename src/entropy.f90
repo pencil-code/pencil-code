@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.67 2002-06-18 16:26:45 dobler Exp $
+! $Id: entropy.f90,v 1.68 2002-06-19 21:23:23 brandenb Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.67 $", &
-           "$Date: 2002-06-18 16:26:45 $")
+           "$Revision: 1.68 $", &
+           "$Date: 2002-06-19 21:23:23 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -271,8 +271,10 @@ module Entropy
       endif
 !
 !  thermal conduction
+!  There seems to be cooling here as well which is now not captured
+!  if it is invoked on its own.
 !
-      call calc_heatcond(f,df,rho1,glnrho,gss,cs2)      
+      if (hcond0/=0) call calc_heatcond(f,df,rho1,glnrho,gss,cs2)      
 !
 !  Calculate entropy related diagnostics
 !
@@ -307,6 +309,8 @@ module Entropy
       intent(out) :: df
 !
 !  Heat conduction / entropy diffusion
+!AB:  The letter lambda is rather uncommon is astrophysics; I always called it K.
+!AB:  could call it KKrad.
 !
       if (headtt) print*,'calc_heatcond: lgravz=',lgravz
       if (lgravz) then
@@ -543,7 +547,6 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
           !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
-!          zinfty=-cs20/(gamma1*gravz)
           zinfty=zref-cs20/(gamma1*gravz)
           cs2top=cs20*(1-(ztop-zref)/zinfty)
           tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &

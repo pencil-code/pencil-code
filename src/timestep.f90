@@ -1,10 +1,10 @@
-! $Id: timestep.f90,v 1.13 2002-06-18 16:26:45 dobler Exp $
+! $Id: timestep.f90,v 1.14 2002-06-19 21:23:24 brandenb Exp $
 
 module Timestep
 
   implicit none
 
-  integer :: itorder=3
+! integer :: itorder=3
 
   contains
 

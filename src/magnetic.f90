@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.49 2002-06-19 10:39:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.50 2002-06-19 21:23:23 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., radius=.1, epsilonaa=1e-2
+  real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   logical :: lpress_equil
   character(len=40) :: kinflow=''
@@ -26,7 +26,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilonaa, &
+       radius,epsilonaa,widthaa, &
        initaa,amplaa, &
        lpress_equil
 
@@ -79,8 +79,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.49 $", &
-           "$Date: 2002-06-19 10:39:45 $")
+           "$Revision: 1.50 $", &
+           "$Date: 2002-06-19 21:23:23 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -136,6 +136,16 @@ module Magnetic
 !
       elseif (initaa==2) then
         call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
+!
+!  Horizontal flux layer
+!
+      elseif (initaa==22) then
+        call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
+!
+!  Horizontal flux layer
+!
+      elseif (initaa==23) then
+        call uniform_x(amplaa,f,iaa,xx,yy,zz)
 !
 !  Vertical field, Bz=coskx
 !
