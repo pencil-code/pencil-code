@@ -157,7 +157,7 @@ module Mpicomm
 !  but in this dummy routine this is done in finalise_isendrcv_bdry
 !
       real, dimension (mx,my,mz,mvar) :: f
-      double precision    :: deltaydy, frak, c1, c2, c3, c4, c5, c6
+      double precision    :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
       integer :: displs
 !
 !  Periodic boundary conditions in x, with shearing sheat
@@ -166,9 +166,9 @@ module Mpicomm
          f( 1:l1-1,:,:,:) = f(l2i:l2,:,:,:)
          f(l2+1:mx,:,:,:) = f(l1:l1i,:,:,:)
       else
-         deltaydy=deltay/dy
-         displs=int(deltaydy)
-         frak=deltaydy-displs
+         deltay_dy=deltay/dy
+         displs=int(deltay_dy)
+         frak=deltay_dy-displs
          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.

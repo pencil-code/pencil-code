@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.36 2002-08-18 12:04:40 brandenb Exp $
+! $Id: mpicomm.f90,v 1.37 2002-08-18 12:27:04 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -379,16 +379,16 @@ module Mpicomm
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
-      double precision :: deltaydy, frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
       integer :: i, ystep
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
 !
 !  Sixth order interpolation along the y-direction
 !
-      deltaydy=deltay/dy
-      displs=int(deltaydy)
+      deltay_dy=deltay/dy
+      displs=int(deltay_dy)
       if (nprocy==1) then
-         frak=deltaydy-displs
+         frak=deltay_dy-displs
          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
@@ -468,7 +468,7 @@ module Mpicomm
       integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
       integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb
       integer :: m2long,i
-      double precision :: frak, c1, c2, c3, c4, c5, c6
+      double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
 !
 !  Sliding periodic boundary conditions in x
 !  ulf:02-mar-02
@@ -482,13 +482,14 @@ module Mpicomm
 !
 ! reading communicated information into f
 !   
+         deltay_dy=deltay/dy
          m2long = 2*my-3*nghost
          fa(:,1:m2,:,:) = falo(:,1:m2,:,:)
          fa(:,m2+1:2*my-2*nghost,:,:) = fahi(:,m1:my,:,:)
          fb(:,1:m2,:,:) = fblo(:,1:m2,:,:)
          fb(:,m2+1:2*my-2*nghost,:,:) = fbhi(:,m1:my,:,:)
-         displs = modulo(int(deltaydy),ny)
-         frak = deltaydy - int(deltaydy)
+         displs = modulo(int(deltay_dy),ny)
+         frak = deltay_dy - int(deltay_dy)
          c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
          c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
          c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
