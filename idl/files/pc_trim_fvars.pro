@@ -1,10 +1,10 @@
-; $Id: pc_trim_fvars.pro,v 1.1 2004-05-11 09:14:48 ajohan Exp $
+; $Id: pc_trim_fvars.pro,v 1.2 2004-05-11 09:32:14 ajohan Exp $
 ;
 ;  Trim f array variables in structure of ghost zones and empty dimensions
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2004-05-11 09:14:48 $
-;  $Revision: 1.1 $
+;  $Date: 2004-05-11 09:32:14 $
+;  $Revision: 1.2 $
 ;
 ;  11-may-04/anders: coded
 ;
@@ -18,16 +18,25 @@
 
   for i=0,ntags-1 do begin
 ;
-; Avoid non-f variables
-;    
-    if (tags(i) ne 'T' and $
-        tags(i) ne 'X' and tags(i) ne 'Y' and tags(i) ne 'Z' and $
-        tags(i) ne 'DX' and tags(i) ne 'DY' and tags(i) ne 'DZ') then begin
-      string = strmid(tags(i),0,1)+tags(i) + ' = pc_trim_var(' + $
+; Avoid non-grid variables
+;
+    string = 'size_var = size(' + object + '.' + tags(i) + ')'
+    res = execute(string)
+
+    if (size_var[0] ne 0) then begin
+;
+; x -> xxx, y -> yyy, z -> zzz
+;      
+      if (tags(i) eq 'X' or tags(i) eq 'Y' or tags(i) eq 'Z') then $
+          tag_extra = tags(i)
+      string = strmid(tags(i),0,1) + tags(i) + tag_extra + ' = pc_trim_var(' + $
           object + '.' + tags(i) + ')'
       print, string
       res = execute(string)
     endif
+
+    tag_extra = ''
+    
   endfor 
 
 end
