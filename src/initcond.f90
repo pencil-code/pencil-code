@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.112 2004-06-13 13:24:06 ajohan Exp $ 
+! $Id: initcond.f90,v 1.113 2004-06-18 05:47:11 brandenb Exp $ 
 
 module Initcond 
  
@@ -1341,6 +1341,34 @@ module Initcond
 !
       if (ip==1) print*,xx,yy,zz
     endsubroutine vfluxlayer
+!***********************************************************************
+    subroutine arcade_x(ampl,f,i,xx,yy,zz,kx,kz)
+!
+!  Arcade-like structures around x=0
+!
+!  17-jun-04/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,kx,kz,zmid
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'expcos_x: set variable to zero; i=',i
+      else
+        zmid=.5*(xyz0(3)+xyz1(3))
+        if ((ip<=16).and.lroot) then
+          print*,'arcade_x: i,zmid=',i,zmid
+          print*,'arcade_x: ampl,kx,kz=',ampl,kx,kz
+        endif
+        
+        f(:,:,:,i+1)=f(:,:,:,i+1)+ampl*exp(-.5*(kx*xx)**2)* &
+          cos(min(abs(kz*(zz-zmid)),.5*pi))
+      endif
+!
+      if (ip==1) print*,xx,yy
+    endsubroutine arcade_x
 !***********************************************************************
     subroutine halfcos_x(ampl,f,i,xx,yy,zz)
 !

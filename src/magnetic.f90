@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.196 2004-06-12 10:25:25 brandenb Exp $
+! $Id: magnetic.f90,v 1.197 2004-06-18 05:47:11 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -50,7 +50,7 @@ module Magnetic
   logical :: reinitalize_aa=.false.
   logical :: lB_ext_pot=.false.,lB_ext_pot_normalize=.false.
   character (len=40) :: kinflow=''
-  real :: nu_ni,nu_ni1,alpha_effect
+  real :: nu_ni,nu_ni1,hall_term,alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
 
   namelist /magnetic_init_pars/ &
@@ -68,7 +68,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,omega_Bz_ext,alpha_effect,nu_ni, &
+       eta,B_ext,omega_Bz_ext,alpha_effect,nu_ni,hall_term, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.196 2004-06-12 10:25:25 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.197 2004-06-18 05:47:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -217,6 +217,7 @@ module Magnetic
       case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('ver-fluxlayer'); call vfluxlayer(amplaa,f,iaa,xx,yy,zz,x0aa,widthaa)
       case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
+      case('arcade-x'); call arcade_x(amplaa,f,iaa,xx,yy,zz,kx_aa,kz_aa)
       case('halfcos-Bx'); call halfcos_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
@@ -309,6 +310,7 @@ module Magnetic
 !   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
 !  12-aug-03/christer: added alpha effect (alpha in the equation above)
 !  26-may-04/axel: ambipolar diffusion added
+!  18-jun-04/axel: Hall term added
 !
       use Cdata
       use Sub
@@ -534,6 +536,13 @@ module Magnetic
         call cross_mn(JxBr,bb,JxBrxB)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*JxBrxB
         etatotal_max=etatotal_max+maxval(nu_ni1*va2)
+      endif
+!
+!  Hall term
+!
+      if (hall_term/=0.) then
+        if (headtt) print*,'daa_dt: hall_term=',hall_term
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*JxB
       endif
 !
 !  add alpha effect if alpha_effect /= 0
