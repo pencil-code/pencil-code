@@ -37,8 +37,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.16 $", &
-             "$Date: 2002-02-28 20:31:06 $")
+             "$Revision: 1.17 $", &
+             "$Date: 2002-03-01 15:24:41 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -123,7 +123,10 @@
             call cread          ! Re-read configuration
             inquire(FILE="STOP", EXIST=stop)! Exit DO loop if the file
                                             ! `STOP' exists
-            if (stop) exit Time_loop
+            if (stop) then
+              if (lroot) write(0,*) "Found STOP file -- quitting"
+              exit Time_loop
+            endif
           endif
 
           if (iforce==1) call forcing1
