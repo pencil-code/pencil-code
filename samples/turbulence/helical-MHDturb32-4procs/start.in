@@ -1,0 +1,16 @@
+!                                     -*-f90-*-   (for emacs)
+!  initialization for forced helical MHD turbulence
+!  start with no velocity, uniform density, and weak
+!  gaussian seed magnetic field.
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2002-11-13 17:42:10 brandenb Exp $',
+/
+&hydro_init_pars
+/
+&density_init_pars
+  gamma=1.
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-4
+/
