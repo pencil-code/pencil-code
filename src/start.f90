@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.63 2002-09-26 16:21:25 brandenb Exp $
+! $Id: start.f90,v 1.64 2002-09-26 20:07:41 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,17 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.63 2002-09-26 16:21:25 brandenb Exp $")
-!
-!  Initialise random number generator in processor-dependent fashion.
-!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
-!  would produce very short-period random numbers with the Intel compiler;
-!  so we need to retain most of the initial entropy of the generator. 
-!
-        call get_nseed(nseed)   ! get state length of random number generator
-        call random_seed_wrapper(get=seed(1:nseed))
-        seed(1) = 1001+iproc    ! different random numbers on different CPUs
-        call random_seed_wrapper(put=seed(1:nseed))
+             "$Id: start.f90,v 1.64 2002-09-26 20:07:41 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -73,6 +63,17 @@
         if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
         if (.not.lperi(2).and.nygrid<2) stop 'for nonperiodic: must have nygrid>1'
         if (.not.lperi(3).and.nzgrid<2) stop 'for nonperiodic: must have nzgrid>1'
+!
+!  Initialise random number generator in processor-dependent fashion for
+!  random initial data.
+!  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
+!  would produce very short-period random numbers with the Intel compiler;
+!  so we need to retain most of the initial entropy of the generator. 
+!
+        call get_nseed(nseed)   ! get state length of random number generator
+        call random_seed_wrapper(get=seed(1:nseed))
+        seed(1) = -(10+iproc)    ! different random numbers on different CPUs
+        call random_seed_wrapper(put=seed(1:nseed))
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  lperi indicate periodicity of given direction
@@ -139,8 +140,9 @@
 !
         call wparam()
 !
-!  seed for random number generator, have to have the same on each
-!  processor as forcing is applied in (global) Beltrami modes
+!  Seed for random number generator to be used in forcing.f90. Have to
+!  have the same on each  processor as forcing is applied in (global)
+!  Beltrami modes.
 !
         seed(1) = 1812
         call outpui(trim(directory)//'/seed.dat',seed,nseed)

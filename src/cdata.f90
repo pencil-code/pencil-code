@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.91 2002-09-26 16:21:25 brandenb Exp $
+! $Id: cdata.f90,v 1.92 2002-09-26 20:07:41 dobler Exp $
 
 module Cdata
 
@@ -32,7 +32,7 @@ module Cdata
   real :: deltay=0. !(for shear, now also used in forcing and output)
 
   integer, dimension(mseed) :: seed=0
-  integer :: nseed
+  integer :: nseed=0
   integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie,iff,ifx,ify,ifz,idd
