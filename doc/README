@@ -1,13 +1,11 @@
-$Id: README,v 1.4 2002-09-10 17:30:04 dobler Exp $
+$Id: README,v 1.5 2003-07-29 09:20:42 brandenb Exp $
 
 In manual.tex we try to keep a reasonably up-to-date description of the code.
 For latex installations that don't have some of the less frequent style files,
 we keep a selection in the texinputs/ directory. If you use the makefile to
 process manual.tex, you will automatically have that directory included in
 you TeX path.
-  Note that you need to make sure a sufficiently recent version of
+
+Note that you need to make sure a sufficiently recent version of
 index.sty is first in your TEXINPUTS. The Makefile takes care of this.
 
-In DISCUSSION we find some of the items where possible changes are imminent.
-
-In TESTS you find a selection of test results that have been checked in.

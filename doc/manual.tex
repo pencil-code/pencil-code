@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.186 2003-07-17 22:45:33 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.187 2003-07-29 09:20:42 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}
+\date{$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}
+  \emph{$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1309,7 +1309,7 @@ Apart from the physics modules (equation of motion: yes, density
 forcing: yes), a few technical modules can also be used or deactivated; in
 the example above, these are \name{MPI} (switched off), additional global
 variables (none), input/output (distributed), and \name{FFT} (not used).
-Table~\ref{Tab-modules} in the Appendix lists all currently available modules.
+The table in Sect.~\ref{Tab-modules} in the Appendix lists all currently available modules.
 
 Note that most of these \name{make} variables \emph{must} be set, but they
 will normally obtain reasonable default values in \file{Makefile} (so you
@@ -1527,9 +1527,16 @@ The \file{Makefile} you need will have the following section:
 
 
 \paragraph{Note 1}
-If you have troubles with \cmd{make} or \file{adapt-mkfile}, look at the
+If you have trouble with \cmd{make} or \file{adapt-mkfile}, look at the
 \file{makefile} written by \file{adapt-mkfile} and check that it has the
 entries for your machine activated.
+In the example above, \code{\#(Janus)} is {\it not} a comment!
+The \file{adapt-mkfile} script will activate (uncomment) exactly this
+line once your machine name (check with \cmd{uname -n}) matches the
+name \code{Janus}.
+A vertical bar separates machine names, so you could also say
+\code{\#(onsager|Janus)}, if you want to use the same setup as for
+onsager (this is {\it not} case sensitive!).
 
 \paragraph{Note 2}
 If you want to experiment with compiler flags, --- or even if you just
@@ -1797,6 +1804,7 @@ changes:
   \prompt{unix> } echo "Reduced eta to get fields growing" > RELOAD \
 \end{alltt}
 
+Use the command \cmd{summarize-history} to print a history of changes.
 
 \paragraph{Stopping the code}
 In the directory where you started the code, create the file
@@ -2759,6 +2767,7 @@ times.
 
 \subsection{Bulk viscosity}
 \label{Bulkviscosity}
+\index{Viscosity}
 
 For a monatomic gas it can be shown that the bulk viscosity vanishes.
 We therefore don't use it in most of our runs.
@@ -2767,6 +2776,8 @@ shock viscosity which, in its simplest formulation, take the form of a
 bulk viscosity.
 
 \subsubsection{Shock Viscosity}
+\index{Shock viscosity}
+
 Shock viscosity, as it is used here and also in the Stagger Code of {\AA}ke Nordlund,
 is proportional to positive flow convergence, maximum over
 five zones, and smoothed to second order,
@@ -2794,6 +2805,7 @@ shock viscosity.
 % ---------------------------------------------------------------------- %
 
 \subsection{Ionization}
+\label{Sionization}
 
 We treat the gas as being composed of partially ionized hydrogen and neutral
 helium. These are four different particle species, each of which regarded as
@@ -2845,6 +2857,9 @@ dependent on the ionization fraction $y$ such as its pressure,
 $P\!=(1\!+y+x_{\rm He})n_{\rm H}k_{\rm B}T$, and its internal energy,
 $E=\frac{3}{2}(1+y+x_{\rm He})n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, where
 $x_{\rm He}$ gives the ratio of neutral helium to the total amount of hydrogen.
+
+For further details regarding the procedure of solving for the entropy
+see Sect.~\ref{S-Ioni} in the appendix.
 
 % ---------------------------------------------------------------------- %
 
@@ -3294,7 +3309,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-29 09:20:42 $ $,~ $ $Revision: 1.187 $ $}}}
 
 \section{Timings}
 
@@ -3534,6 +3549,34 @@ numbers in all meshpoints for all three components.
 The power spectrum of
 $\uv$ ($\Av$) increases then quadratically with wavenumber $k$ (without cutoff)
 and the power spectrum of $\omv$ (or $\Bv$) increases like $k^4$.
+
+Note that a random initial condition contains significant power at the
+Nyquist frequency ($k_{\rm Ny}=\pi/N$, where $N$ is the number of mesh
+points). In a decay calculation, because of the discretization error,
+such power decays slower than it ought to; see Fig.~\ref{ppowercomp2},
+where we show the evolution for a random initial velocity field for $64^3$
+meshpoints, $\nu=5\times10^{-2}$ (fairly large!), and \code{nfilter=30}.
+
+It is clearly a good idea to filter the initial condition to prevent
+excess power at $k_{\rm Ny}$. On the other hand, such excess power is
+weak by comparison with the power at the energy carrying scale, so one
+does not see it in visualizations in real space. Furthermore, as seen
+from Fig.~\ref{ppowercomp2}, for $k<k_{\rm Ny}/2$ the power spectra for
+filtered and unfiltered initial conditions is almost the same.
+
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {ppowercomp2}
+  \caption{Velocity power spectra at three different times
+    with and without filtering of the initial condition.
+  }
+  \label{ppowercomp2}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
 
 % ---------------------------------------------------------------------- %
 
@@ -4278,7 +4321,7 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
 \index{Ionization}
 \label{S-Ioni}
 
-The specific entropy of each particle species (neutral Hydrogen, electrons, protons and neutral Helium) may be written as
+The specific entropy of each particle species (neutral hydrogen, electrons, protons and neutral helium) may be written as
 \begin{equation}
 \frac{s_i}{s_0}=x_i\left(\ln\left[\frac{1}{x_{\rm tot}}
 \frac{\rho_i}{\rho}\left(\frac{T}{T_0}\right)^{3/2}\right]
@@ -4417,8 +4460,11 @@ or
 % ====================================================================== %
 
 \section{Switchable modules}
+  \label{Tab-modules}
+%(AB: this is no longer a table, so I treat it as section)
+%(AB: but acroread somehow still doesn't bring me to the right place)
 
-Table~\ref{Tab-modules} lists the available physics and technical
+The table below lists the available physics and technical
 modules.
 
 % ---------------------------------------------------------------------- %
@@ -4428,7 +4474,7 @@ modules.
 %  \caption{%
 %    Switchable modules as of September 2002.
 %  }
-  \label{Tab-modules}
+% \label{Tab-modules}
 %  \begin{tabular}{lp{0.6\textwidth}}
   \begin{longtable}{lp{0.6\textwidth}}
     \toprule
@@ -5582,7 +5628,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.186 2003-07-17 22:45:33 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.187 2003-07-29 09:20:42 brandenb Exp $ $}
 
 
 \end{document}
