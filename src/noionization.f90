@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.90 2003-11-16 13:57:21 theine Exp $
+! $Id: noionization.f90,v 1.91 2003-11-17 13:43:18 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -19,9 +19,9 @@ module Ionization
 
   implicit none
 
-  interface thermodynamics              ! Overload the `thermodynamics' function
-    module procedure thermodynamics_pencil   ! explicit f implicit m,n
-    module procedure thermodynamics_point    ! explicit lnrho, ss
+  interface eoscalc              ! Overload the `thermodynamics' function
+    module procedure eoscalc_pencil   ! explicit f implicit m,n
+    module procedure eoscalc_point    ! explicit lnrho, ss
   end interface
 
   interface getentropy
@@ -86,7 +86,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.90 2003-11-16 13:57:21 theine Exp $")
+           "$Id: noionization.f90,v 1.91 2003-11-17 13:43:18 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -289,97 +289,106 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine thermodynamics_pencil &
-               (f,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
+    subroutine pressure_gradient(f,cs2,cp1tilde)
 !
-!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
-!  cs2=(dp/drho)_s is the adiabatic sound speed
-!  TT1=1/T is the inverse temperature
-!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
-!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
-!   2-feb-03/axel: simple example coded
-!  15-jun-03/axel: made compatible with current ionization routine
+!   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use General
-      use Sub
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx,3), intent(in), optional :: glnrho,gss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: cs2,cp1tilde
-      real, dimension(nx,3), intent(out), optional :: glnTT,glnPP
-      real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho,ss,logTT,TT_
+      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx) :: lnrho,ss
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
-      logTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
-      TT_=exp(logTT-lnTT0)
-      if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
-      if (present(cs2)) cs2=cs20*TT_
-      if (present(cp1tilde)) cp1tilde=1
-      if (present(yH)) yH=0
-      if (present(lnTT)) lnTT=logTT
-      if (present(glnTT).or.present(glnPP)) then
-        if (.not.(present(glnrho).or.present(gss))) then
-          call stop_it ("thermodynamics: You need to supply glnrho and gss")
-        else
-          if (present(glnTT)) glnTT=gamma1*glnrho+gamma*gss
-          if (present(glnPP)) glnPP=glnrho+gamma*gss
-        endif
-      endif
-      if (present(ee)) ee=cs20*TT_/gamma1/gamma
-      if (present(pp)) pp=cs20*TT_*exp(lnrho)/gamma
 !
-    endsubroutine thermodynamics_pencil
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+      cp1tilde=1
+!
+    endsubroutine pressure_gradient
 !***********************************************************************
-    subroutine thermodynamics_point &
-               (lnrho,ss,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
+    subroutine temperature_gradient(f,glnrho,gss,glnTT)
 !
-!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
-!  cs2=(dp/drho)_s is the adiabatic sound speed
-!  TT1=1/T is the inverse temperature
-!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
-!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
-!   2-feb-03/axel: simple example coded
-!  15-jun-03/axel: made compatible with current ionization routine
+!   17-nov-03/tobi: adapted from subroutine eoscalc
 !
       use Cdata
-      use General
-      use Sub
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3), intent(in) :: glnrho,gss
+      real, dimension(nx,3), intent(out) :: glnTT
+!
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      glnTT=gamma1*glnrho+gamma*gss
+!
+    endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine eoscalc_pencil(f,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx), intent(out), optional :: yH,lnTT,ee,pp
+      real, dimension(nx) :: lnTTi
+      real, dimension(nx) :: lnrho,ss
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
+      lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+!
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      if (present(yH)) yH=0
+      if (present(lnTT)) lnTT=lnTTi
+      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
+      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+!
+    endsubroutine eoscalc_pencil
+!***********************************************************************
+    subroutine eoscalc_point(lnrho,ss,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!
+      use Cdata
       use Mpicomm, only: stop_it
 !
       real, intent(in) :: lnrho,ss
-      real, dimension(3), intent(in), optional :: glnrho,gss
-      real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: cs2,cp1tilde
-      real, dimension(3), intent(out), optional :: glnTT,glnPP
-      real, intent(out), optional :: ee,pp
-      real :: logTT,TT_
+      real, intent(out), optional :: yH,lnTT,ee,pp
+      real :: lnTTi
 !
-      logTT=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
-      TT_=exp(logTT-lnTT0)
-      if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
-      if (present(cs2)) cs2=cs20*TT_
-      if (present(cp1tilde)) cp1tilde=1.
+      lnTTi=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+!
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
       if (present(yH)) yH=0
-      if (present(lnTT)) lnTT=logTT
-      if (present(ee)) ee=cs20*TT_/gamma1/gamma
-      if (present(pp)) pp=cs20*TT_*exp(lnrho)/gamma
-      if (present(glnTT).or.present(glnPP)) then
-        if (.not.(present(glnrho).or.present(gss))) then
-          call stop_it ("thermodynamics: You need to supply glnrho and gss")
-        else
-          if (present(glnTT)) glnTT=gamma1*glnrho+gamma*gss
-          if (present(glnPP)) glnPP=glnrho+gamma*gss
-        endif
-      endif
+      if (present(lnTT)) lnTT=lnTTi
+      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
+      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
 !
-    endsubroutine thermodynamics_point
+    endsubroutine eoscalc_point
 !***********************************************************************
     subroutine get_soundspeed(lnTT,cs2)
 !

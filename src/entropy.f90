@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.243 2003-11-17 04:21:44 brandenb Exp $
+! $Id: entropy.f90,v 1.244 2003-11-17 13:43:18 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.243 2003-11-17 04:21:44 brandenb Exp $")
+           "$Id: entropy.f90,v 1.244 2003-11-17 13:43:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -752,8 +752,9 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,iss)
-      call thermodynamics(f,glnrho=glnrho,gss=gss,yH=yH,lnTT=lnTT,cs2=cs2, &
-                            cp1tilde=cp1tilde,glnTT=glnTT,ee=ee)
+      call eoscalc(f,ee=ee,lnTT=lnTT)
+      call pressure_gradient(f,cs2,cp1tilde)
+      call temperature_gradient(f,glnrho,gss,glnTT)
       TT1=exp(-lnTT)
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine

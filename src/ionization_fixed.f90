@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.39 2003-11-16 13:57:21 theine Exp $
+! $Id: ionization_fixed.f90,v 1.40 2003-11-17 13:43:18 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -21,9 +21,9 @@ module Ionization
 
   implicit none
 
-  interface thermodynamics              ! Overload the `thermodynamics' function
-    module procedure thermodynamics_pencil   ! explicit f implicit m,n
-    module procedure thermodynamics_point    ! explocit lnrho, ss
+  interface eoscalc              ! Overload the `thermodynamics' function
+    module procedure eoscalc_pencil   ! explicit f implicit m,n
+    module procedure eoscalc_point    ! explocit lnrho, ss
   end interface
 
   interface getentropy                      ! Overload subroutine ionput
@@ -93,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.39 2003-11-16 13:57:21 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.40 2003-11-17 13:43:18 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -385,107 +385,115 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine thermodynamics_pencil &
-               (f,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
+    subroutine pressure_gradient(f,cs2,cp1tilde)
 !
-!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
-!  cs2=(dp/drho)_s is the adiabatic sound speed
-!  TT1=1/T is the inverse temperature
-!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
-!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
 !
-!   2-feb-03/axel: simple example coded
-!  15-jun-03/axel: made compatible with current ionization routine
+!   17-nov-03/tobi: adapted from subroutine eoscalc
 !
-      use Sub
-      use Mpicomm
+      use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx,3), intent(in), optional :: glnrho,gss
-      real, dimension(nx), intent(out), optional :: yH,lnTT
-      real, dimension(nx), intent(out), optional :: cs2,cp1tilde
-      real, dimension(nx,3), intent(out), optional :: glnTT,glnPP
-      real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho,ss,logTT,TT
+      real, dimension(nx), intent(out) :: cs2,cp1tilde
+      real, dimension(nx) :: lnrho,ss,lnTT
 !
       lnrho=f(l1:l2,m,n,ilnrho)
       ss=f(l1:l2,m,n,iss)
-      logTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-      TT=exp(logTT)
+      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
-      if (present(cs2))      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*TT
-      if (present(cp1tilde)) cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
-      if (present(yH))       yH=yH0
-      if (present(lnTT))     lnTT=logTT
-      if (present(glnTT).or.present(glnPP)) then
-        if (.not.(present(glnrho).or.present(gss))) then
-          call stop_it ("thermodynamics: You need to supply glnrho and gss")
-        else
-          if (present(glnTT)) then
-            glnTT=(2.0/3.0)*(glnrho+gss/((1+yH0+xHe)*ss_ion))
-          endif
-          if (present(glnPP)) then
-            glnPP=(1+2.0/3.0)*glnrho+(2.0/3.0)*gss/((1+yH0+xHe)*ss_ion)
-          endif
-        endif
-      endif
-      if (present(ee))       ee=1.5*(1+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      if (present(pp))       pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
+      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*exp(lnTT)
+      cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+!
+    endsubroutine pressure_gradient
+!***********************************************************************
+    subroutine temperature_gradient(f,glnrho,gss,glnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3), intent(in) :: glnrho,gss
+      real, dimension(nx,3), intent(out) :: glnTT
+      integer :: j
+!
+      do j=1,3
+        glnTT(:,j)=(2.0/3.0)*(glnrho(:,j)+gss(:,j)/ss_ion/(1+yH0+xHe))
+      enddo
+!
+    endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine eoscalc_pencil(f,yH,lnTT,ee,pp)
+!
+!   Calculate thermodynamical quantities
+!
+!   2-feb-03/axel: simple example coded
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx), intent(out), optional :: yH,lnTT
+      real, dimension(nx), intent(out), optional :: ee,pp
+      real, dimension(nx) :: yHi,lnTTi,TT
+      real, dimension(nx) :: lnrho,ss
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      ss=f(l1:l2,m,n,iss)
+      lnTTi=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+      TT=exp(lnTTi)
+      yHi=yH0
+!
+      if (present(yH))       yH=yHi
+      if (present(lnTT))     lnTT=lnTTi
+      if (present(ee))       ee=1.5*(1+yHi+xHe)*ss_ion*TT+yHi*ss_ion*TT_ion
+      if (present(pp))       pp=(1+yHi+xHe)*exp(lnrho)*TT*ss_ion
 !
       if (ldiagnos) then
-        if (i_yHmax/=0) call max_mn_name(yH,i_yHmax)
-        if (i_yHm/=0) call sum_mn_name(yH,i_yHm)
+        if (i_yHmax/=0) call max_mn_name(yHi,i_yHmax)
+        if (i_yHm/=0) call sum_mn_name(yHi,i_yHm)
         if (i_TTmax/=0) call max_mn_name(TT,i_TTmax)
         if (i_TTm/=0) call sum_mn_name(TT,i_TTm)
       endif
 !
-    endsubroutine thermodynamics_pencil
+    endsubroutine eoscalc_pencil
 !***********************************************************************
-    subroutine thermodynamics_point &
-               (lnrho,ss,glnrho,gss,yH,lnTT,cs2,cp1tilde,glnTT,glnPP,ee,pp)
+    subroutine eoscalc_point(lnrho,ss,yH,lnTT,ee,pp)
 !
-!  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
-!  cs2=(dp/drho)_s is the adiabatic sound speed
-!  TT1=1/T is the inverse temperature
-!  neutral gas: cp1tilde=kB_over_mp/cp=0.4 ("nabla_ad" maybe better name)
-!  in general: cp1tilde=dlnPdS/dlnPdlnrho
+!   Calculate thermodynamical quantities
 !
 !   2-feb-03/axel: simple example coded
-!  15-jun-03/axel: made compatible with current ionization routine
+!   13-jun-03/tobi: the ionization fraction as part of the f-array
+!                   now needs to be given as an argument as input
+!   17-nov-03/tobi: moved calculation of cs2 and cp1tilde to
+!                   subroutine pressure_gradient
 !
-      use Mpicomm
+      use Cdata
 !
       real, intent(in) :: lnrho,ss
-      real, dimension(3), intent(in), optional :: glnrho,gss
       real, intent(out), optional :: yH,lnTT
-      real, intent(out), optional :: cs2,cp1tilde
-      real, dimension(3), intent(out), optional :: glnTT,glnPP
       real, intent(out), optional :: ee,pp
-      real :: logTT,TT
+      real :: lnTTi,TT
 !
-      logTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-      TT=exp(logTT)
+      lnTTi=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+      TT=exp(lnTTi)
 !
-      if (present(cs2))      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*TT
-      if (present(cp1tilde)) cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
       if (present(yH))       yH=yH0
-      if (present(lnTT))     lnTT=logTT
-      if (present(glnTT).or.present(glnPP)) then
-        if (.not.(present(glnrho).or.present(gss))) then
-          call stop_it ("thermodynamics: You need to supply glnrho and gss")
-        else
-          if (present(glnTT)) then
-            glnTT=(2.0/3.0)*(glnrho+gss/((1+yH0+xHe)*ss_ion))
-          endif
-          if (present(glnPP)) then
-            glnPP=(1+2.0/3.0)*glnrho+(2.0/3.0)*gss/((1+yH0+xHe)*ss_ion)
-          endif
-        endif
-      endif
+      if (present(lnTT))     lnTT=lnTTi
       if (present(ee))       ee=1.5*(1+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      if (present(pp))       pp=(1+yH+xHe)*exp(lnrho)*TT*ss_ion
+      if (present(pp))       pp=(1+yH0+xHe)*exp(lnrho)*TT*ss_ion
 !
-    endsubroutine thermodynamics_point
+    endsubroutine eoscalc_point
 !***********************************************************************
     subroutine read_ionization_init_pars(unit,iostat)
       integer, intent(in) :: unit

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.64 2003-11-16 13:57:21 theine Exp $
+! $Id: interstellar.f90,v 1.65 2003-11-17 13:43:18 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.64 2003-11-16 13:57:21 theine Exp $")
+           "$Id: interstellar.f90,v 1.65 2003-11-17 13:43:18 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -385,7 +385,7 @@ module Interstellar
        do n=n1,n2
            do m=m1,m2
              lnrho=f(l1:l2,m,n,ilnrho)
-             call thermodynamics(f,yH=yH,lnTT=lnTT)
+             call eoscalc(f,yH=yH,lnTT=lnTT)
              rho=exp(lnrho)
              TT=exp(TT)
 
@@ -546,7 +546,7 @@ module Interstellar
     use Cdata
     use General
     use Mpicomm
-    use Ionization, only: thermodynamics
+    use Ionization, only: eoscalc
 !
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
     real, intent(in) , dimension(ncpus) :: mass_cloud_byproc
@@ -605,7 +605,7 @@ find_SN: do n=n1,n2
         do m=m1,m2
           do l=l1,l2
             lnrho=f(l,m,n,ilnrho)
-            call thermodynamics(lnrho,ss,yH=yH,lnTT=lnTT)
+            call eoscalc(lnrho,ss,yH=yH,lnTT=lnTT)
             rho=exp(lnrho)
             TT=exp(lnTT)
             if (rho >= rho_crit .and. TT <= TT_crit) then
@@ -732,7 +732,7 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-      call thermodynamics(lnrho_SN,ss_SN,yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
+      call eoscalc(lnrho_SN,ss_SN,yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new, &
                 lnTT_SN_new,yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
@@ -753,7 +753,7 @@ find_SN: do n=n1,n2
          call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
-         call thermodynamics(lnrho_SN_new,ss_SN_new,ee=ee_SN)
+         call eoscalc(lnrho_SN_new,ss_SN_new,ee=ee_SN)
          call perturb_energy(lnrho_SN_new, &
                  (ee_SN*rho_SN+c_SN)/rho_SN_new,ss_SN_new,lnTT_SN_new,yH_SN_new)
          TT_SN_new=exp(lnTT_SN_new)
@@ -785,7 +785,7 @@ find_SN: do n=n1,n2
             ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
-            call thermodynamics(f,yH=yH,lnTT=lnTT,ee=ee_old)
+            call eoscalc(f,yH=yH,lnTT=lnTT,ee=ee_old)
 
             ! Apply perturbations
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
