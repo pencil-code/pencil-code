@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.57 2004-01-26 14:46:02 brandenb Exp $
+! $Id: forcing.f90,v 1.58 2004-02-06 19:27:42 nilshau Exp $
 
 module Forcing
 
@@ -14,7 +14,8 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
-  real :: zff_ampl=0.,zff_hel=0.
+  real :: zff_ampl=0.,zff_hel=0.,max_force=0.02
+  real :: tsforce=-10., dtforce=10
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0.
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
@@ -29,7 +30,7 @@ module Forcing
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        zff_ampl,zff_hel, &
-       lmagnetic_forcing
+       lmagnetic_forcing,max_force,dtforce
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rufm=0
@@ -56,7 +57,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.57 2004-01-26 14:46:02 brandenb Exp $")
+           "$Id: forcing.f90,v 1.58 2004-02-06 19:27:42 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -257,9 +258,9 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1,ruf
+      real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
       real, dimension (mz) :: tmpz
-      real, dimension (nx,3) :: variable_rhs,forcing_rhs
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -420,8 +421,10 @@ module Forcing
 !
       if(lmomentum_ff) then
         rho1=exp(-f(l1:l2,m,n,ilnrho))
+        rho=1./rho1
       else
         rho1=1.
+        rho=exp(f(l1:l2,m,n,ilnrho))
       endif
 !
 !  loop the two cases separately, so we don't check for r_ff during
@@ -429,26 +432,27 @@ module Forcing
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       if (r_ff == 0) then       ! no radial profile
-        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,cmplx(coef1,coef2),force_ampl)
+        if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profz_ampl(n)*cmplx(coef1,profz_hel(n)*coef2),force_ampl)
         do n=n1,n2
           do m=m1,m2
+            variable_rhs=f(l1:l2,m,n,iffx:iffz)
             do j=1,3
               if(extent(j)) then
                 jf=j+ifff-1
-                forcing_rhs(:,j)=profz_ampl(n)*force_ampl &
+                forcing_rhs(:,j)=rho1*profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))
-                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*forcing_rhs(:,j)
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
             enddo
-          enddo
-          if (lout) then
-            if (i_rufm/=0) then
-              variable_rhs=f(l1:l2,m,n,iffx:iffz)
-              call dot_mn(variable_rhs,forcing_rhs,ruf)
-              call sum_mn_name(ruf,i_rufm)
+            if (lout) then
+              if (i_rufm/=0) then
+                call multsv_mn(rho/dt,forcing_rhs,force_all)
+                call dot_mn(variable_rhs,force_all,ruf)
+                call sum_mn_name(ruf/(nw*ncpus),i_rufm)
+              endif
             endif
-          endif
+          enddo
         enddo
       else                      ! with radial profile
         do j=1,3
@@ -515,14 +519,20 @@ module Forcing
 !
       fsum_tmp(1)=rho_uu_ff
       call mpireduce_sum(fsum_tmp,fsum,1)
-      if(lroot) rho_uu_ff=rho_uu_ff/(nw*ncpus)
+      if(lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
       call mpibcast_real(rho_uu_ff,1)
 !
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
-      if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
-      force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
+
+!print*,fname(i_urms)
+
+        if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
+        !      force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
+        force_ampl=work_ff/rho_uu_ff
+        if (force_ampl .gt. max_force) force_ampl=max_force
+        if (force_ampl .lt. -max_force) force_ampl=-max_force
 !
     endsubroutine calc_force_ampl
 !***********************************************************************
@@ -1022,11 +1032,16 @@ module Forcing
       use Mpicomm
       use Cdata
       use Hydro
+      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: force1,force2,force_vec
+      real, dimension (nx) :: ruf,rho
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
       real :: phase1,phase2,p_weight
       real :: kx01,ky1,kz1,kx02,ky2,kz2
+      real :: mulforce_vec=1.,irufm
+      real, dimension (1) :: fsum_tmp,fsum
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
@@ -1084,12 +1099,60 @@ module Forcing
 !  Determine weight parameter
 !
       p_weight=(tsforce-t)/dtforce
+      force_vec=p_weight*force1+(1-p_weight)*force2
+!
+! Find energy input
+!      
+      if (lout .or. lwork_ff) then
+        if (i_rufm/=0 .or. lwork_ff) then
+          irufm=0
+          do n=n1,n2
+            do m=m1,m2
+              forcing_rhs=force_vec(l1:l2,m,n,:)
+              variable_rhs=f(l1:l2,m,n,iffx:iffz)!-force_vec(l1:l2,m,n,:)
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multsv_mn(rho/dt,forcing_rhs,force_all)
+              call dot_mn(variable_rhs,force_all,ruf)
+              irufm=irufm+sum(ruf)
+              !call sum_mn_name(ruf/(nw*ncpus),i_rufm)
+            enddo
+          enddo
+        endif
+      endif
+      irufm=irufm/(ncpus*nw)
+!
+! If we want to make energy input constant  
+!
+      if (lwork_ff) then
+
+!
+!  on different processors, irufm needs to be communicated
+!  to other processors
+!
+        fsum_tmp(1)=irufm
+        call mpireduce_sum(fsum_tmp,fsum,1)
+        call mpibcast_real(irufm,1)
+!
+! What should be added to force_vec in order to make the energy 
+! input equal to work_ff?
+!
+        mulforce_vec=work_ff/irufm
+        if (mulforce_vec .gt. max_force)  mulforce_vec=max_force
+      endif
 !
 !  Add forcing
-!      
-      force_vec=p_weight*force1+(1-p_weight)*force2
+! 
       f(l1:l2,m1:m2,n1:n2,1:3)= &
-           f(l1:l2,m1:m2,n1:n2,1:3)+force_vec(l1:l2,m1:m2,n1:n2,:)
+           f(l1:l2,m1:m2,n1:n2,1:3)+force_vec(l1:l2,m1:m2,n1:n2,:)*mulforce_vec
+!
+! Save for printouts
+!
+      if (lout) then
+        if (i_rufm/=0) then          
+          fname(i_rufm)=irufm*mulforce_vec
+          itype_name(i_rufm)=ilabel_sum
+        endif
+      endif
 !
     end subroutine forcing_hel_smooth
 !***********************************************************************
