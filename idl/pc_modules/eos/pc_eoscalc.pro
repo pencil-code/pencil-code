@@ -30,6 +30,7 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
     return,0
   ENDIF
 
+  default, datadir, 'data'
   ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
   
