@@ -9,6 +9,10 @@ function pc_radio_beamsmooth,var,beam_width_arcseconds,dx=dx,dy=dy,nsigma=nsigma
 ; require nx,ny,dx,dy(,xmin,ymin ? - maybe not; just need spacing dx,dy)
 ;   
     
+COMPILE_OPT IDL2,HIDDEN
+;
+;common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0 
+
 fxln2 = 2.772588722239780 ; = 4*ln(2)
 one_arcsec=4.848137e-6
 
@@ -114,17 +118,26 @@ if not keyword_set(TEST) then begin
   dx=data.dx ;*(units.length/3.086E18)
   dy=data.dy ;*(units.length/3.086E18)
   dz=data.dz ;*(units.length/3.086E18)
-  nx=dim.nx
-  ny=dim.ny
-  nz=dim.nz
-  l1=dim.l1
-  l2=dim.l2
-  m1=dim.m1
-  m2=dim.m2
-  n1=dim.n1
-  n2=dim.n2
-  xmin=param.xyz0[0] 
-  ymin=param.xyz0[1] 
+;  nx=dim.nx
+;  ny=dim.ny
+;  nz=dim.nz
+;  l1=dim.l1
+;  l2=dim.l2
+;  m1=dim.m1
+;  m2=dim.m2
+;  n1=dim.n1
+;  n2=dim.n2
+  nx=dim.mx
+  ny=dim.my
+  nz=dim.mz
+  l1=0
+  l2=nx-1  
+  m1=0
+  m2=ny-1  
+  n1=0
+  n2=nz-1  
+  xmin=param.xyz0[0]-l1*dx
+  ymin=param.xyz0[1]-m1*dy
 
 ;  rescale density so that it is n_e
   n_e=data.rho*(units.density/(mu*m_H))
@@ -160,6 +173,8 @@ endif else begin
     bb(i,j,*,2)=0.
   endfor
   endfor  
+
+
   n_e=fltarr(nx,ny,nz)
   n_e[*,*,*]=1.0
 ;     n_e=1.0
@@ -210,11 +225,12 @@ endelse
 
       
 ; Angle = 2 * intrinsic polatisation angle + faraday_depth
-      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1]/bb[l1:l2,m1:m2,n1+k,0]+(1e-9))+0.5*!pi
-;      pnts=where(intr_angle lt 0.*!pi,siz)
-;      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]+!pi
-;      pnts=where(intr_angle gt !pi,siz)
-;      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]-!pi
+;      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1]/bb[l1:l2,m1:m2,n1+k,0]+(1e-9))+0.5*!pi
+      intr_angle=atan(bb[l1:l2,m1:m2,n1+k,1],bb[l1:l2,m1:m2,n1+k,0])+0.5*!pi
+      pnts=where(intr_angle lt 0.*!pi,siz)
+      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]+!pi
+      pnts=where(intr_angle gt !pi,siz)
+      if siz gt 0 then intr_angle[pnts]=intr_angle[pnts]-!pi
      
       angle[*,*,k]=2.0*intr_angle  + faraday_depth
     endfor
@@ -265,6 +281,21 @@ endif
   bb_los=fltarr(nx,ny,3)
   for i=0,nz-1 do bb_los = bb_los + bb[l1:l2,m1:m2,i,*]
   bb_los=bb_los/nz
+  
+  bb_perp=fltarr(nx,ny,1,2)
+  bb_perp[*,*,0,0]=P_I[*,*,0]*cos(polarization_angle[*,*,0])
+  bb_perp[*,*,0,1]=P_I[*,*,0]*sin(polarization_angle[*,*,0])
+
+  bb_parallel=fltarr(nx,ny,1)
+  for j=0,ny-1 do begin 
+  for i=0,nx-1 do begin 
+    bb_parallel[i,j]=RM[i,j]*nz*dz/total(n_e[i,j,*])
+  endfor
+  endfor
+
+
+  j_parallel=der(spread(bb_perp[*,*,*,1],2,1),0)-der(spread(bb_perp[*,*,*,0],2,1),1)
+  h_c=bb_parallel*j_parallel*dx*dy
 
 ;wind=0
 ;for i=0,(size(lambdas))[1]-1 do begin
@@ -287,7 +318,14 @@ endif
 ;endfor
 ;contour,RM,nlevels=64,/fill
 
-object=CREATE_STRUCT(['polarization_angle','polarized_intensity','bb_los','Q','U','RM','lambda','nlambda'],polarization_angle,P_I,bb_los,Q,U,RM,lambdas,n_elements(lambdas))
+object=CREATE_STRUCT(['polarization_angle','polarized_intensity', $
+                      'bb_los','bb_perp','bb_parallel','Q','U','RM', $
+                      'j_parallel','h_c',                  $
+                      'lambda','nlambda'],                 $
+                       polarization_angle,P_I,             $
+                       bb_los,bb_perp,bb_parallel,Q,U,RM,  $
+                       j_parallel,h_c,                     $
+                       lambdas,n_elements(lambdas))
 
 end
 
