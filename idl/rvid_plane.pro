@@ -1,8 +1,8 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,amin=amin,$
   nrepeat=nrepeat,wait=wait,njump=njump,datadir=datadir,OLDFILE=OLDFILE,$
-  test=test,proc=proc,iy=iy,ps=ps
+  test=test,proc=proc,ix=ix,iy=iy,ps=ps
 ;
-; $Id: rvid_plane.pro,v 1.1 2003-07-21 04:27:27 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.2 2003-08-03 09:50:06 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -15,7 +15,8 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,amin=amin,$
 ;  rvid_plane,'uz',amin=-1e-1,amax=1e-1,/proc
 ;
 default,proc,0
-default,iy,0
+default,ix,-1
+default,iy,-1
 default,ps,0
 default,extension,'xz'
 default,amax,.05
@@ -96,7 +97,8 @@ if keyword_set(test) then begin
 end else begin
   if t ge tmin and t le tmax then begin
     if ijump eq njump then begin
-      plot,plane(*,iy),yr=[amin,amax],ps=ps
+      if iy ne -1 then plot,plane(*,iy),yr=[amin,amax],ps=ps
+      if ix ne -1 then plot,plane(ix,*),yr=[amin,amax],ps=ps
       tvscl,plane
       ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin

@@ -1,11 +1,11 @@
-;  $Id: extra.pro,v 1.21 2003-07-21 04:27:26 brandenb Exp $
+;  $Id: extra.pro,v 1.22 2003-08-03 09:50:06 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
 gamma=5./3.
 gamma1=gamma-1.
 ;
-@pencilconstant.pro
+@pencilconstants.pro
 ;
 ;print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [my,mz])
@@ -26,17 +26,21 @@ if (iaa ne 0) then aaa=aa(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 ;
-if (ilnrho ne 0) then llnrho=lnrho(l1:l2,m1:m2,n1:n2)
-if (ilnrho ne 0) then rho=exp(llnrho)
-if (ilnrho ne 0 and ient eq 0) then cs2=cs20*exp(gamma1*llnrho)
-if (ient ne 0 and iyH eq 0) then sss=ss(l1:l2,m1:m2,n1:n2)
-if (ient ne 0 and iyH eq 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
-if (ient ne 0 and iyH eq 0) then ppp=rho*cs2/gamma
-if (iyH ne 0) then yyH=yH(l1:l2,m1:m2,n1:n2)
-if (iyH ne 0) then TTT=TT(l1:l2,m1:m2,n1:n2)
-; the following gives cs2,cp1tilde,eee,ppp
-if (ient ne 0 and iyH ne 0) then begin
-@thermodynamics.pro
+if (ilnrho ne 0) then begin
+  llnrho=lnrho(l1:l2,m1:m2,n1:n2)
+  rho=exp(llnrho)
+  if (ient eq 0) then cs2=cs20*exp(gamma1*llnrho)
+  if (ient ne 0 and iyH eq 0) then sss=ss(l1:l2,m1:m2,n1:n2)
+  if (ient ne 0 and iyH eq 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
+  if (ient ne 0 and iyH eq 0) then ppp=rho*cs2/gamma
+  if (iyH ne 0) then yyH=yH(l1:l2,m1:m2,n1:n2)
+  if (iyH ne 0) then TTT=TT(l1:l2,m1:m2,n1:n2)
+  ; the following gives cs2,cp1tilde,eee,ppp
+  if (ient ne 0 and iyH ne 0) then begin
+  @thermodynamics.pro
+  endif
+  hhh=cs2/gamma1  ;(enthalpy)
+;
 endif
 ;
 if (iqrad ne 0) then QQrad=Qrad(l1:l2,m1:m2,n1:n2)
@@ -73,9 +77,5 @@ if (ilncc ne 0) then begin
   llncc=lncc(l1:l2,m1:m2,n1:n2)
   ccc=exp(llncc)
 end
-;
-;  in case we need it
-;
-hhh=cs2/gamma1  ;(enthalpy)
 ;
 END

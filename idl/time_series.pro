@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.11 2003-07-12 23:56:15 brandenb Exp $
+;  $Id: time_series.pro,v 1.12 2003-08-03 09:50:06 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -25,6 +25,9 @@ if defined(i_uy2m) ne 0 then uy2m=reform(a(i_uy2m-1,*))
 if defined(i_uz2m) ne 0 then uz2m=reform(a(i_uz2m-1,*))
 if defined(i_um2) ne 0 then um2=reform(a(i_um2-1,*))
 if defined(i_b2m) ne 0 then b2m=reform(a(i_b2m-1,*))
+if defined(i_e2m) ne 0 then e2m=reform(a(i_e2m-1,*))
+if defined(i_dive2m) ne 0 then dive2m=reform(a(i_dive2m-1,*))
+if defined(i_divee2m) ne 0 then divee2m=reform(a(i_divee2m-1,*))
 if defined(i_bx2m) ne 0 then bx2m=reform(a(i_bx2m-1,*))
 if defined(i_by2m) ne 0 then by2m=reform(a(i_by2m-1,*))
 if defined(i_bz2m) ne 0 then bz2m=reform(a(i_bz2m-1,*))
