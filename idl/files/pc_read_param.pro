@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.6 2004-05-11 15:27:35 mee Exp $
+; $Id: pc_read_param.pro,v 1.7 2004-05-11 17:43:34 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 15:27:35 $
-;  $Revision: 1.6 $
+;  $Date: 2004-05-11 17:43:34 $
+;  $Revision: 1.7 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -23,7 +23,7 @@ pro pc_read_param,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,le
                   cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1, $
                   z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz, $
                   mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
-                  object=object, $
+                  object=object, dim=dim, $
                   datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
@@ -84,7 +84,10 @@ COMPILE_OPT IDL2,HIDDEN
 ; Default data directory
 
 default, datadir, 'data'
-pc_set_precision   ; check precision is set
+if (n_elements(dim) eq 0) then pc_read_dim,object=dim,quiet=quiet
+pc_set_precision,dim=dim,quiet=quiet   ; check precision is set
+precision=dim.precision
+
 ;
 ; Initialize / set default returns for ALL variables
 ;
@@ -120,6 +123,14 @@ isothtop  = zero
 ; Build the full path and filename
 filename=datadir+'/param.nml'   
 
+
+;If double precision, force input from params.nml to be doubles
+if ((precision eq 'S') or (precision eq 's')) then begin ; single precision
+  nl2idl_d_opt = ''
+endif else if ((precision eq 'D') or (precision eq 'd')) then begin ; double precision
+  nl2idl_d_opt = '-d'
+endif  ;; Erroneous case already caught by pc_set_precision
+
 ; Check for existance and read the data
 dummy = findfile(filename, COUNT=found)
 if (found gt 0) then begin
@@ -132,7 +143,7 @@ if (found gt 0) then begin
     endelse
     tmpfile = tmpdir+'/param.pro'
     ;; Write content of param.nml to temporary file:
-    spawn, '$PENCIL_HOME/bin/nl2idl -m '+filename+'> ' $
+    spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m '+filename+'> ' $
          + tmpfile , result
     ;; Compile that file. Should be easy, but is incredibly awkward, as
     ;; there is no way in IDL to compile a given file at run-time

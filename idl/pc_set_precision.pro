@@ -1,12 +1,12 @@
-; $Id: pc_set_precision.pro,v 1.4 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_set_precision.pro,v 1.5 2004-05-11 17:43:34 mee Exp $
 ;
 ;
 ;  Read ensure 'zero' and 'one' are set in the pc_precision common block.
 ;
-pro pc_set_precision, precision=precision, QUIET=QUIET
+pro pc_set_precision, precision=precision, dim=dim, QUIET=QUIET
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
-if keyword_set(precision) then begin
+if n_elements(precision) eq 1 then begin
     if ((precision eq 'S') or (precision eq 's')) then begin
         one = 1.e0
     endif else if ((precision eq 'D') or (precision eq 'd')) then begin
@@ -16,8 +16,9 @@ if keyword_set(precision) then begin
     endelse
     zero = 0*one
 endif else begin
-    if N_ELEMENTS(one) EQ 0 then begin
-        pc_read_dim,precision=precision,/QUIET
+;    if N_ELEMENTS(one) EQ 0 then begin
+        if n_elements(dim) ne 1 then pc_read_dim,object=dim
+        precision=dim.precision
         if ((precision eq 'S') or (precision eq 's')) then begin
             one = 1.e0
         endif else if ((precision eq 'D') or (precision eq 'd')) then begin
@@ -26,7 +27,7 @@ endif else begin
             message, "precision = `"+precision+"' makes no sense to me"
         endelse
         zero = 0*one
-    endif
+;    endif
 endelse
 
 

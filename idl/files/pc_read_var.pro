@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.14 2004-05-11 15:39:15 mee Exp $
+; $Id: pc_read_var.pro,v 1.15 2004-05-11 17:43:34 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 15:39:15 $
-;  $Revision: 1.14 $
+;  $Date: 2004-05-11 17:43:34 $
+;  $Revision: 1.15 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -95,8 +95,8 @@ default,varfile,'var.dat'
   endelse
 
 ; and check pc_precision is set!                                                    
-pc_set_precision,precision=precision
-pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
+pc_set_precision,dim=dim,quiet=quiet
+pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
 
 if keyword_set(TRIMALL) then TRIMXYZ=1L
 
@@ -134,7 +134,7 @@ endif
 ;
 ;  Read data
 ;
-varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param)
+varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 

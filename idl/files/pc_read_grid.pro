@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.7 2004-05-05 17:17:22 mee Exp $
+; $Id: pc_read_grid.pro,v 1.8 2004-05-11 17:43:34 mee Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:17:22 $
-;  $Revision: 1.7 $
+;  $Date: 2004-05-11 17:43:34 $
+;  $Revision: 1.8 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -47,9 +47,12 @@ COMPILE_OPT IDL2,HIDDEN
 default, datadir, 'data'
 
 ; Get necessary dimensions, inheriting QUIET
-pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET 
+pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
 ; and check pc_precision is set!
-pc_set_precision,precision=precision,QUIET=QUIET
+pc_set_precision,dim=dim,QUIET=QUIET
+mx=dim.mx
+my=dim.my
+mz=dim.mz
 
 ;
 ; Initialize / set default returns for ALL variables

@@ -1,13 +1,13 @@
-;  $Id: pc_varcontent.pro,v 1.6 2004-05-11 15:39:15 mee Exp $
-FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param
+;  $Id: pc_varcontent.pro,v 1.7 2004-05-11 17:43:34 mee Exp $
+FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
 ; 
 ;  Read the positions of variables in f
 ;  Can't just use `@data/index', as the data directory may have a different name
 ;
-if (n_elements(dim) eq 0) then pc_read_dim,obj=dim
-if (n_elements(param) eq 0) then pc_read_param,obj=param
+if (n_elements(dim) eq 0) then pc_read_dim,obj=dim,quiet=quiet
+if (n_elements(param) eq 0) then pc_read_param,obj=param,dim=dim,quiet=quiet
 
 default,datadir,'data'
 cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'+"' "+datadir+'/index.pro'

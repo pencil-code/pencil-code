@@ -1,10 +1,10 @@
-; $Id: pc_read_slice.pro,v 1.4 2004-05-05 17:17:22 mee Exp $
+; $Id: pc_read_slice.pro,v 1.5 2004-05-11 17:43:34 mee Exp $
 ;
 ;   Read slice files
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:17:22 $
-;  $Revision: 1.4 $
+;  $Date: 2004-05-11 17:43:34 $
+;  $Revision: 1.5 $
 ;
 ;  28-nov-02/tony: coded 
 ;
@@ -60,7 +60,7 @@ default, datadir, 'data'
 ; Get necessary dimensions, inheriting QUIET
 pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET 
 ; and check pc_precision is set!
-pc_set_precision,precision=precision,QUIET=QUIET
+pc_set_precision,dim=dim,QUIET=QUIET
 
 ;
 ; Initialize / set default returns for ALL variables
