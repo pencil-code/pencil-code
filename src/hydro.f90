@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.191 2004-10-29 13:40:40 ajohan Exp $
+! $Id: hydro.f90,v 1.192 2004-10-30 15:24:41 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.191 2004-10-29 13:40:40 ajohan Exp $")
+           "$Id: hydro.f90,v 1.192 2004-10-30 15:24:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -409,12 +409,13 @@ module Hydro
       use Cdata
       use Sub
       use IO
+      use Mpicomm, only: stop_it
       use Slices
       use Special, only: special_calc_hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij,Jij
+      real, dimension (nx,3,3) :: uij,bij,Jij,uij5
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
       real, dimension (nx) :: u2,divu,o2,ou,rho,rho1,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13,ss12,nu_smag
@@ -459,12 +460,33 @@ module Hydro
 !  calculate rate of strain tensor
 !
       if (lneed_sij) then
-        do j=1,3
-          do i=1,3
-            sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+
+        select case (ivisc)
+       
+        case ('nu-const','')
+          do j=1,3
+            do i=1,3
+              sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+            enddo
+            sij(:,j,j)=sij(:,j,j)-.333333*divu
           enddo
-          sij(:,j,j)=sij(:,j,j)-.333333*divu
-        enddo
+
+        case ('hyper3_nu-const')
+
+          call gij(f,iuu,uij5,5)
+          do i=1,3
+            do j=1,3
+              sij(:,i,j)=uij5(:,i,j)
+            enddo
+          enddo
+
+        case default
+
+          print*, 'duu_dt: No rate-of-strain tensor matches ivisc=',ivisc
+          call stop_it('')
+
+        endselect
+
       endif
 !
 !  advection term

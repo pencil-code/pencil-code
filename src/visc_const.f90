@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.45 2004-10-29 10:06:51 ajohan Exp $
+! $Id: visc_const.f90,v 1.46 2004-10-30 15:24:41 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.45 2004-10-29 10:06:51 ajohan Exp $")
+           "$Id: visc_const.f90,v 1.46 2004-10-30 15:24:41 ajohan Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -78,14 +78,15 @@ module Viscosity
     subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
-
+!
       use Cdata
 
-      if ((nu /= 0. .and. ivisc=='nu-const') .or. (ivisc=='smagorinsky_simplified')) then
+      if (((ivisc=='nu-const' .or. ivisc=='hyper_nu-const') .and. nu/=0.) &
+          .or. (ivisc=='smagorinsky_simplified')) then
          lneed_sij=.true.
          lneed_glnrho=.true.
       endif
-
+!
     endsubroutine initialize_viscosity
 !*******************************************************************
     subroutine rprint_viscosity(lreset,lwrite)
@@ -259,17 +260,26 @@ module Viscosity
 !          call max_for_dt(nu,maxdiffus)
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
-        case ('hyper3_simplified2')
+        case ('hyper3_rho_nu-const')
           !
-          !  viscous force: mu/rho*del6v
+          !  viscous force: mu/rho*del6u
           !
           if (headtt) print*,'viscous force: mu/rho*del6v'
-          murho1=(nu*rho0)*rho1  !(=mu/rho)
           call del6v(f,iuu,del6u)
+          murho1=(nu*rho0)*rho1  !(=mu/rho)
           do i=1,3
             fvisc(:,i)=murho1*del6u(:,i)
           enddo
-!          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
+
+        case ('hyper3_nu-const')
+          !
+          !  viscous force: nu*(del6u+S.glnrho), where S_ij=d^5 u_i/dx_j^5
+          !
+          if (headtt) print*,'viscous force: nu*(del6u+S.glnrho)'
+          call del6v(f,iuu,del6u)
+          call multmv_mn(sij,glnrho,sglnrho)
+          fvisc=nu*(del6u+sglnrho)
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
         case ('smagorinsky_simplified')
