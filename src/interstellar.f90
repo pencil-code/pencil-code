@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.40 2003-08-12 18:02:18 mee Exp $
+! $Id: interstellar.f90,v 1.41 2003-08-13 11:44:57 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -14,7 +14,7 @@ module Interstellar
   real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
-  real :: t_next_SNI=0.0, t_interval_SNI=3.64e-3,h_SNI=0.325,h_SNII=0.9
+  real :: t_next_SNI=0.0, t_interval_SNI=3.64e-3,h_SNI=0.325,h_SNII=0.09
   real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.40 2003-08-12 18:02:18 mee Exp $")
+           "$Id: interstellar.f90,v 1.41 2003-08-13 11:44:57 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
