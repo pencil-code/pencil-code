@@ -2,7 +2,7 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.3 2004-04-28 12:55:27 dobler Exp $
+$Id: README,v 1.4 2004-04-28 16:41:59 brandenb Exp $
 
 
 1. Symptoms:
@@ -46,6 +46,12 @@ However, with ifort (Intel Fortran compiler, version 8.0), one gets
     spread_256.x       08049C61  Unknown               Unknown  Unknown
 
 2. Command sequence:
+
+On all machines:
+
+  unix>  make f90
+
+Then
 
   kabul>  make FC=ifort test
 or
