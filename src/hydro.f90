@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.79 2002-11-12 07:33:40 brandenb Exp $
+! $Id: hydro.f90,v 1.80 2002-11-20 19:57:06 mee Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -7,8 +7,9 @@ module Hydro
 !  Note that Omega is already defined in cdata.
 
   use Cparam
-  use Cdata, only: nu,ivisc
+!ajwm  use Cdata, only: nu,ivisc
   use Density
+  use Viscosity  
 
   implicit none
 
@@ -25,14 +26,14 @@ module Hydro
        Omega
 
   ! run parameters
-  real, dimension (nx,3,3) :: sij
+!ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
   namelist /hydro_run_pars/ &
-       nu,ivisc, &
-       Omega,theta, &
+       nu,ivisc, &            !ajwm - kept for backward comp. should 
+       Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
        tau_damp_ruxm,tau_damp_ruym
 
@@ -80,7 +81,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.79 2002-11-12 07:33:40 brandenb Exp $")
+           "$Id: hydro.f90,v 1.80 2002-11-20 19:57:06 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -270,8 +271,8 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,ugu,oo,fvisc,glnrho,sglnrho,del2u,graddivu
-      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,rho,ux,uy,uz,sij2
+      real, dimension (nx,3) :: uu,ugu,oo,glnrho
+      real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2
       real :: c2,s2
       integer :: i,j
 !
@@ -301,7 +302,9 @@ module Hydro
 !
 !  calculate rate of strain tensor
 !
-      if (lentropy .or. (ivisc=='nu-const')) then
+!ajwm -  lviscosity will always be true unless we define noviscosity module
+!ajwm - condition was ivisc='nu-const'
+      if (lentropy .or. lviscosity) then
         do j=1,3
           do i=1,3
             sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
@@ -335,72 +338,17 @@ module Hydro
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
         endif
       endif
+
 !
 !  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
 !
-      if(ldensity .or. (ivisc=='nu-const')) call grad(f,ilnrho,glnrho)
-!
-!  viscosity operator
-!  rho1 is pre-calculated in equ
-!
-      if (nu /= 0.) then
-        select case (ivisc)
+! ajwm - as above old cond was (ivisc=='nu-const')
+      if(ldensity .or. lviscosity) call grad(f,ilnrho,glnrho)
 
-        case ('simplified', '0')
-          !
-          !  viscous force: nu*del2v
-          !  -- not physically correct (no momentum conservation), but
-          !  numerically easy and in most cases qualitatively OK
-          !
-          if (headtt) print*,'viscous force: nu*del2v'
-          call del2v(f,iuu,del2u)
-          fvisc=nu*del2u
-          maxdiffus=amax1(maxdiffus,nu)
+! ajwm - moved viscous force to viscosity module
 
-        case('rho_nu-const', '1')
-          !
-          !  viscous force: mu/rho*(del2u+graddivu/3)
-          !  -- the correct expression for rho*nu=const (=rho0*nu)
-          !
-          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          if (.not.ldensity) &
-               print*, "ldensity better be .true. for ivisc='rho_nu-const'"
-          murho1=(nu*rho0)*rho1  !(=mu/rho)
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          do i=1,3
-            fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
-          enddo
-          maxdiffus=amax1(maxdiffus,murho1)
+   if (lviscosity) call calc_viscous_force(f,df,glnrho,rho1)
 
-        case('nu-const')
-          !
-          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
-          !  -- the correct expression for nu=const
-          !
-          if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          if(ldensity) then
-            call multmv_mn(sij,glnrho,sglnrho)
-            fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            maxdiffus=amax1(maxdiffus,nu)
-          else
-            if(lfirstpoint) &
-                 print*,"ldensity better be .true. for ivisc='nu-const'"
-          endif
-
-        case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
-        call stop_it('DUU_DT')
-
-        endselect
-
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
-      else ! (nu=0)
-        if (headtt) print*,'no viscous force: (nu=0)'
-      endif
 !
 !  maximum squared avection speed
 !

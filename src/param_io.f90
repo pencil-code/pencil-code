@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.83 2002-11-19 20:53:33 dobler Exp $ 
+! $Id: param_io.f90,v 1.84 2002-11-20 19:57:06 mee Exp $ 
 
 module Param_IO
 
@@ -20,6 +20,7 @@ module Param_IO
   use Interstellar
   use Shear
   use Timeavg
+  use Viscosity
  
   implicit none 
 
@@ -126,6 +127,7 @@ module Param_IO
       if (lhydro    ) read(1,NML=hydro_init_pars           ,ERR=99, IOSTAT=ierr)
       label='density_init_pars'
       if (ldensity     ) read(1,NML=density_init_pars      ,ERR=99, IOSTAT=ierr)
+      ! no input parameters for forcing
       label='grav_init_pars'
       if (lgrav        ) read(1,NML=grav_init_pars         ,ERR=99, IOSTAT=ierr)
       label='entropy_init_pars'
@@ -140,6 +142,7 @@ module Param_IO
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
       label='shear_init_pars'
       if (lshear       ) read(1,NML=shear_init_pars        ,ERR=99, IOSTAT=ierr)
+      ! no input parameters for viscosity
       label='[none]'
       close(1)
 !
@@ -188,6 +191,7 @@ module Param_IO
                            print*,'&init_pars                /'
         if (lhydro       ) print*,'&hydro_init_pars          /'
         if (ldensity     ) print*,'&density_init_pars        /'
+        ! no input parameters for forcing
         if (lgrav        ) print*,'&grav_init_pars           /'
         if (lentropy     ) print*,'&entropy_init_pars        /'
         if (lmagnetic    ) print*,'&magnetic_init_pars       /'
@@ -195,7 +199,8 @@ module Param_IO
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
         if (linterstellar) print*,'&interstellar_init_pars   /'
         if (lshear       ) print*,'&shear_init_pars          /'
-        print*,'------END sample namelist -------'
+        ! no input parameters for viscosity
+       print*,'------END sample namelist -------'
         print*
       endif
       if (lroot) then
@@ -233,6 +238,7 @@ module Param_IO
                         write(unit,NML=init_pars          )
         if (lhydro       ) write(unit,NML=hydro_init_pars       )
         if (ldensity     ) write(unit,NML=density_init_pars     )
+        ! no input parameters for forcing
         if (lgrav        ) write(unit,NML=grav_init_pars        )
         if (lentropy     ) write(unit,NML=entropy_init_pars     )
         if (lmagnetic    ) write(unit,NML=magnetic_init_pars    )
@@ -240,6 +246,7 @@ module Param_IO
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
         if (linterstellar) write(unit,NML=interstellar_init_pars)
         if (lshear       ) write(unit,NML=shear_init_pars       )
+        ! no input parameters for viscosity
 !
         if (present(file)) then
           close(unit)
@@ -305,6 +312,8 @@ module Param_IO
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
       label='shear_run_pars'
       if (lshear       ) read(1,NML=shear_run_pars        ,ERR=99, IOSTAT=ierr)
+      label='viscosity_run_pars'
+      if (lviscosity   ) read(1,NML=viscosity_run_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'
       close(1)
 !
@@ -401,6 +410,7 @@ module Param_IO
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
         if (linterstellar) print*,'&interstellar_run_pars   /'
         if (lshear       ) print*,'&shear_run_pars          /'
+        if (lviscosity   ) print*,'&viscosity_run_pars      /'
         print*,'------END sample namelist -------'
         print*
       endif
@@ -456,6 +466,7 @@ module Param_IO
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
         if (linterstellar) write(unit,NML=interstellar_run_pars)
         if (lshear       ) write(unit,NML=shear_run_pars       )
+        if (lviscosity   ) write(unit,NML=viscosity_run_pars   )
 !
         if (present(file)) then
           close(unit)
@@ -495,6 +506,7 @@ module Param_IO
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
         if (linterstellar) write(1,NML=interstellar_init_pars)
         if (lshear       ) write(1,NML=shear_init_pars       )
+        ! no input parameters for viscosity
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                        write(1,NML=lphysics         ) 
@@ -521,6 +533,7 @@ module Param_IO
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
         if (linterstellar) read(1,NML=interstellar_init_pars)
         if (lshear       ) read(1,NML=shear_init_pars       )
+        ! no input parameters for viscosity        
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -550,6 +563,7 @@ module Param_IO
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
         if (linterstellar) write(1,NML=interstellar_run_pars)
         if (lshear       ) write(1,NML=shear_run_pars       )
+        if (lviscosity   ) write(1,NML=viscosity_run_pars   )
       endif
 !
     endsubroutine wparam2

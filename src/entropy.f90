@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.140 2002-11-20 02:47:32 mee Exp $
+! $Id: entropy.f90,v 1.141 2002-11-20 19:57:06 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -9,6 +9,7 @@ module Entropy
   use Cdata
   use Hydro
   use Interstellar
+  use Viscosity
 
   implicit none
 
@@ -74,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.140 2002-11-20 02:47:32 mee Exp $")
+           "$Id: entropy.f90,v 1.141 2002-11-20 19:57:06 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -310,7 +311,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,sij2,uglnrho
+      real, dimension (nx) :: ugss,uglnrho
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
       integer :: j,ju
 !
@@ -347,10 +348,8 @@ module Entropy
 !  advection term
 !
       call dot_mn(uu,gss,ugss)
-!
-!  traceless strainmatrix squared
-!
-      call multm2_mn(sij,sij2)
+
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
 !
 !  calculate 1/T (in units of cp)
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
@@ -358,20 +357,9 @@ module Entropy
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1(1)=',TT1(1)
 
-      select case(ivisc)
-      case ('simplified', '0')
-        if (headtt) print*,'no heating: ivisc=',ivisc
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
-      case('rho_nu-const', '1')
-        if (headtt) print*,'viscous heating: ivisc=',ivisc
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
-      case('nu-const', '2')
-        if (headtt) print*,'viscous heating: ivisc=',ivisc
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
-      case default
-        if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
-        call stop_it("")
-      endselect
+!ajwm - lviscosity always true and there is not a noviscosity module
+      if (lviscosity) call calc_viscous_heat(f,df,rho1,TT1)
+
 !
 !  thermal conduction
 !

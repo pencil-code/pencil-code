@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.54 2002-11-19 14:12:22 mee Exp $
+! $Id: register.f90,v 1.55 2002-11-20 19:57:06 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -33,6 +33,7 @@ module Register
       use Pscalar
       use Interstellar
       use Shear
+      use Viscosity
 !
 !  initialize all mpi stuff
 !
@@ -46,6 +47,7 @@ module Register
 !
       call register_hydro
       call register_density
+      call register_viscosity
       call register_forcing
       call register_ent
       call register_aa

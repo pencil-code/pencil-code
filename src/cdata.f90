@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.112 2002-11-19 20:53:33 dobler Exp $
+! $Id: cdata.f90,v 1.113 2002-11-20 19:57:06 mee Exp $
 
 module Cdata
 
@@ -13,12 +13,19 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
 
+!ajwm - rate of strain tensor brought from hydro.f90
+!ajwm - so it may be used in Viscosity module
+!ajwm - though is is still initialised by Hydro.f90
+  real, dimension (nx,3,3) :: sij
+
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax
   real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
-  real :: DD,nu=0.,cmu,cnu2
+!ajwm nu moved to viscosity module
+!ajwm replaced nu, causes error in forcing to resolve
+  real :: nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
@@ -37,7 +44,8 @@ module Cdata
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-  character (len=labellen) :: ivisc='nu-const',fft_switch='Singleton'
+!ajwm ivisc moved to Viscosity module
+  character (len=labellen) ::fft_switch='Singleton'
 
 !
 !  in this section are all the things related to printing
@@ -61,7 +69,7 @@ module Cdata
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
-  logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
+  logical :: lshear=.false.,lpscalar=.false.,lradiation=.false., lviscosity=.false.
   logical :: linterstellar=.false.
   logical :: lfirstpoint
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
