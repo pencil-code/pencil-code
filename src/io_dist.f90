@@ -134,7 +134,7 @@ contains
       real, dimension (nx,ndim) :: a
       character (LEN=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: ndim =', ndim
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_VECT: ndim =', ndim
 !
        call output_penciled_c(file, a, ndim, &
                                imn, mm(imn), nn(imn), t, &
@@ -157,7 +157,7 @@ contains
       real, dimension (nx) :: a
       character (LEN=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_SCAL'
       if (ndim /= 1) &
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
