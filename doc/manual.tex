@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.167 2003-06-13 15:43:11 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.168 2003-06-13 17:30:08 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-13 15:43:11 $ $,~ $ $Revision: 1.167 $ $}
+\date{$ $Date: 2003-06-13 17:30:08 $ $,~ $ $Revision: 1.168 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-13 15:43:11 $ $,~ $ $Revision: 1.167 $ $}
+  \emph{$ $Date: 2003-06-13 17:30:08 $ $,~ $ $Revision: 1.168 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3947,17 +3947,17 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
 
 A formal solution of Eq.~(\ref{radiative-transfer}) is given by
 \begin{equation}
-  I(\tau) = I_0(\tau) e^{-\tau}
-            + \int\limits_0^\tau e^{-(\tau-\tau')} S(\tau')\,d\tau' \; .
+  I(\tau) = I(\tau_0) e^{-(\tau-\tau_0)}
+            + \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')} S(\tau')\,d\tau' \; .
 \end{equation}
-Using a generalisation of the trapezoidal rule,
+Using a generalization of the trapezoidal rule,
 \begin{eqnarray}
-  \int\limits_0^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
-  &\approx& \int\limits_0^\infty e^{-(\tau-\tau')}
-              \left[ f(0) + \frac{f(\tau){-}f(0)}{\tau}\,\tau'
+  \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')} f(\tau')\,d\tau'
+  &\approx& \int\limits_{\tau_0}^\tau e^{-(\tau-\tau')}
+              \left[ f(\tau_0) + \frac{f(\tau){-}f(\tau_0)}{\tau}\,\tau'
               \right] \; d\tau'\\
-  &=&       (1{-}e^{-\tau}) f(\tau)
-          - \frac{1 - e^{-\tau}(1{+}\tau)}{\tau}[f(\tau)-f(0)]
+  &=&       \left[1{-}e^{-(\tau-\tau_0)}\right] f(\tau)
+          - \frac{1 - e^{-(\tau-\tau_0)}(1{+}\tau)}{\tau}[f(\tau)-f(\tau_0)]
   \; ,
 \end{eqnarray}
 which is exact for linear functions $S(\tau)$, we discretize this as
@@ -3984,7 +3984,6 @@ or
   \delta\tau
   = \frac{\chi_{k+1}-\chi_k}{\ln\frac{\chi_{k+1}}{\ln\chi_k}} \, \delta x
 \end{equation}
-Equation 
 
 % ====================================================================== %
 
@@ -5126,7 +5125,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.167 2003-06-13 15:43:11 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.168 2003-06-13 17:30:08 brandenb Exp $ $}
 
 
 \end{document}
