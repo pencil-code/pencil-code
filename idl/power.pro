@@ -1,6 +1,7 @@
-PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t
+PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t, $
+  noplot=noplot
 ;
-;  $Id: power.pro,v 1.11 2002-10-22 13:00:19 brandenb Exp $
+;  $Id: power.pro,v 1.12 2002-10-23 09:53:56 tarek Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -16,6 +17,11 @@ PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t
 default,var1,'u'
 default,var2,'b'
 default,last,1
+;
+;  plot only when iplot=1 (default)
+;  can be turned off by using /noplot
+;
+if keyword_set(noplot) then iplot=0 else iplot=1
 ;
 file1='power'+var1+'.dat'
 file2='power'+var2+'.dat'
@@ -109,15 +115,18 @@ openr,1, datatopdir+'/'+file1
 		yrr=[globalmin,globalmax]
 		!p.title='t=' + string(time)
 		!y.range=[globalmin,globalmax]
-         	plot_oo,k,spectrum1
-         	if (file2 ne '') then oplot,k,spectrum2,col=122
+         	if iplot eq 1 then begin
+                  plot_oo,k,spectrum1
+         	  if (file2 ne '') then oplot,k,spectrum2,col=122
+                end
+                ; Nils, are these being used??
 		urms(i-1)=total(spectrum1)/2.
 		brms(i-1)=total(spectrum2)/2.
          	wait,.1
        	endif
        	i=i+1
     endwhile
-    if (last eq 1) then begin
+    if (last eq 1 and iplot eq 1) then begin
 	!p.title='t=' + string(time)
 	!y.range=[miny,maxy]
 	plot_oo,k,spectrum1
