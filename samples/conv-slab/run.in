@@ -4,13 +4,13 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.15 2004-07-14 10:19:23 dobler Exp $',
+  cvsid='$Id: run.in,v 1.16 2004-09-12 10:14:08 brandenb Exp $',
   nt=50, it1=10, isave=200, itorder=3,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
   bcy = 'p','p','p', 'p',    'p'
   bcz = 's','s','a','a2','c1:cT'
-  old_cdtv=F
+  cdtv=0.30
 /
 &hydro_run_pars
   nu=4e-3, ivisc='nu-const'
