@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.58 2003-12-05 10:02:21 brandenb Exp $
+;;; $Id: start.pro,v 1.59 2003-12-30 13:17:54 dobler Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -43,6 +43,10 @@ datadir = datatopdir+'/proc'+str(proc)
 ; data/, but can be overwritten in case you don't have write access to
 ; data/ (e.g. when working in another user's directory or on CD data):
 default, tmpdir, datatopdir
+;; Max # of structure tags in one execute statement; if we use more,
+;; we get `% Program code area full' error.
+;; Typically 398 or 569, but stupid Solaris doesn't tolerate more than 127.
+default, maxtags, 120
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
@@ -77,7 +81,7 @@ cmd = 'perl -000 -ne '+"'"+'s/[ \t]+/ /g; print join(" & ",split(/\n/,$_)),"\n"'
 spawn, cmd, result
 res = flatten_strings(result)
 if (execute(res) ne 1) then $
-    message, 'There was a problem with param.nml', /INFO
+    message, 'There was a problem with index.pro', /INFO
 ;
 if (quiet le 2) then print,'nname=',nname
 ;
@@ -121,7 +125,8 @@ pfile = datatopdir+'/param.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   if (quiet le 2) then print, 'Reading param.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param.nml', result
+  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m -M '+strtrim(maxtags,2) $
+         + ' '+datatopdir+'/param.nml', result
   ;; Output may be split in 1024-byte blocks (ludicrous; IDL's fault),
   ;; so join these (joinstr is not available with IDL 5.2):
   res = flatten_strings(result)
@@ -132,12 +137,26 @@ if (cpar gt 0) then begin
   if ((brace ne 0) and (quiet le 4)) then begin
     print, "Your shell produces output when it shouldn't; you'd better"
     print, "fix your prompt."
-    print, "Trying to clean up the mess.."
+    print, "Trying to clean up the mess..."
     res = strmid(res,brace)
   endif
-  ;; Execute the resulting line
-  if (execute('par = '+res) ne 1) then $
-      message, 'There was a problem with param.nml', /INFO
+  ;; Execute the resulting line(s); format is `{ block1 } { block2 } ..'.
+  ;; Need to add each block in its own execute() call in order to
+  ;; remain below the limit of structure tags that can be set within
+  ;; one execute() statement (typically 398 or 570).
+  par = { dummy: 0 }            ; initialize structure for appending
+  brace = strpos(res,'}')
+  iblock = 0
+  repeat begin
+    iblock = iblock+1
+    if (iblock gt 100) then message, "Can't believe there are >100 blocks"
+    print, "  param.nml: block "+strtrim(iblock,2)
+    block = strmid(res,0,brace+1)
+    if (execute('par = create_struct(par,'+block+')') ne 1) then $
+        message, 'There was a problem with param.nml', /INFO
+    res = strmid(res,brace+1)
+    brace = strpos(res,'}')
+  endrep until (brace lt 0)
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
   unit_system=par.unit_system

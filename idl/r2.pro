@@ -1,4 +1,4 @@
-; $Id: r2.pro,v 1.3 2003-06-16 21:17:36 theine Exp $
+; $Id: r2.pro,v 1.4 2003-12-30 13:17:54 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r2.pro,v 1.3 2003-06-16 21:17:36 theine Exp $
+;;; $Id: r2.pro,v 1.4 2003-12-30 13:17:54 dobler Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -35,7 +35,8 @@ pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param2.nml', result
+  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m -M '+strtrim(maxtags,2) $
+         + ' '+datatopdir+'/param2.nml', result
   res = flatten_strings(result)
   ;; For people with an unclean shell: remove everything up to the
   ;; opening brace:
@@ -47,9 +48,22 @@ if (cpar gt 0) then begin
     print, "Trying to clean up the mess.."
     res = strmid(res,brace)
   endif
-  ;; Execute the resulting line
-  if (execute('par2 = '+res) ne 1) then $
-      message, 'There was a problem with param.nml', /INFO
+  ;; Execute the resulting line(s); format is `{ block1 } { block2 } ..'.
+  ;; Need to add each block in its own execute() call in order to
+  ;; remain below the limit of structure tags that can be set within
+  ;; one execute() statement (typically 398 or 570).
+  par2 = { dummy: 0 }            ; initialize structure for appending
+  brace = strpos(res,'}')
+  iblock = 0
+  repeat begin
+    iblock = iblock+1
+    print, "  param2.nml: block "+strtrim(iblock,2)
+    block = strmid(res,0,brace+1)
+    if (execute('par2 = create_struct(par2,'+block+')') ne 1) then $
+        message, 'There was a problem with param2.nml', /INFO
+    res = strmid(res,brace+1)
+    brace = strpos(res,'}')
+  endrep until (brace lt 0)
   if (lhydro) then begin
     nu=par2.nu
   endif

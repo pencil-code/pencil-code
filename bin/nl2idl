@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.13 2003-11-10 12:52:14 dobler Exp $
+# $Id: nl2idl,v 1.14 2003-12-30 13:17:54 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -27,8 +27,9 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 use strict;
 use Getopt::Long;
-# Allow for `-Plp' as equivalent to `-P lp' etc:
-#Getopt::Long::config("bundling");
+# Allow for `-Plp' as equivalent to `-P lp' etc, and honour case for
+# single-letter options:
+Getopt::Long::config("bundling");
 
 my (%opts);	# Variables written by GetOptions
 my $funcname = "param";		# default name of idl function
@@ -62,6 +63,12 @@ Options:
                     \trepresenting the structure. Useful if you use
                     \tEXECUTE to assign the resulting structure to an IDL
                     \tvariable
+  -M <N>
+  --maxtags=<N>     \tLike `-1', but split result in blocks of up to <N>
+                    \ttags: { block1} {block 2} ..
+                    \tThis is because IDL cannot handle structure
+                    \tdefinitions wtih more than ~ 300--600 tags in one
+                    \texecute statement
   --version         \tWrite version number of $cmdname and exit
 ";
 
@@ -72,13 +79,16 @@ GetOptions(\%opts,
                -f=s --function=s
 	       -m   --minimize
                -1   --one-line
+	       -M=i --maxtags=i
 	            --version
                              ));
 
 if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
-my $oneline = ($opts{'1'} || $opts{'one-line'} || 0);
+my $oneline  = ($opts{'1'} || $opts{'one-line'} || 0);
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
+my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
+$oneline=1 if ($maxtags);
 my $opt;
 if ($debug) {
     foreach $opt (keys(%opts)) {
@@ -88,7 +98,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.13 2003-11-10 12:52:14 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.14 2003-12-30 13:17:54 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -152,17 +162,28 @@ merge_nls(\%nlists);
 ## Print IDL statements to generate the namelists as structures
 my ($br0,$br1);			# opening/closing brackets if needed
 my $nl;
+my $itag=0;
+my $brace_to_topen=0;
 foreach $nl (keys %nlists) {
     print STDERR "$nl:\n" if $debug;
     my ($var,$val);
     while (($var, $val) = each %{$nlists{$nl}}) {
+	$itag++;
 	if (@$val > 1) {	# list of values
 	    ($br0,$br1) = ("[", "]");
 	} else {
 	    ($br0,$br1) = ("", "");
 	}
 	if ($oneline) {
+	    $idl .= "{ " if ($brace_to_topen);
+	    $brace_to_topen = 0;
+	    print STDERR "\$itag,\$maxtags = $itag, $maxtags\n" if ($debug);
 	    $idl .= "$var: $br0" . join(", ", @$val) . "$br1, ";
+	    if ($maxtags && ($itag>=$maxtags)) { # new block after $maxtags tags
+		substr($idl,-2) = "} ";
+		$brace_to_topen=1; # re-open `{' later if there are more tags
+		$itag=0;
+	    }
 	} else {
 	    my $varstr = sprintf("%-10s", $var);
 	    $idl .= "    $varstr : $br0" . join(", ", @$val) . "$br1 , \$\n";
