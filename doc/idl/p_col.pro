@@ -1,4 +1,4 @@
-; $Id: p_col.pro,v 1.4 2003-11-15 11:08:13 brandenb Exp $
+; $Id: p_col.pro,v 1.5 2004-09-17 19:06:56 brandenb Exp $
 ;
 window,xs=600,ys=480
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
@@ -14,10 +14,12 @@ a=rtable('timings.dat',2,head=1)
 b=rtable('horseshoe.dat',2,head=1)
 c=rtable('kabul.dat',2,head=1)
 d=rtable('horseshoe_mega.dat',2,head=1)
+e=rtable('horseshoe_giga2.dat',2,head=1)
 n=reform(a(0,*)) & t=reform(a(1,*))
 m=reform(b(0,*)) & s=reform(b(1,*))
 k=reform(c(0,*)) & r=reform(c(1,*))
 l=reform(d(0,*)) & q=reform(d(1,*))
+l2=reform(e(0,*)) & q2=reform(e(1,*))
 ;
 !p.multi=[0,1,2]
 !p.multi=[0,2,1]
@@ -25,18 +27,21 @@ l=reform(d(0,*)) & q=reform(d(1,*))
 !p.charsize=2.0
 !x.title='# of procs'
 !y.title='!7l!6s/step/point'
-!x.range=[.8,160]
+!x.range=[.8,400]
+!y.range=[.01,15]*fact
 ;
-plot_oo,n,fact*t,ps=-1,yr=fact*[.07,15],li=1,back=255,col=1
+plot_oo,n,fact*t,ps=-1,li=1,back=255,col=1
 oplot,m,fact*s,ps=-5,li=0,col=122
 oplot,k,fact*r,ps=-6,li=2,col=55
 oplot,l,fact*q,ps=-6,li=3,col=166
+oplot,l2,fact*q2,ps=-6,li=4,col=100
 ;
-xx=6. & dx=20. & siz=2.0 & xx2=7.
+xx=14. & dx=20. & siz=2.0 & xx2=7.
 legend,xx,dx,10^0.9,1,'!3Origin3000',col=1,siz=siz
 legend,xx,dx,10^0.7,0,'!3Horseshoe',col=122,siz=siz
 legend,xx,dx,10^0.5,2,'!3Kabul',col=55,siz=siz
 legend,xx,dx,10^0.3,3,'!3Giga-queue',col=166,siz=siz
+legend,xx,dx,10^0.1,4,'!3Giga2-queue',col=100,siz=siz
 ;
 ; xx=[1,120] & oplot,col=1,xx,4./xx^.7
 print,'import ptimings.png'
