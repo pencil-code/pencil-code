@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.27 2004-03-20 14:47:41 snod Exp $
+! $Id: cosmicray.f90,v 1.28 2004-03-20 16:41:36 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -39,7 +39,7 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
-  real :: limiter_ecr=5.
+  real :: limiter_cr=1.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -47,7 +47,7 @@ module CosmicRay
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants, limiter_ecr
+       luse_diff_constants, limiter_cr
 
 
   ! other variables (needs to be consistent with reset list below)
@@ -85,7 +85,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.27 2004-03-20 14:47:41 snod Exp $")
+           "$Id: cosmicray.f90,v 1.28 2004-03-20 16:41:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -381,6 +381,12 @@ module CosmicRay
             hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
           enddo
         enddo
+        call multsv_mn(b1,hhh,hhh)
+!
+!  limit the length of H such that dxmin*H < 1, so we also multiply
+!  by 1/sqrt(1.+dxmin^2*H^2).
+!  and dot H with ecr gradient
+!
         call dot2_mn(hhh,hhh2)
         quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
         call multsv_mn(quenchfactor,hhh,hhh)
@@ -399,14 +405,10 @@ module CosmicRay
         enddo
       enddo
 !
-!  calculate   Gi(ni*nj*Gj)  needed for lnecr form; also add into tmp
-!                     
-      do i=1,3
-        tmpi(:)=gecr(:,i)*bunit(:,i)
-        do j=1,3
-          tmp(:)=tmp(:)+bunit(:,j)*gecr(:,j)*tmpi(:)
-        enddo
-      enddo            
+!  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
+!
+      call dot_mn(gecr,bunit,tmpi)
+      tmp=tmp+tmpi**2
 !
 !  calculate gecr2 - needed for lnecr form
 !  
