@@ -1,24 +1,47 @@
-#!/bin/csh
-
+#!/usr/bin/csh
 #
 # Name: pc_llsubmit
 # Author: Anders Johansen
 # Date: 20-aug-2004
 # Description:
 #   Shell script to easily submit jobs to the LoadLeveler queuing system.
-#   Set non-default variables in small script jobscript.csh and include
-#     source pc_llsubmit $argv
-#   in the file. Then do e.g.
-#     jobscript.csh start_run.csh
-#   from the command line.
+#   LoadLeveler variables are input as -variable=value.
+#
+#   Default values are supplied by pc_llsubmit, so only non-default values need
+#   to be supplied at the command line.
+#
+# Usage:
+#   pc_llsubmit [-var1=val1] ... [-varN=valN] [-quiet] filename
+#   
+#   Example: pc_llsubmit -class=small start_run.csh
+#
+# Options:
+#   -quiet: Don't cat the contents of the resulting jobscript
 #
 # Based on sleipsub (by theine)
 #
+foreach block ($argv)
 
+  if ("$block" =~ -*) then # non filename
+    if ("$block" =~ *=*) then  # variable
+      set variable = `perl -e "@a = split /=/, '$block'; print @a[0]"`
+      set value    = `perl -e "@a = split /=/, '$block'; print @a[1]"`
+      set variable = `perl -e "@a = substr('$variable',1); print @a[0]"`
+      set $variable = $value
+    else # option
+      set option   = `perl -e "@a = substr('$block',1); print @a[0]"`
+      set $option
+    endif
+  else # filename
+    set filename = $block
+  endif
+
+end
+if (! $?filename) set filename = start_run.csh
 #
-# defaults
+# LoadLeveler default values
 #
-if (! $?job_name) set job_name = $argv
+if (! $?job_name) set job_name = $filename
 if (! $?job_type) set job_type = parallel
 if (! $?total_tasks) set total_tasks = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 if (! $?class) set class = qexp
@@ -36,7 +59,7 @@ echo "# @ job_type = $job_type" >> pc_llsubmit.tmp
 echo "# @ total_tasks = $total_tasks" >> pc_llsubmit.tmp
 echo "# @ class = $class" >> pc_llsubmit.tmp
 echo "# @ environment = $environment" >> pc_llsubmit.tmp
-echo "# @ executable = $argv" >> pc_llsubmit.tmp
+echo "# @ executable = $filename" >> pc_llsubmit.tmp
 echo "# @ input = $input" >> pc_llsubmit.tmp
 echo "# @ output = $output" >> pc_llsubmit.tmp
 echo "# @ error =  $error" >> pc_llsubmit.tmp
@@ -44,8 +67,11 @@ echo "# @ notification = $notification" >> pc_llsubmit.tmp
 echo "# @ resources = ConsumableCpus(1)" >> pc_llsubmit.tmp
 echo "# @ queue" >> pc_llsubmit.tmp
 #
+# Print out contents of jobscript
+#
+if (! $?quiet) cat pc_llsubmit.tmp
+#
 # submit temporary jobscript and remove it afterwards
 #
-llsubmit pc_llsubmit.tmp && rm pc_llsubmit.tmp
-
+llsubmit pc_llsubmit.tmp && rm -f pc_llsubmit.tmp
 # End of file pc_llsubmit
