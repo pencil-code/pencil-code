@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.186 2004-07-09 22:51:27 nilshau Exp $
+! $Id: run.f90,v 1.187 2004-07-10 15:33:52 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.186 2004-07-09 22:51:27 nilshau Exp $")
+             "$Id: run.f90,v 1.187 2004-07-10 15:33:52 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -83,7 +83,7 @@
         if (lroot) write(*,'(a,i1,a)') 'This is a ',dimensionality,'-D run'
         if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
-!  check if we want to devide cdtv by dimensionality
+!  check if we want to divide cdtv by dimensionality
 !  (old_cdtv defaults to .false.)
 !
         if (old_cdtv) then
