@@ -1,9 +1,6 @@
-;  $Id: extra.pro,v 1.42 2004-04-19 13:29:05 ajohan Exp $
+;  $Id: extra.pro,v 1.43 2004-04-23 06:45:52 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
-;
-gamma=5./3.
-gamma1=gamma-1.
 ;
 @data/pc_constants.pro
 ;

@@ -1,9 +1,9 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
                amin=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
-               proc=proc,ix=ix,iy=iy,ps=ps
+               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane
 ;
-; $Id: rvid_plane.pro,v 1.7 2004-02-17 11:55:48 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.8 2004-04-23 06:45:52 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -28,6 +28,7 @@ default,nrepeat,0
 default,njump,0
 default,tmin,0.
 default,tmax,1e38
+default,iplane,0
 default,wait,.03
 ;
 if keyword_set(proc) then begin
@@ -110,9 +111,9 @@ end else begin
       ;
       ;  show image scaled between amin and amax and filling whole screen
       ;
-      tvscl,plane
+      tvscl,plane,iplane
       ;tv,congrid(bytscl(plane,min=amin,max=amax),!d.x_size,!d.y_size)
-      xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
+      ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
         istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
         image = tvrd()

@@ -2,7 +2,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,compensate=compensate
 ;
-;  $Id: power.pro,v 1.22 2003-12-08 08:48:54 brandenb Exp $
+;  $Id: power.pro,v 1.23 2004-04-23 06:45:52 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -185,6 +185,7 @@ openr,1, datatopdir+'/'+file1
         ;
         if keyword_set(norm) then begin
           spectrum2=spectrum2/total(spectrum2)
+          print,'divide spectrum by total(spectrum2)'
         endif
         ;
        	if (last eq 0) then begin
