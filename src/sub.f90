@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.184 2004-05-28 16:44:39 dobler Exp $ 
+! $Id: sub.f90,v 1.185 2004-05-29 06:30:38 brandenb Exp $ 
 
 module Sub 
 
@@ -2338,13 +2338,14 @@ module Sub
 !  print boundary conditions for scalar field
 !
 !  19-jul-02/wolf: coded
+!  29-may-04/axel: allowed variable name to be 8 chars long
 !
       use Cdata
 !
       character (len=*) :: varname_input
       integer :: idx
 !
-      write(*,'(A,A6,",  x: <",A6,">, y: <",A6,">,  z: <",A6,">")') &
+      write(*,'(A,A10,",  x: <",A8,">, y: <",A8,">,  z: <",A8,">")') &
            'Bcs for ', varname_input, &
            trim(bcx(idx)), trim(bcy(idx)), trim(bcz(idx))
 !

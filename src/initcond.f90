@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.106 2004-04-20 13:31:35 dobler Exp $ 
+! $Id: initcond.f90,v 1.107 2004-05-29 06:30:38 brandenb Exp $ 
 
 module Initcond 
  
@@ -13,6 +13,11 @@ module Initcond
   use Mpicomm
 
   implicit none
+
+  interface posnoise            ! Overload the `posnoise' function
+    module procedure posnoise_vect
+    module procedure posnoise_scal
+  endinterface
 
   interface gaunoise            ! Overload the `gaunoise' function
     module procedure gaunoise_vect
@@ -1432,9 +1437,64 @@ module Initcond
 !
     endsubroutine vfield
 !***********************************************************************
+    subroutine posnoise_vect(ampl,f,i1,i2)
+!
+!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
+!
+!  28-may-04/axel: adapted from gaunoise
+!
+      integer :: i,i1,i2
+      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl
+!
+!  set gaussian random noise vector
+!
+      if (ampl==0) then
+        if (lroot) print*,'posnoise_vect: ampl=0 for i1,i2=',i1,i2
+      else
+        if ((ip<=8).and.lroot) print*,'posnoise_vect: i1,i2=',i1,i2
+        do i=i1,i2
+          call random_number_wrapper(tmp)
+          f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
+          if (lroot) print*,'posnoise_vect: variable i=',i
+        enddo
+      endif
+!
+    endsubroutine posnoise_vect
+!***********************************************************************
+    subroutine posnoise_scal(ampl,f,i)
+!
+!  Add Gaussian (= normally distributed) white noise for variable i
+!
+!  28-may-04/axel: adapted from gaunoise
+!
+      integer :: i
+      real, dimension (mx,my,mz) :: tmp
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: ampl
+!
+!  set positive random noise vector
+!
+      if (ampl==0) then
+        if (lroot) print*,'posnoise_scal: ampl=0 for i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'posnoise_scal: i=',i
+        call random_number_wrapper(tmp)
+        f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
+        if (lroot) print*,'posnoise_scal: variable i=',i
+      endif
+!
+!  Wouldn't the following be equivalent (but clearer)?
+!
+!  call posnoise_vect(ampl,f,i,i)
+!
+!
+    endsubroutine posnoise_scal
+!***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !
-!  Add Gaussian (= normally distributed) white noise for variables i1:i2
+!  Add Gaussian noise (= normally distributed) white noise for variables i1:i2
 !
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before
@@ -1468,7 +1528,7 @@ module Initcond
 !***********************************************************************
     subroutine gaunoise_scal(ampl,f,i)
 !
-!  Ad Gaussian (= normally distributed) white noise for variable i
+!  Add Gaussian (= normally distributed) white noise for variable i
 !
 !  23-may-02/axel: coded
 !  10-sep-03/axel: result only *added* to whatever f array had before

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.131 2004-05-28 16:44:39 dobler Exp $
+! $Id: register.f90,v 1.132 2004-05-29 06:30:38 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -34,6 +34,7 @@ module Register
       use Radiation,    only: register_radiation
       use Ionization,   only: register_ionization
       use Pscalar,      only: register_pscalar
+      use Chiral,       only: register_chiral
       use Dustdensity,  only: register_dustdensity
       use Dustvelocity, only: register_dustvelocity
       use CosmicRay,    only: register_cosmicray
@@ -72,6 +73,7 @@ module Register
       call register_magnetic
       call register_radiation
       call register_pscalar
+      call register_chiral
       call register_dustvelocity
       call register_dustdensity
       call register_gravity
@@ -130,6 +132,7 @@ module Register
       use Radiation,    only: initialize_radiation
       use Ionization,   only: initialize_ionization
       use Pscalar,      only: initialize_pscalar
+      use Chiral,       only: initialize_chiral
       use Dustvelocity, only: initialize_dustvelocity
       use Dustdensity,  only: initialize_dustdensity
       use CosmicRay,    only: initialize_cosmicray
@@ -219,6 +222,7 @@ module Register
       call initialize_magnetic()
       call initialize_radiation()
       call initialize_pscalar(f)
+      call initialize_chiral(f)
       call initialize_dustvelocity()
       call initialize_dustdensity()
       call initialize_cosmicray(f)
@@ -263,6 +267,7 @@ module Register
       use Radiation,    only: rprint_radiation
       use Ionization,   only: rprint_ionization
       use Pscalar,      only: rprint_pscalar
+      use Chiral,       only: rprint_chiral
       use Dustvelocity, only: rprint_dustvelocity
       use Dustdensity,  only: rprint_dustdensity
       use CosmicRay,    only: rprint_cosmicray
@@ -370,6 +375,7 @@ module Register
       call rprint_radiation   (lreset,LWRITE=lroot)
       call rprint_ionization  (lreset,LWRITE=lroot)
       call rprint_pscalar     (lreset,LWRITE=lroot)
+      call rprint_chiral      (lreset,LWRITE=lroot)
       call rprint_dustvelocity(lreset,LWRITE=lroot)
       call rprint_dustdensity (lreset,LWRITE=lroot)
       call rprint_cosmicray   (lreset,LWRITE=lroot)

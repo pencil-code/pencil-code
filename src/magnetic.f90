@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.188 2004-05-28 16:44:39 dobler Exp $
+! $Id: magnetic.f90,v 1.189 2004-05-29 06:30:38 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -45,7 +45,7 @@ module Magnetic
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   character (len=40) :: kinflow=''
-  real :: alpha_effect
+  real :: nu_ni,nu_ni1,alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
 
   namelist /magnetic_init_pars/ &
@@ -62,7 +62,7 @@ module Magnetic
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,omega_Bz_ext,alpha_effect, &
+       eta,B_ext,omega_Bz_ext,alpha_effect,nu_ni, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
@@ -126,7 +126,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.188 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: magnetic.f90,v 1.189 2004-05-29 06:30:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -285,6 +285,7 @@ module Magnetic
 !  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
 !   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
 !  12-aug-03/christer: added alpha effect (alpha in the equation above)
+!  26-may-04/axel: ambipolar diffusion added
 !
       use Cdata
       use Sub
@@ -296,7 +297,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij
-      real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
+      real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb,JxBrxB
       real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
       real, dimension (nx,3) :: del2A,oo,oxu,uxDxuxb,del6A,fres,del4A
       real, dimension (nx,3) :: geta
@@ -501,6 +502,15 @@ module Magnetic
 !  Add to dA/dt
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+fres
+!
+!  Ambipolar diffusion in the strong coupling approximation
+!
+      if (nu_ni/=0.) then
+        nu_ni1=1./nu_ni
+        call cross_mn(JxBr,bb,JxBrxB)
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*JxBrxB
+        etatotal_max=etatotal_max+maxval(nu_ni1*va2)
+      endif
 !
 !  add alpha effect if alpha_effect /= 0
 !      

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.228 2004-05-27 20:07:30 mee Exp $
+! $Id: cdata.f90,v 1.229 2004-05-29 06:30:38 brandenb Exp $
 
 module Cdata
 
@@ -66,6 +66,7 @@ module Cdata
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix=-1,iy=-1,iz=-1,iz2=-1
   integer :: ilncc=0
+  integer :: iXX_chiral=0,iYY_chiral=0
   integer :: iproc,ipx,ipy,ipz,root=0
   integer :: mvar_io=0,dimensionality
   integer :: iinit
@@ -124,6 +125,7 @@ module Cdata
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
   logical :: lroot=.true.,ldebug=.false.,lfft=.true.
   logical :: lshear=.false.,lpscalar=.false.,lpscalar_nolog=.false.
+  logical :: lchiral=.false.
   logical :: lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
@@ -156,7 +158,7 @@ module Cdata
 
   character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
-  character (len=6), dimension(mvar+maux) :: varname
+  character (len=10), dimension(mvar+maux) :: varname
   character (len=labellen) :: force_lower_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()

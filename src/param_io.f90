@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.173 2004-05-12 17:41:48 mee Exp $ 
+! $Id: param_io.f90,v 1.174 2004-05-29 06:30:38 brandenb Exp $ 
 
 module Param_IO
 
@@ -16,6 +16,7 @@ module Param_IO
   use Density
   use Magnetic
   use Pscalar
+  use Chiral
   use CosmicRay
   use Dustvelocity
   use Dustdensity
@@ -186,6 +187,11 @@ module Param_IO
       call sgi_fix(lsgifix,1,'start.in')
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
+
+      call sgi_fix(lsgifix,1,'start.in')
+      label='chiral_init_pars'
+      if (lchiral      ) read(1,NML=chiral_init_pars       ,ERR=99, IOSTAT=ierr)
+
       call sgi_fix(lsgifix,1,'start.in')
       label='dustvelocity_init_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_init_pars ,ERR=99, IOSTAT=ierr)
@@ -279,6 +285,7 @@ module Param_IO
         if (lradiation   ) print*,'&radiation_init_pars      /'
         if (lionization  ) print*,'&ionization_init_pars     /'
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
+        if (lchiral      ) print*,'&chiral_init_pars         /'
         if (ldustvelocity) print*,'&dustvelocity_init_pars   /'
         if (ldustdensity ) print*,'&dustdensity_init_pars    /'
         if (lcosmicray   ) print*,'&cosmicray_init_pars   /'
@@ -331,6 +338,7 @@ module Param_IO
         call write_ionization_init_pars(unit)
 
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
+        if (lchiral      ) write(unit,NML=chiral_init_pars      )
         if (ldustvelocity) write(unit,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_init_pars )
         if (lcosmicray   ) write(unit,NML=cosmicray_init_pars   )
@@ -385,6 +393,7 @@ module Param_IO
 !
 !  read through all items that *may* be present
 !  in the various modules
+!AB: at some point the sgi_fix stuff should probably be removed (see sgi bug)
 !
       label='run_pars'
                          read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
@@ -417,6 +426,11 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
+
+      call sgi_fix(lsgifix,1,'run.in')
+      label='chiral_run_pars'
+      if (lchiral      ) read(1,NML=chiral_run_pars       ,ERR=99, IOSTAT=ierr)
+
       call sgi_fix(lsgifix,1,'run.in')
       label='dustvelocity_run_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_run_pars ,ERR=99, IOSTAT=ierr)
@@ -580,6 +594,7 @@ module Param_IO
         if (lradiation   ) print*,'&radiation_run_pars      /'
         if (lionization  ) print*,'&ionization_run_pars     /'
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
+        if (lchiral      ) print*,'&chiral_run_pars         /'
         if (ldustvelocity) print*,'&dustvelocity_run_pars   /'
         if (ldustdensity ) print*,'&dustdensity_run_pars    /'
         if (lcosmicray   ) print*,'&cosmicray_run_pars      /'
@@ -655,6 +670,7 @@ module Param_IO
         call write_ionization_run_pars(1)
 
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
+        if (lchiral      ) write(unit,NML=chiral_run_pars      )
         if (ldustvelocity) write(unit,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_run_pars )
         if (lcosmicray   ) write(unit,NML=cosmicray_run_pars   )
@@ -766,7 +782,7 @@ module Param_IO
            lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
            lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,  &
-           lionization, lionization_fixed, lvisc_hyper
+           lionization,lionization_fixed,lvisc_hyper,lchiral
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -788,6 +804,7 @@ module Param_IO
         call write_ionization_init_pars(1)
 
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
+        if (lchiral      ) write(1,NML=chiral_init_pars      )
         if (ldustvelocity) write(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(1,NML=dustdensity_init_pars )
         if (lcosmicray   ) write(1,NML=cosmicray_init_pars   )
@@ -823,6 +840,7 @@ module Param_IO
         call read_ionization_init_pars(1)
 
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
+        if (lchiral      ) read(1,NML=chiral_init_pars      )
         if (ldustvelocity) read(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) read(1,NML=dustdensity_init_pars )
         if (lcosmicray   ) read(1,NML=cosmicray_init_pars   )
@@ -859,6 +877,7 @@ module Param_IO
         call write_ionization_run_pars(1)
 
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
+        if (lchiral      ) write(1,NML=chiral_run_pars      )
         if (ldustvelocity) write(1,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(1,NML=dustdensity_run_pars )
         if (lcosmicray   ) write(1,NML=cosmicray_run_pars   )

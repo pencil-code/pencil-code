@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.212 2004-05-28 16:44:39 dobler Exp $
+! $Id: equ.f90,v 1.213 2004-05-29 06:30:38 brandenb Exp $
 
 module Equ
 
@@ -234,6 +234,7 @@ module Equ
       use Radiation
       use Ionization
       use Pscalar
+      use Chiral
       use Dustvelocity
       use Dustdensity
       use CosmicRay
@@ -259,7 +260,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.212 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: equ.f90,v 1.213 2004-05-29 06:30:38 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -393,7 +394,12 @@ module Equ
         endif
 !
 !  cosmic ray energy density
+!
         if (lcosmicray) call decr_dt(f,df,uu,rho1,divu,bij,bb)
+!
+!  chirality of left and right handed aminoacids
+!
+        if (lchiral) call dXY_chiral_dt(f,df,uu)
 !
 !  Evolution of radiative energy
 !

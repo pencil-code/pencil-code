@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.56 2004-05-26 09:04:33 ajohan Exp $
+### $Id: Makefile.src,v 1.57 2004-05-29 06:30:38 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -23,6 +23,7 @@ ENTROPY      = noentropy
 MAGNETIC     = nomagnetic
 RADIATION    = noradiation
 PSCALAR      = nopscalar
+CHIRAL       = nochiral
 DUSTVELOCITY = nodustvelocity
 DUSTDENSITY  = nodustdensity
 INTERSTELLAR = nointerstellar
@@ -246,7 +247,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 ## Abbreviations
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(CHIRAL).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
@@ -399,6 +400,7 @@ $(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o $(IONIZATION).o
 $(COSMICRAY).o:    $(COSMICRAY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
+$(CHIRAL).o:       $(CHIRAL).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
 $(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(IONIZATION).o
