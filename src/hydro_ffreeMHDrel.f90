@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -83,7 +83,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -333,9 +333,7 @@ module Hydro
       uu=f(l1:l2,m,n,iux:iuz)
       call dot2_mn(uu,u2)
 !
-! calculate viscous force
-!
-!     if (lviscosity) call calc_viscous_force(f,df,glnrho,divS,rho1)
+!  the actual calculation happens all in magnetic_ffreeMHDrel.f90
 !
 !  maximum squared avection speed
 !

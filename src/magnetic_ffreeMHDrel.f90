@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -14,6 +14,7 @@ module Magnetic
   character (len=labellen) :: initaa='zero',initaa2='zero'
 
   ! input parameters
+  real, dimension(3) :: B_ext=(/0.,0.,0./)
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
@@ -27,6 +28,7 @@ module Magnetic
   character (len=40) :: kinflow=''
 
   namelist /magnetic_init_pars/ &
+       eta,B_ext, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
@@ -34,12 +36,11 @@ module Magnetic
        kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
-  real :: eta=0.,height_eta=0.,eta_out=0.
+  real :: eta=0.,B2min=0,height_eta=0.,eta_out=0.
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext, &
+       eta,B_ext,B2min, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
@@ -86,7 +87,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.1 2003-07-21 00:48:32 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,28 +131,35 @@ module Magnetic
       use Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz
+      real, dimension (mx,my,mz)      :: xx,yy,zz,cosphi,sinphi
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
+      real :: omega
 !
       select case(initaa)
 
-      case('zero', '0'); f(:,:,:,iax:iaz) = 0.
-      case('Alfven-x')
+      case('zero'); f(:,:,:,iax:iaz) = 0.
+      case('wave')
         !
-        !  Alfven wave
+        !  wave
         !
-        if(lroot) print*,'init_aa: Alfven wave'
-        f(:,:,:,iuy) = amplaa      *sin(kx_aa*xx)
-        f(:,:,:,iaz) = amplaa/kx_aa*cos(kx_aa*xx)
+        if(lroot) print*,'init_aa: B_ext=',B_ext
+        if(lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
         !
-      case('EMwave-x')
+        !  calculate frequency, sin(phi), cos(phi)
         !
-        !  EM wave
+        omega=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
+        sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
+        cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         !
-        if(lroot) print*,'init_aa: EM wave'
-        f(:,:,:,iux) = (amplaa*kx_aa*sin(kx_aa*xx))**2
-        f(:,:,:,iaz) = -amplaa/kx_aa*cos(kx_aa*xx)
+        !  E points in the z-direction
+        !
+        f(:,:,:,iaz)=sinphi
+        !
+        !  S = (A0 x B0)*omega*cos(phi) + 
+        !
+        f(:,:,:,iux)=-B_ext(2)*omega*cosphi+kx_aa*omega*cosphi**2
+        f(:,:,:,iuy)=+B_ext(1)*omega*cosphi+ky_aa*omega*cosphi**2
         !
       case default
         !
@@ -186,19 +194,20 @@ module Magnetic
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: oo,oxu,bbb,uxDxuxb
-      real, dimension (nx) :: rho1,J2,TT1,b2tot,ab,jb,bx,by,bz,va2
+      real, dimension (nx) :: rho1,J2,TT1,ab,jb,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
       integer :: j
 !
       real, dimension (nx,3,3) :: Bij
-      real, dimension (nx,3) :: uu,SS,BB,CC,EE,divS,curlS,curlB,del2A,curlE
-      real, dimension (nx,3) :: SgB,BgS,BdivS,CxB,curlBxB,curlExE,divEE
+      real, dimension (nx,3) :: uu,SS,BB,CC,EE
+      real, dimension (nx,3) :: divS,curlS,curlB,curlE,del2S,del2A
+      real, dimension (nx,3) :: SgB,BgS,BdivS,CxE,curlBxB,curlExE,divEE
       real, dimension (nx,3) :: glnrho
       real, dimension (nx) :: B2,B21,divE,ou,o2,sij2
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
-      real :: c2=1,B2min=1e-12
+      real :: c2=1
 !
       intent(in)  :: f,uu,rho1,TT1,uij
 !
@@ -220,6 +229,14 @@ module Magnetic
       call gij(f,iuu,Sij)
       call curl_mn(Sij,curlS)
       call trace_mn(Sij,divS)
+!
+!  calculate del2S only if nu is finite
+!
+      if(nu/=0.) then
+        call del2v(f,iuu,del2S)
+      else
+        del2S=0.
+      endif
 !
 !  calculate magnetic field gradient matrix
 !
@@ -244,9 +261,9 @@ module Magnetic
       call multmv_mn(Sij,BB,BgS)
       call multmv_mn(Bij,SS,SgB)
 !
-!  calculate C = B_k B_k,i
+!  calculate C = 2*B_k B_k,i
 !
-      call multmv_mn_transp(Bij,BB,CC)
+      call multmv_mn_transp(Bij,2*BB,CC)
 !
 !  calculate E = (BxS)/B2
 !
@@ -260,11 +277,11 @@ module Magnetic
       call dot_mn_sub(CC,EE,divE)
       divE=B21*divE
 !
-!  calculate curlE = (SgB-BgS+BdivS-CxB)/B2
+!  calculate curlE = (SgB-BgS+BdivS-CxE)/B2
 !
       call multvs_mn(BB,divS,BdivS)
-      call cross_mn(CC,BB,CxB)
-      call multvs_mn(SgB-BgS+BdivS-CxB,B21,curlE)
+      call cross_mn(CC,EE,CxE)
+      call multvs_mn(SgB-BgS+BdivS-CxE,B21,curlE)
 !
 !  calculate curlB x B, curlE x E, and divE*E
 !
@@ -274,8 +291,18 @@ module Magnetic
 !
 !  advance Poynting flux and magnetic field
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+curlBxB+curlExE+divEE
-      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-EE
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+nu*del2S+curlBxB+curlExE+divEE
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*del2A-EE
+!
+!  For the timestep calculation, need maximum Alfven speed.
+!  and maximum diffusion (for timestep)
+!  This must include the imposed field (if there is any)
+!
+      if (lfirst.and.ldt) then
+        maxadvec2=amax1(maxadvec2,B2)
+        maxdiffus=amax1(maxdiffus,nu)
+        maxdiffus=amax1(maxdiffus,eta)
+      endif
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
@@ -326,18 +353,6 @@ module Magnetic
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
         endif
-!
-!  For the timestep calculation, need maximum Alfven speed.
-!  and maximum diffusion (for timestep)
-!  This must include the imposed field (if there is any)
-!  The b2 calculated above for only updated when diagnos=.true.
-!
-!       if (lfirst.and.ldt) then
-!         call dot2_mn(bb,b2tot)
-!         va2=b2tot*rho1
-!         maxadvec2=amax1(maxadvec2,va2)
-!         maxdiffus=amax1(maxdiffus,eta)
-!       endif
 !
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
@@ -421,6 +436,10 @@ module Magnetic
         call output_pencil(trim(directory)//'/JxB.dat',JxB,3)
         call output_pencil(trim(directory)//'/df.dat',df(l1:l2,m,n,:),mvar)
       endif
+!     
+if(ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
+if(ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
+if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !     
     endsubroutine daa_dt
 !***********************************************************************
