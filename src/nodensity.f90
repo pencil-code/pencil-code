@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.22 2004-02-17 03:43:54 snod Exp $
+! $Id: nodensity.f90,v 1.23 2004-03-24 11:21:39 mee Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -12,13 +12,11 @@
 module Density
 
   use Cparam
+  use Ionization, only: cs0,cs20,lnrho0,rho0,lcalc_cp,gamma,gamma1,cs2top,cs2bot
 
   implicit none
 
-  real :: cs0=1., rho0=1., gamma=1., cs20=1., gamma1=0.
-  real :: lnrho0, cs2cool=0.
-  logical :: lcalc_cp=.false.
-  real :: cs2bot=1., cs2top=1.
+  real :: cs2cool=0.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
 
   integer :: dummy           ! We cannot define empty namelists
@@ -52,8 +50,11 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.22 2004-02-17 03:43:54 snod Exp $")
+           "$Id: nodensity.f90,v 1.23 2004-03-24 11:21:39 mee Exp $")
 !
+!ajwm Necessary? added incase
+      gamma=1.
+      gamma1=0.
     endsubroutine register_density
 !***********************************************************************
     subroutine initialize_density()

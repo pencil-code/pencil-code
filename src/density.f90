@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.152 2004-03-23 15:09:14 ajohan Exp $
+! $Id: density.f90,v 1.153 2004-03-24 11:21:39 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -16,16 +16,15 @@ module Density
 
   use Cparam
   use Cdata
+  use Ionization, only: cs0,cs20,lnrho0,rho0,lcalc_cp,gamma,gamma1,cs2top,cs2bot,cp
 
   implicit none
 
-  real :: cs0=1., rho0=1.
-  real :: cs20, lnrho0
-  logical :: lcalc_cp = .false.
-  real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
+
+  real :: ampllnrho=0., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., diffrho_shock=0.
   real :: lnrho_const=0.
-  real :: cs2bot=1., cs2top=1., gamma1,amplrho=0,cs2cool=0.
+  real :: amplrho=0,cs2cool=0.
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: b_ell=1., q_ell=5., hh0=0., rbound=1.
@@ -46,11 +45,11 @@ module Density
        b_ell,q_ell,hh0,rbound, &
        mpoly,strati_type, &
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
-       dlnrhobdx,co1_ss,co2_ss,Sigma1
+       dlnrhobdx,co1_ss,co2_ss,Sigma1,cp
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
-       cs2bot,cs2top,lupw_lnrho
+       cs2bot,cs2top,lupw_lnrho,cp
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ekin=0,i_rhom=0,i_ekintot=0
   integer :: i_lnrhomphi=0,i_rhomphi=0
@@ -86,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.152 2004-03-23 15:09:14 ajohan Exp $")
+           "$Id: density.f90,v 1.153 2004-03-24 11:21:39 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -127,8 +126,18 @@ module Density
     select case(initlnrho)
       case('geo-kws')
         if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
-        cs20=gamma
-        cs0=sqrt(cs20)
+!ajwm Shouldn't be done here they should be set as input parameters in
+!ajwm start.in.  There may be a problem at present with run since these
+!ajwm vales will not get set consistantly.
+!ajwm cs0 and lnrho0 are parameters of the EOS not of density
+!        cs20=gamma
+!        cs0=sqrt(cs20)
+!        cp=5./2.
+!ajwm Routine should really be called initialize_eos eventually
+!ajwm important thing is the parameters of the Equation of State 
+!ajwm have changed so we'd better recalculate everything consistently
+!ajwm but that won't work either since 
+!        call initialize_ionization()
     endselect
 !
     endsubroutine initialize_density
@@ -357,7 +366,7 @@ module Density
         !
         !cs2bot = cs2int + gamma/gamma1*gravz*nu_epicycle**2/(mpoly2+1)* &
         !         (zbot**2-z0**2)/2.
-        cs2bot = cs0**2
+        cs2bot = cs20
         if (isothtop /= 0) then
           cs2top = cs20
         else
@@ -373,7 +382,6 @@ module Density
         if (lroot) print*, &
                   'init_lnrho: polytropic vertical stratification (lnrho)'
         !
-        cs20 = cs0**2
         cs2int = cs20
         lnrhoint = lnrho0
         f(:,:,:,ilnrho) = lnrho0 ! just in case
@@ -503,6 +511,10 @@ module Density
       if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       if(lroot) print*, &
           'init_lnrho: e.g. for ionization runs: cs2bot,cs2top not yet set' 
+      if (lionization .or. lionization_fixed) then
+        cs2top=impossible
+        cs2bot=impossible
+      endif
 !
 !  Add some structures to the lnrho initialized above
 !

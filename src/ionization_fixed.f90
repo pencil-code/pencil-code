@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.52 2004-03-19 15:27:45 mee Exp $
+! $Id: ionization_fixed.f90,v 1.53 2004-03-24 11:21:39 mee Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -17,7 +17,6 @@ module Ionization
 
   use Cparam
   use Cdata
-  use Density
 
   implicit none
 
@@ -66,6 +65,17 @@ module Ionization
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
 
+!ajwm  Moved here from Density.f90
+!ajwm  Completely irrelevant to ionization but density and entropy need
+!ajwm  reworking to be independent of these things first
+  real :: cs0=impossible, rho0=impossible
+  real :: cs20=impossible, lnrho0=impossible
+  logical :: lcalc_cp = .false.
+  real :: gamma=impossible, gamma1=impossible
+  real :: cp=impossible, cp1=impossible
+!ajwm  can't use impossible else it breaks reading param.nml 
+  real :: cs2bot=1., cs2top=1. 
+
   contains
 
 !***********************************************************************
@@ -94,7 +104,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.52 2004-03-19 15:27:45 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.53 2004-03-24 11:21:39 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -827,97 +837,15 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       real, intent(in) :: Fbot, FbotKbot, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
-      integer :: i
-      
 !
-      call stop_it("bc_ss_flux: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `c1' boundary condition (constant heat flux) for entropy.
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('strange-bot')
-        if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 1.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n1,iss) &
-                       - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-        tmp_xy = Fbot/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = &
-               (2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
-               )/gamma &
-               + f(:,:,n1+i,iss)
-        enddo
-!
-!  bottom boundary
-!  ===============
-!
-      case('bot')
-        if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
-        else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
-        endif
-!       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
-!
-!  calculate Fbot/(K*cs2)
-!
-        rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
-!
-!  check whether we have chi=constant at bottom, in which case
-!  we have the nonconstant rho_xy*chi in tmp_xy. 
-!
-        if(lcalc_heatcond_constchi) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
-        else
-          tmp_xy=FbotKbot/cs2_xy
-        endif
-!
-!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
-!
-        do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma1/gamma* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
-        enddo
-!
-!  top boundary
-!  ============
-!
-      case('top')
-        if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
-        if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 2.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n2,iss) &
-                       - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-        tmp_xy = FbotKbot * tmp_xy ! F_heat/(hcond T_0)
-        do i=1,nghost
-          f(:,:,n2+i,iss) = &
-               (-2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
-               )/gamma &
-               + f(:,:,n2-i,iss)
-        enddo
-      case default
-        print*,"bc_ss_flux: invalid argument"
-        call stop_it("")
-      endselect
+      call stop_it("bc_ss_flux: NOT IMPLEMENTED IN IONIZATION_FIXED")
+      if (ip==0) print*,f(1,1,1,1),hcond0,hcond1,Fbot, FbotKbot, chi,lmultilayer,lcalc_heatcond_constchi,topbot
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
@@ -932,73 +860,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy
-      integer :: i
 !
       call stop_it("bc_ss_temp_old: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_temp_old: ENTER - cs20,cs0=',cs20,cs0
-!
-!  Do the `c2' boundary condition (fixed temperature/sound speed) for entropy.
-!  This assumes that the density is already set (ie density must register
-!  first!)
-!  tmp_xy = s(x,y) on the boundary.
-!  gamma*s/cp = [ln(cs2/cs20)-(gamma-1)ln(rho/rho0)]
-!
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
-        if (lionization.or.lionization_fixed) then
-!AB: currently, lionization=.true. regardless of lionization_fixed,
-!AB: so ".or.lionization_fixed" is obsolete
-           call stop_it("bc_ss_temp_old: NOT IMPLEMENTED FOR IONIZATION CASES")
-        else
-          if (ldebug) print*, &
-                  'bc_ss_temp_old: set bottom temperature: cs2bot=',cs2bot
-          if (cs2bot<=0.) &
-                print*,'bc_ss_temp_old: cannot have cs2bot<=0'
-            tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
-                 + alog(cs2bot/cs20)) / gamma
-            f(:,:,n1,iss) = tmp_xy
-            do i=1,nghost
-               f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
-            enddo
-         endif
-!
-!  top boundary
-!
-      case('top')
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
-          call stop_it("bc_ss_temp_old: Inconsistent boundary conditions 3.")
-        if (lionization.or.lionization_fixed) then
-           call stop_it("bc_ss_temp_old: NOT IMPLEMENTED FOR IONIZATION CASES")
-        else
-          if (ldebug) print*, &
-                     'bc_ss_temp_old: set top temperature - cs2top=',cs2top
-          if (cs2top<=0.) print*, &
-                     'bc_ss_temp_old: cannot have cs2top<=0'
-  !       if (bcz1(ilnrho) /= "a2") &
-  !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
-          tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                   + alog(cs2top/cs20)) / gamma
-          f(:,:,n2,iss) = tmp_xy
-          do i=1,nghost
-            f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
-          enddo
-        endif
-      case default
-        print*,"bc_ss_temp_old: invalid argument"
-        call stop_it("")
-      endselect
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_old
 !***********************************************************************
@@ -1010,59 +877,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: tmp
-      integer :: i
 !
       call stop_it("bc_ss_temp_x: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_temp_x: cs20,cs0=',cs20,cs0
-!
-!  Constant temperature/sound speed for entropy, i.e. antisymmetric
-!  ln(cs2) relative to cs2top/cs2bot.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (ldebug) print*, &
-                   'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_x: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
-        f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l1+i,:,:,ilnrho)+f(l1-i,:,:,ilnrho)-2*lnrho0)
-        enddo
-!
-!  top boundary
-!
-      case('top')
-        if (ldebug) print*, &
-                       'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                       'bc_ss_temp_x: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
-        f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
-               - gamma1/gamma*(f(l2-i,:,:,ilnrho)+f(l2+i,:,:,ilnrho)-2*lnrho0)
-        enddo
-
-      case default
-        print*,"bc_ss_temp_x: invalid argument"
-        call stop_it("")
-      endselect
-      
-
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_x
 !***********************************************************************
@@ -1074,57 +894,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: tmp
-      integer :: i
 !
       call stop_it("bc_ss_temp_y: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_temp_y: cs20,cs0=',cs20,cs0
-!
-!  Constant temperature/sound speed for entropy, i.e. antisymmetric
-!  ln(cs2) relative to cs2top/cs2bot.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (ldebug) print*, &
-                   'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_y: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m1+i,:,ilnrho)+f(:,m1-i,:,ilnrho)-2*lnrho0)
-        enddo
-!
-!  top boundary
-!
-      case('top')
-        if (ldebug) print*, &
-                     'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
-        if (cs2top<=0.) print*, &
-                     'bc_ss_temp_y: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
-               - gamma1/gamma*(f(:,m2-i,:,ilnrho)+f(:,m2+i,:,ilnrho)-2*lnrho0)
-        enddo
-
-      case default
-        print*,"bc_ss_temp_y: invalid argument"
-        call stop_it("")
-      endselect
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_y
 !***********************************************************************
@@ -1136,7 +911,6 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -1144,55 +918,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       integer :: i
 !
       call stop_it("bc_ss_temp_z: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_temp_z: cs20,cs0=',cs20,cs0
-!
-!  Constant temperature/sound speed for entropy, i.e. antisymmetric
-!  ln(cs2) relative to cs2top/cs2bot.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is processor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-       if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_temp_z: NOT IMPLEMENTED FOR IONISATION CASE")
-       else
-        if (ldebug) print*, &
-                   'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
-        if (cs2bot<=0.) print*, &
-                   'bc_ss_temp_z: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
-        f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n1+i,ilnrho)+f(:,:,n1-i,ilnrho)-2*lnrho0)
-        enddo
-     endif
-!
-!  top boundary
-!
-      case('top')
-       if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_temp_z: NOT IMPLEMENTED FOR IONISATION CASE")
-       else
-        if (ldebug) print*, &
-                     'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
-        if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
-        f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
-        do i=1,nghost
-          f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &
-               - gamma1/gamma*(f(:,:,n2-i,ilnrho)+f(:,:,n2+i,ilnrho)-2*lnrho0)
-        enddo
-       endif
-      case default
-        print*,"bc_ss_temp_z: invalid argument"
-        call stop_it("")
-      endselect
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_temp_z
 !***********************************************************************
@@ -1204,47 +930,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: i
 !
       call stop_it("bc_ss_stemp_x: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_stemp_x: cs20,cs0=',cs20,cs0
-!
-!  Symmetric temperature/sound speed for entropy.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (cs2bot<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2bot<=0'
-        do i=1,nghost
-          f(l1-i,:,:,iss) = f(l1+i,:,:,iss) &
-               + gamma1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
-        enddo
-!
-!  top boundary
-!
-      case('top')
-        if (cs2top<=0.) print*, &
-                        'bc_ss_stemp_x: cannot have cs2top<=0'
-        do i=1,nghost
-          f(l2+i,:,:,iss) = f(l2-i,:,:,iss) &
-               + gamma1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
-        enddo
-
-      case default
-        print*,"bc_ss_stemp_x: invalid argument"
-        call stop_it("")
-      endselect
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_stemp_x
 !***********************************************************************
@@ -1256,49 +947,13 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: i
 !
         call stop_it("bc_ss_stemp_y: NOT IMPLEMENTED IN IONIZATION")
-        if(ldebug) print*,'bc_ss_stemp_y: cs20,cs0=',cs20,cs0
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
-!  Symmetric temperature/sound speed for entropy.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is precessor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (cs2bot<=0.) print*, &
-                       'bc_ss_stemp_y: cannot have cs2bot<=0'
-        do i=1,nghost
-          f(:,m1-i,:,iss) = f(:,m1+i,:,iss) &
-               + gamma1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
-        enddo
-!
-!  top boundary
-!
-      case('top')
-        if (cs2top<=0.) print*, &
-                       'bc_ss_stemp_y: cannot have cs2top<=0'
-        do i=1,nghost
-          f(:,m2+i,:,iss) = f(:,m2-i,:,iss) &
-               + gamma1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
-        enddo
-
-      case default
-        print*,"bc_ss_stemp_y: invalid argument"
-        call stop_it("")
-      endselect
-!
-
     endsubroutine bc_ss_stemp_y
 !***********************************************************************
     subroutine bc_ss_stemp_z(f,topbot)
@@ -1309,54 +964,12 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       use Mpicomm, only: stop_it
       use Cdata
-      use Gravity
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: i
 !
       call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED IN IONIZATION_FIXED")
-      if(ldebug) print*,'bc_ss_stemp_z: cs20,cs0=',cs20,cs0
-!
-!  Symmetric temperature/sound speed for entropy.
-!  This assumes that the density is already set (ie density _must_ register
-!  first!)
-!
-!  check whether we want to do top or bottom (this is processor dependent)
-!
-      select case(topbot)
-!
-!  bottom boundary
-!
-      case('bot')
-        if (lionization.or.lionization_fixed) then
-          call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
-        else
-          if (cs2bot<=0.) print*, &
-                                  'bc_ss_stemp_z: cannot have cs2bot<=0'
-          do i=1,nghost
-             f(:,:,n1-i,iss) = f(:,:,n1+i,iss) &
-                  + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
-          enddo
-        endif
-!
-!  top boundary
-!
-      case('top')
-       if (lionization.or.lionization_fixed) then
-        call stop_it("bc_ss_stemp_z: NOT IMPLEMENTED FOR IONISATION CASE")
-       else
-        if (cs2top<=0.) print*, &
-                 'bc_ss_stemp_z: cannot have cs2top<=0'
-         do i=1,nghost
-           f(:,:,n2+i,iss) = f(:,:,n2-i,iss) &
-                + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
-         enddo
-        endif
-      case default
-        print*,"bc_ss_stemp_z: invalid argument"
-        call stop_it("")
-      endselect
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
     endsubroutine bc_ss_stemp_z
 !***********************************************************************
@@ -1380,37 +993,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !  This assumes that the density is already set (ie density must register
 !  first!)
 !
-    select case(topbot)
+      if (ip==0) print*,f(1,1,1,1),topbot
 !
-! Bottom boundary
-!
-    case('bot')
-      !  Set cs2 (temperature) in the ghost points to the value on
-      !  the boundary
-      !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,iss))
-      do i=1,nghost
-         f(:,:,n1-i,iss)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
-              +log(cs2_2d))
-      enddo
-
-!
-! Top boundary
-!
-    case('top')
-      !  Set cs2 (temperature) in the ghost points to the value on
-      !  the boundary
-      !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,iss))
-      do i=1,nghost
-         f(:,:,n2+i,iss)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
-              +log(cs2_2d))
-      enddo
-    case default
-      print*,"bc_ss_energy: invalid argument"
-      call stop_it("")
-    endselect
-
     end subroutine bc_ss_energy
 !***********************************************************************
 endmodule ionization

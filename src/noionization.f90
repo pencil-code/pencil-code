@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.105 2004-03-17 19:07:54 mee Exp $
+! $Id: noionization.f90,v 1.106 2004-03-24 11:21:39 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -15,7 +15,6 @@ module Ionization
 
   use Cparam
   use Cdata
-  use Density
 
   implicit none
 
@@ -37,7 +36,7 @@ module Ionization
 
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
+  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
 
   ! secondary parameters calculated in initialize
   real :: TT_ion,TT_ion_,ss_ion,kappa0
@@ -49,16 +48,23 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   real :: xHe=0.1
-  real :: cp=1., cp1=1.
+  real :: cp=impossible, cp1=impossible
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe
+  namelist /ionization_init_pars/ xHe,cp
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe
+  namelist /ionization_run_pars/ xHe,cp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_TTm=0,i_TTmax=0
+
+!ajwm  Moved here from Density.f90
+  real :: cs0=1., rho0=1.
+  real :: cs20, lnrho0
+  logical :: lcalc_cp = .false.
+  real :: gamma=5./3., gamma1
+  real :: cs2bot=1., cs2top=1. 
 
   contains
 
@@ -89,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.105 2004-03-17 19:07:54 mee Exp $')
+           '$Id: noionization.f90,v 1.106 2004-03-24 11:21:39 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -102,20 +108,17 @@ module Ionization
 !***********************************************************************
     subroutine initialize_ionization()
 !
-      use Density, only: cs20, gamma1, lcalc_cp, initlnrho
-!
       real :: mu
 !
       if(ip==0) print*,'initialize_ionization: keeping compiler quiet'
       call getmu(mu)
       if (lcalc_cp) then 
         cp=k_B/(mu*m_H)
-      else if (initlnrho=='geo-kws') then
-        if (lroot) print*,'initialize_ionization: set specific heat capacity for spherical shell problem'
-        cp=5./2.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
-      else
-        cp=1.       
       endif
+!     else if (initlnrho=='geo-kws') then
+!        if (lroot) print*,'initialize_ionization: set specific heat capacity for spherical shell problem'
+!        cp=5./2.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
+      if (cp==impossible) cp=1.       
 
       if (lroot) print*,'initialize_ionization: cp=',cp
 
