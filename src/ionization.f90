@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.19 2003-03-29 06:48:29 brandenb Exp $
+! $Id: ionization.f90,v 1.20 2003-03-29 11:14:32 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -19,15 +19,13 @@ module Ionization
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.
+  character (len=labellen) :: cionization='hydrogen'
 
   ! input parameters
-  integer :: dummy 
-  namelist /ionization_init_pars/ dummy
-!lionization
+  namelist /ionization_init_pars/ cionization
 
   ! run parameters
-  namelist /ionization_run_pars/ dummy
-!lionization
+  namelist /ionization_run_pars/  cionization
 
   contains
 
@@ -52,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.19 2003-03-29 06:48:29 brandenb Exp $")
+           "$Id: ionization.f90,v 1.20 2003-03-29 11:14:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -118,14 +116,12 @@ module Ionization
 !
 !  calculate cs2, 1/T, and cp1tilde
 !
-      if(lionization) then
-        if(headtt) print*,'thermodynamics: assume cp is not 1'
+      if(cionization=='hydrogen') then
+        if(headtt) print*,'thermodynamics based on hydrogen ionization'
         call ionfrac(lnrho,ss,yH)
         call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
                                  dlnPdss=dlnPdss, &
                                  TT=TT)
-print*,'thermodynamics: dlnPdlnrho=',dlnPdlnrho
-print*,'thermodynamics: dlnPdss=',dlnPdss
         TT1=1./TT
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
@@ -134,10 +130,10 @@ print*,'thermodynamics: dlnPdss=',dlnPdss
           ee=1.5*(1.+yH)*ss_ion*TT+yH*ss_ion*TT_ion
           call sum_mn_name(rho*ee,i_eth)
         endif
-      else
 !
-!  new case: cp-cv=1, ie cp=2.5
+!  neutral gas case: cp-cv=1*kB/mp, ie cp=2.5*kB/mp
 !
+      elseif(cionization=='neutral') then
         if(headtt) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
         dlnPdlnrho=gamma
         dlnPdss=gamma1
@@ -147,7 +143,7 @@ print*,'thermodynamics: dlnPdss=',dlnPdss
         cp1tilde=dlnPdss/dlnPdlnrho
         if (ldiagnos.and.i_eth/=0) then
           rho=exp(lnrho)
-          ee=cs2/(gamma*gamma1) !(not correct with ionization)
+          ee=cs2/(gamma*gamma1)
           call sum_mn_name(rho*ee,i_eth)
         endif
       endif
@@ -178,7 +174,6 @@ print*,'thermodynamics: dlnPdss=',dlnPdss
       if (present(dlnPdlnrho).or.present(dlnPdss)) then
          f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
 !print*,'m_H/m_p=',m_H/m_p
-print*,'m_H=',m_H
          dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
          dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
       endif

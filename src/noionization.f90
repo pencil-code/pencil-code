@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.6 2003-03-25 05:42:57 brandenb Exp $
+! $Id: noionization.f90,v 1.7 2003-03-29 11:14:32 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -20,10 +20,10 @@ module Ionization
 
   ! input parameters
   integer :: dummy 
-  namelist /ionization_init_pars/ lionization
+  namelist /ionization_init_pars/ dummy
 
   ! run parameters
-  namelist /ionization_run_pars/ lionization
+  namelist /ionization_run_pars/  dummy
 
   contains
 
