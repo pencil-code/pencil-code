@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2004-09-15 21:34:44 $
-;;;  $Revision: 1.3 $
+;;;  $Date: 2004-09-15 22:57:40 $
+;;;  $Revision: 1.4 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -34,6 +34,7 @@
 ;;;      ENHANCE=enhance    --- multiply density map with ENHANCE,
 ;;;                             which must be a non-negative 2d array
 ;;;                             of size NX x NY
+;;;      ASINHSCALE=scale   --- plot asinh(scale*density) instead of density
 ;;;      DENSITY=density    --- return density map (only values 0 an 1
 ;;;                             unless /CONTOUR was sepcified
 ;;;      XCOORDS=xcoords    --- corresponding x coordinates
@@ -51,6 +52,7 @@
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /CONTOUR
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /CONTOUR, /INVERT
 ;;;    plot_binned, xx, ff, NX=60, NY=40, /PLOTIMAGE, /EQUX
+;;;    plot_binned, xx, ff, /PLOTIMAGE, /EQUX, ASINHSCALE=5.
 ;;;    
 ;;;  To do:
 ;;;    Reduce memory usage: xx,yy,good,xind,yind all use the same
@@ -64,26 +66,30 @@ pro plot_binned, xvar, yvar, $
                  PLOTIMAGE=plotimage, $
                  INVERT=invert, $
                  OVERPLOT=overplot, $
-                 PSYM=psym, $
-                 SYMSIZE=symsize, $
+                 PSYM=psym, SYMSIZE=symsize, $
                  COLOR=color, $
+                 XSTYLE=xstyle, YSTYLE=ystyle, $
                  EQUX=equx, EQUY=equy, $
                  ENHANCE=enhance, $
+                 ASINHSCALE=asinhscale, $
                  DENSITY=map, XCOORDS=mapx, YCOORDS=mapy, $
                  _EXTRA=extra
 
-if (n_elements(nmx)       eq 0) then nmx = 500/(!p.multi[1] > 1)
-if (n_elements(nmy)       eq 0) then nmy = 350/(!p.multi[2] > 1)
+if (n_elements(nmx)        eq 0) then nmx = 500/(!p.multi[1] > 1)
+if (n_elements(nmy)        eq 0) then nmy = 350/(!p.multi[2] > 1)
 
-if (n_elements(psym)      eq 0) then psym      = 3
-if (n_elements(contour)   eq 0) then contour   = 0
-if (n_elements(plotimage) eq 0) then plotimage = 0
-if (n_elements(invert)    eq 0) then invert    = 0
-if (n_elements(fill)      eq 0) then fill      = 1
-if (n_elements(nlevels)   eq 0) then nlevels   = 60
-if (n_elements(equx)      eq 0) then equx      = 0
-if (n_elements(equy)      eq 0) then equy      = 0
-if (n_elements(enhance)   eq 0) then enhance   = -1
+if (n_elements(psym)       eq 0) then psym       = 3
+if (n_elements(contour)    eq 0) then contour    = 0
+if (n_elements(plotimage)  eq 0) then plotimage  = 0
+if (n_elements(invert)     eq 0) then invert     = 0
+if (n_elements(fill)       eq 0) then fill       = 1
+if (n_elements(nlevels)    eq 0) then nlevels    = 60
+if (n_elements(equx)       eq 0) then equx       = 0
+if (n_elements(equy)       eq 0) then equy       = 0
+if (n_elements(enhance)    eq 0) then enhance    = -1
+if (n_elements(asinhscale) eq 0) then asinhscale = -1
+if (n_elements(xstyle)     eq 0) then xstyle     = !x.style
+if (n_elements(ystyle)     eq 0) then ystyle     = !y.style
 
 ;; Sanitize keywords
 if (plotimage ne 0) then contour=0
@@ -96,16 +102,19 @@ pmulti1 = !p.multi
 
 ;; Plot the frame (necessary to get x- and y-range)
 if (n_elements(overplot) eq 0) then begin
-  if (scatter eq 0) then begin  ; don't plot, as this will be overplotted later
-    xstyle=4 & ystyle=4
-  endif else begin              ; really plot frame; this will remain
-    xstyle=!x.style & ystyle=!y.style
+  if (scatter eq 0) then begin  ; don't plot and avoid extra PS frame
+    xstyle1 = (xstyle or 4)
+    ystyle1 = (ystyle or 4)
+  endif else begin
+    xstyle1 = xstyle
+    ystyle1 = xstyle    
   endelse
   plot, xvar, yvar, /NODATA, $
-      XSTYLE=xstyle, YSTYLE=ystyle, $
-      COLOR=color, _EXTRA=extra
+      XSTYLE=xstyle1, YSTYLE=ystyle1, $
+      COLOR=color, _EXTRA=extra, /NOERASE
   pmulti2 = !p.multi       ; save so we can exit with correct !p.multi
 endif
+!p.multi = pmulti1
 
 xr = !x.crange                  ; NB: for /xlog, this is alog10(data_range)
 yr = !y.crange
@@ -168,6 +177,13 @@ if (enhance[0] ge 0) then begin
       message, 'NHANCE must be of size '+strtrim(NMx,2)+'x'+strtrim(NMy,2)
   map = map*enhance
 endif
+
+;; Apply asinh if requested
+if (asinhscale ne 0) then begin
+  map = map / max(abs(map))
+  map = asinh(asinhscale*map)
+endif
+
 
 if (scatter eq 0) then !p.multi = pmulti1
 
