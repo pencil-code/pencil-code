@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.6 2003-01-10 14:00:27 nilshau Exp $
+! $Id: struct_func.f90,v 1.7 2003-01-10 15:05:35 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -113,7 +113,7 @@ module struct_func
   !  calculate pdf or structure functions.
   !
   if (variabl .eq. 'pdf') then 
-     vect(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+     vect(:,:,:,1:3)=f(l1:l2,m1:m2,n1:n2,iuu:iuu+2)
      pdf_max= 1.  !(for the time being; assumes |u|<1)
      pdf_min=-pdf_max
      dx_du=(pdf_max-pdf_min)/n_pdf
@@ -129,6 +129,7 @@ module struct_func
   !
   do direction=1,nr_directions
      do l=1,nx
+        if ((iproc==root) .and. (lpostproc)) print*,'l=',l
         do ll=l+1,nx
            separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
            dvect=vect(l,:,:,:)-vect(ll,:,:,:)

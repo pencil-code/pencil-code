@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.119 2003-01-10 14:00:27 nilshau Exp $
+! $Id: cdata.f90,v 1.120 2003-01-10 15:05:35 nilshau Exp $
 
 module Cdata
 
@@ -62,7 +62,7 @@ module Cdata
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0
 
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
-  logical :: lmpicomm=.false., lforcing=.false.
+  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.
