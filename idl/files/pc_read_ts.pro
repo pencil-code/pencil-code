@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.5 2003-08-25 14:57:34 dobler Exp $
+; $Id: pc_read_ts.pro,v 1.6 2003-08-25 19:44:12 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-25 14:57:34 $
-;  $Revision: 1.5 $
+;  $Date: 2003-08-25 19:44:12 $
+;  $Revision: 1.6 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -61,7 +61,7 @@ function in_list, label, list
 end
 ; ---------------------------------------------------------------------- ;
 pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom,ssm=ssm, $
-                 object=object, $ 
+                 object=object, filename=filename, $ 
                  datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 
 ; If no meaningful parameters are given show some help!
@@ -77,6 +77,8 @@ pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom
     print, "                                              "
     print, "  datadir: specify the root data directory.               [string]"
     print, "           Default is './data'           "
+    print, " filename: specify the filename of the time series data   [string]"
+    print, "           Default is 'time_series.dat'                           "
     print, "                                                                  "
     print, "        n: number of entries (valid - not commented out) [integer]"
     print, "       it: array of time step numbers                  [float(it)]"
@@ -102,7 +104,7 @@ pro pc_read_ts,n=n,it=it,t=t,dt=dt,dtc=dtc,urms=urms,ekin=ekin,eth=eth,rhom=rhom
 ; Default data directory
 
 default, datadir, 'data'
-
+default, filename, 'time_series.dat'
 ;
 ; Initialize / set default returns for ALL variables
 ;
@@ -121,16 +123,16 @@ ssm=0.
 GET_LUN, file
 
 ; Build the full path and filename
-filename=datadir+'/time_series.dat'         
+fullfilename=datadir+'/'+filename         
 
 ;
 ;  read header
 ;
 ; Check for existance and read the data
-dummy=findfile(filename, COUNT=found)
+dummy=findfile(fullfilename, COUNT=found)
 if (found gt 0) then begin
-    if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
-    openr, file, filename
+    if ( not keyword_set(QUIET) ) THEN print, 'Reading ' + fullfilename + '...'
+    openr, file, fullfilename
     line = ''
     repeat begin
         readf, file, line
@@ -141,7 +143,7 @@ if (found gt 0) then begin
     point_lun,-file,fileposition
     close,file
 end else begin
-    message, 'ERROR: cannot find file ' + filename
+    message, 'ERROR: cannot find file ' + fullfilename
 end
 
 ;
@@ -156,7 +158,7 @@ while (fileposition ne -1) do begin
   ncols = n_elements(labels)
   newheader='^#--'
  
-  data = input_table(filename,DOUBLE=DOUBLE,  $
+  data = input_table(fullfilename,DOUBLE=DOUBLE,  $
                      STOP_AT=newheader,FILEPOSITION=fileposition)
   if ((size(data))[1] ne ncols) then begin
     message, /INFO, 'Inconsistency: label number different from column number'
