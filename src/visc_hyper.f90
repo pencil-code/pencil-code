@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.7 2004-01-31 14:01:22 dobler Exp $
+! $Id: visc_hyper.f90,v 1.8 2004-02-20 19:15:42 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -31,6 +31,9 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ nu, lvisc_first,ivisc
  
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_epsK2=0
+
   contains
 
 !***********************************************************************
@@ -62,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.7 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: visc_hyper.f90,v 1.8 2004-02-20 19:15:42 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -110,16 +113,16 @@ module Viscosity
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
-!      if (lreset) then
-!        i_TTm=0
-!      endif
+      if (lreset) then
+        i_epsK2=0
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
-!      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
-!      enddo
+      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'epsK2',i_epsK2)
+      enddo
 !
 !  write column where which ionization variable is stored
 !
@@ -127,6 +130,7 @@ module Viscosity
         if (lwrite) then
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
+          write(3,*) 'i_epsK2=',i_epsK2
         endif
       endif
 !   
@@ -322,7 +326,7 @@ module Viscosity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: hyper
       real, dimension (nx,3) :: glnrho,del6u,fvisc,gshock,del4u
-      real, dimension (nx) :: rho1,divu,shock
+      real, dimension (nx) :: rho1,divu,shock,ufvisc,rufvisc
 !
       intent (out) :: df
 !
@@ -351,6 +355,16 @@ module Viscosity
         endif
       else ! (nu=0)
         if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
+      endif
+!
+! Experimental piece of code to dobbel check epsK
+!
+      if (ldiagnos) then
+        if (i_epsK2/=0) then
+          call dot_mn(f(l1:l2,m,n,iux:iuz),fvisc,ufvisc)
+          rufvisc=ufvisc/rho1
+          call sum_mn_name(rufvisc,i_epsK2)
+        endif
       endif
 !
 
