@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.88 2003-10-31 18:23:20 brandenb Exp $ 
+! $Id: initcond.f90,v 1.89 2003-11-12 17:33:51 ajohan Exp $ 
 
 module Initcond 
  
@@ -881,6 +881,79 @@ module Initcond
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !      
     endsubroutine planet
+!***********************************************************************
+    subroutine baroclinic(f,xx,yy,zz,gamma,t_fct_type,rhomid_fct_type, &
+                          TT_til0,alpha_TT,rho0,beta_rho)
+!
+!  Baroclinic shearing sheet initial condition
+!  11-nov-03/anders: coded
+!
+      integer :: i,j,k,izmid
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz,rho,TT_til
+      real, dimension (mx,my,mz) :: dPhidx,dPhidz,I_int,dPdx
+      real :: gamma,TT_til0,alpha_TT,rho0,beta_rho
+      character (len=labellen):: t_fct_type,rhomid_fct_type
+!
+      izmid=mz/2
+!
+!  The potential is Omega**2*( -r0^2 + r0*xx - xx^2 + 0.5*zz^2 )
+!
+      dPhidx = -3*Omega**2*xx    ! Including centrifugal force
+      dPhidz =    Omega**2*zz
+!
+!  Temperature
+!
+      select case(t_fct_type)
+        case('linear_z')
+          TT_til = TT_til0 + alpha_TT * abs(zz)
+      endselect
+!
+!  Density in the mid-plane
+!
+      select case(rhomid_fct_type)
+        case ('linear_x')
+          rho(:,:,izmid) = rho0 + beta_rho * xx(:,:,izmid)
+      endselect
+!
+!  Integral for calculating hydrostatic equlibrium density
+!
+      do i=1,mx
+        do j=1,my
+          I_int(i,j,izmid:mz)   = spline_integral(zz(i,j,izmid:mz), &
+              1/TT_til(i,j,izmid:mz)*dPhidz(i,j,izmid:mz))
+          I_int(i,j,izmid:1:-1) = spline_integral(zz(i,j,izmid:1:-1), &
+              1/TT_til(i,j,izmid:-1)*dPhidz(i,j,izmid:1:-1))
+        enddo
+      enddo
+!
+!  Solution to hydrostatic equlibrium in the z-direction
+!  Note: spline_integral is not very efficient compared to trapezoidal rule
+!
+      do k=1,mz
+        f(:,:,k,ilnrho) = f(:,:,izmid,ilnrho) - &
+            alog(TT_til(:,:,k)/TT_til(:,:,izmid)) - I_int(:,:,k)
+      enddo
+
+      rho = exp(f(:,:,:,ilnrho))
+      
+      do j=1,mx
+        do k=1,my
+          dPdx(:,j,k) = &
+              spline_derivative(xx(:,j,k),rho(:,j,k)*TT_til(:,j,k))
+        enddo
+      enddo
+!
+!  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
+!
+      f(:,:,:,iuy) = 1/(2*Omega)* &
+          ( 1/rho(:,:,:) * dPdx(:,:,:) + dPhidx(:,:,:) ) + qshear*Omega*xx
+!
+!  Entropy is calculated from temperature and density ( P = T~*rho )
+!
+      f(:,:,:,iss) = 1/gamma*alog(TT_til(:,:,:)*rho(:,:,:)) - f(:,:,:,ilnrho)
+!
+    endsubroutine baroclinic
 !***********************************************************************
     subroutine crazy(ampl,f,i)
 !

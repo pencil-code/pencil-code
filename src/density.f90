@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.133 2003-10-31 18:23:20 brandenb Exp $
+! $Id: density.f90,v 1.134 2003-11-12 17:33:51 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -29,12 +29,14 @@ module Density
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: b_ell=1., q_ell=5., hh0=0., rbound=1.
+  real :: TT_til0,alpha_TT,beta_rho
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
+  character (len=labellen) :: t_fct_type='nothing', rhomid_fct_type='nothing'
   complex :: coeflnrho=0.
 
   namelist /density_init_pars/ &
@@ -43,7 +45,8 @@ module Density
        initlnrho2,radius_lnrho,eps_planet, &
        b_ell,q_ell,hh0,rbound, &
        mpoly, &
-       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho
+       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho, &
+       t_fct_type,rhomid_fct_type,TT_til0,alpha_TT,beta_rho
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
@@ -82,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.133 2003-10-31 18:23:20 brandenb Exp $")
+           "$Id: density.f90,v 1.134 2003-11-12 17:33:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -395,6 +398,14 @@ module Density
         call enthblob(f,xx,yy,zz,b_ell,q_ell,gamma,cs20,hh0)
 
 
+      case('baroclinic')
+        !
+        !  Baroclinic initial condition
+        !
+        call baroclinic(f,xx,yy,zz,gamma,t_fct_type,rhomid_fct_type, &
+            TT_til0,alpha_TT,rho0,beta_rho)
+
+      
       case('Ferriere'); if(lroot) print*,'init_lnrho: Ferriere set in entropy'
 
       case('geo-kws')
