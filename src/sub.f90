@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.152 2003-12-23 10:51:00 dobler Exp $ 
+! $Id: sub.f90,v 1.153 2004-01-05 11:54:52 dobler Exp $ 
 
 module Sub 
 
@@ -2606,7 +2606,7 @@ module Sub
 !
     endsubroutine get_nseed
 !***********************************************************************
-    subroutine write_dx_general(file)
+    subroutine write_dx_general(file,x00,y00,z00)
 !
 !  Write .general file for data explorer (aka DX)
 !  04-oct-02/wolf: coded
@@ -2615,6 +2615,7 @@ module Sub
       use Cdata
       use General, only: safe_character_append
 !
+      real :: x00,y00,z00
       character (len=*) :: file
       character (len=datelen) :: date
       character (len=linelen) :: field='',struct='',type='',dep=''
@@ -2686,7 +2687,7 @@ module Sub
       write(1,'(A,A)') 'dependency = ', trim(dep)
       write(1,'(A,A,6(", ",1PG12.4))') 'positions = ', &
            'regular, regular, regular', &
-           x0, dx, y0, dy, z0, dz 
+           x00, dx, y00, dy, z00, dz 
       write(1,'(A)') ''
       write(1,'(A)') 'end'
 !
