@@ -6,3 +6,4 @@ cleann:
 	cd src; $(MAKE) cleann
 qeoclean:
 	rm -f start.csh.o[0-9]* start.csh.e[0-9]* run.csh.o[0-9]* run.csh.e[0-9]*
+	rm -f start_run.csh.o[0-9]* start_run.csh.e[0-9]*
