@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.125 2002-11-16 09:41:13 brandenb Exp $
+### $Id: Makefile,v 1.126 2002-11-19 09:10:00 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,6 +11,8 @@ MPICOMM   = nompicomm
 GLOBAL    = noglobal
 IO        =   io_dist
 FFT       = nofft
+FFTPACK   =   fftpack
+POWER     =   power_spectrum
 DEBUG     =   debug_c
 
 HYDRO     =   hydro
@@ -120,6 +122,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 
 LD=$(FC)
 LDFLAGS=$(FFLAGS)
+# -Mpencil.map
 
 .SUFFIXES: .f90 .mod
 
@@ -150,10 +153,10 @@ code:
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
-comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics) $(FFT).o fftpack.o #fft_nr.o
+comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o #fft_nr.o
 start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
-run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
+run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o $(POWER).o
 run_deps=$(run_deps_f90) $(DEBUG).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
@@ -179,7 +182,7 @@ cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o sub.o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f
-fftpack.o:   fftpack.f
+$(FFTPACK).o:   $(FFTPACK).f
 #fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 timestep.o $(TIMEAVG).o $(physics)
@@ -190,7 +193,7 @@ equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 initcond.o:  initcond.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
-wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o power_spectrum.o
+wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o $(FFT).o 
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
@@ -208,7 +211,7 @@ $(TIMEAVG).o:   $(TIMEAVG).f90 cdata.o
 $(FFT).o:	cdata.o
 timeavg.o:      timeavg.f90 ctimeavg.local
 nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
-power_spectrum.o:power_spectrum.f90 cdata.o sub.o $(MPICOMM).o general.o
+$(POWER).o:$(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 TAGS: $(TAG_SOURCE)

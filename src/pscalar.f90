@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.13 2002-10-04 06:22:04 brandenb Exp $
+! $Id: pscalar.f90,v 1.14 2002-11-19 09:10:00 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -62,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.13 2002-10-04 06:22:04 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.14 2002-11-19 09:10:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -82,7 +82,6 @@ module Pscalar
       use Density
       use Sub
       use Initcond
-      integer i,j,k
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
