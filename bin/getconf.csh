@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.122 2004-08-18 11:53:58 ajohan Exp $
+# $Id: getconf.csh,v 1.123 2004-08-20 14:30:49 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -215,6 +215,16 @@ else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin
   setenv SCP rcp
   setenv LANG en_US
 
+else if ($hn =~ psi*) then
+  echo "RZG in Garching (IBM pSeries Regatta with AIX UNIX)"
+  set mpirun = mpiexec
+  set local_disc = 1
+  set one_local_disc = 1
+  set local_binary = 0
+  setenv SSH rsh
+  setenv SCP rcp
+  setenv LANG en_US
+  setenv SCRATCH_DIR /ptmp/$USER
 
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "fire in Bergen"
@@ -460,10 +470,6 @@ else if ($hn =~ mhd) then
   if ($local_disc) then
     setenv SCRATCH_DIR /var/tmp
   endif
-
-else if ($hn =~ psi*) then
-  echo "RZG in Garching (IBM pSeries Regatta with AIX UNIX)"
-  set mpirun = "poe"
 
 else
   echo "Generic setup; hostname is <$hn>"
