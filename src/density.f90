@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.12 2002-06-16 20:35:03 dobler Exp $
+! $Id: density.f90,v 1.13 2002-06-18 09:16:58 dobler Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-06-16 20:35:03 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-06-18 09:16:58 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -271,28 +271,35 @@ module Density
 !
       if(lhydro) then
         rho1=exp(-lnrho)
-        if(ivisc==0) then
-          if (headtt) print*,'viscous force: nu*del2v'
-          call del2v(f,iuu,del2u)
-          fvisc=nu*del2u
-          maxdiffus=amax1(maxdiffus,nu)
-        elseif(ivisc==1) then
-          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          murho1=(nu*rho0)*rho1  !(=mu/rho)
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          do i=1,3
-            fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
-          enddo
-          maxdiffus=amax1(maxdiffus,murho1)
-        elseif(ivisc==2) then
-          if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          call multmv_mn(sij,glnrho,sglnrho)
-          fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
-          maxdiffus=amax1(maxdiffus,nu)
-        else
-          if (headtt) print*,'no viscous force'
+
+        if (nu /= 0.) then
+          select case (ivisc)
+          case (0)
+            if (headtt) print*,'viscous force: nu*del2v'
+            call del2v(f,iuu,del2u)
+            fvisc=nu*del2u
+            maxdiffus=amax1(maxdiffus,nu)
+          case(1)
+            if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
+            murho1=(nu*rho0)*rho1  !(=mu/rho)
+            call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+            do i=1,3
+              fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
+            enddo
+            maxdiffus=amax1(maxdiffus,murho1)
+          case(2)
+            if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
+            call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+            call multmv_mn(sij,glnrho,sglnrho)
+            fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
+            maxdiffus=amax1(maxdiffus,nu)
+          case default
+            if (headtt) print*,'no viscous force'
+          endselect
+        else ! (nu=0)
+          if (headtt) print*,'no viscous force: (nu=0)'
         endif
+
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
       endif
 !
