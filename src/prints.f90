@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.52 2003-11-22 13:28:15 brandenb Exp $
+! $Id: prints.f90,v 1.53 2003-11-23 16:15:05 brandenb Exp $
 
 module Print
 
@@ -261,23 +261,16 @@ module Print
       character (len=4) :: ch
       character (len=80) :: fname
       character (len=1024) :: labels
- !
+!
+!  write result; normalization is already done in phiaverages_rz
+!
       if(lroot.and.nnamerz>0) then
         call safe_character_assign(fname, &
                                    trim(datadir)//'/averages/PHIAVG'//trim(ch))
         open(1,FILE=fname,FORM='unformatted')
         write(1) nrcyl,n2-n1+1,nprocz,nnamerz ! sizes (just in case) 
         write(1) t,rcyl,z(n1:n2),drcyl,dz
-!
-!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1:1)
-!
-!  ?AB: shouldn't we have a separate nnamerz-loop and normalize first?
-!  write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
-!
-        do i=2,nnamerz
-          fnamerz(:,1:,:,i)=fnamerz(:,1:,:,i)/spread(fnamerz(:,0,:,1),2,nz)
-        enddo
-        write(1) fnamerz(:,1:,:,1:nnamerz)
+        write(1) fnamerz(:,1:nz,:,1:nnamerz)
 !
 !  write labels at the end of file
 !

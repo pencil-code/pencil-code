@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.165 2003-11-23 11:08:40 brandenb Exp $
+! $Id: equ.f90,v 1.166 2003-11-23 16:15:05 brandenb Exp $
 
 module Equ
 
@@ -174,13 +174,20 @@ module Equ
       use Cdata
       use Sub
 !
+      integer :: i
       real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fsumrz
 !
 !  communicate over all processors
 !  the result is only present on the root processor
+!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1:1)
 !
       if(nnamerz>0) then
         call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*(nz+1)*nprocz)
+        if(lroot) then
+          do i=1,nnamerz
+            fnamerz(:,1:nz,:,i)=fsumrz(:,1:nz,:,i)/spread(fsumrz(:,0,:,i),2,nz)
+          enddo
+        endif
       endif
 !
     endsubroutine phiaverages_rz
@@ -224,7 +231,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.165 2003-11-23 11:08:40 brandenb Exp $")
+           "$Id: equ.f90,v 1.166 2003-11-23 16:15:05 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
