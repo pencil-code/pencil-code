@@ -93,8 +93,9 @@ pfile=datatopdir+'/'+'param.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param.nml..'
-  spawn, '../../../bin/nl2idl tmp/param.nml > tmp/param.pro'
-  @tmp/param.pro
+  spawn, '../../../bin/nl2idl -f param tmp/param.nml > tmp/param.pro'
+  resolve_routine, 'param', /IS_FUNCTION, /COMPILE_FULL_FILE
+  par=param()
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
   ;

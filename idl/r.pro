@@ -1,11 +1,11 @@
-; $Id: r.pro,v 1.19 2002-06-14 17:21:17 dobler Exp $
+; $Id: r.pro,v 1.20 2002-06-17 12:09:46 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
 ;;;;;;;;;;;;;;;
 
 ;;; Read the data produced on one processor
-;;; Assumes you have run `start.pro' once before.
+;;; You should have run `start.pro' once before.
 
 ;
 ;  read data
@@ -28,16 +28,17 @@ if (iaa ne 0)    then aa = fltarr(mx,my,mz,3)*one
 pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Reading param2.nml..'
-  spawn, '../../../bin/nl2idl tmp/param2.nml > tmp/param2.pro'
-;  @tmp/param2.pro
-; cs0=par.cs0 & nu=par.nu
+  print, 'Generating and reading param2.nml..'
+  spawn, '../../../bin/nl2idl -f param2 tmp/param2.nml > tmp/param2.pro'
+  resolve_routine, 'param2', /IS_FUNCTION, /COMPILE_FULL_FILE
+  par2=param2()
+  cs0=par2.cs0 & nu=par2.nu
 ;  cs0=1. & nu=0.
-; hcond0=par.hcond0 & hcond1=par.hcond1
-; hcond2=par.hcond2 & whcond=par.whcond
-; cheat=par.cheat & wheat=par.wheat
-; cool=par.cool & wcool=par.wcool
-; Fheat=par.Fheat
+  hcond0=par2.hcond0 & hcond1=par2.hcond1
+  hcond2=par2.hcond2 & whcond=par2.whcond
+  cheat=par2.cheat & wheat=par2.wheat
+  cool=par2.cool & wcool=par2.wcool
+  Fheat=par2.Fheat
 endif else begin
   print, 'Warning: cannot find file ', pfile
 endelse
