@@ -31,7 +31,7 @@ endif
 
 set pwd = `pwd`
 set targetdir = $pwd/data
-set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
+set nodelist = (`echo $NODELIST | sed 's/:/ /g'`) # unpack NODELIST
 
 if ($debug) then
   echo "SCRATCH_DIR = <$SCRATCH_DIR>"
