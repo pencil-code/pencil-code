@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.16 2003-11-02 05:13:31 brandenb Exp $
+;  $Id: thermodynamics.pro,v 1.17 2004-02-17 10:33:04 ajohan Exp $
 
 if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
@@ -18,7 +18,8 @@ endif else begin
     yH0=par.yH0
     yyH=reform(spread(spread(spread(yH0,0,nx),1,ny),2,nz))
     lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
-    TTT=reform(exp(TT(l1:l2,m1:m2,n1:n2)))
+    TT=exp(lnTT)
+    TTT=reform(TT(l1:l2,m1:m2,n1:n2))
     cs2=(5./3.)*(1.+yH0+xHe)*ss_ion*TTT
     cp1tilde=(2./5.)/(1.+yH0+xHe)/ss_ion
     ee=1.5*(1.+yH0+xHe)*ss_ion*TTT+yH0*ss_ion*TT_ion
