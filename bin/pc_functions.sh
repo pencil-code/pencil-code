@@ -194,6 +194,30 @@ pencil_code_run()
   date
 }
 
+queue_submit()
+{
+  # Submit a pencil-code run to the queue system
+  # This function should be over ridden in pc_config.sh
+  
+  echo "------------------------------------------------------------------"  
+  echo " ERROR: NO QUEUE SUBMISSION DEFINED           "  
+  echo "                                              "  
+  echo " You have not defined how to submit to the queue on this machine. "
+  echo " To do so add a definition of the queue_submit shell function     "
+  echo " to the appropriate machine dependent section of pc_config.sh.    "
+  echo "                                              "  
+  echo " eg.                                          "  
+  echo "  queue_submit()                              "  
+  echo "  {                                           "  
+  echo "    qsub -pe mpi \$ncpus \$1                  "  
+  echo "  }                                           "  
+  echo "                                              "  
+  echo "  You may use and variables like \$ncpus defined by running the    "
+  echo "  pc_config.sh script. \$1 will contain the name of the executable "  
+  echo "  script suggested for submission. $2, ..., etc. will contain any  "
+  echo "  other parameters passed on the pc_qsub command line.             "
+  echo "-------------------------------------------------------------------"  
+}
 
 check_RERUN()
 {

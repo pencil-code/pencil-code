@@ -1,0 +1,37 @@
+#!/bin/sh
+# Handle queue submission transparently across different machines
+
+source pc_config.sh
+
+# Run by default
+jobscript=pc_run
+
+# Check for parameters to pc_qsub
+found=yes
+while [ "$found" == "yes" ]
+do
+  if [ "$1" == "-s" ]; then
+    jobscript=pc_start
+    shift
+  elif [ "$1" == "-sr" ]; then
+    jobscript=pc_start_run
+    shift
+  elif [ "$1" == "-r" ]; then
+    jobscript=pc_run
+    shift
+  elif [ "$1" == "-help" ]; then
+    echo "Some help you are."
+    exit 1 
+  else
+    found=no
+  fi
+done 
+
+# Make a meaningfully named link point to the job script
+# use the last directory name in the path
+jobname=${CWD/*\//}
+ln -sf $jobscript $jobname
+
+echo queue_submit $jobname $@
+
+

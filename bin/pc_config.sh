@@ -3,7 +3,7 @@
 # Name:   pc_config
 # Author: Antony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   05-Apr-2004
-# $Id: pc_config.sh,v 1.1 2004-04-05 18:37:14 mee Exp $
+# $Id: pc_config.sh,v 1.2 2004-04-06 16:03:11 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -86,6 +86,10 @@ elif ishost "kis.uni-freiburg.de" ; then
 
 elif ishost "giga[0-9][0-9].ncl.ac.uk" ; then
   echo "Newcastle e-Science Cluster"
+  queue_submit() # Override queue submission shell function
+  { 
+    qsub -pe mpi2 $ncpus $1 
+  }
   if [ -n "$PE" ]; then
     echo "SGE job"
     local_disc=yes
