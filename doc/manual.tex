@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.98 2002-09-19 07:04:47 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.99 2002-09-20 07:06:25 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -291,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.98 $ $}
+\date{\today,~ $ $Revision: 1.99 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.98 $ $}
+  \emph{\today,~ $ $Revision: 1.99 $ $}
 
   \vspace{\stretch{3}}
 
@@ -534,25 +534,31 @@ environment, please let us know.
 
 \section{Obtaining the Code}
 
-There are two ways to obtain and install the code: If you want to use a
-stable release, you can download it as a tarball and unpack it.
-If you prefer to use the latest experimental version,
-you can access it via anonymous CVS access.
+We refrain from making any `stable releases' available at this point.
+We are still improving the code which enhances functionality.
+A set of test problems (listed in \file{\$PENCIL_HOME/bin/auto-test})
+are routinely tested. This set of test problems includes those in
+\file{\$PENCIL_HOME/samples}.
+
+%There are two ways to obtain and install the code: If you want to use a
+%stable release, you can download it as a tarball and unpack it.
+%If you prefer to use the latest experimental version,
+%you can access it via anonymous CVS access.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Obtaining and unpacking the tarball}
+%\subsection{Obtaining and unpacking the tarball}
 
-\begin{enumerate}
-\item Download the tarball from
-  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code.tgz}
-\item Put it into a convenient directory and unpack it:
-  \begin{alltt}
-  \prompt{unix> } mv pencil-code.tgz somewhere/; cd somewhere
-  \prompt{unix> } gunzip pencil-code.tgz
-  \prompt{unix> } tar xf pencil-code.tar \
-  \end{alltt}
-\end{enumerate}
+%\begin{enumerate}
+%\item Download the tarball from
+%  \path{http://www.nordita.dk/data/brandenb/pencil-code/download/pencil-code.tgz}
+%\item Put it into a convenient directory and unpack it:
+%  \begin{alltt}
+%  \prompt{unix> } mv pencil-code.tgz somewhere/; cd somewhere
+%  \prompt{unix> } gunzip pencil-code.tgz
+%  \prompt{unix> } tar xf pencil-code.tar \
+%  \end{alltt}
+%\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
@@ -570,16 +576,23 @@ you can access it via anonymous CVS access.
 going to the web address \url{http://www.nordita.dk/data/brandenb/pencil-code}.
 Alternatively, just email \email{Wolfgang.Dobler@kis.uni-freiburg.de}
 or \email{Axel.Brandenburg@nordita.dk}.
+Priviledged users with write access to the original repository should
+continue to use it.\footnote{In that case you'd say
+\cmd{setenv CVSROOT :pserver:\$USER@norserv.nordita.dk:/home/brandenb/CVS},
+assuming that \cmd{\$USER} is the userid registered in the original
+repository. The content of this repository is copied automatically every
+hour to the anonymous cvs repository.}
+%XX
 
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
   \begin{alltt}
   \prompt{csh> } setenv CVSROOT \bs
-          :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
+          :pserver:anonymous@norserv.nordita.dk:/home/cvs/CVS \
   \end{alltt}
   or (if you are running Bourne shell or bash)
   \begin{alltt}
-  \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS
+  \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/cvs/CVS
   \prompt{sh> } export CVSROOT \
   \end{alltt}
 
@@ -591,7 +604,8 @@ or \email{Axel.Brandenburg@nordita.dk}.
 (you only need to do this once; your CVS password is saved in the file
 \file{.cvspass} in your home directory)
 
-\item Go to wherever you want the code:
+\item Go to wherever you want the code (otherwise the code will land
+in your home directory, which will also be ok):
   \begin{alltt}
   \prompt{unix> } cd \file{somewhere} \
   \end{alltt}
@@ -3470,7 +3484,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.98 2002-09-19 07:04:47 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.99 2002-09-20 07:06:25 brandenb Exp $ $}
 
 
 \end{document}
