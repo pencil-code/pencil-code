@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.127 2003-08-28 15:06:05 mee Exp $
+! $Id: magnetic.f90,v 1.128 2003-08-28 15:23:15 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.127 2003-08-28 15:06:05 mee Exp $")
+           "$Id: magnetic.f90,v 1.128 2003-08-28 15:23:15 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,7 +132,6 @@ module Magnetic
       use Gravity, only: gravz
       use Sub
       use Initcond
-      use Slices
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
@@ -228,6 +227,7 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use Slices
       use IO, only: output_pencil
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
