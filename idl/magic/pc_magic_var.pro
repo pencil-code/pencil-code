@@ -33,7 +33,7 @@ pro pc_magic_var,variables,tags,param=param
       endif else begin
         variables[iv]='pc_eoscalc(lnrho,ss,/tt,/lnrho_ss)'
       endelse
-      tags[iv]='cs2'
+      tags[iv]='tt'
     endif else if variables[iv] eq 'pp' then begin
       if (param.lionization and not param.lionization_fixed) then begin
         variables[iv]='pc_eoscalc(lnrho,lnTT,/pp,/lnrho_lnTT)'
