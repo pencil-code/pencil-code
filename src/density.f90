@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.10 2002-06-13 15:55:49 brandenb Exp $
+! $Id: density.f90,v 1.11 2002-06-15 19:29:55 dobler Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-06-13 15:55:49 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-06-15 19:29:55 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -76,12 +76,11 @@ module Density
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,prof
-!AB   real, dimension (mz) :: stp
-!AB   real, dimension (nx,1) :: rmn
-!AB   real :: lnrho0
-!AB   real :: beta1,lnrhoint,cs2int
-!AB   integer :: i
+      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,p,pot,prof
+      real, dimension (mz) :: stp
+      real, dimension (nx,1) :: rmn
+      real :: lnrho0
+      real :: beta1,lnrhoint,cs2int
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
@@ -112,16 +111,98 @@ module Density
         if (lroot) print*,'density jump; widthlnrho=',widthlnrho
         prof=.5*(1.+tanh(zz/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+alog(rho_left/rho_right)*prof
-!
-!  sound wave (should be consistent with hydro module)
-!
+
+      case (3)
+        !
+        !  hydrostatic density stratification for isentropic atmosphere
+        !
+        if (lgravz) then
+          if (lroot) print*,'vertical density stratification'
+          !        f(:,:,:,ilnrho)=-zz
+          ! isentropic case:
+          !        zmax = -cs20/gamma1/gravz
+          !        print*, 'zmax = ', zmax
+          !        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
+          ! linear entropy gradient;
+          f(:,:,:,ilnrho) = -grads0*zz &
+                            + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
+                                                  *(1-exp(-grads0*zz)) )
+          if (notanumber(f(:,:,:,ilnrho))) then
+            STOP "INIT_HYDRO: Imaginary density values"
+          endif
+        endif
+        !
+        if (lgravr) then
+          if (lroot) print*,'radial density stratification (assumes s=const)'
+! nok     call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+          call potential(x,y(m),z(n),rmn,pot) ! gravity potential
+!          call potential(rr,pot) ! gravity potential
+          call output(trim(directory)//'/pot.dat',pot,1)
+
+          ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
+          if (gamma /= 1) then
+            lnrho0 = alog(cs20/gamma)/gamma1
+            f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
+          else                  ! isothermal
+            f(:,:,:,ilnrho) = alog(rho0)
+          endif
+        endif
+
+      case (4)
+        !
+        !  piecewise polytropic for solar convection stuff
+        !
+        if (lroot) print*,'piecewise polytropic vertical stratification'
+        ! top region
+        if (isothtop /= 0) then
+          beta1 = 0.
+          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-ztop)
+          ! unstable region
+          lnrhoint =  gamma*gravz/cs20*(z2-ztop)
+        else
+          beta1 = gamma*gravz/(mpoly2+1)
+          tmp = 1 + beta1*(zz-ztop)/cs20
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
+          f(:,:,:,ilnrho) = mpoly2*alog(tmp)
+          ! unstable region
+          lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
+        endif
+        ! (lnrho at layer interface z=z2)
+        cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
+        ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
+        beta1 = gamma*gravz/(mpoly0+1)
+        tmp = 1 + beta1*(zz-z2)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly0*alog(tmp)
+        ! smoothly blend the solutions for the two regions:
+        stp = step(z,z2,whcond)
+        p = spread(spread(stp,1,mx),2,my)
+        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
+        ! bottom (stable) region
+        lnrhoint = lnrhoint + mpoly0*alog(1 + beta1*(z1-z2)/cs2int)
+        cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
+        beta1 = gamma*gravz/(mpoly1+1)
+        tmp = 1 + beta1*(zz-z1)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly1*alog(tmp)
+        ! smoothly blend the solutions for the two regions:
+        stp = step(z,z1,whcond)
+        p = spread(spread(stp,1,mx),2,my)
+        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
+        ! Fix origin of log density
+        f(:,:,:,ilnrho) = f(:,:,:,ilnrho) + alog(rho0) 
+
       case(11)
+        !
+        !  sound wave (should be consistent with hydro module)
+        !
         if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=ampllnrho*sin(xx)
-!
-!  shock tube test (should be consistent with hydro module)
-!  
+
       case(13)
+        !
+        !  shock tube test (should be consistent with hydro module)
+        !  
         if (lroot) print*,'polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+(alog(rho_right)-alog(rho_left))*prof

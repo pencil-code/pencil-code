@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.25 2002-06-13 15:55:49 brandenb Exp $
+! $Id: hydro.f90,v 1.26 2002-06-15 19:29:55 dobler Exp $
 
 module Hydro
 
@@ -63,8 +63,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.25 $", &
-           "$Date: 2002-06-13 15:55:49 $")
+           "$Revision: 1.26 $", &
+           "$Date: 2002-06-15 19:29:55 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -81,16 +81,13 @@ module Hydro
 !  7-nov-2001/wolf: coded
 !
       use Cdata
+      use Mpicomm, only: stop_it
       use Sub
       use Global
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot,prof
-      real, dimension (mz) :: stp
-      real, dimension (nx,1) :: rmn
-      real :: lnrho0
-      real :: beta1,lnrhoint,cs2int
+      real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       integer :: i
 !
       cs20=cs0**2
@@ -99,73 +96,58 @@ module Hydro
 !  If init does't match, f=0 is assumed (default).
 !
       select case(inituu)
+
       case(0)
         if (lroot) print*,'zero velocity'
         f(:,:,:,iux)=0.
+
       case(1)               ! random ux (Gaussian distribution)
         if (lroot) print*,'Gaussian-distributed ux'
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
         f(:,:,:,iux)=ampluu*tmp
-!
-!  sound wave (should be consistent with density module)
-!
+
       case(11)
+        !
+        !  sound wave (should be consistent with density module)
+        !
         print*,'x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(xx)
-!
-!  shock tube test (should be consistent with density module)
-!
+
       case(13)
+        !
+        !  shock tube test (should be consistent with density module)
+        !
         print*,'polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthuu))
         f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
+
+      case default
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*, 'There is no such such value for inituu:', inituu
+        call stop_it("")
+
       endselect
+
 !
 !  init corresponds to different initializations of lnrho (called from start).
 !  If init does't match, f=0 is assumed (default).
 !
       select case(init)
+
+      case (-1)
+        if (lroot) print*,'Doing nothing with init -- do we need it at all?'
+
       case(0)               ! random ux (Gaussian distribution)
         if (lroot) print*,'Gaussian-distributed ux'
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
         f(:,:,:,iux)=ampluu*tmp
-      case(1)               ! density stratification
-        if (lgravz) then
-          if (lroot) print*,'vertical density stratification'
-!        f(:,:,:,ilnrho)=-zz
-! isentropic case:
-!        zmax = -cs20/gamma1/gravz
-!        print*, 'zmax = ', zmax
-!        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
-! linear entropy gradient;
-          f(:,:,:,ilnrho) = -grads0*zz &
-                            + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
-                                                  *(1-exp(-grads0*zz)) )
-          if (notanumber(f(:,:,:,ilnrho))) then
-            STOP "INIT_HYDRO: Imaginary density values"
-          endif
-        endif
-        !
-        if (lgravr) then
-          if (lroot) print*,'radial density stratification (assumes s=const)'
-! nok     call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
-          call potential(x,y(m),z(n),rmn,pot) ! gravity potential
-!          call potential(rr,pot) ! gravity potential
-          call output(trim(directory)//'/pot.dat',pot,1)
 
-          ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
-          if (gamma /= 1) then
-            lnrho0 = alog(cs20/gamma)/gamma1
-            f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
-          else                  ! isothermal
-            f(:,:,:,ilnrho) = alog(rho0)
-          endif
-        endif
-        !
       case(2)               ! oblique sound wave
         if (lroot) print*,'oblique sound wave'
         tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
@@ -173,52 +155,20 @@ module Hydro
         f(:,:,:,iux)=ampluu*cos(tmp)
         f(:,:,:,iuy)=ampluu*cos(tmp)*2.
         f(:,:,:,iuz)=ampluu*cos(tmp)*(-1)
+
       case(3)               ! uu = (sin 2x, sin 3y , cos z)
         if (lroot) print*,'uu harmonic (what is this good for?)'
         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
                      spread(spread(sin(3*y),1,mx),3,mz)* &
                      spread(spread(cos(1*z),1,mx),2,my)
-      case(4)               ! piecewise polytropic
-        ! top region
-        if (isothtop /= 0) then
-          beta1 = 0.
-          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-ztop)
-          ! unstable region
-          lnrhoint =  gamma*gravz/cs20*(z2-ztop)
-        else
-          beta1 = gamma*gravz/(mpoly2+1)
-          tmp = 1 + beta1*(zz-ztop)/cs20
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          f(:,:,:,ilnrho) = mpoly2*alog(tmp)
-          ! unstable region
-          lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
-        endif
-        ! (lnrho at layer interface z=z2)
-        cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
-        ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-        beta1 = gamma*gravz/(mpoly0+1)
-        tmp = 1 + beta1*(zz-z2)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly0*alog(tmp)
-        ! smoothly blend the solutions for the two regions:
-        stp = step(z,z2,whcond)
-        p = spread(spread(stp,1,mx),2,my)
-        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
-        ! bottom (stable) region
-        lnrhoint = lnrhoint + mpoly0*alog(1 + beta1*(z1-z2)/cs2int)
-        cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
-        beta1 = gamma*gravz/(mpoly1+1)
-        tmp = 1 + beta1*(zz-z1)/cs2int
-        tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly1*alog(tmp)
-        ! smoothly blend the solutions for the two regions:
-        stp = step(z,z1,whcond)
-        p = spread(spread(stp,1,mx),2,my)
-        f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho)  + (1-p)*tmp
-        ! Fix origin of log density
-        f(:,:,:,ilnrho) = f(:,:,:,ilnrho) + alog(rho0)
+
       case default
-!       if (lroot) print*,'note: the init parameter is no longer used'
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*,'There is no such value for init:', init
+        call stop_it("")
+
       endselect
 !
       if (urand /= 0) then
