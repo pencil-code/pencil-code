@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.95 2002-09-11 13:18:28 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.96 2002-09-11 16:52:25 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -291,7 +291,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.95 $ $}
+\date{\today,~ $ $Revision: 1.96 $ $}
 
 % ====================================================================== %
 
@@ -323,7 +323,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.95 $ $}
+  \emph{\today,~ $ $Revision: 1.96 $ $}
 
   \vspace{\stretch{3}}
 
@@ -560,7 +560,8 @@ you can access it via anonymous CVS access.
 
 \begin{enumerate}
 
-\item Get a \name{CVS} client from \url{http://www.cvshome.org/} and
+\item Many machines have already \name{CVS} (just say \cmd{which cvs}).
+  If not, get a \name{CVS} client from \url{http://www.cvshome.org/} and
   install it (on any machine where you want to run the code).
   Alternatively, just copy the executable from a binary compatible
   machine.
@@ -2185,7 +2186,7 @@ diffusivities, use the run parameter \var{dt} (see p.~\pageref{dt-run}).
 \label{boundconds}
 
 Boundary conditions are implemented through three layers of
-\name{ghost points} on either boundary, which is a quite natural choice
+\name{ghost points} on either boundary, which is quite a natural choice
 for an MPI code that uses ghost zones for representing values located on
 the neighboring processors anyway.
 The desired type of boundary condition is set through the parameters
@@ -2358,6 +2359,7 @@ try to run a problem with \code{nygrid=65} or \code{nygrid=94}, the code
 will stop with an inconsistency message.
 
 \subsubsection{Bandwidth-limited clusters (e.g.\ Beowulf machines)}
+\label{Bandwidth}
 
 On big Beowulf machines, a group of nodes is connected with a switch
 of modest speed, and all these groups are connected via a $n$ times
@@ -2390,12 +2392,12 @@ CPUs, you need to do the following (in that directory):
 
 \item Edit \file[cparam.local]{src/cparam.local} and replace
   \begin{alltt}
-  integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
+  integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
   integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid \
   \end{alltt}
   by
   \begin{alltt}
-  integer, parameter :: ncpus=16,nprocz=4,nprocy=ncpus/nprocz,nprocx=1
+  integer, parameter :: ncpus=16,nprocy=4,nprocz=ncpus/nprocy,nprocx=1
   integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid \
   \end{alltt}
   The first line specifies a $4{\times}4$ layout of the data in the $y$
@@ -2573,6 +2575,19 @@ times.
 %\section{Tuning the code for optimal performance}
 %AB: what is described below is really a fake; not tuning.
 \section{Performance issues}
+
+\subsection{Processor layout when using MPI}
+
+It often pays (and is easy) to adapt to the particular hardware.
+In \S\ref{Bandwidth} we mentioned to extreme sensitivity to
+the precise layout of processors. If you have control over
+the design of the machine, you may want to chose a torus-like
+arrangement that matches best with your mesh. In general you
+won't be alone on the machine, so you have to find a good
+compromise. A two-layered switch arrangement is probably a
+reasonable compromise, in which case it is important to minimize
+the contact surface between the nodes on one switch and the
+outside nodes; see \S\ref{Bandwidth}.
 
 \subsection{Using a simplified viscosity operator}
 
@@ -3440,7 +3455,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.95 2002-09-11 13:18:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.96 2002-09-11 16:52:25 brandenb Exp $ $}
 
 
 \end{document}
