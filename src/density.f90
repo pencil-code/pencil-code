@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.142 2003-12-29 17:11:22 ajohan Exp $
+! $Id: density.f90,v 1.143 2004-01-12 13:16:36 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.142 2003-12-29 17:11:22 ajohan Exp $")
+           "$Id: density.f90,v 1.143 2004-01-12 13:16:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -276,18 +276,20 @@ module Density
             call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
             lnrho_ext = lnrho0 + alog(1 - gamma1*(pot_ext-pot0)/cs20) / gamma1
             cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
-            ! Add temperature and entropy jump (such that pressure
-            ! remains continuous) if cs2cool was specified in start.in:
+            ! Adjust for given cs2cool (if given) or set cs2cool (otherwise)
             if (cs2cool/=0) then
               lnrho_ext = lnrho_ext - alog(cs2cool/cs2_ext)
-              cs2_ext = cs2cool
+            else
+              cs2cool   = cs2_ext
             endif
+            ! Add temperature and entropy jump (such that pressure
+            ! remains continuous) if cs2cool was specified in start.in:
             ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic for r<r_ext
             where (pot <= pot_ext) ! isentropic for r<r_ext
               f(:,:,:,ilnrho) = lnrho0 &
                                 + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
             elsewhere           ! isothermal for r>r_ext
-              f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2_ext
+              f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2cool
             endwhere
           else                  ! gamma=1 --> simply isothermal (I guess [wd])
             f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20

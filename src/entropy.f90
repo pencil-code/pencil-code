@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.258 2004-01-05 11:58:55 dobler Exp $
+! $Id: entropy.f90,v 1.259 2004-01-12 13:16:36 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.258 2004-01-05 11:58:55 dobler Exp $")
+           "$Id: entropy.f90,v 1.259 2004-01-12 13:16:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,6 +329,10 @@ module Entropy
           !
           !  Only makes sense if both initlnrho=initss='isentropic-star'
           !
+          if (.not. ldensity) &
+               call stop_it('isentropic-star requires density.f90')
+          if (initlnrho /= initss) &
+               call stop_it('isentropic star requires initlnrho=initss')
           if (lgravr) then
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
@@ -346,18 +350,17 @@ module Entropy
               !     reasonable.
               call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
               cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
-              ss_ext = 0.
-              ! Add temperature and entropy jump (such that pressure
-              ! remains continuous) if cs2cool was specified in start.in:
-              if (cs2cool/=0) then
-                ss_ext = ss_ext + alog(cs2cool/cs2_ext)
-                cs2_ext = cs2cool
-              endif
+              !
+              ! Make sure init_lnrho (or start.in) has already set cs2cool:
+              !
+              if (cs2cool == 0) &
+                   call stop_it("Inconsistency: cs2cool can't be 0")
+              ss_ext = 0. + alog(cs2cool/cs2_ext)
               ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
               where (pot <= pot_ext) ! isentropic for r<r_ext
                 f(:,:,:,iss) = 0.
               elsewhere           ! isothermal for r>r_ext
-                f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2_ext
+                f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2cool
               endwhere
             else                  ! gamma=1 --> simply isothermal (I guess [wd])
               ! [NB: Never tested this..]
