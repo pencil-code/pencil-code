@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.28 2003-11-13 14:08:57 theine Exp $
+! $Id: slices.f90,v 1.29 2003-11-14 11:23:56 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -76,22 +76,22 @@ module Slices
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      character (len=*) :: path
+      character(len=*) :: path
+      character(len=30), dimension(:), allocatable :: slice
       integer :: j
+!
+!  Only use the relevant part of cnamev
+!
+      allocate (slice(nnamev))
+      slice=cnamev(1:nnamev)
 !
 !  Velocity field
 !
-      if (lhydro) then
-        do j=1,3
-          uu_yz(:,:,j)=f(ix,m1:m2,n1:n2,j+iuu-1)
-          uu_xz(:,:,j)=f(l1:l2,iy,n1:n2,j+iuu-1)
-          uu_xy(:,:,j)=f(l1:l2,m1:m2,iz,j+iuu-1)
-          uu_xy2(:,:,j)=f(l1:l2,m1:m2,iz2,j+iuu-1)
-        enddo
-        call wslice(path//'divu.yz',divu_yz,x(ix),ny,nz)
-        call wslice(path//'divu.xz',divu_xz,y(iy),nx,nz)
-        call wslice(path//'divu.xy',divu_xy,z(iz),nx,ny)
-        call wslice(path//'divu.Xy',divu_xy2,z(iz2),nx,ny)
+      if (any(slice=='uu')) then
+        uu_yz=f(ix,m1:m2,n1:n2,iux:iuz)
+        uu_xz=f(l1:l2,iy,n1:n2,iux:iuz)
+        uu_xy=f(l1:l2,m1:m2,iz,iux:iuz)
+        uu_xy2=f(l1:l2,m1:m2,iz2,iux:iuz)
         call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix),ny,nz)
         call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix),ny,nz)
         call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix),ny,nz)
@@ -104,7 +104,9 @@ module Slices
         call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2),nx,ny)
-
+      endif
+!
+      if (any(slice=='oo')) then
         call wslice(path//'ox.yz',oo_yz(:,:,1),x(ix),ny,nz)
         call wslice(path//'oy.yz',oo_yz(:,:,2),x(ix),ny,nz)
         call wslice(path//'oz.yz',oo_yz(:,:,3),x(ix),ny,nz)
@@ -119,15 +121,20 @@ module Slices
         call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
+      if (any(slice=='divu')) then
+        call wslice(path//'divu.yz',divu_yz,x(ix),ny,nz)
+        call wslice(path//'divu.xz',divu_xz,y(iy),nx,nz)
+        call wslice(path//'divu.xy',divu_xy,z(iz),nx,ny)
+        call wslice(path//'divu.Xy',divu_xy2,z(iz2),nx,ny)
+      endif
+!
 !  Dust velocity
 !
-      if (ldustvelocity) then
-        do j=1,3
-          uud_yz(:,:,j)=f(ix,m1:m2,n1:n2,j+iuud-1)
-          uud_xz(:,:,j)=f(l1:l2,iy,n1:n2,j+iuud-1)
-          uud_xy(:,:,j)=f(l1:l2,m1:m2,iz,j+iuud-1)
-          uud_xy2(:,:,j)=f(l1:l2,m1:m2,iz2,j+iuud-1)
-        enddo
+      if (any(slice=='uud')) then
+        uud_yz=f(ix,m1:m2,n1:n2,iudx:iudz)
+        uud_xz=f(l1:l2,iy,n1:n2,iudx:iudz)
+        uud_xy=f(l1:l2,m1:m2,iz,iudx:iudz)
+        uud_xy2=f(l1:l2,m1:m2,iz2,iudx:iudz)
         call wslice(path//'udx.yz',uud_yz(:,:,1),x(ix),ny,nz)
         call wslice(path//'udy.yz',uud_yz(:,:,2),x(ix),ny,nz)
         call wslice(path//'udz.yz',uud_yz(:,:,3),x(ix),ny,nz)
@@ -142,9 +149,9 @@ module Slices
         call wslice(path//'udz.Xy',uud_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
-!  logarithmic density
+!  Logarithmic density
 !
-      if (ldensity) then
+      if (any(slice=='lnrho')) then
         lnrho_yz=f(ix,m1:m2,n1:n2,ilnrho)
         lnrho_xz=f(l1:l2,iy,n1:n2,ilnrho)
         lnrho_xy=f(l1:l2,m1:m2,iz,ilnrho)
@@ -155,9 +162,9 @@ module Slices
         call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2),nx,ny)
       endif
 !
-!  logarithmic dust density
+!  Logarithmic dust density
 !
-      if (ldustdensity) then
+      if (any(slice=='lnrhod')) then
         lnrhod_yz=f(ix,m1:m2,n1:n2,ilnrhod)
         lnrhod_xz=f(l1:l2,iy,n1:n2,ilnrhod)
         lnrhod_xy=f(l1:l2,m1:m2,iz,ilnrhod)
@@ -170,7 +177,7 @@ module Slices
 !
 !  Entropy
 !
-      if (lentropy) then
+      if (any(slice=='ss')) then
         ss_yz=f(ix,m1:m2,n1:n2,iss)
         ss_xz=f(l1:l2,iy,n1:n2,iss)
         ss_xy=f(l1:l2,m1:m2,iz,iss)
@@ -183,7 +190,7 @@ module Slices
 !
 !  Shock viscosity
 !
-      if (lvisc_shock) then
+      if (any(slice=='shock')) then
         shock_yz=f(ix,m1:m2,n1:n2,ishock)
         shock_xz=f(l1:l2,iy,n1:n2,ishock)
         shock_xy=f(l1:l2,m1:m2,iz,ishock)
@@ -196,7 +203,7 @@ module Slices
 !
 !  Temperature
 !
-      if (lionization) then
+      if (any(slice=='lnTT')) then
         lnTT_yz=f(ix,m1:m2,n1:n2,ilnTT)
         lnTT_xz=f(l1:l2,iy,n1:n2,ilnTT)
         lnTT_xy=f(l1:l2,m1:m2,iz,ilnTT)
@@ -209,7 +216,7 @@ module Slices
 !
 !  Degree of ionization
 !
-      if (lionization) then
+      if (any(slice=='yH')) then
         yH_yz=f(ix,m1:m2,n1:n2,iyH)
         yH_xz=f(l1:l2,iy,n1:n2,iyH)
         yH_xy=f(l1:l2,m1:m2,iz,iyH)
@@ -220,9 +227,9 @@ module Slices
         call wslice(path//'yH.Xy',yH_xy2,z(iz2),nx,ny)
       endif
 !
-!  Heating rate and surface intensity
+!  Heating rate
 !
-      if (lradiation_ray) then
+      if (any(slice=='Qrad')) then
         Qrad_yz=f(ix,m1:m2,n1:n2,iQrad)
         Qrad_xz=f(l1:l2,iy,n1:n2,iQrad)
         Qrad_xy=f(l1:l2,m1:m2,iz,iQrad)
@@ -231,13 +238,17 @@ module Slices
         call wslice(path//'Qrad.xz',Qrad_xz,y(iy),nx,nz)
         call wslice(path//'Qrad.xy',Qrad_xy,z(iz),nx,ny)
         call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2),nx,ny)
+      endif
 !
+!  Surface intensity
+!
+      if (any(slice=='Isurf')) then
         call wslice(path//'Isurf.xy',Isurf_xy,z(iz2),nx,ny)
       endif
 !
 !  Magnetic field
 !
-      if (lmagnetic) then
+      if (any(slice=='bb')) then
         call wslice(path//'bx.yz',bb_yz(:,:,1),x(ix),ny,nz)
         call wslice(path//'by.yz',bb_yz(:,:,2),x(ix),ny,nz)
         call wslice(path//'bz.yz',bb_yz(:,:,3),x(ix),ny,nz)
@@ -250,12 +261,16 @@ module Slices
         call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2),nx,ny)
+      endif
 !
+      if (any(slice=='b2')) then
         call wslice(path//'b2.yz',b2_yz,x(ix),ny,nz)
         call wslice(path//'b2.xz',b2_xz,y(iy),nx,nz)
         call wslice(path//'b2.xy',b2_xy,z(iz),nx,ny)
         call wslice(path//'b2.Xy',b2_xy2,z(iz2),nx,ny)
+      endif
 !
+      if (any(slice=='aa')) then
         aa_yz=f(ix,m1:m2,n1:n2,iax:iaz)
         aa_xz=f(l1:l2,iy,n1:n2,iax:iaz)
         aa_xy=f(l1:l2,m1:m2,iz,iax:iaz)
@@ -276,7 +291,7 @@ module Slices
 !
 !  Passive scalar
 !
-      if (lpscalar) then
+      if (any(slice=='lncc')) then
         lncc_yz=f(ix,m1:m2,n1:n2,ilncc)
         lncc_xz=f(l1:l2,iy,n1:n2,ilncc)
         lncc_xy=f(l1:l2,m1:m2,iz,ilncc)
@@ -289,7 +304,7 @@ module Slices
 !
 !  Cosmic ray energy density
 !
-      if (lcosmicray) then
+      if (any(slice=='ecr')) then
         ecr_yz=f(ix,m1:m2,n1:n2,iecr)
         ecr_xz=f(l1:l2,iy,n1:n2,iecr)
         ecr_xy=f(l1:l2,m1:m2,iz,iecr)
@@ -299,6 +314,10 @@ module Slices
         call wslice(path//'ecr.xy',ecr_xy,z(iz),nx,ny)
         call wslice(path//'ecr.Xy',ecr_xy2,z(iz2),nx,ny)
       endif
+!
+!  Deallocate
+!
+      deallocate (slice)
 !
     endsubroutine wvid
 !***********************************************************************

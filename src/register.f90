@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.107 2003-10-24 13:17:31 dobler Exp $
+! $Id: register.f90,v 1.108 2003-11-14 11:23:56 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -261,7 +261,7 @@ module Register
       use Gravity,      only: rprint_gravity
       use Special,      only: rprint_special
 !
-      integer :: iname,inamez,inamexy,inamerz
+      integer :: iname,inamev,inamez,inamexy,inamerz
       logical :: lreset,exist
 !
 !  read in the list of variables to be printed
@@ -274,15 +274,29 @@ module Register
       if (lroot.and.ip<14) print*,'nname=',nname
       close(1)
 !
+!  read in the list of variables for video slices
+!
+      inquire(file='video.in',exist=exist)
+      if (exist) then
+        lwrite_slices=.true.
+        open(1,file='video.in')
+        do inamev=1,mnamev
+          read(1,*,end=98) cnamev(inamev)
+        enddo
+98      nnamev=inamev-1
+        close(1)
+      endif
+      if (lroot.and.ip<14) print*,'nnamev=',nnamev
+!
 !  read in the list of variables for xy-averages
 !
       inquire(FILE='xyaver.in',EXIST=exist)
       if (exist) then
         open(1,file='xyaver.in')
         do inamez=1,mnamez
-          read(1,*,end=98) cnamez(inamez)
+          read(1,*,end=97) cnamez(inamez)
         enddo
-98      nnamez=inamez-1
+97      nnamez=inamez-1
         close(1)
       endif
       if (lroot.and.ip<14) print*,'nnamez=',nnamez
@@ -293,9 +307,9 @@ module Register
       if (exist) then
         open(1,file='zaver.in')
         do inamexy=1,mnamexy
-          read(1,*,end=97) cnamexy(inamexy)
+          read(1,*,end=96) cnamexy(inamexy)
         enddo
-97      nnamexy=inamexy-1
+96      nnamexy=inamexy-1
         close(1)
       else
         lwrite_zaverages = .false. ! switch zaverages off
@@ -308,9 +322,9 @@ module Register
       if (exist) then
         open(1,file='phiaver.in')
         do inamerz=1,mnamerz
-          read(1,*,end=96) cnamerz(inamerz)
+          read(1,*,end=95) cnamerz(inamerz)
         enddo
-96      nnamerz=inamerz-1
+95      nnamerz=inamerz-1
         close(1)
       else
         lwrite_phiaverages = .false. ! switch phiaverages off

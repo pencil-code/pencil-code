@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.175 2003-11-09 07:58:53 brandenb Exp $
+! $Id: cdata.f90,v 1.176 2003-11-14 11:23:56 theine Exp $
 
 module Cdata
 
@@ -74,11 +74,11 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname=0,nnamez=0,nnamexy=0,nnamerz=0
+  integer :: nname=0,nnamev=0,nnamez=0,nnamexy=0,nnamerz=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
   integer :: ilabel_integrate=3,ilabel_surf=4
   integer :: nr_directions=1
-  integer, parameter :: mname=100,mnamez=20,mnamexy=6,mnamerz=6
+  integer, parameter :: mname=100,mnamev=100,mnamez=20,mnamexy=6,mnamerz=6
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
@@ -86,6 +86,7 @@ module Cdata
   real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
   character (LEN=30) :: cname(mname),cform(mname)
+  character (LEN=30) :: cnamev(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
   character (LEN=30) :: cnamez(mnamez),cformz(mnamez)
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
@@ -99,7 +100,7 @@ module Cdata
 
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
-  logical :: lspecial=.false.
+  logical :: lspecial=.false., lwrite_slices=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid
   logical :: lwrite_ic=.false.,lnowrite=.false.,lserial_io=.false.

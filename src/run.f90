@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.162 2003-11-09 07:58:53 brandenb Exp $
+! $Id: run.f90,v 1.163 2003-11-14 11:23:56 theine Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.162 2003-11-09 07:58:53 brandenb Exp $")
+             "$Id: run.f90,v 1.163 2003-11-14 11:23:56 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -211,7 +211,7 @@
           !  If we want to write out video data, wvid sets lvid=.true.
           !  This allows pde to prepare some of the data
           !
-          call wvid_prepare()
+          if (lwrite_slices) call wvid_prepare()
           !
           !  time advance
           !
@@ -258,7 +258,7 @@
           !
           !  Write slices (for animation purposes)
           !
-          if(lvid) call wvid(f,trim(directory)//'/slice_')
+          if(lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
           !
           !  save snapshot every isnap steps in case the run gets interrupted
           !  the time needs also to be written
