@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: scp-proc-to-proc,v 1.1 2003-01-19 16:12:14 brandenb Exp $
+#$Id: scp-proc-to-proc,v 1.2 2003-03-18 22:21:01 brandenb Exp $
 #
 #  Example:
 #     scp-proc-to-proc grid.dat ../hydro256e
@@ -12,6 +12,6 @@
 
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)
-  echo "cp data/$proc/$1 $2/data/$proc"
+  echo "scp data/$proc/$1 $2/data/$proc"
   scp data/$proc/$1 $2/data/$proc
 end
