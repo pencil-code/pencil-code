@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.21 2003-06-27 21:47:11 theine Exp $
+! $Id: radiation_exp.f90,v 1.22 2003-06-28 13:09:56 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.21 2003-06-27 21:47:11 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.22 2003-06-28 13:09:56 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -147,7 +147,6 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx) :: lnrho
 !
 !  test
 !
@@ -160,18 +159,17 @@ module Radiation
 !
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !
-      do n=n1,n2
-      do m=m1,m2
-         Srad(l1:l2,m,n)=sourcefunction(f)
+      do n=n0,n3
+      do m=m0,m3
+         call sourcefunction(f,Srad)
 !
 !  opacity: if lkappa_es then take electron scattering opacity only;
 !  otherwise use Hminus opacity (but may need to add kappa_es as well).
 !
          if (lkappa_es) then
-            lnrho=f(l1:l2,m,n,ilnrho)
-            kaprho(l1:l2,m,n)=kappa_es*exp(lnrho)
+            kaprho(l0:l3,m,n)=kappa_es*exp(f(l0:l3,m,n,ilnrho))
          else
-            kaprho(l1:l2,m,n)=opacity(f)
+            call opacity(f,kaprho)
          endif
       enddo
       enddo
@@ -256,7 +254,7 @@ module Radiation
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
-      real :: dlength,tau,dtau,emdtau
+      real :: dlength,dtau,emdtau
       integer :: l
       logical, save :: first=.true.
 !
@@ -344,6 +342,7 @@ module Radiation
         do i=1,nghost
           Irad_xy(:,:,i,lrad,mrad,nrad)=1.-exp(dz*i)
         enddo
+        Irad_xy(:,:,:,lrad,mrad,nrad)=0.
       enddo
       enddo
       enddo
@@ -399,11 +398,11 @@ module Radiation
       use Cdata
 !
       integer :: lrad,mrad,nrad
-      real, dimension(mx,my,mz) :: Irad
+      real, dimension(mx,my,mz) :: tau,Irad
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
-      real :: dlength,tau
+      real :: dlength,dtau
       integer :: l
       logical, save :: first=.true.
 !
@@ -440,8 +439,11 @@ module Radiation
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
-          tau=tau+.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
-          Irad(l,m,n)=Irad(lstart-lrad,mstart-mrad,nstart-nrad)*exp(-tau)
+          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
+          tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau
+          Irad(l,m,n)=Irad(l-(l-lstart+1)*lrad, &
+                           m-(m-mstart+1)*mrad, &
+                           n-(n-nstart+1)*nrad)*exp(-tau(l,m,n))
       enddo
       enddo
       enddo

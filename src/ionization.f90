@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.55 2003-06-26 11:03:33 theine Exp $
+! $Id: ionization.f90,v 1.56 2003-06-28 13:09:56 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -21,6 +21,7 @@ module Ionization
   real :: m_H,m_He,mu,twothirds
   real :: TT_ion,TT_ion_,chiH,chiH_,ss_ion,kappa0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
+  integer :: l0,l3,m0,m3,n0,n3
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
@@ -65,7 +66,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.55 2003-06-26 11:03:33 theine Exp $")
+           "$Id: ionization.f90,v 1.56 2003-06-28 13:09:56 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -117,6 +118,15 @@ module Ionization
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu
       kappa0=sigmaH_/m_H/mu
+!
+!  the following array subscripts may be used to avoid unnecessary
+!  calculations in the ghost zones. useful
+!  for 1- and 2-dimensional runs with radiation
+!
+      if (nx>1) then; l0=1; l3=mx; else; l0=l1; l3=l2; endif
+      if (ny>1) then; m0=1; m3=my; else; m0=m1; m3=m2; endif
+      if (nz>1) then; n0=1; n3=mz; else; n0=n1; n3=n2; endif
+!
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
@@ -132,7 +142,7 @@ module Ionization
 !
       use Cdata
       use Sub
-!  
+! 
       logical :: lreset
 !
 !  write column where which ionization variable is stored
@@ -159,24 +169,9 @@ module Ionization
       integer :: lstart,lstop,mstart,mstop,nstart,nstop
       integer :: l
 !
-!  check if yH and TT have to be calculated in the ghost zones.
-!  currently this is the case if the radiation_exp module is used.
-! 
-!ajwm lstart ain't a good name... it's a global flag
-      lstart=l1; lstop=l2
-      mstart=m1; mstop=m2
-      nstart=n1; nstop=n2
-      if (lradiation_ray) then
-        if (nx>1) then; lstart=1; lstop=mx; endif
-        if (ny>1) then; mstart=1; mstop=my; endif
-        if (nz>1) then; nstart=1; nstop=mz; endif
-      endif
-!
-!  do the loop
-!
-      do n=nstart,nstop
-      do m=mstart,mstop
-      do l=lstart,lstop
+      do n=n0,n3
+      do m=m0,m3
+      do l=l0,l3
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
          yH=f(l,m,n,iyH)
@@ -204,21 +199,21 @@ module Ionization
 !
       real, dimension(nx), intent(in)  :: lnrho,ss
       real, dimension(nx), intent(inout) :: yH,TT
-      real :: yHcalc,TTcalc,lnTT_
+      real :: yHsave,TTcalc,lnTT_
       integer :: l
 !
 !  do the loop
 !
-      do l=l1,l2
-         yHcalc=yH(l-l1)
-         call rtsafe(lnrho(l-l1),ss(l-l1),yHcalc)
-         yH(l-l1)=yHcalc
-         lnTT_=twothirds*((ss(l-l1)/ss_ion &
-                           +(1.-yHcalc)*(log(1.-yHcalc)-lnrho_H) &
-                           +yHcalc*(2.*log(yHcalc)-lnrho_e-lnrho_p) &
-                           +xHe*(lnxHe-lnrho_He))/(1.+yHcalc+xHe) &
-                          +lnrho(l-l1)-2.5)
-         TT(l-l1)=exp(lnTT_)*TT_ion
+      do l=1,nx
+         yHsave=yH(l)
+         call rtsafe(lnrho(l),ss(l),yHsave)
+         yH(l)=yHsave
+         lnTT_=twothirds*((ss(l)/ss_ion &
+                           +(1.-yH(l))*(log(1.-yH(l))-lnrho_H) &
+                           +yH(l)*(2.*log(yH(l))-lnrho_e-lnrho_p) &
+                           +xHe*(lnxHe-lnrho_He))/(1.+yH(l)+xHe) &
+                          +lnrho(l)-2.5)
+         TT(l)=exp(lnTT_)*TT_ion
       enddo
 !
     endsubroutine ioncalc_penc
@@ -465,7 +460,7 @@ module Ionization
 !
     endsubroutine thermodynamics_arbpoint
 !***********************************************************************
-    function opacity(f)
+    subroutine opacity(f,kaprho)
 !
 !  calculate opacity
 !
@@ -474,47 +469,33 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx) :: lnrho,yH,TT,kappa,opacity
+      real, dimension (mx,my,mz) :: kaprho
 !
-      lnrho=f(l1:l2,m,n,ilnrho)
-      yH=f(l1:l2,m,n,iyH)
-      TT=f(l1:l2,m,n,iTT)
+      kaprho(l0:l3,m,n)=.25*exp(2.*f(l0:l3,m,n,ilnrho)-lnrho_e_) &
+                        *(TT_ion_/f(l0:l3,m,n,iTT))**1.5 &
+                        *exp(TT_ion_/f(l0:l3,m,n,iTT)) &
+                        *f(l0:l3,m,n,iyH)*(1.-f(l0:l3,m,n,iyH))*kappa0
 !
-!  opacity: if lkappa_es then take electron scattering opacity only;
-!  otherwise use Hminus opacity (but may need to add kappa_es as well).
-!
-      kappa=.25*exp(lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
-            *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
-!
-!  return value
-!
-      opacity=kappa*exp(lnrho)
-!
-    endfunction opacity
+    endsubroutine opacity
 !***********************************************************************
-    function sourcefunction(f)
+    subroutine sourcefunction(f,Srad)
 !
-!  calculate opacity
+!  calculate sourcefunction
 !
 !  26-jun-03/tobi: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (nx) :: TT,sourcefunction
+      real, dimension (mx,my,mz), intent(out) :: Srad
 !
-      TT=f(l1:l2,m,n,iTT)
+      Srad(l0:l3,m,n)=sigmaSB*f(l0:l3,m,n,iTT)**4/pi
 !
-!  return value
-!
-      sourcefunction=sigmaSB*TT**4/pi
-!
-    endfunction sourcefunction
+    endsubroutine sourcefunction
 !***********************************************************************
     subroutine rtsafe(lnrho,ss,yH)
 !
-!   safe newton raphson algorithm (adapted from NR)
-!
+!   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
 !
       real, intent (in)    :: lnrho,ss

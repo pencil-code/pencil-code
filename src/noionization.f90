@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.31 2003-06-26 11:03:33 theine Exp $
+! $Id: noionization.f90,v 1.32 2003-06-28 13:09:56 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -21,6 +21,7 @@ module Ionization
 
   ! global parameter for perfect gas EOS for either yH=0 or yH=1
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
+  integer :: l0,l3,m0,m3,n0,n3
 
   ! secondary parameters calculated in initialize
   double precision :: m_H,m_He,mu,twothirds
@@ -66,7 +67,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.31 2003-06-26 11:03:33 theine Exp $")
+           "$Id: noionization.f90,v 1.32 2003-06-28 13:09:56 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -107,6 +108,15 @@ module Ionization
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu      ! AKA c_p for noionisation
       kappa0=sigmaH_/m_H/mu
+!
+!  the following array subscripts may be used to avoid unnecessary
+!  calculations in the ghost zones. useful
+!  for 1- and 2-dimensional runs with radiation
+!
+      if (nx>1) then; l0=1; l3=mx; else; l0=l1; l3=l2; endif
+      if (ny>1) then; m0=1; m3=my; else; m0=m1; m3=m2; endif
+      if (nz>1) then; n0=1; n3=mz; else; n0=n1; n3=n2; endif
+!
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
         print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
