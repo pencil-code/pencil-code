@@ -22,7 +22,7 @@ source getconf.csh
 if (! -e tmp) then
   echo ""
   echo ">> WARNING: need tmp directory; make local directory underneath"
-  echo ">> IN FUTURE: you may want to make a link to some fast scratch disk!"
+  echo ">> IN FUTURE: you may want to make a link to some fast scratch disk"
   echo ""
   mkdir tmp
 endif
