@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.91 2003-09-10 12:20:12 theine Exp $
+! $Id: ionization.f90,v 1.92 2003-09-18 17:49:06 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -80,7 +80,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.91 2003-09-10 12:20:12 theine Exp $")
+           "$Id: ionization.f90,v 1.92 2003-09-18 17:49:06 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -537,14 +537,14 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=2*epsilon(1.)
+      real, parameter      :: yHacc=10*epsilon(1.)
       integer              :: i
-      integer, parameter   :: maxit=100
+      integer, parameter   :: maxit=1000000
 !
-      yHmax=1-2*epsilon(1.)     ! factor 2 due to superstition
-      yHmin=2*tiny(1.)
-      dyHold=yHmax-yHmin
-      dyH=dyHold
+      yHmax=1
+      yHmin=0
+      dyHold=1
+      dyH=1
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
          if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
@@ -552,15 +552,15 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
             dyHold=dyH
             dyH=.5*(yHmin-yHmax)
             yH=yHmax+dyH
-            if (yHmax.eq.yH) return
+            if (yHmax==yH) return
          else
             dyHold=dyH
             dyH=f/df
             temp=yH
             yH=yH-dyH
-            if (temp.eq.yH) return
+            if (temp==yH) return
          endif
-         if (abs(dyH).lt.yHacc) return
+         if (abs(dyH)<yHacc*yH) return
          call saha(yH,lnrho,ss,f,df)
          if (f.lt.0.) then
             yHmax=yH
