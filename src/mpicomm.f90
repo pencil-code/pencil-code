@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.40 2002-09-04 08:53:39 nilshau Exp $
+! $Id: mpicomm.f90,v 1.41 2002-09-04 21:52:01 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -610,45 +610,51 @@ module Mpicomm
 !
 !  Doing the transpose of information distributed on several processors
 !
-!  03.09.02/nils: coded
+!  03-sep-02/nils: coded
 !
-      real, dimension(nx,ny,nz,mvar) :: send_buf, recv_buf
-      real,dimension(nx,ny,nz) :: a
+      real, dimension(ny,ny,nz) :: send_buf_y, recv_buf_y
+      real, dimension(nz,ny,nz) :: send_buf_z, recv_buf_z
+      real, dimension(nx,ny,nz) :: a
       real, dimension(nz) :: tmp_z
       real, dimension(ny) :: tmp_y
-      integer :: i,j,proc,sendc_y,recvc_y,sendc_z,recvc_z,sender,pz,py
+      integer :: i,j,proc,sendc_y,recvc_y,sendc_z,recvc_z,px,py,pz
+      integer :: tag=100,partner,ierr
       character :: var
+      integer, dimension(MPI_STATUS_SIZE) :: stat
 !
-      sendc_y=nx*ny*nz
-      recvc_y=nx*ny*nz/nprocy
-      sendc_z=nx*ny*nz
-      recvc_z=nx*ny*nz/nprocz
+      sendc_y=ny*ny*nz
+      recvc_y=ny*ny*nz
+      sendc_z=nz*ny*nz
+      recvc_z=nz*ny*nz
 !
 !  Doing x-y transpose if var='y'
 !
 if (var=='y') then
 !
-!  Scatter information to different processors (x-y transpose)
+!  Send information to different processors (x-y transpose)
 !
-      do pz=0,nprocz-1
-         if (ipz==pz) then
-            do py=0,nprocy-1
-               sender=py+ipz*nprocy
-               call MPI_SCATTER(send_buf,sendc_y,MPI_REAL,recv_buf,recvc_y,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
-            enddo
-         end if
+      do px=0,nprocy-1
+        if(px/=ipy) then
+          partner=px+ipz*nprocy
+          send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
+          call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,tag,MPI_COMM_WORLD,ierr)
+          call MPI_RECV(recv_buf_y,recvc_y,MPI_REAL,partner,tag,MPI_COMM_WORLD,stat,ierr)
+          a(px*ny+1:(px+1)*ny,:,:)=recv_buf_y
+        endif
       enddo
 !
-!  Transposing the recived data (x-y transpose)
-!      
-      do proc=1,nprocy
-         do i=1,ny/nprocy
-            do j=1,ny/nprocy
-               tmp_z=recv_buf(i,j,:,proc)
-               recv_buf(i,j,:,proc)= recv_buf(j,i,:,proc)
-               recv_buf(j,i,:,proc)=tmp_z
-            enddo
-         enddo
+!  Transposing the received data (x-y transpose)
+!
+      do px=0,nprocy-1
+        do i=1,ny
+          do j=i+1,ny
+!            print*,'a) a(i,j,1)=',a(i,j,1),i,j,iproc
+            tmp_z=a(i+px*ny,j,:)
+            a(i+px*ny,j,:)=a(j+px*ny,i,:)
+            a(j+px*ny,i,:)=tmp_z
+!            print*,'b) a(i,j,1)=',a(i,j,1),i,j,iproc
+          enddo
+        enddo
       enddo
 !
 !  Doing x-z transpose if var='z'
@@ -657,27 +663,31 @@ elseif (var=='z') then
 !
 !  Scatter information to different processors (x-z transpose)
 !
-      do py=0,nprocy-1
-         if (ipy==py) then
-            do pz=0,nprocz-1
-               sender=pz+ipz*nprocy
-               call MPI_SCATTER(send_buf,sendc_z,MPI_REAL,recv_buf,recvc_z,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
-            enddo
-         end if
+       do px=0,nprocz-1
+        if(px/=ipz) then
+          partner=ipy+px*nprocy
+          send_buf_z=a(px*nz+1:(px+1)*nz,:,:)
+          call MPI_SEND(send_buf_z,sendc_z,MPI_REAL,partner,tag,MPI_COMM_WORLD,ierr)
+          call MPI_RECV(recv_buf_z,recvc_z,MPI_REAL,partner,tag,MPI_COMM_WORLD,stat,ierr)
+          a(px*nz+1:(px+1)*nz,:,:)=recv_buf_z
+        endif
       enddo
 !
-!  Transposing the recived data (x-z transpose)
+!  Transposing the received data (x-z transpose)
 !      
-      do proc=1,nprocz
-         do i=1,nz/nprocz
-            do j=1,nz/nprocz
-               tmp_y=recv_buf(i,:,j,proc)
-               recv_buf(i,:,j,proc)= recv_buf(j,:,i,proc)
-               recv_buf(j,:,i,proc)=tmp_y
-            enddo
-         enddo
+      do px=0,nprocz-1
+        do i=1,nz
+          do j=i+1,nz
+!            print*,'a) a(i,j,1)=',a(i,j,1),i,j,iproc
+            tmp_y=a(i+px*nz,:,j)
+            a(i+px*nz,:,j)=a(j+px*nz,:,i)
+            a(j+px*nz,:,i)=tmp_y
+!            print*,'b) a(i,j,1)=',a(i,j,1),i,j,iproc
+          enddo
+        enddo
       enddo
-   end if
+!
+endif
 !
  end subroutine transp
 !***********************************************************************
