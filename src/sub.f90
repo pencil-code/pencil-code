@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.139 2003-11-10 11:34:47 dobler Exp $ 
+! $Id: sub.f90,v 1.140 2003-11-20 19:56:24 theine Exp $ 
 
 module Sub 
 
@@ -15,6 +15,7 @@ module Sub
   endinterface
 
   interface notanumber          ! Overload the `notanumber' function
+    module procedure notanumber_0
     module procedure notanumber_1
     module procedure notanumber_2
     module procedure notanumber_3
@@ -2149,6 +2150,23 @@ module Sub
 !
       endfunction der_step
 !***********************************************************************
+      function notanumber_0(f)
+!
+!  Check for denormalised floats (in fact NaN or -Inf, Inf).
+!  The test used here should work on all architectures even if
+!  optimisation is high (something like `if (any(f /= f+1))' would be
+!  optimised away).
+!  Version for scalars
+!  20-Nov-03/tobi: adapted
+!
+        logical :: notanumber_0
+        real :: f,g
+
+        g = f
+        notanumber_0 = ((f /= g) .or. (f == g+1))
+!
+      endfunction notanumber_0
+!***********************************************************************
       function notanumber_1(f)
 !
 !  Check for denormalised floats (in fact NaN or -Inf, Inf).
@@ -2176,7 +2194,7 @@ module Sub
 !  Version for 2d arrays.
 !
 !  1-may-02/wolf: coded
-!d
+!
         logical :: notanumber_2
         real, dimension(:,:) :: f
         real, dimension(size(f,1),size(f,2)) :: g
