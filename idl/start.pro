@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.42 2002-11-09 13:23:07 brandenb Exp $
+;;; $Id: start.pro,v 1.43 2002-11-12 08:11:43 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -116,6 +116,17 @@ if (cpar gt 0) then begin
   ;; Output may be split in 1024-byte blocks (ludicrous; IDL's fault),
   ;; so join these (joinstr is not available with IDL 5.2):
   res = flatten_strings(result)
+  ;; For people with an unclean shell: remove everything up to the
+  ;; opening brace:
+  brace = strpos(res,'{')
+  if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
+  if (brace ne 0) then begin
+    print, "Your shell produces output when it shouldn't; you'd better"
+    print, "fix your prompt."
+    print, "Trying to clean up the mess.."
+    res = strmid(res,brace)
+  endif
+  ;; Execute the resulting line
   if (execute('par = '+res) ne 1) then $
       message, 'There was a problem with param.nml', /INFO
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
