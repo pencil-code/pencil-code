@@ -1,0 +1,10 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for a kinematic dynamo run
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2004-02-22 09:11:58 brandenb Exp $',
+  random_gen='nr_f90'
+/
+&magnetic_init_pars
+  initaa='gaussian-noise', amplaa=1e-4
+/
