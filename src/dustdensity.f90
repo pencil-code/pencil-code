@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.49 2004-04-02 16:52:36 ajohan Exp $
+! $Id: dustdensity.f90,v 1.50 2004-04-04 16:06:34 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.49 2004-04-02 16:52:36 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.50 2004-04-04 16:06:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -229,16 +229,8 @@ module Dustdensity
               f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodtot*unit_md)
         enddo
         
-        do l=1,mx
-          do m=1,my
-            do n=1,mz
-              if (exp(f(l,m,n,ilnrho)) < 1e-15) then
-                f(l,m,n,ind(:)) = 0.
-                f(l,m,n,irhod(:)) = 0.
-              endif
-            enddo
-          enddo
-        enddo
+        f(:,:,n1:n1+5,ind(:)) = 0.
+        f(:,:,n2-5:n2,irhod(:)) = 0.
         
       case('const_nd'); f(:,:,:,ind) = nd_const
       case('frac_of_gas_loc')
@@ -330,9 +322,9 @@ module Dustdensity
 !
 !  Recalculate grain masses from nd and rhod
 !
-      if (lmdvar .and. itsub .eq. 1) then
+      if (lmdvar .and. itsub == 1) then
         do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
+          if (f(l1,m,n,ind(k)) > 0. .and. f(l1,m,n,irhod(k)) > 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
             md(k) = 0.5*(mdminus(k)+mdplus(k))
@@ -343,35 +335,35 @@ module Dustdensity
 !
         do k=1,ndustspec
           i_targ = -1
-          if (md(k) .ge. mdplus(k)) then      ! Gone to higher mass bin
+          if (md(k) >= mdplus(k)) then      ! Gone to higher mass bin
             do j=k+1,ndustspec+1 
               i_targ = j
-              if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
+              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
             enddo
-          elseif (md(k) .lt. mdminus(k)) then ! Gone to lower mass bin
+          elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
             do j=k-1,0,-1
               i_targ = j
-              if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
+              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
             enddo
           endif
-          if (i_targ .eq. -1) then
+          if (i_targ == -1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
-          elseif (i_targ .ge. 1 .and. i_targ .le. ndustspec) then
+          elseif (i_targ >= 1 .and. i_targ <= ndustspec) then
             ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
             rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
-          elseif (i_targ .eq. 0) then
+          elseif (i_targ == 0) then
             if (lkeepinitnd) then
               print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
               call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
             endif
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
-          elseif (i_targ .eq. ndustspec+1) then
+          elseif (i_targ == ndustspec+1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
-            !print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
-            !call stop_it('dnd_dt: Hit maximum grain mass border!')
+            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+            call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
         f(l1:l2,m,n,ind)   = ndnew(:,:)
@@ -382,7 +374,7 @@ module Dustdensity
 !  Must redo calculation of grain mass
 !        
         do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
+          if (f(l1,m,n,ind(k)) > 0. .and. f(l1,m,n,irhod(k)) > 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
             md(k) = 0.5*(mdminus(k)+mdplus(k))
@@ -423,7 +415,8 @@ module Dustdensity
             if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= eps_ctog &
                 .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
-            else
+            elseif (nd(1,k) >= 0.) then
+              print*, k, rho, TT1, mfluxcond(:), nd(:,k)
               df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
               df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
             endif
@@ -498,8 +491,8 @@ module Dustdensity
             ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
 
         if (lmdvar) then
-          df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) - &
-              md(k)*(ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
+          df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + &
+              md(k)*(-ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
         endif
 !
 !  mass diffusion, in units of dxmin*cs0
