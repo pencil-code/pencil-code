@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.29 2003-03-06 14:25:51 brandenb Exp $
+! $Id: grav_z.f90,v 1.30 2003-03-19 09:55:26 brandenb Exp $
 
 module Gravity
 
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.29 2003-03-06 14:25:51 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.30 2003-03-19 09:55:26 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -139,9 +139,9 @@ module Gravity
 !  linear gravity profile (for accretion discs)
 !
       elseif (grav_profile=='linear') then
-        if (nu_epicycle/=-gravz) then
-          if (lroot) print*,'print: just wondering, is nu_epicycle ok?'
-        endif
+        !if (nu_epicycle/=-gravz) then
+        !  if (lroot) print*,'Omega,nu_epicycle=',Omega,nu_epicycle
+        !endif
         nu_epicycle2=nu_epicycle**2
         if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
