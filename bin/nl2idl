@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.11 2003-01-14 17:21:22 dobler Exp $
+# $Id: nl2idl,v 1.12 2003-10-31 12:42:42 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -88,7 +88,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.11 2003-01-14 17:21:22 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.12 2003-10-31 12:42:42 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -238,6 +238,13 @@ sub parse_nl {
 		$line =~ s/^($numeric)[ ,]*(.*)$/$2/;
 		if ($debug) { print "\$nl{$var} <- $1\n" };
 	        push @{$nl{$var}}, $1;
+	    } elsif ($ch =~ /\(/) { # complex number (x,y)
+		my $bracket = index($line,')',1); # closing bracket
+		if ($debug) {
+		    print "\$nl{$var} <- ", 'complex' . substr($line,0,$bracket+1),"\n";
+		}
+		push @{$nl{$var}}, 'complex' . substr($line,0,$bracket+1);
+		$line = substr($line,$bracket+1);
 	    } else {
 		if ($debug) { print "\$line = <$line>\n"};
 		# die "Illegal value \"$ch\[..]\" for $var\n";
