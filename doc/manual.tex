@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.170 2003-06-17 15:39:03 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.171 2003-06-18 15:52:11 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-17 15:39:03 $ $,~ $ $Revision: 1.170 $ $}
+\date{$ $Date: 2003-06-18 15:52:11 $ $,~ $ $Revision: 1.171 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-17 15:39:03 $ $,~ $ $Revision: 1.170 $ $}
+  \emph{$ $Date: 2003-06-18 15:52:11 $ $,~ $ $Revision: 1.171 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3683,6 +3683,19 @@ and subtracting the two yields
 
 % ====================================================================== %
 
+\section{Things to bear in mind for specific types of simulations}
+\label{S-specific-sim}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Convection}
+
+[Discuss \var{iwig} (hopefully no longer needed), \var{lupw_lnrho},
+\var{lupw_ss}]
+
+
+% ====================================================================== %
+
 \section{Runs and reference data}
 \label{S-ref-data}
 
@@ -3879,6 +3892,11 @@ horizontal sections for time $t=50$.
 \subsection{Sixth-order spatial derivatives}
 \index{6th-order derivatives}
 \label{S-6th-order}
+[To be written]
+
+\subsection{Upwind derivatives}
+\index{Upwind}
+\label{S-upwind}
 [To be written]
 
 \subsection{The 2N-scheme for time-stepping}
@@ -4652,6 +4670,10 @@ the latest set of parameters, you need to look at the code.
   \var{cs2top} [start]
                & squared sound speed at bottom and top for boundary
                  condition \option{c2}. \\
+  \var{lupw_lnrho} [.false.]
+               & use 5th-order upwind derivative operator for the
+               advection term $\uv\cdot\grad\ln\varrho$ to avoid spurious
+               Nyquist signal (`wiggles'); see \S\ref{S-upwind}. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{entropy_run_pars}} \\
@@ -4710,6 +4732,10 @@ the latest set of parameters, you need to look at the code.
                  turbulent (sub-grid) mixing.
                  It is probably a bad idea to combine this with heat
                  conduction $\var{hcond0} \ne 0$. \\
+  \var{lupw_ss} [.false.]
+               & use 5th-order upwind derivative operator for the
+               advection term $\uv\cdot\grad s$ to avoid spurious Nyquist
+               signal (`wiggles'); see \S\ref{S-upwind}. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
@@ -5157,7 +5183,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.170 2003-06-17 15:39:03 dobler Exp $ $}
+$ $Id: manual.tex,v 1.171 2003-06-18 15:52:11 dobler Exp $ $}
 
 
 \end{document}
