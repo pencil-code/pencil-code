@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.49 2004-04-13 09:42:41 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.50 2004-04-16 14:32:09 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -24,18 +24,18 @@ module Dustvelocity
   ! init parameters
   real, dimension(ndustspec,ndustspec) :: scolld
   real, dimension(nx,ndustspec) :: tausd1
-  real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,rhodsad1
+  real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,mi,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
-  real :: mmon,mumon,surfmon,ustcst
+  real :: mmon,mumon,mumon1,surfmon,ustcst
   double precision :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
   character (len=labellen) :: inituud='zero'
   character (len=labellen) :: draglaw='epstein_cst'
-  character (len=labellen) :: dust_geometry='sphere', dust_chemistry='ice'
+  character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 
   namelist /dustvelocity_init_pars/ &
        rhods, md0, ad0, deltamd, draglaw, dust_geometry, ampluud, inituud, &
@@ -84,7 +84,7 @@ module Dustvelocity
         if (i == 1) then
           iuud(1) = nvar+1
         else
-          if (lmdvar .and. lrhoice) then
+          if (lmdvar .and. lmice) then
             iuud(i) = iuud(i-1) + 6
           elseif (lmdvar) then
             iuud(i) = iuud(i-1) + 5
@@ -108,7 +108,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.49 2004-04-13 09:42:41 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.50 2004-04-16 14:32:09 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -155,14 +155,19 @@ module Dustvelocity
           print*, 'register_dustvelocity: constant grain mass'
         endif
       endif
+
+      if (headtt) &
+          print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
-!  Set dust mass unit
+!  Set dust chemistry
 !
       select case (dust_chemistry)
 
+      case ('nothing')
+        unit_md = 1.
+        unit_rhocc = unit_md
+
       case ('ice')
-        if (headtt) &
-            print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
 !  Surface tension and Young's modulus for sticking velocity
 !
@@ -171,7 +176,7 @@ module Dustvelocity
         nu_Poisson = 0.25 !
         Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
         
-        mumon = 18
+        mumon = 18.
         mmon  = mumon*1.6733e-24
         unit_md = mmon
         if (lpscalar) unit_rhocc = unit_md
@@ -184,6 +189,8 @@ module Dustvelocity
             ("initialize_dustvelocity: No valid dust chemistry specified.")
 
       endselect
+
+      mumon1=1/mumon
 !
 !  Constant used in determination of sticking velocity 
 !    (extra factor 2 from Dominik & Tielens, 1997, end of Sec. 3.2)
@@ -285,29 +292,29 @@ module Dustvelocity
 !
 !  Copy boundary conditions after first dust species to end of array
 !
-      if (lmdvar .and. lrhoice) then
-        bcx(irhoi(ndustspec)+1:)  = bcx(irhoi(1)+1:)
-        bcy(irhoi(ndustspec)+1:)  = bcy(irhoi(1)+1:)
-        bcz(irhoi(ndustspec)+1:)  = bcz(irhoi(1)+1:)
+      if (lmdvar .and. lmice) then
+        bcx(imi(ndustspec)+1:)  = bcx(imi(1)+1:)
+        bcy(imi(ndustspec)+1:)  = bcy(imi(1)+1:)
+        bcz(imi(ndustspec)+1:)  = bcz(imi(1)+1:)
 !
 !  Copy boundary conditions on first dust species to all species
 !
         do i=2,ndustspec
-          bcx(iudx(i):irhoi(i))=bcx(iudx(1):irhoi(1))
-          bcy(iudx(i):irhoi(i))=bcy(iudx(1):irhoi(1))
-          bcz(iudx(i):irhoi(i))=bcz(iudx(1):irhoi(1))
+          bcx(iudx(i):imi(i))=bcx(iudx(1):imi(1))
+          bcy(iudx(i):imi(i))=bcy(iudx(1):imi(1))
+          bcz(iudx(i):imi(i))=bcz(iudx(1):imi(1))
         enddo
       elseif (lmdvar) then
-        bcx(irhod(ndustspec)+1:)  = bcx(irhod(1)+1:)
-        bcy(irhod(ndustspec)+1:)  = bcy(irhod(1)+1:)
-        bcz(irhod(ndustspec)+1:)  = bcz(irhod(1)+1:)
+        bcx(imd(ndustspec)+1:)  = bcx(imd(1)+1:)
+        bcy(imd(ndustspec)+1:)  = bcy(imd(1)+1:)
+        bcz(imd(ndustspec)+1:)  = bcz(imd(1)+1:)
 !
 !  Copy boundary conditions on first dust species to all species
 !
         do i=2,ndustspec
-          bcx(iudx(i):irhod(i))=bcx(iudx(1):irhod(1))
-          bcy(iudx(i):irhod(i))=bcy(iudx(1):irhod(1))
-          bcz(iudx(i):irhod(i))=bcz(iudx(1):irhod(1))
+          bcx(iudx(i):imd(i))=bcx(iudx(1):imd(1))
+          bcy(iudx(i):imd(i))=bcy(iudx(1):imd(1))
+          bcz(iudx(i):imd(i))=bcz(iudx(1):imd(1))
         enddo
       else  
         bcx(ind(ndustspec)+1:)  = bcx(ind(1)+1:)
@@ -874,7 +881,7 @@ module Dustvelocity
       call chn(iudy(1),sudy1)
       call chn(iudz(1),sudz1)
       if (lwr) then
-        if (lmdvar .and. lrhoice) then
+        if (lmdvar .and. lmice) then
           write(3,*) 'iuud=indgen('//trim(sdustspec)//')*6 + '//trim(suud1)
           write(3,*) 'iudx=indgen('//trim(sdustspec)//')*6 + '//trim(sudx1)
           write(3,*) 'iudy=indgen('//trim(sdustspec)//')*6 + '//trim(sudy1)
