@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.17 2003-11-03 09:25:07 dobler Exp $
+# CVS $Id: setup-src,v 1.18 2003-11-04 14:20:34 mee Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -90,5 +90,6 @@ if ($n > 1) echo "$n files already exist in $src"
 #
 #  Generate Makefile
 #
+rm -f Makefile			# for old run directories
 adapt-mkfile Makefile.src Makefile
 rm -f makefile			# for old run directories
