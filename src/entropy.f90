@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.109 2002-07-31 21:38:05 dobler Exp $
+! $Id: entropy.f90,v 1.110 2002-07-31 23:58:05 brandenb Exp $
 
 module Entropy
 
@@ -64,7 +64,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.109 2002-07-31 21:38:05 dobler Exp $")
+           "$Id: entropy.f90,v 1.110 2002-07-31 23:58:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -454,7 +454,7 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
-      if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
+!--   if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -575,7 +575,7 @@ endif
 !    gamma*chi*del2ss
 !
       if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
-      if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
+!--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond
 !***********************************************************************
