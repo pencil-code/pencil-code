@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.44 2004-02-11 14:52:40 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.45 2004-02-11 14:58:39 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -87,7 +87,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.44 2004-02-11 14:52:40 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.45 2004-02-11 14:58:39 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -450,13 +450,7 @@ module Ionization
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
-      integer :: i=0
 !
-      if (i .eq. 0) then
-        print*,lnTTss,lnTTlnrho,lnTT0
-        i = 1
-      endif
-
       select case (ivars)
 
       case (ilnrho_ss)
