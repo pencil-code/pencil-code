@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.36 2004-02-04 14:02:17 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.37 2004-02-11 14:58:01 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -26,7 +26,7 @@ module Dustvelocity
   real, dimension(ndustspec) :: md,mdplus,mdminus,ad,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real :: rhods=1.,md0=1.,ad0=0.,deltamd=1.2
+  real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.36 2004-02-04 14:02:17 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.37 2004-02-11 14:58:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,10 +139,12 @@ module Dustvelocity
 !
 !  Output grain mass discretization type
 !
-      if (lmdvar) then
-        print*, 'register_dustvelocity: variable grain mass'
-      else
-        print*, 'register_dustvelocity: constant grain mass'
+      if (lroot) then
+        if (lmdvar) then
+          print*, 'register_dustvelocity: variable grain mass'
+        else
+          print*, 'register_dustvelocity: constant grain mass'
+        endif
       endif
 !
 !  Dust physics parameters
@@ -170,6 +172,8 @@ module Dustvelocity
             scolld(i,j) = pi*(ad(i)+ad(j))**2
           enddo
         enddo
+
+        dimd1 = 0.333333
 
       case default
         call stop_it( &
@@ -277,10 +281,11 @@ module Dustvelocity
       use Global
       use Gravity
       use Initcond
+      use Ionization, only: pressure_gradient
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real, dimension (nx) :: rhod,tausd1
+      real, dimension (nx) :: rho,cs2,rhod,tausd1,cp1tilde
       integer :: k
 !
 !  inituud corresponds to different initializations of uud (called from start).
@@ -294,11 +299,13 @@ module Dustvelocity
         enddo
       case('terminal_vz')
         if (ldustdrag) then
+          rho = exp(f(l1:l2,m,n,ilnrho))
           do k=1,ndustspec
+            rhod = f(l1:l2,m,n,ind(k))*md(k)
+            call pressure_gradient(f,cs2,cp1tilde)
+            call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
             do m=m1,m2
               do n=n1,n2
-                rhod = f(l1:l2,m,n,ind(k))*md(k)
-                call get_stoppingtime(f,rhod,tausd1,k)
                 f(l1:l2,m,n,iudz(k)) = -tausd1**(-1)*Omega**2*z(n)
               enddo
             enddo
@@ -339,7 +346,7 @@ module Dustvelocity
 !
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,rho1,uud,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho1,cs2,uud,divud,ud2,udij)
 !
 !  velocity evolution
 !  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
@@ -353,7 +360,6 @@ module Dustvelocity
       use IO
       use Mpicomm, only: stop_it
       use Density, only: cs0
-      use Ionization, only: cp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -361,7 +367,7 @@ module Dustvelocity
       real, dimension (nx,3,ndustspec) :: uud
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx,3) :: uu,udgud,ood,del2ud,tausd13,tausg13
-      real, dimension (nx) :: rho1,od2,oud,udx,udy,udz,rhod
+      real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
       real, dimension (nx) :: csrho,tausd1,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,k,l
@@ -382,10 +388,11 @@ module Dustvelocity
           call identify_bcs('udz',iudz(k))
         endif
 !
-!  Dust abbreviations
+!  Abbreviations
 !
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
         rhod =f(l1:l2,m,n,ind(k))*md(k)
+        rho = 1/rho1
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
 !  calculate velocity gradient matrix
@@ -451,7 +458,7 @@ module Dustvelocity
 !  Stopping time of dust is calculated in get_stoppingtime
 !
         if (ldustdrag) then
-          call get_stoppingtime(f,rhod,tausd1,k)
+          call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
 !
 !  Add drag force on dust. If taus << dt, set udx = ux, udy=uy, udz=udz(term)
 !
@@ -573,17 +580,15 @@ module Dustvelocity
 !
     endsubroutine duud_dt
 !***********************************************************************
-    subroutine get_stoppingtime(f,rhod,tausd1,k)
+    subroutine get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
 !
 !  Calculate stopping time depending on choice of drag law
 !
       use Cdata
       use Mpicomm, only: stop_it
-      use Density, only: cs0
-      use Ionization, only: cp
       
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: rhod,csrho,tausd1
+      real, dimension (nx) :: rho,rhod,csrho,cs2,tausd1
       integer :: k
       save :: csrho
 !
@@ -594,13 +599,14 @@ module Dustvelocity
       case ('epstein_cst_b')
         tausd1 = betad(k)/rhod
       case ('epstein_var')
-        if (k .eq. 1) csrho = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp + &
-            0.5*(gamma+1)*f(l1:l2,m,n,ilnrho) + 0.5*(1-gamma)*lnrho0)
+        if (k .eq. 1) then
+          csrho = sqrt(cs2)*rho
+        endif
         tausd1 = csrho*rhodsad1(k)
-       case default
+      case default
          call stop_it("get_stoppingtime: No valid drag law specified.")
 
-       endselect
+      endselect
 !
     endsubroutine get_stoppingtime
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.15 2004-01-29 10:55:50 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.16 2004-02-11 14:58:01 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.15 2004-01-29 10:55:50 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.16 2004-02-11 14:58:01 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -84,7 +84,7 @@ module Dustvelocity
       if (ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,rho1,uud,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho1,cs2,uud,divud,ud2,udij)
 !
 !  velocity evolution
 !  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
@@ -100,9 +100,10 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3) :: uu,uud
-      real, dimension (nx) :: rho1,ud2,divud
+      real, dimension (nx) :: rho1,cs2,ud2,divud
 !
-      if(ip==0) print*,f,df,uu,uud,divud,rho1,ud2,udij  !(keep compiler quiet)
+      if(ip==0) print*,f,df,uu,uud,rho1,divud,rho1,ud2,udij
+      !(keep compiler quiet)
     endsubroutine duud_dt
 !***********************************************************************
     subroutine duud_dt_grav(f,df)

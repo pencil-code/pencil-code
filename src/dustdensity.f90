@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.33 2004-02-05 10:30:27 ajohan Exp $
+! $Id: dustdensity.f90,v 1.34 2004-02-11 14:58:01 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -22,17 +22,18 @@ module Dustdensity
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec) :: cdiffnd=0
-  real :: nd_const=1.,dkern_cst=1.,alpha_dtog=0.,rhod0=1.,nd00=0.
+  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
-  character (len=labellen) :: initnd='zero'
-  logical :: lcalcdkern=.true.
+  real :: mmon,mumon,amon
+  character (len=labellen) :: initnd='zero', dust_chemistry='ice'
+  logical :: ldustcoagulation=.true.,ldustgrowth=.true.,lcalcdkern=.true.
 
   namelist /dustdensity_init_pars/ &
-      rhod0, initnd, alpha_dtog, nd_const, dkern_cst, nd00, mdave0, &
-      adpeak
+      rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
+      adpeak, dust_chemistry, lcalcdkern, ldustcoagulation, ldustgrowth
 
   namelist /dustdensity_run_pars/ &
-      rhod0, cdiffnd, cdiffnd_all, lcalcdkern
+      rhod0, cdiffnd, cdiffnd_all, lcalcdkern, ldustcoagulation, ldustgrowth
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_rhodm
@@ -86,7 +87,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.33 2004-02-05 10:30:27 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.34 2004-02-11 14:58:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +129,8 @@ module Dustdensity
 !
 !  24-nov-02/tony: coded 
 !  08-dec-03/anders: Copy *_all parameters to whole array
+      use Mpicomm, only: stop_it
+!
       integer :: i,j
 !
       select case (initnd)     
@@ -143,6 +146,21 @@ module Dustdensity
           enddo
         enddo
         lcalcdkern = .false.
+
+      endselect
+
+      select case (dust_chemistry)
+
+      case ('ice')
+        if (headtt) &
+            print*, 'initialize_dustdensity: dust_chemistry = ', dust_chemistry
+        mumon = 18
+        mmon  = mumon*1.6733e-24 
+        amon  = pi*(0.3e-7)**2
+
+      case default
+        call stop_it &
+            ("initialize_dustdensity: No valid dust chemistry specified.")
 
       endselect
 !
@@ -201,24 +219,24 @@ module Dustdensity
 
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              f(:,:,:,ind(k))*alpha_dtog*exp(f(:,:,:,ilnrho))/rhodtot
+              f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/rhodtot
         enddo
         
       case('const_nd'); f(:,:,:,ind) = nd_const
       case('frac_of_gas_loc')
-        if (alpha_dtog .lt. 0.) &
-            call stop_it("init_nd: Negative alpha_dtog!")
+        if (eps_dtog .lt. 0.) &
+            call stop_it("init_nd: Negative eps_dtog!")
         do k=1,ndustspec
-          f(:,:,:,ind(k)) = alpha_dtog/md(k)*exp(f(:,:,:,ilnrho))
+          f(:,:,:,ind(k)) = eps_dtog/md(k)*exp(f(:,:,:,ilnrho))
         enddo
       case('frac_of_gas_glo')
-        if (alpha_dtog .lt. 0.) &
-            call stop_it("init_nd: Negative alpha_dtog!")
+        if (eps_dtog .lt. 0.) &
+            call stop_it("init_nd: Negative eps_dtog!")
         do i=1,mx
           do j=1,my
             do k=1,ndustspec
               f(i,j,:,ind(k)) = &
-                  alpha_dtog/md(k)*exp(f(4,4,:,ilnrho))
+                  eps_dtog/md(k)*exp(f(4,4,:,ilnrho))
             enddo
           enddo
         enddo
@@ -258,7 +276,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dnd_dt(f,df,uud,divud,gnd)
+    subroutine dnd_dt(f,df,rho1,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -273,7 +291,8 @@ module Dustdensity
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: gnd,uud
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud
+      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud,rho,rho1
+      real, dimension (nx) :: taugr1
       real :: diffnd
       integer :: i,j,k
       logical :: lfirstpoint2
@@ -328,6 +347,24 @@ module Dustdensity
       do k=1,ndustspec
         nd(:,k) = f(l1:l2,m,n,ind(k))
       enddo
+      rho = exp(f(l1:l2,m,n,ilnrho))
+!
+!  Grain growth due to condensation on grain
+!
+     if (ldustgrowth) then
+       do i=1,ndustspec
+         call get_growthtime(f,taugr1,rho)
+         if (lmdvar) then
+           dndfac = taugr1(:)*mmon**dimd1*md(i)**(1.-dimd1)*nd(:,i)
+           df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + dndfac
+           df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc) - rho1*dndfac
+         else
+           dndfac = taugr1(:)*mmon**dimd1*md(i)**(-dimd1)
+           df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
+           df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc) - md(k)*rho1*dndfac
+         endif
+       enddo
+     endif
 !
 !  Calculate kernel of coagulation equation
 !
@@ -343,36 +380,38 @@ module Dustdensity
         enddo
       endif
 !
-!  Grain growth
+!  Dust grain coagulation
 !
-      do i=1,ndustspec
-        do j=i,ndustspec
-          dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
-          if (minval(dndfac) .ne. 0.) then
-            df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
-            df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
-            do k=j,ndustspec
-              if (md(i) + md(j) .ge. mdminus(k) &
-                  .and. md(i) + md(j) .lt. mdplus(k)) then
-                if (lmdvar) then
-                  df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k)) - dndfac
-                  df(l1:l2,m,n,irhod(i)) = &
-                      df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
-                  df(l1:l2,m,n,irhod(j)) = &
-                      df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
-                  df(l1:l2,m,n,irhod(k)) = &
-                      df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
-                  exit
-                else
-                  df(l1:l2,m,n,ind(k)) = &
-                      df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
-                  exit
+      if (ldustcoagulation) then
+        do i=1,ndustspec
+          do j=i,ndustspec
+            dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
+            if (minval(dndfac) .ne. 0.) then
+              df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
+              df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
+              do k=j,ndustspec
+                if (md(i) + md(j) .ge. mdminus(k) &
+                    .and. md(i) + md(j) .lt. mdplus(k)) then
+                  if (lmdvar) then
+                    df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k)) - dndfac
+                    df(l1:l2,m,n,irhod(i)) = &
+                        df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
+                    df(l1:l2,m,n,irhod(j)) = &
+                        df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
+                    df(l1:l2,m,n,irhod(k)) = &
+                        df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
+                    exit
+                  else
+                    df(l1:l2,m,n,ind(k)) = &
+                        df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
+                    exit
+                  endif
                 endif
-              endif
-            enddo
-          endif
+              enddo
+            endif
+          enddo
         enddo
-      enddo
+      endif
 !
 !  Loop over dust layers
 !
@@ -421,6 +460,39 @@ module Dustdensity
       enddo
 !
     endsubroutine dnd_dt
+!***********************************************************************
+    subroutine get_growthtime(f,taugr1,rho)
+!
+!  Calculate stopping time depending on choice of drag law
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Density, only: cs0
+      use Ionization, only: getmu,eoscalc
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: taugr1,rho,lnTT,TT,pp,ppmon,psat,vth,epsmon
+      real, save :: mu
+!
+      select case(dust_chemistry)
+
+      case ('ice')
+        epsmon = f(l1:l2,m,n,ilncc)
+        call eoscalc(f,lnTT=lnTT,pp=pp)
+        TT = exp(lnTT)
+        if (t .eq. 0.) call getmu(mu)
+        ppmon = pp*epsmon*mu/mumon
+        psat = 1.013e6*exp(-5940/TT+15.6)
+        vth = (3*k_B*TT/mmon)**0.5
+        !print*, k_B, minval(TT), maxval(TT), minval(vth), maxval(vth)
+        taugr1 = amon*vth*epsmon*rho/mmon*(1-psat/ppmon)
+
+      case default
+        call stop_it("get_growthtime: No valid dust chemistry specified.")
+
+      endselect
+!
+    endsubroutine get_growthtime
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
