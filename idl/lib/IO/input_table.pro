@@ -97,7 +97,7 @@ function input_table, filename, $
   clen = strlen(cchar)
   success = 0
   on_ioerror, read_err            ; Catch read errors
-  while (not eof(in_file)) do begin
+  while ((not eof(in_file)) and (idat lt N_lines-1)) do begin
     readf, in_file, line
     is_comm = (strmid(line,0,clen) eq cchar)
     if (not is_comm) then begin ; If this is not a comment line
