@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.47 2003-04-03 07:47:41 brandenb Exp $
+# $Id: getconf.csh,v 1.48 2003-04-04 17:48:38 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -157,6 +157,7 @@ else # no MPI
     lamnodes
     set mpirunops =
     set mpirun = 
+setenv SCRATCH_DIR src
     set start_x = $SCRATCH_DIR/start.x
     set run_x = $SCRATCH_DIR/run.x
   endif
