@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.50 2002-10-05 13:48:07 dobler Exp $
+! $Id: mpicomm.f90,v 1.51 2002-10-09 14:01:48 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -120,6 +120,11 @@ module Mpicomm
         endif
         call stop_it('Inconsistency 2')
       endif
+!
+      if (ny < nghost) &
+           call stop_it('Overlapping ghost zones in y-direction: reduce nprocy')
+      if (nz < nghost) &
+           call stop_it('Overlapping ghost zones in z-direction: reduce nprocz')
 !
 !  position on the processor grid
 !  x is fastest direction, z slowest
