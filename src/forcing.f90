@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.59 2004-02-20 19:12:14 nilshau Exp $
+! $Id: forcing.f90,v 1.60 2004-03-10 09:48:50 nilshau Exp $
 
 module Forcing
 
@@ -20,6 +20,7 @@ module Forcing
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.
+  logical :: old_forcing_evector=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
   integer :: dummy              ! We cannot define empty namelists
@@ -30,7 +31,7 @@ module Forcing
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
        zff_ampl,zff_hel, &
-       lmagnetic_forcing,max_force,dtforce
+       lmagnetic_forcing,max_force,dtforce,old_forcing_evector
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rufm=0
@@ -57,7 +58,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.59 2004-02-20 19:12:14 nilshau Exp $")
+           "$Id: forcing.f90,v 1.60 2004-03-10 09:48:50 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -258,6 +259,7 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (1) :: frane
       real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
@@ -267,6 +269,7 @@ module Forcing
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2
       logical, dimension (3), save :: extent
+      logical :: same
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
@@ -322,17 +325,43 @@ module Forcing
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
-!  pick e1 if kk not parallel to ee1. ee2 else.
-!
-      if((ky.eq.0).and.(kz.eq.0)) then
-        ex=0; ey=1; ez=0
-      else
-        ex=1; ey=0; ez=0
-      endif
+! Find e-vector
+! Keeping old method (not isotropic) for now.
+if (old_forcing_evector) then
+  !
+  !  pick e1 if kk not parallel to ee1. ee2 else.
+  !
+  if((ky.eq.0).and.(kz.eq.0)) then
+    ex=0; ey=1; ez=0
+  else
+    ex=1; ey=0; ez=0
+  endif
+  kde=kx*ex+ky*ey+kz*ez
+else
+  !
+  !  Choose (randomly) which component of e to be non-zero.
+  !  Need to do this in order for the forcing to be isotropic.
+  !
+  same=.true.
+  do while (same)
+    call random_number_wrapper(frane)
+    if (frane(1) .le.0.333) then
+      ex=1; ey=0; ez=0 
+    elseif (frane(1).le.0.667) then
+      ex=0; ey=1; ez=0 
+    else
+      ex=0; ey=0; ez=1
+    endif
+    kde=kx*ex+ky*ey+kz*ez
+    same=.false.
+    if (kde**2 .eq. k2) same=.true.
+  enddo
+endif
+print*,frane(1),ex,ey,ez
 !
 !  k.e
 !
-      kde=kx*ex+ky*ey+kz*ez
+      !kde=kx*ex+ky*ey+kz*ez
 !
 !  k x e
 !
