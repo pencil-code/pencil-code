@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.31 2003-06-30 16:52:18 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.32 2003-07-01 13:39:57 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.31 2003-06-30 16:52:18 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.32 2003-07-01 13:39:57 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -215,27 +215,27 @@ module Radiation
            call intensity1(lrad,mrad,nrad,tau,Irad)
            f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
           if (lrad<0) then
-             tau_yz(:,:,:,lrad,mrad,nrad)=tau(l1-radx0:l1-1,:,:)
-             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1-radx0:l1-1,:,:)
+             tau_yz (:,:,:,lrad,mrad,nrad)=tau (l1:l1+radx0-1,:,:)
+             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1:l1+radx0-1,:,:)
           endif
-          if (lrad<0) then
-             tau_yz(:,:,:,lrad,mrad,nrad)=tau(l1-radx0:l1-1,:,:)
-             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2+1:l2+radx0,:,:)
+          if (lrad>0) then
+             tau_yz (:,:,:,lrad,mrad,nrad)=tau (l2-radx0+1:l2,:,:)
+             Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2-radx0+1:l2,:,:)
           endif
           if (mrad<0) then
-             tau_zx(:,:,:,lrad,mrad,nrad)=tau(:,m1-rady0:m1-1,:)
-             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1-rady0:m1-1,:)
+             tau_zx (:,:,:,lrad,mrad,nrad)=tau (:,m1:m1+rady0-1,:)
+             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1:m1+rady0-1,:)
           endif
           if (mrad>0) then
-             tau_zx(:,:,:,lrad,mrad,nrad)=tau(:,m2+1:m2+rady0,:)
-             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2+1:m2+rady0,:)
+             tau_zx (:,:,:,lrad,mrad,nrad)=tau (:,m2-rady0+1:m2,:)
+             Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2-rady0+1:m2,:)
           endif
           if (nrad<0) then
-             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n1:n1+radz0-1)
+             tau_xy (:,:,:,lrad,mrad,nrad)=tau (:,:,n1:n1+radz0-1)
              Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1:n1+radz0-1)
           endif
           if (nrad>0) then
-             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n2-radz0+1:n2)
+             tau_xy (:,:,:,lrad,mrad,nrad)=tau (:,:,n2-radz0+1:n2)
              Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2-radz0+1:n2)
           endif
         endif
@@ -330,6 +330,8 @@ module Radiation
 !
 !  Vertical direction:
 !
+      !call radtransfer_comm_xyp
+      !call radtransfer_comm_xym
 !
 !  downward ray
 !  start at the top
@@ -407,16 +409,15 @@ module Radiation
               Irad0_yz(:,:,:,lrad,mrad,nrad)=0
               Irad0_zx(:,:,:,lrad,mrad,nrad)=0
               first=.false.
-           else
-              Irad0_yz(:,:,:,lrad,mrad,nrad) &
-                =Irad0_yz(:,:,:,lrad,mrad,nrad) &
-                 *exp(-tau_yz(:,:,:,lrad,mrad,nrad)) &
-                 +Irad_yz(:,:,:,lrad,mrad,nrad)
-              Irad0_zx(:,:,:,lrad,mrad,nrad) &
-                =Irad0_zx(:,:,:,lrad,mrad,nrad) &
-                 *exp(-tau_zx(:,:,:,lrad,mrad,nrad)) &
-                 +Irad_zx(:,:,:,lrad,mrad,nrad)
            endif
+           Irad0_yz(:,:,:,lrad,mrad,nrad) &
+             =Irad0_yz(:,:,:,lrad,mrad,nrad) &
+              *exp(-tau_yz(:,:,:,lrad,mrad,nrad)) &
+              +Irad_yz(:,:,:,lrad,mrad,nrad)
+           Irad0_zx(:,:,:,lrad,mrad,nrad) &
+             =Irad0_zx(:,:,:,lrad,mrad,nrad) &
+              *exp(-tau_zx(:,:,:,lrad,mrad,nrad)) &
+              +Irad_zx(:,:,:,lrad,mrad,nrad)
         endif
       enddo
       enddo
