@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.52 2002-06-07 14:37:04 brandenb Exp $ 
+! $Id: sub.f90,v 1.53 2002-06-07 17:50:45 brandenb Exp $ 
 
 module Sub 
 
@@ -1450,7 +1450,7 @@ module Sub
 !***********************************************************************
     subroutine htube(ampl,f,i,xx,yy,zz,radius,epsilon_nonaxi)
 !
-!  Horizontal flux tube
+!  Horizontal flux tube (for vector potential)
 !
 !   7-jun-02/axel+vladimir: coded
 !
@@ -1458,20 +1458,23 @@ module Sub
 !
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi
 !
-!  set Beltrami field
+!  set horizontal flux tubes
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
       else
-        tmp=exp(-(xx**2+zz**2)/radius)*(1.+epsilon_nonaxi*sin(yy))
+        print*,'implement y-dependent flux tube in xz-plane'
+        print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+        modulate=1.+epsilon_nonaxi*sin(yy)
+        tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(radius*modulate)**2)
         if ((ip<=8).and.lroot) print*,'horizontal flux tube: i=',i
-        f(:,:,:,i  )=+zz*ampl*tmp
+        f(:,:,:,i  )=+zz*tmp
         f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=-xx*ampl*tmp
+        f(:,:,:,i+2)=-xx*tmp
       endif
 !
     endsubroutine htube

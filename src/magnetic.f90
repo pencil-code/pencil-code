@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.37 2002-06-07 14:37:04 brandenb Exp $
+! $Id: magnetic.f90,v 1.38 2002-06-07 17:50:45 brandenb Exp $
 
 module Magnetic
 
@@ -13,13 +13,15 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., radius=.1, epsilon_nonaxi=1e-2
+  real :: amplaa=0., radius=.1, epsilonaa=1e-2
+  logical :: lpress_equil
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilon_nonaxi, &
-       initaa,amplaa
+       radius,epsilonaa, &
+       initaa,amplaa, &
+       lpress_equil
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -69,8 +71,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.37 $", &
-           "$Date: 2002-06-07 14:37:04 $")
+           "$Revision: 1.38 $", &
+           "$Date: 2002-06-07 17:50:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -89,11 +91,14 @@ module Magnetic
 !   7-nov-2001/wolf: coded
 !
       use Cdata
+      use Density
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz,3)    :: tmpv
       real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
+      real, dimension (nx,3) :: bb
+      real, dimension (nx) :: b2
       real, dimension(3) :: axis,disp
       real    :: phi,theta,ct,st,cp,sp
       real    :: fring,Iring,R0,width
@@ -112,7 +117,7 @@ module Magnetic
 !  Horizontal flux tube
 !
       elseif (initaa==2) then
-        call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilon_nonaxi)
+        call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -180,6 +185,20 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
                        spread(spread(sin(4*y),1,mx),3,mz)*&
                        spread(spread(cos(2*z),1,mx),2,my)
         if (lroot) print*, 'sinusoidal magnetic field: for debug purposes'
+      endif
+!
+!  allow for pressure equilibrium (for isothermal tube)
+!  assume that ghost zones have already been set.
+!
+      if (lpress_equil) then
+        print*,'adjust lnrho to have pressure equilibrium; cs0=',cs0
+        do n=n1,n2
+        do m=m1,m2
+          call curl(f,iaa,bb)
+          call dot2_mn(bb,b2)
+          f(l1:l2,m,n,ilnrho)=f(l1:l2,m,n,ilnrho)-b2/(2.*cs0**2)
+        enddo
+        enddo
       endif
 !
     endsubroutine init_aa
