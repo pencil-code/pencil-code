@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.24 2003-06-16 04:41:10 brandenb Exp $
+! $Id: nograv.f90,v 1.25 2003-06-27 04:47:06 brandenb Exp $
 
 module Gravity
 
@@ -15,7 +15,7 @@ module Gravity
     module procedure potential_penc
   endinterface
 
-  real :: z1,z2,zref,zgrav,gravz,zinfty  !(used by Entropy and Density)
+  real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   character (len=labellen) :: grav_profile='const'  !(used by Density)
@@ -49,7 +49,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.24 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: nograv.f90,v 1.25 2003-06-27 04:47:06 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.

@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $
+! $Id: grav_self.f90,v 1.7 2003-06-27 04:47:06 brandenb Exp $
 
 module Gravity
 
@@ -13,6 +13,7 @@ module Gravity
     module procedure potential_penc
   endinterface
 
+  real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
 
@@ -72,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: grav_self.f90,v 1.7 2003-06-27 04:47:06 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.

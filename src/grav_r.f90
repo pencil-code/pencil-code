@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $
+! $Id: grav_r.f90,v 1.36 2003-06-27 04:47:06 brandenb Exp $
 
 module Gravity
 
@@ -18,6 +18,7 @@ module Gravity
 
   ! coefficients for potential
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
+  real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
 
@@ -54,7 +55,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.36 2003-06-27 04:47:06 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
