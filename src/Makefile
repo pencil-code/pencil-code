@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.250 2003-10-23 10:21:32 dobler Exp $
+### $Id: Makefile,v 1.251 2003-10-23 18:36:18 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -112,7 +112,7 @@ PENCIL_MKFILE=makefile
 ##FC=mpif77 #(fe[0-3])
 #FC=ifc -i_dynamic -I/home/ajohan/opt/include #(nw46|nq1)
 #FC=ifc -i_dynamic #(ns0)
-#FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=ifc -I/usr/local/lib/LAM/include -L/usr/local/lib/LAM/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lutil #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)  
 ##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
@@ -122,7 +122,7 @@ PENCIL_MKFILE=makefile
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
 #FFLAGS=-O # (Samos)
 #FFLAGS= # (fire)
-#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
+#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
@@ -130,7 +130,7 @@ PENCIL_MKFILE=makefile
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
 #F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
-##FFLAGS=-O3 -ipo #(fe[0-3])
+#FFLAGS=-O3 -ipo -tpp7 #(fe[0-9])
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)

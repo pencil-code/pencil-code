@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $
+! $Id: radiation_ray.f90,v 1.37 2003-10-23 18:36:18 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -101,7 +101,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: radiation_ray.f90,v 1.37 2003-10-23 18:36:18 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -171,17 +171,17 @@ module Radiation
 !
       weight=1./ndir
 !
-      print*,'initialize_radiation: ndir=',ndir
+      if (lroot) print*,'initialize_radiation: ndir=',ndir
 !
 !  check boundary conditions
 !
-      print*,'initialize_radiation: bc_rad=',bc_rad
+      if (lroot) print*,'initialize_radiation: bc_rad=',bc_rad
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
-      print*,'initialize_radiation: bc_rad1,bc_rad2=',bc_rad1,bc_rad2
+      if (lroot) print*,'initialize_radiation: bc_rad1,bc_rad2=',bc_rad1,bc_rad2
 !
 !  info about numerical scheme in subroutine Qintr
 !
-      print*,'initialize_radiation: l2ndorder=',l2ndorder
+      if (lroot) print*,'initialize_radiation: l2ndorder=',l2ndorder
 !
     endsubroutine initialize_radiation
 !***********************************************************************
