@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.138 2004-07-03 02:13:14 theine Exp $
+! $Id: register.f90,v 1.139 2004-07-04 03:13:40 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -124,7 +124,6 @@ module Register
       use Print
 !      use Hydro
 !      use Density
-      use Deriv,        only: initialize_deriv
       use Timeavg,      only: initialize_timeavg
       use Gravity,      only: initialize_gravity
       use Forcing,      only: initialize_forcing
@@ -215,7 +214,6 @@ module Register
 !  run initialization of individual modules
 !
 !      call initialize_io
-      call initialize_deriv
       call initialize_prints
 !ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages

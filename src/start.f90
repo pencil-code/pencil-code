@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.135 2004-06-22 10:16:17 bingert Exp $
+! $Id: start.f90,v 1.136 2004-07-04 03:13:40 theine Exp $
 !
 !***********************************************************************
       program start
@@ -10,6 +10,7 @@
 !  01-sep-01/axel: adapted to MPI
 !
         use Cdata
+        use Grid
         use General
         use Initcond
         use Mpicomm
@@ -37,7 +38,6 @@
         real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
-        real, dimension (mz) :: zprim,zprim2
         real :: x00,y00,z00
         real :: c_grid1
 !
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.135 2004-06-22 10:16:17 bingert Exp $")
+             "$Id: start.f90,v 1.136 2004-07-04 03:13:40 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -141,71 +141,9 @@
         seed(1) = -(10+iproc)    ! different random numbers on different CPUs
         call random_seed_wrapper(put=seed(1:nseed))
 !
-!  generate mesh, |x| < Lx, and similar for y and z.
-!  lperi indicate periodicity of given direction
-!  dgm: allow for shifted origin when non-periodic
+!  generate grid
 !
-        
-
-        if (lperi(1)) then 
-          dx=Lx/nxgrid
-          x00=x0+.5*dx
-        else; 
-          dx=Lx/(nxgrid-1)
-          x00=x0
-          if (lshift_origin(1)) x00=x0+.5*dx
-        endif
-        if (lperi(2)) then
-          dy=Ly/nygrid
-          y00=y0+.5*dy
-        else
-          dy=Ly/(nygrid-1)
-          y00=y0
-          if (lshift_origin(2)) y00=y0+.5*dy
-        endif
-        if (lperi(3)) then
-          dz=Lz/nzgrid
-          z00=z0+.5*dz
-        else
-          dz=Lz/(nzgrid-1)
-          z00=z0
-          if (lshift_origin(3)) z00=z0+.5*dz
-        endif
-!
-!  set x,y,z arrays
-!
-
-        do i=1,mx; x(i)=x00+(i-nghost-1+ipx*nx)*dx; enddo
-        do i=1,my; y(i)=y00+(i-nghost-1+ipy*ny)*dy; enddo
-        do i=1,mz; zeta_grid(i)=i-nghost-1+ipz*nz; enddo 
-        if (.not. lequidist(1) .or. .not. lequidist(2)) then 
-          call stop_it('start: no non equidistant grid_func for x and y direction')
-        endif
-        if (.not. lequidist(3)) then 
-          select case(grid_func)
-          case ('linear') 
-            z=z00+zeta_grid*dz
-            zprim=dz
-            zprim2=0.
-          case ('sinh')
-            c_grid1=Lz/(sinh(coef_grid(1)*(zeta_grid(n2)-zeta_grid0))- &
-                        sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
-            z     =z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
-            zprim =c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
-            zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid&
-                 &-zeta_grid0))
-            zetaprim=1/zprim
-            zetaprim2=-zprim2/zprim**3
-            if (notanumber(zetaprim))  call stop_it('NaNs in zetaprim')
-            if (notanumber(zetaprim2)) call stop_it('NaNs in zetaprim2')
-!             
-          case default
-            call stop_it('start: Unknown grid_func for no equidistant z-grid')
-          endselect
-        else
-          z=z00+zeta_grid*dz
-        endif
-        
+        call construct_grid(x,y,z,dx,dy,dz)
 !
 !  write grid.dat file
 !

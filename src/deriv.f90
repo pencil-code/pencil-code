@@ -1,7 +1,9 @@
-! $Id: deriv.f90,v 1.18 2004-07-03 02:13:13 theine Exp $
+! $Id: deriv.f90,v 1.19 2004-07-04 03:13:40 theine Exp $
 
 module Deriv
   
+  use Cdata, only: mx,my,mz
+  use Cdata, only: lequidist
   use Mpicomm, only: stop_it
 
   implicit none
@@ -11,51 +13,10 @@ module Deriv
     module procedure der_other  ! derivative of another field
   endinterface
 
-  
   contains
 
 !***********************************************************************
-    subroutine initialize_deriv()
-!
-!  should be moved to grid.f90
-!
-      use Cdata, only: dx,dy,dz
-      use Cdata, only: dx_1,dy_1,dz_1
-
-      dx_1=1./dx
-      dy_1=1./dy
-      dz_1=1./dz
-
-    endsubroutine initialize_deriv
-!***********************************************************************
     subroutine der_main(f,k,df,j)
-!
-!  calculate derivative df_k/dx_j
-!  accurate to 6th order, explicit, periodic
-!  replace cshifts by explicit construction -> x6.5 faster!
-!
-!  28-may-04/bing+wolf: adapted for nonequidistant grid
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      integer :: j,k
-
-      call der_equidist(f,k,df,j)
-      if (.not. lequidist(j)) then
-         if (j==1) then
-            df = df * dx * xiprim(l1:l2)
-         elseif (j==2) then
-            df = df * dy * psiprim(m)
-         elseif (j==3) then
-            df = df * dz * zetaprim(n)
-         endif
-      endif
-!
-    end subroutine der_main
-!***********************************************************************
-    subroutine der_equidist(f,k,df,j)
 !
 !  calculate derivative df_k/dx_j
 !  accurate to 6th order, explicit, periodic
@@ -63,17 +24,17 @@ module Deriv
 !   1-oct-97/axel: coded
 !  18-jul-98/axel: corrected mx -> my and mx -> mz in all y and z ders
 !   1-apr-01/axel+wolf: pencil formulation
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      real :: fac
+      real, dimension (nx) :: df,fac
       integer :: j,k
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=1./(60.*dx)
+          fac=(1./60.)*dx_1(l1:l2)
           df=fac*(45.*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
                   -9.*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
                      +(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
@@ -83,7 +44,7 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=1./(60.*dy)
+          fac=(1./60.)*dy_1(m)
           df=fac*(45.*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
                   -9.*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
                      +(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
@@ -93,7 +54,7 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=1./(60.*dz)
+          fac=(1./60.)*dz_1(n)
           df=fac*(45.*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
                   -9.*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
                      +(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
@@ -103,7 +64,7 @@ module Deriv
         endif
       endif
 !
-    endsubroutine der_equidist
+    endsubroutine der_main
 !***********************************************************************
     subroutine der_other(f,df,j)
 !
@@ -113,21 +74,17 @@ module Deriv
 !  replace cshifts by explicit construction -> x6.5 faster!
 !   26-nov-02/tony: coded - duplicate der_main but without k subscript
 !                           then overload the der interface.
+!   25-jun-04/tobi+wolf: adapted for non-equidistant grids
 
       use Cdata
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (nx) :: df
-      real :: fac
+      real, dimension (nx) :: df,fac
       integer :: j
 !
-      if (.not. lequidist(j)) then
-        call stop_it('der_other: NOT IMPLEMENTED for no equidistant grid')
-      endif
-
       if (j==1) then
         if (nxgrid/=1) then
-          fac=1./(60.*dx)
+          fac=(1./60.)*dx_1(l1:l2)
           df=fac*(45.*(f(l1+1:l2+1,m,n)-f(l1-1:l2-1,m,n)) &
                   -9.*(f(l1+2:l2+2,m,n)-f(l1-2:l2-2,m,n)) &
                      +(f(l1+3:l2+3,m,n)-f(l1-3:l2-3,m,n)))
@@ -137,7 +94,7 @@ module Deriv
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=1./(60.*dy)
+          fac=(1./60.)*dy_1(m)
           df=fac*(45.*(f(l1:l2,m+1,n)-f(l1:l2,m-1,n)) &
                   -9.*(f(l1:l2,m+2,n)-f(l1:l2,m-2,n)) &
                      +(f(l1:l2,m+3,n)-f(l1:l2,m-3,n)))
@@ -147,7 +104,7 @@ module Deriv
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=1./(60.*dz)
+          fac=(1./60.)*dz_1(n)
           df=fac*(45.*(f(l1:l2,m,n+1)-f(l1:l2,m,n-1)) &
                   -9.*(f(l1:l2,m,n+2)-f(l1:l2,m,n-2)) &
                      +(f(l1:l2,m,n+3)-f(l1:l2,m,n-3)))
@@ -163,80 +120,63 @@ module Deriv
 !
 !  calculate 2nd derivative d^2f_k/dx_j^2
 !  accurate to 6th order, explicit, periodic
-!
-!  28-may-04/bing+wolf: adapted for nonequidistant grid
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df2,df
-      integer :: j,k
-
-      intent(in)  :: f,k,j 
-      intent(out) :: df2
-      
-      call der2_equidist(f,k,df2,j)
-      if (.not. lequidist(j)) then
-         call der_equidist(f,k,df,j)
-         if (j==1) then
-            df2 = df2*(dx*xiprim(l1:l2))**2+ df*xiprim2(l1:l2)*dx
-         elseif (j==2) then
-            df2 = df2*(dy*psiprim(m))**2   + df*psiprim2(m)*dy
-         elseif (j==3) then
-            df2 = df2*(dy*zetaprim(n))**2  + df*zetaprim2(n)*dz
-         endif
-      endif
-
-    end subroutine der2
-!***********************************************************************
-    subroutine der2_equidist(f,k,df,j)
-!
-!  calculate 2nd derivative d^2f_k/dx_j^2
-!  accurate to 6th order, explicit, periodic
 !  replace cshifts by explicit construction -> x6.5 faster!
 !   1-oct-97/axel: coded
 !   1-apr-01/axel+wolf: pencil formulation
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      real :: fac
+      real, dimension (nx) :: df2,fac,df
       integer :: j,k
 !
       if (j==1) then
         if (nxgrid/=1) then
-          fac=1./(180.*dx**2)
-          df=fac*(-490.*f(l1:l2    ,m,n,k) &
-                 +270.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
-                  -27.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
-                   +2.*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          fac=(1./180.)*dx_1(l1:l2)**2
+          df2=fac*(-490.*f(l1  :l2  ,m,n,k) &
+                  +270.*(f(l1+1:l2+1,m,n,k)+f(l1-1:l2-1,m,n,k)) &
+                   -27.*(f(l1+2:l2+2,m,n,k)+f(l1-2:l2-2,m,n,k)) &
+                    +2.*(f(l1+3:l2+3,m,n,k)+f(l1-3:l2-3,m,n,k)))
+          if (.not.lequidist(j)) then
+            call der(f,k,df,j)
+            df2=df2+dx_tilde(l1:l2)*df
+          endif
         else
-          df=0.
+          df2=0.
         endif
       elseif (j==2) then
         if (nygrid/=1) then
-          fac=1./(180.*dy**2)
-          df=fac*(-490.*f(l1:l2,m  ,n,k) &
-                 +270.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
-                  -27.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
-                   +2.*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          fac=(1./180.)*dy_1(m)**2
+          df2=fac*(-490.*f(l1:l2,m  ,n,k) &
+                  +270.*(f(l1:l2,m+1,n,k)+f(l1:l2,m-1,n,k)) &
+                   -27.*(f(l1:l2,m+2,n,k)+f(l1:l2,m-2,n,k)) &
+                    +2.*(f(l1:l2,m+3,n,k)+f(l1:l2,m-3,n,k)))
+          if (.not.lequidist(j)) then
+            call der(f,k,df,j)
+            df2=df2+dy_tilde(m)*df
+          endif
         else
-          df=0.
+          df2=0.
         endif
       elseif (j==3) then
         if (nzgrid/=1) then
-          fac=1./(180.*dz**2)
-          df=fac*(-490.*f(l1:l2,m,n  ,k) &
-                 +270.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
-                  -27.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
-                   +2.*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          fac=(1./180.)*dz_1(n)**2
+          df2=fac*(-490.*f(l1:l2,m,n  ,k) &
+                  +270.*(f(l1:l2,m,n+1,k)+f(l1:l2,m,n-1,k)) &
+                   -27.*(f(l1:l2,m,n+2,k)+f(l1:l2,m,n-2,k)) &
+                    +2.*(f(l1:l2,m,n+3,k)+f(l1:l2,m,n-3,k)))
+          if (.not.lequidist(j)) then
+            call der(f,k,df,j)
+            df2=df2+dz_tilde(n)*df
+          endif
         else
-          df=0.
+          df2=0.
         endif
       endif
+
 !
-    endsubroutine der2_equidist
+    endsubroutine der2
 !***********************************************************************
     subroutine der6(f,k,df,j,ignoredx,upwind)
 !
@@ -422,17 +362,17 @@ module Deriv
 !  input: scalar, output: scalar
 !  accurate to 6th order, explicit, periodic
 !   8-sep-01/axel: coded
+!  25-jun-04/tobi+wolf: adapted for non-equidistant grids
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: df
-      real :: fac
+      real, dimension (nx) :: df,fac
       integer :: i,j,k
 !
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
         if (nxgrid/=1.and.nygrid/=1) then
-          fac=1./(60.**2*dx*dy)
+          fac=(1./60.**2)*dx_1(l1:l2)*dy_1(m)
           df=fac*( &
             45.*((45.*(f(l1+1:l2+1,m+1,n,k)-f(l1-1:l2-1,m+1,n,k))  &
                   -9.*(f(l1+2:l2+2,m+1,n,k)-f(l1-2:l2-2,m+1,n,k))  &
@@ -452,20 +392,14 @@ module Deriv
                 -(45.*(f(l1+1:l2+1,m-3,n,k)-f(l1-1:l2-1,m-3,n,k))  &
                   -9.*(f(l1+2:l2+2,m-3,n,k)-f(l1-2:l2-2,m-3,n,k))  &
                      +(f(l1+3:l2+3,m-3,n,k)-f(l1-3:l2-3,m-3,n,k))))&
-                     )
-          if (.not. lequidist(1)) then
-            df =  df * dz * xiprim(l1:l2)
-          endif
-          if (.not. lequidist(2)) then
-            df =  df * dz * psiprim(m)
-          endif
+                 )
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in x-direction'
         endif
       elseif ((i==2.and.j==3).or.(i==3.and.j==2)) then
         if (nygrid/=1.and.nzgrid/=1) then
-          fac=1./(60.**2*dy*dz)
+          fac=(1./60.**2)*dy_1(m)*dz_1(n)
           df=fac*( &
             45.*((45.*(f(l1:l2,m+1,n+1,k)-f(l1:l2,m-1,n+1,k))  &
                   -9.*(f(l1:l2,m+2,n+1,k)-f(l1:l2,m-2,n+1,k))  &
@@ -486,19 +420,13 @@ module Deriv
                   -9.*(f(l1:l2,m+2,n-3,k)-f(l1:l2,m-2,n-3,k))  &
                      +(f(l1:l2,m+3,n-3,k)-f(l1:l2,m-3,n-3,k))))&
                  )
-          if (.not. lequidist(3)) then
-            df =  df * dz * zetaprim(n)
-          endif
-          if (.not. lequidist(2)) then
-            df =  df * dz * psiprim(m)
-          endif
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in y-direction'
         endif
       elseif ((i==3.and.j==1).or.(i==1.and.j==3)) then
         if (nzgrid/=1.and.nxgrid/=1) then
-          fac=1./(60.**2*dz*dx)
+          fac=(1./60.**2)*dz_1(n)*dx_1(l1:l2)
           df=fac*( &
             45.*((45.*(f(l1+1:l2+1,m,n+1,k)-f(l1-1:l2-1,m,n+1,k))  &
                   -9.*(f(l1+2:l2+2,m,n+1,k)-f(l1-2:l2-2,m,n+1,k))  &
@@ -519,18 +447,10 @@ module Deriv
                   -9.*(f(l1+2:l2+2,m,n-3,k)-f(l1-2:l2-2,m,n-3,k))  &
                      +(f(l1+3:l2+3,m,n-3,k)-f(l1-3:l2-3,m,n-3,k))))&
                  )
-          if (.not. lequidist(3)) then
-            df =  df * dz * zetaprim(n)
-          endif 
-          if (.not. lequidist(1)) then
-            df =  df * dz * xiprim(l1:l2)
-          endif
         else
           df=0.
           if (ip.le.10) print*, 'derij: Degenerate case in z-direction'
         endif
-      !else
-      ! (don't waste any time if i=j)
       endif
 !
     endsubroutine derij

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.239 2004-07-03 02:13:13 theine Exp $
+! $Id: cdata.f90,v 1.240 2004-07-04 03:13:40 theine Exp $
 
 module Cdata
 
@@ -7,11 +7,11 @@ module Cdata
   Use Cparam
 
   integer :: itorder=3
-  real, dimension (mx) :: x,xiprim,xiprim2,dx_1
-  real, dimension (my) :: y,psiprim,psiprim2,dy_1
-  real, dimension (mz) :: z,zetaprim,zetaprim2,zeta_grid,dz_1
-  real, dimension (nrcyl) :: rcyl  ! used for phi-averages
+  real, dimension (mx) :: x,dx_1,dx_tilde
+  real, dimension (my) :: y,dy_1,dy_tilde
+  real, dimension (mz) :: z,dz_1,dz_tilde
   real, dimension (nx) :: dxyz_2
+  real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
   real, dimension (nx) :: maxdss,maxdlnrho
@@ -26,7 +26,7 @@ module Cdata
 
   real, parameter :: pi=3.14159265358979324D0
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0)
-  real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
+  real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
   real :: t,dt=0.
   real, dimension (3) :: alpha,beta,dt_beta
   real :: cdt=0.4,cdtv=0.3,cdts=1.0,cdtr=1.0
@@ -61,7 +61,7 @@ module Cdata
   real :: grads0=0.   ! (1/c_p)ds/dz
   real :: Omega=0.,qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
-  real, dimension(1) :: coef_grid
+  real, dimension(3,1) :: coeff_grid=1.0
   real :: zeta_grid0
 
   integer, dimension(mseed) :: seed=0
@@ -82,7 +82,8 @@ module Cdata
   integer, dimension(ndustspec) :: iuud,iudx,iudy,iudz,ind,imd,imi
   logical, dimension(3) :: lperi,lshift_origin
   logical, dimension(3) :: lequidist=(/.true.,.true.,.true. /)
-  character (len=labellen) ::fft_switch='fftpack',grid_func='linear'
+  character (len=labellen), dimension(3) :: grid_func='linear'
+  character (len=labellen) ::fft_switch='fftpack'
   character (len=1) :: slice_position='p'
 !
 !  coordinates of the point where some quantities can be printed

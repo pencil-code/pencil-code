@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.73 2004-06-22 10:16:17 bingert Exp $
+! $Id: io_dist.f90,v 1.74 2004-07-04 03:13:40 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.73 2004-06-22 10:16:17 bingert Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.74 2004-07-04 03:13:40 theine Exp $")
 !
     endsubroutine register_io
 !
@@ -347,8 +347,8 @@ contains
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
-      write(1) xiprim, psiprim ,zetaprim
-      write(1) xiprim2,psiprim2,zetaprim2
+      write(1) dx_1,dy_1,dz_1
+      write(1) dx_tilde,dy_tilde,dz_tilde
       close(1)
 !
     endsubroutine wgrid
@@ -374,8 +374,8 @@ contains
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
-      read(1,end=990) xiprim, psiprim ,zetaprim
-      read(1) xiprim2,psiprim2,zetaprim2
+      read(1,end=990) dx_1,dy_1,dz_1
+      read(1) dx_tilde,dy_tilde,dz_tilde
 990   close(1)
 !
 !  give notification if Lx is not read in
