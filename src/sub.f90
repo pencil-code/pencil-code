@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.157 2004-01-31 14:48:19 dobler Exp $ 
+! $Id: sub.f90,v 1.158 2004-02-07 20:30:12 brandenb Exp $ 
 
 module Sub 
 
@@ -1267,6 +1267,56 @@ module Sub
       endif
 !
     endsubroutine del2v_etc
+!***********************************************************************
+    subroutine del2vi_etc(f,k,ii,del2,graddiv,curlcurl)
+!
+!  calculates a number of second derivative expressions of a vector
+!  outputs a number of different vector fields.
+!  Surprisingly, calling derij only if graddiv or curlcurl are present
+!  does not speed up the code on Mephisto @ 32x32x64.
+!  Just do the ith component
+!
+!   7-feb-04/axel: adapted from del2v_etc
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,3,3) :: fjji,fijj
+      real, dimension (nx), optional :: del2,graddiv,curlcurl
+      real, dimension (nx) :: tmp
+      integer :: i,j,k,k1,ii
+!
+      intent(in) :: f,k,ii
+      intent(out) :: del2,graddiv,curlcurl
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+      do j=1,3
+        call der2 (f,k1+i,tmp,  j); fijj(:,i,j)=tmp  ! f_{i,jj}
+        call derij(f,k1+j,tmp,j,i); fjji(:,i,j)=tmp  ! f_{j,ji}
+      enddo
+      enddo
+!
+      if (present(del2)) then
+        del2=fijj(:,ii,1)+fijj(:,ii,2)+fijj(:,ii,3)
+      endif
+!
+      if (present(graddiv)) then
+        graddiv=fjji(:,ii,1)+fjji(:,ii,2)+fjji(:,ii,3)
+      endif
+!
+      if (present(curlcurl)) then
+        select case (ii)
+        case(1); curlcurl=fjji(:,1,2)-fijj(:,1,2)+fjji(:,1,3)-fijj(:,1,3)
+        case(2); curlcurl=fjji(:,2,3)-fijj(:,2,3)+fjji(:,2,1)-fijj(:,2,1)
+        case(3); curlcurl=fjji(:,3,1)-fijj(:,3,1)+fjji(:,3,2)-fijj(:,3,2)
+        endselect
+      endif
+!
+    endsubroutine del2vi_etc
 !***********************************************************************
     subroutine bij_etc(f,iref,Bij,del2)
 !

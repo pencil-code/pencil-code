@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.42 2004-02-07 11:12:21 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.43 2004-02-07 20:30:12 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.42 2004-02-07 11:12:21 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.43 2004-02-07 20:30:12 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -140,10 +140,10 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  integer :: i,k,ikx,iky,ikz,im,in,ivec,ivec_jj
   real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
-  real, dimension(nx) :: bbi
+  real, dimension(nx) :: bbi,jji
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
   real, dimension(nxgrid) :: kx
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.42 2004-02-07 11:12:21 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.43 2004-02-07 20:30:12 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -207,10 +207,19 @@ module  power_spectrum
       a_im=0.
       b_im=0.
     elseif (sp=='uxj') then
+      do n=n1,n2
+        do m=m1,m2
+          if(ivec==1) ivec_jj=2
+          if(ivec==2) ivec_jj=1
+          if(ivec/=3) call del2vi_etc(f,iaa,ivec_jj,curlcurl=jji)
+          im=m-nghost
+          in=n-nghost
+          if(ivec==1) b_re(:,im,in)=+jji
+          if(ivec==2) b_re(:,im,in)=-jji
+          if(ivec==3) b_re(:,im,in)=+0.
+        enddo
+      enddo
       a_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-      if (ivec==1) b_re=+f(l1:l2,m1:m2,n1:n2,iay)
-      if (ivec==2) b_re=-f(l1:l2,m1:m2,n1:n2,iax)
-      if (ivec==3) b_re=+0.
       a_im=0.
       b_im=0.
     endif
@@ -302,7 +311,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.42 2004-02-07 11:12:21 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.43 2004-02-07 20:30:12 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -413,7 +422,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.42 2004-02-07 11:12:21 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.43 2004-02-07 20:30:12 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
