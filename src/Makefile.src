@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.4 2003-11-10 16:25:36 mee Exp $
+### $Id: Makefile.src,v 1.5 2003-11-10 16:43:13 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -215,11 +215,14 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 .SUFFIXES: .f90 .mod
 
 .f.o:
-	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f $(FCCLEANER)
+	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f 
+#$(FCCLEANER)
 .f90.o:
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 $(FCCLEANER)
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
+#$(FCCLEANER)
 .mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
-	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 $(FCCLEANER)
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90 
+#$(FCCLEANER)
 .c.o:
 	$(CC) $(CFLAGS) $(CFLAGS_GENERAL) -c $*.c
 
@@ -265,7 +268,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x
+	$(MAKE) start.x run.x read_videofiles.x read_vectorfiles.x $(FCCLEANER)
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x 
