@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.155 2003-11-25 15:40:01 mcmillan Exp $
+! $Id: magnetic.f90,v 1.156 2003-11-25 15:53:09 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -58,7 +58,8 @@ module Magnetic
        eta,B_ext,alpha_effect, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       bthresh,bthresh_per_brms,iresistivity,lres_hyper, &
+       bthresh,bthresh_per_brms, &
+       iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,wresistivity
 
   ! other variables (needs to be consistent with reset list below)
@@ -109,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.155 2003-11-25 15:40:01 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.156 2003-11-25 15:53:09 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -267,8 +268,8 @@ module Magnetic
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
-      real, dimension (nx) :: eta_mn,divA            ! dgm: 
-      real, dimension (nx,3) :: geta,eta_mn3,divA3   ! for eta_spatial
+      real, dimension (nx) :: eta_mn,divA        ! dgm: 
+      real, dimension (nx,3) :: geta             ! for eta_spatial
       real :: etamax,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
