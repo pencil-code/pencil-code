@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.88 2002-10-04 17:31:08 dobler Exp $ 
+! $Id: sub.f90,v 1.89 2002-10-04 18:02:27 dobler Exp $ 
 
 module Sub 
 
@@ -1814,30 +1814,70 @@ module Sub
 !
     endsubroutine get_nseed
 !***********************************************************************
-    function date_time_string()
+    subroutine write_dx_general(file)
 !
-!  return current date and time as a string
+!  Write .general file for data explorer (aka DX)
 !  4-oct-02/wolf: coded
 !
-      character (len=20) :: date_time_string
+      use Cdata
+!
+      character (len=*) :: file
+      character(datelen) :: date
+!
+      call date_time_string(date)
+!
+      open(1,FILE=file)
+!
+      write(1,'(A)'  ) '# Creator: The Pencil Code'
+      write(1,'(A,A)') '# Date: ', trim(date)
+      write(1,'(A,A)') 'file = ', trim(datadir)//'/proc0/var.dat'
+      write(1,'(A,I4," x ",I4," x ",I4)') 'grid = ', mx, my, mz 
+      write(1,'(A)'  ) '# NB: setting lsb (little endian); may need to change this to msb'
+      write(1,'(A,A," ",A)') 'format = ', 'lsb', 'ieee'
+      write(1,'(A,A)') 'header = ', 'bytes 4'
+      write(1,'(A,A)') 'interleaving = ', 'record'
+      write(1,'(A,A)') 'majority = ', 'column'
+      write(1,'(A,A)') 'field = ', 'uu'
+      write(1,'(A,A)') 'structure = ', '3-vector'
+      write(1,'(A,A)') 'type = ', 'float'
+      write(1,'(A,A)') 'dependency = ', 'positions'
+      write(1,'(A,A,6(", ",G))') 'positions = ', &
+           'regular, regular, regular', &
+           x0, dx, y0, dy, z0, dz 
+      write(1,'(A)') ''
+      write(1,'(A)') 'end'
+!
+      close(1)
+!
+    endsubroutine write_dx_general
+!***********************************************************************
+    subroutine date_time_string(date)
+!
+!  Return current date and time as a string.
+!  Subroutine, because nested writes don't work on some machines, so
+!  calling a function like
+!    print*, date_time_string()
+!  may crash mysteriously.
+!
+!  4-oct-02/wolf: coded
+!
+      use Mpicomm, only: stop_it
+!
+      character (len=*) :: date
       integer, dimension(8) :: values
       character (len=3), dimension(12) :: month = &
            (/ 'jan', 'feb', 'mar', 'apr', 'may', 'jun', &
               'jul', 'aug', 'sep', 'oct', 'nov', 'dec' /)
 !
-print*, 'BEFORE ====================='
-      call date_and_time(VALUES=values)
-print*, 'MIDDLE ====================='
-print*, 'VALUES = ', values
+      if (len(date) < 20) &
+        call stop_it('DATE_TIME_STRING: string arg too short')
 !
-      write(date_time_string,'(I2,"-",A3,"-",I4," ",I2,":",I2,":",I2)') &
+      call date_and_time(VALUES=values)
+      write(date,'(I2,"-",A3,"-",I4," ",I2,":",I2,":",I2)') &
            values(3), month(values(3)), values(1), &
            values(5), values(6), values(7)
-print*, date_time_string
-print*, 'AFTER ======================'
-
 !
-    endfunction date_time_string
+    endsubroutine date_time_string
 !***********************************************************************
     subroutine blob(ampl,f,i,radius,xblob,yblob,zblob)
 !

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.49 2002-10-04 17:31:08 dobler Exp $
+! $Id: register.f90,v 1.50 2002-10-04 18:02:27 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -134,8 +134,6 @@ module Register
       call rprint_pscalar(lreset)
       close(3)
 !
-      call write_dx_general(trim(datadir)//'/var.general')
-!
     endsubroutine rprint_list
 !***********************************************************************
     subroutine rprint_general(lreset)
@@ -176,44 +174,6 @@ module Register
       write(3,*) 'nname=',nname
 !
     endsubroutine rprint_general
-!***********************************************************************
-    subroutine write_dx_general(file)
-!
-!  write .general file for data explorer (aka DX)
-!  4-oct-02/wolf: coded
-!
-      use Cdata
-      use Sub, only: date_time_string
-!
-      character (len=*) :: file
-!
-      open(1,FILE=file)
-!
-      write(1,'(A)') '# Creator: The Pencil Code'
-print*,'1. ====='
-      write(1,'(A,A)') date_time_string()
-print*,'2. ====='
-      write(1,'(A)') '# Date:'
-      write(1,'(A,A)') 'file = ', trim(datadir)//'/proc0/var.dat'
-      write(1,'(A,I4," x ",I4," x ",I4,)') 'grid = ', mx, my, mz 
-      write(1,'(A)') '# NB: setting lsb (little endian); may need to change this to msb'
-      write(1,'(A,A," ",A)') 'format = ', 'lsb', 'ieee'
-      write(1,'(A,A)') 'header = ', 'bytes 4'
-      write(1,'(A,A)') 'interleaving = ', 'record'
-      write(1,'(A,A)') 'majority = ', 'column'
-      write(1,'(A,A)') 'field = ', 'uu'
-      write(1,'(A,A)') 'structure = ', '3-vector'
-      write(1,'(A,A)') 'type = ', 'float'
-      write(1,'(A,A)') 'dependency = ', 'positions'
-      write(1,'(A,A,A,6(", ",G10.6))') 'positions = ', &
-           'regular, regular, regular', &
-           xyz0(1), dx, xyz0(2), dy,  xyz0(3), dz 
-      write(1,'(A)') ''
-      write(1,'(A)') 'end'
-!
-      close(1)
-!
-    endsubroutine write_dx_general
 !***********************************************************************
 
 endmodule Register
