@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.251 2003-11-25 09:11:31 mcmillan Exp $
+! $Id: entropy.f90,v 1.252 2003-11-25 15:11:27 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.251 2003-11-25 09:11:31 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.252 2003-11-25 15:11:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1151,7 +1151,7 @@ endif
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,maxval(gamma*chix+chi_t))
 !--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond
