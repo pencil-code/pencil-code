@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.78 2003-04-08 18:26:19 brandenb Exp $
+! $Id: density.f90,v 1.79 2003-04-10 09:38:11 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.78 2003-04-08 18:26:19 brandenb Exp $")
+           "$Id: density.f90,v 1.79 2003-04-10 09:38:11 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -475,6 +475,7 @@ module Density
 !
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !  11-jul-02/axel: fixed sign; should be tmp=gamma*pot/cs20
+!  02-apr-03/tony: made entropy explicit rather than using tmp/-gamma  
 !
       use Gravity
 !
@@ -489,7 +490,8 @@ module Density
         call potential(x(l1:l2),y(m),z(n),pot)
         tmp=-gamma*pot/cs20
         f(l1:l2,m,n,ilnrho)=lnrho0+tmp
-        if(lentropy) f(l1:l2,m,n,ient)=-gamma1/gamma*tmp
+!        if(lentropy) f(l1:l2,m,n,ient)=-gamma1/gamma*tmp
+        if(lentropy) f(l1:l2,m,n,ient)=gamma1*pot/cs20
       enddo
       enddo
 
