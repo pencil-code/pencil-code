@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.6 2003-08-25 19:44:12 mee Exp $
+; $Id: pc_read_ts.pro,v 1.7 2003-11-06 17:33:04 dobler Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2003-08-25 19:44:12 $
-;  $Revision: 1.6 $
+;  $Date: 2003-11-06 17:33:04 $
+;  $Revision: 1.7 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -145,6 +145,7 @@ if (found gt 0) then begin
 end else begin
     message, 'ERROR: cannot find file ' + fullfilename
 end
+FREE_LUN, file
 
 ;
 ;  read table
