@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.44 2003-08-19 11:00:58 mee Exp $
+! $Id: interstellar.f90,v 1.45 2003-08-19 12:04:08 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.44 2003-08-19 11:00:58 mee Exp $")
+           "$Id: interstellar.f90,v 1.45 2003-08-19 12:04:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -687,7 +687,7 @@ find_SN: do n=n1,n2
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
       real, dimension(nx) :: deltarho, deltaEE, ee_old
-      real, dimension(nx) :: rho_old, TT_old, ss_new,lnrho_new
+      real, dimension(nx) :: rho_old, TT_old, TT_new, ss_new,lnrho_new
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
      ! the following not really wanted, but are required if we want
@@ -722,7 +722,7 @@ find_SN: do n=n1,n2
       call perturb_energy(lnrho_SN,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
 
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min =', $
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min =', &
                                 TT_SN,TT_SN_new,TT_SN_min
 
       if (TT_SN_new < TT_SN_min) then
@@ -741,7 +741,7 @@ find_SN: do n=n1,n2
          call perturb_energy(lnrho_SN_new,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
 
          if(lroot) print*, &
-            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', $
+            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
