@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.16 2002-06-19 10:39:45 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $
 
 module Magnetic
 
@@ -41,9 +41,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-06-19 10:39:45 $")
+           "$Id: nomagnetic.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $")
 !
     endsubroutine register_aa
 !***********************************************************************

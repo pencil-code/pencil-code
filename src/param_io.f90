@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $ 
+! $Id: param_io.f90,v 1.30 2002-06-25 14:58:47 dobler Exp $ 
 
 module Param_IO
 
@@ -8,7 +8,7 @@ module Param_IO
 !  Using this module is also a compact way of referring to all physics
 !  modules at once.
 !
-! use Timestep
+  use Sub
   use Hydro
   use Forcing
   use Gravity
@@ -54,10 +54,7 @@ module Param_IO
 !  output on the console, but only when root processor
 !
 !  print cvs id from first line
-!  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $
-!   and extract the pieces it needs]
-      if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
+      if(lroot) call cvs_id(cvsid)
 !
       if (lroot.and.ip<14) then
                        write(*,NML=init_pars         )
@@ -107,14 +104,7 @@ module Param_IO
       close(1)
 !
 !  print cvs id from first line
-!  [temporary solution; should have cvs_id parse the line
-!  $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $
-!  and extract the pieces it needs]
-!  for general debugging, put ip<7
-!
-      if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
-      ldebug=lroot.and.(ip<7)
-      print*,'ldebug=',ldebug
+      if(lroot) call cvs_id(cvsid)
 !
 !  Write data to file for IDL
 !

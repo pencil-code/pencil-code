@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.16 2002-06-25 12:25:52 dobler Exp $
+! $Id: density.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $
 
 module Density
 
@@ -53,9 +53,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: density.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-06-25 12:25:52 $")
+           "$Id: density.f90,v 1.17 2002-06-25 14:58:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.22 2002-06-24 17:45:29 brandenb Exp $
+! $Id: noentropy.f90,v 1.23 2002-06-25 14:58:47 dobler Exp $
 
 module Entropy
 
@@ -44,9 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-06-24 17:45:29 $")
+           "$Id: noentropy.f90,v 1.23 2002-06-25 14:58:47 dobler Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************

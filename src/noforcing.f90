@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.4 2002-06-01 09:36:38 brandenb Exp $
+! $Id: noforcing.f90,v 1.5 2002-06-25 14:58:47 dobler Exp $
 
 module Forcing
 
@@ -34,9 +34,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: noforcing.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Id: noforcing.f90,v 1.5 2002-06-25 14:58:47 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************

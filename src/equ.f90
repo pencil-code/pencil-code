@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.66 2002-06-24 17:45:28 brandenb Exp $
+! $Id: equ.f90,v 1.67 2002-06-25 14:58:47 dobler Exp $
 
 module Equ
 
@@ -212,9 +212,7 @@ module Equ
 
       if (headtt.and.ldebug) print*,'ENTER equ'
       if (headtt) call cvs_id( &
-           "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.66 $", &
-           "$Date: 2002-06-24 17:45:28 $")
+           "$Id: equ.f90,v 1.67 2002-06-25 14:58:47 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.30 2002-06-25 12:25:52 dobler Exp $
+! $Id: hydro.f90,v 1.31 2002-06-25 14:58:47 dobler Exp $
 
 module Hydro
 
@@ -65,9 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.30 $", &
-           "$Date: 2002-06-25 12:25:52 $")
+           "$Id: hydro.f90,v 1.31 2002-06-25 14:58:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

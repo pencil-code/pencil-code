@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.7 2002-06-16 20:35:03 dobler Exp $
+! $Id: nograv.f90,v 1.8 2002-06-25 14:58:47 dobler Exp $
 
 module Gravity
 
@@ -38,9 +38,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: nograv.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-06-16 20:35:03 $")
+           "$Id: nograv.f90,v 1.8 2002-06-25 14:58:47 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.

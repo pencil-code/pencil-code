@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.46 2002-06-21 16:34:55 dobler Exp $
+! $Id: start.f90,v 1.47 2002-06-25 14:58:47 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -31,9 +31,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$RCSfile: start.f90,v $", &
-             "$Revision: 1.46 $", &
-             "$Date: 2002-06-21 16:34:55 $")
+             "$Id: start.f90,v 1.47 2002-06-25 14:58:47 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

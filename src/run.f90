@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.52 2002-06-24 17:45:29 brandenb Exp $
+! $Id: run.f90,v 1.53 2002-06-25 14:58:47 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,9 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$RCSfile: run.f90,v $", &
-             "$Revision: 1.52 $", &
-             "$Date: 2002-06-24 17:45:29 $")
+             "$Id: run.f90,v 1.53 2002-06-25 14:58:47 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values

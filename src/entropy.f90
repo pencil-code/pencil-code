@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.76 2002-06-25 12:25:52 dobler Exp $
+! $Id: entropy.f90,v 1.77 2002-06-25 14:58:47 dobler Exp $
 
 module Entropy
 
@@ -60,9 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.76 $", &
-           "$Date: 2002-06-25 12:25:52 $")
+           "$Id: entropy.f90,v 1.77 2002-06-25 14:58:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

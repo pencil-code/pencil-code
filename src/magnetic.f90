@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.55 2002-06-25 12:25:52 dobler Exp $
+! $Id: magnetic.f90,v 1.56 2002-06-25 14:58:47 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -79,9 +79,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.55 $", &
-           "$Date: 2002-06-25 12:25:52 $")
+           "$Id: magnetic.f90,v 1.56 2002-06-25 14:58:47 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
