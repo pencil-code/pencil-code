@@ -1,0 +1,74 @@
+/* Mutual dependencies for the pencil_modular code.
+   Run this through
+     dot -Tps dependencies.dot -o deps.ps
+   to obtain a PostScript graph. dot is part of AT&T's `graphviz'
+   package.
+ */
+digraph G {
+
+  /* Mark the two executables */
+  Start [shape=box];
+  Run [shape=box];
+
+  /* The physics modules */
+   Forcing [shape=diamond];
+   Entropy [shape=diamond];
+   Magnetic [shape=diamond];
+
+  /* These do not depend on anybody else */
+  General [shape=circle];
+  Mpicomm [shape=circle];
+  Cparam [shape=circle];
+
+  Start -> Cdata;
+  Start -> General;
+  Start -> Sub
+  Start -> Mpicomm;
+  Start -> Register;
+  Start -> Entropy;
+  Start -> Magnetic;
+
+  Run -> Cdata;
+  Run -> Sub;
+  Run -> Equ;
+  Run -> Forcing;
+  Run -> General;
+  Run -> Mpicomm;
+  Run -> Register;
+  Run -> Slices;
+  Run -> Timestep;
+
+  Cdata -> Cparam;
+
+  Slices -> Cdata;
+
+  Deriv -> Cdata;
+
+  IO -> Mpicomm;
+  IO -> Cdata;
+
+  Sub -> Cdata;
+  Sub -> Deriv;
+  Sub -> General;
+  Sub -> IO;
+  Sub -> Mpicomm;
+
+  Register -> Cdata;
+  Register -> Sub;
+  Register -> Mpicomm;
+  Register -> Entropy;
+  Register -> Magnetic;
+
+  Equ -> Cdata;
+  Equ -> Slices;
+  Equ -> Sub;
+  Equ -> Deriv;
+  Equ -> Entropy;
+  Equ -> Magnetic;
+  Equ -> Mpicomm;
+
+  Timestep -> Cdata;
+  Timestep -> Equ;
+  Timestep -> Forcing;
+  Timestep -> Mpicomm;
+}
