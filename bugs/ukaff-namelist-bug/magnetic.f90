@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.1 2002-06-12 17:25:17 dobler Exp $
+! $Id: magnetic.f90,v 1.2 2002-06-12 21:20:37 brandenb Exp $
 
 module Magnetic
 
@@ -8,7 +8,7 @@ module Magnetic
 
 
   ! input parameters
-  real, dimension(3) :: axisr1=(/0,0,1/)
+   real, dimension(1) :: axisr1=0.
 
   ! run parameters
   real :: eta=0.

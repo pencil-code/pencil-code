@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.1 2002-06-12 17:25:17 dobler Exp $
+! $Id: hydro.f90,v 1.2 2002-06-12 21:20:37 brandenb Exp $
 
 module Hydro
 
@@ -7,9 +7,7 @@ module Hydro
   implicit none
 
   real :: nu=0.
-  integer :: ivisc
-  namelist /hydro_run_pars/ &
-       nu,ivisc
+  namelist /hydro_run_pars/ nu
 
   contains
 

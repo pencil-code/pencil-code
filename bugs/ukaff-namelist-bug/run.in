@@ -1,7 +1,4 @@
-!
 &hydro_run_pars
-  nu=5e-3, ivisc=0,
 /
 &magnetic_run_pars
-  eta=5e-3,
 /
