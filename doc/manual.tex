@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.66 2002-07-23 00:33:53 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.67 2002-07-23 09:56:30 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.66 $ $}
+\date{\today,~ $ $Revision: 1.67 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.66 $ $}
+  \emph{\today,~ $ $Revision: 1.67 $ $}
 
 
 \end{center}
@@ -373,7 +373,7 @@ in future releases and welcome any feedback.
 \url{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
 \url{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
 
-\section*{Acknowledgements}
+\section*{Acknowledgments}
 
 Many people have contributed in different ways to the development of this
 code. We thank first of all {\AA}ke Nordlund (Copenhagen Observatory)
@@ -1208,8 +1208,6 @@ and documenting the changes for others.
 
 \section{Using the Code}
 \label{Input-params}
-
-Here's how to use the code \ldots
 
 
 % ---------------------------------------------------------------------- %
@@ -2163,6 +2161,82 @@ To discuss:
 \end{itemize}
 
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Running on multi-processor computers}
+\label{MPI}
+
+The code is parallelized using \name{MPI} (\dfn{message passing
+interface}) for a simple domain decomposition (data-pararellism), which is
+a straight-forward and very efficient way of parallelizing
+finite-difference codes.
+The current version has a few restrictions, which you should keep in mind
+when you use the MPI features.
+
+First, only the $y$ and $z$ directions can be distributed over several
+processors.
+Second, the global number of grid points (but excluding the ghost zones)
+in a given direction must be an exact multiple of the number of processors
+you use in that direction.
+E.\,g.~if you have \code{nprocy=8} processors for the $y$ direction, you
+can run a job with \code{nygrid=64} points in that direction, but if you
+try to run a problem with \code{nygrid=65} or \code{nygrid=94}, the code
+will stop with an inconsistency message.
+
+
+\subsubsection{How to run a sample problem in parallel}
+
+To run the sample problem in the directory \file{samples/conv-slab} on 16
+CPUs, you need to do the following (in that directory):
+
+\begin{enumerate}
+
+\item Edit \file{src/Makefile.local} and replace
+  \begin{alltt}
+  MPICOMM   = nompicomm \
+  \end{alltt}
+  by
+  \begin{alltt}
+  MPICOMM   =   mpicomm \
+  \end{alltt}
+
+\item Edit \file{src/cparam.local} and replace
+  \begin{alltt}
+  integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
+  integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid \
+  \end{alltt}
+  by
+  \begin{alltt}
+  integer, parameter :: ncpus=16,nprocz=4,nprocy=ncpus/nprocz,nprocx=1
+  integer, parameter :: nxgrid=64,nygrid=nxgrid,nzgrid=nxgrid \
+  \end{alltt}
+  The first line specifies a $4{\times}4$ layout of the data in the $y$
+  and $z$ direction.
+  The second line increases the resolution of the run because on most
+  architectures you won't gain much by running a problem as small as
+  $32^3$ on 16 CPUs (even $64^3$ may still be quite small in that
+  respect).
+
+\item Recompile the code
+  \begin{alltt}
+  \prompt{unix> } (cd src; make)
+  \end{alltt}
+
+\item Run it
+  \begin{alltt}
+  \prompt{unix> } start.csh
+  \prompt{unix> } run.csh
+  \end{alltt}
+
+\end{enumerate}
+
+Make sure that all CPUs see the same \file{tmp} directory; otherwise
+things will go wrong.
+
+Remember that in order to visualize the full domain with IDL (rather than
+just the domain processed and written by one processor), you need to use
+\file{rall.pro} instead of \file{r.pro}.
+
 
 % ====================================================================== %
 
@@ -2533,7 +2607,7 @@ make[1]: *** [cdata.o] Error 2
 
 \subsection{Running}
 
-\subsubsection{run.csh doesn't work:}
+\subsubsection{\file{run.csh} doesn't work:}
 \begin{Verbatim}
 Invalid character ''' in NAMELIST input
 Program terminated by fatal I/O error
@@ -2545,6 +2619,25 @@ Abort
   \var{bcz} is too long. Make sure it has exactly as many elements
   as \var{nvar} is big.
 }
+
+\subsubsection{Under IRIX, I get}
+\begin{Verbatim}
+lib-4001 : UNRECOVERABLE library error 
+
+Encountered during a namelist READ from unit 1
+Fortran unit 1 is connected to a sequential formatted text file: "run.in"
+IOT Trap
+Abort
+\end{Verbatim}
+
+This is a compiler bug that has been found at least with the MIPSpro F90
+compiler version 7.3.1.3m.
+It has been reported to SGI.
+For the time being, you will need to turn your namelist input (at least
+\file{run.in} into Fortran statements, include them into a replacement
+version of \file{param_io.f90}, and recompile each time you make changes.
+We hope that a fixed compiler version will appear soon.
+
 
 % ---------------------------------------------------------------------- %
 
@@ -3024,7 +3117,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.66 2002-07-23 00:33:53 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.67 2002-07-23 09:56:30 dobler Exp $ $}
 
 
 \end{document}
@@ -3065,5 +3158,7 @@ $ $Id: manual.tex,v 1.66 2002-07-23 00:33:53 brandenb Exp $ $}
 % LocalWords:  SuSE SGI IRIX Tru noshear RedHat ethernet ds pvert umax ssm dtc
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
 % LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
-% LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid
-% LocalWords:  nygrid nzgrid ccc widthss ttrans
+% LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid ke
+% LocalWords:  nygrid nzgrid ccc widthss ttrans brandenb Nils Pariev tcsh ls ln
+% LocalWords:  cincinnatus CEST mx mz lnrho pf pararellism nprocy ncpus nprocz
+% LocalWords:  nprocx MIPSpro
