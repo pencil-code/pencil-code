@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.13 2002-06-03 14:59:48 dobler Exp $
+! $Id: hydro.f90,v 1.14 2002-06-03 16:29:15 dobler Exp $
 
 module Hydro
 
@@ -59,8 +59,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.13 $", &
-           "$Date: 2002-06-03 14:59:48 $")
+           "$Revision: 1.14 $", &
+           "$Date: 2002-06-03 16:29:15 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -88,6 +88,8 @@ module Hydro
       real :: zmax,lnrho0
       real :: beta1,lnrhoint,cs2int
       integer :: i
+!
+      cs20=cs0**2
 !
 !  inituu corresponds to different initializations of uu (called from start).
 !  If init does't match, f=0 is assumed (default).
