@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.35 2002-11-24 13:14:59 mee Exp $
+! $Id: noentropy.f90,v 1.36 2002-11-27 13:40:10 tarek Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.35 2002-11-24 13:14:59 mee Exp $")
+           "$Id: noentropy.f90,v 1.36 2002-11-27 13:40:10 tarek Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -73,7 +73,7 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ss
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -84,7 +84,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,rho1,cs2,TT1,uglnrho
+      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1
@@ -118,7 +118,7 @@ module Entropy
         endif
       endif
 !
-      if(ip==1) print*,f,df,uu,rho1  !(compiler)
+      if(ip==1) print*,f,df,uu,divu,rho1  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine run_hook_ent()
