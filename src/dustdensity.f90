@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.114 2004-07-22 09:52:39 ajohan Exp $
+! $Id: dustdensity.f90,v 1.115 2004-07-22 12:15:03 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -117,7 +117,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.114 2004-07-22 09:52:39 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.115 2004-07-22 12:15:03 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -258,7 +258,9 @@ module Dustdensity
               f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodmt*unit_md)
         enddo
         
-      case('const_nd'); f(:,:,:,ind) = nd_const
+      case('const_nd')
+        f(:,:,:,ind) = nd_const
+        if (lroot) print*, 'init_nd: Constant dust number density'
       case('frac_of_gas_loc')
         if (eps_dtog < 0.) &
             call stop_it("init_nd: Negative eps_dtog!")
@@ -271,21 +273,24 @@ module Dustdensity
         do i=1,mx
           do j=1,my
             do k=1,ndustspec
-              f(i,j,:,ind(k)) = &
-                  eps_dtog*exp(f(4,4,:,ilnrho))/(md(k)*unit_md)
+              f(i,j,:,ind(k)) = eps_dtog*exp(f(4,4,:,ilnrho))/(md(k)*unit_md)
             enddo
           enddo
         enddo
+        if (lroot) print*, 'init_nd: Dust density set by dust-to-gas ratio'// &
+            ' epsd =', eps_dtog
       case('kernel_cst')
-        print*, 'init_nd: Test of dust coagulation with constant kernel'
         f(:,:,:,ind) = 0.
         f(:,:,:,ind(1)) = nd00
+        if (lroot) print*, &
+            'init_nd: Test of dust coagulation with constant kernel'
       case('kernel_lin')
-        print*, 'init_nd: Test of dust coagulation with linear kernel'
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
               nd00*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
         enddo
+        if (lroot) print*, &
+            'init_nd: Test of dust coagulation with linear kernel'
       case default
 !
 !  Catch unknown values
@@ -306,7 +311,7 @@ module Dustdensity
 !      
       if (lmice) f(:,:,:,imi) = 0.
 !
-!
+!  Take logarithm if necessary
 !
       if (ldustdensity_log) then
         do k=1,ndustspec; f(:,:,:,ind(k)) = alog(f(:,:,:,ind(k))); enddo
@@ -316,13 +321,13 @@ module Dustdensity
 !
       do k=1,ndustspec
         if ( notanumber(f(:,:,:,ind(k))) ) then
-          STOP "init_nd: Imaginary dust number density values"
+          call stop_it('init_nd: Imaginary dust number density values')
         endif
         if (lmdvar .and. notanumber(f(:,:,:,imd(k))) ) then
-          STOP "init_nd: Imaginary dust density values"
+          call stop_it('init_nd: Imaginary dust density values')
         endif
         if (lmice .and. notanumber(f(:,:,:,imi(k))) ) then
-          STOP "init_nd: Imaginary ice density values"
+          call stop_it('init_nd: Imaginary ice density values')
         endif
       enddo
 !
