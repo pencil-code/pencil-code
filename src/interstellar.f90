@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.88 2004-03-22 09:45:14 mee Exp $
+! $Id: interstellar.f90,v 1.89 2004-04-03 16:59:53 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.88 2004-03-22 09:45:14 mee Exp $")
+           "$Id: interstellar.f90,v 1.89 2004-04-03 16:59:53 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -180,7 +180,7 @@ module Interstellar
       if (first) then
          if (.not. lstarting) then
             call inpui(trim(directory)//'/seed.dat',seed,nseed)
-            if (lroot.and.ip<14) then
+            if (lroot.and.ip<12) then
                print*, 'initialize_interstellar: reading seed file'
                print*, 'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
             endif
@@ -192,10 +192,10 @@ module Interstellar
 !
          inquire(file=trim(directory)//'/interstellar.dat',exist=exist)
          if (exist) then 
-            if (lroot.and.ip<16) print*, 'initialize_interstellar: read interstellar.dat'
+            if (lroot.and.ip<12) print*, 'initialize_interstellar: read interstellar.dat'
             call inpup(trim(directory)//'/interstellar.dat',  &
                  interstellarsave,ninterstellarsave)
-            if (lroot.and.ip<16) print*, 'initialize_interstellar: interstellarsave', &
+            if (lroot.and.ip<12) print*, 'initialize_interstellar: interstellarsave', &
                  interstellarsave(1)
             t_next_SNI=interstellarsave(1)
          endif
@@ -387,12 +387,12 @@ print*,'SNI inrerval = ',t_interval_SNI
        call explode_SN(f,1)
        !  pre-determine time for next SNI
      !  if (lroot) then
-          if (ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
+          if (lroot.and.ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
           call random_number_wrapper(franSN)   
           t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-          if (ip<40) print*,'check_SNI: Next SNI at time = ',t_next_SNI
+          if (lroot.and.ip<14) print*,'check_SNI: Next SNI at time = ',t_next_SNI
           interstellarsave(1)=t_next_SNI
-          if (ip<14) print*,"check_SNI: New t_next_SNI=",t_next_SNI
+          if (lroot.and.ip<14) print*,"check_SNI: New t_next_SNI=",t_next_SNI
     !   endif
     !   call mpibcast_real(t_next_SNI,1)
        l_SNI=.true.
@@ -423,7 +423,7 @@ print*,'SNI inrerval = ',t_interval_SNI
 !
 !  identifier
 !
-    if(headtt.and.ip<14) print*,'check_SNII: ENTER'
+    if(lroot.and.headtt.and.ip<14) print*,'check_SNII: ENTER'
 !
     if (.not. l_SNI) then         ! only do if no SNI this step
 !
@@ -615,7 +615,7 @@ print*,'SNI inrerval = ',t_interval_SNI
 !
 !  identifier
 !
-      if(lroot.and.ip<20) print*,'position_SNII: ENTER'
+      if(lroot.and.ip<14) print*,'position_SNII: ENTER'
 !
 !  Construct cumulative distribution function, using mass_cloud_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
@@ -643,7 +643,7 @@ print*,'SNI inrerval = ',t_interval_SNI
         exit
       endif
     enddo
-    if (lroot.and.ip<20) &
+    if (lroot.and.ip<14) &
           print*, 'position_SNII: franSN(1),iproc_SN=',franSN(1),iproc_SN
 !
 !  Use random number to pick SNII location on the right processor.
@@ -667,7 +667,7 @@ find_SN: do n=n1,n2
               cum_prob_onproc=cum_mass/mass_cloud
               if (franSN(1) <= cum_prob_onproc) then
                 l_SN=l; m_SN=m; n_SN=n
-                if (ip<20) &
+                if (lroot.and.ip<14) &
                  print*,'position_SNII: cum_mass,cum_prob_onproc,franSN(1)=', &
                                   cum_mass,cum_prob_onproc,franSN(1)
                 exit find_SN
@@ -731,7 +731,7 @@ find_SN: do n=n1,n2
 
     rho_SN=exp(lnrho_SN);
 
-    if (lroot.and.ip<=14) print*, &
+    if (lroot.and.ip<14) print*, &
  'share_SN_parameters: iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN = ' &
           ,iproc_SN,x_SN,y_SN,z_SN,l_SN,m_SN,n_SN,rho_SN,ss_SN
 !
@@ -785,7 +785,7 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
+      if (lroot.and.ip<14) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
         
       !
       !  Now deal with (if nec.) mass relocation
@@ -799,7 +799,7 @@ find_SN: do n=n1,n2
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
-      if(lroot.and.ip<=14) print*, &
+      if(lroot.and.ip<12) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
                                 TT_SN,TT_SN_new,TT_SN_min, ee_SN
 
@@ -821,7 +821,7 @@ print*,ee_SN,rho_SN,c_SN
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
-           if(lroot.and.ip<=14) print*, &
+           if(lroot.and.ip<12) print*, &
               'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
@@ -831,7 +831,7 @@ print*,ee_SN,rho_SN,c_SN
            call mpibcast_real(fmpi1,1)
            profile_integral=fmpi1(1)*dv
            mass_shell=-(rho_SN_new-rho_SN)*profile_integral
-           if (lroot.and.ip<=14) &
+           if (lroot.and.ip<12) &
              print*, 'explode_SN: mass_shell=',mass_shell
            mass_gain=0.
          endif
@@ -895,7 +895,7 @@ print*,ee_SN,rho_SN,c_SN
 !      EE2_SN=fmpi2(3)*dv; 
 !print*,'EE2_SN = ',EE2_SN
 
-      if (lroot.and.ip<=14) print*, &
+      if (lroot.and.ip<12) print*, &
            'explode_SN: mass_gain=',mass_gain
      
       if (lroot) then
