@@ -1,3 +1,7 @@
+;  $Id: extra.pro,v 1.8 2002-08-11 04:00:11 brandenb Exp $
+;
+;  This routine calculates a number of extra variables
+;
 gamma=5./3.
 gamma1=gamma-1.
 ;

@@ -5,6 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   25-Feb-2002
+;;;  $Id: thermo.pro,v 1.9 2002-08-11 04:00:11 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Calculate all relevant thermodynamical variables from lnrho and

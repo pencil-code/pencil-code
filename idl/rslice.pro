@@ -1,4 +1,8 @@
-; $Id: rslice.pro,v 1.2 2002-06-02 07:51:39 brandenb Exp $
+; $Id: rslice.pro,v 1.3 2002-08-11 04:00:11 brandenb Exp $
+;
+;  reads xz slices
+;  this routine is not very general yet and needs to be adjusted
+;  before it can be general purpose.
 ;
 file_slice='tmp/proc0/uz.xz'
 ;

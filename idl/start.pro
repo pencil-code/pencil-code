@@ -5,6 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
+;;; $Id: start.pro,v 1.37 2002-08-11 04:00:11 brandenb Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be

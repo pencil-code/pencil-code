@@ -5,6 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   12-Nov-2001
+;;;  $Id: evol.pro,v 1.8 2002-08-11 04:00:11 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Time evolution (from n.dat).

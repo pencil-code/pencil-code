@@ -1,3 +1,7 @@
+; $Id: rxyaver.pro,v 1.4 2002-08-11 04:00:11 brandenb Exp $
+;
+;  reads the xyaver.dat file
+;
 t=0.
 bxmz=fltarr(nz*nprocz)
 bymz=fltarr(nz*nprocz)

@@ -1,3 +1,9 @@
+;  $Id: r_ez.pro,v 1.5 2002-08-11 04:00:11 brandenb Exp $
+;
+;  this routine is an easy-to-use replacement of r.pro,
+;  which can sometimes fail (if the perl script fails,
+;  for example).
+;
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 ;  compile the right derivative routines

@@ -1,3 +1,8 @@
+;  $Id: extra_ez.pro,v 1.4 2002-08-11 04:00:11 brandenb Exp $
+;
+;  this is to be used in connection with r_ez.pro
+;  it calculates a number of extra variables
+;
 gamma=5./3.
 gamma1=gamma-1.
 ;

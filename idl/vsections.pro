@@ -5,6 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   26-Nov-2001
+;;;  $Id: vsections.pro,v 1.16 2002-08-11 04:00:11 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot velocity, density and entropy field in three horizontal

@@ -1,3 +1,7 @@
+; $Id: rzaver.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+;
+;  reads the zaver.dat file
+;
 t=0.
 bmxy=fltarr(nx,ny*nprocy,nnamexy)
 ;

@@ -5,6 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
+;;;  $Id: rall.pro,v 1.18 2002-08-11 04:00:11 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array

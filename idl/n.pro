@@ -1,3 +1,4 @@
+;  $Id: n.pro,v 1.21 2002-08-11 04:00:11 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written

@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.33 2002-08-02 23:33:13 nilshau Exp $
+; $Id: r.pro,v 1.34 2002-08-11 04:00:11 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,6 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
+;;; $Id: r.pro,v 1.34 2002-08-11 04:00:11 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
