@@ -759,7 +759,7 @@ module Sub
 !
 !  write number of ghost cells (could be different in x, y and z)
 !
-      write(1,*) nghost, nghost, nghost
+      write(1,'(3i3)') nghost, nghost, nghost
 !
       close(1)
     endsubroutine wdim
