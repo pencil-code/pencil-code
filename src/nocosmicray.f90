@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.1 2003-10-09 16:31:57 mee Exp $
+! $Id: nocosmicray.f90,v 1.2 2003-10-09 17:57:49 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -41,7 +41,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.1 2003-10-09 16:31:57 mee Exp $")
+           "$Id: nocosmicray.f90,v 1.2 2003-10-09 17:57:49 brandenb Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -78,7 +78,7 @@ module CosmicRay
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine decr_dt(f,df,uu,glnrho)
+    subroutine decr_dt(f,df,uu,glnrho,divu)
 !
 !  cosmic ray density evolution
 !
@@ -88,13 +88,12 @@ module CosmicRay
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,glnrho
+      real, intent(in), dimension (mx,my,mz,mvar+maux) :: f
+      real, intent(inout), dimension (mx,my,mz,mvar) :: df
+      real, intent(in), dimension (nx,3) :: uu,glnrho
+      real, intent(in), dimension (nx) :: divu
 !
-      intent(in)  :: f,df,uu,glnrho
-!
-      if(ip==0) print*,f,df,uu,glnrho
+      if(ip==0) print*,f,df,uu,glnrho,divu
     endsubroutine decr_dt
 !***********************************************************************
     subroutine rprint_cosmicray(lreset)

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.99 2003-10-09 16:31:57 mee Exp $
+! $Id: register.f90,v 1.100 2003-10-09 17:57:49 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -252,6 +252,7 @@ module Register
       use Pscalar,      only: rprint_pscalar
       use Dustvelocity, only: rprint_dustvelocity
       use Dustdensity,  only: rprint_dustdensity
+      use CosmicRay,    only: rprint_cosmicray
       use Gravity,      only: rprint_gravity
       use Special,      only: rprint_special
 !
@@ -326,6 +327,7 @@ module Register
       call rprint_pscalar(lreset)
       call rprint_dustvelocity(lreset)
       call rprint_dustdensity(lreset)
+      call rprint_cosmicray(lreset)
       call rprint_gravity(lreset)
       call rprint_special(lreset)
       close(3)
