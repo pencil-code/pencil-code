@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.189 2004-07-22 12:44:39 ajohan Exp $
+! $Id: run.f90,v 1.190 2004-07-23 07:46:19 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -55,7 +55,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.189 2004-07-22 12:44:39 ajohan Exp $")
+             "$Id: run.f90,v 1.190 2004-07-23 07:46:19 nilshau Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -248,7 +248,7 @@
               do ivar=1,nreinit
                 select case (reinit_vars(ivar))
                   case ('uud')
-                    f(:,:,:,minval(iudx):maxval(iudz))=0.
+                    f(:,:,:,iudx(1):iudz(ndustspec))=0.
                     call init_uud(f)
                   case ('nd')
                     f(:,:,:,ind)=0.
