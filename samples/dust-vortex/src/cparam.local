@@ -7,4 +7,4 @@
 !
 integer, parameter :: ncpus=1,nprocy=1,nprocz=ncpus/nprocy,nprocx=1
 integer, parameter :: nxgrid=32,nygrid=64,nzgrid=32
-integer, parameter :: dustlayers=1
+integer, parameter :: ndustspec=1
