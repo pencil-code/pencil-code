@@ -1,4 +1,11 @@
-pro rbvec,nxyz=nxyz,png=png
+;  $Id: pc_rvector.pro,v 1.7 2003-08-18 15:56:16 brandenb Exp $
+;
+;  Reads pre-selected vectors and plots in a 3-D box.
+;  Data must be preprocessed with read_vectorfiles.x
+;
+;  18-aug-03/axel: coded
+;
+pro pc_rvector,nxyz=nxyz,png=png
 ;
 default,nxyz,64*2
 print,'Assumed default box size is: nxyz=',nxyz
