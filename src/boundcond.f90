@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.23 2002-07-09 11:39:22 brandenb Exp $
+! $Id: boundcond.f90,v 1.24 2002-07-11 06:56:18 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -189,9 +189,9 @@ module Boundcond
       use Cdata
       use Entropy
       use Magnetic
+      use Density
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my) :: fder,cs2_2d
       integer :: i,j
 !
       if(ldebug) print*,'ENTER: boundconds'
@@ -221,34 +221,10 @@ module Boundcond
             if (j==iaa)  call bc_aa_pot(f,'bot')
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp(f,'bot')
-          case ('db')
-            !
-            !  Set ghost zone to reproduce one-sided boundary condition 
-            !  (2nd order):
-            !  Finding the derivatives on the boundary using a one 
-            !  sided final difference method. This derivative is being 
-            !  used to calculate the boundary points. This will probably
-            !  only be used for ln(rho)
-            !
-            do i=1,nghost
-              fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
-                   -f(:,:,n1-i+3,j))/(2*dz)
-              f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
-            end do
-          case ('ce')
-            !
-            !  Set cs2 (temperature) in the ghost points to the value on
-            !  the boundary
-            !
-            if (lentropy) then 
-              cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
-            else
-              cs2_2d=cs20;
-            end if
-            do i=1,nghost
-              f(:,:,n1-i,j)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
-                  +log(cs2_2d))
-            end do
+          case ('db')             ! complex (processed in its own routine)
+            if (j==ilnrho) call bc_lnrho_db(f,'bot') 
+          case ('ce')             ! complex (processed in its own routine) 
+             if (j==ient) call bc_ss_energy(f,'bot')
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz1 = ", &
@@ -278,34 +254,10 @@ module Boundcond
             if (j==iaa)  call bc_aa_pot(f,'top')
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp(f,'top')
-!
-          case ('db')
-            !
-            !  Finding the derivatives on the boundary using a one 
-            !  sided final difference method. This derivative is being 
-            !  used to calculate the boundary points. This will probably
-            !  only be used for ln(rho).
-            !
-            do i=1,nghost
-              fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
-                    +f(:,:,n2+i-3,j))/(2*dz)
-              f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
-            end do
-!
-          case ('ce')
-            !
-            !  Set cs2 (temperature) in the ghost points to the value on
-            !  the boundary
-            !
-            if (lentropy) then 
-              cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
-            else
-              cs2_2d=cs20;
-            end if
-            do i=1,nghost
-              f(:,:,n2+i,j)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
-                  +log(cs2_2d))
-            end do
+          case ('db')             ! complex (processed in its own routine)
+             if (j==ilnrho) call bc_lnrho_db(f,'top') 
+          case ('ce')             ! complex (processed in its own routine)
+             if (j==ient) call bc_ss_energy(f,'top')
           case default
             if (lroot) &
                  print*, "No such boundary condition bcz2 = ", &

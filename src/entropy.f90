@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.91 2002-07-09 10:34:41 dobler Exp $
+! $Id: entropy.f90,v 1.92 2002-07-11 06:56:18 nilshau Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.91 2002-07-09 10:34:41 dobler Exp $")
+           "$Id: entropy.f90,v 1.92 2002-07-11 06:56:18 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -293,7 +293,7 @@ module Entropy
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
-      if (headtt.or.ldebug) print*,'SOLVE dss_dt'
+      if (headtt.or.ldebug) print*,'SOLVE dss_dt',ldebug,headtt
       call grad(f,ient,gss)
 !
 !  sound speed squared
@@ -802,6 +802,57 @@ module Entropy
       endselect
 !
     endsubroutine bc_ss_temp
+!***********************************************************************
+    subroutine bc_ss_energy(f,topbot)
+!
+!  boundary condition for entropy
+!
+!  may-2002/nils: coded
+!  11-jul-2002/nils: moved into the entropy module
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: cs2_2d
+      integer :: i
+!
+!  The 'ce' boundary condition for entropy makes the energy constant at
+!  the boundaries.
+!  This assumes that the density is already set (ie density must register
+!  first!)
+!
+    select case(topbot)
+!
+! Bottom boundary
+!
+    case('bot')
+      !  Set cs2 (temperature) in the ghost points to the value on
+      !  the boundary
+      !
+      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+      do i=1,nghost
+         f(:,:,n1-i,ient)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
+              +log(cs2_2d))
+      end do
+
+!
+! Top boundary
+!
+    case('top')
+      !  Set cs2 (temperature) in the ghost points to the value on
+      !  the boundary
+      !
+      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+      do i=1,nghost
+         f(:,:,n2+i,ient)=1./gamma*(-gamma1*f(:,:,n2+i,ilnrho)-log(cs20)&
+              +log(cs2_2d))
+      end do
+    case default
+       if(lroot) print*,"invalid argument for 'bc_ss_flux'"
+    endselect
+
+    end subroutine bc_ss_energy
 !***********************************************************************
 
 endmodule Entropy
