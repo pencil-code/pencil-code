@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.67 2002-07-18 23:09:50 dobler Exp $
+! $Id: run.f90,v 1.68 2002-07-19 10:26:01 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.67 2002-07-18 23:09:50 dobler Exp $")
+             "$Id: run.f90,v 1.68 2002-07-19 10:26:01 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -100,7 +100,7 @@
           !  see comments in start.f90 for details
           !
           call random_seed(get=seed(1:nseed))
-          seed(1) = 1000+iproc    ! different random numbers on different CPUs
+          seed(1) = 1001+iproc    ! different random numbers on different CPUs
           call random_seed(put=seed(1:nseed))
         endif
 !

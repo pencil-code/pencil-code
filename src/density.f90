@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.35 2002-07-18 23:09:50 dobler Exp $
+! $Id: density.f90,v 1.36 2002-07-19 10:26:01 dobler Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.35 2002-07-18 23:09:50 dobler Exp $")
+           "$Id: density.f90,v 1.36 2002-07-19 10:26:01 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -138,7 +138,7 @@ module Density
                             + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
                                                   *(1-exp(-grads0*zz)) )
           if (notanumber(f(:,:,:,ilnrho))) then
-            STOP "INIT_HYDRO: Imaginary density values"
+            STOP "INIT_LNRHO: Imaginary density values"
           endif
         endif
 
@@ -265,7 +265,7 @@ module Density
 !  sanity check
 !
       if (notanumber(f(:,:,:,ilnrho))) then
-        STOP "INIT_HYDRO: Imaginary density values"
+        STOP "INIT_LNRHO: Imaginary density values"
       endif
 !
 !  check that cs2bot,cs2top are ok

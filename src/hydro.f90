@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.47 2002-07-16 08:29:44 dobler Exp $
+! $Id: hydro.f90,v 1.48 2002-07-19 10:26:01 dobler Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.47 2002-07-16 08:29:44 dobler Exp $")
+           "$Id: hydro.f90,v 1.48 2002-07-19 10:26:01 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,6 +92,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
+      real :: kabs
       integer :: i,j,k
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -164,23 +165,53 @@ module Hydro
         if (lroot) print*,'tangential discontinuity of uux at z=0'
         if (lroot) print*,'uu_lower=',uu_lower,' uu_upper=',uu_upper
         do i=1,mx
-           do j=1,my
-              do k=1,mz        
-        if(zz(i,j,k).le.0.) then 
-        f(i,j,k,iux)=uu_lower
-        else
-        f(i,j,k,iux)=uu_upper
-        endif
-        enddo
-        enddo
+          do j=1,my
+            do k=1,mz        
+              if(zz(i,j,k).le.0.) then 
+                f(i,j,k,iux)=uu_lower
+              else
+                f(i,j,k,iux)=uu_upper
+              endif
+            enddo
+          enddo
         enddo
 !  Add some random noise to see the development of instability
+!WD: Can't we incorporate this into the urand stuff?
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
 !        tmp=exp(-zz**2*10.)*cos(4.*xx)
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
   
+      case('Fourier-trunc')
+        !
+        !  truncated simple Fourier series as nontrivial initial profile
+        !  for convection. The corresponding stream function is
+        !    exp(-(z-z1)^2/(2w^2))*(cos(kk)+2*sin(kk)+3*cos(3kk)),
+        !    with kk=k_x*x+k_y*y
+        !  Not a big success (convection starts much slower than with
+        !  random or 'up-down' ..
+        !
+        if (lroot) print*,'uu: truncated Fourier'
+        prof = ampluu*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical Gaussian
+        tmp = kx_uu*xx + ky_uu*yy               ! horizontal phase
+        kabs = sqrt(kx_uu**2+ky_uu**2)
+        f(:,:,:,iuz) = prof * kabs*(-sin(tmp) + 4*cos(2*tmp) - 9*sin(3*tmp))
+        tmp = (zz-z1)/widthuu**2*prof*(cos(tmp) + 2*sin(2*tmp) + 3*cos(3*tmp))
+        f(:,:,:,iux) = tmp*kx_uu/kabs
+        f(:,:,:,iuy) = tmp*ky_uu/kabs
+  
+      case('up-down')
+        !
+        !  flow upwards in one spot, downwards in another; not soneloidal
+        ! 
+        if (lroot) print*,'uu: up-down'
+        prof = ampluu*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical profile
+        tmp = sqrt((xx-(x0+0.3*Lx))**2+(yy-(y0+0.3*Ly))**2) ! dist. from spot 1
+        f(:,:,:,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
+        tmp = sqrt((xx-(x0+0.5*Lx))**2+(yy-(y0+0.8*Ly))**2) ! dist. from spot 1
+        f(:,:,:,iuz) = f(:,:,:,iuz) - 0.7*prof*exp(-0.5*(tmp**2)/widthuu**2)
+
       case default
         !
         !  Catch unknown values
@@ -231,6 +262,8 @@ module Hydro
 !
 !AB: isn't this now also obsolete?
 !AB: Above we can add gaussian noise (both 3-d and only in ux)
+!WD: We are not _adding_ above, but setting. urand is for stuff like
+!WD: `sound wave' + noise
       if (urand /= 0) then
         if (lroot) print*, 'Adding random uu fluctuations'
         if (urand > 0) then
