@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.40 2003-02-21 20:21:52 brandenb Exp $
+! $Id: forcing.f90,v 1.41 2003-03-06 14:22:56 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.40 2003-02-21 20:21:52 brandenb Exp $")
+           "$Id: forcing.f90,v 1.41 2003-03-06 14:22:56 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -1032,7 +1032,6 @@ module Forcing
     end subroutine forcing_hel_smooth
 !***********************************************************************
     subroutine hel_vec(f,kx0,ky,kz,phase,kav,ifirst,force1)
-
 !
 !  Add helical forcing function, using a set of precomputed wavevectors.
 !  The relative helicity of the forcing function is determined by the factor
@@ -1056,7 +1055,6 @@ module Forcing
       real, dimension (mx,my,mz,mvar) :: f
       real :: phase,ffnorm
       real :: kav
-      real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx
       real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,3) :: force1
@@ -1064,11 +1062,10 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
-      integer :: ik,j,jf
+      integer :: j,jf
       integer :: ifirst
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
-
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
 !  Here, St=-deltay/Lx
@@ -1208,7 +1205,6 @@ module Forcing
 !
       if (ip.le.9) print*,'forcing OK'
 !
-
     end subroutine hel_vec
 !***********************************************************************
 
