@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.110 2002-07-31 23:58:05 brandenb Exp $
+! $Id: entropy.f90,v 1.111 2002-08-02 07:45:52 dobler Exp $
 
 module Entropy
 
@@ -10,13 +10,13 @@ module Entropy
 
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi
-  real :: luminosity=0.,wheat=0.1,cool=0.,wcool=0.1
+  real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
   real :: chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   logical :: lcalc_heatcond_simple=.false.
-  character (len=labellen) :: initss='nothing',pertss='zero'
+  character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -26,7 +26,8 @@ module Entropy
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,widthss,luminosity,wheat,cool,wcool,Fbot, &
+       hcond0,hcond1,hcond2,widthss,luminosity,wheat, &
+       cooltype,cs2cool,cool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior
 
   ! other variables (needs to be consistent with reset list below)
@@ -64,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.110 2002-07-31 23:58:05 brandenb Exp $")
+           "$Id: entropy.f90,v 1.111 2002-08-02 07:45:52 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -624,7 +625,7 @@ endif
         ! cooling profile; maximum = 1
         ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
-        heat = heat - cool*prof*(cs2-cs20)/cs20
+        heat = heat - cool*prof*rho1*(cs2-cs20)/cs20
       endif
 !
 !  Spherical case:
@@ -635,13 +636,20 @@ endif
         ! heating profile, normalised, so volume integral = 1
         prof = exp(-0.5*(r_mn/wheat)**2) * (2*pi*wheat**2)**(-1.5)
         heat = luminosity*prof
-        ! surface cooling towards s=0
+        ! surface cooling; entropy or temperature
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-!WD: 'FIXME: what am I doing with ztop in spherical geometry?'
-!AB: check whether the following makes sense (ztop no longer in gravity)
-        prof = step(r_mn,ztop,wcool)
-        heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
+        prof = step(r_mn,rcool,wcool)
+        !
+        !  pick type of cooling
+        !
+        select case(cooltype)
+        case ('cs2', 'Temp')    ! cooling to reference temperatur cs2cool
+          heat = heat - cool*prof*rho1*(cs2-cs2cool)/cs2cool
+        case ('entropy')        ! cooling to reference entropy (currently =0)
+          heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
+        case default
+        endselect
       endif
 !
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
