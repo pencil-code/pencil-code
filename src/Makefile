@@ -3,7 +3,7 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=nompicomm
-GLOBAL=global_pot
+GLOBAL=global_rr
 GRAVITY=grav_r
 FORCING=noforcing
 ENTROPY=entropy

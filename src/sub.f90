@@ -991,11 +991,33 @@ module Sub
       revlen =len(revision)
       datelen=len(date)
       write(*,'(A,A,T28," version ",A,T50," of ",A)') "CVS: ", &
-           rcsfile(10:rcsflen-3), &
-           revision(10:revlen-1), &
+           rcsfile(10:rcsflen-4), &
+           revision(12:revlen-1), &
            date(8:datelen-1)
 !
-endsubroutine cvs_id
+    endsubroutine cvs_id
+!***********************************************************************
+    function poly(coef, x)
+!
+!  Horner's scheme for polynomial evaluation.
+!  Might be necessary to overload this at some point in order to allow
+!  for multi-dimensional arrays
+!  17-jan-02/wolf: coded 
+!
+      real, dimension(:) :: coef
+      real, dimension(:) :: x
+      real, dimension(size(x,1)) :: poly
+      integer :: Ncoef,Nx,i
+
+      Ncoef = size(coef,1)
+      Nx = size(x,1)
+
+      poly = coef(Ncoef)
+      do i=Ncoef-1,1,-1
+        poly = poly*x+coef(i)
+      enddo
+
+    endfunction poly
 !***********************************************************************
 
 endmodule Sub

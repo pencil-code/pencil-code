@@ -24,14 +24,14 @@
         integer :: init,i
         real :: ampl
         real, dimension (mx,my,mz,mvar) :: f
-        real, dimension (mx,my,mz) :: xx,yy,zz,rr
+        real, dimension (mx,my,mz) :: xx,yy,zz
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.9 $", &
-             "$Date: 2002-01-17 11:42:43 $")
+             "$Revision: 1.10 $", &
+             "$Date: 2002-01-19 15:50:03 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -72,7 +72,7 @@
         zz=spread(spread(z,1,mx),2,my)
 !
         rr=sqrt(xx**2+yy**2+zz**2)
-        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
+!        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
 !
         cs20=cs0**2 ! (goes into cdata module)
 !

@@ -63,7 +63,7 @@ module Timestep
 !
         if (lfirst.and.lroot) then
           if (ldt) dt=cdt*amin1(dx,dy,dz)/UUmax
-          if (ip.lt.7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
+          if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         call mpibcast_real(dt,1)
         dt_beta=dt*beta
