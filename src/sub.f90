@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.101 2002-11-13 09:44:21 brandenb Exp $ 
+! $Id: sub.f90,v 1.102 2002-11-15 14:31:23 ngrs Exp $ 
 
 module Sub 
 
@@ -313,7 +313,7 @@ module Sub
       real, dimension (nx) :: c
 !
       intent(in) :: a,b
-      intent(out) :: c
+      intent(inout) :: c
 !
       c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
 !
