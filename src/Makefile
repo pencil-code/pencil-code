@@ -28,6 +28,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 ## IRIX64:
 #FC=f90
 #FFLAGS= -64 -O3 -mips4
+#FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(gridur|embla)
 #FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(Antares)
 #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
