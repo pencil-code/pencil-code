@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.176 2003-07-02 18:06:18 mee Exp $
+! $Id: entropy.f90,v 1.177 2003-07-07 10:19:53 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -84,7 +84,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.176 2003-07-02 18:06:18 mee Exp $")
+           "$Id: entropy.f90,v 1.177 2003-07-07 10:19:53 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -323,8 +323,13 @@ module Entropy
           call stop_it("")
 
       endselect
-
-!      endif
+!
+!  if ss_const/=0, add this constant to entropy
+!
+      if (ss_const/=0) f(:,:,:,ient)=f(:,:,:,ient)+ss_const
+!
+!  no entropy initialization when lgravr=.true.
+!  why?
 !
       if (lgravr) then
         f(:,:,:,ient) = -0.

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.121 2003-06-30 05:15:17 brandenb Exp $ 
+! $Id: sub.f90,v 1.122 2003-07-07 10:19:53 brandenb Exp $ 
 
 module Sub 
 
@@ -1972,6 +1972,43 @@ module Sub
         enddo
 !
       endsubroutine parse_bc
+!***********************************************************************
+      subroutine parse_bc_rad(bc,bc1,bc2)
+!
+!  Parse boundary conditions, which may be in the form `a' (applies to
+!  both `lower' and `upper' boundary) or `a:s' (use `a' for lower,
+!  `s' for upper boundary.
+!
+!   6-jul-03/axel: adapted from parse_bc
+!
+        use Cparam, only: bclen
+        use Mpicomm
+!
+        character (len=2*bclen+1), dimension(3) :: bc
+        character (len=bclen), dimension(3) :: bc1,bc2
+        integer :: j,isep
+!
+        intent(in) :: bc
+        intent(out) :: bc1,bc2
+!
+
+        do j=1,3
+          if (bc(j) == '') then ! will probably never happen due to default='p'
+            if (lroot) print*, 'Empty boundary condition No. ', &
+                 j, 'in (x, y, or z)'
+            call stop_it('PARSE_BC')
+          endif
+          isep = index(bc(j),':')
+          if (isep > 0) then
+            bc1(j) = bc(j)(1:isep-1)
+            bc2(j) = bc(j)(isep+1:)
+          else
+            bc1(j) = bc(j)(1:bclen)
+            bc2(j) = bc(j)(1:bclen)
+          endif
+        enddo
+!
+      endsubroutine parse_bc_rad
 !***********************************************************************
       subroutine parse_name(iname,cname,cform,ctest,itest)
 !

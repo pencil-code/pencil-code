@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.51 2003-07-07 09:35:05 theine Exp $
+! $Id: radiation_exp.f90,v 1.52 2003-07-07 10:19:53 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,6 +14,8 @@ module Radiation
 !
   implicit none
 !
+  character (len=2*bclen+1), dimension(3) :: bc_rad
+  character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   integer, parameter :: radx0=1,rady0=1,radz0=1
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
   real, dimension(mx,my,mz,3) :: pos
@@ -44,10 +46,12 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es, &
+       bc_rad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es,nocooling
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es,nocooling, &
+       bc_rad
 
   contains
 
@@ -82,7 +86,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.51 2003-07-07 09:35:05 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.52 2003-07-07 10:19:53 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -109,6 +113,7 @@ module Radiation
 !  03-jul-03/tobi: position array added
 !
       use Cdata
+      use Sub
 !
 !  check that the number of rays does not exceed maximum
 !
@@ -143,6 +148,12 @@ module Radiation
       enddo
       enddo
       enddo
+!
+!  check boundary conditions
+!
+      print*,'bc_rad=',bc_rad
+      call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
+      print*,'bc_rad1,bc_rad2=',bc_rad1,bc_rad2
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -212,7 +223,7 @@ module Radiation
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
-      f(:,:,:,iQrad)=-Srad
+!YYY  f(:,:,:,iQrad)=-Srad
 !
 !  calculate weights
 !
@@ -457,7 +468,7 @@ module Radiation
 !
          if (nrad>0) then
             ! ray points in positive z-direction
-            if (ipz==0) Irad0_xy=Srad(:,:,n1-radz0:n1-1)
+            if (ipz==0) call radboundary_xy(1,Irad0_xy)
             if (ipz/=0) then
                idest=ipz-1
                call radcomm_xy_recv(radz0,idest,tag_xy,Irad0_xy)
@@ -467,7 +478,7 @@ module Radiation
 !
          if (nrad<0) then
             ! ray points in negative z-direction
-            if (ipz==nprocz-1) Irad0_xy=0.
+            if (ipz==nprocz-1) call radboundary_xy(2,Irad0_xy)
             if (ipz/=nprocz-1) then
                idest=ipz+1
                call radcomm_xy_recv(radz0,idest,tag_xy,Irad0_xy)
@@ -584,6 +595,34 @@ module Radiation
          endif
 !
     endsubroutine xy_boundary_send
+!***********************************************************************
+    subroutine radboundary_xy(ibound,Irad0_xy)
+!
+!  sets the physical boundary condition on xy plane
+!
+!   6-jul-03/axel: coded
+!
+    real, dimension(mx,my,radz0) :: Irad0_xy
+    integer :: ibound
+!
+!  lower z-boundary
+!
+    if(ibound==1) then
+      select case(bc_rad1(3))
+      case ('0'); Irad0_xy=0.
+      case ('S'); Irad0_xy=Srad(:,:,n1-radz0:n1-1)
+      endselect
+!
+!  upper z-boundary
+!
+    else if(ibound==2) then
+      select case(bc_rad2(3))
+      case ('0'); Irad0_xy=0.
+      case ('S'); Irad0_xy=Srad(:,:,n2+1:n2+radz0)
+      endselect
+    endif
+!
+    endsubroutine radboundary_xy
 !***********************************************************************
     subroutine intensity_revision(f)
 !
