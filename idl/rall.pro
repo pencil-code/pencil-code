@@ -13,12 +13,43 @@
 ;;;   start.pro after this if you want to continue working on data
 ;;;   from individual processors (e.g. if you want to run r.pro).
 
+function param2
+; Dummy to keep IDL from complaining. The real param() routine will be
+; compiled below
+end
+
 ;
 ;  need to run start first: check whether this has been done
 ;
 if (n_elements(started) le 0) then begin
   message, "You need to run start.pro first: use `.rnew start'"
 endif
+
+;
+;  Read startup parameters
+;
+pfile=datatopdir+'/'+'param2.nml'
+dummy=findfile(pfile, COUNT=cpar)
+if (cpar gt 0) then begin
+  print, 'Generating and reading param2.nml..'
+  spawn, '../../../bin/nl2idl -f param2 tmp/param2.nml > tmp/param2.pro'
+  resolve_routine, 'param2', /IS_FUNCTION
+  par2=param2()
+  if (lhydro) then begin
+    cs0=par2.cs0 & nu=par2.nu
+;  cs0=1. & nu=0.
+  endif
+  if (lentropy) then begin
+    hcond0=par2.hcond0 & hcond1=par2.hcond1
+    hcond2=par2.hcond2 & whcond=par2.whcond
+    cheat=par2.cheat & wheat=par2.wheat
+    cool=par2.cool & wcool=par2.wcool
+    Fheat=par2.Fheat
+  endif
+endif else begin
+  print, 'Warning: cannot find file ', pfile
+endelse
+
 ;
 ;  read global sizes
 ;
