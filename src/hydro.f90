@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.99 2003-08-13 15:30:07 mee Exp $
+! $Id: hydro.f90,v 1.100 2003-08-19 08:00:38 christer Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -34,11 +34,12 @@ module Hydro
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
+  real :: ampl_diffrot=0.
   namelist /hydro_run_pars/ &
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
-       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1
+       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -85,7 +86,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.99 2003-08-13 15:30:07 mee Exp $")
+           "$Id: hydro.f90,v 1.100 2003-08-19 08:00:38 christer Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -404,10 +405,12 @@ module Hydro
 !
 !  adding differential rotation via a frictional term
 !  (should later be moved to a separate routine)
+!  15-aug-03/christer: Added amplitude (ampl_diffrot) below
 !
       if (tau_diffrot1/=0) then
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuy)-cos(x(l1:l2))*cos(z(n)))
+            -tau_diffrot1*(f(l1:l2,m,n,iuy) &
+                           -ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
       endif
 !
 !  add the possibility of removing a mean flow in the y-direction
