@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.133 2004-05-31 15:43:02 brandenb Exp $
+! $Id: register.f90,v 1.134 2004-06-07 06:34:02 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -409,8 +409,8 @@ module Register
       if (lreset) then
         i_t=0; i_it=0; i_dt=0; i_walltime=0; i_timeperstep=0 ! general print.in params
         i_rcylmphi=0; i_phimphi=0; i_zmphi=0; i_rmphi=0 ! general phiaver.in params
-        
-        ix=-1; iy=-1; iz=-1; iz2=-1
+        !AB: the following is no longer consistent: they are reset in read_runpars.
+        !ix=-1; iy=-1; iz=-1; iz2=-1
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
