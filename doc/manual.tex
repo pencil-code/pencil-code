@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.185 2003-07-15 13:28:52 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.186 2003-07-17 22:45:33 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}
+\date{$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}
+  \emph{$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1922,6 +1922,29 @@ A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{How can I run in physical units?}
+\label{physdim}
+\index{Units}
+\index{SI units}
+\index{cgs units}
+
+You can run the code in physical units.  Suppose you want the unit length
+to be $1\,{\rm kpc}$, then you would say \code{unit_length='3e21'}.
+It might then be handy to put \code{unit_velocity='1e5'}, which means
+1~km/s. This implies a time unit of $3\times10^{16}\,{\rm s}$, which
+is roughly $1\,{\rm Gyr}$.
+(Of course, politically correct would be to say \code{unit_system='SI'}
+in which case you say \code{unit_length='3e19'}. More accurate would be
+\code{unit_length='3.1e19'}.)
+For km/s you'd then say \code{unit_velocity='1e3'}.
+If you are used to work with hot stuff, you'd choose
+\code{unit_temperature='1e6'} for mega-Kelvin.
+If you prefer dimensionless units then just don't worry, because unity
+is the default. But if you are doing things like ionization it is really
+best to work with physical dimensions.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{Minimum amount of viscosity}
 \label{viscosity}
 
@@ -3271,7 +3294,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-17 22:45:33 $ $,~ $ $Revision: 1.186 $ $}}}
 
 \section{Timings}
 
@@ -4556,6 +4579,26 @@ double precision, $\varepsilon\approx10^{-15}$.
                & if set \code{T}, auxiliary variables (those calculated at
                  each step, but not evolved mathematically) to 
                  \file{var.dat} after the evolved quantities. \\
+  \var{unit_system} [\code{'cgs'}]
+               & you can set this character string to \index{SI units}
+                 \code{'SI'}, which means that you can give \index{Units}
+                 physical dimensions in \index{SI units} SI units.
+                 The default is \index{cgs units} cgs units.\\
+  \var{unit_length} [\code{1}]
+               & allows you to set the unit length. Suppose you want
+                 the unit length to be $1\,{\rm kpc}$, then you would
+                 say \code{unit_length='3e21'}. (Of course, politically
+                 correct would be to say \code{unit_system='SI'} in
+                 which case you say \code{unit_length='3e19'}.)\\
+  \var{unit_velocity} [\code{1}]
+               & Example: if you want km/s you say \code{unit_length='1e5'}.\\
+  \var{unit_density} [\code{1}]
+               & Example: if you want your unit density to be
+                 $10^{-24}\,{\rm g}/{\rm cm}^3$ you say
+                 \code{unit_density='1e-24'}.\\
+  \var{unit_temperature} [\code{1}]
+               & Example: \code{unit_temperature='1e6'} if you want
+                 mega-Kelvin.\\
   \var{random_gen} [\code{system}]
                & \label{random-gen-init}
                  choose random number generator;
@@ -5539,7 +5582,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.185 2003-07-15 13:28:52 dobler Exp $ $}
+$ $Id: manual.tex,v 1.186 2003-07-17 22:45:33 brandenb Exp $ $}
 
 
 \end{document}
