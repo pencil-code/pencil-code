@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.72 2002-07-27 13:09:48 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.73 2002-07-29 23:40:54 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -219,7 +219,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.72 $ $}
+\date{\today,~ $ $Revision: 1.73 $ $}
 
 % ====================================================================== %
 
@@ -248,7 +248,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.72 $ $}
+  \emph{\today,~ $ $Revision: 1.73 $ $}
 
 
 \end{center}
@@ -2995,15 +2995,15 @@ $g_z=-\dd\Phi/\dd z$.
 Use \var{grav_profile='const'} (which is already the default)
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
-  \Phi=(z-z_\infty)(-g_z),\quad g_z=-1.
+  \Phi=(z-z_\infty)(-g_z),\quad (-g_z)<0.
 \end{equation}
 Use \var{grav_profile='linear'} to get
 \begin{equation} \label{disc-gravz-init}
-  \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\Omega^2,\quad g_z=-\Omega^2z
+  \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\nu_{\rm g}^2,
+\quad g_z=-\nu_{\rm g}^2z
 \end{equation}
-where (currently) the parameter \var{gravz} is used in place of
-$-\Omega^2$; this form of the gravitational potential is commonly used for
-accretion discs.
+where $\nu_{\rm g}$ vertical epicyclic frequency. For a keplerian
+accretion disc, $\nu_{\rm g}=\Omega$, but not for galactic discs.
 
 The value of $z_\infty$ is determined such that $\varrho=\varrho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
@@ -3214,7 +3214,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.72 2002-07-27 13:09:48 dobler Exp $ $}
+$ $Id: manual.tex,v 1.73 2002-07-29 23:40:54 brandenb Exp $ $}
 
 
 \end{document}
