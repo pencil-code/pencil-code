@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.27 2002-07-31 23:17:05 dobler Exp $
+! $Id: grav_r.f90,v 1.28 2002-09-24 14:22:51 brandenb Exp $
 
 module Gravity
 
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.27 2002-07-31 23:17:05 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.28 2002-09-24 14:22:51 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -170,6 +170,7 @@ module Gravity
 !
       use Cdata
       use Sub
+      use IO
       use Global
 !
       real, dimension (mx,my,mz,mvar) :: f,df
