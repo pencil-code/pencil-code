@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.14 2003-06-16 09:19:22 nilshau Exp $
+! $Id: radiation_exp.f90,v 1.15 2003-06-18 19:17:56 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -15,12 +15,9 @@ module Radiation
   implicit none
 !
   integer, parameter :: radx0=3,rady0=3,radz0=3
-  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_yz
-  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_zx
-  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
-    :: Irad_xy
+  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_yz
+  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_zx
+  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_xy
   real, dimension (mx,my,mz) :: Srad,kaprho
   integer :: directions
 !
@@ -76,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.14 2003-06-16 09:19:22 nilshau Exp $")
+           "$Id: radiation_exp.f90,v 1.15 2003-06-18 19:17:56 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -123,6 +120,17 @@ module Radiation
       enddo
       enddo
       print*,'initialize_radiation: directions=',directions
+!
+!  side boundaries : initially I=0
+!
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        Irad_yz(:,:,:,lrad,mrad,nrad)=0
+        Irad_zx(:,:,:,lrad,mrad,nrad)=0
+      enddo
+      enddo
+      enddo
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -270,7 +278,7 @@ module Radiation
       do nrad=+1,+radz
       do mrad=-rady,rady
       do lrad=-radx,radx
-        Irad_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1:n1+radz0-1)
+        Irad_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
       enddo
       enddo
       enddo
@@ -302,18 +310,12 @@ module Radiation
           !
           !  set ghost zones, data from next processor (or opposite boundary)
           !
-          if(lrad>0) &
-          Irad(l1:l1+radx0-1,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
-          if(lrad<0) &
-          Irad(l2-radx0+1:l2,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
-          if(mrad>0) &
-          Irad(:,m1:m1+rady0-1,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
-          if(mrad<0) &
-          Irad(:,m2-rady0+1:m2,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
-          if(nrad>0) &
-          Irad(:,:,n1:n1+radz0-1)=Irad_xy(:,:,:,lrad,mrad,nrad)
-          if(nrad<0) &
-          Irad(:,:,n2-radz0+1:n2)=Irad_xy(:,:,:,lrad,mrad,nrad)
+          if(lrad>0) Irad(l1-radx0:l1-1,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
+          if(lrad<0) Irad(l2+1:l2+radx0,:,:)=Irad_yz(:,:,:,lrad,mrad,nrad)
+          if(mrad>0) Irad(:,m1-rady0:m1-1,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
+          if(mrad<0) Irad(:,m2+1:m2+rady0,:)=Irad_zx(:,:,:,lrad,mrad,nrad)
+          if(nrad>0) Irad(:,:,n1-radz0:n1-1)=Irad_xy(:,:,:,lrad,mrad,nrad)
+          if(nrad<0) Irad(:,:,n2+1:n2+radz0)=Irad_xy(:,:,:,lrad,mrad,nrad)
           !
           !  do the ray, and add corresponding contribution to Q
           !
@@ -322,18 +324,12 @@ module Radiation
           !
           !  safe boundary values for next processor (or opposite boundary)
           !
-          if(lrad<0) &
-          Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1:l1+radx0-1,:,:)
-          if(lrad>0) &
-          Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2-radx0+1:l2,:,:)
-          if(mrad<0) &
-          Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1:m1+rady0-1,:)
-          if(mrad>0) &
-          Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2-rady0+1:m2,:)
-          if(nrad<0) &
-          Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1:n1+radz0-1)
-          if(nrad>0) &
-          Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2-radz0+1:n2)
+          if(lrad<0) Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1-radx0:l1-1,:,:)
+          if(lrad>0) Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2+1:l2+radx0,:,:)
+          if(mrad<0) Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m1-rady0:m1-1,:)
+          if(mrad>0) Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2+1:m2+rady0,:)
+          if(nrad<0) Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1-radz0:n1-1)
+          if(nrad>0) Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2+1:n2+radz0)
         endif
       enddo
       enddo
@@ -390,11 +386,12 @@ module Radiation
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
-          dtau=.5*(kaprho(l,m,n)+kaprho(l+lrad,m+mrad,n+nrad))*dz
+          dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dz
           emdtau=exp(-dtau)
-          Irad(l+lrad,m+mrad,n+nrad)= &
-            Irad(l,m,n)*emdtau+(1.-emdtau)*Srad(l,m,n) &
-            +(emdtau-1+dtau)*(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau
+          Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
+                      +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
+                      +(emdtau-1+dtau)*(Srad(l,m,n) &
+                                       -Srad(l-lrad,m-mrad,n-nrad))/dtau
       enddo
       enddo
       enddo

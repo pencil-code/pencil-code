@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.49 2003-06-18 00:26:57 mee Exp $
+! $Id: ionization.f90,v 1.50 2003-06-18 19:17:56 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -60,7 +60,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.49 2003-06-18 00:26:57 mee Exp $")
+           "$Id: ionization.f90,v 1.50 2003-06-18 19:17:56 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -151,14 +151,26 @@ module Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: lnrho,ss,yH,lnTT_
+      integer :: lstart,lstop,mstart,mstop,nstart,nstop
       integer :: l
 !
-!AB: Tobi, this may be slow. Maybe we should handle at least the
-!AB: full pencil in rtsave and the expression for lnTT_.
+!  check if yH and TT have to be calculated in the ghost zones.
+!  currently this is the case if the radiation_exp module is used.
+! 
+      lstart=l1; lstop=l2
+      mstart=m1; mstop=m2
+      nstart=n1; nstop=n2
+      if (lradiation_ray) then
+        if (nx>1) then; lstart=1; lstop=mx; endif
+        if (ny>1) then; mstart=1; mstop=my; endif
+        if (nz>1) then; nstart=1; nstop=mz; endif
+      endif
 !
-      do n=n1,n2
-      do m=m1,m2
-      do l=l1,l2
+!  do the loop
+!
+      do n=nstart,nstop
+      do m=mstart,mstop
+      do l=lstart,lstop
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
          yH=f(l,m,n,iyH)
@@ -174,7 +186,6 @@ module Ionization
       enddo
 !
     endsubroutine ioncalc
-
 !***********************************************************************
     subroutine ionset(f,ss,lnrho,yH,TT)
 !
