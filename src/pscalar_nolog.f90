@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.16 2004-01-31 14:01:22 dobler Exp $
+! $Id: pscalar_nolog.f90,v 1.17 2004-02-11 14:53:33 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -28,11 +28,12 @@ module Pscalar
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
+  real :: eps_ctog=0.01
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min
+       radius_lncc,epsilon_lncc,widthlncc,cc_min,eps_ctog
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -81,7 +82,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.16 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: pscalar_nolog.f90,v 1.17 2004-02-11 14:53:33 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,6 +148,7 @@ module Pscalar
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
+        case('frac_of_rhogas'); f(:,:,:,ilncc) = eps_ctog*exp(f(:,:,:,ilnrho))
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
@@ -206,6 +208,7 @@ module Pscalar
         prof=.5*(1.+tanh(zz/widthlncc))
         f(:,:,:,ilncc)=-1.+2.*prof
         case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
+        case('frac_of_rhogas'); f(:,:,:,ilncc) = eps_ctog*exp(f(:,:,:,ilnrho))
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 
