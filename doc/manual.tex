@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.81 2002-08-14 15:34:52 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.82 2002-08-16 16:30:24 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -39,9 +39,6 @@
 %                   \url{http://www.nowhere.net/second_page.html}
 %     \email:   An email address:
 %                   \email{nobody@nowhere.nil}
-%AB: this isn't used anywhere!?! (because we used url)
-%WD: may at some point change this to \email, but currently it doesn't
-%    matter
 %
 
 \ifx\pdfoutput\undefined        % not running pdflatex
@@ -221,7 +218,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.81 $ $}
+\date{\today,~ $ $Revision: 1.82 $ $}
 
 % ====================================================================== %
 
@@ -250,7 +247,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.81 $ $}
+  \emph{\today,~ $ $Revision: 1.82 $ $}
 
 
 \end{center}
@@ -390,8 +387,8 @@ in future releases and welcome any feedback.
 
 \vspace{5mm}
 %\noindent
-\url{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
-\url{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
+\email{Wolfgang.Dobler@kis.uni-freiburg.de}\hfill Freiburg\\
+\email{Axel.Brandenburg@nordita.dk}\hfill Copenhagen
 
 \section*{Acknowledgments}
 
@@ -2824,9 +2821,9 @@ the code.
    1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
    1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
    2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
-   4 & Nq[0-3]
-             & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
+   4 & Nq0-3 & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
    4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   4 & fe1   & 3.39 &  $32^3$ & magn/noentro &        & 16-aug-02 & AB \\
    4 & Mhd   & 8.2  &  $64^2\times16$ & nomagn/entro & & 23-jul-02 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
    8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -2835,6 +2832,7 @@ the code.
    8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
    8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
+  16 & fe1   & 0.56 & $256^3$ & magn/noentro &        & 16-aug-02 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
   16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
@@ -3156,6 +3154,61 @@ The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Planet solution in the shearing box}
+
+Assume $s=0$ (isentropy), so the equations in 2-D are
+\begin{equation}\label{ux-eqn}
+  u_x u_{x,x} + (u_y^{(0)}+u_y) u_{x,y} = 2\Omega u_y - h_{,x}
+\end{equation}
+\begin{equation}\label{uy-eqn}
+  u_x u_{y,x} + (u_y^{(0)}+u_y) u_{y,y} = -(2-q)\Omega u_x - h_{,y}
+\end{equation}
+where $u_y^{(0)}=-q\Omega x$.
+Express ${\bf u}$ in terms of a stream function, so
+${\bf u}=\nabla\times(\psi\hat{\bf z})$, or
+\begin{equation}\label{u-streamfunction}
+  u_x = \psi_{,y},\quad u_y = -\psi_{,x}.
+\end{equation}
+Ansatz for enthalpy
+\begin{equation}\label{u-ansatz}
+  h={\textstyle{1\over2}}\delta^2\Omega^2(R^2- x^2 - \epsilon^2 y^2
+  - z^2/\delta^2)
+\end{equation}
+\begin{equation}\label{u-ansatz}
+  \psi=-{\textstyle{1\over2}}\sigma\Omega(R^2- x^2 - \epsilon^2 y^2)
+       +{\textstyle{1\over2}}q\Omega x^2
+\end{equation}
+This implies
+\begin{equation}\label{u-streamfunction}
+  u_x = \sigma\Omega\epsilon^2 y,\quad u_y = (q-\sigma)\Omega x
+\end{equation}
+and $u_{x,x}=u_{y,y}=0$.
+Inserting into Eqs~(\ref{ux-eqn}) and (\ref{uy-eqn}) yields
+\begin{equation}\label{ux-eqn-insert1}
+  (-q+q-\sigma)\sigma\epsilon^2 = 2(q-\sigma)+\delta^2
+\end{equation}
+\begin{equation}\label{uy-eqn-insert1}
+  \sigma(q-\sigma) = -(2-q)\sigma+\delta^2
+\end{equation}
+where we have already canceled common $\Omega^2$ factors in both equations
+and common $\epsilon^2$ factors in the last equation.
+Simplifying both equations yields
+\begin{equation}\label{ux-eqn-insert2}
+  -\sigma^2\epsilon^2 = 2(q-\sigma)+\delta^2
+\end{equation}
+\begin{equation}\label{uy-eqn-insert2}
+  -\sigma^2 = -2\sigma+\delta^2
+\end{equation}
+The second equation yields
+\begin{equation}\label{ux-eqn-elim1}
+  \delta^2=(2-\sigma)\sigma
+\end{equation}
+and subtracting the two yields
+\begin{equation}\label{ux-eqn-elim2}
+  \sigma^2=2q/(1-\epsilon^2)
+\end{equation}
 
 % ====================================================================== %
 
@@ -3248,7 +3301,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.81 2002-08-14 15:34:52 dobler Exp $ $}
+$ $Id: manual.tex,v 1.82 2002-08-16 16:30:24 brandenb Exp $ $}
 
 
 \end{document}
