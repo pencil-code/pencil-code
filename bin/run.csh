@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.71 2004-04-03 13:21:21 mee Exp $
+# CVS: $Id: run.csh,v 1.72 2004-04-10 17:16:43 mee Exp $
 
 #                       run.csh
 #                      ---------
@@ -49,7 +49,7 @@ if ($local_disc) then
 	$SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
 	$SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
-      $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
+      if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
     end
   else # one local disc per MPI process (Horseshoe, etc);
        # still doesn't cover Copson
@@ -63,7 +63,7 @@ if ($local_disc) then
         set i=`expr $i + 1`
         set j=`expr $j - 1`
       end
-      $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
+      if (-e $datadir/allprocs/dxyz.dat) $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs/      
     end
   endif
 endif
