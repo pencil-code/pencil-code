@@ -1,7 +1,9 @@
-! $Id: entropy_fixed.f90,v 1.3 2004-06-11 08:07:35 ajohan Exp $
+! $Id: entropy_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $
 
-!  This module takes care of entropy (initial condition
-!  and time advance)
+!  This module takes care of entropy. Treats entropy as an auxiliary variable
+!  that does not undergo dynamical change. Useful for focusing on other
+!  physics, such as dust evolution, without spending time on evolution of
+!  gas variables.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -113,7 +115,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_fixed.f90,v 1.3 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: entropy_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux

@@ -1,7 +1,9 @@
-! $Id: density_fixed.f90,v 1.3 2004-06-11 17:19:11 mcmillan Exp $
+! $Id: density_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $
 
-!  This module is used both for the initial condition and during run time.
-!  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
+!  This module takes care of density. Treats density as an auxiliary variable
+!  that does not undergo dynamical change. Useful for focusing on other
+!  physics, such as dust evolution, without spending time on evolution of
+!  gas variables.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -90,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density_fixed.f90,v 1.3 2004-06-11 17:19:11 mcmillan Exp $")
+           "$Id: density_fixed.f90,v 1.4 2004-06-22 08:05:12 ajohan Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
