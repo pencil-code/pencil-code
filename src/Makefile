@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.101 2002-10-01 02:45:10 brandenb Exp $
+### $Id: Makefile,v 1.102 2002-10-02 04:42:57 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -67,13 +67,9 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=/usr/bin/mpif77 #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
 #FFLAGS=-O # (Samos)
-#FFLAGS=-fast -DPGF90 #(nq0)
-##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
-#FFLAGS=-fast -lm #(nq0)
 #FFLAGS=-fast -lm #(erland|igor|tycho|fe[0-9])
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
-##LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nq0)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC) -O4 -dusty
@@ -151,8 +147,7 @@ start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
-general.o:   general.f90
-random_nr.o: random_nr.f90 cparam.o
+general.o:   general.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
@@ -163,7 +158,7 @@ prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
-initcond.o:  initcond.f90 cdata.o random_nr.o
+initcond.o:  initcond.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o
 #
