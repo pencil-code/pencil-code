@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.176 2003-06-24 19:01:03 theine Exp $
+%%  CVS: $Id: manual.tex,v 1.177 2003-06-27 06:44:08 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-24 19:01:03 $ $,~ $ $Revision: 1.176 $ $}
+\date{$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-24 19:01:03 $ $,~ $ $Revision: 1.176 $ $}
+  \emph{$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2456,7 +2456,9 @@ viscosity.
 
 The interpretation of the two viscosity terms varies greatly depending upon 
 the Viscosity module used, and indeed on the parameters given to the module.
-See \S??????.
+See \S\ref{Bulkviscosity}.
+%AB: Is this ref reasonably ok?
+
 %ajwm - move this elsewhere? See section...
 %ajwm - and add description of shock viscosity
 %If \code{ivisc='nu-const'}, it is assumed that 
@@ -2591,6 +2593,7 @@ times.
 % ---------------------------------------------------------------------- %
 
 \subsection{Bulk viscosity}
+\label{Bulkviscosity}
 
 For a monatomic gas it can be shown that the bulk viscosity vanishes.
 We therefore don't use it in most of our runs.
@@ -2959,6 +2962,44 @@ What is the problem?
   \file{Makefile}).
 }
 
+\subsubsection{Some samples don't even compile,}
+as you can see on the web,
+\url{http://www.nordita.dk/data/brandenb/pencil-code/tests.html}.
+\begin{Verbatim}
+samples/helical-MHDturb:
+    Compiling..           not ok:
+  make start.x run.x read_videofiles.x
+make[1]: Entering directory `/home/dobler/f90/pencil-code/samples/helical-MHDturb/src'
+/usr/lib/lam/bin/mpif95  -O3   -c initcond.f90
+/usr/lib/lam/bin/mpif95  -O3   -c density.f90
+      use Gravity, only: gravz, nu_epicycle
+                                ^
+Error 208 at (467:density.f90) : No such entity in the module
+Error 355 : In procedure INIT_LNRHO variable NU_EPICYCLE has not been given a type
+Error 355 : In procedure POLYTROPIC_LNRHO_DISC variable NU_EPICYCLE has not been given a type
+3 Errors
+compilation aborted for density.f90 (code 1)
+make[1]: *** [density.o] Error 1
+make[1]: Leaving directory `/home/dobler/f90/pencil-code/samples/helical-MHDturb/src'
+make: *** [code] Error 2
+\end{Verbatim}
+What's the problem? Somebody may have checked in something without having
+run auto-test beforehand. The problem here is that something has been added in
+one module, but not in the corresponding no-module. You can of course check
+with \code{CVS} who it was\ldots
+
+\medskip
+
+{\em
+  Somebody ought to fix this, and fast! This can be most annoying\footnote{
+Once at a meeting I had the ethernet cable for only 5 min, checked in my own
+things (which worked fine) and somebody else has checked in his new things
+(which had already an error). This meant that I couldn't even go back to the
+old version so easily, so I missed the chance to submit my job before catching
+my train\ldots}. For the time being you can just say in the \file{src} directory
+\code{cvs up -D yesterday} or something.
+}
+
 \subsubsection{Internal compiler error with Compaq/Dec F90}
 The Dec Fortran optimizer has occasional problems with \file{nompicomm.f90}:
 \begin{Verbatim}
@@ -3089,7 +3130,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-24 19:01:03 $ $,~ $ $Revision: 1.176 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-27 06:44:08 $ $,~ $ $Revision: 1.177 $ $}}}
 
 \section{Timings}
 
@@ -5331,7 +5372,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.176 2003-06-24 19:01:03 theine Exp $ $}
+$ $Id: manual.tex,v 1.177 2003-06-27 06:44:08 brandenb Exp $ $}
 
 
 \end{document}
