@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.2 2002-06-24 17:45:29 brandenb Exp $
+! $Id: nohydro.f90,v 1.3 2002-07-02 13:01:51 dobler Exp $
 
 module Hydro
 
@@ -41,9 +41,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: nohydro.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-06-24 17:45:29 $")
+           "$Id: nohydro.f90,v 1.3 2002-07-02 13:01:51 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
