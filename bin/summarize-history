@@ -129,6 +129,8 @@ while (@entries) {
     # Do the diff
     # system("$diff", @diff_opts, "$tmpname2", "$tmpname1");
     my $difference = `$diff @diff_opts $tmpname2 $tmpname1`;
+    # Remove context lines written by some sdiffs:
+    $difference =~ s/^[0-9]+(,[0-9]+)?[adc][0-9]+(,[0-9]+)?\s*\n//mg;
     if ($full || ($difference =~ /^\s*[^#\s]/sm)) {
 	print $difference;
 	print "$sepline\n";
