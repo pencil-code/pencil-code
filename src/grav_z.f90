@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.56 2004-06-11 17:19:11 mcmillan Exp $
+! $Id: grav_z.f90,v 1.57 2004-06-12 06:07:37 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -12,7 +12,7 @@
 module Gravity
 
 !  Vertical gravity (for convection in a slab or a full star)
-!  (The full star geometry is currently in grav_r, but in may well
+!  (The full star geometry is currently in grav_r, but it may well
 !  be possible to migrate it in here.)
 
   use cparam
@@ -29,7 +29,6 @@ module Gravity
 !  For a single polytrope, zinfty (calculated in the
 !  density module) is the height where rho=cs2=0.
 
-  integer :: ngrav=10
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
@@ -103,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.56 2004-06-11 17:19:11 mcmillan Exp $")
+           "$Id: grav_z.f90,v 1.57 2004-06-12 06:07:37 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -371,7 +370,7 @@ module Gravity
 !
       use Mpicomm, only: stop_it
 !
-      real :: pot,rad
+      real :: pot
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
 !

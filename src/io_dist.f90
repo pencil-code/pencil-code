@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.71 2004-06-03 15:49:45 brandenb Exp $
+! $Id: io_dist.f90,v 1.72 2004-06-12 06:07:37 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.71 2004-06-03 15:49:45 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.72 2004-06-12 06:07:37 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -321,7 +321,6 @@ contains
 !
       use Cparam, only: fnlen
       use General, only: parse_filename
-      use Mpicomm, only: stop_it
 !
       character (len=*) :: filename,flist
       character (len=fnlen) :: dir,fpart

@@ -608,10 +608,8 @@ subroutine transform_fftpack_2d(a_re,a_im,direction)
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax
-  complex,dimension(ny) :: ay
   complex,dimension(nz) :: az
   real,dimension(4*nx+15) :: wsavex
-  real,dimension(4*ny+15) :: wsavey
   real,dimension(4*nz+15) :: wsavez
   logical :: lforward=.true.
   integer,optional :: direction

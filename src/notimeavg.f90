@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.8 2004-04-02 22:47:39 dobler Exp $ 
+! $Id: notimeavg.f90,v 1.9 2004-06-12 06:07:37 brandenb Exp $ 
 
 module Timeavg
 
@@ -51,6 +51,7 @@ module Timeavg
       optional :: flist
 !
       if(chsnap=='X') enum=.false. !(to keep compiler quiet)
+      if(ip==0) print*,flist !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
 !***********************************************************************
 

@@ -1,4 +1,4 @@
-! $Id: nochiral.f90,v 1.1 2004-05-29 06:33:31 brandenb Exp $
+! $Id: nochiral.f90,v 1.2 2004-06-12 06:07:37 brandenb Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -50,7 +50,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nochiral.f90,v 1.1 2004-05-29 06:33:31 brandenb Exp $")
+           "$Id: nochiral.f90,v 1.2 2004-06-12 06:07:37 brandenb Exp $")
 !
     endsubroutine register_chiral
 !***********************************************************************
@@ -76,9 +76,9 @@ module Chiral
 !  28-may-04/axel: adapted from pscalar
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz)      :: xx,yy,zz,prof
+      real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
+      if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_chiral
 !***********************************************************************
     subroutine dXY_chiral_dt(f,df,uu)

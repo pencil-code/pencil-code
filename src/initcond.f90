@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.110 2004-06-09 12:55:26 ajohan Exp $ 
+! $Id: initcond.f90,v 1.111 2004-06-12 06:07:37 brandenb Exp $ 
 
 module Initcond 
  
@@ -1339,7 +1339,7 @@ module Initcond
         f(:,:,:,i+2)=-ampl*tanh((xx-xflayer)/width)
       endif
 !
-      if (ip==1) print*,xx,yy
+      if (ip==1) print*,xx,yy,zz
     endsubroutine vfluxlayer
 !***********************************************************************
     subroutine halfcos_x(ampl,f,i,xx,yy,zz)
@@ -1646,7 +1646,7 @@ module Initcond
       real, dimension (mx,my,mz) :: rr,prof
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl,dr
-      integer :: i1,i2,i
+      integer :: i1,i2
 !
       intent(in) :: ampl,rr,i1,i2
       intent(out) :: prof,f
@@ -1676,13 +1676,14 @@ module Initcond
       real, dimension (mx,my,mz) :: rr,prof
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl
-      integer :: i1,i2,i
+      integer :: i
 !
       !intent(in) :: ampl,rr,i
       !intent(out) :: prof,f
 !
       !call gaunoise_rprof_vect(ampl,rr,prof,f,i,i)
 !
+    if (ip==0) print*,ampl,rr,prof,f,i !(to keep compiler quiet)
     endsubroutine gaunoise_rprof_scal
 !***********************************************************************
     subroutine trilinear(ampl,f,ivar,xx,yy,zz)

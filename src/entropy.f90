@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.315 2004-06-11 08:07:35 ajohan Exp $
+! $Id: entropy.f90,v 1.316 2004-06-12 06:07:37 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.315 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: entropy.f90,v 1.316 2004-06-12 06:07:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -288,7 +288,8 @@ module Entropy
 !
       endselect
 !
-    endsubroutine initialize_entropy
+      if (ip==0) print*,f,lstarting  !(to keep compiler quiet)
+      endsubroutine initialize_entropy
 !***********************************************************************
     subroutine init_ss(f,xx,yy,zz)
 !
@@ -305,7 +306,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
-      real :: cs2int,ssint,ztop,ss_ext,cd2_ext,pot0,pot_ext
+      real :: cs2int,ssint,ztop,ss_ext,pot0,pot_ext
       logical :: lnothing=.true.
 !
       intent(in) :: xx,yy,zz
@@ -814,7 +815,7 @@ module Entropy
       real, dimension(nx) :: rho,pp,lnrho,ss,lnTT,yH
       real :: cp1tilde,mu 
 !      real, dimension(nx) :: pp 
-      double precision :: pp0 
+!     double precision :: pp0 
 !      real, dimension(2) :: fmpi2
       real, dimension(1) :: fmpi1
       real :: kpc, rhoscale
@@ -970,6 +971,7 @@ module Entropy
           f(:,:,:,iuy)=rpv(4)
         endwhere
 !
+    if (ip==0) print*,zz
     endsubroutine shock2d
 !**********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
@@ -997,7 +999,7 @@ module Entropy
       real, dimension (nx) :: lnrho,ss,rho1,cs2,yH,lnTT,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
       real :: zbot,ztop,xi,profile_cor
-      real :: Kperp,Kpara
+!     real :: Kperp,Kpara
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho,shock,gshock
@@ -1272,10 +1274,10 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: gradcurlaa,allrho,allss
-      real, dimension (nx,3) :: glnrho,gss,glnT,bb,curlcurlaa
+      real, dimension (nx,3) :: glnrho,gss,glnT,bb
       real, dimension (nx) :: rho1,TT,bb2,bb21,cs2,thdiff,chitotal
 
-      real, dimension (nx,3) :: c1,c2,c3,c4,c5,c6,c7
+      real, dimension (nx,3) :: c1,c2,c3,c4,c5
       real, dimension (nx) :: tmp
 
       integer :: i

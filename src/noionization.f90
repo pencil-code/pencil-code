@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.113 2004-05-11 11:17:42 dobler Exp $
+! $Id: noionization.f90,v 1.114 2004-06-12 06:07:37 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.113 2004-05-11 11:17:42 dobler Exp $')
+           '$Id: noionization.f90,v 1.114 2004-06-12 06:07:37 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -251,7 +251,6 @@ module Ionization
     end subroutine perturb_mass
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
-      use Mpicomm, only: stop_it
       
       real, intent(in) :: EE,TT,yH
       real, intent(inout) :: rho

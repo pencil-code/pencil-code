@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.187 2004-06-11 12:22:52 ajohan Exp $ 
+! $Id: sub.f90,v 1.188 2004-06-12 06:07:37 brandenb Exp $ 
 
 module Sub 
 
@@ -2976,7 +2976,7 @@ module Sub
         use General, only: safe_character_assign
 !
       character (len=*) :: strin, strout
-      character (len=255) :: envname, envvalue, chunk
+      character (len=255) :: envname, chunk !, envvalue
       character (len=1) :: chr 
       character (len=64), parameter :: envnamechars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_-'
       integer :: inptr, inlen, envstart, nameptr

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.172 2004-06-11 08:07:35 ajohan Exp $
+! $Id: hydro.f90,v 1.173 2004-06-12 06:07:37 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.172 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: hydro.f90,v 1.173 2004-06-12 06:07:37 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -169,7 +169,8 @@ module Hydro
         endif
       endif
 !
-    endsubroutine initialize_hydro
+      if (ip==0) print*,f,lstarting  !(to keep compiler quiet)
+      endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)
 !
@@ -1218,7 +1219,6 @@ module Hydro
       real, dimension(nx) :: cs2,cp1tilde
       real, dimension(1) :: cs_sum_allprocs_arr,Hp_arr
       real :: cs_sum_thisproc,pp0,pp1,pp2
-      integer :: iprocHp
 !
 !  Calculate turbulent viscosity
 !

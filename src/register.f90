@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.135 2004-06-11 08:07:35 ajohan Exp $
+! $Id: register.f90,v 1.136 2004-06-12 06:07:37 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -140,7 +140,7 @@ module Register
       use Shear,        only: initialize_shear
       use Viscosity,    only: initialize_viscosity
       use Special,      only: initialize_special
-      use Timestep,     only: border_profiles
+!     use Timestep,     only: border_profiles
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstarting
