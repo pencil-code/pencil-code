@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.174 2004-02-06 15:13:49 bingert Exp $
+! $Id: magnetic.f90,v 1.175 2004-02-26 14:10:27 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -77,6 +77,7 @@ module Magnetic
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
   integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
+  integer :: i_b2b13m=0
   integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
   integer :: i_dteta=0
 
@@ -114,7 +115,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.174 2004-02-06 15:13:49 bingert Exp $")
+           "$Id: magnetic.f90,v 1.175 2004-02-26 14:10:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,6 +274,7 @@ module Magnetic
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
+      real, dimension (nx) :: b2b13
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
       real :: etatotal_max,tmp,eta_out1,B_ext21=1.
       integer :: j
@@ -643,6 +645,13 @@ module Magnetic
           call sum_mn_name(uxDxuxb_dotB0,i_uxDxuxbm)
         endif
         !
+        !  < b2 b1,3 >
+        !
+        if (i_b2b13m/=0) then
+          b2b13=bb(:,2)*bij(:,1,3)
+          call sum_mn_name(b2b13,i_b2b13m)
+        endif
+        !
       endif
 !
 !  debug output
@@ -876,6 +885,7 @@ module Magnetic
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
         i_uxjm=0; i_ujxbm=0
+        i_b2b13m=0
         i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
         i_dteta=0
       endif
@@ -918,6 +928,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',i_gpxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxDxuxbm',i_uxDxuxbm)
+        call parse_name(iname,cname(iname),cform(iname),'b2b13m',i_b2b13m)
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
@@ -990,6 +1001,7 @@ module Magnetic
         write(3,*) 'i_jxbxbm=',i_jxbxbm
         write(3,*) 'i_gpxbm=',i_gpxbm
         write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
+        write(3,*) 'i_b2b13m=',i_b2b13m
         write(3,*) 'nname=',nname
         write(3,*) 'iaa=',iaa
         write(3,*) 'iax=',iax

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $
+! $Id: hydro.f90,v 1.149 2004-02-26 14:10:27 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,6 +70,7 @@ module Hydro
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
   integer :: i_divu2m=0,i_epsK=0
+  integer :: i_u2u13m
   integer :: i_urmphi=0,i_upmphi=0,i_uzmphi=0,i_u2mphi=0,i_oumphi=0
 
   contains
@@ -107,7 +108,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: hydro.f90,v 1.149 2004-02-26 14:10:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -383,6 +384,7 @@ module Hydro
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock
       real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
       real, dimension (nx) :: uxuy, uxuz, uyuz
+      real, dimension (nx) :: u2u13
       real :: c2,s2
       integer :: i,j
 !
@@ -623,6 +625,13 @@ module Hydro
             if(i_omax/=0) call max_mn_name(o2,i_omax,lsqrt=.true.)
             if(i_o2m/=0)  call sum_mn_name(o2,i_o2m)
           endif
+        endif
+        !
+        !  < u2 u1,3 >
+        !
+        if (i_u2u13m/=0) then
+          u2u13=uu(:,2)*uij(:,1,3)
+          call sum_mn_name(u2u13,i_u2u13m)
         endif
         !
       endif
@@ -892,6 +901,7 @@ module Hydro
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
+        i_u2u13m=0
         i_urmphi=0; i_upmphi=0; i_uzmphi=0; i_u2mphi=0; i_oumphi=0
       endif
 !
@@ -926,6 +936,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'u2u13m',i_u2u13m)
         call parse_name(iname,cname(iname),cform(iname),'uxpt',i_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',i_uypt)
         call parse_name(iname,cname(iname),cform(iname),'uzpt',i_uzpt)
@@ -987,6 +998,7 @@ module Hydro
         write(3,*) 'i_Mamax=',i_Mamax
         write(3,*) 'i_divu2m=',i_divu2m
         write(3,*) 'i_epsK=',i_epsK
+        write(3,*) 'i_u2u13m=',i_u2u13m
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
         write(3,*) 'iux=',iux
