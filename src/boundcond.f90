@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.9 2002-06-27 22:02:59 brandenb Exp $
+! $Id: boundcond.f90,v 1.10 2002-07-02 04:56:00 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -19,9 +19,12 @@ module Boundcond
 !
 !  Physical boundary conditions except for periodic stuff.
 !  If errmesg is set to a non-empty string, the calling routine will call
-!  stop_it(errmesg). This deferred abort mechanism is necessary because
-!  Boundcond is used by Mpicomm, so we cannot call stop_it (from Mpicomm)
-!  here.
+!  stop_it(errmesg).
+!
+!  Wolfgang: it is now called from wsnap and equ!!
+!  OLD> This deferred abort mechanism is necessary because
+!  OLD> Boundcond is used by Mpicomm, so we cannot call stop_it (from Mpicomm)
+!  OLD> here.
 !
       use Cdata
       use Entropy

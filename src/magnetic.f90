@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.56 2002-06-25 14:58:47 dobler Exp $
+! $Id: magnetic.f90,v 1.57 2002-07-02 04:56:00 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -79,7 +79,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.56 2002-06-25 14:58:47 dobler Exp $")
+           "$Id: magnetic.f90,v 1.57 2002-07-02 04:56:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -126,19 +126,19 @@ module Magnetic
         !
         call gaunoise(amplaa,f,iax,iaz)
 
-      case('beltrami-z', '1')
+      case('Beltrami-z', 'beltrami-z', '1')
         !
         !  Beltrami field
         !
         call beltrami(amplaa,f,iaa)
 
-      case('beltrami-x', '11')
+      case('Beltrami-x', 'beltrami-x', '11')
         !
         !  One more Beltrami field
         !
         call beltrami_x(amplaa,f,iaa)
 
-      case('beltrami-y', '12')
+      case('Beltrami-y', 'beltrami-y', '12')
         !
         !  Yet another Beltrami field
         !

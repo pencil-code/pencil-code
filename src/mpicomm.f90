@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.25 2002-06-12 09:46:03 brandenb Exp $
+! $Id: mpicomm.f90,v 1.26 2002-07-02 04:56:00 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -280,7 +280,6 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar) :: f
-      character (len=160) :: errmesg
 !
 !  1. wait until data received
 !  2. set ghost zones
