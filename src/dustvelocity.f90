@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.81 2004-09-20 12:49:28 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.82 2004-09-20 13:09:36 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -109,7 +109,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.81 2004-09-20 12:49:28 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.82 2004-09-20 13:09:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,9 +170,12 @@ module Dustvelocity
         lcoriolisforce_dust=.false.
         ldragforce_dust=.false.
         lviscosity_dust=.false.
+        lgravx_dust=.false.
+        lgravy_dust=.false.
+        lgravz_dust=.false.
         if (lroot) print*, 'initialize_dustvelocity: '// &
             'Short stopping time approximation. Advection, Coriolis force, '// &
-            'drag force and viscosity on the dust turned off'
+            'drag force, viscosity and gravity on the dust turned off'
       endif
 !
 !  Chemistry dependent variables
