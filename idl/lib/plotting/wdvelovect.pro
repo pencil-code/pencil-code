@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.8 2004-08-07 16:51:20 mee Exp $
+; $Id: wdvelovect.pro,v 1.9 2004-08-09 09:27:12 mee Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -53,8 +53,10 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;	U:	The magnitude of the two-dimensional field.  
 ;		U must be a two-dimensional array.
 ;
-;	V:	The angular direction of the two dimensional field (in radians).  
+;	V:	The angular direction of the two dimensional field (in radians).
 ;               Y must have same dimensions as X.  
+;               Angles are measured as per the computing standard i.e. 
+;               anti-clockwise from the +ve x-axis.
 ;
 ; OPTIONAL INPUT PARAMETERS:
 ; 	X:	Optional abcissae values.  X must be a vector with a length 
@@ -311,8 +313,18 @@ bady:            message, 'Y array has incorrect size.'
 
         if keyword_set(POLAR) then begin
 	  maxmag=max(abs(u))/min([x_step,y_step])
-          sina = length*ugood/maxmag*sin(vgood)
-          cosa = length*ugood/maxmag*cos(vgood)
+;AJWM:   Strange but true!
+;        sina and cosa are switched to use angles measured CCW from the +ve 
+;        +ve x-axis switching them back gives angles measured CW from 
+;        the +ve y-axis; the (x,y)-component based code considers the
+;        angles of vectors such.
+;
+;        Could consider some keywords to allow switching between the two
+;        methods.  But will stick with the IDL/computing standard for now.
+;
+          default,length,1.0
+          cosa = length*ugood/maxmag*sin(vgood)
+          sina = length*ugood/maxmag*cos(vgood)
         endif else begin
 	  maxmag=max([max(abs(ugood/x_step)),max(abs(vgood/y_step))])
 ; ### FR:
