@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.139 2004-11-11 23:10:34 dobler Exp $
+# $Id: getconf.csh,v 1.140 2004-11-15 19:27:06 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -27,10 +27,10 @@ newdir:
 if (-e "LOCK") then
   echo ""
   echo "getconf.csh: found LOCK file"
-  echo "This may indicate that the code is currently running in this directory"
-  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand: rm LOCK"
+  echo "(if it is left over from a crash, remove it by hand: rm LOCK)"
   echo ""
-  echo "THERE IS STILL ONE CHANCE; if a NEWDIR file exist we change directory:"
+  echo "Will *not* start in this directory, as code may already be running."
+  echo "Checking for NEWDIR file to tell us to run somewhere else:"
   if (-e "NEWDIR") then 
     if (-s "NEWDIR") then
       set olddir=$cwd
@@ -47,8 +47,7 @@ if (-e "LOCK") then
          >> $olddir/$datadir/directory_change.log
       (date; echo "redirected FROM original run script in:"; echo $olddir; echo "")\
          >> $datadir/directory_change.log
-      echo "WELL DONE: redirected to new directory:"
-      echo `pwd`
+      echo "found NEWDIR: changing to new directory `pwd`"
       echo "... wait 20 sec, to allow manual escape if we have produced a loop!"
       echo
       # In new run directory, need to check for yet another possible LOCK file
@@ -57,7 +56,7 @@ if (-e "LOCK") then
       goto newdir
     endif
   else
-    echo "BAD LUCK: there is no NEWDIR file"
+    echo "No NEWDIR file -- exiting"
     echo
     # exit                        # won't work in a sourced file
     kill -KILL $$			# full-featured suicide
