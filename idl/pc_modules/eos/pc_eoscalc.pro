@@ -41,16 +41,20 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
+       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, lnTT
+       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_lnTT"
       endif
 
     endif else if (keyword_set(lnrho_ee)) then begin
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, ee
+       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_ee"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, ee
+       message,"Thermodynamic combination not implemented yet: /pp,/lnrho_ee"
       endif
 
     endif else begin
@@ -88,16 +92,20 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif
 
     endif else if (keyword_set(lnrho_ee)) then begin
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif
 
     endif else begin
@@ -128,16 +136,20 @@ function pc_eoscalc,var1,var2,pp=pp,ee=ee,tt=tt,cs2=cs2, $
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif
 
     endif else if (keyword_set(lnrho_ee)) then begin
 
       if keyword_set(pp) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif else if keyword_set(ee) then begin
        ;result = fn of  where var1,var2 = lnrho, ss
+       message,"Thermodynamic combination not implemented yet!"
       endif
 
     endif else begin
