@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.96 2003-07-29 09:43:36 brandenb Exp $
+! $Id: hydro.f90,v 1.97 2003-07-29 18:21:47 tarek Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -18,7 +18,7 @@ module Hydro
   real :: ampluu=0., widthuu=.1, urand=0., kx_uu=1., ky_uu=1., kz_uu=1.
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
-  real :: initpower=1.
+  real :: initpower=1.,cutoff=0.
   character (len=labellen) :: inituu='zero'
 
 
@@ -26,7 +26,7 @@ module Hydro
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu, &
        uy_left,uy_right, &
-       Omega,initpower
+       Omega,initpower,cutoff
 
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
@@ -85,7 +85,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.96 2003-07-29 09:43:36 brandenb Exp $")
+           "$Id: hydro.f90,v 1.97 2003-07-29 18:21:47 tarek Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -264,7 +264,7 @@ module Hydro
 
       case('powern') 
         ! initial spectrum k^power
-        call powern(ampluu,initpower,f,iux,iuz)
+        call powern(ampluu,initpower,cutoff,f,iux,iuz)
   
       case default
         !

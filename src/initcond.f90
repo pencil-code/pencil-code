@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.64 2003-07-29 09:43:36 brandenb Exp $ 
+! $Id: initcond.f90,v 1.65 2003-07-29 18:21:47 tarek Exp $ 
 
 module Initcond 
  
@@ -1150,9 +1150,9 @@ module Initcond
       print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine olddiffrot
 !***********************************************************************
-    subroutine powern(ampl,initpower,f,i1,i2)
+    subroutine powern(ampl,initpower,cutoff,f,i1,i2)
 !
-!   Produces k^initpower spectrum.
+!   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
 !   Still just one processor (but can be remeshed afterwards).
 !
 !   07-may-03/tarek: coded
@@ -1161,39 +1161,52 @@ module Initcond
       real, dimension (nx,ny,nz) :: k2
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im
-      real :: ampl,initpower
+      real :: ampl,initpower,cutoff
+      logical :: ltrue
       
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
         if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
       else
-        call gaunoise_vect(1.,f,i1,i2) ! which has a k^2. spectrum
-        if (initpower.ne.2.) then 
-          
-         k2=      (spread(spread(cshift &
-             ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
-         k2= k2 + (spread(spread(cshift &
-             ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
-         k2= k2 + (spread(spread(cshift &
-             ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
+        call gaunoise_vect(ampl,f,i1,i2) ! which has a k^2. spectrum
 
-        k2(1,1,1) = 1.  ! Avoid division by zero 
+        if ((initpower.ne.2.).or.(cutoff.ne.0.)) then
 
-        do i=i1,i2
-          u_re=f(l1:l2,m1:m2,n1:n2,i)
-          u_im=0. 
-          !  fft of gausian noise w/ k^2 spectrum
-          call transform_fftpack(u_re,u_im,1)
-          ! change to k^n spectrum
-          u_re =(k2)**(.25*initpower-.5)*u_re 
-          u_im =(k2)**(.25*initpower-.5)*u_im 
-          ! back to real space 
-          call transform_fftpack(u_re,u_im,-1)
-          if (lroot) print*,'change to k^',initpower,' spectrum : var  i=',i
-          f(l1:l2,m1:m2,n1:n2,i)=ampl*u_re
-        enddo             
+          k2=      (spread(spread(cshift &
+            ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
+          k2= k2 + (spread(spread(cshift &
+            ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
+          k2= k2 + (spread(spread(cshift &
+            ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
 
-      endif !(n.ne.2.)
+          k2(1,1,1) = 1.  ! Avoid division by zero 
+
+          do i=i1,i2
+            u_re=f(l1:l2,m1:m2,n1:n2,i)
+            u_im=0. 
+            !  fft of gausian noise w/ k^2 spectrum
+            call transform_fftpack(u_re,u_im,1)
+            ! change to k^n spectrum
+            u_re =(k2)**(.25*initpower-.5)*u_re 
+            u_im =(k2)**(.25*initpower-.5)*u_im 
+            ! cutoff
+            if (cutoff .ne. 0.) then
+              u_re = u_re*exp(-k2/cutoff**2.) 
+              u_im = u_im*exp(-k2/cutoff**2.) 
+            endif   
+            ! back to real space 
+            call transform_fftpack(u_re,u_im,-1)
+            f(l1:l2,m1:m2,n1:n2,i)=u_re
+            
+            if (lroot .and. (cutoff.eq.0)) then 
+              print*,'powern :  k^',initpower,' spectrum : var  i=',i
+            else
+              print*,'powern w/ cutoff : k^n*exp(-k^2/k0^2) w/ n=', &
+                     initpower,', k0 =',cutoff,' : var  i=',i
+            endif 
+          enddo !i            
+      endif !(initpower.ne.2.).or.(cutoff.ne.0.)
+
     endif !(ampl.eq.0)
 !
     endsubroutine powern
