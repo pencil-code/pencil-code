@@ -9,7 +9,7 @@ module General
 
 !***********************************************************************
     subroutine chn(n,ch)
-      character*4 ch
+      character (LEN=4) :: ch
       integer :: n
 !
 !  make a character out of a number
@@ -36,7 +36,7 @@ module General
     subroutine chk_time(label,time1,time2)
 !
       integer :: time1,time2,count_rate
-      character*(*) label
+      character (LEN=*) :: label
 !
 !  prints time in seconds
 !

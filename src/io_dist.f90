@@ -23,7 +23,7 @@ contains
 !
       use Cdata
 !
-      character*(*) file
+      character (LEN=*) :: file
       integer :: nn,mode
       real, dimension (mx,my,mz,nn) :: a
       real :: dmax
@@ -71,7 +71,7 @@ contains
 !
 !      integer :: nn
 !      real, dimension (mx,my,mz,nn) :: a
-!      character*(*) file
+!      character (LEN=*) :: file
 !!
 !      open(1,file=file,form='unformatted')
 !      write(1) a
@@ -89,7 +89,7 @@ contains
 !!
 !      integer :: nn
 !      real, dimension (mx,my,mz,mvar) :: a
-!      character*(*) file
+!      character (LEN=*) :: file
 !!
 !!      print*,'OUTPUT_VECTOR'
 !      if (nn /= mvar) STOP "OUTPUT_3vect called with nn/=mvar"
@@ -109,7 +109,7 @@ contains
 !!
 !      integer :: nn
 !      real, dimension (mx,my,mz,3) :: a
-!      character*(*) file
+!      character (LEN=*) :: file
 !!
 !!      print*,'OUTPUT_VECTOR'
 !      if (nn /= 3) STOP "OUTPUT_3vect called with nn/=3"
@@ -129,7 +129,7 @@ contains
 !
       integer :: nn
       real, dimension (mx,my,mz,nn) :: a
-      character*(*) file
+      character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
       open(91,file=file,form='unformatted')
@@ -149,7 +149,7 @@ contains
 !
       integer :: nn
       real, dimension (mx,my,mz) :: a
-      character*(*) file
+      character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
       if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
@@ -167,7 +167,7 @@ contains
       use Cdata
 !
       integer :: nn
-      character*(*) file
+      character (LEN=*) :: file
       real, dimension (mx,my,mz,nn) :: a
 !
 !nn=mx/2

@@ -43,7 +43,7 @@ module Mpicomm
 !! Moved to Cdata to save lots of `use Mpicomm':
 !  logical :: lroot              ! is this the root process?
   logical, dimension (ny*nz) :: necessary=.false.
-  character directory*12
+  character (LEN=12) :: directory
 
   contains
 
@@ -62,7 +62,7 @@ module Mpicomm
       use Cdata, only: lmpicomm
 !
       integer :: i,m,n
-      character chproc*4
+      character (LEN=4) :: chproc
 !
       lmpicomm = .true.
 !
@@ -314,7 +314,7 @@ module Mpicomm
 !  Print message and stop
 !  6-nov-01/wolf: coded
 !
-      character*(*) :: msg
+      character (LEN=*) :: msg
 !      
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize

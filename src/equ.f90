@@ -159,7 +159,9 @@ module Equ
       real, save :: tvid
       integer, save :: ifirst,nvid
 !
-      character ch*4,file*9,chdir*(*)
+      character (LEN=4) :: ch
+      character (LEN=9) :: file
+      character (LEN=*) :: chdir
       logical lvid
 !
 !  Output vid-data in 'tvid' time intervals
@@ -204,7 +206,7 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.5 2001-11-23 16:19:57 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.6 2001-12-17 10:17:40 dobler Exp $'
 !
 !  initiate communication
 !

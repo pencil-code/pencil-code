@@ -29,6 +29,6 @@ module Cdata
   logical :: lroot=.true.
   logical :: lfirstpoint
 
-  character*80 :: form1
+  character (LEN=80) :: form1
 
 endmodule Cdata

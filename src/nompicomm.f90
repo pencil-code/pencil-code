@@ -12,7 +12,7 @@ module Mpicomm
 
   implicit none
 
-  interface mpibcast_real		! Overload the `mpibcast_real' function
+  interface mpibcast_real       ! Overload the `mpibcast_real' function
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
   endinterface
@@ -24,7 +24,7 @@ module Mpicomm
   logical, dimension (nx*ny) :: necessary=.false.
 !  logical :: lroot=.true.       ! is this the root process?
 
-  character directory*12
+  character (LEN=12) :: directory
 
   contains
 
@@ -36,7 +36,7 @@ module Mpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
-      character chproc*4
+      character (LEN=4) :: chproc
       integer :: m,n
 !
 !  for single cpu machine, set processor to root value
@@ -180,7 +180,7 @@ module Mpicomm
 !  Print message and stop
 !  6-nov-01/wolf: coded
 !
-      character*(*) :: msg
+      character (LEN=*) :: msg
 !      
       if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
       call mpifinalize
