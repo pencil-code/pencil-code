@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.77 2004-05-07 17:07:38 mee Exp $
+! $Id: dustdensity.f90,v 1.78 2004-05-10 16:45:00 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -67,28 +67,33 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
+! Set ind to consecutive numbers 0 ... ndustspec-1 
       do k=1,ndustspec
-        if (k == 1) then
-          ind(1) = iuud(1)+3         ! indix to access lam
-          if (lmdvar) imd(1) = ind(1) + 1
-          if (lmice)  imi(1) = ind(1) + 2
-        else
-          if (lmdvar .and. lmice) then
-            ind(k) = ind(k-1) + 6
-            imd(k) = ind(k) + 1
-            imi(k) = ind(k) + 2
-          elseif (lmdvar) then
-            ind(k) = ind(k-1) + 5
-            imd(k) = ind(k) + 1
-          else
-            ind(k) = ind(k-1) + 4
-          endif
-        endif  
-        nvar = nvar + 1                ! add 1 variable pr. dust species
-        if (lmdvar) nvar = nvar + 1
-        if (lmice)  nvar = nvar + 1
+        ind(k)=k
+      enddo
+
+! Allocate some f array variables for Dust Number Density
+      ind=ind+nvar
+      nvar=nvar+ndustspec
+
+      if (lmdvar .and. lmice) then 
+        imd  = ind + ndustspec 
+        imi  = imd + ndustspec 
+        nvar = nvar+2 * ndustspec
+      else if (lmdvar) then 
+! Allocate some f array variables for Dust Density
+        imd  = ind + ndustspec 
+        nvar = nvar+ndustspec
+      else if (lmice) then 
+! Allocate some f array variables for Ice Density
+        imi  = ind + ndustspec
+        nvar = nvar+ndustspec
+      endif
+
 !
-        if ((ip<=8) .and. lroot) then
+! Print some diagnostics
+      do k=1,ndustspec
+        if ((ip<=80) .and. lroot) then
           print*, 'register_dustdensity: k = ', k
           print*, 'register_dustdensity: nvar = ', nvar
           print*, 'register_dustdensity: ind = ', ind(k)
@@ -107,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.77 2004-05-07 17:07:38 mee Exp $")
+           "$Id: dustdensity.f90,v 1.78 2004-05-10 16:45:00 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -926,15 +931,15 @@ module Dustdensity
       if (lmice)  call chn(imi(1),smi1)
       if (lwr) then
         if (lmdvar .and. lmice) then
-          write(3,*) 'ind=indgen('//trim(sdustspec)//')*6 + '//trim(snd1)
-          write(3,*) 'imd=indgen('//trim(sdustspec)//')*6 + '//trim(smd1)
-          write(3,*) 'imi=indgen('//trim(sdustspec)//')*6 + '//trim(smi1)
+          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
+          write(3,*) 'imd=indgen('//trim(sdustspec)//') + '//trim(smd1)
+          write(3,*) 'imi=indgen('//trim(sdustspec)//') + '//trim(smi1)
         elseif (lmdvar) then
-          write(3,*) 'ind=indgen('//trim(sdustspec)//')*5 + '//trim(snd1)
-          write(3,*) 'imd=indgen('//trim(sdustspec)//')*5 + '//trim(smd1)
+          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
+          write(3,*) 'imd=indgen('//trim(sdustspec)//') + '//trim(smd1)
           write(3,*) 'imi=0'
         else
-          write(3,*) 'ind=indgen('//trim(sdustspec)//')*4 + '//trim(snd1)
+          write(3,*) 'ind=indgen('//trim(sdustspec)//') + '//trim(snd1)
           write(3,*) 'imd=0'
           write(3,*) 'imi=0'
         endif

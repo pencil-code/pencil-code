@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.51 2004-04-30 09:30:50 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.52 2004-05-10 16:45:00 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -81,23 +81,13 @@ module Dustvelocity
       ldustvelocity = .true.
 !
       do k=1,ndustspec
-        if (k == 1) then
-          iuud(1) = nvar+1
-        else
-          if (lmdvar .and. lmice) then
-            iuud(k) = iuud(k-1) + 6
-          elseif (lmdvar) then
-            iuud(k) = iuud(k-1) + 5
-          else
-            iuud(k) = iuud(k-1) + 4
-          endif
-        endif
-        iudx(k) = iuud(k)
-        iudy(k) = iuud(k)+1
-        iudz(k) = iuud(k)+2
+        iuud(k) = nvar+1      ! Unecessary index... iudx would suffice 
+        iudx(k) = nvar+1             
+        iudy(k) = nvar+2
+        iudz(k) = nvar+3
         nvar = nvar+3                ! add 3 variables pr. dust layer
 !
-        if ((ip<=8) .and. lroot) then
+        if ((ip<=80) .and. lroot) then
           print*, 'register_dustvelocity: nvar = ', nvar
           print*, 'register_dustvelocity: k = ', k
           print*, 'register_dustvelocity: iudx,iudy,iudz = ', &
@@ -115,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.51 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.52 2004-05-10 16:45:00 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
