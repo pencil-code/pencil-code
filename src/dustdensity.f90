@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.22 2004-01-04 14:06:18 ajohan Exp $
+! $Id: dustdensity.f90,v 1.23 2004-01-28 13:33:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -23,12 +23,12 @@ module Dustdensity
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec) :: cdiffnd=0
   real :: nd_const=1.,dkern_cst=1.,dust_to_gas_ratio=0.,rhod0=1.,nd00=0.
-  real :: cdiffnd_all, mgave0=1.
+  real :: cdiffnd_all, mdave0=1.
   character (len=labellen) :: initnd='zero'
   logical :: lcalcdkern=.true.
 
   namelist /dustdensity_init_pars/ &
-      rhod0, initnd, dust_to_gas_ratio, nd_const, dkern_cst, nd00, mgave0
+      rhod0, initnd, dust_to_gas_ratio, nd_const, dkern_cst, nd00, mdave0
 
   namelist /dustdensity_run_pars/ &
       rhod0, cdiffnd, cdiffnd_all, lcalcdkern
@@ -60,12 +60,22 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
+!  Allocate dust density index arrays
+!
+      allocate (ind(ndustspec))
+      if (lmdvar) then
+        allocate (irhod(ndustspec))
+      else
+        allocate (irhod(1))
+        irhod = 0
+      endif
+!
       do i=1,ndustspec
         if (i .eq. 1) then
           ind(1) = iuud(1)+3         ! indix to access lam
-          if (lmgvar) irhod(1) = ind(1) + 1
+          if (lmdvar) irhod(1) = ind(1) + 1
         else
-          if (lmgvar) then
+          if (lmdvar) then
             ind(i) = ind(i-1) + 5
             irhod(i) = ind(i) + 1
           else
@@ -73,7 +83,7 @@ module Dustdensity
           endif
         endif  
         nvar = nvar + 1              ! add 1 variable pr. dust layer
-        if (lmgvar) nvar = nvar + 1
+        if (lmdvar) nvar = nvar + 1
 !
         if ((ip<=8) .and. lroot) then
           print*, 'register_dustdensity: i = ', i
@@ -85,7 +95,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.22 2004-01-04 14:06:18 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.23 2004-01-28 13:33:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,7 +111,7 @@ module Dustdensity
           if (maux == 0) then
             if (nvar < mvar) then
               write(4,*) ',nd'//trim(sdust)//' $'
-              if (lmgvar) write(4,*) ',rhod'//trim(sdust)//' $'
+              if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
             endif
             if (nvar == mvar) then
               write(4,*) ',nd'//trim(sdust)
@@ -109,10 +119,10 @@ module Dustdensity
             endif
           else
             write(4,*) ',nd'//trim(sdust)//' $'
-            if (lmgvar) write(4,*) ',rhod'//trim(sdust)//' $'
+            if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
           endif
           write(15,*) 'nd'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
-          if (lmgvar) then
+          if (lmdvar) then
             write(15,*) 'rhod'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
           endif
         endif
@@ -138,7 +148,7 @@ module Dustdensity
       case('kernel_lin')
         do i=1,ndustspec
           do j=1,ndustspec
-            dkern(:,i,j) = dkern_cst*(mg(i)+mg(j))
+            dkern(:,i,j) = dkern_cst*(md(i)+md(j))
           enddo
         enddo
         lcalcdkern = .false.
@@ -189,7 +199,7 @@ module Dustdensity
         if (dust_to_gas_ratio .lt. 0.) &
             call stop_it("init_nd: Negative dust_to_gas_ratio!")
         do i=1,ndustspec
-          f(:,:,:,ind(i)) = dust_to_gas_ratio/mg(i)*exp(f(:,:,:,ilnrho))
+          f(:,:,:,ind(i)) = dust_to_gas_ratio/md(i)*exp(f(:,:,:,ilnrho))
         enddo
       case('frac_of_gas_glo')
         if (dust_to_gas_ratio .lt. 0.) &
@@ -198,7 +208,7 @@ module Dustdensity
           do j=1,my
             do k=1,ndustspec
               f(i,j,:,ind(k)) = &
-                  dust_to_gas_ratio/mg(k)*exp(f(4,4,:,ilnrho))
+                  dust_to_gas_ratio/md(k)*exp(f(4,4,:,ilnrho))
             enddo
           enddo
         enddo
@@ -210,7 +220,7 @@ module Dustdensity
         print*, 'init_nd: Test case with kernel linear with sum of masses'
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              nd00/mgave0*exp(-mg(k)/mgave0)*(mgplus(k)-mgminus(k))
+              nd00/mdave0*exp(-md(k)/mdave0)*(mdplus(k)-mdminus(k))
         enddo
       case default
 !
@@ -224,8 +234,8 @@ module Dustdensity
 !
 !  Initialize dust density
 !      
-      if (lmgvar) then
-        do i=1,ndustspec; f(:,:,:,irhod(i)) = mg(i)*f(:,:,:,ind(i)); enddo
+      if (lmdvar) then
+        do i=1,ndustspec; f(:,:,:,irhod(i)) = md(i)*f(:,:,:,ind(i)); enddo
       endif
 !
 !  sanity check
@@ -263,10 +273,10 @@ module Dustdensity
 !
 !  Check for grain mass interval overflows
 !      
-      if (lmgvar) then
-        forall (i=1:ndustspec, mg(i) .lt. mgminus(i) .or. mg(i) .ge. mgplus(i))
-          forall (k=1:ndustspec, mg(k) .ge. mgminus(k) &
-              .and. mg(k) .lt. mgplus(k))
+      if (lmdvar) then
+        forall (i=1:ndustspec, md(i) .lt. mdminus(i) .or. md(i) .ge. mdplus(i))
+          forall (k=1:ndustspec, md(k) .ge. mdminus(k) &
+              .and. md(k) .lt. mdplus(k))
             f(l1:l2,m,n,ind(k))  = f(l1:l2,m,n,ind(k)) + f(l1:l2,m,n,ind(i))
             f(l1:l2,m,n,irhod(k))= f(l1:l2,m,n,irhod(k)) + f(l1:l2,m,n,irhod(i))
             f(l1:l2,m,n,ind(i))  = 0.
@@ -275,7 +285,7 @@ module Dustdensity
         endforall
         do k=1,ndustspec
           if (f(l1,m,n,irhod(k)) .ne. 0. .and. f(l1,m,n,ind(k)) .ne. 0.) then
-            mg(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
+            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           endif
         enddo
       endif
@@ -307,20 +317,20 @@ module Dustdensity
           dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
           df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
           df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
-          if (lmgvar) then
-            forall (k=1:ndustspec, mg(i) + mg(j) .ge. mgminus(k) &
-                .and. mg(i) + mg(j) .lt. mgplus(k)) 
+          if (lmdvar) then
+            forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
+                .and. md(i) + md(j) .lt. mdplus(k)) 
               df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - dndfac
-              df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + mg(i)*dndfac
-              df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + mg(j)*dndfac
+              df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
+              df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
               df(l1:l2,m,n,irhod(k)) = &
-                  df(l1:l2,m,n,irhod(k)) - (mg(i)+mg(j))*dndfac
+                  df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
             endforall
           else
-            forall (k=1:ndustspec, mg(i) + mg(j) .ge. mgminus(k) &
-                .and. mg(i) + mg(j) .lt. mgplus(k)) 
+            forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
+                .and. md(i) + md(j) .lt. mdplus(k)) 
               df(l1:l2,m,n,ind(k)) = &
-                  df(l1:l2,m,n,ind(k)) - dndfac*(mg(i)+mg(j))/mg(k)
+                  df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
             endforall
           endif
         enddo
@@ -363,7 +373,7 @@ module Dustdensity
               lfirstpoint2 = .true.
               lfirstpoint = .false.
             endif
-            call sum_mn_name(nd(:,k)*mg(k),i_rhodm)
+            call sum_mn_name(nd(:,k)*md(k),i_rhodm)
             lfirstpoint = lfirstpoint2
           endif
         endif
@@ -452,9 +462,9 @@ module Dustdensity
 !  Write dust index in short notation
 !      
       call chn(ind(1),snd1)
-      if (lmgvar) call chn(irhod(1),srhod1)
+      if (lmdvar) call chn(irhod(1),srhod1)
       if (lwr) then
-        if (lmgvar) then
+        if (lmdvar) then
           write(3,*) 'ind=indgen('//trim(sdustspec)//')*5 + '//trim(snd1)
           write(3,*) 'irhod=indgen('//trim(sdustspec)//')*5 + '//trim(srhod1)
         else

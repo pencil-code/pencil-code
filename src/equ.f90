@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.187 2004-01-08 09:20:29 nilshau Exp $
+! $Id: equ.f90,v 1.188 2004-01-28 13:33:47 ajohan Exp $
 
 module Equ
 
@@ -226,8 +226,8 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij
       real, dimension (nx,3) :: uu,glnrho,bb,gshock
-      real, dimension (nx,3,size(mg)) :: uud,gnd
-      real, dimension (nx,size(mg)) :: divud,ud2
+      real, dimension (nx,3,size(iuud)) :: uud,gnd
+      real, dimension (nx,size(iuud)) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
       real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
 !
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.187 2004-01-08 09:20:29 nilshau Exp $")
+           "$Id: equ.f90,v 1.188 2004-01-28 13:33:47 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -353,8 +353,7 @@ module Equ
 !  duu_dt_grav now also takes care of dust velocity
 !
         if (lgrav) then
-          if (lhydro)        call duu_dt_grav(f,df,uu,rho1)
-          if (ldustvelocity) call duud_dt_grav(f,df)
+          if (lhydro) call duu_dt_grav(f,df,uu,rho1)
         endif
 !
 !  Magnetic field evolution
@@ -375,7 +374,6 @@ module Equ
 !  Add shear if present
 !
         if (lshear)                     call shearing(f,df)
-        if (lshear .and. ldustvelocity) call shearingdust(f,df)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)

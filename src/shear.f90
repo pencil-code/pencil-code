@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.12 2003-12-06 13:52:21 ajohan Exp $
+! $Id: shear.f90,v 1.13 2004-01-28 13:33:47 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.12 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: shear.f90,v 1.13 2004-01-28 13:33:47 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -70,10 +70,10 @@ module Shear
       use Deriv
       use Hydro, only:theta
 !
-      integer :: j
+      integer :: i,j
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: uy0,dfdy
+      real, dimension (nx) :: uy0,dfdy
 !
       intent(in)  :: f
 !
@@ -101,6 +101,27 @@ module Shear
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)&
                -Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iux)
         endif
+      endif
+!
+!  Loop over dust layers
+!
+      if (ldustvelocity) then
+        do i=1,size(iuud)
+!
+!  Correct Coriolis force term for all dust layers 
+!
+          if (theta==0) then
+            df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
+                - Sshear*f(l1:l2,m,n,iudx(i))
+          else
+            if (headtt) print*,'Sure you want Sshear with finite theta??'
+            df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
+                - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(i))
+          endif
+!
+!  End loop over dust layers
+!
+        enddo
       endif
 !
 !  Magnetic stretching term

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.50 2003-12-23 10:51:00 dobler Exp $
+! $Id: grav_z.f90,v 1.51 2004-01-28 13:33:47 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -35,6 +35,7 @@ module Gravity
   real :: grav_const=1.
   real :: g0
   character (len=labellen) :: grav_profile='const'
+  logical :: lgravzd = .true.
 
 !  The gravity potential must always be negative. However, in an plane
 !  atmosphere with constant gravity, the potential goes to zero at
@@ -65,7 +66,7 @@ module Gravity
 
   namelist /grav_run_pars/ &
        zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top
+       lnrho_bot,lnrho_top,ss_bot,ss_top,lgravzd
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -91,7 +92,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.50 2003-12-23 10:51:00 dobler Exp $")
+           "$Id: grav_z.f90,v 1.51 2004-01-28 13:33:47 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -142,8 +143,9 @@ module Gravity
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1
       real :: nu_epicycle2
+      integer :: i
 !
-      intent(in)  :: f
+      intent(in) :: f
 !
 !  different gravity profiles
 !
@@ -185,6 +187,29 @@ module Gravity
             -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
         if(lroot) print*,'duu_dt_grav: no gravity profile given'
+      endif
+!
+!  Loop over dust species
+!
+      if (ldustvelocity) then
+        do i=1,size(iuud)
+!
+!  different gravity profiles
+!
+          if (grav_profile=='const') then
+            if (lgravzd) df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i)) + gravz
+!
+!  linear gravity profile (for accretion discs)
+!
+          elseif (grav_profile=='linear') then
+            nu_epicycle2=nu_epicycle**2
+            if (lgravzd) &
+                df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i))-nu_epicycle2*z(n)
+          endif
+!
+!  End loop over dust species
+!          
+        enddo
       endif
 !
       if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)

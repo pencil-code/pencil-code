@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.13 2004-01-20 14:25:05 dobler Exp $
+! $Id: nodustvelocity.f90,v 1.14 2004-01-28 13:33:47 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -18,7 +18,7 @@ module Dustvelocity
 
   implicit none
 
-  real, dimension(1) :: mg=1.
+  real, dimension(1) :: md=1.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /dustvelocity_init_pars/ dummy
@@ -30,7 +30,6 @@ module Dustvelocity
   integer :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0,i_udmy=0,i_udmz=0
   integer :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer :: i_divud2m=0,i_epsKd=0
-  integer :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0
 
   contains
 
@@ -53,10 +52,18 @@ module Dustvelocity
 !
       ldustvelocity = .false.
 !
+!  Allocate dust velocity index arrays and set to zero
+!
+      allocate (iuud(1), iudx(1), iudy(1), iudz(1))
+      iuud = 0
+      iudx = 0
+      iudy = 0
+      iudz = 0
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.13 2004-01-20 14:25:05 dobler Exp $")
+           "$Id: nodustvelocity.f90,v 1.14 2004-01-28 13:33:47 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************

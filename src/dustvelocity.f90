@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.28 2004-01-04 14:06:18 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.29 2004-01-28 13:33:47 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -23,23 +23,23 @@ module Dustvelocity
 
   ! init parameters
   real, dimension(ndustspec,ndustspec) :: scolld
-  real, dimension(ndustspec) :: mg,mgplus,mgminus,ag,rhodsa1
+  real, dimension(ndustspec) :: md,mdplus,mdminus,ag,rhodsa1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real :: rhods=1.,mg0=1.,deltamg=1.2
+  real :: rhods=1.,md0=1.,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
-  logical, dimension(ndustspec) :: lfeedback_gas=.true.,lgravzd=.true.
-  logical :: lfeedback_gas_all=.true.,lgravzd_all=.true.
+  logical, dimension(ndustspec) :: lfeedback_gas=.true.
+  logical :: lfeedback_gas_all=.true.
   character (len=labellen) :: inituud='zero'
   character (len=labellen) :: draglaw='epstein_cst', dust_geometry='sphere'
 
   namelist /dustvelocity_init_pars/ &
-       rhods, mg0, deltamg, draglaw, dust_geometry, ampluud, inituud
+       rhods, md0, deltamd, draglaw, dust_geometry, ampluud, inituud
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
        nud, nud_all, betad, betad_all, tausd, tausd_all, &
-       lfeedback_gas, lfeedback_gas_all, lgravzd, lgravzd_all
+       lfeedback_gas, lfeedback_gas_all
 
   ! other variables (needs to be consistent with reset list below)
   integer, dimension(ndustspec) :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
@@ -50,7 +50,6 @@ module Dustvelocity
   integer, dimension(ndustspec) :: i_udmy=0,i_udmz=0
   integer, dimension(ndustspec) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer, dimension(ndustspec) :: i_divud2m=0,i_epsKd=0
-  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0,irhod=0
 
   contains
 
@@ -76,11 +75,16 @@ module Dustvelocity
 !
       ldustvelocity = .true.
 !
+!  Allocate dust velocity index arrays
+!
+      allocate (iuud(ndustspec), iudx(ndustspec), iudy(ndustspec), &
+          iudz(ndustspec))
+!
       do i=1,ndustspec
         if (i .eq. 1) then
           iuud(1) = nvar+1
         else
-          if (lmgvar) then
+          if (lmdvar) then
             iuud(i) = iuud(i-1) + 5
           else
             iuud(i) = iuud(i-1) + 4
@@ -102,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.28 2004-01-04 14:06:18 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.29 2004-01-28 13:33:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -140,7 +144,7 @@ module Dustvelocity
 !
 !  Output grain mass discretization type
 !
-      if (lmgvar) then
+      if (lmdvar) then
         print*, 'register_dustvelocity: variable grain mass'
       else
         print*, 'register_dustvelocity: constant grain mass'
@@ -149,20 +153,20 @@ module Dustvelocity
 !  Dust physics parameters
 !
       do i=1,ndustspec
-        mgminus(i) = mg0*deltamg**(i-1)
-        mgplus(i)  = mg0*deltamg**i
-        mg(i) = 0.5*(mgminus(i)+mgplus(i))
+        mdminus(i) = md0*deltamd**(i-1)
+        mdplus(i)  = md0*deltamd**i
+        md(i) = 0.5*(mdminus(i)+mdplus(i))
       enddo
 
-      if (ndustspec .eq. 1) mg(1) = mg0
+      if (ndustspec .eq. 1) md(1) = md0
 
       select case(dust_geometry)
 
       case ('sphere')
         if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
-        ag(1)  = (0.75*mg(1)/(pi*rhods))**(1/3.)  ! Spherical
+        ag(1)  = (0.75*md(1)/(pi*rhods))**(1/3.)  ! Spherical
         do i=2,ndustspec
-          ag(i)  = ag(1)*(mg(i)/mg(1))**(1/3.)
+          ag(i)  = ag(1)*(md(i)/md(1))**(1/3.)
         enddo
         do i=1,ndustspec
           do j=0,ndustspec
@@ -219,14 +223,6 @@ module Dustvelocity
                 'initialize_dustvelocity: lfeedback_gas_all=',lfeedback_gas_all
         do i=1,ndustspec
           lfeedback_gas(i) = .false.
-        enddo
-      endif
-!
-      if (.not. lgravzd_all) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: lgravzd_all=',lgravzd_all
-        do i=1,ndustspec
-          lgravzd(i) = .false.
         enddo
       endif
 !
@@ -374,7 +370,7 @@ module Dustvelocity
 !  Dust abbreviations
 !
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
-        rhod =f(l1:l2,m,n,ind(k))*mg(k)
+        rhod =f(l1:l2,m,n,ind(k))*md(k)
         rhod1=1./rhod
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
@@ -558,121 +554,6 @@ module Dustvelocity
 !
     endsubroutine duud_dt
 !***********************************************************************
-    subroutine duud_dt_grav(f,df)
-!
-!  add duu/dt according to gravity
-!
-!  6-dec-03/anders: copied from duu_dt_grav
-!
-      use Cdata
-      use Sub
-      use Gravity
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real :: nu_epicycle2
-      integer :: i
-!
-      intent(in)  :: f
-!
-!  Loop over dust layers
-!
-      do i=1,ndustspec
-!
-        if (headtt) print*,'duud_dt_grav: lgravzd=', lgravzd
-!
-!  different gravity profiles
-!
-        if (grav_profile=='const') then
-          if (headtt) print*,'duud_dt_grav: constant gravz=',gravz
-          if (ldustvelocity .and. lgravzd(i)) &
-              df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i)) + gravz
-!
-!  linear gravity profile (for accretion discs)
-!
-        elseif (grav_profile=='const_zero') then
-          if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
-          if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-          if (z(n)<=zgrav) then
-            if (lgravzd(i)) &
-                df(l1:l2,m,n,iudz(i))=df(l1:l2,m,n,iudz(i))+gravz
-          endif
-!
-!  linear gravity profile (for accretion discs)
-!
-        elseif (grav_profile=='linear') then
-        !if (nu_epicycle/=-gravz) then
-        !  if (lroot) print*,'Omega,nu_epicycle=',Omega,nu_epicycle
-        !endif
-          nu_epicycle2=nu_epicycle**2
-          if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-          if (lgravzd(i)) &
-              df(l1:l2,m,n,iudz(i)) = &
-              df(l1:l2,m,n,iudz(i))-nu_epicycle2*z(n)
-!
-!  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
-!   at solar radius.  (for interstellar runs)
-!
-        elseif (grav_profile=='Ferriere') then
-!  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
-!AB: These numbers should be inserted in the appropriate unuts.
-!AB: As it is now, it can never make much sense.
-          if(lgravzd(i)) &
-              df(l1:l2,m,n,iudz(i)) = df(l1:l2,m,n,iudz(i)) &
-              -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
-        else
-          if(lroot) print*,'duud_dt_grav: no gravity profile given'
-        endif
-!
-!  End loop over dust layers
-!
-      enddo
-!
-      if(ip==0) print*,f ! keep compiler quiet
-    endsubroutine duud_dt_grav
-!***********************************************************************
-    subroutine shearingdust(f,df)
-!
-!  Calculates the shear terms, -uy0*df/dy (shearing sheat approximation)
-!
-!  6-dec-03/anders: Copied from shearing
-!
-      use Cparam
-      use Deriv
-!
-      integer :: i,j
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-      real, dimension(nx) :: uy0,dfdy
-!
-      intent(in)  :: f
-!
-!  print identifier
-!
-      if (headtt.or.ldebug) &
-          print*,'shearingdust: Sshear,qshear=',Sshear,qshear
-!
-!  Loop over dust layers
-!
-      do i=1,ndustspec 
-!
-!  Correct Coriolis force term for all dust layers 
-!
-        if (theta==0) then
-          df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
-              - Sshear*f(l1:l2,m,n,iudx(i))
-        else
-          if (headtt) print*,'Sure you want Sshear with finite theta??'
-          df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
-              - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(i))
-        endif
-!
-!  End loop over dust layers
-!
-      enddo
-!
-    end subroutine shearingdust
-!***********************************************************************
     subroutine rprint_dustvelocity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
@@ -853,7 +734,7 @@ module Dustvelocity
       call chn(iudy(1),sudy1)
       call chn(iudz(1),sudz1)
       if (lwr) then
-        if (lmgvar) then
+        if (lmdvar) then
           write(3,*) 'iuud=indgen('//trim(sdustspec)//')*5 + '//trim(suud1)
           write(3,*) 'iudx=indgen('//trim(sdustspec)//')*5 + '//trim(sudx1)
           write(3,*) 'iudy=indgen('//trim(sdustspec)//')*5 + '//trim(sudy1)
