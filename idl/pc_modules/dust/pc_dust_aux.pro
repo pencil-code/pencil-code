@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.8 2004-07-01 12:10:38 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.9 2004-08-17 10:28:10 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -9,6 +9,10 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
 
   default, datadir, 'data'
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
+
+  cmd='grep ndustspec '+datadir+'/index.pro'
+  spawn, cmd, result
+  res=execute(result[0])
 
   result=0.
 
@@ -32,8 +36,6 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
 
   endif else if (var eq 'md') then begin
  
-    sized=size(nd)
-    ndustspec=sized(sized[0])
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     md=fltarr(ndustspec)
@@ -49,7 +51,6 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
   endif else if (var eq 'fd') then begin
 
     sized=size(nd)
-    ndustspec=sized(sized[0])
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     mdminus=fltarr(ndustspec)
