@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.183 2003-07-15 09:02:41 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.184 2003-07-15 11:27:49 nilshau Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}
+\date{$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}
+  \emph{$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2403,15 +2403,22 @@ is given by
   \ =\ \mathcal{F}(u(x,y,z))
   &=& \frac{1}{N_x N_y N_z} \sum_{p=0}^{N_x-1} \sum_{q=0}^{N_y-1} 
        \sum_{r=0}^{N_z-1} u(x_p,y_q,z_r)  \nonumber \\
-  & & {} \times \exp(-i k_x  x_p) \exp(-i k_y y_q) 
-         \exp(-i k_z z_r) ,
+  & & {} \times \exp(-i K_x  x_p) \exp(-i K_y y_q) 
+         \exp(-i K_z z_r) ,
 \end{eqnarray}
 where
 \[
-  k_x = \frac{2\pi}{N_x} \, ,\qquad
-  k_y = \frac{2\pi}{N_y} \, ,\qquad
-  k_z = \frac{2\pi}{N_z} \, .
+  K_x = \frac{2\pi}{N_x}k_x \, ,\qquad
+  K_y = \frac{2\pi}{N_y}k_y \, ,\qquad
+  K_z = \frac{2\pi}{N_z}k_z \, ,
 \]
+and 
+\[
+   1 \le k_x\frac{L}{2 \pi} \le N_x \, ,\qquad
+   1 \le k_y\frac{L}{2 \pi} \le N_y \, ,\qquad
+   1 \le k_z\frac{L}{2 \pi} \le N_z \, ,
+\]
+when $L$ is the size of the simulation box.
 The three-dimensional power spectrum $P(k)$ is defined as
 \begin{equation}
   P(k)=\frac{1}{2}\tilde{u}\tilde{u}^*,
@@ -2443,6 +2450,7 @@ In addition one must edit
   POWER=power_spectrum
   FFTPACK=fftpack \
 \end{alltt}
+You should also make sure $nxgrid=nygrid=nzgrid$.
 
 Running the code will now create the files \name{powerb.dat} and 
 \name{poweru.dat} containing the three-dimensional 
@@ -2450,6 +2458,11 @@ magnetic and kinetic power spectra respectively. In addition to these
 three-dimensional files we will also find the one-dimensional files
 \name{powerbx_x.dat}, \name{powerby_x.dat}, \name{powerbz_x.dat},
 \name{powerux_x.dat}, \name{poweruy_x.dat} and \name{poweruz_x.dat}.
+In these files the data are stored such that the first line contain the
+time of the snapshot, the following $nxgrid/2$ numbers represent the
+power at each wavenumber, from the smallest to the largest.
+If several snapshots have been saved, they are being stored immediately 
+following the preceding snapshot.
 
 To visualize with \name{IDL} just type
 \cmd{power} and you get the last snapshot of the three-dimensional 
@@ -2485,6 +2498,34 @@ In addition one must edit
   \begin{alltt}
   STRUCT_FUNC  = struct_func
   \end{alltt}
+You should also make sure $nxgrid=nygrid=nzgrid$.
+
+Running the code will now create the files: \\ 
+\name{sfu-1.dat}, \name{sfu-2.dat}, \name{sfu-3.dat} (velocity), \\ 
+\name{sfb-1.dat}, \name{sfb-2.dat}, \name{sfb-3.dat} (magnetic field), \\ 
+\name{sfz1-1.dat}, \name{sfz1-2.dat}, \name{sfz1-3.dat} (first Elsasser), \\ 
+\name{sfz2-1.dat}, \name{sfz2-2.dat}, \name{sfz2-3.dat} (second Elsasser), \\ 
+which contains the data of interest. 
+The first line in each file contains the time $t$ 
+and the number $qmax$, such that the largest moment
+calculated is $qmax-1$. The next $imax$ numbers represent the first moment 
+structure function for the first snapshot, here
+\begin{equation}
+imax=2\frac{\log (nxgrid)}{\log 2}-2.
+\end{equation}
+The next $imax$ numbers contain the second moment structure function, 
+and so on 
+till $qmax-1$. The following $imax$ numbers then contain the data of the 
+{\it signed} third order structure function i.e.  
+$S^3_{long.}(l)=< (u_x(x{+}l,y,z)-u_x(x,y,z))^3 >$.
+
+The following $imax \times qmax \times 2$ numbers are zero if 
+\var{nr_directions}=1 
+(default), otherwise they are the same data as above but for the 
+structure functions calculated in the y and z directions.
+
+If the code has been run long enough as to calculate several snapshots, these
+snapshots will now follow, being stored in the same way as the first snapshot.
 
 To visualize with \name{IDL} just type
 \cmd{structure} and you get the time-average of the first order longitudinal 
@@ -3234,7 +3275,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-15 09:02:41 $ $,~ $ $Revision: 1.183 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}}}
 
 \section{Timings}
 
@@ -5502,7 +5543,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.183 2003-07-15 09:02:41 dobler Exp $ $}
+$ $Id: manual.tex,v 1.184 2003-07-15 11:27:49 nilshau Exp $ $}
 
 
 \end{document}
