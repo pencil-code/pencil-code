@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.8 2003-08-08 07:49:16 brandenb Exp $
+;  $Id: readstartpars.pro,v 1.9 2003-08-15 18:38:22 brandenb Exp $
 ;
 ;  Read startup parameters
 ;
@@ -38,6 +38,6 @@ if (cpar gt 0) then begin
     b_ext=par2.b_ext
   endif
 endif else begin
-  if (quiet le 4) then print, 'Warning: cannot find file ', pfile
+  if (quiet le 4) then print, 'Note: the file ', pfile,' does not yet exist.'
   par2={lwrite_aux:0L}
 endelse
