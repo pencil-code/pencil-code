@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.15 2003-01-29 18:30:35 dobler Exp $
+! $Id: struct_func.f90,v 1.16 2003-03-04 21:16:35 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -36,7 +36,8 @@ module struct_func
   !
   implicit none
   !
-  integer, parameter :: qmax=8, imax=lb_nxgrid*2-2
+  integer, parameter :: qmax=8+1 ! the extrta 1 is for unsigned 3. moment.
+  integer, parameter :: imax=lb_nxgrid*2-2
   integer, parameter :: n_pdf=101
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension (nx,ny,nz) :: vect,b_vec
@@ -143,13 +144,10 @@ endif
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
         do lb_ll=1,lb_nxgrid*2-2
-           !separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-!           separation=2**(lb_ll-1)
            exp2=mod((lb_ll),2)
            if (lb_ll .eq. 1) exp2=0
            exp1=int((lb_ll)/2)-exp2
            separation=(2**exp1)*(3**exp2)
-!print*,lb_ll,exp1,exp2,separation
            ll1=mod(l+separation-1,nx)+1
            ll2=mod(l-separation+nx-1,nx)+1
            dvect1=vect(l,:,:)-vect(ll1,:,:)
@@ -176,11 +174,14 @@ endif
               !
               !  Calculates sf
               !
-              do q=1,qmax   
+              do q=1,qmax-1   
                  sf(lb_ll,q,direction) &
                       =sf(lb_ll,q,direction) &
                       +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
               enddo
+              sf(lb_ll,qmax,direction) &
+                   =sf(lb_ll,qmax,direction) &
+                   +sum(dvect1(:,:)**3)+sum(dvect2(:,:)**3)
            endif
         enddo
      enddo
@@ -212,7 +213,6 @@ endif
      call mpireduce_sum(sf,sf_sum,imax*qmax*3)  !Is this safe???
      ndiv=nw*ncpus*2
      sf_sum=sf_sum/ndiv
-     !sf_sum(imax,:,:)=2*sf_sum(imax,:,:)
   endif
   !
   !  Writing output file
