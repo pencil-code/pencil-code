@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.227 2003-10-25 16:43:50 mcmillan Exp $
+! $Id: entropy.f90,v 1.228 2003-10-27 13:35:20 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -40,6 +40,7 @@ module Entropy
   real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
   real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
+  real :: tau_coronal=0.,TT_coronal=0.,z_coronal=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
@@ -62,6 +63,7 @@ module Entropy
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
+       tau_coronal,TT_coronal,z_coronal, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext
 
@@ -100,7 +102,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.227 2003-10-25 16:43:50 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.228 2003-10-27 13:35:20 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1132,7 +1134,7 @@ endif
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,TT,TT1
-      real, dimension (nx) :: heat,prof
+      real, dimension (nx) :: heat,prof,TT_ref
       real :: ssref,zbot,ztop,TTref,profile_buffer
 !
       intent(in) :: f,rho1,cs2
@@ -1222,6 +1224,15 @@ endif
         TTref=(z(n)-ztop)/(zheat_coronal-ztop)*TTheat_coronal
         TTref=(z(n)-zheat_coronal)/(ztop-zheat_coronal)*TTheat_coronal
         heat=heat+amax1(0.,ss*(TTref-TT)/(rho1*tauheat_coronal))
+      endif
+!
+!  alternate coronal heating (and cooling)
+!
+      if(tau_coronal/=0.) then
+        if (z(n)>=z_coronal) then
+          TT_ref=(z(n)-z_coronal)/(ztop-z_coronal)*(TT_coronal-TT)
+        endif
+        heat=heat+ss*TT_ref/(rho1*tau_coronal)
       endif
 !
 !  add heating and cooling to a reference temperature in a buffer
