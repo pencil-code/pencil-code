@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.82 2003-06-30 09:33:57 brandenb Exp $
+! $Id: mpicomm.f90,v 1.83 2003-06-30 10:14:23 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -609,7 +609,7 @@ print*,iproc,'recv_Irad0_xy: nbuf_xy=',nbuf_xy
 !  initiate and finalize straight away
 !
 print*,iproc,'recv_Irad0_xy: tag_xy,isend_xy,ipz_dest=',tag_xy,isend_xy,ipz_dest
-      call MPI_IRECV(Ibuf_xy,nbufy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
+      call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
 print*,iproc,'recv_Irad0_xy: wait(1), err,irecv_xy=',ierr,irecv_xy
       call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
 print*,iproc,'recv_Irad0_xy: wait(2), err,irecv_xy=',ierr,irecv_xy
