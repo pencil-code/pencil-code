@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.31 2003-10-06 20:48:56 dobler Exp $
+! $Id: radiation_ray.f90,v 1.32 2003-10-07 16:50:39 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -35,6 +35,7 @@ module Radiation
   integer, parameter :: idSdtau_m=3,idSdtau_p=4
   integer, parameter :: iSrad1st=5,iSrad2nd=6
   integer, parameter :: iemtau=7,iQrad1=8
+  integer, parameter :: iemdtau1=9,iemdtau2=10
 !
 !  default values for one pair of vertical rays
 !
@@ -90,7 +91,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.31 2003-10-06 20:48:56 dobler Exp $")
+           "$Id: radiation_ray.f90,v 1.32 2003-10-07 16:50:39 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -231,7 +232,7 @@ module Radiation
       use Io
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz,8) :: temp
+      real, dimension(mx,my,mz,10) :: temp
       real :: dlength,dtau,emdtau,tau_term
       real :: Srad1st,Srad2nd,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
@@ -285,12 +286,18 @@ module Radiation
 !
           if (lupwards) then
 !
-            dtau_m=(5*kaprho(l-lrad,m-mrad,n-nrad) &
-                   +8*kaprho(l     ,m     ,n     ) &
-                   -1*kaprho(l+lrad,m+mrad,n+nrad))*dlength/12
-            dtau_p=(5*kaprho(l+lrad,m+mrad,n+nrad) &
-                   +8*kaprho(l     ,m     ,n     ) &
-                   -1*kaprho(l-lrad,m-mrad,n-nrad))*dlength/12
+            !dtau_m=(5*kaprho(l-lrad,m-mrad,n-nrad) &
+                   !+8*kaprho(l     ,m     ,n     ) &
+                   !-1*kaprho(l+lrad,m+mrad,n+nrad))*dlength/12
+            !dtau_p=(5*kaprho(l+lrad,m+mrad,n+nrad) &
+                   !+8*kaprho(l     ,m     ,n     ) &
+                   !-1*kaprho(l-lrad,m-mrad,n-nrad))*dlength/12
+            dtau_m=exp((5*alog(kaprho(l-lrad,m-mrad,n-nrad)) &
+                       +8*alog(kaprho(l     ,m     ,n     )) &
+                       -1*alog(kaprho(l+lrad,m+mrad,n+nrad)))/12)*dlength
+            dtau_p=exp((5*alog(kaprho(l+lrad,m+mrad,n+nrad)) &
+                       +8*alog(kaprho(l     ,m     ,n     )) &
+                       -1*alog(kaprho(l-lrad,m-mrad,n-nrad)))/12)*dlength
             dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
             dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
             Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
@@ -318,6 +325,8 @@ module Radiation
               temp(l,m,n,idSdtau_p)=dSdtau_p
               temp(l,m,n,iSrad1st)=Srad1st
               temp(l,m,n,iSrad2nd)=Srad2nd
+              temp(l,m,n,iemdtau1)=emdtau1
+              temp(l,m,n,iemdtau2)=emdtau2
             endif
 !
           else
@@ -369,7 +378,7 @@ module Radiation
         temp(:,:,:,iemtau)=emtau
         temp(:,:,:,iQrad1)=Qrad
         call chn(idir,idir_str)
-        call output(trim(directory)//'/rad_debug'//trim(idir_str)//'.dat',temp,8)
+        call output(trim(directory)//'/rad_debug'//trim(idir_str)//'.dat',temp,10)
       endif
 !
     endsubroutine Qintr
@@ -1067,6 +1076,7 @@ module Radiation
       write (1,*) 'idSdtau_m=',idSdtau_m-1,' & idSdtau_p=',idSdtau_p-1
       write (1,*) 'iSrad1st=',iSrad1st-1,' & iSrad2nd=',iSrad2nd-1
       write (1,*) 'iemtau=',iemtau-1,' & iQrad=',iQrad1-1
+      write (1,*) 'iemdtau1=',iemdtau1-1,' & iemdtau2=',iemdtau2-1
       write (1,*) "openr,1,'"//trim(directory)//"/rad_debug.dat',/f77"
       write (1,*) "temp=fltarr(mx,my,mz,2)"
       write (1,*) "readu,1,temp"
@@ -1076,7 +1086,7 @@ module Radiation
       do i=1,ndir
         call chn(i,i_str)
         write (1,*) "openr,1,'"//trim(directory)//"/rad_debug"//trim(i_str)//".dat',/f77"
-        write (1,*) "temp=fltarr(mx,my,mz,8)"
+        write (1,*) "temp=fltarr(mx,my,mz,10)"
         write (1,*) "readu,1,temp"
         write (1,*) "dtau_m"//trim(i_str)//"=temp[*,*,*,idtau_m]"
         write (1,*) "dtau_p"//trim(i_str)//"=temp[*,*,*,idtau_p]"
@@ -1086,6 +1096,8 @@ module Radiation
         write (1,*) "Srad2nd"//trim(i_str)//"=temp[*,*,*,iSrad2nd]"
         write (1,*) "emtau"//trim(i_str)//"=temp[*,*,*,iemtau]"
         write (1,*) "Qrad"//trim(i_str)//"=temp[*,*,*,iQrad]"
+        write (1,*) "emdtau1"//trim(i_str)//"=temp[*,*,*,iemdtau1]"
+        write (1,*) "emdtau2"//trim(i_str)//"=temp[*,*,*,iemdtau2]"
         write (1,*) "close,1"
       enddo
 !
