@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.17 2003-05-21 12:07:27 mee Exp $
+! $Id: interstellar.f90,v 1.18 2003-05-22 16:50:50 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -12,6 +12,7 @@ module Interstellar
   implicit none
 
   real :: x_SN,y_SN,z_SN,rho_SN,ampl_SN=5.0
+  real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
   real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
   real :: tau_cloud=2e-2
   integer, parameter :: ninterstellarsave=1
@@ -71,7 +72,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.17 2003-05-21 12:07:27 mee Exp $")
+           "$Id: interstellar.f90,v 1.18 2003-05-22 16:50:50 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -544,223 +545,341 @@ find_SN: do n=n1,n2
     endsubroutine position_SNII
 !***********************************************************************
     subroutine explode_SN(f,itype_SN)
-!
-!  Implement SN (of either type), at pre-calculated position
-!  (This can all be made more efficient, after debugging.)
-!
-    use Cdata
-    use Mpicomm
-!
-    real, dimension(mx,my,mz,mvar) :: f
-    real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
-    real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
-    real :: dz_SN,yshift
-    real :: width_SN,width_shell_outer,width_shell_inner,c_SN
-    real :: mass,mass_cavity,mass_check,mass_shell,c_shell
-    real :: EE_SN,lnrho_SN,lnrho_SN_new,TT_SN_new
-!  (Can't do all of this within a single pencil-sweep, as I need a global
-!   sum of the relocated mass, for the current scheme.)
-!  (Would be much simpler if mass relocation was abandoned -- could do
-!   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
-    real, dimension(nx,ny,nz) :: dr2_SN,rho_old
-!  The following arrays can be streamlined, after debugging.
-    real, dimension(nx) :: lnrho,rho,TT,ss,dss,dee,profile_SN
-    real, dimension(nx) :: profile_shell_outer,profile_shell_inner
-    real, dimension(2) :: fsum2,fsum2_tmp
-    real, dimension(1) :: fsum1,fsum1_tmp
-    real :: cnorm_SN=1.5484             ! (int exp(-r^6) 4\pi r^2 dr)^(1/3)
-    real :: profile_check
-!    real :: TT_limit=1.e7,ee_limit
-    real :: TT_limit=1.e5,ee_limit     ! make weaker, for debug
-    integer :: itype_SN,l,mshift,il,im,in
-!    integer :: point_width=4
-    integer :: point_width=8            ! make larger, for debug
-!
-    intent(in) :: itype_SN
-    intent(inout) :: f
-!
-!  identifier
-!
-    if(lroot) print*,'explode_SN, itype_SN:',itype_SN
-!
-    width_SN=point_width*dxmin
-    width_shell_outer=2.0*width_SN
-    width_shell_inner=1.5*width_SN
-    c_SN=ampl_SN/(cnorm_SN*width_SN)**3      !normalision for SN profile
-    if (lroot) print*,'width_SN,c_SN', width_SN,c_SN
-!
-!  Obtain distance to SN
-!
-    do n=n1,n2
-      in=n-nghost
-      dz_SN=abs(z(n)-z_SN)
-      do m=m1,m2
-        im=m-nghost
-!  consider all possible positions in xy plane, to get shortest
-!  can be made more efficient later
-!  y-separations with no boundaries crossed in x
-        dy_SN_in=abs(y(m)-y_SN)                      !dyi
-        dy_SN_out_y=Ly-dy_SN_in                      !dyii
-!  y-separations across sliding periodic boundary at x=x0
-        yshift=y(m)-deltay
-        mshift=0
-        if (yshift < y0) then 
-          mshift=int((y0-yshift)/Ly)+1
-          yshift=yshift+mshift*Ly
-        elseif (yshift > y0+Ly) then      
-          mshift=int((yshift-(y0+Ly))/Ly)+1
-          yshift=yshift-mshift*Ly
-        endif
-        dy_SN_out_x0a=abs(yshift-y_SN)               !dyiii
-        dy_SN_out_x0b=Ly-dy_SN_out_x0a               !dyiv
-!  y-separations across sliding periodic boundary at x=x1
-        yshift=y(m)+deltay
-        mshift=0
-        if (yshift < y0) then 
-          mshift=int((y0-yshift)/Ly)+1
-          yshift=yshift+mshift*Ly
-        elseif (yshift > y0+Ly) then
-          mshift=int((yshift-(y0+Ly))/Ly)+1
-          yshift=yshift-mshift*Ly
-        endif
-        dy_SN_out_x1a=abs(yshift-y_SN)               !dyv
-        dy_SN_out_x1b=Ly-dy_SN_out_x1a               !dyvi
-        do l=l1,l2
-          il=l-nghost
-!  x-separations associated with each of the above
-          dx_SN_in=abs(x(l)-x_SN)                    !dxi=dxii
-          dx_SN_out_x0=Lx+(x(l)-x_SN)                !dxiii=dxiv
-          dx_SN_out_x1=Lx-(x(l)-x_SN)                !dxv=dxvi
-          dr2_SN(il,im,in)=min( dx_SN_in**2 + dy_SN_in**2,             &
-                                dx_SN_in**2 + dy_SN_out_y**2,          &
-                                dx_SN_out_x0**2 + dy_SN_out_x0a**2,    &
-                                dx_SN_out_x0**2 + dy_SN_out_x0b**2,    &
-                                dx_SN_out_x1**2 + dy_SN_out_x1a**2,    &
-                                dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
-                              + dz_SN**2
-         enddo
-      enddo
-    enddo
-!
-!  Now deal with energy injection, and (if nec.) mass relocation
-!
-    lnrho_SN=alog(rho_SN)
-    TT_SN_new=c_SN/rho_SN*TTunits
-    if (lroot) print*, &
-         'explode_SN, TT_SN_new,TT_limit:',TT_SN_new,TT_limit
-!  If central temperature would be too small, make a cavity.
-!ngrs: disable cavity for now, to check weak explosions
-    if (TT_SN_new < TT_limit) then
-!    if (.false.) then     ! remove cavity option, for debug
-      ee_limit=TT_limit/TTunits
-      lnrho_SN_new=alog(c_SN/ee_limit)
-      if (lroot) print*, &
-         'explode_SN, lnrho_SN,lnrho_SN_new:',lnrho_SN,lnrho_SN_new
-      mass=0.; mass_cavity=0.; mass_check=0.
-      profile_check=0.
-      do n=n1,n2
-        in=n-nghost
-        do m=m1,m2
-          im=m-nghost
-          profile_SN(:)=exp(-min((dr2_SN(:,im,in)/width_SN**2)**3, 75.))
-          profile_check=profile_check+sum(profile_SN(:))
-          lnrho(:)=f(l1:l2,m,n,ilnrho)
-          rho(:)=exp(lnrho(:))
-!  keep original rho, to ensure energy conservation later
-          rho_old(:,im,in)=rho(:)
-!  create low-density cavity
-          lnrho(:)=lnrho(:) + (lnrho_SN_new-lnrho_SN)*profile_SN(:)
-          rho(:)=exp(lnrho(:))
-          f(l1:l2,m,n,ilnrho)=lnrho(:)
-          mass=mass + sum(rho_old(:,im,in))
-          mass_cavity=mass_cavity + sum(rho(:))
-        enddo
-      enddo
-      fsum2_tmp=(/ mass, mass_cavity /)
-      call mpireduce_sum(fsum2_tmp,fsum2,2) 
-      call mpibcast_real(fsum2,2)
-      mass=fsum2(1)*dx*dy*dz; mass_cavity=fsum2(2)*dx*dy*dz
-      fsum1_tmp=(/ profile_check /)
-      call mpireduce_sum(fsum1_tmp,fsum1,1) 
-      call mpibcast_real(fsum1,1)
-      profile_check=fsum1(1)*dx*dy*dz/width_SN**3.
-      if (lroot) print*,'profile_check', &
-          (profile_check)**(1./3.),cnorm_SN
-      mass_shell=(mass-mass_cavity) 
-      c_shell=(mass-mass_cavity) /                                  &
-           ((cnorm_SN*width_shell_outer)**3-(cnorm_SN*width_shell_inner)**3)
-      if (lroot) print*, &
-         'explode_SN, c_shell:',c_shell
-!  add missing mass back into shell
-      do n=n1,n2
-        in=n-nghost
-        do m=m1,m2
-          im=m-nghost
-          lnrho(:)=f(l1:l2,m,n,ilnrho)
-          rho(:)=exp(lnrho(:))
-          profile_shell_outer(:)=                                       &
-                 exp(-min((dr2_SN(:,im,in)/width_shell_outer**2)**3, 75.))
-          profile_shell_inner(:)=                                       &
-                 exp(-min((dr2_SN(:,im,in)/width_shell_inner**2)**3, 75.))
-          rho(:)=rho(:) + c_shell *                                     &
-                 (profile_shell_outer(:) - profile_shell_inner(:))
-          mass_check=mass_check + c_shell *                             &
-                 sum(profile_shell_outer(:) - profile_shell_inner(:))
-         f(l1:l2,m,n,ilnrho)=alog(rho(:))
-        enddo
-      enddo
-      fsum1_tmp=(/ mass_check /)
-      call mpireduce_sum(fsum1_tmp,fsum1,1) 
-      call mpibcast_real(fsum1,1)
-      mass_check=fsum1(1)*dx*dy*dz
-      if (lroot) print*, &
-         'explode_SN, masses:',mass,mass_cavity,mass_shell,mass_check
-    endif
-!
-! Whether mass moved or not, inject energy.
-!
-    EE_SN=0.
-    do n=n1,n2
-      in=n-nghost
-      do m=m1,m2
-        im=m-nghost
-        lnrho(:)=f(l1:l2,m,n,ilnrho)
-        rho(:)=exp(lnrho(:))
-        profile_SN=exp(-min((dr2_SN(:,im,in)/width_SN**2)**3, 75.))
-        ss(:)=f(l1:l2,m,n,ient)
-        TT(:)=cs20*exp(gamma1*(lnrho(:)-lnrho0) + gamma*ss(:))/gamma1*cp1
-        dee(:)=c_SN*profile_SN(:)/rho(:)      ! ee in dimensional units
-        EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
-        dss(:)=dee(:)/TT(:)*cp1               ! dss non-dimensional
-!  Remember to allow for changes in rho if mass  was relocated.
-!ngrs: disable cavity for now, to check weak explosions
-        if (TT_SN_new < TT_limit) then
-!        if (.false.) then     ! remove cavity option, for debug
-          f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient)*rho_old(:,im,in)/rho(:)
-        endif
-        f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + dss(:)
-      enddo
-    enddo
-    fsum1_tmp=(/ EE_SN /)
-    call mpireduce_sum(fsum1_tmp,fsum1,1) 
-    call mpibcast_real(fsum1,1)
+      !
+      !  Implement SN (of either type), at pre-calculated position
+      !  (This can all be made more efficient, after debugging.)
+      !
+      !  ??-nov-02/grs : coded from GalaxyCode                        
+      !  20-may-03/ajwm: pencil formulation and broken into subroutines
+      !
+      use Cdata
+      use Mpicomm
+      !
+      real, intent(inout), dimension(mx,my,mz,mvar) :: f
+      integer, intent(in) :: itype_SN
 
-    EE_SN=fsum1(1)
-if (nxgrid/=1) EE_SN=EE_SN*dx
-if (nygrid/=1) EE_SN=EE_SN*dy
-if (nzgrid/=1) EE_SN=EE_SN*dz
-!
-    if (lroot) then
-       open(1,file=trim(datadir)//'/time_series.dat',position='append')
-       write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-                   '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                   t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
-       write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-                   '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                   t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
-       close(1)
-    endif
-!
+      real :: width_SN,width_shell_outer,width_shell_inner,c_SN
+      real :: mass_check=0., mass_shell=0., profile_integral
+      real :: EE_SN=0.,rho_SN_new,TT_SN_new,dv
+
+      real :: TT_limit=1.e7
+     ! real :: TT_limit=1.e5    ! make weaker, for debug
+      
+      integer :: point_width=4
+     ! integer :: point_width=8            ! make larger, for debug
+      real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old
+      real, dimension(3) :: fmpi3, fmpi3_tmp
+      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
+                                      ! for gaussian of width a
+      integer:: move_mass=0      
+          
+      !
+      !  identifier
+      !
+      if(lroot.and.ip<14) print*,'explode_SN, itype_SN:',itype_SN
+      !
+      width_SN=point_width*dxmin      
+      c_SN=ampl_SN/(cnorm_SN*(width_SN**3))      !normalision for SN profile
+      if (lroot.and.ip<14) print*,'width_SN,c_SN', width_SN,c_SN
+        
+      !
+      !  Now deal with (if nec.) mass relocation
+      !
+      TT_SN_new=c_SN/rho_SN*TTunits
+      if (TT_SN_new < TT_limit) then
+         move_mass=1
+
+         ! The bit that BREAKS the pencil formulation...
+         ! must know the total moved mass BEFORE attempting mass relocation 
+         ! could be put into a conditional
+         call calcmassprofileintegral_SN(profile_integral,width_SN)      
+         if (lroot) print*, 'moving mass...'
+      endif
+!     if (lroot) print*, &
+!           'explode_SN, TT_SN_new,TT_limit:',TT_SN_new,TT_limit
+      
+
+      do n=n1,n2
+         do m=m1,m2
+            call proximity_SN()
+      
+            ! If central temperature would be too small, make a cavity.
+            ! ngrs: disable cavity for now, to check weak explosions
+               !    if (.false.) then     ! remove cavity option, for debug
+            if (move_mass.eq.1) then
+               rho_SN_new=c_SN/TT_limit*TTunits
+               mass_shell=(rho_SN_new-rho_SN)*profile_integral
+               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN,mass_shell,mass_check)
+            endif
+
+            call injectenergy_SN(deltaEE,width_SN,ampl_SN,EE_SN)
+            ! Apply perterbations
+            ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) - (gamma1/gamma)*ln(1+(\delta rho / rho))
+
+            ! Store old values
+            e_old = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
+            rho_old=exp(f(l1:l2,m,n,ilnrho))
+
+            if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
+            f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + &
+                 ( alog(1.+ (deltaEE*(rho_old+deltarho)) / e_old)  -  &
+                 (gamma1*alog(1 + deltarho / rho_old) )  &
+                 ) / gamma
+
+       enddo
+      enddo
+       
+
+      
+      ! Sum and share diagnostics etc. amongst processors
+      dv=1.
+      if (nxgrid/=1) dv=dv*dx
+      if (nygrid/=1) dv=dv*dy
+      if (nzgrid/=1) dv=dv*dz
+
+      fmpi3_tmp=(/ mass_check, EE_SN, mass_shell /)
+      call mpireduce_sum(fmpi3_tmp,fmpi3,3) 
+      call mpibcast_real(fmpi3,3)
+      mass_check=fmpi3(1)*dv
+      EE_SN=fmpi3(2)*dv; 
+      mass_shell=fmpi3(3)*dv; 
+
+
+!      if (lroot) print*, &
+!           'explode_SN, masses:',mass_shell,mass_check
+
+  !    if (lroot) print*,'profile_check', &
+  !         (profile_check)**(1./3.),cnorm_SN
+     
+      !
+      if (lroot) then
+         open(1,file=trim(datadir)//'/time_series.dat',position='append')
+         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+              '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+              t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+              '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+              t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+         close(1)
+      endif
+
+      
     endsubroutine explode_SN
 !***********************************************************************
+    subroutine calcmassprofileintegral_SN(profile_integral,width_SN)
+!
+!  Calculate integral of mass cavity profile  
+!
+!  22-may-03/ajwm: coded
+!
+!
+      use CData
+
+      real, intent(in) :: width_SN
+      real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
+      real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
+      real :: dz_SN,yshift
+      real, intent(out) :: profile_integral
+      integer :: l,mshift,il,im,in
+     
+      !
+      !  Obtain distance to SN
+      !
+      profile_integral=0.
+
+      do n=n1,n2
+         in=n-nghost
+         dz_SN=abs(z(n)-z_SN)
+         do m=m1,m2
+            im=m-nghost
+            !  consider all possible positions in xy plane, to get shortest
+            !  can be made more efficient later
+            !  y-separations with no boundaries crossed in x
+            dy_SN_in=abs(y(m)-y_SN)                      !dyi
+            dy_SN_out_y=Ly-dy_SN_in                      !dyii
+            !  y-separations across sliding periodic boundary at x=x0
+            yshift=y(m)-deltay
+            mshift=0
+            if (yshift < y0) then 
+               mshift=int((y0-yshift)/Ly)+1
+               yshift=yshift+mshift*Ly
+            elseif (yshift > y0+Ly) then      
+               mshift=int((yshift-(y0+Ly))/Ly)+1
+               yshift=yshift-mshift*Ly
+            endif
+            dy_SN_out_x0a=abs(yshift-y_SN)               !dyiii
+            dy_SN_out_x0b=Ly-dy_SN_out_x0a               !dyiv
+            !  y-separations across sliding periodic boundary at x=x1
+            yshift=y(m)+deltay
+            mshift=0
+            if (yshift < y0) then 
+               mshift=int((y0-yshift)/Ly)+1
+               yshift=yshift+mshift*Ly
+            elseif (yshift > y0+Ly) then
+               mshift=int((yshift-(y0+Ly))/Ly)+1
+               yshift=yshift-mshift*Ly
+            endif
+            dy_SN_out_x1a=abs(yshift-y_SN)               !dyv
+            dy_SN_out_x1b=Ly-dy_SN_out_x1a               !dyvi
+            do l=l1,l2
+               il=l-nghost
+               !  x-separations associated with each of the above
+               dx_SN_in=abs(x(l)-x_SN)                    !dxi=dxii
+               dx_SN_out_x0=Lx+(x(l)-x_SN)                !dxiii=dxiv
+               dx_SN_out_x1=Lx-(x(l)-x_SN)                !dxv=dxvi
+               dr2_SN(il)=min( dx_SN_in**2 + dy_SN_in**2,             &
+                    dx_SN_in**2 + dy_SN_out_y**2,          &
+                    dx_SN_out_x0**2 + dy_SN_out_x0a**2,    &
+                    dx_SN_out_x0**2 + dy_SN_out_x0b**2,    &
+                    dx_SN_out_x1**2 + dy_SN_out_x1a**2,    &
+                    dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
+                    + dz_SN**2
+            enddo
+            profile_integral =  profile_integral + sum(exp(-min((dr2_SN(:)/width_SN**2)**3, 75.)))
+         enddo
+      enddo
+    endsubroutine calcmassprofileintegral_SN
+!***********************************************************************
+    subroutine proximity_SN()
+!
+!  Calculate pencil of distance to SN explosion site
+!
+!  20-may-03/ajwm: extracted from explode_SN code written by grs
+!  22-may-03/ajwm: pencil formulation
+!
+!
+      use CData
+
+      real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
+      real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
+      real :: dz_SN,yshift
+      integer :: l,mshift,il,im,in
+     
+      !
+      !  Obtain distance to SN
+      !
+         im=m-nghost
+         in=n-nghost
+         dz_SN=abs(z(n)-z_SN)
+         !  consider all possible positions in xy plane, to get shortest
+         !  can be made more efficient later
+         !  y-separations with no boundaries crossed in x
+         dy_SN_in=abs(y(m)-y_SN)                      !dyi
+         dy_SN_out_y=Ly-dy_SN_in                      !dyii
+         !  y-separations across sliding periodic boundary at x=x0
+         yshift=y(m)-deltay
+         mshift=0
+         if (yshift < y0) then 
+            mshift=int((y0-yshift)/Ly)+1
+            yshift=yshift+mshift*Ly
+         elseif (yshift > y0+Ly) then      
+            mshift=int((yshift-(y0+Ly))/Ly)+1
+            yshift=yshift-mshift*Ly
+         endif
+         dy_SN_out_x0a=abs(yshift-y_SN)               !dyiii
+         dy_SN_out_x0b=Ly-dy_SN_out_x0a               !dyiv
+         !  y-separations across sliding periodic boundary at x=x1
+         yshift=y(m)+deltay
+         mshift=0
+         if (yshift < y0) then 
+            mshift=int((y0-yshift)/Ly)+1
+            yshift=yshift+mshift*Ly
+         elseif (yshift > y0+Ly) then
+            mshift=int((yshift-(y0+Ly))/Ly)+1
+            yshift=yshift-mshift*Ly
+         endif
+         dy_SN_out_x1a=abs(yshift-y_SN)               !dyv
+         dy_SN_out_x1b=Ly-dy_SN_out_x1a               !dyvi
+         do l=l1,l2
+            il=l-nghost
+            !  x-separations associated with each of the above
+            dx_SN_in=abs(x(l)-x_SN)                    !dxi=dxii
+            dx_SN_out_x0=Lx+(x(l)-x_SN)                !dxiii=dxiv
+            dx_SN_out_x1=Lx-(x(l)-x_SN)                !dxv=dxvi
+            dr2_SN(il)=min( dx_SN_in**2 + dy_SN_in**2,             &
+                 dx_SN_in**2 + dy_SN_out_y**2,          &
+                 dx_SN_out_x0**2 + dy_SN_out_x0a**2,    &
+                 dx_SN_out_x0**2 + dy_SN_out_x0b**2,    &
+                 dx_SN_out_x1**2 + dy_SN_out_x1a**2,    &
+                 dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
+                 + dz_SN**2
+         enddo
+       
+    endsubroutine proximity_SN
+!***********************************************************************
+    subroutine makecavity_SN(deltarho,width_SN,depth,mass_shell,mass_check)
+      use CData
+      !  (Can't do all of this within a single pencil-sweep, as I need a global
+      !   sum of the relocated mass, for the current scheme.)
+      !  (Would be much simpler if mass relocation was abandoned -- could do
+      !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
+      real, intent(in) :: width_SN, depth, mass_shell
+      real, intent(inout) :: mass_check
+      !
+      real, dimension(nx) :: profile_shell_outer,profile_shell_inner, profile_cavity
+      real, dimension(1) :: fsum1,fsum1_tmp
+      real :: width_shell_outer, width_shell_inner, c_shell
+      ! real, dimension(1) :: fsum1,fsum1_tmp
+      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
+                                      ! for gaussian of width a
+
+      real, intent(out), dimension(nx) :: deltarho
+
+      width_shell_outer=2.0*width_SN
+      width_shell_inner=1.5*width_SN
+
+      deltarho(:) =  depth*exp(-min((dr2_SN(:)/width_SN**2)**3, 75.))
+      
+      c_shell=mass_shell /                                  &
+           (cnorm_SN*((width_shell_outer**3)-(width_shell_inner**3)))
+
+!      if (lroot) print*, &
+!           'explode_SN, c_shell:',c_shell
+      !  add missing mass back into shell
+      
+      profile_shell_outer(:)=                              &
+           exp(-min((dr2_SN(:)/width_shell_outer**2)**3, 75.))
+      profile_shell_inner(:)=                              &
+           exp(-min((dr2_SN(:)/width_shell_inner**2)**3, 75.))
+      
+      deltarho(:)=deltarho(:) + c_shell *      &
+           (profile_shell_outer(:) - profile_shell_inner(:))
+      
+      mass_check=mass_check + c_shell *                    &
+           sum(profile_shell_outer(:) - profile_shell_inner(:))
+      
+    endsubroutine makecavity_SN
+
+!***********************************************************************
+    subroutine injectenergy_SN(deltaEE,width_SN,energy_SN,EE_SN)
+      use CData
+      !  (Can't do all of this within a single pencil-sweep, as I need a global
+      !   sum of the relocated mass, for the current scheme.)
+      !  (Would be much simpler if mass relocation was abandoned -- could do
+      !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
+      real, intent(in) :: width_SN, energy_SN
+      !
+      real, dimension(nx) :: profile_SN
+      real, intent(inout) :: EE_SN
+      real, intent(out), dimension(nx) :: deltaEE
+
+      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
+                                      ! for gaussian of width a
+
+      real :: c_SN
+      !
+      ! Whether mass moved or not, inject energy.
+      !
+
+      c_SN=energy_SN/(cnorm_SN*(width_SN**3))      !normalision for SN profile
+!      if (lroot) print*,'width_SN,c_SN', width_SN,c_SN
+
+      profile_SN=exp(-min((dr2_SN(:)/width_SN**2)**3, 75.))
+
+      deltaEE(:)=c_SN*profile_SN(:) ! spatial energy density 
+      EE_SN=EE_SN+sum(c_SN*profile_SN(:))   ! EE in (code) erg, not erg/g!
+      
+      !      
+    endsubroutine injectenergy_SN
+
 endmodule interstellar
