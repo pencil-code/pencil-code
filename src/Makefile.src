@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.58 2004-05-30 14:00:19 dobler Exp $
+### $Id: Makefile.src,v 1.59 2004-05-30 14:03:21 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -270,6 +270,7 @@ default: Makefile cparam.inc code
 pacx: pacx-makefile cparam.inc code
 
 Makefile: Makefile.src
+	check-mkfile Makefile.local Makefile.src
 	adapt-mkfile Makefile.src Makefile
 pacx-makefile: Makefile.src
 	pacx-adapt-mkfile Makefile.src pacx-Makefile
@@ -344,7 +345,7 @@ clean:
 # Clean up all
 cleann: clean
 	rm -f Makefile TAGS mpicomm_.f90
-	adapt-mkfile Makefile.src Makefile
+	$(MAKE) -f Makefile.src Makefile
 # same thing
 cleanall: cleann
 
