@@ -3,6 +3,7 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=nompicomm
+GRAVITY=grav_z
 FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic
@@ -89,7 +90,9 @@ makefile: Makefile
 code:
 	make start.x run.x
 
-comm_deps=cparam.o cdata.o general.o slices.o deriv.o $(IO).o sub.o $(MPICOMM).o register.o $(FORCING).o $(ENTROPY).o $(MAGNETIC).o
+technical=cparam.o cdata.o general.o slices.o deriv.o register.o
+physics=$(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
+comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics)
 start_deps=$(comm_deps)
 run_deps=$(comm_deps) equ.o timestep.o
 
@@ -111,11 +114,12 @@ slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 $(IO).o:     $(IO).f90 $(MPICOMM).o cdata.o
 sub.o:       sub.f90 cdata.o deriv.o general.o $(IO).o $(MPICOMM).o
-register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
+register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(ENTROPY).o $(MPICOMM).o 
 timestep.o:  timestep.f90 cdata.o equ.o $(FORCING.o) $(MPICOMM).o
 #
 $(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
+$(GRAVITY).o:  $(GRAVITY).f90 cdata.o $(MPICOMM).o
 $(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o

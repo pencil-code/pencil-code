@@ -21,6 +21,7 @@ module Register
       use Cdata
       use Mpicomm
       use Sub
+      use Gravity
       use Entropy
       use Magnetic
 !
@@ -30,6 +31,7 @@ module Register
       call register_hydro
       call register_ent
       call register_aa
+      call register_grav
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

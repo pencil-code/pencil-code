@@ -25,6 +25,7 @@ module Cdata
   integer, dimension (2) :: seed
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
+  logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt,headtt,ldt,lfirst
   logical :: lroot=.true.
   logical :: lfirstpoint

@@ -202,6 +202,7 @@ module Equ
       use Cdata
       use Slices
       use Sub
+      use Gravity
       use Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -215,7 +216,7 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.7 2001-12-18 08:34:54 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.8 2002-01-09 21:09:15 dobler Exp $'
 !
 !  initiate communication
 !
@@ -267,7 +268,7 @@ module Equ
 !
 !  entropy equation
 !
-        call dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
+        if (lentropy) call dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
 !
 !  momentum equation (forcing is now done in timestep)
 !
@@ -275,7 +276,7 @@ module Equ
 !
 !  add gravity
 !
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
+        if (lgrav) call duu_dt_grav(f,df)
 !
 !  continuity equation
 !

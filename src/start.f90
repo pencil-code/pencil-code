@@ -12,6 +12,7 @@
         use Mpicomm
         use Sub
         use Register
+        use Gravity
         use Entropy
         use Magnetic
 !
@@ -70,6 +71,7 @@
         call init_hydro(f,init,ampl,xx,yy,zz)
         call init_ent  (f,init,ampl,xx,yy,zz)
         call init_aa   (f,init,ampl,xx,yy,zz)
+        call init_grav (f,init,ampl,xx,yy,zz)
 !
 !  write to disk
 !
