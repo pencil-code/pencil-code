@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.5 2003-10-10 11:49:04 brandenb Exp $
+! $Id: cosmicray.f90,v 1.6 2003-10-10 17:07:59 snod Exp $
 
 !  This modules solves the cosmic ray energy density advection difussion equation
 !  it follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -64,7 +64,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.5 2003-10-10 11:49:04 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.6 2003-10-10 17:07:59 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,7 +147,7 @@ module CosmicRay
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine decr_dt(f,df,uu,glnrho,divu,bij,bb)
+    subroutine decr_dt(f,df,uu,divu,rho1,bij,bb)
 !
 !  cosmic ray evolution
 !  calculate decr/dt = -uu.gecr -gammacr*ecr*divu
@@ -160,11 +160,11 @@ module CosmicRay
       real, intent(in), dimension (mx,my,mz,mvar+maux) :: f
       real, intent(inout), dimension (mx,my,mz,mvar) :: df
       real, intent(in), dimension (nx,3,3) :: bij
-      real, intent(in), dimension (nx,3) :: uu,glnrho,bb
-      real, intent(in), dimension (nx) :: divu
+      real, intent(in), dimension (nx,3) :: uu,bb
+      real, intent(in), dimension (nx) :: divu,rho1
 !
       real, dimension (nx,3) :: gecr
-      real, dimension (nx) :: ecr,del2ecr,ugecr,diff_op
+      real, dimension (nx) :: ecr,del2ecr,ugecr
       integer :: j
 !
 !  identify module and boundary conditions
@@ -185,7 +185,7 @@ module CosmicRay
 !  effect on the momentum equation
 !
       do j=0,2
-        df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*gecr(:,1+j)
+        df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
       enddo
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
@@ -267,13 +267,14 @@ module CosmicRay
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b|
 !
 !  10-oct-03/axel: adapted from pscalar
+!  10-oct-03/snod: fixed term in momentum equation
 !
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,del2A,hhh,tmpj
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,tmpj
       real, dimension (nx) :: tmp,b2,b1,del2ecr
       real :: Kperp,Kpara
       integer :: i,j,k
