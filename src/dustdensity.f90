@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.85 2004-05-16 15:26:42 ajohan Exp $
+! $Id: dustdensity.f90,v 1.86 2004-05-18 09:59:18 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.85 2004-05-16 15:26:42 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.86 2004-05-18 09:59:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -372,7 +372,7 @@ module Dustdensity
 !
 !  Calculate kernel of coagulation equation
 !
-      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,TT1,cs2)
+      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,TT1)
 !
 !  Dust coagulation due to sticking
 !
@@ -595,87 +595,18 @@ module Dustdensity
 !
     endsubroutine get_mfluxcond
 !***********************************************************************
-    subroutine coag_kernel(f,TT1,cs2)
+    subroutine coag_kernel(f,TT1)
 !
 !  Calculate mass flux of condensing monomers
 !
-      use Cdata
+      use Hydro, only: ul0,tl0,teta,ueta,tl01,teta1 
       use Sub
-      use Entropy, only: nu_turb
-      use Mpicomm
-      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss
-      use Viscosity, only: nu_mol
-
+!      
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: TT1,cs2
-      real, dimension (1) :: cs_sum_thisproc_arr,cs_sum_allprocs_arr,pp0_arr
-      real :: cs_sum_thisproc
+      real, dimension (nx) :: TT1
       real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
-      real :: ust,pp0,pp1,pp2,cs2p,cp1tilde,cs_sum
-      real :: cs_ave,Hp,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
+      real :: ust
       integer :: i,j,l
-      save :: alphaSS,ul0,tl0,teta,ueta,tl01,teta1
-!
-!  Calculate turbulence properties
-!
-      if (m == m1 .and. n == n1 .and. itsub == 1) then
-        do i=n1,n2
-          call pressure_gradient(f(l1,m,i,ilnrho),f(l1,m,i,iss),cs2p,cp1tilde)
-          cs_sum_thisproc = cs_sum_thisproc + sqrt(cs2p)
-        enddo
-!
-!  Must put into array
-!
-        cs_sum_thisproc_arr = (/ cs_sum_thisproc /)
-!
-!  Get sum of cs_sum_thisproc_arr on all procs
-!
-        call mpireduce_sum(cs_sum_thisproc_arr,cs_sum_allprocs_arr,1)
-!
-!  Calculate average cs
-!        
-        if (lroot) cs_ave = cs_sum_allprocs_arr(1)/nzgrid
-!
-!  Send to all procs
-!          
-        call mpibcast_real(cs_ave,1)
-!
-!  Need mid-plane pressure for scale height calculation
-!
-        if (iproc == nprocz/2) then
-          call eoscalc_point &
-              (ilnrho_ss,f(l1,m,n1,ilnrho),f(l1,m,n1,iss),pp=pp0)
-        endif
-        call mpibcast_real(pp0,1,nprocz/2)
-!
-!  Find scale height and calculate turbulence properties
-!
-        do i=n1,n2
-          pp2 = pp1
-          call eoscalc_point &
-              (ilnrho_ss,f(l1,m,i,ilnrho),f(l1,m,i,iss),pp=pp1)
-          if (pp2 > exp(-1.)*pp0 .and. pp1 <= exp(-1.)*pp0) then
-            Hp = z(i)
-            alphaSS = nu_turb/(Hp**2*Omega)
-            ul0  = alphaSS*cs_ave
-            tl0  = Hp/ul0
-            eps_diss = nu_turb*(qshear*Omega)**2
-            teta = (nu_mol/eps_diss)**0.5
-            ueta = (nu_mol*eps_diss)**0.25
-            exit
-          endif
-        enddo
-!
-!  Broadcast to all processors from scale height processor
-!
-        call mpibcast_real(alphaSS,1,nprocz/2)
-        call mpibcast_real(ul0,1,nprocz/2)
-        call mpibcast_real(tl0,1,nprocz/2)
-        call mpibcast_real(teta,1,nprocz/2)
-        call mpibcast_real(ueta,1,nprocz/2)
-        tl01 = 1/tl0
-        teta1 = 1/teta
-      endif
 !
 !  Relative turbulent velocity depends on stopping time regimes
 !

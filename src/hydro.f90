@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.162 2004-04-30 09:30:50 ajohan Exp $
+! $Id: hydro.f90,v 1.163 2004-05-18 09:59:18 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,6 +27,7 @@ module Hydro
   real :: uu_left=0.,uu_right=0.,uu_lower=1.,uu_upper=1.
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
+  real :: nu_turb=0.,nu_turb0=0.,tau_nuturb=0.,nu_turb1=0.
   character (len=labellen) :: inituu='zero'
   real, dimension(3) :: gradH0=(/0.,0.,0./), uu_const=(/0.,0.,0./)
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
@@ -34,11 +35,10 @@ module Hydro
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu,coefuu, &
-       uy_left,uy_right,uu_const, &
-       Omega,initpower,cutoff
+       uy_left,uy_right,uu_const, Omega,initpower,cutoff, &
+       nu_turb0, tau_nuturb, nu_turb1
 
   ! run parameters
-!ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
@@ -47,6 +47,7 @@ module Hydro
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
+  logical :: lcalc_turbulence_pars
 !
 ! geodynamo
   namelist /hydro_run_pars/ &
@@ -54,9 +55,8 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
-       lOmega_int,Omega_int, &
-       ldamp_fade, lupw_uu, &
-       othresh,othresh_per_orms
+       lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
+       nu_turb0, tau_nuturb, nu_turb1, lcalc_turbulence_pars
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -74,6 +74,9 @@ module Hydro
   integer :: i_divum=0,i_divu2m=0,i_epsK=0
   integer :: i_u2u13m
   integer :: i_urmphi=0,i_upmphi=0,i_uzmphi=0,i_u2mphi=0,i_oumphi=0
+
+! Turbulence parameters
+  real :: Hp,cs_ave,alphaSS,ul0,tl0,eps_diss,teta,ueta,tl01,teta1
 
   contains
 
@@ -116,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.162 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: hydro.f90,v 1.163 2004-05-18 09:59:18 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1184,6 +1187,102 @@ module Hydro
 !
       first = .false.
     endsubroutine calc_mflow
+!***********************************************************************
+    subroutine calc_turbulence_pars(f)
+!
+!  Calculate turbulence parameters for a disc. 
+!  Currently only works in parallel when nprocy=1
+!
+!  18-may-04/anders: programmed
+!
+      use Cdata
+      use Cparam
+      use Mpicomm
+      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss
+      use Viscosity, only: nu_mol
+
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: cs2,cp1tilde
+      real, dimension(1) :: cs_sum_allprocs_arr,Hp_arr
+      real :: cs_sum_thisproc,pp0,pp1,pp2
+      integer :: iprocHp
+!
+!  Calculate turbulent viscosity
+!
+      if (tau_nuturb == 0.) then
+        nu_turb = nu_turb0
+      else
+        nu_turb = nu_turb0*exp(-t/tau_nuturb)
+        if (nu_turb < nu_turb1) nu_turb = nu_turb1
+      endif
+!
+!  Calculate average sound speed in disc
+!
+      do m=m1,m2
+        do n=n1,n2
+          call pressure_gradient(f,cs2,cp1tilde)
+          cs_sum_thisproc = cs_sum_thisproc + sum(sqrt(cs2))
+        enddo
+      enddo
+!
+!  Get sum of cs_sum_thisproc_arr on all procs
+!
+      call mpireduce_sum((/ cs_sum_thisproc /),cs_sum_allprocs_arr,1)
+!
+!  Calculate average cs
+!        
+      if (lroot) cs_ave = cs_sum_allprocs_arr(1)/nwgrid
+!
+!  Send to all procs
+!          
+      call mpibcast_real(cs_ave,1)
+!
+!  Need mid-plane pressure for pressure scale height calculation
+!
+      if (iproc == nprocz/2) then
+        call eoscalc_point(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
+            f(lpoint,mpoint,n1,iss),pp=pp0)
+      endif
+      call mpibcast_real(pp0,1,nprocz/2)
+!
+!  Find pressure scale height and calculate turbulence properties
+!
+      Hp = 0.
+      do n=n1,n2
+        pp1 = pp2
+        call eoscalc_point(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
+            f(lpoint,mpoint,n,iss),pp=pp2)
+        if (pp1 > 0.367879*pp0 .and. pp2 <= 0.367879*pp0) then
+!
+!  Interpolate linearly between z1 and z2 (P_1+(P_2-P_1)/dz*Delta z = 1/e*P_0)
+!          
+          Hp = z(n-1) + dz/(pp2-pp1)*(0.367879*pp0-pp1)
+          exit
+        endif
+      enddo
+!
+!  Broadcast scale height to all processors (Hp is 0 except where Hp is found)
+!
+      call mpireduce_sum((/ Hp /),Hp_arr,1)
+      if (lroot) Hp=Hp_arr(1)
+      call mpibcast_real(Hp,1)
+!  Shakury-Sunyaev alpha      
+      alphaSS = nu_turb/(Hp**2*Omega)
+!  Speed of largest scale      
+      ul0  = alphaSS*cs_ave
+!  Eddy turn over time of largest scale      
+      tl0  = Hp/ul0
+!  Energy dissipation rate for Kolmogorov spectrum      
+      eps_diss = nu_turb*(qshear*Omega)**2
+!  Speed of smallest (viscous) scale      
+      ueta = (nu_mol*eps_diss)**0.25
+!  Eddy turn over time of smallest (viscous) scale      
+      teta = (nu_mol/eps_diss)**0.5
+!  Auxiliary      
+      tl01 = 1/tl0
+      teta1 = 1/teta
+
+    endsubroutine calc_turbulence_pars
 !***********************************************************************
 
 endmodule Hydro

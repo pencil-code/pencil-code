@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.205 2004-05-12 17:27:07 ajohan Exp $
+! $Id: equ.f90,v 1.206 2004-05-18 09:59:18 ajohan Exp $
 
 module Equ
 
@@ -238,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.205 2004-05-12 17:27:07 ajohan Exp $")
+           "$Id: equ.f90,v 1.206 2004-05-18 09:59:18 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -283,6 +283,8 @@ module Equ
       if (lvisc_shock.or.lvisc_hyper) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
+!  Turbulence parameters (alpha, scale height, etc.)      
+      if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
