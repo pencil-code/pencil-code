@@ -1,0 +1,154 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+
+# Name:   src-to-data
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   27-Nov-2003
+# Description:
+#   Move src directory to data/ and link it back to ./src in order to save
+#   space (on the home partition).
+#   Acts on pwd or on each directory given in the command line.
+# Usage:
+#   src-to-data -h|--help
+#   src-to-data [dir1 [dir2 [..]]]
+# Examples:
+#   find $PENCIL_HOME/{samples,runs} -type d | xargs src-to-data
+#   setenv PENCIL_START1_CMD $PENCIL_HOME/utils/src-to-data
+
+use strict;
+use Cwd;
+use File::Copy;
+
+my $debug = 0;
+my $startdir = cwd();		# currently
+
+if (@ARGV) {
+    die usage() if ($ARGV[0] =~ /--?h/);
+}
+
+push @ARGV, $startdir unless (@ARGV); # default dir to ./
+my $ndirs = @ARGV;
+
+foreach my $dir (@ARGV) {
+    print STDERR "  <$dir>" if ($debug);
+    ($dir) = glob($dir);      # expand ~/ or ~user/ path
+    print STDERR " -> <$dir>\n" if ($debug);
+    $dir =~ s{(.*)/$}{$1};	# drop trailing slash
+    $dir =~ s{^([^/])}{$startdir/$1}; # make relative path absolute
+    my ($src,$data) = ("$dir/src","$dir/data");
+
+    ## Make sure $dir/ exists
+    if (! -d $dir ) { warn  "Can't find directory <$dir>\n";      next };
+
+    ## Make sure data/ exists as a link
+    if (! -d $data) { debug("Can't find data directory <$data>\n"); next };
+    if (! -l $data) { warn "data directory <$data> not a link\n"; next };
+
+    ## Copy and link run.log
+    my $target = "$data";
+    my $run_log = "run.log";
+    if (-f "$dir/$run_log" && ! -l "$dir/$run_log") {
+	if (move_with_perms("$dir/$run_log",$target)) {
+	    symlink("data/$run_log","$dir/$run_log") # relative link
+		or warn"Cannot symlink data/$run_log --> $dir/$run_log\n"
+	} else {
+	    warn "Cannot move $src to $target\n";
+	}
+    }
+
+    ## Make sure src/ exists as real directory
+    if (! -d $src ) { debug("Can't find src directory <$src>\n"); next };
+    if (  -l $src ) { debug("src directory <$src> is a link\n");  next };
+
+    ## Make sure data/src doesn't exist jet
+    if (-e "$data/src") { warn "Directory <$data/src> already exists\n"; next };
+
+    print "$dir:\n" if ($ndirs>1);
+
+    ## Copy and link src/
+    $target = "$data/src";
+    if (move_with_perms($src,$target)) {
+	symlink("data/src",$src) # relative link
+	    or warn "Cannot symlink data/src --> $src\n";
+    } else {
+	warn "Cannot move $src to $target\n";
+    }
+
+}
+
+# ---------------------------------------------------------------------- #
+sub move_with_perms {
+# Move with File::Copy's `move' command and then reset permissions which
+# `copy' (and thus `move' across file partition boundaries) is silly
+# enough to lose.
+# Same holds for time stamp.
+    my $src = shift;
+    my $target = shift;
+    die "usage: move_with_perms(src,target)" unless defined($target);
+    die "move_with_perms: cannot find <$src>\n" unless (-e $src);
+
+    # Apparently cannot move directories (at least across devices). So
+    # just do this using the shell.
+#     my (undef,undef,$mode,undef,undef,undef,undef,undef,$atime,$mtime)
+# 	= stat($src);
+#     $mode &= 07777;		# higher bits are irrelevant
+#     if ($debug) { printf STDERR "$mode = %d = %0o\n", $mode, $mode };
+#     unless (move($src,$target)) {
+# 	warn "move: cannot rename <$src> to <$target>: $!\n";
+# 	return 0;
+#     }
+#     unless (chmod($mode,"$target")) {
+# 	warn "chmod: cannot change permissions of <$target> to $mode: $!";
+# 	return 0;
+#     }
+#     unless (utime($atime,$mtime,"$target")) {
+# 	warn "chmod: cannot change time stamp of <$target> to $mode: $!";
+# 	return 0;
+#    }
+    my $result = `mv $src $target && echo 'bingo!'`;
+    if ($result !~ /^bingo!\s*/m) {
+	warn "mv: cannot rename <$src> to <$target>: $result\n";
+	return 0;
+    }
+
+    1;				# success
+}
+# ---------------------------------------------------------------------- #
+sub usage {
+# Extract description and usage information from this file's header.
+    my $thisfile = __FILE__;
+    local $/ = '';              # Read paragraphs
+    open(FILE, "<$thisfile") or die "Cannot open $thisfile\n";
+    while (<FILE>) {
+	# Paragraph _must_ contain `Description:' or `Usage:'
+        next unless /^\s*\#\s*(Description|Usage):/m;
+        # Drop `Author:', etc. (anything before `Description:' or `Usage:')
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
+        # Don't print comment sign:
+        s/^\s*# ?//mg;
+        last;                        # ignore body
+    }
+	$_ or "<No usage information found>\n";
+}
+# ---------------------------------------------------------------------- #
+sub debug {
+# shorten `warn .. if ($debug) so debugging statements fit into single line.
+    warn shift if ($debug);
+}
+# ---------------------------------------------------------------------- #
+
+# End of file src-to-data
