@@ -1,11 +1,11 @@
-%%%%%%%%%%%%%%%%%%%%%%            -*- mode: latex; mode: reftex -*-
+%%%%%%%%%%%%%%%%%%%%%%
 %%%   manual.tex   %%%
 %%%%%%%%%%%%%%%%%%%%%%
 %%
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.217 2003-11-22 16:59:45 mcmillan Exp $
+%%  CVS: $Id: manual.tex,v 1.218 2003-11-22 20:46:49 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-22 16:59:45 $ $,~ $ $Revision: 1.217 $ $}
+%\date{$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-22 16:59:45 $ $,~ $ $Revision: 1.217 $ $}\\
+  \emph{$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1043,7 +1043,7 @@ and lists
   \var{dtc}$=\delta t/({\cs}_0\,\delta x_{\rm min})$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
-\file{print.in}, see Sects~\ref{diagnostic-IO} and \ref{S-print.in-run-params}.
+\file{print.in}, see Sects~\ref{diagnostic-IO} and \ref{S-print.in-params}.
 The output is also saved in \file[time_series.dat]{data/time_series.dat}
 and should be identical to the content of \file{reference.out}.
 
@@ -1154,7 +1154,8 @@ In this case, \file[runs/]{runs} contains individual run directories,
 grouped in
 classes (like \file[spher/]{spher} for spherical calculations, or
 \file[kinematic/]{kinematic} for kinematic dynamo simulations).
-The current list of classes in our own \file{pencil-runs} repository is
+The current list of classes in our own \file[pencil-runs/]{pencil-runs}
+repository is
 \begin{verbatim}
   1d-tests/   disc/          kinematic/  rings/
   2d-tests/   discont/       Misc/       slab_conv/ 
@@ -1608,8 +1609,24 @@ quantity $q$ would have been important to print out, these files are the
 only way to reconstruct the time evolution of $q$ without re-running the
 code.
 
-Together with the raw data, the snapshot files contain the current
-time $t$ and some other header information.
+
+\paragraph{File structure}
+Snapshot files consist of the following
+\name[Fortran record]{Fortran records} (a \name{Fortran record} is marked
+by the 4-byte integer byte count of the data in the record at the
+beginning and the end, i.e.~has the form
+$\left< N_{\rm bytes}, \mathtt{raw\_data}, N_{\rm bytes} \right>$):
+\begin{enumerate}
+\item variable vector \verb|f| [\var{mx},\var{my},\var{mz}]
+\item time $t$ [1], coordinate vectors $x$ [mx], $y$ [my], $z$ [mz],
+  grid spacings $\delta x$ [1], $\delta y$ [1], $\delta z$ [1],
+  shearing-box shift $\Delta y$ [1]
+\end{enumerate}
+All numbers (apart from the record markers) are single precision (4-byte)
+floating point numbers, unless you use double precision (see
+\S\ref{double-precision}, in which case all numbers are 8-byte floating
+point numbers, while the record markers remain 4-byte integers.
+
 The script \cmd{tsnap} allows you to determine the time $t$ of a snapshot
 file:
 \begin{alltt}
@@ -1619,25 +1636,127 @@ file:
   data/proc0/VAR2:           t = 2.00603     
 \end{alltt}
 
+% ---------------------------------------------------------------------- %
 
-\subsubsection{Averages}
+\subsection{Averages}
+\label{S-averages}
 
-\paragraph{Horizontal averages}
+\subsubsection{Horizontal averages}
+\label{S-hor-averages}
 See Secs.~\ref{diagnostic-IO}, \ref{S-new-hor-averages} and
 \ref{S-other-averages} for how to use horizontal averages [we should
 reorganize this material].
 
 
-\paragraph{Azimuthal averages}
-Azimuthal averages are controlled by the file \file{phiaver.in} as
-follows.
+\subsubsection{Azimuthal averages}
+\label{S-phi-averages}
+Azimuthal averages are controlled by the file \file{phiaver.in}, which
+currently supports the quantities listed in Sect.~\ref{S-phiaver.in-params}.
+For example, if \file{phiaver.in} contains the single line
+\begin{Verbatim}
+  b2mphi
+\end{Verbatim}
+then you will get azimuthal averages of the squared magnetic field
+$\Bv^2$.
 
+Azimuthal averages are written every \var{d2davg} time units to the files
+\file[PHIAVG$N$]{data/averages/PHIAVG$N$}.
+The file format of azimuthal-average files consists of the following
+\name[Fortran record]{Fortran records}:
+\begin{enumerate}
+\item averaged data []
+\item time $t$ [1],
+      positions of cylindrical radius $r_{\rm cyl}$ [$N_{r,\rm \varphi-avg}$]
+      and $z$ [$N_{z,\rm \varphi-avg}$] for the grid,
+      radial spacing $\delta r_{\rm cyl}$ [1],
+      vertical spacing $\delta z$ [1]
+\item number of radial points $N_{r,\rm \varphi-avg}$ [1],
+      number of vertical points $N_{z,\rm \varphi-avg}$ [1],
+      number of variables $N_{\rm var,\varphi-avg}$[1]
+\end{enumerate}
+All numbers are 4-byte numbers (floating-point numbers or integers),
+unless you use double precision (see \S\ref{double-precision}).
 
+The file \file[phiavg.pro]{\$PENCIL_HOME/idl/phiavg.pro}
+demonstrates how to read and visualize azimuthal averages in \name{IDL}.
 
-\paragraph{Time averages}
-Time averages are controlled by the averaging time $\tau_{\rm avg}$ (set
-by the parameter \var{tavg}), and by the settings in the file
-\file[ctimeavg.local]{src/ctimeavg.local}
+\subsubsection{Time averages}
+\label{S-time-averages}
+Time averages need to be prepared in the file
+\file[ctimeavg.local]{src/ctimeavg.local}, since they use extra memory.
+They are controlled by the averaging time $\tau_{\rm avg}$ (set
+by the parameter \var{tavg} in \file{run.in}), and by the indices
+\var{idx_tavg} of variables to average.
+
+Currently, averaging is implemented as exponential (memory-less)
+average,\footnote{
+  At some point we may also implement the more straight-forward average
+  \begin{equation}
+    \left<f\right>_{t+\delta t}
+    = \left<f\right>_t
+      + \frac{\delta t}{t{-}t_0{+}\delta t}
+        [f(t{+}\delta t)-\left<f\right>_t] \; ,
+  \end{equation}
+  which is equivalent to
+  \begin{equation}
+    \left<f\right>_t
+    = \frac{1}{t-t_0}
+      \int\limits_{t_0}^t f(t') \, dt' \; ,
+  \end{equation}
+  but we do not expect large differences.
+}
+\begin{equation} \label{Eq-timeavg-exp-alg}
+  \left<f\right>_{t+\delta t}
+  = \left<f\right>_t
+    + \frac{\delta t}{\tau_{\rm avg}} [f(t{+}\delta t)-\left<f\right>_t] \; ,
+\end{equation}
+which is equivalent to
+\begin{equation} \label{Eq-timeavg-exp-int}
+  \left<f\right>_t
+  = \int\limits_{t_0}^t e^{-(t-t')/\tau_{\rm avg}}\, f(t') \, dt' \; .
+\end{equation}
+Here $t_0$ is the time of the snapshot the calculation started with,
+i.e.~the snapshot read by the last \cmd{run.x} command.
+Note that the implementation (\ref{Eq-timeavg-exp-alg}) will approximate
+Eq.~(\ref{Eq-timeavg-exp-int}) only to first-order accuracy in $\delta t$.
+In practice, however, $\delta t$ is small enough to make this accuracy
+suffice.
+
+In \file[ctimeavg.local]{src/ctimeavg.local}, you need to set the number
+of slots used for time averages.
+Each of these slots uses
+$\mathtt{mx}\times\mathtt{my}\times\mathtt{mz}$ floating-point numbers,
+i.e.~half as much memory as each fundamental variable.
+
+For example, if you want to get time averages of all variables, set
+\begin{Verbatim}
+  integer, parameter :: mtavg=mvar
+\end{Verbatim}
+in \file[ctimeavg.local]{src/ctimeavg.local}, and don't set \var{idx_tavg}
+in \file{run.in}.
+
+If you are only interested in averages of variables $1$--$3$ and $6$--$8$
+(say, the velocity vector and the magnetic vector potential in a run with
+\file{hydro.f90}, \file{density.f90}, \file{entropy.f90} and
+\file{magnetic.f90}), then set
+\begin{Verbatim}
+  integer, parameter :: mtavg=6
+\end{Verbatim}
+in \file[ctimeavg.local]{src/ctimeavg.local}, and set
+\begin{Verbatim}
+  idx_tavg = 1,2,3,6,7,8      ! time-average velocity and vector potential
+\end{Verbatim}
+in \file{run.in}.
+
+\bigskip
+
+Permanent snapshots of time averages are written every \var{tavg} time
+units to the files \file[TAVG$N$]{data/proc*/TAV$N$}.
+The current time averages are saved periodically in
+\file[timeavg.dat]{data/proc*/timeavg.dat} whenever
+\file[var.dat]{data/proc*/var.dat} is written.
+The file format for time averages is equivalent to that of the snapshots;
+see \S~\ref{snapshots} above.
 
 
 % ---------------------------------------------------------------------- %
@@ -2009,7 +2128,7 @@ In most tests that come with the Pencil Code, boundary conditions are set
 in \file{run.in}, which is a natural choice.
 However, this may lead to unexpected initial data written by
 \file{start.x}, since when you start the code (via \file{start.csh}), the
-boundary conditions are unkown and \file{start.x} will then fill the ghost
+boundary conditions are unknown and \file{start.x} will then fill the ghost
 zones assuming periodicity (the default boundary condition) in all three
 directions.
 These ghost data will never be used in a calculation, as \file{run.x} will
@@ -2092,19 +2211,20 @@ sheet boundary conditions and have stress-free instead).
 When a run stops at the end of a simulation, you can just resubmit
 the job again, and it will start from the latest snapshot saved in
 \file{data/proc*/var.dat}. The value of the latest time is saved in a
-separate file, \file{data/proc*/time.dat}.
+separate file, \file[time.dat]{data/proc*/time.dat}.
 On parallel machines it is possible that some (or just one) of the
 \file{var.dat} are corrupt; for example after a system crash.
 Check for file size and date, and restart from a good \file{VAR}$N$
 file instead.
 
 If you want to run on a different machine, you just need to copy the
-\file{data/proc*/var.dat} and \file{data/proc*/time.dat} files into a
-new directory tree. You may also need the \file{data/proc*/seed.dat}
+\file[var.dat]{data/proc*/var.dat} and
+\file[time.dat]{data/proc*/time.dat} files into a new directory tree.
+You may also need the \file[seed.dat]{data/proc*/seed.dat}
 files for the random number generator. The easiest way to get all these
 other files is to run \cmd{start.csh} again on the new machine (or in
-a new directory) and then to overwrite the \file{data/proc*/var.dat}
-files with the correct ones.
+a new directory) and then to overwrite the
+\file[var.dat]{data/proc*/var.dat} files with the correct ones.
 
 % ---------------------------------------------------------------------- %
 
@@ -3098,18 +3218,10 @@ starting point.
   (\name{ifc}) compiler under \name{Linux}?}
 
 \name{ifc} 7.1 has bugs that prevent the Pencil Code from being compiled
-(typcially, you will get an `internal compilr error' during compilation of
+(typically you will get an `internal compiler error' during compilation of
 \file[hydro.f90]{src/hydro.f90}), so try to find an older one.
 You can find \name{ifc} 7.0 at
 \url{ftp://download.intel.com/software/products/compilers/downloads}.
-
-
-``What f90 compilers are you guys using ? 
-gcc-g95 is not there yet, and there are a bunch of commercial
-options. I wonder which ones are known to work well.''
-
-{\it On Linux machines the ifc compiler from intel is the fastest, but
-version 7.1 has a problem, so try to get 7.0 or earlier.}
 
 On many current (as of November 2003) Linux systems, there is a mismatch
 between the \name{glibc} versions used by the compiler and the linker.
@@ -3127,7 +3239,6 @@ or
 \end{Verbatim}
 This has solved the problems e.g.~on a system with \emph{glibc-2.3.2}
 and kernel \emph{2.4.22}.
-
 
 Thanks to Leonardo J. Milano (\url{http://udel.edu/~lmilano/}) for part of
 this info.
@@ -3394,7 +3505,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 
 {\bf Q}:
 Isn't there some clever (or even trivial) way that one can avoid the 
-anoying error messages that one gets, when running e.g. ".r rall" after
+annoying error messages that one gets, when running e.g. ".r rall" after
 a new variable has been introduced in "idl/varcontent.pro". Ever so
 often there's a new variable that can't be found in my param2.nml --
 this time is was IECR, IGG, and ILNTT that I had to circumvent...
@@ -3417,7 +3528,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-22 16:59:45 $ $,~ $ $Revision: 1.217 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-22 20:46:49 $ $,~ $ $Revision: 1.218 $ $}
 
 \section{Timings}
 
@@ -4924,7 +5035,7 @@ modules.
 \section{Startup and Run-Time Parameters}
 \label{S-all-parameters}
 
-\subsection{List of startup parameters for `start.in'}
+\subsection{List of startup parameters for \file{start.in}}
 \label{S-all-init-params}
 
 The following table lists all (at the time of writing, September 2002)
@@ -5328,7 +5439,7 @@ double precision, $\varepsilon\approx10^{-15}$.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\subsection{List of runtime parameters for `run.in'}
+\subsection{List of runtime parameters for \file{run.in}}
 \label{S-all-run-params}
 
 The following table lists all (at the time of writing, September 2002)
@@ -5393,7 +5504,7 @@ the latest set of parameters, you need to look at the code.
                  (This information is stored in the file
                  \file[tsnap.dat]{data/tsnap.dat};
                  see the module \var{wsnaps.f90}, which in turn uses the
-                 subroutines \var{out1} and \var{out2}.) \\
+                 subroutines \var{out1} and \var{out2}). \\
   \var{dvid} [$100.$]
                & write two-dimensional sections for generation of videos
                  every \var{dvid} time units (not timesteps; see the
@@ -5404,6 +5515,17 @@ the latest set of parameters, you need to look at the code.
                  scales as little as possible) every \var{iwig} time steps to
                  logarithmic density (sometimes necessary with convection
                  simulations). \\
+  \var{tavg} [$0$]
+               & averaging time $\tau_{\rm avg}$ for time averages (if
+                 $\ne 0$); at the same time, time interval for writing
+                 time averages. See \S~\ref{S-time-averages} for details. \\
+  \var{idx_tavg} [$(0,0,\ldots,0)$]
+               & indices of variables to time-average.
+                 See \S~\ref{S-time-averages} for details. \\
+  \var{d2davg} [$100.$]
+               & time interval for azimuthal and $z$-averages, i.e.~the
+                 averages that produce 2d data.
+                 See \S~\ref{S-phi-averages} for details. \\
   \var{ialive} [$0$]
                & if $\ne 0$, each processor writes the current time step
                  to \file{alive.info} every \var{ialive} time steps. 
@@ -5659,11 +5781,11 @@ the latest set of parameters, you need to look at the code.
 \end{longtable}
 % ---------------------------------------------------------------------- %
 
-\subsection{List of parameters for `print.in'}
-\label{S-print.in-run-params}
+\subsection{List of parameters for \file{print.in}}
+\label{S-print.in-params}
 
 The following table lists all (at the time of writing, September 2002)
-possible inputs to the \file{print.in} file.
+possible inputs to the file \file{print.in}.
 
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.6\textwidth}}
@@ -5743,6 +5865,29 @@ possible inputs to the \file{print.in} file.
 \bottomrule
 \end{longtable}
 % ---------------------------------------------------------------------- %
+
+
+\subsection{List of parameters for \file{phiaver.in}}\
+\label{S-phiaver.in-params}
+
+The following table lists all (at the time of writing, November 2003)
+possible inputs to the file \file{phiaver.in}.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
+\midrule
+  \var{b2mphi} & $\left<\Bv^2\right>$ \\
+%
+\bottomrule
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+
 \subsection{Initial Condition Parameter Dependence}
 \label{S-all-init-depend}
 
@@ -6039,7 +6184,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.217 2003-11-22 16:59:45 mcmillan Exp $ $}
+$ $Id: manual.tex,v 1.218 2003-11-22 20:46:49 dobler Exp $ $}
 
 
 \end{document}
@@ -6101,6 +6246,8 @@ $ $Id: manual.tex,v 1.217 2003-11-22 16:59:45 mcmillan Exp $ $}
 % LocalWords:  sfz Saha Sackur Ioni exp umy umx umz mpi comm fno MHDturb feb uz
 % LocalWords:  initcond nomag apr giga nfilter ppowercomp Narayan Goldreich sim
 % LocalWords:  lupw Collatz Mehrstellen Verfahren hyperviscosity Galsgaard radi
-% LocalWords:  Raphson trans Ylm rrr Coord diag Stegun acroread cgs
-% LocalWords:  visc walltime ekintot ethtot sedov Abramowitz Harri GNG
-% LocalWords:  BJNRST Ferri
+% LocalWords:  Raphson trans Ylm rrr Coord diag Stegun acroread cgs avg mtavg
+% LocalWords:  visc walltime ekintot ethtot sedov Abramowitz Harri GNG tavg tst
+% LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth mkdatadir mkdotin pacx
+% LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
+% LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff
