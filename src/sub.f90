@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.167 2004-02-24 16:08:37 bingert Exp $ 
+! $Id: sub.f90,v 1.168 2004-03-11 09:11:14 dobler Exp $ 
 
 module Sub 
 
@@ -26,16 +26,19 @@ module Sub
   interface cross
     module procedure cross_global
     module procedure cross_mn
+    module procedure cross_0
   endinterface
 
   interface dot
     module procedure dot_global
     module procedure dot_mn
+    module procedure dot_0
   endinterface
 
   interface dot2
     module procedure dot2_global
     module procedure dot2_mn
+    module procedure dot2_0
   endinterface
 
   interface dot_add
@@ -569,6 +572,21 @@ module Sub
 !
     endsubroutine dot_mn
 !***********************************************************************
+    subroutine dot_0(a,b,c)
+!
+!  dot product, c=a.b, of two simple 3-d arrays
+!  11-mar-04/wolf: coded
+!
+      real, dimension (:) :: a,b
+      real :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c = dot_product(a,b)
+!
+    endsubroutine dot_0
+!***********************************************************************
     subroutine dot2_global(a,b)
 !
 !  dot product with itself, to calculate max and rms values of a vector
@@ -603,6 +621,21 @@ module Sub
       b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
     endsubroutine dot2_mn
+!***********************************************************************
+    subroutine dot2_0(a,b)
+!
+!  dot product, c=a.b, of two simple 3-d arrays
+!  11-mar-04/wolf: coded
+!
+      real, dimension (:) :: a
+      real :: b
+!
+      intent(in) :: a
+      intent(out) :: b
+!
+      b = dot_product(a,a)
+!
+    endsubroutine dot2_0
 !***********************************************************************
     subroutine dot_mn_add(a,b,c)
 !
@@ -1022,9 +1055,9 @@ module Sub
 !
     endsubroutine cross_mn
 !***********************************************************************
-    subroutine cross1(a,b,c)
+    subroutine cross_0(a,b,c)
 !
-!  cross product, c = a x b, for amplitude vectors
+!  cross product, c = a x b, for simple 3-d vectors
 !  (independent of position)
 !
       use Cdata
@@ -1038,7 +1071,7 @@ module Sub
       c(2)=a(3)*b(1)-a(1)*b(3)
       c(3)=a(1)*b(2)-a(2)*b(1)
 !
-    endsubroutine cross1
+    endsubroutine cross_0
 !***********************************************************************
     subroutine gij(f,k,g)
 !
