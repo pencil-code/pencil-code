@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.185 2004-07-04 03:13:40 theine Exp $
+! $Id: run.f90,v 1.186 2004-07-09 22:51:27 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.185 2004-07-04 03:13:40 theine Exp $")
+             "$Id: run.f90,v 1.186 2004-07-09 22:51:27 nilshau Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -84,7 +84,7 @@
         if (lroot) print*, 'nxgrid,nygrid,nzgrid=',nxgrid,nygrid,nzgrid
 !
 !  check if we want to devide cdtv by dimensionality
-!  (old_cdtv defaults to .true.)
+!  (old_cdtv defaults to .false.)
 !
         if (old_cdtv) then
           cdtvDim=cdtv
@@ -161,7 +161,7 @@
 !  NOTE: headt=.true. in order to print header titles
 !
         if(lroot) then
-          time1 = mpiwtime()
+           time1 = mpiwtime()
           count = 0
         endif
 !
