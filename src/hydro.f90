@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.152 2004-03-10 11:53:41 nilshau Exp $
+! $Id: hydro.f90,v 1.153 2004-03-30 05:33:51 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -70,7 +70,7 @@ module Hydro
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
-  integer :: i_divu2m=0,i_epsK=0
+  integer :: i_divum=0,i_divu2m=0,i_epsK=0
   integer :: i_u2u13m
   integer :: i_urmphi=0,i_upmphi=0,i_uzmphi=0,i_u2mphi=0,i_oumphi=0
 
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.152 2004-03-10 11:53:41 nilshau Exp $")
+           "$Id: hydro.f90,v 1.153 2004-03-30 05:33:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -540,6 +540,7 @@ module Hydro
         if (i_rumax/=0) call max_mn_name(u2/rho1**2,i_rumax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
+        if (i_divum/=0) call sum_mn_name(divu,i_divum)
         if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
         if (i_ux2m/=0) call sum_mn_name(uu(:,1)**2,i_ux2m)
         if (i_uy2m/=0) call sum_mn_name(uu(:,2)**2,i_uy2m)
@@ -923,7 +924,7 @@ module Hydro
         i_ox2m=0; i_oy2m=0; i_oz2m=0; i_oxoym=0; i_oxozm=0; i_oyozm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
-        i_divu2m=0; i_epsK=0
+        i_divum=0; i_divu2m=0; i_epsK=0
         i_u2u13m=0
         i_urmphi=0; i_upmphi=0; i_uzmphi=0; i_u2mphi=0; i_oumphi=0
       endif
@@ -963,6 +964,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
         call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
+        call parse_name(iname,cname(iname),cform(iname),'divum',i_divum)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
         call parse_name(iname,cname(iname),cform(iname),'u2u13m',i_u2u13m)
@@ -1031,6 +1033,7 @@ module Hydro
         write(3,*) 'i_umz=',i_umz
         write(3,*) 'i_Marms=',i_Marms
         write(3,*) 'i_Mamax=',i_Mamax
+        write(3,*) 'i_divum=',i_divum
         write(3,*) 'i_divu2m=',i_divu2m
         write(3,*) 'i_epsK=',i_epsK
         write(3,*) 'i_u2u13m=',i_u2u13m

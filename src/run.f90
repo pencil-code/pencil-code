@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.172 2004-03-26 13:16:37 dobler Exp $
+! $Id: run.f90,v 1.173 2004-03-30 05:33:55 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.172 2004-03-26 13:16:37 dobler Exp $")
+             "$Id: run.f90,v 1.173 2004-03-30 05:33:55 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -166,6 +166,7 @@
         if (dspec/=impossible) call powersnap(f)
 !
 !  DOCUMENT ME
+!  AB: should check whether this can come under initialize_modules
 !
         call border_profiles()
 !

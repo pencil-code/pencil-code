@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.20 2004-03-18 17:21:53 dobler Exp $
+! $Id: timestep.f90,v 1.21 2004-03-30 05:33:56 brandenb Exp $
 
 module Timestep
 
@@ -98,7 +98,10 @@ module Timestep
 !***********************************************************************
     subroutine border_profiles()
 !
-! DOCUMENT ME
+!  Position-dependent quenching factor that multiplies rhs of pde
+!  by a factor that goes gradually to zero near the boundaries.
+!  border_frac is a 3-D array, separately for all three directions.
+!  border_frac=1 would affect everything between center and border.
 !
       use Cdata
 
@@ -106,7 +109,9 @@ module Timestep
       real, dimension(ny) :: eta
       real, dimension(nz) :: zeta
       real :: border_width,lborder,uborder
-
+!
+!  x-direction
+!
       if ((border_frac(1)>0) .and. (.not. lperi(1))) then
         border_width=border_frac(1)*Lxyz(1)/2
         lborder=xyz0(1)+border_width
@@ -116,7 +121,9 @@ module Timestep
       else
         border_prof_x(l1:l2)=1
       endif
-
+!
+!  y-direction
+!
       if ((border_frac(2)>0) .and. (.not. lperi(2))) then
         border_width=border_frac(2)*Lxyz(2)/2
         lborder=xyz0(2)+border_width
@@ -126,7 +133,9 @@ module Timestep
       else
         border_prof_y(m1:m2)=1
       endif
-
+!
+!  z-direction
+!
       if ((border_frac(3)>0) .and. (.not. lperi(3))) then
         border_width=border_frac(3)*Lxyz(3)/2
         lborder=xyz0(3)+border_width
@@ -136,7 +145,7 @@ module Timestep
       else
         border_prof_z(n1:n2)=1
       endif
-
+!
     endsubroutine border_profiles
 !***********************************************************************
 
