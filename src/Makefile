@@ -125,6 +125,7 @@ TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
 
 clean:
-	rm -f *.x *.o *.mod
+	rm -f *.x *.o *.mod *.d
 	rm -f makefile
 	rm -f TAGS
+	rm -f work.pc work.pcl
