@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.14 2002-12-28 11:19:20 brandenb Exp $
+! $Id: wsnaps.f90,v 1.15 2003-01-01 07:49:49 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -86,6 +86,7 @@ contains
       use Sub
       use Io
       use Power_spectrum
+      use Struct_func
 !
       real, dimension (mx,my,mz,mvar) :: a
       character (len=135) :: file

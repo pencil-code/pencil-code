@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.137 2002-12-26 16:47:46 nilshau Exp $
+### $Id: Makefile,v 1.138 2003-01-01 07:49:48 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -202,7 +202,7 @@ equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
 initcond.o:  initcond.f90 cdata.o general.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
-wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o
+wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o $(POWER).o $(STRUCT_FUNC).o
 #
 $(MPICOMM).o:      $(MPICOMM).f90 cdata.o general.o $(FFT).o 
 $(GLOBAL).o:       $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
@@ -222,7 +222,7 @@ $(IO).o:           $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 $(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
 $(FFT).o:	   cdata.o
 nodebug.o:         nodebug.f90 cdata.o $(MPICOMM).o
-$(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o $(STRUCT_FUNC).o
+$(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 $(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
