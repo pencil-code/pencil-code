@@ -4,9 +4,9 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2002-08-03 20:47:39 dobler Exp $',
+  cvsid='$Id: run.in,v 1.8 2002-09-24 10:03:40 dobler Exp $',
   ip=14,
-  nt=400, it1=50, isave=200, itorder=3,
+  nt=100, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
