@@ -2,10 +2,10 @@
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2002-10-09 17:41:32 brandenb Exp $'
+  cvsid='$Id: run.in,v 1.2 2002-10-09 18:09:56 brandenb Exp $'
   nt=5000, it1=10, cdt=0.1, cdtv=0.20, isave=50, itorder=3,
-  dsnap=20., dvid=1., tmax=80.
-  bcx = 's','s','s','s','s'
+  dsnap=20., dvid=1., tmax=100.
+  bcx = 's','s','s','s','s','s','a2','a2'
 /
 &hydro_run_pars
   nu=0.03
@@ -15,4 +15,7 @@
 /
 &entropy_run_pars
   lcalc_heatcond_constchi=T,chi=2e-4
+/
+&magnetic_run_pars
+  eta=2e-3, B_ext=-.7,0.,0.
 /
