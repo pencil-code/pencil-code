@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.6 2002-08-14 15:20:13 nilshau Exp $ 
+! $Id: initcond.f90,v 1.7 2002-08-15 08:47:29 brandenb Exp $ 
 
 module Initcond 
  
@@ -167,7 +167,7 @@ module Initcond
 !
     endsubroutine beltrami
 !***********************************************************************
-    subroutine planet(ampl,f,xx,yy,zz,eps,Rx,gamma)
+    subroutine planet(ampl,f,xx,yy,zz,eps,radius,gamma)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -175,14 +175,15 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,psi,hh,h0
-      real :: ampl,sigma2,sigma,delta2,delta,eps,Rx,Ry,Rz,hmax,hmin
-      real :: gamma,eps2,rad
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,hmax,hmin
+      real :: gamma,eps2,rad2,radius2
       integer :: i,j
 !
 !  calculate sigma
 !
       print*,'planet: qshear,eps=',qshear,eps
       eps2=eps**2
+      radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
       if (sigma2<0.) then
         print*,'sigma2<0 not allowed; choose another value of eps_planet'
@@ -200,41 +201,34 @@ module Initcond
         delta=sqrt(delta2)
       endif
 !
-!  calculate temporary parameters
-!
-      Ry=Rx/eps
-      !Rz=Rx*delta
-!
 !  calculate psi, hh, and h0
 !
       h0=ampl**(gamma-1.)-zz**2/delta2
-      rr2=xx**2/Rx**2+yy**2/Ry**2!+zz**2/Rz**2
-      psi=-.5*Omega*sigma*amax1(1.-rr2,0.)
-      hh=+.5*(delta*Omega)**2*amax1(1.-rr2,h0)
+      h0=0.
+      rr2=xx**2+eps2*yy**2  !+zz**2/Rz**2
+      hh=+.5*delta2*Omega**2*amax1(radius2-rr2,h0)
 !
 !  limit dynamical range to 1:100
 !
       hmax=maxval(hh)
-      hmin=0.01*hmax
+      hmin=0.3*hmax
       hh=amax1(hh,hmin)
 !
       if (gamma<=1.) print*,'must have gamma>1 for planet solution'
-!!$      f(:,:,:,iux)=   eps2*sigma *Omega*yy
-!!$      f(:,:,:,iuy)=(qshear-sigma)*Omega*xx
-!!$      f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
-
+!
       do i=l1,l2
-         do j=m1,m2
-            rad=x(i)**2/Rx**2+y(j)**2*eps**2/Rx**2
-            if (rad<1) then
-               f(i,j,:,iux)=   eps2*sigma *Omega*yy(i,j,:)
-               f(i,j,:,iuy)=(qshear-sigma)*Omega*xx(i,j,:)
-            endif
-         enddo
+        do j=m1,m2
+          rad2=x(i)**2+eps2*y(j)**2
+          if (rad2<radius2) then
+            f(i,j,:,iux)=   eps2*sigma *Omega*yy(i,j,:)
+            f(i,j,:,iuy)=(qshear-sigma)*Omega*xx(i,j,:)
+          else
+            f(i,j,:,iux)=0.
+            f(i,j,:,iuy)=0.
+          endif
+        enddo
       enddo
       f(:,:,:,ilnrho)=alog(hh)/(gamma-1.)
-
-
 !
     endsubroutine planet
 !***********************************************************************
