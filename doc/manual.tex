@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.104 2002-09-27 07:28:14 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -297,7 +297,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.104 $ $}
+\date{\today,~ $ $Revision: 1.105 $ $}
 
 % ====================================================================== %
 
@@ -329,7 +329,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.104 $ $}
+  \emph{\today,~ $ $Revision: 1.105 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1505,7 +1505,7 @@ As an example, we give here the start parameters for
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: manual.tex,v 1.104 2002-09-27 07:28:14 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $',
   random_gen='nr_f90'
 /
 &hydro_init_pars
@@ -1532,7 +1532,7 @@ As an example, we give here the run parameters for
 \file{samples/helical-MHDturb}
 \begin{verbatim}
 &run_pars
-  cvsid='$Id: manual.tex,v 1.104 2002-09-27 07:28:14 brandenb Exp $',
+  cvsid='$Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $',
   nt=10, it1=1, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen_tmp='nr_f90'
@@ -2816,12 +2816,12 @@ Ansatz for enthalpy
   h={\textstyle{1\over2}}\delta^2\Omega^2(R^2- x^2 - \epsilon^2 y^2
   - z^2/\delta^2)
 \end{equation}
-\begin{equation}\label{u-ansatz}
+\begin{equation}\label{u-ansatz2}
   \psi=-{\textstyle{1\over2}}\sigma\Omega(R^2- x^2 - \epsilon^2 y^2)
        +{\textstyle{1\over2}}q\Omega x^2
 \end{equation}
 This implies
-\begin{equation}\label{u-streamfunction}
+\begin{equation}\label{u-streamfunction2}
   u_x = \sigma\Omega\epsilon^2 y,\quad u_y = (q-\sigma)\Omega x
 \end{equation}
 and $u_{x,x}=u_{y,y}=0$.
@@ -3643,7 +3643,7 @@ the latest information, you should have a look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.104 2002-09-27 07:28:14 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.105 2002-09-27 08:33:56 brandenb Exp $ $}
 
 
 \end{document}
