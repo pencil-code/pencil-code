@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.132 2002-11-13 18:33:03 ngrs Exp $
+! $Id: entropy.f90,v 1.133 2002-11-13 20:43:59 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.132 2002-11-13 18:33:03 ngrs Exp $")
+           "$Id: entropy.f90,v 1.133 2002-11-13 20:43:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -752,7 +752,6 @@ endif
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,cs2,TT1
       real, dimension (nx) :: rho,TT,heat,cool
-      real :: ssref,zbot,ztop
       real :: TTunits=27.8,Lambdaunits=3.29e-18
       real :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
       real, dimension(6) ::                                                 &
@@ -807,6 +806,7 @@ endif
 !
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*(heat - cool)
 !
+      if(ip==0) print*,cs2,f
     endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
     subroutine calc_tau_ss_exterior(f,df)

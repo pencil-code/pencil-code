@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.45 2002-10-25 16:30:09 brandenb Exp $
+! $Id: io_dist.f90,v 1.46 2002-11-13 20:43:59 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -80,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.45 2002-10-25 16:30:09 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.46 2002-11-13 20:43:59 brandenb Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
@@ -298,7 +298,7 @@ contains
       Lz=dz*nz*nprocz
 !
       if (ip<=4) print*
-      if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
+      if (ip<=4) print*,'dx,dy,dz=',dx,dy,dz
 !
     endsubroutine rgrid
 !***********************************************************************

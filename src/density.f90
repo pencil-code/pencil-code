@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.56 2002-11-13 18:33:03 ngrs Exp $
+! $Id: density.f90,v 1.57 2002-11-13 20:43:59 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.56 2002-11-13 18:33:03 ngrs Exp $")
+           "$Id: density.f90,v 1.57 2002-11-13 20:43:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -566,12 +566,12 @@ module Density
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (nx) :: pot,tmp
+      real, dimension (nx) :: pot
       real :: absz,n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6,k_B=0.0144
-      real :: rho,lnrho,pp,pp0,ss0
+      real :: rho,lnrho,pp,pp0
 !
 !  at present the gravity potential is not used -- we may want it 
 !  in future for creating a hydrostatic entropy profile, however (?)
