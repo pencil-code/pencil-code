@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.155 2004-02-11 14:52:40 ajohan Exp $
+! $Id: ionization.f90,v 1.156 2004-02-20 21:08:23 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -48,6 +48,11 @@ module Ionization
   interface eoscalc              ! Overload subroutine eoscalc
     module procedure eoscalc_farray
     module procedure eoscalc_point
+  endinterface
+
+  interface pressure_gradient    ! Overload subroutine pressure_gradient
+    module procedure pressure_gradient_farray
+    module procedure pressure_gradient_point
   endinterface
 
   interface getentropy                      ! Overload subroutine ionput
@@ -112,7 +117,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.155 2004-02-11 14:52:40 ajohan Exp $")
+           "$Id: ionization.f90,v 1.156 2004-02-20 21:08:23 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -213,7 +218,9 @@ module Ionization
       if (lroot) then
         open (1,file=trim(datadir)//'/pc_constants.pro')
         write (1,*) 'TT_ion=',TT_ion
+        write (1,*) 'lnTT_ion=',lnTT_ion
         write (1,*) 'TT_ion_=',TT_ion_
+        write (1,*) 'lnTT_ion_=',lnTT_ion_
         write (1,*) 'lnrho_e=',lnrho_e
         write (1,*) 'lnrho_H=',lnrho_H
         write (1,*) 'lnrho_p=',lnrho_p
@@ -222,6 +229,7 @@ module Ionization
         write (1,*) 'ss_ion=',ss_ion
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
+        write (1,*) 'lnchi0=',lnchi0
         write (1,*) 'Srad0=',Srad0
         close (1)
       endif
@@ -428,7 +436,7 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -461,7 +469,44 @@ module Ionization
       cs2=fractions*ss_ion*dlnPPdlnrho/TT1
       cp1tilde=dlnPPdss/dlnPPdlnrho
 !
-    endsubroutine pressure_gradient
+    endsubroutine pressure_gradient_farray
+!***********************************************************************
+    subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+!
+      real, intent(in) :: lnrho,ss
+      real, intent(out) :: cs2,cp1tilde
+      real :: yH,lnTT
+      real :: R,dlnTTdy,dRdy,dlnTTdlnrho,temp
+      real :: dRdlnrho,dydlnrho,dlnPPdlnrho,fractions,fractions1
+      real :: dlnTTdss,dRdss,dydss,dlnPPdss,TT1
+!
+      yH=0.5
+      call rtsafe(ilnrho_ss,lnrho,ss,yHmin,yHmax,yH)
+      fractions=(1+yH+xHe)
+      fractions1=1/fractions
+      lnTT=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                       +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                       +xHe_term)/fractions+lnrho-2.5)+lnTT_ion
+      TT1=exp(-lnTT)
+!
+      R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH)-2*log(yH)
+      dlnTTdy=(2*(lnrho_H-lnrho_p-R-TT_ion*TT1)-3)/3*fractions1
+      dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
+      temp=(dlnTTdy+fractions1)/dRdy
+      dlnPPdlnrho=(5-2*TT_ion*TT1*temp)/3
+      dlnPPdss=ss_ion1*fractions1*(dlnPPdlnrho-temp-1)
+      cs2=fractions*ss_ion*dlnPPdlnrho/TT1
+      cp1tilde=dlnPPdss/dlnPPdlnrho
+!
+    endsubroutine pressure_gradient_point
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
 !

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.99 2004-02-18 16:51:23 ajohan Exp $
+! $Id: noionization.f90,v 1.100 2004-02-20 21:08:23 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -19,15 +19,20 @@ module Ionization
 
   implicit none
 
-  interface eoscalc              ! Overload the `thermodynamics' function
+  interface eoscalc ! Overload subroutine `eoscalc' function
     module procedure eoscalc_pencil   ! explicit f implicit m,n
     module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_farray   ! explicit lnrho, ss
   end interface
 
-  interface getentropy
-    module procedure getentropy_pencil
-    module procedure getentropy_point
+  interface pressure_gradient ! Overload subroutine `pressure_gradient'
+    module procedure pressure_gradient_farray  ! explicit f implicit m,n
+    module procedure pressure_gradient_point   ! explicit lnrho, ss
+  end interface
+
+  interface getentropy ! Overload subroutine `pressure_gradient'
+    module procedure getentropy_pencil  ! explicit lnrho, ss
+    module procedure getentropy_point   ! explicit lnrho, ss
   end interface
 
 ! integers specifying which independent variables to use in eoscalc
@@ -81,7 +86,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.99 2004-02-18 16:51:23 ajohan Exp $")
+           "$Id: noionization.f90,v 1.100 2004-02-20 21:08:23 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -262,7 +267,7 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -284,7 +289,27 @@ module Ionization
       cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       cp1tilde=1
 !
-    endsubroutine pressure_gradient
+    endsubroutine pressure_gradient_farray
+!***********************************************************************
+    subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, intent(in) :: lnrho,ss
+      real, intent(out) :: cs2,cp1tilde
+!
+      if (gamma1==0.) call stop_it("eoscalc: gamma=1 not allowed w/entropy")
+      cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+      cp1tilde=1
+!
+    endsubroutine pressure_gradient_point
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
 !

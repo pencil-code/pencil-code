@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.115 2003-12-13 19:26:44 theine Exp $
+! $Id: mpicomm.f90,v 1.116 2004-02-20 21:08:23 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -84,6 +84,9 @@ module Mpicomm
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
   integer :: io_perm=20,io_succ=21
+! mpi tag for recv_density_zbot and send_density_ztop
+! to be replaced (see subroutines)
+  integer :: density_tag=30
 !  mpi tags for radiation
 !  the values for those have to differ by a number greater than maxdir=190
 !  in order to have unique tags for each boundary and each direction
@@ -100,6 +103,7 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
+  integer, dimension(MPI_STATUS_SIZE) :: irecv_density ! (see density_tag)
   integer, dimension(MPI_STATUS_SIZE) :: isend_xy,irecv_xy, &  !(for radiation)
                                          isend_zx,irecv_zx
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
@@ -798,6 +802,49 @@ module Mpicomm
       enddo
 !
     endsubroutine radboundary_xy_periodic_ray
+!***********************************************************************
+    subroutine recv_density_zbot(lnrho_bot,lnrho)
+!
+!  Receive density at bottom boundary for a Runge-Kutta type initial condition.
+!  To be replaced with a general purpose routine for this kind of
+!  initial conditions
+!
+!  20-feb-04/tobi: coded
+!
+      real, intent(in) :: lnrho_bot
+      real, intent(out) :: lnrho
+      integer :: nlnrho
+      
+      nlnrho=1
+
+      if (ipz==0) then
+        lnrho=lnrho_bot
+      else
+        call MPI_RECV(lnrho,nlnrho,MPI_REAL,zlneigh,density_tag, &
+                      MPI_COMM_WORLD,irecv_density,ierr)
+      endif
+
+    endsubroutine recv_density_zbot
+!***********************************************************************
+    subroutine send_density_ztop(lnrho)
+!
+!  Send density at top boundary for a Runge-Kutta type initial condition.
+!  To be replaced with a general purpose routine for this kind of
+!  initital conditions
+!
+!  20-feb-04/tobi: coded
+!
+      real, intent(in) :: lnrho
+      integer :: nlnrho
+
+      nlnrho=1
+
+      if (ipz/=nprocz-1) then
+        call MPI_SEND(lnrho,nlnrho,MPI_REAL,zuneigh,density_tag, &
+                      MPI_COMM_WORLD,ierr)
+      endif
+
+    endsubroutine send_density_ztop
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

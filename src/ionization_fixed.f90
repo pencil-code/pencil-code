@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.48 2004-02-14 05:40:39 theine Exp $
+! $Id: ionization_fixed.f90,v 1.49 2004-02-20 21:08:23 theine Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -21,13 +21,18 @@ module Ionization
 
   implicit none
 
-  interface eoscalc              ! Overload the `thermodynamics' function
+  interface eoscalc ! Overload subroutine `eoscalc'
     module procedure eoscalc_farray   ! explicit f implicit m,n
-    module procedure eoscalc_point    ! explocit lnrho, ss
+    module procedure eoscalc_point    ! explicit lnrho, ss
     module procedure eoscalc_pencil
   end interface
 
-  interface getentropy                      ! Overload subroutine ionput
+  interface pressure_gradient ! Overload subroutine `pressure_gradient'
+    module procedure pressure_gradient_farray ! explicit f implicit m,n
+    module procedure pressure_gradient_point  ! explicit lnrho, ss
+  end interface
+
+  interface getentropy ! Overload subroutine `getentropy'
     module procedure getentropy_pencil      ! (dummy routines here --
     module procedure getentropy_point       !  used in noionization.)
   end interface
@@ -88,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.48 2004-02-14 05:40:39 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.49 2004-02-20 21:08:23 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -350,7 +355,7 @@ module Ionization
 !
     endsubroutine getentropy_point
 !***********************************************************************
-    subroutine pressure_gradient(f,cs2,cp1tilde)
+    subroutine pressure_gradient_farray(f,cs2,cp1tilde)
 !
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally glnPP and glnTT
@@ -371,7 +376,28 @@ module Ionization
       cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*exp(lnTT)
       cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
 !
-    endsubroutine pressure_gradient
+    endsubroutine pressure_gradient_farray
+!***********************************************************************
+    subroutine pressure_gradient_point(lnrho,ss,cs2,cp1tilde)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally glnPP and glnTT
+!   gP/rho=cs2*(glnrho+cp1tilde*gss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+!
+      real, intent(in) :: lnrho,ss
+      real, intent(out) :: cs2,cp1tilde
+      real :: lnTT
+!
+      lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
+!
+      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*exp(lnTT)
+      cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+!
+    endsubroutine pressure_gradient_point
 !***********************************************************************
     subroutine temperature_gradient(f,glnrho,gss,glnTT)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.270 2004-02-19 16:30:55 theine Exp $
+! $Id: entropy.f90,v 1.271 2004-02-20 21:08:23 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.270 2004-02-19 16:30:55 theine Exp $")
+           "$Id: entropy.f90,v 1.271 2004-02-20 21:08:23 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -279,6 +279,8 @@ module Entropy
         case('isothermal_lnrho_ss')
           print*, 'init_ss: Isothermal density and entropy stratification'
           call isothermal_lnrho_ss(f,T0,rho0)
+        case('hydrostatic-isentropic')
+          call hydrostatic_isentropic(f,ss_const)
         case('wave'); f(:,:,:,iss) = ampl_ss*sin(kx_ss*xx(:,:,:) + pi)
         case('Ferriere'); call ferriere(f) 
         case('xjump'); call jump(f,iss,ss_left,ss_right,widthss,'x')
@@ -621,6 +623,63 @@ module Entropy
       f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_disc
+!***********************************************************************
+    subroutine hydrostatic_isentropic(f,ss_const)
+!
+!  Hydrostatic initial condition at constant entropy.
+!  Full ionization equation of state.
+!
+!  Solves dlnrho/dz=gravz/cs2
+!  This cannot be done in the density module since entropy has to be
+!  initialized first.
+!
+!  On multiple processors, boundary values need to be communiated. 
+!
+!
+!  20-feb-04/tobi: coded
+!
+      use Ionization, only: pressure_gradient
+      use Gravity, only: gravz,lnrho_bot
+      use Mpicomm, only: recv_density_zbot,send_density_ztop,stop_it
+
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: ss_const
+      real :: cs2,cp1tilde,lnrho,lnrho_m
+
+      if (lgravz==.false.) then
+        call stop_it("hydrostatic_isentropic: currently only works with vertical gravity")
+      endif
+      !
+      ! set/receive density at bottom boundary
+      !
+      call recv_density_zbot(lnrho_bot,lnrho)
+
+      f(:,:,n1,ilnrho)=lnrho
+
+      !
+      ! 2nd order Runge-Kutta
+      ! calculate lnrho in the upper ghost zone in case this value
+      ! needs to the next processor
+      !
+      do n=n1+1,n2+1
+        call pressure_gradient(lnrho,ss_const,cs2,cp1tilde)
+        lnrho_m=lnrho+dz*gravz/cs2/2
+        call pressure_gradient(lnrho_m,ss_const,cs2,cp1tilde)
+        lnrho=lnrho+dz*gravz/cs2
+        f(:,:,n,ilnrho)=lnrho
+      enddo
+
+      !
+      ! send density at top boundary/do nothing
+      !
+      call send_density_ztop(lnrho)
+
+      !
+      ! entropy is constant everywhere
+      !
+      f(:,:,:,iss)=ss_const
+
+    endsubroutine hydrostatic_isentropic
 !***********************************************************************
     subroutine shell_ss(f)
 !
