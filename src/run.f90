@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.161 2003-11-05 11:57:47 theine Exp $
+! $Id: run.f90,v 1.162 2003-11-09 07:58:53 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.161 2003-11-05 11:57:47 theine Exp $")
+             "$Id: run.f90,v 1.162 2003-11-09 07:58:53 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -154,7 +154,7 @@
 !
 !  do loop in time
 !
-        Time_loop: do it=1,nt
+        Time_loop: do while (it<=nt)
           lout=mod(it-1,it1).eq.0
           if (lout) then
             !
@@ -288,6 +288,7 @@
             exit Time_loop
           endif
           !
+          it=it+1
           headt=.false.
         enddo Time_loop
         if(lroot) time2=mpiwtime()
