@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.30 2003-10-06 20:38:36 dobler Exp $
+! $Id: radiation_ray.f90,v 1.31 2003-10-06 20:48:56 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -90,7 +90,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.30 2003-10-06 20:38:36 dobler Exp $")
+           "$Id: radiation_ray.f90,v 1.31 2003-10-06 20:48:56 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -201,7 +201,7 @@ module Radiation
         call Qintr(f)
         call Qperi()
         call Qcomm(f)
-!        call Qrev(f)
+        call Qrev(f)
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 !
