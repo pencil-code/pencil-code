@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.61 2004-09-08 18:07:57 theine Exp $
+! $Id: radiation_ray.f90,v 1.62 2004-09-12 19:01:48 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -43,6 +43,7 @@ module Radiation
   real :: kappa_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
   real :: lnchi_const=1.0,ampllnchi=1.0,radius_lnchi=1.0
+  integer :: nrad_rep=1 ! for timings
 !
 !  default values for one pair of vertical rays
 !
@@ -65,14 +66,14 @@ module Radiation
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
        lnchi_const,ampllnchi,radius_lnchi, &
-       lintrinsic,lcommunicate,lrevision
+       lintrinsic,lcommunicate,lrevision,nrad_rep
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,bc_rad,lrad_debug,kappa_cst, &
        source_function_type,opacity_type, &
        Srad_const,amplSrad,radius_Srad,lrad_timing, &
        lnchi_const,ampllnchi,radius_lnchi, &
-       lintrinsic,lcommunicate,lrevision,lcooling
+       lintrinsic,lcommunicate,lrevision,lcooling,nrad_rep
 
   contains
 
@@ -115,7 +116,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.61 2004-09-08 18:07:57 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.62 2004-09-12 19:01:48 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -299,11 +300,17 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt,iQrad,nt,it,itsub,itorder,nx,ny,nz
-      use Mpicomm, only: mpiwtime
+      use Cdata, only: ldebug,headt,iQrad
+      use Mpicomm, only: mpiwtime,lroot
+      use Mpicomm, only: mpireduce_sum, mpireduce_min, mpireduce_max
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      double precision :: timer=0.0,tmp
+      double precision :: t1,t2,fac_timing
+      double precision, save :: tintr,tcomm
+      real, dimension(1) :: tintr_sum,tintr_min,tintr_max
+      real, dimension(1) :: tcomm_sum,tcomm_min,tcomm_max
+      real, dimension(1) :: tintr_real,tcomm_real
+      integer :: irad_rep
 !
 !  identifier
 !
@@ -318,41 +325,91 @@ module Radiation
 !
       f(:,:,:,iQrad)=0
 !
-!  Get MPI time before the transfer equation is solved
+!  initialize timer
 !
-      if (lrad_timing) tmp=mpiwtime()
+      if (lrad_timing) then
+        tintr=0.0
+        tcomm=0.0
+      endif
 !
 !  loop over rays
 !
       do idir=1,ndir
 !
         call raydirection
+
+        if (lrad_timing) t1=mpiwtime()
 !
-        if (lintrinsic) call Qintrinsic
+        if (lintrinsic) then
+          do irad_rep=1,nrad_rep
+            call Qintrinsic
+          enddo
+        endif
+
+        if (lrad_timing) then
+          t2=mpiwtime()
+          tintr=tintr+(t2-t1)
+          t1=mpiwtime()
+        endif
 !
         if (lcommunicate) then
-          if (lperiodic_ray) then
-            call Qperiodic_ray
-          else
-            call Qcommunicate
-          endif
+          do irad_rep=1,nrad_rep
+            if (lperiodic_ray) then
+              call Qperiodic_ray
+            else
+              call Qcommunicate
+            endif
+          enddo
+        endif
+
+        if (lrad_timing) then
+          t2=mpiwtime()
+          tcomm=tcomm+(t2-t1)
+          t1=mpiwtime()
         endif
 !
-        if (lrevision) call Qrevision
+        if (lrevision) then
+          do irad_rep=1,nrad_rep
+            call Qrevision
+          enddo
+        endif
+
+        if (lrad_timing) then
+          t2=mpiwtime()
+          tintr=tintr+(t2-t1)
+        endif
 !
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
-!
+
       enddo
 !
-!  Add time difference to total timer.
-!  At the last timestep print out wall clock time per timestep,
-!  meshpoint and raydirection.
-!
       if (lrad_timing) then
-        timer=timer+mpiwtime()-tmp
-        if (it==nt.and.itsub==itorder) then
-          print*,'RAD_TIMING:',real(timer*1e9/(nx*ny*nz*itorder*ndir*nt))
-        endif
+
+        fac_timing=(1d9/nrad_rep)/(nxgrid*nygrid*nzgrid*ndir)
+
+        print*,'tintr,tcomm,fac_timing =',tintr,tcomm,fac_timing
+
+        tintr_real=fac_timing*tintr
+        tcomm_real=fac_timing*tcomm
+
+        call mpireduce_min(tintr_real,tintr_min,1)
+        if (lroot) print*,'rad. timings: min(tintr) =',tintr_min
+
+        call mpireduce_max(tintr_real,tintr_max,1)
+        if (lroot) print*,'rad. timings: max(tintr) =',tintr_max
+
+        call mpireduce_sum(tintr_real,tintr_sum,1)
+        if (lroot) print*,'rad. timings: avg(tintr) =',tintr_sum/ncpus
+
+        call mpireduce_min(tcomm_real,tcomm_min,1)
+        if (lroot) print*,'rad. timings: min(tcomm) =',tcomm_min
+
+        call mpireduce_max(tcomm_real,tcomm_max,1)
+        if (lroot) print*,'rad. timings: max(tcomm) =',tcomm_max
+
+        call mpireduce_sum(tcomm_real,tcomm_sum,1)
+        if (lroot) print*,'rad. timings: avg(tcomm) =',tcomm_sum/ncpus
+
       endif
 !
     endsubroutine radtransfer
