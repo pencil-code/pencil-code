@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.67 2004-08-05 13:25:45 ajohan Exp $
+### $Id: Makefile.src,v 1.68 2004-08-05 14:14:11 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -121,8 +121,8 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
-##FC=ifc_6.0 -i_dynamic #(nq[0-9],nw[0-9*])
-#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq.*|aida[0-9]*|opto4)
+##FC=ifc_6.0 -i_dynamic #(nq[0-9]*|nw[0-9]*)
+#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq[0-9]*|aida[0-9]*|opto4)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
 #FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
