@@ -14,11 +14,11 @@ source getconf.csh
 #
 #  On Horseshoe, distribute var.dat from the server to the various nodes
 #
-if ($hn =~ s[0-9]*p[0-9]*) then
+if ($local_disc) then
   set nodelist = `cat $PBS_NODEFILE`
   set i=0
   foreach node ($nodelist)
-    rcp $datadir/proc$i/var.dat ${node}:/scratch
+    $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR
     set i=`expr $i + 1`
     echo 'i=' $i
   end
@@ -29,12 +29,16 @@ rm -f STOP RELOAD fort.20
 
 # On Horseshoe cluster, initialize automatic copying
 # of snapshots back to the data directory
-# Also, copy executable to /scratch of master node
+# Also, copy executable to $SCRATCH_DIR of master node
 # and start top command on all procs
-if ($hn =~ s[0-9]*p[0-9]*) then
-  echo "Use options for the Horseshoe cluster"
+if ($local_disc) then
+  echo "Use local scratch disk"
   copy-snapshots -v >& copy-snapshots.log &
-  cp src/run.x /scratch/run.x
+echo "ls check beforehand src/run.x $SCRATCH_DIR"
+ls -lt src/run.x $SCRATCH_DIR
+  cp src/run.x $SCRATCH_DIR
+echo "ls check afterwards src/run.x $SCRATCH_DIR"
+ls -lt src/run.x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
 
@@ -46,8 +50,8 @@ time $mpirun $mpirunops $npops $run_x
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory
-if ($hn =~ s[0-9]*p[0-9]*) then
-  echo "Use options for the Horseshoe cluster"
+if ($local_disc) then
+  echo "Use local scratch disk"
   copy-snapshots -v var.dat
   echo "done, will now killall copy-snapshots"
   killall copy-snapshots

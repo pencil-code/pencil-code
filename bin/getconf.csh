@@ -14,6 +14,13 @@ set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 set start_x = "src/start.x"
 set run_x = "src/run.x"
 
+# settings for machines with local data disks
+set local_disc = 0  #use global file system by default
+setenv SCRATCH_DIR /scratch
+setenv SSH ssh
+setenv SCP scp
+
+# choose machine specific settings
 echo `uname -a`
 set hn = `hostname`
 if ($mpi) then
@@ -43,7 +50,11 @@ if ($mpi) then
     echo "lamndodes:"
     lamnodes
     set mpirun = /usr/bin/mpirun
-    set mpirunops = "-O -c2c"
+    set mpirunops = "-O -c2c -s n0"
+    setenv SCRATCH_DIR "/var/tmp"
+    set start_x = $SCRATCH_DIR/start.x
+    set run_x = $SCRATCH_DIR/run.x
+    set local_disc = 1
 
   else if ($hn =~ s[0-9]*p[0-9]*) then
     echo "Use options for the Horseshoe cluster"
@@ -55,8 +66,12 @@ if ($mpi) then
     set mpirun = mpirun
     #set mpirunops = "-O -s n0 N -lamd"
     set mpirunops = "-O -c2c -s n0 N -v"
-    set start_x = "/scratch/start.x"
-    set run_x = "/scratch/run.x"
+    setenv SCRATCH_DIR /scratch
+    set start_x = $SCRATCH_DIR/start.x
+    set run_x = $SCRATCH_DIR/run.x
+    set local_disc = 1
+    #setenv SSH "rsh"
+    #setenv SCP "rcp"
 
   else
     echo "Use mpirun as the default option"

@@ -3,7 +3,7 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.1 2002-10-07 18:02:50 brandenb Exp $
+# $Id: remote-top,v 1.2 2002-10-08 09:58:26 brandenb Exp $
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 
@@ -26,9 +26,9 @@ endif
 
 while (1)
   set i=0
-  foreach node ($nodelist)
+  $SSH node ($nodelist)
     if ($debug) echo "node=$node; targetdir=$targetdir"
-    rsh $node "top -bn1 > $targetdir/proc$i/top.log"
+    $SSH $node "top -bn1 > $targetdir/proc$i/top.log"
     set i = `expr $i + 1`
     echo 'i=' $i
   end

@@ -48,7 +48,7 @@ if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/ti
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
 # On Horseshoe cluster, copy executable to /scratch of master node
-if ($hn =~ s[0-9]*p[0-9]*) then
+if ($local_disc) then
   cp src/start.x /scratch/start.x
   remote-top >& remote-top.log &
 endif
@@ -61,7 +61,7 @@ echo ""
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory
-if ($hn =~ s[0-9]*p[0-9]*) then
+if ($local_disc) then
   echo "Use options for the Horseshoe cluster"
   copy-snapshots -v var.dat
 endif
