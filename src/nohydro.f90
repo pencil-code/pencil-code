@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.24 2004-02-22 09:12:42 brandenb Exp $
+! $Id: nohydro.f90,v 1.25 2004-04-13 10:29:42 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -27,7 +27,8 @@ module Hydro
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
-  integer :: i_dtu=0,i_dtv=0,i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_dtu=0,i_dtv=0,i_urms=0,i_umax=0,i_uzrms=0,i_uzmax=0
+  integer :: i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
   integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
@@ -61,7 +62,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.24 2004-02-22 09:12:42 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.25 2004-04-13 10:29:42 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -108,7 +109,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,oo,glnrho,gshock
-      real, dimension (nx) :: u2,divu,o2,ou,rho1,shock
+      real, dimension (nx) :: u2,uz,divu,o2,ou,rho1,shock
 !
       if (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
@@ -138,10 +139,12 @@ module Hydro
 !
       if (ldiagnos) then
         call dot2_mn(uu,u2)
-        if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
-        if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
-        if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
-        if (i_um2/=0) call max_mn_name(u2,i_um2)
+        if (i_urms/=0)  call sum_mn_name(u2,i_urms,lsqrt=.true.)
+        if (i_umax/=0)  call max_mn_name(u2,i_umax,lsqrt=.true.)
+        if (i_uzrms/=0) call sum_mn_name(uu(:,3),i_uzrms,lsqrt=.true.)
+        if (i_uzmax/=0) call max_mn_name(uu(:,3),i_uzmax,lsqrt=.true.)
+        if (i_u2m/=0)   call sum_mn_name(u2,i_u2m)
+        if (i_um2/=0)   call max_mn_name(u2,i_um2)
       endif
 !
       if(ip==0) print*,f,df,glnrho,divu,rho1,u2,uij,shock,gshock
@@ -170,7 +173,8 @@ module Hydro
       if (lreset) then
         i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
         i_uxpt=0; i_uypt=0; i_uzpt=0
-        i_dtu=0; i_dtv=0; i_urms=0; i_umax=0; i_orms=0; i_omax=0
+        i_dtu=0; i_dtv=0; i_urms=0; i_umax=0; i_uzrms=0; i_uzmax=0;
+        i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
         i_uxuym=0; i_uxuzm=0; i_uyuzm=0
@@ -192,6 +196,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'dtv',i_dtv)
         call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
         call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
+        call parse_name(iname,cname(iname),cform(iname),'uzrms',i_uzrms)
+        call parse_name(iname,cname(iname),cform(iname),'uzmax',i_uzmax)
         call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
@@ -216,7 +222,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'uzpt',i_uzpt)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which hydro variable is stored
 !
       if (lwr) then
         write(3,*) 'i_u2m=',i_u2m
@@ -227,6 +233,8 @@ module Hydro
         write(3,*) 'i_dtv=',i_dtv
         write(3,*) 'i_urms=',i_urms
         write(3,*) 'i_umax=',i_umax
+        write(3,*) 'i_uzrms=',i_uzrms
+        write(3,*) 'i_uzmax=',i_uzmax
         write(3,*) 'i_ux2m=',i_ux2m
         write(3,*) 'i_uy2m=',i_uy2m
         write(3,*) 'i_uz2m=',i_uz2m
