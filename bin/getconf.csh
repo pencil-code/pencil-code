@@ -15,7 +15,7 @@ if ($mpi) then
   # Compaq has `dmpirun' instead of `mpirun'; some mpiruns have specail path
   set hn = `hostname`
   if ($hn =~ mhd*.st-and.ac.uk) then
-    set mpirun = "mpijob dmpirun"
+    set mpirun = "dmpirun"
   else if ($hn =~ *.kis.uni-freiburg.de) then
     set mpirun = /opt/local/mpich/bin/mpirun
   else if (($hn =~ cincinnatus*) || ($hn =~ owen*)) then

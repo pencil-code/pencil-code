@@ -40,3 +40,4 @@ date
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
 # bsub -n  8 -q 8cpu12h -o run.`timestr` -e run.`timestr` run.csh
 # bsub -n 16 -q 16cpu8h -o run.`timestr` -e run.`timestr` run.csh
+# bsub -n 16 -q 16cpu8h mpijob dmpirun src/run.x

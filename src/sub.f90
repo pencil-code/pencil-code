@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.60 2002-06-15 18:07:51 brandenb Exp $ 
+! $Id: sub.f90,v 1.61 2002-06-15 18:18:58 brandenb Exp $ 
 
 module Sub 
 
@@ -116,7 +116,7 @@ module Sub
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      fnamez(n_nghost,ipz,iname)=fnamez(n_nghost,ipz,iname)+sum(a)
+      fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
 !
     endsubroutine zsum_mn_name
 !***********************************************************************
