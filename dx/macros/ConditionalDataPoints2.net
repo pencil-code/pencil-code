@@ -1,0 +1,112 @@
+//
+// time: Fri Feb 28 02:47:00 2003
+//
+// version: 3.1.2 (format), 4.2.0 (DX)
+//
+//
+// Begin MDF
+// MODULE ConditionalDataPoints2
+// CATEGORY Pencil Code
+// DESCRIPTION Mark data points as Invalid based on some condition
+// INPUT field; field; (no default);  
+// INPUT statistic; value list or field or string list; (none); Statistic calculated on the mesh points against which to test
+// INPUT statistic_name; string; "x";  
+// INPUT startistic2[visible:0]; value list or field or string list; (no default);  Statistic calculated on the mesh points against which to test
+// INPUT statistic_name2[visible:0]; string; "y";  
+// INPUT conditional_expression; value list or string; (no default); Condition eg.  "x>0.2"
+// OUTPUT selected_field; field;  
+// End MDF
+// workspace: width = 370, height = 436
+// layout: snap = 0, width = 50, height = 50, align = NN
+//
+macro ConditionalDataPoints2(
+ field
+,statistic
+,statistic_name = "x"
+,startistic2
+,statistic_name2 = "y"
+,conditional_expression
+) -> (
+ selected_field
+) {
+    // 
+    // node Input[8]: x = 32, y = 15, inputs = 0, label = conditional_expression
+    // parameter: position = 6, name = 'conditional_expression', value = '(no default)', descriptive = 1, description = 'Condition eg.  "x>0.2"', required = 0, visible = 1
+    //
+ConditionalDataPoints2_Input_8_out_1 = conditional_expression;
+    // 
+    // node Format[4]: x = 17, y = 92, inputs = 3, label = Format
+    // input[1]: defaulting = 0, visible = 1, type = 32, value = "byte(!(%s))"
+    //
+ConditionalDataPoints2_Format_4_out_1 = 
+    Format(
+    "byte(!(%s))",
+    ConditionalDataPoints2_Input_8_out_1,
+    NULL
+    ) [instance: 4, cache: 1];
+    // 
+    // node Input[9]: x = 85, y = 18, inputs = 0, label = statistic_name
+    // parameter: position = 3, name = 'statistic_name', value = '"x"', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+ConditionalDataPoints2_Input_9_out_1 = statistic_name;
+    // 
+    // node Input[6]: x = 142, y = 16, inputs = 0, label = statistic
+    // parameter: position = 2, name = 'statistic', value = '(none)', descriptive = 1, description = 'Statistic calculated on the mesh points against which to test', required = 1, visible = 1
+    //
+ConditionalDataPoints2_Input_6_out_1 = statistic;
+    // 
+    // node Input[10]: x = 201, y = 17, inputs = 0, label = Input
+    // parameter: position = 5, name = 'statistic_name2', value = '"y"', descriptive = 0, description = ' ', required = 0, visible = 0
+    //
+ConditionalDataPoints2_Input_10_out_1 = statistic_name2;
+    // 
+    // node Input[11]: x = 266, y = 21, inputs = 0, label = Input
+    // parameter: position = 4, name = 'startistic2', value = '(no default)', descriptive = 1, description = ' Statistic calculated on the mesh points against which to test', required = 0, visible = 0
+    //
+ConditionalDataPoints2_Input_11_out_1 = startistic2;
+    // 
+    // node Compute2[5]: x = 68, y = 181, inputs = 5, label = Compute2
+    // input[4]: defaulting = 1, visible = 1, type = 32, value = NULL
+    // input[5]: defaulting = 1, visible = 1, type = 16777245, value = NULL
+    //
+ConditionalDataPoints2_Compute2_5_out_1 = 
+    Compute2(
+    ConditionalDataPoints2_Format_4_out_1,
+    ConditionalDataPoints2_Input_9_out_1,
+    ConditionalDataPoints2_Input_6_out_1,
+    ConditionalDataPoints2_Input_10_out_1,
+    ConditionalDataPoints2_Input_11_out_1
+    ) [instance: 5, cache: 1];
+    // 
+    // node Input[7]: x = 328, y = 17, inputs = 0, label = field
+    // parameter: position = 1, name = 'field', value = '(no default)', descriptive = 1, description = ' ', required = 0, visible = 1
+    //
+ConditionalDataPoints2_Input_7_out_1 = field;
+    // 
+    // node Replace[2]: x = 181, y = 277, inputs = 4, label = Replace
+    // input[3]: defaulting = 0, visible = 1, type = 32, value = "data"
+    // input[4]: defaulting = 0, visible = 1, type = 32, value = "invalid positions"
+    //
+ConditionalDataPoints2_Replace_2_out_1 = 
+    Replace(
+    ConditionalDataPoints2_Compute2_5_out_1,
+    ConditionalDataPoints2_Input_7_out_1,
+    "data",
+    "invalid positions"
+    ) [instance: 2, cache: 1];
+    // 
+    // node Output[3]: x = 202, y = 374, inputs = 1, label = Data
+    // parameter: position = 1, name = 'selected_field', value = ' ', descriptive = 0, description = ' ', required = 0, visible = 1
+    //
+selected_field = ConditionalDataPoints2_Replace_2_out_1;
+// network: end of macro body
+}
+ConditionalDataPoints2_Input_8_out_1 = NULL;
+ConditionalDataPoints2_Format_4_out_1 = NULL;
+ConditionalDataPoints2_Input_9_out_1 = NULL;
+ConditionalDataPoints2_Input_6_out_1 = NULL;
+ConditionalDataPoints2_Input_10_out_1 = NULL;
+ConditionalDataPoints2_Input_11_out_1 = NULL;
+ConditionalDataPoints2_Compute2_5_out_1 = NULL;
+ConditionalDataPoints2_Input_7_out_1 = NULL;
+ConditionalDataPoints2_Replace_2_out_1 = NULL;
