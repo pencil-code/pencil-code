@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.233 2004-03-05 14:20:37 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.234 2004-03-11 16:35:59 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}
+%\date{$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}\\
+  \emph{$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3786,7 +3786,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-05 14:20:37 $ $,~ $ $Revision: 1.233 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-11 16:35:59 $ $,~ $ $Revision: 1.234 $ $}
 
 \section{Timings}
 
@@ -5942,13 +5942,31 @@ the latest set of parameters, you need to look at the code.
                  Currently valid choices are
                  \begin{description}
                  \item[\code{`Temp'},\code{`cs2'}] (cool temperature
-                   toward $\cs^2=\var{cs2top}$),
+                   toward $\cs^2=\var{cs2cool}$) with a cooling term
+                   \[
+                     -\mathcal{C} = -c_{\rm cool}
+                                     \frac{\cs^2-{\cs^2}_{\rm cool}}
+                                          {{\cs^2}_{\rm cool}}
+                   \])
+                 \item[\code{`Temp-rho'},\code{cs2-rho}]
+                   (cool temperature toward $\cs^2=\var{cs2cool}$) with a
+                   cooling term
+                   \[
+                     -\mathcal{C} = -c_{\rm cool}\,\varrho\,
+                                     \frac{\cs^2-{\cs^2}_{\rm cool}}
+                                          {{\cs^2}_{\rm cool}}
+                   \]
+                   --- this avoids numerical instabilities in low-density
+                   regions [currently, the cooling coefficient
+                   $c_{\rm cool}\equiv$\var{cool} is not taken into account
+                   when the time step is calculated])
                  \item[\code{`entropy'}] (cool entropy toward $0.$).
                  \end{description}
                  \\
   \var{cool} [$0.$], \\
   \var{wcool} [$0.1$]
-               & strength and width of cooling region. \\
+               & strength $c_{\rm cool}$ and smoothing width of cooling
+                 region. \\
   \var{rcool} [$1.$]
                & radius of cooling region: cool for
                  $|\xv| \ge \mbox{\var{rcool}}$.\\
@@ -5966,14 +5984,14 @@ the latest set of parameters, you need to look at the code.
                  conduction $\var{hcond0} \ne 0$. \\
   \var{lupw_ss} [.false.]
                & use 5th-order upwind derivative operator for the
-               advection term $\uv\cdot\grad s$ to avoid spurious Nyquist
-               signal (`wiggles'); see \S\ref{S-upwind}. \\
+                 advection term $\uv\cdot\grad s$ to avoid spurious Nyquist
+                 signal (`wiggles'); see \S\ref{S-upwind}. \\
   \var{tauheat_buffer} [$0.$]
                & time scale for heating to target temperature
-               (=\var{TTheat_buffer}); zero disables the buffer zone. \\
+                 (=\var{TTheat_buffer}); zero disables the buffer zone. \\
   \var{zheat_buffer} [$0.$]
                & $z$ coordinate of the thermal buffer zone. Buffering
-               is active in $|z|>$\var{TTheat_buffer}. \\
+                 is active in $|z|>$\var{TTheat_buffer}. \\
   \var{dheat_buffer1} [$0.$]
                & Inverse thickness of transition to buffered layer.\\
   \var{TTheat_buffer} [$0.$]
@@ -6542,7 +6560,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.233 2004-03-05 14:20:37 dobler Exp $ $}
+$ $Id: manual.tex,v 1.234 2004-03-11 16:35:59 dobler Exp $ $}
 
 
 \end{document}
