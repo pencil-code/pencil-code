@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.47 2004-04-08 21:24:01 dobler Exp $
+### $Id: Makefile.src,v 1.48 2004-04-10 11:45:40 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -133,7 +133,7 @@ FCCLEANER=
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46)
-#LDMPI=-Wl,-m elf_i386 #(lynx)
+#LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam #(lynx)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
