@@ -3,9 +3,9 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
-               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg
+               r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential
 ;
-; $Id: rvid_plane.pro,v 1.12 2004-07-10 19:04:23 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.13 2004-09-10 17:53:55 mee Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -212,13 +212,24 @@ if keyword_set(global_scaling) then begin
     endif else begin
       readu,1,plane,t,slice_z2pos
     endelse
-    if (first) then begin
-      amax=max(plane)
-      amin=min(plane)
-      first=0L
+    if keyword_set(exponential) then begin
+      if (first) then begin
+        amax=exp(max(plane))
+        amin=exp(min(plane))
+        first=0L
+      endif else begin
+        amax=max([amax,exp(max(plane))])
+        amin=min([amin,exp(min(plane))])
+      endelse
     endif else begin
-      amax=max([amax,max(plane)])
-      amin=min([amin,min(plane)])
+      if (first) then begin
+        amax=max(plane)
+        amin=min(plane)
+        first=0L
+      endif else begin
+        amax=max([amax,max(plane)])
+        amin=min([amin,min(plane)])
+      endelse
     endelse
   end
   close,1
@@ -235,7 +246,11 @@ end
 ;
 ; rescale data with optional parameter zoom
 ;
-plane2=rebinbox(plane,zoom)
+if keyword_set(exponential) then begin
+  plane2=rebinbox(exp(plane),zoom)
+endif else begin
+  plane2=rebinbox(plane,zoom)
+endelse
 ;
 ; do masking, if shell set
 ;
