@@ -19,12 +19,12 @@ if ($#argv > 0) then
 endif
 
 set srcdir = /scratch
-set targetdir = $PBS_O_WORKDIR
+set targetdir = $PBS_O_WORKDIR/tmp
 set nodelist = `cat $PBS_NODEFILE`
 
 if ($debug) then
   echo "srcdir = $srcdir"
-  echo "targetlist = $targetlist"
+  echo "targetdir = $targetdir"
   echo "nodelist = $nodelist"
 endif
 
@@ -34,21 +34,27 @@ set lsout = (`ls -l "$srcdir/var.dat"`)
 set size = $lsout[5]
 
 while (1)
-  
+  set i=0
   foreach node ($nodelist)
     if ($debug) echo "node=$node"
-    foreach file (`cd $srcdir; ls VAR[0-9]* | sort -k1.4`)
-      if (-Z $srcdir/$file >= $size) then
+    echo '$targetdir' $targetdir
+    foreach file (`rsh $node "cd $srcdir; ls VAR[0-9]* | sort -nk1.4"`)
+      set lsout = (`rsh $node ls -l "$srcdir/$file"`)
+      set VARsize = $lsout[5]
+      if ($VARsize >= $size) then
 	# if file is ready (-Z is tcsh-specific), copy it and delete original 
-	if ($debug) echo "Copying $srcdir/$file to $targetdir"
-	rsh $node "cp $srcdir/$file $targetdir && rm $srcdir/$file"
+	if ($debug) echo "Copying $srcdir/$file to $targetdir/proc$i"
+	rsh $node "cp $srcdir/$file $targetdir/proc$i/ && rm $srcdir/$file"
       else
 	if ($debug) echo "Size of $srcdir/$file < $size, so not copying yet"
       endif
     end
+    set i = `expr $i + 1`
+    echo 'i=' $i
   end
 
-  sleep 300			# only check every 5 minutes
+  #sleep 300			# only check every 5 minutes
+  sleep 10			# only check every 5 minutes
 
 end
 

@@ -8,21 +8,6 @@
 #
 #PBS -S /bin/csh
 
-# cut & paste for job submission for PBS
-# qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
-# qsub -l nodes=nq1+nq2+nq3+nq4,mem=1gb,cput=0:10:00 -q p-long start.csh
-# qsub -l nodes=4 -q p-long start.csh
-# qsub -l nodes=nq1+nq2+nq3+nq4 -q p-long start.csh
-# qsub -l nodes=nq1+nq2+nq3 -q p-long start.csh
-# qsub -l ncpus=2,nodes=nq1+nq2 -q p-long start.csh
-# qsub -l nodes=nq2 -q p-long start.csh
-# qsub -l ncpus=4,mem=1gb,walltime=0:05:00 -q parallel start.csh
-# qsub -l ncpus=16,mem=1gb,walltime=0:05:00 -q parallel start.csh
-# qsub -l nodes=8,walltime=0:10:00 -q workq start.csh
-# qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
-# qsub -l nodes=128,walltime=1:00:00 -q workq start.csh
-# qsub -l nodes=128 -q workq start.csh
-#
 if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
@@ -64,6 +49,9 @@ rm -f tmp/*.dat tmp/*.nml tmp/param*.pro tmp/index*.pro >& /dev/null
 # Run start.x
 date
 #
+echo sync; sync
+echo ls -lt; ls -lt src/*; ls -lt; ls -lt src/*.x
+wc src/start.x
 echo "$mpirun $mpirunops $npops src/start.x"
 time $mpirun $mpirunops $npops src/start.x
 #
@@ -74,3 +62,8 @@ date
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
 # bsub -n 16 -q 16cpu8h mpijob dmpirun src/start.x
+
+# cut & paste for job submission for PBS
+# qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
+# qsub -l ncpus=4,mem=1gb,cput=100:00:00 -q parallel start.csh
+# qsub -l nodes=128,mem=64gb,walltime=1:00:00 -q workq start.csh
