@@ -59,21 +59,30 @@ if ($mpi) then
     endif
 
   else if ($hn =~ s[0-9]*p[0-9]*) then
-    echo "Use options for the Horseshoe cluster"
-    set nodelist = `cat $PBS_NODEFILE`
-    cat $PBS_NODEFILE > lamhosts
+    if ($?RUNNINGMPICH) then
+      echo "Running using MPICH"
+      set mpirunops = "-machinefile $PBS_NODEFILE"
+      set mpirun = /usr/local/lib/MPICH/bin/mpirun
+      set start_x=$PBS_O_WORKDIR/src/start.x
+      set run_x=$PBS_O_WORKDIR/src/run.x
+    else
+      echo "Use LAM-MPI options for the Horseshoe cluster"
+      set nodelist = `cat $PBS_NODEFILE`
+      cat $PBS_NODEFILE > lamhosts
 #echo $nodelist > lamhosts.before
 #shift nodelist
 #cat $nodelist > lamhosts
-    lamboot -v lamhosts
-    echo "lamnodes:"
-    lamnodes
-    set mpirun = mpirun
-    #set mpirunops = "-O -s n0 N -lamd"
-    set mpirunops = "-O -c2c -s n0 N -v"
+      lamboot -v lamhosts
+      echo "lamnodes:"
+      lamnodes
+      set mpirunops = "-O -c2c -s n0 N -v" #(direct; should be faster)
+      # set mpirunops = "-O -s n0 N -lamd" #(with debug options on; is slower)
+      set mpirun = mpirun
+      set start_x = $SCRATCH_DIR/start.x
+      set run_x = $SCRATCH_DIR/run.x
+    endif
+
     setenv SCRATCH_DIR /scratch
-    set start_x = $SCRATCH_DIR/start.x
-    set run_x = $SCRATCH_DIR/run.x
     set local_disc = 1
     setenv SSH rsh
     setenv SCP rcp
