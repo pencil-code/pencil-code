@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.8 2003-08-20 19:42:46 mee Exp $
+;  $Id: thermodynamics.pro,v 1.9 2003-10-01 17:03:16 theine Exp $
 
 if (not lionization) then begin
   print,'Using simple equation of state...'
@@ -47,7 +47,7 @@ endif else begin
   ;  calculate cs2, TT1, and cp1tilde
   ;
   fff=lnrho_e-llnrho+1.5*alog(TTT/TT_ion)-TT_ion/TTT+alog(1.-yyH)-2.*alog(yyH)
-  dlnTT_dy=(lnmHmp-gamma1*(fff+TT_ion/TTT)-1.)/(1.+yyH+xHe)
+  dlnTT_dy=((2./3.)*(lnrho_H-lnrho_p-fff-TT_ion/TTT)-1)/(1.+yyH+xHe)
   dfdy=dlnTT_dy*(1.5+TT_ion/TTT)-1./(1.-yyH)-2./yyH
   dlnTT_dlnrho=gamma1
   dfdlnrho=gamma1*TT_ion/TTT

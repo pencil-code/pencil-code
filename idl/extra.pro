@@ -1,11 +1,11 @@
-;  $Id: extra.pro,v 1.25 2003-08-13 06:04:58 brandenb Exp $
+;  $Id: extra.pro,v 1.26 2003-10-01 17:03:16 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
 gamma=5./3.
 gamma1=gamma-1.
 ;
-@pencilconstants.pro
+@data/pc_constants.pro
 ;
 ;print,'calculate xx,yy,zz (comment out if there isnt enough memory!)'
 xx = spread(x, [1,2], [my,mz])

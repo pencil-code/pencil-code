@@ -2,8 +2,8 @@
 ;;; radtransfer.pro
 ;;;
 ;;; Author: Tobias Heinemann
-;;; $Date: 2003-10-01 14:51:08 $
-;;; $Revision: 1.1 $
+;;; $Date: 2003-10-01 17:03:16 $
+;;; $Revision: 1.2 $
 ;;;
 ;;; Description:
 ;;;   Re-implementation of some radiative-transfer routines in IDL, for
@@ -24,9 +24,8 @@ pro radcalc
 ;
 ;  Calculate opacity and source function
 ;
-  common constants,xHe,TT_ion,TT_ion_,lnrho_e,lnrho_H,lnrho_p, $
-                   lnrho_He,lnrho_e_,ss_ion,kappa0,sigmaSB
   common variables,z,lnrho,ss,yH,TT,Srad,kaprho,Qrad0,emtau
+  @data/pc_constants.pro
 
   ioncalc,lnrho,ss,yH,TT
 
@@ -35,7 +34,7 @@ pro radcalc
             *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
 
 end
-
+;*******************************************************************
 pro Qintr,Qrad,nrad,L2NDORDER=l2ndorder,UPWARDS=upwards
 ;
 ;  Integration radiation transfer equation along rays
@@ -44,14 +43,6 @@ pro Qintr,Qrad,nrad,L2NDORDER=l2ndorder,UPWARDS=upwards
   common startstop,n1,n2,nnstart,nnstop,nsign
 
   dlength=abs(z[1]-z[0])
-  default, upwards, 0
-
-
-;;; TMP ;;;
-;;; For testing
-;;kaprho=0*kaprho+1D2
-;;Srad = (z+0)^4
-
 
   if (nrad gt 0) then begin
     nnstart=n1
@@ -70,23 +61,23 @@ pro Qintr,Qrad,nrad,L2NDORDER=l2ndorder,UPWARDS=upwards
 
   for n=nnstart,nnstop,nsign do begin
     if (keyword_set(l2ndorder)) then begin
-      if (upwards) then begin   ; use points n-1, n, n+1 to calculate point n
-                                ; --> better for optically thick case
-        dtau01=(5*kaprho[n-nrad]+8*kaprho[n     ]-kaprho[n+nrad])*dlength/12
-        dtau12=(5*kaprho[n+nrad]+8*kaprho[n     ]-kaprho[n-nrad])*dlength/12
-        dSrad01=Srad[n     ]-Srad[n-nrad]
-        dSrad12=Srad[n+nrad]-Srad[n     ]
-        Srad1st=(dSrad01*dtau12/dtau01+dSrad12*dtau01/dtau12)/(dtau01+dtau12)
-        Srad2nd=-2*(dSrad01/dtau01-dSrad12/dtau12)/(dtau01+dtau12)
-        emdtau=exp(-dtau01)
+      if (keyword_set(upwards)) then begin   ; use points n-1, n, n+1 to calculate point n
+        dtau_m=(5*kaprho[n-nrad]+8*kaprho[n]-1*kaprho[n+nrad])*dlength/12
+        dtau_p=(5*kaprho[n+nrad]+8*kaprho[n]-1*kaprho[n-nrad])*dlength/12
+        dSdtau_m=(Srad[n]-Srad[n-nrad])/dtau_m
+        dSdtau_p=(Srad[n+nrad]-Srad[n])/dtau_p
+        Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
+        Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
+        emdtau=exp(-dtau_m)
         emtau[n]=emtau[n-nrad]*emdtau
-        if (dtau01>1e-5) then emdtau1=1-emdtau $
-                         else emdtau1=dtau01-dtau01^2/2+dtau01^3/6
-        if (dtau01>1e-5) then emdtau2=emdtau*(1+dtau01)-1 $
-                         else emdtau2=-dtau01^2/2+dtau01^3/3-dtau01^4/8
-        Qrad[n]=Qrad[n-nrad]*emdtau $
-                - Srad1st*emdtau1 $
-                - Srad2nd*emdtau2
+        if (dtau_m>1e-5) then begin
+          emdtau1=1-emdtau
+          emdtau2=emdtau*(1+dtau_m)-1
+        endif else begin
+          emdtau1=dtau_m-dtau_m^2/2+dtau_m^3/6
+          emdtau2=-dtau_m^2/2+dtau_m^3/3-dtau_m^4/8
+        endelse
+          Qrad[n]=Qrad[n-nrad]*emdtau-Srad1st*emdtau1-Srad2nd*emdtau2 
       endif else begin          ; use points n-2, n-1, n to calculate point n
         dtau01=(5*kaprho[n     ]+8*kaprho[n-  nrad]-kaprho[n-2*nrad])*dlength/12
         ;; It seems to be slighlty more consistent to use points
@@ -117,7 +108,7 @@ pro Qintr,Qrad,nrad,L2NDORDER=l2ndorder,UPWARDS=upwards
     endelse
   endfor
 end
-
+;*******************************************************************
 pro radboundary,nrad
 
   common variables,z,lnrho,ss,yH,TT,Srad,kaprho,Qrad0,emtau
@@ -146,7 +137,7 @@ pro Qrev,Qrad,nrad
   endfor
 
 end
-
+;*******************************************************************
 function radtransfer,datafile,DOUBLE=double,_EXTRA=_extra
   ;; _extra will handle l2ndorder and upwards
 
