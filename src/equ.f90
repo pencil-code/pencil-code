@@ -102,6 +102,7 @@ module Equ
         print*, 'form1=', form1
         print*, 'cs20=', cs20
         !
+        if (lforcing ) write(*,NML=forcing_run_pars )
         if (lentropy ) write(*,NML=entropy_run_pars )
         if (lmagnetic) write(*,NML=magnetic_run_pars)
       endif
@@ -264,8 +265,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.46 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.47 $", &
+           "$Date: 2002-05-30 16:31:35 $")
 !
 !  initialize counter for calculating and communicating print results
 !
