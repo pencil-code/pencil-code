@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.146 2003-01-29 20:33:47 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.147 2003-01-30 04:03:09 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-01-29 20:33:47 $ $,~ $ $Revision: 1.146 $ $}
+\date{$ $Date: 2003-01-30 04:03:09 $ $,~ $ $Revision: 1.147 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-01-29 20:33:47 $ $,~ $ $Revision: 1.146 $ $}
+  \emph{$ $Date: 2003-01-30 04:03:09 $ $,~ $ $Revision: 1.147 $ $}
 
   \vspace{\stretch{3}}
 
@@ -531,12 +531,15 @@ and Bob Stein (University of Michigan) who introduced us to the idea of
 using high-order schemes in compressible flows and who taught us a lot
 about simulations in general.
 
-The calculation of the power spectra, the remeshing procedures,
+The calculation of the power spectra, structure functions, the remeshing procedures,
 routines for changing the number of processors, as well as
 shearing sheet approximation and the flux-limited diffusion
 approximation for radiative transfer
 were implemented by Nils Erland L.\ Haugen (University of Trondheim).
 
+Anthony (Tony) Mee (University of Newcastle) implemented shock viscosity
+and Graeme R.\ Sarson (also University of Newcastle) added the
+interstellar module.
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition.
 
@@ -2261,6 +2264,30 @@ These results can be understood from the structure of the network, but the
 basic message is to watch out for such effects and to try varying
 \var{nprocy} and \var{nprocz}.
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Running in double-precision}
+\label{double-precision}
+
+Edit \file[Makefile.local]{src/Makefile.local} and add the line
+  \begin{alltt}
+  FFLAGS_GENERAL=-r8
+  MPICOMM=mpicomm_double
+  \end{alltt}
+In addition, if you are running MPI, replace 
+  \begin{alltt}
+  MPICOMM=mpicomm
+  \end{alltt}
+by
+  \begin{alltt}
+  MPICOMM=mpicomm_double
+  \end{alltt}
+Running double precision seems to be important in turbulence runs where
+the resolution is $256^3$ meshpoints and above.
+The procedure \file{postproc/src/realtodouble.x} can be used to produce
+\file{var.dat} and \file{grid.dat} files in double precision.
+Note: the \code{kind} value on many compiles is 8 for double precision,
+but with the NAG compiler it is 2.
 
 % ====================================================================== %
 
@@ -4648,7 +4675,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.146 2003-01-29 20:33:47 dobler Exp $ $}
+$ $Id: manual.tex,v 1.147 2003-01-30 04:03:09 brandenb Exp $ $}
 
 
 \end{document}
