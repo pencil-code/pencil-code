@@ -26,12 +26,17 @@ if defined(i_ekin) ne 0 then ekin=reform(a(i_ekin-1,*))
 if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
 ;
+pmulti = !p.multi
+;
 if (((i_urms or i_um2) ne 0) and ((i_brms or i_bm2) ne 0)) then $
     !p.multi=[0,1,2]
 if i_urms ne 0 then plot,tt,urms,yst=0,TITLE='Velocity'
 if i_um2 ne 0 then oplot,tt,sqrt(um2),line=1
 if i_brms ne 0 then plot,tt,brms,TITLE='B-field'
 if i_bm2 ne 0 then oplot,tt,sqrt(bm2),line=1
+;
+!p.multi=pmulti
+
 ;!p.multi=0
 ;save,file='hydro.sav',t,jmax2,j2m,bmax2,b2m
 ;save,file='magnetic.sav',t,jmax2,j2m,bmax2,b2m
