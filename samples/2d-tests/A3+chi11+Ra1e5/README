@@ -1,12 +1,14 @@
-$Id: README,v 1.1 2003-11-09 20:30:13 brandenb Exp $
+$Id: README,v 1.2 2003-11-10 09:31:41 brandenb Exp $
 
 Trying to reproduce: Table 2, column 1, of BNPST90
 
 Aspect ratio 3, density contrast 11.
 Stratification: cs0=0.2887, rho0=1
 Resolution: 150 x 51 (in the x and z directions).
-Ra=1e5., Fbot=0.001375, nu=K=0.0011
+Ra=1e5, Fbot=0.001375, nu=K=0.0011
 typical timestep: 8.7e-3.
 
 The actual run has been done in directory:
 pencil-code/runs/slab_conv/Hurlburt84-Ra1e5
+The run never became steady: the downdrafts keep
+sweeping back and forth.
