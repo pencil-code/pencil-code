@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.202 2004-06-30 04:38:12 theine Exp $
+! $Id: magnetic.f90,v 1.203 2004-06-30 11:12:21 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.202 2004-06-30 04:38:12 theine Exp $")
+           "$Id: magnetic.f90,v 1.203 2004-06-30 11:12:21 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -233,6 +233,7 @@ module Magnetic
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
+      case('Alfvenz-rot-shear'); call alfvenz_rot_shear(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('force-free-jet')
         lB_ext_pot=.true.
         call force_free_jet(mu_ext_pot,Bz0_ext_pot,r0_ext_pot)
@@ -1349,6 +1350,40 @@ module Magnetic
       f(:,:,:,iaa+1)=+ampl*cos(kz*zz)/kz
 !
     endsubroutine alfvenz_rot
+!***********************************************************************
+    subroutine alfvenz_rot_shear(ampl,f,iuu,iaa,zz,kz,O)
+!
+!  Alfven wave propagating in the z-direction (with Coriolis force and shear)
+!
+!  satisfies the equations
+!  dux/dt - 2*Omega*uy = -Ay''
+!  duy/dt + 1/2*Omega*ux = +Ax''
+!  dAx/dt = 3/2*Omega*Ay + uy
+!  dAy/dt = -ux
+!
+!  Assume B0=rho0=mu0=1
+!
+!  28-june-04/anders: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: zz
+      real :: ampl,kz,O
+      complex :: fac
+      integer :: iuu,iaa
+!
+!  ux and Ay
+!
+      print*,'alfvenz_rot_shear: '// &
+          'Alfven wave with rotation and shear; O,kz=',O,kz
+      fac=cmplx(O-sqrt(16*kz**2+O**2),0.)
+      f(:,:,:,iuu+0)=ampl*fac/(4*kz)*sin(kz*zz)
+      f(:,:,:,iuu+1)=ampl*real(exp(cmplx(0,zz*kz))* &
+          fac*sqrt(2*kz**2+O*fac)/(sqrt(2.)*kz*(-6*O-fac)))
+      f(:,:,:,iaa+0)=ampl*sin(kz*zz)/kz
+      f(:,:,:,iaa+1)=-ampl*2*sqrt(2.)*aimag(exp(cmplx(0,zz*kz))* &
+          sqrt(2*kz**2+O*fac)/(-6*O-fac)/(cmplx(0,kz)))
+!
+    endsubroutine alfvenz_rot_shear
 !***********************************************************************
     subroutine fluxrings(f,ivar,xx,yy,zz,profile)
 !
