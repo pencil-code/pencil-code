@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.60 2004-05-28 13:52:04 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.61 2004-06-09 11:45:25 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -43,7 +43,7 @@ module Dustvelocity
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, nud_all, betad, betad_all, tausd, tausd_all, &
+       nud, nud_all, betad, betad_all, tausd, tausd_all, draglaw, &
        ldustdrag, lfeedback_gas, lfeedback_gas_all
 
   ! other variables (needs to be consistent with reset list below)
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.60 2004-05-28 13:52:04 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.61 2004-06-09 11:45:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -466,15 +466,12 @@ module Dustvelocity
           call identify_bcs('udz',iudz(1))
         endif
 !
-!  Loop over dust layers
-!
-      do k=1,ndustspec
-!
 !  Abbreviations
 !
+      rho = 1/rho1
+      do k=1,ndustspec
         uud(:,:,k) = f(l1:l2,m,n,iudx(k):iudz(k))
         rhod =f(l1:l2,m,n,ind(k))*md(k)
-        rho = 1/rho1
         call dot2_mn(uud(:,:,k),ud2(:,k))
 !
 !  calculate velocity gradient matrix
