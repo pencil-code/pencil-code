@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.39 2004-02-18 16:57:22 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.40 2004-02-26 15:56:51 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.39 2004-02-18 16:57:22 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.40 2004-02-26 15:56:51 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,17 +166,10 @@ module Dustvelocity
         dimd1 = 0.333333
         
         if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
-        ad(1)    = (0.75*md(1)/(pi*rhods))**dimd1
-        surfd(1) = 4*pi*ad(1)**2
-        do i=2,ndustspec
-          ad(i)  = ad(1)*(md(i)/md(1))**dimd1
-          surfd(i) = surfd(1)*(md(i)/md(1))**(1.-dimd1)
-        enddo
-        do i=1,ndustspec
-          do j=1,ndustspec
-            scolld(i,j) = pi*(ad(i)+ad(j))**2
-          enddo
-        enddo
+        
+        call get_dustsurface
+        call get_dustcrosssection
+        
 
       case default
         call stop_it( &
@@ -583,6 +576,35 @@ module Dustvelocity
 !
     endsubroutine duud_dt
 !***********************************************************************
+    subroutine get_dustsurface
+!
+!  Calculate surface of dust particles
+!
+    integer :: i
+!    
+    ad(1)    = (0.75*md(1)/(pi*rhods))**dimd1
+    surfd(1) = 4*pi*ad(1)**2
+    do i=2,ndustspec
+      ad(i)  = ad(1)*(md(i)/md(1))**dimd1
+      surfd(i) = surfd(1)*(md(i)/md(1))**(1.-dimd1)
+    enddo
+!
+    endsubroutine get_dustsurface
+!***********************************************************************
+    subroutine get_dustcrosssection
+!
+!  Calculate surface of dust particles
+!
+      integer :: i,j
+!    
+      do i=1,ndustspec
+        do j=1,ndustspec
+          scolld(i,j) = pi*(ad(i)+ad(j))**2
+        enddo
+      enddo
+!
+    endsubroutine get_dustcrosssection
+!***********************************************************************
     subroutine get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
 !
 !  Calculate stopping time depending on choice of drag law
@@ -737,49 +759,49 @@ module Dustvelocity
           if (i_ud2m(i) .ne. 0) &
               write(3,*) 'i_ud2m('//trim(sdust)//')=',i_ud2m(i)
           if (i_udm2(i) .ne. 0) &
-          write(3,*) 'i_udm2('//trim(sdust)//')=',i_udm2(i)
+              write(3,*) 'i_udm2('//trim(sdust)//')=',i_udm2(i)
           if (i_od2m(i) .ne. 0) &
-          write(3,*) 'i_od2m('//trim(sdust)//')=',i_od2m(i)
+              write(3,*) 'i_od2m('//trim(sdust)//')=',i_od2m(i)
           if (i_oudm(i) .ne. 0) &
-          write(3,*) 'i_oudm('//trim(sdust)//')=',i_oudm(i)
+              write(3,*) 'i_oudm('//trim(sdust)//')=',i_oudm(i)
           if (i_udrms(i) .ne. 0) &
-          write(3,*) 'i_udrms('//trim(sdust)//')=',i_udrms(i)
+              write(3,*) 'i_udrms('//trim(sdust)//')=',i_udrms(i)
           if (i_udmax(i) .ne. 0) &
-          write(3,*) 'i_udmax('//trim(sdust)//')=',i_udmax(i)
+              write(3,*) 'i_udmax('//trim(sdust)//')=',i_udmax(i)
           if (i_rdudmax(i) .ne. 0) &
-          write(3,*) 'i_rdudmax('//trim(sdust)//')=',i_rdudmax(i)
+              write(3,*) 'i_rdudmax('//trim(sdust)//')=',i_rdudmax(i)
           if (i_odrms(i) .ne. 0) &
-          write(3,*) 'i_odrms('//trim(sdust)//')=',i_odrms(i)
+              write(3,*) 'i_odrms('//trim(sdust)//')=',i_odrms(i)
           if (i_odmax(i) .ne. 0) &
-          write(3,*) 'i_odmax('//trim(sdust)//')=',i_odmax(i)
+              write(3,*) 'i_odmax('//trim(sdust)//')=',i_odmax(i)
           if (i_udmx(i) .ne. 0) &
-          write(3,*) 'i_udmx('//trim(sdust)//')=',i_udmx(i)
+              write(3,*) 'i_udmx('//trim(sdust)//')=',i_udmx(i)
           if (i_udmy(i) .ne. 0) &
-          write(3,*) 'i_udmy('//trim(sdust)//')=',i_udmy(i)
+              write(3,*) 'i_udmy('//trim(sdust)//')=',i_udmy(i)
           if (i_udmz(i) .ne. 0) &
-          write(3,*) 'i_udmz('//trim(sdust)//')=',i_udmz(i)
+              write(3,*) 'i_udmz('//trim(sdust)//')=',i_udmz(i)
           if (i_divud2m(i) .ne. 0) &
-          write(3,*) 'i_divud2m('//trim(sdust)//')=',i_divud2m(i)
+              write(3,*) 'i_divud2m('//trim(sdust)//')=',i_divud2m(i)
           if (i_epsKd(i) .ne. 0) &
-          write(3,*) 'i_epsKd('//trim(sdust)//')=',i_epsKd(i)
+              write(3,*) 'i_epsKd('//trim(sdust)//')=',i_epsKd(i)
           if (i_udxpt(i) .ne. 0) &
-          write(3,*) 'i_udxpt('//trim(sdust)//')=',i_udxpt(i)
+              write(3,*) 'i_udxpt('//trim(sdust)//')=',i_udxpt(i)
           if (i_udypt(i) .ne. 0) &
-          write(3,*) 'i_udypt('//trim(sdust)//')=',i_udypt(i)
+              write(3,*) 'i_udypt('//trim(sdust)//')=',i_udypt(i)
           if (i_udzpt(i) .ne. 0) &
-          write(3,*) 'i_udzpt('//trim(sdust)//')=',i_udzpt(i)
+              write(3,*) 'i_udzpt('//trim(sdust)//')=',i_udzpt(i)
           if (i_udxmz(i) .ne. 0) &
-          write(3,*) 'i_udxmz('//trim(sdust)//')=',i_udxmz(i)
+              write(3,*) 'i_udxmz('//trim(sdust)//')=',i_udxmz(i)
           if (i_udymz(i) .ne. 0) &
-          write(3,*) 'i_udymz('//trim(sdust)//')=',i_udymz(i)
+              write(3,*) 'i_udymz('//trim(sdust)//')=',i_udymz(i)
           if (i_udzmz(i) .ne. 0) &
-          write(3,*) 'i_udzmz('//trim(sdust)//')=',i_udzmz(i)
+              write(3,*) 'i_udzmz('//trim(sdust)//')=',i_udzmz(i)
           if (i_udxmxy(i) .ne. 0) &
-          write(3,*) 'i_udxmxy('//trim(sdust)//')=',i_udxmxy(i)
+              write(3,*) 'i_udxmxy('//trim(sdust)//')=',i_udxmxy(i)
           if (i_udymxy(i) .ne. 0) &
-          write(3,*) 'i_udymxy('//trim(sdust)//')=',i_udymxy(i)
+              write(3,*) 'i_udymxy('//trim(sdust)//')=',i_udymxy(i)
           if (i_udzmxy(i) .ne. 0) &
-          write(3,*) 'i_udzmxy('//trim(sdust)//')=',i_udzmxy(i)
+              write(3,*) 'i_udzmxy('//trim(sdust)//')=',i_udzmxy(i)
         endif
 !
 !  End loop over dust layers
