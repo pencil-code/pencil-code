@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.147 2004-01-31 12:37:07 mcmillan Exp $
+! $Id: density.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.147 2004-01-31 12:37:07 mcmillan Exp $")
+           "$Id: density.f90,v 1.148 2004-01-31 14:01:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -701,14 +701,14 @@ module Density
         if (diffrho/=0.) then
           if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
-          maxdiffus=max_for_dt(maxdiffus,diffrho)
+          call max_for_dt(diffrho,maxdiffus)
         endif
 !
         if (diffrho_shock/=0.) then
           call dot_mn(gshock,glnrho,gshockglnrho)
           if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
-          maxdiffus=max_for_dt(maxdiffus,diffrho_shock*maxval(shock))
+          call max_for_dt(diffrho_shock*maxval(shock),maxdiffus)
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.53 2004-01-30 14:26:50 dobler Exp $
+! $Id: noentropy.f90,v 1.54 2004-01-31 14:01:22 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.53 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: noentropy.f90,v 1.54 2004-01-31 14:01:22 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -112,7 +112,7 @@ module Entropy
       else
         cs2=cs20*exp(gamma1*lnrho)
       endif
-      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,cs2)
+      if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !

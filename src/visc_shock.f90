@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.54 2004-01-30 14:26:50 dobler Exp $
+! $Id: visc_shock.f90,v 1.55 2004-01-31 14:01:22 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.54 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: visc_shock.f90,v 1.55 2004-01-31 14:01:22 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -658,7 +658,7 @@ module Viscosity
             call multsv_add_mn(fvisc,nu_shock*divu,gshock,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             nutotal_max=nutotal_max+nu_shock*maxval(shock)
-            maxdiffus=max_for_dt(maxdiffus,nutotal_max)
+            call max_for_dt(nutotal_max,maxdiffus)
          else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -676,7 +676,7 @@ module Viscosity
             if(ldensity) then
                call multmv_mn(sij,glnrho,sglnrho)
                fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-               maxdiffus=max_for_dt(maxdiffus,nu)
+               call max_for_dt(nu,maxdiffus)
             else
                if(lfirstpoint) &
                     print*,"ldensity better be .true. for ivisc='nu-const'"

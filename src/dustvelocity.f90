@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.33 2004-01-30 16:12:28 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.34 2004-01-31 14:01:22 dobler Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.33 2004-01-30 16:12:28 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.34 2004-01-31 14:01:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -429,7 +429,7 @@ module Dustvelocity
 !  the two formulations (ie with either constant betad or constant tausd)
 !
         call del2v(f,iuud(k),del2ud)
-        maxdiffus=max_for_dt(maxdiffus,nud(k))
+        call max_for_dt(nud(k),maxdiffus)
 !
 !  Stopping time of dust depends on the choice of drag law
 !
@@ -489,7 +489,7 @@ module Dustvelocity
 !
         if (headtt.or.ldebug) print*, &
             'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2(:,k))
-        if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,ud2(:,k))
+        if (lfirst.and.ldt) call max_for_dt(ud2(:,k),maxadvec2)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

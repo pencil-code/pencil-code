@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.13 2004-01-30 14:26:50 dobler Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.14 2004-01-31 14:01:22 dobler Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -100,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.13 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.14 2004-01-31 14:01:22 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -357,7 +357,7 @@ module Hydro
 !  maximum squared avection speed
 !
       if (headtt.or.ldebug) print*,'duu_dt: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
-      if (lfirst.and.ldt) maxadvec2=max_for_dt(maxadvec2,u2+c2)
+      if (lfirst.and.ldt) call max_for_dt(u2+c2,maxadvec2)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

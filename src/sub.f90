@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.155 2004-01-30 14:26:50 dobler Exp $ 
+! $Id: sub.f90,v 1.156 2004-01-31 14:01:22 dobler Exp $ 
 
 module Sub 
 
@@ -29,8 +29,8 @@ module Sub
   endinterface
 
   interface max_for_dt
-    module procedure max_for_dt_n_n
-    module procedure max_for_dt_n_1
+    module procedure max_for_dt_nx_nx
+    module procedure max_for_dt_1_nx
   endinterface
 
   contains
@@ -2799,28 +2799,31 @@ module Sub
 !
     endsubroutine blob
 !***********************************************************************
-    function max_for_dt_n_n(oldmax,f)
+    subroutine max_for_dt_nx_nx(f,maxf)
 !
-!  Normally the same as amax1, unless we have chosen to manipulate data
+!  Like maxf = amax1(f,amax1), unless we have chosen to manipulate data
 !  before taking the maximum value. Designed for calculation of time step,
 !  where one may want to exclude certain regions, etc.
 !
-!  Currently coded as an (assumed-size) array-valued function as a plug-in
-!  replacement for amax1; if this should decrease performance, we will
-!  need to rewrite it as a subroutine. 
+!  Would be nicer as an (assumed-size) array-valued function (as a plug-in
+!  replacement for amax1), but this can be more than 2 times slower (NEC
+!  SX-5, compared to about 15% slower with Intel F95) than a subroutine
+!  call according to tests.
 !
 !  30-jan-04/wolf: coded
 !
       use Cdata
 !
-      real, dimension(:) :: oldmax,f
-      real, dimension(size(oldmax)) :: max_for_dt_n_n
+      real, dimension(nx) :: maxf,f
+!
+      intent(in)    :: f
+      intent(inout) :: maxf
 
-      max_for_dt_n_n = amax1(oldmax,f)
+      maxf = amax1(f,maxf)
 
-    endfunction max_for_dt_n_n
+    endsubroutine max_for_dt_nx_nx
 !***********************************************************************
-    function max_for_dt_n_1(oldmax,f)
+    subroutine max_for_dt_1_nx(f,maxf)
 !
 !  Like max_for_dt_n_n, but with a different signature of argument shapes.
 !
@@ -2828,13 +2831,15 @@ module Sub
 !
       use Cdata
 !
-      real, dimension(:) :: oldmax
-      real, dimension(size(oldmax)) :: max_for_dt_n_1
-      real               :: f
+      real, dimension(nx) :: maxf
+      real                :: f
+!
+      intent(in)    :: f
+      intent(inout) :: maxf
 
-      max_for_dt_n_1 = amax1(oldmax,f)
+      maxf = amax1(f,maxf)
 
-    endfunction max_for_dt_n_1
+    endsubroutine max_for_dt_1_nx
 !***********************************************************************
 
 
