@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.170 2003-11-24 18:24:46 theine Exp $
+! $Id: equ.f90,v 1.171 2003-11-25 10:14:12 theine Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
       real, dimension (nx,3,3) :: uij,udij,bij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
-      real, dimension (nx) :: cs2, TT1, shock
+      real, dimension (nx) :: cs2, TT1, shock, UUtemp
       real :: facdiffus,facdss,facdlnrho
 !
 !  print statements when they are first executed
@@ -231,7 +231,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.170 2003-11-24 18:24:46 theine Exp $")
+           "$Id: equ.f90,v 1.171 2003-11-25 10:14:12 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -379,27 +379,7 @@ module Equ
 !
         if (lfirst.and.ldt) then
           !
-          !  timestep limitation by entropy variation
-          !
-          if (lentropy) then
-            maxdss=maxval(abs(df(l1:l2,m,n,iss)))
-            facdss=cdt*dxmin/cdts
-          else
-            maxdss=0.0
-            facdss=0.0
-          endif
-          !
-          !  timestep limitation by density variation
-          !
-          if (ldensity) then
-            maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
-            facdlnrho=cdt*dxmin/cdtr
-          else
-            maxdlnrho=0.0
-            facdlnrho=0.0
-          endif
-          !
-          !  timestep limitation by diffusion
+          !  timestep limited by diffusion
           !
           if (old_cdtv) then
             facdiffus=cdt/(cdtv*dxmin)
@@ -411,11 +391,26 @@ module Equ
           !  (old_UUmax=.true. by default)
           !
           if (old_UUmax) then
-            call max_mn(sqrt(maxadvec2)+(facdss*maxdss)+(facdiffus*maxdiffus), &
-                        UUmax)
+            call max_mn(sqrt(maxadvec2)+(facdiffus*maxdiffus),UUmax)
           else
-            call max_mn(amax1(sqrt(maxadvec2),facdiffus*maxdiffus, &
-                              facdss*maxdss,facdlnrho*facdlnrho),UUmax)
+            UUtemp=amax1(sqrt(maxadvec2),facdiffus*maxdiffus)
+            !
+            !  timestep limited by entropy variation
+            !
+            if (lentropy) then
+              maxdss=maxval(abs(df(l1:l2,m,n,iss)))
+              facdss=cdt*dxmin/cdts
+              UUtemp=amax1(facdss*maxdss,UUtemp)
+            endif
+            !
+            !  timestep limited by density variation
+            !
+            if (ldensity) then
+              maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
+              facdlnrho=cdt*dxmin/cdtr
+              UUtemp=amax1(facdlnrho*maxdlnrho,UUtemp)
+            endif
+            call max_mn(UUtemp,UUmax)
           endif
         endif
 !
