@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.19 2002-07-21 21:34:59 dobler Exp $
+! $Id: forcing.f90,v 1.20 2002-07-22 12:49:20 brandenb Exp $
 
 module Forcing
 
@@ -41,7 +41,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.19 2002-07-21 21:34:59 dobler Exp $")
+           "$Id: forcing.f90,v 1.20 2002-07-22 12:49:20 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -70,39 +70,27 @@ module Forcing
 !
       if (headtt.or.ldebug) print*,'FORCING: addforce started'
 !
-!
 !  calculate and add forcing function
 !
       select case(iforce)
-      case ('zero')
-        if (lroot) print*,'No forcing'
-      case ('irrotational', '1')
-        call forcing_irro(f)
-      case ('helical', '2')
-        call forcing_hel(f)
-      case ('fountain', '3')
-        call forcing_fountain(f)
-      case ('horizontal-shear', '4')
-        call forcing_hshear(f)
-      case default
-        if (lroot) print*, 'No such forcing iforce=', trim(iforce)
+      case ('zero'); if (lroot) print*,'No forcing'
+      case ('irrotational');  call forcing_irro(f)
+      case ('helical', '2');  call forcing_hel(f)
+      case ('fountain', '3'); call forcing_fountain(f)
+      case ('horiz-shear');   call forcing_hshear(f)
+      case ('twist');         call forcing_twist(f)
+      case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
       endselect
 !
 !  add *additional* forcing function
 !
       select case(iforce2)
-      case ('zero')
-        if (headtt .and. lroot) print*,'No additional forcing'
-      case ('irrotational')
-        call forcing_irro(f)
-      case ('helical')
-        call forcing_hel(f)
-      case ('fountain', '1')    ! the '1' is for historical reasons only
-        call forcing_fountain(f)
-      case ('horizontal-shear')
-        call forcing_hshear(f)
-      case default
-        if (lroot) print*, 'No such forcing iforce2=', trim(iforce2)
+      case ('zero'); if(headtt .and. lroot) print*,'No additional forcing'
+      case ('irrotational'); call forcing_irro(f)
+      case ('helical');      call forcing_hel(f)
+      case ('fountain');     call forcing_fountain(f)
+      case ('horiz-shear');  call forcing_hshear(f)
+      case default; if(lroot) print*,'No such forcing iforce2=',trim(iforce2)
       endselect
 !
       if (headtt.or.ldebug) print*,'FORCING: done addforce'
@@ -529,6 +517,65 @@ module Forcing
       enddo
 !
     endsubroutine forcing_hshear
+!***********************************************************************
+    subroutine forcing_twist(f)
+!
+!  add circular twisting motion, (ux, 0, uz)
+!
+!  19-jul-02/axel: coded
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,nz) :: xx,zz,r2,tmp,fx,fz
+      real :: ffnorm,ry2,fy,ytwist1,ytwist2
+!
+!  identifier
+!
+      if(headt) print*,'forcing_twist: r_ff,width_ff=',r_ff,width_ff
+!
+!  need to multiply by dt (for Euler step).
+!
+      ffnorm=force*dt  !(dt for the timestep)
+!
+!  add to velocity
+!  calculate r2=(x^2+z^2)/r^2
+!
+      xx=spread(x(l1:l2),2,nz)
+      zz=spread(z(n1:n2),1,nx)
+      if (r_ff==0.) then
+        if(lroot) print*,'forcing_twist: division by r_ff=0!!'
+      endif
+      r2=(xx**2+zz**2)/r_ff**2
+      tmp=exp(-r2/amax1(1.-r2,1e-5))*ffnorm
+      fx=-zz*tmp
+      fz=+xx*tmp
+!
+!  have opposite twists at
+!
+      y0=xyz0(2)
+      ytwist1=y0+0.25*Ly
+      ytwist2=y0+0.75*Ly
+!
+      do m=m1,m2
+        !
+        ! first twister
+        !
+        ry2=((y(m)-ytwist1)/width_ff)**2
+        fy=exp(-ry2/amax1(1.-ry2,1e-5))
+        f(l1:l2,m,n1:n2,iux)=f(l1:l2,m,n1:n2,iux)+fy*fx
+        f(l1:l2,m,n1:n2,iuz)=f(l1:l2,m,n1:n2,iuz)+fy*fz
+        !
+        ! second twister
+        !
+        ry2=((y(m)-ytwist2)/width_ff)**2
+        fy=exp(-ry2/amax1(1.-ry2,1e-5))
+        f(l1:l2,m,n1:n2,iux)=f(l1:l2,m,n1:n2,iux)-fy*fx
+        f(l1:l2,m,n1:n2,iuz)=f(l1:l2,m,n1:n2,iuz)-fy*fz
+      enddo
+!
+    endsubroutine forcing_twist
 !***********************************************************************
 
 endmodule Forcing

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.52 2002-07-22 08:51:44 dobler Exp $
+! $Id: hydro.f90,v 1.53 2002-07-22 12:49:20 brandenb Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.52 2002-07-22 08:51:44 dobler Exp $")
+           "$Id: hydro.f90,v 1.53 2002-07-22 12:49:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -435,8 +435,7 @@ module Hydro
 !
 !  maximum squared avection speed
 !
-      if (headtt.or.ldebug) print*,'maximum squared avection speed'
-      if (headtt.or.ldebug) print*,'maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
+      if (headtt.or.ldebug) print*,'hydro: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
 !
 !  damp motions in some regions for some time spans if desired

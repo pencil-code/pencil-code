@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.69 2002-07-21 21:34:59 dobler Exp $
+! $Id: run.f90,v 1.70 2002-07-22 12:49:20 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -45,12 +45,12 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.69 2002-07-21 21:34:59 dobler Exp $")
+             "$Id: run.f90,v 1.70 2002-07-22 12:49:20 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
-!  set default values
+!  set default values (should work also for 1-D and 2-D runs)
 !
-        ix=mx/2; iy=my/2; iz=mz/2
+        ix=1+(mx-1)/2; iy=1+(my-1)/2; iz=1+(mz-1)/2
         dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
 !
 !  read parameters from start.x (default values; may be overwritten by
