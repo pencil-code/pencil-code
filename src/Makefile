@@ -107,7 +107,7 @@ start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -lsig -o run.x 
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
