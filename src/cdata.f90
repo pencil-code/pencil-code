@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.259 2005-04-02 13:14:17 theine Exp $
+! $Id: cdata.f90,v 1.260 2005-04-05 11:15:10 ngrs Exp $
 
 module Cdata
 
@@ -71,6 +71,7 @@ module Cdata
   real :: Omega=0.,qshear=0.,Sshear=impossible
   real :: deltay=0. !(for shear; also used in forcing and output)
   real, dimension(3,1) :: coeff_grid=1.0
+  real, dimension(3,2) :: xyz_step,xi_step_frac,xi_step_width=1.5
   real :: zeta_grid0
 
   integer, dimension(mseed) :: seed=0

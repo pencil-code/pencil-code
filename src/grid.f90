@@ -43,6 +43,7 @@ module Grid
       use Cdata, only: ipx,ipy,ipz
       use Cdata, only: nghost,coeff_grid,grid_func
       use Cdata, only: lperi,lshift_origin,xyz_star,lequidist
+      use Cdata, only: xyz_step,xi_step_frac,xi_step_width
       use Mpicomm, only: stop_it
 
       real, dimension(mx), intent(out) :: x
@@ -54,6 +55,8 @@ module Grid
       real :: xi2lo,xi2up,g2lo,g2up
       real :: xi3lo,xi3up,g3lo,g3up
       real :: xi1star,xi2star,xi3star
+      real, dimension(3,2) :: xi_step
+      real, dimension(3,3) :: dxyz_step
 
       real, dimension(mx) :: g1,g1der1,g1der2,xi1,xprim,xprim2
       real, dimension(my) :: g2,g2der1,g2der2,xi2,yprim,yprim2
@@ -100,6 +103,7 @@ module Grid
       xi1lo=0.; xi1up=nxgrid-merge(0.,1.,lperi(1))
       xi2lo=0.; xi2up=nygrid-merge(0.,1.,lperi(2))
       xi3lo=0.; xi3up=nzgrid-merge(0.,1.,lperi(3))
+
 !
 !  Construct nonequidistant grid
 !
@@ -117,16 +121,40 @@ module Grid
         if (err) call &
              stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(1))
 
-        a=coeff_grid(1,1)*dx
-        xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
+        select case (grid_func(1))
 
-        call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
-        call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
-        call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+        case ('linear','sinh')
 
-        x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
-        xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
-        xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+          a=coeff_grid(1,1)*dx
+          xi1star=find_star(a*xi1lo,a*xi1up,x00,x00+Lx,xyz_star(1),grid_func(1))/a
+
+          call grid_profile(a*(xi1  -xi1star),grid_func(1),g1,g1der1,g1der2)
+          call grid_profile(a*(xi1lo-xi1star),grid_func(1),g1lo)
+          call grid_profile(a*(xi1up-xi1star),grid_func(1),g1up)
+
+          x     =x00+Lx*(g1  -  g1lo)/(g1up-g1lo)
+          xprim =    Lx*(g1der1*a   )/(g1up-g1lo)
+          xprim2=    Lx*(g1der2*a**2)/(g1up-g1lo)
+
+        case ('step-linear')
+
+          xi_step(1,1)=xi_step_frac(1,1)*(nxgrid-1.0)
+          xi_step(1,2)=xi_step_frac(1,2)*(nxgrid-1.0)
+          dxyz_step(1,1)=(xyz_step(1,1)-x00)/(xi_step(1,1)-0.0)
+          dxyz_step(1,2)=(xyz_step(1,2)-xyz_step(1,1))/ &
+                                (xi_step(1,2)-xi_step(1,1))
+          dxyz_step(1,3)=(x00+Lx-xyz_step(1,2))/(nxgrid-1.0-xi_step(1,2))
+
+          call grid_profile(xi1,grid_func(1),g1,g1der1,g1der2, &
+           dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
+          call grid_profile(xi1lo,grid_func(1),g1lo, &
+           dxyz=dxyz_step(1,:),xistep=xi_step(1,:),delta=xi_step_width(1,:))
+
+          x     = x00 + g1-g1lo
+          xprim = g1der1
+          xprim2= g1der2
+
+        endselect
 
         dx_1=1./xprim
         dx_tilde=-xprim2/xprim**2
@@ -146,16 +174,39 @@ module Grid
         if (err) &
              call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(2))
 
-        a=coeff_grid(2,1)*dy
-        xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
+        select case (grid_func(2))
 
-        call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
-        call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
-        call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
+        case ('linear','sinh')
 
-        y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
-        yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
-        yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+          a=coeff_grid(2,1)*dy
+          xi2star=find_star(a*xi2lo,a*xi2up,y00,y00+Ly,xyz_star(2),grid_func(2))/a
+
+          call grid_profile(a*(xi2  -xi2star),grid_func(2),g2,g2der1,g2der2)
+          call grid_profile(a*(xi2lo-xi2star),grid_func(2),g2lo)
+          call grid_profile(a*(xi2up-xi2star),grid_func(2),g2up)
+
+          y     =y00+Ly*(g2  -  g2lo)/(g2up-g2lo)
+          yprim =    Ly*(g2der1*a   )/(g2up-g2lo)
+          yprim2=    Ly*(g2der2*a**2)/(g2up-g2lo)
+
+        case ('step-linear')
+
+          xi_step(2,1)=xi_step_frac(2,1)*(nygrid-1.0)
+          xi_step(2,2)=xi_step_frac(2,2)*(nygrid-1.0)
+          dxyz_step(2,1)=(xyz_step(2,1)-y00)/(xi_step(2,1)-0.0)
+          dxyz_step(2,2)=(xyz_step(2,2)-xyz_step(2,1))/ &
+                                (xi_step(2,2)-xi_step(2,1))
+          dxyz_step(2,3)=(y00+Ly-xyz_step(2,2))/(nygrid-1.0-xi_step(2,2))
+
+          call grid_profile(xi2,grid_func(2),g2,g2der1,g2der2, &
+           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          call grid_profile(xi2lo,grid_func(2),g2lo, &
+           dxyz=dxyz_step(2,:),xistep=xi_step(2,:),delta=xi_step_width(2,:))
+          y     = y00 + g2-g2lo
+          yprim = g2der1
+          yprim2= g2der2
+
+        endselect
 
         dy_1=1./yprim
         dy_tilde=-yprim2/yprim**2
@@ -175,16 +226,39 @@ module Grid
         if (err) &
              call stop_it("CONSTRUCT_GRID: unknown grid_func "//grid_func(3))
 
-        a=coeff_grid(3,1)*dz
-        xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
+        select case(grid_func(3))
 
-        call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
-        call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
-        call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
+        case ('linear','sinh')
 
-        z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
-        zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
-        zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+          a=coeff_grid(3,1)*dz
+          xi3star=find_star(a*xi3lo,a*xi3up,z00,z00+Lz,xyz_star(3),grid_func(3))/a
+
+          call grid_profile(a*(xi3  -xi3star),grid_func(3),g3,g3der1,g3der2)
+          call grid_profile(a*(xi3lo-xi3star),grid_func(3),g3lo)
+          call grid_profile(a*(xi3up-xi3star),grid_func(3),g3up)
+
+          z     =z00+Lz*(g3  -  g3lo)/(g3up-g3lo)
+          zprim =    Lz*(g3der1*a   )/(g3up-g3lo)
+          zprim2=    Lz*(g3der2*a**2)/(g3up-g3lo)
+
+        case ('step-linear')
+
+          xi_step(3,1)=xi_step_frac(3,1)*(nzgrid-1.0)
+          xi_step(3,2)=xi_step_frac(3,2)*(nzgrid-1.0)
+          dxyz_step(3,1)=(xyz_step(3,1)-z00)/(xi_step(3,1)-0.0)
+          dxyz_step(3,2)=(xyz_step(3,2)-xyz_step(3,1))/ &
+                                (xi_step(3,2)-xi_step(3,1))
+          dxyz_step(3,3)=(z00+Lz-xyz_step(3,2))/(nzgrid-1.0-xi_step(3,2))
+
+          call grid_profile(xi3,grid_func(3),g3,g3der1,g3der2, &
+           dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
+          call grid_profile(xi3lo,grid_func(3),g3lo, &
+           dxyz=dxyz_step(3,:),xistep=xi_step(3,:),delta=xi_step_width(3,:))
+          z     = z00 + g3-g3lo
+          zprim = g3der1
+          zprim2= g3der2
+
+        endselect
 
         dz_1=1./zprim
         dz_tilde=-zprim2/zprim**2
@@ -192,7 +266,8 @@ module Grid
 
     endsubroutine construct_grid
 !***********************************************************************
-    subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err)
+    subroutine grid_profile_point(xi,grid_func,g,gder1,gder2,err, &
+                                  dxyz,xistep,delta)
 !
 !  Specify the functional form of the grid profile function g
 !  and calculate g,g',g''.
@@ -207,9 +282,11 @@ module Grid
       real              :: g
       real, optional    :: gder1,gder2
       logical, optional :: err
+      real,optional,dimension(3) :: dxyz
+      real,optional,dimension(2) :: xistep,delta
 !
-      intent(in)  :: xi,grid_func
-      intent(out) :: g, gder1,gder2,err
+      intent(in)  :: xi,grid_func,dxyz,xistep,delta
+      intent(out) :: g,gder1,gder2,err
 
       if (present(err)) err=.false.
 
@@ -225,6 +302,29 @@ module Grid
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
 
+      case ('step-linear')
+       if (present(dxyz) .and. present(xistep) .and. present(delta)) then
+        g=                                                                    &
+         dxyz(1)*0.5*(xi - delta(1)*alog(cosh((xi-xistep(1))/delta(1))))  +   &
+         dxyz(2)*0.5*( delta(1)*alog(cosh((xi-xistep(1))/delta(1))) -         &
+                           delta(2)*alog(cosh((xi-xistep(2))/delta(2))) ) +   &
+         dxyz(3)*0.5*( xi + delta(2)*alog(cosh((xi-xistep(2))/delta(2))) )
+        if (present(gder1)) then
+         gder1=                                                     &
+            dxyz(1)*0.5*( 1.0 - tanh((xi-xistep(1))/delta(1)) )  +  &
+            dxyz(2)*0.5*( tanh((xi-xistep(1))/delta(1))  -          &
+                              tanh((xi-xistep(2))/delta(2) ) )   +  &
+            dxyz(3)*0.5*( 1.0 + tanh((xi-xistep(2))/delta(2)) )
+        endif 
+        if (present(gder2)) then
+         gder2=                                                               &
+          dxyz(1)*0.5* (-1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2   +   &
+          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2 -     &
+                       (-1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2)  +   &
+          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2
+        endif 
+       endif 
+
       case default
         if (present(err)) err=.true.
 
@@ -232,7 +332,8 @@ module Grid
 
     endsubroutine grid_profile_point
 !***********************************************************************
-    subroutine grid_profile_1d(xi,grid_func,g,gder1,gder2,err)
+    subroutine grid_profile_1d(xi,grid_func,g,gder1,gder2,err, &
+                               dxyz,xistep,delta)
 !
 !  Same as grid_profile_1 for 1d arrays as arguments
 !
@@ -243,8 +344,10 @@ module Grid
       real, dimension(size(xi,1))           :: g
       real, dimension(size(xi,1)), optional :: gder1,gder2
       logical, optional                     :: err
+      real, optional, dimension(3) :: dxyz
+      real, optional, dimension(2) :: xistep,delta
 !
-      intent(in)  :: xi,grid_func
+      intent(in)  :: xi,grid_func,dxyz,xistep,delta
       intent(out) :: g, gder1,gder2,err
 
       if (present(err)) err=.false.
@@ -260,6 +363,29 @@ module Grid
         g=sinh(xi)
         if (present(gder1)) gder1=cosh(xi)
         if (present(gder2)) gder2=sinh(xi)
+
+      case ('step-linear')
+       if (present(dxyz) .and. present(xistep) .and. present(delta)) then
+        g=                                                                    &
+         dxyz(1)*0.5*(xi - delta(1)*alog(cosh((xi-xistep(1))/delta(1))))  +   &
+         dxyz(2)*0.5*( delta(1)*alog(cosh((xi-xistep(1))/delta(1))) -         &
+                           delta(2)*alog(cosh((xi-xistep(2))/delta(2))) ) +   &
+         dxyz(3)*0.5*( xi + delta(2)*alog(cosh((xi-xistep(2))/delta(2))) )
+        if (present(gder1)) then
+         gder1=                                                        &
+            dxyz(1)*0.5*( 1.0 - tanh((xi-xistep(1))/delta(1)) )  +  &
+            dxyz(2)*0.5*( tanh((xi-xistep(1))/delta(1))  -          &
+                              tanh((xi-xistep(2))/delta(2) ) )   +  &
+            dxyz(3)*0.5*( 1.0 + tanh((xi-xistep(2))/delta(2)) )
+        endif 
+        if (present(gder2)) then
+         gder2=                                                               &
+          dxyz(1)*0.5* (-1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2   +   &
+          dxyz(2)*0.5*(( 1.0)/delta(1)/cosh((xi-xistep(1))/delta(1))**2 -     &
+                       (-1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2)  +   &
+          dxyz(3)*0.5* ( 1.0)/delta(2)/cosh((xi-xistep(2))/delta(2))**2
+        endif 
+       endif
 
       case default
         if (present(err)) err=.true.
