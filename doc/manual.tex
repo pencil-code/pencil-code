@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.54 2002-07-18 15:10:40 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.55 2002-07-18 15:31:01 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -182,7 +182,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.54 $ $}
+\date{\today,~ $ $Revision: 1.55 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.54 $ $}
+  \emph{\today,~ $ $Revision: 1.55 $ $}
 
 
 \end{center}
@@ -781,7 +781,7 @@ To visualize the resulting state, run
   \prompt{IDL >  } .r r
   \prompt{IDL >  } .r pvert \
 \end{alltt}
-and you should obtain somthing similar to Fig.~\ref{Fig-pvert1}, which
+and you should obtain something similar to Fig.~\ref{Fig-pvert1}, which
 corresponds to the state after 1000 time steps.
 
 % ---------------------------------------------------------------------- %
@@ -792,7 +792,7 @@ corresponds to the state after 1000 time steps.
     {pvert1}
   \caption{Like in Fig.~\ref{Fig-pvert0}, but after 1000 time steps at
     time $t=6.99$.
-    The dahsed lines represents the intitial condition.
+    The dashed lines represents the initial condition.
   }
   \label{Fig-pvert1}
 \end{figure}
@@ -804,7 +804,7 @@ Sect.~\ref{S-ref-data} in the Appendix.
 
 \paragraph{Note:}
 If you want to run the code with \name{MPI}, you will probably need to
-adapt \file{getconf.csh}, which is defines the commands and flags used to
+adapt \file{getconf.csh}, which defines the commands and flags used to
 run MPI jobs (and which is sourced by the scripts \file{start.csh} and
 \file{run.csh}).
 Try
@@ -2915,7 +2915,7 @@ horizontal sections for time $t=100$.
     {hsect2}
   \caption{Horizontal section $z=0.352$ at $t=100$.
     Left: velocity field.
-    Right: entropy (colour coded) and density (isocontours).
+    Right: entropy (color coded) and density (isocontours).
     Plots of this type can be produced by running the IDL scripts
     \file{hsections.pro})
   }
@@ -2931,7 +2931,7 @@ horizontal sections for time $t=100$.
     {vsect2}
   \caption{Vertical section $y=0.516$ at $t=100$.
     Left: velocity field.
-    Right: entropy (colour coded) and density (isocontours).
+    Right: entropy (color coded) and density (isocontours).
     Plots of this type can be produced by running the IDL scripts
     \file{vsections.pro}) or \file{vsections2.pro}).
   }
@@ -2947,7 +2947,7 @@ horizontal sections for time $t=100$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.54 2002-07-18 15:10:40 dobler Exp $ $}
+$ $Id: manual.tex,v 1.55 2002-07-18 15:31:01 dobler Exp $ $}
 
 
 \end{document}
@@ -2985,4 +2985,7 @@ $ $Id: manual.tex,v 1.54 2002-07-18 15:10:40 dobler Exp $ $}
 % LocalWords:  Habashi dro dy na mics Akademie polytropes nondimensional mvar
 % LocalWords:  Boussinesq Wc newphysics nonewphysics fmax fsum daa nx ldiagnos
 % LocalWords:  endif lreset iname nname cname cform enddo Pentium GHz Athlon GB
-% LocalWords:  SuSE SGI IRIX Tru noshear RedHat ethernet
+% LocalWords:  SuSE SGI IRIX Tru noshear RedHat ethernet ds pvert umax ssm dtc
+% LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
+% LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv
+% LocalWords:  evol hsect hsections vsect vsections vsections
