@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.15 2003-08-22 13:12:51 brandenb Exp $
+;  $Id: time_series.pro,v 1.16 2003-10-09 16:41:57 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -36,6 +36,9 @@ if defined(i_epsK) ne 0 then epsK=reform(a(i_epsK-1,*))
 if defined(i_epsM) ne 0 then epsM=reform(a(i_epsM-1,*))
 if defined(i_ugradpm) ne 0 then ugradpm=reform(a(i_ugradpm-1,*))
 if defined(i_brms) ne 0 then brms=reform(a(i_brms-1,*))
+if defined(i_bmax) ne 0 then bmax=reform(a(i_bmax-1,*))
+if defined(i_vArms) ne 0 then vArms=reform(a(i_vArms-1,*))
+if defined(i_vAmax) ne 0 then vAmax=reform(a(i_vAmax-1,*))
 if defined(i_bm2) ne 0 then bm2=reform(a(i_bm2-1,*))
 if defined(i_aybym2) ne 0 then aybym2=reform(a(i_aybym2-1,*))
 if defined(i_exaym2) ne 0 then exaym2=reform(a(i_exaym2-1,*))
@@ -52,6 +55,9 @@ if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
+if defined(i_uxbmx) ne 0 then uxbmx=reform(a(i_uxbmx-1,*))
+if defined(i_uxbmy) ne 0 then uxbmy=reform(a(i_uxbmy-1,*))
+if defined(i_uxbmz) ne 0 then uxbmz=reform(a(i_uxbmz-1,*))
 if defined(i_umx) ne 0 then umx=reform(a(i_umx-1,*))
 if defined(i_umy) ne 0 then umy=reform(a(i_umy-1,*))
 if defined(i_umz) ne 0 then umz=reform(a(i_umz-1,*))
@@ -62,6 +68,7 @@ if defined(i_uxBm) ne 0 then uxBm=reform(a(i_uxBm-1,*))
 if defined(i_oxuxBm) ne 0 then oxuxBm=reform(a(i_oxuxBm-1,*))
 if defined(i_uxDxuxbm) ne 0 then uxDxuxbm=reform(a(i_uxDxuxbm-1,*))
 if defined(i_JxBxBm) ne 0 then JxBxBm=reform(a(i_JxBxBm-1,*))
+if defined(i_gpxBm) ne 0 then gpxBm=reform(a(i_gpxBm-1,*))
 if defined(i_ucm) ne 0 then ucm=reform(a(i_ucm-1,*))
 if defined(i_uudcm) ne 0 then uudcm=reform(a(i_uudcm-1,*))
 if defined(i_rhoccm) ne 0 then rhoccm=reform(a(i_rhoccm-1,*))
