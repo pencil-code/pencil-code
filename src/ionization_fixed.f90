@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.26 2003-10-20 16:27:20 dobler Exp $
+! $Id: ionization_fixed.f90,v 1.27 2003-10-20 17:21:46 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.26 2003-10-20 16:27:20 dobler Exp $")
+          "$Id: ionization_fixed.f90,v 1.27 2003-10-20 17:21:46 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -510,16 +510,20 @@ module Ionization
 !
     endsubroutine scale_height_xy
 !***********************************************************************
-    subroutine yH_get(lnrho,Temp,yH)
+    subroutine get_soundspeed(TT,cs2)
 !
-!  Calculate ionization fraction for given temperature.
-!  To be used with the isothermal initial condition for entropy.
+!  Calculate sound speed for given temperature
 !
-      real, intent (in)    :: lnrho,Temp
-      real, intent (inout) :: yH
-      double precision :: tmp1,tmp2,varA
+!  20-Oct-03/tobi: coded
 !
-    end subroutine yH_get
+      use Mpicomm
+!
+      real, intent(in)  :: TT
+      real, intent(out) :: cs2
+!
+      call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
+!
+    end subroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !

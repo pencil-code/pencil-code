@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.214 2003-10-20 16:27:20 dobler Exp $
+! $Id: entropy.f90,v 1.215 2003-10-20 17:21:46 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -102,7 +102,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.214 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: entropy.f90,v 1.215 2003-10-20 17:21:46 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -547,7 +547,7 @@ module Entropy
 !
       use Density, only: gamma1,mpoly
       use Gravity, only: g0
-      use Ionization, only: ionput,cp
+      use Ionization, only: ionput,get_soundspeed
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: Temp
@@ -563,8 +563,10 @@ module Entropy
         T_int = 1+beta1*(1/r_int-1)
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
-        cs2_ext = T_ext*cp*gamma1
-        cs2_int = T_int*cp*gamma1
+        !cs2_ext = T_ext*cp*gamma1
+        call get_soundspeed(T_ext,cs2_ext)
+        !cs2_int = T_int*cp*gamma1
+        call get_soundspeed(T_int,cs2_int)
 !       corresponding values for entropy 
         do imn=1,ny*nz
           n=nn(imn)

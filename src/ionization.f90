@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.120 2003-10-20 16:27:20 dobler Exp $
+! $Id: ionization.f90,v 1.121 2003-10-20 17:21:46 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -97,7 +97,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.120 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: ionization.f90,v 1.121 2003-10-20 17:21:46 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -723,30 +723,20 @@ module Ionization
 !
     endsubroutine scale_height_xy
 !***********************************************************************
-    subroutine yH_get(lnrho,Temp,yH)
+    subroutine get_soundspeed(TT,cs2)
 !
-!  Calculate ionization fraction for given temperature.
-!  To be used with the isothermal initial condition for entropy.
+!  Calculate sound speed for given temperature
 !
-      real, intent (in)    :: lnrho,Temp
-      real, intent (inout) :: yH
-      double precision :: tmp1,tmp2,varA
+!  20-Oct-03/tobi: coded
 !
-      tmp1=exp(lnrho_e)/exp(lnrho)*(Temp/TT_ion)**(1.5)
-      tmp2=exp(-chiH/(k_B*Temp))
-      varA=1./(tmp1*tmp2)
+      use Mpicomm
 !
-      if ((tmp1 .eq. 0) .or. (tmp2 .eq. 0)) then
-        yH=0
-      else
-        if (varA .lt. 1e-7) then
-          yH=1-2*varA
-        else
-          yH=(-1.+dsqrt(1+4*varA))/(2*varA)
-        endif
-      endif
+      real, intent(in)  :: TT
+      real, intent(out) :: cs2
 !
-    end subroutine yH_get
+      call stop_it("get_soundspeed: with ionization, lnrho needs to be known here")
+!
+    end subroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.77 2003-10-20 16:27:21 dobler Exp $
+! $Id: noionization.f90,v 1.78 2003-10-20 17:21:46 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.77 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: noionization.f90,v 1.78 2003-10-20 17:21:46 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -355,16 +355,18 @@ module Ionization
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
 !***********************************************************************
-    subroutine yH_get(lnrho,Temp,yH)
+    subroutine get_soundspeed(TT,cs2)
 !
-!  Calculate ionization fraction for given temperature.
-!  To be used with the isothermal initial condition for entropy.
+!  Calculate sound speed for given temperature
 !
-      real, intent (in)    :: lnrho,Temp
-      real, intent (inout) :: yH
-      double precision :: tmp1,tmp2,varA
+!  20-Oct-03/tobi: Coded
 !
-    end subroutine yH_get
+      real, intent(in)  :: TT
+      real, intent(out) :: cs2
+!
+      cs2=gamma1*cp*TT
+!
+    end subroutine get_soundspeed
 !***********************************************************************
     subroutine isothermal_entropy(f,T0)
 !
