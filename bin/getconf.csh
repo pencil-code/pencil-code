@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.68 2003-08-29 13:28:35 brandenb Exp $
+# $Id: getconf.csh,v 1.69 2003-08-29 17:28:21 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -187,7 +187,7 @@ else if ($hn == hwwsr8k) then
     setenv SCRATCH_DIR "$SCRDIR"
   else
     echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
-    exit 0
+    kill $$			# full-featured suicide
   endif
   setenv SSH rsh 
   setenv SCP rcp
@@ -195,6 +195,18 @@ else if ($hn == hwwsr8k) then
 else if ($hn == hwwsx5) then
   echo "NEC-SX5 in Stuttgart"
   set mpirun = mpiexec
+  set mpirunops = "-p multi -N $nnodes"
+  set local_disc = 1
+  set one_local_disc = 1        # (the default anyway)
+  set local_binary = 0 
+  if (($?SCRDIR) && (-d $SCRDIR)) then
+    setenv SCRATCH_DIR "$SCRDIR"
+  else
+    echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
+    kill $$                     # full-featured suicide
+  endif
+  setenv SSH rsh
+  setenv SCP rcp
 
 else
   echo "Generic setup; hostname is <$hn>"
