@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.56 2004-04-07 13:08:20 ajohan Exp $
+! $Id: dustdensity.f90,v 1.57 2004-04-07 13:24:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.56 2004-04-07 13:08:20 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.57 2004-04-07 13:24:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -480,8 +480,6 @@ module Dustdensity
 !  Dust coagulation
 !
       if (ldustcoagulation) then
-        if (lrhoice) call stop_it('dnd_dt: Dust coagulation and ice density'// &
-            ' at the same time is not implemented (yet)')
         do i=1,ndustspec
           do j=i,ndustspec
             dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
@@ -499,6 +497,14 @@ module Dustdensity
                         df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
                     df(l1:l2,m,n,irhod(k)) = &
                         df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
+                    if (lrhoice) then
+                      df(l1:l2,m,n,irhoi(i)) = &
+                          df(l1:l2,m,n,irhoi(i)) + mice(i)*dndfac
+                      df(l1:l2,m,n,irhoi(j)) = &
+                          df(l1:l2,m,n,irhoi(j)) + mice(j)*dndfac
+                      df(l1:l2,m,n,irhoi(k)) = &
+                          df(l1:l2,m,n,irhoi(k)) - (mice(i)+mice(j))*dndfac
+                    endif
                     exit
                   else
                     df(l1:l2,m,n,ind(k)) = &
