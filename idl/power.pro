@@ -2,7 +2,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,compensate=compensate
 ;
-;  $Id: power.pro,v 1.24 2004-07-22 12:00:04 nilshau Exp $
+;  $Id: power.pro,v 1.25 2004-07-23 10:30:20 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -233,11 +233,11 @@ openr,1, datatopdir+'/'+file1
     if (last eq 1 and iplot eq 1) then begin
 	!p.title='t=' + string(time)
 	!y.range=[miny,maxy]
-	plot_oo,k,spectrum1,back=255,col=0,yr=yrange
+	plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
       	if (file2 ne '') then begin
-		oplot,k,spectrum2,col=122
+		oplot,k,spectrum2*k^compensate,col=122
 		if (tot eq 1) then begin
-			oplot,k,spectrum1+spectrum2,col=47
+			oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
 		endif
 	endif
 	if (lin ne 0) then begin
