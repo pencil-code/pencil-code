@@ -1,4 +1,4 @@
-! $Id: chiral.f90,v 1.3 2004-05-31 15:43:02 brandenb Exp $
+! $Id: chiral.f90,v 1.4 2004-06-24 14:40:27 brandenb Exp $
 
 !  This modules solves two reactive scalar advection equations
 !  This is used for modeling the spatial evolution of left and
@@ -86,7 +86,7 @@ module Chiral
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: chiral.f90,v 1.3 2004-05-31 15:43:02 brandenb Exp $")
+           "$Id: chiral.f90,v 1.4 2004-06-24 14:40:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -186,7 +186,7 @@ module Chiral
       real, dimension (nx) :: RRYY_chiral,YY2_chiral
       real, dimension (nx) :: RR21_chiral
       real, dimension (nx) :: QQ_chiral,QQ21_chiral,QQ21QQ_chiral
-      real :: pp,qq
+      real :: pp,qq,lamchiral
       integer :: j
 !
       intent(in)  :: f,uu
@@ -267,9 +267,10 @@ module Chiral
 !
 !  extra diagnostics
 !
+        lamchiral=2.*chiral_fidelity-1.
         QQ_chiral=XX_chiral-YY_chiral
         QQ21_chiral=1.-QQ_chiral**2
-        QQ21QQ_chiral=(1.-QQ_chiral**2)/(1.+QQ_chiral**2)*QQ_chiral
+        QQ21QQ_chiral=(lamchiral-QQ_chiral**2)/(1.+QQ_chiral**2)*QQ_chiral
         if (i_QQm_chiral/=0) call sum_mn_name(QQ_chiral,i_QQm_chiral)
         if (i_QQ21m_chiral/=0) call sum_mn_name(QQ21_chiral,i_QQ21m_chiral)
         if (i_QQ21QQm_chiral/=0) call sum_mn_name(QQ21QQ_chiral,i_QQ21QQm_chiral)
