@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.83 2004-03-17 11:44:38 mee Exp $
+! $Id: interstellar.f90,v 1.84 2004-03-17 19:07:54 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.83 2004-03-17 11:44:38 mee Exp $")
+           "$Id: interstellar.f90,v 1.84 2004-03-17 19:07:54 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -474,7 +474,8 @@ module Interstellar
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
         if (lroot .and. ip < 16) &
-             print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
+             print*,'check_SNII: rate,prob,rnd:',freq_SNII,rate_SNII,prob_SNII,franSN(1)
+             print*,'check_SNII: frac_heavy,frac_converted,mass_SN,tau_cloud',frac_heavy,frac_converted,mass_cloud_dim,mass_SN,tau_cloud
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
           !   communicate and store them here, to avoid recalculation.

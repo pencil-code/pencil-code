@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.104 2004-03-17 18:28:09 dobler Exp $
+! $Id: noionization.f90,v 1.105 2004-03-17 19:07:54 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -89,7 +89,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.104 2004-03-17 18:28:09 dobler Exp $')
+           '$Id: noionization.f90,v 1.105 2004-03-17 19:07:54 mee Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -141,6 +141,8 @@ module Ionization
         write (1,*) 'lnrho_e_=',lnrho_e_
         write (1,*) 'ss_ion=',ss_ion    
         write (1,*) 'kappa0=',kappa0
+        write (1,*) 'k_B=',k_B
+        write (1,*) 'm_H=',m_H
         close (1)
       endif
 !
