@@ -11,7 +11,7 @@
 subroutine output_penciled_vect_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
-  use Cdata, only: mx,headt
+  use Cdata, only: ip,mx,headt
   use Mpicomm, only: imn
 
   real,dimension(mx,*) :: pencil
@@ -23,6 +23,8 @@ subroutine output_penciled_vect_c(filename,pencil,&
        'OUTPUT_PENCIL: Not writing to ', trim(filename), &
        ' since DEBUG=nodebug'
 
+  ! to keep compiler quiet...
+  if(ip==0) print*,pencil(1,1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
 endsubroutine output_penciled_vect_c
 
 !***********************************************************************
@@ -30,7 +32,7 @@ endsubroutine output_penciled_vect_c
 subroutine output_penciled_scal_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
-  use Cdata, only: mx,headt
+  use Cdata, only: ip,mx,headt
   use Mpicomm, only: imn
 
   real,dimension(mx) :: pencil
@@ -42,8 +44,9 @@ subroutine output_penciled_scal_c(filename,pencil,&
        'OUTPUT_PENCIL: Not writing to ', trim(filename), &
        ' since DEBUG=nodebug'
 
+  ! to keep compiler quiet...
+  if(ip==0) print*,pencil(1),ndim,i,iy,iz,t,nx,ny,nz,nghost,fnlen
 endsubroutine output_penciled_scal_c
-
 
 
 !!! End of file nodebug.f90
