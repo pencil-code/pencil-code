@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.12 2002-06-04 08:19:54 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.13 2002-06-06 12:55:11 brandenb Exp $
 
 module Magnetic
 
@@ -15,6 +15,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+  integer :: i_bxmz=0,i_bymz=0,i_bmz=0
 
   contains
 
@@ -40,8 +41,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2002-06-04 08:19:54 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2002-06-06 12:55:11 $")
 !
     endsubroutine register_aa
 !***********************************************************************
