@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.19 2003-10-09 16:39:57 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.20 2003-10-09 16:53:36 ngrs Exp $
 
 !  Dummy routine for noionization
 
@@ -19,6 +19,12 @@ module Ionization
     module procedure ionget_pencil
     module procedure ionget_point
     module procedure ionget_xy
+  end interface
+
+  interface ionput                      ! Overload subroutine ionput
+    module procedure ionput_pencil      ! (dummy routines here --
+    module procedure ionput_point       !  used in noionization.)
+    module procedure ionput_xy
   end interface
 
   interface perturb_energy              ! Overload subroutine perturb_energy
@@ -82,7 +88,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.19 2003-10-09 16:39:57 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.20 2003-10-09 16:53:36 ngrs Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -381,6 +387,46 @@ module Ionization
       TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_xy
+!***********************************************************************
+    subroutine ionput_pencil(f,yH,TT)
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(:), intent(out) :: yH,TT
+      real, dimension(size(yH)) :: lnrho,ss
+!
+      call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION_FIXED")
+!
+    endsubroutine ionput_pencil
+!***********************************************************************
+    subroutine ionput_point(lnrho,ss,yH,TT)
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, intent(in) :: lnrho,ss
+      real, intent(out) :: yH,TT
+!
+      call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION_FIXED")
+!
+    endsubroutine ionput_point
+!***********************************************************************
+    subroutine ionput_xy(f,yH,TT,boundary,radz0)
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      character(len=5), intent(in) :: boundary
+      integer, intent(in) :: radz0
+      real, dimension(mx,my,radz0) :: lnrho,ss
+      real, dimension(mx,my,radz0), intent(out) :: yH,TT
+!
+      call stop_it("ionput_xy: NOT IMPLEMENTED IN IONIZATION_FIXED")
+!
+    endsubroutine ionput_xy
 !***********************************************************************
     subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
