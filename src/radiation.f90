@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.6 2002-08-02 23:41:47 nilshau Exp $
+! $Id: radiation.f90,v 1.7 2002-08-05 14:12:01 nilshau Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -20,8 +20,7 @@ module Radiation
   real :: a_SB=1.
   real :: kappa_es=0
   real :: amplee=0
-  real :: diffe=0
-  real :: left=2
+  real :: left=0
 
   ! init parameteres
   character (len=labellen) :: initrad='equil',pertee='none'
@@ -31,7 +30,7 @@ module Radiation
 
   ! input parameters
   namelist /radiation_init_pars/ &
-       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB,amplee,diffe,left,pertee
+       initrad,c_gam,opas,kappa_es,mbar,k_B,a_SB,amplee,pertee,left
   ! run parameters
   namelist /radiation_run_pars/ &
        c_gam,opas,kappa_es,mbar,k_B,a_SB,flim
@@ -75,7 +74,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.6 2002-08-02 23:41:47 nilshau Exp $")
+           "$Id: radiation.f90,v 1.7 2002-08-05 14:12:01 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -98,9 +97,8 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
+      real :: taux
       integer :: l12
-!
-!  Initial conditions
 !
       select case(initrad)
 
@@ -110,34 +108,35 @@ module Radiation
       case('gaussian-noise','1'); call gaunoise(amplee,f,iE)
       case('equil','2'); call init_equil(f)
       case ('cos', '3')
-         f(:,:,:,ie) = amplee*cos(sqrt(3.)*0.5*xx) 
+         f(:,:,:,ie) = -amplee*cos(sqrt(3.)*0.5*xx)*(xx-Lx/2)*(xx+Lx/2)
+      case ('step', '4')
+         l12=(l1+l2)/2
+         f(1    :l12,:,:,ie) = 1.
+         f(l12+1: mx,:,:,ie) = 2.
       case default
         !
         !  Catch unknown values
         !
         if (lroot) print*, 'No such such value for initrad: ', trim(initrad)
         call stop_it("")
-
       endselect
 !
 !  Pertubations
 !
       select case(pertee)
-
+         
       case('none', '0') 
       case('left','1')
          l12=(l1+l2)/2
          f(l1:l12,m1:m2,n1:n2,ie) = left*f(l1:l12,m1:m2,n1:n2,ie)
       case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*, 'No such such value for pertee: ', trim(pertee)
-        call stop_it("")
-
+         !
+         !  Catch unknown values
+         !
+         if (lroot) print*, 'No such such value for pertee: ', trim(pertee)
+         call stop_it("")
+         
       endselect
-
-
 !
     endsubroutine init_rad
 !********************************************************************
@@ -183,22 +182,14 @@ module Radiation
          kappa=kappa_abs+kappa_es
          cooling=(source-E_rad)*c_gam*kappa_abs/rho1
       else
-         cooling=0
          kappa=kappa_es
-      end if
-!!$!
-!!$!  optical depth in x-dir.
-!!$!
-!!$      taux=0
-!!$      do i=1,nx
-!!$         taux=taux+dx*kappa(i)/rho1(i)
-!!$      end do
-!!$      print*,taux
+         cooling=0
+      endif
 !
 !  calculating some values needed for momentum equation
 !
       Edivu=E_rad*divu
-      call grad(f,ie,gradE)
+      call grad(f,iE,gradE)
       call dot_mn(uu,gradE,ugradE)
 !
 !  Flux-limited diffusion app.
@@ -220,12 +211,22 @@ module Radiation
          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+kappa*f(l1:l2,m,n,iFx)/c_gam
          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)+kappa*f(l1:l2,m,n,iFy)/c_gam
          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+kappa*f(l1:l2,m,n,iFz)/c_gam
-      end if
+      endif
 !
 !  add cooling to entropy equation
 !
       if (lentropy) then
       df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)-(source-E_rad)*kappa_abs*c_gam*TT1
+      endif
+!
+!  optical depth in x-dir.
+!
+      if ((headtt.or.ldebug) .and. (m==4 .and. n==4)) then
+         taux=0
+         do i=1,nx
+            taux=taux+dx*kappa(i)/rho1(i)
+         end do
+         print*,'Optical depth in x direction is:',taux
       end if
 !
 !  Calculate diagnostic values
@@ -241,7 +242,7 @@ module Radiation
         if (i_egas_max/=0) call max_mn_name(E_gas,i_egas_max)   
       endif
 !
-!  Calculate UUmax for use in determination of time step length
+!  Calculate UUmax for use in determinationof time step length
 !
       if (UUmax>c_gam) call stop_it('Speed of light too small')
       UUmax=max(UUmax,c_gam)
@@ -309,18 +310,18 @@ module Radiation
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: gradE,n_vec,tmp
       real, dimension (nx,3,3) :: P_tens,f_mat,n_mat
-      real, dimension (nx) :: E_rad,rho1,exp2
+      real, dimension (nx) :: E_rad,rho1
       real, dimension (nx) :: lgamma,RF,DFF,absgradE
-      real, dimension (nx) :: f_sc,kappa,E_gas,var1
-      integer :: i,j
+      real, dimension (nx) :: f_sc,kappa,E_gas
+      integer :: i,j,teller
 !
+
       call dot2_mn(gradE,absgradE)
-      absgradE=sqrt(absgradE)
       lgamma=rho1/kappa
+      absgradE=sqrt(absgradE)
       if (flim=='tanhr') then
-         var1=kappa*E_rad/(rho1*absgradE)
-         exp2=exp(-2/var1)
-         DFF=var1*((1+exp2)/(1-exp2)-var1)
+         RF=lgamma*absgradE/E_rad
+         DFF=(1./tanh(RF)-1./RF)/RF
       elseif (flim=='simple') then
          RF=lgamma*absgradE/E_rad
          DFF=(9+RF**2)**(-0.5)
@@ -342,13 +343,7 @@ module Radiation
          print*,'There are no such flux-limiter:', flim
       end if
       f_sc=DFF+DFF**2*RF**2
-      do i=1,nx
-         if (absgradE(i)==0) then
-            n_vec(i,:)=0
-         else 
-            call multvs_mn(gradE,1./absgradE,n_vec)
-         end if
-      end do
+      call multvs_mn(gradE,1./absgradE,n_vec)
       call multvv_mat_mn(n_vec,n_vec,n_mat)
 !
 !  calculate P_tens
@@ -366,6 +361,16 @@ module Radiation
          do j=1,3
             P_tens(:,i,j)=E_rad*f_mat(:,i,j)
          enddo
+      enddo
+      do teller=1,nx
+         if (absgradE(teller)==0) then !Uniform rad. density
+            do i=1,3
+               do j=1,3
+                  P_tens(teller,i,j)=0
+                  if (j==i) P_tens(teller,i,i)=E_rad(teller)/3.
+               enddo
+            enddo
+         endif
       enddo
 !
 !  calculate the flux
@@ -392,11 +397,11 @@ module Radiation
       gamma1=gamma-1
       do i=1,my
          do j=1,mz
-            lnrho=f(:,m,n,ilnrho)
-            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(:,m,n,ient))
+            lnrho=f(:,i,j,ilnrho)
+            cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*f(:,i,j,ient))
             TT1=gamma1/cs2
             source=a_SB*TT1**(-4)
-            f(:,i,j,ie) = source*(1+diffe)
+            f(:,i,j,ie) = source
          enddo
       enddo
 !
