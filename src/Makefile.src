@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.99 2004-12-22 01:53:10 dobler Exp $
+### $Id: Makefile.src,v 1.100 2005-01-12 15:06:07 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -210,6 +210,12 @@ FCCLEANER=
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #FFLAGS=-O2 -ipo -xW -tpp7 #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
+#FC=ifort #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#F77=$(FC) #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#FFLAGS=-O3 -ipo #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#LDMPI=-lmpi #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#CC=icc #(lws.Stanford.EDU|lws2.Stanford.EDU)
+#CFLAGS=-O3 -ipo -DFUNDERSC=1 #(lws.Stanford.EDU|lws2.Stanford.EDU)
 
 ## Darwin:
 ## Power Macintosh
