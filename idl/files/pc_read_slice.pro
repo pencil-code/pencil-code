@@ -1,10 +1,10 @@
-; $Id: pc_read_slice.pro,v 1.1 2003-08-02 15:38:25 mee Exp $
+; $Id: pc_read_slice.pro,v 1.2 2003-08-02 20:05:32 brandenb Exp $
 ;
 ;   Read slice files
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2003-08-02 15:38:25 $
-;  $Revision: 1.1 $
+;  $Date: 2003-08-02 20:05:32 $
+;  $Revision: 1.2 $
 ;
 ;  28-nov-02/tony: coded 
 ;
@@ -21,7 +21,7 @@ pro pc_read_slice,field=field,plane=plane,slice=slice,t=t,x=x,y=y,z=z,dx=dx,dy=d
     print, "              /PRINT, /QUIET, /HELP                                                         "
     print, "                                                                                            "
     print, "Returns slice data with the grid position arrays and grid deltas of a Pencil-Code run. By   "
-    print, "default the first slice is loaded.  If an already open file is provided the NEXT slice is
+    print, "default the first slice is loaded.  If an already open file is provided the NEXT slice is   "
     print, "read."
     print, "Returns zeros and empty in all variables on failure.                             "
     print, "                                                                                            "
