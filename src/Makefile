@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.67 2002-07-02 00:50:44 brandenb Exp $
+### $Id: Makefile,v 1.68 2002-07-02 12:54:14 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -147,7 +147,8 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o $(IO).o
 param_io.o:  param_io.f90 timestep.o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
 prints.o:    prints.f90 cdata.o sub.o $(physics)
-equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
+equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
+             $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
