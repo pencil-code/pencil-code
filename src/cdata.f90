@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.187 2003-11-25 15:29:28 brandenb Exp $
+! $Id: cdata.f90,v 1.188 2003-11-27 15:25:04 mcmillan Exp $
 
 module Cdata
 
@@ -59,7 +59,7 @@ module Cdata
   integer :: ilncc=0
   integer :: iproc,ipx,ipy,ipz,root=0
   integer :: mvar_io=0,dimensionality
-  logical, dimension(3) :: lperi
+  logical, dimension(3) :: lperi,lshift_origin
   character (len=labellen) ::fft_switch='fftpack'
 !
 !  coordinates of the point where some quantities can be printed

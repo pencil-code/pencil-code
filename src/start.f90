@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.124 2003-11-15 19:09:02 brandenb Exp $
+! $Id: start.f90,v 1.125 2003-11-27 15:25:04 mcmillan Exp $
 !
 !***********************************************************************
       program start
@@ -46,13 +46,15 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.124 2003-11-15 19:09:02 brandenb Exp $")
+             "$Id: start.f90,v 1.125 2003-11-27 15:25:04 mcmillan Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
         xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
         Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
+! dgm
+        lshift_origin=(/.false.,.false.,.false./) ! don't shift origin
 !
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, iss, and iaa to disk.
@@ -99,7 +101,10 @@
         if (.not.lperi(1).and.nxgrid<2) stop 'for nonperiodic: must have nxgrid>1'
         if (.not.lperi(2).and.nygrid<2) stop 'for nonperiodic: must have nygrid>1'
         if (.not.lperi(3).and.nzgrid<2) stop 'for nonperiodic: must have nzgrid>1'
-!'
+        if (lperi(1).and.lshift_origin(1)) stop 'for periodic: must have lshift_origin=F'
+        if (lperi(2).and.lshift_origin(2)) stop 'for periodic: must have lshift_origin=F'
+        if (lperi(3).and.lshift_origin(3)) stop 'for periodic: must have lshift_origin=F'
+!
 !  Initialise random number generator in processor-dependent fashion for
 !  random initial data.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -113,10 +118,32 @@
 !
 !  generate mesh, |x| < Lx, and similar for y and z.
 !  lperi indicate periodicity of given direction
+!  dgm: allow for shifted origin when non-periodic
 !
-        if (lperi(1)) then; dx=Lx/nxgrid; x00=x0+.5*dx; else; dx=Lx/(nxgrid-1); x00=x0; endif
-        if (lperi(2)) then; dy=Ly/nygrid; y00=y0+.5*dy; else; dy=Ly/(nygrid-1); y00=y0; endif
-        if (lperi(3)) then; dz=Lz/nzgrid; z00=z0+.5*dz; else; dz=Lz/(nzgrid-1); z00=z0; endif
+        if (lperi(1)) then 
+          dx=Lx/nxgrid
+          x00=x0+.5*dx
+        else; 
+          dx=Lx/(nxgrid-1)
+          x00=x0
+          if (lshift_origin(1)) x00=x0+.5*dx
+        endif
+        if (lperi(2)) then
+          dy=Ly/nygrid
+          y00=y0+.5*dy
+        else
+          dy=Ly/(nygrid-1)
+          y00=y0
+          if (lshift_origin(2)) y00=y0+.5*dy
+        endif
+        if (lperi(3)) then
+          dz=Lz/nzgrid
+          z00=z0+.5*dz
+        else
+          dz=Lz/(nzgrid-1)
+          z00=z0
+          if (lshift_origin(3)) z00=z0+.5*dz
+        endif
 !
 !  set x,y,z arrays
 !
