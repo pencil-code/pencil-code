@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.231 2003-10-30 14:21:59 ajohan Exp $
+! $Id: entropy.f90,v 1.232 2003-10-30 14:46:34 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.231 2003-10-30 14:21:59 ajohan Exp $")
+           "$Id: entropy.f90,v 1.232 2003-10-30 14:46:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1252,9 +1252,11 @@ endif
 !  in the x direction.
 !      
       if(lsinus_heat) then 
-        heat = heat + TT/rho1*( &
+        heat = heat + TT/rho1*( &         ! Heating
             chi*gamma*kx_ss**2*ampl_ss*sin(kx_ss*x(l1:l2) + pi) - &
             chi*gamma**2*kx_ss**2*ampl_ss**2*cos(kx_ss*x(l1:l2) + pi)**2)
+        heat = heat + TT/rho1*( &         ! Advection term
+            -f(l1:l2,m,n,iux)*kx_ss*ampl_ss*cos(kx_ss*x(l1:l2) + pi) )
       endif
 !
 !  add to entropy equation
