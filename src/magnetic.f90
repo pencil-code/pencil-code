@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.203 2004-06-30 11:12:21 ajohan Exp $
+! $Id: magnetic.f90,v 1.204 2004-06-30 12:08:41 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.203 2004-06-30 11:12:21 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.204 2004-06-30 12:08:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1336,7 +1336,7 @@ module Magnetic
       real :: ampl,kz,O,fac
       integer :: iuu,iaa
 !
-!  ux and Ay
+!  ux, uy, Ax and Ay
 !
       print*,'alfvenz_rot: Alfven wave with rotation; O,kz=',O,kz
       fac=-O+sqrt(O**2+kz**2)
@@ -1371,7 +1371,7 @@ module Magnetic
       complex :: fac
       integer :: iuu,iaa
 !
-!  ux and Ay
+!  ux, uy, Ax and Ay
 !
       print*,'alfvenz_rot_shear: '// &
           'Alfven wave with rotation and shear; O,kz=',O,kz
