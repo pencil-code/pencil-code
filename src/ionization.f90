@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.17 2003-03-28 20:48:06 brandenb Exp $
+! $Id: ionization.f90,v 1.18 2003-03-28 22:15:32 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.17 2003-03-28 20:48:06 brandenb Exp $")
+           "$Id: ionization.f90,v 1.18 2003-03-28 22:15:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -93,7 +93,7 @@ module Ionization
     endsubroutine initialize_ionization
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -107,9 +107,12 @@ module Ionization
       use General
       use Sub
 !
+      real, dimension (nx),optional :: Temperature
       real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: dlnPdlnrho,dlnPdss,yH,TT,rho,ee,lnTT
       real :: ss0=-5.5542
+!
+      intent(out) :: Temperature
 !
 !  calculate cs2, 1/T, and cp1tilde
 !
@@ -144,6 +147,7 @@ module Ionization
           call sum_mn_name(rho*ee,i_eth)
         endif
       endif
+      if(present(Temperature)) Temperature=TT
 !
     endsubroutine thermodynamics
 !***********************************************************************
