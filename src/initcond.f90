@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.54 2003-06-20 20:31:49 ajohan Exp $ 
+! $Id: initcond.f90,v 1.55 2003-06-24 10:17:52 ajohan Exp $ 
 
 module Initcond 
  
@@ -648,6 +648,7 @@ module Initcond
       print*,'planet: gamma,zinfty2=',gamma,zinfty2
 
       ztop=z(n2)
+      if(lroot) print*,'planet: ztop=', ztop
 !
 !  Cylinder vortex 3-D solution (b_ell along x, a_ell along y)
 !
@@ -672,8 +673,13 @@ module Initcond
           do j=1,my
             do k=1,mz
               if(r_ell(i,j,k) .gt. 1) then
-                hh(i,j,k) = &
-                    -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
+                if(lentropy) then
+                  hh(i,j,k)=hh0
+                  f(i,j,k,ient)=(1./hh0)*0.5*Omega**2*zz(i,j,k)**2
+                else
+                  hh(i,j,k) = &
+                      -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
+                endif
               endif
             enddo
           enddo
@@ -690,10 +696,6 @@ module Initcond
 !
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
-!
-!  Calculate entropy
-!
-      if (lentropy) f(l1:l2,m1:m2,n1:n2,ient)=0.
 !
 !  calculate density, depending on what gamma is
 !
