@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.43 2003-10-12 22:13:17 mee Exp $
+! $Id: grav_z.f90,v 1.44 2003-10-16 17:13:00 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -91,7 +91,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.43 2003-10-12 22:13:17 mee Exp $")
+           "$Id: grav_z.f90,v 1.44 2003-10-16 17:13:00 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -196,7 +196,7 @@ module Gravity
         if(lroot) print*,'duu_dt_grav: no gravity profile given'
       endif
 !
-      if(ip==0) print*,f(1,1,1,1),uu,rho1 !(keep compiler quiet)
+      if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)

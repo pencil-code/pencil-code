@@ -1,6 +1,6 @@
-! $Id: cosmicray.f90,v 1.7 2003-10-12 22:13:17 mee Exp $
+! $Id: cosmicray.f90,v 1.8 2003-10-16 17:13:00 brandenb Exp $
 
-!  This modules solves the cosmic ray energy density advection difussion equation
+!  This modules solves the cosmic ray energy density advection diffusion equation
 !  it follows the description of Hanasz & Lesch (2002,2003) as used in their
 !  ZEUS 3D implementation
 !
@@ -63,7 +63,7 @@ module CosmicRay
 !
       lcosmicray = .true.
       iecr = nvar+1            ! index to access icr
-      nvar = nvar+1             ! added 1 variable
+      nvar = nvar+1            ! added 1 variable
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_cosmicray: nvar = ', nvar
@@ -73,7 +73,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.7 2003-10-12 22:13:17 mee Exp $")
+           "$Id: cosmicray.f90,v 1.8 2003-10-16 17:13:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.119 2003-10-16 12:50:25 mee Exp $
+! $Id: hydro.f90,v 1.120 2003-10-16 17:13:00 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -98,7 +98,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.119 2003-10-16 12:50:25 mee Exp $")
+           "$Id: hydro.f90,v 1.120 2003-10-16 17:13:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -363,7 +363,7 @@ module Hydro
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock
       real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
       real :: c2,s2
-      integer :: i,j,lpoint,mpoint,npoint
+      integer :: i,j
 !
       intent(in) :: f,rho1
       intent(out) :: df,uu,glnrho,divu,u2,shock,gshock
@@ -508,15 +508,11 @@ module Hydro
         endif
         !
         !  kinetic field components at one point (=pt)
-        !  for now we take the middle of the root processor
         !
-        lpoint=(l1+l2)/2
-        mpoint=(m1+m2)/2
-        npoint=(n1+n2)/2
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (i_uxpt/=0) call save_name(uu(lpoint,1),i_uxpt)
-          if (i_uypt/=0) call save_name(uu(lpoint,2),i_uypt)
-          if (i_uzpt/=0) call save_name(uu(lpoint,3),i_uzpt)
+          if (i_uxpt/=0) call save_name(uu(lpoint-nghost,1),i_uxpt)
+          if (i_uypt/=0) call save_name(uu(lpoint-nghost,2),i_uypt)
+          if (i_uzpt/=0) call save_name(uu(lpoint-nghost,3),i_uzpt)
         endif
 !
 !  mean heating term

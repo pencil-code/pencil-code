@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.107 2003-10-08 11:02:15 theine Exp $
+! $Id: mpicomm.f90,v 1.108 2003-10-16 17:13:00 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -271,9 +271,10 @@ module Mpicomm
       endif
 !
 !  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
 !
-      if (ip<7.and.ipy==0.and.ipz==3) &
-        print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
+!     if (ip<7.and.ipy==0.and.ipz==3) &
+!       print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
@@ -361,10 +362,11 @@ module Mpicomm
       endif
 !
 !  communication sample
+!  (commented out, because compiler does like this for 0-D runs)
 !
-      if (ip<7.and.ipy==3.and.ipz==0) &
-        print*,'finalise_isendrcv_bdry: MPICOMM recv ul: ', &
-                        iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
+!     if (ip<7.and.ipy==3.and.ipz==0) &
+!       print*,'finalise_isendrcv_bdry: MPICOMM recv ul: ', &
+!                       iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time

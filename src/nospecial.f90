@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $
+! $Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $
 
 !  This module provide a way for users to specify custom (i.e. not in the standard Pencil Code)
 !  physics, diagnostics etc. 
@@ -108,11 +108,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $")
+           "$Id: nospecial.f90,v 1.3 2003-10-16 17:13:00 brandenb Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -283,9 +283,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f(1,1,1,1),df(1,1,1,1),uu(1),glnrho(1),divu(1), &
-                      lnrho(1)
-                  
+      if (ip==0) print*,f,df,uu,glnrho,divu,lnrho
+
     endsubroutine special_calc_density
 !***********************************************************************
     subroutine special_calc_hydro(f,df,uu,glnrho,divu,rho1,u2,uij)
@@ -316,9 +315,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f(1,1,1,1),df(1,1,1,1),uu(1),glnrho(1),divu(1), &
-                      rho1(1), u2(1), uij(1)
-                  
+      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,u2,uij
+
     endsubroutine special_calc_hydro
 !***********************************************************************
     subroutine special_calc_magnetic(f,df,uu,rho1,TT1,uij)
@@ -349,9 +347,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f(1,1,1,1),df(1,1,1,1),uu(1), &
-                      TT1(1), uij(1)
-                  
+      if (ip==0) print*,f,df,uu,TT1,uij
+
     endsubroutine special_calc_magnetic
 !!***********************************************************************
     subroutine special_calc_entropy(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
@@ -380,9 +377,8 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f(1,1,1,1),df(1,1,1,1),uu(1),glnrho(1),divu(1), &
-                      rho1(1), lnrho(1), cs2(1), TT1(1)
-                  
+      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
+
     endsubroutine special_calc_entropy
 !***********************************************************************
 !***********************************************************************

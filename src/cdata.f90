@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.170 2003-10-12 05:45:16 brandenb Exp $
+! $Id: cdata.f90,v 1.171 2003-10-16 17:13:00 brandenb Exp $
 
 module Cdata
 
@@ -60,14 +60,17 @@ module Cdata
   integer :: mvar_io=0
   logical, dimension(3) :: lperi
   character (len=labellen) ::fft_switch='fftpack'
-
+!
+!  coordinates of the point where some quantities can be printed
+!  for now, these points only apply to the root processor.
+!
+  integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2
 !
 !  pencil-related stuff
 !
   integer :: imn,m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
-
 !
 !  in this section are all the things related to printing
 !

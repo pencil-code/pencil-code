@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.18 2003-10-12 22:13:17 mee Exp $
+! $Id: noradiation.f90,v 1.19 2003-10-16 17:13:00 brandenb Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.18 2003-10-12 22:13:17 mee Exp $")
+           "$Id: noradiation.f90,v 1.19 2003-10-16 17:13:00 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -167,7 +167,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
 !
     end subroutine bc_ee_inflow_x
 !***********************************************************************
@@ -180,7 +180,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==1) print*,topbot,f  !(to keep compiler quiet)
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************

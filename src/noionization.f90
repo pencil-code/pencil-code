@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.72 2003-10-16 15:04:26 mee Exp $
+! $Id: noionization.f90,v 1.73 2003-10-16 17:13:00 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -93,7 +93,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.72 2003-10-16 15:04:26 mee Exp $")
+           "$Id: noionization.f90,v 1.73 2003-10-16 17:13:00 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -164,15 +164,15 @@ module Ionization
 !   
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
 !   
-      if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
-!   
+      if(ip==0) print*,f  !(keep compiler quiet)
+!
     endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc(f)
 !
     real, dimension (mx,my,mz,mvar+maux) :: f
 !
-    if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
+    if(ip==0) print*,f  !(keep compiler quiet)
 !
     endsubroutine ioncalc
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.15 2003-10-12 22:13:17 mee Exp $
+! $Id: dustvelocity.f90,v 1.16 2003-10-16 17:13:00 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -36,6 +36,7 @@ module Dustvelocity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
+  integer :: i_udxpt=0,i_udypt=0,i_udzpt=0
   integer :: i_udrms=0,i_udmax=0,i_odrms=0,i_odmax=0
   integer :: i_udxmz=0,i_udymz=0,i_udzmz=0,i_udmx=0,i_udmy=0,i_udmz=0
   integer :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
@@ -76,7 +77,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.15 2003-10-12 22:13:17 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.16 2003-10-16 17:13:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -288,6 +289,14 @@ module Dustvelocity
         if (i_ud2m/=0) call sum_mn_name(ud2,i_ud2m)
         if (i_udm2/=0) call max_mn_name(ud2,i_udm2)
         if (i_divud2m/=0) call sum_mn_name(divud**2,i_divud2m)
+!
+!  kinetic field components at one point (=pt)
+!
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (i_udxpt/=0) call save_name(uud(lpoint-nghost,1),i_udxpt)
+          if (i_udypt/=0) call save_name(uud(lpoint-nghost,2),i_udypt)
+          if (i_udzpt/=0) call save_name(uud(lpoint-nghost,3),i_udzpt)
+        endif
 !!
 !!  mean heating term
 !!
@@ -350,6 +359,7 @@ module Dustvelocity
 !
       if (lreset) then
         i_ud2m=0; i_udm2=0; i_oudm=0; i_od2m=0
+        i_udxpt=0; i_udypt=0; i_udzpt=0
         i_udrms=0; i_udmax=0; i_odrms=0; i_odmax=0
         i_udmx=0; i_udmy=0; i_udmz=0
         i_divud2m=0; i_epsKd=0
@@ -372,6 +382,9 @@ module Dustvelocity
         call parse_name(iname,cname(iname),cform(iname),'udmz',i_udmz)
         call parse_name(iname,cname(iname),cform(iname),'divud2m',i_divud2m)
         call parse_name(iname,cname(iname),cform(iname),'epsKd',i_epsKd)
+        call parse_name(iname,cname(iname),cform(iname),'udxpt',i_udxpt)
+        call parse_name(iname,cname(iname),cform(iname),'udypt',i_udypt)
+        call parse_name(iname,cname(iname),cform(iname),'udzpt',i_udzpt)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -394,6 +407,9 @@ module Dustvelocity
       write(3,*) 'iudx=',iudx
       write(3,*) 'iudy=',iudy
       write(3,*) 'iudz=',iudz
+      write(3,*) 'i_udxpt=',i_udxpt
+      write(3,*) 'i_udypt=',i_udypt
+      write(3,*) 'i_udzpt=',i_udzpt
       write(3,*) 'i_udxmz=',i_udxmz
       write(3,*) 'i_udymz=',i_udymz
       write(3,*) 'i_udzmz=',i_udzmz

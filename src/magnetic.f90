@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.138 2003-10-12 22:13:17 mee Exp $
+! $Id: magnetic.f90,v 1.139 2003-10-16 17:13:00 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -101,7 +101,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.138 2003-10-12 22:13:17 mee Exp $")
+           "$Id: magnetic.f90,v 1.139 2003-10-16 17:13:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -253,7 +253,7 @@ module Magnetic
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1,B_ext21=1.
-      integer :: j,lpoint,mpoint,npoint
+      integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij
 !
@@ -409,15 +409,11 @@ module Magnetic
       if (ldiagnos) then
         !
         !  magnetic field components at one point (=pt)
-        !  for now we take the middle of the root processor
         !
-        lpoint=(l1+l2)/2
-        mpoint=(m1+m2)/2
-        npoint=(n1+n2)/2
         if (lroot.and.m==mpoint.and.n==npoint) then
-          if (i_bxpt/=0) call save_name(bbb(lpoint,1),i_bxpt)
-          if (i_bypt/=0) call save_name(bbb(lpoint,2),i_bypt)
-          if (i_bzpt/=0) call save_name(bbb(lpoint,3),i_bzpt)
+          if (i_bxpt/=0) call save_name(bbb(lpoint-nghost,1),i_bxpt)
+          if (i_bypt/=0) call save_name(bbb(lpoint-nghost,2),i_bypt)
+          if (i_bzpt/=0) call save_name(bbb(lpoint-nghost,3),i_bzpt)
         endif
         !
         !  v_A = |B|/sqrt(rho); in units where "4pi"=1
