@@ -1,16 +1,16 @@
-; $Id: pc_read_var.pro,v 1.5 2003-10-10 12:25:45 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.6 2004-04-08 11:41:50 mcmillan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2003-10-10 12:25:45 $
-;  $Revision: 1.5 $
+;  $Date: 2004-04-08 11:41:50 $
+;  $Revision: 1.6 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, all=all, $
-                uu=uu, lnrho=lnrho, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $
+                uu=uu, lnrhom=lnrhom, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $
                 uud=uud, lnrhod=lnrhod, $
                 object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
@@ -20,7 +20,7 @@ pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, all=all, $
     print, "Usage: "
     print, ""
     print, "pc_read_var, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay, $                     "
-    print, "             uu=uu, lnrho=lnrho, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $                  "
+    print, "             uu=uu, lnrhom=lnrhom, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $                  "
     print, "             object=object, $                                                              "
     print, "             varfile=varfile, datadir=datadir, proc=proc, $                                "
     print, "             /PRINT, /QUIET, /HELP                                                         "
@@ -40,7 +40,7 @@ pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, all=all, $
     print, "       dy: y mesh spacing in code length units                                  [precision]"
     print, "       dz: z mesh spacing in code length units                                  [precision]"
     print, "       uu: velocity field (vector) in code units                    [precision(mx,my,mz,3)]"
-    print, "    lnrho: density field (scalar) in code units                       [precision(mx,my,mz)]"
+    print, "    lnrhom: density field (scalar) in code units                       [precision(mx,my,mz)]"
     print, "       ss: entropy field (scalar) in code units                       [precision(mx,my,mz)]"
     print, "       aa: magnetic vector potential (vector) in code units         [precision(mx,my,mz,3)]"
     print, "     lncc: passive scalar field (scalar) in code units                [precision(mx,my,mz)]"
@@ -75,11 +75,11 @@ t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & deltay=zero
 ;uu=uu
-;lnrho=lnrho
+;lnrhom=lnrhom
 ;ss=ss,aa=aa,lncc=lncc,ee=ee,ff=ff
 
 iuu=0    
-ilnrho=0    
+ilnrhom=0    
 iss=0  
 iaa=0
 ie=0
@@ -87,7 +87,7 @@ ilncc=0
 iuud=0 
 ilnrhod=0 
 if (params.lhydro)        then iuu=1
-if (params.ldensity)      then ilnrho=1    
+if (params.ldensity)      then ilnrhom=1    
 if (params.lentropy)      then iss=1  
 if (params.lmagnetic)     then iaa=1
 if (params.lradiation)    then ie=1 
@@ -97,7 +97,7 @@ if (params.ldustdensity)  then ilnrhod=1
 
 
 if (params.lhydro)        then uu     = fltarr(mx,my,mz,3)*one
-if (params.ldensity)      then lnrho  = fltarr(mx,my,mz  )*one
+if (params.ldensity)      then lnrhom = fltarr(mx,my,mz  )*one
 if (params.lentropy)      then ss     = fltarr(mx,my,mz  )*one
 if (params.lmagnetic)     then aa     = fltarr(mx,my,mz,3)*one
 if (params.lradiation)    then ff     = fltarr(mx,my,mz,3)*one
@@ -121,50 +121,50 @@ if (cgrid gt 0) then begin
   ;
   openr,file, filename, /F77
                      ;
-  if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa ne 0 then begin
+  if iuu ne 0 and ilnrhom ne 0 and iss ne 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'MHD with entropy'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,aa
-  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa ne 0 $ 
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,ss,aa
+  end else if iuu ne 0 and ilnrhom ne 0 and iss eq 0 and iaa ne 0 $ 
            and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro without entropy, but with magnetic field'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,aa
-  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and ie ne 0 $
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,aa
+  end else if iuu ne 0 and ilnrhom ne 0 and iss ne 0 and ie ne 0 $
            and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, density and radiation'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,ee,ff
-  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa eq 0 $
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,ss,ee,ff
+  end else if iuu ne 0 and ilnrhom ne 0 and iss ne 0 and iaa eq 0 $
            and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,ss
       if keyword_set(ASSOCIATE) then begin
           all=assoc(file,fltarr(mx,my,mz,mvar)*one,4)
       endif
-  end else if iuu ne 0 and ilnrho ne 0 and ilncc ne 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrhom ne 0 and ilncc ne 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,lncc
-  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa eq 0 then begin
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,lncc
+  end else if iuu ne 0 and ilnrhom ne 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with no entropy and no magnetic field'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho
-  end else if iuu ne 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 then begin
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom
+  end else if iuu ne 0 and ilnrhom eq 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just velocity (Burgers)'
       if not keyword_set(ASSOCIATE) then readu,file,uu
-  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa ne 0 then begin
+  end else if iuu eq 0 and ilnrhom eq 0 and iss eq 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just magnetic fparams.ield (kinematic)'
       if not keyword_set(ASSOCIATE) then readu,file,aa
-  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 and ilncc ne 0 then begin
+  end else if iuu eq 0 and ilnrhom eq 0 and iss eq 0 and iaa eq 0 and ilncc ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just passive scalar (no field nor hydro)'
       if not keyword_set(ASSOCIATE) then readu,file,lncc
-  end else if iuu eq 0 and ilnrho ne 0 and iss eq 0 and iaa eq 0 then begin
+  end else if iuu eq 0 and ilnrhom ne 0 and iss eq 0 and iaa eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just density (probably just good for tests)'
-      if not keyword_set(ASSOCIATE) then readu,file,lnrho
-  end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 and ie ne 0 then begin
+      if not keyword_set(ASSOCIATE) then readu,file,lnrhom
+  end else if iuu eq 0 and ilnrhom eq 0 and iss eq 0 and iaa eq 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just radiation'
       if not keyword_set(ASSOCIATE) then readu,file,ee,ff
-  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iuud ne 0 $
+  end else if iuu ne 0 and ilnrhom ne 0 and iss ne 0 and iuud ne 0 $
            and ilnrhod ne 0 then begin
       if ( not keyword_set(QUIET) ) then $
           print,'hydro with entropy, density, dustvelocity and dustdensity'
-      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,uud,lnrhod
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrhom,ss,uud,lnrhod
   end else begin
       if ( not keyword_set(QUIET) ) then print,'not prepared...'
   end
@@ -201,8 +201,8 @@ print, '  var            minval         maxval          mean           rms'
       print, FORMAT=fmt, 'uu_'+xyz[j]+'   =', $
       minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
     if (params.ldensity) then $
-      print, FORMAT=fmt, 'lnrho  =', $
-      minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+      print, FORMAT=fmt, 'lnrhom  =', $
+      minmax(lnrhom), mean(lnrhom,/DOUBLE), rms(lnrhom,/DOUBLE)
     if (params.lentropy) then $
       print, FORMAT=fmt, 'ss     =', $
       minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
