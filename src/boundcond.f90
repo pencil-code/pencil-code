@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.68 2004-07-17 02:06:42 theine Exp $
+! $Id: boundcond.f90,v 1.69 2004-07-17 02:24:49 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -292,7 +292,7 @@ module Boundcond
                 ! tell other modules not to change boundary value
                 call bc_frozen_in_bb_z(topbot)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
-              case ('g')        ! set to given value(s) or function
+              case ('g','ga')        ! set to given value(s) or function
                  call bc_force_z(f,-1,topbot,j)
               case ('gs')
                  call bc_force_z(f,+1,topbot,j)
