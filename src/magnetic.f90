@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.16 2002-05-04 13:50:48 dobler Exp $
+! $Id: magnetic.f90,v 1.17 2002-05-04 14:16:33 dobler Exp $
 
 module Magnetic
 
@@ -46,8 +46,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-05-04 13:50:48 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-05-04 14:16:33 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,8 +101,8 @@ module Magnetic
             axis  = (/nr2x,nr2y,nr2z/)
             shift = (/r2x,r2y,r2z/)
           endif
-          phi   = atan2(axis(2),axis(1))
-          theta = atan2(sqrt(axis(1)**2+axis(2)**2),axis(3))
+          phi   = atan2(axis(2)+1.e-30,axis(1))
+          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+1.e-30,axis(3))
           if (ip <= 6) print*, 'Init_aa: phi,theta = ', phi,theta
           ct = cos(theta); st = sin(theta)
           cp = cos(phi)  ; sp = sin(phi)
