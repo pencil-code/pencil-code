@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.272 2004-08-20 20:31:21 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.273 2004-08-21 18:14:03 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}
+%\date{$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}\\
+  \emph{$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4654,7 +4654,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-08-21 18:14:03 $ $,~ $ $Revision: 1.273 $ $}
 
 \section{Timings}
 
@@ -4765,7 +4765,9 @@ application on your specific hardware.
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
   16 & fe1   & 0.75 & $128^3$ & magn/noentro &4x4/ifc6&  9-may-03 & AB \\
-  16 & s40s17& 0.39 & $128^3$ & magn/noentro &4x4/ifc6& 20-aug-04 & AB \\
+  16 & workq & 0.88 & $128^3$ & magn/noentro &4x4/ifc6& 21-aug-04 & AB \\
+  16 & giga  & 0.76 & $128^3$ & magn/noentro &4x4/ifc6& 21-aug-04 & AB \\
+  16 & giga2 & 0.39 & $128^3$ & magn/noentro &4x4/ifc6& 20-aug-04 & AB \\
   16 & giga  & 0.47 & $128^3$ & chiral       &4x4/ifc6& 29-may-04 & AB \\
   16 & giga  & 0.43 & $128^3$ & nomag/noentro&4x4/ifc6& 28-apr-03 & AB \\
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
@@ -4802,9 +4804,11 @@ application on your specific hardware.
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
  128 & fe1   & 0.27 & $512^3$ & magn/noentro & 4x32   &  5-sep-02 & AB \\
  128 & fe1   & 0.108& $512^3$ & magn/noentro &4x32/ifc6& 5-jan-02 & AB \\
+64+64& giga2 & 0.0600&$512^3$ & magn/noentro &4x32/ifc6&21-aug-04 & AB \\
+ 128l& giga2 & 0.0605&$512^3$ & magn/noentro &4x32/ifc6&21-aug-04 & AB \\
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
  128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
- 256 & s40p17& 0.028& $1024^3$& magn/noentro &4x32/ifc6&20-aug-04 & AB \\
+ 256 & giga2 & 0.028& $1024^3$& magn/noentro &4x64/ifc6&20-aug-04 & AB \\
     \bottomrule
   \end{longtable}
   %\end{tabular}
@@ -4837,10 +4841,16 @@ The machines we have used can be characterized as follows:
   1\,GB memory;
   256\,kB cache per CPU;
   SuSE Linux 7.3
-\item[Horseshoe (fe1):] 2.0\,GHz Pentium 512 single CPU;
+\item[Horseshoe (fe1, giga, and giga2):] consists of different subclusters.
+  The old one (queue name: workq, referred to as fe1)
+  2.0\,GHz Pentium 512 single CPU;
   25x 24-port fast ethernet switches with gigabit ethernet uplink;
-  1 30-port gigabit ethernet switch;
-  1\,GB memory;
+  1 30-port gigabit ethernet switch; 1\,GB memory.
+  The next generation has gigabit switches directly between nodes,
+  and 2.6 GHz processors.
+  The third generation (giga2) has 3.2 GHz processors (most of which have 1 GB,
+  some 2 GB), is organized in 2 blocks interconnected with 2 Gb links,
+  with 10 Gb uplinks within each block.
 \item[Ukaff:] SGI Origin 3000;
   400\,MHz IP35 CPUs;
   IRIX 6.5;
@@ -7712,7 +7722,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.272 2004-08-20 20:31:21 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.273 2004-08-21 18:14:03 brandenb Exp $ $}
 
 
 \end{document}
