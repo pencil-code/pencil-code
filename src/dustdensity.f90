@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.94 2004-05-22 09:35:30 ajohan Exp $
+! $Id: dustdensity.f90,v 1.95 2004-05-22 12:24:32 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -114,7 +114,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.94 2004-05-22 09:35:30 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.95 2004-05-22 12:24:32 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -481,7 +481,7 @@ module Dustdensity
 !
 !  Put all overflowing grains into relevant interval
 !
-            if (i_targ >= 1 .and. i_targ <= ndustspec .and. nd(l,k) /= 0.) then
+            if (i_targ >= 1 .and. nd(l,k) /= 0.) then
               mdnew(i_targ) = (nd(l,k)*md(k) + &
                   ndnew(i_targ)*mdnew(i_targ))/(nd(l,k) + ndnew(i_targ))
               if (lmice) minew(i_targ) = (nd(l,k)*mi(k) + &
