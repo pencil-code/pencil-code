@@ -57,8 +57,8 @@ save_state
 wput
 
 !p.multi = [0,3,2]
-!p.charsize = 1.8
-!x.title = '!8x!X'
+!p.charsize = 2
+!x.title = '!8y!X'
 !y.title = '!8z!X'
 
 tit = '!17u!6 at '
@@ -78,15 +78,15 @@ endif else begin
   undefine, zruu                ; ZRANGE=<undef> is like no ZRANGE kw at all
 endelse
 
-plot_3d_vect, uu[nx1,*,*,*],y,z, PERM=[0,2,1], $
+plot_3d_vect, uu[nx1,*,*,*],y,z, PERM=[1,2,0], $
     /KEEP, TITLE=tit+sx1+'!X', ZRANGE=zruu
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx1]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-plot_3d_vect, uu[nx2,*,*,*],y,z, PERM=[0,2,1], $
+plot_3d_vect, uu[nx2,*,*,*],y,z, PERM=[1,2,0], $
     /KEEP, TITLE=tit+sx2+'!X', ZRANGE=zruu
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx2]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 ;
-plot_3d_vect, uu[nx3,*,*,*],y,z, PERM=[0,2,1], $
+plot_3d_vect, uu[nx3,*,*,*],y,z, PERM=[1,2,0], $
     /KEEP, TITLE=tit+sx3+'!X', ZRANGE=zruu
 _opstuff, [z0,z1,z2,z3], sqrt(1-x[nx3]^2), LGRAVZ=lgravz, LGRAVR=lgravr
 
