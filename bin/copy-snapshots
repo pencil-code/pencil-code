@@ -68,8 +68,7 @@ else
       echo 'i=' $i
     end
 
-    #sleep 300			# only check every 5 minutes
-    sleep 10			# only check every 5 minutes
+    sleep 300			# only check every 5 minutes
 
   end
 
