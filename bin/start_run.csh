@@ -26,6 +26,7 @@ if (-e "LOCK") then
   echo "rm LOCK"
   exit
 endif
+touch LOCK
 
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
@@ -119,6 +120,9 @@ endif
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
+
+# remove LOCK file
+rm -f LOCK
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
