@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.174 2003-11-25 15:29:28 brandenb Exp $
+! $Id: equ.f90,v 1.175 2003-11-26 17:34:40 theine Exp $
 
 module Equ
 
@@ -232,7 +232,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.174 2003-11-25 15:29:28 brandenb Exp $")
+           "$Id: equ.f90,v 1.175 2003-11-26 17:34:40 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -398,19 +398,19 @@ module Equ
             !
             !  timestep limited by entropy variation
             !
-            if (lentropy) then
-              maxdss=maxval(abs(df(l1:l2,m,n,iss)))
-              facdss=cdt*dxmin/cdts
-              UUtemp=amax1(facdss*maxdss,UUtemp)
-            endif
+            !if (lentropy) then
+              !maxdss=maxval(abs(df(l1:l2,m,n,iss)))
+              !facdss=cdt*dxmin/cdts
+              !UUtemp=amax1(facdss*maxdss,UUtemp)
+            !endif
             !
             !  timestep limited by density variation
             !
-            if (ldensity) then
-              maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
-              facdlnrho=cdt*dxmin/cdtr
-              UUtemp=amax1(facdlnrho*maxdlnrho,UUtemp)
-            endif
+            !if (ldensity) then
+              !maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
+              !facdlnrho=cdt*dxmin/cdtr
+              !UUtemp=amax1(facdlnrho*maxdlnrho,UUtemp)
+            !endif
             call max_mn(UUtemp,UUmax)
           endif
         endif
