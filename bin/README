@@ -1,6 +1,6 @@
-$Id: README,v 1.3 2002-10-06 07:23:07 brandenb Exp $
+$Id: README,v 1.4 2004-05-29 17:34:26 brandenb Exp $
 
-files currently in this directory
+In October 2002 the files in this directory were
 
    4 CVS/                4 cvsci_run*      8 mkdotin*      4 run.csh*       4 x*
    4 README              4 getconf.csh     4 mkinpars*     4 setup-src*
@@ -30,3 +30,5 @@ new: produces a new run directory similar to another one.
 cvsci_run: used to check in a standard set of file that are frequently
      used for post-processing purposes (including time_series.dat and index.pro)
 
+In the mean time there are many more files now. New files tend to
+be preceded by "pc_" to identify them as Pencil Code scripts.

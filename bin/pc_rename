@@ -1,0 +1,62 @@
+#!/bin/csh
+#
+#  $Id: pc_rename,v 1.1 2004-05-29 17:34:26 brandenb Exp $
+#
+#  renames a run directory including the link to the data directory
+#
+#  29-may-2004/axel: coded
+#
+#  Usage:
+#     new run1 run2
+#  Alternative usage, if one is already in run1
+#     new run2
+#
+if ($#argv == 2) then
+  set olddir=$cwd/$1
+  set newdir=$cwd/$2
+else
+  set olddir=$cwd
+  cd ..
+  set newdir=$cwd/$1
+endif
+#
+#  save current working directory and make new run directory
+#  and go there.
+#
+set parentdir=$cwd
+#
+# establish the tail of the names of the old directory
+#
+cd $olddir; set olddir_tail=$cwd:t
+#
+#  we are now in new run directory
+#  establish full path to old data directory
+#
+cd data
+set olddatadir=`pwd`
+echo "olddatadir=" $olddatadir
+echo "Parent directory: " $parentdir
+cd $parentdir
+#
+#  move to run directory
+#  establish the tail of the names of the new directory
+#
+mv $olddir $newdir
+cd $newdir; set newdir_tail=$cwd:t
+#
+#  In the new run directory, call mkdatadir, and
+#  write file with name of directory from which
+#  the new one is generated
+#
+cd $newdir
+rm data  #(this won't work if this is not a link!)
+$PENCIL_HOME/bin/mkdatadir
+cd data
+cd ..
+rmdir $newdir_tail
+#
+#  rename data directory
+#
+mv $olddatadir $newdir_tail
+cd $newdir
+#
