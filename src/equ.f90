@@ -104,12 +104,10 @@ module Equ
 !  the result is present only on the root processor
 !
       if(lroot) then
-!
-!   need to take sqare root
-!
         fsum=fsum/(nw*ncpus)
 !
 !  reassemble using old names
+!  need to take sqare root
 !
         umax=sqrt(fmax(1))
         omax=sqrt(fmax(2))
@@ -201,13 +199,12 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2,rho,rho1,nurho1,cs2
-      logical :: lfirstpoint
       integer :: i,j
 !
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.3 2001-11-07 17:05:17 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.4 2001-11-12 13:11:17 dobler Exp $'
 !
 !  initiate communication
 !
@@ -216,7 +213,7 @@ module Equ
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !
-      lfirstpoint=.true.
+      lfirstpoint=.true.        ! true for very first m-n loop
       do imn=1,ny*nz
         n=nn(imn)
         m=mm(imn)
@@ -283,7 +280,8 @@ module Equ
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  In rms_mn sum of all u^2 (etc) is accumulated
-!  Calculate maximum advection speed for timestep; needs to be done at every step
+!  Calculate maximum advection speed for timestep; needs to be done at
+! every step
 !
         if (lfirst.and.ldt) call max_mn(u2+cs2,UUmax)
 !

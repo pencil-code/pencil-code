@@ -21,12 +21,13 @@ module Cdata
   integer :: it,ix,iy,iz
   integer :: ivisc,iforce
   integer :: ibc(mvar)
-  integer :: m,n,im,in
+  integer :: m,n
   integer, dimension (2) :: seed
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
   logical :: lout,headt,headtt,ldt,lfirst
   logical :: lroot=.true.
+  logical :: lfirstpoint
 
   character*80 :: form1
 

@@ -10,8 +10,7 @@ module Sub
     subroutine max_mn(u2,res)
 !
 !  successively calculate maximum of u, where u^2=u2 is supplied
-!  at each call. This routine initializes counter when m=n=1,
-!  and calculates final result when m=my and n=mz.
+!  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !
@@ -20,7 +19,8 @@ module Sub
       real, dimension (nx) :: u2
       real :: res
 !
-      if (im==m1.and.in==n1) then
+!      if (m==m1.and.n==n1) then
+      if (lfirstpoint) then
         res=maxval(u2)
       else
         res=amax1(res,maxval(u2))
@@ -31,8 +31,7 @@ module Sub
     subroutine rms_mn(u2,res)
 !
 !  successively calculate rms of u, where u^2=u2 is supplied
-!  at each call. This routine initializes counter when m=n=1,
-!  and calculates final result when m=my and n=mz.
+!  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !
@@ -41,7 +40,8 @@ module Sub
       real, dimension (nx) :: u2
       real :: res
 !
-      if (im==m1.and.in==n1) then
+!      if (m==m1.and.n==n1) then
+      if (lfirstpoint) then
         res=sum(u2)
       else
         res=res+sum(u2)
