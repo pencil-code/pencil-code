@@ -106,8 +106,17 @@ if (-r datadir.in) then
 else
   set datadir = "data"
 endif
-
 echo "datadir = $datadir"
+
+# If local disc is used, write name into $datadir/directory_snap.
+# This will be read by the code, if the file exists.
+# Remove file, if not needed, to avoid confusion.
+if ($local_disc) then
+  echo $SCRATCH_DIR >$datadir/directory_snap
+else
+  if (-f $datadir/directory_snap) rm $datadir/directory_snap
+endif
+
 exit
 
 # If we are using local disk, the directory name is written into
