@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.43 2003-04-08 17:39:54 brandenb Exp $
+; $Id: r.pro,v 1.44 2003-04-09 13:41:20 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.43 2003-04-08 17:39:54 brandenb Exp $
+;;; $Id: r.pro,v 1.44 2003-04-09 13:41:20 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -159,11 +159,9 @@ if (lmagnetic) then begin
 end
 ;
 print,'t = ',t
-print,'to read more (if radiation is on), say ".c"'
-stop
 ;
 if (par.lradiation ne 0) then begin
-  if (par2.output_Qrad) then begin
+  if (par.output_Qrad) then begin
     Qrad=fltarr(mx,my,mz)*one
     Srad=fltarr(mx,my,mz)*one
     kappa=fltarr(mx,my,mz)*one
@@ -178,7 +176,7 @@ if (par.lradiation ne 0) then begin
 end
 ;
 if (par.lionization ne 0) then begin
-  if (par2.output_yH) then begin
+  if (par.output_yH) then begin
     yyH=fltarr(mx,my,mz)*one
     readu,1,yyH
     print, FORMAT=fmt, 'yyH   =', $
