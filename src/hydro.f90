@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.60 2002-08-21 04:15:01 brandenb Exp $
+! $Id: hydro.f90,v 1.61 2002-08-21 12:21:01 nilshau Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.60 2002-08-21 04:15:01 brandenb Exp $")
+           "$Id: hydro.f90,v 1.61 2002-08-21 12:21:01 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -528,9 +528,9 @@ module Hydro
         call mpireduce_max(fsum_tmp,fsum,1)
         if(lroot) then
           uxm=ux_sum/(nw*ncpus)
-          call mpibcast_real(uxm,1)
-print*,'root: uxm=',uxm
         endif
+        call mpibcast_real(uxm,1)
+print*,'root: uxm=',uxm
       endif
 !
 print*,'iproc,uxm=',iproc,uxm
