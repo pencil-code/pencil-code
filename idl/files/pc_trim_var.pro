@@ -1,10 +1,10 @@
-; $Id: pc_trim_var.pro,v 1.2 2004-05-07 09:32:11 ajohan Exp $
+; $Id: pc_trim_var.pro,v 1.3 2004-05-11 08:45:06 ajohan Exp $
 ;
 ;  Trim variable of ghost zones and empty dimensions
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2004-05-07 09:32:11 $
-;  $Revision: 1.2 $
+;  $Date: 2004-05-11 08:45:06 $
+;  $Revision: 1.3 $
 ;
 ;  07-may-04/anders: coded
 ;
@@ -24,6 +24,6 @@ function pc_trim_var, var
 ;
 ; 3+D array (the fourth dimension can be velocity component, etc.)
 ;
-  return, reform(var(3:mx_arr-4,3:my_arr-4,3:mz_arr-4,*))
+  return, reform(var(3:mx_arr-4,3:my_arr-4,3:mz_arr-4,*,*))
 
 end
