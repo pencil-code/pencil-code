@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.45 2004-05-20 14:41:04 ajohan Exp $
+! $Id: pscalar.f90,v 1.46 2004-05-25 12:21:12 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -41,7 +41,7 @@ module Pscalar
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0,lpscalar_turb_diff
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
+  integer :: i_rhoccm=0,i_ccmax=0,i_ccmin=0.,i_lnccm=0,i_lnccmz=0
   integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
   integer :: i_cc1m=0,i_cc2m=0,i_cc3m=0,i_cc4m=0,i_cc5m=0
   integer :: i_cc6m=0,i_cc7m=0,i_cc8m=0,i_cc9m=0,i_cc10m=0
@@ -79,7 +79,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.45 2004-05-20 14:41:04 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.46 2004-05-25 12:21:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -257,6 +257,7 @@ module Pscalar
         rho=exp(f(l1:l2,m,n,ilnrho))
         if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
+        if (i_ccmin/=0) call min_mn_name(cc,i_ccmin)
         if (i_lnccmz/=0) call xysum_mn_name_z(lncc,i_lnccmz)
         if (i_ucm/=0) call sum_mn_name(uu(:,3)*cc,i_ucm)
         if (i_uudcm/=0) call sum_mn_name(uu(:,3)*cc*uglncc,i_uudcm)
@@ -286,7 +287,7 @@ module Pscalar
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
+        i_rhoccm=0; i_ccmax=0; i_ccmin=0., i_lnccm=0; i_lnccmz=0
         i_ucm=0; i_uudcm=0; i_Cz2m=0; i_Cz4m=0; i_Crmsm=0
       endif
 !
@@ -295,6 +296,7 @@ module Pscalar
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhoccm',i_rhoccm)
         call parse_name(iname,cname(iname),cform(iname),'ccmax',i_ccmax)
+        call parse_name(iname,cname(iname),cform(iname),'ccmin',i_ccmin)
         call parse_name(iname,cname(iname),cform(iname),'lnccm',i_lnccm)
         call parse_name(iname,cname(iname),cform(iname),'ucm',i_ucm)
         call parse_name(iname,cname(iname),cform(iname),'uudcm',i_uudcm)
@@ -314,6 +316,7 @@ module Pscalar
       if (lwr) then
         write(3,*) 'i_rhoccm=',i_rhoccm
         write(3,*) 'i_ccmax=',i_ccmax
+        write(3,*) 'i_ccmin=',i_ccmin
         write(3,*) 'i_lnccm=',i_lnccm
         write(3,*) 'i_ucm=',i_ucm
         write(3,*) 'i_uudcm=',i_uudcm
