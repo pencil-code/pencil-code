@@ -1,0 +1,94 @@
+#!/bin/sh
+#  -*-Perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w
+# line 17
+
+# Name:   timer
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   21-Feb-2003
+# Description:
+#   Time the code for a set of time steps (starting afresh each time) to
+#   semi-automatically identify the `weird-Pentium' effect.
+# Side effects:
+#   Modifies run.in
+
+use strict;
+
+my @nsteps = (1, 2, 5, 10, 20, 50, 100, 200, 500, 1000);
+
+foreach my $n (@nsteps) {
+    local $/ = undef;
+    ## Initialize code
+    my $startout = run_cmd("start.csh");
+    if ($startout =~ /error/i) { die "Error from start.csh: \n$startout" };
+
+    ## Modify run.in:
+    open(RUN_IN, "< run.in") or die "Can't open run.in for reading: $!\n";
+    my $run_in = <RUN_IN>;
+    close(RUN_IN) or die "Can't close run.in after reading: $!\n";
+    $run_in =~ s/\b(nt)\s*=\s*[0-9]+/$1=$n/g;
+    open(RUN_IN, "> run.in") or die "Can't open run.in for writing: $!\n";
+    print RUN_IN $run_in;
+    close(RUN_IN) or die "Can't close run.in after writing: $!\n";
+
+    ## Run code for given number of steps:
+    my $runout = run_cmd("run.csh");
+    if ($runout =~ /error/i) { die "Error from run.csh: \n$runout" };
+#    if ($runout !~ /wall clock time/i) {
+#	die "No timing from run.csh: \n$runout";
+#    }
+    my ($nx,$ny,$nz) =
+      ($runout =~
+       /^\s*nxgrid,nygrid,nzgrid=\s+([0-9]+)\s+([0-9]+)\s+([0-9]+)\s*$/m);
+    my $size = $nx*$ny*$nz;
+
+    my ($secs,$musecs,$wclock,$perc) =
+	($runout =~
+         /.*
+          ^\s*Wall\ clock\ time\s*\[sec\]\s*=\s*(\S+).*
+          ^\s*Wall\ clock\ time.*\[microsec\]\s*=\s*(\S+).*
+          ^\s*[0-9.]+u\s+[0-9.]+s\s+([0-9.:]+)\s+([0-9.]+)%
+         /msx);
+    if (! defined($secs)) { die "Can't parse output: \n$runout" };
+
+    my $altmusecs = hms2s($wclock)/$n/$size*1e6;
+    printf
+      "%4d steps: %6.2f µs (%6.2f µs) @ %5.1f%% [%10s = %6.2f wall secs]\n",
+	$n, $musecs, $altmusecs, $perc, $wclock, $secs;
+}
+
+# ---------------------------------------------------------------------- #
+sub run_cmd {
+    ## Run a command and return its output
+    my $cmd = shift;
+
+    local $/=undef;		# get all output at once
+    open(CMD, '-|', "$cmd 2>&1") or die "Can't run $cmd: $!\n";
+    my $out = <CMD>;
+    close(CMD) or die "Can't close shell to $cmd: $!\n";
+
+    $out;
+}
+# ---------------------------------------------------------------------- #
+sub hms2s {
+    ## Convert a hh:mm:ss.mmm type string to seconds
+    my @hms = split(':',shift);
+    my $secs = $hms[-1];
+    $secs += 60*($hms[-2] || 0);
+    $secs += 3600*($hms[-3] || 0);
+}
+# ---------------------------------------------------------------------- #
+
+# End of file timer
