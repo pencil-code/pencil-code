@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.167 2003-12-13 15:52:15 theine Exp $
+! $Id: magnetic.f90,v 1.168 2003-12-13 16:05:41 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -113,7 +113,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.167 2003-12-13 15:52:15 theine Exp $")
+           "$Id: magnetic.f90,v 1.168 2003-12-13 16:05:41 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -409,7 +409,10 @@ module Magnetic
 !
 !  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
 !  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation
-!  set JxB_rhomin>0 to limit the JxB term at very low densities.
+!  set JxB_rhomin>0 in order to limit the JxB term at very low densities.
+!  set JxB_va2max>0 in order to limit the JxB term at very high alven speeds.
+!  set JxB_va2power to an integer value in order to specify the power
+!  of the limiting term,
 !
       if (lhydro) then
         call cross_mn(jj,bb,JxB)
