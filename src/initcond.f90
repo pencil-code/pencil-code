@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.46 2003-06-05 17:29:50 ajohan Exp $ 
+! $Id: initcond.f90,v 1.47 2003-06-06 15:26:37 ajohan Exp $ 
 
 module Initcond 
  
@@ -542,7 +542,8 @@ module Initcond
 !  xi=1 inside vortex, and 0 outside
 !  NOTE: if width is too small, the vertical integration below may fail.
 !
-      hh=0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-0.5*Omega**2*zz**2+hh0
+      hh=0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-0.5*Omega**2*zz**2
+
       if(delta==0.) then
         if(lroot) print*,'planet: delta=0, so we ignore z-dependence of xi'
         xi=.5+.5*tanh((radius2-xx**2-eps2*yy**2)/width**2)
@@ -554,8 +555,7 @@ module Initcond
 !
     if(nz.eq.1) then
 !
-!  Solution as in the old disc code
-!  add floor value (currently a constant)
+!  2-d solution. Outside vortex enthalpy is ampl**gamma1/gamma1
 !
       print*,'use h -> h+h0 and constant entropy'
       !hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
@@ -563,34 +563,28 @@ module Initcond
       if(lentropy) f(:,:,:,ient)=0.
     else
 !
-!  add a constant to hh such that hh is "ampl" times in the vortex
-!
-!     print*,"with entropy: hot corona"
-!     hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
-!     hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
-!     if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
-!
-!  add a constant to hh such that hh is "ampl" times in the vortex
-!
-!
 !  Naive 3-D solution
 !
-      !b_ell = radius
-      !a_ell = radius/eps
-      !c_ell = radius*delta 
-      !r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2+zz**2/c_ell**2)
-
-      !do i=1,mx
-      !  do j=1,my
-      !    do k=1,mz
-      !      if(r_ell(i,j,k) .gt. 1) then
-      !        hh(i,j,k) = -0.5*Omega**2*zz(i,j,k)**2+hh0
-      !      endif
-      !    enddo
-      !  enddo
-      !enddo
-
-      print*,"with entropy: integrate hot corona"
+!!$      b_ell = radius
+!!$      a_ell = radius/eps
+!!$      c_ell = radius*delta 
+!!$      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2+zz**2/c_ell**2)
+!!$
+!!$      hh=0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-0.5*Omega**2*zz**2+hh0
+!!$
+!!$      do i=1,mx
+!!$        do j=1,my
+!!$          do k=1,mz
+!!$            if(r_ell(i,j,k) .gt. 1) then
+!!$              hh(i,j,k) = -0.5*Omega**2*zz(i,j,k)**2+hh0
+!!$            endif
+!!$          enddo
+!!$        enddo
+!!$      enddo
+!
+!  Embed vortex in hot corona
+!
+      print*,"With entropy: integrate hot corona"
       hh(:,:,n2)=1.  !(initial condition)
       f(:,:,:,ient)=-alog(ampl)*xi
       do n=n2-1,n1,-1
@@ -598,7 +592,8 @@ module Initcond
         hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS) + &
              Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
       enddo
-    endif
+
+     endif
 !
 !  calculate mask function xi, which is 0 outside and 1 inside the vortex
 !  At present, width is not measured in sensible units...
@@ -610,7 +605,7 @@ module Initcond
 !
       print*,'planet: hmin,zinfty2=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
 !!$      print*,'hh=amin1(1e-5*maxval(hh),hh)'
-!!$      hh=amin1(1e-5*maxval(hh),hh)
+      hh=amin1(1e-5*maxval(hh),hh)
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
