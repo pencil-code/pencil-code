@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.54 2004-05-10 18:14:42 mee Exp $
+! $Id: dustvelocity.f90,v 1.55 2004-05-11 07:44:25 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.54 2004-05-10 18:14:42 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.55 2004-05-11 07:44:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -285,7 +285,6 @@ module Dustvelocity
 !    
 !  27-feb-04/anders: Copied from initialize_dustvelocity
 !
-      integer :: i
       if (lmdvar .and. lmice) then
 !
 !  Copy boundary conditions after dust conditions to end of array
@@ -293,38 +292,13 @@ module Dustvelocity
         bcx(imi(ndustspec)+1:)  = bcx(iudz(1)+4:)
         bcy(imi(ndustspec)+1:)  = bcy(iudz(1)+4:)
         bcz(imi(ndustspec)+1:)  = bcz(iudz(1)+4:)
-!
-!  Move boundary condition to correct place for first dust species 
-!
-        bcx(imi(1))  = bcx(iudz(1)+3)
-        bcx(imd(1))  = bcx(iudz(1)+2)
-        bcx(ind(1))  = bcx(iudz(1)+1)
-
-        bcy(imi(1))  = bcy(iudz(1)+3)
-        bcy(imd(1))  = bcy(iudz(1)+2)
-        bcy(ind(1))  = bcy(iudz(1)+1)
-
-        bcz(imi(1))  = bcz(iudz(1)+3)
-        bcz(imd(1))  = bcz(iudz(1)+2)
-        bcz(ind(1))  = bcz(iudz(1)+1)
-     elseif (lmdvar) then
+      elseif (lmdvar) then
 !
 !  Copy boundary conditions after dust conditions to end of array
 !
         bcx(imd(ndustspec)+1:)  = bcx(iudz(1)+3:)
         bcy(imd(ndustspec)+1:)  = bcy(iudz(1)+3:)
         bcz(imd(ndustspec)+1:)  = bcz(iudz(1)+3:)
-!
-!  Move boundary condition to correct place for first dust species 
-!
-        bcx(imd(1))  = bcx(iudz(1)+2)
-        bcx(ind(1))  = bcx(iudz(1)+1)
-
-        bcy(imd(1))  = bcy(iudz(1)+2)
-        bcy(ind(1))  = bcy(iudz(1)+1)
-
-        bcz(imd(1))  = bcz(iudz(1)+2)
-        bcz(ind(1))  = bcz(iudz(1)+1)
       else  
 !
 !  Copy boundary conditions after dust conditions to end of array
@@ -332,33 +306,45 @@ module Dustvelocity
         bcx(ind(ndustspec)+1:)  = bcx(iudz(1)+2:)
         bcy(ind(ndustspec)+1:)  = bcy(iudz(1)+2:)
         bcz(ind(ndustspec)+1:)  = bcz(iudz(1)+2:)
+      endif
 !
 !  Move boundary condition to correct place for first dust species 
 !
-        bcx(ind(1))  = bcx(iudz(1)+1)
-        bcy(ind(1))  = bcy(iudz(1)+1)
-        bcz(ind(1))  = bcz(iudz(1)+1)
-      endif
+      bcx(ind(1))  = bcx(iudz(1)+1)
+      if (lmdvar) bcx(imd(1))  = bcx(iudz(1)+2)
+      if (lmice)  bcx(imi(1))  = bcx(iudz(1)+3)
+
+      bcy(ind(1))  = bcy(iudz(1)+1)
+      if (lmdvar) bcy(imd(1))  = bcy(iudz(1)+2)
+      if (lmice)  bcy(imi(1))  = bcy(iudz(1)+3)
+
+      bcz(ind(1))  = bcz(iudz(1)+1)
+      if (lmdvar) bcz(imd(1))  = bcz(iudz(1)+2)
+      if (lmice)  bcz(imi(1))  = bcz(iudz(1)+3)
 !
 !  Copy boundary conditions on first dust species to all species
 !
-      do i=2,ndustspec
-        bcx(iudx(i):iudz(i))=bcx(iudx(1):iudz(1))
-        bcx(ind(i))=bcx(ind(1))
-        if (lmdvar) bcx(imd(i))=bcx(imd(1))
-        if (lmice) bcx(imi(i))=bcx(imi(1))
+      bcx(iudx) = bcx(iudx(1))
+      bcx(iudy) = bcx(iudy(1))
+      bcx(iudz) = bcx(iudz(1))
+      bcx(ind)  = bcx(ind(1))
+      if (lmdvar) bcx(imd) = bcx(imd(1))
+      if (lmice)  bcx(imi) = bcx(imi(1))
 
-        bcy(iudx(i):iudz(i))=bcy(iudx(1):iudz(1))
-        bcy(ind(i))=bcy(ind(1))
-        if (lmdvar) bcy(imd(i))=bcy(imd(1))
-        if (lmice) bcy(imi(i))=bcy(imi(1))
+      bcy(iudx) = bcy(iudx(1))
+      bcy(iudy) = bcy(iudy(1))
+      bcy(iudz) = bcy(iudz(1))
+      bcy(ind)  = bcy(ind(1))
+      if (lmdvar) bcy(imd) = bcy(imd(1))
+      if (lmice)  bcy(imi) = bcy(imi(1))
 
-        bcz(iudx(i):iudz(i))=bcz(iudx(1):iudz(1))
-        bcz(ind(i))=bcz(ind(1))
-        if (lmdvar) bcz(imd(i))=bcz(imd(1))
-        if (lmice) bcz(imi(i))=bcz(imi(1))
-      enddo
- !
+      bcz(iudx) = bcz(iudx(1))
+      bcz(iudy) = bcz(iudy(1))
+      bcz(iudz) = bcz(iudz(1))
+      bcz(ind)  = bcz(ind(1))
+      if (lmdvar) bcz(imd) = bcz(imd(1))
+      if (lmice)  bcz(imi) = bcz(imi(1))
+!
       if (ndustspec>1 .and. lroot) then
         print*, 'copy_bcs_dust: Copied bcs on first dust species to all others'
       endif
