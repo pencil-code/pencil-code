@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.253 2004-06-09 17:27:55 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.254 2004-06-17 20:59:15 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-06-09 17:27:55 $ $,~ $ $Revision: 1.253 $ $}
+%\date{$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-06-09 17:27:55 $ $,~ $ $Revision: 1.253 $ $}\\
+  \emph{$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1559,27 +1559,68 @@ its parent directory, i.e.\
 and edit the \file{cparam.local} for the new resolution.
 
 % ---------------------------------------------------------------------- %
-\subsection{Using non equidistant grid}
+\subsection{Using a non-equidistant grid}
 
-The non equidistant grid z=z($\zeta$) in the vertical direction is a function of a equidistant grid with 
-a grid space of one.\\
-Therefor the first derivative is calculated by\\
-\begin{equation}
-\frac{df}{dz}=\frac{df}{d\zeta}\frac{d\zeta}{dz}=\frac{1}{z'}f'
+We introduce a non-equidistant grid $z_i$ (so far only implemented for the
+vertical direction) as a function $=z(\zeta)$ of an equidistant grid
+$\zeta_i$ with grid spacing $\Delta\zeta = 1$.
+Therefor the first derivative can be calculated by
+\begin{equation} \label{Eq-nonequi-fprime}
+  \frac{df}{dz} = \frac{df}{d\zeta}\frac{d\zeta}{dz}
+                = \frac{1}{z'}f'(\zeta) \; ,
 \end{equation}
-and the second derivative by\\
-\begin{equation}
-\frac{d^2f}{dz^2}=\frac{1}{z'^2}f''-\frac{z''}{z'^3}f'
+and the second derivative by
+\begin{equation} \label{Eq-nonequi-f2prime}
+  \frac{d^2f}{dz^2} =   \frac{1}{z'^2}f''(\zeta)
+                      - \frac{z''}{z'^3}f'(\zeta) \; .
 \end{equation}
-The non equidistant grid is implemented only for the vertical
-direction right now. The function is chosen to be\\
+
+The parameters \var{lequidist} (a 3-element logical array),
+\var{grid_func}, \var{coef_grid} and \var{zeta_grid0} define the function
+$z(\zeta)$.
+So far, one can choose between \code{grid_function='sinh'} and
+\code{grid_function='linear'} (which produces an equidistant grid for
+testing purposes).
+
+For \code{grid_function='sinh'}, the $z(\zeta)$ is given by
 \begin{equation}
-z(\zeta)=z_0 - L_z \frac{\sinh{a(\zeta_0-\zeta)}}{\sinh{a(\zeta_n-\zeta)}-\sinh{a(\zeta_0-\zeta)}}
+  z(\zeta)
+  = z_0 - L_z \frac{\sinh a(\zeta_0-\zeta)}
+                   {\sinh a(\zeta_n-\zeta)-\sinh a(\zeta_0-\zeta)} \; .
 \end{equation}
-To select the non equidistant grid set grid_func='sinh' in start.in
-There you can also set the coefficient $a$ by setting
-'coef_grid'. If you start at a non zero height you have to set
-'zeta_grid0' too. 
+To apply that profile, you can set the following in \file{start.in}:
+\begin{Verbatim}
+  &init_pars
+    [...]
+    lequidist = T, T, F         ! non-equidistant grid in z
+    coef_grid = 0.05
+    grid_func = 'sinh'          ! sinh function: linear for small, but
+                                ! exponential for large z
+    ! zeta_grid0 = 0.           ! default anyway
+/
+\end{Verbatim}
+The parameter \var{coef_grid} represents $a$; the bottom height $z_0$ and
+the total box height $L_z$ are taken from \var{xyz0} and \var{Lxyz} as in
+the equidistant case.
+If you want the linear part of the $\sinh$ profile at a non-zero height,
+you can set \var{zeta_grid0} to a value $\zeta_0$ different from zero.
+
+%
+\paragraph{Alternative formulation:}
+Equations~(\ref{Eq-timeavg-exp-alg}) and (\ref{Eq-timeavg-exp-int}) take a
+somewhat more compact form when working with the inverse function
+$\zeta(z)$:
+\begin{eqnarray} \label{Eq-nonequi-fprime-zeta-z}
+  \frac{df}{dz}     &=&   \zeta'(z)\, f'(\zeta) \; , \\
+  \frac{d^2f}{dz^2} &=&   \zeta'^2(z)\,f''(\zeta)
+                        + \zeta''(z) f'(\zeta) \; ,
+\end{eqnarray}
+because of
+\begin{equation}
+  \zeta'(z)  = \frac{1}{z'(\zeta)} \; , \qquad
+  \zeta''(z) = -\frac{z''}{z'^3} \; .
+\end{equation}
+
 
 % ---------------------------------------------------------------------- %
 
@@ -4272,7 +4313,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-06-09 17:27:55 $ $,~ $ $Revision: 1.253 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-06-17 20:59:15 $ $,~ $ $Revision: 1.254 $ $}
 
 \section{Timings}
 
@@ -7252,7 +7293,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.253 2004-06-09 17:27:55 dobler Exp $ $}
+$ $Id: manual.tex,v 1.254 2004-06-17 20:59:15 dobler Exp $ $}
 
 
 \end{document}
