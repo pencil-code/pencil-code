@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.41 2004-05-05 17:10:31 mee Exp $
+;;;  $Id: rall.pro,v 1.42 2004-05-29 06:20:07 brandenb Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -85,7 +85,7 @@ for i=1L,totalvars do begin
   ; Initialise variable
   if (varcontent[i].variable eq 'UNKNOWN') then $
            message, 'Unknown variable at position ' + str(i)  $
-                                    + ' needs declaring in varcontent.pro', /INFO   
+                                    + ' needs declaring in pc_varcontent.pro', /INFO   
   if (execute(varcontent[i].idlvar+'='+varcontent[i].idlinit,0) ne 1) then $
            message, 'Error initialising ' + varcontent[i].variable $
                                     +' - '+ varcontent[i].idlvar, /INFO

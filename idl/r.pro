@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.57 2004-05-05 17:10:31 mee Exp $
+; $Id: r.pro,v 1.58 2004-05-29 06:20:07 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.57 2004-05-05 17:10:31 mee Exp $
+;;; $Id: r.pro,v 1.58 2004-05-29 06:20:07 brandenb Exp $
 
 function param2
 COMPILE_OPT HIDDEN 
@@ -45,7 +45,7 @@ for iv=1L,totalvars do begin
   ; Initialise variable
   if (varcontent[iv].variable eq 'UNKNOWN') then $
            message, 'Unknown variable at position ' + str(iv)  $
-                    + ' needs declaring in varcontent.pro', /INFO   
+                    + ' needs declaring in pc_varcontent.pro', /INFO   
   cmd = varcontent[iv].idlvar + '='+varcontent[iv].idlinit
   if (execute(cmd) ne 1) then $
       message, 'Error initialising ' + varcontent[iv].variable $

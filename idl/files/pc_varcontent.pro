@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.7 2004-05-11 17:43:34 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.8 2004-05-29 06:20:07 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -129,6 +129,20 @@ varcontent[ilncc].idlvar   = 'lncc'
 varcontent[ilncc].idlinit    = INIT_SCALAR
 varcontent[ilncc].idlvarloc= 'lncc_loc'
 varcontent[ilncc].idlinitloc = INIT_SCALAR_LOC
+
+default,iXX_chiral,0
+varcontent[iXX_chiral].variable = 'XX_chiral'
+varcontent[iXX_chiral].idlvar   = 'XX_chiral'
+varcontent[iXX_chiral].idlinit    = INIT_SCALAR
+varcontent[iXX_chiral].idlvarloc= 'XX_chiral_loc'
+varcontent[iXX_chiral].idlinitloc = INIT_SCALAR_LOC
+
+default,iYY_chiral,0
+varcontent[iYY_chiral].variable = 'YY_chiral'
+varcontent[iYY_chiral].idlvar   = 'YY_chiral'
+varcontent[iYY_chiral].idlinit    = INIT_SCALAR
+varcontent[iYY_chiral].idlvarloc= 'YY_chiral_loc'
+varcontent[iYY_chiral].idlinitloc = INIT_SCALAR_LOC
 
 varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
 varcontent[iecr].idlvar   = 'ecr'
