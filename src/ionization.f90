@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.125 2003-10-22 15:29:59 dobler Exp $
+! $Id: ionization.f90,v 1.126 2003-10-23 14:01:51 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,8 +73,7 @@ module Ionization
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l
 
-  !  lionization initialized to .true.
-  !  it can be reset to .false. in namelist
+  ! namelist parameters
   real :: xHe=0.1
   real :: yHacc=1e-5
   real :: yHmin=2*tiny(yHacc), yHmax=1-2*epsilon(yHacc)
@@ -120,7 +119,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.125 2003-10-22 15:29:59 dobler Exp $")
+           "$Id: ionization.f90,v 1.126 2003-10-23 14:01:51 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
