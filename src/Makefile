@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.94 2002-09-20 10:08:11 dobler Exp $
+### $Id: Makefile,v 1.95 2002-09-20 10:16:27 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -9,7 +9,7 @@ LDMPI=-lmpi
 
 MPICOMM   = nompicomm
 GLOBAL    = noglobal
-IO        =   io_mpio
+IO        =   io_dist
 FFT       = nofft
 DEBUG     =   debug_c
 
