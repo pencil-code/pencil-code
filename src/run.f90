@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.119 2002-12-05 09:15:00 dobler Exp $
+! $Id: run.f90,v 1.120 2002-12-09 19:31:08 ngrs Exp $
 !
 !***********************************************************************
       program run
@@ -27,6 +27,7 @@
         use Boundcond
         use Power_spectrum
         use Timeavg
+        use Interstellar
 !
         implicit none
 !
@@ -51,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.119 2002-12-05 09:15:00 dobler Exp $")
+             "$Id: run.f90,v 1.120 2002-12-09 19:31:08 ngrs Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -213,6 +214,10 @@
           !
           if (lshear) call advance_shear()
           if (lforcing) call addforce(f)
+          !
+          !  check for SNe, and update f if necessary (see interstellar.f90)
+          !
+          if (linterstellar) call check_SN(f)
           !
           !  in regular intervals, calculate certain averages
           !  and do other output.

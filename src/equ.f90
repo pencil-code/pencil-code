@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.112 2002-12-09 19:28:34 mee Exp $
+! $Id: equ.f90,v 1.113 2002-12-09 19:31:08 ngrs Exp $
 
 module Equ
 
@@ -167,7 +167,6 @@ module Equ
       use Magnetic
       use Radiation
       use Pscalar
-      use Interstellar
       use Boundcond
       use IO
       use Shear
@@ -184,7 +183,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.112 2002-12-09 19:28:34 mee Exp $")
+           "$Id: equ.f90,v 1.113 2002-12-09 19:31:08 ngrs Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -201,13 +200,6 @@ module Equ
       if (ldebug) print*,'PDE: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       if (test_nonblocking) call finalise_isendrcv_bdry(f)
-!
-!  Check for SNe, and update df (for rho and entropy), if appropriate
-!  (Subroutines are in interstellar.f90)
-!
-      if (linterstellar .and. lfirst) then
-        call check_SN(f,df)
-      endif        
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
