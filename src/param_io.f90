@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.141 2003-11-02 05:19:08 brandenb Exp $ 
+! $Id: param_io.f90,v 1.142 2003-11-15 19:46:12 brandenb Exp $ 
 
 module Param_IO
 
@@ -72,7 +72,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux,onedall,lcalc_cp
+       lwrite_aux,onedall,lcalc_cp,old_cdtv
   contains
 
 !***********************************************************************

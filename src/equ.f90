@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.163 2003-11-15 19:09:02 brandenb Exp $
+! $Id: equ.f90,v 1.164 2003-11-15 19:46:12 brandenb Exp $
 
 module Equ
 
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.163 2003-11-15 19:09:02 brandenb Exp $")
+           "$Id: equ.f90,v 1.164 2003-11-15 19:46:12 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -357,7 +357,11 @@ module Equ
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
         if (lfirst.and.ldt) then
-          fac=cdt/(cdtv*dxmin)*dimensionality
+          if (old_cdtv) then
+            fac=cdt/(cdtv*dxmin)
+          else
+            fac=cdt/(cdtv*dxmin)*dimensionality
+          endif
           facheat=dxmin/cdt
 ! if(ip<=14) print*,'pde: facheat,maxheating(1)=',facheat,maxheating(1)
 ! if(ip<=14) print*,'pde: maxadvec2(1),fac=',maxadvec2(1),fac
