@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.109 2002-10-25 16:46:35 brandenb Exp $
+! $Id: run.f90,v 1.110 2002-10-29 09:43:54 tarek Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.109 2002-10-25 16:46:35 brandenb Exp $")
+             "$Id: run.f90,v 1.110 2002-10-29 09:43:54 tarek Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -244,6 +244,8 @@
            if (vel_spec) call power(f,'u')
            if (mag_spec) call power(f,'b')
            if (vec_spec) call power(f,'a')
+           if (ab_spec)  call powerhel(f,'mag')
+           if (ou_spec)  call powerhel(f,'kin')
         endif
 !
 !  write seed parameters (only if forcing is turned on)
