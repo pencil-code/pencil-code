@@ -4,7 +4,7 @@
 ;;;  Author: axel, wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   8-Jul-1999
 ;;;  Version: vel_a 1.2
-;;;  CVS $Revision: 1.1 $
+;;;  CVS $Revision: 1.2 $
 ;;;  Based on: vel.pro,v 1.4 1997/01/15 03:11:50 idl Exp,
 ;;;  Description: A clone of IDL's vel allowing for
 ;;;    a) X and Y arguments and the corresponding {X,Y}RANGE,
@@ -141,6 +141,7 @@ PRO VEL_A,U,W,xx,yy,LENGTH=length,XMAX=xmax, $
           nvecs = nvecs, nsteps = nsteps, $
           title = title, over=over, $
           seed=seed, noeras=noeras, $
+          color=color, $
           _EXTRA=extra
 ;+
 ; NAME:
@@ -217,6 +218,7 @@ if n_elements(nsteps) le 0 then nsteps = 10
 if n_elements(length) le 0 then length=.1
 if n_elements(title) le 0 then title='Velocity Field'
 if n_elements(seed) le 0 then seed=3.11
+if n_elements(color) le 0 then color=255
 ;
 if n_elements(xx) le 0 then begin ; Mimic the old behaviour
   X=ARROWS_A(U,W,Nvecs,LENGTH, nsteps=nsteps,seed=seed)
@@ -234,13 +236,13 @@ endif else begin
   y1=min(yy) & dyy=max(yy)-y1
   if keyword_set(noeras) then begin
     if not keyword_set(over) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
-        title=title,/nodata,/noeras
+        title=title,/nodata,/noeras,color=color
   end else begin
     if not keyword_set(over) then plot,x1+dxx*[0,1,1,0,0],y1+dyy*[0,0,1,1,0],$
-        title=title,/nodata
+        title=title,/nodata,color=color
   end
   X=ARROWS_A(U,W,Nvecs,LENGTH, nsteps=nsteps,seed=seed,dx=dxx,dy=dyy)
-  FOR I=0L,Nvecs-1 DO PLOTS,x1+dxx*X[I,*,0],y1+dyy*X[I,*,1],noclip=0
+  FOR I=0L,Nvecs-1 DO PLOTS,x1+dxx*X[I,*,0],y1+dyy*X[I,*,1],noclip=0,color=color
 endelse
 RETURN
 end
