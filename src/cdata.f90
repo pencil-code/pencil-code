@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.124 2003-02-02 20:05:37 dobler Exp $
+! $Id: cdata.f90,v 1.125 2003-02-03 14:49:13 dobler Exp $
 
 module Cdata
 
@@ -10,7 +10,7 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real, dimension (nr) :: rcyl  ! used for phi-averages
+  real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn
   real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
@@ -19,7 +19,7 @@ module Cdata
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
-  real :: dx,dy,dz,dxmin,dxmax
+  real :: dx,dy,dz,dxmin,dxmax,drcyl
   real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: tsforce=-10., dtforce=1
   real, dimension (2) :: fran1,fran2
@@ -57,8 +57,8 @@ module Cdata
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
-  real, dimension (nr,nz,nprocz,mnamerz) :: fnamerz
-  real, dimension (nr,nx) :: phiavg_profile
+  real, dimension (nrcyl,nz,nprocz,mnamerz) :: fnamerz
+  real, dimension (nrcyl,nx) :: phiavg_profile
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
   character (LEN=30) :: cnamez(mnamez),cformz(mnamez)

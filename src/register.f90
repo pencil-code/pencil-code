@@ -1,8 +1,7 @@
-! $Id: register.f90,v 1.59 2003-02-02 20:05:37 dobler Exp $
+! $Id: register.f90,v 1.60 2003-02-03 14:49:13 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
-!!!  entropy, magnetic, etc modules). Didn't know where else to put this:
-!!!  Entropy uses Sub and Init must be used by both, Start and Run.
+!!!  entropy, magnetic, etc modules).
 
 
 module Register
@@ -15,7 +14,9 @@ module Register
     subroutine register_modules()
 !
 !  Call all registration hooks, i.e. initialise MPI and register
-!  physics modules.
+!  physics modules. Registration implies getting slices of the f-array
+!  and setting logicals like lentropy to .true. This routine is called by
+!  both, start.x and run.x .
 !
 !  6-nov-01/wolf: coded
 !
@@ -78,16 +79,16 @@ module Register
 !***********************************************************************
     subroutine initialize_modules(f)
 !
-!ajwm - not sure whether original renaming of initialize to register
-!ajwm - and this and its children to initialize and initialize_XXX
-!ajwm - might be better???
-!
-!  Call all initialisation hooks, i.e. initialize
-!  physics modules so parameters derived from paramaters may be calculated.
+!  Call initialization hooks, i.e. initialize physics and technical
+!  modules. This implies some preparation of auxiliary quantities, often
+!  based on input parameters. This routine is called by run.x (but not by
+!  start.x) initially and each time the run parameters have been reread.
 !
 !  6-nov-01/wolf: coded
 !
       use Cdata
+      use Print
+      use Timeavg
       use Gravity
       use Hydro
       use Forcing
@@ -99,18 +100,14 @@ module Register
       use Interstellar
       use Shear
       use Viscosity
-      use Timeavg
 
-! Allow initializations it 'inspect' f
       real, dimension(mx,my,mz,mvar) :: f
 !
-! Reset defaults for some variables to allow logical
-! .or. to be performed serially
+!  Defaults for some logicals; will later be set to true if needed
       lneed_sij = .false.
       lneed_glnrho = .false.
 !
 !  set gamma1, cs20, and lnrho0
-!  general parameter checks (and possible adjustments)
 !
       gamma1=gamma-1.
       cs20=cs0**2
@@ -118,23 +115,23 @@ module Register
 !
 !  run initialization of individual modules
 !
-!ajwm need initialize_io ????
 !      call initialize_io
+      call initialize_prints
+!ajwm timeavg needs tidying to be similar structure to other modules
+      call initialize_timeavg(f) ! initialize time averages
 !
-      call initialize_hydro
-      call initialize_density
+!      call initialize_hydro
+!      call initialize_density
       call initialize_forcing  ! get random seed from file, ..
       call initialize_entropy  ! calculate radiative conductivity, etc.
-      call initialize_magnetic
-      call initialize_radiation
-      call initialize_ionization
-      call initialize_pscalar
+!      call initialize_magnetic
+!      call initialize_radiation
+!      call initialize_ionization
+!      call initialize_pscalar
       call initialize_gravity
       call initialize_interstellar
       call initialize_shear
       call initialize_viscosity
-!ajwm timeavg needs tidying to be similar structure to other modules
-      call initialize_timeavg(f) ! initialize time averages
 !
 !  timestep: if dt=0 (ie not initialized), ldt=.true.
 !

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.109 2003-02-02 20:05:38 dobler Exp $ 
+! $Id: sub.f90,v 1.110 2003-02-03 14:49:13 dobler Exp $ 
 
 module Sub 
 
@@ -180,7 +180,7 @@ module Sub
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      do ir=1,nr
+      do ir=1,nrcyl
         fnamerz(ir,n_nghost,ipz+1,iname) &
            = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
       enddo
@@ -202,8 +202,8 @@ module Sub
 !  approximately one. Eventually, we will sum up unity together with the
 !  data to get the exact normalization for arbitrary profiles.
 !
-      width = dx
-      do ir=1,nr
+      width = drcyl
+      do ir=1,nrcyl
         r0 = rcyl(ir)
         phiavg_profile(ir,:) &
              = 0.06349*dx*dy/(r0*width)*exp(-0.5*((rcyl_mn-r0)/width)**2)

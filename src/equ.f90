@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.120 2003-02-02 20:05:37 dobler Exp $
+! $Id: equ.f90,v 1.121 2003-02-03 14:49:13 dobler Exp $
 
 module Equ
 
@@ -11,8 +11,8 @@ module Equ
 !***********************************************************************
       subroutine collect_UUmax
 !
-!  This routine is used for calculating the maximum effective advection
-!  velocity in the domain for determining dt at each timestep
+!  Calculate the maximum effective advection velocity in the domain;
+!  needed for determining dt at each timestep
 !
 !   2-sep-01/axel: coded
 !
@@ -164,13 +164,13 @@ module Equ
       use Cdata
       use Sub
 !
-      real, dimension (nr,nz,nprocz,mnamerz) :: fsumrz
+      real, dimension (nrcyl,nz,nprocz,mnamerz) :: fsumrz
 !
 !  communicate over all processors
 !  the result is only present on the root processor
 !
       if(nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nr*nz*nprocz)
+        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*nz*nprocz)
 !        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
       endif
 !
@@ -209,7 +209,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.120 2003-02-02 20:05:37 dobler Exp $")
+           "$Id: equ.f90,v 1.121 2003-02-03 14:49:13 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.35 2003-02-02 20:05:37 dobler Exp $
+! $Id: prints.f90,v 1.36 2003-02-03 14:49:13 dobler Exp $
 
 module Print
 
@@ -10,6 +10,30 @@ module Print
 
   contains
 
+!***********************************************************************
+    subroutine initialize_prints()
+!
+!  setup variables needed for output of diagnostic quantities and
+!  averages.
+!
+      use Cdata
+!
+      integer :: i
+      logical, save :: first=.true.
+!
+      if (first) then
+        !
+        !  Initialize rcyl for the phi-averages grid. Does not need to be
+        !  done after each reload of run.in, but this is the easiest way
+        !  of doing it.
+        !
+        drcyl = dx
+        rcyl = (/ ((i-0.5)*drcyl, i=1,nrcyl) /)
+      endif
+!
+      first = .false.
+!
+    endsubroutine initialize_prints
 !***********************************************************************
     subroutine prints
 !
@@ -154,9 +178,9 @@ module Print
       logical,save :: first=.true.
 !
       if(lroot.and.nnamerz>0) then
-        open(1,file=trim(datadir)//'/phiaverages.dat',position='append')
-        write(1,'(1pe12.5)') t
-        write(1,'(1p,8e11.3)') fnamerz(:,:,:,1:nnamerz)
+        open(1,FILE=trim(datadir)//'/phiaverages.dat',FORM='unformatted')
+        write(1) fnamerz(:,:,:,1:nnamerz)
+        write(1) t,rcyl,z(n1:n2),drcyl,dz
         close(1)
       endif
       first = .false.
