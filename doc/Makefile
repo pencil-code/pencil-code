@@ -33,6 +33,17 @@ manual.dvi: manual.tex
 manual.pdf: manual.dvi
 	dvipdfm -p a4 manual.dvi
 
+# To generate manual.ps, we need to temporarily replace
+# `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
+manual.ps: manual.tex
+	perl -i.bak1 -0777 -pe \
+	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
+	$(MAKE) manual.dvi
+	perl -i.bak2 -0777 -pe \
+	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
+	dvips -Ppdf -G0 manual -o manual.ps
+	rm -f manual.dvi	# or it might get used by next `make manual.pdf'
+
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
 

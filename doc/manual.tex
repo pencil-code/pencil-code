@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.213 2003-11-20 15:43:05 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.214 2003-11-20 16:43:57 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -58,7 +58,6 @@
 \else                           % running pdflatex
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
 \fi
-\usepackage{hyperref}
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
 %\usepackage{german,a4}
@@ -70,14 +69,17 @@
 \renewcommand{\ttdefault}{cmtt} % Courier is too broad
 \usepackage{amsmath}
 
-%\usepackage{makeidx}
-\usepackage{index}              % Allow for multiple indexes
-
 \usepackage[it,footnotesize]{caption2}
 \setlength{\abovecaptionskip}{5pt} % Space before caption
 \setlength{\belowcaptionskip}{5pt} % Space after caption
 
 \usepackage[bf,sf,small,nonindentfirst]{titlesec}
+
+\usepackage[dvipdfm]{hyperref}  % load after titlesec, or else (with dvipdfm)
+                                % the \section links are one or two pages off
+%\usepackage{makeidx}
+\usepackage{index}      % Allow for multiple indexes (load after hyperref)
+
 \newcommand{\sectionbreak}{\clearpage} % starts new page for new section
 \titleformat{\subsubsection}{\normalfont\itshape}{\thesubsubsection}{.5em}{}
 %\titlespacing{\subsubsection}{0pt}{*1}{*-1}
@@ -346,7 +348,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-20 15:43:05 $ $,~ $ $Revision: 1.213 $ $}
+%\date{$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}
 
 % ====================================================================== %
 
@@ -381,7 +383,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-20 15:43:05 $ $,~ $ $Revision: 1.213 $ $}\\
+  \emph{$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3397,7 +3399,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-20 15:43:05 $ $,~ $ $Revision: 1.213 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-20 16:43:57 $ $,~ $ $Revision: 1.214 $ $}
 
 \section{Timings}
 
@@ -6018,7 +6020,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.213 2003-11-20 15:43:05 dobler Exp $ $}
+$ $Id: manual.tex,v 1.214 2003-11-20 16:43:57 dobler Exp $ $}
 
 
 \end{document}
