@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.118 2004-07-24 12:47:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.119 2004-07-24 12:51:02 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -118,7 +118,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.118 2004-07-24 12:47:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.119 2004-07-24 12:51:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -184,9 +184,8 @@ module Dustdensity
       if (nx*ny /= 1) print*,'initialize_dustdensity: WARNING -'// &
           'dust equations only tested in one dimension (z).'
 !
-!  Special test cases need initialization of kernel
+!  Special coagulation equation test cases require initialization of kernel
 !
-
       select case (initnd)     
       
       case('kernel_cst')
