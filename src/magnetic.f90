@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $
+! $Id: magnetic.f90,v 1.228 2004-10-04 17:27:43 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -91,12 +91,12 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
-  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM2=0,i_epsM_LES=0
+  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0,i_epsM_LES=0
   integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
   integer :: i_beta1m=0,i_beta1max=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
-  integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0
+  integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0,i_djuidjbim
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
@@ -146,7 +146,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.227 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.228 2004-10-04 17:27:43 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -376,7 +376,7 @@ module Magnetic
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: b2b13,jo,sign_jo
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
-      real, dimension (nx) :: ufres,rufres,etatotal,pp
+      real, dimension (nx) :: etatotal,pp,djuidjbi
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j,i
       real, dimension (nx) :: eta_smag
@@ -447,6 +447,12 @@ module Magnetic
            bybz = bb(:,2)*bb(:,3)
            call sum_mn_name(bybz,i_bybzm)
         endif
+
+        if (i_djuidjbim/=0) then
+           call multmm_sc(uij,bij,djuidjbi)
+           call sum_mn_name(djuidjbi,i_djuidjbim)
+        endif 
+
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -686,15 +692,6 @@ module Magnetic
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
-        !
-        ! Dissipated energy directly from the resistive force
-        ! (only correct for periodic bc)
-        !
-        if (i_epsM2/=0) then
-          call dot_mn(bb,fres,ufres)
-          rufres=ufres/rho1
-          call sum_mn_name(-rufres,i_epsM2)
-        endif
         !
         !  magnetic field components at one point (=pt)
         !
@@ -1132,12 +1129,12 @@ module Magnetic
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
-        i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM2=0; i_epsM_LES=0
+        i_bxpt=0; i_bypt=0; i_bzpt=0; i_epsM_LES=0
         i_aybym2=0; i_exaym2=0; i_exjm2=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
         i_beta1m=0; i_beta1max=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
-        i_bxbym=0; i_bxbzm=0; i_bybzm=0
+        i_bxbym=0; i_bxbzm=0; i_bybzm=0; i_djuidjbim=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
@@ -1164,7 +1161,6 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
         call parse_name(iname,cname(iname),cform(iname),'epsM',i_epsM)
-        call parse_name(iname,cname(iname),cform(iname),'epsM2',i_epsM2)
         call parse_name(iname,cname(iname),cform(iname),'epsM_LES',i_epsM_LES)
         call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
@@ -1181,6 +1177,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bxbym',i_bxbym)
         call parse_name(iname,cname(iname),cform(iname),'bxbzm',i_bxbzm)
         call parse_name(iname,cname(iname),cform(iname),'bybzm',i_bybzm)
+        call parse_name(iname,cname(iname),cform(iname),'djuidjbim',i_djuidjbim)
         call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',i_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',i_uxbmy)
@@ -1244,7 +1241,6 @@ module Magnetic
         write(3,*) 'i_j2m=',i_j2m
         write(3,*) 'i_jm2=',i_jm2
         write(3,*) 'i_epsM=',i_epsM
-        write(3,*) 'i_epsM2=',i_epsM2
         write(3,*) 'i_epsM_LES=',i_epsM_LES
         write(3,*) 'i_brms=',i_brms
         write(3,*) 'i_bmax=',i_bmax
@@ -1261,6 +1257,7 @@ module Magnetic
         write(3,*) 'i_bxbym=',i_bxbym
         write(3,*) 'i_bxbzm=',i_bxbzm
         write(3,*) 'i_bybzm=',i_bybzm
+        write(3,*) 'i_djuidjbim=',i_djuidjbim
         write(3,*) 'i_uxbm=',i_uxbm
         write(3,*) 'i_uxbmx=',i_uxbmx
         write(3,*) 'i_uxbmy=',i_uxbmy
