@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.99 2003-06-18 14:04:19 ajohan Exp $
+! $Id: density.f90,v 1.100 2003-06-19 07:20:09 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.99 2003-06-18 14:04:19 ajohan Exp $")
+           "$Id: density.f90,v 1.100 2003-06-19 07:20:09 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -761,7 +761,7 @@ module Density
 !  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
 !  for the time being, we don't worry about lnrho0 (assuming that it is 0)
 !
-        tmp=gravz/cs2bot
+        tmp=-gravz/cs2bot
         do i=1,nghost
           f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,ient) &
                                                   -f(:,:,n1-i,ient) +2*i*dz*tmp
