@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.25 2002-08-03 20:47:39 dobler Exp $
+! $Id: boundcond.f90,v 1.26 2002-08-03 22:32:41 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -64,8 +64,10 @@ module Boundcond
               do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
             case ('a2')         ! antisymmetry relative to boundary value
               do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
-            case ('cT')             ! constant temp. (processed in own routine)
+            case ('cT')         ! constant temp. (processed in own routine)
               if (j==ient) call bc_ss_temp_x(f,'bot')
+            case ('sT')         ! symmetric temp. (processed in own routine)
+              if (j==ient) call bc_ss_stemp_x(f,'bot')
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx1 = ", &
@@ -93,6 +95,8 @@ module Boundcond
               do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
             case ('cT')             ! constant temp. (processed in own routine)
               if (j==ient) call bc_ss_temp_x(f,'top')
+            case ('sT')             ! symmetric temp. (processed in own routine)
+              if (j==ient) call bc_ss_stemp_x(f,'top')
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx2 = ", &
@@ -147,6 +151,8 @@ module Boundcond
             do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
           case ('cT')             ! constant temp. (processed in own routine)
             if (j==ient) call bc_ss_temp_y(f,'bot')
+          case ('sT')             ! symmetric temp. (processed in own routine)
+            if (j==ient) call bc_ss_stemp_y(f,'bot')
           case default
             if (lroot) &
                  print*, "No such boundary condition bcy1 = ", &
@@ -173,6 +179,8 @@ module Boundcond
             do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
           case ('cT')             ! constant temp. (processed in own routine)
             if (j==ient) call bc_ss_temp_y(f,'top')
+          case ('sT')             ! symmetric temp. (processed in own routine)
+            if (j==ient) call bc_ss_stemp_y(f,'top')
           case default
             if (lroot) &
                  print*, "No such boundary condition bcy2 = ", &
@@ -229,6 +237,8 @@ module Boundcond
             if (j==iaa)  call bc_aa_pot(f,'bot')
           case ('cT')             ! constant temp. (processed in own routine)
             if (j==ient) call bc_ss_temp_z(f,'bot')
+          case ('sT')             ! symmetric temp. (processed in own routine)
+            if (j==ient) call bc_ss_stemp_z(f,'bot')
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp_old(f,'bot')
           case ('db')             ! complex (processed in its own routine)
@@ -264,6 +274,8 @@ module Boundcond
             if (j==iaa)  call bc_aa_pot(f,'top')
           case ('cT')             ! constant temp. (processed in own routine)
             if (j==ient) call bc_ss_temp_z(f,'top')
+          case ('sT')             ! symmetric temp. (processed in own routine)
+            if (j==ient) call bc_ss_stemp_z(f,'top')
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp_old(f,'top')
           case ('db')             ! complex (processed in its own routine)
