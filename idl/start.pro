@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.47 2003-06-13 09:29:41 nilshau Exp $
+;;; $Id: start.pro,v 1.48 2003-06-16 12:21:10 theine Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -136,6 +136,7 @@ if (cpar gt 0) then begin
   unit_length=par.unit_length
   unit_velocity=par.unit_velocity
   unit_density=par.unit_density
+  unit_temperature=par.unit_temperature
   ;
   lhydro    = par.lhydro
   ldensity  = par.ldensity

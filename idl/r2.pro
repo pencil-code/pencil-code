@@ -1,4 +1,4 @@
-; $Id: r2.pro,v 1.1 2003-06-16 09:09:52 nilshau Exp $
+; $Id: r2.pro,v 1.2 2003-06-16 12:21:10 theine Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r2.pro,v 1.1 2003-06-16 09:09:52 nilshau Exp $
+;;; $Id: r2.pro,v 1.2 2003-06-16 12:21:10 theine Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -84,6 +84,9 @@ rr = sqrt(xx^2+yy^2+zz^2)
 ;
 ;  Summarise data
 ;
+print,' t     =',t
+print,'----------------------'
+;
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, '  var            minval         maxval          mean           rms'
@@ -113,7 +116,7 @@ if (lradiation_fld) then begin
     minmax(ee), mean(ee,/DOUBLE), rms(ee,/DOUBLE)
 end
 if (lradiation AND NOT lradiation_fld) then begin
-    print, FORMAT=fmt, 'Qrad     =', $
+    print, FORMAT=fmt, 'Qrad   =', $
     minmax(Qrad(l1:l2,m1:m2,n1:n2)), mean(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE)
     print, FORMAT=fmt, 'TT     =', $
     minmax(TT(l1:l2,m1:m2,n1:n2)), mean(TT(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(TT(l1:l2,m1:m2,n1:n2),/DOUBLE)
@@ -126,8 +129,6 @@ if (lmagnetic) then begin
       eta=par2.eta
     end
 end
-;
-print,'t = ',t
 ;
 if (par.lvisc_shock ne 0) then begin
     nu_shock=fltarr(mx,my,mz)*one
