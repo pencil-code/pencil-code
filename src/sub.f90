@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.99 2002-11-09 08:31:56 brandenb Exp $ 
+! $Id: sub.f90,v 1.100 2002-11-12 07:33:40 brandenb Exp $ 
 
 module Sub 
 
@@ -302,6 +302,23 @@ module Sub
 !
     endsubroutine dot_mn
 !***********************************************************************
+    subroutine dot_mn_add(a,b,c)
+!
+!  dot product
+!  11-nov-02/axel: adapted from dot_mn
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c=c+a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
+!
+    endsubroutine dot_mn_add
+!***********************************************************************
     subroutine dot2_mn(a,b)
 !
 !  dot product with itself, to calculate max and rms values of a vector
@@ -401,6 +418,27 @@ module Sub
       end do
 !
     end subroutine multmm_sc_mn
+!***********************************************************************
+    subroutine multm2_mn(a,b)
+!
+!  matrix squared, gives scalar
+!
+!  11-nov-02/axel: adapted from multmm_sc_mn
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: a
+      real, dimension (nx) :: b
+      integer :: i,j
+!
+      b=0
+      do i=1,3
+         do j=1,3
+            b=b+a(:,i,j)**2
+         end do
+      end do
+!
+    end subroutine multm2_mn
 !***********************************************************************
     subroutine multmv_mn(a,b,c)
 !

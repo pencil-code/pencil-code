@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.94 2002-11-09 16:42:17 brandenb Exp $
+! $Id: magnetic.f90,v 1.95 2002-11-12 07:33:40 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -43,7 +43,7 @@ module Magnetic
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.94 2002-11-09 16:42:17 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.95 2002-11-12 07:33:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -321,12 +321,13 @@ module Magnetic
         !
         ! <J^2> and J^2|max
         !
-        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0) then
+        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0.or.i_epsM/=0) then
           call dot2_mn(jj,j2)
           if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
           if (i_jm2/=0) call max_mn_name(j2,i_jm2)
           if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
+          if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
         endif
         !
         if (i_uxuxBm/=0) then
@@ -394,7 +395,7 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
@@ -410,6 +411,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'epsM',i_epsM)
         call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
         call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
         call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
@@ -446,6 +448,7 @@ module Magnetic
       write(3,*) 'i_bm2=',i_bm2
       write(3,*) 'i_j2m=',i_j2m
       write(3,*) 'i_jm2=',i_jm2
+      write(3,*) 'i_epsM=',i_epsM
       write(3,*) 'i_brms=',i_brms
       write(3,*) 'i_bmax=',i_bmax
       write(3,*) 'i_jrms=',i_jrms

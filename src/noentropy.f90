@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.31 2002-10-09 14:05:31 mee Exp $
+! $Id: noentropy.f90,v 1.32 2002-11-12 07:33:40 brandenb Exp $
 
 module Entropy
 
@@ -20,7 +20,7 @@ module Entropy
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ssm=0
+  integer :: i_ssm=0,i_ugradpm=0
 
   contains
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.31 2002-10-09 14:05:31 mee Exp $")
+           "$Id: noentropy.f90,v 1.32 2002-11-12 07:33:40 brandenb Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -68,10 +68,11 @@ module Entropy
 !   9-jun-02/axel: pressure gradient added to du/dt already here
 !
       use Density
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,rho1,cs2,TT1
+      real, dimension (nx) :: lnrho,rho1,cs2,TT1,uglnrho
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1
@@ -94,6 +95,15 @@ module Entropy
           ju=j+iuu-1
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*glnrho(:,j)
         enddo
+      endif
+!
+!  Calculate entropy related diagnostics
+!
+      if (ldiagnos) then
+        if (i_ugradpm/=0) then
+          call dot_mn(uu,glnrho,uglnrho)
+          call sum_mn_name(cs2*uglnrho,i_ugradpm)
+        endif
       endif
 !
       if(ip==1) print*,f,df,uu,rho1  !(compiler)
@@ -122,16 +132,17 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ssm=0.
+        i_ssm=0; i_ugradpm=0
       endif
 !
       do iname=1,nname
-!       call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       write(3,*) 'i_ssm=',i_ssm
+      write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
 !

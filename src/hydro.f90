@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.78 2002-11-11 21:19:09 brandenb Exp $
+! $Id: hydro.f90,v 1.79 2002-11-12 07:33:40 brandenb Exp $
 
 !  This module takes care of everything related to velocity
 
@@ -43,6 +43,7 @@ module Hydro
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
+  integer :: i_divu2m=0,i_epsK=0
 
   contains
 
@@ -79,7 +80,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.78 2002-11-11 21:19:09 brandenb Exp $")
+           "$Id: hydro.f90,v 1.79 2002-11-12 07:33:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -270,7 +271,7 @@ module Hydro
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,fvisc,glnrho,sglnrho,del2u,graddivu
-      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,rho,ux,uy,uz
+      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1,rho,ux,uy,uz,sij2
       real :: c2,s2
       integer :: i,j
 !
@@ -425,6 +426,15 @@ module Hydro
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
+        if (i_divu2m/=0) call sum_mn_name(divu**2,i_divu2m)
+!
+!  mean heating term
+!
+        if (i_epsK/=0) then
+          rho=exp(f(l1:l2,m,n,ilnrho))
+          call multm2_mn(sij,sij2)
+          call sum_mn_name(2*nu*rho*sij2,i_epsK)
+        endif
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -618,6 +628,7 @@ module Hydro
         i_ruxm=0; i_ruym=0; i_ruzm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
+        i_divu2m=0; i_epsK=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -640,6 +651,8 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'umz',i_umz)
         call parse_name(iname,cname(iname),cform(iname),'Marms',i_Marms)
         call parse_name(iname,cname(iname),cform(iname),'Mamax',i_Mamax)
+        call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
+        call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -676,6 +689,8 @@ module Hydro
       write(3,*) 'i_umz=',i_umz
       write(3,*) 'i_Marms=',i_Marms
       write(3,*) 'i_Mamax=',i_Mamax
+      write(3,*) 'i_divu2m=',i_divu2m
+      write(3,*) 'i_epsK=',i_epsK
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.129 2002-10-16 14:42:19 brandenb Exp $
+! $Id: entropy.f90,v 1.130 2002-11-12 07:33:40 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -37,7 +37,7 @@ module Entropy
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ssm=0
+  integer :: i_ssm=0,i_ugradpm=0
 
   contains
 
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.129 2002-10-16 14:42:19 brandenb Exp $")
+           "$Id: entropy.f90,v 1.130 2002-11-12 07:33:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -301,9 +301,9 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,sij2
+      real, dimension (nx) :: ugss,sij2,uglnrho
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
-      integer :: i,j,ju
+      integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho
       intent(out) :: df,cs2,TT1
@@ -339,12 +339,9 @@ module Entropy
 !
       call dot_mn(uu,gss,ugss)
 !
-      sij2=0.
-      do j=1,3
-      do i=1,3
-        sij2=sij2+sij(:,i,j)**2
-      enddo
-      enddo
+!  traceless strainmatrix squared
+!
+      call multm2_mn(sij,sij2)
 !
 !  calculate 1/T (in units of cp)
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
@@ -391,6 +388,10 @@ module Entropy
 !
       if (ldiagnos) then
         if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
+        if (i_ugradpm/=0) then
+          call dot_mn(uu,glnrho,uglnrho)
+          call sum_mn_name(cs2*(uglnrho+ugss),i_ugradpm)
+        endif
       endif
 !
     endsubroutine dss_dt
@@ -776,16 +777,18 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ssm=0
+        i_ssm=0; i_ugradpm=0
       endif
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
+        call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       write(3,*) 'i_ssm=',i_ssm
+      write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
 !
