@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.17 2004-01-10 17:38:40 theine Exp $
+### $Id: Makefile.src,v 1.18 2004-01-10 18:25:36 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -145,6 +145,7 @@ FCCLEANER=
 #CC=icc #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11|wormhole)
 #LDMPI= # (Samos|fire|sandin)
+#LDMPI=-llammpio -llamf77mpi -lmpi -llam -lutil #(cosmo)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(cosmo)
 #F77=$(FC)
