@@ -2,7 +2,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin
 ;
-;  $Id: power.pro,v 1.18 2003-07-14 09:48:51 nilshau Exp $
+;  $Id: power.pro,v 1.19 2003-11-02 17:52:28 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -75,7 +75,7 @@ end
 if keyword_set(noplot) then iplot=0 else iplot=1
 ;
 ;!p.multi=[0,1,1]
-!p.charsize=2
+;!p.charsize=2
 
 mx=0L & my=0L & mz=0L & nvar=0L
 prec=''
