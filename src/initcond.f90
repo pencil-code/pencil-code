@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.21 2002-12-12 11:16:16 brandenb Exp $ 
+! $Id: initcond.f90,v 1.22 2003-02-13 10:01:54 torkel Exp $ 
 
 module Initcond 
  
@@ -664,6 +664,26 @@ module Initcond
       f(:,:,:,ivar) = ampl*cos(kx*xx)*cos(ky*yy)*sin(kz*zz)
 !
     endsubroutine cos_cos_sin
+!***********************************************************************
+    subroutine tor_pert(ampl,f,ivar,xx,yy,zz)
+!
+!  Produce a profile that is periodic in the y- and z-directions.
+!  For testing the Balbus-Hawley instability of a toroidal magnetic field
+!
+!  12-feb-03/ulf: coded
+!
+      integer :: ivar
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,ky,kz
+!
+      if (lroot) print*, 'uu: trilinear in ', ivar
+!
+      ky=2*pi/Ly
+      kz=2.*pi/Lz
+      f(:,:,:,ivar) = ampl*cos(ky*yy)*cos(kz*zz)
+!
+    endsubroutine tor_pert
 !***********************************************************************
 
 endmodule Initcond
