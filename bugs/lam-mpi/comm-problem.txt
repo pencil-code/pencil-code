@@ -1,4 +1,4 @@
-$Id: comm-problem.txt,v 1.1 2002-07-24 12:26:05 dobler Exp $
+$Id: comm-problem.txt,v 1.2 2002-07-24 14:16:54 dobler Exp $
 
 On Kabul, the code sometimes hangs after some 1000 or time steps (sometimes
 less, sometimes more). Here is the output of mpitask for a run on 5 CPUs
@@ -34,11 +34,13 @@ And this is the output of mpimsg
   2/2            1/1            10      WORLD    4608     REAL        n2,#104
 
 
-Tag 5 is tolowz; there are no tags 86 or 15 (they must come from reduction
-or broadcast operations):
+Tag 5 in WORLD is tolowz:
 
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: TOll=7,TOul=8,TOuu=9,TOlu=10 ! msg. tags for corners
+
+WORLD* seems to be an internal communicator used for reduction or
+broadcast operations.
 
 
 Thus everything hangs because:
