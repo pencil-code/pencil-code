@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.309 2004-05-18 09:59:18 ajohan Exp $
+! $Id: entropy.f90,v 1.310 2004-05-19 10:47:34 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -31,7 +31,7 @@ module Entropy
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.,Kisotr=0.
   real :: Kgperp=0.,Kgpara=0.
-  real :: ss_left,ss_right
+  real :: ss_left=1.,ss_right=1.
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
   !parameters for Sedov type initial condition
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.309 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: entropy.f90,v 1.310 2004-05-19 10:47:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.163 2004-05-18 09:59:18 ajohan Exp $
+! $Id: hydro.f90,v 1.164 2004-05-19 10:47:34 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.163 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: hydro.f90,v 1.164 2004-05-19 10:47:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1198,7 +1198,7 @@ module Hydro
       use Cdata
       use Cparam
       use Mpicomm
-      use Ionization, only: pressure_gradient,eoscalc_point,ilnrho_ss
+      use Ionization, only: pressure_gradient,eoscalc,ilnrho_ss
       use Viscosity, only: nu_mol
 
       real, dimension(mx,my,mz,mvar+maux) :: f
@@ -1240,7 +1240,7 @@ module Hydro
 !  Need mid-plane pressure for pressure scale height calculation
 !
       if (iproc == nprocz/2) then
-        call eoscalc_point(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
+        call eoscalc(ilnrho_ss,f(lpoint,mpoint,n1,ilnrho),&
             f(lpoint,mpoint,n1,iss),pp=pp0)
       endif
       call mpibcast_real(pp0,1,nprocz/2)
@@ -1250,7 +1250,7 @@ module Hydro
       Hp = 0.
       do n=n1,n2
         pp1 = pp2
-        call eoscalc_point(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
+        call eoscalc(ilnrho_ss,f(lpoint,mpoint,n,ilnrho), &
             f(lpoint,mpoint,n,iss),pp=pp2)
         if (pp1 > 0.367879*pp0 .and. pp2 <= 0.367879*pp0) then
 !
