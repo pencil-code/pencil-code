@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.134 2002-11-14 14:29:29 dobler Exp $
+! $Id: entropy.f90,v 1.135 2002-11-15 14:28:03 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.134 2002-11-14 14:29:29 dobler Exp $")
+           "$Id: entropy.f90,v 1.135 2002-11-15 14:28:03 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -431,7 +431,7 @@ module Entropy
           !  calculate hcond and FbotKbot=Fbot/K, where K=hcond is radiative conductivity
           !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
-          FbotKbot=Fbot/Kbot
+          FbotKbot=gamma/gamma1/(mpoly+1.)
           if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
         endif
       endif
