@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.14 2004-05-24 13:57:21 mee Exp $
+; $Id: pc_read_ts.pro,v 1.15 2004-09-27 14:19:40 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-05-24 13:57:21 $
-;  $Revision: 1.14 $
+;  $Date: 2004-09-27 14:19:40 $
+;  $Revision: 1.15 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -69,7 +69,8 @@ pro pc_read_ts, $
                 OBJECT=object, $ 
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
-                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST 
+                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST,  $
+                MOVINGAVERAGE=MOVINGAVERAGE
 COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
@@ -79,6 +80,7 @@ COMPILE_OPT IDL2,HIDDEN
     print, "pc_read_ts,  T=t,"
     print, "             OBJECT=object," 
     print, "             FILENAME=filename," 
+    print, "             MOVINGAVERAGE=maverage," 
     print, "             /PRINT, /DOUBLE, /QUIET, /HELP"
     print, ""
     print, "Read time series data from time_series.dat into separate "
@@ -86,6 +88,8 @@ COMPILE_OPT IDL2,HIDDEN
     print, ""
     print, " filename: specify the filename of the time series data   [string]"
     print, "           Default is 'time_series.dat'                           "
+    print, " maverage: number of points to include in a moving       [integer]"
+    print, "           average. (should probably be odd!)                     "
     print, "  datadir: specify the path to the data directory         [string]"
     print, "           containing the time series file.                       "
     print, "           Default is 'data/'                                     "
@@ -117,6 +121,7 @@ COMPILE_OPT IDL2,HIDDEN
 
   default, datadir, 'data/'
   default, filename, 'time_series.dat'
+  default, MOVINGAVERAGE,0
 
   if (strpos(filename,'/') eq -1) then begin
     fullfilename=datadir+filename
@@ -235,6 +240,24 @@ COMPILE_OPT IDL2,HIDDEN
 
 ; If we wish to throw away the initial diagnostics line:
   if keyword_set(TRIMFIRST) then full_data=full_data[*,1:*]
+
+  if ( MOVINGAVERAGE gt 0 ) then begin
+    original_data=full_data
+    sz=size(full_data)
+    if (keyword_set(double)) then begin
+      full_data = dblarr(sz[1],sz[2]-MOVINGAVERAGE+1)
+      full_data[*,*] = 0D
+    endif else begin
+      full_data = fltarr(sz[1],sz[2]-MOVINGAVERAGE+1)
+      full_data[*,*] = 0.
+    endelse
+    for i=0,sz[2]-MOVINGAVERAGE do begin
+      for j=0,MOVINGAVERAGE-1 do begin
+        full_data[*,i]=full_data[*,i]+original_data[*,i+j]
+      endfor
+      full_data[*,i]=full_data[*,i]/(1D*MOVINGAVERAGE)
+    endfor
+  endif
 ;
 ;  assemble the data
 ;
