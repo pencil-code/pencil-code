@@ -103,10 +103,12 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     var1 = avg.brmphi
     var2 = avg.bzmphi
     var3 = avg.bpmphi
+    var3_plot = var3
   endif else if (uu) then begin
     var1 = avg.urmphi
     var2 = avg.uzmphi
     var3 = avg.upmphi
+    var3_plot = var3/spread(avg.rcyl>1.e-20,1,nz) ; plot omega, not u_phi
   endif else begin
     message, 'Need one of UU or BB to be true'
   endelse
@@ -122,7 +124,7 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       pot[*,iiz] = integral(avg.rcyl,avg.rcyl*var2[*,iiz],/accumulate)
     endfor
     ;; 2. Plot
-    contourfill, var3, $
+    contourfill, var3_plot, $
         avg.rcyl, avg.z, $
         POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
         YRANGE=minmax(avg.z), YSTYLE=1, $
@@ -140,7 +142,7 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
         LEVELS=levels
   endif else begin
     ;; Plot arrows on color
-    plot_3d_vect, var1, var2, var3, $
+    plot_3d_vect, var1, var2, var3_plot, $
         avg.rcyl, avg.z, $
         POS=pos, XRANGE=minmax(avg.rcyl), XSTYLE=1, $
         YRANGE=minmax(avg.z), YSTYLE=1, $
@@ -185,16 +187,16 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       weight2 = 0.
     endelse
     ; vrm=rms(weight*var1) & vrm2=rms(weight2*var1)
-    ; vpm=rms(weight*var2) & vpm2=rms(weight2*var2)
-    ; vzm=rms(weight*var3) & vzm2=rms(weight2*var3)
+    ; vzm=rms(weight*var2) & vzm2=rms(weight2*var2)
+    ; vpm=rms(weight*var3) & vpm2=rms(weight2*var3)
     vrm=sqrt(mean(weight*var1^2)) & vrm2=sqrt(mean(weight2*var1^2))
-    vpm=sqrt(mean(weight*var2^2)) & vpm2=sqrt(mean(weight2*var2^2))
-    vzm=sqrt(mean(weight*var3^2)) & vzm2=sqrt(mean(weight2*var3^2))
+    vzm=sqrt(mean(weight*var2^2)) & vzm2=sqrt(mean(weight2*var2^2))
+    vpm=sqrt(mean(weight*var3^2)) & vpm2=sqrt(mean(weight2*var3^2))
 
     sph = where(r_spher<rout)
     vrmin=min(abs(var1[sph])) & vrmax=max(abs(var1))
-    vpmin=min(abs(var2[sph])) & vpmax=max(abs(var2))
-    vzmin=min(abs(var3[sph])) & vzmax=max(abs(var3))
+    vzmin=min(abs(var2[sph])) & vzmax=max(abs(var2))
+    vpmin=min(abs(var3[sph])) & vpmax=max(abs(var3))
     vv = sqrt(var1^2+var2^2+var3^2)
     vvmin=min(vv[sph])        & vvmax=max(vv)
 
@@ -209,8 +211,8 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
 
     r_cyl = spread(avg.rcyl,1,nz)
     rho = avg.rhomphi
-    E_pol = mean(weight2*0.5*rho*(var1^2+var3^2))
-    E_tor = mean(weight2*0.5*rho*var2^2)
+    E_pol = mean(weight2*0.5*rho*(var1^2+var2^2))
+    E_tor = mean(weight2*0.5*rho*var3^2)
     E_rot = mean(weight2*0.5*rho*r_cyl^2*Omega^2)
     print
     print, '<E_kin>_sphere = '
