@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.47 2004-08-16 14:35:20 ajohan Exp $
+! $Id: slices.f90,v 1.48 2004-08-19 12:30:05 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -477,10 +477,10 @@ module Slices
             epsd_xz=md_xz(:,:,k)*nd_xz/exp(f(l1:l2,iy,n1:n2,ilnrho))
             epsd_xy=md_xy(:,:,k)*nd_xy/exp(f(l1:l2,m1:m2,iz,ilnrho))
             epsd_xy2=md_xy2(:,:,k)*nd_xy2/exp(f(l1:l2,m1:m2,iz2,ilnrho))
-            call wslice(path//'epsd'//trim(sdust)//'.yz',nd_yz,x(ix),ny,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xz',nd_xz,y(iy),nx,nz)
-            call wslice(path//'epsd'//trim(sdust)//'.xy',nd_xy,z(iz),nx,ny)
-            call wslice(path//'epsd'//trim(sdust)//'.Xy',nd_xy2,z(iz2),nx,ny)
+            call wslice(path//'epsd'//trim(sdust)//'.yz',epsd_yz,x(ix),ny,nz)
+            call wslice(path//'epsd'//trim(sdust)//'.xz',epsd_xz,y(iy),nx,nz)
+            call wslice(path//'epsd'//trim(sdust)//'.xy',epsd_xy,z(iz),nx,ny)
+            call wslice(path//'epsd'//trim(sdust)//'.Xy',epsd_xy2,z(iz2),nx,ny)
           enddo
 !
 !  Surface intensity (derived variable)
