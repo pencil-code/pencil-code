@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.29 2003-10-23 19:21:48 theine Exp $
+;  $Id: extra.pro,v 1.30 2003-11-02 03:57:25 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -25,6 +25,7 @@ if (iuu ne 0) then ooo=reform(oo(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then aaa=reform(aa(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then bbb=reform(bb(l1:l2,m1:m2,n1:n2,*))
 if (iaa ne 0) then jjj=reform(jj(l1:l2,m1:m2,n1:n2,*))
+if (iuud ne 0) then uuud=reform(uud(l1:l2,m1:m2,n1:n2,*))
 ;
 if (ilnrho ne 0) then begin
   llnrho=reform(lnrho(l1:l2,m1:m2,n1:n2))
@@ -39,6 +40,13 @@ if (ilnrho ne 0) then begin
 ;ajwm NOT SO SURE THE ENTHALPY IS CORRECT EITHER
   hhh=cs2/gamma1  ;(enthalpy)
 ;
+end
+;
+;  dust density
+;
+if (ilnrhod ne 0) then begin
+  llnrhod=lnrhod(l1:l2,m1:m2,n1:n2)
+  rhod=exp(llnrhod)
 end
 ;
 if (iqrad ne 0) then QQrad=reform(Qrad(l1:l2,m1:m2,n1:n2))
