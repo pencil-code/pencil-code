@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.9 2003-01-20 20:00:01 nilshau Exp $
+! $Id: struct_func.f90,v 1.10 2003-01-20 21:00:19 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -106,10 +106,10 @@ module struct_func
   !
   !  Beginning the loops
   !
-  sep=1
   do direction=1,nr_directions
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
+        sep=1
         do ll=l+1,nx
            separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
            if (separation .eq. 2**(sep-1)) then
@@ -133,15 +133,15 @@ module struct_func
                  !  Calculates sf
                  !
                  !totall(sep)=totall(sep)+1
-                 do q=1,qmax                          
+                 do q=1,qmax   
                     sf(sep,q,direction) &
                          =sf(sep,q,direction) &
                          +sum(abs(dvect(:,:))**q)
                  enddo
               endif
+              sep=sep+1
            endif
         enddo
-        sep=sep+1
      enddo
      if (nr_directions .gt. 1) then
         if (direction .eq. 1) then
