@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.196 2004-09-11 09:39:57 brandenb Exp $
+! $Id: run.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.196 2004-09-11 09:39:57 brandenb Exp $")
+             "$Id: run.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -437,7 +437,6 @@
           if (ip<=11) &
                call wsnap(trim(directory)//'/dcrash.dat',df,mvar,ENUM=.false.)
         endif
-
 !
 !  save spectrum snapshot
 !

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.86 2004-08-31 10:42:17 ajohan Exp $
+### $Id: Makefile.src,v 1.87 2004-09-12 09:49:34 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -99,8 +99,6 @@ FCCLEANER=
 #FFLAGS=$(OPTFLAGS) -warn argument_checking -warn declarations -warn unused
 #F77=$(FC)
 #F77
-## I (wd) guess the lsig stuff is obsolete now (Aug-2004)
-##LIBSIG=-lsig
 
 ## Linux:
 #FC=f95
@@ -153,7 +151,8 @@ FCCLEANER=
 #FFLAGS= -fast -O5 -notransform_loops -tune ev6 -arch ev6 #(mhd)
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 ##LDMPI=-L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
-##LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
+##AB: next line uncommented on Tobi's advice
+#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -pthread -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam #(nw50)
 #LDMPI=-L/home/ajohan/f90/lib -llamf77mpi -lmpi -llam #(ns0|nq[0-9]*|nw[0-9]*)
@@ -165,7 +164,7 @@ FCCLEANER=
 ##FFLAGS= -fast -lm#(erland|bohm|igor|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
 ##FFLAGS=-O3 -ipo #(fe[0-3])
-#FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
+#FFLAGS= #(fe[0-4])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto|Aladdin)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS=-O3 #(nw[0-9]*|nl6|nl11|wormhole|sandin|lynx)

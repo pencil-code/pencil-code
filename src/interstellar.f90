@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.98 2004-08-24 19:58:58 mee Exp $
+! $Id: interstellar.f90,v 1.99 2004-09-12 09:49:34 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -20,8 +20,6 @@ module Interstellar
   real, dimension(ninterstellarsave) :: interstellarsave
   real :: t_next_SNI=0.0
   real :: t_interval_SNI=impossible
-
-  
 
   ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
   ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -147,7 +145,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.98 2004-08-24 19:58:58 mee Exp $")
+           "$Id: interstellar.f90,v 1.99 2004-09-12 09:49:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -209,7 +207,10 @@ module Interstellar
 !
       call getmu(mu) 
       if (unit_system=='cgs') then
-
+!
+!  this Lambda as such enters as n^2*Lambda(T) on the rhs of the
+!  energy equation per unit volume
+!
         unit_Lambda = unit_energy * unit_length**3 / unit_time 
       elseif (unit_system=='SI') then
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
@@ -242,6 +243,7 @@ module Interstellar
       end if
 !
       coolH = coolH_cgs / unit_Lambda * (unit_temperature**coolB) / (mu*m_H)**2 * coolingfunction_scalefactor
+      !
       coolT = coolT_cgs / unit_temperature
 
       if (unit_system=='cgs') then

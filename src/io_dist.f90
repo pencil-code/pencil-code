@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.77 2004-08-20 16:14:26 dobler Exp $
+! $Id: io_dist.f90,v 1.78 2004-09-12 09:49:34 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.77 2004-08-20 16:14:26 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.78 2004-09-12 09:49:34 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -221,7 +221,7 @@ contains
 !  11-apr-97/axel: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it,start_serialize,end_serialize
+      use Mpicomm, only: stop_it,start_serialize,end_serialize
 !
       integer :: nv
       real, dimension (mx,my,mz) :: a

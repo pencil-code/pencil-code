@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.250 2004-09-11 09:39:56 brandenb Exp $
+! $Id: cdata.f90,v 1.251 2004-09-12 09:49:34 brandenb Exp $
 
 module Cdata
 
@@ -36,7 +36,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible,xyz_star=(/0.0,0.0,0.0/)
   real :: t,dt=0.
   real, dimension (3) :: alpha,beta,dt_beta
-  real :: cdt=0.4,cdtv=0.3,cdts=1.0,cdtr=1.0
+  real :: cdt=0.4,cdtv=0.25,cdts=1.0,cdtr=1.0
   real :: cdtvDim
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible

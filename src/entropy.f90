@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.325 2004-08-26 19:17:08 dobler Exp $
+! $Id: entropy.f90,v 1.326 2004-09-12 09:49:34 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.325 2004-08-26 19:17:08 dobler Exp $")
+           "$Id: entropy.f90,v 1.326 2004-09-12 09:49:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -312,12 +312,14 @@ module Entropy
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
+      print*,'NiniT:!!!',ninit
+      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-alog(gamma1))/gamma
       do iinit=1,ninit
 !
 !  if we pretend that ss in in reality g1lnTT, we initialize the background
 !  of lnTT/gamma such that it corresponds to ss=0.
 !
-      if (pretend_lnTT) f(:,:,:,iss)=(f(:,:,:,ilnrho)*gamma1-alog(gamma1))/gamma
+
 !
       if (initss(iinit)/='nothing') then
 !
@@ -1118,7 +1120,7 @@ module Entropy
       call u_dot_gradf(f,iss,gss,uu,ugss,UPWIND=lupw_ss)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - ugss
 !
-!  if pretend_lnTT=.true., we pretend that ss is actually lnTT
+!  if pretend_lnTT=.true., we pretend that ss is actually lnTT/gamma
 !
       if (pretend_lnTT) then
         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-divu*gamma1/gamma

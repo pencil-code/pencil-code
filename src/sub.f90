@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.196 2004-09-12 07:47:14 brandenb Exp $ 
+! $Id: sub.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $ 
 
 module Sub 
 
@@ -1853,7 +1853,6 @@ module Sub
 !   8-sep-01/axel: adapted to take myout,mzout
 !
       use Cdata
-      use Mpicomm, only: ipx,ipy,ipz
 !
       character (len=*) :: file
       integer, optional :: mxout,myout,mzout
