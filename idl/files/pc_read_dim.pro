@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.3 2002-11-28 02:07:00 mee Exp $
+; $Id: pc_read_dim.pro,v 1.4 2002-12-05 16:16:40 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 02:07:00 $
-;  $Revision: 1.3 $
+;  $Date: 2002-12-05 16:16:40 $
+;  $Revision: 1.4 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -14,6 +14,7 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  precision=precision, $
                  nghostx=nghostx, nghosty=nghosty, nghostz=nghostz, $
                  nprocx=nprocx, nprocy=nprocy, nprocz=nprocz,$
+                 l1=l1, l2=l2, m1=m1, m2=m2, n1=n1, n2=n2, $ 
                  object=object, $ 
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 ;
@@ -54,6 +55,9 @@ pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
     print, "   nprocx: number of communicating processors in the x direction                   [integer]"
     print, "   nprocy: number of communicating processors in the y direction                   [integer]"
     print, "   nprocz: number of communicating processors in the z direction                   [integer]"
+    print, "   l1, l2: first & last index of non-ghost-point in x                              [integer]"
+    print, "   m1, m2: first & last index of non-ghost-point in y                              [integer]"
+    print, "   n1, n2: first & last index of non-ghost-point in z                              [integer]"
     print, ""
     print, "   object: optional structure in which to return all the above as tags           [structure]"
     print, ""
@@ -116,6 +120,9 @@ nx = mx - (2 * nghostx)
 ny = my - (2 * nghosty)
 nz = mz - (2 * nghostz)
 mw = mx * my * mz
+l1 = nghostx & l2 = mx-nghostx
+m1 = nghosty & m2 = my-nghosty
+n1 = nghostz & n2 = mz-nghostz
 
 precision = (strtrim(precision,2))        ; drop leading zeros
 precision = strmid(precision,0,1)
