@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.37 2003-05-08 14:30:58 tarek Exp $ 
+! $Id: initcond.f90,v 1.38 2003-05-08 18:05:39 brandenb Exp $ 
 
 module Initcond 
  
@@ -51,6 +51,108 @@ module Initcond
       endif
 !
     endsubroutine sinxsinz
+!***********************************************************************
+    subroutine gaussian(ampl,f,i,kx,ky,kz)
+!
+!  gaussian bump
+!
+!   2-may-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.
+!
+!  wavenumber k
+!
+!  set x-wave
+!
+      if (present(kx)) then
+        k=kx
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kx=',k
+        else
+          if (lroot) print*,'wave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*x)**2),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-wave
+!
+      if (present(ky)) then
+        k=ky
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; ky=',k
+        else
+          if (lroot) print*,'wave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*y)**2),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-wave
+!
+      if (present(kz)) then
+        k=kz
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kz=',k
+        else
+          if (lroot) print*,'wave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*z)**2),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine gaussian
+!***********************************************************************
+    subroutine parabola(ampl,f,i,kx,ky,kz)
+!
+!  gaussian bump
+!
+!   2-may-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.
+!
+!  wavenumber k
+!
+!  set x-wave
+!
+      if (present(kx)) then
+        k=kx
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kx=',k
+        else
+          if (lroot) print*,'wave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*x)**2),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-wave
+!
+      if (present(ky)) then
+        k=ky
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; ky=',k
+        else
+          if (lroot) print*,'wave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*y)**2),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-wave
+!
+      if (present(kz)) then
+        k=kz
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in wave; kz=',k
+        else
+          if (lroot) print*,'wave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*z)**2),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine parabola
 !***********************************************************************
     subroutine wave(ampl,f,i,kx,ky,kz)
 !
