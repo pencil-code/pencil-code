@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.16 2003-05-20 19:43:43 mee Exp $
+! $Id: interstellar.f90,v 1.17 2003-05-21 12:07:27 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -18,6 +18,7 @@ module Interstellar
   real, dimension(ninterstellarsave) :: interstellarsave
   real, parameter :: rho_crit=1.,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
+
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
 !  code units based on:
@@ -26,6 +27,7 @@ module Interstellar
 !    [rho]     =       = 1.00 10^-24 g/cm^3
 !  Lambdaunits converts coolH into interstellar code units.
 !   (this should really just be incorporated into coolH coefficients)
+
   real, parameter :: cp1=27.8,TTunits=46.6,tosolarMkpc3=1.483e7
   real, parameter :: Lambdaunits=3.29e-18
   real, parameter :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
@@ -69,7 +71,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.16 2003-05-20 19:43:43 mee Exp $")
+           "$Id: interstellar.f90,v 1.17 2003-05-21 12:07:27 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,6 +92,7 @@ module Interstellar
       use Cdata
       use General
       use Sub, only: inpui,inpup
+      use Mpicomm, only: mpibcast_real
 !
       logical, save :: first=.true.
       logical :: lstart
@@ -105,17 +108,19 @@ module Interstellar
             call random_seed_wrapper(put=seed(1:nseed))
          endif
 !
-         inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
-         if (exist) then 
-            if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
-            call inpup(trim(directory)//'/interstellar.dat',  &
-                 interstellarsave,ninterstellarsave)
-            t_next_SNI=interstellarsave(1)
-            if (lroot.and.ip<14) &
-                 print*, 'initialize_interstellar: t_next_SNI',t_next_SNI
-         else
-            interstellarsave(1)=t_next_SNI
+         if (lroot) then
+            inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
+            if (exist) then 
+               if (ip<14) print*, 'initialize_interstellar: read interstellar.dat'
+               call inpup(trim(datadir)//'/interstellar.dat',  &
+                    interstellarsave,ninterstellarsave)
+               if (ip<14) print*, 'initialize_interstellar: t_next_SNI',t_next_SNI
+            else
+               interstellarsave(1)=t_next_SNI
+            endif
          endif
+         call mpibcast_real(interstellarsave,1)
+         t_next_SNI=interstellarsave(1)
       endif
 
       if (lroot.and.ip<14) then
@@ -242,7 +247,7 @@ module Interstellar
       if (lroot) then
         call random_number_wrapper(franSN)   
         t_next_SNI=t_next_SNI + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-        print*,'Next SNI at time: ',t_next_SNI
+        if (ip<14) print*,'Next SNI at time: ',t_next_SNI
         interstellarsave(1)=t_next_SNI
       endif
       call mpibcast_real(t_next_SNI,1)
@@ -321,7 +326,7 @@ module Interstellar
              call mpibcast_real_nonroot(fmpi1,1,icpu-1)
              mass_cloud_byproc(icpu)=fmpi1(1)
           enddo
-          if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
+          if (lroot.and.ip<14) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
           call position_SNII(f,mass_cloud_byproc)
           call explode_SN(f,2)
        endif
@@ -428,7 +433,7 @@ module Interstellar
       !TT_SN not actually needed...
       !TT_SN=cs20*exp(gamma1*(f(l_SN,m_SN,n_SN,ilnrho)-lnrho0) +       &
       !                  gamma*f(l_SN,m_SN,n_SN,ient))/gamma1*cp1
-      print*, 'position_SNI:',l_SN,m_SN,n_SN,x_SN,y_SN,z_SN,rho_SN
+      if (lroot.and.ip<14) print*, 'position_SNI:',l_SN,m_SN,n_SN,x_SN,y_SN,z_SN,rho_SN
     endif
 !
 !  Broadcast rho_SN to all processors.
@@ -436,7 +441,7 @@ module Interstellar
     fmpi1=(/ rho_SN /)
     call mpibcast_real_nonroot(fmpi1,1,iproc_SN)
     rho_SN=fmpi1(1)
-    if (lroot) print*, 'position_SNI:',iproc_SN,x_SN,y_SN,z_SN,rho_SN
+    if (lroot.and.ip<14) print*, 'position_SNI:',iproc_SN,x_SN,y_SN,z_SN,rho_SN
 !
     endsubroutine position_SNI
 !***********************************************************************
@@ -749,10 +754,10 @@ if (nzgrid/=1) EE_SN=EE_SN*dz
        open(1,file=trim(datadir)//'/time_series.dat',position='append')
        write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
                    '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                   t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+                   t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
        write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
                    '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                   t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+                   t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
        close(1)
     endif
 !

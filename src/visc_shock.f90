@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.17 2003-04-10 10:07:13 mee Exp $
+! $Id: visc_shock.f90,v 1.18 2003-05-21 12:07:27 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.17 2003-04-10 10:07:13 mee Exp $")
+           "$Id: visc_shock.f90,v 1.18 2003-05-21 12:07:27 mee Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -67,13 +67,13 @@ module Viscosity
     subroutine initialize_viscosity()
 !
 !  20-nov-02/tony: coded
-
+       use CData
  !     if (nu /= 0. .and. (ivisc=='nu-const')) then
          lneed_sij=.true.
          lneed_glnrho=.true.
  !     endif
 
-        if (headtt) print*,'viscosity: nu=',nu,', nu_shock=',nu_shock
+        if (headtt.and.lroot) print*,'viscosity: nu=',nu,', nu_shock=',nu_shock
 
     endsubroutine initialize_viscosity
 !***********************************************************************
@@ -346,12 +346,12 @@ module Viscosity
       df=0.
 
       if (nxgrid/=1) then
-         df(1     ,:,:) =   df(:,1     ,:) &
-                            + (  4.*f(2,:,:,iux) &
+         df(1     ,:,:) =   (  4.*f(2,:,:,iux) &
                                - 3.*f(1,:,:,iux) &
-                               -    f(3,:,:,iux) &
-                               )/(2.*dx) 
-         df(2:mx-1,:,:) =   (f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux))/(2.*dx) 
+                               -    f(3,:,:,iux) ) &
+                               / (2.*dx) 
+         df(2:mx-1,:,:) =   ( f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux) ) &
+                                / (2.*dx) 
          df(mx    ,:,:) =   (  3.*f(mx  ,:,:,iux) &
                              - 4.*f(mx-1,:,:,iux) &
                              +    f(mx-2,:,:,iux) &
@@ -470,7 +470,7 @@ module Viscosity
             !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
             !  -- the correct expression for nu=const
             !
-            if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
+            if (headtt.and.lroot) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             if(ldensity) then
                call multmv_mn(sij,glnrho,sglnrho)
@@ -483,7 +483,7 @@ module Viscosity
             
             df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
          else ! (nu=0)
-            if (headtt) print*,'no viscous force: (nu=0)'
+            if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
          endif
       endif
 !
