@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.101 2002-10-09 18:29:31 dobler Exp $
+! $Id: cdata.f90,v 1.102 2002-10-10 08:53:20 dobler Exp $
 
 module Cdata
 
@@ -13,7 +13,7 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
 
-  real, parameter :: pi=3.14159265358979324_8,epsi=5*epsilon(1.)
+  real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax
