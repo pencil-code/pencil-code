@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.14 2003-01-16 20:27:45 mee Exp $
+! $Id: visc_shock.f90,v 1.15 2003-01-20 16:48:39 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.14 2003-01-16 20:27:45 mee Exp $")
+           "$Id: visc_shock.f90,v 1.15 2003-01-20 16:48:39 mee Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -260,245 +260,70 @@ module Viscosity
       use Cdata
 !
       real, dimension (mx,my,mz) :: f
-      real, dimension (mx,my,mz) :: smoothf
+      real, dimension (mx,my,mz) :: smoothf, tmp
       integer :: j,k
 
-      ! FORGET corners and edges for the moment! Even faces
-      ! shouldn't be needed but we'll calculate them anyway... 
 
-      ! Smooth faces regions - lower x
-      smoothf(1     ,2:my-1,2:mz-1) = f(1     ,2:my-1,2:mz-1) * 2.0 / 3.0
-      smoothf(1     ,2:my-1,2:mz-1) = smoothf(1     ,2:my-1,2:mz-1) + &
-                                      ( f(2     ,2:my-1,2:mz-1) + &
-                                        f(1     ,1:my-2,2:mz-1) + &
-                                        f(1     ,3:my  ,2:mz-1) + &
-                                        f(1     ,2:my-1,1:mz-2) + &
-                                        f(1     ,2:my-1,3:mz  )) / 3.0
-      smoothf(1     ,2:my-1,2:mz-1) = smoothf(1     ,2:my-1,2:mz-1) + &
-                                      ( f(2     ,1:my-2,2:mz-1) + &
-                                        f(2     ,3:my  ,2:mz-1) + &
-                                        f(2     ,2:my-1,1:mz-2) + &
-                                        f(2     ,2:my-1,3:mz ) + &
-                                        f(1     ,3:my  ,1:mz-2) + &
-                                        f(1     ,3:my  ,3:mz  ) + &
-                                        f(1     ,1:my-2,1:mz-2) + &
-                                        f(1     ,1:my-2,3:mz  )) / 6.0
-      smoothf(1     ,2:my-1,2:mz-1) = smoothf(1 ,2:my-1,2:mz-1) + &
-                                      ( f(2     ,1:my-2,1:mz-2) + &
-                                        f(2     ,1:my-2,3:mz  ) + &
-                                        f(2     ,3:my  ,1:mz-2) + &
-                                        f(2     ,3:my  ,3:mz  )) / 12.0
+!
+!  check for degeneracy
+!
+      if (nxgrid/=1) then
+         if (mx.ge.3) then
+            smoothf(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
+                                             f(2     ,:,:))
 
-      ! Smooth faces regions - upper x
-      smoothf(mx    ,2:my-1,2:mz-1) = f(mx    ,2:my-1,2:mz-1) * 2.0 / 3.0
-      smoothf(mx    ,2:my-1,2:mz-1) = smoothf(mx    ,2:my-1,2:mz-1) + &
-                                      ( f(mx-1  ,2:my-1,2:mz-1) + &
-                                        f(mx    ,1:my-2,2:mz-1) + &
-                                        f(mx    ,3:my  ,2:mz-1) + &
-                                        f(mx    ,2:my-1,1:mz-2) + &
-                                        f(mx    ,2:my-1,3:mz  )) / 3.0
-      smoothf(mx    ,2:my-1,2:mz-1) = smoothf(mx    ,2:my-1,2:mz-1) + &
-                                      ( f(mx-1  ,1:my-2,2:mz-1) + &
-                                        f(mx-1  ,3:my  ,2:mz-1) + &
-                                        f(mx-1  ,2:my-1,1:mz-2) + &
-                                        f(mx-1  ,2:my-1,3:mz ) + &
-                                        f(mx    ,3:my  ,1:mz-2) + &
-                                        f(mx    ,3:my  ,3:mz  ) + &
-                                        f(mx    ,1:my-2,1:mz-2) + &
-                                        f(mx    ,1:my-2,3:mz  )) / 6.0
-      smoothf(mx    ,2:my-1,2:mz-1) = smoothf(mx,2:my-1,2:mz-1) + &
-                                      ( f(mx-1  ,1:my-2,1:mz-2) + &
-                                        f(mx-1  ,1:my-2,3:mz  ) + &
-                                        f(mx-1  ,3:my  ,1:mz-2) + &
-                                        f(mx-1  ,3:my  ,3:mz  )) / 12.0
-      ! Smooth faces regions - lower y
-      smoothf(2:mx-1,1     ,2:mz-1) = f(2:mx-1,1     ,2:mz-1) * 2.0 / 3.0
-      smoothf(2:mx-1,1     ,2:mz-1) = smoothf(2:mx-1,1     ,2:mz-1) + &
-                                      ( f(2:mx-1,2     ,2:mz-1) + &
-                                        f(1:mx-2,1     ,2:mz-1) + &
-                                        f(3:mx  ,1     ,2:mz-1) + &
-                                        f(2:mx-1,1     ,1:mz-2) + &
-                                        f(2:mx-1,1     ,3:mz  )) / 3.0
-      smoothf(2:mx-1,1     ,2:mz-1) = smoothf(2:mx-1,1     ,2:mz-1) + &
-                                      ( f(1:mx-2,2     ,2:mz-1) + &
-                                        f(3:mx  ,2     ,2:mz-1) + &
-                                        f(2:mx-1,2     ,1:mz-2) + &
-                                        f(2:mx-1,2     ,3:mz ) + &
-                                        f(3:mx  ,1     ,1:mz-2) + &
-                                        f(3:mx  ,1     ,3:mz  ) + &
-                                        f(1:mx-2,1     ,1:mz-2) + &
-                                        f(1:mx-2,1     ,3:mz  )) / 6.0
-      smoothf(2:mx-1,1     ,2:mz-1) = smoothf(2:mx-1,1 ,2:mz-1) + &
-                                      ( f(1:mx-2,2     ,1:mz-2) + &
-                                        f(1:mx-2,2     ,3:mz  ) + &
-                                        f(3:mx  ,2     ,1:mz-2) + &
-                                        f(3:mx  ,2     ,3:mz  )) / 12.0
+            smoothf(2:mx-1,:,:) = 0.25 * (   f(1:mx-2,:,:) + &
+                                          2.*f(2:mx-1,:,:) + &
+                                             f(3:mx  ,:,:))
+                                
+            smoothf(mx    ,:,:) = 0.25 * (   f(mx-1  ,:,:) + &
+                                          3.*f(mx    ,:,:))
+         else
+            smoothf=f
+         endif
+      else
+         smoothf=f
+      endif
+!
+!  check for degeneracy
+!
+      if (nygrid/=1) then
+         if (my.ge.3) then
+            tmp(:,1     ,:) = 0.25 * (3.*smoothf(:,1     ,:) +  &
+                                         smoothf(:,2     ,:))
 
-      ! Smooth faces regions - upper y
-      smoothf(2:mx-1,my    ,2:mz-1) = f(2:mx-1,my    ,2:mz-1) * 2.0 / 3.0
-      smoothf(2:mx-1,my    ,2:mz-1) = smoothf(2:mx-1,my    ,2:mz-1) + &
-                                      ( f(2:mx-1,my-1  ,2:mz-1) + &
-                                        f(1:mx-2,my    ,2:mz-1) + &
-                                        f(3:mx  ,my    ,2:mz-1) + &
-                                        f(2:mx-1,my    ,1:mz-2) + &
-                                        f(2:mx-1,my    ,3:mz  )) / 3.0
-      smoothf(2:mx-1,my    ,2:mz-1) = smoothf(2:mx-1,my    ,2:mz-1) + &
-                                      ( f(1:mx-2,my-1  ,2:mz-1) + &
-                                        f(3:mx  ,my-1  ,2:mz-1) + &
-                                        f(2:mx-1,my-1  ,1:mz-2) + &
-                                        f(2:mx-1,my-1  ,3:mz ) + &
-                                        f(3:mx  ,my    ,1:mz-2) + &
-                                        f(3:mx  ,my    ,3:mz  ) + &
-                                        f(1:mx-2,my    ,1:mz-2) + &
-                                        f(1:mx-2,my    ,3:mz  )) / 6.0
-      smoothf(2:mx-1,my    ,2:mz-1) = smoothf(2:mx-1,my,2:mz-1) + &
-                                      ( f(1:mx-2,my-1  ,1:mz-2) + &
-                                        f(1:mx-2,my-1  ,3:mz  ) + &
-                                        f(3:mx  ,my-1  ,1:mz-2) + &
-                                        f(3:mx  ,my-1  ,3:mz  )) / 12.0
-      ! Smooth faces regions - lower z
-      smoothf(2:mx-1,2:my-1,1     ) = f(2:mx-1,2:my-1,1     ) * 2.0 / 3.0
-      smoothf(2:mx-1,2:my-1,1     ) = smoothf(2:mx-1,2:my-1,1     ) + &
-                                      ( f(2:mx-1,2:my-1,2     ) + &
-                                        f(1:mx-2,2:my-1,1     ) + &
-                                        f(3:mx  ,2:my-1,1     ) + &
-                                        f(2:mx-1,1:my-2,1     ) + &
-                                        f(2:mx-1,3:my  ,1     )) / 3.0
-      smoothf(2:mx-1,2:my-1,1     ) = smoothf(2:mx-1,2:my-1,1     ) + &
-                                      ( f(1:mx-2,2:my-1,2     ) + &
-                                        f(3:mx  ,2:my-1,2     ) + &
-                                        f(2:mx-1,1:my-2,2     ) + &
-                                        f(2:mx-1,3:my  ,2     ) + &
-                                        f(3:mx  ,1:my-2,1     ) + &
-                                        f(3:mx  ,3:my  ,1     ) + &
-                                        f(1:mx-2,1:my-2,1     ) + &
-                                        f(1:mx-2,3:my  ,1     )) / 6.0
-      smoothf(2:mx-1,2:my-1,1     ) = smoothf(2:mx-1,2:my-1,1 ) + &
-                                      ( f(1:mx-2,1:my-2,2     ) + &
-                                        f(1:mx-2,3:my  ,2     ) + &
-                                        f(3:mx  ,1:my-2,2     ) + &
-                                        f(3:mx  ,3:my  ,2     )) / 12.0
+            tmp(:,2:my-1,:) = 0.25 * (   smoothf(:,1:my-2,:) + &
+                                      2.*smoothf(:,2:my-1,:) + &
+                                         smoothf(:,3:my  ,:))
+                                
+            tmp(:,my    ,:) = 0.25 * (   smoothf(:,my-1  ,:) + &
+                                      3.*smoothf(:,my    ,:))
+         else
+            tmp=smoothf
+         endif
+      else
+         tmp=smoothf
+      endif
+!
+!  check for degeneracy
+!
+      if (nzgrid/=1) then
+         if (mz.ge.3) then
+            smoothf(:,:,1     ) = 0.25 * (3.*tmp(:,:,1     ) +  &
+                                             tmp(:,:,2     ))
 
-      ! Smooth faces regions - upper z
-      smoothf(2:mx-1,2:my-1,mz    ) = f(2:mx-1,2:my-1,mz    ) * 2.0 / 3.0
-      smoothf(2:mx-1,2:my-1,mz    ) = smoothf(2:mx-1,2:my-1,mz    ) + &
-                                      ( f(2:mx-1,2:my-1,mz-1  ) + &
-                                        f(1:mx-2,2:my-1,mz    ) + &
-                                        f(3:mx  ,2:my-1,mz    ) + &
-                                        f(2:mx-1,1:my-2,mz    ) + &
-                                        f(2:mx-1,3:my  ,mz    )) / 3.0
-      smoothf(2:mx-1,2:my-1,mz    ) = smoothf(2:mx-1,2:my-1,mz    ) + &
-                                      ( f(1:mx-2,2:my-1,mz-1  ) + &
-                                        f(3:mx  ,2:my-1,mz-1  ) + &
-                                        f(2:mx-1,1:my-2,mz-1  ) + &
-                                        f(2:mx-1,3:my  ,mz-1  ) + &
-                                        f(3:mx  ,1:my-2,mz    ) + &
-                                        f(3:mx  ,3:my  ,mz    ) + &
-                                        f(1:mx-2,1:my-2,mz    ) + &
-                                        f(1:mx-2,3:my  ,mz    )) / 6.0
-      smoothf(2:mx-1,2:my-1,mz    ) = smoothf(2:mx-1,2:my-1,mz) + &
-                                      ( f(1:mx-2,1:my-2,mz-1  ) + &
-                                        f(1:mx-2,3:my  ,mz-1  ) + &
-                                        f(3:mx  ,1:my-2,mz-1  ) + &
-                                        f(3:mx  ,3:my  ,mz-1  )) / 12.0
-
-      ! Smooth central region - pencil by pencil
-      smoothf(2:mx-1,:,:) = f(2:mx-1,:,:) / 8.0
-      do j=2,my-1
-         do k=2,mz-1
-           smoothf(2:mx-1,j,k) = smoothf(2:mx-1,j,k) + &
-                                         ( f(1:mx-2,j,k) + &
-                                           f(3:mx,j,k) + &
-                                           f(2:mx-1,j-1,k) + &
-                                           f(2:mx-1,j+1,k) + &
-                                           f(2:mx-1,j,k-1) + &
-                                           f(2:mx-1,j,k+1)) / 16.0
-  
-           smoothf(2:mx-1,j,k) = smoothf(2:mx-1,j,k) + &
-                                         ( f(1:mx-2,j-1,k) + &
-                                           f(1:mx-2,j+1,k) + &
-                                           f(1:mx-2,j  ,k+1) + &
-                                           f(1:mx-2,j  ,k-1) + &
-                                           f(3:mx  ,j-1,k) + &
-                                           f(3:mx  ,j+1,k) + &
-                                           f(3:mx  ,j  ,k-1) + &
-                                           f(3:mx  ,j  ,k+1) + &
-                                           f(2:mx-1,j-1,k-1) + &
-                                           f(2:mx-1,j+1,k-1) + &
-                                           f(2:mx-1,j-1,k+1) + &
-                                           f(2:mx-1,j+1,k+1)) / 32.0
-           smoothf(2:mx-1,j,k) = smoothf(2:mx-1,j,k) + &
-                                         ( f(1:mx-2,j-1,k-1) + &
-                                           f(1:mx-2,j-1,k+1) + &
-                                           f(1:mx-2,j+1,k-1) + &
-                                           f(1:mx-2,j+1,k+1) + &
-                                           f(3:mx  ,j-1,k-1) + &
-                                           f(3:mx  ,j-1,k+1) + &
-                                           f(3:mx  ,j+1,k-1) + &
-                                           f(3:mx  ,j+1,k+1)) / 64.0
-
-         end do
-      end do
-!!$!
-!!$!  check for degeneracy
-!!$!
-!!$      if (nxgrid/=1) then
-!!$         if (mx.ge.3) then
-!!$            smoothfx(1     ,:,:) = 0.25 * (3.*f(1     ,:,:) +  &
-!!$                                             f(2     ,:,:))
-!!$
-!!$            smoothfx(2:mx-1,:,:) = 0.25 * (   f(1:mx-2,:,:) + &
-!!$                                          2.*f(2:mx-1,:,:) + &
-!!$                                             f(3:mx  ,:,:))
-!!$                                
-!!$            smoothfx(mx    ,:,:) = 0.25 * (   f(mx-1  ,:,:) + &
-!!$                                          3.*f(mx    ,:,:))
-!!$         else
-!!$            smoothfx=f
-!!$         endif
-!!$      else
-!!$         smoothfx=f
-!!$      endif
-!!$!
-!!$!  check for degeneracy
-!!$!
-!!$      if (nygrid/=1) then
-!!$         if (my.ge.3) then
-!!$            smoothfy(:,1     ,:) = 0.25 * (3.*f(:,1     ,:) +  &
-!!$                                       f(:,2     ,:))
-!!$
-!!$            smoothfy(:,2:my-1,:) = 0.25 * (   f(:,1:my-2,:) + &
-!!$                                    2.*f(:,2:my-1,:) + &
-!!$                                       f(:,3:my  ,:))
-!!$                                
-!!$            smoothfy(:,my    ,:) = 0.25 * (   f(:,my-1  ,:) + &
-!!$                                    3.*f(:,my    ,:))
-!!$         else
-!!$            f=smoothf
-!!$         endif
-!!$      else
-!!$         f=smoothf
-!!$      endif
-!!$!
-!!$!  check for degeneracy
-!!$!
-!!$      if (nzgrid/=1) then
-!!$         if (mz.ge.3) then
-!!$            smoothf(:,:,1     ) = 0.25 * (3.*f(:,:,1     ) +  &
-!!$                                             f(:,:,2     ))
-!!$
-!!$            smoothf(:,:,2:mz-1) = 0.25 * (   f(:,:,1:mz-2) + &
-!!$                                          2.*f(:,:,2:mz-1) + &
-!!$                                             f(:,:,3:mz  ))
-!!$                                
-!!$            smoothf(:,:,mz    ) = 0.25 * (   f(:,:,mz-1  ) + &
-!!$                                          3.*f(:,:,mz    ))
-!!$         else
-!!$            smoothf=f
-!!$         endif
-!!$      else
-!!$         smoothf=f
-!!$      end if
+            smoothf(:,:,2:mz-1) = 0.25 * (   tmp(:,:,1:mz-2) + &
+                                          2.*tmp(:,:,2:mz-1) + &
+                                             tmp(:,:,3:mz  ))
+                                
+            smoothf(:,:,mz    ) = 0.25 * (   tmp(:,:,mz-1  ) + &
+                                          3.*tmp(:,:,mz    ))
+         else
+            smoothf=tmp
+         endif
+      else
+         smoothf=tmp
+      end if
 
     endsubroutine shock_smooth
 !***********************************************************************
