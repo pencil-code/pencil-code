@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.46 2002-09-24 11:17:07 nilshau Exp $
+! $Id: mpicomm.f90,v 1.47 2002-09-24 15:21:07 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -729,7 +729,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !
   a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
   b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-  if(lroot) print*,'fft is finnished'
+  if(lroot .AND. ip<10) print*,'fft is finnished'
 !
 end subroutine transform
 !***********************************************************************
