@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.97 2002-11-13 09:44:21 brandenb Exp $
+! $Id: magnetic.f90,v 1.98 2002-11-13 21:10:13 tarek Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,10 +18,11 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0.,radius=.1,epsilonaa=1e-2,widthaa=.5,z0aa=0.
+  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: radius=.1,epsilonaa=1e-2,widthaa=.5,z0aa=0.
   real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: amplaa2=0.,kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
 
@@ -30,7 +31,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
-       lpress_equil
+       kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -83,7 +84,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.97 2002-11-13 09:44:21 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.98 2002-11-13 21:10:13 tarek Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -146,13 +147,22 @@ module Magnetic
         call stop_it("")
 
       endselect
+
+
+!    If not already used in initaa one can still use kx_aa etc. 
+!    to define the wavenumber of the 2nd field. (For old runs!)
 !
+       if (kx_aa2==impossible) kx_aa2 = kx_aa
+       if (ky_aa2==impossible) ky_aa2 = ky_aa
+       if (kz_aa2==impossible) kz_aa2 = kz_aa
+
+
 !  superimpose something else
 !
       select case(initaa2)
-        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,KX=kx_aa)
-        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,KY=ky_aa)
-        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa)
+        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,KX=kx_aa2)
+        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,KY=ky_aa2)
+        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa2)
       endselect
 !
 !  allow for pressure equilibrium (for isothermal tube)
