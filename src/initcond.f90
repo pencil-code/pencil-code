@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.108 2004-06-08 14:08:48 ajohan Exp $ 
+! $Id: initcond.f90,v 1.109 2004-06-08 21:24:11 brandenb Exp $ 
 
 module Initcond 
  
@@ -1643,27 +1643,27 @@ module Initcond
 !
 !  18-apr-04/wolf: coded
 !
-      !use Sub, only: cubic_step
+      use Sub, only: cubic_step
 !
       real, dimension (mx,my,mz) :: rr,prof
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl,dr
       integer :: i1,i2,i
 !
-      !intent(in) :: ampl,rr,i1,i2
-      !intent(out) :: prof,f
+      intent(in) :: ampl,rr,i1,i2
+      intent(out) :: prof,f
 !
 !  set up profile
 !
-      !dr = r_ext-max(0.,r_int)
-      !prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
-      !prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
-      !if (r_int>0.) then
-      !  prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
-      !endif
-      !prof = ampl*prof
+      dr = r_ext-max(0.,r_int)
+      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+      prof = 1 - cubic_step(rr,r_ext,0.25*dr,SHIFT=-1.)
+      if (r_int>0.) then
+        prof = prof*cubic_step(rr,r_int,0.25*dr,SHIFT=1.)
+      endif
+      prof = ampl*prof
 !
-      !call gaunoise(prof,f,i1,i2)
+      call gaunoise(prof,f,i1,i2)
 !
     endsubroutine gaunoise_rprof_vect
 !***********************************************************************
