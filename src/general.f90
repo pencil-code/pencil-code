@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.18 2003-04-03 12:13:48 theine Exp $
+! $Id: general.f90,v 1.19 2003-04-03 14:56:55 theine Exp $
 
 module General
 
@@ -431,6 +431,7 @@ module General
       if (bet.eq.0.) then
          print*,'tridag_ser: Error at code stage 1'
          if (present(err)) err=.true.
+         return
       endif
 
       u(1)=r(1)/bet
@@ -440,6 +441,7 @@ module General
          if (bet.eq.0.) then
             print*,'tridag_ser: Error at code stage 2'
             if (present(err)) err=.true.
+            return
          endif
          u(j)=(r(j)-a(j-1)*u(j-1))/bet
       end do
