@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.4 2004-10-04 07:50:12 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.5 2004-10-05 09:22:13 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -37,7 +37,7 @@ module Radiation
   integer :: llstart,llstop,lsign
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
-  integer :: ipystart,ipystop,ipzstart,ipzstop
+  integer :: ipzstart,ipzstop
   logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: kappa_cst=1.0
@@ -45,7 +45,7 @@ module Radiation
   real :: lnchi_const=1.0,ampllnchi=1.0,radius_lnchi=1.0
   integer :: nrad_rep=1 ! for timings
 !
-!  default values for one pair of vertical rays
+!  Default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
@@ -53,9 +53,9 @@ module Radiation
   logical :: lintrinsic=.true.,lcommunicate=.true.,lrevision=.true.
 
   character :: lrad_str,mrad_str,nrad_str
-  character(len=3) :: raydirection_str
+  character(len=3) :: raydir_str
 !
-!  definition of dummy variables for FLD routine
+!  Definition of dummy variables for FLD routine
 !
   real :: DFF_new=0.  !(dum)
   integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
@@ -80,7 +80,7 @@ module Radiation
 !***********************************************************************
     subroutine register_radiation()
 !
-!  initialise radiation flags
+!  Initialize radiation flags
 !
 !  24-mar-03/axel+tobi: coded
 !
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.4 2004-10-04 07:50:12 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.5 2004-10-05 09:22:13 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -153,12 +153,12 @@ module Radiation
       if (radz>1) call stop_it("radz currently must not be greater than 1")
 
       if (radx==1.and.nz>nx) then
-        ! could be fixed but it's probably not worth it...
+        ! Could be fixed but it's probably not worth it...
         call stop_it("initialize_radiation: For periodic boundaries in the"//&
                      "x-direction we need nz <= nx")
       endif
       if (rady==1.and.nz>ny) then
-        ! could be fixed but it's probably not worth it...
+        ! See above
         call stop_it("initialize_radiation: For periodic boundaries in the"//&
                      "y-direction we need nz <= ny")
       endif
@@ -166,11 +166,11 @@ module Radiation
 !  Count
 !
       idir=1
-!
+
       do mrad=-rady,rady
       do lrad=-radx,radx
-        rad2=1+mrad**2+nrad**2
-        if(rad2<=rad2max) then 
+        rad2=1+lrad**2+mrad**2
+        if (rad2<=rad2max) then 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
@@ -183,27 +183,27 @@ module Radiation
 !
       ndir=idir-1
 !
-!  determine when terms like  exp(-dtau)-1  are to be evaluated
+!  Determine when terms like  exp(-dtau)-1  are to be evaluated
 !  as a power series 
 !
-!  experimentally determined optimum
-!  relative errors for (emdtau1, emdtau2) will be
+!  Experimentally determined optimum
+!  Relative errors for (emdtau1, emdtau2) will be
 !  (1e-6, 1.5e-4) for floats and (3e-13, 1e-8) for doubles
 !
       dtau_thresh1=-log(epsilon(dtau_thresh1))
       dtau_thresh2=1.6*epsilon(dtau_thresh2)**0.25
 !
-!  calculate arad for LTE source function
+!  Calculate arad for LTE source function
 !
       arad=SigmaSB/pi
 !
-!  calculate weights
+!  Calculate weights
 !
       weight=1.0/ndir
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',2*ndir
 !
-!  check boundary conditions
+!  Check boundary conditions
 !
       if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad =',bc_rad
 !
@@ -225,7 +225,7 @@ module Radiation
 !
 !  Identifier
 !
-      if(ldebug.and.headt) print*,'radtransfer'
+      if (ldebug.and.headt) print*,'radtransfer'
 !
 !  Calculate source function and opacity
 !
@@ -278,16 +278,16 @@ module Radiation
 !
       use Cdata, only: ldebug,headt
 !
-!  identifier
+!  Identifier
 !
       if(ldebug.and.headt) print*,'raydirection'
 !
-!  get direction components
+!  Get direction components
 !
       lrad=dir(idir,1)
       mrad=dir(idir,2)
 !
-!  determine start and stop positions
+!  Determine start and stop positions
 !
       llstart=l1; llstop=l2; lsign=+1
       mmstart=m1; mmstop=m2; msign=+1
@@ -299,28 +299,23 @@ module Radiation
       if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
       if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
 !
-!  determine boundary conditions
+!  Are we dealing with a periodic ray?
 !
-      if (lrad>0) bc_ray_x=bc_rad1(1)
-      if (lrad<0) bc_ray_x=bc_rad2(1)
-      if (mrad>0) bc_ray_y=bc_rad1(2)
-      if (mrad<0) bc_ray_y=bc_rad2(2)
+      lperiodic_ray_x=(mrad==0.and.nrad==0)
+      lperiodic_ray_y=(nrad==0.and.lrad==0)
+      lperiodic_ray=(lperiodic_ray_x.or.lperiodic_ray_y)
+!
+!  Determine boundary conditions
+!
       if (nrad>0) bc_ray_z=bc_rad1(3)
       if (nrad<0) bc_ray_z=bc_rad2(3)
 !
-!  are we dealing with a periodic ray?
+!  Determine start and stop processors
 !
-      lperiodic_ray_x=bc_ray_x=='p'.and.mrad==0.and.nrad==0
-      lperiodic_ray_y=bc_ray_y=='p'.and.nrad==0.and.lrad==0
-      lperiodic_ray_z=bc_ray_z=='p'.and.lrad==0.and.mrad==0
-      lperiodic_ray=lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_z
-!
-!  determine start and stop processors
-!
-      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
-      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
       if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
+!
+!  Label for debug output
 !
       if (lrad_debug) then
         lrad_str='0'; mrad_str='0'; nrad_str='0'
@@ -330,9 +325,9 @@ module Radiation
         if (mrad<0) mrad_str='m'
         if (nrad>0) nrad_str='p'
         if (nrad<0) nrad_str='m'
-        raydirection_str=lrad_str//mrad_str//nrad_str
+        raydir_str=lrad_str//mrad_str//nrad_str
       endif
-!
+
     endsubroutine raydirection
 !***********************************************************************
     subroutine Qintrinsic
@@ -400,8 +395,8 @@ module Radiation
       enddo
 
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/emtau-'//raydirection_str//'.dat',emtau,1)
-        call output(trim(directory_snap)//'/Qintr-'//raydirection_str//'.dat',Qrad,1)
+        call output(trim(directory_snap)//'/emtau-'//raydir_str//'.dat',emtau,1)
+        call output(trim(directory_snap)//'/Qintr-'//raydir_str//'.dat',Qrad,1)
       endif
 !
     endsubroutine Qintrinsic
@@ -563,7 +558,7 @@ module Radiation
       endif
 !
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/Qrev-'//raydirection_str//'.dat',Qrad,1)
+        call output(trim(directory_snap)//'/Qrev-'//raydir_str//'.dat',Qrad,1)
       endif
 !
     endsubroutine Qrevision
@@ -611,14 +606,14 @@ module Radiation
 !
 !  Add radiative cooling
 !
-      if(lcooling) then
-        df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) &
-            + 4*pi*exp(lnchi(l1:l2,m,n)-lnrho)*TT1*Qrad
+      if (lcooling) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss) &
+                         +4*pi*exp(lnchi(l1:l2,m,n)-lnrho)*TT1*Qrad
       endif
 !
 !  diagnostics
 !
-      if(ldiagnos) then
+      if (ldiagnos) then
         Qrad2=f(l1:l2,m,n,iQrad)**2
         if(i_Qradrms/=0) call sum_mn_name(Qrad2,i_Qradrms,lsqrt=.true.)
         if(i_Qradmax/=0) call max_mn_name(Qrad2,i_Qradmax,lsqrt=.true.)
@@ -660,12 +655,13 @@ module Radiation
           lfirst=.false.
         endif
 
-      case ('periodic')
+      case ('cos')
         if (lfirst) then
           Srad=Srad_const &
               +amplSrad*spread(spread(cos(x)**2,2,my),3,mz) &
                        *spread(spread(cos(y)**2,1,mx),3,mz) &
                        *spread(spread(cos(z)**2,1,mx),2,my)
+          lfirst=.false.
         endif
         call output('Srad.dat',Srad,1)
 
@@ -719,12 +715,13 @@ module Radiation
           lfirst=.false.
         endif
 
-      case ('periodic')
+      case ('cos')
         if (lfirst) then
           lnchi=lnchi_const &
                +ampllnchi*spread(spread(cos(x)**2,2,my),3,mz) &
                          *spread(spread(cos(y)**2,1,mx),3,mz) &
                          *spread(spread(cos(z)**2,1,mx),2,my)
+          lfirst=.false.
         endif
         call output('lnchi.dat',lnchi,1)
 
