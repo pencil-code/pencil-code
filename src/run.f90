@@ -28,6 +28,9 @@
         call siginit
         call signonbrutal
 !
+!  identify version and register modules
+!
+        print*,'$Id: run.f90,v 1.7 2002-01-17 10:02:52 dobler Exp $'
         call initialize         ! register modules, etc.
 !
 !  ix,iy,iz are indices for checking variables at some selected point
@@ -80,7 +83,7 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.6 2002-01-10 18:04:21 dobler Exp $'
+          print*,'$Id: run.f90,v 1.7 2002-01-17 10:02:52 dobler Exp $'
         endif
 !
 !  do loop in time
