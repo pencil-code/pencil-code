@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.98 2003-12-04 09:03:38 brandenb Exp $ 
+! $Id: initcond.f90,v 1.99 2004-02-14 08:51:37 theine Exp $ 
 
 module Initcond 
  
@@ -723,7 +723,8 @@ module Initcond
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real, dimension (mz) :: lnrho0,SS0
+      integer, parameter :: ntotal=nz*nprocz+6
+      real, dimension (ntotal) :: lnrho0,ss0
       real :: ztmp,ampl
       logical :: exist
 !
@@ -743,17 +744,19 @@ module Initcond
       endif
 !
 !  read data
+!  first the entire stratification file
+!  select the right region for the processor afterwards
 !
-      do n=1,nz*ipz
-        read(19,*) ztmp,lnrho0(n),SS0(n)
+      do n=1,ntotal
+        read(19,*) ztmp,lnrho0(n),ss0(n)
+        if (ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
       enddo
 !
       do n=1,mz
-        read(19,*) ztmp,lnrho0(n),SS0(n)
-        if(ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
-        f(:,:,n,ilnrho)=lnrho0(n)
-        f(:,:,n,iss)=SS0(n)
+        f(:,:,n,ilnrho)=lnrho0(ipz*nz+n)
+        f(:,:,n,iss)=ss0(ipz*nz+n)
       enddo
+!
       close(19)
 !
       if(ip==0) print*,ampl,xx,yy,zz !(to keep compiler quiet)
