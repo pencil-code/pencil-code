@@ -1,0 +1,19 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for disc run
+!
+&init_pars
+  ip=20
+  cvsid='$Id: start.in,v 1.1 2004-01-04 14:10:10 ajohan Exp $'
+  Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
+  lperi=T,T,T
+/
+&hydro_init_pars
+/
+&density_init_pars
+/
+&dustvelocity_init_pars
+  mg0=1., deltamg=1.1
+/
+&dustdensity_init_pars
+  initnd='kernel_lin', nd00=1., dkern_cst=1., mgave0=100.
+/
