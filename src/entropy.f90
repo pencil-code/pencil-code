@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.181 2003-08-02 22:09:36 theine Exp $
+! $Id: entropy.f90,v 1.182 2003-08-03 02:49:41 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -41,7 +41,7 @@ module Entropy
        khor_ss, thermal_background, thermal_peak, thermal_scaling, &
        center1_x, center1_y, center1_z, &
        center2_x, center2_y, center2_z, &
-       yH0,xHe,TT0
+       TT0
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -49,7 +49,7 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       yH0,xHe,heat_uniform,lupw_ss
+       heat_uniform,lupw_ss
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.181 2003-08-02 22:09:36 theine Exp $")
+           "$Id: entropy.f90,v 1.182 2003-08-03 02:49:41 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -116,10 +116,6 @@ module Entropy
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
-!
-!  check which type of thermodynamics we want
-!
-      lfixed_ionization = (yH0/=impossible)
 !
 !  radiative diffusion: initialize flux etc
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.63 2003-08-02 22:09:36 theine Exp $
+! $Id: ionization.f90,v 1.64 2003-08-03 02:49:41 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -27,21 +27,20 @@ module Ionization
   end interface
 
   !  secondary parameters calculated in initialize
-  real :: mu,twothirds
-  real :: TT_ion,TT_ion_,ss_ion,kappa0
+  real, parameter :: twothirds=2./3.
+  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHetilde
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
-  logical :: lionization=.true.,lfixed_ionization=.false.,output_yH=.false.
-  character (len=labellen) :: cionization='hydrogen'
-  real :: yH0=impossible,xHe=0.1,lnxHe
+  logical :: lionization=.true.,lfixed_ionization=.false.
+  real :: yH0=impossible,yHacc=1e-5,xHe=0.1
 
   ! input parameters
-  namelist /ionization_init_pars/ cionization,output_yH
+  namelist /ionization_init_pars/ xHe,yH0,yHacc
 
   ! run parameters
-  namelist /ionization_run_pars/  cionization,output_yH
+  namelist /ionization_run_pars/ xHe,yH0,yHacc
 
   contains
 
@@ -74,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.63 2003-08-02 22:09:36 theine Exp $")
+           "$Id: ionization.f90,v 1.64 2003-08-03 02:49:41 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -106,17 +105,13 @@ module Ionization
       use Cdata
       use General
 !
+      real :: mu
+!
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      m_H=m_p+m_e
-      m_He=3.97153*m_H
-      lnxHe=log(xHe)
-      twothirds=2./3.
       mu=1.+3.97153*xHe
-      chiH=13.6*eV
-      chiH_=0.75*eV
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
       lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
@@ -126,6 +121,12 @@ module Ionization
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu
       kappa0=sigmaH_/m_H/mu
+!
+      if (xHe==0.) then
+        xHetilde=0.
+      else
+        xHetilde=xHe*(log(xHe)-lnrho_He)
+      endif
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
@@ -159,7 +160,7 @@ module Ionization
 !***********************************************************************
     subroutine ioninit(f)
 !
-!  the ionization fraction has to be set to a value yH0 < yH < yH1 before
+!  the ionization fraction has to be set to a value yH0 < yH < yHmax before
 !  rtsafe is called for the first time
 !
 !  12-jul-03/tobi: coded
@@ -196,7 +197,7 @@ module Ionization
          f(l,m,n,iyH)=yH
          lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                            +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                           +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                           +xHetilde)/(1.+yH+xHe) &
                           +lnrho-2.5)
          f(l,m,n,iTT)=exp(lnTT_)*TT_ion
       enddo
@@ -270,7 +271,7 @@ module Ionization
       call rtsafe(lnrho,ss,yH)
       lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                        +xHetilde)/(1.+yH+xHe) &
                        +lnrho-2.5)
       TT=exp(lnTT_)*TT_ion
 !
@@ -387,26 +388,25 @@ module Ionization
 !
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
-      real                 :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=1e-5
+      real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
       integer              :: i
       integer, parameter   :: maxit=100
 
-      yH1=1.-yHacc
-      yH0=yHacc
+      yHmax=1.-yHacc
+      yHmin=yHacc
       dyHold=1.-2.*yHacc
       dyH=dyHold
 !
 !  return if y is too close to 0 or 1
 !
-      call saha(yH0,lnrho,ss,fh,df)
+      call saha(yHmin,lnrho,ss,fh,df)
       if (fh.le.0.) then
-         yH=yH0
+         yH=yHmin
          return
       endif
-      call saha(yH1,lnrho,ss,fl,df)
+      call saha(yHmax,lnrho,ss,fl,df)
       if (fl.ge.0.) then
-         yH=yH1
+         yH=yHmax
          return
       endif
 !
@@ -414,12 +414,12 @@ module Ionization
 !
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
-         if (((yH-yH0)*df-f)*((yH-yH1)*df-f).gt.0. &
+         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
               .or.abs(2.*f).gt.abs(dyHold*df)) then
             dyHold=dyH
-            dyH=.5*(yH0-yH1)
-            yH=yH1+dyH
-            if (yH1.eq.yH) return
+            dyH=.5*(yHmin-yHmax)
+            yH=yHmax+dyH
+            if (yHmax.eq.yH) return
          else
             dyHold=dyH
             dyH=f/df
@@ -430,9 +430,9 @@ module Ionization
          if (abs(dyH).lt.yHacc) return
          call saha(yH,lnrho,ss,f,df)
          if (f.lt.0.) then
-            yH1=yH
+            yHmax=yH
          else
-            yH0=yH
+            yHmin=yH
          endif
       enddo
       print *,'rtsafe: exceeded maximum iterations',f
@@ -452,7 +452,7 @@ module Ionization
 
       lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                         +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
-                        +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                        +xHetilde)/(1.+yH+xHe) &
                        +lnrho-2.5)
       f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
       dlnTT_=(twothirds*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)

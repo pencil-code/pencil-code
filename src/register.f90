@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.87 2003-06-19 21:42:09 mee Exp $
+! $Id: register.f90,v 1.88 2003-08-03 02:49:41 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -164,6 +164,13 @@ module Register
         sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
         kappa_es=kappa_es_cgs*1e-1/(unit_length**2/unit_mass)
       endif
+!
+!  calculate additional constants
+!
+      m_H=m_p+m_e
+      m_He=3.97153*m_H
+      chiH=13.6*eV
+      chiH_=0.75*eV        
 !
 !  print parameters in code units, but only when used
 !

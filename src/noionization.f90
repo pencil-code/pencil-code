@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.39 2003-08-02 22:09:36 theine Exp $
+! $Id: noionization.f90,v 1.40 2003-08-03 02:49:41 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -32,22 +32,22 @@ module Ionization
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
 
   ! secondary parameters calculated in initialize
-  real :: mu,twothirds
-  real :: TT_ion,TT_ion_,ss_ion,kappa0
+  real,parameter :: twothirds=2./3.
+  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHetilde
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   logical :: lionization=.false.,lfixed_ionization=.false.
-  real :: yH0=impossible,xHe=0.1
+  real :: yH0=impossible,yHacc=1e-5,xHe=0.1
 
   ! input parameters
   integer :: dummy_ni 
-  namelist /ionization_init_pars/ dummy_ni 
+  namelist /ionization_init_pars/ yH0,yHacc,xHe
 
   ! run parameters
-  namelist /ionization_run_pars/  dummy_ni 
+  namelist /ionization_run_pars/ yH0,yHacc,xHe
 
   contains
 
@@ -75,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.39 2003-08-02 22:09:36 theine Exp $")
+           "$Id: noionization.f90,v 1.40 2003-08-03 02:49:41 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -96,47 +96,51 @@ module Ionization
       use Cdata
       use General
 !
-      real :: yH
+      real :: mu
+!
+!  check which type of thermodynamics we want
+!
+      lfixed_ionization = (yH0/=impossible)
 !
 !  ionization parameters
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      m_H=m_p+m_e
-      m_He=3.97153*m_H
-      mu=1.+3.97153*xHe  
-      chiH=13.6*eV
-      chiH_=0.75*eV
-      TT_ion=chiH/k_B
-      TT_ion_=chiH_/k_B
-      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
-      lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
-      ss_ion=k_B/m_H/mu      
-      kappa0=sigmaH_/m_H/mu
-
-!  the following array subscripts may be used to avoid unnecessary
-!  calculations in the ghost zones. useful
-!  for 1- and 2-dimensional runs with radiation
+      if (lfixed_ionization) then
+        mu=1.+3.97153*xHe  
+        TT_ion=chiH/k_B
+        TT_ion_=chiH_/k_B
+        lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+        lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+        lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+        lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+        lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
+        ss_ion=k_B/m_H/mu      
+        kappa0=sigmaH_/m_H/mu
 !
-      if(lroot) then
-        print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
+        if (xHe==0.) then
+          xHetilde=0.
+        else
+          xHetilde=xHe*(log(xHe)-lnrho_He)
+        endif
+!
+        if(lroot) then
+          print*,'initialize_ionization: reference values for ionization'
+          print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
+        endif
+!
+        yH0=amin1(amax1(yH0,yHacc),1.-yHacc)
+        lnTT0=log(TT_ion)+twothirds*((-1.5*(1.-yH0)*log(m_H/m_e) &
+                          -1.5*yH0*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
+                          +(1.-yH0)*log(1.-yH0)+2.*yH0*log(yH0)+xHe*log(xHe)) &
+                          /(1.+yH0+xHe)-lnrho_e-2.5)
+!
+        dlnPdlnrho=1.+twothirds
+        dlnPdss=twothirds/(1.+yH0+xHe) 
+!
+        coef_lr=dlnPdlnrho-1.
+        coef_ss=dlnPdss/ss_ion 
       endif
-!
-      yH=amin1(amax1(yH0,1e-5),1.-1e-5)
-      lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH)*log(m_H/m_e) &
-                        -1.5*yH*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
-                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+xHe*log(xHe)) &
-                        /(1.+yH+xHe)-lnrho_e-2.5)
-
-      dlnPdlnrho=5./3.    
-      dlnPdss=(2./3.)/(1.+yH0+xHe) 
-!
-      coef_lr=dlnPdlnrho-1.
-      coef_ss=dlnPdss/ss_ion 
 !
     endsubroutine initialize_ionization
 !*******************************************************************
