@@ -154,10 +154,10 @@ if nbox eq 0 then begin
      ;surface,fltarr(2,2),/nodata,/save,xr=minmax(x),yr=minmax(y),zr=minmax(z),ax=ax,az=az
   if keyword_set(back) then begin
     col0=1
-    surface,fltarr(2,2),/nodata,/save,xr=xyzr,yr=xyzr,zr=xyzr,ax=ax,az=az,back=back,col=col0,charsize=symsize
+    surface,fltarr(2,2),/nodata,/save,xr=xyzr,yr=xyzr,zr=xyzr,ax=ax,az=az,back=back,col=col0,xtit='x',ytit='y',ztit='z'
   end else begin
     col0=255
-    surface,fltarr(2,2),/nodata,/save,xr=xyzr,yr=xyzr,zr=xyzr,ax=ax,az=az,charsize=symsize
+    surface,fltarr(2,2),/nodata,/save,xr=xyzr,yr=xyzr,zr=xyzr,ax=ax,az=az,xtit='x',ytit='y',ztit='z'
   end
 x0=min(x) & x1=max(x)
 y0=min(y) & y1=max(y)
