@@ -2,11 +2,17 @@
 #  This file tries to set the PENCIL_HOME environment variable if it
 #  doesn't exist yet, and then adds stuff to your PATH and IDL_PATH.
 #
+#  If _sourceme_quiet is set, no output is printed, which enables you to
+#  put the lines
+#    export PENCIL_HOME=[...]
+#    _sourceme_quiet=1; . $PENCIL_HOME/sourceme.sh; unset _sourceme_quiet
+#  into your .bashrc
+#
+
 #  You may or may not want to put the lines
 #    setenv PENCIL_HOME [...]
 #    . $HOME/f90/pencil_modular/sourceme.sh
 #  into your .bashrc
-#
 
 if [ -z $PENCIL_HOME ]; then
   unset _sourceme		# tabula rasa without PENCIL_HOME
@@ -31,32 +37,28 @@ if [ -z $PENCIL_HOME ]; then
   unset _dir
 
   if [ -z $PENCIL_HOME ]; then # no success
-    echo "Cannot locate home directory of pencil code."
-    echo "Try sourcing me from the home directory itself, or set PENCIL_HOME"
+    echo "sourceme.sh: Cannot locate home directory of pencil code."
+    echo "  Try sourcing me from the home directory itself, or set PENCIL_HOME"
     exit 0
   fi
 fi
 
-echo "PENCIL_HOME = <$PENCIL_HOME>"
+if [ -z $_sourceme_quiet ]; then echo "PENCIL_HOME = <$PENCIL_HOME>"; fi
 
 if [ -z $_sourceme ]; then	# called for the first time?
   # CDPATH="./:../:../../:../../../:$HOME"
   if [ -d $PENCIL_HOME/bin ]; then
     #  Set shell path
-    echo "Adding $PENCIL_HOME/bin to path"
+    if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/bin to PATH"; fi
     PATH=${PATH}:$PENCIL_HOME/bin
     
-IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
+    IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
     export PATH IDL_PATH _sourceme
     
-    # Now a separate shell script:
-    # local() {
-    #   cp -p $1 tmp.$$; \rm $1; mv tmp.$$ $1; chmod u+w $1;
-    # }
   else
-    echo "Not adding $PENCIL_HOME/bin to path: not a directory"
+    echo "Not adding $PENCIL_HOME/bin to PATH: not a directory"
   fi
 fi
