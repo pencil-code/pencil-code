@@ -83,8 +83,8 @@ function texsyms, DEVICE=device
               Re          : '!7Â!X' , $
               sqrt        : '!7Ö!X' , $
               times       : '!7´!X' , $
-              lesseq      : '!6!S<!R_!X' , $ ; `le' is reserved..
-              gtreq       : '!6!S>!R_!X'   $ ; `ge' is reserved..
+              lte         : '!6!S<!R_!X' , $ ; `le' is reserved..
+              gte         : '!6!S>!R_!X'   $ ; `ge' is reserved..
   }
   endif else begin ; Hershey fonts
     ; lowercase lsymbols
@@ -151,8 +151,8 @@ function texsyms, DEVICE=device
               sqrt        : '!9r!X',   $
               times       : '!9X!X',   $
               odot        : '!9n!X',   $
-              lesseq      : '!9l!X',   $ ; `le' is reserved..
-              gtreq       : '!9b!X'    $ ; `ge' is reserved..
+              lte         : '!9l!X',   $ ; `le' is reserved..
+              gte         : '!9b!X'    $ ; `ge' is reserved..
   }
   endelse
 
