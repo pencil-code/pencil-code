@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.195 2004-02-17 16:38:55 bingert Exp $
+! $Id: equ.f90,v 1.196 2004-02-18 16:56:38 ajohan Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.195 2004-02-17 16:38:55 bingert Exp $")
+           "$Id: equ.f90,v 1.196 2004-02-18 16:56:38 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -342,7 +342,7 @@ module Equ
 !  dust equations
 !
         call duud_dt  (f,df,uu,rho1,cs2,uud,divud,ud2,udij)
-        call dnd_dt   (f,df,rho1,uud,divud,gnd)
+        call dnd_dt   (f,df,rho1,TT1,uud,divud,gnd)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.37 2004-02-16 16:20:47 ajohan Exp $
+! $Id: dustdensity.f90,v 1.38 2004-02-18 16:56:38 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -26,16 +26,16 @@ module Dustdensity
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
   real :: mmon,mumon,surfmon,supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero', dust_chemistry='ice'
-  logical :: ldustformation=.true.,ldustgrowth=.true.,ldustcoagulation=.true.
+  logical :: ldustnucleation=.false.,ldustgrowth=.true.,ldustcoagulation=.true.
   logical :: lcalcdkern=.true.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
-      adpeak, dust_chemistry, ldustformation, ldustgrowth, ldustcoagulation, &
+      adpeak, dust_chemistry, ldustnucleation, ldustgrowth, ldustcoagulation, &
       lcalcdkern, supsatfac
 
   namelist /dustdensity_run_pars/ &
-      rhod0, cdiffnd, cdiffnd_all, ldustformation, ldustgrowth, &
+      rhod0, cdiffnd, cdiffnd_all, ldustnucleation, ldustgrowth, &
       ldustcoagulation, lcalcdkern, supsatfac
       
 
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.37 2004-02-16 16:20:47 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.38 2004-02-18 16:56:38 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,9 +137,9 @@ module Dustdensity
 !
       integer :: i,j
 !
-      if (lroot) print*, 'initialize_dustdensity: ldustformation,' // &
+      if (lroot) print*, 'initialize_dustdensity: ldustnucleation,' // &
           'ldustgrowth,ldustcoagulation =', &
-          ldustformation,ldustgrowth,ldustcoagulation
+          ldustnucleation,ldustgrowth,ldustcoagulation
 !
 !  Special test cases need initialization of kernel
 !
@@ -298,7 +298,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dnd_dt(f,df,rho1,uud,divud,gnd)
+    subroutine dnd_dt(f,df,rho1,TT1,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -311,9 +311,10 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
-      real, dimension (nx,3,ndustspec) :: gnd,uud
+      real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
       real, dimension (nx,ndustspec) :: nd,divud
       real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud,rho,rho1
+      real, dimension (nx) :: TT1,ugrhod
       real, dimension (nx) :: mfluxcond, nofluxcond
       real :: diffnd
       integer :: i,j,k
@@ -322,12 +323,22 @@ module Dustdensity
       intent(in)  :: uud,divud
       intent(out) :: df,gnd
 !
+!  identify module and boundary conditions
+!
+      if (headtt.or.ldebug) print*,'dnd_dt: SOLVE dnd_dt'
+      if (headtt) call identify_bcs('nd',ind(1))
+      if (lmdvar .and. headtt) then
+        call identify_bcs('rhod',irhod(1))
+      endif
+!
 !  Recalculate grain masses from nd and rhod
 !
       if (lmdvar) then
         do k=1,ndustspec
           if (f(l1,m,n,ind(k)) .ne. 0) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
+          else
+            md(k) = 0.5*(mdminus(k)+mdplus(k))
           endif
         enddo
 !
@@ -336,14 +347,23 @@ module Dustdensity
         do k=1,ndustspec
           if (md(k) .lt. mdminus(k)) then
             do j=k-1,0,-1
-              if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) then
-                f(l1:l2,m,n,ind(j))   = &
-                    f(l1:l2,m,n,ind(j)) + f(l1:l2,m,n,ind(k))
-                f(l1:l2,m,n,irhod(j)) = &
-                    f(l1:l2,m,n,irhod(j)) + f(l1:l2,m,n,irhod(k))
+              if (j .eq. 0) then
+                f(l1:l2,m,n,ilncc) = &
+                    f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
                 f(l1:l2,m,n,ind(k))   = 0.
                 f(l1:l2,m,n,irhod(k)) = 0.
-                exit
+                md(k) = 0.5*(mdminus(k)+mdplus(k))
+              else
+                if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) then
+                  f(l1:l2,m,n,ind(j))   = &
+                      f(l1:l2,m,n,ind(j)) + f(l1:l2,m,n,ind(k))
+                  f(l1:l2,m,n,irhod(j)) = &
+                      f(l1:l2,m,n,irhod(j)) + f(l1:l2,m,n,irhod(k))
+                  f(l1:l2,m,n,ind(k))   = 0.
+                  f(l1:l2,m,n,irhod(k)) = 0.
+                  md(k) = 0.5*(mdminus(k)+mdplus(k))
+                  exit
+                endif
               endif
             enddo
           else
@@ -356,6 +376,7 @@ module Dustdensity
                       f(l1:l2,m,n,irhod(j)) + f(l1:l2,m,n,irhod(k))
                   f(l1:l2,m,n,ind(k))   = 0.
                   f(l1:l2,m,n,irhod(k)) = 0.
+                  md(k) = 0.5*(mdminus(k)+mdplus(k))
                   exit
                 endif
               enddo
@@ -372,8 +393,9 @@ module Dustdensity
       rho = exp(f(l1:l2,m,n,ilnrho))
 !
 !  Formation of the smallest dust particles due to condensation
+!  Currently not working (it is much more complex than sketched here)
 !
-      if (ldustformation) then
+      if (ldustnucleation) then
         call get_nofluxcond(f,nofluxcond,rho)
         dndfac = surfd(1)*nofluxcond*nd(:,1)
         df(l1:l2,m,n,ind(1)) = df(l1:l2,m,n,ind(1)) + dndfac
@@ -383,7 +405,7 @@ module Dustdensity
 !  Dust growth due to condensation on grains
 !
       if (ldustgrowth) then
-        call get_mfluxcond(f,mfluxcond,rho)
+        call get_mfluxcond(f,mfluxcond,rho,TT1)
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
@@ -448,11 +470,6 @@ module Dustdensity
 !
       do k=1,ndustspec
 !
-!  identify module and boundary conditions
-!
-        if (headtt.or.ldebug) print*,'dnd_dt: SOLVE dnd_dt'
-        if (headtt) call identify_bcs('nd',ind(k))
-!
 !  calculate dustdensity gradient and advection term
 !
         call grad(f,ind(k),gnd(:,:,k))
@@ -462,6 +479,13 @@ module Dustdensity
 !
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
             ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+
+        if (lmdvar) then
+          call grad(f,irhod(k),grhod(:,:,k))
+          call dot_mn(uud(:,:,k),grhod(:,:,k),ugrhod)
+          df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) - &
+              ugrhod - f(l1:l2,m,n,irhod(k))*divud(:,k)
+        endif
 !
 !  mass diffusion, in units of dxmin*cs0
 !
@@ -486,36 +510,39 @@ module Dustdensity
           endif
         endif
 !
+!
+!
+!        UUmax = max( UUmax,maxval( -1/nd(:,k)*df(l1:l2,n,m,ind(k))*dxmin ) )
+!
 !  End loop over dust layers
 !
       enddo
 !
     endsubroutine dnd_dt
 !***********************************************************************
-    subroutine get_mfluxcond(f,mfluxcond,rho)
+    subroutine get_mfluxcond(f,mfluxcond,rho,TT1)
 !
 !  Calculate mass flux of condensing monomers
 !
       use Cdata
       use Mpicomm, only: stop_it
-      use Ionization, only: getmu,eoscalc
+      use Ionization, only: getmu,eoscalc_pencil,ilnrho_ss
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: mfluxcond,rho,lnTT,TT,pp,ppmon,ppsat,vth,epsmon
+      real, dimension (nx) :: mfluxcond,rho,TT1,pp,ppmon,ppsat,vth,epsmon
       real, dimension (nx) :: supsatratio1
       real, save :: mu
-      integer :: l
 !
       select case(dust_chemistry)
 
       case ('ice')
         epsmon = f(l1:l2,m,n,ilncc)
-        call eoscalc(f,lnTT=lnTT,pp=pp)
-        TT = exp(lnTT)
         if (it .eq. 1) call getmu(mu)
+        call eoscalc_pencil &
+            (ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
         ppmon = pp*epsmon*mu/mumon
-        ppsat = 1.013e6*exp(-5940/TT+15.6)
-        vth = (3*k_B*TT/mmon)**0.5
+        ppsat = 1.013e6*exp(-5940*TT1+15.6)
+        vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
         mfluxcond = vth*epsmon*rho*(1-supsatratio1)
 
@@ -544,13 +571,14 @@ module Dustdensity
 
       case ('ice')
         epsmon = f(l1:l2,m,n,ilncc)
-        call eoscalc(f,lnTT=lnTT,pp=pp)
+        !call eoscalc(f,lnTT=lnTT,pp=pp)
         TT = exp(lnTT)
         if (it .eq. 1) call getmu(mu)
         ppmon = pp*epsmon*mu/mumon
         ppsat = 1.013e6*exp(-5940/TT+15.6)
         vth = (3*k_B*TT/mmon)**0.5
         supsatratio1 = ppsat/ppmon
+        !print*, n, minval(ppmon), maxval(ppmon), minval(ppsat), maxval(ppsat), minval(supsatratio1), maxval(supsatratio1)
         nofluxcond = vth*epsmon*rho/mmon*(1-supsatratio1)
 
         if (supsatfac1 .ne. 1.) then
