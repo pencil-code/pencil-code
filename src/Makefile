@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.223 2003-08-11 14:23:45 brandenb Exp $
+### $Id: Makefile,v 1.224 2003-08-13 11:07:34 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -155,7 +155,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=mpif90
 #F77=$(FC)
 #FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
-#FFLAGS=-lowercase -OSS -noparallel -O4
+#FFLAGS=-lowercase -Os -noparallel -O4
 #CFLAGS=-O4 -DFUNDERSC=0
 #LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
 
@@ -179,6 +179,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI=
 
 ### End machine dependent
+
 LD=$(FC)
 LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 # -Mpencil.map
