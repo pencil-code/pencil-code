@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
-;;;  $Date: 2004-09-16 00:01:48 $
-;;;  $Revision: 1.5 $
+;;;  $Date: 2005-04-04 20:38:13 $
+;;;  $Revision: 1.6 $
 ;;;  Description:
 ;;;    Scatter-plot data, but bin them first in order to reduce the
 ;;;    size of thusly created PostScript files. For 60^3 data points,
@@ -73,7 +73,10 @@ pro plot_binned, xvar, yvar, $
                  ENHANCE=enhance, $
                  ASINHSCALE=asinhscale, $
                  DENSITY=map, XCOORDS=mapx, YCOORDS=mapy, $
+                 HELP=help, $
                  _EXTRA=extra
+
+if (keyword_set(help)) then extract_help, 'plot_binned'
 
 if (n_elements(nmx)        eq 0) then nmx = 500/(!p.multi[1] > 1)
 if (n_elements(nmy)        eq 0) then nmy = 350/(!p.multi[2] > 1)
