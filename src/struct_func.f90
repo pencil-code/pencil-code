@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.16 2003-03-04 21:16:35 nilshau Exp $
+! $Id: struct_func.f90,v 1.17 2003-03-06 14:19:14 brandenb Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -46,7 +46,7 @@ module struct_func
   real, dimension(n_pdf,imax,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz) :: i_du1,i_du2
-  integer :: l,ll,j,q,direction,ll1,ll2
+  integer :: l,q,direction,ll1,ll2
   integer :: i,ivec,lb_ll,separation,exp1,exp2
   integer(KIND=ikind8) :: ndiv
   real :: pdf_max,pdf_min,normalization,dx_du
