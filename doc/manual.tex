@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.219 2003-11-24 08:29:51 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.220 2003-11-24 13:20:54 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}
+%\date{$ $Date: 2003-11-24 13:20:54 $ $,~ $ $Revision: 1.220 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}\\
+  \emph{$ $Date: 2003-11-24 13:20:54 $ $,~ $ $Revision: 1.220 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1617,8 +1617,9 @@ by the 4-byte integer byte count of the data in the record at the
 beginning and the end, i.e.~has the form
 $\left< N_{\rm bytes}, \mathtt{raw\_data}, N_{\rm bytes} \right>$):
 \begin{enumerate}
-\item variable vector \verb|f| [\var{mx},\var{my},\var{mz}]
-\item time $t$ [1], coordinate vectors $x$ [mx], $y$ [my], $z$ [mz],
+\item variable vector \verb|f| [$\var{mx}{\times}\var{my}{\times}\var{mz}$]
+\item time $t$ [1],
+  coordinate vectors $x$ [\var{mx}], $y$ [\var{my}], $z$ [\var{mz}],
   grid spacings $\delta x$ [1], $\delta y$ [1], $\delta z$ [1],
   shearing-box shift $\Delta y$ [1]
 \end{enumerate}
@@ -1687,21 +1688,30 @@ Azimuthal averages are written every \var{d2davg} time units to the files
 The file format of azimuthal-average files consists of the following
 \name[Fortran record]{Fortran records}:
 \begin{enumerate}
-\item averaged data []
+\item number of radial points $N_{r,\rm \varphi-avg}$ [1],
+      number of vertical points $N_{z,\rm \varphi-avg}$ [1],
+      number of variables $N_{\rm var,\varphi-avg}$[1],
+      number of processors in $z$ direction [1]
 \item time $t$ [1],
       positions of cylindrical radius $r_{\rm cyl}$ [$N_{r,\rm \varphi-avg}$]
       and $z$ [$N_{z,\rm \varphi-avg}$] for the grid,
       radial spacing $\delta r_{\rm cyl}$ [1],
       vertical spacing $\delta z$ [1]
-\item number of radial points $N_{r,\rm \varphi-avg}$ [1],
-      number of vertical points $N_{z,\rm \varphi-avg}$ [1],
-      number of variables $N_{\rm var,\varphi-avg}$[1]
+\item averaged data [$N_{r,\rm \varphi-avg} {\times} N_{z,\rm \varphi-avg}$]
+\item labels of averaged variables [$N_{\rm var,\varphi-avg}$]
 \end{enumerate}
 All numbers are 4-byte numbers (floating-point numbers or integers),
 unless you use double precision (see \S\ref{double-precision}).
 
-The file \file[phiavg.pro]{\$PENCIL_HOME/idl/phiavg.pro}
-demonstrates how to read and visualize azimuthal averages in \name{IDL}.
+To read and visualize azimuthal averages in \name{IDL}, use
+\file[read_phiavg.pro]{\$PENCIL_HOME/idl/read_phiavg.pro}
+\begin{alltt}
+  \prompt{IDL> } avg = read_phiavg('data/averages/PHIAVG1')
+  \prompt{IDL> } contour, avg.b2mphi, avg.rcyl, avg.z, TITLE='!17B!U2!N!X'
+\end{alltt}
+or have a look at \file[phiavg.pro]{\$PENCIL_HOME/idl/phiavg.pro} for a
+more sophisticated example.
+
 
 \subsubsection{Time averages}
 \label{S-time-averages}
@@ -3557,7 +3567,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-24 08:29:51 $ $,~ $ $Revision: 1.219 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-24 13:20:54 $ $,~ $ $Revision: 1.220 $ $}
 
 \section{Timings}
 
@@ -5818,7 +5828,7 @@ The following table lists all (at the time of writing, September 2002)
 possible inputs to the file \file{print.in}.
 
 % ---------------------------------------------------------------------- %
-\begin{longtable}{lp{0.6\textwidth}}
+\begin{longtable}{lp{0.7\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
@@ -5904,9 +5914,21 @@ The following table lists all (at the time of writing, November 2003)
 possible inputs to the file \file{phiaver.in}.
 
 % ---------------------------------------------------------------------- %
-\begin{longtable}{lp{0.6\textwidth}}
+\begin{longtable}{lp{0.7\textwidth}}
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{prints.f90}} \\
+\midrule
+  \var{rcylmphi} & cylindrical radius $\varpi = \sqrt{x^2+y^2}$
+  (useful for debugging azimuthal averages)\\
+  \var{phimphi} & azimuthal angle $\varphi = \arctan\frac{y}{x}$
+  (useful for debugging)\\
+  \var{zmphi} & $z$-coordinate
+  (useful for debugging)\\
+  \var{rmphi} & spherical radius $r=\sqrt{\varpi^2+z^2}$
+  (useful for debugging)\\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
@@ -6227,7 +6249,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.219 2003-11-24 08:29:51 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.220 2003-11-24 13:20:54 dobler Exp $ $}
 
 
 \end{document}
