@@ -9,6 +9,7 @@ module Timestep
 !
 !  Runge Kutta advance, accurate to order itorder
 !  At the moment, itorder can be 1, 2, or 3.
+!
 !   2-apr-01/axel: coded
 !  14-sep-01/axel: moved itorder to cdata
 !
@@ -36,6 +37,7 @@ module Timestep
       elseif (itorder==3) then
         !alpha=(/0., -2./3., -1./)
         !beta=(/1./3., 1., 1./2./)
+        !  use coefficients of Williamson (1980)
         alpha=(/  0. ,  -5./9., -153./128. /)
         beta=(/ 1./3., 15./16.,    8./15.  /)
       else
@@ -68,11 +70,6 @@ module Timestep
         call mpibcast_real(dt,1)
         dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
-!
-!  only now we know the length of the time step, which enters the scaling
-!  of the forcing
-!
-        if (iforce/=0) call addforce(df)
 !
 !  do this loop in slice, for cache efficiency
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.26 2002-05-25 13:38:30 brandenb Exp $
+! $Id: magnetic.f90,v 1.27 2002-05-26 16:42:58 brandenb Exp $
 
 module Magnetic
 
@@ -29,7 +29,7 @@ module Magnetic
        eta,B_ext
 
   ! other variables
-  integer :: i_brms,i_bmax,i_jrms,i_jmax
+  integer :: i_b2m,i_bm2,i_j2m,i_jm2,i_abm,i_jbm
 
   contains
 
@@ -66,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.26 $", &
-           "$Date: 2002-05-25 13:38:30 $")
+           "$Revision: 1.27 $", &
+           "$Date: 2002-05-26 16:42:58 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,10 +97,15 @@ module Magnetic
       real    :: ampl,fring,Iring,R0,width
       integer :: init,i
 !
-!  initialize to zero
+!  Gaussian noise
 !
       if (initaa==0) then
         call gaunoise(amplaa,f,iax,iaz)
+!
+!  Beltrami field
+!
+      elseif (initaa==1) then
+        call beltrami(amplaa,f,iaa)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -109,7 +114,7 @@ module Magnetic
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
 !
-      elseif (initaa==1) then
+      elseif (initaa==2) then
       f(:,:,:,iax:iaz) = 0.
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
@@ -185,9 +190,8 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2,b2tot
+      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2,b2tot,ab,jb
 !
-    !  aa=f(l1:l2,m,n,iax:iaz)
       call curl(f,iaa,bb)
 !
 !  calculate max and rms field
@@ -195,9 +199,12 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !  Here we don't want to include the imposed field (if there is any)
 !
       if (ldiagnos) then
+        aa=f(l1:l2,m,n,iax:iaz)
+        call dot_mn(aa,bb,ab)
         call dot2_mn(bb,b2)
-        if (i_brms/=0) call sum_mn_name(b2,i_brms)
-        if (i_bmax/=0) call max_mn_name(b2,i_bmax)
+        if (i_abm/=0) call sum_mn_name(ab,i_abm)
+        if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
+        if (i_bm2/=0) call max_mn_name(b2,i_bm2)
       endif
 !
 !  possibility to add external field
@@ -250,9 +257,11 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
+        call dot_mn(jj,bb,jb)
         call dot2_mn(jj,j2)
-        if (i_jrms/=0) call sum_mn_name(j2,i_jrms)
-        if (i_jmax/=0) call max_mn_name(j2,i_jmax)
+        if (i_jbm/=0) call sum_mn_name(jb,i_jbm)
+        if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
+        if (i_jm2/=0) call max_mn_name(j2,i_jm2)
       endif
 !
 !  debug output
@@ -281,10 +290,12 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       integer :: iname
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
-        call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
-        call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
-        call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
+        call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'b2m',i_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
+        call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
+        call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
       enddo
 !
     endsubroutine rprint_magnetic

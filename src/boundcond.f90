@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.2 2002-05-21 07:25:50 brandenb Exp $
+! $Id: boundcond.f90,v 1.3 2002-05-26 16:42:58 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -29,7 +29,7 @@ module Boundcond
       real, dimension (mx,my) :: tmp_xy
       real, dimension (7) :: lnrho
       real :: dlnrho
-      integer :: i,j,k
+      integer :: i,j
       character (len=*) :: errmesg
 !
       errmesg=""

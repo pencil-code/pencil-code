@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.27 2002-05-25 13:38:30 brandenb Exp $
+! $Id: run.f90,v 1.28 2002-05-26 16:42:58 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -42,8 +42,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.27 $", &
-             "$Date: 2002-05-25 13:38:30 $")
+             "$Revision: 1.28 $", &
+             "$Date: 2002-05-26 16:42:58 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -128,26 +128,17 @@
             endif
           endif
 !
-!  check for the possibility of forcing
-!
-          if (iforce/=0) call forcing_select
-!
 !  time advance
 !
           call rk_2n(f,df)
+          if (iforce/=0) call addforce(f)
           if(lout) call prints
-          call wsnap(trim(directory)//'/VAR',f)
+          call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
 !
 !  save snapshot every isnap steps in case the run gets interrupted
 !
-          if (mod(it,isave).eq.0) then
-!  update ghost zones for var.dat (cheap, since done infrequently)
-            call initiate_isendrcv_bdry(f)
-            call finalise_isendrcv_bdry(f)
-!  write data
-            call output(trim(directory)//'/var.dat',f,mvar)
-          endif
+          if (mod(it,isave).eq.0) call wsnap(trim(directory)//'/var.dat',f,.false.)
 !
           headt=.false.
           if (it>=nt) exit Time_loop
@@ -162,11 +153,8 @@
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
-!  update ghost zones for var.dat (cheap, since done once)
-        call initiate_isendrcv_bdry(f)
-        call finalise_isendrcv_bdry(f)
-        call output(trim(directory)//'/var.dat',f,mvar)
-        if (ip<=10) call output(trim(directory)//'/dvar.dat',df,mvar)
+        call wsnap(trim(directory)//'/var.dat',f,.false.)
+        if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
 !
 !  write seed parameters (only if forcing is turned on)
 !

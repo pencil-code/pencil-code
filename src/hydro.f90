@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.4 2002-05-11 12:18:48 dobler Exp $
+! $Id: hydro.f90,v 1.5 2002-05-26 16:42:58 brandenb Exp $
 
 module Hydro
 
@@ -6,7 +6,7 @@ module Hydro
 
   implicit none
 
-  integer :: i_t=0,i_urms=0,i_umax=0
+  integer :: i_t=0,i_u2m=0,i_um2=0,i_oum,i_o2m
 
   contains
 
@@ -44,9 +44,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-05-11 12:18:48 $")
-!
+           "$Revision: 1.5 $", &
+           "$Date: 2002-05-26 16:42:58 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -67,9 +66,11 @@ module Hydro
       integer :: iname
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'t',i_t)
-        call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
-        call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
+!       call parse_name(iname,cname(iname),cform(iname),'t',i_t)
+        call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
+        call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
+        call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
+        call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
       enddo
 !
     endsubroutine rprint_hydro

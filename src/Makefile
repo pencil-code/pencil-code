@@ -121,7 +121,7 @@ sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o $(IO).o
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
-boundcond.o: cdata.o
+boundcond.o: boundcond.f90 cdata.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o boundcond.o

@@ -18,8 +18,8 @@ module Cdata
   real :: DD,nu,cmu,cnu2,cdiffrho
   real :: hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2
   real :: t_diag,dtu,dtv
-  real :: rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
-  real :: orms,omax,o2max,ourms,oumax
+  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
+  real :: o2m,om2,oum
   real :: UUmax,cdt,cdtv,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,ztop
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz

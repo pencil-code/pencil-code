@@ -765,9 +765,11 @@ module Sub
 10    format(8e10.3)
     endsubroutine outpuf
 !***********************************************************************
-    subroutine wsnap(chsnap,a)
+    subroutine wsnap(chsnap,a,llabel)
 !
-!  write snapshot file, labelled consecutively
+!  Write snapshot file, labelled consecutively if llabel==.true.
+!  Otherwise just write a snapshot without label (used for restart files)
+!
 !  30-sep-97/axel: coded
 !
       use Cdata
@@ -777,29 +779,40 @@ module Sub
       character (len=4) :: ch
       character (len=9) :: file
       character (len=*) :: chsnap
-      logical lsnap
+      logical lsnap,llabel
       integer, save :: ifirst,nsnap
       real, save :: tsnap
 !
-!  Output snapshot in 'tsnap' time intervals
+!  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
 !
-      file='tsnap.dat'
+      if (llabel) then
+        file='tsnap.dat'
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in out1, but only available to root processor
 !
-      if (ifirst==0) then
-        call out1 (file,tsnap,nsnap,dsnap,t)
-        ifirst=1
-      endif
+        if (ifirst==0) then
+          call out1 (file,tsnap,nsnap,dsnap,t)
+          ifirst=1
+        endif
 !
-      call out2 (file,tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
-      if (lsnap) then
+!  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
+!
+        call out2 (file,tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
+        if (lsnap) then
+          call initiate_isendrcv_bdry(a)
+          call finalise_isendrcv_bdry(a)
+          call output(chsnap//ch,a,mvar)
+        endif
+!
+!  write snapshot without label
+!
+      else
         call initiate_isendrcv_bdry(a)
         call finalise_isendrcv_bdry(a)
-        call output(chsnap//ch,a,mvar)
+        call output(chsnap,a,mvar)
       endif
 !
     endsubroutine wsnap
@@ -1428,6 +1441,32 @@ module Sub
         close(1,STATUS="DELETE")
 !
       endsubroutine remove_file
+!***********************************************************************
+    subroutine beltrami(ampl,f,i)
+!
+!  Write Beltrami field as initial condition
+!
+!  26-may-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+!  set Beltrami field
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        if ((ip<=8).and.lroot) print*,'set_Betrami field: i=',i
+        f(:,:,:,i  )=ampl*spread(spread(cos(z),1,mx),2,my)
+        f(:,:,:,i+1)=ampl*spread(spread(sin(z),1,mx),2,my)
+        f(:,:,:,i+2)=0.
+      endif
+!
+    endsubroutine beltrami
 !***********************************************************************
     subroutine gaunoise_vect(ampl,f,i1,i2)
 !

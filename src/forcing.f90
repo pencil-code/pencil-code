@@ -6,11 +6,8 @@ module Forcing
 
   implicit none
 
-  real, dimension (mx,my,mz,3) :: fforce=0   !(forcing function)
-
   namelist /forcing_run_pars/ &
        iforce,force,relhel
-
 
   contains
 
@@ -35,41 +32,32 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.5 $", &
-           "$Date: 2002-05-25 13:38:30 $")
+           "$Revision: 1.6 $", &
+           "$Date: 2002-05-26 16:42:58 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine addforce(df)
+    subroutine addforce(f)
 !
       use Cdata
 !
-!  add forcing in timestep()
+!  add forcing at the end of each time step
+!  Since forcing is constant during one time step,
+!  this can be added as an Euler 1st order step
 !
-      real, dimension (mx,my,mz,mvar) :: df
-      real :: sdt
+      real, dimension (mx,my,mz,mvar) :: f
 !
-      sdt=sqrt(abs(dt))
-      do n=n1,n2
-      do m=m1,m2
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+sdt*fforce(l1:l2,m,n,:)
-      enddo
-      enddo
+!  calculate and add forcing function
+!
+      if(iforce==1) call forcing1(f)
+      if(iforce==2) call forcing2(f)
 !
     endsubroutine addforce
 !***********************************************************************
-    subroutine forcing_select
+    subroutine forcing1(f)
 !
-!  select different forcing routines
-!
-    if(iforce==1) call forcing1
-    if(iforce==2) call forcing2
-!
-    endsubroutine forcing_select
-!***********************************************************************
-    subroutine forcing1
-!
-!  forcing function, using a set of precomputed wavevectors
+!  add acoustic forcing function, using a set of precomputed wavevectors
+!  This forcing drives pressure waves
 !
       use Mpicomm
       use Cdata
@@ -77,13 +65,14 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (mx,my,mz,mvar) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
-      integer :: ik,j
+      integer :: ik,j,jf
 !
       if (ifirst==0) then
         if (lroot) print*,'opening k.dat'
@@ -107,7 +96,11 @@ module Forcing
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
-      ffnorm=force*sqrt(kav/abs(dt))
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      ffnorm=force*sqrt(kav/dt)*dt
       fx=exp(cmplx(0.,kkx(ik)*x+phase))*ffnorm
       fy=exp(cmplx(0.,kky(ik)*y))
       fz=exp(cmplx(0.,kkz(ik)*z))
@@ -115,17 +108,21 @@ module Forcing
       ikk(1)=cmplx(0.,kkx(ik))
       ikk(2)=cmplx(0.,kky(ik))
       ikk(3)=cmplx(0.,kkz(ik))
+!
       do j=1,3
-        fforce(:,:,:,j)=real(spread(spread(ikk(j)*fx,2,my),3,mz)* &
-                             spread(spread(       fy,1,mx),3,mz)* &
-                             spread(spread(       fz,1,mx),2,my))
+        jf=j+iux-1
+        do n=n1,n2
+        do m=m1,m2
+          f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
+        enddo
+        enddo
       enddo
 !
     endsubroutine forcing1
 !***********************************************************************
-    subroutine forcing2
+    subroutine forcing2(f)
 !
-!  helical forcing function, using a set of precomputed wavevectors
+!  add helical forcing function, using a set of precomputed wavevectors
 !
       use Mpicomm
       use Cdata
@@ -134,14 +131,15 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
+      real, dimension (mx,my,mz,mvar) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
-      integer :: ik,j,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
-      real :: k2,k,ex,ey,ez,kde,sig=1.
+      integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
+      real :: k2,k,ex,ey,ez,kde,sig=1.,fact
 !
       if (ifirst==0) then
         if (lroot) print*,'opening k.dat'
@@ -206,15 +204,25 @@ module Forcing
 !  Normalise ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
 !
+!  This does already include the new sqrt(2) factor (missing in B01).
+!  So, in order to reproduce the 0.1 factor mentioned in B01
+!  we have to set force=0.07.
+!
       ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
       if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
 !
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      fact=force/ffnorm*sqrt(dt)
+!
 !  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
 !  case one needs to scale by 2pi/Lx, etc.
 !
-      fx=exp(cmplx(0.,kx*x+phase))*force/ffnorm
+      fx=exp(cmplx(0.,kx*x+phase))*fact
       fy=exp(cmplx(0.,ky*y))
       fz=exp(cmplx(0.,kz*z))
       if (ip.le.5) print*,'fx=',fx
@@ -230,15 +238,16 @@ module Forcing
       if (ip.le.5) print*,'coef=',coef
 !
       do j=1,3
-        fforce(:,:,:,j)=real(coef(j)*   &
-          spread(spread(fx,2,my),3,mz)* &
-          spread(spread(fy,1,mx),3,mz)* &
-          spread(spread(fz,1,mx),2,my))
+        jf=j+iux-1
+        do n=n1,n2
+        do m=m1,m2
+          f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+        enddo
+        enddo
       enddo
 !
       if (ip.le.12) print*,'forcing OK'
-      if (ip.le.4) call output('tmp/ff.dat',fforce,3)
-
+!
     endsubroutine forcing2
 !***********************************************************************
 

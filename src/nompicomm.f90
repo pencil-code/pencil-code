@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.22 2002-05-13 18:52:54 dobler Exp $
+! $Id: nompicomm.f90,v 1.23 2002-05-26 16:42:58 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -47,8 +47,10 @@ module Mpicomm
 !
 !  produce index-array for the sequence of points to be worked through.
 !  Trivial here, since no communication.
+!  Need to do the boundary conditions right in the beginning
 !
       imn=1
+      necessary(imn)=.true.
       do n=n1,n2
         do m=m1,m2
           mm(imn)=m
@@ -89,7 +91,6 @@ module Mpicomm
       character (len=160) :: errmesg
 !
 !  Boundary conditions in x
-!
 !
       call boundconds(f,errmesg)
       if (errmesg /= "") call stop_it(trim(errmesg))

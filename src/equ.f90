@@ -194,87 +194,6 @@ module Equ
 !
     endsubroutine diagnostic
 !***********************************************************************
-    subroutine diagnostic_old
-!
-!  calculate diagnostic quantities
-!   2-sep-01/axel: coded
-!
-      use Mpicomm
-      use Cdata
-      use Sub
-!
-      real, dimension (mreduce) :: fmax_tmp,fsum_tmp,fmax,fsum
-!
-!  old procedure; keep still intact for the time being
-!
-      fmax_tmp(1)=u2max
-      fmax_tmp(2)=o2max
-      fmax_tmp(3)=oumax
-      fmax_tmp(4)=divu2max
-      fmax_tmp(5)=rmax
-!
-      fsum_tmp(1)=urms
-      fsum_tmp(2)=orms
-      fsum_tmp(3)=ourms
-      fsum_tmp(4)=divurms
-      fsum_tmp(5)=rmean
-      fsum_tmp(6)=rrms
-!
-!  communicate over all processors
-!
-      call mpireduce_max(fmax_tmp,fmax,mreduce)
-      call mpireduce_sum(fsum_tmp,fsum,mreduce)
-!
-!  the result is present only on the root processor
-!
-      if(lroot) then
-        fsum=fsum/(nw*ncpus)
-!
-!  reassemble using old names
-!  need to take sqare root
-!
-        umax=sqrt(fmax(1))
-        omax=sqrt(fmax(2))
-        oumax=fmax(3)
-        divumax=sqrt(fmax(4))
-        rmax=fmax(5)
-!
-        urms=sqrt(fsum(1))
-        orms=sqrt(fsum(2))
-        ourms=sqrt(fsum(3))
-        divurms=sqrt(fsum(4))
-        rmean=fsum(5)
-        rrms=sqrt(fsum(6))
-!
-      endif
-!
-    endsubroutine diagnostic_old
-!***********************************************************************
-    subroutine prints_old
-!
-!  calculate and print some useful quantities during the run
-!  29-sep-97/axel: coded
-!
-      use Cdata
-      use Sub
-!
-!  print max and rms values of u and divu (calculated in pde)
-!  do this only if we are on the root processor
-!
-      if(lroot) then
-        write( 6,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax,dtu,dtv
-        write(20,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax,dtu,dtv
-        open(3,file='check')
-        write(3,'(a)')'it,t_diag,urms,umax,orms,omax,ourms,oumax,rmean,rrms,rmax,divurms,divumax,dtu,dtv'
-        write( 3,form1) it-1,t_diag,urms,umax,orms,omax,ourms,oumax, &
-             rmean,rrms,rmax,divurms,divumax,dtu,dtv
-        close(3)
-      endif
-!
-    endsubroutine prints_old
-!***********************************************************************
     subroutine wvid(chdir)
 !
 !  write into video file
@@ -345,8 +264,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.42 $", &
-           "$Date: 2002-05-19 21:31:07 $")
+           "$Revision: 1.43 $", &
+           "$Date: 2002-05-26 16:42:58 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -501,13 +420,19 @@ module Equ
 !
         if (ldiagnos) then
           t_diag = t            ! diagnostic quantities are for this time
-          if (i_urms/=0) call sum_mn_name(u2,i_urms)
-          if (i_umax/=0) call max_mn_name(u2,i_umax)
-!         oo(:,1)=uij(:,3,2)-uij(:,2,3)
-!         oo(:,2)=uij(:,1,3)-uij(:,3,1)
-!         oo(:,3)=uij(:,2,1)-uij(:,1,2)
-!         o2=oo(:,1)**2+oo(:,2)**2+oo(:,3)**2
-!         ou=oo(:,1)*uu(:,1)+oo(:,2)*uu(:,2)+oo(:,3)*uu(:,3)
+          oo(:,1)=uij(:,3,2)-uij(:,2,3)
+          oo(:,2)=uij(:,1,3)-uij(:,3,1)
+          oo(:,3)=uij(:,2,1)-uij(:,1,2)
+          if (i_oum/=0) then
+            call dot_mn(oo,uu,ou)
+            call sum_mn_name(ou,i_oum)
+          endif
+          if (i_o2m/=0) then
+            call dot2_mn(oo,o2)
+            call sum_mn_name(o2,i_o2m)
+          endif
+          if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
+          if (i_um2/=0) call max_mn_name(u2,i_um2)
 !         divu2=divu**2
 !         rho=exp(f(l1:l2,m,n,ilnrho))
 !         call max_mn (u2,u2max)
