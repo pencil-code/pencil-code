@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.189 2004-06-12 08:44:27 ajohan Exp $ 
+! $Id: sub.f90,v 1.190 2004-06-12 08:49:46 ajohan Exp $ 
 
 module Sub 
 
@@ -2711,12 +2711,16 @@ module Sub
         use Cdata
         use Mpicomm, only: stop_it
 !
-        real, dimension(mx,my,mz,mvar+maux) :: f
+        real, dimension(:,:,:,:) :: f
         character (len=*) :: msg
-        integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=mvar+maux
+        integer :: a,b,c,d,a1=1,a2=mx,b1=1,b2=my,c1=1,c2=mz,d1=1,d2=1
         integer, dimension(2), optional :: int1,int2,int3,int4
         character (len=*), optional :: region
         logical, optional :: lstop
+!
+!  Must set d2 according to whether f or df is considered
+!
+        d2 = size(f,4)
 !
 !  Set intervals for different predescribed regions
 !
@@ -2759,7 +2763,6 @@ module Sub
 !
 !  Look for NaN and inf in resulting interval
 !
-        print*, a1,a2,b1,b2,c1,c2,d1,d2
         do a=a1,a2
           do b=b1,b2
             do c=c1,c2
