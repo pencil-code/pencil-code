@@ -1,4 +1,4 @@
-10,5,-.4,10,3,		nt,it1,dt,isave,iorder
+40,5,-.4,10,3,		nt,it1,dt,isave,iorder
 2.,.2,0e-2,1e-6,	dsnap,dvid,dforce,dtmin
 0.,0.,0.,		tinit,tdamp,dampu
 0.,1.2,0.2,		dampuext,rdamp,wdamp

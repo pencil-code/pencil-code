@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.23 2002-05-19 18:07:00 brandenb Exp $
+! $Id: magnetic.f90,v 1.24 2002-05-19 21:31:07 brandenb Exp $
 
 module Magnetic
 
@@ -28,8 +28,6 @@ module Magnetic
 
   ! other variables
   integer :: i_brms,i_bmax,i_jrms,i_jmax
-
-
 
   contains
 
@@ -66,8 +64,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.23 $", &
-           "$Date: 2002-05-19 18:07:00 $")
+           "$Revision: 1.24 $", &
+           "$Date: 2002-05-19 21:31:07 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -218,9 +216,10 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
 !  For the timestep calculation, need maximum Alfven speed.
 !  This must include the imposed field (if there is any)
+!  The b2 calculated above for only updated when diagnos=.true.
 !
         if (lfirst.and.ldt) then
-          b2tot=b2+B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
+          call dot2_mn(bb,b2tot)
           va2=b2tot*rho1
         endif
 !

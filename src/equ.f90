@@ -110,7 +110,9 @@ module Equ
 !***********************************************************************
       subroutine calc_UUmax
 !
-!  calculate diagnostic quantities
+!  This routine is used for calculating the maximum effective advection
+!  velocity in the domain for determining dt at each timestep 
+!  
 !   2-sep-01/axel: coded
 !
       use Mpicomm
@@ -343,8 +345,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.41 $", &
-           "$Date: 2002-05-19 18:07:00 $")
+           "$Revision: 1.42 $", &
+           "$Date: 2002-05-19 21:31:07 $")
 !
 !  initialize counter for calculating and communicating print results
 !
