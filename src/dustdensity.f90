@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.67 2004-04-17 16:29:18 ajohan Exp $
+! $Id: dustdensity.f90,v 1.68 2004-04-19 08:49:24 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.67 2004-04-17 16:29:18 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.68 2004-04-19 08:49:24 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -462,13 +462,13 @@ module Dustdensity
       do l=1,nx
         md(:) = f(3+l,m,n,imd(:))
         if (lmice) mi(:) = f(3+l,m,n,imi(:))
+        mdnew = 0.5*(mdminus+mdplus)
+        ndnew = 0.
+        minew = 0.
 !
 !  Check for interval overflows on all species
 !          
         do k=1,ndustspec
-          mdnew = md
-          ndnew = nd(l,:)
-          minew = mi
           i_targ = k
           if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
             do j=k+1,ndustspec+1 
@@ -487,34 +487,24 @@ module Dustdensity
           if (i_targ == ndustspec+1) i_targ = ndustspec
 !
 !  Put all overflowing grains into relevant interval
-!        
-          if (i_targ >= 1 .and. i_targ <= ndustspec .and. i_targ /= k) then
-            mdnew(i_targ) = (f(3+l,m,n,ind(k))*md(k) + &
-                ndnew(i_targ)*mdnew(i_targ))/(f(3+l,m,n,ind(k))+ndnew(i_targ))
+!
+          if (i_targ >= 1 .and. i_targ <= ndustspec .and. nd(l,k) /= 0.) then
+            mdnew(i_targ) = (nd(l,k)*md(k) + &
+                ndnew(i_targ)*mdnew(i_targ))/(nd(l,k)+ndnew(i_targ))
             if (lmice) minew(i_targ) = (f(3+l,m,n,ind(k))*mi(k) + &
-                ndnew(i_targ)*minew(i_targ))/(f(3+l,m,n,ind(k))+ndnew(i_targ))
-            ndnew(i_targ) = ndnew(i_targ) + f(3+l,m,n,ind(k))
-            ndnew(k)      = ndnew(k)      - f(3+l,m,n,ind(k))
-            if (ndnew(k) == 0.) mdnew(k) = 0.5*(mdminus(k)+mdplus(k))
+                ndnew(i_targ)*minew(i_targ))/(f(3+l,m,n,ind(k)) + ndnew(i_targ))
+            ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
           elseif (i_targ == 0) then
 !
 !  Underflow below lower boundary
-!          
+!
             f(3+l,m,n,ilncc) = &
-                f(3+l,m,n,ilncc) + f(3+l,m,n,ind(k))*md(k)*unit_md*rho1(l)
-            ndnew(i_targ) = ndnew(i_targ) - nd(l,i_targ)
-            if (ndnew(i_targ) == 0.) then
-              mdnew(i_targ) = 0.5*(mdminus(i_targ)+mdplus(i_targ))
-              if (lmice) minew(i_targ) = 0.
-            endif
+                f(3+l,m,n,ilncc) + nd(l,k)*md(k)*unit_md*rho1(l)
           endif
         enddo
         f(3+l,m,n,ind(:)) = ndnew(:)
         f(3+l,m,n,imd(:)) = mdnew(:)
         if (lmice) f(3+l,m,n,imi(:)) = minew(:)
-        ndnew = 0.
-        mdnew = 0.
-        if (lmice) minew = 0.
       enddo
 !
     endsubroutine redist_mdbins
@@ -548,9 +538,9 @@ module Dustdensity
         do k=1,ndustspec
           dmdfac = surfd(k)*mfluxcond(l)
           if (lmice) then
-            if (dmdfac < 0. .and. mi(k) <= 0.01) then
+            if (dmdfac < 0. .and. mi(k) <= 0.001) then
               ! Do nothing when there is no ice in the dust grains
-            elseif (nd(l,k) >= 0.) then
+            elseif (nd(l,k) > 0.) then
               df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac/unit_md
               df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc)  - rho1(l)*dmdfac*nd(l,k)
               df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac/unit_md
