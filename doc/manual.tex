@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.116 2002-10-01 16:00:04 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.117 2002-10-01 16:00:58 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -310,10 +310,10 @@
 
 % ---------------------------------------------------------------------- %
 
-\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
+%\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.116 $ $}
+\date{\today,~ $ $Revision: 1.117 $ $}
 
 % ====================================================================== %
 
@@ -329,11 +329,12 @@
 
   \vspace*{2cm}
 
-  {\Large\sffamily\bfseries PENCIL--MPI: A High-Order MPI code for MHD Turbulence}
+  {\Large\sffamily\bfseries The Pencil-Code:\\[2\parskip]
+    A High-Order MPI code for MHD Turbulence}
 
-  \vspace{2ex}
+  \vspace{3ex}
 
-  {\sffamily Documentation and Test Problems}
+  {\sffamily User's and Reference Manual}
 
   \vspace{\stretch{2}}
 
@@ -345,7 +346,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.116 $ $}
+  \emph{\today,~ $ $Revision: 1.117 $ $}
 
   \vspace{\stretch{3}}
 
@@ -570,9 +571,9 @@ To use the code, you will need the following:
 
 \section{Obtaining the Code}
 
-There are two ways to obtain the code: you can download the tarball of a
-stable release, or you can access the latest version via anonymous
-\name{CVS}.
+There are two ways to obtain the code:
+you can access the latest version via anonymous \name{CVS},
+or you can download the tarball of a stable release.
 
 Since we are still actively developing the code (and probably always
 will), it is important to be able to update your version to the current
@@ -586,24 +587,6 @@ versions, a set of test problems (listed in
 are routinely tested.
 This includes all problems in
 \file[samples/]{\$PENCIL_HOME/samples}.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Obtaining and unpacking the tarball}
-
-\begin{enumerate}
-\item Download the tarball \texttt{pencil-code_\emph{X}.tar.gz}
-  (where \emph{X} is the release number) from the download section in
-  \url{http://www.nordita.dk/data/brandenb/pencil-code}
-
-\item Put it into a convenient directory and unpack it:
-  \begin{alltt}
-  \prompt{unix> } mv pencil-code_\emph{X}.tar.gz somewhere/
-  \prompt{unix> } cd somewhere
-  \prompt{unix> } gunzip pencil-code_\emph{X}.tar.gz
-  \prompt{unix> } tar xf pencil-code_\emph{X}.tar \
-  \end{alltt}
-\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
@@ -673,6 +656,24 @@ This includes all problems in
   subdirectories below \file{pencil-code/}.
 \end{enumerate}
 
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Obtaining and unpacking the tarball}
+
+\begin{enumerate}
+\item Download the tarball \texttt{pencil-code_\emph{X}.tar.gz}
+  (where \emph{X} is the release number) from the download section in
+  \url{http://www.nordita.dk/data/brandenb/pencil-code}
+
+\item Put it into a convenient directory and unpack it:
+  \begin{alltt}
+  \prompt{unix> } mv pencil-code_\emph{X}.tar.gz somewhere/
+  \prompt{unix> } cd somewhere
+  \prompt{unix> } gunzip pencil-code_\emph{X}.tar.gz
+  \prompt{unix> } tar xf pencil-code_\emph{X}.tar \
+  \end{alltt}
+\end{enumerate}
 
 % ---------------------------------------------------------------------- %
 
@@ -1005,13 +1006,13 @@ The relevant part of the code's output looks like\\
 and lists
 \begin{enumerate}
 \item the number \var{it} of the current time step; 
-\item the time \var{t};
-\item the time step \var{dt};
-\item the rms velocity \var{urms}$=\sqrt{\left<\uv^2\right>}$;
-\item the maximum velocity \var{umax}$=\max |\uv|$;
-\item the mean density \var{rhom}$=\left<\varrho\right>$;
-\item the mean entropy \var{ssm}$=\left<s\right>/c_p$;
-\item the time step in units of the acoustic Courant step
+\item the time, \var{t};
+\item the time step, \var{dt};
+\item the rms velocity, \var{urms}$=\sqrt{\left<\uv^2\right>}$;
+\item the maximum velocity, \var{umax}$=\max |\uv|$;
+\item the mean density, \var{rhom}$=\left<\varrho\right>$;
+\item the mean entropy, \var{ssm}$=\left<s\right>/c_p$;
+\item the time step in units of the acoustic Courant step,
   \var{dtc}$=\delta t/({\cs}_0\,\delta x_{\rm min})$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
@@ -1169,7 +1170,7 @@ all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
 \cmd{setup-src}).
 
 General-purpose visualization routines for \name{IDL} or \name{DX} are in the
-\file[idl/]{idl} and \file[dx/]{dx} directories, respectively.
+directories \file[idl/]{idl} and \file[dx/]{dx}, respectively.
 There are additional and more specialized \name{IDL} directories in the
 different branches under \file[pencil-runs/]{pencil-runs}.
 
@@ -2030,7 +2031,7 @@ the magnetic flux density, $\nu$ is kinematic viscosity, and
 \end{equation}
 is the traceless rate-of-strain tensor.
 
-If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
+If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace\uv$, of the
 viscous term is used, which is not physically consistent (momentum
 conservation is violated for compressible media), but in some cases
 this option could be a useful approximation during an initial relaxation phase;
@@ -4015,7 +4016,7 @@ possible inputs to the \file{print.in} file.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.116 2002-10-01 16:00:04 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.117 2002-10-01 16:00:58 dobler Exp $ $}
 
 
 \end{document}
