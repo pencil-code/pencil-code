@@ -49,8 +49,10 @@ if ($mpi) then
 #    set mpirunops = "-machinefile machines"
     #  is that the right place??
     echo "Use options for the Nordita cluster"
-    set nodelist = `cat $PBS_NODEFILE`
-    cat $PBS_NODEFILE > lamhosts
+    if (! $?prompt ) then
+      set nodelist = `cat $PBS_NODEFILE`
+      cat $PBS_NODEFILE > lamhosts
+    endif
     #cat ~/lam-bhost.def > lamhosts
     lamboot -v lamhosts
     echo "lamndodes:"
