@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.149 2003-07-02 14:33:35 theine Exp $
+! $Id: equ.f90,v 1.150 2003-07-11 17:30:10 brandenb Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.149 2003-07-02 14:33:35 theine Exp $")
+           "$Id: equ.f90,v 1.150 2003-07-11 17:30:10 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -331,6 +331,10 @@ module Equ
 !
         if (lradiation_fld) call de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
 !
+!  Add radiative cooling (for ray method)
+!
+        if (lradiation_ray.and.lentropy) call radiative_cooling(f,df)
+!
 !  Add shear if precent
 !
         if (lshear) call shearing(f,df)
@@ -378,7 +382,6 @@ module Equ
         lfirstpoint=.false.
       enddo
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
-      if (lradiation_ray.and.lentropy) call radiative_cooling(f,df)
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

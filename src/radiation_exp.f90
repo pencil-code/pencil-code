@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.67 2003-07-11 16:45:10 theine Exp $
+! $Id: radiation_exp.f90,v 1.68 2003-07-11 17:30:10 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -40,7 +40,7 @@ module Radiation
 !
   real :: DFF_new=0.  !(dum)
   integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
-  integer :: i_Egas_rms=0,i_Egas_max=0
+  integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,output_Qrad,test_radiation,lkappa_es, &
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.67 2003-07-11 16:45:10 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.68 2003-07-11 17:30:10 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -732,25 +732,31 @@ module Radiation
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
+      use Sub
       use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real :: formfactor=0.5
+      real, dimension (nx) :: Qrad2
+      real :: formfactor=1.0
 !
 !  Add radiative cooling
 !
-      do n=n1,n2
-      do m=m1,m2
-         if(.not. nocooling) then
-            df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-                              +4.*pi*kaprho(l1:l2,m,n) &
-                               *f(l1:l2,m,n,iQrad) &
-                               /f(l1:l2,m,n,iTT)*formfactor &
-                               *exp(-f(l1:l2,m,n,ilnrho))
-         endif
-      enddo
-      enddo
+      if(.not. nocooling) then
+         df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+                           +4.*pi*kaprho(l1:l2,m,n) &
+                            *f(l1:l2,m,n,iQrad) &
+                            /f(l1:l2,m,n,iTT)*formfactor &
+                            *exp(-f(l1:l2,m,n,ilnrho))
+      endif
+!
+!  diagnostics
+!
+      if(ldiagnos) then
+         Qrad2=f(l1:l2,m,n,iQrad)**2
+         if(i_Qradrms/=0) call sum_mn_name(Qrad2,i_Qradrms,lsqrt=.true.)
+         if(i_Qradmax/=0) call max_mn_name(Qrad2,i_Qradmax,lsqrt=.true.)
+      endif
 !
     endsubroutine radiative_cooling
 !***********************************************************************
@@ -819,7 +825,22 @@ module Radiation
       use Cdata
       use Sub
 !  
+      integer :: iname
       logical :: lreset
+!
+!  reset everything in case of RELOAD
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_Qradrms=0; i_Qradmax=0
+      endif
+!
+!  check for those quantities that we want to evaluate online
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'Qradrms',i_Qradrms)
+        call parse_name(iname,cname(iname),cform(iname),'Qradmax',i_Qradmax)
+      enddo
 !
 !  write column where which radiative variable is stored
 !
@@ -829,6 +850,8 @@ module Radiation
       write(3,*) 'i_Erad_max=',i_Erad_max
       write(3,*) 'i_Egas_rms=',i_Egas_rms
       write(3,*) 'i_Egas_max=',i_Egas_max
+      write(3,*) 'i_Qradrms=',i_Qradrms
+      write(3,*) 'i_Qradmax=',i_Qradmax
       write(3,*) 'nname=',nname
       write(3,*) 'ie=',ie
       write(3,*) 'ifx=',ifx
