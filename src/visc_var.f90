@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.1 2003-04-01 13:06:14 tarek Exp $
+! $Id: visc_var.f90,v 1.2 2003-04-28 10:47:29 tarek Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -13,14 +13,15 @@ module Viscosity
 
 !  real :: nu=0.
   character (len=labellen) :: ivisc='nu-const'
-  real :: nu_var=0. , q_DJO=3.67, t0_DJO=1.
+  real :: nu_var, q_DJO=2., t0_DJO=0., nuf_DJO,ti_DJO=1.,tf_DJO
+  real :: pp
   integer :: dummy, i_nu_var
 
   ! input parameters
   namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu, ivisc, q_DJO, t0_DJO
+  namelist /viscosity_run_pars/ ivisc,q_DJO,t0_DJO,nu,nuf_DJO,ti_DJO,tf_DJO
 
   contains
 
@@ -47,7 +48,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.1 2003-04-01 13:06:14 tarek Exp $")
+           "$Id: visc_var.f90,v 1.2 2003-04-28 10:47:29 tarek Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -145,10 +146,6 @@ module Viscosity
 !***********************************************************************
     subroutine calc_viscous_force(f,df,glnrho,divu,rho1)
 !
-!  calculate viscous heating term for right hand side of entropy equation
-!
-!  20-nov-02/tony: coded
-!
       use Cdata
       use Mpicomm
       use Sub
@@ -164,35 +161,10 @@ module Viscosity
 !  viscosity operator
 !  rho1 is pre-calculated in equ
 !
-      if (nu /= 0.) then
+!      if (nu /= 0.) then
+       
         select case (ivisc)
-
-        case ('simplified', '0')
-          !
-          !  viscous force: nu*del2v
-          !  -- not physically correct (no momentum conservation), but
-          !  numerically easy and in most cases qualitatively OK
-          !
-          if (headtt) print*,'viscous force: nu*del2v'
-          call del2v(f,iuu,del2u)
-          fvisc=nu*del2u
-          maxdiffus=amax1(maxdiffus,nu)
-
-        case('rho_nu-const', '1')
-          !
-          !  viscous force: mu/rho*(del2u+graddivu/3)
-          !  -- the correct expression for rho*nu=const (=rho0*nu)
-          !
-          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          if (.not.ldensity) &
-               print*, "ldensity better be .true. for ivisc='rho_nu-const'"
-          murho1=(nu*rho0)*rho1  !(=mu/rho)
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          do i=1,3
-            fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
-          enddo
-          maxdiffus=amax1(maxdiffus,murho1)
-
+        
         case('nu-const')
           !
           !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
@@ -215,12 +187,28 @@ module Viscosity
          !  Viscosity is choosen here such that second argument remains constant
          !  with time. q and t0  must be guest apriori. q=3.67 might be a good 
          !  choice.
-         !
+         
+         !  if nu is given in namelist this will correspond to nu at t=1. 
+         !  alternativly nu_min=nu(t_max) and t_max can be set in namelist 
+         ! 
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const
          !
-          nu_var=nu*(t+t0_DJO)**((1.-q_DJO)/(3.+q_DJO))
-          if (headtt) print*,'Using variable viscosity. '
+        
+
+           pp = - (1.-q_DJO)/(3.+q_DJO)  
+           if (t.lt.ti_DJO) then 
+             nu_var = nu
+           else 
+             nu_var= nu*((ti_DJO + t0_DJO)/(t + t0_DJO))**pp
+           endif 
+          tf_DJO = (nu/nuf_DJO)**(1./pp)*(ti_DJO + t0_DJO) - t0_DJO
+          if (lroot.and.lfirstpoint.and.lout) call write_viscosity
+          if (headtt) print*,'Using DJO variable viscosity. with '
+          if (headtt.and.(ip.lt.6)) then   
+                print*,'VISC_VAR: nu, nuf,ti,tf,t0,q'
+                print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO
+          endif 
           if (headtt) print*,'viscous force: nu_var*(del2u+graddivu/3+2S.glnrho)'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
@@ -232,22 +220,46 @@ module Viscosity
                  print*,"ldensity better be .true. for ivisc=",ivisc
           endif
 
-
+        case('nu-DJO-nobulk')
+           
+          pp = - (1.-q_DJO)/(3.+q_DJO)  
+          if (t.lt.ti_DJO) then 
+             nu_var = nu
+           else 
+             nu_var= nu*((ti_DJO + t0_DJO)/(t + t0_DJO))**pp
+           endif 
+          tf_DJO = (nu/nuf_DJO)**(1./pp)*(ti_DJO + t0_DJO) - t0_DJO
+          if (lroot.and.lfirstpoint.and.lout) call write_viscosity
+          if (headtt.and.(ip.lt.6)) then   
+                print*,'VISC_VAR: nu, nuf,ti,tf,t0,q'
+                print*,nu,nuf_DJO,ti_DJO,tf_DJO,t0_DJO,q_DJO
+          endif 
+          if (headtt) print*,'VARIABLE viscous force: nu_var*del2v'
+          call del2v(f,iuu,del2u)
+          fvisc=nu_var *del2u
 
         case default
         !
         !  Catch unknown values
         !
+        if (lroot) print*, 'Program compiled with VISCOSITY = visc_var '
         if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
         call stop_it('calc_viscous_forcing')
-
-        endselect
+        
+      endselect
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
-      else ! (nu=0)
-        if (headtt) print*,'no viscous force: (nu=0)'
-      endif
+!      else ! (nu=0)
+!        if (headtt) print*,'no viscous force: (nu=0)'
+!      endif
 
       if(ip==0) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
+
+
+    subroutine write_viscosity
+     open(1,file=trim(datadir)//'/visc_var.dat',position='append')
+     write(1,*) it,t,nu_var
+     close(1)
+    end subroutine
 endmodule Viscosity
