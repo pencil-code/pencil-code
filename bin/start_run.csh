@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.31 2004-04-03 13:21:21 mee Exp $
+# CVS: $Id: start_run.csh,v 1.32 2004-04-03 16:58:27 mee Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -160,6 +160,7 @@ if ($local_disc) then
   end
 
   if ($remove_scratch_root) then
+    rm -rf $SCRATCH_DIR/*
     rm -rf $SCRATCH_DIR
   endif
 endif
