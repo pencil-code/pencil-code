@@ -1,10 +1,10 @@
-!                              -*-f90-*-     (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 ! Convection in vertically stratified atmosphere
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2003-11-09 20:30:13 brandenb Exp $',
+  cvsid='$Id: start.in,v 1.2 2004-04-07 10:36:29 theine Exp $',
   ip=15,			! debugging parameter
   xyz0  = -1.5, -1.5, -1.10,	! first corner of box
   xyz1  =  1.5,  1.5, -0.10,	! second corner of box

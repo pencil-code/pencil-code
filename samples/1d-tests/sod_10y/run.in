@@ -1,8 +1,9 @@
-!                     -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
 !  Runtime parameters for shocktube problem
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2003-05-27 14:30:35 ngrs Exp $'
+  cvsid='$Id: run.in,v 1.2 2004-04-07 10:36:28 theine Exp $'
   nt=20000, it1=5, cdt=0.4, cdtv=0.4, isave=50, itorder=3,
   dsnap=20., dvid=.02,tmax=2.4,
   bcy = 'a','s','s','s','s'

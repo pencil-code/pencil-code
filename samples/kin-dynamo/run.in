@@ -1,9 +1,9 @@
-!                               -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  run parameters for kinematic dynamo run with Glen Roberts flow
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.1 2004-02-22 09:11:58 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.2 2004-04-07 10:36:34 theine Exp $',
   nt=50, it1=10, cdt=99, cdtv=.4, old_cdtv=F, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen='nr_f90'

@@ -1,8 +1,9 @@
-!                     -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.19 2004-03-11 21:33:59 dobler Exp $'
+  cvsid='$Id: start.in,v 1.20 2004-04-07 10:36:33 theine Exp $'
 /
 &hydro_init_pars
 /

@@ -1,9 +1,9 @@
-!                               -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.24 2004-03-10 22:14:56 dobler Exp $',
+  cvsid='$Id: run.in,v 1.25 2004-04-07 10:36:32 theine Exp $',
   nt=10, it1=2, cdt=0.4, cdtv=0.80, isave=10, itorder=3,
   dsnap=50, dvid=0.5,
   random_gen='system'

@@ -1,8 +1,9 @@
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  sample file for 1-D sound wave
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.3 2002-12-05 12:43:13 brandenb Exp $'
+  cvsid='$Id: run.in,v 1.4 2004-04-07 10:36:23 theine Exp $'
   nt=5000, it1=10, cdt=0.4, cdtv=0.20, isave=50, itorder=3,
   dsnap=20., dvid=1., tmax=100.
   bcx = 's','s','s','s','s','s','a2','a2'

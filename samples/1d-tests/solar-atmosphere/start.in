@@ -1,10 +1,10 @@
-!                              -*-f90-*-     (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 ! Convection in vertically stratified atmosphere/solar convection zone
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2004-02-22 19:18:12 theine Exp $'
+  cvsid='$Id: start.in,v 1.2 2004-04-07 10:36:28 theine Exp $'
 
   unit_length=1e8               !
   unit_velocity=1e6             ! unit system (relative to cgs)

@@ -1,8 +1,9 @@
-!                     -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.18 2002-09-26 20:04:18 dobler Exp $',
+  cvsid='$Id: start.in,v 1.19 2004-04-07 10:36:32 theine Exp $',
   random_gen='system'
   random_gen='min_std'
   random_gen='nr_f90'

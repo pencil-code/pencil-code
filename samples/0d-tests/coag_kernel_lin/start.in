@@ -1,9 +1,10 @@
-!                     -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
 ! Initialisation parameters for disc run
 !
 &init_pars
   ip=20,lwrite_ic=T
-  cvsid='$Id: start.in,v 1.4 2004-04-01 08:58:34 ajohan Exp $'
+  cvsid='$Id: start.in,v 1.5 2004-04-07 10:36:21 theine Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
 /

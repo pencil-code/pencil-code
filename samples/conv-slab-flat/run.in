@@ -1,9 +1,9 @@
-!                           -*-f90-*-     (for Emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
 !
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2003-08-08 20:08:58 dobler Exp $',
+  cvsid='$Id: run.in,v 1.7 2004-04-07 10:36:30 theine Exp $',
   nt=20, it1=5, isave=100
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,

@@ -1,9 +1,10 @@
-!                     -*-f90-*-   (for emacs)
+!  -*-f90-*-  (for Emacs)    vim:set filetype=fortran:  (for vim)
+!
 !  Initialisation parameters for Riemann problem with magnetic field
 !  to be compared with Fig.6 of Falle (2002, ApJ 577, L123)
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2002-10-11 07:13:53 brandenb Exp $'
+  cvsid='$Id: start.in,v 1.2 2004-04-07 10:36:23 theine Exp $'
   xyz0  =-280., 0.0, 0.0,      ! first corner of box
   xyz1  = 220., 1.0, 1.0,      ! box size
   lperi = F , T , T,          ! periodic direction?
