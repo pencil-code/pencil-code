@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.225 2004-09-12 07:47:14 brandenb Exp $
+! $Id: equ.f90,v 1.226 2004-09-20 12:49:28 ajohan Exp $
 
 module Equ
 
@@ -247,7 +247,7 @@ module Equ
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij,aij
-      real, dimension (nx,3) :: uu,glnrho,bb,jj,gshock,del2A,graddivA
+      real, dimension (nx,3) :: uu,glnrho,bb,jj,JxBr,gshock,del2A,graddivA
       real, dimension (nx,3,ndustspec) :: uud,gnd
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.225 2004-09-12 07:47:14 brandenb Exp $")
+           "$Id: equ.f90,v 1.226 2004-09-20 12:49:28 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -391,7 +391,7 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,graddivA,va2,shock,gshock)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,JxBr,del2A,graddivA,va2,shock,gshock)
 !
 !  Passive scalar evolution
 !
@@ -399,7 +399,7 @@ module Equ
 !
 !  Dust evolution
 !
-        call duud_dt (f,df,uu,rho1,cs2,uud,divud,ud2,udij)
+        call duud_dt (f,df,uu,uud,glnrho,rho1,cs2,JxBr,divud,ud2,udij)
         call dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
 !
 !  Add gravity, if present

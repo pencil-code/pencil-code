@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.53 2004-09-12 07:47:14 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.54 2004-09-20 12:49:28 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.53 2004-09-12 07:47:14 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.54 2004-09-20 12:49:28 ajohan Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -100,7 +100,7 @@ module Magnetic
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,graddivA,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,jj,JxBr,del2A,graddivA,va2,shock,gshock)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -111,7 +111,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij,aij
-      real, dimension (nx,3) :: uu,bb,jj,del2A,graddivA,gshock
+      real, dimension (nx,3) :: uu,bb,jj,JxBr,del2A,graddivA,gshock
       real, dimension (nx) :: rho1,TT1,va2,shock
 !
       intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
