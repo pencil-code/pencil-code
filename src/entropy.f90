@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.169 2003-06-17 07:08:19 dobler Exp $
+! $Id: entropy.f90,v 1.170 2003-06-17 22:52:39 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.169 2003-06-17 07:08:19 dobler Exp $")
+           "$Id: entropy.f90,v 1.170 2003-06-17 22:52:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -486,7 +486,8 @@ module Entropy
 !
 !  advection term
 !
-      call dot_mn(uu,gss,ugss)
+      ! call u_dot_gradf(f,ient,gss,uu,ugss,UPWIND=.true.)
+      call u_dot_gradf(f,ient,gss,uu,ugss)
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
 !
 !  1/T is now calculated in thermodynamics
@@ -1012,7 +1013,7 @@ endif
 !
       case('strange-bot')
         if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
-        if (bcz1(ilnrho) /= "a2") &
+        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 1.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n1,ient) &
@@ -1063,7 +1064,7 @@ endif
 !
       case('top')
         if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
-        if (bcz2(ilnrho) /= "a2") &
+        if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 2.")
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n2,ient) &
@@ -1117,7 +1118,7 @@ endif
       case('bot')
         if (ldebug) print*,'set bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        if (bcz1(ilnrho) /= "a2") &
+        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3")) &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
                  + alog(cs2bot/cs20)) / gamma
