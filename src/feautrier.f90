@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.12 2003-04-05 21:22:33 brandenb Exp $
+! $Id: feautrier.f90,v 1.13 2003-04-06 17:16:46 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.12 2003-04-05 21:22:33 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.13 2003-04-06 17:16:46 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -86,7 +86,7 @@ module Radiation
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         yH=ionfrac(lnrho,ss)
+         yH=yyH(l1:l2,m,n)
          call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
          Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
          TT(l1:l2,m,n)=TT_
@@ -139,7 +139,7 @@ module Radiation
          endif
 !
          feautrier(lrad,mrad,n1:n2)=Prad_
-         !print*,'Prad',Prad_
+!         print*,'Prad',Prad_
       enddo
       enddo
     endfunction feautrier
