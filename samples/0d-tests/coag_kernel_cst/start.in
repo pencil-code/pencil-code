@@ -4,7 +4,7 @@
 !
 &init_pars
   ip=20,lwrite_ic=T
-  cvsid='$Id: start.in,v 1.5 2004-04-07 10:36:20 theine Exp $'
+  cvsid='$Id: start.in,v 1.6 2004-04-16 14:36:10 ajohan Exp $'
   Lxyz=+0.,+0.,+0., xyz0=0.,0.,0., 
   lperi=T,T,T
 /
@@ -16,5 +16,5 @@
   md0=1., deltamd=1.2
 /
 &dustdensity_init_pars
-  initnd='kernel_cst', nd00=1., dkern_cst=1.
+  initnd='kernel_cst', nd00=1., dkern_cst=1., ldustcoagulation=T
 /
