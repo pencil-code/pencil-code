@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.8 2002-07-20 19:01:37 dobler Exp $
+! $Id: pscalar.f90,v 1.9 2002-07-31 20:39:12 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -61,7 +61,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.8 2002-07-20 19:01:37 dobler Exp $")
+           "$Id: pscalar.f90,v 1.9 2002-07-31 20:39:12 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -125,7 +125,7 @@ module Pscalar
       else
         if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
       endif
-      if (headtt) call identify_bcs('cc',icc)
+      if (headtt) call identify_bcs('cc',ilncc)
 !
 !  gradient of passive scalar
 !  allow for possibility to turn off passive scalar
