@@ -9,7 +9,7 @@
 ;;;  Description:
 ;;;   Read phi-averages from file and return them in a structure
 ;;;  File format:
-;;     3. nr_phiavg, nz_phiavg, nvars
+;;     3. nr_phiavg, nz_phiavg, nprocz, nvars
 ;;;    2. t, r_phiavg, z_phiavg, dr, dz
 ;;;    1. data
 ;;;    4. labels
@@ -17,6 +17,7 @@
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
 ;;;       z        FLOAT Array[nz]    ; coordinate
+;;;       nprocz   LONG               ; number of processors in z
 ;;;       nvars    LONG               ; number of variables
 ;;;       <var1>   FLOAT Array[nr,nz] ; first averaged variable
 ;;;       <var2>   FLOAT Array[nr,nz] ; second averaged variable,
@@ -64,9 +65,9 @@ function read_phiavg, file, $
   close, 1
   openr, 1, file, /F77
 
-  nr=1L & nz=1L &nvars=1L
-  readu, 1, nr, nz, nvars
-  if (debug) then print,'nr,nz,nvars=',nr,nz,nvars
+  nr=1L & nz=1L & nprocz=1L & nvars=1L
+  readu, 1, nr, nz, nprocz, nvars
+  if (debug) then print,'nr,nz,nvars=',nr,nz,nprocz,nvars
 
   t = 0.
   rcyl = fltarr(nr)
@@ -78,7 +79,7 @@ function read_phiavg, file, $
     print,'z in '   , minmax(z)
   endif
 
-  vars = fltarr(nr,nz,nvars)
+  vars = fltarr(nr,nz,nprocz,nvars)
   readu, 1, vars
   if (debug) then print, 'vars in ', minmax(vars)
 
@@ -103,7 +104,7 @@ function read_phiavg, file, $
       ' labels, but nvars=', + strtrim(nvars,2)
   def = '{t: t, rcyl: rcyl, z: z, nvars: nvars, labels: labels'
   for i=0, nvars-1 do begin
-    def = def + ', ' + labels[i] + ': vars[*,*,'+strtrim(i,2)+']'
+    def = def + ', ' + labels[i] + ': vars[*,*,*,'+strtrim(i,2)+']'
   endfor
   def = def + '}'
   if (debug) then print, 'def = ', def
