@@ -1,0 +1,51 @@
+
+                           ifort-huge
+                          ------------
+
+$Id: README,v 1.1 2004-08-24 16:25:51 dobler Exp $
+
+
+1. Symptoms:
+
+  The attached file huge.f90
+
+    program test
+      print*, (/1.,huge(1.)/)
+    endprogram
+
+  should print
+
+    1.000000      3.4028235E+38
+
+  but older versions of ifort 8.0 print
+
+    1.000000      0.0000000E+00
+
+  instead.
+
+
+2. Command sequence:
+
+  unix>  make FC=ifort test
+or
+  fe4>  make FC=ifort80 NLSPATH=/usr/local/lib/intel/intel_fc_80/lib/ifcore_msg.cat test
+(or similar)
+
+3. Platforms:
+   32-bit:
+
+   Gentoo, Kernel 2.4.24, Intel Xeon, 2.4GHz
+       ifort 8.0, Build 20031016Z
+
+4. Other compilers tested (OPK means problem could not be reproduced):
+   - Intel ifc 6.0 (Linux)  OK
+   - Intel ifc 7.1 (Linux)  OK
+   - Intel ifort 8.0 Build 20040616Z Package ID: l_fc_pc_8.0.046_pe049.1
+
+5. Solution:
+   Update your version of ifort
+
+6. Original date:
+
+   Wed 24 Aug 2004
+
