@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.153 2003-12-13 19:31:37 theine Exp $
+! $Id: ionization.f90,v 1.154 2004-02-06 16:07:20 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -62,8 +62,8 @@ module Ionization
   integer :: l
 
   ! namelist parameters
-  !real, parameter :: yHmin=tiny(yHmin), yHmax=1-epsilon(yHmax)
-  real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
+  !real, parameter :: yHmin=tiny(TT_ion), yHmax=1-epsilon(TT_ion)
+  real, parameter :: yHmin=epsilon(TT_ion), yHmax=1-epsilon(TT_ion)
   real :: xHe=0.1
   real :: yMetals=0
   real :: yHacc=1e-5
@@ -112,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.153 2003-12-13 19:31:37 theine Exp $")
+           "$Id: ionization.f90,v 1.154 2004-02-06 16:07:20 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -689,11 +689,17 @@ module Ionization
       do i=1,maxit
         where (yHcheck/=yH)
           where (((yH-yHlow)*df-f)*((yH-yHhigh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
+            !
+            !  Bisection
+            !
             dyHold=dyH
             dyH=0.5*(yHhigh-yHlow)
             yHcheck=yHhigh
             yH=yHhigh-dyH
           elsewhere
+            !
+            !  Newton-Raphson
+            !
             dyHold=dyH
             dyH=f/df
             yHcheck=yH
