@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.92 2002-08-09 08:09:22 nilshau Exp $
+! $Id: equ.f90,v 1.93 2002-08-11 03:28:59 brandenb Exp $
 
 module Equ
 
@@ -215,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.92 2002-08-09 08:09:22 nilshau Exp $")
+           "$Id: equ.f90,v 1.93 2002-08-11 03:28:59 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -257,17 +257,11 @@ module Equ
         maxdiffus=0.
         maxadvec2=0.
 !
-!  calculate inverse density: currenly only needed
-!  in magnetic (provided lhydro=.true.) and for the
-!  viscosity (currently in ldensity)
-!  Better check that this is still true (after modifications)
-!  Otherwise, better always calculate rho1.
-!
-!        if(ivisc==1.or.(lmagnetic.and.lhydro)) rho1=exp(-f(l1:l2,m,n,ilnrho))
-!
+!  calculate inverse density
 !  WD: Also needed with heat conduction, so we better calculate it in all
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
+!
         if (ldensity) rho1=exp(-f(l1:l2,m,n,ilnrho))
 !
 !  hydro, density, and entropy evolution

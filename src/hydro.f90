@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.53 2002-07-22 12:49:20 brandenb Exp $
+! $Id: hydro.f90,v 1.54 2002-08-11 03:28:59 brandenb Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.53 2002-07-22 12:49:20 brandenb Exp $")
+           "$Id: hydro.f90,v 1.54 2002-08-11 03:28:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -408,7 +408,7 @@ module Hydro
           !  -- the correct expression for nu=const
           !
           if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=2'
+          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=nu-visc'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.118 2002-08-11 01:52:33 brandenb Exp $
+! $Id: entropy.f90,v 1.119 2002-08-11 03:28:59 brandenb Exp $
 
 module Entropy
 
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.118 2002-08-11 01:52:33 brandenb Exp $")
+           "$Id: entropy.f90,v 1.119 2002-08-11 03:28:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -347,7 +347,7 @@ module Entropy
       case ('simplified', '0')
         if (headtt) print*,'no heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
-      case('rho_mu-const', '1')
+      case('rho_nu-const', '1')
         if (headtt) print*,'viscous heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
       case('nu-const', '2')
