@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.143 2004-01-12 13:16:36 dobler Exp $
+! $Id: density.f90,v 1.144 2004-01-30 10:17:57 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.143 2004-01-12 13:16:36 dobler Exp $")
+           "$Id: density.f90,v 1.144 2004-01-30 10:17:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -172,6 +172,9 @@ module Density
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
+      case('isothermal_1H')
+        cs20 = gamma/2*(Omega*(Lz/2))**2
+        call isothermal_density(f)
       case('stratification'); call stratification(amplrho,f,xx,yy,zz)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*, &
@@ -804,24 +807,23 @@ module Density
 !
       if (lroot) print*,'isothermal_density: isothermal stratification'
       do n=n1,n2
-      do m=m1,m2
-        call potential(x(l1:l2),y(m),z(n),pot)
+        do m=m1,m2
+          call potential(x(l1:l2),y(m),z(n),pot)
 !        if (lionization_fixed) then
 !           call isothermal_density_ion(pot,tmp)
 !            tmp=0.
 !        else
-           tmp=-gamma*pot/cs20
+          tmp=-gamma*pot/cs20
 !        endif
-        f(l1:l2,m,n,ilnrho)=lnrho0+tmp
+          f(l1:l2,m,n,ilnrho)=lnrho0+tmp
 !        if(lentropy) f(l1:l2,m,n,iss)= -gamma1/gamma*tmp
 !                                      = gamma1*pot/cs20
 !   MOVED to isothermal_entropy routine
 
-        if(lentropy) f(l1:l2,m,n,iss)= &
-             -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+          if(lentropy) f(l1:l2,m,n,iss)= &
+               -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+        enddo
       enddo
-      enddo
-
 !
 !  cs2 values at top and bottom may be needed to boundary conditions.
 !  The values calculated here may be revised in the entropy module.
