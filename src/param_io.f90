@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.115 2003-06-18 20:33:36 brandenb Exp $ 
+! $Id: param_io.f90,v 1.116 2003-07-17 23:00:05 brandenb Exp $ 
 
 module Param_IO
 
@@ -136,10 +136,12 @@ module Param_IO
       character (len=30) :: label='[none]'
 !
 !  set default values
+!  AB: they should not be overwritten at this point
+!  AB: I will remove this at some future point
 !
-      bcx(1:nvar)='p'
-      bcy(1:nvar)='p'
-      bcz(1:nvar)='p'
+      !bcx(1:nvar)='p'
+      !bcy(1:nvar)='p'
+      !bcz(1:nvar)='p'
 !
 !  open namelist file
 !
@@ -226,6 +228,7 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
+      call check_consistency_of_lperi('called from read_startpars')
 !
 !  in case of i/o error: print sample input list
 !
@@ -323,10 +326,12 @@ module Param_IO
       character (len=30) :: label='[none]'
 !
 !  set default values
+!  AB: they should not be overwritten at this point
+!  AB: I will remove this at some future point
 !
-      bcx(1:nvar)='p'
-      bcy(1:nvar)='p'
-      bcz(1:nvar)='p'
+      !bcx(1:nvar)='p'
+      !bcy(1:nvar)='p'
+      !bcz(1:nvar)='p'
 !
 !  set default to shearing sheet if lshear=.true.
 !  AB: (even when Sshear==0.)
@@ -425,6 +430,7 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
+      call check_consistency_of_lperi('called from read_runpars')
 !
 !  in case of i/o error: print sample input list
 !
@@ -514,6 +520,75 @@ module Param_IO
       endif
 !
     endsubroutine print_runpars
+!***********************************************************************
+    subroutine check_consistency_of_lperi (label)
+!
+!  check consistency of lperi
+!
+!  18-jul-03/axel: coded
+!
+      use Cdata
+!
+      character (len=*) :: label
+      logical :: lwarning=.true.
+      integer :: j
+!
+      print*,'check_consistency_of_lperi: label=',label
+!
+!  check x direction
+!
+      j=1
+      if(any(bcx=='p').and..not.lperi(j).or.&
+         any(bcx/='p').and.lperi(j)) &
+           call warning_lperi(lwarning,bcx,lperi,j)
+!
+!  check y direction
+!
+      j=2
+      if(any(bcy=='p').and..not.lperi(j).or.&
+         any(bcy/='p').and.lperi(j)) &
+           call warning_lperi(lwarning,bcy,lperi,j)
+!
+!  check z direction
+!
+      j=3
+      if(any(bcz=='p').and..not.lperi(j).or.&
+         any(bcz/='p').and.lperi(j)) &
+           call warning_lperi(lwarning,bcz,lperi,j)
+!
+!  print final warning
+!
+      if(.not.lwarning) then
+        print*,'check_consistency_of_lperi: you better stop and check!'
+        print*,'------------------------------------------------------'
+        print*
+      endif
+!
+    endsubroutine check_consistency_of_lperi
+!***********************************************************************
+    subroutine warning_lperi(lwarning,bc,lperi,j)
+!
+!  print consistency warning of lperi
+!
+!  18-jul-03/axel: coded
+!
+      character (len=*), dimension(mvar) :: bc
+      logical, dimension(3) :: lperi
+      logical :: lwarning
+      integer :: j
+!
+      if(lwarning) then
+        print*
+        print*,'------------------------------------------------------'
+        print*,'W A R N I N G'
+        lwarning=.false.
+      endif
+!
+      print*,'warning_lperi: inconsistency, j=',j
+      print*,'lperi(j)=',lperi(j)
+      print*,'bc=',bc
+!
+    endsubroutine warning_lperi
 !***********************************************************************
     subroutine wparam ()
 !

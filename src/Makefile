@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.198 2003-07-10 13:42:40 dobler Exp $
+### $Id: Makefile,v 1.199 2003-07-17 23:00:05 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -6,8 +6,6 @@
 
 LIBSIG=
 LDMPI=-lmpi
-
-
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal

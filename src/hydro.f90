@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.93 2003-06-23 19:21:52 brandenb Exp $
+! $Id: hydro.f90,v 1.94 2003-07-17 23:00:05 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -85,7 +85,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.93 2003-06-23 19:21:52 brandenb Exp $")
+           "$Id: hydro.f90,v 1.94 2003-07-17 23:00:05 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -152,6 +152,7 @@ module Hydro
       case('trilinear-z'); call trilinear(ampluu,f,iuz,xx,yy,zz)
       case('cos-cos-sin-uz'); call cos_cos_sin(ampluu,f,iuz,xx,yy,zz)
       case('tor_pert'); call tor_pert(ampluu,f,iux,xx,yy,zz)
+      case('diffrot'); call diffrot(ampluu,f,iuy,xx,yy,zz)
 
       case('sound-wave', '11')
         !

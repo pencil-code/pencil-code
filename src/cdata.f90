@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.152 2003-07-10 13:43:47 dobler Exp $
+! $Id: cdata.f90,v 1.153 2003-07-17 23:00:05 brandenb Exp $
 
 module Cdata
 
@@ -108,7 +108,7 @@ module Cdata
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
 
-  character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
+  character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()

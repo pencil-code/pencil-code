@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.61 2003-07-17 10:37:58 ajohan Exp $ 
+! $Id: initcond.f90,v 1.62 2003-07-17 23:00:05 brandenb Exp $ 
 
 module Initcond 
  
@@ -1086,6 +1086,26 @@ module Initcond
 !
       print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
+!***********************************************************************
+    subroutine diffrot(ampl,f,ivar,xx,yy,zz)
+!
+!  Set up profile for differential rotation
+!
+!  16-jul-03/axel: coded
+!
+      integer :: ivar
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,kx,kz
+!
+      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
+!
+      kx=.5*pi/Lx
+      kz=.5*pi/Lz
+      f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
+!
+      print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
+    endsubroutine diffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,f,i1,i2)
 !   Produces k^initpower spectrum.
