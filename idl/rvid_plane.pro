@@ -2,7 +2,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,amin=amin,$
   nrepeat=nrepeat,wait=wait,njump=njump,datadir=datadir,OLDFILE=OLDFILE,$
   test=test,proc=proc,ix=ix,iy=iy,ps=ps
 ;
-; $Id: rvid_plane.pro,v 1.2 2003-08-03 09:50:06 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.3 2003-09-10 14:46:08 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -34,6 +34,7 @@ if keyword_set(proc) then begin
 endif else begin
   file_slice=datadir+'/slice_'+field+'.'+extension
 endelse
+print,!d.y_size
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
@@ -65,8 +66,10 @@ slice_z2pos=0.
 ;
 dev='x' ;(default)
 if keyword_set(png) then begin
+  resolution=[!d.x_size,!d.y_size] ; set window size
+  print,'z-buffer resolution (in pixels)=',resolution
   set_plot, 'z'                   ; switch to Z buffer
-  device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
+  device, SET_RESOLUTION=resolution ; set window size
   itpng=0 ;(image counter)
   dev='z'
 end else if keyword_set(mpeg) then begin
@@ -97,17 +100,20 @@ if keyword_set(test) then begin
 end else begin
   if t ge tmin and t le tmax then begin
     if ijump eq njump then begin
-      if iy ne -1 then plot,plane(*,iy),yr=[amin,amax],ps=ps
-      if ix ne -1 then plot,plane(ix,*),yr=[amin,amax],ps=ps
-      tvscl,plane
-      ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
+      ;if iy ne -1 then plot,plane(*,iy),yr=[amin,amax],ps=ps
+      ;if ix ne -1 then plot,plane(ix,*),yr=[amin,amax],ps=ps
+      ;
+      ;  show image scaled between amin and amax and filling whole screen
+      ;
+      tv,congrid(bytscl(plane,min=amin,max=amax),!d.x_size,!d.y_size)
+      xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
         istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
         image = tvrd()
         ;
         ;  make background white, and write png file
         ;
-        bad=where(image eq 0) & image(bad)=255
+        ;bad=where(image eq 0) & image(bad)=255
         tvlct, red, green, blue, /GET
         imgname = 'img_'+istr2+'.png'
         write_png, imgname, image, red, green, blue
