@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-09-30 14:21:49 $
-# $Revision: 1.5 $
+# $Date: 2003-09-30 14:54:10 $
+# $Revision: 1.6 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -64,8 +64,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.5 $';
-    my $date = '$Date: 2003-09-30 14:21:49 $';
+    my $rev = '$Revision: 1.6 $';
+    my $date = '$Date: 2003-09-30 14:54:10 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
@@ -209,30 +209,34 @@ C<#(mhd0|mhd1)> or C<#(mhd[0-6])>
 single-comment lines will be commented out (with one comment sign); all
 other lines are left untouched
 
-=item * An example is probably best to illustrate how an input Makefile
+=back
+
+An example is probably best to illustrate how an input Makefile
 can look like:
 
   ### Begin machine dependent
+
+  ## OSF1:
+  ## Compaq/HP alpha
+  #FC=f95
+  #FFLAGS=-fast -O5
+  #FFLAGS=-fast -O5 -tune ev6 -arch ev6 #(Mhd.)
+
+  ## Linux:
+  ## This comment will always remain untouched
+  #FC=f95
+  #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
+  #FFLAGS= -O4 -C -gline -Wc,-malign-double
 
   ## IRIX64:
   #FC=f90
   #FFLAGS= -64 -O3 -C -macro_expand  #(Antares)
   #FFLAGS= -pfalist -64 -O3 -mips4 -C -macro_expand  #(Grand)
 
-  ## Linux:
-  ## This comment will always remain untouched
-  #FC=f95
-  #FFLAGS= -O4 -C -gline -Wc,-malign-double
-
-  ## SunOS:
-  FC=pghpf
-  FFLAGS= -Msmp -O4		#(Lomond)
-
   ### End machine dependent
 
   ## Main part of Makefile follows...
 
-=back
 
 =head1 FILES
 
@@ -254,12 +258,12 @@ machine dependent', the contents of the following files will be inserted
 This allows you to enforce local settings without touching the Makefile
 itself (useful for tricky things like cross-compiling).
 
-=head1 NOTE
+=head1 NOTES
 
 =over 4
 
 =item * All pattern matching is case-independent, thus C<## linux:>,
-C<## Linux:> and C<## LiNuX:> will all be matched on a GNU/Linux box.
+    C<## Linux:> and C<## LiNuX:> will all be matched on a GNU/Linux box.
 
 =item * One can call B<adapt-mkfile> within the F<Makefile>:
 
