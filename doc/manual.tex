@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.59 2002-07-19 13:02:35 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.60 2002-07-20 18:46:07 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -121,11 +121,15 @@
 % \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
 \newcommand{\atanh} {\mathop{\rm atanh}\nolimits}
 % \newcommand{\sgn}    {\mathop{\rm sgn}\nolimits}
-\newcommand{\grad}    {\mathop{\rm grad}\nolimits}
-\newcommand{\Div}     {\mathop{\rm div}\nolimits}
-\newcommand{\curl}    {\mathop{\rm curl}\nolimits}
+% \newcommand{\grad}    {\mathop{\rm grad}\nolimits}
+% \newcommand{\Div}     {\mathop{\rm div}\nolimits}
+% \newcommand{\curl}    {\mathop{\rm curl}\nolimits}
+% \newcommand{\Laplace} {\mathop{\Delta}\nolimits}
+\newcommand{\grad}    {\nabla}
+\newcommand{\Div}     {\nabla\cdot}
+\newcommand{\curl}    {\nabla\times}
+\newcommand{\Laplace} {\nabla^2}
 \newcommand{\rot}     {\curl}
-\newcommand{\Laplace} {\mathop{\Delta}\nolimits}
 \newcommand{\erfc}    {\mathop{\rm erfc}\nolimits}
 \newcommand{\erf}     {\mathop{\rm erf}\nolimits}
 
@@ -182,7 +186,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.59 $ $}
+\date{\today,~ $ $Revision: 1.60 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +215,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.59 $ $}
+  \emph{\today,~ $ $Revision: 1.60 $ $}
 
 
 \end{center}
@@ -1089,8 +1093,8 @@ Table~\ref{Tab-modules} lists all currently available modules.
                      motion; \\
     nohydro.f90    & no variable $\uv$: useful for kinematic dynamo runs. \\
     \midrule
-    density.f90    & Add variable $\varrho$ with continuity equation \\
-    nodensity.f90  & no variable $\varrho$: useful for Burgers' equation. \\
+    density.f90    & Add variable $\ln\varrho$ with continuity equation \\
+    nodensity.f90  & no variable $\ln\varrho$: useful for Burgers' equation. \\
     \midrule
     entropy.f90    & Add variable $s$ with entropy equation (energy
                      equation); \\
@@ -1100,10 +1104,10 @@ Table~\ref{Tab-modules} lists all currently available modules.
                      induction equation; \\
     nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
     \midrule
-    pscalar.f90    & Add variable $c$ (concentration) with
+    pscalar.f90    & Add variable $\ln c$ (concentration) with
                      advection-diffusion equation for transport of a
                      passive scalar; \\
-    nopscalar.f90  & no passive scalar, no variable $c$. \\
+    nopscalar.f90  & no passive scalar, no variable $\ln c$. \\
     \midrule
     \midrule
     forcing.f90    & Add a forcing function to rhs of equation of motion
@@ -1390,7 +1394,7 @@ the latest information, you should have a look at the code.
 The value $\varepsilon$ corresponds to 5 times the smallest number larger
 than zero.
 For single precision, this is typically about
-$\varepsilon \approx 5\times1.2\times10^{-7} = 6\times10^{-7}$; for
+$\varepsilon \approx 5\times1.2{\times}10^{-7} = 6{\times}10^{-7}$; for
 double precision, $\varepsilon\approx10^{-15}$.
 
 % ---------------------------------------------------------------------- %
@@ -1428,10 +1432,14 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{inituu} [\code{'zero'}]
                & initialization of velocity. Currently valid choices are
-                 \code{`zero'} ($\uv=0$), 
-                 \code{`random-normal'} (random, normally-distributed $u_x$), 
-                 \code{`sound=wave'} (sound wave in $x$ direction), 
-                 \code{`shock-tube'} (polytropic standing shock). \\
+                 \begin{description}
+                 \item[\code{`zero'}] ($\uv=0$ ),
+                 \item[\code{`random-normal'}] (random,
+                   normally-distributed $u_x$),
+                 \item[\code{`sound=wave'}] (sound wave in $x$ direction),
+                 \item[\code{`shock-tube'}] (polytropic standing shock).
+                 \end{description}
+                 \\
   \var{ampluu} [$0.$]
                & amplitude for some types of initial velocities. \\
   \var{widthuu} [$0.1$]
@@ -1453,17 +1461,22 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{initlnrho} [\code{'zero'}]
                & initialization of density. Currently valid choices are
-                 \code{`zero'} ($\ln\varrho=0$),
-                 \code{`isothermal'} (isothermal stratification),
-                 \code{`polytropic\_simple'} (polytropic stratification),
-                 \code{`hydrostatic-z-2'} (hydrostatic vertical
+                 \begin{description}
+                 \item[\code{`zero'}] ($\ln\varrho=0$),
+                 \item[\code{`isothermal'}] (isothermal stratification),
+                 \item[\code{`polytropic\_simple'}] (polytropic stratification),
+                 \item[\code{`hydrostatic-z-2'}] (hydrostatic vertical
                    stratification for isentropic atmosphere),
-                 \code{`rho-jump'} (density jump of width \var{widthlnrho}),
-                 \code{`piecew-poly'} (piecewise polytropic vertical
-                               stratification for solar convection),
-                 \code{`polytropic'} (polytropic vertical stratification),
-                 \code{`sound-wave'} (sound wave),
-                 \code{`shock-tube'} (polytropic standing shock).\\
+                 \item[\code{`rho-jump'}] (density jump of width
+                   \var{widthlnrho}),
+                 \item[\code{`piecew-poly'}] (piecewise polytropic vertical
+                   stratification for solar convection),
+                 \item[\code{`polytropic'}] (polytropic vertical
+                   stratification),
+                 \item[\code{`sound-wave'}] (sound wave),
+                 \item[\code{`shock-tube'}] (polytropic standing shock).
+                 \end{description}
+                 \\
   \var{gamma} [$5./3$]
                & adiabatic index $\gamma=c_p/c_v$. \\
   \var{cs0} [$1.$], \\
@@ -1511,24 +1524,32 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{initss} [\code{'nothing'}]
                & initialization of entropy. Currently valid choices are
-                 \code{`nothing'} (leaves the initialization done in the
-                   density module unchanged),
-                 \code{`zero'} (put $s=0$ explicitly; this may overwrite
-                   the initialization done in the density module),
-                 \code{`isothermal'} (isothermal stratification, $T=\const$),
-                 \code{`isobaric'} (isobaric, $p=\const$),
-                 \code{`isentropic'} (isentropic with superimposed hot [or
-                   cool] bubble),
-                 \code{`linprof'} (linear entropy profile in $z$),
-                 \code{`piecew-poly'} (piecewise polytropic stratification
-                   for convection),
-                 \code{`polytropic'} (polytropic stratification,
-                   polytropic exponent is \var{mpoly0}). \\
+                 \begin{description}
+                 \item[\code{`nothing'}] (leaves the initialization done
+                   in the density module unchanged),
+                 \item[\code{`zero'}] (put $s=0$ explicitly; this may
+                   overwrite the initialization done in the density module),
+                 \item[\code{`isothermal'}] (isothermal stratification,
+                   $T=\const$),
+                 \item[\code{`isobaric'}] (isobaric, $p=\const$),
+                 \item[\code{`isentropic'}] (isentropic with superimposed
+                   hot [or cool] bubble),
+                 \item[\code{`linprof'}] (linear entropy profile in $z$),
+                 \item[\code{`piecew-poly'}] (piecewise polytropic
+                   stratification for convection),
+                 \item[\code{`polytropic'}] (polytropic stratification,
+                   polytropic exponent is \var{mpoly0}).
+                 \end{description}
+                 \\
   \var{pertss} [\code{'zero'}]
                & additional perturbation to entropy. Currently valid
                  choices are
-                 \code{'zero'} (no perturbation)
-                 \code{'hexagonal'} (hexagonal perturbation for convection). \\
+                 \begin{description}
+                 \item[\code{'zero'}] (no perturbation)
+                 \item[\code{'hexagonal'}] (hexagonal perturbation for
+                   convection).
+                 \end{description}
+                 \\
   \var{ampl_ss} [$0.$]
                & amplitude for some types of initial entropy profiles. \\
   \var{grads0} [$0.$]
@@ -1576,27 +1597,33 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{initaa} [\code{'zero'}]
                & initialization of magnetic field (vector potential).
                  Currently valid choices are
-                 \code{`zero'} (zero field),
-                 \code{`gaussian-noise'} (white noise),
-                 \code{`Beltrami-x'} ($x$-dependent Beltrami wave),
-                 \code{`Beltrami-y'} ($y$-dependent Beltrami wave),
-                 \code{`Beltrami-z'} ($z$-dependent Beltrami wave),
-                 \code{`hor-fluxtube'} (horizontal flux tube),
-                 \code{`hor-fluxlayer'} (horizontal flux layer),
-                 \code{`uniform-Bx'} (uniform field in $x$ direction),
-                 \code{`Bz(x)'} ($B_z\propto\cos(k x)$),
-                 \code{`fluxrings'} (two interlocked magnetic fluxrings;
+                 \begin{description}
+                 \item[\code{`zero'}] (zero field),
+                 \item[\code{`gaussian-noise'}] (white noise),
+                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave),
+                 \item[\code{`hor-fluxtube'}] (horizontal flux tube),
+                 \item[\code{`hor-fluxlayer'}] (horizontal flux layer),
+                 \item[\code{`uniform-Bx'}] (uniform field in $x$ direction),
+                 \item[\code{`Bz(x)'}] ($B_z\propto\cos(k x)$),
+                 \item[\code{`fluxrings'}] (two interlocked magnetic fluxrings;
                    see Sect.~\ref{fluxrings}),
-                 \code{`crazy'} (for testing purposes),
-                 \code{`Alfven-circ-x'} (circularly polarized Alfvén wave).
+                 \item[\code{`crazy'}] (for testing purposes),
+                 \item[\code{`Alfven-circ-x'}] (circularly polarized
+                   Alfvén wave).
+                 \end{description}
                  \\
   \var{initaa2} [\code{'zero'}]
                & additional perturbation of magnetic field.
                  Currently valid choices are
-                 \code{`zero'} (zero perturbation),
-                 \code{`Beltrami-x'} ($x$-dependent Beltrami wave),
-                 \code{`Beltrami-y'} ($y$-dependent Beltrami wave),
-                 \code{`Beltrami-z'} ($z$-dependent Beltrami wave). \\
+                 \begin{description}
+                 \item[\code{`zero'}] (zero perturbation),
+                 \item[\code{`Beltrami-x'}] ($x$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-y'}] ($y$-dependent Beltrami wave),
+                 \item[\code{`Beltrami-z'}] ($z$-dependent Beltrami wave).
+                 \end{description}
+                 \\
   \var{amplaa} [$0.$]
                & amplitude for some types of initial magnetic fields. \\
   \var{amplaa2} [$0.$]
@@ -1629,17 +1656,23 @@ double precision, $\varepsilon\approx10^{-15}$.
                & initialization of passive scalar
                  (concentration per unit mass, $c$).
                  Currently valid choices (for $\ln c$) are
-                 \code{`zero'} ($\ln c=0.$),
-                 \code{`gaussian-noise'} (white noise),
-                 \code{`wave-x'} (wave in $x$ direction),
-                 \code{`wave-y'} (wave in $y$ direction),
-                 \code{`wave-z'} (wave in $z$ direction). \\
+                 \begin{description}
+                 \item[\code{`zero'}] ($\ln c=0.$),
+                 \item[\code{`gaussian-noise'}] (white noise),
+                 \item[\code{`wave-x'}] (wave in $x$ direction),
+                 \item[\code{`wave-y'}] (wave in $y$ direction),
+                 \item[\code{`wave-z'}] (wave in $z$ direction).
+                 \end{description}
+                 \\
   \var{initlncc2} [\code{'zero'}]
                & additional perturbation of passive scalar concentration $c$.
                  Currently valid choices are
-                 \code{`zero'} ($\delta\ln c=0.$),
-                 \code{`wave-x'} (add $x$-directed wave to $\ln c$). \\
-  \var{ampllncc} [$0.1$]
+                 \begin{description}
+                 \item[\code{`zero'}] ($\delta\ln c=0.$),
+                 \item[\code{`wave-x'}] (add $x$-directed wave to $\ln c$).
+                 \end{description}
+                 \\
+\var{ampllncc} [$0.1$]
                & amplitude for some types of initial concentration. \\
   \var{ampllncc2} [$0.$]
                & amplitude for some types of concentration perturbation. \\
@@ -1754,14 +1787,14 @@ the latest information, you should have a look at the code.
   \var{nu} [$0.$]
                & kinematical viscosity. \\
   \var{ivisc} [$0$]
-               & select form of viscous term:
+               & select form of viscous term; currently valid choices are
                  \begin{description}
-                 \item[\code{ivisc=0}] Simplified viscous force
+                 \item[\code{'simplified'}] -- simplified viscous force
                    $\Fv_{\rm visc}=\nu\Laplace\uv$
-                 \item[\code{ivisc=1}] Viscous force for
+                 \item[\code{'rho_mu-const'}] -- viscous force for
                    $\mu\equiv\varrho\nu=\const$,
                    $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv)$
-                 \item[\code{ivisc=2}] Viscous force for $\nu=\const$,
+                 \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
                    $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv
                     + 2\mathsf{S}\cdot\grad\ln\varrho)$
                  \end{description}
@@ -1881,24 +1914,21 @@ the latest information, you should have a look at the code.
   \multicolumn{2}{c}{Namelist \name{forcing_run_pars}} \\
 \midrule
   \var{iforce} [$2$]
-               & select form of forcing in the equation of motion:
+               & select form of forcing in the equation of motion;
+                 currently valid choices are
                  \begin{description}
-                 \item[\code{iforce=1}] irrotational forcing
-                 \item[\code{iforce=2}] helical forcing
-                 \item[\code{iforce=3}] forcing of ``fountain flow'' (cf.\
-                                        MNRAS 276, 651 for similar reference)
-                 \item[\code{iforce=4}] forcing localized horizontal
-                                        sinusoidal shear
+                 \item[\code{'zero'}] (no forcing),
+                 \item[\code{'irrotational'}] (irrotational forcing),
+                 \item[\code{'helical'}] (helical forcing),
+                 \item[\code{'fountain'}] (forcing of ``fountain flow'';
+                   cf.~MNRAS 276, 651 for similar reference),
+                 \item[\code{'horizontal-shear'}] (forcing localized
+                   horizontal sinusoidal shear).
                  \end{description}
                  \\
   \var{iforce2} [$0$]
-               & select form of additional forcing in the equation of motion:
-                 \begin{description}
-                 \item[\code{iforce=1}]forcing of fountain flow (used in
-                                       combination with helical forcing,
-                                       for example.
-                 \end{description}
-                 \\
+               & select form of additional forcing in the equation of
+                 motion; valid choices are as for \var{iforce}. \\
   \var{force} [$0.$]
                & amplitude of forcing. \\
   \var{relhel} [$1.$]
@@ -1947,7 +1977,7 @@ The resulting Courant step is given by
   \delta t
   = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
                     {U_{\rm max}} ,
-               c_{\delta t_v}
+               c_{\delta t,v}
                \frac{\delta x_{\rm min}^2}
                     {D_{\rm max}}
         \right) \; ,
@@ -1967,7 +1997,7 @@ $\chi = \lambda/(c_p\varrho)$ thermal
 diffusivity and $\eta$ the magnetic diffusivity.
 
 To fix the time step $\delta t$ to a value independent of velocities and
-diffusivities, use the run parameter \var{dt} (see p.~\ref{dt-run}).
+diffusivities, use the run parameter \var{dt} (see p.~\pageref{dt-run}).
 
 % ---------------------------------------------------------------------- %
 
@@ -2144,15 +2174,27 @@ derivative.
       - \grad\Phi
       + \frac{\jv\times\Bv}{\varrho}
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + {\bf{\sf S}}\cdot{\bf{\nabla}}\ln\varrho\right) \; .
+      + {\sf S}\cdot\grad\ln\varrho\right) \; .
 \end{equation}
 Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
 $\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
 $\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
-the magnetic flux density, and $\nu$ is kinematic viscosity.
-If \var{ivisc}=1, it is assumed that 
+the magnetic flux density, $\nu$ is kinematic viscosity, and ${\sf S}$ is
+the traceless rate-of-strain tensor (\ref{Eq-S-traceless}).
+
+If \code{ivisc='simplified'}, a simplified version, $\nu\Laplace$, of the
+viscous term is used, which is not physically consistent (momentum
+conservation is violated for compressible media), but in many cases
+results will be qualitatively OK).
+
+If \code{ivisc='rho_mu-const'}, it is assumed that 
 $\mu \equiv \varrho\nu = \const$ everywhere; in that
-case the input parameter $\nu$ is used to give the value of $\mu$.
+case the input parameter $\nu$ is used to give the value of
+$\mu/\varrho_0$.
+The rate-of-strain tensor does not appear in the equation.
+
+If \code{ivisc='nu-const'}, it is assumed that 
+$\nu = \const$ everywhere.
 
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
@@ -2200,11 +2242,11 @@ The equation solved is
 Here, $T$ is temperature, $c_p$ the specific heat at constant pressure,
 $\Heat$ and $\Cool$ are explicit heating and cooling terms,
 $\lambda$ is the thermal conductivity, and
-\begin{equation}
+\begin{equation} \label{Eq-S-traceless}
   {\sf S}_{ik} = \frac{\partial_i u_k + \partial_k u_i}{2}
                  -\frac{1}{3} \delta_{ik}\Div\uv
 \end{equation}
-is the traceless rate of strain tensor.
+is the traceless rate-of-strain tensor.
 
 \bigskip
 
@@ -2219,6 +2261,20 @@ polytropic behavior
 A better way to achieve isothermality is to use the \name{noentropy}
 module.
 
+% ---------------------------------------------------------------------- %
+
+\subsection{Transport equation for a passive scalar}
+
+\begin{equation}
+  \frac{D\ln c}{Dt}
+  = - {\cal D} \left[ \Laplace\ln c + \grad\ln(\varrho c)\cdot\grad\ln c
+               \right] \; .
+\end{equation}
+
+Here $c$ denotes the concentration (per mass) of the passive scalar and
+${\cal D}$ its diffusion constant.
+Using $\ln c$ instead of $c$ has the advantage to enforce $c>0$ for all
+times.
 
 
 % ====================================================================== %
@@ -2959,7 +3015,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.59 2002-07-19 13:02:35 dobler Exp $ $}
+$ $Id: manual.tex,v 1.60 2002-07-20 18:46:07 dobler Exp $ $}
 
 
 \end{document}
