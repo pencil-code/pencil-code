@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -404,7 +404,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.38 2003-09-12 08:11:48 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.39 2003-09-12 09:41:58 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -427,22 +427,19 @@ module  power_spectrum
   endif
   b1=0
   a2=a1
-
-
-
-spectrumx=0
-spectrumx_sum=0
-spectrumy=0
-spectrumy_sum=0
-spectrumz=0
-spectrumz_sum=0
-
-
+  !
+  ! Need to initialize
+  !
+  spectrumx=0
+  spectrumx_sum=0
+  spectrumy=0
+  spectrumy_sum=0
+  spectrumz=0
+  spectrumz_sum=0
   !
   !  Doing the Fourier transform
   !
   call transform_fftpack_1d(a1,b1)
-  !if (onedall) call transform_fftpack(a1,b1)
   !
   !    Stopping the run if FFT=nofft
   !
