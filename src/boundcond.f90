@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.33 2002-11-11 13:38:19 dobler Exp $
+! $Id: boundcond.f90,v 1.34 2002-11-12 13:23:22 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -51,7 +51,9 @@ module Boundcond
       use Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j
+      integer :: i,j,k,ip_ok
+      character (len=bclen), dimension(mvar) :: bc12
+      character (len=3) :: topbot
 !
       if(ldebug) print*,'ENTER: boundconds_x'
 !
@@ -65,90 +67,53 @@ module Boundcond
 !  can still use other boundary conditions (even with shear)
 !
       case default
-      if (bcx1(1)=='she') then
-         if (headtt) print*,'use shearing sheet boundary condition'
-         call initiate_shearing(f)
-         if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
-      else
-        do j=1,mvar
-          !
-          ! `lower' bdry
-          !
-          if (ldebug) write(*,'(A,I2,A,A)') ' bcx1(',j,')=',bcx1(j)
-          if (ipx == 0) then
-            select case(bcx1(j))
-            case ('p')          ! periodic
-              if (nprocx==1) then
-                f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
-                ! so far edges are copied twice, corners three times...
+        if (bcx1(1)=='she') then
+          if (headtt) print*,'use shearing sheet boundary condition'
+          call initiate_shearing(f)
+          if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
+        else
+          do k=1,2                ! loop over 'bot','top'
+            if (k==1) then
+              topbot='bot'; bc12=bcx1; ip_ok=0
+            else
+              topbot='top'; bc12=bcx2; ip_ok=nprocx-1
+            endif
+            !
+            do j=1,mvar
+              if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcx',k,'(',j,')=',bc12(j)
+              if (ipx == ip_ok) then
+                select case(bc12(j))
+                case ('p')        ! periodic
+                  call bc_per_x(f,topbot,j)
+                case ('s')        ! symmetry
+                  call bc_sym_x(f,+1,topbot,j)
+                case ('a')        ! antisymmetry
+                  call bc_sym_x(f,-1,topbot,j)
+                case ('a2')       ! antisymmetry relative to boundary value
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.)
+                case ('cT')       ! constant temp.
+                  if (j==ient) call bc_ss_temp_x(f,topbot)
+                case ('sT')       ! symmetric temp.
+                  if (j==ient) call bc_ss_stemp_x(f,topbot)
+                case ('in')
+                  if (j==ie) call bc_ee_inflow_x(f,topbot)
+                case ('out')
+                  if (j==ie) call bc_ee_outflow_x(f,topbot)
+                case ('db')
+                  call bc_db_x(f,topbot,j)
+                case ('osc')
+!                 if (j==ilnrho) call bc_lnrho_osc_x(f,topbot)
+                  call bc_osc_x(f,topbot,j)
+                case default
+                  if (lroot) &
+                       print*, "No such boundary condition bcx1/2 = ", &
+                               bc12(j), " for j=", j
+                  call stop_it("")
+                endselect
               endif
-            case ('s')          ! symmetry
-              do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
-            case ('a')          ! antisymmetry
-              f(l1,:,:,j) = 0.  ! ensure bdry value=0 (indep of initial cond)
-              do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
-            case ('a2')         ! antisymmetry relative to boundary value
-              do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
-            case ('cT')         ! constant temp. (processed in own routine)
-              if (j==ient) call bc_ss_temp_x(f,'bot')
-            case ('sT')         ! symmetric temp. (processed in own routine)
-              if (j==ient) call bc_ss_stemp_x(f,'bot')
-            case ('in')
-              if (j==ie) call bc_ee_inflow_x(f,'bot')
-            case ('out')
-              if (j==ie) call bc_ee_outflow_x(f,'bot')
-            case ('db')
-               call bc_db_x(f,'bot',j)
-            case ('osc')
-!               if (j==ilnrho) call bc_lnrho_osc_x(f,'bot')
-               call bc_osc_x(f,'bot',j)
-            case default
-              if (lroot) &
-                   print*, "No such boundary condition bcx1 = ", &
-                           bcx1(j), " for j=", j
-              call stop_it("")
-            endselect
-          endif
-          !
-          ! `upper' bdry
-          !
-          if (ldebug) write(*,'(A,I2,A,A)') ' bcx2(',j,')=',bcx2(j)
-          if (ipx == nprocx-1) then
-            select case(bcx2(j))
-            case ('p')          ! periodic
-              if (nprocx==1) then
-                f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
-                ! so far edges are copied twice, corners three times...
-              endif
-            case ('s')          ! symmetry
-              do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
-            case ('a')          ! antisymmetry
-              f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep of initial cond)
-              do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
-            case ('a2')            ! antisymmetry relative to boundary value
-              do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
-            case ('cT')            ! constant temp. (processed in own routine)
-              if (j==ient) call bc_ss_temp_x(f,'top')
-            case ('sT')            ! symmetric temp. (processed in own routine)
-              if (j==ient) call bc_ss_stemp_x(f,'top')
-            case ('in')
-               if (j==ie) call bc_ee_inflow_x(f,'top')
-            case ('out')
-               if (j==ie) call bc_ee_outflow_x(f,'top')
-            case ('db')
-               call bc_db_x(f,'top',j)
-            case ('osc')
-!               if (j==ilnrho) call bc_lnrho_osc_x(f,'top')
-               call bc_osc_x(f,'top',j)
-            case default
-              if (lroot) &
-                   print*, "No such boundary condition bcx2 = ", &
-                   bcx2(j), " for j=", j
-              call stop_it("")              
-            endselect
-          endif
-        enddo
-      endif
+            enddo
+          enddo
+        endif
       endselect
 !
     endsubroutine boundconds_x
@@ -168,7 +133,9 @@ module Boundcond
       use Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j
+      integer :: i,j,k,ip_ok
+      character (len=bclen), dimension(mvar) :: bc12
+      character (len=3) :: topbot
 !
       if(ldebug) print*,'ENTER: boundconds_y'
 !
@@ -180,65 +147,38 @@ module Boundcond
 !  Boundary conditions in y
 !
       case default
-      do j=1,mvar 
-        !
-        ! `lower' bdry
-        !
-        if (ldebug) write(*,'(A,I2,A,A)') ' bcy1(',j,')=',bcy1(j)
-        if (ipy == 0) then
-          select case(bcy1(j))
-          case ('p')              ! periodic
-            if (nprocy==1) then
-              f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
-              ! so far edges are copied twice, corners three times...
+        do k=1,2                ! loop over 'bot','top'
+          if (k==1) then
+            topbot='bot'; bc12=bcy1; ip_ok=0
+          else
+            topbot='top'; bc12=bcy2; ip_ok=nprocy-1
+          endif
+          !
+          do j=1,mvar 
+            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcy',k,'(',j,')=',bc12(j)
+            if (ipy == ip_ok) then
+              select case(bc12(j))
+              case ('p')        ! periodic
+                call bc_per_y(f,topbot,j)
+              case ('s')        ! symmetry
+                call bc_sym_y(f,+1,topbot,j)
+              case ('a')        ! antisymmetry
+                call bc_sym_y(f,-1,topbot,j)
+              case ('a2')       ! antisymmetry relative to boundary value
+                call bc_sym_y(f,-1,topbot,j,REL=.true.)
+              case ('cT')       ! constant temp.
+                if (j==ient) call bc_ss_temp_y(f,topbot)
+              case ('sT')       ! symmetric temp.
+                if (j==ient) call bc_ss_stemp_y(f,topbot)
+              case default
+                if (lroot) &
+                     print*, "No such boundary condition bcy1/2 = ", &
+                             bc12(j), " for j=", j
+                call stop_it("")
+              endselect
             endif
-          case ('s')              ! symmetry
-            do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
-          case ('a')              ! antisymmetry
-            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
-            do i=1,nghost; f(:,m1-i,:,j) = -f(:,m1+i,:,j); enddo
-          case ('a2')             ! antisymmetry relative to boundary value
-            do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
-          case ('cT')             ! constant temp. (processed in own routine)
-            if (j==ient) call bc_ss_temp_y(f,'bot')
-          case ('sT')             ! symmetric temp. (processed in own routine)
-            if (j==ient) call bc_ss_stemp_y(f,'bot')
-          case default
-            if (lroot) &
-                 print*, "No such boundary condition bcy1 = ", &
-                         bcy1(j), " for j=", j
-            call stop_it("")
-          endselect
-        endif
-        !
-        ! `upper' bdry
-        !
-        if (ldebug) write(*,'(A,I2,A,A)') ' bcy2(',j,')=',bcy2(j)
-        if (ipy == nprocy-1) then
-          select case(bcy2(j))
-          case ('p')              ! periodic
-            if (nprocy==1) then
-              f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
-            endif
-          case ('s')              ! symmetry
-            do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
-          case ('a')              ! antisymmetry
-            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
-            do i=1,nghost; f(:,m2+i,:,j) = -f(:,m2-i,:,j); enddo
-          case ('a2')             ! antisymmetry relative to boundary value
-            do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
-          case ('cT')             ! constant temp. (processed in own routine)
-            if (j==ient) call bc_ss_temp_y(f,'top')
-          case ('sT')             ! symmetric temp. (processed in own routine)
-            if (j==ient) call bc_ss_stemp_y(f,'top')
-          case default
-            if (lroot) &
-                 print*, "No such boundary condition bcy2 = ", &
-                         bcy2(j), " for j=", j
-            call stop_it("")
-          endselect
-        endif
-      enddo
+          enddo
+        enddo
       endselect
 !
     endsubroutine boundconds_y
@@ -246,7 +186,7 @@ module Boundcond
     subroutine boundconds_z(f)
 !
 !  Physical boundary conditions in z except for periodic stuff.
-!  For the x-direction, the routines needs to be called immediately;
+!  For the x-direction, the routine needs to be called immediately;
 !  for the y- and z-directions is needs to be called after all
 !  communication is done, because it needs to overwrite the otherwise
 !  periodic boundary conditions that have already been solved under mpi.
@@ -259,7 +199,9 @@ module Boundcond
       use Density
 !
       real, dimension (mx,my,mz,mvar) :: f
-      integer :: i,j
+      integer :: i,j,k,ip_ok
+      character (len=bclen), dimension(mvar) :: bc12
+      character (len=3) :: topbot
 !
       if(ldebug) print*,'ENTER: boundconds_z'
 !
@@ -271,92 +213,275 @@ module Boundcond
 !  Boundary conditions in z
 !
       case default
-      do j=1,mvar
-        !
-        ! `lower' bdry
-        !
-        if (ldebug) write(*,'(A,I2,A,A)') ' bcz1(',j,')=',bcz1(j)
-        if (ipz == 0) then
-          select case(bcz1(j))
-          case ('p')              ! periodic
-            if (nprocz==1) then
-              f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
+        do k=1,2                ! loop over 'bot','top'
+          if (k==1) then
+            topbot='bot'; bc12=bcz1; ip_ok=0
+          else
+            topbot='top'; bc12=bcz2; ip_ok=nprocz-1
+          endif
+          !
+          do j=1,mvar
+            if (ldebug) write(*,'(A,I1,A,I2,A,A)') ' bcz',k,'(',j,')=',bc12(j)
+            if (ipz == ip_ok) then
+              select case(bc12(j))
+              case ('p')        ! periodic
+                call bc_per_z(f,topbot,j)
+              case ('s')        ! symmetry
+                call bc_sym_z(f,+1,topbot,j)
+              case ('a')        ! antisymmetry
+                call bc_sym_z(f,-1,topbot,j)
+              case ('a2')       ! antisymmetry relative to boundary value
+                call bc_sym_z(f,-1,topbot,j,REL=.true.)
+              case ('c1')       ! complex
+                if (j==ient) call bc_ss_flux(f,topbot)
+                if (j==iaa)  call bc_aa_pot(f,topbot)
+              case ('cT')       ! constant temp.
+                if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
+                if (j==ient)   call bc_ss_temp_z(f,topbot)
+              case ('sT')       ! symmetric temp.
+                if (j==ient) call bc_ss_stemp_z(f,topbot)
+              case ('c2')       ! complex
+                if (j==ient) call bc_ss_temp_old(f,topbot)
+              case ('db')       ! complex
+                call bc_db_z(f,topbot,j) 
+              case ('ce')       ! complex
+                if (j==ient) call bc_ss_energy(f,topbot)
+              case ('')         ! do nothing; assume that everything is set
+              case default
+                if (lroot) &
+                     print*, "No such boundary condition bcz1/2 = ", &
+                             bc12(j), " for j=", j
+                call stop_it("")
+              endselect
             endif
-          case ('s')              ! symmetry
-            do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
-          case ('a')              ! antisymmetry
-            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
-            do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
-          case ('a2')             ! antisymmetry relative to boundary value
-            do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
-          case ('c1')             ! complex (processed in its own routine)
-            if (j==ient) call bc_ss_flux(f,'bot')
-            if (j==iaa)  call bc_aa_pot(f,'bot')
-          case ('cT')             ! constant temp. (processed in own routine)
-            if (j==ient) call bc_ss_temp_z(f,'bot')
-          case ('sT')             ! symmetric temp. (processed in own routine)
-            if (j==ient) call bc_ss_stemp_z(f,'bot')
-          case ('c2')             ! complex (processed in its own routine)
-            if (j==ient) call bc_ss_temp_old(f,'bot')
-          case ('db')             ! complex (processed in its own routine)
-            call bc_db_z(f,'bot',j) 
-          case ('ce')             ! complex (processed in its own routine) 
-             if (j==ient) call bc_ss_energy(f,'bot')
-          case default
-            if (lroot) &
-                 print*, "No such boundary condition bcz1 = ", &
-                         bcz1(j), " for j=", j
-            call stop_it("")
-          endselect
-        endif
-        !
-        ! `upper' bdry
-        !
-        if (ldebug) write(*,'(A,I2,A,A)') ' bcz2(',j,')=',bcz2(j)
-        if (ipz == nprocz-1) then
-          select case(bcz2(j))
-          case ('p')              ! periodic
-            if (nprocz==1) then
-              f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
-            endif
-          case ('s')              ! symmetry
-            do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
-          case ('a')              ! antisymmetry
-            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
-            do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
-          case ('a2')             ! antisymmetry relative to boundary value
-            do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
-          case ('c1')             ! complex (processed in its own routine)
-            if (j==ient) call bc_ss_flux(f,'top')
-            if (j==iaa)  call bc_aa_pot(f,'top')
-          case ('cT')             ! constant temp. (processed in own routine)
-            if (j==ilnrho) call bc_lnrho_temp_z(f,'top')
-            if (j==ient)   call bc_ss_temp_z(f,'top')
-          case ('sT')             ! symmetric temp. (processed in own routine)
-            if (j==ient) call bc_ss_stemp_z(f,'top')
-          case ('c2')             ! complex (processed in its own routine)
-            if (j==ient) call bc_ss_temp_old(f,'top')
-          case ('db')             ! complex (processed in its own routine)
-             call bc_db_z(f,'top',j) 
-          case ('ce')             ! complex (processed in its own routine)
-             if (j==ient) call bc_ss_energy(f,'top')
-          case ('')             ! complex (processed in its own routine)
-             !(don't do anything; assume that it has been set already)
-          case default
-            if (lroot) &
-                 print*, "No such boundary condition bcz2 = ", &
-                         bcz2(j), " for j=", j
-            call stop_it("")
-          endselect
-        endif
-      enddo
+          enddo
+        enddo
       endselect
 !
     endsubroutine boundconds_z
 !***********************************************************************
+    subroutine bc_per_x(f,topbot,j)
+!
+!  periodic boundary condition
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (nprocx==1) f(1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
+
+      case('top')               ! top boundary
+        if (nprocx==1) f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_per_x
+!***********************************************************************
+    subroutine bc_per_y(f,topbot,j)
+!
+!  periodic boundary condition
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+         if (nprocy==1) f(:,1:m1-1,:,j) = f(:,m2i:m2,:,j)
+
+      case('top')               ! top boundary
+        if (nprocy==1) f(:,m2+1:my,:,j) = f(:,m1:m1i,:,j)
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_per_y
+!***********************************************************************
+    subroutine bc_per_z(f,topbot,j)
+!
+!  periodic boundary condition
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (nprocz==1) f(:,:,1:n1-1,j) = f(:,:,n2i:n2,j)
+
+      case('top')               ! top boundary
+        if (nprocz==1) f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_per_z
+!***********************************************************************
+    subroutine bc_sym_x(f,sgn,topbot,j,rel)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (relative) then
+          do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l1-i,:,:,j)=              sgn*f(l1+i,:,:,j); enddo
+          if (sgn<0) f(l1,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case('top')               ! top boundary
+        if (relative) then
+          do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
+        else
+          do i=1,nghost; f(l2+i,:,:,j)=              sgn*f(l2-i,:,:,j); enddo
+          if (sgn<0) f(l2,:,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_sym_x
+!***********************************************************************
+    subroutine bc_sym_y(f,sgn,topbot,j,rel)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (relative) then
+          do i=1,nghost; f(:,m1-i,:,j)=2*f(:,m1,:,j)+sgn*f(:,m1+i,:,j); enddo
+        else
+          do i=1,nghost; f(:,m1-i,:,j)=              sgn*f(:,m1+i,:,j); enddo
+          if (sgn<0) f(:,m1,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case('top')               ! top boundary
+        if (relative) then
+          do i=1,nghost; f(:,m2+i,:,j)=2*f(:,m2,:,j)+sgn*f(:,m2-i,:,j); enddo
+        else
+          do i=1,nghost; f(:,m2+i,:,j)=              sgn*f(:,m2-i,:,j); enddo
+          if (sgn<0) f(:,m2,:,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_sym_y
+!***********************************************************************
+    subroutine bc_sym_z(f,sgn,topbot,j,rel)
+!
+!  Symmetry boundary conditions.
+!  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
+!  (f,+1,topbot,j)            --> symmetry                 (f' =0)
+!  (f,-1,topbot,j,REL=.true.) --> generalized antisymmetry (f''=0)
+!  Don't combine rel=T and sgn=1, that wouldn't make much sense.
+!
+!  11-nov-02/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: sgn,i,j
+      logical, optional :: rel
+      logical :: relative
+!
+      if (present(rel)) then; relative=rel; else; relative=.false.; endif
+
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        if (relative) then
+          do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)+sgn*f(:,:,n1+i,j); enddo
+        else
+          do i=1,nghost; f(:,:,n1-i,j)=              sgn*f(:,:,n1+i,j); enddo
+          if (sgn<0) f(:,:,n1,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case('top')               ! top boundary
+        if (relative) then
+          do i=1,nghost; f(:,:,n2+i,j)=2*f(:,:,n2,j)+sgn*f(:,:,n2-i,j); enddo
+        else
+          do i=1,nghost; f(:,:,n2+i,j)=              sgn*f(:,:,n2-i,j); enddo
+          if (sgn<0) f(:,:,n2,j) = 0. ! set bdry value=0 (indep of initcond)
+        endif
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_sym_z
+!***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
-!  boundary condition for density
+!  ``One-sided'' boundary condition for density.
+!  Set ghost zone to reproduce one-sided boundary condition 
+!  (2nd order):
+!  Finding the derivatives on the boundary using a one 
+!  sided final difference method. This derivative is being 
+!  used to calculate the boundary points. This will probably
+!  only be used for ln(rho)
 !
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the density module
@@ -368,39 +493,38 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my) :: fder
       integer :: i,j
-      !
-      !  Set ghost zone to reproduce one-sided boundary condition 
-      !  (2nd order):
-      !  Finding the derivatives on the boundary using a one 
-      !  sided final difference method. This derivative is being 
-      !  used to calculate the boundary points. This will probably
-      !  only be used for ln(rho)
-      !
-    select case(topbot)
+!
+      select case(topbot)
 !
 ! Bottom boundary
 !
-    case('bot')
-       do i=1,nghost
+      case('bot')
+        do i=1,nghost
           fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
                -f(:,:,n1-i+3,j))/(2*dz)
           f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
-       end do
-    case('top')
-       do i=1,nghost
+        enddo
+      case('top')
+        do i=1,nghost
           fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
                +f(:,:,n2+i-3,j))/(2*dz)
           f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
-       end do
-    case default
-       if(lroot) print*,"invalid argument for 'bc_db_z'"
-    endselect
+        enddo
+      case default
+        if(lroot) print*,"invalid argument for 'bc_db_z'"
+      endselect
 !
-  end subroutine bc_db_z
+    endsubroutine bc_db_z
 !*********************************************************************** 
     subroutine bc_db_x(f,topbot,j)
 !
-!  boundary condition for density
+!  ``One-sided'' boundary condition for density.
+!  Set ghost zone to reproduce one-sided boundary condition 
+!  (2nd order):
+!  Finding the derivatives on the boundary using a one 
+!  sided final difference method. This derivative is being 
+!  used to calculate the boundary points. This will probably
+!  only be used for ln(rho)
 !
 !  may-2002/nils: coded
 !  11-jul-2002/nils: moved into the density module
@@ -412,14 +536,7 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (my,mz) :: fder
       integer :: i,j
-      !
-      !  Set ghost zone to reproduce one-sided boundary condition 
-      !  (2nd order):
-      !  Finding the derivatives on the boundary using a one 
-      !  sided final difference method. This derivative is being 
-      !  used to calculate the boundary points. This will probably
-      !  only be used for ln(rho)
-      !
+!
       select case(topbot)
 !
 ! Bottom boundary
