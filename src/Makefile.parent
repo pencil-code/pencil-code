@@ -1,9 +1,25 @@
+#                              -*-Makefile-*-
+#  Makefile.parent
+#
+#  Pencil Code Makefile for run directories that builds the code in the
+#  src/ subdirectory by running `make' there.
+#
+
+# Build the code:
 default:
 	cd src; $(MAKE) -f Makefile.src Makefile; $(MAKE)
+
+# Clean up most files:
 clean:
 	cd src; $(MAKE) -f Makefile.src clean
+
+# Clean up even more files:
 cleann:
 	cd src; $(MAKE) -f Makefile.src cleann
+# same thing:
+cleanall: cleann
+
+# Clean up files produced by common queuing systems:
 qeoclean:
 	rm -f start.csh.o[0-9]* start.csh.e[0-9]* run.csh.o[0-9]* run.csh.e[0-9]*
 	rm -f start_run.csh.o[0-9]* start_run.csh.e[0-9]*

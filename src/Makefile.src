@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.30 2004-02-26 07:47:03 ajohan Exp $
+### $Id: Makefile.src,v 1.31 2004-02-27 15:27:33 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -330,6 +330,8 @@ clean:
 cleann: clean
 	rm -f Makefile TAGS mpicomm_.f90
 	adapt-mkfile Makefile.src Makefile
+# same thing
+cleanall: cleann
 
 ## ---------------------------------------------------------------------- #
 ## Code targets
