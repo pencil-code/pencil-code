@@ -17,17 +17,14 @@ m1=3 & m2=ny-4
 ;
 if lequidist[1] then begin
   dy2=1./(180.*(y[4]-y[3])^2)
-  dd=0.
 endif else begin
   d1=yder(f)
-; check if divide by zero:  
-  tt = where(yprim eq 0)
-  if (tt[0] ne -1) then  zprim[tt] = 1e-10 
-  tt = where(yprim2 eq 0)
-  if (tt[0] ne -1) then  zprim2[tt] = 1e-10
 ;
-  dy2=spread(spread(1./(180.*yprim^2),0,nx),2,nz)
-  dd =d1*spread(spread(yprim2/yprim^2,0,nx),2,nz)
+;  nonuniform mesh correction
+;  d2f/dy2  = f"*psi'^2 + psi"f'   see also the manual
+;
+  dy2=spread(spread(yprim^2/180.,0,nx),2,nz)
+  dd =d1*spread(spread(yprim2,0,nx),2,nz)
 endelse
 ;
 if s[0] eq 2 then begin
@@ -38,7 +35,7 @@ end else if s[0] eq 3 then begin
                     -27.*(f[*,m1-2:m2-2,*]+f[*,m1+2:m2+2,*])$
                      +2.*(f[*,m1-3:m2-3,*]+f[*,m1+3:m2+3,*])$
                    )
-  d=d-dd
+  if not lequidist[1] then d=d+dd
   
 end
 ;

@@ -20,7 +20,7 @@ if lequidist[0] then begin
 endif else begin
   tt = where(xprim eq 0)
   if (tt[0] ne -1) then  xprim[tt] = 1
-  dx2=spread(spread(1./(60.*xprim),1,ny),2,nz)
+  dx2=spread(spread(xprim/60.,1,ny),2,nz)
 endelse
 
 s=size(f)

@@ -21,7 +21,7 @@ if lequidist[2] then begin
 endif else begin
   tt = where(zprim eq 0)
   if (tt[0] ne -1) then  zprim[tt] = 1 
-  dz2=spread(spread(1./(60.*zprim),0,nx),1,ny)
+  dz2=spread(spread(zprim/60.,0,nx),1,ny)
 endelse
 ;
 

@@ -20,7 +20,7 @@ if lequidist[1] then begin
 endif else begin
   tt = where(yprim eq 0)
   if (tt[0] ne -1) then  yprim[tt] = 1 
-  dy2=spread(spread(1./(60.*yprim),0,nx),2,nz)
+  dy2=spread(spread(yprim/60.,0,nx),2,nz)
 endelse
 ;
 if m2 gt m1 then begin
