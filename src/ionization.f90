@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.106 2003-10-02 15:37:44 theine Exp $
+! $Id: ionization.f90,v 1.107 2003-10-02 16:14:39 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.106 2003-10-02 15:37:44 theine Exp $")
+           "$Id: ionization.f90,v 1.107 2003-10-02 16:14:39 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -110,14 +110,9 @@ module Ionization
 !   12-aug-03/tony: implemented
 !
       real, intent(out) :: mu
-
-!  mu = mu_H * (1 - xHe) + mu_He * xHe 
-!     = mu_H + (mu_He-mu_H) * xHe
-!  mu_H = 1.
-!  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
-!        = 3.97
 !
-      mu=1.+2.97153*xHe  
+      mu=1.+3.97153*xHe  
+!
     endsubroutine getmu
 !***********************************************************************
     subroutine initialize_ionization()
