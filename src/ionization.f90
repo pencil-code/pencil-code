@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.5 2003-02-04 13:15:08 brandenb Exp $
+! $Id: ionization.f90,v 1.6 2003-02-20 15:34:01 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -49,7 +49,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.5 2003-02-04 13:15:08 brandenb Exp $")
+           "$Id: ionization.f90,v 1.6 2003-02-20 15:34:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -97,7 +97,8 @@ module Ionization
         call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdS)
         call logtemperature(lnrho,ss,yH,logTT)
         cs2=kB_over_mp*exp(logTT)*dlnPdlnrho
-        TT1=exp(-logTT)                              ! /c_p ?
+        TT1=exp(-logTT)                     ! /c_p ?
+        TT1=exp(-logTT)/kB_over_mp          !(better?)
         cp1tilde=dlnPdS/dlnPdlnrho
       else
 !
@@ -118,7 +119,8 @@ module Ionization
         dlnPdS=gamma1
         logTT=gamma1*(lnrho+ss-ss0)
         cs2=kB_over_mp*exp(logTT)*dlnPdlnrho
-        TT1=exp(-logTT)                              ! /c_p ?
+        !TT1=exp(-logTT)                    ! /c_p ?
+        TT1=exp(-logTT)/kB_over_mp          !(better?)
         cp1tilde=dlnPdS/dlnPdlnrho
       endif
 !
