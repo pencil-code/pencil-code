@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.2 2003-11-24 16:10:43 dobler Exp $
+; $Id: wdvelovect.pro,v 1.3 2004-02-09 17:24:47 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -89,7 +89,8 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;
 ;       MAXVEC: Maximum number of arrows; either a scalar (limit total
 ;               number) or an array [maxvecx,maxvecy]. A value of zero
-;               means no limit. Default is maxvec=[20,20].
+;               means no limit. The default tries to keep the arrows
+;               visible, based on screen resolution.
 ;
 ;       NOPLOT: Do not plot any arrows. Useful for just establishing
 ;               the coordinate system like PLOT_3D_VECT does.
@@ -193,8 +194,18 @@ bady:            message, 'Y array has incorrect size.'
               if n_elements(y) ne s[2] then goto,bady
         endelse
 ; wd: regrid data if too many points
+        xwidth = !x.window[1] - !x.window[0]
+        ywidth = !y.window[1] - !y.window[0]
         case n_elements(maxvec) of
-          0: maxvec = [20,20]   ; default values
+          0: begin  ; default settings
+            if ((!d.flags and 1) eq 0) then begin ; fixed-size pixels
+              npix = 9    ; make longest arrows that many pixels long
+              maxvec = [!d.x_vsize*xwidth, !d.y_vsize*ywidth]/npix
+            endif else begin    ; scalable pixels
+              nmms = 2.0      ;  make longest arrows that many mm long
+              maxvec = [!d.x_vsize*xwidth, !d.y_vsize*ywidth]/(nmms*100)
+            endelse
+          end
           1: maxvec = floor([sqrt(maxvec*sx/sy), sqrt(maxvec*sy/sx)])
           else:                 ; nothing to do
         endcase
@@ -210,6 +221,8 @@ bady:            message, 'Y array has incorrect size.'
           ny = maxvec[1]
           regrid = 1
         endif
+        nx = floor(nx)
+        ny = floor(ny)
         if (regrid) then begin
           if ((quiet eq 0) and (noplot eq 0)) then begin
             message, /INFO, $
@@ -273,10 +286,13 @@ bady:            message, 'Y array has incorrect size.'
 	y_b1=y1+y_step
         if (not keyword_set(overplot)) then begin
 ;         if n_elements(position) eq 0 then begin
-          if ((n_elements(xrange) le 1) or (xrange[0] eq xrange[1])) $
-              then xrange=[x_b0,x_b1]
-          if ((n_elements(yrange) le 1) or (yrange[0] eq yrange[1])) $
-              then yrange=[y_b0,y_b1]
+          ;; The following would be clearer in the form
+          ;;   if ((n_elts(xr) le 1) or (xr[0] eq xr[1])) then xr = [..] ,
+          ;; but IDL doesn't support logical shortcircuiting
+          if (n_elements(xrange) le 1) then xrange=[x_b0,x_b1]
+          if (xrange[0] eq xrange[1])  then xrange=[x_b0,x_b1]
+          if (n_elements(yrange) le 1) then yrange=[y_b0,y_b1]
+          if (yrange[0] eq yrange[1])  then yrange=[y_b0,y_b1]
             plot,[x_b0,x_b1],[y_b1,y_b0],/nodata,/xst,/yst, $
               color=color, xrange=xrange, yrange=yrange, $
               _EXTRA = extra
