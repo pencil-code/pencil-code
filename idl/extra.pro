@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.26 2003-10-01 17:03:16 theine Exp $
+;  $Id: extra.pro,v 1.27 2003-10-02 17:07:15 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -42,7 +42,7 @@ if (ilnrho ne 0) then begin
 end
 ;
 if (iqrad ne 0) then QQrad=Qrad(l1:l2,m1:m2,n1:n2)
-if (iqrad ne 0) then SSrad=sigmaSB*TTT^4/!pi
+if (iqrad ne 0) then SSrad=Srad0*(TTT/TT_ion)^4
 if (iqrad ne 0) then kaprho=.25*exp(2*llnrho-lnrho_e_)*(TT_ion_/TTT)^1.5 $
                             *exp(TT_ion_/TTT)*yyH*(1.-yyH)*kappa0
 ;

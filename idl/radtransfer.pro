@@ -2,8 +2,8 @@
 ;;; radtransfer.pro
 ;;;
 ;;; Author: Tobias Heinemann
-;;; $Date: 2003-10-01 17:03:16 $
-;;; $Revision: 1.2 $
+;;; $Date: 2003-10-02 17:07:15 $
+;;; $Revision: 1.3 $
 ;;;
 ;;; Description:
 ;;;   Re-implementation of some radiative-transfer routines in IDL, for
@@ -29,7 +29,7 @@ pro radcalc
 
   ioncalc,lnrho,ss,yH,TT
 
-  Srad=sigmaSB*TT^4/!pi
+  Srad=Srad0*(TT/TT_ion)^4
   kaprho=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)^1.5 $
             *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
 
