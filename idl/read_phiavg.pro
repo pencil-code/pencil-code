@@ -7,7 +7,7 @@
 ;;;  Date:   11-Aug-2003
 ;;;
 ;;;  Description:
-p;;;   Read phi-averages from file and return them in a structure
+;;;   Read phi-averages from file and return them in a structure
 ;;;  File format:
 ;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
 ;;;    2. t, r_phiavg, z_phiavg, dr, dz
