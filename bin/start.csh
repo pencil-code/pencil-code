@@ -15,6 +15,9 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
+# Set up PATH for people who don't include $PENCIL_HOME/bin by default
+setenv PATH ${PATH}:${PENCIL_HOME}/bin
+
 # Prevent code from running twice (and removing files by accident)
 if (-e "LOCK") then
   echo ""
