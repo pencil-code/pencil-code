@@ -6,6 +6,11 @@
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
 
+function param
+; Dummy to keep IDL from complaining. The real param() routine will be
+; compiled below
+end
+
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 @xder_6th_ghost
