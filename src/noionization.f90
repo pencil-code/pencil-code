@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.5 2003-03-24 18:44:29 brandenb Exp $
+! $Id: noionization.f90,v 1.6 2003-03-25 05:42:57 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -71,7 +71,7 @@ module Ionization
 !  if ionization turned off, continue assuming cp=1
 !  with IONIZATION=noionization this is the only option
 !
-        if(headtt) print*,'thermodynamics: assume cp=1'
+        !if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
         if(present(Temperature)) Temperature=cs2/gamma1

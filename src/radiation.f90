@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.19 2003-03-24 18:44:29 brandenb Exp $
+! $Id: radiation.f90,v 1.20 2003-03-25 05:42:57 brandenb Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.19 2003-03-24 18:44:29 brandenb Exp $")
+           "$Id: radiation.f90,v 1.20 2003-03-25 05:42:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,6 +90,20 @@ module Radiation
       endif
 !
     endsubroutine register_radiation
+!***********************************************************************
+    subroutine radtransfer(f)
+!
+!  Integration radioation transfer equation along rays
+!
+!  24-mar-03/axel+tobi: coded
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      if(ip==0) print*,f !(keep compiler quiet)
+    endsubroutine radtransfer
 !***********************************************************************
     subroutine initialize_radiation()
 !
