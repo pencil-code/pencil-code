@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.94 2002-10-09 14:54:34 dobler Exp $ 
+! $Id: sub.f90,v 1.95 2002-10-22 12:34:28 brandenb Exp $ 
 
 module Sub 
 
@@ -708,6 +708,45 @@ module Sub
       g(:,3)=tmp1-tmp2
 !
     endsubroutine curl
+!***********************************************************************
+    subroutine curli(f,k,g,i)
+!
+!  calculate curl of a vector, get vector
+!  22-oct-02/axel+tarek: adapted from curl
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: g
+      real, dimension (nx) :: tmp1,tmp2
+      integer :: k,k1,i
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+      k1=k-1
+!
+      select case (i)
+!
+      case(1)
+      call der(f,k1+3,tmp1,2)
+      call der(f,k1+2,tmp2,3)
+      g=tmp1-tmp2
+!
+      case(2)
+      call der(f,k1+1,tmp1,3)
+      call der(f,k1+3,tmp2,1)
+      g=tmp1-tmp2
+!
+      case(3)
+      call der(f,k1+2,tmp1,1)
+      call der(f,k1+1,tmp2,2)
+      g=tmp1-tmp2
+!
+      endselect
+!
+    endsubroutine curli
 !***********************************************************************
     subroutine del2(f,k,del2f)
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.102 2002-10-10 08:53:20 dobler Exp $
+! $Id: cdata.f90,v 1.103 2002-10-22 12:34:28 brandenb Exp $
 
 module Cdata
 
@@ -64,6 +64,7 @@ module Cdata
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
   logical :: lfirstpoint
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
+  logical :: ab_spec=.false.,ou_spec=.false.
   logical :: test_nonblocking=.false.
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz

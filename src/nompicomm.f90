@@ -364,4 +364,24 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 
 end subroutine transform
 !***********************************************************************
+subroutine transform_i(a_re,a_im)
+!
+!  Subroutine to do fourier transform
+!  The routine overwrites the input data
+!
+!  22-oct-02/axel+tarek: adapted from transform
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+!
+  if(lroot .AND. ip<10) print*,'doing fft'
+  call fft(a_re,a_im, nx*ny*nz, nx, nx      ,-1)
+  call fft(a_re,a_im, nx*ny*nz, ny, nx*ny   ,-1)
+  call fft(a_re,a_im, nx*ny*nz, nz, nx*ny*nz,-1)
+  
+  ! Normalize
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+
+end subroutine transform_i
+!***********************************************************************
 endmodule Mpicomm

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.104 2002-10-16 14:42:19 brandenb Exp $
+! $Id: run.f90,v 1.105 2002-10-22 12:34:28 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.104 2002-10-16 14:42:19 brandenb Exp $")
+             "$Id: run.f90,v 1.105 2002-10-22 12:34:28 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -190,7 +190,7 @@
           !  and do other output.
           !
           if(lout) call write_xyaverages()
-          if(lout) call write_zaverages()
+          if(lout.and.lwrite_zaverages) call write_zaverages()
           if(lout) call prints()
           if (ialive /= 0) then ! set ialive=0 to fully switch this off
             if (mod(it,ialive)==0) &

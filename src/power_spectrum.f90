@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.9 2002-10-09 14:05:31 mee Exp $
+! $Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -22,6 +22,9 @@ module  power_spectrum
 !***********************************************************************
     subroutine power(f,sp)
 !
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in
   real, dimension (mx,my,mz,mvar) :: f
@@ -36,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.9 2002-10-09 14:05:31 mee Exp $")
+       "$Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -118,7 +121,126 @@ module  power_spectrum
      close(1)
   endif
   !
-end subroutine power
+  endsubroutine power
+!***********************************************************************
+  subroutine power_hel(f,sp)
+!
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+  integer, parameter :: nk=nx/2
+  integer :: i,k,ikx,iky,ikz,ivec
+  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
+  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nk) :: spectrum_hel=0.,spectrum_hel_sum=0
+  integer, dimension(nxgrid) :: kx
+  integer, dimension(nygrid) :: ky
+  integer, dimension(nzgrid) :: kz
+  character (len=3) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call cvs_id( &
+       "$Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $")
+  !
+  !    Stopping the run if FFT=nofft
+  !
+  if (.NOT. lfft) call stop_it( 'You need FFT=fft in Makefile.local to get power spectra')
+  !
+  !  define wave vector
+  !
+  kx=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
+  ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
+  kz=cshift((/(i-(nzgrid-1)/2,i=0,nzgrid-1)/),+(nzgrid-1)/2)*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  spectrum=0
+  spectrum_hel=0
+  !
+  !  loop over all the components
+  !
+  do ivec=1,3
+    !
+    !  In fft, real and imaginary parts are handled separately.
+    !  For "kin", calculate spectra of <uk^2> and <ok.uk>
+    !  For "mag", calculate spectra of <bk^2> and <ak.bk>
+    !
+    if (sp=='kin') then
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iuu,a_re,ivec)
+        enddo
+      enddo
+      b_re=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
+      a_im=0.
+      b_im=0.
+    elseif (sp=='mag') then
+      do n=n1,n2
+        do m=m1,m2
+          call curli(f,iaa,b_re,ivec)
+        enddo
+      enddo
+      a_re=f(l1:l2,m1:m2,n1:n2,iaa+ivec-1)
+      a_im=0.
+      b_im=0.
+    endif
+    !
+    !  Doing the Fourier transform
+    !
+    call transform_i(a_re,a_im)
+    call transform_i(b_re,b_im)
+    !
+    !  integration over shells
+    !
+    if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+    do ikz=1,nz
+      do iky=1,ny
+        do ikx=1,nx
+          k=nint(sqrt(float(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2)))
+          if(k>=0 .and. k<=(nk-1)) then
+            spectrum(k+1)=spectrum(k+1) &
+               +b_re(ikx,iky,ikz)**2 &
+               +b_im(ikx,iky,ikz)**2
+            spectrum_hel(k+1)=spectrum_hel(k+1) &
+               +a_re(ikx,iky,ikz)*b_re(ikx,iky,ikz) &
+               +a_im(ikx,iky,ikz)*b_im(ikx,iky,ikz)
+          endif
+        enddo
+      enddo
+    enddo
+    !
+  enddo !(from loop over ivec)
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  call mpireduce_sum(spectrum_hel,spectrum_hel_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !
+  !  append to diagnostics file
+  !
+  if (iproc==root) then
+    if (ip<10) print*,'Writing power spectra of variable',sp &
+         ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
+    spectrum_sum=.5*spectrum_sum
+    !
+    open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) spectrum_sum
+    close(1)
+    !
+    open(1,file=trim(datadir)//'/power_hel'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,*) spectrum_hel_sum
+    close(1)
+  endif
+  !
+  endsubroutine power_hel
 !***********************************************************************
     subroutine powersnap(a)
 !
@@ -127,7 +249,6 @@ end subroutine power
 !  30-sep-97/axel: coded
 !  07-oct-02/nils: adapted from wsnap
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
-!  
 !
       use Io
 !
@@ -159,10 +280,10 @@ end subroutine power
          if (vel_spec) call power(a,'u')
          if (mag_spec) call power(a,'b')
          if (vec_spec) call power(a,'a')
+         if (ab_spec) call power_hel(a,'mag')
+         if (ou_spec) call power_hel(a,'kin')
       endif
 !
     endsubroutine powersnap
 !***********************************************************************
 end module power_spectrum
-
-
