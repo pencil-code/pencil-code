@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.55 2003-07-01 08:38:49 dobler Exp $
+;;; $Id: start.pro,v 1.56 2003-08-12 22:34:18 mee Exp $
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
@@ -154,6 +154,7 @@ if (cpar gt 0) then begin
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
   lionization=par.lionization
+  lionization_fixed=par.lionization_fixed
   lvisc_shock=par.lvisc_shock
   lpscalar  = par.lpscalar
   ldustvelocity = par.ldustvelocity
