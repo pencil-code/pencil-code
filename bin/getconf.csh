@@ -32,6 +32,12 @@ if ($mpi) then
     set mpirun = /usr/bin/mpirun
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
+  else if ($hn =~ fe) then
+    #  is that the right place??
+    set nodelist = `cat $PBS_NODEFILE`
+    cat $PBS_NODEFILE > lamhosts
+    lamboot -v lamhosts
+    set mpirun = mpirun
   else
     set mpirun = mpirun
   endif
