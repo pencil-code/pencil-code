@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.128 2004-08-27 13:58:13 ajohan Exp $
+# $Id: getconf.csh,v 1.129 2004-08-31 17:20:39 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -569,9 +569,14 @@ else
   rm -f SGIFIX
 endif
 
-# Wrap up nodelist as (scalar, colon-separateds) environment variable
+# Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
-setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
+if ($one_local_disc) then
+  make copy-snapshots copy only once
+  setenv NODELIST $nodelist[1]
+else
+  setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
+endif
 
 if ($debug) then
   echo '$mpi            = ' "<$mpi>"

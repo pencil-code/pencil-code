@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.33 2004-07-25 15:56:22 brandenb Exp $
+# CVS: $Id: copy-snapshots,v 1.34 2004-08-31 17:20:39 dobler Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -49,7 +49,7 @@ endif
 if ($?varfile) then		# explicit filename given
   echo "======================== $varfile ========================"
   foreach node ($nodelist)
-    echo "---------------------- $node ---------------------------"
+    echo "---------------------- $node --------------------------- "
     echo "copy-snapshots: working on $node.."
     if ($debug) then
       printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR/allprocs/$varfile :\n"
@@ -111,7 +111,7 @@ else				# no explicit file given -- copy VARN, TAVGN
 	## New scheme
 	echo "New scheme for copying (based on varN.list)"
 	foreach node ($nodelist)
-	  if ($debug) echo "---------------------- $node ---------------------------"
+	  if ($debug) echo "---------------------- $node --------------------------- "
 	  cd $SCRATCH_DIR	# just for debug output, but doesn't harm
 	  if ($debug) then
 	    echo "cd $SCRATCH_DIR; ls allprocs proc0 --> "`ls allprocs proc0`
@@ -121,7 +121,27 @@ else				# no explicit file given -- copy VARN, TAVGN
 #	  foreach d (`cd $SCRATCH_DIR; ls -d allprocs proc*`)
 #	    set fdir = $SCRATCH_DIR/$d
 #	    echo "d = <$d>;  fdir = <$fdir>"
+
 #            set remcmd = 'for f in `cat '"$fdir"'/*.list 2> /dev/null`; do file="'"$fdir"'/$f"; if [ -e $file ]; then echo "Moving $file to '"$targetdir/$d/"'"; mv -f $file '"$targetdir/$d/"'; fi; done;'
+
+          ## Construct remote command that will do approximately the
+          ## following thing (strongly complicated by the pathetic shell
+          ## quoting rules. ceterum censeo: This script should be written
+          ## in Perl):
+	  ##
+	  ##   for d in `cd $SCRATCH_DIR; ls -d allprocs proc*`; do
+	  ##       fdir="$SCRATCH_DIR/$d"
+	  ##       for f in `cat $fdir/*.list`; do
+	  ##           file=$fdir/$f
+	  ##           if [ -e $file ]; then
+	  ##               echo "Moving $file to $targetdir/$d/"
+	  ##               mv -f $file $targetdir/$d/"
+	  ##           fi
+	  ##       done
+	  ##   done
+	  ##
+	  ## This runs as a POSIX (Bourne) shell script on the remote
+          ## side, so wo can write a full for(each) loop in one line.
           set remcmd = 'for d in `cd "'"$SCRATCH_DIR"'"; ls -d allprocs proc* 2> /dev/null`; do fdir="'"$SCRATCH_DIR"'/$d"; for f in `cat $fdir/*.list 2> /dev/null`; do file=$fdir/$f; if [ -e $file ]; then echo "Moving $file to '"$targetdir"'/$d/"; mv -f $file "'"$targetdir"'/$d/"; fi; done; done;'
 ##	    if ($debug) echo "$SSH $node sh < $remshcmd"
 ##	    echo "$remshcmd" | $SSH $node sh
@@ -129,7 +149,7 @@ else				# no explicit file given -- copy VARN, TAVGN
           $SSH $node sh -c "'$remcmd'"
 #	  if ($debug) echo
 #	  end
-	  if ($debug) echo "--------------------------------------------------------"
+	  if ($debug) echo "-------------------------------------------------------- "
 	end
 
       else
@@ -175,7 +195,7 @@ else				# no explicit file given -- copy VARN, TAVGN
 endif
 
 if ($debug) echo "copy-snapshots: done"
-echo "------------------------------------------------------"
+echo "------------------------------------------------------ "
 
 #TEST-BEGIN
 if($debug) then
