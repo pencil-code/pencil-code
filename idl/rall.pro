@@ -135,18 +135,18 @@ zz = spread(x, [0,1], [mx,my])
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, ' var        minval         maxval            mean           rms'
-for j=0,2 do $
-    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
-    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-print, FORMAT=fmt, 'lnrho  =', $
-    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-if (lentropy) then $
-    print, FORMAT=fmt, 'ss  =', $
-      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-if (lmagnetic) then $
-    for j=0,2 do $
-      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
-      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+;for j=0,2 do $
+;    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
+;    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+;print, FORMAT=fmt, 'lnrho  =', $
+;    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+;if (lentropy) then $
+;    print, FORMAT=fmt, 'ss  =', $
+;      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+;if (lmagnetic) then $
+;    for j=0,2 do $
+;      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
+;      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 
