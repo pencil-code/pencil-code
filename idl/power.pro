@@ -2,7 +2,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
           tot=tot,lin=lin,png=png,yrange=yrange
 ;
-;  $Id: power.pro,v 1.20 2003-11-04 21:20:18 brandenb Exp $
+;  $Id: power.pro,v 1.21 2003-11-07 12:49:46 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -101,7 +101,7 @@ size=2*!pi
 ;
 first='true'
 nx=mx-nghostx*2
-print,'nx=',nx
+;print,'nx=',nx
 imax=nx/2
 spectrum1=fltarr(imax)
 if n_elements(size) eq 0 then size=2.*!pi
@@ -155,8 +155,10 @@ if keyword_set(png) then begin
   ;
   !p.charsize=2
   !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
+endif else if (!d.name eq 'PS') then begin
+    set_plot, 'PS'
 endif else begin
-  set_plot, 'x' ;(we may need to be careful hardwiring this)
+    set_plot, 'x'   
 endelse
 ;
 i=1 
