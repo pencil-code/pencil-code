@@ -52,7 +52,7 @@ if [ -z $_sourceme ]; then	# called for the first time?
     if [ -z $_sourceme_quiet ]; then echo "Adding $PENCIL_HOME/bin to PATH"; fi
     PATH=${PATH}:$PENCIL_HOME/bin
     
-    IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
+    IDL_PATH="./idl:../idl:+${PENCIL_HOME}/idl:./data:./tmp:${IDL_PATH=<IDL_DEFAULT>}"
     _sourceme="set"
 
     # export CDPATH PATH IDL_PATH
