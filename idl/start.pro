@@ -6,7 +6,7 @@
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
 
-common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 ;
 @xder_6th_ghost
 @yder_6th_ghost
@@ -21,21 +21,18 @@ default, file, 'var.dat'
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
-nx=0L & ny=0L & nz=0L & nvar=0L
+mx=0L & my=0L & mz=0L & nvar=0L
 prec=''
-nghx=0L & nghy=0L & nghz=0L
+nghostx=0L & nghosty=0L & nghostz=0L
 ;
 close,1
 openr,1,datadir+'/'+'dim.dat'
-readf,1,nx,ny,nz,nvar
+readf,1,mx,my,mz,nvar
 readf,1,prec
-readf,1,nghx,nghy,nghz
+readf,1,nghostx,nghosty,nghostz
 close,1
 ;
-nw=nx*ny*nz  ;(this must be calculated; its not in dim.dat)
-;nxtot = nx+2*nghx
-;nytot = ny+2*nghy
-;nztot = nz+2*nghz
+mw=mx*my*mz  ;(this must be calculated; its not in dim.dat)
 prec = (strtrim(prec,2))        ; drop leading zeros
 prec = strmid(prec,0,1)
 if ((prec eq 'S') or (prec eq 's')) then begin
@@ -82,7 +79,7 @@ endelse
 ;  Read grid
 ;
 t=zero
-x=fltarr(nx)*one & y=fltarr(ny)*one & z=fltarr(nz)*one
+x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gfile=datadir+'/'+'grid.dat'
 dummy=findfile(gfile, COUNT=cgrid)
@@ -96,11 +93,16 @@ endif else begin
   print, 'Warning: cannot find file ', gfile
 endelse
 ;
+print,'calculating xx,yy,zz (comment this out if there is not enough memory)'
+xx = spread(x, [1,2], [my,mz])
+yy = spread(y, [0,2], [mx,mz])
+zz = spread(z, [0,1], [mx,my])
+;
 ;  set boundary values for physical (sub)domain
 ;
-l1=3 & l2=nx-4
-m1=3 & m2=ny-4
-n1=3 & n2=nz-4
+l1=3 & l2=mx-4
+m1=3 & m2=my-4
+n1=3 & n2=mz-4
 ;
 print, '..done'
 ;
