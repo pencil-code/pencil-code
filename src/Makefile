@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.120 2002-11-13 16:41:33 brandenb Exp $
+### $Id: Makefile,v 1.121 2002-11-13 18:50:18 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -133,7 +133,7 @@ LDFLAGS=$(FFLAGS)
 
 #####
 
-default: makefile cparam.inc code read_videofiles.x
+default: makefile cparam.inc code
 
 pacx: pacx-makefile cparam.inc code
 
@@ -145,7 +145,7 @@ pacx-makefile: Makefile
 cparam.inc: Makefile Makefile.local
 	mkcparam Makefile Makefile.local -o cparam.inc
 code:
-	make start.x run.x
+	make start.x run.x read_videofiles.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
