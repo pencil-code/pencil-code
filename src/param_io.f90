@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.144 2003-11-23 21:59:37 brandenb Exp $ 
+! $Id: param_io.f90,v 1.145 2003-11-24 08:30:59 brandenb Exp $ 
 
 module Param_IO
 
@@ -48,6 +48,7 @@ module Param_IO
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
   logical :: lread_oldsnap=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
+  character (len=1) :: slice_position='p'
   !
   ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
   ! under IRIX -- at least for the moment
@@ -67,7 +68,7 @@ module Param_IO
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,lwrite_phiaverages,test_nonblocking, &
-       ix,iy,iz,iz2, &
+       ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
@@ -457,11 +458,26 @@ module Param_IO
           endif
         endif
       endif
+!
+!  set slice position. The default for slice_position is 'p' for periphery,
+!  although setting ix, iy, iz, iz2 by hand will overwrite this.
+!  If slice_position is not 'p', then ix, iy, iz, iz2 are overwritten.
+!
+      if (slice_position=='m') then
+        ix=(l1+l2)/2
+        iy=m1
+        iz=n1
+        iz2=n2
+        if(nprocy==1) then; iy=(m1+m2)/2; endif
+        if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
+      endif
 !  
 !  make sure ix,iy,iz,iz2 are not outside the boundaries
 !
       ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
       ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
+      if (lroot) write(*,'(x,a,4i4)') &
+        'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries
