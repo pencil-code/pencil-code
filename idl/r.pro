@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.31 2002-07-31 18:05:26 brandenb Exp $
+; $Id: r.pro,v 1.32 2002-08-02 07:09:09 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -44,9 +44,9 @@ if (cpar gt 0) then begin
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
-    cheat=par2.cheat & wheat=par2.wheat
+    Luminosity=par2.Luminosity & wheat=par2.wheat
     cool=par2.cool & wcool=par2.wcool
-    Fheat=par2.Fheat
+    Fbot=par2.Fbot
   endif
 endif else begin
   print, 'Warning: cannot find file ', pfile
