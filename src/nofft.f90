@@ -2,7 +2,7 @@
 !
 !  dummy routine for fft.f
 !
-        use cdata
+        use Cdata, only: lfft
 !
       real :: a,b
       integer :: ntot,n,nspan,isn
