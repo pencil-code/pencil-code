@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.58 2002-08-19 06:48:46 brandenb Exp $
+! $Id: hydro.f90,v 1.59 2002-08-21 03:29:25 brandenb Exp $
 
 module Hydro
 
@@ -25,12 +25,12 @@ module Hydro
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
-  real :: tau_damp_uym=0.
+  real :: tau_damp_uxm=0.,tau_damp_uym=0.
   namelist /hydro_run_pars/ &
        nu,ivisc, &
        Omega,theta, &
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
-       tau_damp_uym
+       tau_damp_uxm,tau_damp_uym
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.58 2002-08-19 06:48:46 brandenb Exp $")
+           "$Id: hydro.f90,v 1.59 2002-08-21 03:29:25 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -452,6 +452,7 @@ module Hydro
 !
 !  add the possibility of removing a mean flow in the y-direction
 !
+      if (tau_damp_uxm/=0.) call damp_uxm(f,df)
       if (tau_damp_uym/=0.) call damp_uym(f,df)
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -493,6 +494,47 @@ module Hydro
       endif
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine damp_uxm(f,df)
+!
+!  Damps mean ux velocity, uxm, to zero.
+!  This can be useful in situations where a mean flow is generated.
+!  This tends to be the case when there is linear shear but no rotation
+!  and the turbulence is forced. A constant drift velocity in the
+!  x-direction is most dangerous, because it leads to a linear increase
+!  of <uy> due to the shear term. If there is rotation, the epicyclic
+!  motion brings one always back to no mean flow on the average.
+!
+!  20-aug-02/axel: adapted from damp_uym
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension(nx) :: ux
+      real :: tau_damp_uxm1
+      real, save :: uxm=0.,ux_sum=0.
+!
+!  at the beginning of each timestep we calculate uxm
+!  using the sum of ux over all meshpoints, ux_sum,
+!  that was calculated at the end of the previous step.
+!  This result is only known on the root processor and
+!  needs to be broadcasted.
+!
+      if(lfirstpoint) then
+        if(lroot) then
+          uxm=ux_sum/(nw*ncpus)
+          call mpibcast_real(uxm,1)
+        endif
+      endif
+!
+      ux=f(l1:l2,m,n,iux)
+      call sum_mn(ux,ux_sum)
+      tau_damp_uxm1=1./tau_damp_uxm
+      df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-tau_damp_uxm1*uxm
+!
+    endsubroutine damp_uxm
 !***********************************************************************
     subroutine damp_uym(f,df)
 !
