@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.51 2004-02-24 14:14:50 ajohan Exp $
+! $Id: radiation_ray.f90,v 1.52 2004-03-16 14:46:40 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.51 2004-02-24 14:14:50 ajohan Exp $")
+           "$Id: radiation_ray.f90,v 1.52 2004-03-16 14:46:40 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -315,8 +315,8 @@ module Radiation
       do m=mmstart,mmstop,msign
 !
         do l=llstart,llstop,lsign 
-          dtau_m=exp((lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n))/2)*dlength
-          dtau_p=exp((lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad))/2)*dlength
+          dtau_m=sqrt(exp(lnchi(l-lrad,m-mrad,n-nrad)+lnchi(l,m,n)))*dlength
+          dtau_p=sqrt(exp(lnchi(l,m,n)+lnchi(l+lrad,m+mrad,n+nrad)))*dlength
           dSdtau_m=(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad))/dtau_m
           dSdtau_p=(Srad(l+lrad,m+mrad,n+nrad)-Srad(l,m,n))/dtau_p
           Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
