@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $
+! $Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -33,15 +33,15 @@ module  power_spectrum
   real, dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
   real, dimension(nx,3) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
-  integer, dimension(nxgrid) :: kx
-  integer, dimension(nygrid) :: ky
-  integer, dimension(nzgrid) :: kz
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
   character (len=1) :: sp
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -83,9 +83,9 @@ module  power_spectrum
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !
-  kx=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid-1)/2,i=0,nzgrid-1)/),+(nzgrid-1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
   !
   !  integration over shells
   !
@@ -94,7 +94,7 @@ module  power_spectrum
   do ikz=1,nz
      do iky=1,ny
         do ikx=1,nx
-           k=nint(sqrt(float(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2)))
+           k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
            if(k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
                 +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2 &
                 +a2(ikx,iky,ikz)**2+b2(ikx,iky,ikz)**2 &
@@ -141,15 +141,15 @@ module  power_spectrum
   real, dimension(nx) :: bbi
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nk) :: spectrumhel=0.,spectrumhel_sum=0
-  integer, dimension(nxgrid) :: kx
-  integer, dimension(nygrid) :: ky
-  integer, dimension(nzgrid) :: kz
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
   character (len=3) :: sp
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.20 2002-10-30 18:21:16 dobler Exp $")
+       "$Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -158,9 +158,9 @@ module  power_spectrum
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
   !
-  kx=cshift((/(i-(nxgrid-1)/2,i=0,nxgrid-1)/),+(nxgrid-1)/2)*2*pi/Lx
-  ky=cshift((/(i-(nygrid-1)/2,i=0,nygrid-1)/),+(nygrid-1)/2)*2*pi/Ly
-  kz=cshift((/(i-(nzgrid-1)/2,i=0,nzgrid-1)/),+(nzgrid-1)/2)*2*pi/Lz
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
   !
   !  initialize power spectrum to zero
   !
@@ -223,7 +223,7 @@ module  power_spectrum
     do ikz=1,nz
       do iky=1,ny
         do ikx=1,nx
-          k=nint(sqrt(float(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2)))
+          k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
           if(k>=0 .and. k<=(nk-1)) then
             spectrum(k+1)=spectrum(k+1) &
                +b_re(ikx,iky,ikz)**2 &
