@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.55 2004-05-11 07:44:25 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.56 2004-05-11 08:42:36 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -87,7 +87,7 @@ module Dustvelocity
         iudz(k) = nvar+3
         nvar = nvar+3                ! add 3 variables pr. dust layer
 !
-        if ((ip<=80) .and. lroot) then
+        if ((ip<=8) .and. lroot) then
           print*, 'register_dustvelocity: nvar = ', nvar
           print*, 'register_dustvelocity: k = ', k
           print*, 'register_dustvelocity: iudx,iudy,iudz = ', &
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.55 2004-05-11 07:44:25 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.56 2004-05-11 08:42:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
