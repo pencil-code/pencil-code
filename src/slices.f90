@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.18 2003-09-01 07:56:10 nilshau Exp $
+! $Id: slices.f90,v 1.19 2003-09-10 11:13:24 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -12,12 +12,15 @@ module Slices
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
+  real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
+  real, dimension (nx,nz) :: TT_xz,yH_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
+  real, dimension (ny,nz) :: TT_yz,yH_yz
 
   contains
 
@@ -66,6 +69,7 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !
       use Sub
+      use Ionization  !!(we should move lionization to cdata)
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       character (len=*) :: path
@@ -158,6 +162,32 @@ module Slices
         call wslice(path//'ss.xz',ss_xz,y(iy),nx,nz)
         call wslice(path//'ss.xy',ss_xy,z(iz),nx,ny)
         call wslice(path//'ss.Xy',ss_xy2,z(iz2),nx,ny)
+      endif
+!
+!  Temperature
+!
+      if (lionization) then
+        TT_yz=f(ix,m1:m2,n1:n2,iTT)
+        TT_xz=f(l1:l2,iy,n1:n2,iTT)
+        TT_xy=f(l1:l2,m1:m2,iz,iTT)
+        TT_xy2=f(l1:l2,m1:m2,iz2,iTT)
+        call wslice(path//'TT.yz',TT_yz,x(ix),ny,nz)
+        call wslice(path//'TT.xz',TT_xz,y(iy),nx,nz)
+        call wslice(path//'TT.xy',TT_xy,z(iz),nx,ny)
+        call wslice(path//'TT.Xy',TT_xy2,z(iz2),nx,ny)
+      endif
+!
+!  Degree of ionization
+!
+      if (lionization) then
+        yH_yz=f(ix,m1:m2,n1:n2,iyH)
+        yH_xz=f(l1:l2,iy,n1:n2,iyH)
+        yH_xy=f(l1:l2,m1:m2,iz,iyH)
+        yH_xy2=f(l1:l2,m1:m2,iz2,iyH)
+        call wslice(path//'yH.yz',yH_yz,x(ix),ny,nz)
+        call wslice(path//'yH.xz',yH_xz,y(iy),nx,nz)
+        call wslice(path//'yH.xy',yH_xy,z(iz),nx,ny)
+        call wslice(path//'yH.Xy',yH_xy2,z(iz2),nx,ny)
       endif
 !
 !  Magnetic field

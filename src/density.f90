@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.110 2003-08-28 14:35:11 mee Exp $
+! $Id: density.f90,v 1.111 2003-09-10 11:13:24 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -23,7 +23,7 @@ module Density
   real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
-  character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
+  character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.110 2003-08-28 14:35:11 mee Exp $")
+           "$Id: density.f90,v 1.111 2003-09-10 11:13:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

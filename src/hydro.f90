@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.102 2003-09-01 07:56:10 nilshau Exp $
+! $Id: hydro.f90,v 1.103 2003-09-10 11:13:24 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -86,7 +86,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.102 2003-09-01 07:56:10 nilshau Exp $")
+           "$Id: hydro.f90,v 1.103 2003-09-10 11:13:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,9 +148,9 @@ module Hydro
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
                      call jump(f,iuy,uy_left,uy_right,widthuu,'x')
-      case('Beltrami-x'); call beltrami(ampluu,f,iuu,KX=1.)
-      case('Beltrami-y'); call beltrami(ampluu,f,iuu,KY=1.)
-      case('Beltrami-z'); call beltrami(ampluu,f,iuu,KZ=1.)
+      case('Beltrami-x'); call beltrami(ampluu,f,iuu,kx=kx_uu)
+      case('Beltrami-y'); call beltrami(ampluu,f,iuu,ky=ky_uu)
+      case('Beltrami-z'); call beltrami(ampluu,f,iuu,kz=kz_uu)
       case('trilinear-x'); call trilinear(ampluu,f,iux,xx,yy,zz)
       case('trilinear-y'); call trilinear(ampluu,f,iuy,xx,yy,zz)
       case('trilinear-z'); call trilinear(ampluu,f,iuz,xx,yy,zz)
@@ -158,9 +158,9 @@ module Hydro
       case('tor_pert'); call tor_pert(ampluu,f,iux,xx,yy,zz)
       case('diffrot'); call diffrot(ampluu,f,iuy,xx,yy,zz)
       case('olddiffrot'); call olddiffrot(ampluu,f,iuy,xx,yy,zz)
-      case('soundwave-x'); call soundwave(ampluu,f,iux,kx=1.)
-      case('soundwave-y'); call soundwave(ampluu,f,iuy,ky=1.)
-      case('soundwave-z'); call soundwave(ampluu,f,iuz,kz=1.)
+      case('soundwave-x'); call soundwave(ampluu,f,iux,kx=kx_uu)
+      case('soundwave-y'); call soundwave(ampluu,f,iuy,ky=ky_uu)
+      case('soundwave-z'); call soundwave(ampluu,f,iuz,kz=kz_uu)
       case('sound-wave', '11')
         !
         !  sound wave (should be consistent with density module)

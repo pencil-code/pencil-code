@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.114 2003-08-15 08:58:51 brandenb Exp $
+! $Id: start.f90,v 1.115 2003-09-10 11:13:24 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -42,7 +42,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.114 2003-08-15 08:58:51 brandenb Exp $")
+             "$Id: start.f90,v 1.115 2003-09-10 11:13:24 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -140,8 +140,9 @@
 !
         call initialize_modules(f,lstart=.true.)
 !
-!  Initial conditions: read existing snapshot or initialize all variables
-!  to zero
+!  Initial conditions: by default, we put f=0 (ss=lnrho=uu=0, etc)
+!  alternatively: read existing snapshot and overwrite only some fields
+!  by the various procedures below.
 !
         if(lread_oldsnap) then
           print*,'read old snapshot file'
