@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.81 2002-07-02 19:57:36 dobler Exp $
+! $Id: entropy.f90,v 1.82 2002-07-02 20:08:44 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.81 2002-07-02 19:57:36 dobler Exp $")
+           "$Id: entropy.f90,v 1.82 2002-07-02 20:08:44 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -345,7 +345,7 @@ module Entropy
 !
 !  heating/cooling
 !
-      if (cheat /= 0) .or. (cool /= 0)) &
+      if ((cheat /= 0) .or. (cool /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
 !  Calculate entropy related diagnostics
