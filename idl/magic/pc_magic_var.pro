@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.11 2004-09-08 18:56:55 mee Exp $
+; $Id: pc_magic_var.pro,v 1.12 2004-12-06 12:08:13 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-09-08 18:56:55 $
-;  $Revision: 1.11 $
+;  $Date: 2004-12-06 12:08:13 $
+;  $Revision: 1.12 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -74,6 +74,11 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     if variables[iv] eq 'bb' then begin
       tags[iv]=variables[iv]
       variables[iv]='curl(aa)'
+
+    ; Current density 
+    endif else if variables[iv] eq 'jj' then begin
+      tags[iv]=variables[iv]
+      variables[iv]='curl(curl(aa))'
 
     ; Divergence of velocity
     endif else if variables[iv] eq 'divu' then begin
