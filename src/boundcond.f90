@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.70 2004-07-17 02:51:59 theine Exp $
+! $Id: boundcond.f90,v 1.71 2004-08-25 08:50:51 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -1231,13 +1231,15 @@ module Boundcond
        real, dimension (mx,my,mz,mvar+maux) :: f
        real, dimension (nx,ny) :: uxd,uyd,uxl,uxr,uyl,uyr
        integer :: lend,iostat=0,i=0,jpp
-       real :: tl=0.,tr=0.
-              
+       real :: tl=0.,tr=0.,delta_t
+       
        intent (inout) :: f
        
+!       tl=0.
+!       tr=0.
        
 ! Read the time table
-        if (t*unit_time < tl .or. t*unit_time>=tr .and. iostat .ne. -2) then
+        if (t*unit_time < tl+delta_t .or. t*unit_time>=tr+delta_t .and. iostat .ne. -2) then
           
           inquire(IOLENGTH=lend) tl
           close (10)
@@ -1246,21 +1248,22 @@ module Boundcond
           iostat = 0
           i=0
           do while (iostat .eq. 0)
-             i=i+1
-             read (10,rec=i,iostat=iostat) tl          
-             read (10,rec=i+1,iostat=iostat) tr
-             if (iostat .ne. 0) then
-                print*,'No more snapshots of velocity field available!!!!'
-                i=i-1
-                read (10,rec=i,iostat=iostat) tl          
-                read (10,rec=i+1,iostat=iostat) tr
-                iostat=-2                     ! EOF is reached
-             else
-                if(t*unit_time>=tl .and. t*unit_time<tr) iostat=-1 ! correct time step is reached
-             endif
+            i=i+1
+            read (10,rec=i,iostat=iostat) tl          
+            read (10,rec=i+1,iostat=iostat) tr
+            if (iostat .ne. 0) then
+              print*,'No more snapshots of velocity field available!!!!'
+              i=0
+              delta_t = t*unit_time                  ! EOF is reached => read again
+              read (10,rec=i,iostat=iostat) tl          
+              read (10,rec=i+1,iostat=iostat) tr
+              iostat=-1
+            else
+              if(t*unit_time>=tl+delta_t .and. t*unit_time<tr+delta_t)  iostat=-1 ! correct time step is reached
+            endif
           enddo
           close (10)
-          print*,'tmin,t,tmax',tl,t*unit_time,tr
+          print*,'tmin,t,tmax',tl+delta_t,t*unit_time,tr
           
 ! Read velocity field
           open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny,access='direct')
@@ -1273,19 +1276,19 @@ module Boundcond
 !      
 !   simple linear interploation between timesteps
           if (tr .ne. tl) then
-             uxd  = (t*unit_time - tl) * (uxr - uxl) / (tr - tl) + uxl
-             uyd  = (t*unit_time - tl) * (uyr - uyl) / (tr - tl) + uyl       
+             uxd  = (t*unit_time - (tl+delta_t)) * (uxr - uxl) / (tr - tl) + uxl
+             uyd  = (t*unit_time - (tl+delta_t)) * (uyr - uyl) / (tr - tl) + uyl       
           endif
        endif
        
 ! Fill the ghost cells and the bottom layer with vel. field
-       f(l1:l2,m1:m2,n1,iuz) = 0.
+       f(l1:l2,m1:m2,1:n1,iuz) = 0.
        do jpp=1,n1
           f(l1:l2,m1:m2,jpp,iux) = uxd(:,:)/1.e5
           f(l1:l2,m1:m2,jpp,iuy) = uyd(:,:)/1.e5
        enddo
-       if (notanumber(uxd))    print*,'uxd'
-       if (notanumber(uyd))    print*,'uyd'
+       if (notanumber(uxd))    call stop_it('uu_driver: NaN`s in vel. field')
+       if (notanumber(uyd))    call stop_it('uu_driver: NaN`s in vel. field')
      endsubroutine uu_driver
 !***********************************************************************
 endmodule Boundcond
