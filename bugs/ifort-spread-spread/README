@@ -2,7 +2,7 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.4 2004-04-28 16:41:59 brandenb Exp $
+$Id: README,v 1.5 2004-04-28 16:49:58 brandenb Exp $
 
 
 1. Symptoms:
@@ -45,6 +45,30 @@ However, with ifort (Intel Fortran compiler, version 8.0), one gets
     spread_256.x       400A89ED  Unknown               Unknown  Unknown
     spread_256.x       08049C61  Unknown               Unknown  Unknown
 
+With ifort 8.0 Itanium
+
+    spread-tmp: Starting
+    spread-tmp: <f> =    1.000000    
+    spread-tmp: Done.
+ 
+    spread_255: Starting
+    spread_255: <f> =    1.000000    
+    spread_255: Done.
+ 
+    spread_256: Starting
+    spread_256: <f> =    1.000000    
+    spread_256: Done.
+ 
+    spread_1791: Starting
+    spread_1791: <f> =    1.000000    
+    spread_1791: Done.
+ 
+    spread_1792: Starting
+   make: *** [test] Error 139
+
+where the make `Error 139' is caused by `Segmentation fault'.
+
+
 2. Command sequence:
 
 On all machines:
@@ -66,6 +90,8 @@ or
 (or similar)
 
 3. Platforms:
+   32-bit:
+
    SuSE   8.0, Kernel 2.4.18-4GB-SMP, dual AMD Athlon MP 1900+, 1.6  GHz
        ifort 8.0, Build 20031016Z, Package ID: l_fc_p_8.0.034   
    RedHat 9.0, Kernel 2.4.20-28.9smp, dual Pentium III,         0.93 GHz
@@ -73,6 +99,12 @@ or
    Debian 3.0, Kernel 2.4.26,              Pentium 4,           2.0  Ghz
        ifort 8.0, Build 20031016Z
    and ifort 8.0, Build 20040318Z, Package ID: l_fc_pc_8.0.039_pe044.1
+
+   64-bit:
+   SGI ProPack 2.4 for Linux, Build 240rp04021313_10046-0402131355
+               Kernel 2.4.21-sgi240rp04021313_10046
+                                      SMP  Itanium 2,           1.3  GHz
+       ifort 8.0, Build 20040318,  Package ID: l_fc_pc_8.0.039_pl044.1
 
 4. Other compilers tested (OPK means problem could not be reproduced):
    - Intel ifc 6.0 (Linux)  OK

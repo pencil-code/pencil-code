@@ -1,4 +1,9 @@
 # Makefile
+#
+# Usage:
+#   make f90
+#   make FC=ifort test
+
 
 .SUFFIXES: .f90 .x
 
