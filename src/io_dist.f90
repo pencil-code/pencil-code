@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.60 2003-07-30 10:07:21 dobler Exp $
+! $Id: io_dist.f90,v 1.61 2003-08-03 09:26:55 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.60 2003-07-30 10:07:21 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.61 2003-08-03 09:26:55 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -331,6 +331,7 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !
       use Cdata
+      use Mpicomm, only: stop_it
 !
       real :: tdummy
       character (len=*) :: file
@@ -351,6 +352,10 @@ contains
         print*,'dx,dy,dz=',dx,dy,dz
         print*,'dxmin,dxmax=',dxmin,dxmax
       endif
+!
+!  should stop if dxmin=0
+!
+      if (dxmin==0) call stop_it("rgrid: check Lx,Ly,Lz: is one of them 0?")
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
