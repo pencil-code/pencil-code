@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.62 2002-06-13 11:19:10 vpariev Exp $
+! $Id: entropy.f90,v 1.63 2002-06-13 15:55:49 brandenb Exp $
 
 module Entropy
 
@@ -10,12 +10,12 @@ module Entropy
 
   integer :: initss=0
   real, dimension (nx) :: cs2,TT1
-  real :: radius=0.1,amplss=1.
-  real :: chi_t=0.
+  real :: radius_ss=0.1,ampl_ss=0.
+  real :: chi_t=0.,ss0=0.
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,grads0,radius,amplss, &
+       initss,grads0,radius_ss,ampl_ss, &
        hcond0,hcond1,hcond2,whcond, &
        mpoly0,mpoly1,mpoly2,isothtop
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.62 $", &
-           "$Date: 2002-06-13 11:19:10 $")
+           "$Revision: 1.63 $", &
+           "$Date: 2002-06-13 15:55:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -103,12 +103,14 @@ module Entropy
 !  constant ss
 !
         case(1)
-          f(:,:,:,ient)=alog(-gamma1*gravz*zinfty)/gamma
-          if (amplss/=0.) then
-            print*,'put bubble: radius,amplss=',radius,amplss
+          !ss0=alog(-gamma1*gravz*zinfty)/gamma
+          !print*,'isentropic stratification; ss=',ss0
+          f(:,:,:,ient)=0.
+          if (ampl_ss/=0.) then
+            print*,'put bubble: radius_ss,ampl_ss=',radius_ss,ampl_ss
             tmp=xx**2+yy**2+zz**2
-            f(:,:,:,ient)=f(:,:,:,ient)+amplss*exp(-tmp/amax1(radius**2-tmp,1e-20))
-            !f(:,:,:,ient)=f(:,:,:,ient)+amplss*exp(-tmp/radius**2)
+            f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/amax1(radius_ss**2-tmp,1e-20))
+            !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
           endif
 !
 !  linear profile of ss, centered around ss=0.
@@ -536,6 +538,7 @@ module Entropy
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
           !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          zinfty=-cs20/(gamma1*gravz)
           cs2top=cs20*(1-z(n2)/zinfty)
           tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy

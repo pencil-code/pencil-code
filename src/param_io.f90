@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.18 2002-06-12 09:46:03 brandenb Exp $ 
+! $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $ 
 
 module Param_IO
 
@@ -54,7 +54,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.18 2002-06-12 09:46:03 brandenb Exp $
+!   $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -107,7 +107,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.18 2002-06-12 09:46:03 brandenb Exp $
+!   $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -222,10 +222,6 @@ module Param_IO
         print*, "rho0,gamma=", rho0,gamma
       endif
 !
-!  read the print parameter list
-!
-!     call rprint_list
-!  
     endsubroutine rparam
 !***********************************************************************
     subroutine wparam2 ()

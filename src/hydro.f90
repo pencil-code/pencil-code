@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.24 2002-06-10 15:40:05 mattias Exp $
+! $Id: hydro.f90,v 1.25 2002-06-13 15:55:49 brandenb Exp $
 
 module Hydro
 
@@ -63,8 +63,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.24 $", &
-           "$Date: 2002-06-10 15:40:05 $")
+           "$Revision: 1.25 $", &
+           "$Date: 2002-06-13 15:55:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,6 +261,7 @@ module Hydro
 !  
 !  abbreviations
 !
+      if (headtt) print*,'solve duu_dt'
       uu=f(l1:l2,m,n,iux:iuz)
       call dot2_mn(uu,u2)
 !

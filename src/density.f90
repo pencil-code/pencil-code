@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.9 2002-06-12 09:02:24 brandenb Exp $
+! $Id: density.f90,v 1.10 2002-06-13 15:55:49 brandenb Exp $
 
 module Density
 
@@ -7,12 +7,12 @@ module Density
   implicit none
 
   integer :: initlnrho=0
-  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., zinfty=1., widthlnrho=.1, &
+  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20, cs2top, gamma1
+          cs20, cs2top, gamma1, zinfty
 
   namelist /density_init_pars/ &
-       cs0,rho0,ampllnrho,gamma,zinfty,initlnrho,widthlnrho, &
+       cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
        rho_left,rho_right,cs2top
 
   namelist /density_run_pars/ &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-06-12 09:02:24 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-06-13 15:55:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -102,12 +102,10 @@ module Density
           !  physical to specify zinfty, ie the top of the atmosphere.
           !  This is done if zinfty is different from 0.
           !
-          if (zinfty==0.) zinfty=cs20/(gamma1*gravz)  !(zinfty=0 is 
-          if (lroot) print*,'rho=(1-z/zinfty)^gamma1, zinfty=',zinfty
-          !cs20=-gamma1*gravz*zinfty
-          !cs0=sqrt(cs20)
-          !print*,'Note: since zinfty is given, we have reset: cs0=',cs0
-          f(:,:,:,ilnrho)=alog(1.-zz/zinfty)/gamma1
+          print*,'z=',z
+          zinfty=-cs20/(gamma1*gravz)
+          if (lroot) print*,'rho=(1-z/zinfty)^gamma1; zinfty=',zinfty
+          f(:,:,n1:n2,ilnrho)=alog(1.-zz(:,:,n1:n2)/zinfty)/gamma1
         endif
       case(2)
         if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
@@ -157,6 +155,7 @@ module Density
 !
 !  define lnrho; calculate density gradient and avection term
 !
+      if (headtt) print*,'solve dlnrho_dt'
       lnrho=f(l1:l2,m,n,ilnrho)
       call grad(f,ilnrho,glnrho)
       call dot_mn(uu,glnrho,uglnrho)

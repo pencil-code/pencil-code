@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.47 2002-06-11 08:45:51 dobler Exp $
+! $Id: cdata.f90,v 1.48 2002-06-13 15:55:49 brandenb Exp $
 
 module Cdata
 
@@ -22,7 +22,7 @@ module Cdata
   real :: o2m,om2,oum
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,ztop
-  real :: gravz=0.,ss0=0.,grads0=0.   ! (1/c_p)ds/dz
+  real :: gravz=0.,grads0=0.   ! (1/c_p)ds/dz
   real :: urand
 
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.39 2002-06-12 09:02:24 brandenb Exp $
+! $Id: start.f90,v 1.40 2002-06-13 15:55:49 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.39 $", &
-             "$Date: 2002-06-12 09:02:24 $")
+             "$Revision: 1.40 $", &
+             "$Date: 2002-06-13 15:55:49 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -51,8 +51,10 @@
         cs0=1; gamma=5./3.; rho0=1.
 !
 !  read parameters from start.in
+!  call also rprint_list, because it writes iuu, ilnrho, ient, and iaa to disk.
 !
         call read_inipars()
+        call rprint_list(.false.)
 !
 !  write input parameters to a parameter file (for run.x and IDL)
 !

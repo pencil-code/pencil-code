@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.55 2002-06-12 09:46:03 brandenb Exp $ 
+! $Id: sub.f90,v 1.56 2002-06-13 15:55:49 brandenb Exp $ 
 
 module Sub 
 
@@ -1407,7 +1407,7 @@ module Sub
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
-      real :: ampl,radius,epsilon_nonaxi
+      real :: ampl,radius,epsilon_nonaxi,ky
 !
 !  set horizontal flux tubes
 !
@@ -1415,9 +1415,10 @@ module Sub
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
       else
-        print*,'implement y-dependent flux tube in xz-plane'
+        ky=2*pi/Ly
+        print*,'implement y-dependent flux tube in xz-plane; i=',i
         print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
-        modulate=1.+epsilon_nonaxi*sin(yy)
+        modulate=1.+epsilon_nonaxi*sin(ky*yy)
         tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(radius*modulate)**2)
         if ((ip<=8).and.lroot) print*,'horizontal flux tube: i=',i
         f(:,:,:,i  )=+zz*tmp

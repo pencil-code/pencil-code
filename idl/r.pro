@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.17 2002-06-09 12:16:19 brandenb Exp $
+; $Id: r.pro,v 1.18 2002-06-13 15:55:49 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -53,6 +53,9 @@ openr,1, datadir+'/'+file, /F77
   if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
     print,'MHD with entropy'
     readu,1,uu,lnrho,ss,aa
+  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
+    print,'hydro without entropy, but with magnetic field'
+    readu,1,uu,lnrho,aa
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
     print,'hydro with entropy, but no magnetic field'
     readu,1,uu,lnrho,ss

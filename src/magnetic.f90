@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.42 2002-06-10 15:40:05 mattias Exp $
+! $Id: magnetic.f90,v 1.43 2002-06-13 15:55:49 brandenb Exp $
 
 module Magnetic
 
@@ -73,8 +73,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.42 $", &
-           "$Date: 2002-06-10 15:40:05 $")
+           "$Revision: 1.43 $", &
+           "$Date: 2002-06-13 15:55:49 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -225,6 +225,7 @@ module Magnetic
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
+      if (headtt) print*,'solve daa_dt'
       call curl(f,iaa,bb)
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
