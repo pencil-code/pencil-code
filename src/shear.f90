@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.14 2004-01-30 14:26:50 dobler Exp $
+! $Id: shear.f90,v 1.15 2004-01-30 16:08:59 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.14 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: shear.f90,v 1.15 2004-01-30 16:08:59 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -70,7 +70,7 @@ module Shear
       use Deriv
       use Hydro, only:theta
 !
-      integer :: i,j
+      integer :: j,k
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: uy0,dfdy
@@ -106,17 +106,17 @@ module Shear
 !  Loop over dust layers
 !
       if (ldustvelocity) then
-        do i=1,size(iuud)
+        do k=1,size(iuud)
 !
 !  Correct Coriolis force term for all dust layers 
 !
           if (theta==0) then
-            df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
-                - Sshear*f(l1:l2,m,n,iudx(i))
+            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
+                - Sshear*f(l1:l2,m,n,iudx(k))
           else
             if (headtt) print*,'Sure you want Sshear with finite theta??'
-            df(l1:l2,m,n,iudy(i)) = df(l1:l2,m,n,iudy(i)) &
-                - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(i))
+            df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) &
+                - Sshear*cos(theta*pi/180.)*f(l1:l2,m,n,iudx(k))
           endif
 !
 !  End loop over dust layers
