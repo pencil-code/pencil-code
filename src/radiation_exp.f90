@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.16 2003-06-19 12:43:38 theine Exp $
+! $Id: radiation_exp.f90,v 1.17 2003-06-19 21:28:17 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -73,7 +73,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.16 2003-06-19 12:43:38 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.17 2003-06-19 21:28:17 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -261,7 +261,7 @@ module Radiation
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: Irad
       real :: frac
-      integer :: lrad,mrad,nrad,rad2
+      integer :: lrad,mrad,nrad,rad2,i
       integer :: counter=0
 !
 !  identifier
@@ -288,7 +288,12 @@ module Radiation
       do nrad=-radz,-1
       do mrad=-rady,rady
       do lrad=-radx,radx
-        Irad_xy(:,:,:,lrad,mrad,nrad)=0.
+        !in principle ok
+        !Irad_xy(:,:,:,lrad,mrad,nrad)=0.
+        ! to make sure we reproduce old results
+        do i=1,nghost
+          Irad_xy(:,:,i,lrad,mrad,nrad)=1.-exp(dz*i)
+        enddo
       enddo
       enddo
       enddo
