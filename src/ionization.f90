@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.18 2003-03-28 22:15:32 brandenb Exp $
+! $Id: ionization.f90,v 1.19 2003-03-29 06:48:29 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -22,10 +22,12 @@ module Ionization
 
   ! input parameters
   integer :: dummy 
-  namelist /ionization_init_pars/ lionization
+  namelist /ionization_init_pars/ dummy
+!lionization
 
   ! run parameters
-  namelist /ionization_run_pars/ lionization
+  namelist /ionization_run_pars/ dummy
+!lionization
 
   contains
 
@@ -50,7 +52,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.18 2003-03-28 22:15:32 brandenb Exp $")
+           "$Id: ionization.f90,v 1.19 2003-03-29 06:48:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -122,6 +124,8 @@ module Ionization
         call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
                                  dlnPdss=dlnPdss, &
                                  TT=TT)
+print*,'thermodynamics: dlnPdlnrho=',dlnPdlnrho
+print*,'thermodynamics: dlnPdss=',dlnPdss
         TT1=1./TT
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
@@ -173,6 +177,8 @@ module Ionization
       endif
       if (present(dlnPdlnrho).or.present(dlnPdss)) then
          f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+!print*,'m_H/m_p=',m_H/m_p
+print*,'m_H=',m_H
          dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
          dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
       endif
