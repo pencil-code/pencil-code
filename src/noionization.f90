@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.53 2003-08-08 17:21:59 theine Exp $
+! $Id: noionization.f90,v 1.54 2003-08-09 19:47:27 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -70,7 +70,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.53 2003-08-08 17:21:59 theine Exp $")
+           "$Id: noionization.f90,v 1.54 2003-08-09 19:47:27 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -89,10 +89,22 @@ module Ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset)
 !
+!  Writes iyH and iTT to index.pro file
+!
+!  14-jun-03/axel: adapted from rprint_radiation
+!
+      use Cdata
+      use Sub
+! 
       logical :: lreset
+!
+!  write column where which ionization variable is stored
+!
+      write(3,*) 'nname=',nname
+      write(3,*) 'iyH=',iyH
+      write(3,*) 'iTT=',iTT
 !   
-      if(ip==0) print*,lreset  !(keep compiler quiet)
-!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization
 !***********************************************************************
     subroutine ioninit(f)

@@ -1,4 +1,4 @@
-;  $Id: pencilconstants.pro,v 1.4 2003-08-08 07:49:16 brandenb Exp $
+;  $Id: pencilconstants.pro,v 1.5 2003-08-09 19:47:27 mee Exp $
 ;
 ; constants in cgs units
 ;
@@ -57,3 +57,6 @@
   lnrho_e_=1.5*alog((m_e/hbar)*(chiH_/hbar)/2./!pi)+alog(m_H)+alog(mu)
   ss_ion=k_B/m_H/mu
   kappa0=sigmaH_/m_H/mu
+
+
+  impossible=3.9085e37

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.71 2003-08-08 17:21:59 theine Exp $
+! $Id: ionization.f90,v 1.72 2003-08-09 19:47:27 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.71 2003-08-08 17:21:59 theine Exp $")
+           "$Id: ionization.f90,v 1.72 2003-08-09 19:47:27 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -135,6 +135,11 @@ module Ionization
       else
         xHe_term=0.
       endif
+!
+! Set the reference sound speed (used for noionisation) to impossible
+!
+      cs20=impossible
+!
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'

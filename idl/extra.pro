@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.23 2003-08-04 17:59:58 theine Exp $
+;  $Id: extra.pro,v 1.24 2003-08-09 19:47:27 mee Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -29,19 +29,17 @@ if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then begin
   llnrho=lnrho(l1:l2,m1:m2,n1:n2)
   rho=exp(llnrho)
-  if (iss eq 0) then cs2=cs20*exp(gamma1*llnrho)
-  if (iss ne 0 and iyH eq 0) then sss=ss(l1:l2,m1:m2,n1:n2)
-  if (iss ne 0 and iyH eq 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
-  if (iss ne 0 and iyH eq 0) then ppp=rho*cs2/gamma
-  if (iyH ne 0) then yyH=yH(l1:l2,m1:m2,n1:n2)
-  if (iyH ne 0) then TTT=TT(l1:l2,m1:m2,n1:n2)
-  ; the following gives cs2,cp1tilde,eee,ppp
-  if (iss ne 0 and iyH ne 0) then begin
-  @thermodynamics.pro
-  endif
+  if (iss eq 0) then begin
+    cs2=cs20*exp(gamma1*llnrho) 
+  end else begin
+    sss=ss(l1:l2,m1:m2,n1:n2)
+    ; the following gives cs2,cp1tilde,eee,ppp
+    @thermodynamics.pro
+  end
+;ajwm NOT SO SURE THE ENTHALPY IS CORRECT EITHER
   hhh=cs2/gamma1  ;(enthalpy)
 ;
-endif
+end
 ;
 if (iqrad ne 0) then QQrad=Qrad(l1:l2,m1:m2,n1:n2)
 if (iqrad ne 0) then SSrad=sigmaSB*TTT^4/!pi
