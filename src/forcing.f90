@@ -36,8 +36,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-30 07:12:45 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-05-30 17:01:55 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -272,7 +272,7 @@ module Forcing
 !
     endsubroutine forcing_hel
 !***********************************************************************
-    subroutine forcing_fountain(f)
+    subroutine forcing_roberts(f)
 !
 !  add some artificial fountain flow
 !  (to check for example small scale magnetic helicity loss)
@@ -332,6 +332,72 @@ module Forcing
       do m=m1,m2
         f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ffnorm*(+sxx*cy(m)*gz1(n)+cxx*sy(m)*gg(n))
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*(-cxx*sy(m)*gz1(n)+sxx*cy(m)*gg(n))
+        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ffnorm*sxx*sy(m)*gz(n)*2.
+      enddo
+      enddo
+!
+    endsubroutine forcing_roberts
+!***********************************************************************
+    subroutine forcing_fountain(f)
+!
+!  add some artificial fountain flow
+!  (to check for example small scale magnetic helicity loss)
+!
+!  30-may-02/axel: coded
+!
+      use Mpicomm
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: sxx,cxx
+      real, dimension (mx) :: sx,cx
+      real, dimension (my) :: sy,cy
+      real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
+      real :: kx,ky,kz,ffnorm,fac
+!
+!  need to multiply by dt (for Euler step), but it also needs to be
+!  divided by sqrt(dt), because square of forcing is proportional
+!  to a delta function of the time difference
+!
+      kx=kfountain
+      ky=kfountain
+      kz=1.
+!
+      sx=sin(kx*x); cx=cos(kx*x)
+      sy=sin(ky*y); cy=cos(ky*y)
+      sz=sin(kz*z); cz=cos(kz*z)
+!
+!  abbreviation
+!
+      sxx=sx(l1:l2)
+      cxx=cx(l1:l2)
+!
+!  g(z) and g'(z)
+!  use z-profile to cut off
+!
+      if (height/=0.) then
+        tmpz=(z/height)**2
+        gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
+      endif
+!
+      fac=1./(60.*dz)
+      gg(1:3)=0.; gg(mz-2:mz)=0. !!(border pts to zero)
+      gg(4:mz-3)=fac*(45.*(gz(5:mz-2)-gz(3:mz-4)) &
+                      -9.*(gz(6:mz-1)-gz(2:mz-5)) &
+                         +(gz(7:mz)  -gz(1:mz-6)))
+!
+!  make sign antisymmetric
+!
+      where(z<0) ss=-1.
+      gz1=-ss*gz !!(negative for z>0)
+      ffnorm=fountain*nu*kfountain**2*dt
+!
+!  set forcing function
+!
+      do n=n1,n2
+      do m=m1,m2
+        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ffnorm*(cxx*sy(m)*gg(n))
+        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*(sxx*cy(m)*gg(n))
         f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ffnorm*sxx*sy(m)*gz(n)*2.
       enddo
       enddo

@@ -1,0 +1,2 @@
+set path=($cwd/bin $HOME/bin $path)
+setenv IDL_PATH "../idl:../../idl:../../../idl:+~/idl:+/usr/local/rsi/idl"
