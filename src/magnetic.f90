@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.217 2004-08-13 08:25:45 nilshau Exp $
+! $Id: magnetic.f90,v 1.218 2004-08-20 11:25:40 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Magnetic
   real :: mu_r=-0.5 !(still needed for backwards compatibility)
   real :: mu_ext_pot=-0.5
   real :: rescale_aa=1.
-  real :: ampl_B0=0.
+  real :: ampl_B0=0.,D_smag=0.17
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
@@ -85,7 +85,7 @@ module Magnetic
        rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction, &
        reinitalize_aa,rescale_aa,lB_ext_pot, &
        lee_ext,lbb_ext,ljj_ext,displacement_gun, &
-       pertaa,pertamplaa
+       pertaa,pertamplaa,D_smag
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.217 2004-08-13 08:25:45 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.218 2004-08-20 11:25:40 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -565,13 +565,12 @@ module Magnetic
             diva=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
             do j=1,3
               do i=1,3
-                Jij(:,i,j)=.5*(aij(:,i,j)+aij(:,j,i))
+                Jij(:,i,j)=.5*(aij(:,i,j)-aij(:,j,i))
               enddo
-              Jij(:,j,j)=Jij(:,j,j)-.333333*diva
+              !Jij(:,j,j)=Jij(:,j,j)-.333333*diva
             enddo
-            call multm2_mn(Jij,Jij2)
-            BB12=sqrt(2*Jij2)
-            eta_smag=(C_smag*dxmax)**2.*BB12
+            call dot2_mn(jj,J2)
+            eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
             call del2v_etc(f,iaa,GRADDIV=graddiva)
             call multmv_mn(Jij,glnrho,bglnrho)
             call multsv_mn(eta_smag,bglnrho,nubglnrho)
@@ -726,6 +725,7 @@ module Magnetic
         !
         if (i_epsM_LES/=0) then
           if (iresistivity .eq. 'Smagorinsky') then
+            call multm2_mn(Jij,Jij2)
             call sum_mn_name(2*eta_smag*exp(f(l1:l2,m,n,ilnrho))*Jij2,i_epsM_LES)
            endif
         endif
