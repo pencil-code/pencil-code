@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.26 2003-10-02 17:03:52 theine Exp $
+! $Id: radiation_ray.f90,v 1.27 2003-10-06 11:29:02 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -28,12 +28,20 @@ module Radiation
   integer :: nnstart,nnstop,nsign
   integer :: l
 !
+!  debugging stuff
+!
+  integer, parameter :: ikaprho=1,iSrad1=2
+  integer, parameter :: idtau_m=1,idtau_p=2
+  integer, parameter :: idSdtau_m=3,idSdtau_p=4
+  integer, parameter :: iSrad1st=5,iSrad2nd=6
+  integer, parameter :: iemtau=7,iQrad=8
+!
 !  default values for one pair of vertical rays
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
   logical :: nocooling=.false.,test_radiation=.false.,lkappa_es=.false.
-  logical :: l2ndorder=.true.,lupwards=.true.
+  logical :: l2ndorder=.true.,lupwards=.true.,lrad_debug=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -43,11 +51,11 @@ module Radiation
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es, &
-       bc_rad,l2ndorder,lupwards
+       bc_rad,l2ndorder,lupwards,lrad_debug
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es,nocooling, &
-       bc_rad,l2ndorder,lupwards
+       bc_rad,l2ndorder,lupwards,lrad_debug
 
   contains
 
@@ -82,7 +90,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.26 2003-10-02 17:03:52 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.27 2003-10-06 11:29:02 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -169,8 +177,10 @@ module Radiation
 !
       use Cdata
       use Ionization
+      use Io
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,2) :: temp
 !
 !  identifier
 !
@@ -197,6 +207,13 @@ module Radiation
 !
       enddo
 !
+      if (lrad_debug) then
+        temp(:,:,:,ikaprho)=kaprho
+        temp(:,:,:,iSrad1)=Srad
+        call output(trim(directory)//'/rad_debug.dat',temp,2)
+        call rad_debug_idl
+      endif
+!
     endsubroutine radtransfer
 !***********************************************************************
     subroutine Qintr(f)
@@ -210,12 +227,16 @@ module Radiation
 !   3-aug-03/axel: added amax1(dtau,dtaumin) construct
 !
       use Cdata
+      use General
+      use Io
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(mx,my,mz,8) :: temp
       real :: dlength,dtau,emdtau,tau_term
       real :: Srad1st,Srad2nd,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       real :: dtau01,dtau12,dSdtau01,dSdtau12
+      character(len=4) :: idir_str
 !
 !  identifier
 !
@@ -242,6 +263,11 @@ module Radiation
       if (mrad<0) then; mmstart=m2; mmstop=m1+mrad; msign=-1; endif
       if (nrad>0) then; nnstart=n1; nnstop=n2+nrad; nsign= 1; endif
       if (nrad<0) then; nnstart=n2; nnstop=n1+nrad; nsign=-1; endif
+!
+!  determine start and stop positions
+!
+      if (lrad_debug) then
+      endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -279,6 +305,14 @@ module Radiation
             endif
             Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                        -Srad1st*emdtau1-Srad2nd*emdtau2
+            if (lrad_debug) then
+              temp(l,m,n,idtau_m)=dtau_m
+              temp(l,m,n,idtau_p)=dtau_p
+              temp(l,m,n,idSdtau_m)=dSdtau_m
+              temp(l,m,n,idSdtau_p)=dSdtau_p
+              temp(l,m,n,iSrad1st)=Srad1st
+              temp(l,m,n,iSrad2nd)=Srad2nd
+            endif
 !
           else
 !
@@ -324,6 +358,13 @@ module Radiation
       enddo
       enddo
       enddo
+!
+      if (lrad_debug) then
+        temp(:,:,:,iemtau)=emtau
+        temp(:,:,:,iQrad)=Qrad
+        call chn(idir,idir_str)
+        call output(trim(directory)//'/rad_debug'//trim(idir_str)//'.dat',temp,8)
+      endif
 !
     endsubroutine Qintr
 !***********************************************************************
@@ -1002,6 +1043,51 @@ module Radiation
 !
       if(ip==0) print*,f,df,rho1,divu,uu,uij,TT1,gamma !(keep compiler quiet)
     endsubroutine de_dt
+!*******************************************************************
+    subroutine rad_debug_idl
+!
+!  writes IDL script for debugging
+!
+      use Cdata
+      use General
+!
+      integer :: i
+      character(len=4) :: i_str
+!
+      open (1,file=trim(datadir)//'/rad_debug.pro')
+!
+      write (1,*) 'ikaprho=',ikaprho-1,' & iSrad=',iSrad1-1
+      write (1,*) 'idtau_m=',idtau_m-1,' & idtau_p=',idtau_p-1
+      write (1,*) 'idSdtau_m=',idSdtau_m-1,' & idSdtau_p=',idSdtau_p-1
+      write (1,*) 'iSrad1st=',iSrad1st-1,' & iSrad2nd=',iSrad2nd-1
+      write (1,*) 'iemtau=',iemtau-1,' & iQrad=',iQrad-1
+      write (1,*) "openr,1,'"//trim(directory)//"/rad_debug.dat',/f77"
+      write (1,*) "temp=fltarr(mx,my,mz,2)"
+      write (1,*) "readu,1,temp"
+      write (1,*) "kaprho=temp[*,*,*,ikaprho] & Srad=temp[*,*,*,iSrad]"
+      write (1,*) "close,1"
+!
+      do i=1,ndir
+        call chn(i,i_str)
+        write (1,*) "openr,1,'"//trim(directory)//"/rad_debug"//trim(i_str)//".dat',/f77"
+        write (1,*) "temp=fltarr(mx,my,mz,8)"
+        write (1,*) "readu,1,temp"
+        write (1,*) "kaprho=temp[*,*,*,ikaprho] & Srad=temp[*,*,*,iSrad]"
+        write (1,*) "dtau_m"//trim(i_str)//"=temp[*,*,*,idtau_m]"
+        write (1,*) "dtau_p"//trim(i_str)//"=temp[*,*,*,idtau_p]"
+        write (1,*) "dSdtau_m"//trim(i_str)//"=temp[*,*,*,idSdtau_m]"
+        write (1,*) "dSdtau_p"//trim(i_str)//"=temp[*,*,*,idSdtau_p]"
+        write (1,*) "Srad1st"//trim(i_str)//"=temp[*,*,*,iSrad1st]"
+        write (1,*) "Srad2nd"//trim(i_str)//"=temp[*,*,*,iSrad2nd]"
+        write (1,*) "emtau"//trim(i_str)//"=temp[*,*,*,iemtau]"
+        write (1,*) "Qrad"//trim(i_str)//"=temp[*,*,*,iQrad]"
+        write (1,*) "close,1"
+      enddo
+!
+      write (1,*) "end"
+      close (1)
+!
+    end subroutine rad_debug_idl
 !*******************************************************************
     subroutine rprint_radiation(lreset)
 !
