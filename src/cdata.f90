@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.249 2004-09-06 10:01:47 ajohan Exp $
+! $Id: cdata.f90,v 1.250 2004-09-11 09:39:56 brandenb Exp $
 
 module Cdata
 
@@ -15,6 +15,12 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
   real, dimension (nx) :: maxdss,maxdlnrho
+
+!  coordinate system (alternatives: spherical, cylindric)
+  character (len=9) :: coord_system='cartesian'
+  logical :: lspherical=.false.,lcylindric=.false.
+  real, dimension (nx) :: r1_mn
+
 !  timestep related:
   real, dimension (nx) :: advec_uu,advec_shear,advec_hall
   real, dimension (nx) :: advec_cs2,advec_va2,advec_uud

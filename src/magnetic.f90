@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.220 2004-08-25 08:34:04 bingert Exp $
+! $Id: magnetic.f90,v 1.221 2004-09-11 09:39:57 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.220 2004-08-25 08:34:04 bingert Exp $")
+           "$Id: magnetic.f90,v 1.221 2004-09-11 09:39:57 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -330,7 +330,7 @@ module Magnetic
 !
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,del2A,va2,shock,gshock)
 !
 !  magnetic field evolution
 !
@@ -357,7 +357,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij
+      real, dimension (nx,3,3) :: uij,bij,aij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb,JxBrxB
       real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
       real, dimension (nx,3) :: del2A,oo,oxu,uxDxuxb,del6A,fres,del4A
@@ -375,16 +375,15 @@ module Magnetic
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j,i
 
-
-      real, dimension (nx,3,3) :: aij,Jij
+      real, dimension (nx,3,3) :: Jij
       real, dimension (nx) :: Jij2
       real, dimension (nx) :: bb12,eta_smag
 
       real, dimension (nx,3) :: graddiva,bglnrho
       real, dimension (nx,3) :: nubglnrho,tmp1,tmp2
 !
-      intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
-      intent(out)    :: bij,va2
+      intent(in)     :: f,uu,rho1,TT1,uij,bij,aij,bb,del2A,shock,gshock
+      intent(out)    :: va2
       intent(inout)  :: df     
 !
 !  identify module and boundary conditions
@@ -396,11 +395,12 @@ module Magnetic
         call identify_bcs('Az',iaz)
       endif
 !
-!  calculate B-field, and then max and mean (w/o imposed field, if any)
+!  Note that the B field is now calculated in calculate_vars_magnetic
 !
-!     call curl(f,iaa,bb)  ! now calculate by CALCULATE_VARS_MAGNETIC
       call dot2_mn(bb,b2)
-
+!
+!  Calculate some diagnostic quantities
+!
       if (ldiagnos) then
 
         if (gamma1/=0.) then
@@ -462,17 +462,12 @@ module Magnetic
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
       endif
 !
-!  calculating the current jj, and simultaneously del2A.
+!  calculating the current jj from bij
 !
-!  --old--   call del2v_etc(f,iaa,del2A,curlcurl=jj)
-!  The following two routines also calculate del2A and jj, but they
-!  also produce the magnetic field gradient matrix, B_{i,j}, which is
-!  needed for cosmic ray evolution. If the overhead in calculating
-!  Bij becomes noticeable (even though no extra derivatives are calculated)
-!  one should make it switchable between this one and del2v_etc.
+!  The following routine also calculates the magnetic field gradient matrix, B_{i,j},
+!   which is needed for cosmic ray evolution.
 !
-      call bij_etc(f,iaa,bij,del2A)
-      call curl_mn(bij,jj)
+      call curl_mn(bij,jj,bb)
       if (mu01/=1.) jj=mu01*jj
 !
 !  external current (currently for spheromak experiments)
@@ -559,10 +554,10 @@ module Magnetic
       case ('Smagorinsky')
           if (headtt) print*,'resistive force: Smagorinsky'
           if(ldensity) then
-            call gij(f,iaa,aij)
             diva=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
             do j=1,3
               do i=1,3
+                !AB: Nils, are you sure?
                 Jij(:,i,j)=.5*(aij(:,i,j)-aij(:,j,i))
               enddo
               !Jij(:,j,j)=Jij(:,j,j)-.333333*diva
@@ -895,12 +890,13 @@ module Magnetic
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,bij)
+    subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A)
 !
 !  Calculation of bb
 !
 !  06-feb-04/bing: coded
 !  14-mar-04/axel: allow external magnetic field to precess about z-axis
+!  11-sep-04/axel: calculate bb from aij matrix
 !
       use Cdata
       use Sub
@@ -908,17 +904,25 @@ module Magnetic
       use Global, only: get_global
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx,3,3) :: bij
-      real, dimension (nx,3) :: bb,dummy
+      real, dimension (nx,3,3) :: aij,bij
+      real, dimension (nx,3) :: aa,bb,del2A
       real, dimension (nx,3) :: bb_ext,bb_ext_pot
       real :: B2_ext,c,s
 
       intent(in)  :: f
-      intent(out) :: bb,bij
-      
-      call curl(f,iaa,bb)
+      intent(out) :: bb,bij,aij,del2A
 !
-      call bij_etc(f,iaa,bij,dummy)
+!  The following routines calculates the gradient matrix of
+!  the vector potential (needed to calculate bb) and bij
+!  (needed for cosmic ray evolution and thermal conduction).
+!
+      call gij(f,iaa,aij)
+      call bij_etc(f,iaa,bij,del2A)
+!
+!  use aij to calculate bb
+!
+      aa=f(l1:l2,m,n,iax:iaz)
+      call curl_mn(aij,bb,aa)
 !
 !  Note; for diagnostics purposes keep copy of original field
 !

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.51 2004-08-26 19:24:16 dobler Exp $
+! $Id: nomagnetic.f90,v 1.52 2004-09-11 09:39:57 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.51 2004-08-26 19:24:16 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.52 2004-09-11 09:39:57 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -100,7 +100,7 @@ module Magnetic
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine pert_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,aij,bb,del2A,va2,shock,gshock)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -110,24 +110,24 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij
-      real, dimension (nx,3) :: uu,bb,gshock
+      real, dimension (nx,3,3) :: uij,bij,aij
+      real, dimension (nx,3) :: uu,bb,del2A,gshock
       real, dimension (nx) :: rho1,TT1,va2,shock
 !
       intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
-      intent(out)    :: bij,va2
+      intent(out)    :: bij,aij,va2
       intent(inout)  :: df
 !
 !  set Alfven speed to zero for proper time stepping
 !
       va2=0
 !
-      if(ip==0) bij=0.                             ! (keep compiler quiet)
-      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb ! (keep compiler quiet)
-      if(ip==0) print*,shock,gshock                ! (keep compiler quiet)
+      if(ip==0) bij=0.                                   ! (keep compiler quiet)
+      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb,del2A ! (keep compiler quiet)
+      if(ip==0) print*,shock,gshock                      ! (keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb,bij)
+    subroutine calculate_vars_magnetic(f,bb,bij,aij,del2A)
 !
 !   Calculation of bb
 !   dummy routine
@@ -135,16 +135,20 @@ module Magnetic
 !   06-febr-04/bing: coded
 !      
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx,3,3) :: bij
-      real, dimension (nx,3) :: bb
-      
+      real, dimension (nx,3,3) :: bij,aij
+      real, dimension (nx,3) :: bb,del2A
+!
       intent(in)  :: f
-      intent(out) :: bb,bij
-      
+      intent(out) :: bb,bij,aij,del2A
+!
+!  dummy settings
+!
       if (ip==0) print*,f(1,1,1,1) ! (keep compiler quiet)
       if (ip==0) bb=0.             ! (keep compiler quiet)
       if (ip==0) bij=0.
-     
+      if (ip==0) aij=0.
+      if (ip==0) del2A=0.
+!
     endsubroutine calculate_vars_magnetic
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)

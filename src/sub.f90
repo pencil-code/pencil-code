@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.194 2004-07-08 12:01:47 ajohan Exp $ 
+! $Id: sub.f90,v 1.195 2004-09-11 09:39:57 brandenb Exp $ 
 
 module Sub 
 
@@ -721,22 +721,30 @@ module Sub
 !
     end subroutine div
 !***********************************************************************
-    subroutine curl_mn(a,b)
+    subroutine curl_mn(aij,b,a)
 !
 !  calculate curl from derivative matrix
 !  21-jul-03/axel: coded
 !
       use Cdata
 !
-      real, dimension (nx,3,3) :: a
-      real, dimension (nx,3) :: b
+      real, dimension (nx,3,3) :: aij
+      real, dimension (nx,3) :: b,a
 !
-      intent(in) :: a
+      intent(in) :: aij,a
       intent(out) :: b
 !
-      b(:,1)=a(:,3,2)-a(:,2,3)
-      b(:,2)=a(:,1,3)-a(:,3,1)
-      b(:,3)=a(:,2,1)-a(:,1,2)
+      b(:,1)=aij(:,3,2)-aij(:,2,3)
+      b(:,2)=aij(:,1,3)-aij(:,3,1)
+      b(:,3)=aij(:,2,1)-aij(:,1,2)
+!
+!  adjustments for spherical corrdinate system
+!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
+!
+      if (lspherical) then
+        b(:,2)=b(:,2)-r1_mn*a(:,3)
+        b(:,3)=b(:,3)+r1_mn*a(:,2)
+      endif
 !
     endsubroutine curl_mn
 !***********************************************************************
@@ -1176,6 +1184,7 @@ module Sub
 !  calculate curl of a vector, get vector
 !  12-sep-97/axel: coded
 !  10-sep-01/axel: adapted for cache efficiency
+!  11-sep-04/axel: began adding spherical coordinates 
 !
       use Cdata
       use Deriv
@@ -1201,6 +1210,14 @@ module Sub
       call der(f,k1+2,tmp1,1)
       call der(f,k1+1,tmp2,2)
       g(:,3)=tmp1-tmp2
+!
+!  adjustments for spherical corrdinate system
+!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
+!
+!     if (lspherical) then
+!       g(:,2)=g(:,2)-r1_mn*f(l1:l2,m,n,k1+3)
+!       g(:,3)=g(:,3)+r1_mn*f(l1:l2,m,n,k1+2)
+!     endif
 !
     endsubroutine curl
 !***********************************************************************

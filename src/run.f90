@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.195 2004-08-27 12:08:31 ajohan Exp $
+! $Id: run.f90,v 1.196 2004-09-11 09:39:57 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.195 2004-08-27 12:08:31 ajohan Exp $")
+             "$Id: run.f90,v 1.196 2004-09-11 09:39:57 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -154,12 +154,14 @@
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
+!------This can perhaps now be removed. Please check----------
 !  The following is only kept for backwards compatibility with
 !  an old grid.dat.
 !
         if (lequidist(1)) dx_1=1./dx
         if (lequidist(2)) dy_1=1./dy
         if (lequidist(3)) dz_1=1./dz
+!^^^^^-This can perhaps now be removed. Please check-^^^^^^^^^
 !
 !  Write parameters to log file (done after reading var.dat, since we
 !  want to output time t

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.139 2004-07-04 03:13:40 theine Exp $
+! $Id: register.f90,v 1.140 2004-09-11 09:39:57 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -118,6 +118,7 @@ module Register
 !  6-nov-01/wolf: coded
 ! 23-feb-03/axel: added physical constants conversion
 !  7-oct-03/david: initialize_gravity before density, etc (its needed there)
+! 11-sep-04/axel: began adding spherical coordinates 
 !
       use Cdata
       use Param_IO
@@ -236,6 +237,33 @@ module Register
       call initialize_viscosity()
       call initialize_special()
 !
+!----------------------------------------------------------------------------
+!  Coordinate-related issues: nonuniform meshes, different corrdinate systems
+!
+!  The following is only kept for backwards compatibility with
+!  an old grid.dat.
+!
+      if (lequidist(1)) dx_1=1./dx
+      if (lequidist(2)) dy_1=1./dy
+      if (lequidist(3)) dz_1=1./dz
+!
+!  For spherical coordinate system, calculate 1/r, cot(theta)/r, etc
+!
+      if (coord_system=='cartesian') then
+        lspherical=.false.
+        lcylindric=.false.
+      elseif (coord_system=='spherical') then
+        lspherical=.true.
+        lcylindric=.false.
+        r1_mn=1./x(l1:l2)
+      endif
+!
+!  DOCUMENT ME
+!  AB: should check whether this can come under initialize_modules
+!
+!       call border_profiles()
+!
+!----------------------------------------------------------------------------
 !  timestep: distinguish two cases,
 !  (a) dt explicitly given in run.in -> ldt=.false.
 !  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
@@ -253,11 +281,6 @@ module Register
           print*, 'absolute timestep dt=', dt
         endif
       endif
-!
-!  DOCUMENT ME
-!  AB: should check whether this can come under initialize_modules
-!
-!       call border_profiles()
 !
     endsubroutine initialize_modules
 !***********************************************************************
