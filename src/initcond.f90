@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.28 2003-03-18 14:50:13 brandenb Exp $ 
+! $Id: initcond.f90,v 1.29 2003-03-26 10:27:48 anders Exp $ 
 
 module Initcond 
  
@@ -258,7 +258,7 @@ module Initcond
 !  calculate delta
 !
       delta2=(2.-sigma)*sigma
-      print*,'planet: sigma,delta2=',sigma,delta2
+      print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
       if (delta2<=0.) then
         print*,'delta2<=0 not allowed'
       else
@@ -323,6 +323,118 @@ module Initcond
 !
     endsubroutine planet
 !***********************************************************************
+    subroutine kepvor(ampl,f,xx,yy,zz,aell,bell,gamma,cs20,width)
+!
+!  Ellipsoidal planet solution with gradual transition to Kepler flow
+!  (Chavanis 2000)
+!
+!  26 March 2003: AJ coded
+! 
+      
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,eta,xi,Psi
+      real, dimension (4) :: result
+      real, dimension (4,4) :: Ja
+      real :: ampl,sigma2,sigma,delta2,delta,eps,xi0
+      real :: gamma,eps2,radius2,width
+      real :: gamma1,zinfty2,cs20,hh0
+!
+!  calculate sigma
+!
+
+kappa = qshear*Omega
+qasp = aell/bell
+
+do i=l1,l2
+  xi(i,1,1)=5
+  eta(i,1,1)=5
+  do j=m1,m2
+    do k=n1,n2
+      count=0
+      f=[1.1*tol, 1.1*tol]
+      while (abs(f(0)) .gt. tol) and (abs(f(1)) .gt. tol)
+        f = (/ c*cosh(xi(i,j,k))*cos(eta(i,j,k))-xx(i,j,k), c*sinh(xi(i,j,k))*sin(eta(i,j,k))-yy(i,j,k) /)
+ 
+        df1dxi  =  c*sinh(xi(i,j,k))*cos(eta(i,j,k))
+        df1deta = -c*cosh(xi(i,j,k))*sin(eta(i,j,k))
+        df2dxi  =  c*cosh(xi(i,j,k))*sin(eta(i,j,k))
+        df2deta =  c*sinh(xi(i,j,k))*cos(eta(i,j,k))
+
+        Ja(*,1)= (/ df1dxi, df1deta /)
+        Ja(*,2)= (/ df2dxi, df2deta /)
+
+        call GAUSSJ (Ja, 4, 4, result, 1, 1)
+
+        delta = result##f
+
+        xi(i,j,k)  =  xi(i,j,k) - delta(1)
+        eta(i,j,k) = eta(i,j,k) - delta(2)
+
+        count=count+1
+
+        if (k .gt. 100) then begin            ; At most 100 tries
+          print, 'Newton-Raphson exploded'
+          stop
+        endif
+      endwhile
+
+      if (xi(i,j,k) .lt. 0) then xi(i,j,k)=-xi(i,j,k)
+
+      if (xi(i,j,k) .gt. xi0) then
+        Psi(i,j,k) = 0.25*kappa*b^2*(qasp^2-1.)*sinh(xi(i,j,k))^2*(1.-cos(2*eta(i,j,k))) + 0.25*b^2*kappa*(qasp+1.)/(qasp-1.)+0.5*b^2*kappa*(qasp+1.)/(qasp-1.)*(xi(i,j,k)-xi0)+0.25*kappa*b^2*exp(2*(xi0-xi(i,j,k)))*cos(2*eta(i,j,k)
+      else
+        Psi(i,j,k)=kappa*b^2/(2*qasp)*(qasp+1.)*(cosh(xi(i,j,k))^2*cos(eta(i,j,k))^2+qasp^2*sinh(xi(i,j,k))^2*sin(eta(i,j,k)^2)
+      endif  
+    enddo
+ enddo
+enddo
+
+
+do i=l1,l2
+  do j=m1,m2
+    do k=
+    dPsidx(i,j)=(Psi(i+1,j)-Psi(i-1,j))/(xx(i+1,j)-xx(i-1,j))
+    dPsidy(i,j)=(Psi(i,j+1)-Psi(i,j-1))/(yy(i,j+1)-yy(i,j-1))
+  enddo
+enddo
+
+f(:,:,:,iux) = dPsidy
+f(:,:,:,iuy) =-dPsidx
+
+print*,'planet: qshear,a,b=',qshear,a,b
+!
+!  calculate zinfty**2 (similar to poluytropic_simple)
+!
+      gamma1=gamma-1.
+      zinfty2=cs20/(.5*gamma1*Omega**2)
+      print*,'planet: zinfty2=',zinfty2
+!
+!  calculate hh
+!
+      hh = 1.5*Omega**2*xx**2-0.5*Omega**2*zz**2-2*Omega*Psi-0.5*(f(:,:,:,iux)**2+f(:,:,:,iuy)**2)
+!
+!  calculate density, depending on what gamma is
+!
+      print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
+      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+!
+!  have to use explicit indices here, because ghostzones are not set
+!
+      if(lentropy) then
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+            -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+        print*,'planet solution with entropy jump for gamma=',gamma
+      else
+        if(gamma==1.) then
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
+          print*,'planet solution for gamma=1'
+        else
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+          print*,'planet solution for gamma=',gamma
+        endif
+!
+    endsubroutine planet
+!*****************************************************************
     subroutine crazy(ampl,f,i)
 !
 !  A crazy initial condition
