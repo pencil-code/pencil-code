@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.26 2002-07-02 04:56:00 brandenb Exp $
+! $Id: mpicomm.f90,v 1.27 2002-07-02 17:02:14 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -23,6 +23,7 @@ module Mpicomm
 
   include 'mpif.h'
  
+  integer, parameter :: nbufx_gh=my*mz*nghost*mvar ! For shear
   integer, parameter :: nbufy=nx*nz*nghost*mvar
   integer, parameter :: nbufz=nx*ny*nghost*mvar
   integer, parameter :: nbufyz=nx*nghost*nghost*mvar
@@ -31,6 +32,9 @@ module Mpicomm
   real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
   real, dimension (nx,nghost,nghost,mvar) :: llbufi,lubufi,uubufi,ulbufi
   real, dimension (nx,nghost,nghost,mvar) :: llbufo,lubufo,uubufo,ulbufo
+  real, dimension (nghost,my,mz,mvar) :: fahi, falo, fbhi, fblo, fao, fbo ! For shear
+  real :: deltay ! For shear
+  integer :: nextya, nextyb, lastya, lastyb, displs ! For shear
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: nprocs
@@ -40,6 +44,8 @@ module Mpicomm
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
   integer :: isend_rq_TOll,isend_rq_TOul,isend_rq_TOuu,isend_rq_TOlu  !(corners)
   integer :: irecv_rq_FRuu,irecv_rq_FRlu,irecv_rq_FRll,irecv_rq_FRul  !(corners)
+  integer :: isend_rq_tolastya,isend_rq_tonextya,irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
+  integer :: isend_rq_tolastyb,isend_rq_tonextyb,irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul,isend_stat_Tuu,isend_stat_Tlu
@@ -280,6 +286,7 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar) :: f
+      character (len=160) :: errmesg
 !
 !  1. wait until data received
 !  2. set ghost zones
@@ -334,6 +341,155 @@ module Mpicomm
 !
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
     endsubroutine finalise_isendrcv_bdry
+!***********************************************************************
+   subroutine initiate_shearing(f)
+!
+!  Subroutine for shearing sheet boundary conditions
+!
+!  20-june-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      double precision :: frak, c1, c2, c3, c4, c5, c6
+      integer :: i, ystep
+      integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
+!
+!        Sixth order interpolation along the y-direction
+!
+      deltay=qshear*Lx*Omega*t
+      deltay=deltay-int(deltay/Ly)*Ly
+      deltay=deltay/dy
+      displs=int(deltay)
+      if (nprocy==1) then
+         frak=deltay-displs
+         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+         f(1:l1-1,m1:m2,:,:)=c1*cshift(f(l2i:l2,m1:m2,:,:),-displs+2,2) &
+              +c2*cshift(f(l2i:l2,m1:m2,:,:),-displs+1,2) &
+              +c3*cshift(f(l2i:l2,m1:m2,:,:),-displs,2) &
+              +c4*cshift(f(l2i:l2,m1:m2,:,:),-displs-1,2) &
+              +c5*cshift(f(l2i:l2,m1:m2,:,:),-displs-2,2) &
+              +c6*cshift(f(l2i:l2,m1:m2,:,:),-displs-3,2)
+         f(l2+1:mx,m1:m2,:,:)=c1*cshift(f(l1:l1i,m1:m2,:,:),displs-2,2) &
+              +c2*cshift(f(l1:l1i,m1:m2,:,:),displs-1,2) &
+              +c3*cshift(f(l1:l1i,m1:m2,:,:),displs,2) &
+              +c4*cshift(f(l1:l1i,m1:m2,:,:),displs+1,2) &
+              +c5*cshift(f(l1:l1i,m1:m2,:,:),displs+2,2) &
+              +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2)
+      else
+!
+!  With more than one CPU in the y-direction it will become necessary to 
+!  interpolate over data from two different CPUs.  Likewise two different
+!  CPUs will require data from this CPU.
+!
+         ystep = displs/ny
+         nextya = ipz*nprocy+modulo(ipy-ystep,nprocy)
+         lastya = ipz*nprocy+modulo(ipy-ystep-1,nprocy)
+         lastyb = ipz*nprocy+modulo(ipy+ystep,nprocy)
+         nextyb = ipz*nprocy+modulo(ipy+ystep+1,nprocy)
+         fao = f(l1:l1i,:,:,:)
+         fbo = f(l2i:l2,:,:,:)
+         if (lastya/=iproc) then 
+            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,lastya,tonextyb,MPI_COMM_WORLD,isend_rq_tolastya,ierr) 
+         end if
+         if (nextyb==iproc) then
+            fbhi=fao
+         else
+            call MPI_IRECV(fbhi,nbufx_gh,MPI_REAL,nextyb,tonextyb,MPI_COMM_WORLD,irecv_rq_fromnextyb,ierr)
+         end if
+         if (nextya/=iproc) then 
+            call MPI_ISEND(fao,nbufx_gh,MPI_REAL,nextya,tolastyb,MPI_COMM_WORLD,isend_rq_tonextya,ierr)
+         end if
+         if (lastyb==iproc) then
+            fblo=fao
+         else               
+            call MPI_IRECV(fblo,nbufx_gh,MPI_REAL,lastyb,tolastyb,MPI_COMM_WORLD,irecv_rq_fromlastyb,ierr)
+         end if
+         if (lastyb/=iproc) then 
+            call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,lastyb,tonextya,MPI_COMM_WORLD,isend_rq_tolastyb,ierr)
+         end if
+         if (nextya==iproc) then
+            fahi=fbo
+         else               
+            call MPI_IRECV(fahi,nbufx_gh,MPI_REAL,nextya,tonextya,MPI_COMM_WORLD,irecv_rq_fromnextya,ierr)
+         end if
+         if (nextyb/=iproc) then 
+            call MPI_ISEND(fbo,nbufx_gh,MPI_REAL,nextyb,tolastya,MPI_COMM_WORLD,isend_rq_tonextyb,ierr)
+         end if
+         if (lastya==iproc) then
+            falo=fbo
+         else               
+            call MPI_IRECV(falo,nbufx_gh,MPI_REAL,lastya,tolastya,MPI_COMM_WORLD,irecv_rq_fromlastya,ierr)
+         end if
+      end if
+    end subroutine initiate_shearing
+!***********************************************************************
+    subroutine finalise_shearing(f)
+!
+!  Subroutine for shearing sheet boundary conditions
+!
+!  20-june-02/nils: adapted from pencil_mpi
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nghost,2*my-2*nghost,mz,mvar) :: fa, fb
+      integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
+      integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb
+      integer :: m2long
+      double precision :: frak, c1, c2, c3, c4, c5, c6
+!
+!  Sliding periodic boundary conditions in x
+!  ulf:02-mar-02
+!
+! need to wait till all communication has been recived
+!
+         if (lastyb/=iproc) call MPI_WAIT(irecv_rq_fromlastyb,irecv_stat_fbl,ierr)
+         if (nextyb/=iproc) call MPI_WAIT(irecv_rq_fromnextyb,irecv_stat_fbn,ierr)
+         if (lastya/=iproc) call MPI_WAIT(irecv_rq_fromlastya,irecv_stat_fal,ierr)
+         if (nextya/=iproc) call MPI_WAIT(irecv_rq_fromnextya,irecv_stat_fan,ierr)
+!
+! reading communicated information into f
+!   
+         m2long = 2*my-3*nghost
+         fa(:,1:m2,:,:) = falo(:,1:m2,:,:)
+         fa(:,m2+1:2*my-2*nghost,:,:) = fahi(:,m1:my,:,:)
+         fb(:,1:m2,:,:) = fblo(:,1:m2,:,:)
+         fb(:,m2+1:2*my-2*nghost,:,:) = fbhi(:,m1:my,:,:)
+         displs = modulo(int(deltay),ny)
+         frak = deltay - int(deltay)
+         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+         f(1:l1-1,m1:m2,:,:) = c1*fa(:,m2long-ny-displs+3:m2long-displs+2,:,:) &
+              +c2*fa(:,m2long-ny-displs+2:m2long-displs+1,:,:) &
+              +c3*fa(:,m2long-ny-displs+1:m2long-displs-0,:,:) &
+              +c4*fa(:,m2long-ny-displs-0:m2long-displs-1,:,:) &
+              +c5*fa(:,m2long-ny-displs-1:m2long-displs-2,:,:) &
+              +c6*fa(:,m2long-ny-displs-2:m2long-displs-3,:,:) 
+         f(l2+1:mx,m1:m2,:,:) = c1*fb(:,m1+displs-2:m2+displs-2,:,:) &
+              +c2*fb(:,m1+displs-1:m2+displs-1,:,:) &
+              +c3*fb(:,m1+displs:m2+displs,:,:) &
+              +c4*fb(:,m1+displs+1:m2+displs+1,:,:) &
+              +c5*fb(:,m1+displs+2:m2+displs+2,:,:) &
+              +c6*fb(:,m1+displs+3:m2+displs+3,:,:) 
+!
+!  need to wait till buffer is empty before re-using it again
+!
+         if (nextyb/=iproc) call MPI_WAIT(isend_rq_tonextyb,isend_stat_tnb,ierr)
+         if (lastyb/=iproc) call MPI_WAIT(isend_rq_tolastyb,isend_stat_tlb,ierr)
+         if (nextya/=iproc) call MPI_WAIT(isend_rq_tonextya,isend_stat_tna,ierr)
+         if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
+!
+       end subroutine finalise_shearing
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !

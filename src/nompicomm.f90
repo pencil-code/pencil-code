@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.30 2002-06-12 09:46:03 brandenb Exp $
+! $Id: nompicomm.f90,v 1.31 2002-07-02 17:02:14 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -21,6 +21,7 @@ module Mpicomm
 
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
+  real :: deltay ! For shear
   logical, dimension (ny*nz) :: necessary=.false.
 
   contains
@@ -140,6 +141,57 @@ module Mpicomm
 !
       if (ip==0) print*,f
     endsubroutine finalise_isendrcv_bdry
+!***********************************************************************
+    subroutine initiate_shearing(f)
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: dummy
+!    
+      dummy=f(1,1,1,1)
+    endsubroutine initiate_shearing
+!***********************************************************************
+    subroutine finalise_shearing(f)
+!
+  use Cdata
+!
+!  for one processor, use periodic boundary conditions
+!  but in this dummy routine this is done in finalise_isendrcv_bdry
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      double precision    :: frak,c1, c2, c3, c4, c5, c6
+      integer :: displs
+!
+!  Periodic boundary conditions in x, with shearing sheat
+!
+      if (nygrid==1) then !If 2D
+         f( 1:l1-1,:,:,:) = f(l2i:l2,:,:,:)
+         f(l2+1:mx,:,:,:) = f(l1:l1i,:,:,:)
+      else
+         deltay=qshear*Lx*Omega*t
+         deltay=deltay-int(deltay/Ly)*Ly
+         deltay=deltay/dy
+         displs=int(deltay)
+         frak=deltay-displs
+         c1 = -          (frak+1.)*frak*(frak-1.)*(frak-2.)*(frak-3.)/120.
+         c2 = +(frak+2.)          *frak*(frak-1.)*(frak-2.)*(frak-3.)/24.
+         c3 = -(frak+2.)*(frak+1.)     *(frak-1.)*(frak-2.)*(frak-3.)/12.
+         c4 = +(frak+2.)*(frak+1.)*frak          *(frak-2.)*(frak-3.)/12.
+         c5 = -(frak+2.)*(frak+1.)*frak*(frak-1.)          *(frak-3.)/24.
+         c6 = +(frak+2.)*(frak+1.)*frak*(frak-1.)*(frak-2.)          /120.
+         f( 1:l1-1,m1:m2,:,:)=c1*cshift(f(l2i:l2,m1:m2,:,:),-displs+2,2) &
+                             +c2*cshift(f(l2i:l2,m1:m2,:,:),-displs+1,2) &
+                             +c3*cshift(f(l2i:l2,m1:m2,:,:),-displs,2) &
+                             +c4*cshift(f(l2i:l2,m1:m2,:,:),-displs-1,2) &
+                             +c5*cshift(f(l2i:l2,m1:m2,:,:),-displs-2,2) &
+                             +c6*cshift(f(l2i:l2,m1:m2,:,:),-displs-3,2)  
+         f(l2+1:mx,m1:m2,:,:)=c1*cshift(f(l1:l1i,m1:m2,:,:),displs-2,2) &
+                             +c2*cshift(f(l1:l1i,m1:m2,:,:),displs-1,2) &
+                             +c3*cshift(f(l1:l1i,m1:m2,:,:),displs,2) &
+                             +c4*cshift(f(l1:l1i,m1:m2,:,:),displs+1,2) &
+                             +c5*cshift(f(l1:l1i,m1:m2,:,:),displs+2,2) &
+                             +c6*cshift(f(l1:l1i,m1:m2,:,:),displs+3,2) 
+      end if
+    end subroutine finalise_shearing
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
