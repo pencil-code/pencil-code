@@ -90,6 +90,10 @@ if ($local_binary) then
   ls -lt src/run.x $SCRATCH_DIR
 endif
 
+# Write $PBS_JOBID to file (important when run is migrated within the same job)
+if ($?PBS_JOBID) then
+  echo $PBS_JOBID "  RUN STARTED  " `date` >> $datadir/jobid.dat
+endif
 
 # Run run.x
 date
@@ -98,6 +102,11 @@ echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $run_x $x_ops
 set run_status=$status		# save for exit
 date
+
+# Write $PBS_JOBID to file (important when run is migrated within the same job)
+if ($?PBS_JOBID) then
+  echo $PBS_JOBID " RUN FINISHED  " `date` >> $datadir/jobid.dat
+endif
 
 # look for RERUN file 
 # With this method one can only reload a new executable.
