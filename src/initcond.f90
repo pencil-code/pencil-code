@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.69 2003-08-06 07:31:14 brandenb Exp $ 
+! $Id: initcond.f90,v 1.70 2003-08-06 19:31:51 mee Exp $ 
 
 module Initcond 
  
@@ -549,7 +549,7 @@ module Initcond
       enddo
       close(19)
 !
-      print*,ampl,xx,yy,zz !(to keep compiler quiet)
+      if(ip<1) print*,ampl,xx,yy,zz !(to keep compiler quiet)
     endsubroutine stratification
 !***********************************************************************
     subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width,rbound)
