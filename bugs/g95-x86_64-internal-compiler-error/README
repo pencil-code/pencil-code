@@ -1,0 +1,35 @@
+
+                      g95-x86_64-internal-compiler-error
+                     ------------------------------------
+
+$Id: README,v 1.1 2004-11-02 21:33:48 dobler Exp $
+
+
+1. Symptoms:
+
+   Using g95-x86_64-32-linux (downloaded 2-Nov-2004), compilation of
+   general.f90 with -O1 or higher optimization results in
+
+     general.f90: In function `general_MP_tridag_double__':
+     general.f90:80: internal compiler error: in emit_move_insn, at expr.c:2513
+     Please submit a full bug report,
+     with preprocessed source if appropriate.
+     See http://www.g95.org or mail andyv@firstinter.net for instructions.
+
+   Compiling with -O0 works.
+
+2. Command sequence:
+
+  unix>  make
+
+3. Platform:
+   Gentoo, Kernel 2.6.7-gentoo-r11, AMD Athlon(tm) 64 Processor 3000+
+
+4. Other compilers tested (OK means problem could not be reproduced):
+   - g95-x86_64-32-linux (downloaded 2-Nov-2004)  OK
+
+5. Workaround:
+   Use -O0 flag
+
+6. Original date:
+   Tue Nov  2 14:34:19 MST 2004
