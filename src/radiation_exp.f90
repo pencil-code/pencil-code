@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.71 2003-07-29 14:25:12 dobler Exp $
+! $Id: radiation_exp.f90,v 1.72 2003-08-02 22:09:36 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.71 2003-07-29 14:25:12 dobler Exp $")
+           "$Id: radiation_exp.f90,v 1.72 2003-08-02 22:09:36 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -164,6 +164,7 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: lnrho,yH,TT
       real :: k
 !
 !  test
@@ -178,20 +179,29 @@ module Radiation
         return
       endif
 !
-!  At the moment we don't calculate ghost zones (ok for vertical arrays)  
+!  no test
 !
-      do n=n0,n3
-      do m=m0,m3
-         call sourcefunction(f,Srad)
+      do n=1,mz
+      do m=1,my
 !
-!  opacity: if lkappa_es then take electron scattering opacity only;
-!  otherwise use Hminus opacity (but may need to add kappa_es as well).
+!  get thermodynamic quantities
+!
+         lnrho=f(:,m,n,ilnrho)
+         call ionget(f,yH,TT)
+!
+!  calculate source function
+!
+         Srad(:,m,n)=sigmaSB*TT**4/pi
+!
+!  calculate opacity
 !
          if (lkappa_es) then
-            kaprho(l0:l3,m,n)=kappa_es*exp(f(l0:l3,m,n,ilnrho))
+            kaprho(:,m,n)=kappa_es*exp(lnrho)
          else
-            call opacity(f,kaprho)
+            kaprho(:,m,n)=.25*exp(2.*lnrho-lnrho_e_)*(TT_ion_/TT)**1.5 &
+                             *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
          endif
+!
       enddo
       enddo
 !
@@ -222,6 +232,12 @@ module Radiation
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
+      !print*,'radtransfer: lnrho=',f(4,4,:,ilnrho)
+      !print*,'radtransfer: ss=',f(4,4,:,ient)
+      !print*,'radtransfer: Srad=',Srad(4,4,:)
+      !print*,'radtransfer: kaprho=',kaprho(4,4,:)
+      !print*,'radtransfer: yH=',f(4,4,:,iyH)
+      !print*,'radtransfer: TT=',f(4,4,:,iTT)
       f(:,:,:,iQrad)=-Srad
       if(axeltest) f(:,:,:,iQrad)=0
 !

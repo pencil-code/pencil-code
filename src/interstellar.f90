@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.35 2003-07-02 18:06:18 mee Exp $
+! $Id: interstellar.f90,v 1.36 2003-08-02 22:09:36 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -11,7 +11,7 @@ module Interstellar
 
   implicit none
 
-  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
+  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,yH_SN,TT_SN,ss_SN,ee_SN,ampl_SN=1.0
   integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
   real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
@@ -95,7 +95,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.35 2003-07-02 18:06:18 mee Exp $")
+           "$Id: interstellar.f90,v 1.36 2003-08-02 22:09:36 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -503,8 +503,8 @@ module Interstellar
 !      call ioncalc(lnrho,ss,cs2,TT1,cp1tilde, &
 !        Temperature=TT_SN_new,InternalEnergy=ee,IonizationFrac=yH)
 !      TT_SN=cs20*exp(gamma1*(lnrho_SN-lnrho0)+gamma*ss_SN)/gamma1*cp1
-      call thermodynamics(lnrho_SN,ss_SN,TT1=TT_SN,ee=ee_SN)
-      TT_SN=1./TT_SN
+      call ionget(lnrho_SN,ss_SN,yH_SN,TT_SN)
+      call thermodynamics(lnrho_SN,ss_SN,yH_SN,TT_SN,ee=ee_SN)
 
       if (lroot.and.ip<14) &
            print*, 'position_SNI:',l_SN,m_SN,n_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN
@@ -640,7 +640,7 @@ find_SN: do n=n1,n2
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
-      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,TT_SN_new,dv,yH
+      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new,dv
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
@@ -677,13 +677,13 @@ find_SN: do n=n1,n2
       !
 
       ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN / ee_SN)) ) / gamma  
-      call thermodynamics(lnrho_SN,ss_SN_new,TT1=TT_SN_new,yH=yH)
+      call ionget(lnrho_SN,ss_SN,yH_SN_new,TT_SN_new)
 !      TT_SN_new=1./TT_SN_new  
 
 !      TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
 
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH :',TT_SN,TT_SN_new,TT_SN_min, yH
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH_SN, yH_SN_new :',TT_SN,TT_SN_new,TT_SN_min, yH_SN, yH_SN_new
 
       if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
@@ -695,8 +695,7 @@ find_SN: do n=n1,n2
          rho_SN_new=c_SN/TT_SN_min*TTunits
          ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN_new / ee_SN)) ) / gamma  
          lnrho_SN_new=alog(rho_SN_new)
-         call thermodynamics(lnrho_SN_new,ss_SN_new,TT1=TT_SN_new)
-         TT_SN_new=1./TT_SN_new
+         call ionget(lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new)
 
          if(lroot) print*, &
             'explode_SN: Relocate mass... TT_SN_new, rho_SN_new :',TT_SN_new,rho_SN_new
@@ -733,8 +732,8 @@ find_SN: do n=n1,n2
             ss_old=f(l1:l2,m,n,ient)
 
             !compare old and new conversions for consistency...
-            call ionset(f,lnrho_old,ss_old,yH_old,TT_old)
-            call thermodynamics(f,ee=ee_old)
+            call ionget(f,yH_old,TT_old)
+            call thermodynamics(lnrho_old,ss_old,yH_old,TT_old,ee=ee_old)
             ! TT_old=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)/gamma1*cp1
             ! ee_old=TT_old/TTunits
             ! TT1=1./TT_old

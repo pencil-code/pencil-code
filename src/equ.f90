@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.151 2003-07-29 09:43:36 brandenb Exp $
+! $Id: equ.f90,v 1.152 2003-08-02 22:09:36 theine Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.151 2003-07-29 09:43:36 brandenb Exp $")
+           "$Id: equ.f90,v 1.152 2003-08-02 22:09:36 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -233,7 +233,7 @@ module Equ
 !  when radiation transfer of global ionization is calculated.
 !  This could in principle be avoided (but it not worth it now)
 !
-      early_finalize=test_nonblocking.and.lionization.and.lradiation_ray
+      early_finalize=test_nonblocking.or.lionization.or.lradiation_ray
 !
 !  Initiate (non-blocking) communication and do boundary conditions.
 !  Required order:

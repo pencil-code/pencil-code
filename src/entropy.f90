@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.180 2003-08-02 15:42:45 mee Exp $
+! $Id: entropy.f90,v 1.181 2003-08-02 22:09:36 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -86,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.180 2003-08-02 15:42:45 mee Exp $")
+           "$Id: entropy.f90,v 1.181 2003-08-02 22:09:36 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -567,8 +567,8 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gss
       real, dimension (nx) :: ugss,uglnrho,divu
-      real, dimension (nx) :: lnrho,ss,yH,rho1,cs2,TT1,cp1tilde
-      real, dimension (nx) :: rho,ee,TT
+      real, dimension (nx) :: lnrho,ss,yH,TT,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: rho,ee
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho
@@ -587,8 +587,8 @@ module Entropy
 !  yH and TT have already been calculated in the beginning of pencil loop
 !
       ss=f(l1:l2,m,n,ient)
-!      call ionset(f,ss,lnrho,yH,TT)
-      call thermodynamics(f,TT1=TT1,cs2=cs2,cp1tilde=cp1tilde,ee=ee,yHout=yH)
+      call ionget(f,yH,TT)
+      call thermodynamics(lnrho,ss,yH,TT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
 !?? does this option make sense?
 !       call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee)
 !     endif
@@ -596,7 +596,7 @@ module Entropy
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),1./TT1(1),cp1tilde(1)
+      if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),TT(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition
 !
@@ -620,6 +620,7 @@ module Entropy
 !
 !  1/T is now calculated in thermodynamics
 !  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
+      TT1=1./TT
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1)
@@ -637,12 +638,12 @@ module Entropy
 !
 !  shock entropy diffusion
 !
-      if(chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss)
+      if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss)
 !
 !  heating/cooling
 !
       if ((luminosity /= 0) .or. (cool /= 0) .or. (heat_uniform /= 0)) &
-           call calc_heat_cool(f,df,rho1,cs2,TT1)
+        call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
 !ngrs: switch off for debug
 !      if (linterstellar) &
