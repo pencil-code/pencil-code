@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.118 2002-11-12 10:33:10 brandenb Exp $
+### $Id: Makefile,v 1.119 2002-11-13 10:08:51 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -169,7 +169,7 @@ run.o:       run.f90 $(run_deps)
 cparam.o:    cparam.f90 cparam.local cparam.inc
 general.o:   general.f90 cparam.o
 cdata.o:     cdata.f90 cparam.o
-slices.o:    slices.f90 cdata.o
+slices.o:    slices.f90 cdata.o sub.o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f
 fftpack.o:   fftpack.f

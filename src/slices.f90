@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.6 2002-11-13 09:44:21 brandenb Exp $
+! $Id: slices.f90,v 1.7 2002-11-13 10:08:52 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -32,7 +32,6 @@ module Slices
 !  13-nov-02/axel: added more fields, use wslice.
 !
       use Cdata
-      use Sub
 !
       real, save :: tvid
       integer, save :: nvid
@@ -58,6 +57,9 @@ module Slices
 !  Data not derived from f (e.g. magnetic field) are prepared in pde.
 !
 !  13-nov-02/axel: added more fields, use wslice.
+!
+      use Cdata
+      use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f
       character (len=*) :: path
