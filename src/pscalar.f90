@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.25 2003-05-15 14:01:39 pkapyla Exp $
+! $Id: pscalar.f90,v 1.26 2003-05-15 19:40:31 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -64,7 +64,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.25 2003-05-15 14:01:39 pkapyla Exp $")
+           "$Id: pscalar.f90,v 1.26 2003-05-15 19:40:31 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -237,7 +237,7 @@ module Pscalar
 !
       if (lreset) then
         i_rhoccm=0; i_ccmax=0; i_lnccm=0; i_lnccmz=0
-        i_ucm=0; i_uudcm=0; i_Cz2m=0; i_Cz4m=0
+        i_ucm=0; i_uudcm=0; i_Cz2m=0; i_Cz4m=0; i_Crmsm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
