@@ -1,10 +1,10 @@
-### $Id: Makefile,v 1.252 2003-10-23 18:43:16 theine Exp $
+### $Id: Makefile,v 1.253 2003-10-28 17:02:56 mcmillan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
 ## which should be present in each local to run directory.
 
-PENCIL_MKFILE= makefile
+PENCIL_MKFILE= makefile.adapted
 LIBSIG=
 LDMPI=-lmpi
 
@@ -97,7 +97,7 @@ LDONLYFLAGS=
 #LIBSIG=-lsig
 
 ## Linux:
-PENCIL_MKFILE=makefile
+##PENCIL_MKFILE=makefile
 #FC=f95
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
@@ -152,9 +152,10 @@ PENCIL_MKFILE=makefile
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
 
 ## Darwin:
-## Mac OSX
+## Power Macintosh
 #PENCIL_MKFILE=makefile.darwin
 #FC=f95
+#LDMPI=
 
 ## SunOS:
 ## Sun
@@ -316,7 +317,7 @@ clean:
 
 # Clean up all
 cleann: clean
-	rm -f makefile makefile.darwin TAGS mpicomm_.f90
+	rm -f $(PENCIL_MKFILE) TAGS mpicomm_.f90
 
 ## ---------------------------------------------------------------------- #
 ## Code targets
