@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.42 2004-02-26 16:01:14 ajohan Exp $
+! $Id: dustdensity.f90,v 1.43 2004-02-27 09:37:46 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.42 2004-02-26 16:01:14 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.43 2004-02-27 09:37:46 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -308,6 +308,7 @@ module Dustdensity
 !
       use Sub
       use Density, only: cs0
+      use Pscalar, only: eps_ctog
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -426,7 +427,8 @@ module Dustdensity
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            if (dndfac(1) .lt. 0. .and. lkeepinitnd) then
+            if (dndfac(1) .lt. 0. .and. f(l1,m,n,ilncc) .gt. eps_ctog &
+                .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
             else
               df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac
