@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.80 2003-04-26 09:21:06 brandenb Exp $
+! $Id: density.f90,v 1.81 2003-05-05 18:48:51 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -36,7 +36,7 @@ module Density
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_eth=0,i_ekin=0,i_rhom=0
+  integer :: i_ekin=0,i_rhom=0
 
   contains
 
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.80 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: density.f90,v 1.81 2003-05-05 18:48:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -450,21 +450,19 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_eth=0;i_ekin=0;i_rhom=0
+        i_ekin=0; i_rhom=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
         call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_eth=',i_eth
       write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname
@@ -748,6 +746,7 @@ module Density
 !  boundary condition for lnrho: constant pressure
 !
 !   4-apr-2003/axel: coded
+!   1-may-2003/axel: added the same for top boundary
 !
       use Mpicomm, only: stop_it
       use Cdata
@@ -770,8 +769,38 @@ module Density
 !  bottom boundary
 !
       case('top')
-        if (lroot) print*,'bc_lnrho_pressure_z: bot not implemented'
-        call stop_it("")
+        if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_top,ss_top=',lnrho_top,ss_top
+!
+!  fix entropy if inflow (uz>0); otherwise leave s unchanged
+!  afterwards set s antisymmetrically about boundary value
+!
+        if(lentropy) then
+!         do m=m1,m2
+!         do l=l1,l2
+!           if (f(l,m,n1,iuz)>=0) then
+!             f(l,m,n1,ient)=ss_bot
+!           else
+!             f(l,m,n1,ient)=f(l,m,n1+1,ient)
+!           endif
+!         enddo
+!         enddo
+          f(:,:,n2,ient)=ss_top
+          do i=1,nghost; f(:,:,n2+i,ient)=2*f(:,:,n2,ient)-f(:,:,n2-i,ient); enddo
+!
+!  set density value such that pressure is constant at the bottom
+!
+          f(:,:,n2,ilnrho)=lnrho_top+ss_top-f(:,:,n2,ient)
+        else
+          f(:,:,n2,ilnrho)=lnrho_top
+        endif
+!
+!  make density antisymmetric about boundary
+!  another possibility might be to enforce hydrostatics
+!  ie to set dlnrho/dz=-g/cs^2, assuming zero entropy gradient
+!
+        do i=1,nghost
+          f(:,:,n2+i,ilnrho)=2*f(:,:,n2,ilnrho)-f(:,:,n2-i,ilnrho)
+        enddo
 !
 !  top boundary
 !

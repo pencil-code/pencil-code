@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.39 2003-04-22 17:24:17 brandenb Exp $
+! $Id: prints.f90,v 1.40 2003-05-05 18:48:52 brandenb Exp $
 
 module Print
 
@@ -109,9 +109,9 @@ module Print
           line(index_d:index_d)=' '
         endif
 !
-!  if the line contains multiple asterisks then comment out line
+!  if the line contains unreadible characters, then comment out line
 !
-        index_a=index(line,'***')
+        index_a=(index(line,'***') .or. index(line,'???'))
         if (index_a > 0) then
           line(1:1)='#'
         endif

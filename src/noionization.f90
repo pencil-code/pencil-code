@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.13 2003-04-27 10:49:15 brandenb Exp $
+! $Id: noionization.f90,v 1.14 2003-05-05 18:48:52 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -47,7 +47,8 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
+    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde, &
+      Temperature,InternalEnergy,IonizationFrac)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -61,12 +62,12 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension (nx),optional :: Temperature
+      real, dimension (nx), intent(out), optional :: Temperature
+      real, dimension (nx), intent(out), optional :: InternalEnergy
+      real, dimension (nx), intent(out), optional :: IonizationFrac
       real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS,rho,ee
       real :: ss0=-5.5542
-!
-      intent(out) :: Temperature
 !
 !  calculate cs2, 1/T, and cp1tilde
 !  leave this in, in case we may activate it
@@ -89,15 +90,14 @@ module Ionization
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
         if(present(Temperature)) Temperature=cs2/gamma1
         cp1tilde=1.
+        if(ldiagnos) ee=cs2/(gamma*gamma1)
       endif
 !
-!  calculation of internal energy
+!  optional output
 !
-      if (ldiagnos.and.i_eth/=0) then
-        rho=exp(lnrho)
-        ee=cs2/(gamma*gamma1) !(not correct with ionization)
-        call sum_mn_name(rho*ee,i_eth)
-      endif
+      if(present(Temperature)) Temperature=1./TT1
+      if(present(InternalEnergy)) InternalEnergy=ee
+      if(present(IonizationFrac)) IonizationFrac=0.
 !
     endsubroutine thermodynamics
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.134 2003-04-26 09:21:06 brandenb Exp $
+! $Id: equ.f90,v 1.135 2003-05-05 18:48:52 brandenb Exp $
 
 module Equ
 
@@ -212,7 +212,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.134 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: equ.f90,v 1.135 2003-05-05 18:48:52 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -350,8 +350,6 @@ module Equ
             ! Nothing seems to depend on lhydro here:
             ! if(lhydro) then
             rho=exp(f(l1:l2,m,n,ilnrho))
-!           if (gamma1/=0.) ee=cs2/(gamma*gamma1)             !(this needs to be calculated in ionization)
-!           if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
           endif

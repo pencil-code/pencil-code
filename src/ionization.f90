@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.34 2003-04-27 16:20:14 brandenb Exp $
+! $Id: ionization.f90,v 1.35 2003-05-05 18:48:52 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -55,7 +55,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.34 2003-04-27 16:20:14 brandenb Exp $")
+           "$Id: ionization.f90,v 1.35 2003-05-05 18:48:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -190,7 +190,8 @@ module Ionization
     endsubroutine calc_kappa
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature)
+    subroutine thermodynamics(lnrho,ss,cs2,TT1,cp1tilde, &
+      Temperature,InternalEnergy,IonizationFrac)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -206,8 +207,10 @@ module Ionization
 !
       logical, save :: first=.true.
       real, dimension (nx), intent(out), optional :: Temperature
-      real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
-      real, dimension (nx) :: dlnPdlnrho,dlnPdss,yH,TT,rho,ee,lnTT
+      real, dimension (nx), intent(out), optional :: InternalEnergy
+      real, dimension (nx), intent(out), optional :: IonizationFrac
+      real, dimension (nx) :: lnrho,ss,yH,ee,cs2,TT1,cp1tilde
+      real, dimension (nx) :: dlnPdlnrho,dlnPdss,TT,rho,lnTT
       real :: ss0=-5.5542
 !
 !  calculate cs2, 1/T, and cp1tilde
@@ -220,11 +223,7 @@ module Ionization
         TT1=1./TT
         cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
-        if (ldiagnos.and.i_eth/=0) then
-          rho=exp(lnrho)
-          ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
-          call sum_mn_name(rho*ee,i_eth)
-        endif
+        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
 !  neutral gas case: cp-cv=1*kB/mp, ie cp=2.5*kB/mp
 !
@@ -238,13 +237,14 @@ module Ionization
         cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
         if(headtt) print*,'thermodynamics: gamma1,lnTT,cs2=',gamma1,lnTT,cs2
-        if (ldiagnos.and.i_eth/=0) then
-          rho=exp(lnrho)
-          ee=cs2/(gamma*gamma1)
-          call sum_mn_name(rho*ee,i_eth)
-        endif
+        if(ldiagnos) ee=cs2/(gamma*gamma1)
       endif
+!
+!  optional output
+!
       if(present(Temperature)) Temperature=TT
+      if(present(InternalEnergy)) InternalEnergy=ee
+      if(present(IonizationFrac)) IonizationFrac=yH
 !
       first = .false.
     endsubroutine thermodynamics

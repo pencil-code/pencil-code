@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.170 2003-04-30 07:46:45 nilshau Exp $
+### $Id: Makefile,v 1.171 2003-05-05 18:48:51 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -88,9 +88,10 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LIBSIG=-lsig
 
 ## Linux:
+## The -tpp7 flag leads to a 10% speedup on nl6
 #FC=f95
 #FFLAGS=-O3
-#F90FLAGS=-u
+#F90FLAGS=-u -tpp7
 #F90FLAGS= # (fire)
 #LDMPI=
 #FC=mpif90 # (Samos|fire)

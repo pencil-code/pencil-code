@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.153 2003-04-27 16:20:14 brandenb Exp $
+! $Id: entropy.f90,v 1.154 2003-05-05 18:48:51 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -25,7 +25,7 @@ module Entropy
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
-  real :: lambda_cool=0.
+  real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
@@ -44,10 +44,10 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
-       lambda_cool
+       heat_uniform
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ssm=0,i_ugradpm=0
+  integer :: i_eth=0,i_TTm=0,i_yHm=0,i_ssm=0,i_ugradpm=0
 
   contains
 
@@ -81,7 +81,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.153 2003-04-27 16:20:14 brandenb Exp $")
+           "$Id: entropy.f90,v 1.154 2003-05-05 18:48:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -373,6 +373,7 @@ module Entropy
       real, dimension (nx,3) :: uu,glnrho,gss
       real, dimension (nx) :: ugss,uglnrho, divu
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
+      real, dimension (nx) :: rho,ee,TT,yH
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho
@@ -395,7 +396,8 @@ module Entropy
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+      call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde, &
+        Temperature=TT,InternalEnergy=ee,IonizationFrac=yH)
       if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),1./TT1(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition
@@ -437,7 +439,7 @@ module Entropy
 !
 !  heating/cooling
 !
-      if ((luminosity /= 0) .or. (cool /= 0) .or. (lambda_cool /= 0)) &
+      if ((luminosity /= 0) .or. (cool /= 0) .or. (heat_uniform /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
 !ngrs: switch off for debug
@@ -450,9 +452,15 @@ module Entropy
 !
 !  Calculate entropy related diagnostics
 !
-      if (ldiagnos) then
-        if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
-        if (i_ugradpm/=0) then
+      if(ldiagnos) then
+        if(i_eth/=0) then
+          rho=exp(lnrho)
+          call sum_mn_name(rho*ee,i_eth)
+        endif
+        if(i_TTm/=0) call sum_mn_name(TT,i_TTm)
+        if(i_yHm/=0) call sum_mn_name(yH,i_yHm)
+        if(i_ssm/=0) call sum_mn_name(ss,i_ssm)
+        if(i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
           call sum_mn_name(cs2*(uglnrho+ugss),i_ugradpm)
         endif
@@ -685,7 +693,7 @@ endif
 !***********************************************************************
     subroutine calc_heat_cool(f,df,rho1,cs2,TT1)
 !
-!  heating and cooling
+!  add combined heating and cooling
 !
 !  02-jul-02/wolf: coded
 !
@@ -710,6 +718,10 @@ endif
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
+!
+!  initialize
+!
+      heat=0.
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
@@ -758,12 +770,11 @@ endif
         endselect
       endif
 !
-!  overwrite with spatially uniform cooling (as a test)
+!  add spatially uniform heating (usually as a test)
 !
-      if(lambda_cool/=0) then
-        heat=-lambda_cool/rho1
-        if(headtt) print*,'heat=',heat
-      endif
+      if(heat_uniform/=0.) heat=heat+heat_uniform
+!
+!  add to entropy equation
 !
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
 !
@@ -809,16 +820,22 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ssm=0; i_ugradpm=0
+        i_eth=0; i_TTm=0; i_yHm=0; i_ssm=0; i_ugradpm=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
+        call parse_name(iname,cname(iname),cform(iname),'TTm',i_TTm)
+        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
+      write(3,*) 'i_eth=',i_eth
+      write(3,*) 'i_TTm=',i_TTm
+      write(3,*) 'i_yHm=',i_yHm
       write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'i_ugradpm=',i_ugradpm
       write(3,*) 'nname=',nname

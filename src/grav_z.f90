@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.32 2003-04-26 09:21:06 brandenb Exp $
+! $Id: grav_z.f90,v 1.33 2003-05-05 18:48:52 brandenb Exp $
 
 module Gravity
 
@@ -21,7 +21,7 @@ module Gravity
 
   integer :: ngrav=10
   real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
-  real :: lnrho_bot,ss_bot
+  real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   character (len=labellen) :: grav_profile='const'
 
@@ -46,13 +46,15 @@ module Gravity
 !      |
 !
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav,lnrho_bot,ss_bot
+       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav, &
+       lnrho_bot,lnrho_top,ss_bot,ss_top
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       zref,gravz,nu_epicycle,grav_profile,zgrav,lnrho_bot,ss_bot
+       zref,gravz,nu_epicycle,grav_profile,zgrav, &
+       lnrho_bot,lnrho_top,ss_bot,ss_top
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -78,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.32 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.33 2003-05-05 18:48:52 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
