@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.18 2002-05-01 18:16:12 dobler Exp $
+! $Id: nompicomm.f90,v 1.19 2002-05-04 12:34:55 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -213,49 +213,52 @@ module Mpicomm
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !
-      if (bcz1(ient) == "c1") then
-        if (bcz1(ilnrho) /= "a2") &
-             call stop_it("Inconsistent boundary conditions 1.")
-        tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n1,ient) - gamma1*f(:,:,n1,ilnrho))
-        tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
-        do i=1,nghost
-          f(:,:,n1-i,ient) = &
-               (2*i*dx*tmp_xy &
-                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
-               )/gamma &
-               + f(:,:,n1+i,ient)
-        enddo
-      endif
+      if (lentropy) then
+        if (bcz1(ient) == "c1") then
+          if (bcz1(ilnrho) /= "a2") &
+               call stop_it("Inconsistent boundary conditions 1.")
+          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n1,ient) - gamma1*f(:,:,n1,ilnrho))
+          tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
+          do i=1,nghost
+            f(:,:,n1-i,ient) = &
+                 (2*i*dx*tmp_xy &
+                  + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
+                 )/gamma &
+                 + f(:,:,n1+i,ient)
+          enddo
+        endif
 !
-      if (bcz2(ient) == "c1") then
-        if (bcz2(ilnrho) /= "a2") &
-             call stop_it("Inconsistent boundary conditions 2.")
-        tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n2,ient) - gamma1*f(:,:,n2,ilnrho))
-        tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
-        do i=1,nghost
-          f(:,:,n2+i,ient) = &
-               (-2*i*dx*tmp_xy &
-                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
-               )/gamma &
-               + f(:,:,n2-i,ient)
-        enddo
-      endif
+        if (bcz2(ient) == "c1") then
+          if (bcz2(ilnrho) /= "a2") &
+               call stop_it("Inconsistent boundary conditions 2.")
+          tmp_xy = gamma1/gamma & ! 1/T_0 (i.e. 1/T at boundary)
+                   * exp(-gamma*f(:,:,n2,ient) - gamma1*f(:,:,n2,ilnrho))
+          tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
+          do i=1,nghost
+            f(:,:,n2+i,ient) = &
+                 (-2*i*dx*tmp_xy &
+                  + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
+                 )/gamma &
+                 + f(:,:,n2-i,ient)
+          enddo
+        endif
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for
 !  entropy and density.
 !  NB: Sound speed is set to cs0, so this is mostly useful for top boundary.  
 !
-      if (bcz2(ient) == "c2") then
-        if (bcz1(ilnrho) /= "a2") &
-             call stop_it("Inconsistent boundary conditions 4.")
-        tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
-        f(:,:,n2,ient) = tmp_xy
-        do i=1,nghost
-          f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
-        enddo
-      endif
+        if (bcz2(ient) == "c2") then
+          if (bcz1(ilnrho) /= "a2") &
+               call stop_it("Inconsistent boundary conditions 4.")
+          tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          f(:,:,n2,ient) = tmp_xy
+          do i=1,nghost
+            f(:,:,n2+i,ient) = 2*tmp_xy - f(:,:,n2-i,ient)
+          enddo
+        endif
+!
+      endif                     ! (lentropy)
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
