@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.72 2003-08-30 17:01:24 dobler Exp $
+# $Id: getconf.csh,v 1.73 2003-08-30 17:21:06 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -34,10 +34,12 @@ set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
 echo $ncpus CPUs
 
-# Location of executables; can be overwritten below
+# Location of executables and other default settings; can be overwritten
+# below
 set start_x = "src/start.x"
 set run_x   = "src/run.x"
 set x_ops = ""         # arguments to both start.x and run.x
+set mpirun = 'mpirun'
 
 # Settings for machines with local data disks
 # local_disc     = 1 means processes uses their own local scratch disc(s) for
