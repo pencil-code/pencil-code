@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.122 2002-11-14 12:29:46 dobler Exp $
+### $Id: Makefile,v 1.123 2002-11-14 13:25:11 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -204,6 +204,7 @@ $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(G
 $(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o
 $(IO).o:        $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 $(TIMEAVG).o:   $(TIMEAVG).f90 cdata.o
+$(FFT).o:	cdata.o
 timeavg.o:      timeavg.f90 ctimeavg.local
 nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
 power_spectrum.o:power_spectrum.f90 cdata.o sub.o $(MPICOMM).o general.o
