@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.79 2003-09-06 17:39:33 ajohan Exp $ 
+! $Id: initcond.f90,v 1.80 2003-09-10 07:08:34 ajohan Exp $ 
 
 module Initcond 
  
@@ -694,8 +694,9 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,ztop,cs20,hh0,lnrhosum_box,rho0
-      integer :: i,j,k
+      real :: gamma1,ztop,cs20,hh0
+      real :: lnrhosum_box,lnrhosum_thisbox,rho0
+      real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
 !
 !  calculate sigma
 !
@@ -704,7 +705,8 @@ module Initcond
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
       if (sigma2<0. .and. lroot) then
-        print*,'planet: sigma2<0 not allowed; choose another value of eps_planet'
+        print*, &
+            'planet: sigma2<0 not allowed; choose another value of eps_planet'
       else
         sigma=sqrt(sigma2)
       endif
@@ -745,16 +747,7 @@ module Initcond
 !
 !  Calculate enthalpy outside vortex
 !
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            if(r_ell(i,j,k) .gt. 1) then
-              hh(i,j,k) = &
-                   -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
-            endif
-          enddo
-        enddo
-      enddo
+      where (r_ell .gt. 1) hh=-0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0 
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
@@ -790,15 +783,28 @@ module Initcond
 !
 !  Use average density of box as unit density
 !
-      do i=1,mx
-        do j=1,my
-          do k=1,mz
-            lnrhosum_box = lnrhosum_box + f(i,j,k,ilnrho)
-          enddo
-        enddo
-      enddo
-      rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      if (ip < 14) print*,'planet_hc: rho0=',rho0
+      lnrhosum_thisbox = sum(f(l1:l2,m1:m2,n1:n2,ilnrho))
+      if (ip<14) &
+        print*,'planet_hc: iproc,lnrhosum_thisbox=',iproc,lnrhosum_thisbox
+!
+!  Must put sum_thisbox in 1-dimensional array 
+!
+      lnrhosum_thisbox_tmp = (/ lnrhosum_thisbox /)
+!
+!  Add sum_thisbox up for all processors, deliver to root
+!
+      call mpireduce_sum(lnrhosum_thisbox_tmp,lnrhosum_wholebox,1)
+      if (lroot .and. ip<14) &
+        print*,'planet_hc: lnrhosum_wholebox=',lnrhosum_wholebox
+!
+!  Calculate <rho> and send to all processors
+!      
+      if (lroot) rho0 = exp(-lnrhosum_wholebox(1)/(nxgrid*nygrid*nzgrid))
+      call mpibcast_real_scl(rho0,1)
+      if (ip<14) print*,'planet_hc: iproc,rho0=',iproc,rho0
+!
+!  Multiply density by rho0 (divide by <rho>)
+!      
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !      
     endsubroutine planet
