@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.98 2003-11-20 16:34:39 mee Exp $
+# $Id: getconf.csh,v 1.99 2003-11-21 14:01:16 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -394,7 +394,7 @@ set procdirs = \
 if ($local_disc) then
   echo "Creating directory structure on scratch disc(s)"
   foreach host ($nodelist)
-    $SSH $host "mkdir -p $SCRATCH_DIR/$procdirs $SCRATCH_DIR/$subdirs" 
+    $SSH $host "mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
   end
 endif
 
