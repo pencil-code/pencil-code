@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.26 2004-03-20 14:44:47 snod Exp $
+! $Id: cosmicray.f90,v 1.27 2004-03-20 14:47:41 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -39,7 +39,7 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
-  real :: limiter_cr=5.
+  real :: limiter_ecr=5.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -85,7 +85,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.26 2004-03-20 14:44:47 snod Exp $")
+           "$Id: cosmicray.f90,v 1.27 2004-03-20 14:47:41 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -344,6 +344,7 @@ module CosmicRay
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
       real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
+      real, dimension (nx) :: hhh2,quenchfactor
 !
 !  use global Kperp, Kpara ?
 ! 
