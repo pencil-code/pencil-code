@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.184 2003-07-15 11:27:49 nilshau Exp $
+%%  CVS: $Id: manual.tex,v 1.185 2003-07-15 13:28:52 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}
+\date{$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}
+  \emph{$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2403,32 +2403,28 @@ is given by
   \ =\ \mathcal{F}(u(x,y,z))
   &=& \frac{1}{N_x N_y N_z} \sum_{p=0}^{N_x-1} \sum_{q=0}^{N_y-1} 
        \sum_{r=0}^{N_z-1} u(x_p,y_q,z_r)  \nonumber \\
-  & & {} \times \exp(-i K_x  x_p) \exp(-i K_y y_q) 
-         \exp(-i K_z z_r) ,
+  & & {} \times \exp(-i k_x  x_p) \exp(-i k_y y_q) 
+         \exp(-i k_z z_r) ,
 \end{eqnarray}
 where
 \[
-  K_x = \frac{2\pi}{N_x}k_x \, ,\qquad
-  K_y = \frac{2\pi}{N_y}k_y \, ,\qquad
-  K_z = \frac{2\pi}{N_z}k_z \, ,
-\]
-and 
-\[
-   1 \le k_x\frac{L}{2 \pi} \le N_x \, ,\qquad
-   1 \le k_y\frac{L}{2 \pi} \le N_y \, ,\qquad
-   1 \le k_z\frac{L}{2 \pi} \le N_z \, ,
+   |k_x| < \frac{\pi N_x}{L_x} \, ,\qquad
+   |k_y| < \frac{\pi N_y}{L_y} \, ,\qquad
+   |k_z| < \frac{\pi N_z}{L_z} \, ,
 \]
 when $L$ is the size of the simulation box.
 The three-dimensional power spectrum $P(k)$ is defined as
 \begin{equation}
   P(k)=\frac{1}{2}\tilde{u}\tilde{u}^*,
 \end{equation}
-when
+where
 \begin{equation}
-  k=\sqrt{k_x^2+k_y^2+k_z^2}, \mbox{ and } 1 \le k \le N_x/2.
+  k=\sqrt{k_x^2+k_y^2+k_z^2} .
 \end{equation}
+Note that we can only reasonably calculate $P(k)$ for $k < \pi N_x/L_x$.
 
-Edit \file{run.in} and add for example the following lines 
+To get power spectra from the code, edit \file{run.in} and add for example
+the following lines
 \begin{alltt}
   dspec=2.3, 
   vel_spec=T,mag_spec=T,
@@ -3275,7 +3271,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-07-15 11:27:49 $ $,~ $ $Revision: 1.184 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-07-15 13:28:52 $ $,~ $ $Revision: 1.185 $ $}}}
 
 \section{Timings}
 
@@ -5543,7 +5539,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.184 2003-07-15 11:27:49 nilshau Exp $ $}
+$ $Id: manual.tex,v 1.185 2003-07-15 13:28:52 dobler Exp $ $}
 
 
 \end{document}
