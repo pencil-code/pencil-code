@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.147 2003-11-24 13:20:33 dobler Exp $ 
+! $Id: sub.f90,v 1.148 2003-11-24 16:03:35 mcmillan Exp $ 
 
 module Sub 
 
@@ -317,6 +317,28 @@ module Sub
       phiy=+x_mn*rcyl_mn1
 !
     endsubroutine calc_phiavg_unitvects
+!***********************************************************************
+    subroutine calc_unitvects_sphere()
+!
+!  Calculate spherical radius unit vectors for given pencil
+!
+!  24-nov-03/dave: coded
+!
+      use Cdata
+!
+      x_mn = x(l1:l2)
+      y_mn = spread(y(m),1,nx)
+      z_mn = spread(z(n),1,nx)
+      r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
+!
+!  evr is the radial unit vector
+!
+      evr(:,1) = x_mn
+      evr(:,2) = y_mn
+      evr(:,3) = z_mn
+      evr = evr / spread(r_mn+epsi,2,3)
+!
+    endsubroutine calc_unitvects_sphere
 !***********************************************************************
     subroutine max_mn(a,res)
 !

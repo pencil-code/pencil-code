@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.168 2003-11-24 13:20:33 dobler Exp $
+! $Id: equ.f90,v 1.169 2003-11-24 16:03:35 mcmillan Exp $
 
 module Equ
 
@@ -231,7 +231,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.168 2003-11-24 13:20:33 dobler Exp $")
+           "$Id: equ.f90,v 1.169 2003-11-24 16:03:35 mcmillan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -286,10 +286,7 @@ module Equ
 !  circumstances where this is not needed.
 !  Note: cylindrical radius currently only needed for phi-averages.
 !
-        x_mn = x(l1:l2)
-        y_mn = spread(y(m),1,nx)
-        z_mn = spread(z(n),1,nx)
-        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
+        call calc_unitvects_sphere()
 !
 !  calculate profile for phi-averages if needed
 !

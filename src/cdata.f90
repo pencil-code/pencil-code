@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.182 2003-11-24 13:20:33 dobler Exp $
+! $Id: cdata.f90,v 1.183 2003-11-24 16:03:35 mcmillan Exp $
 
 module Cdata
 
@@ -12,6 +12,7 @@ module Cdata
   real, dimension (mz) :: z
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
+  real, dimension (nx,3) :: evr    ! sprherical unit radius vector
   real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
   real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor

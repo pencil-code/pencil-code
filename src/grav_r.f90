@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.57 2003-11-20 18:51:18 brandenb Exp $
+! $Id: grav_r.f90,v 1.58 2003-11-24 16:03:35 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.57 2003-11-20 18:51:18 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.58 2003-11-24 16:03:35 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -84,11 +84,11 @@ module Gravity
 !
 !ajwm - need to figure out how to call this from start.f90
       use Cdata
-      use Sub, only: poly
+      use Sub, only: poly, calc_unitvects_sphere
       use Mpicomm
       use Global
 !
-      real, dimension (nx,3) :: evr,gg_mn
+      real, dimension (nx,3) :: gg_mn
       real, dimension (nx) :: g_r
       real :: r0pot
       integer, parameter :: npot=10  !(exponent for smoothed potential)
@@ -162,20 +162,8 @@ module Gravity
         n=nn(imn)
         m=mm(imn)
 !
-!  set x_mn, y_mn, z_mn and r_mn
+        call calc_unitvects_sphere()
 !
-!
-        x_mn = x(l1:l2)
-        y_mn = spread(y(m),1,nx)
-        z_mn = spread(z(n),1,nx)
-        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
-!
-!  evr is the radial unit vector
-!
-        evr(:,1) = x_mn
-        evr(:,2) = y_mn
-        evr(:,3) = z_mn
-        evr = evr / spread(r_mn+epsi,2,3)
         if (lpade) then
           g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
                                   3*(cpot(1)*cpot(5)-cpot(3)), &
@@ -227,18 +215,15 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: evr,gg_mn,uu
+      real, dimension (nx,3) :: gg_mn,uu
       real, dimension (nx) :: g_r,rho1
 !
 !  evr is the radial unit vector
 !
 if (.false.) then               ! switch between the two methods for timing
 !if (.true.) then               ! switch between the two methods for timing
-      evr(:,1) = x_mn
-      evr(:,2) = y_mn
-      evr(:,3) = z_mn
-      evr = evr / spread(r_mn+epsi,2,3)
-      g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
+!
+       g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
                               3*(cpot(1)*cpot(5)-cpot(3)), &
                               4*cpot(1)*cpot(3), &
                               cpot(5)*cpot(2)-cpot(3)*cpot(4), &
@@ -247,6 +232,10 @@ if (.false.) then               ! switch between the two methods for timing
                    / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
 !      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
 !                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
+!
+! dgm: radial unit vector evr now calculated in subroutine 
+! calc_unitvects_sphere()
+!
       gg_mn = evr*spread(g_r,2,3)
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 else
