@@ -1,8 +1,8 @@
-! $Id: cosmicray.f90,v 1.23 2004-01-31 14:01:22 dobler Exp $
+! $Id: cosmicray.f90,v 1.24 2004-02-07 11:12:21 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
-!  ZEUS 3D implementation.  
+!  ZEUS 3D implementation.
 !
 !  this module solves for ln(ecr).  ecr is used for lnecr  
 
@@ -84,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.23 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.24 2004-02-07 11:12:21 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
