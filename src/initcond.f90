@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.1 2002-07-08 06:51:51 brandenb Exp $ 
+! $Id: initcond.f90,v 1.2 2002-07-09 18:37:49 dobler Exp $ 
 
 module Initcond 
  
@@ -250,7 +250,7 @@ module Initcond
 !
     endsubroutine htube
 !***********************************************************************
-    subroutine hlayer(ampl,f,i,xx,yy,zz,width)
+    subroutine hlayer(ampl,f,i,xx,yy,zz,zflayer,width)
 !
 !  Horizontal flux layer (for vector potential)
 !
@@ -259,16 +259,16 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: ampl,width
+      real :: ampl,zflayer,width
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'HLAYER: set variable to zero; i=',i
       else
-        print*,'horizontal flux layer; i=',i
+        if (lroot) print*,'horizontal flux layer; i=',i
         if ((ip<=16).and.lroot) print*,'ampl,width=',ampl,width
         f(:,:,:,i  )=0.
-        f(:,:,:,i+1)=ampl*tanh(zz/width)
+        f(:,:,:,i+1)=ampl*tanh((zz-zflayer)/width)
         f(:,:,:,i+2)=0.
       endif
 !

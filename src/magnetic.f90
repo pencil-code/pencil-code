@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.67 2002-07-08 23:34:25 brandenb Exp $
+! $Id: magnetic.f90,v 1.68 2002-07-09 18:37:49 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@ module Magnetic
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5
+  real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5,z0aa=0.
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa=0.,ky_aa=0.,kz_aa=0.
   logical :: lpress_equil
@@ -27,7 +27,7 @@ module Magnetic
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
-       radius,epsilonaa,widthaa, &
+       radius,epsilonaa,z0aa,widthaa, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
        lpress_equil
 
@@ -80,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.67 2002-07-08 23:34:25 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.68 2002-07-09 18:37:49 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -116,8 +116,10 @@ module Magnetic
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,kx=1.)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,ky=1.)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,kz=1.)
-      case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
-      case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
+      case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz, &
+                                            radius,epsilonaa)
+      case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz, &
+                                               z0aa,widthaa)
       case('uniform-Bx', '23'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
