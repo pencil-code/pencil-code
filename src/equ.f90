@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.189 2004-01-30 14:26:50 dobler Exp $
+! $Id: equ.f90,v 1.190 2004-01-31 13:46:59 dobler Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.189 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: equ.f90,v 1.190 2004-01-31 13:46:59 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -396,7 +396,7 @@ module Equ
             if (ldiagnos.and.i_dtv/=0) then
               call max_mn_name(maxadvec/dxmin/cdt,i_dtv,l_dt=.true.)
             endif
-            UUtemp=max_for_dt(maxadvec,cdt*maxdiffus/(cdtvDim*dxmin))
+            UUtemp=amax1(maxadvec,cdt*maxdiffus/(cdtvDim*dxmin))
             call max_mn(UUtemp,UUmax)
           else
             call max_mn(sqrt(maxadvec2)+(cdt*maxdiffus)/(cdtvDim*dxmin),UUmax)
