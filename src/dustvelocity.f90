@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.11 2003-08-05 03:53:29 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.12 2003-08-07 14:18:57 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.11 2003-08-05 03:53:29 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.12 2003-08-07 14:18:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,12 +148,14 @@ module Dustvelocity
       use Cdata
       use Sub
       use IO
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
-      real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud,fac
-      real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz,rho1,rhod1
+      real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud,fac,taug1
+      real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz
+      real, dimension (nx) :: rho1,rhod1,rhod
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j
 !
@@ -225,24 +227,39 @@ module Dustvelocity
 !
 !  calculate viscous and drag force
 !
+      if (taud /= 0 .and. beta /= 0) &
+        call stop_it("Both tau_d and beta specified. Please specify only one!")
+
       call del2v(f,iuud,del2ud)
       maxdiffus=amax1(maxdiffus,nud)
-      !if (taud /= 0.) taud1=1./taud
-      !df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-taud1*(uud-uu)
+      if (taud /= 0.) then
+        taud1=1./taud
+        df(l1:l2,m,n,iudx:iudz)= &
+            df(l1:l2,m,n,iudx:iudz)+nud*del2ud-taud1*(uud-uu)
+      endif
 !
-      rhod1=exp(-f(l1:l2,m,n,ilnrhod))
-      do j=1,3; fac(:,j)=beta*rhod1; enddo
-      df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-fac*(uud-uu)
+      if (beta /= 0.) then
+        rhod1=exp(-f(l1:l2,m,n,ilnrhod))
+        do j=1,3; fac(:,j)=beta*rhod1; enddo
+        df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-fac*(uud-uu)
+      endif
 !
 !  add drag force on gas (if Mdust_to_Mgas is large enough)
 !
       if(lfeedback_gas) then
         rho1=exp(-f(l1:l2,m,n,ilnrho))
-        do j=1,3; fac(:,j)=beta*rho1; enddo
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-fac*(uu-uud)
+        if (taud /= 0.) then
+          rhod=exp(f(l1:l2,m,n,ilnrhod))
+          do j=1,3; taug1(:,j)=rhod*rho1*taud1; enddo
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-taug1*(uu-uud)
+        endif
+        if (beta /= 0.) then
+          do j=1,3; fac(:,j)=beta*rho1; enddo
+          df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-fac*(uu-uud)
+        endif
       endif
 !
-!  maximum squared avection speed
+!  maximum squared advection speed
 !
       if (headtt.or.ldebug) print*,'hydro: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,ud2)
