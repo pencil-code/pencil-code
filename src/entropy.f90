@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.247 2003-11-19 16:41:51 theine Exp $
+! $Id: entropy.f90,v 1.248 2003-11-19 17:37:28 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -45,7 +45,7 @@ module Entropy
   real :: heat_uniform=0.
   logical :: lsinus_heat=.false.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
-  logical :: lcalc_heatcond_constchi=.false.
+  logical :: lcalc_heatcond=.true.,lcalc_heatcond_constchi=.false.
   logical :: lupw_ss=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
@@ -63,7 +63,7 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
-       chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
+       chi,lcalc_heatcond,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.247 2003-11-19 16:41:51 theine Exp $")
+           "$Id: entropy.f90,v 1.248 2003-11-19 17:37:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -813,17 +813,20 @@ module Entropy
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
 !  thermal conduction
+!  take none or one of the three choiced.
 !
       if (lcalc_heatcond_simple) then
         call calc_heatcond_simple(f,df,rho1,glnrho,gss)
       elseif (lcalc_heatcond_constchi) then
         call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
-      else
-        !if ((hcond0 /= 0) .or. (chi_t /= 0)) &  !!(AB: needed?)
+      elseif (lcalc_heatcond) then
         call calc_heatcond(f,df,rho1,glnrho,gss)
+      else
+        if (headtt) print*,'dss_dt: no calc_heatcond, may need chi_shock'
       endif
 !
 !  shock entropy diffusion
+!  Can now also take care of constant contribution, chi_t.
 !
       if (chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,glnTT,gss,shock,gshock)
 !
@@ -936,6 +939,7 @@ module Entropy
 !  This routine should be ok with ionization.
 !
 !  20-jul-03/axel: adapted from calc_heatcond_constchi
+!  19-nov-03/axel: added chi_t also here.
 !
       use Cdata
       use Mpicomm
@@ -966,10 +970,8 @@ module Entropy
 !  Write: chi_shock = chi_shock0*shock, and gshock=grad(shock), so
 !  Ds/Dt = ... + chi_shock0*[shock*(del2ss+glnpp.gss) + gshock.gss]
 !
-      if(chi_shock/=0.) then
-        if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
-          thdiff = thdiff + chi_shock*(shock*(del2ss+g2)+gshockgss)
-      endif
+      if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
+      thdiff=(chi_shock*shock+chi_t)*(del2ss+g2)+chi_shock*gshockgss
 !
 !  add heat conduction to entropy equation
 !
@@ -980,11 +982,9 @@ module Entropy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-!  NEED TO FIX THIS
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi_shock*maxval(shock))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(chi_t+chi_shock*maxval(shock)))
 !
       if(ip==0) print*,rho1,glnrho !(keep compiler quiet)
-!
     endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
