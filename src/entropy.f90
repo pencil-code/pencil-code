@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-02-21 18:05:15 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-02-22 11:55:18 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -208,7 +208,7 @@ module Entropy
         ! surface cooling towards s=0
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-        prof = step(r_mn,1.,wcool)
+        prof = step(r_mn,z3,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 
@@ -222,14 +222,22 @@ module Entropy
 !
       use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,z3,hcond0,hcond1,hcond2,whcond
       use Sub, only: step
+
+use IO
+use Mpicomm,only:imn,directory
+
 !
       real, dimension (nx) :: x,y,z
       real, dimension (nx) :: hcond
 !
       if (lgravz) then
-        hcond = hcond0 * (1 + (hcond1-1)*step(z,z2,whcond))
+        hcond = 1 + (hcond1-1)*step(z,z1,-whcond) &
+                  + (hcond2-1)*step(z,z2,whcond)
+        hcond = hcond0*hcond
       endif
-
+call output_stenc(trim(directory)//'/step.dat',step(z,z2,whcond),1,imn)
+write(0,*) 'z0,z1,z2,z3 = ',z0,z1,z2,z3
+write(0,*) 'hcond0,hcond1,hcond2 = ',hcond0,hcond1,hcond2
       if (lgravr) then
         write(0,*) 'What should I do in heatcond() for spherical geometry?'
       endif
