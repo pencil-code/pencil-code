@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.221 2003-11-24 20:11:57 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.222 2003-11-27 13:30:37 mcmillan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-24 20:11:57 $ $,~ $ $Revision: 1.221 $ $}
+%\date{$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-24 20:11:57 $ $,~ $ $Revision: 1.221 $ $}\\
+  \emph{$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3567,7 +3567,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-24 20:11:57 $ $,~ $ $Revision: 1.221 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}
 
 \section{Timings}
 
@@ -5624,11 +5624,23 @@ the latest set of parameters, you need to look at the code.
                  $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
                  Useful for situations where initial conditions are not near
                  equilibrium. \\
-  \var{dampuext} [$0.$], \\
-  \var{rdamp} [$1.2$], \\
+  \var{dampuint} [$0.$], 
+               & weighting of damping external to spherical region 
+                 (see \var{wdamp}, $\var{damp}_u$ below). \\
+  \var{dampuext} [$0.$], 
+               & weighting of damping in internal spherical region 
+                 (see \var{wdamp}, $\var{damp}_u$ below). \\
+  \var{rdampint} [$0.$], 
+               & radius of internal damping region  \\
+  \var{rdampext} [impossible], 
+               & radius of external damping region, used in place of 
+                 former variable \var{rdamp} \\
   \var{wdamp} [$0.2$]
-               & permanently damp motions in $|\xv|>r_{\rm damp}$ with
-                 damping term $-\var{damp}_u \,\uv\,\chi(r{-}r_{\rm damp})$,
+               & permanently damp motions in $|\xv|<r_{\rm dampint}$ 
+	         with damping term 
+                 $-\var{damp}_uint \,\uv\,\chi(r{-}r_{\rm dampint})$
+                 or $|\xv|>r_{\rm dampext}$ with damping term 
+                 $-\var{damp}_uext \,\uv\,\chi(r{-}r_{\rm dampext})$,
                  where $\chi(\cdot)$ is a smooth profile of width
                  \var{wdamp}. \\
 %
@@ -5739,6 +5751,12 @@ the latest set of parameters, you need to look at the code.
   \var{height_eta} [$0.$], \\
   \var{eta_out} [$0.$]
                & used to add extra diffusivity in a halo region. \\
+  \var{eta_int} [$0.$]
+               & used to add extra diffusivity inside sphere of
+                 radius \var{r_int}. \\
+  \var{eta_ext} [$0.$]
+               & used to add extra diffusivity outside sphere of
+                 radius \var{r_ext}. \\
   \var{kinflow} [\code{''}]
                & set type of flow fixed with \option{nohydro}. Currently
                  the only recognized value is \code{'ABC'} for an $ABC$
@@ -6249,7 +6267,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.221 2003-11-24 20:11:57 dobler Exp $ $}
+$ $Id: manual.tex,v 1.222 2003-11-27 13:30:37 mcmillan Exp $ $}
 
 
 \end{document}
