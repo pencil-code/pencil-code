@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.63 2004-03-11 09:51:40 dobler Exp $
+! $Id: forcing.f90,v 1.64 2004-03-17 16:45:18 nilshau Exp $
 
 module Forcing
 
@@ -58,7 +58,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.63 2004-03-11 09:51:40 dobler Exp $")
+           "$Id: forcing.f90,v 1.64 2004-03-17 16:45:18 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -338,7 +338,6 @@ module Forcing
       else
         ex=1; ey=0; ez=0
       endif
-      kde=kx*ex+ky*ey+kz*ez
       if (.not. old_forcing_evector) then
         !
         !  Isotropize ee in the plane perp. to kk by
@@ -356,13 +355,11 @@ module Forcing
         call random_number_wrapper(phi); phi = phi*2*pi
         ee = cos(phi)*e1 + sin(phi)*e2
         ex=ee(1); ey=ee(2); ez=ee(3)
-        ! kde = kx*ex+ky*ey+kz*ez
-        call dot(kk,ee,kde)
       endif
 !
 !  k.e
 !
-      !kde=kx*ex+ky*ey+kz*ez
+      call dot(kk,ee,kde)
 !
 !  k x e
 !
@@ -575,6 +572,7 @@ module Forcing
 !
       use Mpicomm
       use Cdata
+      use General
       use Sub
       use Hydro
 !
@@ -593,6 +591,8 @@ module Forcing
       integer, save :: ifirst,nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
       real :: k2,k,ex,ey,ez,kde,sig=1.,fact
+      real, dimension(3) :: ek,e1,e2,ee,kk
+      real :: norm,phi
 !
       if (ifirst==0) then
         if (lroot) print*,'force_hel_noshear: opening k.dat'
@@ -628,17 +628,39 @@ module Forcing
       k2=float(kx**2+ky**2+kz**2)
       k=sqrt(k2)
 !
-!  pick e1 if kk not parallel to ee1. ee2 else.
+! Find e-vector
 !
+      !
+      ! Start with old method (not isotropic) for now.
+      ! Pick e1 if kk not parallel to ee1. ee2 else.
+      !
       if((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
       endif
+      if (.not. old_forcing_evector) then
+        !
+        !  Isotropize ee in the plane perp. to kk by
+        !  (1) constructing two basis vectors for the plane perpendicular
+        !      to kk, and
+        !  (2) choosing a random direction in that plane (angle phi)
+        !  Need to do this in order for the forcing to be isotropic.
+        !
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+      endif
 !
 !  k.e
 !
-      kde=kx*ex+ky*ey+kz*ez
+      call dot(kk,ee,kde)
 !
 !  k x e
 !
@@ -1223,6 +1245,8 @@ module Forcing
       integer :: ifirst
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
+      real, dimension(3) :: ek,e1,e2,ee,kk
+      real :: norm,phi
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
 !  Here, St=-deltay/Lx
@@ -1237,17 +1261,39 @@ module Forcing
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
-!  pick e1 if kk not parallel to ee1. ee2 else.
+! Find e-vector
 !
+      !
+      ! Start with old method (not isotropic) for now.
+      ! Pick e1 if kk not parallel to ee1. ee2 else.
+      !
       if((ky.eq.0).and.(kz.eq.0)) then
         ex=0; ey=1; ez=0
       else
         ex=1; ey=0; ez=0
       endif
+      if (.not. old_forcing_evector) then
+        !
+        !  Isotropize ee in the plane perp. to kk by
+        !  (1) constructing two basis vectors for the plane perpendicular
+        !      to kk, and
+        !  (2) choosing a random direction in that plane (angle phi)
+        !  Need to do this in order for the forcing to be isotropic.
+        !
+        kk = (/kx, ky, kz/)
+        ee = (/ex, ey, ez/)
+        call cross(kk,ee,e1)
+        call dot2(e1,norm); e1=e1/sqrt(norm) ! e1: unit vector perp. to kk
+        call cross(kk,e1,e2)
+        call dot2(e2,norm); e2=e2/sqrt(norm) ! e2: unit vector perp. to kk, e1
+        call random_number_wrapper(phi); phi = phi*2*pi
+        ee = cos(phi)*e1 + sin(phi)*e2
+        ex=ee(1); ey=ee(2); ez=ee(3)
+      endif
 !
 !  k.e
 !
-      kde=kx*ex+ky*ey+kz*ez
+      call dot(kk,ee,kde)
 !
 !  k x e
 !
