@@ -28,8 +28,7 @@
 ;;;   string must not be preceeded by white space in the data file,
 ;;;   i.e. the line must begin directly with it.
 ;;; - /DOUBLE tells INPUT_TABLE to read double precision values; the
-;;;   default are FLOATs
-;;; - /VERBOSE tells INPUT_TABLE to waffle a lot.
+;;;   default are FLOATs;;; - /VERBOSE tells INPUT_TABLE to waffle a lot.
 ;;; - STOP_AT may be set on entry to a regular expression to test against
 ;;;   each line of input.  When a match INPUT_TABLE stops reading data
 ;;;   returning the current file position in FILEPOSITION and the content
@@ -112,8 +111,9 @@ function input_table, filename, $
     iline = fileposition
   endif
   fileposition=-1 
-  
-  while ((not eof(in_file)) and (idat lt N_lines-1)) do begin
+  found_stop=0
+  while ((not eof(in_file)) and (idat lt N_lines-1) $
+                            and (not found_stop)) do begin
     readf, in_file, line
     if (N_cols eq 0) then begin
       N_cols = n_elements(STRSPLIT(line,'[\ ]',/REGEX,/EXTRACT))
@@ -144,15 +144,17 @@ function input_table, filename, $
       if (stregex(line,STOP_AT,/BOOLEAN)) then begin     
         point_lun,-in_file,fileposition  ;Save the file position
         STOP_AT=line                 ;Return the line
-        break                        ;Exit the loop
+        found_stop=-1                ;Exit the loop
       endif
     endif
 
-    is_comm = (strmid(line,0,clen) eq cchar)
-    if (not is_comm) then begin ; If this is not a comment line
-      reads, line, row
-      data[*,idat] = row
-      idat = idat + 1
+    if (not found_stop) then begin
+      is_comm = (strmid(line,0,clen) eq cchar)
+      if (not is_comm) then begin ; If this is not a comment line
+        reads, line, row
+        data[*,idat] = row
+        idat = idat + 1
+      endif
     endif
 
     iline = iline + 1
