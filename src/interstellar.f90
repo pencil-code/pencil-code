@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.56 2003-10-07 10:39:18 nilshau Exp $
+! $Id: interstellar.f90,v 1.57 2003-10-07 13:58:25 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -113,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.56 2003-10-07 10:39:18 nilshau Exp $")
+           "$Id: interstellar.f90,v 1.57 2003-10-07 13:58:25 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -526,7 +526,7 @@ module Interstellar
     use Cdata
     use General
     use Mpicomm
-    use Ionization
+    use Ionization, only: ionget, thermodynamics
 !
     real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
     real, intent(in) , dimension(ncpus) :: mass_cloud_byproc
@@ -535,7 +535,7 @@ module Interstellar
     real, dimension(1) :: franSN
     real :: mass_cloud,cum_mass,cum_prob_onproc
     real :: lnrho,rho,ss,TT,yH
-    integer :: icpu,li
+    integer :: icpu,l
 !
 !
 !  identifier
@@ -583,17 +583,17 @@ module Interstellar
       cum_mass=0.0
 find_SN: do n=n1,n2
         do m=m1,m2
-          do li=l1,l2
-            lnrho=f(li,m,n,ilnrho)
+          do l=l1,l2
+            lnrho=f(l,m,n,ilnrho)
             rho=exp(lnrho)
-            ss=f(li,m,n,iss)
+            ss=f(l,m,n,iss)
             call ionget(lnrho,ss,yH,TT)
             call thermodynamics(lnrho,ss,yH,TT)
             if (rho >= rho_crit .and. TT <= TT_crit) then
               cum_mass=cum_mass+rho
               cum_prob_onproc=cum_mass/mass_cloud
               if (franSN(1) <= cum_prob_onproc) then
-                l_SN=li; m_SN=m; n_SN=n
+                l_SN=l; m_SN=m; n_SN=n
                 if (ip<14) &
                  print*,'position_SNII: cum_mass,cum_prob_onproc,franSN(1)=', &
                                   cum_mass,cum_prob_onproc,franSN(1)
