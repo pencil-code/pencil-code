@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.133 2004-09-28 19:53:20 dobler Exp $
+# $Id: getconf.csh,v 1.134 2004-09-28 22:09:35 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -580,7 +580,7 @@ endif
 # Remove file, if not needed, to avoid confusion.
 if (-f $datadir/directory_snap) rm $datadir/directory_snap
 if ($local_disc) then
-  echo $SCRATCH_DIR >$datadir/directory_snap
+  echo $SCRATCH_DIR >! $datadir/directory_snap
 endif
 
 if ($local_binary) then

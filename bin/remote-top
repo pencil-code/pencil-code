@@ -3,7 +3,7 @@
 # Name:   remote-top
 # Author: wd+ab
 # Date:    7-Oct-2002
-# $Id: remote-top,v 1.6 2004-02-05 23:31:51 dobler Exp $
+# $Id: remote-top,v 1.7 2004-09-28 22:09:35 dobler Exp $
 # Description:
 #     does top -bn1 on all procs of nodelist, write to datadir
 
@@ -14,10 +14,13 @@ set nodelist = `echo "$NODELIST" | sed 's/:/ /g'`
 
 # Check for existence of `top' command:
 set node = $nodelist[1]
-set top_cmd = 'top -bn1 2>&1 > /dev/null; echo $?'
+set top_cmd = 'env TERM=dumb top -bn1 2>&1 > /dev/null; echo $?'
 set top_stat = `$SSH $node "sh -c '$top_cmd'"`
 if ("$top_stat" != "0") then         # return status should be 0
-  echo "remote-top: Can't find top command on $node --- exiting"
+  echo "remote-top: Can't find top command on $node"
+  echo "Command was: <$SSH $node "'"'"sh -c '$top_cmd'"'">'
+  echo "Reply was: <$top_stat>"
+  echo "Exiting"
   exit 1
 endif
 
@@ -40,7 +43,7 @@ while (1)
   set i=0
   foreach node ($nodelist)
     if ($debug) echo "node=$node; targetdir=$targetdir"
-    $SSH $node "top -bn1 >! $targetdir/proc$i/top.log"
+    $SSH $node "sh -c 'env TERM=dumb top -bn1 > $targetdir/proc$i/top.log'"
     set i = `expr $i + 1`
     echo 'i=' $i
   end
