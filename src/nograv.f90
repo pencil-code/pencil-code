@@ -1,7 +1,7 @@
 module Gravity
 
 !
-!  Vertical gravity (for convection tests, etc.)
+!  Dummy model: no gravity
 !
 
   use Cparam
@@ -16,6 +16,7 @@ module Gravity
 !  initialise gravity flags
 !
 !  9-jan-02/wolf: coded
+! 28-mar-02/axel: adapted from grav_z
 !
       use Cdata
       use Mpicomm
@@ -29,12 +30,12 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.6 $", &
+           "$RCSfile: nograv.f90,v $", &
+           "$Revision: 1.1 $", &
            "$Date: 2002-03-28 18:51:49 $")
 !
-      lgrav = .true.
-      lgravz = .true.
+      lgrav = .false.
+      lgravz = .false.
       lgravr = .false.
 !
     endsubroutine register_grav
@@ -42,7 +43,7 @@ module Gravity
     subroutine init_grav(f,init,ampl,xx,yy,zz)
 !
 !  initialise gravity; called from start.f90
-!  9-jan-02/wolf: coded
+!   9-jan-02/wolf: coded
 !
       use Cdata
 !
@@ -58,9 +59,9 @@ module Gravity
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !
-!  add duu/dt according to gravity
+!  add nothing to duu/dt
 !
-!  9-jan-02/wolf: coded
+! 28-mar-02/axel: adapted from grav_z
 !
       use Cdata
 !      use Mpicomm
@@ -69,21 +70,20 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
 !
-      df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
-!
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential(xmn,ymn,zmn,rmn, pot)
 !
 !  gravity potential
-!  21-jan-02/wolf: coded
+!  28-mar-02/axel: adapted from grav_z
 !
-      use Cdata, only: nx,ny,nz,gravz
+      use Cdata, only: nx,ny,nz,gravz,lroot
       use Sub, only: poly
 !
       real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
 !
-      pot = -gravz*zmn
+      if (lroot) print*,'potential: should not have been called'
+      pot = 0.
 !
     endsubroutine potential
 !***********************************************************************

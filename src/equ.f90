@@ -275,8 +275,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.23 $", &
-           "$Date: 2002-03-09 20:18:55 $")
+           "$Revision: 1.24 $", &
+           "$Date: 2002-03-28 18:51:49 $")
 !
 !  initiate communication
 !
@@ -301,7 +301,7 @@ module Equ
         call gij(f,iuu,uij)
         call grad(f,ilnrho,glnrho)
 !
-!  rho1 is needed by viscous term and heat conduction
+!  rho1 (=1/rho) is needed by viscous term and heat conduction
 !
         rho1=exp(-f(l1:l2,m,n,ilnrho))
 !

@@ -169,7 +169,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.10 $ $}
+\date{\today,~ $ $Revision: 1.11 $ $}
 
 % ====================================================================== %
 
@@ -185,11 +185,11 @@
 
   \vspace*{3cm}
 
-  {\Large\sffamily\bfseries Installing and Using the High-Order MHD MPI code}
+  {\Large\sffamily\bfseries HOMPI -- A High-Order MPI code for MHD Turbulence}
 
   \vspace{0.5cm}
 
-  {\sffamily A very preliminary manual}
+  {\sffamily Installation, Usage, and Tests}
 
   \vspace{1.5cm}
 
@@ -198,7 +198,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.10 $ $}
+  \emph{\today,~ $ $Revision: 1.11 $ $}
 
 
 \end{center}
@@ -252,7 +252,7 @@ This code is therefore particularly well suited for all kind of
 dynamo problems.
 
 The code is non-conservative. Thus, conserved quantities should only be
-conserved up to the discretization error of the scheme (not the machine acuracy). Fully conservative
+conserved up to the discretization error of the scheme (not the machine accuracy). Fully conservative
 schemes cannot easily deal with large temperature and density contrasts
 and there is no guarantee that a conservative code is more accurate with
 respect to quantities that are not explicitly conserved, such as entropy.
@@ -366,6 +366,19 @@ provided as the default configuration of the code.
 
 It is absolutely mandatory to monitor exactly what one is doing.
 IDL is a very useful tool to inspect the data in a very flexible fashion.
+
+\subsection{A first test}
+
+Before explaining details of the code, we want to make sure it runs ok.
+We want to have a simple example (periodic, isothermal, non-forced)
+where the physics is already nontrivial.
+
+EXPLAIN: isotrop1, plan to set-up vortex rings as initial condition,
+without magnetic fields etc.
+
+\subsection{Other test problems}
+
+1-D shock tube, interlocked pair of flux rings, stably stratified atmosphere.
 
 % ====================================================================== %
 
@@ -535,7 +548,7 @@ Basic sequence:
   \prompt{IDL> }  .run r
   \prompt{IDL> }  {\sf[specific commands]} \
 \end{alltt}
-You call \file{start.pro} once to initialise the fields and read in the
+You call \file{start.pro} once to initialize the fields and read in the
 startup parameters from the code.
 Each time you want to read in a new snapshot, you run \file{r.pro},
 possibly after adjusting the IDL variable \var{file} to a specific snapshot
@@ -781,6 +794,17 @@ Not all parameters are used for a given scenario.
 
 
 % ---------------------------------------------------------------------- %
+\section{How to put new things into the code}
+
+The best is to write a new module that takes care of everything.
+In many cases it will not be enough to just replace (in the Makefile)
+an already existing module. Instead, it will often be necessary to
+add new things into several other routines. In order to come back
+to other cases (needed for regular tests of the code and for future
+releases) it is important to supply also a corresponding dummy routine,
+whose name will start with `no'.
+
+% ---------------------------------------------------------------------- %
 \section{Frequently asked questions}
 
 \begin{itemize}
@@ -847,7 +871,7 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.10 2002-03-27 16:11:23 dobler Exp $ $}
+$ $Id: manual.tex,v 1.11 2002-03-28 18:51:49 brandenb Exp $ $}
 
 
 \end{document}

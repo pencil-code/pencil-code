@@ -21,17 +21,18 @@ default, file, 'var.dat'
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
-nx=0L & ny=0L & nz=0L & nw=0L
+nx=0L & ny=0L & nz=0L & nvar=0L
 prec=''
 nghx=0L & nghy=0L & nghz=0L
 ;
 close,1
 openr,1,datadir+'/'+'dim.dat'
-readf,1,nx,ny,nz,nw
+readf,1,nx,ny,nz,nvar
 readf,1,prec
 readf,1,nghx,nghy,nghz
 close,1
 ;
+nw=nx*ny*nz  ;(this must be calculated; its not in dim.dat)
 ;nxtot = nx+2*nghx
 ;nytot = ny+2*nghy
 ;nztot = nz+2*nghz

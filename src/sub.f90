@@ -1107,7 +1107,6 @@ module Sub
 !  print CVS Revision info in a compact, yet structured form
 !  17-jan-02/wolf: coded
 !
-
       character (len=*) :: rcsfile, revision, date
       integer :: rcsflen, revlen, datelen
 

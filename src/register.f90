@@ -1,5 +1,5 @@
 
-!!!  A module for setting up f and related variables (`register' the
+!!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
 !!!  Entropy uses Sub and Init must be used by both, Start and Run.
 
@@ -71,12 +71,12 @@ module Register
         print*, 'iux,iuy,iuz = ', iux,iuy,iuz
       endif
 !
-!  identify version number
+!  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-03-08 15:43:19 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-03-28 18:51:49 $")
 !
 !
       if (nvar > mvar) then
@@ -105,6 +105,9 @@ module Register
       real :: zmax,lnrho0
       real :: beta1,lnrhoint,cs2int
       integer :: init,i
+!
+!  init corresponds to different initializations (called from start).
+!  If init does't match, f=0 is assumed (default).
 !
       select case(init)
       case(0)               ! random ux (Gaussian distribution)

@@ -40,9 +40,15 @@ endelse
 ;
 ;  Read data
 ;
+;AB: the following is not quite save, nvar=7 could mean other things...
+;
 close,1
 openr,1, datadir+'/'+file, /F77
-readu,1, uu, lam, ent, aa
+if nvar eq 8 then begin
+  readu,1, uu, lam, ent, aa
+end else if nvar eq 7 then begin
+  readu,1, uu, lam, aa
+end
 readu,1, t, x, y, z
 close,1
 ;
