@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.169 2003-06-14 14:35:01 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.170 2003-06-17 15:39:03 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-14 14:35:01 $ $,~ $ $Revision: 1.169 $ $}
+\date{$ $Date: 2003-06-17 15:39:03 $ $,~ $ $Revision: 1.170 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-14 14:35:01 $ $,~ $ $Revision: 1.169 $ $}
+  \emph{$ $Date: 2003-06-17 15:39:03 $ $,~ $ $Revision: 1.170 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2828,6 +2828,37 @@ starting point.
 
 \subsection{Compilation}
 
+\subsubsection{When compiling with MPI on a Linux system, the linker
+  complains:}
+\begin{Verbatim}
+  mpicomm.o: In function `mpicomm_mpicomm_init_':
+  mpicomm.o(.text+0x36): undefined reference to `mpi_init_'
+  mpicomm.o(.text+0x55): undefined reference to `mpi_comm_size_'
+  mpicomm.o(.text+0x6f): undefined reference to `mpi_comm_rank_'
+  [...]
+\end{Verbatim}
+
+\medskip
+
+{\em
+  This is the infamous \name{underscore problem}.
+  Your \name{MPI} libraries have been compiled with \name{G77} without the
+  option \option{-fno-second-underscore}, which makes the \name{MPI}
+  symbol names incompatible with other Fortran compilers.
+
+  As a workaround, use
+  \begin{Verbatim}
+  MPICOMM = mpicomm_
+  \end{Verbatim}
+  in \file{Makefile.local}.
+  Or, even better, you can set this globally (for the given computer) by
+  inserting  that line into the file
+  \file[.adapt-mkfile.inc]{\~{}/.adapt-mkfile.inc}
+  (see \code{perldoc adapt-mkfile} for more details).
+  \index{adapt-mkfile}
+}
+
+
 \subsubsection{Compilation stops with the cryptic error message:}
 \begin{Verbatim}
   f95  -O3 -u -c .f90.f90
@@ -5126,7 +5157,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.169 2003-06-14 14:35:01 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.170 2003-06-17 15:39:03 dobler Exp $ $}
 
 
 \end{document}
