@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.67 2002-07-23 09:56:30 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.68 2002-07-23 13:53:11 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.67 $ $}
+\date{\today,~ $ $Revision: 1.68 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.67 $ $}
+  \emph{\today,~ $ $Revision: 1.68 $ $}
 
 
 \end{center}
@@ -2775,31 +2775,72 @@ The machines we have used can be characterized as follows:
   1\,GB memory per (dual) node
 \item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
   1\,GB memory per (dual) node;
+  256\,kB cache per CPU;
   Gigabit ethernet;
   SuSE Linux 8.0;
   LAM-MPI
+\item[Cincinnatus:] 1.7\,GHz Pentium 4 single CPU;
+  1\,GB memory;
+  256\,kB cache per CPU;
+  SuSE Linux 7.3
 \item[Ukaff:] SGI Origin 3000;
   400\,MHz IP35 CPUs;
   IRIX 6.5;
   native MPI
 \item[Mhd:] EV6 Compaq cluster with 4 CPUs per node;
-  4\,;GB memory per node (i.\,e.~1\,GB per CPU)
+  4\,GB memory per node (i.\,e.~1\,GB per CPU)
   OSF1 4.0;
   native MPI
 \end{description}
 
-%WD: The following should be in table or is outdated (???):
+Table~\ref{Ttimescale-convsample} shows a similar list, but for a few
+well-defined sample problems.
 
-%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
-%CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
-%CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
-%CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
-%CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
-%CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
+% ---------------------------------------------------------------------- %
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Like Table~\ref{Ttimescale}, but for the versions from the
+      \file{samples} directory.
+    }
+    \label{Ttimescale-convsample}
+    \begin{small}
+    \begin{tabular}{rllrlrll}
+    \toprule
+    \mcc{proc(s)}
+       & \mcc{machine}
+             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
+                    & \mcc{resol.} 
+                                    & \mcc{mem./proc}
+                                                    & \mcc{when}&\mcc{who}\\
+    \midrule
+      \multicolumn{7}{c}{\emph{conv-slab}}\\
+    \midrule
+        1 & Mhd         & 6.45 &  $32^3$ &    4 Mb & 23-jul-02 & wd \\
+        1 & Cincinnatus & 4.82 &  $32^3$ &    3 Mb & 23-jul-02 & wd \\
+        1 & Cincinnatus & 11.6 &  $64^3$ &   14 Mb & 23-jul-02 & wd \\
+        1 & Cincinnatus & 20.8 & $128^3$ &   93 Mb & 23-jul-02 & wd \\
+        1 & Kabul       & 3.91 &  $32^3$ &         & 23-jul-02 & wd \\
+        1 & Kabul       & 3.88 &  $64^3$ &         & 23-jul-02 & wd \\
+        1 & Kabul       & 4.16 & $128^3$ &   93 Mb & 23-jul-02 & wd \\
+    \midrule
+      \multicolumn{7}{c}{\emph{conv-slab-flat}}\\
+    \midrule
+        1 & Kabul       & 3.02 &  $128^2{\times}32$
+                                         &   29 Mb & 23-jul-02 & wd \\
+        2 & Kabul       & 1.81 &  $128^2{\times}32$
+                                         &   18 Mb & 23-jul-02 & wd \\
+        4 & Kabul       & 1.03 &  $128^2{\times}32$
+                                         &   11 Mb & 23-jul-02 & wd \\
+        8 & Kabul       & 0.87 &  $128^2{\times}32$
+                                         &    9 Mb & 23-jul-02 & wd \\
+    \bottomrule
+    \end{tabular}
+    \end{small}
+  \end{center}
+\end{table}
+% ---------------------------------------------------------------------- %
 
-%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
-%7288 with 32x32x64 (single processor, linux)
-%print,38*38*71.*8.*2.*4./1e6
 
 % ====================================================================== %
 
@@ -3117,7 +3158,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.67 2002-07-23 09:56:30 dobler Exp $ $}
+$ $Id: manual.tex,v 1.68 2002-07-23 13:53:11 dobler Exp $ $}
 
 
 \end{document}
