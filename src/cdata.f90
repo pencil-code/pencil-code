@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.75 2002-07-18 23:09:50 dobler Exp $
+! $Id: cdata.f90,v 1.76 2002-07-20 17:43:53 dobler Exp $
 
 module Cdata
 
@@ -41,10 +41,11 @@ module Cdata
   integer :: ie,iff,ifx,ify,ifz
   integer :: nt=0,it1=10
   integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
-  integer :: ivisc=0
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
+  character (len=labellen) :: ivisc='simplified'
+
 !
 !  in this section are all the things related to printing
 !

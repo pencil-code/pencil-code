@@ -5,7 +5,7 @@
 
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
-MPICOMM=nompicomm
+MPICOMM=mpicomm
 GLOBAL=noglobal
 GRAVITY=nograv
 FORCING=noforcing

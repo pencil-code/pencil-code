@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.37 2002-07-19 12:41:34 dobler Exp $
+! $Id: density.f90,v 1.38 2002-07-20 17:43:53 dobler Exp $
 
 module Density
 
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.37 2002-07-19 12:41:34 dobler Exp $")
+           "$Id: density.f90,v 1.38 2002-07-20 17:43:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -149,7 +149,7 @@ module Density
         !
         if (lgravr) then
           if (lroot) print*, &
-               'radial density stratification (assumes s=const) -- FIXME'
+               'radial density stratification (assumes s=const)'
           call setup_grav()     ! get coefficients cpot(1:5)
           call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)

@@ -2,13 +2,13 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.13 2002-07-04 06:41:28 dobler Exp $'
+  cvsid='$Id: run.in,v 1.14 2002-07-20 17:43:57 dobler Exp $'
   nt=1, it1=1, cdt=0.4, cdtv=0.80, isave=50, itorder=3,
   dsnap=50, dvid=0.5,
   ip=14
   /
 &hydro_run_pars
-  nu=0., ivisc=0,
+  nu=0., ivisc='0',
 /
 &density_run_pars
 /

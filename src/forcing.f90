@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.17 2002-07-11 12:51:17 dobler Exp $
+! $Id: forcing.f90,v 1.18 2002-07-20 17:43:53 dobler Exp $
 
 module Forcing
 
@@ -8,8 +8,9 @@ module Forcing
 
   implicit none
 
-  integer :: iforce=2,iforce2=0,kfountain=5
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
+  integer :: kfountain=5
+  character (len=labellen) :: iforce='zero', iforce2='zero'
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
@@ -40,7 +41,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.17 2002-07-11 12:51:17 dobler Exp $")
+           "$Id: forcing.f90,v 1.18 2002-07-20 17:43:53 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -59,14 +60,37 @@ module Forcing
 !
 !  calculate and add forcing function
 !
-      if(iforce==1) call forcing_irro(f)
-      if(iforce==2) call forcing_hel(f)
-      if(iforce==3) call forcing_fountain(f)
-      if(iforce==4) call forcing_hshear(f)
+      select case(iforce)
+      case ('zero')
+        if (lroot) print*,'No forcing'
+      case ('irrotational', '1')
+        call forcing_irro(f)
+      case ('helical', '2')
+        call forcing_hel(f)
+      case ('fountain', '3')
+        call forcing_fountain(f)
+      case ('horizontal-shear', '4')
+        call forcing_hshear(f)
+      case default
+        if (lroot) print*, 'No such forcing iforce=', trim(iforce)
+      endselect
 !
 !  add *additional* forcing function
 !
-      if(iforce2==1) call forcing_fountain(f)
+      select case(iforce2)
+      case ('zero')
+        if (headtt .and. lroot) print*,'No additional forcing'
+      case ('irrotational')
+        call forcing_irro(f)
+      case ('helical')
+        call forcing_hel(f)
+      case ('fountain', '1')    ! the '1' is for historical reasons only
+        call forcing_fountain(f)
+      case ('horizontal-shear')
+        call forcing_hshear(f)
+      case default
+        if (lroot) print*, 'No such forcing iforce2=', trim(iforce2)
+      endselect
 !
       if (headtt.or.ldebug) print*,'FORCING: done addforce'
 !
@@ -96,7 +120,7 @@ module Forcing
       integer :: ik,j,jf
 !
       if (ifirst==0) then
-        if (lroot) print*,'opening k.dat'
+        if (lroot) print*,'irrotational forcing; opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'average k=',kav
@@ -169,7 +193,7 @@ module Forcing
       real :: k2,k,ex,ey,ez,kde,sig=1.,fact
 !
       if (ifirst==0) then
-        if (lroot) print*,'opening k.dat'
+        if (lroot) print*,'helical forcing; opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
         if (lroot) print*,'average k=',kav
@@ -338,6 +362,10 @@ module Forcing
       real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
       real :: kx,ky,kz,ffnorm,fac
 !
+!  identify ourselves
+!
+      if (headtt.or.ldebug) print*,'Roberts forcing'
+!
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
 !  to a delta function of the time difference
@@ -403,6 +431,10 @@ module Forcing
       real, dimension (my) :: sy,cy
       real, dimension (mz) :: sz,cz,tmpz,gz,gg,ss=1.,gz1
       real :: kx,ky,kz,ffnorm,fac
+!
+!  identify ourselves
+!
+      if (headtt.or.ldebug) print*,'fountain forcing'
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional

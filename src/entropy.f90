@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.96 2002-07-19 12:41:34 dobler Exp $
+! $Id: entropy.f90,v 1.97 2002-07-20 17:43:53 dobler Exp $
 
 module Entropy
 
@@ -61,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.96 2002-07-19 12:41:34 dobler Exp $")
+           "$Id: entropy.f90,v 1.97 2002-07-20 17:43:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -331,20 +331,24 @@ module Entropy
       enddo
 !
 !  calculate 1/T (in units of cp)
-!  Viscous heating depends on ivisc; no visc heating if ivisc=0
+!  Viscous heating depends on ivisc; no visc heating if ivisc='simplified'
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1 ok'
-      if (ivisc==2) then
-        if (headtt) print*,'viscous heating: ivisc=',ivisc
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
-      elseif (ivisc==1) then
-        if (headtt) print*,'viscous heating: ivisc=',ivisc
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
-      elseif (ivisc==0) then
+
+      select case(ivisc)
+      case ('simplified', '0')
         if (headtt) print*,'no heating: ivisc=',ivisc
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
-      endif
+      case('rho_mu-const', '1')
+        if (headtt) print*,'viscous heating: ivisc=',ivisc
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2*rho1
+      case('nu-const', '2')
+        if (headtt) print*,'viscous heating: ivisc=',ivisc
+        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss + TT1*2.*nu*sij2
+      case default
+        if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
+      endselect
 !
 !  thermal conduction
 !

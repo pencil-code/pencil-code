@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.50 2002-07-19 13:01:12 dobler Exp $
+! $Id: hydro.f90,v 1.51 2002-07-20 17:43:53 dobler Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.50 2002-07-19 13:01:12 dobler Exp $")
+           "$Id: hydro.f90,v 1.51 2002-07-20 17:43:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -295,6 +295,7 @@ module Hydro
 !  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !
       use Cdata
+      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -330,7 +331,7 @@ module Hydro
 !
 !  calculate rate of strain tensor
 !
-      if (lentropy.or.ivisc==2) then
+      if (lentropy.or.ivisc=='nu-const') then
         do j=1,3
           do i=1,3
             sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
@@ -365,7 +366,7 @@ module Hydro
         endif
       endif
 !
-!  calculate grad(lnrho) here: needed for ivisc=2 and continuity
+!  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
 !
       if(ldensity) call grad(f,ilnrho,glnrho)
 !
@@ -374,30 +375,38 @@ module Hydro
 !
       if (nu /= 0.) then
         select case (ivisc)
-!
-!  viscous force: nu*del2v
-!
-        case (0)
+
+        case ('simplified', '0')
+          !
+          !  viscous force: nu*del2v
+          !  -- not physically correct (no momentum conservation), but
+          !  numerically easy and in most cases qualitatively OK
+          !
           if (headtt) print*,'viscous force: nu*del2v'
           call del2v(f,iuu,del2u)
           fvisc=nu*del2u
           maxdiffus=amax1(maxdiffus,nu)
-!
-!  viscous force: mu/rho*(del2u+graddivu/3)
-!
-        case(1)
+
+        case('rho_mu-const', '1')
+          !
+          !  viscous force: mu/rho*(del2u+graddivu/3)
+          !  -- the correct expression for rho*nu=const (=rho0*nu)
+          !
           if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=1'
+          if (.not.ldensity) &
+               print*, "ldensity better be .true. for ivisc='rho_mu-const'"
           murho1=(nu*rho0)*rho1  !(=mu/rho)
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
           do i=1,3
             fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
           enddo
           maxdiffus=amax1(maxdiffus,murho1)
-!
-!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
-!
-        case(2)
+
+        case('nu-const', '2')
+          !
+          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+          !  -- the correct expression for nu=const
+          !
           if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
           if (.not.ldensity) print*,'ldensity better be .true. for ivisc=2'
           call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
@@ -406,11 +415,19 @@ module Hydro
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,nu)
           else
-            if(lfirstpoint) print*,'ldensity better be .true. for ivisc=2'
+            if(lfirstpoint) &
+                 print*,"ldensity better be .true. for ivisc='nu-const'"
           endif
+
         case default
-          if (headtt) print*,'no viscous force'
+        !
+        !  Catch unknown values
+        !
+        if (lroot) print*, 'No such such value for ivisc: ', trim(ivisc)
+        call stop_it('DUU_DT')
+
         endselect
+
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
       else ! (nu=0)
         if (headtt) print*,'no viscous force: (nu=0)'
@@ -422,9 +439,9 @@ module Hydro
       if (headtt.or.ldebug) print*,'maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
 !
-!  >> Wolfgang, could you please reinstate this if you still need it?
-!  >> Your old material is now in the damping routine below.
-!  >> if (...) call udamping(f,df)
+!  damp motions in some regions for some time spans if desired
+!
+      if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
