@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.1 2002-06-04 08:19:54 brandenb Exp $
+! $Id: density.f90,v 1.2 2002-06-04 10:02:30 brandenb Exp $
 
 module Density
 
@@ -7,12 +7,12 @@ module Density
   implicit none
 
   integer :: initlnrho=0
-  real :: cs0=1., rho0=1., amplrho=1., gamma=5./3., widthlnrho=.1, &
+  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho, &
           cs20, cs2top, gamma1
 
   namelist /density_init_pars/ &
-       cs0,rho0,amplrho,gamma,initlnrho,widthlnrho, &
+       cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
        rho_left,rho_right
 
   namelist /density_run_pars/ &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-06-04 08:19:54 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-06-04 10:02:30 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -64,7 +64,7 @@ module Density
 !
     endsubroutine register_density
 !***********************************************************************
-    subroutine init_density(f,xx,yy,zz)
+    subroutine init_lnrho(f,xx,yy,zz)
 !
 !  initialise lnrho; called from start.f90
 !
@@ -83,8 +83,6 @@ module Density
 !AB   real :: beta1,lnrhoint,cs2int
 !AB   integer :: i
 !
-      cs20=cs0**2
-!
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
@@ -96,14 +94,16 @@ module Density
         if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal/polytropic)'
         f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
       case(2)
-        if (lroot) print*,'density jump; amplrho,widthlnrho=',amplrho,widthlnrho
-        f(:,:,:,ilnrho)=alog(rho0)+alog(amplrho)*.5*(1.+tanh(zz/widthlnrho))
+        if (lroot) print*,'density jump; rho_left,right=',rho_left,rho_right
+        if (lroot) print*,'density jump; widthlnrho=',widthlnrho
+        prof=.5*(1.+tanh(zz/widthlnrho))
+        f(:,:,:,ilnrho)=alog(rho_left)+alog(rho_left/rho_right)*prof
 !
 !  sound wave (should be consistent with hydro module)
 !
       case(11)
-        if (lroot) print*,'sound wave; amplrho=',amplrho
-        f(:,:,:,ilnrho)=alog(amplrho)*sin(xx)
+        if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
+        f(:,:,:,ilnrho)=ampllnrho*sin(xx)
 !
 !  shock tube test (should be consistent with hydro module)
 !  
@@ -119,7 +119,7 @@ module Density
       endselect
 !
       if(ip==0) print*,prof,yy
-    endsubroutine init_density
+    endsubroutine init_lnrho
 !***********************************************************************
     subroutine rprint_density(lreset)
 !

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.16 2002-06-02 07:51:39 brandenb Exp $
+! $Id: noentropy.f90,v 1.17 2002-06-04 10:02:30 brandenb Exp $
 
 module Entropy
 
@@ -42,8 +42,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-06-02 07:51:39 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-06-04 10:02:30 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -67,7 +67,7 @@ module Entropy
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
 !
-      use Cdata
+      use Density
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
@@ -89,9 +89,13 @@ module Entropy
         endif
         first=.false.
       endif
-      gpprho=cs20*glnrho
-      if(ip==1) print*,f,df,uu,uij,divu,rho1,glnrho,gpprho  !(to remove compiler warnings)
 !
+!  sound speed squared; isothermal pressure gradient
+!
+      cs20=cs0**2
+      gpprho=cs20*glnrho
+!
+      if(ip==1) print*,f,df,uu,uij,divu,rho1,glnrho,gpprho  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset)

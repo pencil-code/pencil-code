@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.35 2002-06-03 07:02:21 brandenb Exp $
+! $Id: start.f90,v 1.36 2002-06-04 10:02:30 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,8 +31,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.35 $", &
-             "$Date: 2002-06-03 07:02:21 $")
+             "$Revision: 1.36 $", &
+             "$Date: 2002-06-04 10:02:30 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -91,6 +91,7 @@
 !
         f = 0.
         call init_hydro(f,xx,yy,zz)
+        call init_lnrho(f,xx,yy,zz)
         call init_ent  (f,xx,yy,zz)
         call init_aa   (f,xx,yy,zz)
         call init_grav (f,xx,yy,zz)

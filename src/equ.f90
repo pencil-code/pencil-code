@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.51 2002-06-04 08:12:02 brandenb Exp $
+! $Id: equ.f90,v 1.52 2002-06-04 10:02:30 brandenb Exp $
 
 module Equ
 
@@ -171,8 +171,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.51 $", &
-           "$Date: 2002-06-04 08:12:02 $")
+           "$Revision: 1.52 $", &
+           "$Date: 2002-06-04 10:02:30 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -241,18 +241,13 @@ module Equ
 !
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu + fvisc
 !
-!  entropy equation
-!  needs to be called every time even with noentropy,
+!  entropy equation: needs to be called EVERY time EVEN with noentropy,
 !  because it is here that we set cs2, TT1, and gpprho
 !
-!       if (lentropy .or. headtt) then
-          call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
-!       endif
+        call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
-        !!if (lentropy) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
 !
 !  thermal part of eq. of motion (pressure force)
-!
 !
 !  magnetic part
 !

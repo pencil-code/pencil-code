@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.15 2002-06-04 08:12:02 brandenb Exp $
+! $Id: hydro.f90,v 1.16 2002-06-04 10:02:30 brandenb Exp $
 
 module Hydro
 
@@ -8,7 +8,7 @@ module Hydro
 
   implicit none
 
-  integer :: init=0,inituu=0
+  integer :: init=-1,inituu=0
   real :: ampluu=0., widthuu=.1, urand=0.
   real :: uu_left=1.,uu_right=1.
 
@@ -58,8 +58,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-06-04 08:12:02 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-06-04 10:02:30 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -107,7 +107,7 @@ module Hydro
 !  sound wave (should be consistent with density module)
 !
       case(11)
-        print*,'sound wave in the x-direction'
+        print*,'x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(xx)
 !
 !  shock tube test (should be consistent with density module)
