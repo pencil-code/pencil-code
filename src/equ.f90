@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.118 2003-02-02 16:54:02 dobler Exp $
+! $Id: equ.f90,v 1.119 2003-02-02 17:46:03 brandenb Exp $
 
 module Equ
 
@@ -103,7 +103,7 @@ module Equ
 !  (and fnamez).
 !  In other words: the whole xy-average is present in one and the same fsumz,
 !  but the result is not complete on any of the processors before
-!  mpireduce_sum has been called. This is impler than collecting results
+!  mpireduce_sum has been called. This is simpler than collecting results
 !  first in processors with the same ipz and different ipy, and then
 !  assemble result from the subset of ipz processors which have ipy=0
 !  back on the root processor.
@@ -209,7 +209,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.118 2003-02-02 16:54:02 dobler Exp $")
+           "$Id: equ.f90,v 1.119 2003-02-02 17:46:03 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
