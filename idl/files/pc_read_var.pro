@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.13 2004-05-07 14:38:29 mee Exp $
+; $Id: pc_read_var.pro,v 1.14 2004-05-11 15:39:15 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 14:38:29 $
-;  $Revision: 1.13 $
+;  $Date: 2004-05-11 15:39:15 $
+;  $Revision: 1.14 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -32,9 +32,10 @@ COMPILE_OPT IDL2,HIDDEN
 end
 
 pro pc_read_var,t=t,dx=dx,dy=dy,dz=dz,deltay=deltay, $
-                object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
-                variables=variables,tags=tags, TRIMXYZ=TRIMXYZ, $
-                datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+            object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
+            variables=variables,tags=tags, TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL, $
+            nameobject=nameobject, $
+            datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
   COMMON pc_precision, zero, one
@@ -43,7 +44,6 @@ COMPILE_OPT IDL2,HIDDEN
     print, "Usage: "
     print, ""
     print, "pc_read_var, t=t, x=x, y=y, z=z, dx=dx, dy=dy, dz=dz, deltay=deltay, $                     "
-    print, "             uum=uum, lnrhom=lnrhom, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $              "
     print, "             object=object, $                                                              "
     print, "             varfile=varfile, datadir=datadir, proc=proc, $                                "
     print, "             /PRINT, /QUIET, /HELP                                             "
@@ -62,19 +62,18 @@ COMPILE_OPT IDL2,HIDDEN
     print, "       dx: x mesh spacing in code length units                                  [precision]"
     print, "       dy: y mesh spacing in code length units                                  [precision]"
     print, "       dz: z mesh spacing in code length units                                  [precision]"
-;    print, "       uum: velocity field (vector) in code units                    [precision(mx,my,mz,3)]"
-;    print, "    lnrhom: density field (scalar) in code units                       [precision(mx,my,mz)]"
-;    print, "       ss: entropy field (scalar) in code units                       [precision(mx,my,mz)]"
-;    print, "       aa: magnetic vector potential (vector) in code units         [precision(mx,my,mz,3)]"
-;    print, "     lncc: passive scalar field (scalar) in code units                [precision(mx,my,mz)]"
-;    print, "       ee: radiation ??                                               [precision(mx,my,mz)]"
-;    print, "       ff: radiation ??                                               [precision(mx,my,mz)]"
     print, ""
     print, "   object: optional structure in which to return all the above as tags          [structure]"
     print, "           (or if variables is set then only those variables are returned)      [structure]"
     print, "variables: an array of textual names of variables that one would like to have   [string(*)]"
     print, "           returned in the object"
     print, ""
+    print, " /TRIMXYZ: removes the ghost zone points from the x,y,z arrays that are returned           "
+    print, " /TRIMALL: removes the ghost zone points from all returned variables and x,y,z arrays      "
+    print, "             - this is equivalent to wrapping each requested variable with                 "
+    print, "                     pc_noghost(..., dim=dim)                                              "
+    print, "               pc_noghost will skip, i.e. do nothing to variables not initially of size    "
+    print, "                                (dim.mx,dim.my,dim.mz)                                     "
     print, ""
     print, "   /PRINT: instruction to print all variables to standard output                           "
     print, "   /QUIET: instruction not to print any 'helpful' information                              "
@@ -99,6 +98,7 @@ default,varfile,'var.dat'
 pc_set_precision,precision=precision
 pc_read_param,object=param,datadir=datadir,QUIET=QUIET 
 
+if keyword_set(TRIMALL) then TRIMXYZ=1L
 
 nx=dim.nx
 ny=dim.ny
@@ -138,7 +138,6 @@ varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param)
 totalvars=(size(varcontent))[1]-1L
 
 
-
 default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
 default,tags,variables
 
@@ -153,7 +152,11 @@ GET_LUN, file
 res=''
 content=''
 for iv=1L,totalvars do begin
-  res     = res + ',' + varcontent[iv].idlvarloc
+  if (n_elements(proc) eq 1) then begin
+    res     = res + ',' + varcontent[iv].idlvar
+  endif else begin
+    res     = res + ',' + varcontent[iv].idlvarloc
+  endelse
   content = content + ', ' + varcontent[iv].variable
 
   ; Initialise variable
@@ -195,7 +198,7 @@ for i=0,ncpus-1 do begin
   openr,file, filename, /F77
     if not keyword_set(ASSOCIATE) then begin
       if (execute('readu,file'+res) ne 1) then $
-             message, 'Error reading: ' + 'readu,1'+res
+             message, 'Error reading: ' + 'readu,'+str(file)+res
     endif else begin
       message, 'ASSOCIATE BEHAVIOUR NOT IMPLEMENTED HERE YET'
     endelse
@@ -217,51 +220,53 @@ for i=0,ncpus-1 do begin
     ;  accordingly in y and z direction makes a difference on the
     ;  diagonals)
     ;
-    if (procdim.ipx eq 0) then begin
+    if (procdim.ipx eq 0L) then begin
       i0x=0L
-      i1x=i0x+procdim.mx-1
+      i1x=i0x+procdim.mx-1L
       i0xloc=0L 
-      i1xloc=procdim.mx-1
+      i1xloc=procdim.mx-1L
     endif else begin
       i0x=procdim.ipx*procdim.nx+procdim.nghostx 
-      i1x=i0x+procdim.mx-1-procdim.nghostx
-      i0xloc=procdim.nghostx & i1xloc=procdim.mx-1
+      i1x=i0x+procdim.mx-1L-procdim.nghostx
+      i0xloc=procdim.nghostx & i1xloc=procdim.mx-1L
     endelse
     ;
-    if (procdim.ipy eq 0) then begin
+    if (procdim.ipy eq 0L) then begin
       i0y=0L
-      i1y=i0y+procdim.my-1
+      i1y=i0y+procdim.my-1L
       i0yloc=0L 
-      i1yloc=procdim.my-1
+      i1yloc=procdim.my-1L
     endif else begin
       i0y=procdim.ipy*procdim.ny+procdim.nghosty 
-      i1y=i0y+procdim.my-1-procdim.nghosty
+      i1y=i0y+procdim.my-1L-procdim.nghosty
       i0yloc=procdim.nghosty 
-      i1yloc=procdim.my-1
+      i1yloc=procdim.my-1L
     endelse
     ;
-    if (procdim.ipz eq 0) then begin
+    if (procdim.ipz eq 0L) then begin
       i0z=0L
-      i1z=i0z+procdim.mz-1
+      i1z=i0z+procdim.mz-1L
       i0zloc=0L 
-      i1zloc=procdim.mz-1
+      i1zloc=procdim.mz-1L
     endif else begin
       i0z=procdim.ipz*procdim.nz+procdim.nghostz 
-      i1z=i0z+procdim.mz-1-procdim.nghostz
+      i1z=i0z+procdim.mz-1L-procdim.nghostz
       i0zloc=procdim.nghostz 
-      i1zloc=procdim.mz-1
+      i1zloc=procdim.mz-1L
     endelse
 
     x[i0x:i1x] = xloc[i0xloc:i1xloc]
     y[i0y:i1y] = yloc[i0yloc:i1yloc]
     z[i0z:i1z] = zloc[i0zloc:i1zloc]
 
+    
     for iv=1L,totalvars do begin
       if (varcontent[iv].variable eq 'UNKNOWN') then continue
+;DEBUG: tmp=execute("print,'Minmax of "+varcontent[iv].variable+" = ',minmax("+varcontent[iv].idlvarloc+")")
       cmd =   varcontent[iv].idlvar $
-            + "[i0x:i1x,i0y:i1y,i0z:i1z,*]=" $
+            + "[i0x:i1x,i0y:i1y,i0z:i1z,*,*]=" $
             + varcontent[iv].idlvarloc $
-            +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]"
+            +"[i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*,*]"
       if (execute(cmd) ne 1) then $
           message, 'Error combining data for ' + varcontent[iv].variable
 
@@ -295,13 +300,20 @@ if (keyword_set(TRIMXYZ)) then begin
 endif
 
 ; Build structure of all the variables
-if (n_elements(proc) eq 1) then begin
-  objectname=filename+arraytostring(tags,LIST='_')
-endif else begin
-  objectname=datadir+varfile+arraytostring(tags,LIST='_')
-endelse
+;if (n_elements(proc) eq 1) then begin
+;  objectname=filename+arraytostring(tags,LIST='_')
+;endif else begin
+;  objectname=datadir+varfile+arraytostring(tags,LIST='_')
+;endelse
 
-makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
+;makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
+
+if keyword_set(TRIMALL) then begin
+;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
+  variables = 'pc_noghost('+variables+',dim=dim)'
+endif
+
+makeobject="object = CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','dz'" + $
                                      arraytostring(tags,QUOTE="'") + $
                                      "],t,x,y,z,dx,dy,dz" + $
                                      arraytostring(variables) + ")"

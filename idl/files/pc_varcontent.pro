@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.5 2004-05-10 18:22:19 mee Exp $
+;  $Id: pc_varcontent.pro,v 1.6 2004-05-11 15:39:15 mee Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param
 COMPILE_OPT IDL2,HIDDEN
 
@@ -17,7 +17,6 @@ res = flatten_strings(result)
 ;res=''
 ;get_lun,indexfile
 ;openr,indexfile,datadir+'/index.pro'
-
 ;repeat begin
 ;readf,indexfile,res
 if (execute(res) ne 1) then $
@@ -136,14 +135,13 @@ varcontent[iecr].idlvar   = 'ecr'
 varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
-
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
 varcontent[iuud[0]].variable = 'Dust velocity  (uud)'
 varcontent[iuud[0]].idlvar   = 'uud'
-varcontent[iuud[0]].idlinit  = 'fltarr(mx,my,mz,3,'+str(dustcount)+')' 
+varcontent[iuud[0]].idlinit  = 'fltarr(mx,my,mz,3,'+str(dustcount)+')*one' 
 varcontent[iuud[0]].idlvarloc= 'uud_loc'
-varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')'
+varcontent[iuud[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,3,'+str(dustcount)+')*one'
 varcontent[iuud[0]].skip     = (dustcount * 3) - 1
 endif
 
@@ -151,9 +149,9 @@ dustcount=n_elements(ind)
 if (dustcount gt 0L) then begin
 varcontent[ind[0]].variable = 'Dust number density (nd)'
 varcontent[ind[0]].idlvar   = 'nd'
-varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[ind[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
 varcontent[ind[0]].idlvarloc= 'nd_loc'
-varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[ind[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
 varcontent[ind[0]].skip     = dustcount - 1
 endif
 
@@ -161,9 +159,9 @@ dustcount=n_elements(imd)
 if (dustcount gt 0L) then begin
 varcontent[imd[0]].variable = 'Dust density (md)'
 varcontent[imd[0]].idlvar   = 'md'
-varcontent[imd[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[imd[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
 varcontent[imd[0]].idlvarloc= 'md_loc'
-varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[imd[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
 varcontent[imd[0]].skip     = dustcount - 1
 endif
 
@@ -171,9 +169,9 @@ dustcount=n_elements(imi)
 if (dustcount gt 0L) then begin
 varcontent[imi[0]].variable = 'Ice density (mi)'
 varcontent[imi[0]].idlvar   = 'mi'
-varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')' 
+varcontent[imi[0]].idlinit  = 'fltarr(mx,my,mz,'+str(dustcount)+')*one' 
 varcontent[imi[0]].idlvarloc= 'mi_loc'
-varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')'
+varcontent[imi[0]].idlinitloc = 'fltarr(mxloc,myloc,mzloc,'+str(dustcount)+')*one'
 varcontent[imi[0]].skip     = dustcount - 1
 endif
 
@@ -236,7 +234,6 @@ varcontent[0].variable = 'UNKNOWN'
 varcontent[0].idlvar   = 'UNKNOWN'
 varcontent[0].idlinit  = '0.'
 varcontent[0].skip  = 0
-
 
 return,varcontent
 
