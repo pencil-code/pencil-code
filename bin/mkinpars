@@ -4,13 +4,23 @@
 set path = ( $path ../../../bin )
 
 ## Generate start.in and run.in if necessary
-echo $path
-if (! -e start.in) then
+if (-e start.in) then
+  echo "start.in already exists"
+else
   mkdotin --start src/Makefile src/Makefile.local
   echo "Generated start.in"
 endif
 #
-if (! -e run.in ) then
+if (-e run.in ) then
+  echo "run.in already exists"
+else
   mkdotin --run   src/Makefile src/Makefile.local
   echo "Generated run.in"
+endif
+#
+if (-e print.in ) then
+  echo "print.in already exists"
+else
+  printf "%s\n" 'it(f6.0)' 't(f10.3)' > print.in
+  echo "Generated print.in"
 endif

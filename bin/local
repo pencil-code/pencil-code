@@ -1,0 +1,37 @@
+#!/bin/csh
+
+# Name:   local
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   17-Jul-2002
+# Description:
+#   Materialize a link to one or several files or directories (the latter
+#   will not work under some unices (but under Linux).
+
+if ( ($#argv < 1) ||  ("$1" == "-h") || ("$1" == "--help") ) goto usage
+
+set tmpfile = tmp.$$
+
+foreach f ( $* )
+  if (-l $f) then
+    if (-d $f) then		# link to directory
+      cp -rpL $f $tmpfile && rm $f && mv $tmpfile $f
+    else			# link to file
+      cp -p $f $tmpfile && rm $f && mv $tmpfile $f
+    endif
+  else
+    echo "Not a link: $f"
+  endif
+end
+
+exit
+
+usage:
+set cmd_name = "$0"             # OSF1 is idiosyncratic
+set cmd_name = ${cmd_name:t}
+echo "Usage:"
+echo "    $cmd_name <file1> [<file2> ..]"
+echo ""
+echo "Replace a link to a file by a copy. Will also work on directories,"
+echo "but only under some unix dialects (Linux in particular)."
+
+# End of file local
