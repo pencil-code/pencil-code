@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.149 2003-06-17 22:52:39 dobler Exp $
+! $Id: cdata.f90,v 1.150 2003-06-18 20:33:36 brandenb Exp $
 
 module Cdata
 
@@ -98,6 +98,7 @@ module Cdata
 
   logical :: lfirstpoint
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
+  logical :: ro_spec=.false.,ss_spec=.false.,cc_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.,oned=.false.
   logical :: test_nonblocking=.false.
   logical :: lsfu=.false.,lsfb=.false.,lsfz1=.false.,lsfz2=.false.

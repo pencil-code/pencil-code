@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.114 2003-06-18 17:53:16 dobler Exp $ 
+! $Id: param_io.f90,v 1.115 2003-06-18 20:33:36 brandenb Exp $ 
 
 module Param_IO
 
@@ -61,6 +61,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec,ou_spec,ab_spec,fft_switch, &
+       ro_spec,ss_spec,cc_spec, &
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,test_nonblocking, &

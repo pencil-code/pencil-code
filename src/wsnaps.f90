@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.30 2003-06-16 16:38:27 dobler Exp $
+! $Id: wsnaps.f90,v 1.31 2003-06-18 20:33:36 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -147,6 +147,9 @@ contains
          if (vec_spec) call power(a,'a')
          if (ab_spec)  call powerhel(a,'mag')
          if (ou_spec)  call powerhel(a,'kin')
+         if (ro_spec)  call powerscl(a,'ro')
+         if (ss_spec)  call powerscl(a,'ss')
+         if (cc_spec)  call powerscl(a,'cc')
          if (oned) then
             if (vel_spec) call power_1d(a,'u',1)
             if (mag_spec) call power_1d(a,'b',1)

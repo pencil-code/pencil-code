@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -275,6 +275,113 @@ module  power_spectrum
   !
   endsubroutine powerhel
 !***********************************************************************
+  subroutine powerscl(f,sp)
+!
+!  Calculate power spectrum of scalar quantity (on spherical shells) of the
+!  variable specified by `sp', e.g. spectra of cc, rho, etc.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+  integer, parameter :: nk=nx/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real, dimension (mx,my,mz,mvar+maux) :: f
+  real, dimension(nx,ny,nz) :: a_re,a_im
+  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nxgrid) :: kx
+  real, dimension(nygrid) :: ky
+  real, dimension(nzgrid) :: kz
+  character (len=2) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call cvs_id( &
+       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
+  !
+  !   Stopping the run if FFT=nofft (applies only to Singleton fft)
+  !   But at the moment, fftpack is always linked into the code
+  !
+  if(.NOT.lfft.and.fft_switch=='Singleton') &
+    call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+  ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
+  kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
+  !
+  !  initialize power spectrum to zero
+  !
+  spectrum=0.
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  For "kin", calculate spectra of <uk^2> and <ok.uk>
+  !  For "mag", calculate spectra of <bk^2> and <ak.bk>
+  !
+  if (sp=='ro') then
+    a_re=exp(f(l1:l2,m1:m2,n1:n2,ilnrho))
+    a_im=0.
+  elseif (sp=='ss') then
+    a_re=f(l1:l2,m1:m2,n1:n2,ient)
+    a_im=0.
+  elseif (sp=='cc') then
+    !old-- a_re=exp(f(l1:l2,m1:m2,n1:n2,ilncc)
+    a_re=f(l1:l2,m1:m2,n1:n2,ilncc)
+    a_im=0.
+  endif
+  !
+  !  Doing the Fourier transform
+  !
+  select case (fft_switch)
+  case ('fft_nr')
+    call transform_nr(a_re,a_im)
+  case ('fftpack')
+    call transform_fftpack(a_re,a_im)
+  case ('Singleton')
+    call transform_i(a_re,a_im)
+  case default
+    call stop_it("powerhel: no fft_switch chosen")
+  endselect
+  !
+  !  integration over shells
+  !
+  if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+  do ikz=1,nz
+    do iky=1,ny
+      do ikx=1,nx
+        k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+        if(k>=0 .and. k<=(nk-1)) then
+          spectrum(k+1)=spectrum(k+1) &
+             +a_re(ikx,iky,ikz)**2 &
+             +a_im(ikx,iky,ikz)**2
+        endif
+      enddo
+    enddo
+  enddo
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !  ok for helicity, so \int F(k) dk = <o.u> = 1/2 <o*.u+o.u*>
+  !
+  !  append to diagnostics file
+  !
+  if (iproc==root) then
+    if (ip<10) print*,'Writing power spectrum ',sp &
+         ,' to ',trim(datadir)//'/power_'//trim(sp)//'.dat'
+    spectrum_sum=.5*spectrum_sum
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
+    write(1,*) t
+    write(1,'(1p,8e10.2)') spectrum_sum
+    close(1)
+  endif
+  !
+  endsubroutine powerscl
+!***********************************************************************
     subroutine power_1d(f,sp,ivec)
 !
 !  Calculate power spectra (on shperical shells) of the variable
@@ -295,7 +402,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.34 2003-06-18 20:33:36 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
