@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.88 2003-06-09 12:08:11 ajohan Exp $
+! $Id: density.f90,v 1.89 2003-06-11 22:33:28 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.88 2003-06-09 12:08:11 ajohan Exp $")
+           "$Id: density.f90,v 1.89 2003-06-11 22:33:28 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,7 +130,7 @@ module Density
       case('zero', '0'); if(lroot) print*,'zero lnrho'
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
-      case('isothermal'); call isothermal(f)
+      case('isothermal'); call isothermal_density(f)
       case('stratification'); call stratification(amplrho,f,xx,yy,zz)
       case('polytropic_simple'); call polytropic_simple(f)
       case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
@@ -484,15 +484,22 @@ module Density
 !***********************************************************************
 !  Here comes a collection of different density stratification routines
 !***********************************************************************
-    subroutine isothermal(f)
+    subroutine isothermal_density(f)
 !
 !  Isothermal stratification (for lnrho and ss)
 !  This routine should be independent of the gravity module used.
 !  When entropy is present, this module also initializes entropy.
 !
+!  Sound speed (and hence Temperature), and density (at infinity) are 
+!  initialised to their respective reference values:
+!           sound speed: cs^2_0            from start.in  
+!           density: rho0 = exp(lnrho0)
+!
 !   8-jul-02/axel: incorporated/adapted from init_lnrho
 !  11-jul-02/axel: fixed sign; should be tmp=gamma*pot/cs20
 !  02-apr-03/tony: made entropy explicit rather than using tmp/-gamma  
+!  11-jun-03/tony: moved entropy initialisation to separate routine 
+!                  to allow isothermal condition for arbitrary density
 !
       use Gravity
 !
@@ -507,8 +514,12 @@ module Density
         call potential(x(l1:l2),y(m),z(n),pot)
         tmp=-gamma*pot/cs20
         f(l1:l2,m,n,ilnrho)=lnrho0+tmp
-!        if(lentropy) f(l1:l2,m,n,ient)=-gamma1/gamma*tmp
-        if(lentropy) f(l1:l2,m,n,ient)=gamma1*pot/cs20
+!        if(lentropy) f(l1:l2,m,n,ient)= -gamma1/gamma*tmp
+!                                      = gamma1*pot/cs20
+!   MOVED to isothermal_entropy routine
+
+        if(lentropy) f(l1:l2,m,n,ient)= &
+             -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
       enddo
       enddo
 
@@ -519,7 +530,7 @@ module Density
       cs2bot=cs20
       cs2top=cs20
 !
-    endsubroutine isothermal
+    endsubroutine isothermal_density
 !***********************************************************************
     subroutine polytropic_simple(f)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.160 2003-05-30 16:31:48 mee Exp $
+! $Id: entropy.f90,v 1.161 2003-06-11 22:33:28 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.160 2003-05-30 16:31:48 mee Exp $")
+           "$Id: entropy.f90,v 1.161 2003-06-11 22:33:28 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -172,7 +172,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,ient) = 0.
         case('const_ss'); f(:,:,:,ient) = ss_const
         case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,0.)
-        case('isothermal'); if(lroot) print*,'init_ss: isotherm set in density'
+        case('isothermal'); call isothermal_entropy(f)
         case('Ferriere'); if(lroot) print*,'init_ss: Ferriere set in density'
         case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
         case('yjump'); call jump(f,ient,ss_left,ss_right,widthss,'y')
@@ -314,6 +314,38 @@ module Entropy
       if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ss
+!***********************************************************************
+    subroutine isothermal_entropy(f)
+!
+!  Isothermal stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!  Sound speed (and hence Temperature), is
+!  initialised to the reference value:
+!           sound speed: cs^2_0            from start.in  
+!           density: rho0 = exp(lnrho0)
+!
+!  11-jun-03/tony: extracted from isothermal routine in Density module
+!                  to allow isothermal condition for arbitrary density
+!
+!
+      real, dimension (mx,my,mz,mvar) :: f
+!
+      do n=n1,n2
+      do m=m1,m2
+        f(l1:l2,m,n,ient)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
+                  ! + other terms for sound speed not equal to cs_0
+      enddo
+      enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  The values calculated here may be revised in the entropy module.
+!
+      cs2bot=cs20
+      cs2top=cs20
+!
+    endsubroutine isothermal_entropy
 !***********************************************************************
     subroutine polytropic_ss_z( &
          f,mpoly,zz,tmp,zint,zbot,zblend,isoth,cs2int,ssint)
