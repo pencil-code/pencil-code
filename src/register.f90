@@ -102,16 +102,24 @@ module Register
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
         f(:,:,:,iux)=ampl*tmp
       case(1)               ! density stratification
-        if (lroot) print*,'density stratification'
+        if (lgravz) then
+          if (lroot) print*,'vertical density stratification'
 !        f(:,:,:,ilnrho)=-zz
 ! isentropic case:
 !        zmax = -cs20/gamma1/gravz
 !        print*, 'zmax = ', zmax
 !        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
 ! linear entropy gradient;
-        f(:,:,:,ilnrho) = -dsdz0*zz &
-                          + 1./gamma1*alog( 1 + gamma1*gravz/dsdz0/cs20 &
-                                                *(1-exp(-dsdz0*zz)) )
+          f(:,:,:,ilnrho) = -dsdz0*zz &
+                            + 1./gamma1*alog( 1 + gamma1*gravz/dsdz0/cs20 &
+                                                  *(1-exp(-dsdz0*zz)) )
+        endif
+        !
+        if (lgravr) then
+          if (lroot) print*,'radial density stratification (so far trivial)'
+          f(:,:,:,ilnrho) = 0.
+        endif
+        !
 !  The following needs better implementation: add random component 
 !  *after* major initialisation and make amplitude input parameter
 call random_number(tmp)
@@ -134,6 +142,7 @@ f(:,:,:,iuz) = 0.2*(tmp-0.5)   ! velocity perturbation
       case default
         if (lroot) print*,'Initialising everything to zero'
       endselect
+!
 !
     endsubroutine init_hydro
 !***********************************************************************

@@ -50,6 +50,7 @@ module Entropy
 !  7-nov-2001/wolf: coded
 !
       use Cdata
+      use Global
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
@@ -57,14 +58,20 @@ module Entropy
       real :: ss0,dsdz0=-0.2      ! (1/c_p)ds/dz
       integer :: init
 !
-      ss0 = (alog(cs20) - gamma1*alog(rho0) - alog(gamma)) / gamma
-      select case(init)
-      case(1)               ! density stratification
-        f(:,:,:,ient) = (-alog(gamma) + alog(cs20))/gamma &
-                        + dsdz0 * zz
-      case default
-        f(:,:,:,ient) = 0.
-      endselect
+      if (lgravz) then
+        ss0 = (alog(cs20) - gamma1*alog(rho0) - alog(gamma)) / gamma
+        select case(init)
+        case(1)               ! density stratification
+          f(:,:,:,ient) = (-alog(gamma) + alog(cs20))/gamma &
+                          + dsdz0 * zz
+        case default
+          f(:,:,:,ient) = 0.
+        endselect
+      endif
+!
+      if (lgravr) then
+          f(:,:,:,ient) = m_pot
+      endif
 !
     endsubroutine init_ent
 !***********************************************************************

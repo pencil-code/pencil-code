@@ -12,6 +12,7 @@
         use Mpicomm
         use Sub
         use Register
+        use Global
         use Gravity
         use Entropy
         use Magnetic
@@ -23,7 +24,7 @@
         integer :: init,i
         real :: ampl
         real, dimension (mx,my,mz,mvar) :: f
-        real, dimension (mx,my,mz) :: xx,yy,zz
+        real, dimension (mx,my,mz) :: xx,yy,zz,rr
 !
         call initialize         ! register modules, etc.
 !
@@ -63,6 +64,9 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
+        rr=sqrt(xx**2+yy**2+zz**2)
+        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
+!
         cs20=cs0**2 ! (goes into cdata module)
 !
 !  different initial conditions
@@ -79,6 +83,8 @@
         call wdim(trim(directory)//'/dim.dat')
 !  also write full dimensions to tmp/ :
         if (lroot) call wdim('tmp/dim.dat',nygrid,nzgrid)
+!  write global variables:
+        call write_global()
 
 !
 !  seed for random number generator, have to have the same on each

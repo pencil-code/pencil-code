@@ -15,6 +15,7 @@ module Equ
       open(1,file='run.in',form='formatted')
       read(1,*) nt,it1,dt,isave,itorder
       read(1,*) dsnap,dvid,dforce
+      read(1,*) tdamp,dampu
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc
       read(1,*) cdiffrho
@@ -42,6 +43,7 @@ module Equ
       if (lroot) then
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
         print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
+        print*, 'tdamp,dampu', tdamp,dampu
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
         print*, 'cdiffrho=', cdiffrho
@@ -216,7 +218,7 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
-      if (headtt) print*,'$Id: equ.f90,v 1.8 2002-01-09 21:09:15 dobler Exp $'
+      if (headtt) print*,'$Id: equ.f90,v 1.9 2002-01-09 23:28:14 dobler Exp $'
 !
 !  initiate communication
 !
@@ -273,6 +275,22 @@ module Equ
 !  momentum equation (forcing is now done in timestep)
 !
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu-gpprho+fvisc
+!
+!  damp motion during time interval 0<t<tdamp.
+!  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
+!
+        if ((dampu .ne. 0.) .and. (t < tdamp)) then
+          ! damp motion provided t<tdamp
+          if (dampu > 0) then
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                    - dampu*f(l1:l2,m,n,iux:iuz)
+          else
+            if (dt > 0) then    ! dt known and good
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                      + dampu/dt*f(l1:l2,m,n,iux:iuz)
+            endif
+          endif
+        endif
 !
 !  add gravity
 !

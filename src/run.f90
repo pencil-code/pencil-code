@@ -13,6 +13,7 @@
         use Mpicomm
         use Sub
         use Register
+        use Global
         use Forcing
         use Equ
         use Slices
@@ -54,6 +55,7 @@
 !
         if (ip<=6) print*,'read var files'
         call input(trim(directory)//'/var.dat',f,mvar,1)
+        call read_global()
 !
 !  read seed field parameters (only if forcing is turned on)
 !
@@ -72,7 +74,7 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.4 2001-11-23 16:19:59 dobler Exp $'
+          print*,'$Id: run.f90,v 1.5 2002-01-09 23:28:14 dobler Exp $'
         endif
 !
 !  do loop in time

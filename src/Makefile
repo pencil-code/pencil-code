@@ -3,7 +3,8 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=nompicomm
-GRAVITY=grav_z
+GLOBAL=global_pot
+GRAVITY=grav_r
 FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic
@@ -91,16 +92,16 @@ code:
 	make start.x run.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o register.o
-physics=$(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
+physics=$(GLOBAL).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 comm_deps=$(technical) $(IO).o sub.o $(MPICOMM).o $(physics)
 start_deps=$(comm_deps)
 run_deps=$(comm_deps) equ.o timestep.o
-
 start=start.o $(start_deps)
+run=run.o $(run_deps)
+
 start.x: $(start)
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
-run=run.o $(run_deps)
 run.x: $(run)
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -lsig -o run.x 
 
@@ -114,12 +115,13 @@ slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 $(IO).o:     $(IO).f90 $(MPICOMM).o cdata.o
 sub.o:       sub.f90 cdata.o deriv.o general.o $(IO).o $(MPICOMM).o
-register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
-equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(ENTROPY).o $(MPICOMM).o 
+register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(physics)
+equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(physics) $(MPICOMM).o 
 timestep.o:  timestep.f90 cdata.o equ.o $(FORCING.o) $(MPICOMM).o
 #
 $(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
-$(GRAVITY).o:  $(GRAVITY).f90 cdata.o $(MPICOMM).o
+$(GLOBAL).o:   $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
+$(GRAVITY).o:  $(GRAVITY).f90 cdata.o $(GLOBAL).o $(MPICOMM).o
 $(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o

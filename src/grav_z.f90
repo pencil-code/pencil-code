@@ -1,5 +1,9 @@
 module Gravity
 
+!
+!  Vertical gravity (for convection tests, etc.)
+!
+
   use Cparam
 
   implicit none
