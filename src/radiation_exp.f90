@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.92 2003-09-03 19:06:32 theine Exp $
+! $Id: radiation_exp.f90,v 1.93 2003-09-04 11:39:15 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -35,6 +35,7 @@ module Radiation
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
   logical :: nocooling=.false.,test_radiation=.false.,lkappa_es=.false.
+  logical :: lsleipner_test=.false.
 !
 !  definition of dummy variables for FLD routine
 !
@@ -44,11 +45,11 @@ module Radiation
 
   namelist /radiation_init_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es, &
-       bc_rad
+       bc_rad,lsleipner_test
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,test_radiation,lkappa_es,nocooling, &
-       bc_rad
+       bc_rad,lsleipner_test
 
   contains
 
@@ -83,7 +84,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.92 2003-09-03 19:06:32 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.93 2003-09-04 11:39:15 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -708,6 +709,14 @@ module Radiation
       use Mpicomm
 !
       real, dimension(mx,rady0,mz) :: Irad0_zx
+!
+      if (lsleipner_test) then
+        if (bc_rad1(2)=='p') print*,'radboundary_zx_set: periodic boundary (if)'
+        select case (bc_rad1(2))
+        case ('p')
+          print*,'radboundary_zx_set: periodic boundary (case)'
+        end select
+      endif
 !
 !--------------------
 !  lower y-boundary
