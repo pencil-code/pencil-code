@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.66 2004-06-14 07:52:42 bingert Exp $
+;;; $Id: start.pro,v 1.67 2004-07-03 04:02:40 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -14,7 +14,6 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
 forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
@@ -179,7 +178,6 @@ if (cpar gt 0) then begin
   lentropy  = par.lentropy
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
-  lequidist = par.lequidist
   lionization=safe_get_tag(par,'lionization',DEFAULT=safe_get_tag(par,'leos_ionization',DEFAULT=0))
   lionization_fixed=safe_get_tag(par,'lionization_fixed',DEFAULT=safe_get_tag(par,'leos_fixed_ionization',DEFAULT=0))
   lvisc_shock=par.lvisc_shock
@@ -191,15 +189,15 @@ if (cpar gt 0) then begin
   lshear    = par.lshear
   lradiation_fld = par.lradiation_fld
   ;
-  if (any(not lequidist)) then begin
-    openr,1,gfile,/F77
-    point_lun,1,pos
-    xprim=fltarr(mx)*zero & yprim=fltarr(my)*zero & zprim=fltarr(mz)*zero
-    xprim2=fltarr(mx)*zero & yprim2=fltarr(my)*zero & zprim2=fltarr(mz)*zero
-    readu,1, xprim,  yprim,  zprim
-    readu,1, xprim2, yprim2, zprim2
-    close,1
-  endif
+;  if (any(not lequidist)) then begin
+;    openr,1,gfile,/F77
+;    point_lun,1,pos
+;    xprim=fltarr(mx)*zero & yprim=fltarr(my)*zero & zprim=fltarr(mz)*zero
+;    xprim2=fltarr(mx)*zero & yprim2=fltarr(my)*zero & zprim2=fltarr(mz)*zero
+;    readu,1, xprim,  yprim,  zprim
+;    readu,1, xprim2, yprim2, zprim2
+;    close,1
+;  endif
 ;
   if (ldensity) then begin
     if (not lionization) then begin
