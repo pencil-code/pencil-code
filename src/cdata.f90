@@ -17,13 +17,12 @@ module Cdata
   real :: UUmax,cdt,pi,Lx,Ly,Lz
   real :: gravz
 
+  integer, dimension (2) :: seed
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
   integer :: ivisc,iforce
-  integer :: ibc(mvar)
   integer :: m,n
-  integer, dimension (2) :: seed
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
@@ -32,5 +31,6 @@ module Cdata
   logical :: lfirstpoint
 
   character (LEN=80) :: form1
+  character (LEN=3), dimension(mvar) :: bcx,bcy,bcz
 
 endmodule Cdata

@@ -21,7 +21,9 @@ module Equ
       read(1,*) cdiffrho
       read(1,*) gravz
       read(1,*) iforce,force,relhel
-      read(1,*) ibc
+      read(1,*) bcx
+      read(1,*) bcy
+      read(1,*) bcz
       read(1,*) form1
       close(1)
       cs20=cs0**2 !(goes into cdata module)
@@ -49,7 +51,9 @@ module Equ
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
         print*, 'iforce,force,relhel=', iforce,force,relhel
-        print*, 'ibc=', ibc
+        print*, 'bcx=', bcx
+        print*, 'bcy=', bcy
+        print*, 'bcz=', bcz
         print*, 'form1=', form1
         print*, 'cs20=', cs20
       endif
@@ -220,8 +224,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-01-17 11:42:43 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-01-20 22:34:10 $")
 !
 !  initiate communication
 !

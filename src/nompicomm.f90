@@ -72,37 +72,86 @@ module Mpicomm
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
 !
-!  Periodic boundary conditions in x
+!  Boundary conditions in x
 !
-      f( 1:l1-1,:,:,:) = f(l2i:l2,:,:,:)
-      f(l2+1:mx,:,:,:) = f(l1:l1i,:,:,:)
+      do j=1,mvar
+        select case(bcx(j))
+        case ('p')              ! periodic
+          f( 1:l1-1,:,:,j) = f(l2i:l2,:,:,j)
+          f(l2+1:mx,:,:,j) = f(l1:l1i,:,:,j)
+        case ('s')              ! symmetry
+          do i=1,nghost
+            f(l1-i,:,:,j) = f(l1+i,:,:,j)
+            f(l2+i,:,:,j) = f(l2-i,:,:,j)
+          enddo
+        case ('a')              ! antisymmetry
+          f(l1,:,:,j) = 0.      ! ensure boundary values are zero (indep.
+          f(l2,:,:,j) = 0.      ! of initial conditions)
+          do i=1,nghost
+            f(l1-i,:,:,j) = -f(l1+i,:,:,j)
+            f(l2+i,:,:,j) = -f(l2-i,:,:,j)
+          enddo
+        case ('a2')             ! antisymmetry relative to boundary value
+          do i=1,nghost
+            f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j)
+            f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j)
+          enddo
+        case default
+          if (lroot) &
+               print*,"No such boundary condition bcx = ", bcx(j), " for j=", j
+        endselect
+      enddo
 !
-!  Periodic boundary conditions in y
+!  Boundary conditions in y
 !
-      f(:, 1:m1-1,:,:) = f(:,m2i:m2,:,:)
-      f(:,m2+1:my,:,:) = f(:,m1:m1i,:,:)
+      do j=1,mvar
+        select case(bcy(j))
+        case ('p')              ! periodic
+          f(:, 1:m1-1,:,:) = f(:,m2i:m2,:,:)
+          f(:,m2+1:my,:,:) = f(:,m1:m1i,:,:)
+        case ('s')              ! symmetry
+          do i=1,nghost
+            f(:,m1-i,:,j) = f(:,m1+i,:,j)
+            f(:,m2+i,:,j) = f(:,m2-i,:,j)
+          enddo
+        case ('a')              ! antisymmetry
+          f(:,m1,:,j) = 0.      ! ensure boundary values are zero (indep.
+          f(:,m2,:,j) = 0.      ! of initial conditions)
+          do i=1,nghost
+            f(:,m1-i,:,j) = -f(:,m1+i,:,j)
+            f(:,m2+i,:,j) = -f(:,m2-i,:,j)
+          enddo
+        case ('a2')             ! antisymmetry relative to boundary value
+          do i=1,nghost
+            f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j)
+            f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j)
+          enddo
+        case default
+          if (lroot) &
+               print*,"No such boundary condition bcy = ", bcy(j), " for j=", j
+        endselect
+      enddo
 !
 !  Boundary conditions in z
 !
       do j=1,mvar
-        select case(ibc(j))
-        case (0)                ! periodic
+        select case(bcz(j))
+        case ('p')              ! periodic
           f(:,:, 1:n1-1,j) = f(:,:,n2i:n2,j)
           f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
-        case (1)                ! symmetry
+        case ('s')              ! symmetry
           do i=1,nghost
             f(:,:,n1-i,j) = f(:,:,n1+i,j)
             f(:,:,n2+i,j) = f(:,:,n2-i,j)
           enddo
-        case (-1)               ! antisymmetry
+        case ('a')              ! antisymmetry
           f(:,:,n1,j) = 0.      ! ensure boundary values are zero (indep.
-                                ! of initial conditions)
-          f(:,:,n2,j) = 0.
+          f(:,:,n2,j) = 0.      ! of initial conditions)
           do i=1,nghost
             f(:,:,n1-i,j) = -f(:,:,n1+i,j)
             f(:,:,n2+i,j) = -f(:,:,n2-i,j)
           enddo
-        case (-2)               ! antisymmetry relative to boundary value
+        case ('a2')             ! antisymmetry relative to boundary value
           do i=1,nghost
             f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j)
             f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j)
@@ -123,7 +172,7 @@ module Mpicomm
 ! !!!!    END OF HACK   !!!!
         case default
           if (lroot) &
-               print*,"No such boundary condition ibc = ", ibc(j), " for j=", j
+               print*,"No such boundary condition bcz = ", bcz(j), " for j=", j
         endselect
       enddo
 !
