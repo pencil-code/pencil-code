@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.79 2002-06-30 17:44:52 brandenb Exp $
+! $Id: entropy.f90,v 1.80 2002-07-02 18:12:00 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.79 2002-06-30 17:44:52 brandenb Exp $")
+           "$Id: entropy.f90,v 1.80 2002-07-02 18:12:00 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -373,53 +373,51 @@ module Entropy
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: glnrho,gss,glnT,glnTlambda,glhc
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
       real, dimension (nx) :: rho1,cs2,chi
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
-      real, dimension (nx) :: lambda
+      real, dimension (nx) :: hcond
       real, dimension (nx) :: heat,prof
       real :: ssref,z_prev=-1.23e20
 !
-      save :: z_prev,lambda,glhc
+      save :: z_prev,hcond,glhc
 !
       intent(in) :: f,rho1,glnrho,cs2
       intent(out) :: df
 !
 !  Heat conduction / entropy diffusion
-!AB:  The letter lambda is rather uncommon is astrophysics; I always called it K.
-!AB:  could call it KKrad.
 !
       if (headtt) print*,'calc_heatcond: lgravz=',lgravz
       if (lgravz) then
         ! For vertical geometry, we only need to calculate this for each
         ! new value of z -> speedup by about 8% at 32x32x64
         if (z_mn(1) /= z_prev) then
-          call heatcond(x_mn,y_mn,z_mn,lambda)
+          call heatcond(x_mn,y_mn,z_mn,hcond)
           call gradloghcond(x_mn,y_mn,z_mn, glhc)
           z_prev = z_mn(1)
         endif
       endif
       if (lgravr) then
-        call heatcond(x_mn,y_mn,z_mn,lambda)
+        call heatcond(x_mn,y_mn,z_mn,hcond)
         call gradloghcond(x_mn,y_mn,z_mn, glhc)
       endif
-      chi = rho1*lambda
+      chi = rho1*hcond
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
-      glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
-      call dot_mn(glnT,glnTlambda,g2)
+      glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot_mn(glnT,glnThcond,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
       if (headt) then
         if (notanumber(glhc))   print*,'NaNs in glhc'
         if (notanumber(rho1))   print*,'NaNs in rho1'
-        if (notanumber(lambda)) print*,'NaNs in lambda'
+        if (notanumber(hcond)) print*,'NaNs in hcond'
         if (notanumber(chi))    print*,'NaNs in chi'
         if (notanumber(del2ss)) print*,'NaNs in del2ss'
         if (notanumber(del2lnrho)) print*,'NaNs in del2lnrho'
         if (notanumber(glhc))   print*,'NaNs in glhc'
-        if (notanumber(1/lambda))   print*,'NaNs in 1/lambda'
+        if (notanumber(1/hcond))   print*,'NaNs in 1/hcond'
         if (notanumber(glnT))   print*,'NaNs in glnT'
-        if (notanumber(glnTlambda))     print*,'NaNs in glnTlambda'
+        if (notanumber(glnThcond))     print*,'NaNs in glnThcond'
         if (notanumber(g2))     print*,'NaNs in g2'
         if (notanumber(thdiff)) print*,'NaNs in thdiff'
 !        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
@@ -427,7 +425,7 @@ module Entropy
 
       if (headt .and. lfirst .and. ip<=9) then
         call output_pencil(trim(directory)//'/chi.dat',chi,1)
-        call output_pencil(trim(directory)//'/lambda.dat',lambda,1)
+        call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
@@ -511,7 +509,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)
 !
-!  calculate the heat conductivity lambda
+!  calculate the heat conductivity hcond
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
 !  23-jan-2002/wolf: coded
 !
@@ -538,7 +536,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
 !***********************************************************************
     subroutine gradloghcond(x,y,z,glhc)
 !
-!  calculate grad(log lambda), where lambda is the heat conductivity
+!  calculate grad(log hcond), where hcond is the heat conductivity
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
@@ -590,7 +588,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                    * exp(-gamma*f(:,:,n1,ient) &
                          - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-          tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
+          tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
           do i=1,nghost
             f(:,:,n1-i,ient) = &
                  (2*i*dz*tmp_xy &
@@ -606,7 +604,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                    * exp(-gamma*f(:,:,n2,ient) &
                          - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-          tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
+          tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
           do i=1,nghost
             f(:,:,n2+i,ient) = &
                  (-2*i*dz*tmp_xy &
