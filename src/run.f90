@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.92 2002-10-02 15:49:57 dobler Exp $
+! $Id: run.f90,v 1.93 2002-10-02 16:08:29 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.92 2002-10-02 15:49:57 dobler Exp $")
+             "$Id: run.f90,v 1.93 2002-10-02 16:08:29 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -153,7 +153,6 @@
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
               call read_runpars(PRINT=.true.) !(Re-read configuration)
               call rprint_list(.true.) !(Re-read output list)
-              call mpibarrier() ! all CPUs must read RELOAD before it is removed
               if (lroot) call remove_file("RELOAD")
               reload = .false.
             endif
