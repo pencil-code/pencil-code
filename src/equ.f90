@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.177 2003-11-27 19:19:36 mee Exp $
+! $Id: equ.f90,v 1.178 2003-11-27 19:30:44 mee Exp $
 
 module Equ
 
@@ -233,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.177 2003-11-27 19:19:36 mee Exp $")
+           "$Id: equ.f90,v 1.178 2003-11-27 19:30:44 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -267,7 +267,7 @@ module Equ
 !
       if(lionization)    call ioncalc(f)
       if(lradiation_ray) call radtransfer(f)
-      if(lvisc_shock .or. lvisc_hyper3) call calc_viscosity(f)
+      if(lfirst.and.(lvisc_shock .or. lvisc_hyper3)) call calc_viscosity(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
