@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.144 2003-10-24 13:17:31 dobler Exp $
+! $Id: magnetic.f90,v 1.145 2003-10-31 18:23:20 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -36,12 +36,13 @@ module Magnetic
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
   real :: alpha_effect
+  complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
-       initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
+       initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
        kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
@@ -101,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.144 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: magnetic.f90,v 1.145 2003-10-31 18:23:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -154,6 +155,8 @@ module Magnetic
       select case(initaa)
 
       case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+      case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
+      case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)

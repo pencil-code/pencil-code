@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.130 2003-10-31 14:01:07 theine Exp $
+! $Id: hydro.f90,v 1.131 2003-10-31 18:23:20 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -29,10 +29,11 @@ module Hydro
   real :: initpower=1.,cutoff=0.
   character (len=labellen) :: inituu='zero'
   real, dimension(3) :: gradH0=(/0.,0.,0./), uu_const=(/0.,0.,0./)
+  complex, dimension(3) :: coefuu=(/0.,0.,0./)
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
-       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu, &
+       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu,coefuu, &
        uy_left,uy_right,uu_const, &
        Omega,initpower,cutoff
 
@@ -101,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.130 2003-10-31 14:01:07 theine Exp $")
+           "$Id: hydro.f90,v 1.131 2003-10-31 18:23:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -179,6 +180,7 @@ module Hydro
                      ! Ensure really is zero, as may have used lread_oldsnap
                      f(:,:,:,iux:iuz)=0. 
       case('const_uu'); do i=1,3; f(:,:,:,iuu+i-1) = uu_const(i); enddo
+      case('mode'); call modev(ampluu,coefuu,f,iuu,kx_uu,ky_uu,kz_uu,xx,yy,zz)
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux)
       case('gaussian-noise-y'); call gaunoise(ampluu,f,iuy)

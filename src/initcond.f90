@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.87 2003-10-24 09:40:33 dobler Exp $ 
+! $Id: initcond.f90,v 1.88 2003-10-31 18:23:20 brandenb Exp $ 
 
 module Initcond 
  
@@ -328,6 +328,68 @@ module Initcond
       endif
 !
     endsubroutine wave_uu
+!***********************************************************************
+    subroutine modes(ampl,coef,f,i,kx,ky,kz,xx,yy,zz)
+!
+!  mode
+!
+!  30-oct-03/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      complex :: coef
+      complex :: ii=(0.,1.)
+      real :: ampl,kx,ky,kz
+!
+      f(:,:,:,i)=ampl*real(coef*exp(ii*(kx*xx+ky*yy+kz*zz)))
+!
+    endsubroutine modes
+!***********************************************************************
+    subroutine modev(ampl,coef,f,i,kx,ky,kz,xx,yy,zz)
+!
+!  mode
+!
+!  30-oct-03/axel: coded
+!
+      integer :: i,ivv
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      complex, dimension (3) :: coef
+      complex :: ii=(0.,1.)
+      real :: ampl,kx,ky,kz
+!
+      do ivv=0,2
+        f(:,:,:,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*xx+ky*yy+kz*zz)))
+      enddo
+!
+    endsubroutine modev
+!***********************************************************************
+    subroutine modeb(ampl,coefb,f,i,kx,ky,kz,xx,yy,zz)
+!
+!  mode
+!
+!  30-oct-03/axel: coded
+!
+      integer :: i,ivv
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      complex, dimension (3) :: coef,coefb
+      complex :: ii=(0.,1.)
+      real :: ampl,kx,ky,kz,k2
+!
+      print*,'print Ak coefficients from Bk coefficients'
+      k2=kx**2+ky**2+kz**2
+      coef(1)=(ky*coefb(3)-kz*coefb(2))/k2
+      coef(2)=(kz*coefb(1)-kx*coefb(3))/k2
+      coef(3)=(kx*coefb(2)-ky*coefb(1))/k2
+      print*,'coef=',coef
+!
+      do ivv=0,2
+        f(:,:,:,ivv+i)=ampl*real(coef(ivv+1)*exp(ii*(kx*xx+ky*yy+kz*zz)))
+      enddo
+!
+    endsubroutine modeb
 !***********************************************************************
     subroutine jump(f,i,fleft,fright,width,dir)
 !

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.132 2003-10-24 13:17:31 dobler Exp $
+! $Id: density.f90,v 1.133 2003-10-31 18:23:20 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -35,6 +35,7 @@ module Density
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
+  complex :: coeflnrho=0.
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
@@ -42,7 +43,7 @@ module Density
        initlnrho2,radius_lnrho,eps_planet, &
        b_ell,q_ell,hh0,rbound, &
        mpoly, &
-       kx_lnrho,ky_lnrho,kz_lnrho,amplrho
+       kx_lnrho,ky_lnrho,kz_lnrho,amplrho,coeflnrho
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
@@ -81,7 +82,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.132 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: density.f90,v 1.133 2003-10-31 18:23:20 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,6 +165,7 @@ module Density
                           f(:,:,:,ilnrho)=0.
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
       case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
+      case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
       case('stratification'); call stratification(amplrho,f,xx,yy,zz)
