@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.70 2003-08-29 20:09:57 mee Exp $
+# $Id: getconf.csh,v 1.71 2003-08-30 13:28:39 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -62,10 +62,19 @@ set mpirunops = ''
 # Construct list of nodes, separated by colons, so it can be transported
 # in an environment variable
 if ($?PBS_NODEFILE) then
-  setenv NODELIST \
-  `cat $PBS_NODEFILE | grep -v '^#.*' | sed 's/:[0-9]*//' | xargs printf ":%s" | sed s/^://`
+  if ($debug) echo "PBS job"
+  set nodelist = `cat $PBS_NODEFILE`
+else if ($?JOB_ID) then
+  if ($debug) echo "Scout [?] job"
+  if (-e $HOME/.score/ndfile.$JOB_ID) then
+    set nodelist = `cat $HOME/.score/ndfile.$JOB_ID`
+  else
+    echo "JOB_ID=$JOB_ID, but can't find ~/.score/ndfile.$JOB_ID -- aborting"
+    kill $$			# full-featured suicide
+  endif
 else
-  if (! $?NODELIST) setenv NODELIST "$hn"
+  if ($debug) echo "Setting nodelist to ($hn)"
+  set nodelist = ("$hn")
 endif
 
 ## ------------------------------
@@ -176,9 +185,15 @@ else if ($hn =~ copson*) then
     set run_x=src/run.x
 
     setenv SCRATCH_DIR /scratch
-    set local_disc=1
+    if ($?JOB_ID && -e $HOME/.score/ndfile.$JOB_ID) then
+      set local_disc=1
+    else
+      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
+      set local_disc=0
+    endif
 #    setenv SSH rsh
 #    setenv SCP rcp
+  endif
 
 else if ($hn == rasmussen) then
   echo "Rasmussen"
@@ -269,25 +284,6 @@ else
 endif
 echo "datadir = $datadir"
 
-# Unpack NODELIST to csh array
-set nodelist = `echo "$NODELIST" | sed 's/:/ /g'`
-if ($?PBS_NODEFILE) then
-  set nodelist = `cat $PBS_NODEFILE`
-  set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
-else 
-  if ($?JOB_ID) then
-    if (-e $HOME/.score/ndfile.$JOB_ID) then
-      set nodelist = `cat $HOME/.score/ndfile.$JOB_ID`
-    else
-      echo "WARNING: Cannot find node list, continuing without local disk access"
-      set local_disc=0
-    endif
-  else
-    echo "WARNING: Cannot find node list, continuing without local disk access"
-    set local_disc=0
-  endif
-endif
-
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
 # Remove file, if not needed, to avoid confusion.
@@ -322,6 +318,10 @@ if ($os =~ IRIX*) then
 else
   rm -f SGIFIX
 endif
+
+# Wrap up nodelist as (scalar, colon-separateds) environment variable
+# NODELIST for transport to sub-processes.
+setenv NODELIST `echo $nodelist | grep -v '^#.*' | sed 's/:[0-9]*//' | xargs printf ":%s" | sed s/^://`
 
 if ($debug) then
   echo '$mpi          = ' "<$mpi>"
