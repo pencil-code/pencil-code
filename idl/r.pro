@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.25 2002-07-06 18:10:45 dobler Exp $
+; $Id: r.pro,v 1.26 2002-07-08 20:57:41 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -74,8 +74,11 @@ openr,1, datadir+'/'+file, /F77
     print,'just velocity (Burgers)'
     readu,1,uu
   end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
-    print,'just magnetic ffield (kinematic)'
+    print,'just magnetic field (kinematic)'
     readu,1,aa
+  end else if iuu eq 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+    print,'just density (probably just good for tests)'
+    readu,1,lnrho
   end else begin
     print,'not prepared...'
   end
