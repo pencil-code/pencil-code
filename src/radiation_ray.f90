@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.52 2004-03-16 14:46:40 theine Exp $
+! $Id: radiation_ray.f90,v 1.53 2004-03-17 16:16:43 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.52 2004-03-16 14:46:40 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.53 2004-03-17 16:16:43 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -365,8 +365,8 @@ module Radiation
 !  x-direction
 !
       if (lperiodic_ray_x) then
-        Qrad_tot_yz=Qrad(llstop-lrad,m1:m2,n1:n2)
-        tau_tot_yz=tau(llstop-lrad,m1:m2,n1:n2)
+        Qrad_tot_yz=Qrad(llstop,m1:m2,n1:n2)
+        tau_tot_yz=tau(llstop,m1:m2,n1:n2)
         Qrad0_yz=0
         tau0_yz=0
         where (tau_tot_yz>dtau_thresh)
@@ -382,18 +382,13 @@ module Radiation
 !
       if (lperiodic_ray_y) then
         if (nprocy==1) then
-          Qrad_tot_zx=Qrad(l1:l2,mmstop-mrad,n1:n2)
-          tau_tot_zx=tau(l1:l2,mmstop-mrad,n1:n2)
+          Qrad_tot_zx=Qrad(l1:l2,mmstop,n1:n2)
+          tau_tot_zx=tau(l1:l2,mmstop,n1:n2)
           Qrad0_zx=0
           tau0_zx=0
         else
-          if (ipy/=ipystop) then
-            Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
-            tau_zx=tau(l1:l2,mmstop,n1:n2)
-          else
-            Qrad_zx=Qrad(l1:l2,mmstop-mrad,n1:n2)
-            tau_zx=tau(l1:l2,mmstop-mrad,n1:n2)
-          endif
+          Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
+          tau_zx=tau(l1:l2,mmstop,n1:n2)
           call radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx, &
                                            Qrad0_zx,tau0_zx, &
                                            Qrad_tot_zx,tau_tot_zx)
@@ -411,18 +406,13 @@ module Radiation
 !
       if (lperiodic_ray_z) then
         if (nprocz==1) then
-          Qrad_tot_xy=Qrad(l1:l2,m1:m2,nnstop-nrad)
-          tau_tot_xy=tau(l1:l2,m1:m2,nnstop-nrad)
+          Qrad_tot_xy=Qrad(l1:l2,m1:m2,nnstop)
+          tau_tot_xy=tau(l1:l2,m1:m2,nnstop)
           Qrad0_xy=0
           tau0_xy=0
         else
-          if (ipz/=ipzstop) then
-            Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
-            tau_xy=tau(l1:l2,m1:m2,nnstop)
-          else
-            Qrad_xy=Qrad(l1:l2,m1:m2,nnstop-nrad)
-            tau_xy=tau(l1:l2,m1:m2,nnstop-nrad)
-          endif
+          Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
+          tau_xy=tau(l1:l2,m1:m2,nnstop)
           call radboundary_xy_periodic_ray(nrad,Qrad_xy,tau_xy, &
                                            Qrad0_xy,tau0_xy, &
                                            Qrad_tot_xy,tau_tot_xy)
