@@ -1,3 +1,6 @@
-function dot2,f
-  return,f(*,*,*,0)^2+f(*,*,*,1)^2+f(*,*,*,2)^2
+;;
+;; Scalar product of vector field f with itself
+;;
+function dot2, f
+  return, dot(f,f)
 end
