@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.49 2003-11-13 14:08:50 theine Exp $
+! $Id: radiation_ray.f90,v 1.50 2003-11-23 16:23:09 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.49 2003-11-13 14:08:50 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.50 2003-11-23 16:23:09 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -416,7 +416,7 @@ module Radiation
           Qrad0_xy=0
           tau0_xy=0
         else
-          if (ipy/=ipystop) then
+          if (ipz/=ipzstop) then
             Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
             tau_xy=tau(l1:l2,m1:m2,nnstop)
           else

@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.113 2003-11-07 10:27:42 theine Exp $
+! $Id: mpicomm.f90,v 1.114 2003-11-23 16:23:09 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -734,15 +734,15 @@ module Mpicomm
                                            Qrad_tot_xy,tau_tot_xy) 
 !
       integer, intent(in) :: nrad
-      real, dimension(ny,nz), intent(in) :: Qrad_send_xy,tau_send_xy
-      real, dimension(ny,nz), intent(out) :: Qrad0_xy,tau0_xy
-      real, dimension(ny,nz), intent(out) :: Qrad_tot_xy,tau_tot_xy
-      real, dimension(ny,nz) :: Qrad_recv_xy,tau_recv_xy
+      real, dimension(nx,ny), intent(in) :: Qrad_send_xy,tau_send_xy
+      real, dimension(nx,ny), intent(out) :: Qrad0_xy,tau0_xy
+      real, dimension(nx,ny), intent(out) :: Qrad_tot_xy,tau_tot_xy
+      real, dimension(nx,ny) :: Qrad_recv_xy,tau_recv_xy
       integer :: idest,isource,nQrad_xy,ntau_xy,ipzstart,ipzstop
       integer :: n
 !
-      nQrad_xy=ny*nz
-      ntau_xy=ny*nz
+      nQrad_xy=nx*ny
+      ntau_xy=nx*ny
 !
       Qrad_tot_xy=0
       tau_tot_xy=0
