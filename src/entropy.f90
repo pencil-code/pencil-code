@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.254 2003-11-26 17:13:09 mcmillan Exp $
+! $Id: entropy.f90,v 1.255 2003-11-28 05:15:52 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -72,6 +72,7 @@ module Entropy
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtc=0,i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
   integer :: i_dtchi=0
+  integer :: i_ssmphi=0
 
   contains
 
@@ -105,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.254 2003-11-26 17:13:09 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.255 2003-11-28 05:15:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -845,9 +846,17 @@ module Entropy
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
 !
-!
+!  entry possibility for "personal" entries.
+!  In that case you'd need to provide your own "special" routine.
 !
       if (lspecial) call special_calc_entropy(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
+!
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      if (l2davgfirst) then
+        if (i_ssmphi/=0) call phisum_mn_name_rz(ss,i_ssmphi)
+      endif
 !
 !  Calculate entropy related diagnostics
 !
@@ -1347,7 +1356,7 @@ endif
       use Cdata
       use Sub
 !
-      integer :: iname
+      integer :: iname,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -1360,7 +1369,10 @@ endif
       if (lreset) then
         i_dtc=0; i_eth=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
         i_dtchi=0
+        i_ssmphi=0
       endif
+!
+!  iname runs through all possible names that may be listed in print.in
 !
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
@@ -1369,6 +1381,12 @@ endif
         call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
+      enddo
+!
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'ssmphi',i_ssmphi)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -1382,6 +1400,7 @@ endif
         write(3,*) 'i_ugradpm=',i_ugradpm
         write(3,*) 'nname=',nname
         write(3,*) 'iss=',iss
+        write(3,*) 'i_ssmphi=',i_ssmphi
       endif
 !
     endsubroutine rprint_entropy

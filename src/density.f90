@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.139 2003-11-25 09:11:31 mcmillan Exp $
+! $Id: density.f90,v 1.140 2003-11-28 05:15:52 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -52,6 +52,7 @@ module Density
        cs2bot,cs2top,lupw_lnrho
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ekin=0,i_rhom=0,i_ekintot=0
+  integer :: i_lnrhomphi=0,i_rhomphi=0
 
   contains
 
@@ -84,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.139 2003-11-25 09:11:31 mcmillan Exp $")
+           "$Id: density.f90,v 1.140 2003-11-28 05:15:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -662,6 +663,14 @@ module Density
 
       if (lspecial) call special_calc_density(f,df,uu,glnrho,divu,lnrho)
 !
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!
+      if (l2davgfirst) then
+        if (i_lnrhomphi/=0) call phisum_mn_name_rz(lnrho,i_lnrhomphi)
+        if (i_rhomphi/=0) call phisum_mn_name_rz(exp(lnrho),i_rhomphi)
+      endif
+!
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset,lwrite)
@@ -673,7 +682,7 @@ module Density
 !
       use Sub
 !
-      integer :: iname
+      integer :: iname,irz
       logical :: lreset,lwr
       logical, optional :: lwrite
 !
@@ -685,6 +694,7 @@ module Density
 !
       if (lreset) then
         i_ekin=0; i_rhom=0; i_ekintot=0
+        i_lnrhomphi=0; i_rhomphi=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -696,6 +706,13 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
       enddo
 !
+!  check for those quantities for which we want phi-averages
+!
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'lnrhomphi',i_lnrhomphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'rhomphi',i_rhomphi)
+      enddo
+!
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
@@ -704,6 +721,8 @@ module Density
         write(3,*) 'i_rhom=',i_rhom
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
+        write(3,*) 'i_lnrhomphi=',i_lnrhomphi
+        write(3,*) 'i_rhomphi=',i_rhomphi
       endif
 !
     endsubroutine rprint_density
