@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.110 2003-11-05 15:47:57 theine Exp $
+! $Id: mpicomm.f90,v 1.111 2003-11-06 12:05:08 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -973,15 +973,17 @@ module Mpicomm
 !
 !  Transposing the received data (x-z transpose)
 !
-        do px=0,nprocz-1
-          do i=1,nz
-            do j=i+1,nz
-              tmp_y=a(i+px*nz,:,j)
-              a(i+px*nz,:,j)=a(j+px*nz,:,i)
-              a(j+px*nz,:,i)=tmp_y
+        if (nz>1) then
+          do px=0,nprocz-1
+            do i=1,nz
+              do j=i+1,nz
+                tmp_y=a(i+px*nz,:,j)
+                a(i+px*nz,:,j)=a(j+px*nz,:,i)
+                a(j+px*nz,:,i)=tmp_y
+              enddo
             enddo
           enddo
-        enddo
+        endif
 !
       else
         if (lroot) print*,'transp: No clue what var=', var, 'is supposed to mean'

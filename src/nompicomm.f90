@@ -337,25 +337,29 @@ module Mpicomm
 !
 if (var=='y') then
 !
-      do i=1,ny
-        do j=i+1,ny
-          tmp_z=a(i,j,:)
-          a(i,j,:)=a(j,i,:)
-          a(j,i,:)=tmp_z
+      if (ny>1) then
+        do i=1,ny
+          do j=i+1,ny
+            tmp_z=a(i,j,:)
+            a(i,j,:)=a(j,i,:)
+            a(j,i,:)=tmp_z
+          enddo
         enddo
-      enddo
+      endif
 !
 !  Doing x-z transpose if var='z'
 !
 elseif (var=='z') then
 !
-      do i=1,nz
-        do j=i+1,nz
-          tmp_y=a(i,:,j)
-          a(i,:,j)=a(j,:,i)
-          a(j,:,i)=tmp_y
+      if (nz>1) then
+        do i=1,nz
+          do j=i+1,nz
+            tmp_y=a(i,:,j)
+            a(i,:,j)=a(j,:,i)
+            a(j,:,i)=tmp_y
+          enddo
         enddo
-      enddo
+      endif
 !
 endif
 !

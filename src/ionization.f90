@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.135 2003-11-05 11:57:47 theine Exp $
+! $Id: ionization.f90,v 1.136 2003-11-06 12:05:08 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -123,7 +123,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.135 2003-11-05 11:57:47 theine Exp $")
+           "$Id: ionization.f90,v 1.136 2003-11-06 12:05:08 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -681,7 +681,7 @@ module Ionization
 !
       yHl=2*tiny(yHl)
       yHh=1-2*epsilon(yHh)
-      dyH=1
+      dyH=yHh-yHl
       dyHold=dyH
 !
       temp=0
