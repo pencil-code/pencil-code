@@ -537,7 +537,7 @@ subroutine transform_fftpack_1d(a_re,a_im)
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax
   real,dimension(4*nx+15) :: wsavex
-  integer :: l,m,n
+  integer :: m,n
 !
   if(lroot .AND. ip<10) print*,'doing FFTpack in x'
   call cffti(nx,wsavex)
