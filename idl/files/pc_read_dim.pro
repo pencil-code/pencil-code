@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.5 2003-10-10 12:25:45 ajohan Exp $
+; $Id: pc_read_dim.pro,v 1.6 2004-03-23 09:16:51 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2003-10-10 12:25:45 $
-;  $Revision: 1.5 $
+;  $Date: 2004-03-23 09:16:51 $
+;  $Revision: 1.6 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -135,7 +135,7 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar', $
                         'nx','ny','nz', $
                         'nghostx','nghosty','nghostz', $
                         'nprocx','nprocy','nprocz'], $
-                       mx,my,mz,mw,mvar,nx,ny,nz,precision,nghostx,nghosty,nghostz,nprocx,nprocy,nprocz)
+                       mx,my,mz,mw,mvar,precision,nx,ny,nz,nghostx,nghosty,nghostz,nprocx,nprocy,nprocz)
 
 
 ; If requested print a summary
