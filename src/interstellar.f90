@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.87 2004-03-20 13:22:44 mee Exp $
+! $Id: interstellar.f90,v 1.88 2004-03-22 09:45:14 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -50,7 +50,7 @@ module Interstellar
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min_cgs=1.e7
-  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-52
+  double precision, parameter :: SNI_area_rate_cgs=1.330982784D-56
   double precision, parameter :: solar_mass_cgs=1.989e33
   real, parameter :: h_SNI_cgs=1.00295e21,h_SNII_cgs=2.7774e20
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.87 2004-03-20 13:22:44 mee Exp $")
+           "$Id: interstellar.f90,v 1.88 2004-03-22 09:45:14 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -232,10 +232,10 @@ module Interstellar
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
-      t_interval_SNI = SNI_area_rate * Lxyz(1) * Lxyz(2)
+      t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
-
+print*,'SNI inrerval = ',t_interval_SNI
 
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
@@ -244,8 +244,8 @@ module Interstellar
 
       if (lroot.and. (.not. lstarting)) then
          open(1,file=trim(datadir)//'/sn_series.dat',position='append')
-         write(1,'("# ",2A)')  &
-          '--it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-------', &
+         write(1,'("#",2A)')  &
+          '---it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-------', &
           '----z_SN-----------rho_SN---------EE_SN-----l_SN--m_SN--n_SN-----'
          close(1)
       endif
@@ -390,7 +390,7 @@ module Interstellar
           if (ip<14) print*,"check_SNI: Old t_next_SNI=",t_next_SNI
           call random_number_wrapper(franSN)   
           t_next_SNI=t + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-          if (ip<14) print*,'check_SNI: Next SNI at time = ',t_next_SNI
+          if (ip<40) print*,'check_SNI: Next SNI at time = ',t_next_SNI
           interstellarsave(1)=t_next_SNI
           if (ip<14) print*,"check_SNI: New t_next_SNI=",t_next_SNI
     !   endif
@@ -785,7 +785,7 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<=40) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
+      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
         
       !
       !  Now deal with (if nec.) mass relocation
@@ -794,12 +794,12 @@ find_SN: do n=n1,n2
                               yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
       TT_SN=exp(lnTT_SN)
 
-      ee_SN_new = frac_eth*(ee_SN+c_SN/rho_SN)
+      ee_SN_new = (ee_SN+frac_eth*c_SN/rho_SN)
       call eoscalc(ilnrho_ee,lnrho_SN,ee_SN_new, &
                               ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
 
-      if(lroot.and.ip<=40) print*, &
+      if(lroot.and.ip<=14) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
                                 TT_SN,TT_SN_new,TT_SN_min, ee_SN
 
@@ -815,13 +815,13 @@ find_SN: do n=n1,n2
 print*,ee_SN,rho_SN,c_SN
            call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
            lnrho_SN_new=log(rho_SN_new)
-           ee_SN_new=frac_eth*(ee_SN*rho_SN+c_SN)/rho_SN_new
+           ee_SN_new=(ee_SN*rho_SN+frac_eth*c_SN)/rho_SN_new
 
            call eoscalc(ilnrho_ee,lnrho_SN_new,ee_SN_new, &
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
            TT_SN_new=exp(lnTT_SN_new)
 
-           if(lroot.and.ip<=40) print*, &
+           if(lroot.and.ip<=14) print*, &
               'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
@@ -831,7 +831,7 @@ print*,ee_SN,rho_SN,c_SN
            call mpibcast_real(fmpi1,1)
            profile_integral=fmpi1(1)*dv
            mass_shell=-(rho_SN_new-rho_SN)*profile_integral
-           if (lroot.and.ip<=40) &
+           if (lroot.and.ip<=14) &
              print*, 'explode_SN: mass_shell=',mass_shell
            mass_gain=0.
          endif
