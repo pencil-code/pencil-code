@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.42 2002-06-06 07:09:35 brandenb Exp $
+! $Id: cdata.f90,v 1.43 2002-06-06 15:06:39 brandenb Exp $
 
 module Cdata
 
@@ -36,7 +36,7 @@ module Cdata
   integer, dimension (2) :: seed
   integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0,iaa=0,iax=0,iay=0,iaz=0
   integer :: nt,it1,isave,itorder
-  integer :: it,ix,iy,iz
+  integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
   integer :: ivisc
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0

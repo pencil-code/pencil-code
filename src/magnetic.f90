@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.35 2002-06-05 23:45:57 brandenb Exp $
+! $Id: magnetic.f90,v 1.36 2002-06-06 15:06:39 brandenb Exp $
 
 module Magnetic
 
@@ -31,7 +31,7 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
-  integer :: i_bxmz=0,i_bymz=0,i_bmz
+  integer :: i_bxmz=0,i_bymz=0,i_bmz=0
 
   contains
 
@@ -68,8 +68,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.35 $", &
-           "$Date: 2002-06-05 23:45:57 $")
+           "$Revision: 1.36 $", &
+           "$Date: 2002-06-06 15:06:39 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

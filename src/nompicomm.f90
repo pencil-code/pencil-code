@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.25 2002-06-02 07:51:39 brandenb Exp $
+! $Id: nompicomm.f90,v 1.26 2002-06-06 15:06:39 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -85,12 +85,12 @@ module Mpicomm
 !  left and right hand boxes
 !
       do n=n1,n2
-        do m=m1,m1i
+        do m=m1,min(m1i,m2)
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
         enddo
-        do m=m2i,m2
+        do m=max(m2i,m1),m2
           mm(imn)=m
           nn(imn)=n
           imn=imn+1
