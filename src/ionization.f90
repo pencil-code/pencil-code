@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.58 2003-07-02 18:06:18 mee Exp $
+! $Id: ionization.f90,v 1.59 2003-07-07 16:20:06 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -23,8 +23,8 @@ module Ionization
   end interface
 
   !  secondary parameters calculated in initialize
-  real :: m_H,m_He,mu,twothirds
-  real :: TT_ion,TT_ion_,chiH,chiH_,ss_ion,kappa0
+  real :: mu,twothirds
+  real :: TT_ion,TT_ion_,ss_ion,kappa0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   integer :: l0,l3,m0,m3,n0,n3
 
@@ -71,7 +71,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.58 2003-07-02 18:06:18 mee Exp $")
+           "$Id: ionization.f90,v 1.59 2003-07-07 16:20:06 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -134,7 +134,10 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
+        print*,'TT_ion,ss_ion,kappa0=', &
+                TT_ion,ss_ion,kappa0
+        print*,'lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
+                lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
     endsubroutine initialize_ionization
 
