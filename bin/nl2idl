@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.16 2004-04-10 18:56:36 dobler Exp $
+# $Id: nl2idl,v 1.17 2004-05-03 14:22:52 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -104,7 +104,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.16 2004-04-10 18:56:36 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.17 2004-05-03 14:22:52 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -283,10 +283,9 @@ sub parse_nl {
 	    } else {
 		if ($debug) { print "\$line = <$line>\n"};
 		# die "Illegal value \"$ch\[..]\" for $var\n";
-		die "This does not look like a valid namelist file.\n"
-		    . "If it is, please send it to $email,\n"
-		    . "together with the version number of $cmdname:\n"
-		    . "  $cmdname --version\n";
+		err_msg("incomprehensible syntax, starting with <"
+			. substr($line,0,20)
+			. " ...>");
 	    }
 	    if ($debug) { print "\$line = <$line>\n"};
 	}
@@ -336,17 +335,22 @@ sub expand_line {
 	} else {		# star first
 	    if ($apo == $star+1) { # n*'string'
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*?)([0-9]+)\*(\'[^\']*\')[ ,]?(.*)/ );
+		    ( $line =~ /^([^*]*?)([0-9]+)\*(\'[^\']*\')\s*,?(.*)/ );
 	    } elsif ($quo == $star+1) { # n*"string"
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*?)([0-9]+)\*(\"[^\"]*\")[ ,]?(.*)/ );
+		    ( $line =~ /^([^*]*?)([0-9]+)\*(\"[^\"]*\")\s*,?(.*)/ );
 	    } else {		# n*<number|(complex, number)|T|F>
 		if (substr($line,$star+1,1) eq '(') { # n*(complex, number)
 		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*?)([0-9]+)\*(\([^\)]+\))[ ,]?(.*)/ );
-		} else {	# n*<number|T|F>
+			( $line =~ /^([^*]*?)([0-9]+)\*(\([^\)]+\))\s*,?(.*)/ );
+		} elsif (substr($line,$star+1,1) =~ '[-+.0-9TtFf]') {
+		    # n*<number|T|F>
 		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*?)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
+			( $line =~ /^([^*]*?)([0-9]+)\*([^ ,]+)\s*,?(.*)/ );
+		} else {
+		    err_msg("asterisk syntax, starting with <"
+			    . substr($line,0,20)
+			    . " ...>");
 		}
 	    }
 	    if (checkdef("(\$pre,\$mul,\$val,\$post)=",
@@ -411,11 +415,11 @@ sub checkdef {
     if ($nundef) {
 	warn "Undefined elements: $msg <",
 	join("><", map { defined($_) ? "$_" : "undef" } @list),
-	">\n";
+	">";
 	0;
     } else {
 	1;
-	}
+    }
 }
 # ---------------------------------------------------------------------- #
 sub trim_strings {
@@ -424,6 +428,25 @@ sub trim_strings {
     my ($arref) = @_;
     map { s/\s*([\'\"])$/$1/ } @$arref;
     @_ = ($arref);
+}
+# ---------------------------------------------------------------------- #
+sub err_msg {
+## Write generic error message with one specific string:
+    my $msg = (shift || undef);
+    chomp($msg);
+
+    my $message = "This does not look like a valid namelist file";
+    if (defined($msg)) {
+	$message .= ":\n";
+	$message .= "  $msg\n";	
+    } else {
+	$message .= ".\n";
+    }
+    $message .= "If it is, please send it to $email,\n";
+    $message .= "together with the version number of $cmdname:\n";
+    $message .= "  $cmdname --version\n";
+
+    die $message;
 }
 # ---------------------------------------------------------------------- #
 
