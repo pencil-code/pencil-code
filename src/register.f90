@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-03-06 17:47:59 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-03-08 15:43:19 $")
 !
 !
       if (nvar > mvar) then
@@ -151,19 +151,26 @@ module Register
                      spread(spread(cos(1*z),1,mx),2,my)
       case(4)               ! piecewise polytropic
         ! top region
-        if (isothtop) then
-          beta1 = -0.1
+        if (isothtop /= 0) then
+          beta1 = 0.
+          f(:,:,:,ilnrho) = gamma*gravz/cs20*(zz-ztop)
+          ! unstable region
+          lnrhoint =  gamma*gravz/cs20*(z2-ztop)
         else
           beta1 = gamma*gravz/(mpoly2+1)
+          tmp = 1 + beta1*(zz-ztop)/cs20
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
+          f(:,:,:,ilnrho) = mpoly2*alog(tmp)
+          ! unstable region
+          lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
         endif
-        f(:,:,:,ilnrho) = mpoly2*alog(1 + beta1*(zz-ztop)/cs20)
-        ! unstable region
-        lnrhoint =  mpoly2*alog(1 + beta1*(z2-ztop)/cs20)
         ! (lnrho at layer interface z=z2)
         cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
         ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
         beta1 = gamma*gravz/(mpoly0+1)
-        tmp = lnrhoint + mpoly0*alog(1 + beta1*(zz-z2)/cs2int)
+        tmp = 1 + beta1*(zz-z2)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly0*alog(tmp)
         ! smoothly blend the solutions for the two regions:
         stp = step(z,z2,whcond)
         p = spread(spread(stp,1,mx),2,my)
@@ -172,7 +179,9 @@ module Register
         lnrhoint = lnrhoint + mpoly0*alog(1 + beta1*(z1-z2)/cs2int)
         cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
         beta1 = gamma*gravz/(mpoly1+1)
-        tmp = lnrhoint + mpoly1*alog(1 + beta1*(zz-z1)/cs2int)
+        tmp = 1 + beta1*(zz-z1)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = lnrhoint + mpoly1*alog(tmp)
         ! smoothly blend the solutions for the two regions:
         stp = step(z,z1,whcond)
         p = spread(spread(stp,1,mx),2,my)

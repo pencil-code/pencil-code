@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.30 $", &
-           "$Date: 2002-03-06 17:47:59 $")
+           "$Revision: 1.31 $", &
+           "$Date: 2002-03-08 15:43:19 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,20 +75,27 @@ use IO
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           ! top region
           ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-          if (isothtop) then 
-            beta1 = -0.1
+          if (isothtop /= 0) then ! isothermal top layer
+            beta1 = 0.
+            f(:,:,:,ient) = -gamma1*gravz*(zz-ztop)/cs20
+            ! unstable region
+            ssint = -gamma1*gravz*(z2-ztop)/cs20 ! ss at layer interface z=z2
           else
             beta1 = gamma*gravz/(mpoly2+1)
+            tmp = 1 + beta1*(zz-ztop)/cs20
+            tmp = max(tmp,epsi)  ! ensure arg to log is positive
+            f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
+                            * alog(tmp)
+            ! unstable region
+            ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
+                    * alog(1 + beta1*(z2-ztop)/cs20)
           endif
-          f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
-                          * alog(1 + beta1*(zz-ztop)/cs20)
-          ! unstable region
-          ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-                  * alog(1 + beta1*(z2-ztop)/cs20)
           cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
           beta1 = gamma*gravz/(mpoly0+1)
+          tmp = 1 + beta1*(zz-z2)/cs2int
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
           tmp = ssint + (1-mpoly0*gamma1)/gamma &
-                        * alog(1 + beta1*(zz-z2)/cs2int)
+                        * alog(tmp)
           ! smoothly blend the solutions for the two regions:
           stp = step(z,z2,whcond)
           p = spread(spread(stp,1,mx),2,my)
@@ -99,8 +106,10 @@ use IO
                           * alog(1 + beta1*(z1-z2)/cs2int)
           cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
           beta1 = gamma*gravz/(mpoly1+1)
+          tmp = 1 + beta1*(zz-z1)/cs2int
+          tmp = max(tmp,epsi)  ! ensure arg to log is positive
           tmp = ssint + (1-mpoly1*gamma1)/gamma &
-                        * alog(1 + beta1*(zz-z1)/cs2int)
+                        * alog(tmp)
           ! smoothly blend the solutions for the two regions:
           stp = step(z,z1,whcond)
           p = spread(spread(stp,1,mx),2,my)
