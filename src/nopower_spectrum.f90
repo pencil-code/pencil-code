@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.2 2003-02-06 12:08:53 nilshau Exp $
+! $Id: nopower_spectrum.f90,v 1.3 2003-02-07 08:46:22 nilshau Exp $
 !
 module  power_spectrum
   !
@@ -27,10 +27,11 @@ module  power_spectrum
   if(sp=='') print*,f(1,1,1,1)  !(to keep compiler happy)
   endsubroutine powerhel
 !***********************************************************************
-    subroutine power_1d(f,sp)
+    subroutine power_1d(f,sp,ivec)
 !
   real, dimension (mx,my,mz,mvar) :: f
   character (len=1) :: sp
+  integer :: ivec
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
   if(sp=='') print*,f(1,1,1,1)  !(to keep compiler happy)

@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -275,7 +275,7 @@ module  power_spectrum
   !
   endsubroutine powerhel
 !***********************************************************************
-    subroutine power_1d(f,sp)
+    subroutine power_1d(f,sp,ivec)
 !
 !  Calculate power spectra (on shperical shells) of the variable
 !  specified by `sp'.
@@ -290,11 +290,12 @@ module  power_spectrum
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nxgrid) :: kx
   character (len=1) :: sp
+  character (len=7) :: str
   !
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.29 2003-02-07 08:46:22 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -305,8 +306,6 @@ module  power_spectrum
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-  !
-  ivec=1
   !
   if (sp=='u') then
      a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
@@ -354,14 +353,17 @@ module  power_spectrum
   !  on root processor, write global result to file
   !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
   !
+  if (ivec .eq. 1) str='x_x.dat'
+  if (ivec .eq. 2) str='y_x.dat'
+  if (ivec .eq. 3) str='z_x.dat'
 !
 !  append to diagnostics file
 !
   if (iproc==root) then
      if (ip<10) print*,'Writing power spectra of variable',sp &
-          ,'to ',trim(datadir)//'/power'//trim(sp)//'x_x.dat'
+          ,'to ',trim(datadir)//'/power'//trim(sp)//trim(str)
      spectrum_sum=.5*spectrum_sum
-     open(1,file=trim(datadir)//'/power'//trim(sp)//'x_x.dat',position='append')
+     open(1,file=trim(datadir)//'/power'//trim(sp)//trim(str),position='append')
      write(1,*) t
      write(1,'(1p,8e10.2)') spectrum_sum
      close(1)
