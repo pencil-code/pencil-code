@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.2 2003-10-09 17:57:49 brandenb Exp $
+! $Id: cosmicray.f90,v 1.3 2003-10-09 23:30:53 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density advection difussion equation
 !  it follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -13,30 +13,25 @@ module CosmicRay
   implicit none
 
   character (len=labellen) :: initecr='zero', initecr2='zero'
-  character (len=40) :: tensor_pscalar_file
 
   real, parameter :: gammacr = 4./3., gammacr1=1./3.
 
   ! input parameters
-  real :: amplecr=.1, widthecr=.5, ecr_min=0.
+  real :: amplecr=.1, widthecr=.5, ecr_min=0., ecr_const=0.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
-!  real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
-       radius_ecr,epsilon_ecr,widthecr
+       radius_ecr,epsilon_ecr,widthecr,ecr_const
 
   ! run parameters
   real :: cosmicray_diff=0.,tensor_cosmicray_diff=0.
 
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,tensor_cosmicray_diff
-       ! ,gradC0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
-!  integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
-!  integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
 
   contains
 
@@ -69,7 +64,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.2 2003-10-09 17:57:49 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.3 2003-10-09 23:30:53 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +115,7 @@ module CosmicRay
 !
       select case(initecr)
         case('zero'); f(:,:,:,iecr)=0.
+        case('const_ecr'); f(:,:,:,iecr)=ecr_const
         case('gaussian-x'); call gaussian(amplecr,f,iecr,kx=kx_ecr)
         case('gaussian-y'); call gaussian(amplecr,f,iecr,ky=ky_ecr)
         case('gaussian-z'); call gaussian(amplecr,f,iecr,kz=kz_ecr)
@@ -166,7 +162,7 @@ module CosmicRay
       real, intent(in), dimension (nx) :: divu
 !
       real, dimension (nx,3) :: gecr
-      real, dimension (nx) :: ecr,ugecr,diff_op,del2lnecr
+      real, dimension (nx) :: ecr,del2ecr,ugecr,diff_op
       integer :: j
 !
 !  identify module and boundary conditions
@@ -186,29 +182,24 @@ module CosmicRay
 !
 !  diffusion operator
 !
-!!        if (pscalar_diff/=0.) then
-!!          if(headtt) print*,'decr_dt: pscalar_diff=',pscalar_diff
-!!          call dot_mn(gecr+glnrho,gecr,diff_op)
-!!          call del2(f,iecr,del2ecr)
-!!          diff_op=diff_op+del2ecr
-!!          df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+pscalar_diff*diff_op
-!!        endif
-!
-!  add advection of imposed constant gradient of ecr (called gradC0)
-!  makes sense really only for periodic boundary conditions
-!  This gradient can have arbitary direction.
-!ajwm  temporarily removes... while modifying from pscalar
-!        do j=1,3
-!          if (gradC0(j)/=0.) then
-!            df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)-gradC0(j)*uu(:,j)
-!          endif
-!        enddo
+      if (cosmicray_diff/=0.) then
+        if(headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
+        call del2(f,iecr,del2ecr)
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+cosmicray_diff*del2ecr
+      endif
 !
 !  tensor diffusion (but keep the isotropic one)
 !
 !!        if (tensor_pscalar_diff/=0.) call tensor_diff(f,df,tensor_pscalar_diff,gecr)
-!
+        !
 !!      endif
+!
+!  For the timestep calculation, need maximum diffusion
+!
+        if (lfirst.and.ldt) then
+          maxdiffus=amax1(maxdiffus,cosmicray_diff)
+          maxdiffus=amax1(maxdiffus,tensor_cosmicray_diff)
+        endif
 !
 !  diagnostics
 !

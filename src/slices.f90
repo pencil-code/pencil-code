@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.20 2003-09-10 12:20:12 theine Exp $
+! $Id: slices.f90,v 1.21 2003-10-09 23:30:53 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -12,15 +12,15 @@ module Slices
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
-  real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2
+  real, dimension (nx,ny) :: TT_xy,TT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
-  real, dimension (nx,nz) :: TT_xz,yH_xz
+  real, dimension (nx,nz) :: TT_xz,yH_xz,ecr_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
-  real, dimension (ny,nz) :: TT_yz,yH_yz
+  real, dimension (ny,nz) :: TT_yz,yH_yz,ecr_yz
 
   contains
 
@@ -217,6 +217,19 @@ module Slices
         call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
         call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
         call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
+      endif
+!
+!  Cosmic ray energy density
+!
+      if (lcosmicray) then
+        ecr_yz=f(ix,m1:m2,n1:n2,iecr)
+        ecr_xz=f(l1:l2,iy,n1:n2,iecr)
+        ecr_xy=f(l1:l2,m1:m2,iz,iecr)
+        ecr_xy2=f(l1:l2,m1:m2,iz2,iecr)
+        call wslice(path//'ecr.yz',ecr_yz,x(ix),ny,nz)
+        call wslice(path//'ecr.xz',ecr_xz,y(iy),nx,nz)
+        call wslice(path//'ecr.xy',ecr_xy,z(iz),nx,ny)
+        call wslice(path//'ecr.Xy',ecr_xy2,z(iz2),nx,ny)
       endif
 !
     endsubroutine wvid
