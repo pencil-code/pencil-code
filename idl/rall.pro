@@ -185,8 +185,8 @@ for i=0,ncpus-1 do begin        ; read data from individual files
 endfor
 ;
 xx = spread(x, [1,2], [my,mz])
-yy = spread(x, [0,2], [mx,mz])
-zz = spread(x, [0,1], [mx,my])
+yy = spread(y, [0,2], [mx,mz])
+zz = spread(z, [0,1], [mx,my])
 ;
 ;  Summarise data
 ;
