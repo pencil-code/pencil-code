@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.90 2004-04-04 19:52:30 theine Exp $
+! $Id: interstellar.f90,v 1.91 2004-04-10 17:04:27 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -119,7 +119,7 @@ module Interstellar
       width_SN, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
-      h_SNI, SNI_area_rate
+      h_SNI, h_SNII, SNI_area_rate
 
   contains
 
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.90 2004-04-04 19:52:30 theine Exp $")
+           "$Id: interstellar.f90,v 1.91 2004-04-10 17:04:27 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -235,7 +235,6 @@ module Interstellar
       t_interval_SNI = 1./(SNI_area_rate * Lxyz(1) * Lxyz(2))
       average_SNI_heating =r_SNI *ampl_SN/(sqrt(pi)*h_SNI )*heatingfunction_scalefactor
       average_SNII_heating=r_SNII*ampl_SN/(sqrt(pi)*h_SNII)*heatingfunction_scalefactor
-print*,'SNI inrerval = ',t_interval_SNI
 
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)

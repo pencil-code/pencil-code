@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.297 2004-04-10 04:24:01 brandenb Exp $
+! $Id: entropy.f90,v 1.298 2004-04-10 17:04:27 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.297 2004-04-10 04:24:01 brandenb Exp $")
+           "$Id: entropy.f90,v 1.298 2004-04-10 17:04:27 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,7 +167,7 @@ module Entropy
         if (Kbot == impossible) then
           Kbot = hcond0
         else
-          print*, 'WARNING: You should not set Kbot and hcond0 at the same time'
+          if (lroot) print*, 'WARNING: You should not set Kbot and hcond0 at the same time'
         endif
       endif
       !
@@ -1745,6 +1745,9 @@ module Entropy
         i_dtc=0; i_eth=0; i_ethdivum=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
         i_dtchi=0
         i_ssmphi=0
+    
+        Kbot=impossible
+        hcond0=impossible
       endif
 !
 !  iname runs through all possible names that may be listed in print.in

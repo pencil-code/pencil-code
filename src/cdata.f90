@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.217 2004-04-10 04:24:01 brandenb Exp $
+! $Id: cdata.f90,v 1.218 2004-04-10 17:04:27 mee Exp $
 
 module Cdata
 
@@ -105,7 +105,7 @@ module Cdata
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
   ! other variables (needs to be consistent with reset list in register.90)
-  integer :: i_t=0,i_it=0,i_dt=0,i_walltime=0
+  integer :: i_t=0,i_it=0,i_dt=0,i_walltime=0,i_timeperstep=0
   integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0
 
   !  initialization of various switches; actual settings depends on the

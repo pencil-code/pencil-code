@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.176 2004-04-02 20:51:45 dobler Exp $
+! $Id: run.f90,v 1.177 2004-04-10 17:04:27 mee Exp $
 !
 !***********************************************************************
       program run
@@ -37,7 +37,9 @@
         double precision :: time1,time2
         integer :: count
         logical :: stop=.false.,reload=.false.,save_lastsnap=.true.
-        real :: wall_clock_time
+        real :: wall_clock_time, time_per_step
+        real :: time_last_diagnostic, time_this_diagnostic
+        integer ::  it_last_diagnostic
 !
         lrun = .true.
 !
@@ -49,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.176 2004-04-02 20:51:45 dobler Exp $")
+             "$Id: run.f90,v 1.177 2004-04-10 17:04:27 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -262,7 +264,13 @@
              wall_clock_time = (time2-time1)
              call save_name(wall_clock_time,i_walltime) 
           endif
-          if(lout) call prints()
+          if(lout.and.lroot.and.i_timeperstep/=0) then
+             time_this_diagnostic=mpiwtime()
+             time_per_step = (time_this_diagnostic-time_last_diagnostic)/(it-it_last_diagnostic)
+             time_last_diagnostic=time_this_diagnostic
+             call save_name(time_per_step,i_timeperstep) 
+          endif
+           if(lout) call prints()
           !
           !  Setting ialive=1 can be useful on flaky machines!
           !  Each processor writes it's processor number (if it is alive!)
@@ -280,7 +288,7 @@
           !
           !  Write slices (for animation purposes)
           !
-          if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+          if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_') 
           !
           !  save snapshot every isnap steps in case the run gets interrupted
           !  the time needs also to be written
@@ -310,6 +318,7 @@
             exit Time_loop
           endif
           !
+          if (lout) it_last_diagnostic = it
           it=it+1
           headt=.false.
         enddo Time_loop

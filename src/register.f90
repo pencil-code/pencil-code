@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.128 2004-04-08 12:47:08 dobler Exp $
+! $Id: register.f90,v 1.129 2004-04-10 17:04:27 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -401,8 +401,10 @@ module Register
 !  (general variables that are defined in Cdata)
 !
       if (lreset) then
-        i_t=0; i_it=0; i_dt=0; i_walltime=0 ! general print.in params
+        i_t=0; i_it=0; i_dt=0; i_walltime=0; i_timeperstep=0 ! general print.in params
         i_rcylmphi=0; i_phimphi=0; i_zmphi=0; i_rmphi=0 ! general phiaver.in params
+        
+        ix=-1; iy=-1; iz=-1; iz2=-1
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -413,6 +415,7 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'it',i_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
         call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
+        call parse_name(iname,cname(iname),cform(iname),'timeperstep',i_timeperstep)
       enddo
 !
 !  phi-averages
@@ -439,6 +442,7 @@ module Register
         write(3,*) 'i_it=',i_it
         write(3,*) 'i_dt=',i_dt
         write(3,*) 'i_walltime=',i_walltime
+        write(3,*) 'i_timeperstep=',i_timeperstep
         write(3,*) 'nname=',nname
 !
         write(3,*) 'i_rcylmphi=',i_rcylmphi
