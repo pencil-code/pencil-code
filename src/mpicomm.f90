@@ -189,7 +189,7 @@ module Mpicomm
 !
 !  Periodic boundary conditions in y
 !
-      if (nprocy==0) then
+      if (nprocy==1) then
         f(l1:l2, 1:m1-1,n1:n2,:) = f(l1:l2,m2i:m2,n1:n2,:)
         f(l1:l2,m2+1:my,n1:n2,:) = f(l1:l2,m1:m1i,n1:n2,:)
       else
@@ -203,7 +203,7 @@ module Mpicomm
 !
 !  Periodic boundary conditions in z
 !
-      if (nprocz==0) then
+      if (nprocz==1) then
         f(l1:l2,m1:m2, 1:n1-1,:) = f(l1:l2,m1:m2,n2i:n2,:)
         f(l1:l2,m1:m2,n2+1:mz,:) = f(l1:l2,m1:m2,n1:n1i,:)
       else
