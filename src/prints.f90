@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.59 2003-12-04 09:03:38 brandenb Exp $
+! $Id: prints.f90,v 1.60 2003-12-07 08:42:14 brandenb Exp $
 
 module Print
 
@@ -190,9 +190,9 @@ module Print
         call mpibcast_real(cc2m,1)
       endif
 !
-      if (i_gcc1m/=0) then
-        if (iproc==0) gcc1m=fname(i_gcc1m)
-        call mpibcast_real(gcc1m,1)
+      if (i_gcc2m/=0) then
+        if (iproc==0) gcc2m=fname(i_gcc2m)
+        call mpibcast_real(gcc2m,1)
       endif
 !
       if(ldebug) print*,'exit prints'

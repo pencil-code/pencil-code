@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.153 2003-12-04 09:03:38 brandenb Exp $ 
+! $Id: param_io.f90,v 1.154 2003-12-07 08:42:14 brandenb Exp $ 
 
 module Param_IO
 
@@ -469,6 +469,10 @@ module Param_IO
         iy=m1
         iz=n1
         iz2=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
 !
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
@@ -480,6 +484,10 @@ module Param_IO
         iz2=n2
         if(nprocy==1) then; iy=(m1+m2)/2; endif
         if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
+        lwrite_slice_xy2=(ipz==nprocz/2)
+        lwrite_slice_xy=(ipz==nprocz/2)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
 !
 !  slice position when the first meshpoint in z is the equator (sphere)
 !  For one z-processor, iz remains n1, but iz2 is set to the middle.
@@ -491,7 +499,17 @@ module Param_IO
         iz2=n2
         if(nprocy==1) then; iy=(m1+m2)/2; endif
         if(nprocz==1) then; iz2=(iz+n2)/2; endif
+        lwrite_slice_xy2=(ipz==nprocz/4)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
       endif
+!
+!  write slice position to a file (for convenient post-processing)
+!
+      open(1,file=trim(datadir)//'/slice_position.dat')
+      write(1,*) slice_position
+      close(1)
 !  
 !  make sure ix,iy,iz,iz2 are not outside the boundaries
 !

@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.34 2003-12-06 13:52:21 ajohan Exp $
+! $Id: slices.f90,v 1.35 2003-12-07 08:42:15 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -361,9 +361,16 @@ module Slices
       real, dimension (ndim1,ndim2) :: a
       real, intent(in) :: pos
 !
-      open(1,file=file,form='unformatted',position='append')
-      write(1) a,t,pos
-      close(1)
+!  check whether we want to write a slice on this processor
+!
+      if ( (lwrite_slice_xy2.and.index(file,'Xy')>0) .or. &
+           (lwrite_slice_xy.and.index(file,'xy')>0)  .or. &
+           (lwrite_slice_xz.and.index(file,'xz')>0)  .or. &
+           (lwrite_slice_yz.and.index(file,'yz')>0) ) then
+        open(1,file=file,form='unformatted',position='append')
+        write(1) a,t,pos
+        close(1)
+      endif
 !
     endsubroutine wslice
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.13 2003-11-28 16:30:38 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.14 2003-12-07 08:42:14 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -23,7 +23,8 @@
 !
       integer :: ipy,ipz,iproc,it,nt=999999,ipz_top,ipz_bottom,ipy_front
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4
-      logical :: eof=.false.
+      integer :: itdebug=2
+      logical :: eof=.false.,slice_position_ok=.false.
       real :: t
       real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
 !
@@ -31,7 +32,7 @@
       character (len=120) :: datadir='data',path=''
       character (len=5) :: chproc=''
       character (len=20) :: field='lnrho'
-      character (len=1) :: position_arrangement='p'
+      character (len=1) :: slice_position='p'
 !
       real :: min_xy_loc,min_xy2_loc,min_xz_loc,min_yz_loc
       real :: max_xy_loc,max_xy2_loc,max_xz_loc,max_yz_loc
@@ -50,22 +51,32 @@
       read*,field
 !
 !  periphery or middle of the box?
+!  This information is now written in a file.
+!  If file doesn't exist, read from the input line.
 !
-      !call getarg (1,field)
-      write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
-      read*,position_arrangement
+      open(1,file='data/slice_position.dat',err=998)
+      read(1,*) slice_position
+      close(1)
+      slice_position_ok=.true.
+      write(*,*) 'slice position (from file) is: ',slice_position_ok
+998   continue
 !
-!  interpret position_arrangement
+      if (.not.slice_position_ok) then
+        write(*,'(a)',ADVANCE='NO') 'periphery (p), middle (m) of box, equator (e)? '
+        read*,slice_position
+      endif
 !
-      if (position_arrangement=='p') then
+!  interpret slice_position
+!
+      if (slice_position=='p') then
         ipz_top=nprocz-1
         ipz_bottom=0
         ipy_front=0
-      elseif (position_arrangement=='m') then
+      elseif (slice_position=='m') then
         ipz_top=nprocz/2
         ipz_bottom=nprocz/2
         ipy_front=nprocy/2
-      elseif (position_arrangement=='e') then
+      elseif (slice_position=='e') then
         ipz_top=nprocz/4
         ipz_bottom=0.
         ipy_front=nprocy/2
@@ -87,7 +98,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it==1) print*,trim(fullname)
+        if(it<=itdebug) print*,trim(fullname)
         call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof)
         min_xy2_loc=min(min_xy2_loc,minval(xy2_loc))
         max_xy2_loc=max(max_xy2_loc,maxval(xy2_loc))
@@ -107,7 +118,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it==1) print*,trim(fullname)
+        if(it<=itdebug) print*,trim(fullname)
         call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof)
         min_xy_loc=min(min_xy_loc,minval(xy_loc))
         max_xy_loc=max(max_xy_loc,maxval(xy_loc))
@@ -127,7 +138,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it==1) print*,trim(fullname)
+        if(it<=itdebug) print*,trim(fullname)
         call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof)
         min_xz_loc=min(min_xz_loc,minval(xz_loc))
         max_xz_loc=max(max_xz_loc,maxval(xz_loc))
@@ -147,7 +158,7 @@
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
-        if(it==1) print*,trim(fullname)
+        if(it<=itdebug) print*,trim(fullname)
         call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof)
         min_yz_loc=min(min_yz_loc,minval(yz_loc))
         max_yz_loc=max(max_yz_loc,maxval(yz_loc))
@@ -161,6 +172,7 @@
       print*,'written full set of slices at t=',t
       enddo
 999   continue
+      print*,'last file read: ',trim(fullname)
       print*,'-------------------------------------------------'
       print*,'minimum and maximum values:'
       print*,'xy-plane:',min_xy_loc,max_xy_loc

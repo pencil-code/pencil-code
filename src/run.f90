@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.167 2003-11-28 17:00:00 theine Exp $
+! $Id: run.f90,v 1.168 2003-12-07 08:42:14 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.167 2003-11-28 17:00:00 theine Exp $")
+             "$Id: run.f90,v 1.168 2003-12-07 08:42:14 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -272,7 +272,7 @@
           !
           !  Write slices (for animation purposes)
           !
-          if(lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
+          if (lvid.and.lwrite_slices) call wvid(f,trim(directory)//'/slice_')
           !
           !  save snapshot every isnap steps in case the run gets interrupted
           !  the time needs also to be written

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.119 2003-11-27 10:13:48 brandenb Exp $
+! $Id: register.f90,v 1.120 2003-12-07 08:42:14 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -283,8 +283,6 @@ module Register
       if (exist) then
         lwrite_slices=.true.
         isubstract=0
-!  these values are already read in in param_io
-!       ix=n1; iy=m1; iz=n1; iz2=n2
         open(1,file='video.in')
         do inamev=1,mnamev
           read(1,*,end=98,iostat=io_stat) ix_,iy_,iz_,iz2_

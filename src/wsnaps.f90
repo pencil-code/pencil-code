@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.44 2003-12-04 09:03:38 brandenb Exp $
+! $Id: wsnaps.f90,v 1.45 2003-12-07 08:42:15 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -185,8 +185,8 @@ contains
          if (rhocc_pdf) call pdf(a,'rhocc',rhoccm,sqrt(cc2m))
          if (cc_pdf)    call pdf(a,'cc'   ,rhoccm,sqrt(cc2m))
          if (lncc_pdf)  call pdf(a,'lncc' ,rhoccm,sqrt(cc2m))
-         if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,gcc1m)
-         if (lngcc_pdf) call pdf(a,'lngcc',0.    ,gcc1m)
+         if (gcc_pdf)   call pdf(a,'gcc'  ,0.    ,sqrt(gcc2m))
+         if (lngcc_pdf) call pdf(a,'lngcc',0.    ,sqrt(gcc2m))
          !
       endif
 !
