@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.19 2004-03-18 15:01:35 theine Exp $
+! $Id: timestep.f90,v 1.20 2004-03-18 17:21:53 dobler Exp $
 
 module Timestep
 
@@ -7,11 +7,12 @@ module Timestep
   implicit none
 
 !
-! DOCUMENT ME
+!  border_prof_[x-z] could be of size n[x-z], but having the same
+!  length as f() (in the given dimension) gives somehow more natural code.
 !
-  real, dimension(mx) :: border_prof_x
-  real, dimension(my) :: border_prof_y
-  real, dimension(mz) :: border_prof_z
+  real, dimension(mx) :: border_prof_x=1.
+  real, dimension(my) :: border_prof_y=1.
+  real, dimension(mz) :: border_prof_z=1.
 
 ! integer :: itorder=3
 
@@ -106,7 +107,7 @@ module Timestep
       real, dimension(nz) :: zeta
       real :: border_width,lborder,uborder
 
-      if (border_frac(1)>0) then
+      if ((border_frac(1)>0) .and. (.not. lperi(1))) then
         border_width=border_frac(1)*Lxyz(1)/2
         lborder=xyz0(1)+border_width
         uborder=xyz1(1)-border_width
@@ -116,7 +117,7 @@ module Timestep
         border_prof_x(l1:l2)=1
       endif
 
-      if (border_frac(1)>0) then
+      if ((border_frac(2)>0) .and. (.not. lperi(2))) then
         border_width=border_frac(2)*Lxyz(2)/2
         lborder=xyz0(2)+border_width
         uborder=xyz1(2)-border_width
@@ -126,7 +127,7 @@ module Timestep
         border_prof_y(m1:m2)=1
       endif
 
-      if (border_frac(1)>0) then
+      if ((border_frac(3)>0) .and. (.not. lperi(3))) then
         border_width=border_frac(3)*Lxyz(3)/2
         lborder=xyz0(3)+border_width
         uborder=xyz1(3)-border_width
