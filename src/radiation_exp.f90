@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.54 2003-07-07 12:35:41 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.55 2003-07-07 12:46:24 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -88,7 +88,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.54 2003-07-07 12:35:41 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.55 2003-07-07 12:46:24 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -225,7 +225,7 @@ module Radiation
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
-!YYY  f(:,:,:,iQrad)=-Srad
+      f(:,:,:,iQrad)=-Srad
 !
 !  calculate weights
 !
