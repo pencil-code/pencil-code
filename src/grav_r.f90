@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.48 2003-10-17 13:05:08 nilshau Exp $
+! $Id: grav_r.f90,v 1.49 2003-10-18 20:43:34 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.48 2003-10-17 13:05:08 nilshau Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.49 2003-10-18 20:43:34 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -336,6 +336,10 @@ endif
       write(3,*) 'i_curlggmax=',i_curlggmax
       write(3,*) 'i_divggrms=',i_divggrms
       write(3,*) 'i_divggmax=',i_divggmax
+      write(3,*) 'igg=',igg
+      write(3,*) 'igx=',igx
+      write(3,*) 'igy=',igy
+      write(3,*) 'igz=',igz
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_gravity

@@ -1,8 +1,8 @@
-! $Id: cosmicray.f90,v 1.8 2003-10-16 17:13:00 brandenb Exp $
+! $Id: cosmicray.f90,v 1.9 2003-10-18 20:43:34 brandenb Exp $
 
-!  This modules solves the cosmic ray energy density advection diffusion equation
-!  it follows the description of Hanasz & Lesch (2002,2003) as used in their
-!  ZEUS 3D implementation
+!  This modules solves the cosmic ray energy density equation.
+!  It follows the description of Hanasz & Lesch (2002,2003) as used in their
+!  ZEUS 3D implementation.
 !
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -23,21 +23,22 @@ module CosmicRay
 
   character (len=labellen) :: initecr='zero', initecr2='zero'
 
-  real, parameter :: gammacr=4./3., gammacr1=gammacr-1.
-
   ! input parameters
-  real :: amplecr=.1, widthecr=.5, ecr_min=0., ecr_const=0.
+  real :: gammacr=4./3.,gammacr1
+  real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
 
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
-       radius_ecr,epsilon_ecr,widthecr,ecr_const
+       radius_ecr,epsilon_ecr,widthecr,ecr_const, &
+       gammacr
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
 
   namelist /cosmicray_run_pars/ &
-       cosmicray_diff,Kperp,Kpara
+       cosmicray_diff,Kperp,Kpara, &
+       gammacr
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -73,7 +74,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.8 2003-10-16 17:13:00 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.9 2003-10-18 20:43:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -100,10 +101,12 @@ module CosmicRay
 !  09-oct-03/tony: coded
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-! 
-!  set to zero and then call the same initial condition
-!  that was used in start.csh
-!   
+!
+!  initialize gammacr1
+!
+      gammacr1=gammacr-1.
+      if(lroot) print*,'gammacr1=',gammacr1
+!
       if(ip==0) print*,'f=',f
     endsubroutine initialize_cosmicray
 !***********************************************************************
@@ -156,11 +159,12 @@ module CosmicRay
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
-    subroutine decr_dt(f,df,uu,divu,rho1,bij,bb)
+    subroutine decr_dt(f,df,uu,rho1,divu,bij,bb)
 !
 !  cosmic ray evolution
-!  calculate decr/dt = -uu.gecr -gammacr*ecr*divu
-!  + cosmicray_diff_perp*[del2ecr + ...]
+!  calculate decr/dt + div(u.ecr - flux) = -pcr*divu = -(gammacr-1)*ecr*divu
+!  solve as decr/dt + u.grad(u.ecr) = -gammacr*ecr*divu + div(flux)
+!  add du = ... - (1/rho)*grad(pcr) to momentum equation
 !
 !   09-oct-03/tony: coded
 !
@@ -191,7 +195,8 @@ module CosmicRay
       ecr=f(l1:l2,m,n,iecr)
       df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)-ugecr-gammacr*ecr*divu
 !
-!  effect on the momentum equation
+!  effect on the momentum equation, (1/rho)*grad(pcr)
+!  cosmic ray pressure is: pcr=(gammacr-1)*ecr
 !
       do j=0,2
         df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)

@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.11 2003-10-12 22:13:17 mee Exp $
+! $Id: grav_self.f90,v 1.12 2003-10-18 20:43:34 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -83,7 +83,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.11 2003-10-12 22:13:17 mee Exp $")
+           "$Id: grav_self.f90,v 1.12 2003-10-18 20:43:34 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -317,6 +317,10 @@ module Gravity
       write(3,*) 'i_curlggmax=',i_curlggmax
       write(3,*) 'i_divggrms=',i_divggrms
       write(3,*) 'i_divggmax=',i_divggmax
+      write(3,*) 'igg=',igg
+      write(3,*) 'igx=',igx
+      write(3,*) 'igy=',igy
+      write(3,*) 'igz=',igz
 !
     endsubroutine rprint_gravity
 !***********************************************************************

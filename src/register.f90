@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.102 2003-10-13 14:54:31 mcmillan Exp $
+! $Id: register.f90,v 1.103 2003-10-18 20:43:34 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -128,7 +128,7 @@ module Register
       use Pscalar,      only: initialize_pscalar
 !      use Dustdensity,  only: initialize_dustdensity
 !      use Dustvelocity, only: initialize_dustvelocity
-!      use CosmicRay,    only: initialize_cosmicray
+      use CosmicRay,    only: initialize_cosmicray
       use Interstellar, only: initialize_interstellar
       use Shear,        only: initialize_shear
       use Viscosity,    only: initialize_viscosity
@@ -214,7 +214,7 @@ module Register
       call initialize_pscalar(f)
 !      call initialize_dustvelocity
 !      call initialize_dustdensity
-!      call initialize_cosmicray(f)
+      call initialize_cosmicray(f)
       call initialize_interstellar(lstart)
       call initialize_shear
       call initialize_viscosity
