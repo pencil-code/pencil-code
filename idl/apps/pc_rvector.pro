@@ -1,8 +1,28 @@
-nxyz=64
+pro rbvec,nxyz=nxyz,png=png
+;
+default,nxyz,64*2
+print,'Assumed default box size is: nxyz=',nxyz
+print,'(If not ok, then set nxyz!)'
+;
+;  time stamp label
+;
+siz=2
+fo='(f6.1)'
+loadct,5
+;
+;  open MPEG file, if keyword is set
+;
+dev='x' ;(default)
+if keyword_set(png) then begin
+  set_plot, 'z'                   ; switch to Z buffer
+  device, SET_RESOLUTION=[!d.x_size,!d.y_size] ; set window size
+  itpng=0 ;(image counter)
+  dev='z'
+endif
+;
 lun=41
 nread=0
 l=0L & m=0L & n=0L
-;file='data/proc3/bvec.dat'
 file='data/bvec.dat'
 close,lun
 openr,lun,file,/f77
@@ -12,10 +32,26 @@ while not eof(lun) do begin
     t=bx
     print,'nread=',nread
     if nread gt 0 then begin
-      vecgdv_good,ll-4,mm-4,nn-1,bbx,bby,bbz,indgen(nxyz),indgen(nxyz),indgen(nxyz),ax=30,az=30,len=1e6
-      print,t,nread,n_elements(ll)
+      vecgdv_good,ll-4,mm-4,nn-1,bbx,bby,bbz,$
+        indgen(nxyz),indgen(nxyz),indgen(nxyz),$
+        ax=30,az=30,len=1e6,back=255
+      xyouts,-5,-5,'!8t!6='+string(t,fo=fo),siz=siz,col=1
+      wait,.05
+      ;
+      if keyword_set(png) then begin
+        istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
+        image = tvrd()
+        ;
+        ;  write png file
+        ;
+        tvlct, red, green, blue, /GET
+        imgname = 'img_'+istr2+'.png'
+        write_png, imgname, image, red, green, blue
+        itpng=itpng+1 ;(counter)
+      endif
+      ;
     endif
-    nread=nread+1
+    nread=0
     readnew=1
      ;stop
   endif else begin
@@ -27,6 +63,7 @@ while not eof(lun) do begin
       ll=[ll,l] & mm=[mm,m] & nn=[nn,n]
       bbx=[bbx,bx] & bby=[bby,by] & bbz=[bbz,bz]
     endelse
+    nread=nread+1
   endelse
 endwhile
 close,lun
