@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.26 2003-05-31 04:25:14 brandenb Exp $
+! $Id: wsnaps.f90,v 1.27 2003-06-14 16:30:32 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -82,8 +82,8 @@ contains
 !
       if(lsnap.or..not.llabel) then
         if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
-        call output_radiation(lun_output)
-        call output_ionization(lun_output)
+        !call output_radiation(lun_output)
+        !call output_ionization(lun_output)
         close(lun_output)
       endif
 !
