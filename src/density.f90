@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.94 2003-06-17 07:08:19 dobler Exp $
+! $Id: density.f90,v 1.95 2003-06-17 15:04:00 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.94 2003-06-17 07:08:19 dobler Exp $")
+           "$Id: density.f90,v 1.95 2003-06-17 15:04:00 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -740,8 +740,23 @@ module Density
 !  bottom boundary
 !
       case('bot')
-        if (lroot) print*,'bc_lnrho_temp_z: bot not yet implemented'
-        call stop_it("")
+        if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        tmp = 2/gamma*alog(cs2bot/cs20)
+!
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
+!
+        f(:,:,n1,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
+        do i=1,nghost; f(:,:,n1-i,ient) = 2*f(:,:,n1,ient)-f(:,:,n1+i,ient); enddo
+!
+!  set density in the ghost zones so that dlnrho/dz + ds/dz = gz/cs2bot
+!  for the time being, we don't worry about lnrho0 (assuming that it is 0)
+!
+        tmp=gravz/cs2bot
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho) = f(:,:,n1+i,ilnrho) +f(:,:,n1+i,ient) &
+                                                  -f(:,:,n1-i,ient) +2*i*dz*tmp
+        enddo
 !
 !  top boundary
 !
@@ -750,7 +765,7 @@ module Density
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
         tmp = 2/gamma*alog(cs2top/cs20)
 !
-!  set first boundary value for entropy, and then ghost points antisymmetrically
+!  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
         f(:,:,n2,ient) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost; f(:,:,n2+i,ient) = 2*f(:,:,n2,ient)-f(:,:,n2-i,ient); enddo
