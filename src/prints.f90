@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.23 2002-06-24 17:45:29 brandenb Exp $
+! $Id: prints.f90,v 1.24 2002-06-25 14:55:39 dobler Exp $
 
 module Print
 
@@ -30,13 +30,13 @@ module Print
       character (len=1) :: comma=','
       integer :: iname,index_d
 !
-!  If the timestep (=dt) is to be outputted, it is known only after
+!  If the timestep (=dt) is to be written, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
 !
       if (lroot) then
-        if (i_t/=0) call save_name(tdiagnos,i_t)
-        if (i_dt/=0) call save_name(dt,i_dt)
-        if (i_it/=0) call save_name(float(it-1),i_it)
+        if (i_t/=0)   call save_name(tdiagnos,i_t)
+        if (i_dt/=0)  call save_name(dt,i_dt)
+        if (i_it/=0)  call save_name(float(it-1),i_it)
         if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
         if (lmagnetic) call calc_mfield
 !
@@ -59,7 +59,7 @@ module Print
 !  also listed in print.in.
 !
         if(first) print*
-        if(first) print*,trim(legend)
+        if(first) write(*,'(" ",A)') trim(legend)
 !
 !  write legend to extra file
 !  (might want to do only once after each lreset)
