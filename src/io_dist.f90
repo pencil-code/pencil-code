@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $
+! $Id: io_dist.f90,v 1.80 2004-09-28 10:01:58 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.79 2004-09-12 10:39:28 ponty Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.80 2004-09-28 10:01:58 ajohan Exp $")
 !
     endsubroutine register_io
 !
@@ -319,6 +319,7 @@ contains
 !  In the directory containing `filename', append one line to file
 !  `flist' containing the file part of filename
 !
+      use Cdata, only: lcopysnapshots_exp
       use Cparam, only: fnlen
       use General, only: parse_filename
 !
@@ -329,6 +330,12 @@ contains
       open(1,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
       write(1,'(A)') trim(fpart)
       close(1)
+!
+      if (lcopysnapshots_exp) then
+        open(1,FILE=trim(dir)//'/'//'move-me.list',POSITION='append')
+          write(1,'(A)') trim(filename)
+        close(1)
+      endif
 !
     endsubroutine log_filename_to_file
 !***********************************************************************

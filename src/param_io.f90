@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.191 2004-09-18 07:54:29 brandenb Exp $ 
+! $Id: param_io.f90,v 1.192 2004-09-28 10:01:58 ajohan Exp $ 
 
 module Param_IO
 
@@ -64,7 +64,7 @@ module Param_IO
        random_gen,nfilter,lserial_io, &
        lread_oldsnap,lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        lwrite_aux,lcalc_cp,pretend_lnTT, &
-       lprocz_slowest, &
+       lprocz_slowest, lcopysnapshots_exp, &
        bcx,bcy,bcz,r_int,r_ext,r_ref,mu0,force_lower_bound
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &
