@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.94 2003-09-08 13:23:20 theine Exp $
+! $Id: radiation_exp.f90,v 1.95 2003-09-08 18:33:18 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -84,7 +84,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.94 2003-09-08 13:23:20 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.95 2003-09-08 18:33:18 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -825,11 +825,11 @@ module Radiation
 !  integrated from infinity using a characteristic scale height
 !
         if (bc_rad1(3)=='e') then
-          kaprho_xy=kaprho(:,:,n1-radz0:n1-1)
           Srad_xy=Srad(:,:,n1-radz0:n1-1)
+          kaprho_xy=kaprho(:,:,n1-radz0:n1-1)
           call ionget_xy(f,yH_xy,TT_xy,'lower',radz0)
           H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
-          Irad0_xy=Srad_xy*(1.-exp(-kaprho_xy*H_xy))
+          Irad0_xy=Srad_xy*(1.-exp(kaprho_xy*H_xy))
         endif
 !
 !  periodic boundary consition
@@ -870,11 +870,11 @@ module Radiation
 ! integrated from infinity using a characteristic scale height
 !
         if (bc_rad2(3)=='e') then
-          kaprho_xy=kaprho(:,:,n2+1:n2+radz0)
           Srad_xy=Srad(:,:,n2+1:n2+radz0)
+          kaprho_xy=kaprho(:,:,n2+1:n2+radz0)
           call ionget_xy(f,yH_xy,TT_xy,'upper',radz0)
           H_xy=(1.+yH_xy+xHe)*ss_ion*TT_xy/gravz
-          Irad0_xy=Srad_xy*(1.-exp(-kaprho_xy*H_xy))
+          Irad0_xy=Srad_xy*(1.-exp(kaprho_xy*H_xy))
         endif
 !
 ! periodic boundary consition (currently only implemented for
