@@ -1,0 +1,66 @@
+ &INIT_PARS
+ CVSID='$Id: param.nml,v 1.1 2004-06-03 15:30:25 brandenb Exp $                   
+                                                ',IP= 14
+ XYZ0=  -3.141593    ,  -3.141593    ,  -3.141593    
+ XYZ1=   3.141593    ,   3.141593    ,   3.141593    
+ LXYZ=   6.283185    ,   6.283185    ,   6.283185    
+ LPERI= T, T, T
+ LSHIFT_ORIGIN= F, F, F
+ LWRITE_IC= F,LNOWRITE= F,UNIT_SYSTEM='cgs',UNIT_LENGTH= 1.00000000000000
+ UNIT_VELOCITY= 1.00000000000000,UNIT_DENSITY= 1.00000000000000
+ UNIT_TEMPERATURE= 1.00000000000000,RANDOM_GEN='nr_f90                   '
+ NFILTER= 0,LSERIAL_IO= F,LREAD_OLDSNAP= F,LREAD_OLDSNAP_NOMAG= F,LWRITE_AUX= F
+ LCALC_CP= F,PRETEND_LNTT= F,LPROCZ_SLOWEST= T
+ BCX='p      ','p      ','p      ','p      ','p      ','p      ','p      '
+ BCY='p      ','p      ','p      ','p      ','p      ','p      ','p      '
+ BCZ='p      ','p      ','p      ','p      ','p      ','p      ','p      '
+ R_INT= 0.0,R_EXT= 3.908500E+37,MU0= 1.000000
+ /
+ &HYDRO_INIT_PARS
+ AMPLUU= 0.0,INITUU='zero                     ',WIDTHUU= 0.1000000,URAND= 0.0
+ UU_LEFT= 0.0,UU_RIGHT= 0.0,UU_LOWER= 1.000000,UU_UPPER= 1.000000,KX_UU=
+  1.000000,KY_UU= 1.000000,KZ_UU= 1.000000
+ COEFUU=                     (0.0,0.0),                     (0.0,0.0)
+                             (0.0,0.0)
+ UY_LEFT= 0.0,UY_RIGHT= 0.0
+ UU_CONST=        0.0    ,        0.0    ,        0.0    
+ OMEGA= 0.0,INITPOWER= 1.000000,CUTOFF= 0.0,NU_TURB0= 0.0,TAU_NUTURB= 0.0
+ NU_TURB1= 0.0
+ /
+ &DENSITY_INIT_PARS
+ CS0= 1.000000,RHO0= 1.000000,AMPLLNRHO= 0.0,GAMMA= 1.000000
+ INITLNRHO='nothing                  ','nothing                  '
+           'nothing                  ','nothing                  '
+ INITLNRHO2='nothing                  ',WIDTHLNRHO= 0.1000000,RHO_LEFT=
+  1.000000,RHO_RIGHT= 1.000000,LNRHO_CONST= 0.0,CS2BOT= 1.000000,CS2TOP=
+  1.000000,RADIUS_LNRHO= 0.5000000,EPS_PLANET= 0.5000000,B_ELL= 1.000000,Q_ELL=
+  5.000000,HH0= 0.0,RBOUND= 1.000000,MPOLY= 1.500000,STRATI_TYPE='lnrho_ss      
+           ',KX_LNRHO= 1.000000,KY_LNRHO= 1.000000,KZ_LNRHO= 1.000000,AMPLRHO=
+  0.0,COEFLNRHO= (0.0,0.0),DLNRHOBDX= 0.0,CO1_SS= 0.0,CO2_SS= 0.0,SIGMA1=
+  150.0000,CP= 1.000000
+ /
+ &MAGNETIC_INIT_PARS
+ B_EXT=        0.0    ,        0.0    ,        0.0    
+ FRING1= 0.0,IRING1= 0.0,RRING1= 1.000000,WR1= 0.3000000
+ AXISR1=        0.0    ,        0.0    ,   1.000000    
+ DISPR1=        0.0    ,  0.5000000    ,        0.0    
+ FRING2= 0.0,IRING2= 0.0,RRING2= 1.000000,WR2= 0.3000000
+ AXISR2=   1.000000    ,        0.0    ,        0.0    
+ DISPR2=        0.0    , -0.5000000    ,        0.0    
+ RADIUS= 0.1000000,EPSILONAA= 1.000000E-02,X0AA= 0.0,Z0AA= 0.0,WIDTHAA=
+  0.5000000,BY_LEFT= 0.0,BY_RIGHT= 0.0,INITAA='gaussian-noise           '
+ INITAA2='zero                     ',AMPLAA= 1.000000E-04,AMPLAA2= 0.0,KX_AA=
+  1.000000,KY_AA= 1.000000,KZ_AA= 1.000000
+ COEFAA=                     (0.0,0.0),                     (0.0,0.0)
+                             (0.0,0.0)
+ COEFBB=                     (0.0,0.0),                     (0.0,0.0)
+                             (0.0,0.0)
+ KX_AA2= 1.000000,KY_AA2= 1.000000,KZ_AA2= 1.000000,LPRESS_EQUIL= F
+ LPRESS_EQUIL_VIA_SS= F,MU_R= -0.5000000
+ /
+ &LPHYSICS
+ LHYDRO= T,LDENSITY= T,LENTROPY= F,LMAGNETIC= T,LPSCALAR= F,LRADIATION= F
+ LFORCING= T,LGRAVZ= F,LGRAVR= F,LSHEAR= F,LINTERSTELLAR= F,LCOSMICRAY= F
+ LDUSTVELOCITY= F,LDUSTDENSITY= F,LVISC_SHOCK= F,LRADIATION_FLD= F,LIONIZATION=
+  F,LIONIZATION_FIXED= F,LVISC_HYPER= F,LCHIRAL= F
+ /
