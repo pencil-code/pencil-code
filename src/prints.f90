@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.48 2003-08-29 15:53:11 dobler Exp $
+! $Id: prints.f90,v 1.49 2003-08-29 16:16:02 dobler Exp $
 
 module Print
 
@@ -237,6 +237,9 @@ module Print
         write(1,'(1p,8e10.3)') fnamexy(:,:,:,1:nnamexy)
         close(1)
       endif
+!
+      if(ip==0) print*,ch       ! (keep compiler quiet)
+
 !
     endsubroutine write_zaverages
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.134 2003-08-15 08:58:51 brandenb Exp $ 
+! $Id: sub.f90,v 1.135 2003-08-29 16:16:02 dobler Exp $ 
 
 module Sub 
 
@@ -1541,7 +1541,7 @@ module Sub
 !
       character (len=*) :: file
       integer :: lun,nout
-      real :: tout,dtout,ttt,tt,t
+      real :: tout,dtout,t!,ttt,tt,t
       integer, parameter :: nbcast_array=2
       real, dimension(nbcast_array) :: bcast_array
       logical exist
@@ -1581,16 +1581,21 @@ module Sub
       tout=bcast_array(1)
       nout=bcast_array(2)
 !
-!  special treatment when tt is negative
-!  this has to do with different integer arithmetic for negative numbers
-!  tout was the last good value for next output (e.g., after restarted)
+! REMOVE_US
 !
-      tt=tout
-      if (tt.lt.0.) then
-        ttt=tt-1.
-      else
-        ttt=tt
-      endif
+! wd: tt and ttt are never used again, so I guess we don't need this?
+!
+! !
+! !  special treatment when tt is negative
+! !  this has to do with different integer arithmetic for negative numbers
+! !  tout was the last good value for next output (e.g., after restarted)
+! !
+!       tt=tout
+!       if (tt.lt.0.) then
+!         ttt=tt-1.
+!       else
+!         ttt=tt
+!       endif
 !
     endsubroutine read_snaptime
 !***********************************************************************
@@ -1883,7 +1888,7 @@ module Sub
       character (len=20) :: rcsfile, revision, author, date
       character (len=200) :: fmt
       character (len=20) :: tmp1,tmp2,tmp3,tmp4
-      integer :: ir0,ir1,iv0,iv1,id0,id1,id2,ia0,ia1
+      integer :: ir0,ir1,iv0,iv1,id0,id2,ia0,ia1
       integer :: rw=18, vw=12, aw=10, dw=19 ! width of individual fields
 
       !
@@ -1902,7 +1907,7 @@ module Sub
       !  date
       !
       id0 = iv1 + 2             ! first char of date
-      id1 = iv1 + 12            ! postition of space
+      ! id1 = iv1 + 12            ! position of space
       id2 = iv1 + 20            ! last char of time
       date = cvsid(id0:id2)
       !
@@ -2076,10 +2081,9 @@ module Sub
       real, dimension(:) :: coef
       real, dimension(:) :: x
       real, dimension(size(x,1)) :: poly_1
-      integer :: Ncoef,Nx,i
+      integer :: Ncoef,i
 
       Ncoef = size(coef,1)
-      Nx = size(x,1)
 
       poly_1 = coef(Ncoef)
       do i=Ncoef-1,1,-1
@@ -2097,10 +2101,9 @@ module Sub
       real, dimension(:) :: coef
       real, dimension(:,:,:) :: x
       real, dimension(size(x,1),size(x,2),size(x,3)) :: poly_3
-      integer :: Ncoef,Nx,i
+      integer :: Ncoef,i
 
       Ncoef = size(coef,1)
-      Nx = size(x,1)
 
       poly_3 = coef(Ncoef)
       do i=Ncoef-1,1,-1

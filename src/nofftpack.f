@@ -1,4 +1,4 @@
-!  $Id: nofftpack.f,v 1.4 2003-08-15 12:04:54 brandenb Exp $
+!  $Id: nofftpack.f,v 1.5 2003-08-29 16:16:02 dobler Exp $
 !
 !  Dummy routine, to avoid never seeing the compiler warnings from fftpack.
 !
@@ -14,6 +14,7 @@
         c(i)=0.
       enddo
       iprint=1
+      if (.false.) print*,wsave(1) ! (keep compiler quiet)
       END
 !***********************************************************************
       SUBROUTINE CFFTI (N,WSAVE)
@@ -44,13 +45,16 @@
 !***********************************************************************
       SUBROUTINE COSQB (N,X,WSAVE)
       DIMENSION X(*),WSAVE(*)
+      if (.false.) print*,n,x(1),wsave(1) ! (keep compiler quiet)
       END
 !***********************************************************************
       SUBROUTINE COSQF (N,X,WSAVE)
       DIMENSION X(*),WSAVE(*)
+      if (.false.) print*,n,x(1),wsave(1) ! (keep compiler quiet)
       END
 !***********************************************************************
       SUBROUTINE COSQI (N,WSAVE)
       DIMENSION WSAVE(*)
+      if (.false.) print*,n,x(1),wsave(1) ! (keep compiler quiet)
       END
 !***********************************************************************

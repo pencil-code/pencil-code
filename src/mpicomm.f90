@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.105 2003-08-13 15:30:07 mee Exp $
+! $Id: mpicomm.f90,v 1.106 2003-08-29 16:16:02 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -289,7 +289,6 @@ module Mpicomm
 !  21-may-02/axel: communication of corners added
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      character (len=160) :: errmesg
       integer :: j
 !
 !  1. wait until data received
@@ -383,7 +382,7 @@ module Mpicomm
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
-      integer :: i, ystep
+      integer :: ystep
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
 !
 !  Sixth order interpolation along the y-direction
@@ -760,7 +759,7 @@ module Mpicomm
 !
 !  19-nov-02/wolf: coded
 !
-      integer :: i,buf
+      integer :: buf
       integer, dimension(MPI_STATUS_SIZE) :: status
 !
       buf = 0
@@ -850,7 +849,6 @@ module Mpicomm
       real, dimension(ny) :: tmp_y
       integer :: i,j,sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: ytag=101,ztag=102,partner,ierr
-      integer :: isend_rq_y,irecv_rq_y,isend_rq_z,irecv_rq_z
       character :: var
       integer, dimension(MPI_STATUS_SIZE) :: stat
 !
@@ -1073,7 +1071,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax
   real,dimension(4*nx+15) :: wsavex
-  integer :: l,m,n
+  integer :: m,n
   integer,optional :: dummy
 
 !
@@ -1137,6 +1135,8 @@ subroutine transform_fftpack(a_re,a_im,dummy)
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
   if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
+!
+  if(ip==0) print*,dummy  !(keep compiler quiet)
 !
 endsubroutine transform_fftpack
 !***********************************************************************
@@ -1217,7 +1217,7 @@ subroutine transform_fftpack_1d(a_re,a_im)
   real,dimension(nx,ny,nz) :: a_re,a_im
   complex,dimension(nx) :: ax
   real,dimension(4*nx+15) :: wsavex
-  integer :: l,m,n
+  integer :: m,n
 !
 !  check whether nxgrid=nygrid=nzgrid
 !

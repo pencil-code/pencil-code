@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.76 2003-08-28 15:35:41 ajohan Exp $ 
+! $Id: initcond.f90,v 1.77 2003-08-29 16:16:02 dobler Exp $ 
 
 module Initcond 
  
@@ -969,7 +969,7 @@ module Initcond
       integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: ampl,kz,zbot,ztop
+      real :: ampl,kz,zbot
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
@@ -978,7 +978,7 @@ module Initcond
         print*,'halscos_x: half cosine x-field ; i=',i
         kz=0.5*pi/Lz
         zbot=xyz0(3)
-        ztop=xyz0(3)+Lxyz(3)
+        ! ztop=xyz0(3)+Lxyz(3)
         if ((ip<=16).and.lroot) print*,'halfcos_x: ampl,kz=',ampl,kz
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=-ampl*sin(kz*(zz-zbot))

@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.24 2003-08-13 15:30:07 mee Exp $
+! $Id: general.f90,v 1.25 2003-08-29 16:16:02 dobler Exp $
 
 module General
 
@@ -202,6 +202,8 @@ module General
           endif
         endif
       endselect
+!
+      if (.false.) print*, dummy ! (keep compiler quiet)
 !
     endsubroutine random_seed_wrapper
 !***********************************************************************

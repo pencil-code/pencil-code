@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.231 2003-08-29 11:02:08 dobler Exp $
+### $Id: Makefile,v 1.232 2003-08-29 16:16:02 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -195,8 +195,8 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 	$(F77) $(FFLAGS) $(FFLAGS_GENERAL) $(F77FLAGS) -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
-#.mod.o:
-#	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
+.mod.o: # sometimes need this one to avoid m2c (Modula-to-C) to get called..
+	$(FC) $(FFLAGS) $(FFLAGS_GENERAL) $(F90FLAGS) -c $*.f90
 .c.o:
 	$(CC) $(CFLAGS) -c $*.c
 

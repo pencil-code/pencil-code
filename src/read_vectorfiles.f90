@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.1 2003-08-11 14:23:45 brandenb Exp $
+! $Id: read_vectorfiles.f90,v 1.2 2003-08-29 16:16:02 dobler Exp $
 
 !***********************************************************************
       program read_vectorfiles
@@ -70,6 +70,8 @@
         close(lun)
       enddo
       close(lun2)
+!
+      if(ip==0) print*,ipx  !(keep compiler quiet)
 !
       end
 !***********************************************************************
