@@ -8,7 +8,7 @@
 # is used by both start.csh and run.csh
 
 # Are we running the MPI version?
-set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/makefile`
+set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
 if ($mpi) then
   echo "Running under MPI"
