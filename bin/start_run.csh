@@ -82,6 +82,8 @@ endif
 date
 echo "$mpirun $mpirunops $npops $start_x $x_ops"
 time $mpirun $mpirunops $npops $start_x $x_ops
+set start_status=$status	# save for exit
+if ($status) exit $status	# something went wrong
 echo ""
 date
 
@@ -110,6 +112,7 @@ date
 echo "$mpirun $mpirunops $npops $run_x $x_ops"
 echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $run_x $x_ops
+set run_status=$status		# save for exit
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory
@@ -125,6 +128,8 @@ if ($booted_lam) lamhalt
 
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
+
+exit $run_status
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x

@@ -80,6 +80,7 @@ date
 echo "$mpirun $mpirunops $npops $run_x $x_ops"
 echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
 time $mpirun $mpirunops $npops $run_x $x_ops
+set run_status=$status		# save for exit
 date
 
 # Copy var.dat back from local scratch to data directory
@@ -96,6 +97,8 @@ if ($booted_lam) lamhalt
 # remove LOCK file
 if (-e "LOCK") rm -f LOCK
 
+exit $run_status		# propagate status of mpirun
+
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/run.x
@@ -107,11 +110,3 @@ if (-e "LOCK") rm -f LOCK
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
 # qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
 # eval `env-setup lam`; qsub -v PATH -pe lam 8 -j y -o run.log run.csh
-
-
-
-
-
-
-
-

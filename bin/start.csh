@@ -83,6 +83,7 @@ endif
 date
 echo "$mpirun $mpirunops $npops $start_x $x_ops"
 time $mpirun $mpirunops $npops $start_x $x_ops
+set start_status=$status	# save for exit
 echo ""
 date
 
@@ -91,6 +92,8 @@ if ($local_disc) then
   echo "Copying var.dat back to data directory"
   copy-snapshots -v var.dat
 endif
+
+exit $start_status		# propagate status of mpirun
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x

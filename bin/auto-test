@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.35 2003-08-08 17:52:32 brandenb Exp $
+# CVS: $Id: auto-test,v 1.36 2003-08-26 10:04:21 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -26,7 +26,6 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   matching to extract the relevant output lines.
 # To Do:
 # - Remove directory from /var/tmp when encountering Ctl-c
-# - Investigate the return status after namelist error or similar
 
 use strict;
 use constant QUIET=>1;
@@ -95,7 +94,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.35 2003-08-08 17:52:32 brandenb Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.36 2003-08-26 10:04:21 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
