@@ -177,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.31 $ $}
+\date{\today,~ $ $Revision: 1.32 $ $}
 
 % ====================================================================== %
 
@@ -206,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.31 $ $}
+  \emph{\today,~ $ $Revision: 1.32 $ $}
 
 
 \end{center}
@@ -1104,19 +1104,28 @@ so the memory consumption is given per node. For example, a $256^3$ MHD run with
 entropy evolution requires 241 Mb per node. So the size per processor is
 241/4 Mb = 60 Mb.
 }\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
-proc(s)& machine            &  $\mu$s/pt/step & resol.\ & what & Size/proc & when/who \\
+proc(s)& machine          &  $\mu$s/pt/step
+                                 & resol.\ & what         & Size/proc
+                                                                   & when/who \\
 \hline
-1     & 500MHz linux (nl3)&  19  &  $64^3$ & kinematic    & 10 Mb  & (20-may-02/AB)\\
-1     & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro & 20 Mb  & (20-may-02/AB)\\
-1     & 924MHz linux (nq1)&  10  &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
-1     & Origin3000 (ukaff)& 9.2  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
-1     & Compaq (mhd)      & 7.8  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
-4     & linux nq0-3       & 6.8  & $256^3$ & magn/noentro & 294 Mb & (10-jun-02/AB)\\
-4     & Compaq (mhd)      & 2.76 &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
-8     & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+ 1    & 500MHz linux (nl3)&  19  &  $64^3$ & kinematic    &  10 Mb & (20-may-02/AB)\\
+ 1    & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro &  20 Mb & (20-may-02/AB)\\
+ 1    & 924MHz linux (nq1)&  10  &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
+ 1    & Origin3000 (ukaff)& 9.2  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+ 1    & Compaq (mhd)      & 7.8  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+ 1    & Linux (Kabul)     & 4.4  & $128^3$ & magn/noentro & 130 Mb & (20-jun-02/WD)\\
+ 2    & Linux (Kabul)     & 2.5  & $128^3$ & magn/noentro &  80 Mb & (20-jun-02/WD)\\
+ 4    & Linux nq0-3       & 6.8  & $256^3$ & magn/noentro & 294 Mb & (10-jun-02/AB)\\
+ 4    & Compaq (mhd)      & 2.76 &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
+ 4    & Linux (Kabul)     & 1.5  & $128^3$ & magn/noentro &  47 Mb & (20-jun-02/WD)\\
+ 8    & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
+ 8    & Linux (Kabul)     & 0.83 & $128^3$ & magn/noentro &  28 Mb & (20-jun-02/WD)\\
+ 8    & Linux (Kabul)     & 0.87 & $256^3$ & magn/noentro & 160 Mb & (20-jun-02/WD)\\
 16    & Compaq (mhd)      & 0.64 & $256^3$ & magn/noentro &241/4 Mb& (22-may-02/AB)\\
 16    & Origin3000 (ukaff)& 0.61 & $128^3$ & magn/noentro &        & (22-may-02/AB)\\
 16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
+16    & Linux (Kabul)     & 0.80 & $128^3$ & magn/noentro &  16 Mb & (20-jun-02/WD)\\
+16    & Linux (Kabul)     & 0.51 & $256^3$ & magn/noentro &   9 Mb & (20-jun-02/WD)\\
 32    & Origin3000 (ukaff)& 0.34 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
 32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro &        & (20-may-02/AB)\\
 64    & Origin3000 (ukaff)& 0.17 & $512^3$ & magn/noentro &        & (21-may-02/AB)\\
@@ -1214,7 +1223,7 @@ make[1]: *** [.f90.o] Error 1
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.31 2002-06-15 18:24:25 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.32 2002-06-20 20:04:45 dobler Exp $ $}
 
 
 \end{document}
