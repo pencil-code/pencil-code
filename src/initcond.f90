@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.65 2003-07-29 18:21:47 tarek Exp $ 
+! $Id: initcond.f90,v 1.66 2003-08-02 21:50:46 brandenb Exp $ 
 
 module Initcond 
  
@@ -465,6 +465,57 @@ module Initcond
       endif
 !
     endsubroutine beltrami
+!***********************************************************************
+    subroutine soundwave(ampl,f,i,kx,ky,kz)
+!
+!  sound wave (as initial condition)
+!
+!   2-aug-02/axel: adapted from Beltrami
+!
+      integer :: i,j
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real,optional :: kx,ky,kz
+      real :: ampl,k=1.,fac
+!
+!  wavenumber k
+!
+!  set x-dependent sin wave
+!
+      if (present(kx)) then
+        k=kx; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in sin wave; kx=',k
+        else
+          if (lroot) print*,'sin wave: kx,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*x),2,my),3,mz)
+        endif
+      endif
+!
+!  set y-dependent sin wave field
+!
+      if (present(ky)) then
+        k=ky; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in sin wave; ky=',k
+        else
+          if (lroot) print*,'sin wave: ky,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*y),1,mx),3,mz)
+        endif
+      endif
+!
+!  set z-dependent sin wave field
+!
+      if (present(kz)) then
+        k=kz; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        if (ampl==0) then
+          if (lroot) print*,'ampl=0 in sin wave; kz=',k
+        else
+          if (lroot) print*,'sin wave: kz,i=',k,i
+          f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*z),1,mx),2,my)
+        endif
+      endif
+!
+    endsubroutine soundwave
 !***********************************************************************
     subroutine stratification(ampl,f,xx,yy,zz)
 !

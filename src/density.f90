@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.103 2003-07-02 18:06:18 mee Exp $
+! $Id: density.f90,v 1.104 2003-08-02 21:50:46 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.103 2003-07-02 18:06:18 mee Exp $")
+           "$Id: density.f90,v 1.104 2003-08-02 21:50:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,6 +148,9 @@ module Density
       case('xjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'x')
       case('yjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'y')
       case('zjump'); call jump(f,ilnrho,lnrho_left,lnrho_right,widthlnrho,'z')
+      case('soundwave-x'); call soundwave(ampllnrho,f,ilnrho,kx=1.)
+      case('soundwave-y'); call soundwave(ampllnrho,f,ilnrho,ky=1.)
+      case('soundwave-z'); call soundwave(ampllnrho,f,ilnrho,kz=1.)
       case('gaussian3d'); call gaussian3d(ampllnrho,f,ilnrho,xx,yy,zz,radius_lnrho)
       case('gaussian-noise'); call gaunoise(ampllnrho,f,ilnrho,ilnrho)
       case('gaussian-noise-x')

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.97 2003-07-29 18:21:47 tarek Exp $
+! $Id: hydro.f90,v 1.98 2003-08-02 21:50:46 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -33,12 +33,12 @@ module Hydro
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
-  real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
+  real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   namelist /hydro_run_pars/ &
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
-       tau_damp_ruxm,tau_damp_ruym
+       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -85,7 +85,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.97 2003-07-29 18:21:47 tarek Exp $")
+           "$Id: hydro.f90,v 1.98 2003-08-02 21:50:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -154,7 +154,9 @@ module Hydro
       case('tor_pert'); call tor_pert(ampluu,f,iux,xx,yy,zz)
       case('diffrot'); call diffrot(ampluu,f,iuy,xx,yy,zz)
       case('olddiffrot'); call olddiffrot(ampluu,f,iuy,xx,yy,zz)
-
+      case('soundwave-x'); call soundwave(ampluu,f,iux,kx=1.)
+      case('soundwave-y'); call soundwave(ampluu,f,iuy,ky=1.)
+      case('soundwave-z'); call soundwave(ampluu,f,iuz,kz=1.)
       case('sound-wave', '11')
         !
         !  sound wave (should be consistent with density module)
@@ -399,6 +401,14 @@ module Hydro
 !  damp motions in some regions for some time spans if desired
 !
       if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
+!
+!  adding differential rotation via a frictional term
+!  (should later be moved to a separate routine)
+!
+      if (tau_diffrot1/=0) then
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
+            -tau_diffrot1*(f(l1:l2,m,n,iuy)-cos(x(l1:l2))*cos(z(n)))
+      endif
 !
 !  add the possibility of removing a mean flow in the y-direction
 !
