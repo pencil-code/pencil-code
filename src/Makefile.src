@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.57 2004-05-29 06:30:38 brandenb Exp $
+### $Id: Makefile.src,v 1.58 2004-05-30 14:00:19 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -113,13 +113,14 @@ FCCLEANER=
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
 #FC=g95 #(Cincinnatus)
 #F77=$(FC) #(Cincinnatus)
-#FFLAGS=-O4 #(Cincinnatus)
-#CFLAGS=-O3 -DFUNDERSC=2 #(Cincinnatus)
+#FFLAGS=-O4 -fno-second-underscore -I/usr/lib/mpich/include #(Cincinnatus)
+#CFLAGS=-O3 -DFUNDERSC=1 #(Cincinnatus)
+#LDMPI=-L/usr/lib/mpich/lib -lmpich #(Cincinnatus)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
 ##FC=ifc_6.0 -i_dynamic #(nw46)
-#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq*)
+#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe|nq.*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
 #FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
