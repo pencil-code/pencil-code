@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.4 2002-11-19 13:44:14 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.5 2003-08-28 08:58:21 mee Exp $
 
 !***********************************************************************
       program rvid_box
@@ -44,6 +44,7 @@
 !  Top Xy-plane:
 !  need data where ipz=nprocz-1
 !
+!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY z MESH POINT
       ipz=nprocz-1
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
@@ -62,6 +63,7 @@
 !  Bottom xy-plane:
 !  need data where ipz=0
 !
+!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY z MESH POINT
       ipz=0
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
@@ -80,6 +82,7 @@
 !  Front xz-plane:
 !  need data where ipy=0
 !
+!tony NOT NECESSARILY SINCE SLICES CAN BE AT ARBITRARY y MESH POINT
       ipy=0
       do ipz=0,nprocz-1
         iproc=ipy+nprocy*ipz
