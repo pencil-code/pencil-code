@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.17 2002-06-04 10:02:30 brandenb Exp $
+! $Id: noentropy.f90,v 1.18 2002-06-08 08:01:16 brandenb Exp $
 
 module Entropy
 
@@ -42,8 +42,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.17 $", &
-           "$Date: 2002-06-04 10:02:30 $")
+           "$Revision: 1.18 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -62,7 +62,7 @@ module Entropy
 !
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -70,32 +70,23 @@ module Entropy
       use Density
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,gpprho
-      real, dimension (nx) :: divu,rho1,chi
-      real, dimension (nx) :: cs2,TT1
-      logical, save :: first=.true.
+      real, dimension (nx) :: lnrho,cs2,TT1
 !
-      intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: gpprho,cs2,TT1,chi !(df is dummy)
+      intent(in) :: f,uu,glnrho
+      intent(out) :: gpprho,cs2,TT1  !(df is dummy)
 !
-      if (first) then
-        TT1 = 0.
-        chi = 0.
-        cs2 = cs20
-        if (gamma /= 1) then
-          if (lroot) print*, 'noentropy, thus resetting gamma to 1'
-          gamma = 1
-        endif
-        first=.false.
-      endif
+!  sound speed squared and inverse temperature
 !
-!  sound speed squared; isothermal pressure gradient
+      TT1=0.
+      cs2=cs20*exp(gamma1*lnrho)
 !
-      cs20=cs0**2
+!  isothermal pressure gradient
+!
       gpprho=cs20*glnrho
 !
-      if(ip==1) print*,f,df,uu,uij,divu,rho1,glnrho,gpprho  !(compiler)
+      if(ip==1) print*,f,df,uu,sij  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset)

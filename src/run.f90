@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.36 2002-06-06 07:09:35 brandenb Exp $
+! $Id: run.f90,v 1.37 2002-06-08 08:01:16 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.36 $", &
-             "$Date: 2002-06-06 07:09:35 $")
+             "$Revision: 1.37 $", &
+             "$Date: 2002-06-08 08:01:16 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -56,7 +56,6 @@
 !
         call rparam !(Read parameters from start.x; may be overwritten by
                     ! read_runpars)
-        gamma1 = gamma-1.
         call read_runpars(PRINT=.true.)
         call rprint_list(.false.)
 !

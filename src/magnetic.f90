@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.38 2002-06-07 17:50:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.39 2002-06-08 08:01:16 brandenb Exp $
 
 module Magnetic
 
@@ -25,7 +25,6 @@ module Magnetic
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
-  real, dimension (nx) :: va2
   real :: eta=0.,height_eta=0.,eta_out=0.
 
   namelist /magnetic_run_pars/ &
@@ -71,8 +70,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.38 $", &
-           "$Date: 2002-06-07 17:50:45 $")
+           "$Revision: 1.39 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -220,7 +219,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A
-      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by
+      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,va2
       real :: tmp,eta_out1
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
@@ -289,6 +288,10 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
       if (lentropy) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
 !
+!  check maximum diffusion (for timestep)
+!
+      maxdiffus=amax1(maxdiffus,eta)
+!
 !  For the timestep calculation, need maximum Alfven speed.
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
@@ -296,6 +299,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         if (lfirst.and.ldt) then
           call dot2_mn(bb,b2tot)
           va2=b2tot*rho1
+          maxadvec2=amax1(maxadvec2,va2)
         endif
 !
 !  calculate max and rms current density

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.43 2002-06-06 15:06:39 brandenb Exp $
+! $Id: cdata.f90,v 1.44 2002-06-08 08:01:16 brandenb Exp $
 
 module Cdata
 
@@ -10,20 +10,19 @@ module Cdata
   real, dimension (my) :: y
   real, dimension (mz) :: z
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
-!  real, dimension (nx) :: rmn
+  real, dimension (nx) :: maxadvec2,maxdiffus
 !
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt=0.,cdt=0.,cdtv=0.,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dtmin=0.
-  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: z1,z2,ztop
-  real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
+  real :: gravz=0.,ss0=0.,grads0=0.   ! (1/c_p)ds/dz
   real :: urand
 
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in

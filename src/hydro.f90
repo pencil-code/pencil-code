@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.18 2002-06-07 08:18:46 brandenb Exp $
+! $Id: hydro.f90,v 1.19 2002-06-08 08:01:16 brandenb Exp $
 
 module Hydro
 
@@ -9,6 +9,7 @@ module Hydro
   implicit none
 
   integer :: init=-1,inituu=0
+  real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   real :: ampluu=0., widthuu=.1, urand=0.
   real :: uu_left=1.,uu_right=1.
 
@@ -17,7 +18,8 @@ module Hydro
        uu_left,uu_right
 
   namelist /hydro_run_pars/ &
-       nu,ivisc
+       nu,ivisc, &
+       tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_u2m=0,i_um2=0,i_oum,i_o2m
@@ -58,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-06-07 08:18:46 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -233,6 +235,97 @@ module Hydro
 !
 !
     endsubroutine init_hydro
+!***********************************************************************
+    subroutine duu_dt(f,df,uu,divu,sij,uij,u2)
+!
+!  velocity evolution
+!  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
+!  pressure gradient force added in density and entropy modules.
+!
+!   7-jun-02/axel: incoporated from subroutine pde
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3,3) :: uij,sij
+      real, dimension (nx,3) :: uu,ugu
+      real, dimension (nx) :: u2,divu
+      integer :: i,j
+!  
+!  abbreviations
+!
+      uu=f(l1:l2,m,n,iux:iuz)
+      u2=uu(:,1)**2+uu(:,2)**2+uu(:,3)**2
+!
+!  calculate velocity gradient matrix
+!
+      call gij(f,iuu,uij)
+      divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
+!
+!  calculate rate of strain tensor
+!
+      if (lentropy.or.ivisc==2) then
+        do j=1,3
+          do i=1,3
+            sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
+          enddo
+          sij(:,j,j)=sij(:,j,j)-.333333*divu
+        enddo
+      endif
+!
+!  advection term
+!
+        call multmv_mn(uij,uu,ugu)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
+!
+!  maximum squared avection speed
+!
+        maxadvec2=amax1(maxadvec2,u2)
+!
+!  Wolfgang, could you please reinstate this if you still need it?
+!
+!???    if (...) call udamping(f,df)
+!
+    endsubroutine duu_dt
+!***********************************************************************
+    subroutine udamping(f,df)
+!
+!  damping terms (artificial, but sometimes useful):
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension(nx) :: pdamp
+      integer :: i
+!  
+!  1. damp motion during time interval 0<t<tdamp.
+!  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
+!
+        if ((dampu .ne. 0.) .and. (t < tdamp)) then
+          ! damp motion provided t<tdamp
+          if (dampu > 0) then
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                    - dampu*f(l1:l2,m,n,iux:iuz)
+          else 
+            if (dt > 0) then    ! dt known and good
+              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                      + dampu/dt*f(l1:l2,m,n,iux:iuz)
+            endif
+          endif
+        endif
+!
+!  2. damp motions for r_mn>1
+!
+        if (lgravr) then
+          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
+          do i=iux,iuz
+            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+          enddo
+        endif
+!
+    endsubroutine udamping
 !***********************************************************************
     subroutine rprint_hydro(lreset)
 !

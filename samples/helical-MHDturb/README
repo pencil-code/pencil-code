@@ -1,0 +1,8 @@
+$Id: README,v 1.1 2002-06-08 08:01:15 brandenb Exp $
+
+This is a helical MHD turbulence run. After about 600 time units
+a large scale magnetic field develops from an initially random
+magnetic field (if initaa=0 is set). The set of forcing wavenumbers
+are precalculated in idl (../idl/gwav.pro). In the B01 paper, the
+average forcing wavenumber was 5. In the present sample file it is
+set to about 3.

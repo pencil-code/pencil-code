@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.54 2002-06-05 23:45:57 brandenb Exp $
+! $Id: equ.f90,v 1.55 2002-06-08 08:01:16 brandenb Exp $
 
 module Equ
 
@@ -145,6 +145,7 @@ module Equ
         open(44,file=chdir//'/ux.xz',form='unformatted')
         open(45,file=chdir//'/uz.xz',form='unformatted')
         open(46,file=chdir//'/lnrho.xz',form='unformatted')
+        open(47,file=chdir//'/ss.xz',form='unformatted')
         call out1 (file,tvid,nvid,dvid,t)
         ifirst=1
       else
@@ -156,15 +157,14 @@ module Equ
           write(44) uu_xz(:,:,1),t
           write(45) uu_xz(:,:,3),t
           write(46) lnrho_xz(:,:),t
+          write(47) ss_xz(:,:),t
         endif
       endif
     endsubroutine wvid
 !***********************************************************************
     subroutine pde(f,df)
 !
-!  Hydro equation
-!  du/dt = -u.gradu -cs2*gradlam +nu*del2(u) ;(if graddivu term ignored)
-!  dlnrho/dt = -u.grad(lnrho) - divu
+!  call the different evolution equations (now all in their own modules)
 !
 !  10-sep-01/axel: coded
 !
@@ -180,13 +180,12 @@ module Equ
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
-      real, dimension (nx) :: divu,lnrho,uglnrho,u2,o2,ou
-      real, dimension(nx) :: rho,rho1,nu_var,chi,diff,del2lam
-      real, dimension(nx) :: pdamp
-      real :: diffrho,fac
-      integer :: i,j
+      real, dimension (nx,3,3) :: uij,sij
+      real, dimension (nx,3) :: uu,glnrho,oo,gpprho
+      real, dimension (nx) :: lnrho,divu,u2,o2,ou
+      real, dimension(nx) :: rho1
+      real :: fac
+      integer :: j
 !
 !  print statements when they are first executed
 !
@@ -194,8 +193,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.54 $", &
-           "$Date: 2002-06-05 23:45:57 $")
+           "$Revision: 1.55 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -204,7 +203,6 @@ module Equ
 !  initiate communication
 !
       call initiate_isendrcv_bdry(f)
-      diffrho = cdiffrho*dxmin*cs0
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -215,124 +213,54 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) call finalise_isendrcv_bdry(f)
 !
-!  abbreviations
-!
-        uu=f(l1:l2,m,n,iux:iuz)
-        lnrho=f(l1:l2,m,n,ilnrho)
-!
-!  do all the neccessary derivatives here
-!
-        call gij(f,iuu,uij)
-        call grad(f,ilnrho,glnrho)
-!
 !  coordinates are needed all the time
+!  (but not for isotropic turbulence!)
 !
         x_mn = x(l1:l2)
         y_mn = spread(y(m),1,nx)
         z_mn = spread(z(n),1,nx)
         r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
 !
-!  rho1 (=1/rho) is needed for viscous term, heat conduction, and Lorentz force
+!  for each pencil, accummulate through the different routines
+!  maximum diffusion and maximum advection (keep as nx-array)
 !
-        rho1=exp(-lnrho)
+        maxdiffus=0.
+        maxadvec2=0.
 !
-!  viscosity operator
+!  hydro and density parts
 !
-        if (ivisc==1) then
-          if (headtt) print*,'full viscous force'
-          nu_var=nu*rho0*rho1   ! spatially varying nu
-          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-          do i=1,3
-            fvisc(:,i)=nu_var*(del2u(:,i)+1./3*graddivu(:,i))
-          enddo
-        else
-          if (headtt) print*,'reduced viscous force'
-          call del2v(f,iuu,del2u)
-          fvisc=nu*del2u
-        endif
-!
-!  auxiliary terms
-!
-        u2=uu(:,1)**2+uu(:,2)**2+uu(:,3)**2
-        divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
-        uglnrho=uu(:,1)*glnrho(:,1)+uu(:,2)*glnrho(:,2)+uu(:,3)*glnrho(:,3)
-        do i=1,3
-          ugu(:,i)=uu(:,1)*uij(:,i,1)+uu(:,2)*uij(:,i,2)+uu(:,3)*uij(:,i,3)
-        enddo
-!
-!  pure hydro part of eq. of motion (forcing is now done in timestep)
-!
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu + fvisc
+        if (lhydro)   call duu_dt   (f,df,uu,divu,sij,uij,u2)
+        if (ldensity) call dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
 !
 !  entropy equation: needs to be called EVERY time EVEN with noentropy,
 !  because it is here that we set cs2, TT1, and gpprho
 !
-        call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
-!
-!  thermal part of eq. of motion (pressure force)
+        call dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-gpprho
 !
 !  magnetic part
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
 !
-!  damping terms (artificial, but sometimes useful):
-!
-!  1. damp motion during time interval 0<t<tdamp.
-!  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
-!
-        if ((dampu .ne. 0.) .and. (t < tdamp)) then
-          ! damp motion provided t<tdamp
-          if (dampu > 0) then
-            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                    - dampu*f(l1:l2,m,n,iux:iuz)
-          else
-            if (dt > 0) then    ! dt known and good
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      + dampu/dt*f(l1:l2,m,n,iux:iuz)
-            endif
-          endif
-        endif
-!
-!  2. damp motions for r_mn>1
-!
-        if (lgravr) then
-!          pdamp = 0.5*(1+tanh((r_mn-rdamp)/wdamp)) ! damping profile
-          pdamp = step(r_mn,rdamp,wdamp) ! damping profile
-          do i=iux,iuz
-            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
-          enddo
-        endif
-!
 !  add gravity
 !
         if (lgrav) call duu_dt_grav(f,df)
-!
-!  continuity equation
-!
-        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
-!
-!  mass diffusion
-!
-        if (cdiffrho /= 0.) then
-          call del2(f,ilnrho,del2lam)
-          df(l1:l2,m,n,ilnrho) = df(l1:l2,m,n,ilnrho) + diffrho*del2lam
-        endif
 !
 !  write slices for animation
 !
         if (n.eq.iz) then
           divu_xy(:,m-m1+1)=divu
-          lnrho_xy(:,m-m1+1)=lnrho
+          if (ldensity) lnrho_xy(:,m-m1+1)=f(l1:l2,m,n,ilnrho)
           do j=1,3
-            uu_xy(:,m-m1+1,j)=uu(:,j)
+            uu_xy(:,m-m1+1,j)=f(l1:l2,m,n,iuu+j-1)
           enddo
         endif
 !
         if (m.eq.iy) then
-          lnrho_xz(:,n-n1+1)=lnrho
+          if (ldensity) lnrho_xz(:,n-n1+1)=f(l1:l2,m,n,ilnrho)
+          if (lentropy) ss_xz(:,n-n1+1)=f(l1:l2,m,n,ient)
           do j=1,3
-            uu_xz(:,n-n1+1,j)=uu(:,j)
+            uu_xz(:,n-n1+1,j)=f(l1:l2,m,n,iuu+j-1)
           enddo
         endif
 !
@@ -344,9 +272,7 @@ module Equ
 !
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
-          diff = nu  !!(for the time being)
-          if (lentropy)  diff = max(diff, chi)
-          call max_mn(sqrt(u2+cs2+va2)+fac*diff,UUmax)
+          call max_mn(sqrt(maxadvec2)+fac*maxdiffus,UUmax)
         endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -368,18 +294,6 @@ module Equ
           endif
           if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
           if (i_um2/=0) call max_mn_name(u2,i_um2)
-          rho=exp(f(l1:l2,m,n,ilnrho))
-          if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
-!
-!         call max_mn (u2,u2max)
-!         call rms2_mn(u2,urms)
-!         call max_mn (o2,o2max)
-!         call rms2_mn(o2,orms)
-!         call max_mn (ou,oumax)
-!         call rms_mn (ou,ourms)
-!         call mean_mn(rho,rmean)
-!         call max_mn (rho,rmax)
-!         call rms_mn (rho,rrms)
         endif
 !
 !  end of loops over m and n

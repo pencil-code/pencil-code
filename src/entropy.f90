@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.51 2002-06-03 07:02:21 brandenb Exp $
+! $Id: entropy.f90,v 1.52 2002-06-08 08:01:16 brandenb Exp $
 
 module Entropy
 
@@ -54,8 +54,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.51 $", &
-           "$Date: 2002-06-03 07:02:21 $")
+           "$Revision: 1.52 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,9 +75,12 @@ module Entropy
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
+      real, dimension (mx,my,mz) :: tmp,p,xx,yy,zz
       real, dimension (mz) :: stp
       real :: beta1,cs2int,ssint
+!
+      intent(in) :: xx,yy,zz
+      intent(inout) :: f
 !
       if (lgravz) then
         !
@@ -152,9 +155,10 @@ module Entropy
           f(:,:,:,ient) = -0.
       endif
 !
+    if(ip==0) print*,xx,yy  !(to keep compiler quiet)
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -170,19 +174,15 @@ module Entropy
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
-      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
-      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
-      real, dimension (nx) :: ss,lnrho,lambda
-      real, dimension (nx) :: heat,prof
-      real :: ssref,z_prev=-1.23e20
+      real, dimension (nx,3,3) :: sij
+      real, dimension (nx,3) :: uu,glnrho,gpprho,gss
+      real, dimension (nx) :: ugss,del2ss,del2lnrho,sij2
+      real, dimension (nx) :: lnrho,ss,cs2,TT1
+!     real, dimension (nx) :: heat
       integer :: i,j
 !
-      save :: z_prev,lambda,glhc
-!
-      intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: df,gpprho,cs2,TT1,chi
+      intent(in) :: f,uu,sij,glnrho
+      intent(out) :: df,gpprho,cs2,TT1
 !
 !  begin by calculating all necessary dervatives
 !
@@ -193,10 +193,12 @@ module Entropy
 !
 !  sound speed squared
 !
-      cs20=cs0**2
       ss=f(l1:l2,m,n,ient)
-      lnrho=f(l1:l2,m,n,ilnrho)
       cs2=cs20*exp(gamma1*lnrho+gamma*ss)
+!
+!  maximum advection speed (sound)
+!
+      maxadvec2=amax1(maxadvec2,cs2)
 !
 !  pressure gradient term
 !
@@ -206,16 +208,7 @@ module Entropy
 !
 !  advection term
 !
-      ugss=uu(:,1)*gss(:,1)+uu(:,2)*gss(:,2)+uu(:,3)*gss(:,3)
-!
-!  calculate rate of strain tensor
-!
-      do j=1,3
-        do i=1,3
-          sij(:,i,j)=.5*(uij(:,i,j)+uij(:,j,i))
-        enddo
-        sij(:,j,j)=sij(:,j,j)-.333333*divu
-      enddo
+      call dot_mn(uu,gss,ugss)
 !
       sij2=0.
       do j=1,3
@@ -235,7 +228,7 @@ module Entropy
 !--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
+    subroutine calc_heatcond(f,df,rho1,glnrho,gss,cs2)
 !
 !  calculate right hand side of entropy equation
 !
@@ -249,19 +242,17 @@ module Entropy
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
-      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
-      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
-      real, dimension (nx) :: ss,lnrho,lambda
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnTlambda,glhc
+      real, dimension (nx) :: rho1,cs2,chi
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+      real, dimension (nx) :: lambda
       real, dimension (nx) :: heat,prof
       real :: ssref,z_prev=-1.23e20
-      integer :: i,j
 !
       save :: z_prev,lambda,glhc
 !
-      intent(in) :: f,uu,uij,divu,rho1,glnrho
-      intent(out) :: df,gpprho,cs2,TT1,chi
+      intent(in) :: f,rho1,glnrho,cs2
+      intent(out) :: df
 !
 !  Heat conduction / entropy diffusion
 !
@@ -346,6 +337,10 @@ module Entropy
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 !
+!  check maximum diffusion from thermal diffusion
+!
+      maxdiffus=amax1(maxdiffus,chi)
+!
     endsubroutine calc_heatcond
 !***********************************************************************
     subroutine rprint_entropy(lreset)
@@ -386,7 +381,7 @@ module Entropy
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
+      use Cdata, only: nx,lgravz,lgravr,z1,z2, &
            hcond0,hcond1,hcond2,whcond
       use Sub, only: step
 !
@@ -403,6 +398,7 @@ module Entropy
         hcond = hcond0
       endif
 !
+    if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine heatcond
 !***********************************************************************
     subroutine gradloghcond(x,y,z,glhc)
@@ -411,7 +407,7 @@ module Entropy
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
+      use Cdata, only: nx,lgravz,lgravr,z1,z2, &
            hcond0,hcond1,hcond2,whcond
       use Sub, only: der_step
 !
@@ -429,6 +425,7 @@ module Entropy
         glhc = 0.
       endif
 !
+    if(ip==0) print*,x,y  !(to keep compiler quiet)
     endsubroutine gradloghcond
 !***********************************************************************
     subroutine bc_ss(f,errmesg)

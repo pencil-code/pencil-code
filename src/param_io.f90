@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.13 2002-06-06 15:06:39 brandenb Exp $ 
+! $Id: param_io.f90,v 1.14 2002-06-08 08:01:16 brandenb Exp $ 
 
 module Param_IO
 
@@ -21,7 +21,6 @@ module Param_IO
   namelist /run_pars/ &
        ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin, &
-       tinit,tdamp,dampu,dampuext,rdamp,wdamp, &
        bcx,bcy,bcz
 !
   contains
@@ -130,6 +129,11 @@ module Param_IO
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
+!
+!  set gamma1 and cs20
+!
+      gamma1=gamma-1.
+      cs20=cs0**2
 !
 !  timestep
 !

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.4 2002-06-06 07:09:35 brandenb Exp $
+! $Id: density.f90,v 1.5 2002-06-08 08:01:16 brandenb Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-06-06 07:09:35 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-06-08 08:01:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +120,82 @@ module Density
 !
       if(ip==0) print*,prof,yy
     endsubroutine init_lnrho
+!***********************************************************************
+    subroutine dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
+!
+!  continuity equation
+!  calculate dlnrho/dt = - u.gradlnrho - divu
+!
+!   7-jun-02/axel: incoporated from subroutine pde
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3,3) :: sij
+      real, dimension (nx,3) :: uu,glnrho,sglnrho,del2u,graddivu,fvisc
+      real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
+      real, dimension (nx) :: murho1,rho1,del2lnrho,rho
+      real :: diffrho
+      integer :: i
+!
+!  define lnrho; calculate density gradient and avection term
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      call grad(f,ilnrho,glnrho)
+      call dot_mn(uu,glnrho,uglnrho)
+!
+!  continuity equation
+!
+      df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
+!
+!  mass diffusion, in units of dxmin*cs0
+!
+      if (cdiffrho /= 0.) then
+        diffrho=cdiffrho*dxmin*cs0
+        call del2(f,ilnrho,del2lnrho)
+        call dot2_mn(glnrho,glnrho2)
+        df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
+        maxdiffus=amax1(maxdiffus,diffrho)
+      endif
+!
+!  calculate viscous force for du/dt equation
+!
+      if(lhydro) then
+        rho1=exp(-lnrho)
+        if(ivisc==0) then
+          if (headtt) print*,'viscous force: nu*del2v'
+          call del2v(f,iuu,del2u)
+          fvisc=nu*del2u
+          maxdiffus=amax1(maxdiffus,nu)
+        elseif(ivisc==1) then
+          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
+          murho1=(nu*rho0)*rho1  !(=mu/rho)
+          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+          do i=1,3
+            fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
+          enddo
+          maxdiffus=amax1(maxdiffus,murho1)
+        elseif(ivisc==2) then
+          if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
+          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+          call multmv_mn(sij,glnrho,sglnrho)
+          fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
+          maxdiffus=amax1(maxdiffus,nu)
+        else
+          if (headtt) print*,'no viscous force'
+        endif
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+      endif
+!
+!  calculate density diagnostics: mean density
+!
+      if (ldiagnos) then
+        rho=exp(f(l1:l2,m,n,ilnrho))
+        if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
+      endif
+
+    endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset)
 !
