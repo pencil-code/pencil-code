@@ -117,7 +117,10 @@ if keyword_set(dev) then begin
     amin=-amax
     amax=atop
   endif else if dev eq 'cgm' then ncols=245
-endif
+  dev1=dev
+end else begin
+  dev1=''
+end
 if n_elements(npx) eq 0 then npx=1
 if n_elements(npy) eq 0 then npy=1
 nxi=fix((1.0-xval)*(nx-1))+1
@@ -208,15 +211,19 @@ zs=size(zimg)
 xs=size(ximg)
 ys=size(yimg)
 
-if keyword_set(dev) then begin
-x_size=640 & y_size=480
-;  x_size=200 & y_size=200
-endif else begin
- x_size=!d.x_size & y_size=!d.y_size
-endelse
-set_plot,'z'
-device,set_res=[x_size,y_size]
+;if keyword_set(dev) then begin
+;  x_size=640 & y_size=480
+;  ;  x_size=200 & y_size=200
+;endif else begin
+  x_size=!d.x_size & y_size=!d.y_size
+;endelse
+;
+if dev1 ne 'z' then begin
+  set_plot,'z'
+  device,set_res=[x_size,y_size]
+end
 erase
+;
 ;Set up scaling
 sf=1.25/scale
 if (xmax*npx ge ymax*npy) then maxscale=xmax*npx*sf else maxscale=ymax*npy*sf
@@ -252,52 +259,54 @@ bad=where(a eq 0) & a(bad)=255
 ;
 ;  plot
 ;
-if keyword_set(dev) then begin
- if dev eq 'ps' then begin
-   set_plot,dev
-   device,xsize=18,ysize=12,xoff=1.5,yoff=10,bits=8,encap=0
-   a(where(a eq 0B))=255B
-   tv,a,xsize=1.0,ysize=1.0,/norm
-   if keyword_set(title) then begin 
-      ;device,/TIMES
-      ;xyouts,0.18,0.82,title,font=0,size=2.5,/norm
-      xyouts,0.97,1.34,title,siz=2.
-   endif
- endif else begin
-   if dev eq 'eps' then begin
-     set_plot,'ps'
-     device,file='idl.eps',/encap
-     device,xsize=18,ysize=18,xoff=1.5,yoff=10,bits=8
-     a(where(a eq 0B))=255B
-     tv,a,xsize=1.0,ysize=1.0,/norm
-   if keyword_set(title) then begin 
-      device,/TIMES
-      xyouts,0.18,0.82,title,font=0,size=2.5,/norm
-   endif
-   endif else begin
-     if dev eq 'cgm' then begin
-       set_plot,dev
-       device,colors=ncols
-;       restore,'~dpb/p3d/col.tab3'
-;       tvlct,r,g,b
-;       loadct,file='/local/d/pcm/idl/colors1.tbl'
-	mloadct
-;       help,/dev
-       tv,a
-     endif
-   endelse
- endelse
-endif else begin
+;if keyword_set(dev) then begin
+; if dev eq 'ps' then begin
+;   set_plot,dev
+;   device,xsize=18,ysize=12,xoff=1.5,yoff=10,bits=8,encap=0
+;   a(where(a eq 0B))=255B
+;   tv,a,xsize=1.0,ysize=1.0,/norm
+;   if keyword_set(title) then begin 
+;      ;device,/TIMES
+;      ;xyouts,0.18,0.82,title,font=0,size=2.5,/norm
+;      xyouts,0.97,1.34,title,siz=2.
+;   endif
+; endif else begin
+;   if dev eq 'eps' then begin
+;     set_plot,'ps'
+;     device,file='idl.eps',/encap
+;     device,xsize=18,ysize=18,xoff=1.5,yoff=10,bits=8
+;     a(where(a eq 0B))=255B
+;     tv,a,xsize=1.0,ysize=1.0,/norm
+;     if keyword_set(title) then begin 
+;        device,/TIMES
+;        xyouts,0.18,0.82,title,font=0,size=2.5,/norm
+;     endif
+;   endif else begin
+;     if dev eq 'cgm' then begin
+;       set_plot,dev
+;       device,colors=ncols
+;;       restore,'~dpb/p3d/col.tab3'
+;;       tvlct,r,g,b
+;;       loadct,file='/local/d/pcm/idl/colors1.tbl'
+;;	mloadct
+;;       help,/dev
+;       tv,a
+;     endif
+;   endelse
+; endelse
+;endif else begin
   ;
   ;  default
   ;
-  set_plot,'x'
-  tv,a
+  if dev1 ne 'z' then begin
+    set_plot,'x'
+    tv,a
+  end
    if keyword_set(title) then begin 
       ;xyouts,0.18,0.82,title,size=2.5,color=0,/norm
-      xyouts,1.02,1.34,title,siz=2.
+      xyouts,1.02,1.34,title,siz=2.,col=122
    endif
-endelse
+;endelse
 ;
 ;  overplot streak lines of the vector field
 ;
@@ -327,9 +336,11 @@ if keyword_set(box) then velfld_box,verts,face=2,thick=thick
 ;  reset device
 ;
 if keyword_set(dev) then begin
- device,/close
- set_plot,'x'
- print,'image in idl.',dev,', device X reset'
+  if dev1 ne 'z' and dev1 ne 'x' then begin
+    device,/close
+    set_plot,'x'
+    print,'image in idl.',dev,', device X reset'
+  end
 endif
 
 end
