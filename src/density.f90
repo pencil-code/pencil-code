@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.131 2003-10-24 12:09:15 dobler Exp $
+! $Id: density.f90,v 1.132 2003-10-24 13:17:31 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.131 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: density.f90,v 1.132 2003-10-24 13:17:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -665,7 +665,7 @@ module Density
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $
+! $Id: nohydro_file.f90,v 1.13 2003-10-24 13:17:31 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,8 +50,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.12 $", &
-           "$Date: 2003-10-24 12:09:15 $")
+           "$Revision: 1.13 $", &
+           "$Date: 2003-10-24 13:17:31 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -160,7 +160,7 @@ module Hydro
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

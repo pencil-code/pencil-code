@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.30 2003-10-24 12:09:15 dobler Exp $
+! $Id: radiation.f90,v 1.31 2003-10-24 13:17:31 dobler Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -91,7 +91,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.30 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: radiation.f90,v 1.31 2003-10-24 13:17:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -356,7 +356,7 @@ module Radiation
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

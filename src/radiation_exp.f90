@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.103 2003-10-24 12:09:15 dobler Exp $
+! $Id: radiation_exp.f90,v 1.104 2003-10-24 13:17:31 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -93,7 +93,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.103 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: radiation_exp.f90,v 1.104 2003-10-24 13:17:31 dobler Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -984,7 +984,7 @@ module Radiation
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)

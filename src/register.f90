@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.106 2003-10-24 12:09:15 dobler Exp $
+! $Id: register.f90,v 1.107 2003-10-24 13:17:31 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -353,7 +353,7 @@ module Register
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

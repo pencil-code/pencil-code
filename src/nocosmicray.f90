@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $
+! $Id: nocosmicray.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -50,7 +50,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: nocosmicray.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -118,7 +118,7 @@ module CosmicRay
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

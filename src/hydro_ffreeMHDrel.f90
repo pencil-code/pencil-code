@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.11 2003-10-24 12:09:15 dobler Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.12 2003-10-24 13:17:31 dobler Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -100,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.11 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.12 2003-10-24 13:17:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -453,7 +453,7 @@ module Hydro
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

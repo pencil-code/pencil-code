@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.33 2003-10-24 12:53:14 dobler Exp $
+! $Id: ionization_fixed.f90,v 1.34 2003-10-24 13:17:31 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -94,7 +94,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.33 2003-10-24 12:53:14 dobler Exp $")
+          "$Id: ionization_fixed.f90,v 1.34 2003-10-24 13:17:31 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -229,7 +229,7 @@ module Ionization
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  write column where which ionization variable is stored
 !

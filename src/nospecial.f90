@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $
+! $Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -137,11 +137,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: nospecial.f90,v 1.8 2003-10-24 13:17:31 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -268,7 +268,7 @@ module Special
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 
 !!
 !!!   SAMPLE IMPLEMENTATION

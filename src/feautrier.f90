@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.40 2003-10-24 12:09:15 dobler Exp $
+! $Id: feautrier.f90,v 1.41 2003-10-24 13:17:31 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.40 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: feautrier.f90,v 1.41 2003-10-24 13:17:31 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -501,7 +501,7 @@ module Radiation
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  write column where which radiative variable is stored
 !

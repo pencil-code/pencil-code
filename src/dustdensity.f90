@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.14 2003-10-24 12:09:15 dobler Exp $
+! $Id: dustdensity.f90,v 1.15 2003-10-24 13:17:31 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -66,7 +66,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.14 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: dustdensity.f90,v 1.15 2003-10-24 13:17:31 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -223,7 +223,7 @@ module Dustdensity
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

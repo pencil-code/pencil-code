@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $
+! $Id: visc_var.f90,v 1.13 2003-10-24 13:17:31 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -58,7 +58,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: visc_var.f90,v 1.13 2003-10-24 13:17:31 dobler Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -98,7 +98,7 @@ module Viscosity
 !      logical, optional :: lwrite
 !!
 !      lwr = .false.
-!      if (present(lwrite)) lwr=.true.
+!      if (present(lwrite)) lwr=lwrite
 !!
 !!  reset everything in case of reset
 !!  (this needs to be consistent with what is defined above!)

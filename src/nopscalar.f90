@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.9 2003-10-24 12:09:15 dobler Exp $
+! $Id: nopscalar.f90,v 1.10 2003-10-24 13:17:31 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -50,7 +50,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.9 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: nopscalar.f90,v 1.10 2003-10-24 13:17:31 dobler Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -118,7 +118,7 @@ module Pscalar
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)

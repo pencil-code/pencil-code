@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $
+! $Id: noradiation.f90,v 1.22 2003-10-24 13:17:31 dobler Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: noradiation.f90,v 1.22 2003-10-24 13:17:31 dobler Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -139,7 +139,7 @@ module Radiation
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  write column where which radiative variable is stored
 !

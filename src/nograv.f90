@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.32 2003-10-24 12:09:15 dobler Exp $
+! $Id: nograv.f90,v 1.33 2003-10-24 13:17:31 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.32 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: nograv.f90,v 1.33 2003-10-24 13:17:31 dobler Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -158,7 +158,7 @@ module Gravity
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero

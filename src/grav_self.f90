@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.16 2003-10-24 12:09:15 dobler Exp $
+! $Id: grav_self.f90,v 1.17 2003-10-24 13:17:31 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -83,7 +83,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.16 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: grav_self.f90,v 1.17 2003-10-24 13:17:31 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -299,7 +299,7 @@ module Gravity
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)

@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $
+! $Id: cosmicray.f90,v 1.13 2003-10-24 13:17:30 dobler Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -74,7 +74,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $")
+           "$Id: cosmicray.f90,v 1.13 2003-10-24 13:17:30 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,7 +249,7 @@ module CosmicRay
       logical, optional :: lwrite
 !
       lwr = .false.
-      if (present(lwrite)) lwr=.true.
+      if (present(lwrite)) lwr=lwrite
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
