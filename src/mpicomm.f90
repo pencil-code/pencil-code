@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.109 2003-10-31 19:17:08 theine Exp $
+! $Id: mpicomm.f90,v 1.110 2003-11-05 15:47:57 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -536,15 +536,15 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radboundary_zx_recv(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_recv(mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !  receive intensities from neighboring processor in y
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: rady0,mrad,idir
-      real, dimension(mx,rady0,mz) :: Ibuf_zx
-      real, dimension(nx,rady0,nz), optional :: taubuf_zx
+      integer :: mrad,idir
+      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(nx,nz), optional :: taubuf_zx
       integer :: nIbuf_zx,ntaubuf_zx,isource
 !
 !  Identifier
@@ -553,8 +553,8 @@ module Mpicomm
 !
 !  buffer sizes
 !
-      nIbuf_zx=mx*rady0*mz
-      ntaubuf_zx=nx*rady0*nz
+      nIbuf_zx=mx*mz
+      ntaubuf_zx=nx*nz
 !
 !  source
 !
@@ -574,15 +574,15 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !  receive intensities from neighboring processor in z
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: radz0,nrad,idir
-      real, dimension(mx,my,radz0) :: Ibuf_xy
-      real, dimension(nx,ny,radz0), optional :: taubuf_xy
+      integer :: nrad,idir
+      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(nx,ny), optional :: taubuf_xy
       integer :: nIbuf_xy,ntaubuf_xy,isource
 !
 !  Identifier
@@ -591,8 +591,8 @@ module Mpicomm
 !
 !  buffer sizes
 !
-      nIbuf_xy=mx*my*radz0
-      ntaubuf_xy=nx*ny*radz0
+      nIbuf_xy=mx*my
+      ntaubuf_xy=nx*ny
 !
 !  source
 !
@@ -612,15 +612,15 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_zx_send(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_send(mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !  send intensities to neighboring processor in y
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: rady0,mrad,idir
-      real, dimension(mx,rady0,mz) :: Ibuf_zx
-      real, dimension(nx,rady0,nz), optional :: taubuf_zx
+      integer :: mrad,idir
+      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(nx,nz), optional :: taubuf_zx
       integer :: nIbuf_zx,ntaubuf_zx,idest
 !
 !  Identifier
@@ -629,8 +629,8 @@ module Mpicomm
 !
 !  buffer sizes
 !
-      nIbuf_zx=mx*rady0*mz
-      ntaubuf_zx=nx*rady0*nz
+      nIbuf_zx=mx*mz
+      ntaubuf_zx=nx*nz
 !
 !  destination
 !
@@ -650,15 +650,15 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radboundary_xy_send(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_send(nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !  send intensities to neighboring processor in z
 !
 !  11-jul-03/tobi: coded
 !
-      integer :: radz0,nrad,idir
-      real, dimension(mx,my,radz0) :: Ibuf_xy
-      real, dimension(nx,ny,radz0), optional :: taubuf_xy
+      integer :: nrad,idir
+      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(nx,ny), optional :: taubuf_xy
       integer :: nIbuf_xy,ntaubuf_xy,idest
 !
 !  Identifier
@@ -667,8 +667,8 @@ module Mpicomm
 !
 !  buffer sizes
 !
-      nIbuf_xy=mx*my*radz0
-      ntaubuf_xy=nx*ny*radz0
+      nIbuf_xy=mx*my
+      ntaubuf_xy=nx*ny
 !
 !  destination
 !

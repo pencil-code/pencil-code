@@ -136,61 +136,61 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
-    subroutine radboundary_zx_recv(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_recv(mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
-      integer :: rady0,mrad,idir
-      real, dimension(mx,rady0,mz) :: Ibuf_zx(1,1,1)
-      real, dimension(mx,rady0,mz), optional :: taubuf_zx
+      integer :: mrad,idir
+      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(mx,mz), optional :: taubuf_zx
 !
       if (ip==0) then
-         print*,rady0,mrad,idir,Ibuf_zx
+         print*,mrad,idir,Ibuf_zx(1,1)
          if (present(taubuf_zx)) print*,taubuf_zx
       endif
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
-      integer :: radz0,nrad,idir
-      real, dimension(mx,my,radz0) :: Ibuf_xy
-      real, dimension(mx,my,radz0), optional :: taubuf_xy
+      integer :: nrad,idir
+      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(mx,my), optional :: taubuf_xy
 !
       if (ip==0) then
-         print*,radz0,nrad,idir,Ibuf_xy(1,1,1)
+         print*,nrad,idir,Ibuf_xy(1,1)
          if (present(taubuf_xy)) print*,taubuf_xy
       endif
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_zx_send(rady0,mrad,idir,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_send(mrad,idir,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
-      integer :: rady0,mrad,idir
-      real, dimension(mx,rady0,mz) :: Ibuf_zx
-      real, dimension(mx,rady0,mz), optional :: taubuf_zx
+      integer :: mrad,idir
+      real, dimension(mx,mz) :: Ibuf_zx
+      real, dimension(mx,mz), optional :: taubuf_zx
 !
       if (ip==0) then
-         print*,rady0,mrad,idir,Ibuf_zx(1,1,1)
+         print*,mrad,idir,Ibuf_zx(1,1)
          if (present(taubuf_zx)) print*,taubuf_zx
       endif
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radboundary_xy_send(radz0,nrad,idir,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_send(nrad,idir,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
-      integer :: radz0,nrad,idir
-      real, dimension(mx,my,radz0) :: Ibuf_xy
-      real, dimension(mx,my,radz0), optional :: taubuf_xy
+      integer :: nrad,idir
+      real, dimension(mx,my) :: Ibuf_xy
+      real, dimension(mx,my), optional :: taubuf_xy
 !
       if (ip==0) then
-         print*,radz0,nrad,idir,Ibuf_xy(1,1,1)
+         print*,nrad,idir,Ibuf_xy(1,1)
          if (present(taubuf_xy)) print*,taubuf_xy
       endif
 !
