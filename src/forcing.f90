@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.37 2002-11-24 13:14:59 mee Exp $
+! $Id: forcing.f90,v 1.38 2002-12-19 09:56:05 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.37 2002-11-24 13:14:59 mee Exp $")
+           "$Id: forcing.f90,v 1.38 2002-12-19 09:56:05 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -326,7 +326,7 @@ module Forcing
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
       if (ip.le.9) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.9) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
-      write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
+      !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -558,7 +558,7 @@ module Forcing
       ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
       if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
-      write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
+      !!(debug...) write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
