@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.30 2003-06-23 13:53:51 dobler Exp $
+;;;  $Id: rall.pro,v 1.31 2003-06-24 11:05:42 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -104,24 +104,24 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   readf,1, dummy
   readf,1, ipx,ipy,ipz
   ; read data
-  if (i eq 0) then begin
+  if ((i eq 0) and (quiet le 2)) then begin
     print,'File contains: '+content
     print, FORMAT='(A,$)', "Reading: "
   endif
 
   close,1
   openr,1, datadir+'/'+varfile, /F77
-    print, FORMAT='(A," ",$)', tag
-    if (execute('readu,1'+readstring) ne 1) then $
+  if (quiet le 2) then print, FORMAT='(A," ",$)', tag
+  if (execute('readu,1'+readstring) ne 1) then $
       message, 'Error reading: ' + 'readu,1'+readstring
     ;
     ;  read deltay in case of shear
     ;
-    if (lshear) then begin
-      readu,1, t, xloc, yloc, zloc, dx, dy, dz, deltay
-    end else begin
-      readu,1, t, xloc, yloc, zloc
-    end
+  if (lshear) then begin
+    readu,1, t, xloc, yloc, zloc, dx, dy, dz, deltay
+  end else begin
+    readu,1, t, xloc, yloc, zloc
+  end
 
   close,1
   ;
@@ -169,7 +169,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   endfor
 
 endfor
-print
+if (quiet le 2) then print
 
 ;
 xx = spread(x, [1,2], [my,mz])
@@ -181,31 +181,34 @@ rr = sqrt(xx^2+yy^2+zz^2)
 ;
 xyz = ['x', 'y', 'z']
 fmt = '(A9,A,4G15.6)'
-print, '  var             minval         maxval          mean           rms'
-;
-;
-for i=1,totalvars do begin
-  if (varcontent[i].skip eq 2) then begin
+if (quiet le 2) then begin
+  print, '  var             minval         maxval          mean           rms'
+  ;
+  ;
+  for iv=1,totalvars do begin
+    if (varcontent[iv].skip eq 2) then begin
       for j=0,2 do begin
-          cmd = "print, FORMAT=fmt,strmid('"+varcontent[i].idlvar+"_'+xyz["+str(j)+"]+'        ',0,8),'=', " $
-            + "minmax("+varcontent[i].idlvar+"(*,*,*,"+str(j)+")), " $
-            + "mean("+varcontent[i].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE), " $
-            + "rms("+varcontent[i].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE)"
-          if (execute(cmd,1) ne 1) then $
-                          message, 'Error printing stats for ' + varcontent[i].variable         
-      end
-  end else begin
-      cmd = "print, FORMAT=fmt,strmid('"+varcontent[i].idlvar+"        ',0,8),'=', " $
-        + "minmax("+varcontent[i].idlvar+"(*,*,*)), " $
-        + "mean("+varcontent[i].idlvar+"(*,*,*),/DOUBLE), " $
-        + "rms("+varcontent[i].idlvar+"(*,*,*),/DOUBLE)"
+        cmd = "print, FORMAT=fmt,strmid('"+varcontent[iv].idlvar+"_'+xyz["+str(j)+"]+'        ',0,8),'=', " $
+            + "minmax("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+")), " $
+            + "mean("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE), " $
+            + "rms("+varcontent[iv].idlvar+"(*,*,*,"+str(j)+"),/DOUBLE)"
+        if (execute(cmd,1) ne 1) then $
+            message, 'Error printing stats for ' + varcontent[iv].variable
+      endfor
+    endif else begin
+      cmd = "print, FORMAT=fmt,strmid('"+varcontent[iv].idlvar+"        ',0,8),'=', " $
+        + "minmax("+varcontent[iv].idlvar+"(*,*,*)), " $
+        + "mean("+varcontent[iv].idlvar+"(*,*,*),/DOUBLE), " $
+        + "rms("+varcontent[iv].idlvar+"(*,*,*),/DOUBLE)"
       if (execute(cmd,1) ne 1) then $
-        message, 'Error printing stats for ' + varcontent[i].variable         
-  end
-  i=i+varcontent[i].skip
-end
+          message, 'Error printing stats for ' + varcontent[iv].variable
+    endelse
+    iv=iv+varcontent[iv].skip
+  endfor
+  ;
+  print,'t = ',t
 ;
-print,'t = ',t
+endif
 
 ; reset datadir to more reasonable default
 datadir=datatopdir+'/proc0'
