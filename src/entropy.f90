@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.192 2003-08-15 17:14:19 mee Exp $
+! $Id: entropy.f90,v 1.193 2003-08-16 05:52:46 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -29,7 +29,7 @@ module Entropy
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
   real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
-  real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.
+  real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
@@ -52,7 +52,7 @@ module Entropy
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        tauheat_coronal,TTheat_coronal,zheat_coronal, &
-       tauheat_buffer,TTheat_buffer,zheat_buffer, &
+       tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss
 
   ! other variables (needs to be consistent with reset list below)
@@ -90,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.192 2003-08-15 17:14:19 mee Exp $")
+           "$Id: entropy.f90,v 1.193 2003-08-16 05:52:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -990,7 +990,7 @@ endif
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,TT,TT1
       real, dimension (nx) :: heat,prof
-      real :: ssref,zbot,ztop,TTref
+      real :: ssref,zbot,ztop,TTref,profile_buffer
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1070,13 +1070,12 @@ endif
       endif
 !
 !  add heating and cooling to a reference temperature in a buffer
-!  zone at the z boundaries	
-!  assume a linearly increasing reference profile, TTref
-!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!  zone at the z boundaries. Only regions in |z| > zheat_buffer are affected.
+!  Inverse width of the transition is given by dheat_buffer1.
 !
       if(tauheat_buffer/=0.) then
-        TTref=0.5*(1.+tanh(abs(z(n))-(ztop-zheat_buffer)))*TTheat_buffer
-        heat=heat+ss*(TTref-TT)/(rho1*tauheat_buffer)
+        profile_buffer=0.5*(1.+tanh(dheat_buffer1*(abs(z(n))-zheat_buffer)))
+        heat=heat+profile_buffer*ss*(TTheat_buffer-TT)/(rho1*tauheat_buffer)
       endif
 !
 !  add to entropy equation
