@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.130 2002-11-20 19:57:06 mee Exp $
+### $Id: Makefile,v 1.131 2002-11-24 18:33:15 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -58,6 +58,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wrenpacx)
 #FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wren)
 #LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wren)
+##FC=/c/brandenb/pacx/bin/pacxfc #(tacsg2)
+#FFLAGS=-64 -O3 -mips4 #(tacsg2)
 #OPTFLAGS= -64
 #F77=$(FC)
 CFLAGS=-O3 -64 -DFUNDERSC=1
@@ -78,7 +80,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 #FC=pgf90 #(nq0)
-#FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-9])
+##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-9])
 ##FC=mpif77 #(fe[0-9])
 #FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/bin/mpif77 #(nq0)
