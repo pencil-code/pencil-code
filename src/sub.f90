@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.131 2003-08-08 08:49:38 dobler Exp $ 
+! $Id: sub.f90,v 1.132 2003-08-11 15:06:48 dobler Exp $ 
 
 module Sub 
 
@@ -1533,7 +1533,7 @@ module Sub
             tout=alog10(t)
           else
             !  make sure the tout is a good time
-            if (dtout.ne.0.) tout=t-amod(t,abs(dtout))
+            if (dtout.ne.0.) tout=t-amod(t,abs(dtout))+dtout
           endif
           nout=1
           write(lun,*) tout,nout
