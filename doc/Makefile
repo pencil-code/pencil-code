@@ -98,7 +98,7 @@ www/faq.tex: manual.tex
 # Clean up
 clean:
 	rm -f manual.ps* body.ps* appendix.ps* manual.dvi *.aux *.toc *.log \
-	*.idx *.ind *.ilg *.vidx *.vind *.fidx *.find
+	*.idx *.ind *.ilg *.out *.vidx *.vind *.fidx *.find manual.image.*
 # same, but including image directory
 cleann: clean
 	cd figs; make clean
