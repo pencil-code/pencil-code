@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.117 2003-10-13 15:23:30 mcmillan Exp $
+! $Id: hydro.f90,v 1.118 2003-10-14 07:02:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -41,7 +41,6 @@ module Hydro
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
-  real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
 !
@@ -50,7 +49,6 @@ module Hydro
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       frec_ux,ampl_osc_ux, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0
 ! end geodynamo
 
@@ -100,7 +98,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.117 2003-10-13 15:23:30 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.118 2003-10-14 07:02:24 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

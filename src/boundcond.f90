@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.58 2003-10-13 01:30:37 mee Exp $
+! $Id: boundcond.f90,v 1.59 2003-10-14 07:02:24 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -104,9 +104,6 @@ module Boundcond
                   if (j==ie) call bc_ee_outflow_x(f,topbot)
                 case ('db')
                   call bc_db_x(f,topbot,j)
-                case ('osc')
-!                 if (j==ilnrho) call bc_lnrho_osc_x(f,topbot)
-                  call bc_osc_x(f,topbot,j)
                 case ('1')        ! f=1 (for debugging)
                   call bc_one_x(f,topbot,j)
                 case default
@@ -794,41 +791,6 @@ module Boundcond
       endselect
 !
     endsubroutine bc_db_x
-!***********************************************************************
-    subroutine bc_osc_x(f,topbot,j)
-!
-!  12-aug-02/nils: coded
-!  14-aug-02/nils: moved to boundcond
-!
-      use Cdata
-      use Density
-      use Hydro
-!
-      character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real :: ampl_osc,frec
-      integer :: i,pnts=10,j
-!
-      if (j==ilnrho) then
-        ampl_osc=ampl_osc_lnrho
-        frec=frec_lnrho
-      elseif (j==iux) then
-        ampl_osc=ampl_osc_ux
-        frec=frec_ux
-      else
-        print*,"bc_osc_x: invalid argument for 'bc_osc_x'"
-      endif
-!         
-      if (topbot=='bot') then
-        do i=1,pnts
-          f(i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(i)*mx/(Lx*pnts))
-        enddo
-      else
-        do i=1,pnts
-          f(mx+1-i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
-        enddo
-      endif
-    endsubroutine bc_osc_x
 !***********************************************************************
     subroutine bc_one_x(f,topbot,j)
 !

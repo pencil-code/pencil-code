@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.9 2003-10-12 22:13:17 mee Exp $
+! $Id: nohydro_file.f90,v 1.10 2003-10-14 07:02:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,7 +24,6 @@ module Hydro
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_Marms=0,i_Mamax=0
-  real :: frec_ux=100,ampl_osc_ux=1e-3
 
   contains
 
@@ -51,8 +50,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2003-10-12 22:13:17 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2003-10-14 07:02:24 $")
 !
     endsubroutine register_hydro
 !***********************************************************************

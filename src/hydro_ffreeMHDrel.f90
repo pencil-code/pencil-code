@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.5 2003-10-12 22:13:17 mee Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.6 2003-10-14 07:02:24 nilshau Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -39,7 +39,6 @@ module Hydro
 !ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
-  real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.
 ! geodynamo
 !       original line replaced and split in two
@@ -47,14 +46,13 @@ module Hydro
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
-       frec_ux,ampl_osc_ux, &
        tau_damp_ruxm,tau_damp_ruym
 ! end geodynamo
 
 !  namelist /hydro_run_pars/ &
 !       nu,ivisc, &            !ajwm - kept for backward comp. should 
 !       Omega,theta, &         ! remove and use viscosity_run_pars only
-!       tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
+!       tdamp,dampu,dampuext,rdamp,wdamp, &
 !       tau_damp_ruxm,tau_damp_ruym
 
   ! other variables (needs to be consistent with reset list below)
@@ -102,7 +100,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.5 2003-10-12 22:13:17 mee Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.6 2003-10-14 07:02:24 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

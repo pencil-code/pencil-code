@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.13 2003-10-12 22:13:17 mee Exp $
+! $Id: nodensity.f90,v 1.14 2003-10-14 07:02:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -19,7 +19,6 @@ module Density
   real :: lnrho0
   logical :: lcalc_cp = .false.
   real :: cs2bot=1., cs2top=1.
-  real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /density_init_pars/ dummy
@@ -52,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.13 2003-10-12 22:13:17 mee Exp $")
+           "$Id: nodensity.f90,v 1.14 2003-10-14 07:02:24 nilshau Exp $")
 !
     endsubroutine register_density
 !***********************************************************************

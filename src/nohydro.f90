@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.15 2003-10-12 22:13:17 mee Exp $
+! $Id: nohydro.f90,v 1.16 2003-10-14 07:02:24 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -21,7 +21,6 @@ module Hydro
   namelist /hydro_run_pars/  dummyuu
 
   real :: theta=0.
-  real :: frec_ux=100,ampl_osc_ux=1e-3
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -57,7 +56,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.15 2003-10-12 22:13:17 mee Exp $")
+           "$Id: nohydro.f90,v 1.16 2003-10-14 07:02:24 nilshau Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
