@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -28,10 +28,10 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,k,ikx,iky,ikz,im,in
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
   real, dimension (mx,my,mz,mvar) :: f
-  real, dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
-  real, dimension(nx,3) :: bb
+  real, dimension(nx,ny,nz) :: a1,b1
+  real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
   real, dimension(nxgrid) :: kx
   real, dimension(nygrid) :: ky
@@ -41,44 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $")
-  !
-  !  In fft, real and imaginary parts are handled separately.
-  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
-  !
-  if (sp=='u') then
-     a1=f(l1:l2,m1:m2,n1:n2,iux)
-     a2=f(l1:l2,m1:m2,n1:n2,iuy)
-     a3=f(l1:l2,m1:m2,n1:n2,iuz)
-  elseif (sp=='b') then
-     do n=n1,n2
-        do m=m1,m2
-           call curl(f,iaa,bb)
-           im=m-nghost
-           in=n-nghost
-           a1(:,im,in)=bb(:,1)
-           a2(:,im,in)=bb(:,2)
-           a3(:,im,in)=bb(:,3)
-        enddo
-     enddo
-  elseif (sp=='a') then
-     a1=f(l1:l2,m1:m2,n1:n2,iax)
-     a2=f(l1:l2,m1:m2,n1:n2,iay)
-     a3=f(l1:l2,m1:m2,n1:n2,iaz)
-  else
-     print*,'There are no such sp=',sp
-  endif
-  b1=0
-  b2=0
-  b3=0
-  !
-  !  Doing the Fourier transform
-  !
-  call transform(a1,a2,a3,b1,b2,b3)
-  !
-  !    Stopping the run if FFT=nofft
-  !
-  if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+       "$Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -87,21 +50,63 @@ module  power_spectrum
   ky=cshift((/(i-(nygrid+1)/2,i=0,nygrid-1)/),+(nygrid+1)/2)*2*pi/Ly
   kz=cshift((/(i-(nzgrid+1)/2,i=0,nzgrid-1)/),+(nzgrid+1)/2)*2*pi/Lz
   !
-  !  integration over shells
-  !
   spectrum=0
-  if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do ikz=1,nz
-     do iky=1,ny
-        do ikx=1,nx
-           k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
-           if(k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
-                +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2 &
-                +a2(ikx,iky,ikz)**2+b2(ikx,iky,ikz)**2 &
-                +a3(ikx,iky,ikz)**2+b3(ikx,iky,ikz)**2
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !
+  do ivec=1,3
+     !
+     if (sp=='u') then
+        a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+     elseif (sp=='b') then
+        do n=n1,n2
+           do m=m1,m2
+              call curli(f,iaa,bb,ivec)
+              im=m-nghost
+              in=n-nghost
+              a1(:,im,in)=bb
+           enddo
+        enddo
+     elseif (sp=='a') then
+        a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+     else
+        print*,'There are no such sp=',sp
+     endif
+     b1=0
+     !
+     !  Doing the Fourier transform
+     !
+     !  call transform(a1,a2,a3,b1,b2,b3)
+     select case (fft_switch)
+     case ('fft_nr')
+        call transform_nr(a1,b1)
+     case ('fftpack')
+        call transform_fftpack(a1,b1)
+     case ('Singleton')
+        call transform_i(a1,b1)
+     case default
+        call stop_it("power: no fft_switch chosen")
+     endselect
+     !
+     !    Stopping the run if FFT=nofft
+     !
+     if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+     !
+     !  integration over shells
+     !
+     if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+     do ikz=1,nz
+        do iky=1,ny
+           do ikx=1,nx
+              k=nint(sqrt(kx(ikx)**2+ky(iky+ipy*ny)**2+kz(ikz+ipz*nz)**2))
+              if(k>=0 .and. k<=(nk-1)) spectrum(k+1)=spectrum(k+1) &
+                   +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+           enddo
         enddo
      enddo
-  enddo
+     !
+  enddo !(from loop over ivec)
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
@@ -149,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.23 2002-11-08 12:44:34 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
