@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.106 2003-07-29 09:43:36 brandenb Exp $
+! $Id: start.f90,v 1.107 2003-07-29 15:37:36 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -46,7 +46,7 @@ integer :: ivar,ifilter
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.106 2003-07-29 09:43:36 brandenb Exp $")
+             "$Id: start.f90,v 1.107 2003-07-29 15:37:36 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -75,8 +75,12 @@ integer :: ivar,ifilter
 !  Set up directory names and check whether the directories exist
 !
         call directory_names()
-        inquire(FILE=directory_snap, EXIST=exist)
-        if (.not. exist) call stop_it('Need directory ' // trim(directory_snap))
+!
+!  Unfortunately the following test for existence of directory fails under
+!  OSF1:
+!        inquire(FILE=trim(directory_snap), EXIST=exist)
+!        if (.not. exist) &
+!             call stop_it('Need directory <' // trim(directory_snap) // '>')
 !
         if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
