@@ -2,10 +2,16 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2004-04-27 16:04:24 dobler Exp $'
+  cvsid='$Id: start.in,v 1.3 2004-07-14 18:43:57 dobler Exp $'
   xyz0 = , , 0.
   ! Lxyz =  6.28.,   6.28.,  6.28.
   lperi = T,    T,   F
+  !! For non-equidistant grid:
+  ! lequidist  = T, T, F
+  ! grid_func  =  ,  , 'sinh'
+  ! coeff_grid =  ,  , 0.35
+  ! xyz_star   = , , 0.
+  !!
   bcx = 'p' ,'p' ,'p','p', 'p', 'p', 'p'
   bcy = 'p' ,'p' ,'p','p', 'p', 'p', 'p'
   bcz = 'a2','a2','a','a2','a2','a2','a2'
