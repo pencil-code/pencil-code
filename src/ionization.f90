@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.76 2003-08-19 21:39:56 mee Exp $
+! $Id: ionization.f90,v 1.77 2003-08-25 17:36:49 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -15,11 +15,6 @@ module Ionization
     module procedure thermodynamics_pencil
     module procedure thermodynamics_point
   endinterface
-
-  interface ioncalc_ss                  ! Overload subroutine ioncalc_ss
-    module procedure ioncalc_ss_point
-    module procedure ioncalc_ss_pencil
-  end interface
 
   interface ionget                      ! Overload subroutine ionget
     module procedure ionget_pencil
@@ -78,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.76 2003-08-19 21:39:56 mee Exp $")
+           "$Id: ionization.f90,v 1.77 2003-08-25 17:36:49 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -153,6 +148,9 @@ module Ionization
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
+      open(1,file=trim(datadir)//'/testsn.dat',position='append')
+      write (1,"('#',A)") '--TT---ss----lnrho---yH---ionstat--noionstat---'
+    close(1)
     endsubroutine initialize_ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset)
@@ -203,7 +201,10 @@ module Ionization
       real :: lnrho,ss,yH,lnTT_
       integer :: lstart,lstop,mstart,mstop,nstart,nstop
       integer :: l
+      real :: ionstat,noionstat
 !
+      open(1,file=trim(datadir)//'/testsn.dat',position='append')
+      
       do n=1,mz
       do m=1,my
       do l=1,mx
@@ -217,43 +218,78 @@ module Ionization
                            +xHe_term)/(1.+yH+xHe) &
                           +lnrho-2.5)
          f(l,m,n,iTT)=exp(lnTT_)*TT_ion
+
+noionstat=2./3.*(ss/ss_ion-(1.+xHe)*(2.5-lnrho)+ lnrho_H+xHe_term)
+ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
+
+write (1,'(1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') exp(lnTT_)*TT_ion,ss,lnrho,yH,ionstat,noionstat
+
       enddo
       enddo
       enddo
+     close(1)
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,EE,ss,TT)
+    subroutine perturb_energy_point(lnrho,ee,ss,TT)
 
       use Mpicomm, only: stop_it
       
       real,intent(in) :: lnrho,EE
       real, intent(out) :: ss,TT
-      real :: yH
+      real :: yH,yH_term,one_yH_term
 !
-!        TT=( (EE-yH0*ss_ion*TT_ion*exp(lnrho))*2. ) / &
-!              (3. * (1.+yH0+xHe) * ss_ion * exp(lnrho) )
 !        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
 !        yH=2./(1.+sqrt(1.+4./K))
-!        ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
-      call stop_it("perturb_energy_point: NOT IMPLEMENTED IN FULL IONIZATION")
-      ss=0.
-      TT=0.
-      if (ip==0) print*,lnrho,EE
+      yH=0.5
+      call rtsafe_ee(lnrho,ee,yH)
+      
+      if (yH>0.) then
+        yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+      else
+        yH_term=0.
+      endif
+      if (yH<1.) then
+        one_yH_term=(1.-yH)*(log(1.-yH)-lnrho_H)
+      else
+        one_yH_term=0.
+      endif
+      
+      TT=( (ee-yH*ss_ion*TT_ion)) / &
+              (1.5 * (1.+yH+xHe) * ss_ion )
+      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term - &
+                    one_yH_term-xHe_term)*ss_ion
+       
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,EE,ss,TT)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,TT)
 
       use Mpicomm, only: stop_it
       
-      real, dimension(nx) ,intent(in) :: lnrho,EE
+      real, dimension(nx) ,intent(in) :: lnrho,ee
       real, dimension(nx) ,intent(out) :: ss,TT
-      real, dimension(nx) :: yH
+      real, dimension(nx) :: yH,yH_term,one_yH_term
+      integer :: l
 
-      call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
-      ss=0.
-      TT=0.
-      if (ip==0) print*,lnrho,EE
+      do l=1,nx 
+        yH(l)=0.5
+        call rtsafe_ee(lnrho(l),ee(l),yH(l))
+      
+        if (yH(l)>0.) then
+          yH_term(l)=yH(l)*(2*log(yH(l))-lnrho_e-lnrho_p)
+        else
+          yH_term(l)=0.
+        endif
+        if (yH(l)<1.) then
+          one_yH_term(l)=(1.-yH(l))*(log(1.-yH(l))-lnrho_H)
+        else
+          one_yH_term(l)=0.
+        endif
+      enddo
+      TT=( (ee-yH*ss_ion*TT_ion)) / &
+            (1.5 * (1.+yH+xHe) * ss_ion )
+      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term- &
+                  one_yH_term-xHe_term)*ss_ion
     end subroutine perturb_energy_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
@@ -266,30 +302,6 @@ module Ionization
       rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
 
     end subroutine getdensity
-!***********************************************************************
-    subroutine ioncalc_ss_point(lnrho,TT,ss)
-      real,intent(in) :: lnrho,TT
-      real, intent(out) :: ss
-      real :: yH,K
-!
-      K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-      yH=2./(1.+sqrt(1.+4./K))
-      ss=yH*(lnrho_e+lnrho_p-2.*log(yH))+(1.-yH)*(lnrho_H-log(1.-yH))+xHe_term &
-         +(1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)
-!
-    end subroutine ioncalc_ss_point
-!***********************************************************************
-    subroutine ioncalc_ss_pencil(lnrho,TT,ss)
-      real, dimension(nx), intent(in) :: lnrho,TT
-      real, dimension(nx), intent(out) :: ss
-      real, dimension(nx) :: yH,K
-!
-      K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-      yH=2./(1.+sqrt(1.+4./K))
-      ss=yH*(lnrho_e+lnrho_p-2.*log(yH))+(1.-yH)*(lnrho_H-log(1.-yH))+xHe_term &
-         +(1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)
-!
-    end subroutine ioncalc_ss_pencil
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
 !
@@ -503,5 +515,81 @@ module Ionization
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
 !
     endsubroutine saha
+!***********************************************************************
+    subroutine rtsafe_EE(lnrho,ee,yH)
+!
+!   safe newton raphson algorithm (adapted from NR) !
+!   25-aug-03/tony: modified from entropy based routine
+!
+      real, intent (in)    :: lnrho,ee
+      real, intent (inout) :: yH
+      real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
+      integer              :: i
+      integer, parameter   :: maxit=100
+
+      yHmax=1.-yHacc
+      yHmin=yHacc
+      dyHold=1.-2.*yHacc
+      dyH=dyHold
+!
+!  return if y is too close to 0 or 1
+!
+      call saha_ee(yHmin,lnrho,ee,fh,df)
+      if (fh.le.0.) then
+         yH=yHmin
+         return
+      endif
+      call saha_ee(yHmax,lnrho,ee,fl,df)
+      if (fl.ge.0.) then
+         yH=yHmax
+         return
+      endif
+!
+!  otherwise find root
+!
+      call saha_ee(yH,lnrho,ee,f,df)
+      do i=1,maxit
+         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
+              .or.abs(2.*f).gt.abs(dyHold*df)) then
+            dyHold=dyH
+            dyH=.5*(yHmin-yHmax)
+            yH=yHmax+dyH
+            if (yHmax.eq.yH) return
+         else
+            dyHold=dyH
+            dyH=f/df
+            temp=yH
+            yH=yH-dyH
+            if (temp.eq.yH) return
+         endif
+         if (abs(dyH).lt.yHacc) return
+         call saha_ee(yH,lnrho,ee,f,df)
+         if (f.lt.0.) then
+            yHmax=yH
+         else
+            yHmin=yH
+         endif
+      enddo
+      print *,'rtsafe: exceeded maximum iterations',f
+!
+    endsubroutine rtsafe_ee
+!!***********************************************************************
+    subroutine saha_ee(yH,lnrho,ee,f,df)
+!
+!   we want to find the root of f
+!
+!   25-aug-03/tony: coded from entropy based routine
+!
+      real, intent(in)  :: yH,lnrho,ee
+      real, intent(out) :: f,df
+      real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
+
+      lnTT_=log(ee-yH*ss_ion*TT_ion) -  &
+           log(1.5 * (1.+yH+xHe) * ss_ion * TT_ion )
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+!
+    endsubroutine saha_ee
 !***********************************************************************
 endmodule ionization

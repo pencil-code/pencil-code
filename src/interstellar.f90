@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.47 2003-08-20 08:30:35 brandenb Exp $
+! $Id: interstellar.f90,v 1.48 2003-08-25 17:36:49 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.47 2003-08-20 08:30:35 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.48 2003-08-25 17:36:49 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -574,7 +574,7 @@ module Interstellar
     lnrho_SN=fmpi4(1); ee_SN=fmpi4(2); ss_SN=fmpi4(3); TT_SN=fmpi4(4)
     rho_SN=exp(lnrho_SN);
 
-    if (lroot.and.ip<=14) &
+    if (lroot.and.ip<14) &
          print*, 'position_SNI:',iproc_SN,x_SN,y_SN,z_SN,rho_SN,TT_SN,ee_SN,ss_SN
 !
     endsubroutine position_SNI
@@ -702,7 +702,7 @@ find_SN: do n=n1,n2
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
-      real, dimension(nx) :: deltarho, deltaEE, ee_old
+      real, dimension(nx) :: deltarho, deltaEE, ee_old ,ee_new
       real, dimension(nx) :: rho_old, TT_old, TT_new, ss_new,lnrho_new
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
@@ -716,7 +716,7 @@ find_SN: do n=n1,n2
       !
       !  identifier
       !
-      if(lroot.and.ip<14) print*,'explode_SN: itype_SN=',itype_SN
+      if(lroot.and.ip<12) print*,'explode_SN: itype_SN=',itype_SN
       !
       width_SN=point_width*dxmin      
       idim=0                         !allow for 1-d, 2-d and 3-d profiles...
@@ -729,15 +729,15 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN=', width_SN,c_SN
+      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN,rho_SN=', width_SN,c_SN,rho_SN
         
       !
       !  Now deal with (if nec.) mass relocation
       !
 
-      call perturb_energy(lnrho_SN,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
+      call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new,TT_SN_new)
 
-      if(lroot) print*, &
+      if(lroot.and.ip<=14) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min =', &
                                 TT_SN,TT_SN_new,TT_SN_min
 
@@ -748,13 +748,11 @@ find_SN: do n=n1,n2
          ! The bit that BREAKS the pencil formulation...
          ! must know the total moved mass BEFORE attempting mass relocation 
 
-         rho_SN_new=c_SN/TT_SN_min*TTunits
-
          ! ASSUME: SN will fully ionize the gas at its centre
          call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
-         call perturb_energy(lnrho_SN_new,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
+         call perturb_energy(lnrho_SN_new,(ee_SN+c_SN/rho_SN),ss_SN_new,TT_SN_new)
 
          if(lroot) print*, &
             'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
@@ -773,6 +771,8 @@ find_SN: do n=n1,n2
       
 
       EE_SN=0. !; EE_SN2=0.
+open(1,file=trim(datadir)//'/testsn.dat',position='append')
+write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
       do n=n1,n2
          do m=m1,m2
             call proximity_SN()
@@ -785,7 +785,7 @@ find_SN: do n=n1,n2
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
             ! Apply perturbations
             lnrho_old=f(l1:l2,m,n,ilnrho)
-            rho_old=exp(lnrho_old)
+            rho_old=exp(lnrho_old) 
             ss_old=f(l1:l2,m,n,iss)
 
             call ionget(f,yH_old,TT_old)
@@ -797,9 +797,12 @@ find_SN: do n=n1,n2
             else
               lnrho_new(:)=lnrho_old(:)
             endif
-  
+
+
             call perturb_energy(lnrho_new, &
-                                   (ee_old*rho_old)+deltaEE,ss_new,TT_new)
+                 ((ee_old*rho_old)+deltaEE)/exp(lnrho_new),ss_new,TT_new)
+            call thermodynamics(lnrho_new,ss_new,yH_old,TT_new,ee=ee_new)
+write (1,'(f8.0, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') n,deltarho,rho_old,exp(lnrho_new),TT_old,TT_new,ss_old,ss_new,deltaEE,ee_old,ee_new
 
             if (lmove_mass) f(l1:l2,m,n,ilnrho)=lnrho_new
             f(l1:l2,m,n,iss)=ss_new

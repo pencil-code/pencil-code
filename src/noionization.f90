@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.57 2003-08-20 04:54:51 brandenb Exp $
+! $Id: noionization.f90,v 1.58 2003-08-25 17:36:49 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -13,11 +13,6 @@ module Ionization
   interface thermodynamics              ! Overload the `thermodynamics' function
     module procedure thermodynamics_pencil   ! explicit f implicit m,n
     module procedure thermodynamics_point    ! explocit lnrho, ss
-  end interface
-
-  interface ioncalc_ss                  ! Overload the 'ioncalc_ss' function
-    module procedure ioncalc_ss_penc
-    module procedure ioncalc_ss_point
   end interface
 
   interface ionget
@@ -75,7 +70,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.57 2003-08-20 04:54:51 brandenb Exp $")
+           "$Id: noionization.f90,v 1.58 2003-08-25 17:36:49 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -169,24 +164,6 @@ module Ionization
       rho=0.
 
     end subroutine getdensity
-!***********************************************************************
-    subroutine ioncalc_ss_point(lnrho,TT,ss)
-!
-      real,intent(in) :: lnrho,TT
-      real, intent(out) :: ss
-!
-      ss=(log(TT)-gamma1*(lnrho-lnrho0)-alog(cs20/gamma1))/gamma
-!
-    end subroutine ioncalc_ss_point
-!***********************************************************************
-    subroutine ioncalc_ss_penc(lnrho,TT,ss)
-!
-      real, dimension(nx), intent(in) :: lnrho,TT
-      real, dimension(nx), intent(out) :: ss
-!
-      ss=(log(TT)-gamma1*(lnrho-lnrho0)-alog(cs20/gamma1))/gamma
-!
-    end subroutine ioncalc_ss_penc
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
 !

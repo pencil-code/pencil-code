@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.8 2003-08-19 21:39:56 mee Exp $
+! $Id: ionization_fixed.f90,v 1.9 2003-08-25 17:36:49 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -11,11 +11,6 @@ module Ionization
   interface thermodynamics              ! Overload the `thermodynamics' function
     module procedure thermodynamics_pencil   ! explicit f implicit m,n
     module procedure thermodynamics_point    ! explocit lnrho, ss
-  end interface
-
-  interface ioncalc_ss                  ! Overload the 'ioncalc_ss' function
-    module procedure ioncalc_ss_penc
-    module procedure ioncalc_ss_point
   end interface
 
   interface ionget
@@ -79,7 +74,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.8 2003-08-19 21:39:56 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.9 2003-08-25 17:36:49 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -213,29 +208,35 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,EE,ss,TT)
-      real,intent(in) :: lnrho,EE
+    subroutine perturb_energy_point(lnrho,ee,ss,TT)
+      real,intent(in) :: lnrho,ee
       real, intent(out) :: ss,TT
-      real :: yH,K
+!      real :: yH,K
 !
-        TT=( (EE-yH0*ss_ion*TT_ion*exp(lnrho))*2. ) / &
-              (3. * (1.+yH0+xHe) * ss_ion * exp(lnrho) )
-        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-        yH=2./(1.+sqrt(1.+4./K))
-        ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
+        TT= (ee-ee0) / eeTT
+        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
+print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
+!        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
+!              (3. * (1.+yH0+xHe) * ss_ion )
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,EE,ss,TT)
-      real, dimension(nx), intent(in) :: lnrho,EE
+    subroutine perturb_energy_pencil(lnrho,ee,ss,TT)
+      real, dimension(nx), intent(in) :: lnrho,ee
       real, dimension(nx), intent(out) :: ss,TT
-      real, dimension(nx) :: yH,K
+!      real, dimension(nx) :: yH,K
 !
-        TT=( (EE-yH0*ss_ion*TT_ion*exp(lnrho))*2. ) / &
-              (3. * (1.+yH0+xHe) * ss_ion * exp(lnrho) )
-        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
-        yH=2./(1.+sqrt(1.+4./K))
-        ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
+        TT= (ee-ee0) / eeTT
+        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
+
+!        TT= 1.5 * (EE/exp(lnrho)-yH0*ss_ion*TT_ion ) / &
+!              ((1.+yH0+xHe) * ss_ion)
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !
     end subroutine perturb_energy_pencil
 !***********************************************************************
@@ -249,22 +250,6 @@ module Ionization
       rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
 
     end subroutine getdensity
-!***********************************************************************
-    subroutine ioncalc_ss_point(lnrho,TT,ss)
-      real,intent(in) :: lnrho,TT
-      real, intent(out) :: ss
-
-      ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
-!
-    end subroutine ioncalc_ss_point
-!***********************************************************************
-    subroutine ioncalc_ss_penc(lnrho,TT,ss)
-      real, dimension(nx), intent(in) :: lnrho,TT
-      real, dimension(nx), intent(out) :: ss
-!   
-      ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
-!
-    end subroutine ioncalc_ss_penc
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
 !
