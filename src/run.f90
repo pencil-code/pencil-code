@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.136 2003-06-10 20:07:15 mee Exp $
+! $Id: run.f90,v 1.137 2003-06-11 22:38:43 mee Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.136 2003-06-10 20:07:15 mee Exp $")
+             "$Id: run.f90,v 1.137 2003-06-11 22:38:43 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -84,7 +84,10 @@
 !  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
         if (ip<=6.and.lroot) print*,'reading var files'
-        call input(trim(directory_snap)//'/var.dat',f,mvar,1)
+!
+!ajwm - no need to read maux variables as they will be calculated
+!       at the first time step...? Even if lwrite_aux is set
+        call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)
 !
@@ -235,7 +238,11 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          call wsnap(trim(directory_snap)//'/VAR',f,mvar,.true.)
+          if (lwrite_aux) then
+             call wsnap(trim(directory_snap)//'/VAR',f,mvar+maux,.true.)
+          else
+             call wsnap(trim(directory_snap)//'/VAR',f,mvar,.true.)
+          endif
           call wsnap_timeavgs(trim(directory_snap)//'/TAVG',.true.)
           !
           !  Write slices (for animation purposes)
@@ -247,9 +254,13 @@
           !
           if (isave /= 0) then
             if (mod(it,isave)==0) then
-              call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
-              call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',.false.)
-              call wtime(trim(directory)//'/time.dat',t)
+               if (lwrite_aux) then
+                  call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
+               else
+                  call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
+               endif
+               call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat',.false.)
+               call wtime(trim(directory)//'/time.dat',t)
             endif
           endif
           !
@@ -275,7 +286,11 @@
 !  dvar is written for analysis purposes only
 !
         if(save_lastsnap) then
-          call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
+           if (lwrite_aux) then
+              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)
+           else
+              call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
+           endif
           call wtime(trim(directory)//'/time.dat',t)
           if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,mvar+maux,.false.)
         endif

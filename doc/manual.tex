@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.163 2003-06-10 19:25:32 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.164 2003-06-11 22:38:43 mee Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-10 19:25:32 $ $,~ $ $Revision: 1.163 $ $}
+\date{$ $Date: 2003-06-11 22:38:43 $ $,~ $ $Revision: 1.164 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-10 19:25:32 $ $,~ $ $Revision: 1.163 $ $}
+  \emph{$ $Date: 2003-06-11 22:38:43 $ $,~ $ $Revision: 1.164 $ $}
 
   \vspace{\stretch{3}}
 
@@ -4069,6 +4069,10 @@ double precision, $\varepsilon\approx10^{-15}$.
                  files. This could be useful after having changed the code
                  and, in particular, when the \file{var.dat} files will be
                  overwritten by \file{remesh.csh}.\\
+  \var{lwrite_aux} [\code{F}]
+               & if set \code{T}, auxilliary variables (those calculated at
+                 each step, but not evolved mathematically) to 
+                 \file{var.dat} after the evolved quantities. \\
   \var{random_gen} [\code{system}]
                & \label{random-gen-init}
                  choose random number generator;
@@ -4470,6 +4474,11 @@ the latest set of parameters, you need to look at the code.
                  discussion. \\
   \var{random_gen} [start]
                & see start parameters, p.~\pageref{random-gen-init} \\
+  \var{lwrite_aux} [start]
+               & if set \code{T}, auxilliary variables (those calculated at
+                 each step, but not evolved mathematically) to 
+                 \file{var.dat} and \file{VAR} files after the evolved 
+                 quantities. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
@@ -5039,7 +5048,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.163 2003-06-10 19:25:32 mee Exp $ $}
+$ $Id: manual.tex,v 1.164 2003-06-11 22:38:43 mee Exp $ $}
 
 
 \end{document}
