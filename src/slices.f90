@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.36 2003-12-08 18:37:47 ajohan Exp $
+! $Id: slices.f90,v 1.37 2003-12-08 18:41:17 ajohan Exp $
 
 !  This module produces slices for animation purposes
 
@@ -201,7 +201,7 @@ module Slices
 !          call wslice(path//'lnrhod'//trim(sidust)//'.Xy', &
 !              lnrhod_xy2,z(iz2),nx,ny)
 !        enddo
-!
+! 
 !  Entropy
 !
       case ('ss')
