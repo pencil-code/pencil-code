@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.18 2003-05-22 16:50:50 mee Exp $
+! $Id: interstellar.f90,v 1.19 2003-05-26 16:23:55 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -11,7 +11,8 @@ module Interstellar
 
   implicit none
 
-  real :: x_SN,y_SN,z_SN,rho_SN,ampl_SN=5.0
+  real :: x_SN,y_SN,z_SN,rho_SN,lnrho_SN,TT_SN,ss_SN,ampl_SN=1.0
+  integer :: l_SN,m_SN,n_SN
   real, dimension(nx) :: dr2_SN     ! Pencil storing radius to SN
   real :: t_next_SNI=0.0,t_interval_SNI=3.64e-3,h_SNI=0.325
   real :: tau_cloud=2e-2
@@ -19,6 +20,9 @@ module Interstellar
   real, dimension(ninterstellarsave) :: interstellarsave
   real, parameter :: rho_crit=1.,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
+  real, parameter :: cnorm_SN = 3.71213666 !  3.128289613 
+                         ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
+                         ! for gaussian of width a
 
 !  cp1=1/cp used to convert TT (and ss) into interstellar code units
 !  (useful, as many conditions conveniently expressed in terms of TT)
@@ -29,7 +33,8 @@ module Interstellar
 !  Lambdaunits converts coolH into interstellar code units.
 !   (this should really just be incorporated into coolH coefficients)
 
-  real, parameter :: cp1=27.8,TTunits=46.6,tosolarMkpc3=1.483e7
+  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
+  real, parameter :: TTunits=46.6,tosolarMkpc3=1.483e7
   real, parameter :: Lambdaunits=3.29e-18
   real, parameter :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
   real, parameter, dimension(6) ::                                          &
@@ -72,7 +77,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.18 2003-05-22 16:50:50 mee Exp $")
+           "$Id: interstellar.f90,v 1.19 2003-05-26 16:23:55 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -350,7 +355,6 @@ module Interstellar
     real, dimension(3) :: fran3,fmpi3
     real, dimension(1) :: fmpi1
     integer :: i, l, nzskip=10   !prevent SNI from being too close to boundaries
-    integer :: l_SN,m_SN,n_SN
     integer, dimension(1) :: impi
     logical :: lfound,lfoundx,lfoundy,lfoundz
 !
@@ -430,7 +434,14 @@ module Interstellar
       lfound=(lfoundx .and. lfoundy .and. lfoundz)
       if (.not. lfound) print*,'position_SNI: SN not found!'
       !print*, 'position_SNI:',l_SN,m_SN,n_SN,ilnrho,f(l_SN,m_SN,n_SN,ilnrho)
-      rho_SN=exp(f(l_SN,m_SN,n_SN,ilnrho))
+      lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
+      rho_SN=exp(lnrho_SN)
+      ss_SN=f(l_SN,m_SN,n_SN,ient)
+! NEED TO USE IONISATION CALCS 
+
+!      call ioncalc(lnrho,ss,cs2,TT1,cp1tilde, &
+!        Temperature=TT_SN_new,InternalEnergy=ee,IonizationFrac=yH)
+      TT_SN=cs20*exp(gamma1*(lnrho_SN-lnrho0)+gamma*ss_SN)/gamma1*cp1
       !TT_SN not actually needed...
       !TT_SN=cs20*exp(gamma1*(f(l_SN,m_SN,n_SN,ilnrho)-lnrho0) +       &
       !                  gamma*f(l_SN,m_SN,n_SN,ient))/gamma1*cp1
@@ -562,15 +573,13 @@ find_SN: do n=n1,n2
       real :: mass_check=0., mass_shell=0., profile_integral
       real :: EE_SN=0.,rho_SN_new,TT_SN_new,dv
 
-      real :: TT_limit=1.e7
+      real, parameter :: TT_limit=1.e7
      ! real :: TT_limit=1.e5    ! make weaker, for debug
       
-      integer :: point_width=4
+      integer, parameter :: point_width=4
      ! integer :: point_width=8            ! make larger, for debug
       real, dimension(nx) :: deltarho, deltaEE, e_old, rho_old
       real, dimension(3) :: fmpi3, fmpi3_tmp
-      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
-                                      ! for gaussian of width a
       integer:: move_mass=0      
           
       !
@@ -585,7 +594,11 @@ find_SN: do n=n1,n2
       !
       !  Now deal with (if nec.) mass relocation
       !
-      TT_SN_new=c_SN/rho_SN*TTunits
+
+
+      TT_SN_new=TT_SN+(c_SN*rho_SN*gamma*cp1)
+      if(lroot) print*,'explode_SN - TT_SN, TT_SN_new :',TT_SN,TT_SN_new
+
       if (TT_SN_new < TT_limit) then
          move_mass=1
 
@@ -613,16 +626,19 @@ find_SN: do n=n1,n2
             endif
 
             call injectenergy_SN(deltaEE,width_SN,ampl_SN,EE_SN)
-            ! Apply perterbations
+            ! Apply perturbations
             ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) - (gamma1/gamma)*ln(1+(\delta rho / rho))
 
             ! Store old values
-            e_old = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
             rho_old=exp(f(l1:l2,m,n,ilnrho))
+            e_old = cs20 * exp(gamma*f(l1:l2,m,n,ient))*((rho_old/rho0)**(gamma-2.))/(gamma*gamma1)
+!            rho_old=exp(f(l1:l2,m,n,ilnrho))
 
+!ajwm - 4\pi ??? What's that all about?...
             if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
             f(l1:l2,m,n,ient)=f(l1:l2,m,n,ient) + &
-                 ( alog(1.+ (deltaEE*(rho_old+deltarho)) / e_old)  -  &
+                 ( alog(1.+ (deltaEE / 12.56637061 & 
+                            *(rho_old+deltarho) / e_old))  -  &
                  (gamma1*alog(1 + deltarho / rho_old) )  &
                  ) / gamma
 
@@ -656,10 +672,10 @@ find_SN: do n=n1,n2
          open(1,file=trim(datadir)//'/time_series.dat',position='append')
          write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
               '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
          write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
               '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-              t,itype_SN,iproc,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
+              t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,')'
          close(1)
       endif
 
@@ -863,8 +879,6 @@ find_SN: do n=n1,n2
       real, intent(inout) :: EE_SN
       real, intent(out), dimension(nx) :: deltaEE
 
-      real :: cnorm_SN=3.128289613    ! (int exp(-(r/a)^6) 4\pi r^2 dr) / (a^3)
-                                      ! for gaussian of width a
 
       real :: c_SN
       !
