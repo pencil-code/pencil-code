@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.301 2004-04-17 16:29:18 ajohan Exp $
+! $Id: entropy.f90,v 1.302 2004-04-23 06:44:56 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.301 2004-04-17 16:29:18 ajohan Exp $")
+           "$Id: entropy.f90,v 1.302 2004-04-23 06:44:56 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -349,6 +349,9 @@ module Entropy
         call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
       !   f(:,:,:,iss) = (alog(f(:,:,:,iss) + thermal_background)+alog(thermal_scaling))/gamma 
    
+        case('shock2d') 
+          call shock2d(f,xx,yy,zz)
+
         case('isobaric')
           !
           !  ss = - ln(rho/rho0)
@@ -881,6 +884,84 @@ module Entropy
       if (lroot) print*, 'ferriere: cs2bot=',cs2bot, ' cs2top=',cs2top
 !
     endsubroutine ferriere
+!***********************************************************************
+    subroutine shock2d(f,xx,yy,zz)
+!
+!  shock2d
+!
+! taken from clawpack:
+!     =====================================================
+!       subroutine ic2rp2(maxmx,maxmy,meqn,mbc,mx,my,x,y,dx,dy,q)
+!     =====================================================
+!
+!     # Set initial conditions for q.
+!
+!      # Data is piecewise constant with 4 values in 4 quadrants
+!      # 2D Riemann problem from Figure 4 of
+!        @article{csr-col-glaz,
+!          author="C. W. Schulz-Rinne and J. P. Collins and H. M. Glaz",
+!          title="Numerical Solution of the {R}iemann Problem for
+!                 Two-Dimensional Gas Dynamics",
+!          journal="SIAM J. Sci. Comput.",
+!          volume="14",
+!          year="1993",
+!          pages="1394-1414" }
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real, dimension (4) :: rpp,rpr,rpu,rpv
+!
+      if (lroot) print*,'shock2d: initial condition, gamma=',gamma
+!
+!      # First quadrant:
+        rpp(1) = 1.5d0
+        rpr(1) = 1.5d0
+        rpu(1) = 0.d0
+        rpv(1) = 0.d0
+!
+!      # Second quadrant:
+        rpp(2) = 0.3d0
+        rpr(2) = 0.532258064516129d0
+        rpu(2) = 1.206045378311055d0
+        rpv(2) = 0.0d0
+!
+!      # Third quadrant:
+        rpp(3) = 0.029032258064516d0
+        rpr(3) = 0.137992831541219d0
+        rpu(3) = 1.206045378311055d0
+        rpv(3) = 1.206045378311055d0
+!
+!      # Fourth quadrant:
+        rpp(4) = 0.3d0
+        rpr(4) = 0.532258064516129d0
+        rpu(4) = 0.0d0
+        rpv(4) = 1.206045378311055d0
+!XX
+!  s=-lnrho+alog(gamma*p)/gamma
+!
+        where ( (xx>=0.) .and. (yy>=0.) )
+          f(:,:,:,ilnrho)=alog(rpr(1))
+          f(:,:,:,iss)=alog(gamma*rpp(1))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,iux)=rpu(1)
+          f(:,:,:,iuy)=rpv(1)
+        elsewhere ( (xx<0.) .and. (yy>=0.) )
+          f(:,:,:,ilnrho)=alog(rpr(2))
+          f(:,:,:,iss)=alog(gamma*rpp(2))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,iux)=rpu(2)
+          f(:,:,:,iuy)=rpv(2)
+        elsewhere ( (xx<0.) .and. (yy<0.) )
+          f(:,:,:,ilnrho)=alog(rpr(3))
+          f(:,:,:,iss)=alog(gamma*rpp(3))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,iux)=rpu(3)
+          f(:,:,:,iuy)=rpv(3)
+        elsewhere ( (xx>=0.) .and. (yy<0.) )
+          f(:,:,:,ilnrho)=alog(rpr(4))
+          f(:,:,:,iss)=alog(gamma*rpp(4))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,iux)=rpu(4)
+          f(:,:,:,iuy)=rpv(4)
+        endwhere
+!
+    endsubroutine shock2d
 !**********************************************************************
     subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
