@@ -1,9 +1,10 @@
 /* Mutual dependencies for the pencil_modular code.
    Run this through
      dot -Tps structure.dot -o struct.ps
-   to obtain a PostScript graph. dot is part of AT&T's `graphviz'
-   package.
+   to obtain a PostScript graph.
+   `dot' is part of AT&T's `graphviz' package.
  */
+
 digraph G {
 
   /* Top directory */
@@ -12,7 +13,7 @@ digraph G {
 
   /* */
   node [shape=ellipse];
-  { rank=same; src; idl_dx; doc; bin; runs }
+  { rank=same; src; idl_dx; doc; bin; runs; samples }
 
   idl_dx [label="idl | dx"];
 
@@ -21,6 +22,7 @@ digraph G {
   pencil_modular -> bin;
   pencil_modular -> doc;
   pencil_modular -> runs;
+  pencil_modular -> samples;
 
   runs->gravz    ->entro1;
   runs->spher    ->spher1;

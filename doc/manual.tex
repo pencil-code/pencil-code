@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.46 2002-07-12 09:06:29 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.47 2002-07-13 16:36:21 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -183,7 +183,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.46 $ $}
+\date{\today,~ $ $Revision: 1.47 $ $}
 
 % ====================================================================== %
 
@@ -212,7 +212,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.46 $ $}
+  \emph{\today,~ $ $Revision: 1.47 $ $}
 
 
 \end{center}
@@ -407,8 +407,8 @@ environment, please let us know.
 
 There are two ways to obtain and install the code: If you want to use a
 stable release, you can download it as a tarball and unpack it.
-If you prefer to use the latest version we are experimenting with,
-this is provided for by anonymous CVS access.
+If you prefer to use the latest experimental version,
+you can access it via anonymous CVS access.
 
 % ---------------------------------------------------------------------- %
 
@@ -450,7 +450,7 @@ This needs then to be automatically put into the CVS passwd file.}
   \prompt{csh> } setenv CVSROOT \bs
           :pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS \
   \end{alltt}
-  (all in one line) or (if you are running Bourne shell or bash)
+  or (if you are running Bourne shell or bash)
   \begin{alltt}
   \prompt{sh> } CVSROOT=:pserver:anonymous@norserv.nordita.dk:/home/brandenb/CVS
   \prompt{sh> } export CVSROOT \
@@ -488,8 +488,8 @@ If you have done nontrivial alterations to your version of the code, you
 ought to be careful about upgrading: although CVS is the optimal tool for
 distributed programming, conflicts are quite likely, since we are going to
 touch many parts of the code while we develop it further.
-Thus, despite the fact that we use CVS, you should probably back up your
-changes before upgrading.
+Thus, despite the fact that the code is under CVS, you should probably
+back up your changes before upgrading.
 
 Here is the upgrading procedure:
 \begin{enumerate}
@@ -509,11 +509,10 @@ Here is the upgrading procedure:
 
 \subsection{Getting older versions}
 
-You may find that the latest version produces errors. This is quite
-possible if introduced changes to the code. It it therefore extremely
-useful to get an older version where you know it should work correctly.
-
-Here is what you have to do:
+You may find that the latest CVS version of the code produces errors.
+If you have reasons to believe that this is due to changes introduced on
+31 June 2000 (to give an example), you can check out the version prior to
+this by:
 \begin{enumerate}
 \item Go to the top directory of the code:
   \begin{alltt}
@@ -524,14 +523,13 @@ Here is what you have to do:
   \prompt{unix> } cvs up -D "30 Jun 2000"\
   \end{alltt}
 \end{enumerate}
-(...if that's the version you want)
 
 
 % ====================================================================== %
 
 \section{Getting Started}
 
-To get yourself started, you should run one of several examples which are
+To get yourself started, you should run one or several examples which are
 provided in one of the runs/sample subdirectories.
 
 You will only be able to fully assess the numerical solutions if you
@@ -545,7 +543,7 @@ Sect.~\ref{S-IDLroutines}).
 \begin{itemize}
 \item sourceme.x (where \var{x} stands for \var{csh} or \var{sh})
 \item lnsrc (alias setup)
-\item edit the Makefile (full description here or elsewhere?)
+\item Localize the Makefile (see \S \ref{adapt-mkfile})
 \end{itemize}
 \vspace{7cm}
 
@@ -553,7 +551,7 @@ Sect.~\ref{S-IDLroutines}).
 
 \subsection{A first test}
 
-Now we are ready to compile and run a simple example (periodic,
+Now you are ready to compile and run a simple example (periodic,
 isothermal, non-forced MHD) where the physics is already nontrivial.
 
 
@@ -567,12 +565,12 @@ isothermal, non-forced MHD) where the physics is already nontrivial.
   \prompt{unix> } cd src
   \prompt{unix> } make
   \prompt{unix> } cd ..
-  \prompt{unix> } mkdir tmp \quad\#(or link some data disc to tmp)
+  \prompt{unix> } mkdir tmp \quad{\sl\# (or [better] link directory on local disc to \file{tmp})}
   \prompt{unix> } ./start.csh
   \prompt{unix> } ./run.csh
 \end{alltt}
 
-You should obtain \ldots
+The output should look like \ldots
 
 \vspace{5cm}
 
@@ -629,19 +627,20 @@ The current list of classes is
   buoy_tube/  kinematic/  1d-tests/ rings/
 \end{verbatim}
 The directory \file{forced/} contains some forced turbulence runs (both
-magnetic and nonmagnetic). 
-\file{gravz/} contains runs with vertical gravity, \file{rings/}
-contains decaying MHD problems (interlocked flux rings as initial condition, for
-example), and \file{kinematic/} contains kinematic dynamo problems where the
+magnetic and nonmagnetic);
+\file{gravz/} contains runs with vertical gravity;
+\file{rings/} contains decaying MHD problems (interlocked flux rings as
+initial condition, for example);
+and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
-The file \file{runs/README} will always contain an up-to-date list and
+The file \file{runs/README} will contain an up-to-date list and
 short description of the individual classes.
 
 The subdirectory \file{src} of each run directory contains a few local
 configuration files (currently these are \file{Makefile.local} and
-\file{cparam.local} and contains all the \file{.f90} and \file{.c} files,
-together with the \file{Makefile} as links from the top \file{src}
-directory.
+\file{cparam.local}, together with links to
+all the \file{.f90} and \file{.c} files and the \file{Makefile} in the top
+\file{src} directory (these links are set up by the script \cmd{lnsrc}.
 
 General purpose visualization routines for \name{IDL} or \name{DX} are in the
 \file{idl} and \file{dx} directories, respectively.
@@ -672,40 +671,58 @@ your \name{IDL} path is set appropriately (provided you want to use
 
 Unlike the CRAY computers that dominated supercomputing in the 80s and
 early 90s, all modern computers have a cache that constitutes a significant
-bottleneck for many codes. This is the case if large three-dimensional
-arrays are constantly used within each time step. The advantage of this
-way of coding is clearly the conceptual simplicity of the code. A more
-cache-efficient way of coding is to calculate an entire time step (or
-a corresponding substep in a three-stage $2N$ Runge-Kutta scheme) only
-along a one-dimensional pencil of data within the box. On Linux and Irix
-architectures, for example, this leads to a speed-up by 60\%. An additional
-advantage is a drastic reduction in temporary storage that is needed for
+bottleneck for many codes.
+This is the case if large three-dimensional arrays are constantly used
+within each time step, which has the obvious advantage of leading to
+conceptual simplicity of the code and using F90 array syntax as much as
+possible.
+A more  cache-efficient way of coding is to calculate an entire time step
+(or substep of a multi-stage time-stepping scheme) only
+along a one-dimensional pencil of data within the numerical grid.
+This technique was popular on vector computers, but it is also quite
+efficient for modern RISC processors:
+On Linux PCs and SGI workstations, for example, we have found a speed-up
+by about 60\%{} in some cases.
+An additional advantage is a drastic reduction in temporary storage for
 auxiliary variables within each time step.
 
 
 \subsubsection{The 2$N$-scheme}
 \index{2N-scheme}
 
-For the time stepping high-order schemes are necessary in order to reduce
+For time stepping, higher-order schemes are necessary in order to reduce
 the amplitude error of the scheme and to allow longer time steps. Usually
-such schemes require large amounts of memory. However, there are the
-memory-effective $2N$-schemes that require only two sets of variables
-to be held in memory. Such schemes work for
+such schemes require large amounts of memory.
+However, we here use the memory-effective $2N$-schemes that require only
+two sets of variables to be held in memory.
+Such schemes work for
 arbitrarily high order, although not all Runge-Kutta schemes can be
 written as $2N$-schemes \cite{2Nstorage,SH88}.
-These schemes work iteratively according to the formula
+Consider the ordinary differential equation (ODE)
 \begin{equation}
-w_i=\alpha_i w_{i-1}+\delta t\,F(t_{i-1},u_{i-1}),
+  \dot{u} = F(u,t) \; ,
+\end{equation}
+which can also be used as a prototype for a system of ODEs to be solved,
+like the ones obtained by spatial discretization of PDEs.
+The $2N$-schemes construct an approximation to the solution
+\begin{equation}
+  u^{(n}) \equiv u(t_n)
+\end{equation}
+according to the iterative procedure
+\begin{equation}
+  w_i=\alpha_i w_{i-1}+\delta t\,F(u_{i-1},t_{i-1}),
 \end{equation}
 \begin{equation}
-u_i=u_{i-1}+\beta_i w_i.
+  u_i=u_{i-1}+\beta_i w_i.
 \label{iterform0}
 \end{equation}
 For a three-step scheme we have $i=1,...,3$.
 In order to advance the variable $u$ from $u^{(n)}$ at time $t^{(n)}$
 to $u^{(n+1)}$ at time $t^{(n+1)}=t^{(n)}+\delta h$ we set in \Eq{iterform0}
 \begin{equation}
-u_0=u^{(n)}\quad\mbox{and}\quad u^{(n+1)}=u_3,
+  u_0=u^{(n)}
+  \quad\mbox{and, after the last step,}\quad
+  u^{(n+1)}=u_3,
 \end{equation}
 with $u_1$ and $u_2$ being intermediate steps. In order to be able to
 calculate the first step, $i=1$, for which no $w_{i-1}\equiv w_0$ exists,
@@ -714,9 +731,12 @@ $\alpha_2$, $\alpha_3$, $\beta_1$, $\beta_2$, and $\beta_3$. Three
 conditions follow from the fact that the scheme be third order, so we
 have to have two more conditions. One possibility is to choose the
 fractional times at which the right hand side is evaluated, for
-example (0,~1/3,~2/3) or even (0,~1/2,~1). In the latter case the right hand
-side is evaluated twice at the same time. It is therefore some sort of
-predictor-corrector scheme. Yet another possibility is to require that
+example $(0,1/3,2/3)$ or even $(0,1/2,1)$.
+%wd: Don't see the point of the following: 
+% In the latter case the right hand
+% side is evaluated twice at the same time. It is therefore some sort of
+% predictor-corrector scheme.
+Yet another possibility is to require that
 inhomogeneous equations of the form $\dot{u}=t^n$ with $n=1$ and 2 are
 solved exactly.
 The corresponding coefficients are listed in Table~\ref{T-2N-RK3} and compared
@@ -725,22 +745,36 @@ are about equally good when it comes to real applications, although
 we found the first one in Table~\ref{T-2N-RK3} (`symmetric') marginally better in some
 simple test problems where an analytic solution was known.
 
-\begin{table}[htb]\caption{
-Possible coefficients for different $2N$-RK3 schemes.
-}\vspace{12pt}\centerline{\begin{tabular}{lccccccc}
-\hline
-label & $\alpha_2$ & $\alpha_3$ & $\beta_1$ & $\beta_2$ & $\beta_3$ \\
-\hline
-symmetric           &  $-2/3$  &   $-1$   & 1/3 &  1  & 1/2 \\
-predictor/corrector &  $-1/4$  &  $-4/3$  & 1/2 & 2/3 & 1/2 \\
-inhomogeneous       & $-17/32$ & $-32/27$ & 1/4 & 8/9 & 3/4 \\
-Williamson (1980)   &  $-5/9$  &$-153/128$& 1/3 &15/16& 8/15\\
-\label{T-2N-RK3}\end{tabular}}\end{table}
+\begin{table}[htb]
+  \centering
+  \caption{
+    Possible coefficients for different $2N$-type third-order Runge-Kutta
+    schemes.
+    }\label{T-2N-RK3}
+  \vspace{12pt}
+  \begin{tabular}{l@{\quad}l@{\quad}ccccccc}
+    \toprule
+    scheme            & nodes $(t_i-t_0)/\delta t$
+                                      & $\alpha_2$
+                                                 & $\alpha_3$
+                                                            & $\beta_1$
+                                                                    &$\beta_2$
+                                                                            & $\beta_3$\\
+    \midrule
+    symmetric         & $0,1/3,2/3$   &  $-2/3$  &   $-1$   & $1/3$ &  $1$  & $1/2$ \\
+    {}[predictor/corrector]
+                      & $0,3/4,0$
+                        [????]        &  $-1/4$  &  $-4/3$  & $1/2$ & $2/3$ & $1/2$ \\
+    inhomogeneous     & $0,15/32,4/9$ & $-17/32$ & $-32/27$ & $1/4$ & $8/9$ & $3/4$ \\
+    Williamson (1980) & $0,4/9,15/32$ &  $-5/9$  &$-153/128$& $1/3$ &$15/16$& $8/15$\\
+    \bottomrule
+  \end{tabular}
+\end{table}
 
 \subsubsection{Modularity}
 \index{modules}
 
-Each run directory has a \file{src/Makefile.local} file in which you
+Each run directory has a file \file{src/Makefile.local} in which you
 choose certain \name{modules}\footnote{%
   We stress once more that we are not talking about F90 modules here,
   although there is some connection, as most of our modules define F90
@@ -751,16 +785,16 @@ choose certain \name{modules}\footnote{%
 hydrodynamics, density, forcing, etc.~should be invoked.
 For example, the settings for forced turbulent MHD simulations are
 \begin{verbatim}
-  HYDRO=hydro
-  DENSITY=density
-  ENTROPY=noentropy
-  MAGNETIC=magnetic
-  GRAVITY=nograv
-  FORCING=forcing
-  
-  MPICOMM=nompicomm
-  GLOBAL=noglobal
-  IO=io_dist
+  HYDRO    =   hydro
+  DENSITY  =   density
+  ENTROPY  = noentropy
+  MAGNETIC =   magnetic
+  GRAVITY  = nograv
+  FORCING  =   forcing
+    
+  MPICOMM  = nompicomm
+  GLOBAL   = noglobal
+  IO       =   io_dist
 \end{verbatim}
 This file will be processed by \cmd{make} and the settings are thus
 assignments of \name{make} variables.
@@ -773,12 +807,13 @@ available).
 Table~\ref{Tab-modules} lists all currently available modules.
 
 \begin{table}
+  \small
   \centering
   \caption{%
     Switchable modules as of June 2002.
   }
   \label{Tab-modules}
-  \begin{tabular}{lp{0.7\textwidth}}
+  \begin{tabular}{lp{0.6\textwidth}}
     \toprule
     hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
                      motion; \\
@@ -794,6 +829,11 @@ Table~\ref{Tab-modules} lists all currently available modules.
     magnetic.f90   & Add variable $\Av$ (magnetic vector potential) with
                      induction equation; \\
     nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
+    \midrule
+    pscalar.f90    & Add variable $c$ (concentration) with
+                     advection-diffusion equation for transport of a
+                     passive scalar; \\
+    nopscalar.f90  & no passive scalar, no variable $c$. \\
     \midrule
     \midrule
     forcing.f90    & Add a forcing function to rhs of equation of motion
@@ -831,7 +871,7 @@ Table~\ref{Tab-modules} lists all currently available modules.
                      requires C compiler to be set up correctly and maybe
                      requires appropriate compiler flags
                      (\code{-DFUNDERSCORE}) for correctly interfacing C
-                     with Fortran (and may still not work); \\
+                     with Fortran (and may still not work in some cases); \\
     nodebug.f90    & don't use these debugging routines, avoiding any
                      C-Fortran interoperability problems. \\
     \bottomrule
@@ -848,73 +888,10 @@ preprocessor directives.
  
 Many possible combinations of modules have already been tested
 and examples are part of the distribution, but you may be interested in a
-combination which were never tested and which may not yet work, since the
+combination which was never tried before and which may not yet work, since the
 modules are not fully orthogonal.
 In all such cases, we depend on your feedback for fixing the problems
 and documenting the changes for others.
-
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Localization (adapt-mkfile)}
-
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Visualization}
-
-
-\subsubsection{IDL routines}
-\label{S-IDLroutines}
-
-Basic sequence:
-\begin{alltt}
-  \prompt{unix> } idl
-  \prompt{IDL> }  .run start
-  \prompt{IDL> }  .run r
-  \prompt{IDL> }  {\sf[specific commands]} \
-\end{alltt}
-You call \file{start.pro} once to initialize the fields and read in the
-startup parameters from the code.
-Each time you want to read in a new snapshot, you run \file{r.pro},
-possibly after adjusting the IDL variable \var{file} to a specific snapshot
-file; by default, the file \file{var.dat} in the data directory will be
-read, which is overwritten with new data in regular intervals.
-
-If the data are scattered over different processors and you want to
-reassemble everything into one file, you say
-\begin{alltt}
-  \prompt{IDL> }  .r rall
-\end{alltt}
-Here, \cmd{.r} is a shorthand for \cmd{.run}.
-The procedure \file{rall.pro} reads (and assembles) the data from all
-processors.
-If you want to look at just one processor, use \file{r.pro} instead.
-
-If you need the magnetic field or the current density, you can calculate
-them in IDL by saying
-\begin{alltt}
-  \prompt{IDL> }  bb=curl(aa)
-  \prompt{IDL> }  jj=curl2(aa)
-\end{alltt}
-
-By default one is reading always the latest time corresponding to the file
-\file{var.dat}; if you want to read any earlier snapshots, you say (for
-example)
-\begin{alltt}
-  \prompt{IDL> }  file='VAR2'
-  \prompt{IDL> }  .r rall
-  \prompt{IDL> }  print,t
-\end{alltt}
-and it will get the data from all processors from that snapshot.
-
-To discuss:
-\begin{itemize}
-\item availability of IDL (demo version; Pvwave; Ana)?
-\item setup (include \file{../idl} and \file{../../idl} (?) in \var{!path})
-\item how to get our IDL routines
-\end{itemize}
-
 
 
 % ---------------------------------------------------------------------- %
@@ -938,11 +915,17 @@ To discuss:
 
 Here's how to use the code \ldots
 
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Localization (adapt-mkfile)}
+\label{adapt-mkfile}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{I/O diagnostics}
 
-Every \verb|n1| time steps (\verb|n1| is a runtime parameter, see
+Every \var{n1} time steps (\var{n1} is a runtime parameter, see
 \S\ref{Run-params}), the code writes monitoring output to \name{stdout}
 and, parallel to this, to the file \file{tmp/n.dat}.
 The variables that appear in this listing and the output format are
@@ -951,18 +934,35 @@ the code (even while the code is running).
 A simple example of \file{print.in} may look like this:
 \begin{verbatim}
   t(f10.3)
-  u2m(1pe13.4)
+  urms(1pe13.4)
+  rhom(0pf10.5)
   oum
 \end{verbatim}
 which means that the output table will contain time \var{t} in the first
-column with format \verb|(f10.3)|, followed by the mean squared velocity,
-\var{u2m} (i.e.~$\left<\uv^2\right>$) in the second column with format
-\verb|(1pe13.4)|, and the kinetic helicity \var{oum}
+column formatted as \verb|(f10.3)|, followed by the mean squared velocity,
+\var{urms} (i.e.~$\left<\uv^2\right>$) in the second column with format
+\verb|(1pe13.4)|, the average density \var{rhom} ($\left<\varrho\right>$,
+which allows to monitor mass conservation) formatted \verb|(f10.5)| and
+the kinetic helicity \var{oum}
 (that is $\left<\vec{\omega}\cdot\uv\right>$) in the last column with the
-default format \verb|(1pe10.2)|.
+default format \verb|(1pe10.2)|.\footnote{
+  Note that immediately after a format that uses the modifier \code{1p},
+  on should switch back to \code{0p}, since otherwise the following numbers
+  printed with \code{f} formats will be one order of magnitude off.
+  This is the sad heritage of some more obscure Fortran I/O features.
+}
+The corresponding diagnostic output will look like
+\begin{verbatim}
+ ----t---------urms--------rhom------oum----
+     0.000   4.9643E-03  14.42457 -8.62E-06
+     0.032   3.9423E-03  14.42446 -5.25E-06
+     0.063   6.8399E-03  14.42449 -3.50E-06
+     0.095   1.1437E-02  14.42455 -2.58E-06
+     0.126   1.6980E-02  14.42457 -1.93E-06
+\end{verbatim}
 
 In the file \file{zaver.in}, $z$-dependent (horizontal) averages are listed.
-They are written in the file \file{tmp/zaverages.dat}. At the moment we
+They are written to the file \file{tmp/zaverages.dat}. At the moment we
 can also output in \file{print.in} the associated mean square value
 of the horizontal field, but this requires that in \file{zaver.in} the
 quantities \code{bxmz} and \code{bymz} are set.
@@ -987,7 +987,7 @@ quantities \code{bxmz} and \code{bymz} are set.
 
 \subsection{RELOAD and STOP files}
 
-The code periodically checks (exactly every \var{it} time steps)
+The code periodically (every \var{it} time steps) checks 
 for the existence of two files, \file{RELOAD}
 and \file{STOP}, which can be used to trigger certain behavior.
 
@@ -1044,8 +1044,8 @@ While all parameters from the namelists can be set, in most cases
 reasonable default values are preset.
 Thus, the typical file \file{start.in} will only contain a minimum set of
 variables or (if you are \emph{very} minimalistic) none at all.
-If you want to run a particular problem, the best will be to start by
-modifying a particular example which is closest to yours.
+If you want to run a particular problem, it is best to start by
+modifying a particular example which is closest to your application.
 
 The following table lists all (at the time of writing, June 2002)
 namelists with their corresponding start parameters and their default
@@ -1061,18 +1061,21 @@ state; to get more insight, you should have a look at the code.
 \begin{longtable}{lp{0.6\textwidth}}
 %\begin{tabular}{lp{0.6\textwidth}}
 \toprule
-  \multicolumn{1}{c}{\emph{Variable (default value)}}
+  \multicolumn{1}{c}{\emph{Variable [default value]}}
                & \multicolumn{1}{c}{\emph{Meaning}} \\
 \midrule
   \multicolumn{2}{c}{Namelist \name{init_pars}}\\
 \midrule
-  \var{cvsid}  & the \name{CVS} identification string, which allows you to
+  \var{cvsid} [\code{''}]
+               & the \name{CVS} identification string, which allows you to
                  keep track of the version of \file{start.in}.\\
-  \var{ip}     & (anti-)verbosity level: \code{ip=1} produces lots of
+  \var{ip} [$14$]
+               & (anti-)verbosity level: \code{ip=1} produces lots of
                  diagnostic output, \code{ip=14} virtually none. \\
-  \var{xyz0},
-  \var{Lxyz},
-  \var{lperi}  & determine the geometry of the box. All three are vectors
+  \var{xyz0} [$(-\pi,-\pi,-\pi)$],\\
+  \var{Lxyz} [$(\pi,\pi,\pi)$],\\
+  \var{lperi} [(\code{T},\code{T},\code{T})]
+               & determine the geometry of the box. All three are vectors
                  of the form ($x$-comp., $y$-comp., $z$-comp.); \var{xyz0}
                  describes the left (lower) corner of the box, \var{Lxyz}
                  the box size.
@@ -1087,28 +1090,32 @@ state; to get more insight, you should have a look at the code.
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
 \midrule
-  \var{inituu} & initialization of velocity. Currently valid choices are
+  \var{inituu} [\code{'zero'}]
+               & initialization of velocity. Currently valid choices are
                  `zero' ($\uv=0$), 
                  `random-normal' (random, normally-distributed $u_x$), 
                  `sound=wave' (sound wave in $x$ direction), 
                  `shock-tube' (polytropic standing shock). \\
-  \var{ampluu} & amplitude for some types of initial velocities. \\
-  \var{widthuu}& width for some types of initial velocities. \\
-  \var{urand}  & additional random perturbation of $\uv$. If
+  \var{ampluu} [$0.$]
+               & amplitude for some types of initial velocities. \\
+  \var{widthuu} [$0.1$]
+               & width for some types of initial velocities. \\
+  \var{urand} [$0.$]
+               & additional random perturbation of $\uv$. If
                  \verb|urand>0|, the perturbation is additive,
                  $u_i \mapsto u_i + u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
                  if \verb|urand<0|, it is multiplicative,
                  $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
                  in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
                  distributed random variable on the interval $[-0.5,0.5]$.\\
-  \var{uu_left},
-  \var{uu_right}
+  \var{uu_left} [$1.$],
+  \var{uu_right} [$1.$]
                & needed for \code{inituu='shock-tube'}.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{density_init_pars}} \\
 \midrule
-  \var{initlnrho}
+  \var{initlnrho} [\code{'zero'}]
                & initialization of density. Currently valid choices are
                  `zero' ($\ln\varrho=0$),
                  `isothermal' (isothermal stratification),
@@ -1121,31 +1128,35 @@ state; to get more insight, you should have a look at the code.
                  `polytropic' (polytropic vertical stratification),
                  `sound-wave' (sound wave),
                  `shock-tube' (polytropic standing shock).\\
-  \var{gamma}  & adiabatic index $\gamma=c_p/c_v$. \\
-  \var{cs0,rho0}
+  \var{gamma} [$5./3$]
+               & adiabatic index $\gamma=c_p/c_v$. \\
+  \var{cs0} [$1.$], rho0} [$1.$]
                & reference values of sound speed and density,
                  i.\,e.~values at height \var{zref}. \\
-  \var{ampllnrho},
-  \var{widthlnrho}
+  \var{ampllnrho} [$1.$],
+  \var{widthlnrho} [$0.1$]
                & amplitude and width for some types of initial densities. \\
-  \var{rho_left},
-  \var{rho_right}
+  \var{rho_left} [$1.$],
+  \var{rho_right} [$1.$]
                & needed for \code{initlnrho='shock-tube'}. \\
-  \var{cs2bot},
-  \var{cs2top} & sound speed at bottom and top. Needed for some types of
+  \var{cs2bot} [--],
+  \var{cs2top} [--]
+               & sound speed at bottom and top. Needed for some types of
                  stratification. \\ 
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
 \midrule
-  \var{zref}
+  \var{zref} [$0.$]
                & reference height where in the initial stratification
                  $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
+  \var{gravz} [$-1.$]
+               & vertical gravity component $g_z$.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
 \midrule
-  \var{initss}
+  \var{initss} [\code{'nothing'}]
                & initialization of entropy. Currently valid choices are
                  `nothing' (leaves the initialization done in the density
                  module unchanged),
@@ -1353,6 +1364,27 @@ Not all parameters are used for a given scenario.
 \bottomrule
 \end{longtable}
 
+\paragraph{The time step}
+The actual time step is [either set explicitly, or] given by
+\begin{equation}
+  \delta t
+  = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
+                    {U_{\rm max}} ,
+               c_{\delta t_v}
+               \frac{\delta x_{\rm min}^2}
+                    {D_{\rm max}}
+        \right) \; ,
+\end{equation}
+where
+$\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
+$U_{\rm max} \equiv \max\left(|\uv|
+                    + \sqrt{\cs^2{+}\vA^2}\right)$,
+$\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
+respectively;
+and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
+$\nu$ denotes kinematic viscosity,
+$\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
+$\eta$ the magnetic diffusivity.
 
 % ---------------------------------------------------------------------- %
 
@@ -1379,14 +1411,76 @@ Not all parameters are used for a given scenario.
 \end{itemize}
 
 
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Visualization}
+
+
+\subsubsection{IDL routines}
+\label{S-IDLroutines}
+
+The basic command sequence is:
+\begin{alltt}
+  \prompt{unix> } idl
+  \prompt{IDL> }  .run start
+  \prompt{IDL> }  .run r
+  \prompt{IDL> }  {\sf[specific commands]} \
+\end{alltt}
+You call \file{start.pro} once to initialize the fields and read in the
+startup parameters from the code.
+Each time you want to read in a new snapshot, you run \file{r.pro} (or
+\file{rall.pro}, see below),
+possibly after adjusting the IDL variable \var{file} to a specific snapshot
+file; by default, the file \file{var.dat} in the data directory will be
+read, which is overwritten with new data in regular intervals.
+
+If the data are scattered over different processors and you want to
+reassemble everything into one file, you use
+\begin{alltt}
+  \prompt{IDL> }  .r rall
+\end{alltt}
+instead of \cmd{.r run}.
+Here, \cmd{.r} is a shorthand for \cmd{.run}.
+The procedure \file{rall.pro} reads (and assembles) the data from all
+processors and correspondingly requires large amounts of memory for very
+large runs.
+If you want to look at just one processor, use \file{r.pro} instead.
+
+If you need the magnetic field or the current density, you can calculate
+them in IDL by saying
+\begin{alltt}
+  \prompt{IDL> }  bb=curl(aa)
+  \prompt{IDL> }  jj=curl2(aa)
+\end{alltt}
+
+By default one is reading always the latest time corresponding to the file
+\file{var.dat}; if you want to read any earlier snapshots, you say (for
+example)
+\begin{alltt}
+  \prompt{IDL> }  file='VAR2'
+  \prompt{IDL> }  .r rall
+  \prompt{IDL> }  print,t
+\end{alltt}
+and it will get the data for that snapshot from all processors.
+
+To discuss:
+\begin{itemize}
+\item availability of IDL (demo version; Pvwave; Ana)?
+\item setup (include \file{../idl} and \file{../../idl} (?) in \var{!path})
+\item how to get our IDL routines
+\end{itemize}
+
+
+
 % ====================================================================== %
 
 \section{The Equations}
 
 The equations solved by the MHD code are basically the standard
 compressible MHD equations. However, the modular structure allows
-some variations of the MHD equations, as well as to switch
-some of the equations off (nomagnetic, noentropy).
+some variations of the MHD equations, as well as switching
+some of the equations off (nomagnetic, noentropy, etc.).
 
 % ---------------------------------------------------------------------- %
 
@@ -1419,6 +1513,7 @@ the magnetic flux density, and $\nu$ is kinematic viscosity.
 Note that the viscous term used here is only correct if the dynamical
 viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
 
+For isothermal hydrodynamics, see \S\ref{entropy} below.
 
 % ---------------------------------------------------------------------- %
 \subsection{Induction equation}
@@ -1986,7 +2081,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.46 2002-07-12 09:06:29 dobler Exp $ $}
+$ $Id: manual.tex,v 1.47 2002-07-13 16:36:21 dobler Exp $ $}
 
 
 \end{document}
