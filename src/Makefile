@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.114 2002-10-30 05:44:37 brandenb Exp $
+### $Id: Makefile,v 1.115 2002-11-04 18:37:22 stringfellow Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -47,6 +47,13 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -64 -O3 -auto_use mpi_interface -mips4 #(ukaff|origin)
+#FFLAGS= -64 -O3 -mips4 -r12000 -flist #(green)
+#FFLAGS= -64 -O3 -mips4 -r12000 #(wrenstandard)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M #(wrencache)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wrenpacx)
+#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wrenpacx)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wren)
+#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wren)
 #OPTFLAGS= -64
 #F77=$(FC)
 CFLAGS=-O3 -64 -DFUNDERSC=1
