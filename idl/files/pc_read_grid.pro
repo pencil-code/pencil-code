@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.10 2004-06-03 21:07:47 mee Exp $
+; $Id: pc_read_grid.pro,v 1.11 2004-06-22 14:16:07 mee Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 21:07:47 $
-;  $Revision: 1.10 $
+;  $Date: 2004-06-22 14:16:07 $
+;  $Revision: 1.11 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -13,7 +13,7 @@ pro pc_read_grid,object=object, dim=dim, param=param, $
                  TRIMXYZ=TRIMXYZ, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
-  common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
@@ -49,11 +49,11 @@ if n_elements(param) eq 0 then  $
 
 ncpus=dim.nprocx*dim.nprocy*dim.nprocz
 
-; Set nx,ny,nz in common block for derivative routines
-nx=dim.nx
-ny=dim.ny
-nz=dim.nz
-lequidist=safe_get_tag(param,'lequidist')
+; Set mx,my,mz in common block for derivative routines
+mx=dim.mx
+my=dim.my
+mz=dim.mz
+lequidist=safe_get_tag(param,'lequidist',default=[1,1,1])
 
 ; and check pc_precision is set!
 pc_set_precision,dim=dim,QUIET=QUIET

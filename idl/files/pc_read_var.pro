@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.25 2004-06-08 13:11:13 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.26 2004-06-22 14:16:07 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-08 13:11:13 $
-;  $Revision: 1.25 $
+;  $Date: 2004-06-22 14:16:07 $
+;  $Revision: 1.26 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -18,7 +18,7 @@ pro pc_read_var, t=t,                                            $
             datadir=datadir,proc=proc,                           $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
-  common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
+  common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
   common cdat_nonequidist,xprim,yprim,zprim,xprim2,yprim2,zprim2,lequidist
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
