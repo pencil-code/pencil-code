@@ -94,7 +94,7 @@ rm -f STOP RELOAD fort.20
 # We still need to copy (at least one of) the var.dat files back, so
 # the background process copy-snapshots will know how large the snapshots
 # ought to be. Certainly far from elegant..
-copy-snapshots -v var.dat
+copy-snapshots -v var.dat >& copy-snapshots.log
 
 # On machines with local scratch directory, initialize automatic
 # background copying of snapshots back to the data directory.
@@ -102,7 +102,7 @@ copy-snapshots -v var.dat
 # and start top command on all procs
 if ($local_disc) then
   echo "Use local scratch disk"
-  copy-snapshots -v >& copy-snapshots.log &
+  copy-snapshots -v >>& copy-snapshots.log &
   remote-top >& remote-top.log &
 endif
 if ($local_binary) then
@@ -130,6 +130,7 @@ if ($local_disc) then
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
   echo "Killing processes $pids"
   kill $pids
+  sleep 5; kill -KILL $pids      # just to be sure
 endif
 
 # Shut down lam if we have started it

@@ -93,6 +93,7 @@ if ($local_disc) then
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`
   echo "Killing processes $pids"
   kill $pids
+  sleep 5; kill -KILL $pids      # just to be sure
 endif
 
 # Shut down lam if we have started it

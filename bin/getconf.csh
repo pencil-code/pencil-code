@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.77 2003-09-02 22:21:00 theine Exp $
+# $Id: getconf.csh,v 1.78 2003-09-03 15:48:05 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -220,7 +220,7 @@ else if ($hn == hwwsr8k) then
 else if ($hn == hwwsx5) then
   echo "NEC-SX5 in Stuttgart"
   set mpirun = mpiexec
-  set mpirunops = "-p multi -N $nnodes"
+  set mpirunops = ''
   set local_disc = 1
   set one_local_disc = 1        # (the default anyway)
   set local_binary = 0 

@@ -19,8 +19,14 @@ if ($#argv > 0) then
   endif
 endif
 
+if ($debug) then
+#  set verbose
+#  set echo
+endif
+
 if ($#argv > 0) then
   set varfile = $1
+  if ($debug) echo "varfile = <$varfile>"
 endif
 
 set pwd = `pwd`
@@ -28,17 +34,22 @@ set targetdir = $pwd/data
 set nodelist = (`echo $NODELIST | sed 's/:/ /'`) # unpack NODELIST
 
 if ($debug) then
-  echo "SCRATCH_DIR = $SCRATCH_DIR"
-  echo "targetdir = $targetdir"
-  echo "nodelist = $nodelist"
+  echo "SCRATCH_DIR = <$SCRATCH_DIR>"
+  echo "targetdir   = <$targetdir>"
+  echo "nodelist    = <$nodelist>"
 endif
 
 if ($?varfile) then		# explicit filename given
   foreach node ($nodelist)
-
     echo "copy-snapshots: working on $node.."
-    if ($debug) echo "node=$node; targetdir=$targetdir"
-    if ($debug) $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $targetdir/proc*/$varfile"
+    if ($debug) then
+      echo "node=$node"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/"
+      echo
+    endif
     # Copy all files you find (not efficient on dual-CPU systems, unless
     # we would delete files after copying..)
     # Extremely awkward due to quoting rules:
@@ -51,16 +62,20 @@ if ($?varfile) then		# explicit filename given
     set cmd7 = "$targetdir/"
     set cmd8 = '$f; done'
     set remcmd = "$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
-    if ($debug) echo "Now running <$remcmd>"
-    $SSH $node sh -x -c "'$remcmd'"
+    if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
+    $SSH $node sh -c "'$remcmd'"
+    printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile :\n"
+    $SSH $node "ls -ltd $targetdir/proc*/$varfile"
   end
 
 else
 
   # Get size of var.dat (must exist, since run.csh only ever runs after
   # start.csh). Quite some silly hack.
+  echo "Determining size of var.dat:"
   set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
   set size = $lsout[5]
+  echo "  $size"
 
   while (1)
     echo
@@ -88,5 +103,8 @@ else
   end
 
 endif
+
+if ($debug) echo "copy-snapshots: done"
+echo "------------------------------------------------------"
 
 # End of file copy-snapshots
