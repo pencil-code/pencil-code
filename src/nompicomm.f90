@@ -49,6 +49,12 @@ module Mpicomm
 !
       integer :: m,n,min_m1i_m2,max_m2i_m1
 !
+!  consistency check
+!
+      if (ncpus > 1) then
+        call stop_it("Inconsistency: MPICOMM=nompicomm, but ncpus >= 2")
+      endif
+!
 !  for single cpu machine, set processor to zero
 !
       lmpicomm = .false.
