@@ -99,6 +99,9 @@ if ($mpi) then
 
   # Determine number of CPUS
   set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
+  if(-e .hostfile)then
+    set ncpus = `grep "^[       ]*$hn" .hostfile | awk '{print 2+$2}'`
+  endif
   echo $ncpus CPUs
   set npops = "-np $ncpus"
 else # no MPI
