@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.65 2003-11-17 13:43:18 theine Exp $
+! $Id: interstellar.f90,v 1.66 2003-11-18 12:20:48 theine Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -18,7 +18,7 @@ module Interstellar
   real :: tau_cloud=2e-2, r_SNI=3.e+4, r_SNII=4.e+3
   integer, parameter :: ninterstellarsave=1
   real, dimension(ninterstellarsave) :: interstellarsave
-  real, parameter :: rho_crit=1,TT_crit=4000
+  real, parameter :: rho_crit=1.,TT_crit=4000.
   real, parameter :: frac_converted=0.02,frac_heavy=0.10,mass_SN=10.
   real, parameter :: rho_min=1.e-6
   
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.65 2003-11-17 13:43:18 theine Exp $")
+           "$Id: interstellar.f90,v 1.66 2003-11-18 12:20:48 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -239,10 +239,10 @@ module Interstellar
 !
       if(headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
-!  rho and TT factor (could perhaps better be calculated in entropy)
+!  rho factor (could perhaps better be calculated in entropy)
 !
-      rho=1/rho1
-      TT=1/TT1
+      rho=1./rho1
+      TT=1./TT1
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
 !
@@ -361,7 +361,7 @@ module Interstellar
     use Ionization
 ! 
     real, dimension(mx,my,mz,mvar+maux) :: f
-    real, dimension(nx) :: lnrho,rho,lnTT,TT,rho_cloud,ss,yH
+    real, dimension(nx) :: lnrho,rho,rho_cloud,ss,lnTT,TT,yH
 !    real :: lnrho,rho,rho_cloud,ss,TT
     real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII,dv
     real, dimension(1) :: franSN,fsum1,fsum1_tmp,fmpi1
@@ -384,15 +384,17 @@ module Interstellar
        mass_cloud=0.0
        do n=n1,n2
            do m=m1,m2
-             lnrho=f(l1:l2,m,n,ilnrho)
-             call eoscalc(f,yH=yH,lnTT=lnTT)
-             rho=exp(lnrho)
-             TT=exp(TT)
+             lnrho(:)=f(l1:l2,m,n,ilnrho)
+             rho(:)=exp(lnrho(:))
+             ss(:)=f(l1:l2,m,n,iss)
 
-             rho_cloud=0.0
-             where (rho >= rho_crit .and. TT <= TT_crit)   &
-                  rho_cloud=rho
-             mass_cloud=mass_cloud+sum(rho_cloud)
+             call eoscalc(f,yH=yH,lnTT=lnTT)
+             TT=exp(lnTT)
+
+             rho_cloud(:)=0.0
+             where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
+                  rho_cloud(:)=rho(:)
+             mass_cloud=mass_cloud+sum(rho_cloud(:))
           enddo
        enddo
        fsum1_tmp=(/ mass_cloud /)
@@ -554,7 +556,7 @@ module Interstellar
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
     real :: mass_cloud,cum_mass,cum_prob_onproc
-    real :: lnrho,rho,lnTT,TT,ss,yH
+    real :: lnrho,rho,ss,lnTT,TT,yH
     integer :: icpu,l
 !
 !
@@ -605,8 +607,9 @@ find_SN: do n=n1,n2
         do m=m1,m2
           do l=l1,l2
             lnrho=f(l,m,n,ilnrho)
-            call eoscalc(lnrho,ss,yH=yH,lnTT=lnTT)
             rho=exp(lnrho)
+            ss=f(l,m,n,iss)
+            call eoscalc(lnrho,ss,yH=yH,lnTT=lnTT)
             TT=exp(lnTT)
             if (rho >= rho_crit .and. TT <= TT_crit) then
               cum_mass=cum_mass+rho
@@ -700,13 +703,13 @@ find_SN: do n=n1,n2
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
-      real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new
-      real :: ss_SN_new,yH_SN_new,lnTT_SN_new,TT_SN_new,dv
+      real :: EE_SN=0.,EE2_SN=0.
+      real :: rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,lnTT_SN_new,TT_SN_new,dv
       
       real, dimension(nx) :: deltarho, deltaEE
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
-      real, dimension(nx) ::  lnrho, ss, yH, lnTT, rho_old, ee_old
+      real, dimension(nx) ::  lnrho, ss, yH, lnTT, TT, rho_old, ee_old
 
       logical :: lmove_mass=.false.
       integer :: idim
@@ -733,14 +736,15 @@ find_SN: do n=n1,n2
       !  Now deal with (if nec.) mass relocation
       !
       call eoscalc(lnrho_SN,ss_SN,yH=yH_SN,lnTT=lnTT_SN,ee=ee_SN)
+      TT_SN=exp(lnTT_SN)
+
       call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new, &
                 lnTT_SN_new,yH_SN_new)
       TT_SN_new=exp(lnTT_SN_new)
-      TT_SN=exp(lnTT_SN)
 
       if(lroot.and.ip<=14) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
-                                TT_SN,TT_SN_new,TT_SN_min,ee_SN
+                                TT_SN,TT_SN_new,TT_SN_min, ee_SN
 
       if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
@@ -753,7 +757,8 @@ find_SN: do n=n1,n2
          call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
-         call eoscalc(lnrho_SN_new,ss_SN_new,ee=ee_SN)
+         call eoscalc(lnrho_SN_new,ss_SN_new,yH=yH_SN_new,lnTT=lnTT_SN_new,ee=ee_SN)
+         TT_SN_new=exp(lnTT_SN_new)
          call perturb_energy(lnrho_SN_new, &
                  (ee_SN*rho_SN+c_SN)/rho_SN_new,ss_SN_new,lnTT_SN_new,yH_SN_new)
          TT_SN_new=exp(lnTT_SN_new)
@@ -785,7 +790,9 @@ find_SN: do n=n1,n2
             ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
+            ss=f(l1:l2,m,n,iss)
             call eoscalc(f,yH=yH,lnTT=lnTT,ee=ee_old)
+            TT=exp(lnTT)
 
             ! Apply perturbations
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
@@ -793,14 +800,16 @@ find_SN: do n=n1,n2
               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
-              lnrho=alog(amax1(rho_old+deltarho,rho_min))
+              lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
             endif
   
             call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,lnTT,yH)
+            TT=exp(lnTT)
 
             ! Save changes 
             f(l1:l2,m,n,ilnrho)=lnrho
             f(l1:l2,m,n,iss)=ss
+            lnTT=log(TT)
             if (ilnTT.ne.0) f(l1:l2,m,n,ilnTT)=lnTT
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
 !
