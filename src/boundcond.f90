@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.28 2002-08-14 15:22:45 nilshau Exp $
+! $Id: boundcond.f90,v 1.29 2002-08-14 20:23:26 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -412,26 +412,26 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
-      real :: ampl_osc,frek
+      real :: ampl_osc,frec
       integer :: i,pnts=10,j
 !
       if (j==ilnrho) then
          ampl_osc=ampl_osc_lnrho
-         frek=frek_lnrho
+         frec=frec_lnrho
       elseif (j==iux) then
          ampl_osc=ampl_osc_ux
-         frek=frek_ux
+         frec=frec_ux
       else
          if(lroot) print*,"invalid argument for 'bc_osc_x'"
       endif
 !         
       if (topbot=='bot') then
          do i=1,pnts
-            f(i,:,:,j)=ampl_osc*sin(t*frek)*cos(2*pi*x(i)*mx/(Lx*pnts))
+            f(i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(i)*mx/(Lx*pnts))
          enddo
       else
          do i=1,pnts
-            f(mx+1-i,:,:,j)=ampl_osc*sin(t*frek)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
+            f(mx+1-i,:,:,j)=ampl_osc*sin(t*frec)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
          enddo
       endif
       end subroutine  bc_osc_x

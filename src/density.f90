@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.44 2002-08-14 15:22:45 nilshau Exp $
+! $Id: density.f90,v 1.45 2002-08-14 20:23:26 nilshau Exp $
 
 module Density
 
@@ -19,7 +19,7 @@ module Density
   real :: eps_planet=.5
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
-  real :: frek_lnrho=1,ampl_osc_lnrho=1e-3
+  real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
   integer:: isothtop=0
   character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
 
@@ -31,7 +31,7 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho
 
   namelist /density_run_pars/ &
-       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frek_lnrho,ampl_osc_lnrho
+       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho
 
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_ekin=0,i_rhom=0
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.44 2002-08-14 15:22:45 nilshau Exp $")
+           "$Id: density.f90,v 1.45 2002-08-14 20:23:26 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
