@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.60 2003-10-21 14:34:30 dobler Exp $
+! $Id: boundcond.f90,v 1.61 2003-11-21 21:05:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -838,9 +838,9 @@ module Boundcond
 
       case('bot')               ! bottom boundary
         f(:,:,n1  ,j)= 0.       ! set bdry value=0 (indep of initcond)
-        f(:,:,n1-1,j)=0.2   *(                -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
-        f(:,:,n1-2,j)=0.2   *( 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
-        f(:,:,n1-3,j)=1./35.*(33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
+        f(:,:,n1-1,j)=0.2   *(                 -  4*f(:,:,n1+2,j)- 3*f(:,:,n1+3,j)+ 3*f(:,:,n1p4,j))
+        f(:,:,n1-2,j)=0.2   *(- 2*f(:,:,n1+1,j)-  9*f(:,:,n1+2,j)- 6*f(:,:,n1+3,j)+ 7*f(:,:,n1p4,j))
+        f(:,:,n1-3,j)=1./35.*(-33*f(:,:,n1+1,j)-108*f(:,:,n1+2,j)-68*f(:,:,n1+3,j)+87*f(:,:,n1p4,j))
 
       case('top')               ! top boundary
         f(:,:,n2  ,j)= 0.       ! set bdry value=0 (indep of initcond)
