@@ -27,22 +27,14 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
-# Set up PATH for people who don't include $PENCIL_HOME/bin by default
-if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
+# ---------------------------------------------------------------------- #
 
-# Prevent code from running twice (and removing files by accident)
-if (-e "LOCK") then
-  echo ""
-  echo "start_run.csh: found LOCK file"
-  echo "This may indicate that the code is currently running in this directory"
-  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
-  echo "rm LOCK"
-  exit
-endif
-if (! -e "NEVERLOCK") touch LOCK
-
+# Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
+
+# Prevent code from running twice (and removing files by accident)
+if (! -e "NEVERLOCK") touch LOCK
 
 #
 #  If we don't have a data subdirectory: stop here (it is too easy to
@@ -76,21 +68,12 @@ foreach dir ($subdirs)
       end
     #endif
   endif
-  # Create directories on local scratch disk if necessary
-  #if ($local_disc) then
-  #  if (! -e $localdir) then
-  #    mkdir $dir
-  #  else
-  #    # Clean up
-  #    rm -f $localdir/VAR* $localdir/var.dat >& /dev/null
-  #  endif
-  #endif
 end
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
 # If local disk is used, copy executable to $SCRATCH_DIR of master node
-if ($local_disc) then
+if ($local_binary) then
   cp src/start.x $SCRATCH_DIR
   remote-top >& remote-top.log &
 endif
@@ -105,26 +88,28 @@ date
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
 
-# On Horseshoe cluster, initialize automatic copying
-# of snapshots back to the data directory
-# Also, copy executable to $SCRATCH_DIR of master node
+# On machines with local scratch directory, initialize automatic
+# background copying of snapshots back to the data directory.
+# Also, if necessary copy executable to $SCRATCH_DIR of master node
 # and start top command on all procs
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >& copy-snapshots.log &
-  echo "ls before copying src/run.x to $SCRATCH_DIR"
+  remote-top >& remote-top.log &
+endif
+if ($local_binary) then
+  echo "ls src/run.x $SCRATCH_DIR before copying:"
   ls -lt src/run.x $SCRATCH_DIR
   cp src/run.x $SCRATCH_DIR
-  echo "ls after copying src/run.x to $SCRATCH_DIR"
+  echo "ls src/run.x $SCRATCH_DIR after copying:"
   ls -lt src/run.x $SCRATCH_DIR
-  remote-top >& remote-top.log &
 endif
 
 # Run run.x
 date
-echo "$mpirun $mpirunops $npops $run_x"
-echo $mpirun $mpirunops $npops $run_x >! run_command.log
-time $mpirun $mpirunops $npops $run_x
+echo "$mpirun $mpirunops $npops $run_x $x_ops"
+echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
+time $mpirun $mpirunops $npops $run_x $x_ops
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory

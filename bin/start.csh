@@ -26,19 +26,9 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
-# Set up PATH for people who don't include $PENCIL_HOME/bin by default
-if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
+# ---------------------------------------------------------------------- #
 
-# Prevent code from running twice (and removing files by accident)
-if (-e "LOCK") then
-  echo ""
-  echo "start.csh: found LOCK file"
-  echo "This may indicate that the code is currently running in this directory"
-  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
-  echo "rm LOCK"
-  exit
-endif
-
+# Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
@@ -58,9 +48,6 @@ if (! -d "$datadir") then
 endif
 
 # Create list of subdirectories
-set subdirs = ("allprocs" "averages" "idl")
-set procdirs = \
-    `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"proc";' 'i; }' | bc`
 foreach dir ($procdirs $subdirs)
   # Make sure a sufficient number of subdirectories exist
   set ddir = "$datadir/$dir"
@@ -78,14 +65,6 @@ foreach dir ($procdirs $subdirs)
     #endif
   endif
 end
-
-# Create directories on local scratch disk if necessary
-if ($local_disc) then
-  echo "Creating directory structure on scratch disc(s)"
-  foreach host ($NODELIST)
-    $SSH $host "cd $SCRATCH_DIR; mkdir $procdirs $subdirs" 
-  end
-endif
 
 # Clean up previous runs
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) \

@@ -1,4 +1,4 @@
-#!/bin/csh -v -x
+#!/bin/csh
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -33,18 +33,26 @@ if ($debug) then
 endif
 
 if ($?varfile) then		# explicit filename given
-  set i=0
   foreach node ($nodelist)
 
-    echo 'work on node i='$i
+    echo "copy-snapshots: working on $node.."
     if ($debug) echo "node=$node; targetdir=$targetdir"
-    $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $targetdir/proc$i/"
+    if ($debug) $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $targetdir/proc*/$varfile"
     # Copy all files you find (not efficient on dual-CPU systems, unless
-    # we deleted files after copying..)
-    set dollar = '$ '		# avoid quoting problems..
-    $SSH $node sh -c "for f in `ls $SCRATCH_DIR/proc*/$varfile | sed s=^.*/proc=proc=`; do cp ${dollar}f $targetdir/${dollar}f; done"
-    set i = `expr $i + 1`
+    # we would delete files after copying..)
+    # Extremely awkward due to quoting rules:
+    set cmd1 = "cd $SCRATCH_DIR; "
+    set cmd2 = 'for f in `'
+    set cmd3 = "ls proc*/$varfile"
+    set cmd4 = '`; do cp '
+    set cmd5 = "$SCRATCH_DIR/"
+    set cmd6 = '$f '
+    set cmd7 = "$targetdir/"
+    set cmd8 = '$f; done'
+    set remcmd = "$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
+    $SSH $node sh -x -c "'$remcmd'"
   end
+
 else
 
   # Get size of var.dat (must exist, since run.csh only ever runs after

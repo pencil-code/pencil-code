@@ -26,51 +26,54 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
-# Set up PATH for people who don't include $PENCIL_HOME/bin by default
-if ($?PENCIL_HOME) setenv PATH ${PATH}:${PENCIL_HOME}/bin
+# ---------------------------------------------------------------------- #
 
-# Prevent code from running twice (and removing files by accident)
-if (-e "LOCK") then
-  echo ""
-  echo "run.csh: found LOCK file"
-  echo "This may indicate that the code is currently running in this directory"
-  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
-  echo "rm LOCK"
-  exit
-endif
-if (! -e "NEVERLOCK") touch LOCK
-
+# Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
+# Prevent code from running twice (and removing files by accident)
+if (! -e "NEVERLOCK") touch LOCK
+
 #
-#  On Horseshoe, distribute var.dat from the server to the various nodes
+#  If necessary, distribute var.dat from the server to the various nodes
 #
 if ($local_disc) then
-  set i=0
-  foreach node ($NODELIST)
-    $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/
-    set i=`expr $i + 1`
-    echo 'i=' $i
-  end
+  if ($one_local_disc) then	# one common local disc
+    foreach node ($nodelist)
+      foreach d (`cd $datadir; ls -d proc* allprocs`)
+	$SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+      end
+    end
+  else # one local disc per MPI process (Horseshoe, etc);
+       # still doesn't cover Copson
+    set i=0
+    foreach node ($nodelist)
+      echo "i = $i"
+      $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/
+      set i=`expr $i + 1`
+    end
+  endif
 endif
 
 # Clean up control and data files
 rm -f STOP RELOAD fort.20
 
-# On Horseshoe cluster, initialize automatic copying
-# of snapshots back to the data directory
-# Also, copy executable to $SCRATCH_DIR of master node
+# On machines with local scratch directory, initialize automatic
+# background copying of snapshots back to the data directory.
+# Also, if necessary copy executable to $SCRATCH_DIR of master node
 # and start top command on all procs
 if ($local_disc) then
   echo "Use local scratch disk"
   copy-snapshots -v >& copy-snapshots.log &
+  remote-top >& remote-top.log &
+endif
+if ($local_binary) then
   echo "ls src/run.x $SCRATCH_DIR before copying:"
   ls -lt src/run.x $SCRATCH_DIR
   cp src/run.x $SCRATCH_DIR
   echo "ls src/run.x $SCRATCH_DIR after copying:"
   ls -lt src/run.x $SCRATCH_DIR
-  remote-top >& remote-top.log &
 endif
 
 # Run run.x
