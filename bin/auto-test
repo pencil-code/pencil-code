@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.25 2003-01-25 11:34:24 dobler Exp $
+# CVS: $Id: auto-test,v 1.26 2003-01-25 13:18:26 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -55,6 +55,7 @@ my $noheader = "Couldn't find header line";
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
 my (%opts);			# variables written by GetOptions
+my $help = 0;
 (my $cmdname = $0) =~ s{.*/}{};
 
 my $usage =
@@ -75,6 +76,9 @@ Options:
   -s,  --short          \tPrint short directory names only";
 
 ## Process command line options
+eval {
+    Getopt::Long::config("bundling"); # makes single-letter options case-sensitive
+};
 GetOptions(\%opts,
 	   qw( -h   --help
 	       -v   --version
@@ -88,7 +92,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.25 2003-01-25 11:34:24 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.26 2003-01-25 13:18:26 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0 };
@@ -113,6 +117,10 @@ if ($debug) {
 $t_start &&= $t_comp;
 $t_run &&= $t_start;
 $t_res &&= $t_run;
+
+# Expand `.' and `./subpath' in remaining arguments
+my $cwd = `pwd`; chomp($cwd);
+@ARGV = map { s{^\.}{$cwd}; $_ } @ARGV; # Make `.' and similar work
 
 # Make sure we are in the top directory and have the right PATH
 die "Need to set environment variable PENCIL_HOME\n" 
