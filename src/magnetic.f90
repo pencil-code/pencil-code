@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.73 2002-07-19 12:41:35 dobler Exp $
+! $Id: magnetic.f90,v 1.74 2002-07-20 18:43:59 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -19,7 +19,8 @@ module Magnetic
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5,z0aa=0.
-  real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
+!  real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
+  real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa=0.,ky_aa=0.,kz_aa=0.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
@@ -38,7 +39,7 @@ module Magnetic
   namelist /magnetic_run_pars/ &
        eta,B_ext, &
        height_eta,eta_out, &
-       kinflow,kx,ky,kz,ABC_A,ABC_B,ABC_C
+       kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
@@ -81,7 +82,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.73 2002-07-19 12:41:35 dobler Exp $")
+           "$Id: magnetic.f90,v 1.74 2002-07-20 18:43:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,9 +115,9 @@ module Magnetic
 
       case('zero', '0'); f(:,:,:,iax:iaz) = 0.
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
-      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,kx=1.)
-      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,ky=1.)
-      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,kz=1.)
+      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=1.)
+      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=1.)
+      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=1.)
       case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz, &
                                             radius,epsilonaa)
       case('hor-fluxlayer', '22'); call hlayer(amplaa,f,iaa,xx,yy,zz, &
@@ -145,9 +146,9 @@ module Magnetic
 !  superimpose something else
 !
       select case(initaa2)
-        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,kx=kx_aa)
-        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,ky=ky_aa)
-        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,kz=kz_aa)
+        case('Beltrami-x'); call beltrami(amplaa2,f,iaa,KX=kx_aa)
+        case('Beltrami-y'); call beltrami(amplaa2,f,iaa,KY=ky_aa)
+        case('Beltrami-z'); call beltrami(amplaa2,f,iaa,KZ=kz_aa)
       endselect
 !
 !  allow for pressure equilibrium (for isothermal tube)

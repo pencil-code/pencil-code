@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.7 2002-07-15 14:04:36 nilshau Exp $
+! $Id: nohydro.f90,v 1.8 2002-07-20 18:43:59 dobler Exp $
 
 module Hydro
 
@@ -42,7 +42,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.7 2002-07-15 14:04:36 nilshau Exp $")
+           "$Id: nohydro.f90,v 1.8 2002-07-20 18:43:59 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -81,9 +81,9 @@ module Hydro
 !
       if (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
-        uu(:,1)=ABC_A*sin(kz*z(n))    +ABC_C*cos(ky*y(m))
-        uu(:,2)=ABC_B*sin(kx*x(l1:l2))+ABC_A*cos(kz*z(n))
-        uu(:,3)=ABC_C*sin(ky*y(m))    +ABC_B*cos(kx*x(l1:l2))
+        uu(:,1)=ABC_A*sin(kz_aa*z(n))    +ABC_C*cos(ky_aa*y(m))
+        uu(:,2)=ABC_B*sin(kx_aa*x(l1:l2))+ABC_A*cos(kz_aa*z(n))
+        uu(:,3)=ABC_C*sin(ky_aa*y(m))    +ABC_B*cos(kx_aa*x(l1:l2))
       else
         if (headtt) print*,'uu=0'
         uu=0.

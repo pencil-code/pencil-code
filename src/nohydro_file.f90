@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.4 2002-07-08 19:28:14 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.5 2002-07-20 18:43:59 dobler Exp $
 
 module Hydro
 
@@ -40,8 +40,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-07-08 19:28:14 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-07-20 18:43:59 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -92,9 +92,9 @@ module Hydro
         endif
       elseif (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
-        uu(:,1)=ABC_A*sin(kz*z(n))    +ABC_C*cos(ky*y(m))
-        uu(:,2)=ABC_B*sin(kx*x(l1:l2))+ABC_A*cos(kz*z(n))
-        uu(:,3)=ABC_C*sin(ky*y(m))    +ABC_B*cos(kx*x(l1:l2))
+        uu(:,1)=ABC_A*sin(kz_aa*z(n))    +ABC_C*cos(ky_aa*y(m))
+        uu(:,2)=ABC_B*sin(kx_aa*x(l1:l2))+ABC_A*cos(kz_aa*z(n))
+        uu(:,3)=ABC_C*sin(ky_aa*y(m))    +ABC_B*cos(kx_aa*x(l1:l2))
       else
         if (headtt) print*,'uu=0'
         uu=0.
