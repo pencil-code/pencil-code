@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   11-Nov-2001
-;;;  $Id: pvert.pro,v 1.15 2002-10-09 19:14:01 dobler Exp $
+;;;  $Id: pvert.pro,v 1.16 2002-10-16 14:41:01 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Plot vertical profiles of uz, lnrho and entropy.
@@ -61,24 +61,24 @@ for ivar = 0,3 do begin
     0: begin
       var = lnrho
       title = '!6ln '+s.varrho
-      xr = minmax(var)
+      if (ny eq 1) then xr = minmax(var[*,3,*]) else xr = minmax(var)
       if (n_elements(lnrhoinit) gt 0) then xr = minmax([xr,lnrhoinit])
     end
     1: begin
       var = uu[*,*,*,2]
       title = '!8u!Dz!N!X'
-      xr = minmax(var)
+      if (ny eq 1) then xr = minmax(var[*,3,*]) else xr = minmax(var)
     end
     2: begin
       var = ss
       title = '!6Entropy !8s!X'
-      xr = minmax(var)
+      if (ny eq 1) then xr = minmax(var[*,3,*]) else xr = minmax(var)
       if (n_elements(ssinit) gt 0) then xr = minmax([xr,ssinit])
     end
     3: begin
       var = cs0^2/gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       title = '!6Temperature !8T!X'
-      xr = minmax(var)
+      if (ny eq 1) then xr = minmax(var[*,3,*]) else xr = minmax(var)
       if (n_elements(Tinit) gt 0) then xr = minmax([xr,Tinit])
     end
   endcase
