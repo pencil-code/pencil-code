@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.60 2004-03-10 09:48:50 nilshau Exp $
+! $Id: forcing.f90,v 1.61 2004-03-10 09:49:45 nilshau Exp $
 
 module Forcing
 
@@ -58,7 +58,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.60 2004-03-10 09:48:50 nilshau Exp $")
+           "$Id: forcing.f90,v 1.61 2004-03-10 09:49:45 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -326,10 +326,11 @@ module Forcing
       k=sqrt(k2)
 !
 ! Find e-vector
-! Keeping old method (not isotropic) for now.
+!
 if (old_forcing_evector) then
   !
-  !  pick e1 if kk not parallel to ee1. ee2 else.
+  ! Keeping old method (not isotropic) for now.
+  ! Pick e1 if kk not parallel to ee1. ee2 else.
   !
   if((ky.eq.0).and.(kz.eq.0)) then
     ex=0; ey=1; ez=0
@@ -357,7 +358,6 @@ else
     if (kde**2 .eq. k2) same=.true.
   enddo
 endif
-print*,frane(1),ex,ey,ez
 !
 !  k.e
 !
