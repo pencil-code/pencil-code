@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.11 2002-10-22 13:00:19 brandenb Exp $
+;  $Id: extra.pro,v 1.12 2002-11-26 15:51:53 mee Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -45,8 +45,10 @@ end
 ;  calculate vertical averages
 ;
 if (ient ne 0) then begin
-  cs2m=haver(cs2) & csm=sqrt(cs2m)
-  rhom=haver(rho)
+  if (ny gt 1) then begin
+    cs2m=haver(cs2) & csm=sqrt(cs2m)
+    rhom=haver(rho)
+  end
 end
 ;
 END
