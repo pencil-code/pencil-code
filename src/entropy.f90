@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.28 $", &
-           "$Date: 2002-02-28 20:31:06 $")
+           "$Revision: 1.29 $", &
+           "$Date: 2002-03-01 11:31:25 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,8 +135,10 @@ use IO
       real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
       real, dimension (nx) :: ss,lnrho,TT1,lambda
       real, dimension (nx) :: heat,prof
-      real :: ssref
+      real :: ssref,z_prev=-1.23e20
       integer :: i,j
+!
+      save :: z_prev,lambda,glhc
 !
       intent(in) :: f,uu,uij,divu,rho1,glnrho
       intent(out) :: df,gpprho,cs2,chi
@@ -194,11 +196,17 @@ use IO
 !
 !  Heat conduction / entropy diffusion
 !
-      call heatcond(x_mn,y_mn,z_mn,lambda)
+      if (lgravz) then
+        ! For vertical geometry, we only need to calculate this for each
+        ! new value of z -> speedup by about 8% at 32x32x64
+        if (z_mn(1) /= z_prev) then
+          call heatcond(x_mn,y_mn,z_mn,lambda)
+          call gradloghcond(x_mn,y_mn,z_mn, glhc)
+        endif
+      endif
       chi = rho1*lambda
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
-      call gradloghcond(x_mn,y_mn,z_mn, glhc)
-      glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
+       glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
