@@ -2,9 +2,9 @@
 # -*-perl-*-
 #
 # Name:   tsnap
-# Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   2-Oct-1999
-# Version: 0.5
+# Version: 0.52
 # Description:
 #   Extract time information from a snapshot file. Assumes the following to be
 #   written to the file:
@@ -23,30 +23,37 @@ else
 fi
 
 exec $perl -x -S $0 "$@"	# -x: start from the following line
-# Line numbers in perl warnings are counted from the following line as
-# line zero.
 #======================================================================#
 #! /good_path/perl -w 
+# line 29
 
 require 5;
 use strict;
 use Getopt::Long;
 
 my (%opts);	# Variables written by GetOptions
-my ($usage,$file,$N,$N_swap,$endi);
+my ($usage,$real,$fmt,$file,$N,$N_swap,$endi);
 my $nn=0; my $nn1=0; my $t=0;	# Initialise these for Antares
 
 # Process command line:
-$usage = "Usage:  $0  [-s|--sort]  <file1> [<file2> ..]\n";
+$usage = "Usage:  $0  [-s|--sort] [-d|--double] <file1> [<file2> ..]\n";
 die $usage unless (@ARGV > 0);
 
 # Initialise
 $opts{'help'} = '';
 $opts{'sort'} = '';
-GetOptions(\%opts, "--help", "--sort");
+$opts{'double'} = '';
+GetOptions(\%opts, "--help", "--sort", "--double");
 
 if ($opts{'help'}) { die $usage; }
 if ($opts{'sort'}) { @ARGV = sort by_first_num(@ARGV);}
+if ($opts{'double'}) {
+    $real = 8;
+    $fmt = "d";
+} else {
+    $real = 4;
+    $fmt = "f";
+}
 
 # Process files
 foreach $file (@ARGV) {
@@ -63,13 +70,13 @@ foreach $file (@ARGV) {
     # Skip $N bytes and check record end for consistency
     if (!defined($N) || $N == 0) { print "$file:\t  (corrupt)\n"; next; }
     if (seek(INPUT,$N+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
-	&& seek(INPUT,4,1) && read(INPUT, $t, 4)) {
+	&& seek(INPUT,4,1) && read(INPUT, $t, $real)) {
 	$endi=0;
-	$t = unpack("f",$t);
+	$t = unpack($fmt,$t);
     } elsif (seek(INPUT,$N_swap+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
-	     && seek(INPUT,4,1) && read(INPUT, $t, 4)) {
+	     && seek(INPUT,4,1) && read(INPUT, $t, $real)) {
 	$endi=1;
-	$t = unpack("f",reverse($t));
+	$t = unpack($fmt,reverse($t));
     } else {
 	print "$file:\t  (Corrupt)\n";
 	next;
