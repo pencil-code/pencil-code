@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.244 2003-10-10 01:23:58 mee Exp $
+### $Id: Makefile,v 1.245 2003-10-10 17:06:54 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -134,7 +134,7 @@ PENCIL_MKFILE=makefile
 #FFLAGS=-O3 #(nw46|ns0|nl6|nl11|wormhole|sandin)
 #FFLAGS=-g #(cosmo|nw17)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
-#FC=ifc #(sandin)  
+#FC=ifc #(sandin|davey[1-2])  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11|wormhole)  
 #FC=mpif77 -i_dynamic #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11|wormhole)
