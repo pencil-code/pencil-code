@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.9 2002-08-21 03:38:23 brandenb Exp $
+;  $Id: extra.pro,v 1.10 2002-09-19 07:36:53 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -26,7 +26,7 @@ if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then llnrho=lnrho(l1:l2,m1:m2,n1:n2)
 if (ilnrho ne 0) then rho=exp(llnrho)
 if (ient ne 0) then sss=ss(l1:l2,m1:m2,n1:n2)
-if (ient ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
+if (ient ne 0) then cs2=cs20*exp(gamma1*llnrho+gamma*sss)
 if (ient ne 0) then ppp=rho*cs2/gamma
 ;
 if (iuu ne 0) then for j=0,2 do print,sqrt(mean(uu(*,*,*,j)^2))

@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.35 2002-08-18 13:16:11 brandenb Exp $
+; $Id: r.pro,v 1.36 2002-09-19 07:36:53 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.35 2002-08-18 13:16:11 brandenb Exp $
+;;; $Id: r.pro,v 1.36 2002-09-19 07:36:53 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -43,7 +43,6 @@ if (cpar gt 0) then begin
   par2=param2()
   if (lhydro) then begin
     cs0=par2.cs0 & nu=par2.nu
-;  cs0=1. & nu=0.
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
