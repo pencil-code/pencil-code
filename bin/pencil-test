@@ -17,15 +17,15 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-01-03 10:25:23 $
-# $Revision: 1.5 $
+# $Date: 2003-01-25 11:34:24 $
+# $Revision: 1.6 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
 # Usage:
-#   pencil-test [-html] [-clean] [-update] host1 [host2 [host3 ..]]
+#   pencil-test [-H|--html] [-c|--clean] [-u|--update] host1 [host2 [host3 ..]]
 # Crontab entry:
-#  05 01 * * *     $HOME/bin/pencil-test -html -update HOST > $HOME/public_html/pencil-code/tests/HOST.html
+#  05 01 * * *     $HOME/bin/pencil-test --html --update HOST > $HOME/public_html/pencil-code/tests/HOST.html
 
 use strict;
 use Getopt::Long;
@@ -37,13 +37,16 @@ GetOptions(\%opts,
 	   qw( -H --html
 	       -c --clean
 	       -u --update
+                  --debug
 	                   ));
+my $debug  = (            $opts{debug}  || 0);
 my $html   = ($opts{H} || $opts{html}   || 0);
 my $clean  = ($opts{c} || $opts{clean}  || 0);
 my $update = ($opts{u} || $opts{update} || 0);
 
 my $usage = "Usage:
-  pencil-test [-html] [-clean] [-update] host1 [host2 [host3 ..]]\n";
+  pencil-test [-H|--html] [-c|--clean] [-u|--update] host1 [host2 [host3 ..]]
+";
 die $usage if (! @ARGV);
 
 ## Print header
@@ -78,9 +81,10 @@ foreach my $host (@ARGV) {
     my $remcmd = '\'cd $PENCIL_HOME';
     if ($update) { $remcmd .= "; cvs update >& /dev/null"};
     $remcmd .= "; ./bin/auto-test -s";
-    if ($clean) { $remcmd .= " -c"};
+    if ($clean) { $remcmd .= " --clean"};
     push @cmd, $remcmd;
 #    system("@cmd |");
+    if ($debug) { print STDERR "open(POUT, \"@cmd' |\"\n" };
     open(POUT, "@cmd' |");
 #    print "<",join("> <",@cmd,">\n");
 #    print "<@cmd'>\n");
