@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.215 2003-10-20 17:21:46 theine Exp $
+! $Id: entropy.f90,v 1.216 2003-10-21 11:16:50 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -102,7 +102,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.215 2003-10-20 17:21:46 theine Exp $")
+           "$Id: entropy.f90,v 1.216 2003-10-21 11:16:50 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -545,17 +545,17 @@ module Entropy
 !
 !  20-oct-03/dave -- coded
 !
-      use Density, only: gamma1,mpoly
+      use Density, only: mpoly
       use Gravity, only: g0
       use Ionization, only: ionput,get_soundspeed
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension (nx) :: Temp
+      real, dimension (nx) :: Temp,yH
       real :: beta1
 !     real :: ss_ext,ss_int
-!      integer :: ijk
 !
       beta1 = g0/(mpoly+1)
+      call get_soundspeed(T0,cs20)
 
       if (initss=='geo-kws') then
 !       temperatures at shell boundaries
@@ -582,7 +582,7 @@ module Entropy
           where (r_mn >= r_ext) Temp = T_ext
           where (r_mn < r_ext .AND. r_mn > r_int) Temp = 1+beta1*(1/r_mn-1)
           where (r_mn <= r_int) Temp = T_int
-          call ionput(f,Temp,Temp)
+          call ionput(f,yH,Temp)
         enddo 
       endif
       
