@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.85 2003-10-08 11:43:06 theine Exp $ 
+! $Id: initcond.f90,v 1.86 2003-10-13 08:35:27 ajohan Exp $ 
 
 module Initcond 
  
@@ -572,16 +572,15 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  26-Jul-03/anders: Revived from June 1 version
 !
-      use Mpicomm, only: mpireduce_sum, mpibcast_real
+      use Mpicomm, only: mpireduce_sum, mpibcast_real_scl
       
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi
       real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius,a_ell,b_ell,c_ell
       real :: gamma,cs20,gamma1,eps2,radius2,width
-      real :: lnrhosum_box,lnrhosum_thisbox,rho0
+      real :: lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
-      integer :: k
 !
 !  calculate sigma
 !
@@ -700,14 +699,14 @@ module Initcond
 !
 !   jun-03/anders: coded (adapted from old 'planet', now 'planet_hc')
 !
-    use Sub
+      use Mpicomm, only: mpireduce_sum, mpibcast_real_scl
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
       real :: gamma1,ztop,cs20,hh0
-      real :: lnrhosum_box,lnrhosum_thisbox,rho0
+      real :: lnrhosum_thisbox,rho0
       real, dimension(1) :: lnrhosum_thisbox_tmp,lnrhosum_wholebox
 !
 !  calculate sigma
