@@ -40,6 +40,9 @@ date
 echo "ls -lt /scratch"
 ls -lt /scratch
 
+# initilize automatic copying of var.dat back
+copy-snapshots -v var.dat
+
 echo "done, will now killall copy-snapshots"
 killall copy-snapshots
 

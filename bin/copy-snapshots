@@ -15,7 +15,12 @@ set debug = 0
 if ($#argv > 0) then
   if (($1 == "-v") || ($1 == "--verbose")) then
     set debug = 1
+    shift
   endif
+endif
+
+if ($#argv > 0) then
+  set varfile = $1
 endif
 
 set srcdir = /scratch
@@ -28,35 +33,46 @@ if ($debug) then
   echo "nodelist = $nodelist"
 endif
 
-# Get size of var.dat (must exist, since run.csh only ever runs after
-# start.csh). Quite some silly hack.
-set lsout = (`ls -l "$srcdir/var.dat"`)
-set size = $lsout[5]
-
-while (1)
+if ($?varfile) then
   set i=0
   foreach node ($nodelist)
-    if ($debug) echo "node=$node"
-    echo '$targetdir' $targetdir
-    foreach file (`rsh $node "cd $srcdir; ls VAR[0-9]* | sort -nk1.4"`)
-      set lsout = (`rsh $node ls -l "$srcdir/$file"`)
-      set VARsize = $lsout[5]
-      if ($VARsize >= $size) then
-	# if file is ready (-Z is tcsh-specific), copy it and delete original 
-	if ($debug) echo "Copying $srcdir/$file to $targetdir/proc$i"
-	rsh $node "cp $srcdir/$file $targetdir/proc$i/ && rm $srcdir/$file"
-      else
-	if ($debug) echo "Size of $srcdir/$file < $size, so not copying yet"
-      endif
-    end
+    if ($debug) echo "node=$node; targetdir=$targetdir"
+    rsh $node "cp $srcdir/$varfile $targetdir/proc$i/"
     set i = `expr $i + 1`
     echo 'i=' $i
   end
+else
 
-  #sleep 300			# only check every 5 minutes
-  sleep 10			# only check every 5 minutes
+  # Get size of var.dat (must exist, since run.csh only ever runs after
+  # start.csh). Quite some silly hack.
+  set lsout = (`ls -l "$srcdir/var.dat"`)
+  set size = $lsout[5]
 
-end
+  while (1)
+    set i=0
+    foreach node ($nodelist)
+      if ($debug) echo "node=$node"
+      echo '$targetdir' $targetdir
+      foreach file (`rsh $node "cd $srcdir; ls VAR[0-9]* | sort -nk1.4"`)
+        set lsout = (`rsh $node ls -l "$srcdir/$file"`)
+        set VARsize = $lsout[5]
+        if ($VARsize >= $size) then
+	  # if file is ready (-Z is tcsh-specific), copy it and delete original 
+	  if ($debug) echo "Copying $srcdir/$file to $targetdir/proc$i"
+	  rsh $node "cp $srcdir/$file $targetdir/proc$i/ && rm $srcdir/$file"
+        else
+	  if ($debug) echo "Size of $srcdir/$file < $size, so not copying yet"
+        endif
+      end
+      set i = `expr $i + 1`
+      echo 'i=' $i
+    end
 
+    #sleep 300			# only check every 5 minutes
+    sleep 10			# only check every 5 minutes
+
+  end
+
+endif
 
 # End of file copy-snapshots
