@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.8 2004-03-18 16:15:59 brandenb Exp $
+! $Id: cosmicray_nolog.f90,v 1.9 2004-03-19 20:02:40 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -38,15 +38,15 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
+  real :: bfloor_for_unitvector=0.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
-
 
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
-       luse_diff_constants, ampl_Qcr
-
+       luse_diff_constants,ampl_Qcr, &
+       bfloor_for_unitvector
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -84,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.8 2004-03-18 16:15:59 brandenb Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.9 2004-03-19 20:02:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -347,7 +347,7 @@ module CosmicRay
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-      b1=1./amax1(tiny(b2),sqrt(b2))
+      b1=1./amax1(bfloor_for_unitvector,tiny(b2),sqrt(b2))
       call multsv_mn(b1,bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.176 2004-03-15 05:32:42 brandenb Exp $
+! $Id: magnetic.f90,v 1.177 2004-03-19 20:02:40 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -38,7 +38,7 @@ module Magnetic
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
-  logical :: lpress_equil=.false.
+  logical :: lpress_equil=.false., llorentzforce=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   character (len=40) :: kinflow=''
@@ -65,7 +65,7 @@ module Magnetic
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,eta_shock,wresistivity, &
-       rhomin_JxB,va2max_JxB,va2power_JxB
+       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -116,7 +116,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.176 2004-03-15 05:32:42 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.177 2004-03-19 20:02:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -190,6 +190,7 @@ module Magnetic
       case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
+      case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
@@ -401,7 +402,7 @@ module Magnetic
         if (rhomin_JxB>0) rho1_JxB=min(rho1_JxB,1/rhomin_JxB)
         if (va2max_JxB>0) rho1_JxB=rho1_JxB/(1+(va2/va2max_JxB)**va2power_JxB)
         call multsv_mn(rho1_JxB,JxB,JxBr)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
+        if(llorentzforce) df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
         if(lentropy) then
           call dot2_mn(jj,J2)
           df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*J2*rho1*TT1
