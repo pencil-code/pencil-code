@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.83 2003-09-04 14:00:37 dobler Exp $
+# $Id: getconf.csh,v 1.84 2003-09-04 15:21:03 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -95,6 +95,22 @@ else if ($hn =~ *.kis.uni-freiburg.de) then
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
   set mpirun = /usr/bin/mpiexec
+  set local_disc = 1
+  set one_local_disc = 1
+  set local_binary = 0
+  if ($?SCRDIR) then
+    if (-d $SCRDIR)) then
+      setenv SCRATCH_DIR "$SCRDIR"
+    else
+      echo 'NO SUCH DIRECTORY: $SCRDIR'="<$SCRDIR> -- ABORTING"
+      kill $$                     # full-featured suicide
+    endif
+  else
+    echo 'NO SUCH VARIABLE: $SCRDIR'="<$SCRDIR> -- ABORTING"
+    kill $$                     # full-featured suicide
+  endif
+  setenv SSH rsh
+  setenv SCP rcp
   setenv LANG en_US
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
