@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.78 2004-05-10 16:45:00 mee Exp $
+! $Id: dustdensity.f90,v 1.79 2004-05-10 18:14:42 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,11 +112,17 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.78 2004-05-10 16:45:00 mee Exp $")
+           "$Id: dustdensity.f90,v 1.79 2004-05-10 18:14:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('register_dustdensity: nvar > mvar')
+      endif
+!
+!  Ensure dust density variables are contiguous with dust velocity
+!
+      if ((iudz(ndustspec)+1) .ne. ind(1)) then
+        call stop_it('register_dustdensity: uud and ind are NOT contiguous in the f-array - as required by copy_bcs_dust')
       endif
 !
 !  Writing files for use with IDL
