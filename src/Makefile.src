@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.94 2004-11-03 22:14:57 dobler Exp $
+### $Id: Makefile.src,v 1.95 2004-11-22 20:40:37 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -399,7 +399,7 @@ read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
-$(GRID).o:   $(GRID).f90 cdata.o
+$(GRID).o:   $(GRID).f90 cdata.o $(MPICOMM).o
 general.o:   general.f90 cparam.o cdata.o
 slices.o:    slices.f90 cdata.o sub.o $(IONIZATION).o
 deriv.o:     deriv.f90 cdata.o $(MPICOMM).o
