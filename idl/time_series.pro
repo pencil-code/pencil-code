@@ -1,4 +1,4 @@
-;  $Id: time_series.pro,v 1.8 2003-05-20 17:39:10 brandenb Exp $
+;  $Id: time_series.pro,v 1.9 2003-06-15 09:02:50 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -62,6 +62,7 @@ if defined(i_Egas_max) ne 0 then Egas_max=reform(a(i_Egas_max-1,*))
 if defined(i_Frms) ne 0 then Frms=reform(a(i_Frms-1,*))
 if defined(i_Fmax) ne 0 then Fmax=reform(a(i_Fmax-1,*))
 if defined(i_lnccm) ne 0 then lnccm=reform(a(i_lnccm-1,*))
+if defined(i_walltime) ne 0 then walltime=reform(a(i_walltime-1,*))
 ;
 pmulti = !p.multi
 ;
