@@ -1,6 +1,6 @@
 it(f6.0)
-t(1pe12.5)
-dt(1pe10.3)
+t(1pe11.4)
+dt(1pe9.2)
 dtc(e10.3)
 urms(e10.3)
 ekintot(e10.3)
