@@ -1,0 +1,10 @@
+$PENCIL_HOME/dx/basic:
+======================
+
+This directory contins scripts for DX (data explorer) to do very basic
+visualization of the fundamental variables.
+
+To visualize e.g. the velocity field uu, start dx like this
+  dx -edit $PENCIL_HOME/dx/basic/uu
+once dx has started, type Ctl-o (execute once) to execute the program.
+ 
