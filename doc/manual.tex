@@ -177,7 +177,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.28 $ $}
+\date{\today,~ $ $Revision: 1.29 $ $}
 
 % ====================================================================== %
 
@@ -206,7 +206,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.28 $ $}
+  \emph{\today,~ $ $Revision: 1.29 $ $}
 
 
 \end{center}
@@ -713,6 +713,20 @@ To discuss:
 
 % ---------------------------------------------------------------------- %
 \subsection{Start parameters}
+
+Since the text below was written we have changed to namelists.
+This means very few input parameters are generally needed,
+especially in simple situations where a set of reasonable
+default parameters is used, e.g.\ box size $(2\pi)^3$ which is
+good for most forced turbulence runs, periodic boundary
+conditions, Courant time step, order of the scheme, etc.
+If one wants to depart from that, one simply enters the right
+values under the right category (but within the category in
+arbitrary order). Below still the parameters from an older
+write-up. Many of those parameters are however specific to
+some convection tests, but at the moment convection is not
+quite ready yet.
+
 \label{start-params}
 
 Here is a list of parameters that are set in \file{start.in}
@@ -966,7 +980,7 @@ and the powerspectrum of $\Bv$ increases like $k^4$.
 \begin{equation}
 %\Av=\pmatrix{\cos z\cr\sin z\cr0}
 \Av=(\cos z,\;\sin z,\;0)
-\label{Betrami}
+\label{Beltrami}
 \end{equation}
 
 % ---------------------------------------------------------------------- %
@@ -1196,7 +1210,7 @@ make[1]: *** [.f90.o] Error 1
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.28 2002-06-13 07:24:06 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.29 2002-06-14 12:14:31 brandenb Exp $ $}
 
 
 \end{document}
