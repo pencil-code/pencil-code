@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.121 2003-12-09 10:34:30 ajohan Exp $
+! $Id: register.f90,v 1.122 2004-01-21 16:13:58 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -199,6 +199,7 @@ module Register
       gamma1=gamma-1.
       cs20=cs0**2
       lnrho0=alog(rho0)
+      mu01=1./mu0
 !
 !  run initialization of individual modules
 !

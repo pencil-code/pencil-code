@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.202 2004-01-07 19:02:11 nilshau Exp $
+! $Id: cdata.f90,v 1.203 2004-01-21 16:13:58 brandenb Exp $
 
 module Cdata
 
@@ -42,6 +42,9 @@ module Cdata
   
   double precision :: k_B,m_p,m_e,m_H,m_He,eV,hbar, &
                       chiH,chiH_,sigmaH_,sigmaSB,kappa_es
+
+  ! magnetic permeability
+  real :: mu0=1., mu01=0.
 
 !ajwm nu moved to viscosity module
 !ajwm replaced nu, causes error in forcing to resolve

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.170 2004-01-07 19:02:11 nilshau Exp $
+! $Id: magnetic.f90,v 1.171 2004-01-21 16:13:58 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -113,7 +113,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.170 2004-01-07 19:02:11 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.171 2004-01-21 16:13:58 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -189,7 +189,7 @@ module Magnetic
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
-      case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
+      case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('Alfven-circ-x')
         !
@@ -344,23 +344,6 @@ module Magnetic
         if (i_bzmxy/=0) call zsum_mn_name_xy(bz,i_bzmxy)
       endif
 !
-!  phi-averages
-!  Note that this does not necessarily happen with ldiagnos=.true.
-!
-      if (l2davgfirst) then
-        bx=bb(:,1)
-        by=bb(:,2)
-        bz=bb(:,3)
-        if (i_brmphi/=0) call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
-        if (i_bpmphi/=0) call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
-        if (i_bzmphi/=0) call phisum_mn_name_rz(bz,i_bzmphi)
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
-        if (i_jbmphi/=0) then
-          call dot_mn(jj,bb,jb)
-          call phisum_mn_name_rz(jb,i_jbmphi)
-        endif
-      endif
-!
 !  write B-slices for output in wvid in run.f90
 !  Note: ix is the index with respect to array with ghost zones.
 !
@@ -399,13 +382,14 @@ module Magnetic
 !
       call bij_etc(f,iaa,bij,del2A)
       call curl_mn(bij,jj)
+      if (mu01/=1.) jj=mu01*jj
 !
 !  calculate alven speed
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
 !
       call dot2_mn(bb,b2tot)
-      va2=b2tot*rho1
+      va2=b2tot*mu01*rho1
 !
 !  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
 !  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation
@@ -423,7 +407,7 @@ module Magnetic
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
         if(lentropy) then
           call dot2_mn(jj,J2)
-          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+eta*J2*rho1*TT1
+          df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+(eta*mu0)*J2*rho1*TT1
         endif
       endif
 !
@@ -486,12 +470,30 @@ module Magnetic
         if (headtt) print*,'daa_dt: height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
         eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
-        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-eta_out1*jj
+        df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-(eta_out1*mu0)*jj
       endif
 !
 !  possibility of relaxation of A in exterior region
 !
       if (tau_aa_exterior/=0.) call calc_tau_aa_exterior(f,df)
+!
+!  phi-averages
+!  Note that this does not necessarily happen with ldiagnos=.true.
+!  This block must be done after jj has been calculated.
+!
+      if (l2davgfirst) then
+        bx=bb(:,1)
+        by=bb(:,2)
+        bz=bb(:,3)
+        if (i_brmphi/=0) call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
+        if (i_bpmphi/=0) call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
+        if (i_bzmphi/=0) call phisum_mn_name_rz(bz,i_bzmphi)
+        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+        if (i_jbmphi/=0) then
+          call dot_mn(jj,bb,jb)
+          call phisum_mn_name_rz(jb,i_jbmphi)
+        endif
+      endif
 !
 !  For the timestep calculation, need maximum Alfven speed
 !  and maximum diffusion.
@@ -1105,7 +1107,7 @@ module Magnetic
 !
     endsubroutine alfven_x
 !***********************************************************************
-    subroutine alfven_z(ampl,f,iuu,iaa,zz,kz)
+    subroutine alfven_z(ampl,f,iuu,iaa,zz,kz,mu0)
 !
 !  Alfven wave propagating in the z-direction
 !  ux = cos(kz-ot), for B0z=1 and rho=1.
@@ -1119,13 +1121,13 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
-      real :: ampl,kz
+      real :: ampl,kz,mu0
       integer :: iuu,iaa
 !
 !  ux and Ay
 !
       f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)*sqrt(mu0)
 !
     endsubroutine alfven_z
 !***********************************************************************
