@@ -83,7 +83,6 @@ endelse
 xx=fltarr(nx,ny,nz)*one & yy=xx & zz=xx
 t=zero
 x=fltarr(nx)*one & y=fltarr(ny)*one & z=fltarr(nz)*one
-Lx=zero &  Ly=zero &  Lz=zero
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
 gfile=datadir+'/'+'grid.dat'
 dummy=findfile(gfile, COUNT=cgrid)
