@@ -1,10 +1,10 @@
       program todx
 ! Converts var.dat snapshot to the Dx readable binary data files.
 ! The data are read in again by .dx routines on regular rectangular
-! mesh. The todx.f should be linked in tmp subdirectory of the 
+! mesh. The todx.f should be linked in the 
 ! directory of the run. Compile f77 todx.f -o todx.x and run todx.x
-! .net files should be linked to tmp directory (from pencil_modular/dx).
-! Then, Data Explorer is ready to be started from tmp directory.
+! .net files should be linked to the run directory (from pencil_modular/dx).
+! Then, Data Explorer is ready to be started from run directory.
       parameter(mx=27,my=27,mz=47,mvar=5)
       parameter(nghost=3)
       dimension f(mx,my,mz,mvar)
@@ -18,32 +18,32 @@
       z0=-0.3
 
 ! Read snapshot file
-      open(unit=17, file='./proc0/var.dat', form='unformatted')
+      open(unit=17, file='./tmp/proc0/var.dat', form='unformatted')
       read(17) f
       read(17) t,x,y,z,dx,dy,dz
       close(17)
       print*,'t=',t,' dx=',dx,' dy=',dy,' dz=',dz
       
 ! Write out velocity field for Dx
-      open(unit=18, file='uuu_dx.bin', form='unformatted')
+      open(unit=18, file='./tmp/uuu_dx.bin', form='unformatted')
       write(18) ((((real(f(i,j,k,n)),n=1,3),k=nghost+1,mz-nghost),
      > j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(18)
 
 ! Write out ln density field for Dx
-      open(unit=19, file='lnrho_dx.bin', form='unformatted')
+      open(unit=19, file='./tmp/lnrho_dx.bin', form='unformatted')
       write(19) (((real(f(i,j,k,4)),k=nghost+1,mz-nghost),
      > j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(19)
 
 ! Write out entropy field for Dx
-      open(unit=20, file='ss_dx.bin', form='unformatted')
+      open(unit=20, file='./tmp/ss_dx.bin', form='unformatted')
       write(20) (((real(f(i,j,k,5)),k=nghost+1,mz-nghost),
      > j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(20)
 
 ! Create .dx scripts
-      open(unit=21, file='uuu.dx')
+      open(unit=21, file='./tmp/uuu.dx')
       write(21,*) 'object 1 class gridpositions counts ', mx-2*nghost,
      > my-2*nghost, mz-2*nghost
       write(21,*) 'origin  ', x0, y0, z0 
@@ -69,7 +69,7 @@
       write(21,*) 'end'
       close(21)
 
-      open(unit=22, file='lnrho.dx')
+      open(unit=22, file='./tmp/lnrho.dx')
       write(22,*) 'object 1 class gridpositions counts ', mx-2*nghost,
      > my-2*nghost, mz-2*nghost
       write(22,*) 'origin  ', x0, y0, z0 
@@ -95,7 +95,7 @@
       write(22,*) 'end'
       close(22)
 
-      open(unit=23, file='ss.dx')
+      open(unit=23, file='./tmp/ss.dx')
       write(23,*) 'object 1 class gridpositions counts ', mx-2*nghost,
      > my-2*nghost, mz-2*nghost
       write(23,*) 'origin  ', x0, y0, z0 
