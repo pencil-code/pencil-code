@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.69 2002-06-20 10:30:49 dobler Exp $
+! $Id: entropy.f90,v 1.70 2002-06-20 21:19:02 dobler Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.69 $", &
-           "$Date: 2002-06-20 10:30:49 $")
+           "$Revision: 1.70 $", &
+           "$Date: 2002-06-20 21:19:02 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,49 +132,63 @@ module Entropy
           !
           cs20=cs0**2
           ss0 = 0.
-          ! top region
-          ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
-          if (isothtop /= 0) then ! isothermal top layer
-            beta1 = 0.
-            f(:,:,:,ient) = -gamma1*gravz*(zz-zref)/cs20
-            ! unstable region
-            ssint = -gamma1*gravz*(z2-zref)/cs20 ! ss at layer interface z=z2
-          else
-            beta1 = gamma*gravz/(mpoly2+1)
-            tmp = 1 + beta1*(zz-zref)/cs20
-            tmp = max(tmp,epsi)  ! ensure arg to log is positive
-            f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
-                            * alog(tmp)
-            ! unstable region
-            ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-                    * alog(1 + beta1*(z2-zref)/cs20)
-          endif
-          cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
-          beta1 = gamma*gravz/(mpoly0+1)
-          tmp = 1 + beta1*(zz-z2)/cs2int
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = ssint + (1-mpoly0*gamma1)/gamma &
-                        * alog(tmp)
-          ! smoothly blend the solutions for the two regions:
-          stp = step(z,z2,whcond)
-          p = spread(spread(stp,1,mx),2,my)
 
-          f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
-          ! bottom (stable) region
-          ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
-                          * alog(1 + beta1*(z1-z2)/cs2int)
-          cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
-          beta1 = gamma*gravz/(mpoly1+1)
-          tmp = 1 + beta1*(zz-z1)/cs2int
-          tmp = max(tmp,epsi)  ! ensure arg to log is positive
-          tmp = ssint + (1-mpoly1*gamma1)/gamma &
-                        * alog(tmp)
-          ! smoothly blend the solutions for the two regions:
-          stp = step(z,z1,whcond)
-          p = spread(spread(stp,1,mx),2,my)
-          f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
-          ! Fix origin of entropy
-          f(:,:,:,ient) = f(:,:,:,ient) + ss0
+
+!           ! top region
+!           ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
+!           if (isothtop /= 0) then ! isothermal top layer
+!             beta1 = 0.
+!             f(:,:,:,ient) = -gamma1*gravz*(zz-zref)/cs20
+!             ! unstable region
+!             ssint = -gamma1*gravz*(z2-zref)/cs20 ! ss at layer interface z=z2
+!           else
+!             beta1 = gamma*gravz/(mpoly2+1)
+!             tmp = 1 + beta1*(zz-zref)/cs20
+!             tmp = max(tmp,epsi)  ! ensure arg to log is positive
+!             f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
+!                             * alog(tmp)
+!             ! unstable region
+!             ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
+!                     * alog(1 + beta1*(z2-zref)/cs20)
+!           endif
+!           cs2int = cs20 + beta1*(z2-zref) ! cs2 at layer interface z=z2
+          cs2int = cs20
+          ssint = 0.            ! reference value ss0 is zero
+          f(:,:,:,ient) = -1.
+          call polytropic_z(f,mpoly2,zz,tmp,zref,z2,z0+2*Lz, &
+                            isothtop,cs2int,ssint)
+
+
+!           beta1 = gamma*gravz/(mpoly0+1)
+!           tmp = 1 + beta1*(zz-z2)/cs2int
+!           tmp = max(tmp,epsi)  ! ensure arg to log is positive
+!           tmp = ssint + (1-mpoly0*gamma1)/gamma &
+!                         * alog(tmp)
+!           ! smoothly blend the solutions for the two regions:
+!           stp = step(z,z2,whcond)
+!           p = spread(spread(stp,1,mx),2,my)
+!           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+!           ! bottom (stable) region
+!           ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
+!                           * alog(1 + beta1*(z1-z2)/cs2int)
+!           cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
+          call polytropic_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
+
+
+!           beta1 = gamma*gravz/(mpoly1+1)
+!           tmp = 1 + beta1*(zz-z1)/cs2int
+!           tmp = max(tmp,epsi)  ! ensure arg to log is positive
+!           tmp = ssint + (1-mpoly1*gamma1)/gamma &
+!                         * alog(tmp)
+!           ! smoothly blend the solutions for the two regions:
+!           stp = step(z,z1,whcond)
+!           p = spread(spread(stp,1,mx),2,my)
+!           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+!           ! Fix origin of entropy
+!           f(:,:,:,ient) = f(:,:,:,ient) + ss0
+
+          call polytropic_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+
 
         case default
           !
@@ -192,7 +206,66 @@ module Entropy
       endif
 !
     if(ip==0) print*,xx,yy  !(to keep compiler quiet)
+!
     endsubroutine init_ent
+!***********************************************************************
+    subroutine polytropic_z(f,mpoly,zz,tmp,ztop,zbot,zblend,isoth,cs2int,ssint)
+!
+!  Implement a polytropic profile in ss above zbot. If this routine is
+!  called several times (for a piecewise polytropic atmosphere), on needs
+!  to call it from top to bottom.
+!
+!  ztop    -- z at top of layer
+!  zbot    -- z at bottom of layer
+!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
+!             with new profile (for z<zblend)
+!  isoth   -- flag for isothermal stratification;
+!  ssint   -- value of ss at interface, i.e. at the top on entry, at the
+!             bottom on exit
+!  cs2int  -- same for cs2
+!
+      use Sub, only: step
+      use Gravity, only: gravz
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,p,zz
+      real, dimension (mz) :: stp
+      real :: mpoly,ztop,zbot,zblend,beta1,cs2int,ssint
+      integer :: isoth
+!
+      ! NB: beta1 is not dT/dz, but dcs2/dz = (gamma-1)c_p dT/dz
+      if (isoth /= 0) then ! isothermal layer
+        beta1 = 0.
+print*,'POLY_Z 1.: gamma1,beta1,ssint,cs2int = ', gamma1,beta1,ssint,cs2int
+        tmp = ssint - gamma1*gravz*(zz-ztop)/cs2int
+print*, 'tmp in ', minval(tmp), maxval(tmp)
+        ssint = -gamma1*gravz*(zbot-ztop)/cs2int ! ss at layer interface
+      else
+        beta1 = gamma*gravz/(mpoly+1)
+print*,'POLY_Z 2.: gamma1,beta1,ssint,cs2int = ', gamma1,beta1,ssint,cs2int
+        tmp = 1 + beta1*(zz-ztop)/cs2int
+        tmp = max(tmp,epsi)  ! ensure arg to log is positive
+        tmp = ssint + (1-mpoly*gamma1)/gamma &
+                      * alog(tmp)
+        ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
+                        * alog(1 + beta1*(zbot-ztop)/cs2int)
+      endif
+      cs2int = cs2int + beta1*(zbot-ztop) ! cs2 at layer interface (bottom)
+
+      !
+      ! smoothly blend the old value (above ztop) and the new one (below
+      ! ztop) for the two regions:
+      !
+      stp = step(z,zblend,whcond)
+      p = spread(spread(stp,1,mx),2,my)
+      f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
+
+
+print*, 'tmp in ', minval(tmp), maxval(tmp)
+print*, 'ss in ', minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
+
+
+    endsubroutine polytropic_z
 !***********************************************************************
     subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
 !
