@@ -1,0 +1,65 @@
+#!/bin/bash
+#
+# Makes a skeleton for a html file were result of run can be recorded.
+# README, start.in, and run.in are included in file.
+# File is put in the a public directory which is linked to the run directory.
+# Still messy!
+#
+# tarek  Dec  2 2002
+#
+
+hn=`hostname`
+pwd=`pwd`
+dir=${pwd##*/}
+
+if [ "$hn" = "gridur" ]; then str='s/f90/www/g'; fi
+www=`echo $pwd | sed -e $str` 
+
+echo  www directory set to $www
+mkdir -p $www
+ln -s  $www www
+
+cd $www
+title='Pencil code run '$dir
+index='index.html'
+
+if [ -e $index ]; then echo $index exists. Delete it and try again; else
+#-------------------------------------------------------
+
+ cat >  $index<<EOF 
+  <HTML>
+   <HEAD> <TITLE> $title </TITLE></HEAD>
+   <BODY>
+   <H1> $title </H1>
+   <H2>Aim</H2>
+    <PRE>
+EOF
+cat $pwd/README >>   $index
+cat >> $index <<EOF
+   </PRE>
+   <H2> Start  Parameters</H2>
+   <PRE>
+EOF
+cat $pwd/start.in >>   $index
+cat >> $index <<EOF 
+   </PRE>
+   <H2> Run Parameters</H2>
+   <PRE>
+EOF
+cat $pwd/start.in >>   $index 
+cat >> $index<<EOF
+   </PRE>
+   <H2>Results</H2>
+   <!-- <IMG SRC="URL" USEMAP="URL">  -->
+   <H2>Discusion</H2>
+
+   <p>
+   made on the `date` by `whoami`  <br>
+   CVS: \$Id: mkwww,v 1.1 2002-12-02 21:37:27 tarek Exp $
+
+  </BODY>  
+ </HTML> 
+EOF
+
+#-----------------------------------------------
+fi
