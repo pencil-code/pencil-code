@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.19 2003-11-17 04:21:44 brandenb Exp $
+! $Id: grav_self.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -20,6 +20,7 @@ module Gravity
   interface potential
     module procedure potential_global
     module procedure potential_penc
+    module procedure potential_point
   endinterface
 
   real :: nu_epicycle=1.
@@ -84,7 +85,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.19 2003-11-17 04:21:44 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -263,6 +264,23 @@ module Gravity
 !
       if(ip==0) print*,xmn,ymn,zmn,rmn !(keep compiler quiet)
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine potential_point(x,y,z,r, pot,pot0, grav)
+!
+!  Gravity potential in one point
+!
+!  20-dec-03/wolf: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real :: pot,rad
+      real, optional :: x,y,z,r
+      real, optional :: pot0,grav
+!
+      call stop_it("grav_self: potential_point not implemented")
+!
+      if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+    endsubroutine potential_point
 !!***********************************************************************
 !    subroutine self_gravity(f)
 !!

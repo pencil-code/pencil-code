@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.14 2003-12-03 13:59:16 aas Exp $
+### $Id: Makefile.src,v 1.15 2003-12-23 10:50:59 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -309,8 +309,8 @@ fft.f90:
 	@ touch fft.f90
 TAGS: $(TAG_SOURCE)
 	etags $(TAG_SOURCE)
-	@ if [ ! -s nofftpack.f90 ]; then rm nofftpack.f90; fi
-	@ if [ ! -s fft.f90 ]; then rm fft.f90; fi
+	@ if [ ! -s nofftpack.f90 ]; then rm -f nofftpack.f90; fi
+	@ if [ ! -s fft.f90 ]; then rm -f fft.f90; fi
 
 # Clean up, but leave makefile and TAGS
 clean:

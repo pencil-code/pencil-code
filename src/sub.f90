@@ -1,10 +1,11 @@
-! $Id: sub.f90,v 1.151 2003-12-10 14:47:20 nilshau Exp $ 
+! $Id: sub.f90,v 1.152 2003-12-23 10:51:00 dobler Exp $ 
 
 module Sub 
 
   implicit none
 
   interface poly                ! Overload the `poly' function
+    module procedure poly_0
     module procedure poly_1
     module procedure poly_3
   endinterface
@@ -2209,6 +2210,26 @@ module Sub
       enddo
 
     endfunction poly_1
+!***********************************************************************
+    function poly_0(coef, x)
+!
+!  Horner's scheme for polynomial evaluation.
+!  Version for scalar.
+!  17-jan-02/wolf: coded 
+!
+      real, dimension(:) :: coef
+      real :: x
+      real :: poly_0
+      integer :: Ncoef,i
+
+      Ncoef = size(coef,1)
+
+      poly_0 = coef(Ncoef)
+      do i=Ncoef-1,1,-1
+        poly_0 = poly_0*x+coef(i)
+      enddo
+
+    endfunction poly_0
 !***********************************************************************
     function poly_3(coef, x)
 !

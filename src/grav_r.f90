@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.58 2003-11-24 16:03:35 mcmillan Exp $
+! $Id: grav_r.f90,v 1.59 2003-12-23 10:51:00 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -22,6 +22,7 @@ module Gravity
   interface potential
     module procedure potential_global
     module procedure potential_penc
+    module procedure potential_point
   endinterface
 
 
@@ -65,7 +66,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.58 2003-11-24 16:03:35 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.59 2003-12-23 10:51:00 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -276,7 +277,7 @@ endif
 !***********************************************************************
     subroutine potential_penc(xmn,ymn,zmn, pot,pot0, grav,rmn)
 !
-!  gravity potential. The grav/rmn stuff is currently not used
+!  Gravity potential along one pencil
 !
 !  21-jan-02/wolf: coded
 !
@@ -298,6 +299,39 @@ endif
 !
       if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine potential_point(x,y,z,r, pot,pot0, grav)
+!
+!  Gravity potential in one point
+!
+!  20-dec-03/wolf: coded
+!
+      use Sub, only: poly
+      use Mpicomm, only: stop_it
+!
+      real :: pot,rad
+      real, optional :: x,y,z,r
+      real, optional :: pot0,grav
+!
+      if (present(r)) then
+        rad = r
+      else
+        if (present(x) .and. present(y) .and. present(z)) then
+          rad = sqrt(x**2+y**2+z**2)
+        else
+          call stop_it("Need to specify either x,y,z or r in potential_point()")
+        endif
+      endif
+!      
+      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
+              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rad)
+!
+      if (present(pot0)) then
+        pot0 = cpot(1)            ! potential at r=0
+      endif
+!
+      if(ip==0) print*,grav     !(to keep compiler quiet)
+    endsubroutine potential_point
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !

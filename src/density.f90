@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.140 2003-11-28 05:15:52 brandenb Exp $
+! $Id: density.f90,v 1.141 2003-12-23 10:50:59 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -25,7 +25,7 @@ module Density
   real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., diffrho_shock=0.
   real :: lnrho_const=0.
-  real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
+  real :: cs2bot=1., cs2top=1., gamma1,amplrho=0,cs2cool=0.
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
   real :: b_ell=1., q_ell=5., hh0=0., rbound=1.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.140 2003-11-28 05:15:52 brandenb Exp $")
+           "$Id: density.f90,v 1.141 2003-12-23 10:50:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,6 +142,7 @@ module Density
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
+      real :: pot_ext,lnrho_ext,cs2_ext
       real :: zbot,ztop
 !
 !  define bottom and top height
@@ -238,12 +239,57 @@ module Density
           call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !
-          ! rho0, cs0 are the values in the centre, pot0
+          ! rho0, cs0, pot0 are the values in the centre
           !
           if (gamma /= 1) then  ! isentropic
             f(:,:,:,ilnrho) = lnrho0 &
                               + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
           else                  ! isothermal
+            f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
+          endif
+        endif
+
+      case ('isentropic-star')
+        !
+        !  isentropic/isothermal hydrostatic sphere"
+        !    ss  = 0       for r<R,
+        !    cs2 = const   for r>R
+        !
+        !  Only makes sense if both initlnrho=initss='isentropic-star'
+        !
+        if (lgravr) then
+          if (lroot) print*, &
+               'init_lnrho: isentropic star with isothermal atmosphere'
+          call initialize_gravity()     ! get coefficients cpot(1:5)
+          call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
+          call output(trim(directory)//'/pot.dat',pot,1)
+          !
+          ! rho0, cs0, pot0 are the values in the centre
+          !
+          if (gamma /= 1) then
+            ! Note:
+            ! (a) `where' is expensive, but this is only done at
+            !     initialization.
+            ! (b) Comparing pot with pot_ext instead of r with r_ext will
+            !     only work if grav_r<=0 everywhere -- but that seems
+            !     reasonable.
+            call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
+            lnrho_ext = lnrho0 + alog(1 - gamma1*(pot_ext-pot0)/cs20) / gamma1
+            cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+            ! Add temperature and entropy jump (such that pressure
+            ! remains continuous) if cs2cool was specified in start.in:
+            if (cs2cool/=0) then
+              lnrho_ext = lnrho_ext - alog(cs2cool/cs2_ext)
+              cs2_ext = cs2cool
+            endif
+            ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic for r<r_ext
+            where (pot <= pot_ext) ! isentropic for r<r_ext
+              f(:,:,:,ilnrho) = lnrho0 &
+                                + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
+            elsewhere           ! isothermal for r>r_ext
+              f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2_ext
+            endwhere
+          else                  ! gamma=1 --> simply isothermal (I guess [wd])
             f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
           endif
         endif
@@ -593,7 +639,7 @@ module Density
         enddo 
       endif
 !      
-   end subroutine shell_lnrho
+    endsubroutine shell_lnrho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.256 2003-11-28 16:59:59 theine Exp $
+! $Id: entropy.f90,v 1.257 2003-12-23 10:50:59 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -19,13 +19,13 @@ module Entropy
   use Hydro
   use Interstellar
   use Viscosity
-  use Density, only: lcalc_cp
+  use Density, only: lcalc_cp,cs2cool
 
   implicit none
 
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
-  real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
+  real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
@@ -53,7 +53,7 @@ module Entropy
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
-       khor_ss, thermal_background, thermal_peak, thermal_scaling, &
+       khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, &
        center2_x, center2_y, center2_z,T0, &
        kx_ss
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.256 2003-11-28 16:59:59 theine Exp $")
+           "$Id: entropy.f90,v 1.257 2003-12-23 10:50:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -261,8 +261,8 @@ module Entropy
       use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
-      real :: cs2int,ssint,ztop
+      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot
+      real :: cs2int,ssint,ztop,ss_ext,cd2_ext,pot0,pot_ext
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
@@ -320,6 +320,50 @@ module Entropy
           !
           if (lroot) print*,'init_ss: linear entropy profile'
           f(:,:,:,iss) = grads0*zz
+
+        case('isentropic-star')
+          !
+          !  isentropic/isothermal hydrostatic sphere"
+          !    ss  = 0       for r<R,
+          !    cs2 = const   for r>R
+          !
+          !  Only makes sense if both initlnrho=initss='isentropic-star'
+          !
+          if (lgravr) then
+            if (lroot) print*, &
+                 'init_lnrho: isentropic star with isothermal atmosphere'
+            ! call initialize_gravity()     ! already done by init_lnrho
+            call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
+            !
+            ! rho0, cs0,pot0 are the values in the centre
+            !
+            if (gamma /= 1) then
+              ! Note:
+              ! (a) `where' is expensive, but this is only done at
+              !     initialization.
+              ! (b) Comparing pot with pot_ext instead of r with r_ext will
+              !     only work if grav_r<=0 everywhere -- but that seems
+              !     reasonable.
+              call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
+              cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
+              ss_ext = 0.
+              ! Add temperature and entropy jump (such that pressure
+              ! remains continuous) if cs2cool was specified in start.in:
+              if (cs2cool/=0) then
+                ss_ext = ss_ext + alog(cs2cool/cs2_ext)
+                cs2_ext = cs2cool
+              endif
+              ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
+              where (pot <= pot_ext) ! isentropic for r<r_ext
+                f(:,:,:,iss) = 0.
+              elsewhere           ! isothermal for r>r_ext
+                f(:,:,:,iss) = ss_ext + gamma1*(pot-pot_ext)/cs2_ext
+              endwhere
+            else                  ! gamma=1 --> simply isothermal (I guess [wd])
+              ! [NB: Never tested this..]
+              f(:,:,:,iss) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
+            endif
+          endif
 
         case('piecew-poly', '4')
           !

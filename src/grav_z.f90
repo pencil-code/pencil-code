@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.49 2003-12-06 13:52:21 ajohan Exp $
+! $Id: grav_z.f90,v 1.50 2003-12-23 10:51:00 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -22,6 +22,7 @@ module Gravity
   interface potential
     module procedure potential_global
     module procedure potential_penc
+    module procedure potential_point
   endinterface
 
 !  zref is the height where rho=rho0 and cs2=cs20.
@@ -90,7 +91,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.49 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.50 2003-12-23 10:51:00 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -309,6 +310,23 @@ module Gravity
       first=.false.
 !
     endsubroutine potential_penc
+!***********************************************************************
+    subroutine potential_point(x,y,z,r, pot,pot0, grav)
+!
+!  Gravity potential in one point
+!
+!  20-dec-03/wolf: coded
+!
+      use Mpicomm, only: stop_it
+!
+      real :: pot,rad
+      real, optional :: x,y,z,r
+      real, optional :: pot0,grav
+!
+      call stop_it("grav_z: potential_point not implemented")
+!
+      if(ip==0) print*,x,y,z,r,pot,pot0,grav     !(to keep compiler quiet)
+    endsubroutine potential_point
 !***********************************************************************
     subroutine rprint_gravity(lreset,lwrite)
 !
