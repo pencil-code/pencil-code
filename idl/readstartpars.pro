@@ -37,4 +37,5 @@ if (cpar gt 0) then begin
   endif
 endif else begin
   print, 'Warning: cannot find file ', pfile
+  par2={lwrite_aux:0L}
 endelse
