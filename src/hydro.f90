@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.65 2002-10-01 02:45:10 brandenb Exp $
+! $Id: hydro.f90,v 1.66 2002-10-02 03:37:16 vpariev Exp $
 
 module Hydro
 
@@ -72,7 +72,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.65 2002-10-01 02:45:10 brandenb Exp $")
+           "$Id: hydro.f90,v 1.66 2002-10-02 03:37:16 vpariev Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,22 +164,17 @@ module Hydro
         !
         if (lroot) print*,'tangential discontinuity of uux at z=0'
         if (lroot) print*,'uu_lower=',uu_lower,' uu_upper=',uu_upper
-        do i=1,mx
-          do j=1,my
-            do k=1,mz        
-              if(zz(i,j,k).le.0.) then 
-                f(i,j,k,iux)=uu_lower
-              else
-                f(i,j,k,iux)=uu_upper
-              endif
-            enddo
-          enddo
-        enddo
+        if (lroot) print*,'widthuu=',widthuu
+        prof=.5*(1.+tanh(zz/widthuu))
+        f(:,:,:,iux)=uu_lower+(uu_upper-uu_lower)*prof
+
 !  Add some random noise to see the development of instability
 !WD: Can't we incorporate this into the urand stuff?
+        print*, 'ampluu=',ampluu
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
+!        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
+        tmp=exp(-zz**2*10.)*cos(2.*xx+sin(4.*xx))
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
   
       case('Fourier-trunc')
