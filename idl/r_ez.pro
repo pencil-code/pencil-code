@@ -1,4 +1,4 @@
-;  $Id: r_ez.pro,v 1.5 2002-08-11 04:00:11 brandenb Exp $
+;  $Id: r_ez.pro,v 1.6 2002-08-21 03:33:22 brandenb Exp $
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
 ;  which can sometimes fail (if the perl script fails,
@@ -29,7 +29,7 @@ y=fltarr(my)
 z=fltarr(mz)
 openr,1,dir+file,/f77
 readu,1,f
-readu,1,t,x,y,z,dx,dy,dz
+readu,1,t,x,y,z,dx,dy,dz,deltay
 close,1
 print,'t=',t
  

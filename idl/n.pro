@@ -1,4 +1,4 @@
-;  $Id: n.pro,v 1.21 2002-08-11 04:00:11 brandenb Exp $
+;  $Id: n.pro,v 1.22 2002-08-21 03:33:22 brandenb Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
@@ -29,6 +29,9 @@ if defined(i_rhom) ne 0 then rhom=reform(a(i_rhom-1,*))
 if defined(i_bmx) ne 0 then bmx=reform(a(i_bmx-1,*))
 if defined(i_bmy) ne 0 then bmy=reform(a(i_bmy-1,*))
 if defined(i_bmz) ne 0 then bmz=reform(a(i_bmz-1,*))
+if defined(i_uxm) ne 0 then uxm=reform(a(i_uxm-1,*))
+if defined(i_uym) ne 0 then uym=reform(a(i_uym-1,*))
+if defined(i_uzm) ne 0 then uzm=reform(a(i_uzm-1,*))
 if defined(i_uxuxBm) ne 0 then uxuxBm=reform(a(i_uxuxBm-1,*))
 if defined(i_Erad_rms) ne 0 then Erad_rms=reform(a(i_Erad_rms-1,*))
 if defined(i_Erad_max) ne 0 then Erad_max=reform(a(i_Erad_max-1,*))

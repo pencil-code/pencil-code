@@ -1,10 +1,13 @@
-; $Id: rslice.pro,v 1.4 2002-08-17 08:40:37 brandenb Exp $
+; $Id: rslice.pro,v 1.5 2002-08-21 03:33:22 brandenb Exp $
 ;
 ;  reads xz slices
 ;  this routine is not very general yet and needs to be adjusted
 ;  before it can be general purpose.
 ;
 file_slice='tmp/proc0/uz.xz'
+file_slice='tmp/proc0/bx.xz'
+file_slice='tmp/proc0/ux.xz'
+file_slice='tmp/proc0/lnrho.xz'
 ;
 t=0.
 xz_slice=fltarr(nx,nz)
