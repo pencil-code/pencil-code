@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.32 2003-06-26 11:03:33 theine Exp $
+! $Id: feautrier.f90,v 1.33 2003-06-27 21:47:11 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -67,7 +67,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.32 2003-06-26 11:03:33 theine Exp $")
+           "$Id: feautrier.f90,v 1.33 2003-06-27 21:47:11 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -349,7 +349,7 @@ module Radiation
       transx=Q
     endfunction transx
 !***********************************************************************
-    subroutine radtransfer(f)
+    subroutine radtransfer1(f)
 !
 !  Integration radiation transfer equation along rays
 !
@@ -362,7 +362,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer'
+      if(lroot.and.headt) print*,'radtransfer1'
 !
       call radcalc(f)
       do l=l1,l2
@@ -371,7 +371,19 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine radtransfer
+    endsubroutine radtransfer1
+!***********************************************************************
+    subroutine radtransfer2(f)
+!
+!  dummy routine
+!
+      use Cdata
+      use Sub
+!
+      real, dimension(mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,f !(keep compiler quiet)
+    endsubroutine radtransfer2
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !

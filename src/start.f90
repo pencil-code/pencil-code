@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.100 2003-06-17 07:08:19 dobler Exp $
+! $Id: start.f90,v 1.101 2003-06-27 21:47:11 theine Exp $
 !
 !***********************************************************************
       program start
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.100 2003-06-17 07:08:19 dobler Exp $")
+             "$Id: start.f90,v 1.101 2003-06-27 21:47:11 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -150,7 +150,11 @@
           f(:,:,:,iyH)=0.5
           call ioncalc(f)
         endif
-        if(lradiation_ray) call radtransfer(f)
+        if(lradiation_ray) then
+          call radtransfer1(f)
+          ! call radtransfer_comm
+          call radtransfer2(f)
+        endif
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file

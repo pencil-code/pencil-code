@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.20 2003-06-26 11:03:33 theine Exp $
+! $Id: radiation_exp.f90,v 1.21 2003-06-27 21:47:11 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -15,9 +15,12 @@ module Radiation
   implicit none
 !
   integer, parameter :: radx0=3,rady0=3,radz0=3
-  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_yz
-  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_zx
-  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Irad_xy
+  real, dimension(radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_yz,tau_yz
+  real, dimension(mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_zx,tau_zx
+  real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) &
+    :: Irad_xy,tau_xy
   real, dimension (mx,my,mz) :: Srad,kaprho
   integer :: directions
 !
@@ -73,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.20 2003-06-26 11:03:33 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.21 2003-06-27 21:47:11 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -175,9 +178,13 @@ module Radiation
 !
     endsubroutine radcalc
 !***********************************************************************
-    subroutine radtransfer(f)
+    subroutine radtransfer1(f)
 !
 !  Integration radioation transfer equation along rays
+!
+!  This routine is called before the communication part
+!  (certainly needs to be given a better name)
+!  All rays start with zero intensity
 !
 !  16-jun-03/axel+tobi: coded
 !
@@ -185,13 +192,13 @@ module Radiation
       use Sub
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(mx,my,mz) :: Irad
+      real, dimension(mx,my,mz) :: tau,Irad
       real :: frac
       integer :: lrad,mrad,nrad,rad2,i
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer'
+      if(lroot.and.headt) print*,'radtransfer1'
 !
 !  calculate source function and opacity
 !
@@ -213,42 +220,50 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-           ! no boundary conditions (equal to zero)
+           ! no boundary conditions
+           tau=0.
+           Irad=0.
            ! they will be communicated in radtransfer_comm
-           call intensity(lrad,mrad,nrad,Irad)
+           call intensity1(lrad,mrad,nrad,tau,Irad)
            f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
+          if(lrad<0) tau_yz(:,:,:,lrad,mrad,nrad)=tau(l1-radx0:l1-1,:,:)
+          if(lrad>0) tau_yz(:,:,:,lrad,mrad,nrad)=tau(l2+1:l2+radx0,:,:)
+          if(mrad<0) tau_zx(:,:,:,lrad,mrad,nrad)=tau(:,m1-rady0:m1-1,:)
+          if(mrad>0) tau_zx(:,:,:,lrad,mrad,nrad)=tau(:,m2+1:m2+rady0,:)
+          if(nrad<0) tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n1-radz0:n1-1)
+          if(nrad>0) tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n2+1:n2+radz0)
         endif
       enddo
       enddo
       enddo
 !
-!  communication
-!
-      call radtransfer_comm(f)
-!
-    endsubroutine radtransfer
+    endsubroutine radtransfer1
 !***********************************************************************
-    subroutine intensity(lrad,mrad,nrad,Irad)
+    subroutine intensity1(lrad,mrad,nrad,tau,Irad)
 !
 !  Integration radiation transfer equation along all rays
+!
+!  This routine is called before the communication part
+!  (certainly needs to be given a better name)
+!  All rays start with zero intensity
 !
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata
 !
       integer :: lrad,mrad,nrad
-      real, dimension(mx,my,mz) :: Irad
+      real, dimension(mx,my,mz) :: tau,Irad
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
-      real :: dlength,dtau,emdtau
+      real :: dlength,tau,dtau,emdtau
       integer :: l
       logical, save :: first=.true.
 !
 !  identifier
 !
       if(first) then
-        print*,'intensity'
+        print*,'intensity1'
         first=.false.
       endif
 !
@@ -269,17 +284,13 @@ module Radiation
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
 !
-!  set boundary intensity equal to zero
-!  corrections will be done later on in subroutine intensity_comm
-!
-      Irad(lstart-lrad,mstart-mrad,nstart-nrad)=0.
-!
 !  loop
 !
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
-      do l=lstart,lstop,lrad1
+      do l=lstart,lstop,lrad1 
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
+          tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau
           emdtau=exp(-dtau)
           Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
@@ -289,12 +300,15 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity
+    endsubroutine intensity1
 !***********************************************************************
-    subroutine radtransfer_comm(f)
+    subroutine radtransfer2(f)
 !
 !  Integration radioation transfer equation along rays
 !
+!  This routine is called after the communication part
+!  The true boundary intensities I0 are now known and
+!    the correction term I0*exp(-tau) is added
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata
@@ -307,7 +321,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer_comm'
+      if(lroot.and.headt) print*,'radtransfer2'
 !
 !  bottom boundary (rays point upwards): I=S
 !
@@ -357,10 +371,12 @@ module Radiation
           !
           !  do the ray, and add corresponding contribution to Q
           !
-          call intensity_comm(lrad,mrad,nrad,Irad)
+          call intensity2(lrad,mrad,nrad,Irad)
           f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Irad
           !
           !  safe boundary values for next processor (or opposite boundary)
+          !
+          !  This needs to be done in the communication part and not here
           !
           if(lrad<0) Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l1-radx0:l1-1,:,:)
           if(lrad>0) Irad_yz(:,:,:,lrad,mrad,nrad)=Irad(l2+1:l2+radx0,:,:)
@@ -372,9 +388,9 @@ module Radiation
       enddo
       enddo
       enddo
-    endsubroutine radtransfer_comm
+    endsubroutine radtransfer2
 !***********************************************************************
-    subroutine intensity_comm(lrad,mrad,nrad,Irad)
+    subroutine intensity2(lrad,mrad,nrad,Irad)
 !
 !  Integration radiation transfer equation along all rays
 !
@@ -394,7 +410,7 @@ module Radiation
 !  identifier
 !
       if(first) then
-        print*,'intensity_comm'
+        print*,'intensity2'
         first=.false.
       endif
 !
@@ -430,7 +446,7 @@ module Radiation
       enddo
       enddo
 !
-    endsubroutine intensity_comm
+    endsubroutine intensity2
 !***********************************************************************
     subroutine radiative_cooling(f,df)
 !
