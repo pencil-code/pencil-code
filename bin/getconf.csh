@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.67 2003-08-28 15:51:24 dobler Exp $
+# $Id: getconf.csh,v 1.68 2003-08-29 13:28:35 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -78,11 +78,12 @@ if ($hn =~ mhd*.st-and.ac.uk) then
 else if ($hn =~ *.kis.uni-freiburg.de) then
   set mpirun = /opt/local/mpich/bin/mpirun
 
-else if ($hn =~ sleipner) then
-  set mpirun = /usr/bin/poe
-  set local_disc = 1
-  set local_binary = 1		# (probably not needed..)
-  setenv SCRATCH_DIR $SCRDIR
+else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
+    set mpirun = /usr/bin/poe
+    set mpirunops = -savehostsfile host.list
+    set local_disc = 1
+    setenv SCRATCH_DIR $SCRDIR
+    setenv LANG en_US
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) ) then
