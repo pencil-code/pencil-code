@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.32 2002-10-09 14:05:31 mee Exp $
+! $Id: forcing.f90,v 1.33 2002-11-02 08:49:58 brandenb Exp $
 
 module Forcing
 
@@ -12,6 +12,7 @@ module Forcing
 
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
+  real :: tforce_stop=impossible
   integer :: kfountain=5
   logical :: lwork_ff=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
@@ -21,7 +22,7 @@ module Forcing
 
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
-       iforce2,kfountain,fountain, &
+       iforce2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff
 
   contains
@@ -46,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.32 2002-10-09 14:05:31 mee Exp $")
+           "$Id: forcing.f90,v 1.33 2002-11-02 08:49:58 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -88,34 +89,42 @@ module Forcing
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
-      if (headtt.or.ldebug) print*,'FORCING: addforce started'
+!  if t>tforce_stop, then turn off forcing
+!  This can be useful for producing good initial conditions
+!  for turbulent decay experiments.
+!
+      if (t>tforce_stop) then
+        if (headtt.or.ldebug) print*,'FORCING: t>tforce_stop; no forcing'
+      else
+        if (headtt.or.ldebug) print*,'FORCING: addforce started'
 !
 !  calculate and add forcing function
 !
-      select case(iforce)
-      case ('zero'); if (headt) print*,'No forcing'
-      case ('irrotational');  call forcing_irro(f)
-      case ('helical', '2');  call forcing_hel(f)
-      case ('fountain', '3'); call forcing_fountain(f)
-      case ('horiz-shear');   call forcing_hshear(f)
-      case ('twist');         call forcing_twist(f)
-      case ('diffrot');       call forcing_diffrot(f)
-      case ('blobs');         call forcing_blobs(f)
-      case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
-      endselect
+        select case(iforce)
+        case ('zero'); if (headt) print*,'No forcing'
+        case ('irrotational');  call forcing_irro(f)
+        case ('helical', '2');  call forcing_hel(f)
+        case ('fountain', '3'); call forcing_fountain(f)
+        case ('horiz-shear');   call forcing_hshear(f)
+        case ('twist');         call forcing_twist(f)
+        case ('diffrot');       call forcing_diffrot(f)
+        case ('blobs');         call forcing_blobs(f)
+        case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
+        endselect
 !
 !  add *additional* forcing function
 !
-      select case(iforce2)
-      case ('zero'); if(headtt .and. lroot) print*,'No additional forcing'
-      case ('irrotational'); call forcing_irro(f)
-      case ('helical');      call forcing_hel(f)
-      case ('fountain');     call forcing_fountain(f)
-      case ('horiz-shear');  call forcing_hshear(f)
-      case default; if(lroot) print*,'No such forcing iforce2=',trim(iforce2)
-      endselect
+        select case(iforce2)
+        case ('zero'); if(headtt .and. lroot) print*,'No additional forcing'
+        case ('irrotational'); call forcing_irro(f)
+        case ('helical');      call forcing_hel(f)
+        case ('fountain');     call forcing_fountain(f)
+        case ('horiz-shear');  call forcing_hshear(f)
+        case default; if(lroot) print*,'No such forcing iforce2=',trim(iforce2)
+        endselect
 !
-      if (headtt.or.ldebug) print*,'FORCING: done addforce'
+        if (headtt.or.ldebug) print*,'FORCING: done addforce'
+      endif
 !
     endsubroutine addforce
 !***********************************************************************

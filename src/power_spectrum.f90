@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -149,11 +149,13 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.21 2002-10-30 20:20:47 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.22 2002-11-02 08:49:58 brandenb Exp $")
   !
-  !    Stopping the run if FFT=nofft
+  !   Stopping the run if FFT=nofft (applies only to Singleton fft)
+  !   But at the moment, fftpack is always linked into the code
   !
-  if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+  if(.NOT.lfft.and.fft_switch=='Singleton') &
+    call stop_it('Need FFT=fft in Makefile.local to get spectra!')
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.

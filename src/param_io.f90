@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.76 2002-11-02 07:16:15 brandenb Exp $ 
+! $Id: param_io.f90,v 1.77 2002-11-02 08:49:58 brandenb Exp $ 
 
 module Param_IO
 
@@ -80,12 +80,13 @@ module Param_IO
 !
 !  check for existence of datadir.in
 !
-      inquire(FILE=trim(datadir)//'directory_snap',EXIST=exist)
+      inquire(FILE=trim(datadir)//'/directory_snap',EXIST=exist)
       if (exist) then
-        open(1,FILE=trim(datadir)//'directory_snap',FORM='formatted')
-        read(1,*) dir
+        open(1,FILE=trim(datadir)//'/directory_snap',FORM='formatted')
+        read(1,'(a)') dir
         close(1)
       endif
+      if(lroot.and.ip<6) print*,'get_snapdir: dir=',trim(dir)
 !
     endsubroutine get_snapdir
 !***********************************************************************
