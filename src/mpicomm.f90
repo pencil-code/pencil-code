@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.64 2002-10-30 18:00:04 dobler Exp $
+! $Id: mpicomm.f90,v 1.65 2002-11-12 10:33:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -965,11 +965,17 @@ subroutine transform_nr(a_re,a_im)
   complex,dimension(nx) :: ax
   integer :: m,n
 !
+!  This Fourier transform would work, but it's very slow!
+!  Even the compilation is very slow, so we better get rid of it!
+!
+  print*,'fft_nr currently disabled!'
+  call stop_it("")
+!
   if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call four1(ax,nx,-1)
+    !call four1(ax,nx,-1)
     a_re(:,m,n)=real(ax)
     a_im(:,m,n)=aimag(ax)
   enddo
@@ -984,7 +990,7 @@ subroutine transform_nr(a_re,a_im)
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call four1(ax,nx,-1)
+    !call four1(ax,nx,-1)
     a_re(:,m,n)=real(ax)
     a_im(:,m,n)=aimag(ax)
   enddo
@@ -998,7 +1004,7 @@ subroutine transform_nr(a_re,a_im)
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call four1(ax,nx,-1)
+    !call four1(ax,nx,-1)
     a_re(:,m,n)=real(ax)
     a_im(:,m,n)=aimag(ax)
   enddo

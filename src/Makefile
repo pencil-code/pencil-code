@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.117 2002-11-12 09:42:18 dobler Exp $
+### $Id: Makefile,v 1.118 2002-11-12 10:33:10 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -74,16 +74,15 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 #FC=pgf90 #(nq0)
 #FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-9])
-#FC=mpif90 #(fe[0-9])
-#FC=mpif77 #(fe[0-9])
-##FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
+##FC=mpif77 #(fe[0-9])
+#FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/bin/mpif77 #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
 #FFLAGS=-O # (Samos)
-##LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
+#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
 #FFLAGS=-O3 -ipo #PACX #(fe[0-9])
-#FFLAGS=-fast -lm #(erland|igor|tycho|fe[0-9])
-##FFLAGS=-O3 -ipo #(fe[0-9])
+#FFLAGS=-fast -lm #(erland|igor|tycho)
+#FFLAGS=-O3 -ipo #(fe[0-9])
 #FFLAGS=-O4 -u -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
 #LDMPI= # (Samos)
@@ -150,7 +149,7 @@ code:
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
-comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics) $(DEBUG).o $(FFT).o fftpack.o fft_nr.o
+comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics) $(DEBUG).o $(FFT).o fftpack.o #fft_nr.o
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90)
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
@@ -174,7 +173,7 @@ slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f
 fftpack.o:   fftpack.f
-fft_nr.o:    fft_nr.f90
+#fft_nr.o:    fft_nr.f90
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
 param_io.o:  param_io.f90 timestep.o $(TIMEAVG).o $(physics)
 register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o

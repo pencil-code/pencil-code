@@ -455,11 +455,17 @@ subroutine transform_nr(a_re,a_im)
   complex,dimension(nz) :: az
   integer :: l,m,n
 !
+!  This Fourier transform would work, but it's very slow!
+!  Even the compilation is very slow, so we better get rid of it!  
+!
+  print*,'fft_nr currently disabled!'
+  call stop_it("")
+!
   if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
   do m=1,ny
   do n=1,nz
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
-    call four1(ax,nx,-1)
+    !call four1(ax,nx,-1)
     a_re(:,m,n)=real(ax)
     a_im(:,m,n)=aimag(ax)
   enddo
@@ -469,7 +475,7 @@ subroutine transform_nr(a_re,a_im)
   do l=1,nx
   do n=1,nz
     ay=cmplx(a_re(l,:,n),a_im(l,:,n))
-    call four1(ay,ny,-1)
+    !call four1(ay,ny,-1)
     a_re(l,:,n)=real(ay)
     a_im(l,:,n)=aimag(ay)
   enddo
@@ -479,7 +485,7 @@ subroutine transform_nr(a_re,a_im)
   do l=1,nx
   do m=1,ny
     az=cmplx(a_re(l,m,:),a_im(l,m,:))
-    call four1(az,nz,-1)
+    !call four1(az,nz,-1)
     a_re(l,m,:)=real(az)
     a_im(l,m,:)=aimag(az)
   enddo
