@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.190 2004-01-31 13:46:59 dobler Exp $
+! $Id: equ.f90,v 1.191 2004-02-03 14:30:06 ajohan Exp $
 
 module Equ
 
@@ -226,8 +226,8 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij,bij
       real, dimension (nx,3) :: uu,glnrho,bb,gshock
-      real, dimension (nx,3,size(iuud)) :: uud,gnd
-      real, dimension (nx,size(iuud)) :: divud,ud2
+      real, dimension (nx,3,ndustspec) :: uud,gnd
+      real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
       real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
 !
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.190 2004-01-31 13:46:59 dobler Exp $")
+           "$Id: equ.f90,v 1.191 2004-02-03 14:30:06 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -344,7 +344,7 @@ module Equ
 !  dust equations
 !
         call duud_dt  (f,df,uu,rho1,uud,divud,ud2,udij)
-        call dnd_dt   (f,df,uu,uud,divud,gnd)
+        call dnd_dt   (f,df,uud,divud,gnd)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?

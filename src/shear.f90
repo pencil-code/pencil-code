@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.16 2004-01-31 14:01:22 dobler Exp $
+! $Id: shear.f90,v 1.17 2004-02-03 14:30:06 ajohan Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.16 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: shear.f90,v 1.17 2004-02-03 14:30:06 ajohan Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -106,7 +106,7 @@ module Shear
 !  Loop over dust layers
 !
       if (ldustvelocity) then
-        do k=1,size(iuud)
+        do k=1,ndustspec
 !
 !  Correct Coriolis force term for all dust layers 
 !

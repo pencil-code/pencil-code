@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.51 2004-01-28 13:33:47 ajohan Exp $
+! $Id: grav_z.f90,v 1.52 2004-02-03 14:30:06 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -92,7 +92,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.51 2004-01-28 13:33:47 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.52 2004-02-03 14:30:06 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -192,7 +192,7 @@ module Gravity
 !  Loop over dust species
 !
       if (ldustvelocity) then
-        do i=1,size(iuud)
+        do i=1,ndustspec
 !
 !  different gravity profiles
 !
