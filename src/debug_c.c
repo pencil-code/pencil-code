@@ -45,14 +45,14 @@
 
 /* ---------------------------------------------------------------------- */
 
-int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
+int FTNIZE(output_penciled_c) (char *filename, REAL *pencil, FINT *ndim,
 			FINT *i, FINT *iy, FINT *iz, REAL *t,
 			FINT *nx, FINT *ny, FINT *nz, FINT *nghost,
 			FINT *fnlen)
 /* Writes a scalar field to a file mimicking the Fortran record structure
-   of the file. This subroutine is called once for each stencil.
+   of the file. This subroutine is called once for each pencil.
    ndim           -- 1 for scalar, 3 for vector field
-   i,ix,iy        -- position of stencil. i is the loop index.
+   i,ix,iy        -- position of pencil. i is the loop index.
    n[x-z],nghosts -- data layout
    fnlen          -- length of filename (needed due to obscure Fortran--C
                      mapping of strings)
@@ -74,30 +74,30 @@ int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
 
   REAL zero=0.;
   static char *fname;
-  int nstenc,ilast,bcount;
+  int npencil,ilast,bcount;
   int j,k,l,m;
   long int mx,my,mz;
   long int datasize,pos;
-  int first_stenc,last_stenc;
+  int first_pencil,last_pencil;
   static int first_var=1,max_depth,toggle;	/* Processing first variable */
 
   mx = *nx + 2*(*nghost);
   my = *ny + 2*(*nghost);
   mz = *nz + 2*(*nghost);
 
-  nstenc = (*ny)*(*nz);		/* Number of stencils (excluding ghosts) */
-  ilast = nstenc;
+  npencil = (*ny)*(*nz);		/* Number of pencils (excluding ghosts) */
+  ilast = npencil;
 
-  first_stenc = (*i == 1);
-  last_stenc = (*i == ilast);
+  first_pencil = (*i == 1);
+  last_pencil = (*i == ilast);
 
 
     /* Called for the first time:
        - open file
        - calculate and write byte count
     */
-  if (first_stenc) {
-    if (first_var) {		/* First stencil, first variable: need to
+  if (first_pencil) {
+    if (first_var) {		/* First pencil, first variable: need to
 				   initialise list structure */
       root_node.depth=0;
       root_node.prev=0;		/* just to be safe */
@@ -129,12 +129,12 @@ int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
   }
 
 
-  /* Second stencil called for first variable:
+  /* Second pencil called for first variable:
      - reset first_var and toggle
      (needs to be done just once; for the following calls, depth
      vs. maxdepth is the correct criterion)
   */
-  if (!first_stenc && toggle) {
+  if (!first_pencil && toggle) {
     toggle = 0;
     first_var = 1;
   }
@@ -142,9 +142,9 @@ int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
 
   /* Any call:
      - position appropriately
-     - write nghosts zeros, one stencil, nghost zeros
+     - write nghosts zeros, one pencil, nghost zeros
   */
-  if (!first_stenc) {
+  if (!first_pencil) {
     if (first_var) {		/* reset current_node to start from top */
       current_node = &root_node; 
     } else {			/* move on in linked list */
@@ -157,11 +157,11 @@ int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
     for (j=0;j<*nghost;j++) {
       fwrite(&zero, sizeof(REAL), 1, current_node->file);
     }
-    fwrite(stenc+m*(*nx), sizeof(REAL), *nx, current_node->file);
+    fwrite(pencil+m*(*nx), sizeof(REAL), *nx, current_node->file);
     for (j=0;j<*nghost;j++) {
       fwrite(&zero, sizeof(REAL), 1, current_node->file);
     }
-    if (first_stenc || (current_node->depth < max_depth)) {
+    if (first_pencil || (current_node->depth < max_depth)) {
       first_var = 0;
     } else {			/* processing last variable */
       first_var = 1;		/* reset for next call */
@@ -176,7 +176,7 @@ int FTNIZE(output_stenciled_c) (char *filename, REAL *stenc, FINT *ndim,
      - write time as short record
      - close file
   */
-  if (last_stenc) {
+  if (last_pencil) {
     /* Zero out remaining ghost zones */
     for (m=0;m<*ndim;m++) { 
       for (k=0;k<*nghost;k++) {

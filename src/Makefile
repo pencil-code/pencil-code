@@ -3,8 +3,8 @@
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
 MPICOMM=nompicomm
-GLOBAL=noglobal
-GRAVITY=grav_z
+GLOBAL=global_rr
+GRAVITY=grav_r
 FORCING=noforcing
 ENTROPY=entropy
 MAGNETIC=magnetic

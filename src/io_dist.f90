@@ -15,29 +15,29 @@ module Io
     module procedure output_scal
   endinterface
 
-  interface output_stenc        ! Overload the `output_stenc' function
-    module procedure output_stenc_vect
-    module procedure output_stenc_scal
+  interface output_pencil        ! Overload the `output_pencil' function
+    module procedure output_pencil_vect
+    module procedure output_pencil_scal
   endinterface
 
   ! Interface to external C function
-  ! Does not work, since stenc can be either a 1-d or a 2-d array and the
+  ! Does not work, since a pencil can be either a 1-d or a 2-d array and the
   ! C function does not care.
-  !   interface output_stenciled_c
-  !     subroutine output_stenciled_c(filename,stenc,&
+  !   interface output_penciled_c
+  !     subroutine output_penciled_c(filename,pencil,&
   !                                   ndim,i,iy,iz,t, &
   !                                   nx,ny,nz,nghost,fnlen)
   !       use Cdata, only: mx
   
-  !       real,dimension(mx,*) :: stenc
-  !       real,dimension(mx) :: stenc
+  !       real,dimension(mx,*) :: pencil
+  !       real,dimension(mx) :: pencil
   !       real :: t
   !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
   !       character (LEN=*) :: filename
-  !     endsubroutine output_stenciled_c
+  !     endsubroutine output_penciled_c
   !   endinterface
 
-  external output_stenciled_c   ! Note really needed, but self-documenting
+  external output_penciled_c   ! Note really needed, but self-documenting
 
 contains
 
@@ -183,10 +183,10 @@ contains
       close(91)
     endsubroutine output_scal
 !***********************************************************************
-    subroutine output_stenc_vect(file,a,ndim)
+    subroutine output_pencil_vect(file,a,ndim)
 !
-!  Write snapshot file of stenciled vector data (for debugging).
-!  Wrapper to the C routine output_stenciled_c.
+!  Write snapshot file of penciled vector data (for debugging).
+!  Wrapper to the C routine output_penciled_c.
 !
 !  15-feb-02/wolf: coded
 !
@@ -199,16 +199,16 @@ contains
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: ndim =', ndim
 !
-       call output_stenciled_c(file, a, ndim, &
+       call output_penciled_c(file, a, ndim, &
                                imn, mm(imn), nn(imn), t, &
                                nx, ny, nz, nghost, len(file))
 !
-    endsubroutine output_stenc_vect
+    endsubroutine output_pencil_vect
 !***********************************************************************
-    subroutine output_stenc_scal(file,a,ndim)
+    subroutine output_pencil_scal(file,a,ndim)
 !
-!  Write snapshot file of stenciled scalar data (for debugging).
-!  Wrapper to the C routine output_stenciled_c.
+!  Write snapshot file of penciled scalar data (for debugging).
+!  Wrapper to the C routine output_penciled_c.
 !
 !  15-feb-02/wolf: coded
 !
@@ -224,11 +224,11 @@ contains
       if (ndim /= 1) &
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
-      call output_stenciled_c(file, a, ndim, &
+      call output_penciled_c(file, a, ndim, &
                               imn, mm(imn), nn(imn), t, &
                               nx, ny, nz, nghost, len(file))
 !
-    endsubroutine output_stenc_scal
+    endsubroutine output_pencil_scal
 !***********************************************************************
     subroutine outpus(file,a,nn)
 !
