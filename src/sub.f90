@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.193 2004-07-02 02:32:03 dobler Exp $ 
+! $Id: sub.f90,v 1.194 2004-07-08 12:01:47 ajohan Exp $ 
 
 module Sub 
 
@@ -1963,6 +1963,7 @@ module Sub
     subroutine update_snaptime(file,tout,nout,dtout,t,lout,ch,enum)
 !
       use General
+      use Cdata, only: ldsnap_unit_orbits,deltay,Ly
 !
 !  Check whether we need to write snapshot; if so, update the snapshot
 !  file (e.g. tsnap.dat).
@@ -1983,6 +1984,7 @@ module Sub
         tt=alog10(t)
       else
         tt=t
+        if (ldsnap_unit_orbits) tt = deltay/Ly
       endif
 !
 !  if enum=.false. we don't want to generate a running file number

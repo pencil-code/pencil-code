@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.186 2004-07-06 00:18:07 theine Exp $ 
+! $Id: param_io.f90,v 1.187 2004-07-08 12:01:47 ajohan Exp $ 
 
 module Param_IO
 
@@ -80,7 +80,8 @@ module Param_IO
        lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
        save_lastsnap, &
        force_lower_bound,twod, &
-       border_frac,border_frac_x,border_frac_y,border_frac_z
+       border_frac,border_frac_x,border_frac_y,border_frac_z, &
+       ldsnap_unit_orbits
   contains
 
 !***********************************************************************
@@ -251,13 +252,6 @@ module Param_IO
         cs20=cs0**2
       endif
       lnrho0=alog(rho0)
-!
-!  calculate shear flow velocity; if Sshear is not given
-!  then Sshear=-qshear*Omega is calculated.
-!
-      if (lshear) then
-        if (Sshear==impossible) Sshear=-qshear*Omega
-      endif
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries
@@ -583,6 +577,14 @@ module Param_IO
       ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
       if (lroot) write(*,'(1x,a,4i4)') &
         'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
+!
+!  Give warning when dsnap or dspec are not fractions 1/n of an orbit.
+!  Leads to missing snapshots when deltay is adjusted (by shear).
+!
+      if (ldsnap_unit_orbits .and. &
+          (mod(1/dsnap,1.) /= 0. .or. mod(1/dspec,1.) /= 0.)) &
+          print*, 'read_runpars:'// &
+          ' WARNING - dsnap and dspec must be fractions 1/n of an orbit'     
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries
