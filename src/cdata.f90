@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.183 2003-11-24 16:03:35 mcmillan Exp $
+! $Id: cdata.f90,v 1.184 2003-11-24 18:24:46 theine Exp $
 
 module Cdata
 
@@ -13,13 +13,13 @@ module Cdata
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! sprherical unit radius vector
-  real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
+  real, dimension (nx) :: maxadvec2,maxdiffus,maxdss,maxdlnrho
 
   real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor
 
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
-  real :: t,dt=0.,cdt=0.4,cdtv=0.4,ttransient=0.
+  real :: t,dt=0.,cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: r_int=0.0,r_ext=impossible   ! for spherical shell problems
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
@@ -103,7 +103,8 @@ module Cdata
 
   logical :: lstart=.false., lrun=.false.
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
-  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false., old_cdtv=.true.
+  logical :: lmpicomm=.false., lforcing=.false., lpostproc=.false.
+  logical :: old_UUmax=.true.,old_cdtv=.true.
   logical :: lspecial=.false., lwrite_slices=.false., lwrite_2daverages=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.false.,headtt=.true.,ldt,lfirst,ldiagnos,lvid

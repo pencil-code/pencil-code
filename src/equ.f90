@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.169 2003-11-24 16:03:35 mcmillan Exp $
+! $Id: equ.f90,v 1.170 2003-11-24 18:24:46 theine Exp $
 
 module Equ
 
@@ -223,7 +223,7 @@ module Equ
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb,gshock
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
       real, dimension (nx) :: cs2, TT1, shock
-      real :: fac, facheat
+      real :: facdiffus,facdss,facdlnrho
 !
 !  print statements when they are first executed
 !
@@ -231,7 +231,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.169 2003-11-24 16:03:35 mcmillan Exp $")
+           "$Id: equ.f90,v 1.170 2003-11-24 18:24:46 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -311,7 +311,6 @@ module Equ
 !  
         maxdiffus  = 0.
         maxadvec2  = 0.
-        maxheating = 0.
 !
 !  calculate inverse density
 !  WD: Also needed with heat conduction, so we better calculate it in all
@@ -379,17 +378,45 @@ module Equ
 !  This has to do with the term on the diagonal, cdtv depends on order of scheme
 !
         if (lfirst.and.ldt) then
-          if (old_cdtv) then
-            fac=cdt/(cdtv*dxmin)
+          !
+          !  timestep limitation by entropy variation
+          !
+          if (lentropy) then
+            maxdss=maxval(abs(df(l1:l2,m,n,iss)))
+            facdss=cdt*dxmin/cdts
           else
-            fac=cdt/(cdtv*dxmin)*dimensionality
+            maxdss=0.0
+            facdss=0.0
           endif
-          facheat=dxmin/cdt
-! if(ip<=14) print*,'pde: facheat,maxheating(1)=',facheat,maxheating(1)
-! if(ip<=14) print*,'pde: maxadvec2(1),fac=',maxadvec2(1),fac
-! if(ip<=14) print*,'pde: maxdiffus(1),UUmax,dxmin=',maxdiffus(1),UUmax,dxmin
-          call max_mn((facheat*maxheating)+ &
-               sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
+          !
+          !  timestep limitation by density variation
+          !
+          if (ldensity) then
+            maxdlnrho=maxval(abs(df(l1:l2,m,n,ilnrho)))
+            facdlnrho=cdt*dxmin/cdtr
+          else
+            maxdlnrho=0.0
+            facdlnrho=0.0
+          endif
+          !
+          !  timestep limitation by diffusion
+          !
+          if (old_cdtv) then
+            facdiffus=cdt/(cdtv*dxmin)
+          else
+            facdiffus=cdt/(cdtv*dxmin)*dimensionality
+          endif
+          !
+          !  sum or maximum of the above terms?
+          !  (old_UUmax=.true. by default)
+          !
+          if (old_UUmax) then
+            call max_mn(sqrt(maxadvec2)+(facdss*maxdss)+(facdiffus*maxdiffus), &
+                        UUmax)
+          else
+            call max_mn(amax1(sqrt(maxadvec2),facdiffus*maxdiffus, &
+                              facdss*maxdss,facdlnrho*facdlnrho),UUmax)
+          endif
         endif
 !
 !  calculate density diagnostics: mean density
