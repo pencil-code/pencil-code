@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.38 2004-03-17 16:05:19 snod Exp $
+### $Id: Makefile.src,v 1.39 2004-03-19 09:45:39 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -144,7 +144,8 @@ FCCLEANER=
 #FFLAGS=-O3 #(barilko)
 #FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
-#FC=ifc #(sandin|davey[1-2]|nw43)  
+#FC=ifc #(sandin|davey[1-2])  
+#FC=ifort #(nw43)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 #FC=ifort #(cosmo)
