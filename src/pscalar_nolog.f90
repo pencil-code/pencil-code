@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.18 2004-02-13 16:20:15 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.19 2004-04-01 14:26:38 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -29,6 +29,7 @@ module Pscalar
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
   real :: eps_ctog=0.01
+  real :: unit_rhocc=1.
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
@@ -82,7 +83,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.18 2004-02-13 16:20:15 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.19 2004-04-01 14:26:38 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -313,7 +314,7 @@ module Pscalar
         rho=exp(f(l1:l2,m,n,ilnrho))
         cc1=rho*abs(cc)
         call dot2_mn(gcc,gcc2); gcc1=sqrt(gcc2)
-        if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
+        if (i_rhoccm/=0) call sum_mn_name(rho*cc/unit_rhocc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)
         if (i_lnccmz/=0) call xysum_mn_name_z(cc,i_lnccmz)
         if (i_ucm/=0) call sum_mn_name(uu(:,3)*cc,i_ucm)
