@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.74 2003-08-13 15:30:07 mee Exp $
+! $Id: ionization.f90,v 1.75 2003-08-19 11:00:58 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -24,6 +24,11 @@ module Ionization
   interface ionget                      ! Overload subroutine ionget
     module procedure ionget_pencil
     module procedure ionget_point
+  end interface
+  
+  interface perturb_energy              ! Overload subroutine perturb_energy
+    module procedure perturb_energy_pencil
+    module procedure perturb_energy_point
   end interface
 
   !  secondary parameters calculated in initialize
@@ -73,7 +78,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.74 2003-08-13 15:30:07 mee Exp $")
+           "$Id: ionization.f90,v 1.75 2003-08-19 11:00:58 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -213,6 +218,50 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
+    subroutine perturb_energy_point(lnrho,EE,ss,TT)
+
+      use Mpicomm, only: stop_it
+      
+      real,intent(in) :: lnrho,EE
+      real, intent(out) :: ss,TT
+      real :: yH
+!
+!        TT=( (EE-yH0*ss_ion*TT_ion*exp(lnrho))*2. ) / &
+!              (3. * (1.+yH0+xHe) * ss_ion * exp(lnrho) )
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+!        ss=(1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term
+      call stop_it("perturb_energy_point: NOT IMPLEMENTED IN FULL IONIZATION")
+      ss=0.
+      TT=0.
+      if (ip==0) print*,lnrho,EE
+    end subroutine perturb_energy_point
+!***********************************************************************
+    subroutine perturb_energy_pencil(lnrho,EE,ss,TT)
+
+      use Mpicomm, only: stop_it
+      
+      real, dimension(nx) ,intent(in) :: lnrho,EE
+      real, dimension(nx) ,intent(out) :: ss,TT
+      real, dimension(nx) :: yH
+
+      call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+      ss=0.
+      TT=0.
+      if (ip==0) print*,lnrho,EE
+    end subroutine perturb_energy_pencil
+!***********************************************************************
+    subroutine getdensity(EE,TT,yH,rho)
+
+      use Mpicomm, only: stop_it
+      
+      real, intent(in) :: EE,TT,yH
+      real, intent(out) :: rho
+
+      rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
+
+    end subroutine getdensity
+!***********************************************************************
     subroutine ioncalc_ss_point(lnrho,TT,ss)
       real,intent(in) :: lnrho,TT
       real, intent(out) :: ss
@@ -236,13 +285,6 @@ module Ionization
          +(1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)
 !
     end subroutine ioncalc_ss_pencil
-!***********************************************************************
-    subroutine isothermal_density_ion(pot,tmp)
-      real, dimension (nx), intent(in) :: pot
-      real, dimension (nx), intent(out) :: tmp
-!ajwm WRONG
-      tmp=pot/(1+yH0+xHe)/ss_ion
-    end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
 !

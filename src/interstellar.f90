@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.43 2003-08-15 08:58:51 brandenb Exp $
+! $Id: interstellar.f90,v 1.44 2003-08-19 11:00:58 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -106,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.43 2003-08-15 08:58:51 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.44 2003-08-19 11:00:58 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -686,12 +686,13 @@ find_SN: do n=n1,n2
       
       integer, parameter :: point_width=4
      ! integer :: point_width=8            ! vary for debug, tests
-      real, dimension(nx) :: deltarho, deltaEE, ee_old, rho_old, TT_old, rho_new
+      real, dimension(nx) :: deltarho, deltaEE, ee_old
+      real, dimension(nx) :: rho_old, TT_old, ss_new,lnrho_new
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
      ! the following not really wanted, but are required if we want
      ! to use the thermodynamics function in the [No]Ionisation module
-      real, dimension(nx) ::  lnrho_old, ss_old, TT1_old, cs2_old, cp1tilde_old ,yH_old
+      real, dimension(nx) ::  lnrho_old, ss_old, TT1_old, cs2_old, yH_old
 
       logical :: lmove_mass=.false.
       integer :: idim
@@ -718,14 +719,11 @@ find_SN: do n=n1,n2
       !  Now deal with (if nec.) mass relocation
       !
 
-      ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN / ee_SN)) ) / gamma  
-      call ionget(lnrho_SN,ss_SN,yH_SN_new,TT_SN_new)
-!      TT_SN_new=1./TT_SN_new  
-
-!      TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
+      call perturb_energy(lnrho_SN,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
 
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH_SN, yH_SN_new=',TT_SN,TT_SN_new,TT_SN_min, yH_SN, yH_SN_new
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min =', $
+                                TT_SN,TT_SN_new,TT_SN_min
 
       if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
@@ -735,12 +733,16 @@ find_SN: do n=n1,n2
          ! must know the total moved mass BEFORE attempting mass relocation 
 
          rho_SN_new=c_SN/TT_SN_min*TTunits
-         ss_SN_new=ss_SN + ( alog(1.+ (c_SN / rho_SN_new / ee_SN)) ) / gamma  
+
+         ! ASSUME: SN will fully ionize the gas at its centre
+         call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
-         call ionget(lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new)
+
+         call perturb_energy(lnrho_SN_new,(ee_SN*rho_SN)+c_SN,ss_SN_new,TT_SN_new)
 
          if(lroot) print*, &
-            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=',TT_SN_new,rho_SN_new
+            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', $
+                                                     TT_SN_new,rho_SN_new
 
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
          fmpi1_tmp=(/ profile_integral /)
@@ -766,33 +768,25 @@ find_SN: do n=n1,n2
 
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
             ! Apply perturbations
-            ! (\delta s)/cp = (1/gamma)*ln(1+(\delta e / e)) 
-            !                 - (gamma1/gamma)*ln(1+(\delta rho / rho))
-
             lnrho_old=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho_old)
             ss_old=f(l1:l2,m,n,iss)
 
-            !compare old and new conversions for consistency...
             call ionget(f,yH_old,TT_old)
             call thermodynamics(lnrho_old,ss_old,yH_old,TT_old,ee=ee_old)
-            ! TT_old=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)/gamma1*cp1
-            ! ee_old=TT_old/TTunits
-            ! TT1=1./TT_old
 
             ! use amax1 with rho_min to ensure rho doesn't go negative
-            rho_new(:)=amax1(rho_old(:)+deltarho(:),rho_min)
-            if (lmove_mass) f(l1:l2,m,n,ilnrho)=alog(rho_new)
-            f(l1:l2,m,n,iss)=ss_old + &
-                 ( alog(1.+ (deltaEE  &            ! / 12.56637061
-                            / rho_new / ee_old)) ) / gamma  
-            if (lmove_mass) f(l1:l2,m,n,iss) = f(l1:l2,m,n,iss) &
-                             - (gamma1*alog(rho_new / rho_old) )/ gamma
- 
-! EXTRA debug stuff
-!            call thermodynamics(f(l1:l2,m,n,ilnrho), & 
-!                  f(l1:l2,m,n,iss),cs2,TT1,cp1tilde,InternalEnergy=e_new)
-!            EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(ee_old*rho_old))
+            if (lmove_mass) then
+              lnrho_new(:)=alog(amax1(rho_old(:)+deltarho(:),rho_min))
+            else
+              lnrho_new(:)=lnrho_old(:)
+            endif
+  
+            call perturb_energy(lnrho_new, &
+                                   (ee_old*rho_old)+deltaEE,ss_new,TT_new)
+
+            if (lmove_mass) f(l1:l2,m,n,ilnrho)=lnrho_new
+            f(l1:l2,m,n,iss)=ss_new
 
        enddo
       enddo

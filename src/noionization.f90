@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.54 2003-08-09 19:47:27 mee Exp $
+! $Id: noionization.f90,v 1.55 2003-08-19 11:00:58 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -23,6 +23,11 @@ module Ionization
   interface ionget
     module procedure ionget_pencil
     module procedure ionget_point
+  end interface
+
+  interface perturb_energy              ! Overload subroutine perturb_energy
+    module procedure perturb_energy_pencil
+    module procedure perturb_energy_point
   end interface
 
   ! secondary parameters calculated in initialize
@@ -70,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.54 2003-08-09 19:47:27 mee Exp $")
+           "$Id: noionization.f90,v 1.55 2003-08-19 11:00:58 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -123,6 +128,45 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
+    subroutine perturb_energy_point(lnrho,EE,ss,TT)
+      use Mpicomm, only: stop_it
+      
+      real, intent(in) :: lnrho,EE
+      real, intent(out) :: ss,TT
+      real :: yH,K
+
+      call stop_it("perturb_energy_point: NOT IMPLEMENTED IN NO IONIZATION")
+      ss=0.
+      TT=0.
+      if (ip==0) print*,lnrho,EE
+    end subroutine perturb_energy_point
+!***********************************************************************
+    subroutine perturb_energy_pencil(lnrho,EE,ss,TT)
+      use Mpicomm, only: stop_it
+      
+      real, dimension(nx), intent(in) :: lnrho,EE
+      real, dimension(nx), intent(out) :: ss,TT
+      real, dimension(nx) :: yH,K
+
+      call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+      ss=0.
+      TT=0.
+      if (ip==0) print*,lnrho,EE
+    end subroutine perturb_energy_pencil
+!***********************************************************************
+    subroutine getdensity(EE,TT,yH,rho)
+      use Mpicomm, only: stop_it
+      
+      real, intent(in) :: EE,TT,yH
+      real, intent(out) :: rho
+
+      call stop_it("getdensity: NOT IMPLEMENTED IN NO IONIZATION")
+      !rho = EE / ((1.5*(1+yH+xHe)*TT + yH*TT_ion) * ss_ion)
+      if (ip==0) print*,EE,TT,yH
+      rho=0.
+
+    end subroutine getdensity
+!***********************************************************************
     subroutine ioncalc_ss_point(lnrho,TT,ss)
 !
       real,intent(in) :: lnrho,TT
@@ -148,6 +192,7 @@ module Ionization
 !
       tmp=pot
 !
+
     end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
