@@ -1,8 +1,8 @@
-; $Id: pc_magic_var.pro,v 1.9 2004-07-19 11:27:26 mee Exp $
+; $Id: pc_magic_var.pro,v 1.10 2004-08-17 10:26:27 ajohan Exp $
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-07-19 11:27:26 $
-;  $Revision: 1.9 $
+;  $Date: 2004-08-17 10:26:27 $
+;  $Revision: 1.10 $
 ;
 ;  25-may-04/tony: coded 
 ;
@@ -123,7 +123,7 @@ pro pc_magic_var,variables,tags,param=param,datadir=datadir
     ; Dust density
     endif else if variables[iv] eq 'rhod' then begin
       tags[iv]=variables[iv]
-      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod'"
+      variables[iv]="pc_dust_aux(nd=nd,md=md,param=param,var='rhod')"
 
     ; Dust distribution function dn = f dm
     endif else if variables[iv] eq 'fd' then begin
