@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.53 2004-03-17 16:16:43 theine Exp $
+! $Id: radiation_ray.f90,v 1.54 2004-03-26 14:25:23 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -43,7 +43,10 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
-  logical :: nocooling=.false.
+  logical :: nocooling=.false.,lrad_debug=.false.
+
+  character :: lrad_str,mrad_str,nrad_str
+  character(len=3) :: raydirection_str
 !
 !  definition of dummy variables for FLD routine
 !
@@ -52,10 +55,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0,i_Qradrms,i_Qradmax
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,bc_rad
+       radx,rady,radz,rad2max,bc_rad,lrad_debug
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,bc_rad,nocooling
+       radx,rady,radz,rad2max,bc_rad,nocooling,lrad_debug
 
   contains
 
@@ -94,7 +97,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.53 2004-03-17 16:16:43 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.54 2004-03-26 14:25:23 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -277,6 +280,17 @@ module Radiation
       if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
       if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
 !
+      if (lrad_debug) then
+        lrad_str='0'; mrad_str='0'; nrad_str='0'
+        if (lrad>0) lrad_str='p'
+        if (lrad<0) lrad_str='m'
+        if (mrad>0) mrad_str='p'
+        if (mrad<0) mrad_str='m'
+        if (nrad>0) nrad_str='p'
+        if (nrad<0) nrad_str='m'
+        raydirection_str=lrad_str//mrad_str//nrad_str
+      endif
+!
     endsubroutine raydirection
 !***********************************************************************
     subroutine Qintrinsic
@@ -289,12 +303,14 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !   3-aug-03/axel: added amax1(dtau,dtaumin) construct
 !
-      use Cdata, only: ldebug,headt,dx,dy,dz
+      use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap
+      use IO, only: output
 !
       real, dimension(mx) :: dtau,emdtau,Qrad_term
       real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2
       real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p,emdtau_m
       integer :: l,m,n
+      character(len=3) :: raydir
 !
 !  identifier
 !
@@ -341,6 +357,11 @@ module Radiation
 !
       enddo
       enddo
+
+      if (lrad_debug) then
+        call output(trim(directory_snap)//'/tau-'//raydirection_str//'.dat',tau,1)
+        call output(trim(directory_snap)//'/Qintr-'//raydirection_str//'.dat',Qrad,1)
+      endif
 !
     endsubroutine Qintrinsic
 !***********************************************************************
@@ -532,8 +553,9 @@ module Radiation
 !
 !  16-jun-03/axel+tobi: coded
 !
-      use Cdata, only: ldebug,headt
+      use Cdata, only: ldebug,headt,directory_snap
       use Slices, only: Isurf_xy
+      use IO, only: output
 !
       integer :: l,m,n
 !
@@ -556,6 +578,10 @@ module Radiation
 !
       if (lrad==0.and.mrad==0.and.nrad==1) then
         Isurf_xy=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+      endif
+!
+      if (lrad_debug) then
+        call output(trim(directory_snap)//'/Qrev-'//raydirection_str//'.dat',Qrad,1)
       endif
 !
     endsubroutine Qrevision
