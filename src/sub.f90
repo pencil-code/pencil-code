@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.111 2003-02-03 20:15:44 dobler Exp $ 
+! $Id: sub.f90,v 1.112 2003-02-03 21:17:08 dobler Exp $ 
 
 module Sub 
 
@@ -188,8 +188,9 @@ module Sub
       enddo
 !
 !  sum up ones for normalization; store result in fnamerz(:,0,:,1)
+!  Only do this for the first n, or we would sum up nz times too often
 !
-      if (iname==1) then
+      if (iname==1 .and. n_nghost==1) then
         do ir=1,nrcyl
           fnamerz(ir,0,ipz+1,iname) &
                = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))   
@@ -209,15 +210,15 @@ module Sub
       real :: r0,width
       integer :: ir
 !
-!  Just for crude testing; the following Gaussian profile sums up to
-!  approximately one. Eventually, we will sum up unity together with the
-!  data to get the exact normalization for arbitrary profiles.
+!  The following Gaussian profile sums up to approximately one. Since we
+!  are now explicitly normalizing, this is no longer important.
 !
-      width = drcyl
+      width = .5*drcyl
       do ir=1,nrcyl
         r0 = rcyl(ir)
-        phiavg_profile(ir,:) &
-             = 0.06349*dx*dy/(r0*width)*exp(-0.5*((rcyl_mn-r0)/width)**2)
+!        phiavg_profile(ir,:) &
+!             = 0.06349*dx*dy/(r0*width)*exp(-0.5*((rcyl_mn-r0)/width)**2)
+        phiavg_profile(ir,:) = exp(-0.5*((rcyl_mn-r0)/width)**4)
       enddo
 !
     endsubroutine calc_phiavg_profile
