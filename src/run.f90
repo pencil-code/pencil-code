@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.105 2002-10-22 12:34:28 brandenb Exp $
+! $Id: run.f90,v 1.106 2002-10-22 17:03:54 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.105 2002-10-22 12:34:28 brandenb Exp $")
+             "$Id: run.f90,v 1.106 2002-10-22 17:03:54 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -125,6 +125,10 @@
 !  time step even if we didn't read ghost zones
 !
         call update_ghosts(f)
+!
+!  save spectrum snapshot
+!
+        if (dspec .NE. impossible) call powersnap(f)
 !
 !  do loop in time
 !
