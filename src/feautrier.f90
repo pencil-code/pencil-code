@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.4 2003-04-02 05:22:26 brandenb Exp $
+! $Id: feautrier.f90,v 1.5 2003-04-02 07:34:04 theine Exp $
 
 module Radiation
 
@@ -53,7 +53,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.4 2003-04-02 05:22:26 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.5 2003-04-02 07:34:04 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -91,7 +91,7 @@ module Radiation
 !
     endsubroutine source_function
 !***********************************************************************
-    subroutine feautrier(f,Prad)
+    function feautrier(f)
 !
 !  Solves the transfer equation using Feautrier's method
 !  At the moment for vertical rays only
@@ -100,35 +100,35 @@ module Radiation
 !
       use Cdata
       use General
-
+!
       real, dimension(mx,my,mz,mvar) :: f
-      real, dimension(mx,my,mz) :: Prad
+      real, dimension(mx,my,mz) :: feautrier
       real, dimension(nz) :: kaprho,tau,Srad_,Prad_
       real, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
-
+!
       do lrad=l1,l2
       do mrad=m1,m2
          kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral(z,kaprho)
          Srad_=Srad(lrad,mrad,n1:n2)
-
+!
          b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
          c(1)=-2./(tau(2)-tau(1))**2
          a(nz)=0.
          b(nz)=1.
-
+!
          a(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2))
          b(2:nz-1)=1.+2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2)) &
                      +2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
          c(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
-
+!
          call tridag(a,b,c,Srad_,Prad_)
-
-         Prad(lrad,mrad,n1:n2)=Prad_
+!
+         feautrier(lrad,mrad,n1:n2)=Prad_
       enddo
       enddo
-    endsubroutine feautrier
+    endfunction feautrier
 !***********************************************************************
     subroutine radtransfer(f)
 !
@@ -141,7 +141,6 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar) :: f
-      real, dimension(mx,my,mz) :: Prad
 !
 !  identifier
 !
@@ -149,11 +148,8 @@ module Radiation
 !
       call source_function(f)
       Qrad=-Srad
-
-!AB: could avoid Prad array by adding in feautrier directly into Qrad
-      call feautrier(f,Prad)
-      Qrad=Qrad+Prad
-
+!
+      Qrad=Qrad+feautrier(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
