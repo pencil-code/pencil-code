@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.76 2002-08-03 20:52:13 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -219,7 +219,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.76 $ $}
+\date{\today,~ $ $Revision: 1.77 $ $}
 
 % ====================================================================== %
 
@@ -248,7 +248,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.76 $ $}
+  \emph{\today,~ $ $Revision: 1.77 $ $}
 
 
 \end{center}
@@ -1847,7 +1847,7 @@ the latest information, you should have a look at the code.
 \midrule
   \var{nu} [$0.$]
                & kinematical viscosity. \\
-  \var{ivisc} [$0$]
+  \var{ivisc} [\code{'nu-const'}]
                & select form of viscous term; currently valid choices are
                  \begin{description}
                  \item[\code{'simplified'}] -- simplified viscous force
@@ -1926,13 +1926,16 @@ the latest information, you should have a look at the code.
   \var{isothtop} [start]
                & flag for isothermal top layer for solar convection case.
                  See start parameters, p.~\pageref{mpoly012-init}. \\
-  \var{cheat} [$0.$], \\
+  \var{luminosity} [$0.$], \\
   \var{wheat} [$0.1$]
                & strength and width of heating region. \\
   \var{cool} [$0.$], \\
   \var{wcool} [$0.1$]
                & strength and width of cooling region. \\
-  \var{Fheat} [start]
+  \var{rcool} [$1.$], \\
+               & radius of cooling region: cool for
+                 $|\xv| \ge \mbox{\var{rcool}}$.
+  \var{Fbot} [start]
                & heat flux for boundary condition \option{c1}.
                  For polytropic atmospheres calculated by \cmd{start.x}. \\
   \var{chi_t} [$0.$]
@@ -3220,7 +3223,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.76 2002-08-03 20:52:13 dobler Exp $ $}
+$ $Id: manual.tex,v 1.77 2002-08-07 19:55:36 dobler Exp $ $}
 
 
 \end{document}
