@@ -1,4 +1,4 @@
-;  $Id: pc_varcontent.pro,v 1.9 2004-05-30 13:53:57 ajohan Exp $
+;  $Id: pc_varcontent.pro,v 1.10 2004-12-05 15:10:57 brandenb Exp $
 FUNCTION pc_varcontent,datadir=datadir,dim=dim,param=param,quiet=quiet
 COMPILE_OPT IDL2,HIDDEN
 
@@ -145,11 +145,19 @@ varcontent[iYY_chiral].idlinit    = INIT_SCALAR
 varcontent[iYY_chiral].idlvarloc= 'YY_chiral_loc'
 varcontent[iYY_chiral].idlinitloc = INIT_SCALAR_LOC
 
+default,ialpM,0
+varcontent[ialpM].variable = 'alpM'
+varcontent[ialpM].idlvar   = 'alpM'
+varcontent[ialpM].idlinit    = INIT_SCALAR
+varcontent[ialpM].idlvarloc= 'alpM_loc'
+varcontent[ialpM].idlinitloc = INIT_SCALAR_LOC
+
 varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
 varcontent[iecr].idlvar   = 'ecr'
 varcontent[iecr].idlinit    = INIT_SCALAR
 varcontent[iecr].idlvarloc= 'ecr_loc'
 varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
+
 dustcount=n_elements(iuud) 
 if (dustcount gt 0L) then begin
 varcontent[iuud[0]].variable = 'Dust velocity  (uud)'
