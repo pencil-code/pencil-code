@@ -1,7 +1,7 @@
-! $Id: dustdensity.f90,v 1.20 2003-12-10 10:44:35 ajohan Exp $
+! $Id: dustdensity.f90,v 1.21 2003-12-29 17:09:26 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
-!  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
+!  It contains dnd_dt and init_nd, among other auxiliary routines.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -19,29 +19,23 @@ module Dustdensity
   use Dustvelocity
 
   implicit none
-
-  real, dimension(ndustspec) :: ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.
-  real, dimension(ndustspec) :: lnrhod_const=0.,rhod_const=1.
-  real, dimension(ndustspec) :: dust_to_gas_ratio=0.
-  real, dimension(ndustspec) :: kx_lnrhod,ky_lnrhod,kz_lnrhod
-  real :: rhod0=1.,lnrhod0,ampllnrhod_all,dust_to_gas_ratio_all
-  real :: kx_lnrhod_all,ky_lnrhod_all,kz_lnrhod_all,amplrhod_all
-  real :: rhod_const_all,lnrhod_const_all,cdiffrhod_all
-  character (len=labellen), dimension(ndustspec) :: initlnrhod='zero'
-  character (len=labellen) :: initlnrhod_all=''
+  
+  real, dimension(nx,ndustspec,ndustspec) :: dkern
+  real, dimension(ndustspec) :: cdiffnd=0
+  real :: nd_const=1.,dkern_cst=1.,dust_to_gas_ratio=0.,rhod0=1.,nd00=0.
+  real :: cdiffnd_all
+  character (len=labellen) :: initnd='zero'
+  logical :: lcalcdkern=.true.
 
   namelist /dustdensity_init_pars/ &
-       rhod0, ampllnrhod, ampllnrhod_all, initlnrhod, initlnrhod_all, &
-       dust_to_gas_ratio, dust_to_gas_ratio_all, &
-       kx_lnrhod, kx_lnrhod_all, ky_lnrhod, ky_lnrhod_all, &
-       kz_lnrhod, kz_lnrhod_all, amplrhod, amplrhod_all, &
-       rhod_const, rhod_const_all, lnrhod_const, lnrhod_const_all
+       rhod0, initnd, dust_to_gas_ratio, nd_const, dkern_cst, nd00
 
   namelist /dustdensity_run_pars/ &
-       rhod0, cdiffrhod, cdiffrhod_all
+       rhod0, cdiffnd, cdiffnd_all, lcalcdkern
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer, dimension(ndustspec) :: i_rhodm=0
+  integer :: i_rhodm
+  integer, dimension(ndustspec) :: i_ndm=0
 
   contains
 
@@ -49,7 +43,7 @@ module Dustdensity
     subroutine register_dustdensity()
 !
 !  Initialise variables which should know that we solve the
-!  compressible hydro equations: ilnrhod; increase nvar accordingly.
+!  compressible hydro equations: ind; increase nvar accordingly.
 !
 !   4-jun-02/axel: adapted from hydro
 !
@@ -59,7 +53,7 @@ module Dustdensity
 !
       logical, save :: first=.true.
       integer :: idust
-      character (len=4) :: sidust
+      character (len=4) :: sdust
 !
       if (.not. first) call stop_it('register_dustdensity: called twice')
       first = .false.
@@ -68,23 +62,23 @@ module Dustdensity
 !
       do idust=1,ndustspec
         if (idust .eq. 1) then
-          ilnrhod(1) = iuud(1)+3         ! indix to access lam
+          ind(1) = iuud(1)+3         ! indix to access lam
         else
-          ilnrhod(idust) = ilnrhod(idust-1)+4
+          ind(idust) = ind(idust-1)+4
         endif  
         nvar = nvar+1                 ! add 1 variable pr. dust layer
 !
         if ((ip<=8) .and. lroot) then
           print*, 'register_dustdensity: idust = ', idust
           print*, 'register_dustdensity: nvar = ', nvar
-          print*, 'register_dustdensity: ilnrhod = ', ilnrhod(idust)
+          print*, 'register_dustdensity: ind = ', ind(idust)
         endif
       enddo
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.20 2003-12-10 10:44:35 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.21 2003-12-29 17:09:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -94,16 +88,16 @@ module Dustdensity
 !  Writing files for use with IDL
 !
       do idust=1,ndustspec
-        call chn(idust,sidust)
-        if (ndustspec .eq. 1) sidust = ''
+        call chn(idust,sdust)
+        if (ndustspec .eq. 1) sdust = ''
         if (lroot) then
           if (maux == 0) then
-            if (nvar < mvar) write(4,*) ',lnrhod'//trim(sidust)//' $'
-            if (nvar == mvar) write(4,*) ',lnrhod'//trim(sidust)
+            if (nvar < mvar) write(4,*) ',nd'//trim(sdust)//' $'
+            if (nvar == mvar) write(4,*) ',nd'//trim(sdust)
           else
-            write(4,*) ',lnrhod'//trim(sidust)//' $'
+            write(4,*) ',nd'//trim(sdust)//' $'
           endif
-          write(15,*) 'lnrhod'//trim(sidust)//' = fltarr(mx,my,mz,1)*one'
+          write(15,*) 'nd'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
         endif
       enddo
 !
@@ -118,95 +112,29 @@ module Dustdensity
 !  08-dec-03/anders: Copy *_all parameters to whole array
       integer :: idust
 !
+      select case (initnd)     
+      
+      case('kernel_cst')
+        dkern(:,:,:) = dkern_cst
+        lcalcdkern=.false.
+
+      endselect
+!
 !  If *_all set, make all empty *(:) = *_all
 !
-      if (initlnrhod_all .ne. '') then
+      if (cdiffnd_all .ne. 0.) then
         if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: initlnrhod_all=',initlnrhod_all
+            print*, 'initialize_dustdensity: cdiffnd_all=',cdiffnd_all
         do idust=1,ndustspec
-          if (initlnrhod(idust) .eq. 'zero') initlnrhod(idust)=initlnrhod_all
-        enddo
-      endif
-!           
-      if (dust_to_gas_ratio_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: dust_to_gas_ratio_all=', &
-            dust_to_gas_ratio_all
-        do idust=1,ndustspec
-          if (dust_to_gas_ratio(idust) .eq. 0.) &
-              dust_to_gas_ratio(idust)=dust_to_gas_ratio_all
-        enddo
-      endif
-!           
-      if (kx_lnrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: kx_lnrhod_all=',kx_lnrhod_all
-        do idust=1,ndustspec
-          if (kx_lnrhod(idust) .eq. 0.) kx_lnrhod(idust)=kx_lnrhod_all
-        enddo
-      endif
-!           
-      if (ky_lnrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: ky_lnrhod_all=',ky_lnrhod_all
-        do idust=1,ndustspec
-          if (ky_lnrhod(idust) .eq. 0.) ky_lnrhod(idust)=ky_lnrhod_all
-        enddo
-      endif
-!           
-      if (kz_lnrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: kz_lnrhod_all=',kz_lnrhod_all
-        do idust=1,ndustspec
-          if (kz_lnrhod(idust) .eq. 0.) kz_lnrhod(idust)=kz_lnrhod_all
-        enddo
-      endif
-!           
-      if (amplrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: amplrhod_all=',amplrhod_all
-        do idust=1,ndustspec
-          if (amplrhod(idust) .eq. 0.) amplrhod(idust)=amplrhod_all
-        enddo
-      endif
-!           
-      if (ampllnrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: ampllnrhod_all=',ampllnrhod_all
-        do idust=1,ndustspec
-          if (ampllnrhod(idust) .eq. 0.) ampllnrhod(idust)=ampllnrhod_all
-        enddo
-      endif
-!           
-      if (rhod_const_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: rhod_const_all=',rhod_const_all
-        do idust=1,ndustspec
-          if (rhod_const(idust) .eq. 1.) rhod_const(idust)=rhod_const_all
-        enddo
-      endif
-!           
-      if (lnrhod_const_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: lnrhod_const_all=',lnrhod_const_all
-        do idust=1,ndustspec
-          if (lnrhod_const(idust) .eq. 0.) lnrhod_const(idust)=lnrhod_const_all
-        enddo
-      endif
-!           
-      if (cdiffrhod_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustdensity: cdiffrhod_all=',cdiffrhod_all
-        do idust=1,ndustspec
-          if (cdiffrhod(idust) .eq. 0.) cdiffrhod(idust)=cdiffrhod_all
+          if (cdiffnd(idust) .eq. 0.) cdiffnd(idust) = cdiffnd_all
         enddo
       endif
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
-    subroutine init_lnrhod(f,xx,yy,zz)
+    subroutine init_nd(f,xx,yy,zz)
 !
-!  initialise lnrhod; called from start.f90
+!  initialise nd; called from start.f90
 !
 !  7-nov-01/wolf: coded
 ! 28-jun-02/axel: added isothermal
@@ -222,60 +150,61 @@ module Dustdensity
       real, dimension (mx,my,mz) :: xx,yy,zz
       integer :: i,j,idust
 !
-!  Loop over dust layers
+!  different initializations of nd (called from start).
 !
-      do idust=1,ndustspec
-!
-!  different initializations of lnrhod (called from start).
-!
-        lnrhod0=alog(rhod0)
-
-        select case(initlnrhod(idust))
+      select case(initnd)
  
-        case('zero'); if(lroot) print*,'init_lnrhod: zero lnrhod'
-        case('const_rhod'); f(:,:,:,ilnrhod(idust))=alog(rhod_const(idust))
-        case('const_lnrhod'); f(:,:,:,ilnrhod(idust))=lnrhod_const(idust)
-        case('frac_of_gas_loc')
-          if (dust_to_gas_ratio(idust) .lt. 0.) &
-              call stop_it("init_lnrhod: Negative dust_to_gas_ratio!")
-          f(:,:,:,ilnrhod(idust))=alog(dust_to_gas_ratio(idust))+f(:,:,:,ilnrho)
-        case('frac_of_gas_glo')
-          if (dust_to_gas_ratio(idust) .lt. 0.) &
-              call stop_it("init_lnrhod: Negative dust_to_gas_ratio!")
-          do i=1,mx
-            do j=1,my
-              f(i,j,:,ilnrhod(idust)) = &
-                  alog(dust_to_gas_ratio(idust))+f(4,4,:,ilnrho)
+      case('zero'); if(lroot) print*,'init_nd: zero nd'
+      case('first')
+        f(:,:,:,ind(1):ind(ndustspec)) = 0.
+        f(:,:,:,ind(1)) = nd00
+      case('MRN77')
+      case('const_nd'); f(:,:,:,ind) = nd_const
+      case('frac_of_gas_loc')
+        if (dust_to_gas_ratio .lt. 0.) &
+            call stop_it("init_nd: Negative dust_to_gas_ratio!")
+        do idust=1,ndustspec
+          f(:,:,:,ind(idust)) = dust_to_gas_ratio/mg(idust)*exp(f(:,:,:,ilnrho))
+        enddo
+      case('frac_of_gas_glo')
+        if (dust_to_gas_ratio .lt. 0.) &
+            call stop_it("init_nd: Negative dust_to_gas_ratio!")
+        do i=1,mx
+          do j=1,my
+            do idust=1,ndustspec
+              f(i,j,:,ind(idust)) = &
+                  dust_to_gas_ratio/mg(idust)*exp(f(4,4,:,ilnrho))
             enddo
           enddo
-        case default
+        enddo
+      case('kernel_cst')
+        print*, 'init_nd: Test case with constant kernel'
+        f(:,:,:,ind(1):ind(ndustspec)) = 0.
+        f(:,:,:,ind(1)) = nd00
+      case default
 !
 !  Catch unknown values
 !
-          if (lroot) print*, 'init_lnrhod: No such value for initlnrhod: ', &
-              trim(initlnrhod(idust))
-          call stop_it("")
+        if (lroot) print*, 'init_nd: No such value for initnd: ', &
+            trim(initnd)
+        call stop_it("")
 
       endselect
 !
 !  sanity check
 !
-        if ( notanumber(f(:,:,:,ilnrhod(idust))) ) then
-          STOP "init_lnrhod: Imaginary dustdensity values"
-        endif
-!
-!  End loop over dust layers
-!
-      enddo
+      if ( notanumber(f(:,:,:,ind)) ) then
+        STOP "init_nd: Imaginary dustdensity values"
+      endif
 !
       if(ip==0) print*,xx,yy,zz ! keep compiler quiet
 !
-    endsubroutine init_lnrhod
+    endsubroutine init_nd
 !***********************************************************************
-    subroutine dlnrhod_dt(f,df,uud,glnrhod,divud,lnrhod)
+    subroutine dnd_dt(f,df,uu,uud,divud,gnd)
 !
 !  continuity equation
-!  calculate dlnrhod/dt = - u.gradlnrhod - divud
+!  calculate dnd/dt = - u.gradnd - nd*divud
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !
@@ -284,14 +213,51 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uud,glnrhod
-      real, dimension (nx) :: lnrhod,divud,uglnrhod,glnrhod2
-      real, dimension (nx) :: del2lnrhod,rhod
-      real :: diffrhod
-      integer :: idust
+      real, dimension (nx,3,3) :: udij
+      real, dimension (nx,3,ndustspec) :: gnd
+      real, dimension (nx,ndustspec) :: nd,uu,uud,divud
+      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud
+      real :: diffnd
+      integer :: i,j,k,idust
+      logical :: lfirstpoint2
 !
-      intent(in)  :: f,uud,divud
-      intent(out) :: df,glnrhod,lnrhod
+      intent(in)  :: f,uu,uud,divud
+      intent(out) :: df,gnd
+!
+!  Abbreviations
+!
+      do idust=1,ndustspec
+        nd(:,idust) = f(l1:l2,m,n,ind(idust))
+      enddo
+!
+!  Calculate kernel of coagulation equation
+!
+      if (lcalcdkern) then
+        do i=1,ndustspec
+          do j=i,ndustspec
+            call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
+                f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
+            deltaud = sqrt(udiudj)
+            dkern(:,i,j) = scolld(i,j)*deltaud
+            dkern(:,j,i) = dkern(:,i,j)
+          enddo
+        enddo
+      endif
+!
+!  Grain growth
+!
+      do i=1,ndustspec
+        do j=i,ndustspec
+          dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
+          df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
+          df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
+          forall (k=1:ndustspec, &
+              mg(i) + mg(j) .ge. mglow(k) .and. mg(i) + mg(j) .lt. mghig(k)) 
+            df(l1:l2,m,n,ind(k)) = &
+                df(l1:l2,m,n,ind(k)) - dndfac*(mg(i)+mg(j))/mg(k)
+          endforall
+        enddo
+      enddo
 !
 !  Loop over dust layers
 !
@@ -299,40 +265,47 @@ module Dustdensity
 !
 !  identify module and boundary conditions
 !
-        if (headtt.or.ldebug) print*,'dlnrhod_dt: SOLVE dlnrhod_dt'
-        if (headtt) call identify_bcs('lnrhod',ilnrhod(idust))
+        if (headtt.or.ldebug) print*,'dnd_dt: SOLVE dnd_dt'
+        if (headtt) call identify_bcs('nd',ind(idust))
 !
-!  define lnrhod; calculate dustdensity gradient and avection term
+!  calculate dustdensity gradient and advection term
 !
-        lnrhod=f(l1:l2,m,n,ilnrhod(idust))
-        call grad(f,ilnrhod(idust),glnrhod)
-        call dot_mn(uud,glnrhod,uglnrhod)
+        call grad(f,ind(idust),gnd(:,:,idust))
+        call dot_mn(uud(:,idust),gnd(:,:,idust),ugnd)
 !
 !  continuity equation
 !
-        df(l1:l2,m,n,ilnrhod(idust))=df(l1:l2,m,n,ilnrhod(idust))-uglnrhod-divud
+        df(l1:l2,m,n,ind(idust)) = df(l1:l2,m,n,ind(idust)) - &
+            ugnd - f(l1:l2,m,n,ind(idust))*divud(:,idust)
 !
 !  mass diffusion, in units of dxmin*cs0
 !
-        if (cdiffrhod(idust) /= 0.) then
-          diffrhod=cdiffrhod(idust)*dxmin*cs0
-          call del2(f,ilnrhod(idust),del2lnrhod)
-          call dot2_mn(glnrhod,glnrhod2)
-          df(l1:l2,m,n,ilnrhod(idust)) = &
-              df(l1:l2,m,n,ilnrhod(idust))+diffrhod*(del2lnrhod+glnrhod2)
-          maxdiffus=amax1(maxdiffus,diffrhod)
+        if (cdiffnd(idust) /= 0.) then
+          diffnd=cdiffnd(idust)*dxmin*cs0
+          call del2(f,ind(idust),del2nd)
+          call dot2_mn(gnd(:,:,idust),gnd2)
+          df(l1:l2,m,n,ind(idust)) = &
+              df(l1:l2,m,n,ind(idust)) + diffnd*(del2nd+nd(:,idust)*gnd2)
+          maxdiffus=amax1(maxdiffus,diffnd)
         endif
 !
         if (ldiagnos) then
-          rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
-          if (i_rhodm(idust)/=0) call sum_mn_name(rhod,i_rhodm(idust))
+          if (i_ndm(idust)/=0) call sum_mn_name(nd(:,idust),i_ndm(idust))
+          if (i_rhodm/=0) then
+            if (lfirstpoint .and. idust .ne. 1) then
+              lfirstpoint2 = .true.
+              lfirstpoint = .false.
+            endif
+            call sum_mn_name(nd(:,idust)*mg(idust),i_rhodm)
+            lfirstpoint = lfirstpoint2
+          endif
         endif
 !
 !  End loop over dust layers
 !
       enddo
 !
-    endsubroutine dlnrhod_dt
+    endsubroutine dnd_dt
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
@@ -347,7 +320,7 @@ module Dustdensity
       integer :: iname,idust
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sidust,sdustspec
+      character (len=4) :: sdust,sdustspec,snd1
 !
 !  Write information to index.pro that should not be repeated for idust
 !
@@ -359,45 +332,61 @@ module Dustdensity
         write(3,*) 'nname=',nname
       endif
 !
+!  reset everything in case of reset
+!
+      if (lreset) then
+        i_ndm = 0
+        i_rhodm = 0
+      endif
+!
 !  Define arrays for multiple dust species
 !
       if (lwr) then
         call chn(ndustspec,sdustspec)
-        write(3,*) 'ilnrhod=intarr('//trim(sdustspec)//')'
-        write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
+        write(3,*) 'ind=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
       endif
 !
-!  Loop over dust layers
+!  Loop over dust species (for species-dependent diagnostics)
 !
       do idust=1,ndustspec
-        call chn(idust-1,sidust)
-        if (ndustspec .eq. 1) sidust=''
-!
-!  reset everything in case of reset
-!  (this needs to be consistent with what is defined above!)
-!
-        if (lreset) then
-          i_rhodm(idust)=0
-        endif
+        call chn(idust-1,sdust)
+        if (ndustspec .eq. 1) sdust=''
 !
 !  iname runs through all possible names that may be listed in print.in
 !
         if(lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
         do iname=1,nname
           call parse_name(iname,cname(iname),cform(iname), &
-              'rhodm'//trim(sidust),i_rhodm(idust))
+              'ndm'//trim(sdust),i_ndm(idust))
         enddo
 !
 !  write column where which variable is stored
 !
         if (lwr) then
-          write(3,*) 'ilnrhod('//trim(sidust)//')=',ilnrhod(idust)
-          write(3,*) 'i_rhodm('//trim(sidust)//')=',i_rhodm(idust)
+          if (i_ndm(idust) .ne. 0) &
+              write(3,*) 'i_ndm('//trim(sdust)//')=',i_ndm(idust)
         endif
 !
 !  End loop over dust layers
 !
       enddo
+!
+!  Non-species-dependent diagnostics
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rhodm',i_rhodm)
+      enddo
+      if (lwr) then
+        if (i_rhodm .ne. 0) write(3,*) 'i_rhodm=',i_rhodm
+      endif
+!
+!  Write dust index in short notation
+!      
+      call chn(ind(1),snd1)
+      if (lwr) then
+        write(3,*) 'ind=indgen('//trim(sdustspec)//')*4 + '//trim(snd1)
+      endif
 !
     endsubroutine rprint_dustdensity
 !***********************************************************************

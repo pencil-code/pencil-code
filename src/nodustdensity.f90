@@ -1,4 +1,4 @@
-! $Id: nodustdensity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $
+! $Id: nodustdensity.f90,v 1.10 2003-12-29 17:09:26 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -50,7 +50,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustdensity.f90,v 1.9 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: nodustdensity.f90,v 1.10 2003-12-29 17:09:26 ajohan Exp $")
 !
     endsubroutine register_dustdensity
 !***********************************************************************
@@ -65,7 +65,7 @@ module Dustdensity
 !
     endsubroutine initialize_dustdensity
 !***********************************************************************
-    subroutine init_lnrhod(f,xx,yy,zz)
+    subroutine init_nd(f,xx,yy,zz)
 !
 !  initialise lnrhod; called from start.f90
 !
@@ -82,9 +82,9 @@ module Dustdensity
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz ! keep compiler quiet
-    endsubroutine init_lnrhod
+    endsubroutine init_nd
 !***********************************************************************
-    subroutine dlnrhod_dt(f,df,uud,glnrhod,divud,lnrhod)
+    subroutine dnd_dt(f,df,uu,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dlnrhod/dt = - u.gradlnrhod - divud
@@ -95,11 +95,11 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uud,glnrhod
-      real, dimension (nx) :: lnrhod,divud
+      real, dimension (nx,3) :: uu,uud,gnd
+      real, dimension (nx) :: divud
 !
-      if(ip==0) print*,f,df,uud,glnrhod,divud,lnrhod ! keep compiler quiet
-    endsubroutine dlnrhod_dt
+      if(ip==0) print*,f,df,uu,uud,divud,gnd ! keep compiler quiet
+    endsubroutine dnd_dt
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !

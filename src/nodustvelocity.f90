@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.11 2003-12-08 18:38:49 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.12 2003-12-29 17:09:26 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -17,6 +17,8 @@ module Dustvelocity
   use Cparam
 
   implicit none
+
+  real, dimension(1) :: mg=1.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /dustvelocity_init_pars/ dummy
@@ -54,7 +56,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.11 2003-12-08 18:38:49 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.12 2003-12-29 17:09:26 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -83,7 +85,7 @@ module Dustvelocity
       if (ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,uud,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho1,uud,divud,ud2,udij)
 !
 !  velocity evolution
 !  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
@@ -99,7 +101,7 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3) :: uu,uud
-      real, dimension (nx) :: ud2,divud
+      real, dimension (nx) :: rho1,ud2,divud
 !
       if(ip==0) print*,f,df,uu,uud,divud,ud2,udij  !(keep compiler quiet)
     endsubroutine duud_dt

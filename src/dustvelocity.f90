@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.26 2003-12-09 13:41:34 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.27 2003-12-29 17:09:26 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -22,20 +22,23 @@ module Dustvelocity
   implicit none
 
   ! init parameters
-  real, dimension(ndustspec) :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real, dimension(ndustspec) :: tausd=0.,beta=0.,nud=0.
-  real :: tausd1,nud_all=0.,beta_all=0.,tausd_all=0.,ampluud_all=0.
+  real, dimension(ndustspec,ndustspec) :: scolld
+  real, dimension(ndustspec) :: mg,mghig,mglow,ag,rhodsa1
+  real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
+  real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
+  real :: rhods=1.,mg0=1.,deltamg=1.2
+  real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
   logical, dimension(ndustspec) :: lfeedback_gas=.true.,lgravzd=.true.
   logical :: lfeedback_gas_all=.true.,lgravzd_all=.true.
-  character (len=labellen), dimension(ndustspec) :: inituud='zero'
-  character (len=labellen) :: inituud_all=''
+  character (len=labellen) :: inituud='zero'
+  character (len=labellen) :: draglaw='epstein_cst', dust_geometry='sphere'
 
   namelist /dustvelocity_init_pars/ &
-       ampluud, ampluud_all, inituud, inituud_all
+       rhods, mg0, deltamg, draglaw, dust_geometry, ampluud, inituud
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, nud_all, beta, beta_all, tausd, tausd_all, &
+       nud, nud_all, betad, betad_all, tausd, tausd_all, &
        lfeedback_gas, lfeedback_gas_all, lgravzd, lgravzd_all
 
   ! other variables (needs to be consistent with reset list below)
@@ -47,7 +50,7 @@ module Dustvelocity
   integer, dimension(ndustspec) :: i_udmy=0,i_udmz=0
   integer, dimension(ndustspec) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer, dimension(ndustspec) :: i_divud2m=0,i_epsKd=0
-  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0
+  integer, dimension(ndustspec) :: iuud=0,iudx=0,iudy=0,iudz=0,ind=0
 
   contains
 
@@ -66,7 +69,7 @@ module Dustvelocity
 !
       logical, save :: first=.true.
       integer :: idust
-      character(len=4) :: sidust
+      character(len=4) :: sdust
 !
       if (.not. first) call stop_it('register_dustvelocity: called twice')
       first = .false.
@@ -95,7 +98,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.26 2003-12-09 13:41:34 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.27 2003-12-29 17:09:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -105,16 +108,16 @@ module Dustvelocity
 !  Writing files for use with IDL
 !
       do idust=1,ndustspec
-        call chn(idust,sidust)
-        if (ndustspec .eq. 1) sidust = ''
+        call chn(idust,sdust)
+        if (ndustspec .eq. 1) sdust = ''
         if (lroot) then
           if (maux == 0) then
-            if (nvar < mvar) write(4,*) ',uud'//trim(sidust)//' $'
-            if (nvar == mvar) write(4,*) ',uud'//trim(sidust)
+            if (nvar < mvar) write(4,*) ',uud'//trim(sdust)//' $'
+            if (nvar == mvar) write(4,*) ',uud'//trim(sdust)
           else
-            write(4,*) ',uud'//trim(sidust)//' $'
+            write(4,*) ',uud'//trim(sdust)//' $'
           endif
-            write(15,*) 'uud'//trim(sidust)//' = fltarr(mx,my,mz,3)*one'
+            write(15,*) 'uud'//trim(sdust)//' = fltarr(mx,my,mz,3)*one'
         endif
       enddo
 !
@@ -127,7 +130,55 @@ module Dustvelocity
 !
 !  18-mar-03/axel+anders: adapted from hydro
 !
-   integer :: idust
+   use Mpicomm, only: stop_it
+!
+   integer :: idust,j
+!
+!  Dust physics parameters
+!
+      mg(1) = mg0
+      do idust=2,ndustspec; mg(idust) = mg(1)*deltamg**(idust-1); enddo
+
+      mglow(1) = 0.
+      do idust=2,ndustspec
+        mglow(idust) = 0.5*(mg(idust)+mg(idust-1))
+      enddo
+
+      mghig(ndustspec) = deltamg*mg(ndustspec)
+      do idust=1,ndustspec-1
+        mghig(idust) = 0.5*(mg(idust)+mg(idust+1))
+      enddo
+
+      select case(dust_geometry)
+
+      case ('sphere')
+        if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
+        ag(1)  = (0.75*mg(1)/(pi*rhods))**(1/3.)  ! Spherical
+        do idust=2,ndustspec
+          ag(idust)  = ag(1)*(mg(idust)/mg(1))**(1/3.)
+        enddo
+        do idust=1,ndustspec
+          do j=0,ndustspec
+            scolld(idust,j) = pi*(ag(idust)+ag(j))**2
+          enddo
+        enddo
+
+      case default
+        call stop_it( &
+            "initialize_dustvelocity: No valid dust geometry specified.")
+
+      endselect
+!
+!  Auxilliary variables necessary for different drag laws
+!
+      select case (draglaw)
+      
+      case ('epstein_var')
+        rhodsa1 = 1./rhods*ag
+      case ('epstein_cst')
+        tausd1 = 1./tausd(idust)
+
+      endselect
 !
 !  If *_all set, make all primordial *(:) = *_all
 !
@@ -139,27 +190,11 @@ module Dustvelocity
         enddo
       endif
 !      
-      if (inituud_all .ne. '') then
+      if (betad_all .ne. 0.) then
         if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: inituud_all=',inituud_all
+            print*, 'initialize_dustvelocity: betad_all=',betad_all
         do idust=1,ndustspec
-          if (inituud(idust) .eq. 'zero') inituud(idust) = inituud_all
-        enddo
-      endif
-!
-      if (ampluud_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: ampluud_all=',ampluud_all
-        do idust=1,ndustspec
-          if (ampluud(idust) .eq. 0.) ampluud(idust) = ampluud_all
-        enddo
-      endif
-!
-      if (beta_all .ne. 0.) then
-        if (lroot .and. ip<6) &
-            print*, 'initialize_dustvelocity: beta_all=',beta_all
-        do idust=1,ndustspec
-          if (beta(idust) .eq. 0.) beta(idust) = beta_all
+          if (betad(idust) .eq. 0.) betad(idust) = betad_all
         enddo
       endif
 !
@@ -190,32 +225,32 @@ module Dustvelocity
 !
 !  Copy boundary conditions after first dust species to end of array
 !
-      bcx(ilnrhod(ndustspec)+1:)  = bcx(ilnrhod(1)+1:)
-      bcx1(ilnrhod(ndustspec)+1:) = bcx1(ilnrhod(1)+1:)
-      bcx2(ilnrhod(ndustspec)+1:) = bcx2(ilnrhod(1)+1:)
+      bcx(ind(ndustspec)+1:)  = bcx(ind(1)+1:)
+      bcx1(ind(ndustspec)+1:) = bcx1(ind(1)+1:)
+      bcx2(ind(ndustspec)+1:) = bcx2(ind(1)+1:)
 
-      bcy(ilnrhod(ndustspec)+1:)  = bcy(ilnrhod(1)+1:)
-      bcy1(ilnrhod(ndustspec)+1:) = bcy1(ilnrhod(1)+1:)
-      bcy2(ilnrhod(ndustspec)+1:) = bcy2(ilnrhod(1)+1:)
+      bcy(ind(ndustspec)+1:)  = bcy(ind(1)+1:)
+      bcy1(ind(ndustspec)+1:) = bcy1(ind(1)+1:)
+      bcy2(ind(ndustspec)+1:) = bcy2(ind(1)+1:)
 
-      bcy(ilnrhod(ndustspec)+1:)  = bcy(ilnrhod(1)+1:)
-      bcy1(ilnrhod(ndustspec)+1:) = bcy1(ilnrhod(1)+1:)
-      bcy2(ilnrhod(ndustspec)+1:) = bcy2(ilnrhod(1)+1:)
+      bcy(ind(ndustspec)+1:)  = bcy(ind(1)+1:)
+      bcy1(ind(ndustspec)+1:) = bcy1(ind(1)+1:)
+      bcy2(ind(ndustspec)+1:) = bcy2(ind(1)+1:)
 !
 !  Copy boundary conditions on first dust species to all species
 !
       do idust=2,ndustspec
-        bcx(iudx(ndustspec):ilnrhod(ndustspec))=bcx(iudx(1):ilnrhod(1))
-        bcx1(iudx(ndustspec):ilnrhod(ndustspec))=bcx1(iudx(1):ilnrhod(1))
-        bcx2(iudx(ndustspec):ilnrhod(ndustspec))=bcx2(iudx(1):ilnrhod(1))
+        bcx(iudx(ndustspec):ind(ndustspec))=bcx(iudx(1):ind(1))
+        bcx1(iudx(ndustspec):ind(ndustspec))=bcx1(iudx(1):ind(1))
+        bcx2(iudx(ndustspec):ind(ndustspec))=bcx2(iudx(1):ind(1))
         
-        bcy(iudx(ndustspec):ilnrhod(ndustspec))=bcy(iudx(1):ilnrhod(1))
-        bcy1(iudx(ndustspec):ilnrhod(ndustspec))=bcy1(iudx(1):ilnrhod(1))
-        bcy2(iudx(ndustspec):ilnrhod(ndustspec))=bcy2(iudx(1):ilnrhod(1))
+        bcy(iudx(ndustspec):ind(ndustspec))=bcy(iudx(1):ind(1))
+        bcy1(iudx(ndustspec):ind(ndustspec))=bcy1(iudx(1):ind(1))
+        bcy2(iudx(ndustspec):ind(ndustspec))=bcy2(iudx(1):ind(1))
         
-        bcz(iudx(ndustspec):ilnrhod(ndustspec))=bcz(iudx(1):ilnrhod(1))
-        bcz1(iudx(ndustspec):ilnrhod(ndustspec))=bcz1(iudx(1):ilnrhod(1))
-        bcz2(iudx(ndustspec):ilnrhod(ndustspec))=bcz2(iudx(1):ilnrhod(1))
+        bcz(iudx(ndustspec):ind(ndustspec))=bcz(iudx(1):ind(1))
+        bcz1(iudx(ndustspec):ind(ndustspec))=bcz1(iudx(1):ind(1))
+        bcz2(iudx(ndustspec):ind(ndustspec))=bcz2(iudx(1):ind(1))
       enddo
 !
       if (ndustspec>1 .and. lroot .and. ip<14) then
@@ -245,69 +280,76 @@ module Dustvelocity
       real, dimension (mx,my,mz) :: xx,yy,zz
       integer :: idust
 !
-!  Loop over dust layers
-!
-      do idust=1,ndustspec
-!
 !  inituud corresponds to different initializations of uud (called from start).
 !
-        select case(inituud(idust))
- 
-        case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
-        case('follow_gas'); f(:,:,:,iudx(idust):iudz(idust))=f(:,:,:,iux:iuz)
-        case('Beltrami-x')
-          call beltrami(ampluud(idust),f,iuud(idust),kx=kx_uud(idust))
-        case('Beltrami-y')
-          call beltrami(ampluud(idust),f,iuud(idust),ky=ky_uud(idust))
-        case('Beltrami-z')
-          call beltrami(ampluud(idust),f,iuud(idust),kz=kz_uud(idust))
-        case('sound-wave')
-          f(:,:,:,iudx(idust)) = ampluud(idust)*sin(kx_uud(idust)*xx)
+      select case(inituud)
+
+      case('zero', '0'); if(lroot) print*,'init_uud: zero dust velocity'
+      case('follow_gas')
+        do idust=1,ndustspec
+          f(:,:,:,iudx(idust):iudz(idust))=f(:,:,:,iux:iuz)
+        enddo
+      case('Beltrami-x')
+        do idust=1,ndustspec
+          call beltrami(ampluud,f,iuud(idust),kx=kx_uud)
+        enddo
+      case('Beltrami-y')
+        do idust=1,ndustspec
+          call beltrami(ampluud,f,iuud(idust),ky=ky_uud)
+        enddo
+      case('Beltrami-z')
+        do idust=1,ndustspec
+          call beltrami(ampluud,f,iuud(idust),kz=kz_uud)
+        enddo
+      case('sound-wave')
+        do idust=1,ndustspec
+          f(:,:,:,iudx(idust)) = ampluud*sin(kx_uud*xx)
           print*,'init_uud: iudx,ampluud,kx_uud=', &
-              iudx(idust), ampluud(idust), kx_uud(idust)
-        case default
+              iudx(idust), ampluud, kx_uud
+        enddo
+      case default
 !
 !  Catch unknown values
 !
-          if (lroot) print*, &
-              'init_uud: No such such value for inituu: ', trim(inituud(idust))
-          call stop_it("")
- 
-        endselect
-!
-!  End loop over dust layers
-!
-      enddo
+        if (lroot) print*, &
+            'init_uud: No such such value for inituu: ', trim(inituud)
+        call stop_it("")
+
+      endselect
 !
       if (ip==0) print*,yy,zz ! keep compiler quiet
 !
     endsubroutine init_uud
 !***********************************************************************
-    subroutine duud_dt(f,df,uu,uud,divud,ud2,udij)
+    subroutine duud_dt(f,df,uu,rho1,uud,divud,ud2,udij)
 !
 !  velocity evolution
 !  calculate dud/dt = - ud.gradud - 2Omega x ud + grav + Fvisc
 !  no pressure gradient force for dust!
 !
 !  18-mar-03/axel+anders: adapted from hydro
-!   8-aug-03/anders: added tausd as possible input parameter instead of beta
+!   8-aug-03/anders: added tausd as possible input parameter instead of betad
 !
       use Cdata
       use Sub
       use IO
       use Mpicomm, only: stop_it
+      use Density, only: cs0
+      use Ionization, only: cp
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
-      real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud,fac,taug1
-      real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz
-      real, dimension (nx) :: rho1,rhod1,rhod
+      real, dimension (nx,3,ndustspec) :: uud
+      real, dimension (nx,ndustspec) :: divud,ud2
+      real, dimension (nx,3) :: uu,udgud,ood,del2ud,tausd13,tausg13
+      real, dimension (nx) :: rho1,od2,oud,udx,udy,udz,rhod,rhod1
+      real, dimension (nx) :: csrho,tausd1,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j,idust
 !
-      intent(in) :: f,uu
-      intent(out) :: df,uud,divud,ud2
+      intent(in) :: f,uu,rho1
+      intent(out) :: df,divud,ud2
 !
 !  Loop over dust layers
 !
@@ -322,18 +364,20 @@ module Dustvelocity
           call identify_bcs('udz',iudz(idust))
         endif
 !
-!  abbreviations
+!  Dust abbreviations
 !
-        uud=f(l1:l2,m,n,iudx(idust):iudz(idust))
-        call dot2_mn(uud,ud2)
+        uud(:,:,idust) = f(l1:l2,m,n,iudx(idust):iudz(idust))
+        rhod =f(l1:l2,m,n,ind(idust))*mg(idust)
+        rhod1=1./rhod
+        call dot2_mn(uud(:,:,idust),ud2(:,idust))
 !
 !  calculate velocity gradient matrix
 !
         if (lroot .and. ip < 5) print*, &
           'duud_dt: call dot2_mn(uud,ud2); m,n,iudx,iudz,ud2=' &
-          ,m,n,iudx(idust),iudz(idust),ud2
+          ,m,n,iudx(idust),iudz(idust),ud2(:,idust)
         call gij(f,iuud(idust),udij)
-        divud=udij(:,1,1)+udij(:,2,2)+udij(:,3,3)
+        divud(:,idust) = udij(:,1,1) + udij(:,2,2) + udij(:,3,3)
 !
 !  calculate rate of strain tensor
 !
@@ -342,16 +386,16 @@ module Dustvelocity
              do i=1,3
               sdij(:,i,j)=.5*(udij(:,i,j)+udij(:,j,i))
             enddo
-            sdij(:,j,j)=sdij(:,j,j)-.333333*divud
+            sdij(:,j,j)=sdij(:,j,j)-.333333*divud(:,idust)
           enddo
         endif
 !
 !  advection term
 !
         if (ldebug) print*,'duud_dt: call multmv_mn(udij,uud,udgud)'
-        call multmv_mn(udij,uud,udgud)
+        call multmv_mn(udij,uud(:,:,idust),udgud)
         df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
-            df(l1:l2,m,n,iudx(idust):iudz(idust))-udgud
+            df(l1:l2,m,n,iudx(idust):iudz(idust)) - udgud
 !
 !  Coriolis force, -2*Omega x ud
 !  Omega=(-sin_theta, 0, cos_theta)
@@ -361,68 +405,73 @@ module Dustvelocity
           if (theta==0) then
             if (headtt) print*,'duud_dt: add Coriolis force; Omega=',Omega
             c2=2*Omega
-            df(l1:l2,m,n,iudx(idust))=df(l1:l2,m,n,iudx(idust))+c2*uud(:,2)
-            df(l1:l2,m,n,iudy(idust))=df(l1:l2,m,n,iudy(idust))-c2*uud(:,1)
+            df(l1:l2,m,n,iudx(idust)) = df(l1:l2,m,n,iudx(idust)) + &
+                c2*uud(:,2,idust)
+            df(l1:l2,m,n,iudy(idust)) = df(l1:l2,m,n,iudy(idust)) - &
+                c2*uud(:,1,idust)
           else
             if (headtt) print*, &
                 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
             c2=2*Omega*cos(theta*pi/180.)
             s2=2*Omega*sin(theta*pi/180.)
             df(l1:l2,m,n,iudx(idust)) = &
-                df(l1:l2,m,n,iudx(idust))+c2*uud(:,2)
+                df(l1:l2,m,n,iudx(idust)) + c2*uud(:,2,idust)
             df(l1:l2,m,n,iudy(idust)) = &
-                df(l1:l2,m,n,iudy(idust))-c2*uud(:,1)+s2*uud(:,3)
+                df(l1:l2,m,n,iudy(idust)) - c2*uud(:,1,idust) +s2*uud(:,3,idust)
             df(l1:l2,m,n,iudz(idust)) = &
-                df(l1:l2,m,n,iudz(idust))            +s2*uud(:,2)
+                df(l1:l2,m,n,iudz(idust))                     +s2*uud(:,2,idust)
           endif
         endif
 !
 !  calculate viscous and drag force
 !
 !  add dust diffusion (mostly for numerical reasons) in either of
-!  the two formulations (ie with either constant beta or constant tausd)
+!  the two formulations (ie with either constant betad or constant tausd)
 !
         call del2v(f,iuud(idust),del2ud)
         maxdiffus=amax1(maxdiffus,nud(idust))
 !
-!  if tausd is set then assume that beta=rhod/tausd,
-!  otherwise use beta
+!  Stopping time of dust depends on the choice of drag law
 !
-        if (tausd(idust) /= 0.) then
-          tausd1=1./tausd(idust)
-          df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
-              df(l1:l2,m,n,iudx(idust):iudz(idust)) + &
-              nud(idust)*del2ud-tausd1*(uud-uu)
-        elseif (beta(idust) /= 0.) then
-          rhod1=exp(-f(l1:l2,m,n,ilnrhod(idust)))
-          do j=1,3; fac(:,j)=beta(idust)*rhod1; enddo
-          df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
-              df(l1:l2,m,n,iudx(idust):iudz(idust)) + &
-              nud(idust)*del2ud-fac*(uud-uu)
-        else
-          call stop_it( &
-              "duud_dt: Both tausd and beta specified. Specify only one!")
+        select case(draglaw)
+        
+        case ('epstein_cst')
+          ! Do nothing, initialized in initialize_dustvelocity
+        case ('epstein_cst_b')
+          tausd1 = betad(idust)*rhod1
+        case ('epstein_var')
+          csrho  = cs0*exp(0.5*gamma*f(l1:l2,m,n,iss)/cp)*rho1**(-0.5*(gamma-1))
+          tausd1 = csrho*rhodsa1(idust)
+        case default
+          call stop_it("duud_dt: No valid drag law specified.")
+
+        endselect
+!
+!  Add drag force on dust
+!
+        do j=1,3; tausd13(:,j) = tausd1; enddo
+        df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
+            df(l1:l2,m,n,iudx(idust):iudz(idust)) - tausd13*(uud(:,:,idust)-uu)
+!
+!  Add drag force on gas (back-reaction)
+!
+        if (lfeedback_gas(idust)) then
+          tausg1 = rhod*tausd1*rho1
+          do j=1,3; tausg13(:,j) = tausg1; enddo
+          df(l1:l2,m,n,iux:iuz) = &
+              df(l1:l2,m,n,iux:iuz) - tausg13*(uu-uud(:,:,idust))
         endif
 !
-!  add drag force on gas (if Mdust_to_Mgas is large enough)
+!  Add viscosity on dust
 !
-        if(lfeedback_gas(idust)) then
-          rho1=exp(-f(l1:l2,m,n,ilnrho))
-          if (tausd(idust) /= 0.) then
-            rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
-            do j=1,3; taug1(:,j)=rhod*rho1*tausd1; enddo
-            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-taug1*(uu-uud)
-          elseif (beta(idust) /= 0.) then
-            do j=1,3; fac(:,j)=beta(idust)*rho1; enddo
-            df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-fac*(uu-uud)
-          endif
-        endif
+        df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
+            df(l1:l2,m,n,iudx(idust):iudz(idust)) + nud(idust)*del2ud
 !
 !  maximum squared advection speed
 !
         if (headtt.or.ldebug) print*, &
-            'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2)
-        if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,ud2)
+            'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2(:,idust))
+        if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,ud2(:,idust))
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
@@ -432,33 +481,32 @@ module Dustvelocity
           if (headtt.or.ldebug) print*, &
               'duud_dt: Calculate maxima and rms values...'
           if (i_udrms(idust)/=0) &
-              call sum_mn_name(ud2,i_udrms(idust),lsqrt=.true.)
+              call sum_mn_name(ud2(:,idust),i_udrms(idust),lsqrt=.true.)
           if (i_udmax(idust)/=0) &
-              call max_mn_name(ud2,i_udmax(idust),lsqrt=.true.)
-          if (i_rdudmax(idust)/=0) then
-            rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
-            call max_mn_name(rhod**2*ud2,i_rdudmax(idust),lsqrt=.true.)
-          endif
-          if (i_ud2m(idust)/=0) call sum_mn_name(ud2,i_ud2m(idust))
-          if (i_udm2(idust)/=0) call max_mn_name(ud2,i_udm2(idust))
-          if (i_divud2m(idust)/=0) call sum_mn_name(divud**2,i_divud2m(idust))
+              call max_mn_name(ud2(:,idust),i_udmax(idust),lsqrt=.true.)
+          if (i_rdudmax(idust)/=0) call max_mn_name(rhod**2*ud2(:,idust), &
+              i_rdudmax(idust),lsqrt=.true.)
+          if (i_ud2m(idust)/=0) call sum_mn_name(ud2(:,idust),i_ud2m(idust))
+          if (i_udm2(idust)/=0) call max_mn_name(ud2(:,idust),i_udm2(idust))
+          if (i_divud2m(idust)/=0) &
+              call sum_mn_name(divud(:,idust)**2,i_divud2m(idust))
 !
 !  kinetic field components at one point (=pt)
 !
           if (lroot.and.m==mpoint.and.n==npoint) then
             if (i_udxpt(idust)/=0) call &
-                save_name(uud(lpoint-nghost,1),i_udxpt(idust))
+                save_name(uud(lpoint-nghost,1,idust),i_udxpt(idust))
             if (i_udypt(idust)/=0) call &
-                save_name(uud(lpoint-nghost,2),i_udypt(idust))
+                save_name(uud(lpoint-nghost,2,idust),i_udypt(idust))
             if (i_udzpt(idust)/=0) call &
-                save_name(uud(lpoint-nghost,3),i_udzpt(idust))
+                save_name(uud(lpoint-nghost,3,idust),i_udzpt(idust))
           endif
 !
 !  this doesn't need to be as frequent (check later)
 !
-          if (i_udxmz(idust)/=0.or.i_udxmxy(idust)/=0) udx=uud(:,1)
-          if (i_udymz(idust)/=0.or.i_udymxy(idust)/=0) udy=uud(:,2)
-          if (i_udzmz(idust)/=0.or.i_udzmxy(idust)/=0) udz=uud(:,3)
+          if (i_udxmz(idust)/=0.or.i_udxmxy(idust)/=0) udx=uud(:,1,idust)
+          if (i_udymz(idust)/=0.or.i_udymxy(idust)/=0) udy=uud(:,2,idust)
+          if (i_udzmz(idust)/=0.or.i_udzmxy(idust)/=0) udz=uud(:,3,idust)
           if (i_udxmz(idust)/=0) &
               call xysum_mn_name_z(udx(idust),i_udxmz(idust))
           if (i_udymz(idust)/=0) &
@@ -481,7 +529,7 @@ module Dustvelocity
             ood(:,3)=udij(:,2,1)-udij(:,1,2)
 !
             if (i_oudm(idust)/=0) then
-              call dot_mn(ood,uud,oud)
+              call dot_mn(ood,uud(:,:,idust),oud)
               call sum_mn_name(oud,i_oudm(idust))
             endif
 !
@@ -632,7 +680,7 @@ module Dustvelocity
       integer :: iname,idust
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sidust,sdustspec
+      character (len=4) :: sdust,sdustspec,suud1,sudx1,sudy1,sudz1
 !
 !  Write information to index.pro that should not be repeated for idust
 !
@@ -697,80 +745,112 @@ module Dustvelocity
 !
         if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
-          call chn(idust,sidust)
-          if (ndustspec .eq. 1) sidust=''
+          call chn(idust,sdust)
+          if (ndustspec .eq. 1) sdust=''
           call parse_name(iname,cname(iname),cform(iname), &
-              'ud2m'//trim(sidust),i_ud2m(idust))
+              'ud2m'//trim(sdust),i_ud2m(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udm2'//trim(sidust),i_udm2(idust))
+              'udm2'//trim(sdust),i_udm2(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'od2m'//trim(sidust),i_od2m(idust))
+              'od2m'//trim(sdust),i_od2m(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'oudm'//trim(sidust),i_oudm(idust))
+              'oudm'//trim(sdust),i_oudm(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udrms'//trim(sidust),i_udrms(idust))
+              'udrms'//trim(sdust),i_udrms(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmax'//trim(sidust),i_udmax(idust))
+              'udmax'//trim(sdust),i_udmax(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'rdudmax'//trim(sidust),i_rdudmax(idust))
+              'rdudmax'//trim(sdust),i_rdudmax(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'odrms'//trim(sidust),i_odrms(idust))
+              'odrms'//trim(sdust),i_odrms(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'odmax'//trim(sidust),i_odmax(idust))
+              'odmax'//trim(sdust),i_odmax(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmx'//trim(sidust),i_udmx(idust))
+              'udmx'//trim(sdust),i_udmx(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmy'//trim(sidust),i_udmy(idust))
+              'udmy'//trim(sdust),i_udmy(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udmz'//trim(sidust),i_udmz(idust))
+              'udmz'//trim(sdust),i_udmz(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'divud2m'//trim(sidust),i_divud2m(idust))
+              'divud2m'//trim(sdust),i_divud2m(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'epsKd'//trim(sidust),i_epsKd(idust))
+              'epsKd'//trim(sdust),i_epsKd(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udxpt'//trim(sidust),i_udxpt(idust))
+              'udxpt'//trim(sdust),i_udxpt(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udypt'//trim(sidust),i_udypt(idust))
+              'udypt'//trim(sdust),i_udypt(idust))
           call parse_name(iname,cname(iname),cform(iname), &
-              'udzpt'//trim(sidust),i_udzpt(idust))
+              'udzpt'//trim(sdust),i_udzpt(idust))
         enddo
 !
 !  write column where which variable is stored
 !
         if (lwr) then
-          call chn(idust-1,sidust)
-          write(3,*) 'iuud('//trim(sidust)//')=',iuud(idust)
-          write(3,*) 'iudx('//trim(sidust)//')=',iudx(idust)
-          write(3,*) 'iudy('//trim(sidust)//')=',iudy(idust)
-          write(3,*) 'iudz('//trim(sidust)//')=',iudz(idust)
-          write(3,*) 'i_ud2m('//trim(sidust)//')=',i_ud2m(idust)
-          write(3,*) 'i_udm2('//trim(sidust)//')=',i_udm2(idust)
-          write(3,*) 'i_od2m('//trim(sidust)//')=',i_od2m(idust)
-          write(3,*) 'i_oudm('//trim(sidust)//')=',i_oudm(idust)
-          write(3,*) 'i_udrms('//trim(sidust)//')=',i_udrms(idust)
-          write(3,*) 'i_udmax('//trim(sidust)//')=',i_udmax(idust)
-          write(3,*) 'i_rdudmax('//trim(sidust)//')=',i_rdudmax(idust)
-          write(3,*) 'i_odrms('//trim(sidust)//')=',i_odrms(idust)
-          write(3,*) 'i_odmax('//trim(sidust)//')=',i_odmax(idust)
-          write(3,*) 'i_udmx('//trim(sidust)//')=',i_udmx(idust)
-          write(3,*) 'i_udmy('//trim(sidust)//')=',i_udmy(idust)
-          write(3,*) 'i_udmz('//trim(sidust)//')=',i_udmz(idust)
-          write(3,*) 'i_divud2m('//trim(sidust)//')=',i_divud2m(idust)
-          write(3,*) 'i_epsKd('//trim(sidust)//')=',i_epsKd(idust)
-          write(3,*) 'i_udxpt('//trim(sidust)//')=',i_udxpt(idust)
-          write(3,*) 'i_udypt('//trim(sidust)//')=',i_udypt(idust)
-          write(3,*) 'i_udzpt('//trim(sidust)//')=',i_udzpt(idust)
-          write(3,*) 'i_udxmz('//trim(sidust)//')=',i_udxmz(idust)
-          write(3,*) 'i_udymz('//trim(sidust)//')=',i_udymz(idust)
-          write(3,*) 'i_udzmz('//trim(sidust)//')=',i_udzmz(idust)
-          write(3,*) 'i_udxmxy('//trim(sidust)//')=',i_udxmxy(idust)
-          write(3,*) 'i_udymxy('//trim(sidust)//')=',i_udymxy(idust)
-          write(3,*) 'i_udzmxy('//trim(sidust)//')=',i_udzmxy(idust)
+          call chn(idust-1,sdust)
+          if (i_ud2m(idust) .ne. 0) &
+              write(3,*) 'i_ud2m('//trim(sdust)//')=',i_ud2m(idust)
+          if (i_udm2(idust) .ne. 0) &
+          write(3,*) 'i_udm2('//trim(sdust)//')=',i_udm2(idust)
+          if (i_od2m(idust) .ne. 0) &
+          write(3,*) 'i_od2m('//trim(sdust)//')=',i_od2m(idust)
+          if (i_oudm(idust) .ne. 0) &
+          write(3,*) 'i_oudm('//trim(sdust)//')=',i_oudm(idust)
+          if (i_udrms(idust) .ne. 0) &
+          write(3,*) 'i_udrms('//trim(sdust)//')=',i_udrms(idust)
+          if (i_udmax(idust) .ne. 0) &
+          write(3,*) 'i_udmax('//trim(sdust)//')=',i_udmax(idust)
+          if (i_rdudmax(idust) .ne. 0) &
+          write(3,*) 'i_rdudmax('//trim(sdust)//')=',i_rdudmax(idust)
+          if (i_odrms(idust) .ne. 0) &
+          write(3,*) 'i_odrms('//trim(sdust)//')=',i_odrms(idust)
+          if (i_odmax(idust) .ne. 0) &
+          write(3,*) 'i_odmax('//trim(sdust)//')=',i_odmax(idust)
+          if (i_udmx(idust) .ne. 0) &
+          write(3,*) 'i_udmx('//trim(sdust)//')=',i_udmx(idust)
+          if (i_udmy(idust) .ne. 0) &
+          write(3,*) 'i_udmy('//trim(sdust)//')=',i_udmy(idust)
+          if (i_udmz(idust) .ne. 0) &
+          write(3,*) 'i_udmz('//trim(sdust)//')=',i_udmz(idust)
+          if (i_divud2m(idust) .ne. 0) &
+          write(3,*) 'i_divud2m('//trim(sdust)//')=',i_divud2m(idust)
+          if (i_epsKd(idust) .ne. 0) &
+          write(3,*) 'i_epsKd('//trim(sdust)//')=',i_epsKd(idust)
+          if (i_udxpt(idust) .ne. 0) &
+          write(3,*) 'i_udxpt('//trim(sdust)//')=',i_udxpt(idust)
+          if (i_udypt(idust) .ne. 0) &
+          write(3,*) 'i_udypt('//trim(sdust)//')=',i_udypt(idust)
+          if (i_udzpt(idust) .ne. 0) &
+          write(3,*) 'i_udzpt('//trim(sdust)//')=',i_udzpt(idust)
+          if (i_udxmz(idust) .ne. 0) &
+          write(3,*) 'i_udxmz('//trim(sdust)//')=',i_udxmz(idust)
+          if (i_udymz(idust) .ne. 0) &
+          write(3,*) 'i_udymz('//trim(sdust)//')=',i_udymz(idust)
+          if (i_udzmz(idust) .ne. 0) &
+          write(3,*) 'i_udzmz('//trim(sdust)//')=',i_udzmz(idust)
+          if (i_udxmxy(idust) .ne. 0) &
+          write(3,*) 'i_udxmxy('//trim(sdust)//')=',i_udxmxy(idust)
+          if (i_udymxy(idust) .ne. 0) &
+          write(3,*) 'i_udymxy('//trim(sdust)//')=',i_udymxy(idust)
+          if (i_udzmxy(idust) .ne. 0) &
+          write(3,*) 'i_udzmxy('//trim(sdust)//')=',i_udzmxy(idust)
         endif
 !
 !  End loop over dust layers
 !
       enddo
+!
+!  Write dust index in short notation
+!
+      call chn(iuud(1),suud1)
+      call chn(iudx(1),sudx1)
+      call chn(iudy(1),sudy1)
+      call chn(iudz(1),sudz1)
+      if (lwr) then
+        write(3,*) 'iuud=indgen('//trim(sdustspec)//')*4 + '//trim(suud1)
+        write(3,*) 'iudx=indgen('//trim(sdustspec)//')*4 + '//trim(sudx1)
+        write(3,*) 'iudy=indgen('//trim(sdustspec)//')*4 + '//trim(sudy1)
+        write(3,*) 'iudz=indgen('//trim(sdustspec)//')*4 + '//trim(sudz1)
+      endif
 !
     endsubroutine rprint_dustvelocity
 !***********************************************************************
