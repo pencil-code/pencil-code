@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.10 2002-06-01 09:36:38 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.11 2002-06-04 08:12:02 brandenb Exp $
 
 module Magnetic
 
@@ -40,8 +40,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.10 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Revision: 1.11 $", &
+           "$Date: 2002-06-04 08:12:02 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -56,6 +56,7 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
+      if(ip==0) print*,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_aa
 !***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1)
@@ -70,6 +71,7 @@ module Magnetic
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1,cs2
 !
+      if(ip==0) print*,f,df,uu,rho1,TT1 !(keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
     subroutine rprint_magnetic(lreset)

@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.10 2002-06-01 02:56:21 brandenb Exp $
+! $Id: timestep.f90,v 1.11 2002-06-04 08:12:02 brandenb Exp $
 
 module Timestep
 
@@ -72,7 +72,7 @@ module Timestep
         dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
-!  do this loop in slice, for cache efficiency
+!  do this loop in pencils, for cache efficiency
 !
         do j=1,mvar
         do n=n1,n2

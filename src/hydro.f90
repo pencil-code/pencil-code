@@ -1,22 +1,23 @@
-! $Id: hydro.f90,v 1.14 2002-06-03 16:29:15 dobler Exp $
+! $Id: hydro.f90,v 1.15 2002-06-04 08:12:02 brandenb Exp $
 
 module Hydro
 
   use Cparam
-  use Cdata, only: nu,ivisc,cdiffrho
+  use Density
+  use Cdata, only: nu,ivisc
 
   implicit none
 
-  integer :: init=0,inituu=0,initlnrho=0
-  real :: cs0=1., rho0=1., amplrho=10., gamma=5./3., ampl=0., width=.1, urand=0.
-  real :: cs20, cs2top, gamma1
+  integer :: init=0,inituu=0
+  real :: ampluu=0., widthuu=.1, urand=0.
+  real :: uu_left=1.,uu_right=1.
 
   namelist /hydro_init_pars/ &
-       cs0,rho0,amplrho,gamma,ampl,init,inituu, &
-       initlnrho,width,urand
+       ampluu,inituu,widthuu,urand, &
+       uu_left,uu_right
 
   namelist /hydro_run_pars/ &
-       cs0,rho0,gamma,nu,ivisc,cdiffrho
+       nu,ivisc
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_t=0,i_it=0,i_dt=0,i_u2m=0,i_um2=0,i_oum,i_o2m
@@ -42,16 +43,14 @@ module Hydro
 !
       lhydro = .true.
 !
-      iuu = nvar+1             ! indices to access uu and lam
+      iuu = nvar+1             ! indices to access uu
       iux = iuu
       iuy = iuu+1
       iuz = iuu+2
-      ilnrho = iuu+3
-      nvar = nvar+4             ! added 4 variables
+      nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
         print*, 'Register_hydro:  nvar = ', nvar
-        print*, 'iuu,ilnrho = ', iuu,ilnrho
         print*, 'iux,iuy,iuz = ', iux,iuy,iuz
       endif
 !
@@ -59,8 +58,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-06-03 16:29:15 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-06-04 08:12:02 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -82,10 +81,10 @@ module Hydro
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot
+      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot,prof
       real, dimension (mz) :: stp
       real, dimension (nx,1) :: rmn
-      real :: zmax,lnrho0
+      real :: lnrho0
       real :: beta1,lnrhoint,cs2int
       integer :: i
 !
@@ -103,22 +102,20 @@ module Hydro
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-        f(:,:,:,iux)=ampl*tmp
-      endselect
+        f(:,:,:,iux)=ampluu*tmp
 !
-!  initlnrho corresponds to different initializations of lnrho (called from start).
-!  If init does't match, f=0 is assumed (default).
+!  sound wave (should be consistent with density module)
 !
-      select case(initlnrho)
-      case(0)
-        if (lroot) print*,'uniform lnrho'
-        f(:,:,:,ilnrho)=0.
-      case(1)
-        if (lroot) print*,'lnrho=gravz*zz/cs0^2 (for isothermal/polytropic)'
-        f(:,:,:,ilnrho)=(gravz/cs0**2)*zz
-      case(2)
-        if (lroot) print*,'density jump; ampl,width=',ampl,width
-        f(:,:,:,ilnrho)=alog(rho0)+alog(amplrho)*.5*(1.+tanh(zz/width))
+      case(11)
+        print*,'sound wave in the x-direction'
+        f(:,:,:,iux)=ampluu*sin(xx)
+!
+!  shock tube test (should be consistent with density module)
+!
+      case(13)
+        print*,'polytopic standing shock'
+        prof=.5*(1.+tanh(xx/widthuu))
+        f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
       endselect
 !
 !  init corresponds to different initializations of lnrho (called from start).
@@ -130,7 +127,7 @@ module Hydro
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-        f(:,:,:,iux)=ampl*tmp
+        f(:,:,:,iux)=ampluu*tmp
       case(1)               ! density stratification
         if (lgravz) then
           if (lroot) print*,'vertical density stratification'
@@ -166,10 +163,10 @@ module Hydro
       case(2)               ! oblique sound wave
         if (lroot) print*,'oblique sound wave'
         tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
-        f(:,:,:,ilnrho)=ampl*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
-        f(:,:,:,iux)=ampl*cos(tmp)
-        f(:,:,:,iuy)=ampl*cos(tmp)*2.
-        f(:,:,:,iuz)=ampl*cos(tmp)*(-1)
+        f(:,:,:,ilnrho)=ampluu*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
+        f(:,:,:,iux)=ampluu*cos(tmp)
+        f(:,:,:,iuy)=ampluu*cos(tmp)*2.
+        f(:,:,:,iuz)=ampluu*cos(tmp)*(-1)
       case(3)               ! uu = (sin 2x, sin 3y , cos z)
         if (lroot) print*,'uu harmonic (what is this good for?)'
         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &

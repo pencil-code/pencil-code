@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.50 2002-06-01 09:36:38 brandenb Exp $
+! $Id: equ.f90,v 1.51 2002-06-04 08:12:02 brandenb Exp $
 
 module Equ
 
@@ -117,8 +117,9 @@ module Equ
       file='tvid.dat'
       if (ifirst==0) then
         open(41,file=chdir//'/divu.xy',form='unformatted')
-        open(43,file=chdir//'/ux.xy',form='unformatted')
-        open(44,file=chdir//'/uz.xy',form='unformatted')
+        open(42,file=chdir//'/ux.xy',form='unformatted')
+        open(43,file=chdir//'/uz.xy',form='unformatted')
+        open(44,file=chdir//'/ux.xz',form='unformatted')
         open(45,file=chdir//'/uz.xz',form='unformatted')
         open(46,file=chdir//'/lnrho.xz',form='unformatted')
         call out1 (file,tvid,nvid,dvid,t)
@@ -127,8 +128,9 @@ module Equ
         call out2 (file,tvid,nvid,dvid,t,lvid,ch,.false.)
         if (lvid) then
           write(41) divu_xy(:,:),t
-          write(43) uu_xy(:,:,1),t
-          write(44) uu_xy(:,:,3),t
+          write(42) uu_xy(:,:,1),t
+          write(43) uu_xy(:,:,3),t
+          write(44) uu_xz(:,:,1),t
           write(45) uu_xz(:,:,3),t
           write(46) lnrho_xz(:,:),t
         endif
@@ -169,8 +171,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.50 $", &
-           "$Date: 2002-06-01 09:36:38 $")
+           "$Revision: 1.51 $", &
+           "$Date: 2002-06-04 08:12:02 $")
 !
 !  initialize counter for calculating and communicating print results
 !

@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.5 2002-06-03 14:59:48 dobler Exp $
+! $Id: nograv.f90,v 1.6 2002-06-04 08:12:02 brandenb Exp $
 
 module Gravity
 
@@ -37,8 +37,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nograv.f90,v $", &
-           "$Revision: 1.5 $", &
-           "$Date: 2002-06-03 14:59:48 $")
+           "$Revision: 1.6 $", &
+           "$Date: 2002-06-04 08:12:02 $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -58,6 +58,7 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
+      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_grav
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
@@ -73,6 +74,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
 !
+      if(ip==0) print*,f,df  !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential(xmn,ymn,zmn,rmn, pot)
@@ -80,14 +82,15 @@ module Gravity
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
 !
-      use Cdata, only: nx,ny,nz,gravz,lroot
-      use Sub, only: poly
+      use Cdata, only: nx,lroot
 !
-      real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
+      real, dimension (nx,1,1) :: xmn,rmn, pot
+      real :: ymn,zmn
 !
       if (lroot) print*,'potential: should not have been called'
       pot = 0.
 !
+      if(ip==0) print*,xmn,ymn,zmn,rmn
     endsubroutine potential
 !***********************************************************************
 

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.38 2002-06-02 07:51:39 brandenb Exp $
+! $Id: cdata.f90,v 1.39 2002-06-04 08:12:02 brandenb Exp $
 
 module Cdata
 
@@ -17,7 +17,7 @@ module Cdata
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dtmin
   real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
-  real :: DD,nu,cmu,cnu2,cdiffrho
+  real :: DD,nu,cmu,cnu2
   real :: tdiagnos,dtu,dtv
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
@@ -52,8 +52,8 @@ module Cdata
   real, dimension (mname) :: fname
   character (len=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
 
-  logical :: lmpicomm=.false., lhydro=.true., lentropy=.false., lmagnetic=.false.
-  logical :: lforcing=.false.
+  logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
+  logical :: lmpicomm=.false., lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt,headtt,ldt,lfirst,ldiagnos
   logical :: lroot=.true.

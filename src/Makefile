@@ -93,7 +93,7 @@ code:
 	make start.x run.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o prints.o
-physics=$(GLOBAL).o $(HYDRO).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
+physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) debug_c.o
@@ -111,7 +111,7 @@ run.x: $(run) Makefile.local
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 #
-cparam.o:    cparam.f90
+cparam.o:    cparam.f90 cparam.local
 general.o:   general.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
@@ -128,9 +128,10 @@ $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o boundcond.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(DENSITY).o $(IO).o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o
-$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
+$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(DENSITY).o $(GRAVITY).o slices.o
+$(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o debug_c.o
 #
 debug_c.o:   debug_c.c

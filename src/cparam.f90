@@ -1,20 +1,26 @@
-! $Id: cparam.f90,v 1.16 2002-05-27 12:18:25 dobler Exp $
+! $Id: cparam.f90,v 1.17 2002-06-04 08:12:02 brandenb Exp $
 
 module Cparam
 
 !!!  Parameters
 
 !  (nx,ny,nz) is the size of the computational mesh
-!  The total nmumber of meshpoints is (nx,ny,nz*ncpus).
+!  The total nmumber of meshpoints is (nx*nprocx,ny*nprocy,nz*nprocz).
 !  The number of ghost zones is NOT counted.
 !
-  integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
-  integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
-  integer, parameter :: nghost=3,mk=3000,mvar=5
-  integer, parameter :: bclen=3
+!  In practice, the user will change the number of cpus (in y and z)
+!  and the number of mesh points, and recompile.
+!  Dependening on what is invoked under Makefile.local,
+!  one needs to adjust nvar.
+!  This part is now isolated in a separate cparam.local file.
 !
-!  derived parameters
+include 'cparam.local'
+! integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
+! integer, parameter :: nxgrid=200,nygrid=1,nzgrid=1,mvar=4
 !
+!  derived and fixed parameters
+!
+  integer, parameter :: nghost=3,bclen=3
   integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz,nw=nx*ny*nz
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
