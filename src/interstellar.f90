@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.8 2002-12-10 00:50:51 ngrs Exp $
+! $Id: interstellar.f90,v 1.9 2002-12-10 13:35:07 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.8 2002-12-10 00:50:51 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.9 2002-12-10 13:35:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,12 +95,16 @@ module Interstellar
       logical :: exist
 
       if (first) then
-         if (lroot.and.ip<14) print*, 'reading seed file'
+         if (lroot.and.ip<14) then
+            print*, 'initialize_interstellar: reading seed file'
+            print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+         endif
          call inpui(trim(directory)//'/seed.dat',seed,nseed)
          call random_seed_wrapper(put=seed(1:nseed))
 !
          inquire(file=trim(datadir)//'/interstellar.dat',exist=exist)
          if (exist) then 
+           if (lroot.and.ip<14) print*, 'initialize_interstellar: read interstellar.dat'
            call inpup(trim(datadir)//'/interstellar.dat',  &
                                      interstellarsave,ninterstellarsave)
            t_next_SNI=interstellarsave(1)
@@ -108,7 +112,11 @@ module Interstellar
            interstellarsave(1)=t_next_SNI
          endif
       endif
-
+      if (lroot.and.ip<14) then
+        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+        print*,'initialize_interstellar: finished'
+      endif
+!
     endsubroutine initialize_interstellar
 !***********************************************************************
     subroutine calc_heat_cool_interstellar(df,rho1,TT1)
