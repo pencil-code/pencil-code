@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.23 2003-04-05 19:31:35 brandenb Exp $
+! $Id: radiation.f90,v 1.24 2003-04-28 02:13:34 brandenb Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -18,7 +18,7 @@ module Radiation
   real :: mbar=1.  !mbar*m_unit in to not get to big numbers
   real :: k_B_radiation=1.      !k_B*m_unit in to not get to big numbers
   real :: a_SB=1.
-  real :: kappa_es=0
+  real :: kappa_es_radiation=0
   real :: amplee=0
   real :: ampl_pert=0
   real :: inflow=2
@@ -33,10 +33,10 @@ module Radiation
 
   ! input parameters
   namelist /radiation_init_pars/ &
-       initrad,c_gam,opas,kappa_es,mbar,k_B_radiation,a_SB,amplee,pertee,ampl_pert
+       initrad,c_gam,opas,kappa_es_radiation,mbar,k_B_radiation,a_SB,amplee,pertee,ampl_pert
   ! run parameters
   namelist /radiation_run_pars/ &
-       c_gam,opas,kappa_es,mbar,k_B_radiation,a_SB,flim,inflow
+       c_gam,opas,kappa_es_radiation,mbar,k_B_radiation,a_SB,flim,inflow
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_frms=0,i_fmax=0,i_Erad_rms=0,i_Erad_max=0
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.23 2003-04-05 19:31:35 brandenb Exp $")
+           "$Id: radiation.f90,v 1.24 2003-04-28 02:13:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -252,10 +252,10 @@ module Radiation
          E_gas=1.5*k_B_radiation/(rho1*mbar*TT1)
          kappa_abs=opas*(1./rho1)**(9./2)*E_gas**(-7./2)
          source=a_SB*TT1**(-4)
-         kappa=kappa_abs+kappa_es
+         kappa=kappa_abs+kappa_es_radiation
          cooling=(source-E_rad)*c_gam*kappa_abs/rho1
       else
-         kappa=kappa_es
+         kappa=kappa_es_radiation
          cooling=0
       endif
 !
