@@ -43,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-05-02 16:29:42 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-05-02 17:46:33 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +120,7 @@ print*, 'tmpv_z: ', minval(tmpv(:,:,:,3)), maxval(tmpv(:,:,:,3))
                - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3)
         enddo
       endif
+      print*, 'Magnetic flux rings initialized'
 !
     endsubroutine init_aa
 !***********************************************************************

@@ -66,13 +66,7 @@ contains
 !  assume uniform mesh; use the first two *interior* points
 !  to calculate mesh spacing
 !
-        if (mx.gt.1) then; dx=x(5)-x(4); else; dx=0.; endif
-        if (my.gt.1) then; dy=y(5)-y(4); else; dy=0.; endif
-        if (mz.gt.1) then; dz=z(5)-z(4); else; dz=0.; endif
         dxmax=max(dx,dy,dz)
-        if (mx.eq.1) dx=dxmax
-        if (my.eq.1) dy=dxmax
-        if (mz.eq.1) dz=dxmax
         dxmin=min(dx,dy,dz)
         Lx=dx*mx
         Ly=dy*my
