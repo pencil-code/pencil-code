@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.222 2003-08-09 19:42:00 mee Exp $
+### $Id: Makefile,v 1.223 2003-08-11 14:23:45 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -209,6 +209,8 @@ start=start.o $(start_deps)
 run=run.o $(run_deps)
 read_videofiles_deps=cparam.o cdata.o general.o
 read_videofiles=read_videofiles.o $(read_videofiles_deps)
+read_vectorfiles_deps=cparam.o cdata.o general.o
+read_vectorfiles=read_vectorfiles.o $(read_vectorfiles_deps)
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 
 # ---------------------------------------------------------------------- #
@@ -233,7 +235,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	sed -e 's/\(MPI_[A-Z_]*\)\([ ]*(\)/\1_\2/' mpicomm_double.f90 | sed -e 's/\(MPI_[A-Z_]*\)\([ ]*!\)/\1_\2/' > mpicomm_double_.f90
 
 code:
-	make start.x run.x read_videofiles.x
+	make start.x run.x read_videofiles.x read_vectorfiles.x
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
@@ -294,9 +296,13 @@ cleann: clean
 read_videofiles.x: $(read_videofiles)
 	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
 
+read_vectorfiles.x: $(read_vectorfiles)
+	$(LD) $(LDFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
+
 start.o:     start.f90 $(start_deps)
 run.o:       run.f90 $(run_deps)
 read_videofiles.o: read_videofiles.f90 $(read_videofiles_deps)
+read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
