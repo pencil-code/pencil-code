@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.133 2003-09-30 12:39:58 nilshau Exp $
+! $Id: magnetic.f90,v 1.134 2003-10-03 17:41:09 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -48,13 +48,14 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
+  integer :: i_bxpt=0,i_bypt=0,i_bzpt=0
   integer :: i_aybym2=0,i_exaym2=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
-  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_jxum=0,i_ujxbm
+  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
   integer :: i_b2mphi=0
 
   contains
@@ -91,7 +92,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.133 2003-09-30 12:39:58 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.134 2003-10-03 17:41:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -235,14 +236,14 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
-      real, dimension (nx,3) :: gpxb,glnrho,jxu
+      real, dimension (nx,3) :: gpxb,glnrho,uxj
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,jxu_dotB0,ujxb
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1,B_ext21=1.
-      integer :: j
+      integer :: j,lpoint,mpoint,npoint
 !
       intent(in)  :: f,uu,rho1,TT1,uij
 !
@@ -387,6 +388,18 @@ module Magnetic
 !
       if (ldiagnos) then
         !
+        !  magnetic field components at one point (=pt)
+        !  for now we take the middle of the root processor
+        !
+        lpoint=(l1+l2)/2
+        mpoint=(m1+m2)/2
+        npoint=(n1+n2)/2
+        if (lroot.and.m==mpoint.and.n==npoint) then
+          if (i_bxpt/=0) call save_name(bbb(lpoint,1),i_bxpt)
+          if (i_bypt/=0) call save_name(bbb(lpoint,2),i_bypt)
+          if (i_bzpt/=0) call save_name(bbb(lpoint,3),i_bzpt)
+        endif
+        !
         !  v_A = |B|/sqrt(rho); in units where "4pi"=1
         !
         if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
@@ -435,13 +448,13 @@ module Magnetic
           if (i_uxbmz/=0) call sum_mn_name(uxb(:,3),i_uxbmz)
         endif
         !
-        !  calculate <jxu>.B0/B0^2
+        !  calculate <uxj>.B0/B0^2
         !
-        if (i_jxum/=0) then
-          call cross_mn(jj,uu,jxu)
-          jxu_dotB0=B_ext(1)*jxu(:,1)+B_ext(2)*jxu(:,2)+B_ext(3)*jxu(:,3)
-          jxu_dotB0=jxu_dotB0*B_ext21
-          call sum_mn_name(jxu_dotB0,i_jxum)
+        if (i_uxjm/=0) then
+          call cross_mn(jj,uu,uxj)
+          uxj_dotB0=B_ext(1)*uxj(:,1)+B_ext(2)*uxj(:,2)+B_ext(3)*uxj(:,3)
+          uxj_dotB0=uxj_dotB0*B_ext21
+          call sum_mn_name(uxj_dotB0,i_uxjm)
         endif
         !
         !  calculate <u.(jxb)>
@@ -626,6 +639,7 @@ module Magnetic
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
+        i_bxpt=0; i_bypt=0; i_bzpt=0
         i_aybym2=0; i_exaym2=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
@@ -633,7 +647,7 @@ module Magnetic
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
-        i_b2mphi=0; i_jxum=0; i_ujxbm=0
+        i_b2mphi=0; i_uxjm=0; i_ujxbm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -662,7 +676,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',i_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',i_uxbmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbmz',i_uxbmz)
-        call parse_name(iname,cname(iname),cform(iname),'jxum',i_jxum)
+        call parse_name(iname,cname(iname),cform(iname),'uxjm',i_uxjm)
         call parse_name(iname,cname(iname),cform(iname),'ujxbm',i_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
@@ -671,6 +685,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
+        call parse_name(iname,cname(iname),cform(iname),'bxpt',i_bxpt)
+        call parse_name(iname,cname(iname),cform(iname),'bypt',i_bypt)
+        call parse_name(iname,cname(iname),cform(iname),'bzpt',i_bzpt)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -720,7 +737,7 @@ module Magnetic
       write(3,*) 'i_uxbmx=',i_uxbmx
       write(3,*) 'i_uxbmy=',i_uxbmy
       write(3,*) 'i_uxbmz=',i_uxbmz
-      write(3,*) 'i_jxum=',i_jxum
+      write(3,*) 'i_uxjm=',i_uxjm
       write(3,*) 'i_ujxbm=',i_ujxbm
       write(3,*) 'i_oxuxbm=',i_oxuxbm
       write(3,*) 'i_jxbxbm=',i_jxbxbm
@@ -738,6 +755,9 @@ module Magnetic
       write(3,*) 'i_bmx=',i_bmx
       write(3,*) 'i_bmy=',i_bmy
       write(3,*) 'i_bmz=',i_bmz
+      write(3,*) 'i_bxpt=',i_bxpt
+      write(3,*) 'i_bypt=',i_bypt
+      write(3,*) 'i_bzpt=',i_bzpt
       write(3,*) 'nnamexy=',nnamexy
       write(3,*) 'i_bxmxy=',i_bxmxy
       write(3,*) 'i_bymxy=',i_bymxy

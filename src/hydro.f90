@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.104 2003-09-30 12:02:19 brandenb Exp $
+! $Id: hydro.f90,v 1.105 2003-10-03 17:41:09 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -20,7 +20,7 @@ module Hydro
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
   character (len=labellen) :: inituu='zero'
-  real, dimension(3) :: gradH0=(/0.,0.,0./)
+  real, dimension(3) :: gradH0=(/0.,0.,0./), uu_const=(/0.,0.,0./)
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
@@ -86,7 +86,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.104 2003-09-30 12:02:19 brandenb Exp $")
+           "$Id: hydro.f90,v 1.105 2003-10-03 17:41:09 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -144,6 +144,7 @@ module Hydro
                      if(lroot) print*,'init_uu: zero velocity'
                      ! Ensure really is zero, as may have used lread_oldsnap
                      f(:,:,:,iux:iuz)=0. 
+      case('const_uu'); do i=1,3; f(:,:,:,iuu+i) = uu_const(i); enddo
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
