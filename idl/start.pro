@@ -52,6 +52,10 @@ zero = 0*one
 x0=(y0=(z0=zero))
 Lx=(Ly=(Lz=zero))
 cs0=(gamma=(gamma1=zero))
+gravz=(rho0=(grads0=zero))
+z1=(z2=(z3=zero))
+hcond0=(hcond1=(hcond2=(whcond=zero)))
+mpoly0=(mpoly1=(mpoly2=zero))
 bx_ext=(by_ext=(bz_ext=zero))
 pfile=datatopdir+'/'+'param.dat'
 dummy=findfile(pfile, COUNT=cpar)
@@ -60,6 +64,10 @@ if (cpar gt 0) then begin
   openr,1, datatopdir+'/'+'param.dat', /F77
   readu,1, x0,y0,z0,Lx,Ly,Lz
   readu,1, cs0,gamma,gamma1
+  readu,1, gravz,rho0,grads0
+  readu,1, z1,z2,ztop
+  readu,1, hcond0,hcond1,hcond2,whcond
+  readu,1, mpoly0,mpoly1,mpoly2
   close,1
 endif else begin
   print, 'Warning: cannot find file ', pfile

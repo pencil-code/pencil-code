@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.26 $", &
-           "$Date: 2002-02-24 21:02:45 $")
+           "$Revision: 1.27 $", &
+           "$Date: 2002-02-25 17:55:16 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,10 +129,10 @@ use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,g1,g2,glhc
+      real, dimension (nx,3) :: uu,glnrho,gpprho,gss,glnT,glnTlambda,glhc
       real, dimension (nx) :: divu,rho1,cs2,chi
       real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
-      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g1_g2
+      real, dimension (nx) :: ugss,thdiff,del2ss,del2lnrho,sij2,g2
       real, dimension (nx) :: ss,lnrho,TT1,lambda
       real, dimension (nx) :: heat,prof
       real :: ssref
@@ -196,11 +196,11 @@ use IO
 !
       call heatcond(x_mn,y_mn,z_mn,lambda)
       chi = rho1*lambda
-      g1 = gamma*gss + gamma1*glnrho
+      glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
       call gradloghcond(x_mn,y_mn,z_mn, glhc)
-      g2 = g1 + glhc
-      call dot_mn(g1,g2,g1_g2)
-      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
+      glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
+      call dot_mn(glnT,glnTlambda,g2)
+      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
       if (headt) then
         call output_stenc(trim(directory)//'/chi.dat',chi,1)
