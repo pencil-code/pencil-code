@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.192 2004-05-31 15:43:02 brandenb Exp $
+! $Id: magnetic.f90,v 1.193 2004-06-05 13:54:37 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -130,7 +130,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.192 2004-05-31 15:43:02 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.193 2004-06-05 13:54:37 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1514,13 +1514,13 @@ module Magnetic
       where (xx == 0.0)
         where (yy < 0.0)
           phi=-pi/2
-        else where
+        elsewhere
           phi= pi/2
         endwhere
-      else where
+      elsewhere
         where (xx > 0.0)
           phi=atan(yy/xx)
-        else where
+        elsewhere
           phi=atan(yy/xx)+pi
         endwhere
       endwhere
