@@ -85,6 +85,7 @@ function texsyms, DEVICE=device
               times       : '!7´!X' , $
               leq         : '!6!S<!R_!X' , $ ; `le' is reserved..
               geq         : '!6!S>!R_!X' , $ ; `ge' is reserved..
+              nabla       : '!MÑ!X' , $
               uparrow     : '!7­!X', $
               downarrow   : '!7¯!X', $
               leftarrow   : '!7¬!X', $ 
@@ -161,6 +162,7 @@ function texsyms, DEVICE=device
               odot        : '!9n!X',   $
               leq         : '!9l!X',   $ ; `le' is reserved..
               geq         : '!9b!X',   $ ; `ge' is reserved..
+              nabla       : '!MG!X', $
               uparrow     : '!97!X', $
               downarrow   : '!95!X', $
               leftarrow   : '!94!X', $
