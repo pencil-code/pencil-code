@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.141 2003-06-04 10:44:36 brandenb Exp $
+! $Id: equ.f90,v 1.142 2003-06-13 09:25:24 nilshau Exp $
 
 module Equ
 
@@ -206,6 +206,7 @@ module Equ
       use Boundcond
       use IO
       use Shear
+      use Density
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -220,7 +221,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.141 2003-06-04 10:44:36 brandenb Exp $")
+           "$Id: equ.f90,v 1.142 2003-06-13 09:25:24 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

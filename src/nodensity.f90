@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.8 2002-11-24 13:14:59 mee Exp $
+! $Id: nodensity.f90,v 1.9 2003-06-13 09:25:24 nilshau Exp $
 
 module Density
 
@@ -8,6 +8,7 @@ module Density
 
   real :: cs0=1., rho0=1., gamma=1., cs20=1., gamma1=0.
   real :: lnrho0
+  real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
 
   integer :: dummy           ! We cannot define empty namelists
   namelist /density_init_pars/ dummy
@@ -40,7 +41,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.8 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nodensity.f90,v 1.9 2003-06-13 09:25:24 nilshau Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
