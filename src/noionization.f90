@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.68 2003-09-12 16:16:20 mee Exp $
+! $Id: noionization.f90,v 1.69 2003-10-02 15:26:10 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -78,7 +78,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.68 2003-09-12 16:16:20 mee Exp $")
+           "$Id: noionization.f90,v 1.69 2003-10-02 15:26:10 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -109,8 +109,20 @@ module Ionization
     endsubroutine initialize_ionization
 !*******************************************************************
     subroutine getmu(mu)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   12-aug-03/tony: implemented
+!
       real, intent(out) :: mu
-      mu=1.+3.97153*xHe  
+
+!  mu = mu_H * (1 - xHe) + mu_He * xHe 
+!     = mu_H + (mu_He-mu_H) * xHe
+!  mu_H = 1.
+!  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
+!        = 3.97
+!
+      mu=1.+2.97153*xHe  
     endsubroutine getmu
 !*******************************************************************
     subroutine rprint_ionization(lreset)

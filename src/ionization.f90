@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.104 2003-10-01 17:02:32 theine Exp $
+! $Id: ionization.f90,v 1.105 2003-10-02 15:26:09 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.104 2003-10-01 17:02:32 theine Exp $")
+           "$Id: ionization.f90,v 1.105 2003-10-02 15:26:09 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -104,8 +104,20 @@ module Ionization
     endsubroutine register_ionization
 !*******************************************************************
     subroutine getmu(mu)
+!
+!  Calculate average particle mass in the gas relative to
+!
+!   12-aug-03/tony: implemented
+!
       real, intent(out) :: mu
-      mu=1.+3.97153*xHe  
+
+!  mu = mu_H * (1 - xHe) + mu_He * xHe 
+!     = mu_H + (mu_He-mu_H) * xHe
+!  mu_H = 1.
+!  mu_He = 4.0026 / 1.0079  (molar masses from a Periodic Table)
+!        = 3.97
+!
+      mu=1.+2.97153*xHe  
     endsubroutine getmu
 !***********************************************************************
     subroutine initialize_ionization()
