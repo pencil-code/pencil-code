@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.137 2003-10-10 01:28:02 brandenb Exp $ 
+! $Id: sub.f90,v 1.138 2003-11-10 10:58:28 dobler Exp $ 
 
 module Sub 
 
@@ -2539,6 +2539,30 @@ module Sub
       write(date,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
            values(3), month(values(2)), values(1), &
            values(5), values(6), values(7)
+!
+! TEMPORARY DEBUGGING STUFF
+! SOMETIMES THIS ROUTINE PRINTS '***' WHEN IT SHOULDN'T
+!
+      if (index(date,'*')>0) then
+        open(11,FILE='date_time_string.debug')
+        write(11,*) 'This file was generated because sub$date_time_string()'
+        write(11,*) 'produced a strange result. Please forwad this file to'
+        write(11,*) '  Wolfgang.Dobler@kis.uni-freiburg.de'
+        write(11,*)
+        write(11,*) 'date = <', date,'>'
+        write(11,*) 'values = ', values
+        write(11,*) 'i.e.'
+        write(11,*) 'values(1) = ', values(1)
+        write(11,*) 'values(2) = ', values(2)
+        write(11,*) 'values(3) = ', values(3)
+        write(11,*) 'values(4) = ', values(4)
+        write(11,*) 'values(5) = ', values(5)
+        write(11,*) 'values(6) = ', values(6)
+        write(11,*) 'values(7) = ', values(7)
+        close(11)
+!
+!  END OF TEMPORARY DEBUGGING STUFF
+!
 !
     endsubroutine date_time_string
 !***********************************************************************
