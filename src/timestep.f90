@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.26 2004-07-05 20:50:10 theine Exp $
+! $Id: timestep.f90,v 1.27 2004-08-25 15:06:25 mee Exp $
 
 module Timestep
 
@@ -33,6 +33,7 @@ module Timestep
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real :: ds
+      real, dimension(1) :: dt1, dt1_local
       integer :: j
 !
 !  coefficients for up to order 3
@@ -76,9 +77,13 @@ module Timestep
 !  This is done here because it uses UUmax which was calculated in pde.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
-        if (lroot.and.lfirst.and.ldt) dt=1.0/maxval(dt1_max)
+        if (lfirst.and.ldt) then 
+           dt1_local=maxval(dt1_max)
+           call mpireduce_max(dt1_local,dt1,1)
+           dt=1.0/dt1(1)       ! could be just if (lroot) - but hey, make'em work!
+           call mpibcast_real(dt,1)
+        endif
 
-        if (lfirst) call mpibcast_real(dt,1)
         if (ldt) dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
