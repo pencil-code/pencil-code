@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.237 2003-09-04 09:05:57 dobler Exp $
+### $Id: Makefile,v 1.238 2003-09-04 16:03:36 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -48,6 +48,7 @@ FFLAGS=
 F90FLAGS=
 F77FLAGS=
 CFLAGS=-O3 -DFUNDERSC=1
+LDONLYFLAGS=
 
 ## The following block (`Begin/End machine dependent') specifies compilers
 ## and switches for given architectures and machine names. See
@@ -192,6 +193,7 @@ PENCIL_MKFILE=makefile
 ##-------------------
 #FFLAGS=-O5 -qstrict
 #F90FLAGS=-qsuffix=f=f90
+#LDONLYFLAGS=-qipa
 #LDMPI=
 
 ### End machine dependent
@@ -255,16 +257,16 @@ code:
 	make -f $(PENCIL_MKFILE) start.x run.x read_videofiles.x read_vectorfiles.x
 
 start.x: $(start) Makefile.local
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 # Handy for debugging; just compile by hand what is changed.
 # When you use this you must be certain that everying is consistent.
 linkonly:
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
 	make -f $(PENCIL_MKFILE) linkonly
@@ -275,8 +277,8 @@ mpicomm_.f90:      mpicomm.f90
 # Shortcut for debugging radiation:
 rad:
 	ifc -c radiation_exp.f90
-	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
-	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 # Remove all build files, but keep executables
 # (misleading name..)
@@ -312,10 +314,10 @@ cleann: clean
 ## ---------------------------------------------------------------------- #
 
 read_videofiles.x: $(read_videofiles)
-	$(LD) $(LDFLAGS) $(read_videofiles) -o read_videofiles.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(read_videofiles) -o read_videofiles.x 
 
 read_vectorfiles.x: $(read_vectorfiles)
-	$(LD) $(LDFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
+	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(read_vectorfiles) -o read_vectorfiles.x 
 
 ## ---------------------------------------------------------------------- #
 ## Dependancies
