@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.35 2004-02-13 16:24:57 ajohan Exp $
+! $Id: dustdensity.f90,v 1.36 2004-02-14 16:53:28 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -24,7 +24,7 @@ module Dustdensity
   real, dimension(ndustspec) :: cdiffnd=0
   real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=0.
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
-  real :: mmon,mumon,amon
+  real :: mmon,mumon,surfmon
   character (len=labellen) :: initnd='zero', dust_chemistry='ice'
   logical :: ldustformation=.true.,ldustgrowth=.true.,ldustcoagulation=.true.
   logical :: lcalcdkern=.true.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.35 2004-02-13 16:24:57 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.36 2004-02-14 16:53:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,8 +166,14 @@ module Dustdensity
             print*, 'initialize_dustdensity: dust_chemistry = ', dust_chemistry
         mumon = 18
         mmon  = mumon*1.6733e-24 
-        amon  = pi*(0.3e-7)**2
-        if (lroot) print*, 'initialize_dustdensity: mmon, amon = ', mmon, amon
+
+        select case (dust_geometry)
+        case('sphere')
+          surfmon = surfd(1)*(mmon/md(1))**(1.-dimd1)
+        endselect
+
+        if (lroot) print*, &
+            'initialize_dustdensity: mmon, surfmon = ', mmon, surfmon
 
       case default
         call stop_it &
@@ -505,7 +511,7 @@ module Dustdensity
         ppmon = pp*epsmon*mu/mumon
         ppsat = 1.013e6*exp(-5940/TT+15.6)
         vth = (3*k_B*TT/mmon)**0.5
-        taucond1 = amon*vth*epsmon*rho/mmon*(1-ppsat/ppmon)
+        taucond1 = surfmon*vth*epsmon*rho/mmon*(1-ppsat/ppmon)
 
       case default
         call stop_it("get_condtime: No valid dust chemistry specified.")

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.37 2004-02-11 14:58:01 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.38 2004-02-14 16:53:28 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -23,7 +23,7 @@ module Dustvelocity
 
   ! init parameters
   real, dimension(ndustspec,ndustspec) :: scolld
-  real, dimension(ndustspec) :: md,mdplus,mdminus,ad,rhodsad1
+  real, dimension(ndustspec) :: md,mdplus,mdminus,ad,surfd,rhodsad1
   real, dimension(ndustspec) :: tausd=0.,betad=0.,nud=0.
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
@@ -101,7 +101,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.37 2004-02-11 14:58:01 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.38 2004-02-14 16:53:28 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -162,18 +162,21 @@ module Dustvelocity
       select case(dust_geometry)
 
       case ('sphere')
+
+        dimd1 = 0.333333
+        
         if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
-        ad(1)  = (0.75*md(1)/(pi*rhods))**(1/3.)  ! Spherical
+        ad(1)    = (0.75*md(1)/(pi*rhods))**dimd1
+        surfd(1) = 4*pi*ad(1)**2
         do i=2,ndustspec
-          ad(i)  = ad(1)*(md(i)/md(1))**(1/3.)
+          ad(i)  = ad(1)*(md(i)/md(1))**dimd1
+          surfd(i) = surfd(1)*(md(i)/md(1))**(1.-dimd1)
         enddo
         do i=1,ndustspec
           do j=1,ndustspec
             scolld(i,j) = pi*(ad(i)+ad(j))**2
           enddo
         enddo
-
-        dimd1 = 0.333333
 
       case default
         call stop_it( &
