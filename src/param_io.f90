@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.44 2002-07-22 22:36:59 brandenb Exp $ 
+! $Id: param_io.f90,v 1.45 2002-07-23 16:06:09 dobler Exp $ 
 
 module Param_IO
 
@@ -43,6 +43,8 @@ module Param_IO
 !
       use Mpicomm, only: stop_it
 !
+      character (len=30) :: label='[none]'
+!
 !  open namelist file
 !
       open(1,FILE='start.in',FORM='formatted')
@@ -50,15 +52,25 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
+      label='init_pars'
                       read(1,NML=init_pars          ,err=99)
+      label='hydro_init_pars'
       if (lhydro    ) read(1,NML=hydro_init_pars    ,err=99)
+      label='density_init_pars'
       if (ldensity  ) read(1,NML=density_init_pars  ,err=99)
+      label='grav_init_pars'
       if (lgrav     ) read(1,NML=grav_init_pars     ,err=99)
+      label='entropy_init_pars'
       if (lentropy  ) read(1,NML=entropy_init_pars  ,err=99)
+      label='magnetic_init_pars'
       if (lmagnetic ) read(1,NML=magnetic_init_pars ,err=99)
+      label='radiation_init_pars'
       if (lradiation) read(1,NML=radiation_init_pars,err=99)
+      label='pscalar_init_pars'
       if (lpscalar  ) read(1,NML=pscalar_init_pars  ,err=99)
+      label='shear_init_pars'
       if (lshear    ) read(1,NML=shear_init_pars    ,err=99)
+      label='[none]'
       close(1)
 !
 !  output on the console, but only when root processor
@@ -102,7 +114,8 @@ module Param_IO
         print*,'------END sample namelist -------'
         print*
       endif
-      call stop_it('found error in input namelist: use sample above')
+      call stop_it('found error in input namelist "' // trim(label) &
+           // '": use sample above')
 !
     endsubroutine read_inipars
 !***********************************************************************
@@ -118,6 +131,7 @@ module Param_IO
       use Mpicomm, only: stop_it
 !
       logical, optional :: print
+      character (len=30) :: label='[none]'
 !
 !  set default values
 !
@@ -136,16 +150,27 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
+      label='run_pars'
                       read(1,NML=run_pars          ,err=99)
+      label='hydro_run_pars'
       if (lhydro    ) read(1,NML=hydro_run_pars    ,err=99)
+      label='density_run_pars'
       if (ldensity  ) read(1,NML=density_run_pars  ,err=99)
+      label='forcing_run_pars'
       if (lforcing  ) read(1,NML=forcing_run_pars  ,err=99)
+      label='grav_run_pars'
       if (lgrav     ) read(1,NML=grav_run_pars     ,err=99)
+      label='entropy_run_pars'
       if (lentropy  ) read(1,NML=entropy_run_pars  ,err=99)
+      label='magnetic_run_pars'
       if (lmagnetic ) read(1,NML=magnetic_run_pars ,err=99)
+      label='radiation_run_pars'
       if (lradiation) read(1,NML=radiation_run_pars,err=99)
+      label='pscalar_run_pars'
       if (lpscalar  ) read(1,NML=pscalar_run_pars  ,err=99)
+      label='shear_run_pars'
       if (lshear    ) read(1,NML=shear_run_pars    ,err=99)
+      label='[none]'
       close(1)
 !
 !  print cvs id from first line
@@ -220,7 +245,8 @@ module Param_IO
         print*,'------END sample namelist -------'
         print*
       endif
-      call stop_it('found error in input namelist: use sample above')
+      call stop_it('found error in input namelist "' // trim(label) &
+           // '": use sample above')
 !
     endsubroutine read_runpars
 !***********************************************************************

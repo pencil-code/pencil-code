@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.31 2002-07-11 12:37:34 nilshau Exp $
+! $Id: mpicomm.f90,v 1.32 2002-07-23 16:06:09 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -582,7 +582,16 @@ module Mpicomm
                       MPI_COMM_WORLD, ierr)
     endsubroutine mpireduce_sum
 !***********************************************************************
-    subroutine mpifinalize
+    subroutine mpibarrier()
+!
+!  synchronize nodes
+!  23-jul-2002/wolf: coded
+!
+      call MPI_BARRIER(MPI_COMM_WORLD, ierr)
+!
+    endsubroutine mpibarrier
+!***********************************************************************
+    subroutine mpifinalize()
       call MPI_BARRIER(MPI_COMM_WORLD, ierr)
       call MPI_FINALIZE(ierr)
     endsubroutine mpifinalize

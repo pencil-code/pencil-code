@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.32 2002-07-04 16:52:37 dobler Exp $
+! $Id: nompicomm.f90,v 1.33 2002-07-23 16:06:09 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -234,7 +234,10 @@ module Mpicomm
       fsum=fsum_tmp
     endsubroutine mpireduce_sum
 !***********************************************************************
-    subroutine mpifinalize
+    subroutine mpibarrier()
+    endsubroutine mpibarrier
+!***********************************************************************
+    subroutine mpifinalize()
     endsubroutine mpifinalize
 !***********************************************************************
     subroutine stop_it(msg)
