@@ -33,8 +33,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-01-21 18:23:46 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-04-03 20:28:36 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -90,14 +90,16 @@ module Gravity
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
+!    subroutine potential(xmn,ymn,zmn,rmn, pot)
     subroutine potential(rr, pot)
 !
 !  gravity potential
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: mx,my,mz
+      use Cdata, only: nx,ny,nz,gravz
       use Sub, only: poly
 !
+!      real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
       real, dimension (mx,my,mz) :: rr,pot
 !
       pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &

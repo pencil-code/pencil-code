@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.19 $", &
-             "$Date: 2002-03-06 17:47:59 $")
+             "$Revision: 1.20 $", &
+             "$Date: 2002-04-03 20:28:36 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -94,7 +94,7 @@
         yy=spread(spread(y,1,mx),3,mz)
         zz=spread(spread(z,1,mx),2,my)
 !
-!        rr=sqrt(xx**2+yy**2+zz**2)
+        rr=sqrt(xx**2+yy**2+zz**2)
 !        m_pot=(1.+rr**2)/(1.+rr**2+rr**3) ! negative potential
 !
         cs20=cs0**2 ! (goes into cdata module)

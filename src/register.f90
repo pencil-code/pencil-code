@@ -55,7 +55,7 @@ module Register
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('init_hydro called twice')
+      if (.not. first) call stop_it('register_hydro called twice')
       first = .false.
 !
       iuu = nvar+1             ! indices to access uu and lam
@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-03-28 18:51:49 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-04-03 20:28:36 $")
 !
 !
       if (nvar > mvar) then
@@ -135,8 +135,11 @@ module Register
         !
         if (lgravr) then
           if (lroot) print*,'radial density stratification (assumes s=const)'
-          call potential(x(l1:l2),y(m),z(n),rmn,&
-               pot) ! gravity potential
+!          call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
+          call potential(rr,pot) ! gravity potential
+
+print*, 'pot in ', minval(pot), maxval(pot)
+
           ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
           lnrho0 = alog(cs20/gamma)/gamma1
           f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
