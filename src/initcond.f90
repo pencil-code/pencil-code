@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.15 2002-10-09 17:37:32 brandenb Exp $ 
+! $Id: initcond.f90,v 1.16 2002-10-10 17:41:10 brandenb Exp $ 
 
 module Initcond 
  
@@ -136,7 +136,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx) :: prof
+      real, dimension (mx) :: prof,alog_cosh_xwidth
       real :: fleft,fright,width
       character(len=*) :: dir
 !
@@ -148,9 +148,12 @@ module Initcond
 !  Ay=+int Bz dx
 !  Az=-int By dx
 !
+!  alog(cosh(x/width)) = 
+!
       case('x')
+        alog_cosh_xwidth=abs(x/width)+alog(.5*(1.+exp(-2*abs(x/width))))
         prof=.5*(fright+fleft)*x &
-            +.5*(fright-fleft)*width*alog(cosh(x/width))
+            +.5*(fright-fleft)*width*alog_cosh_xwidth
         f(:,:,:,i)=f(:,:,:,i)-spread(spread(prof,2,my),3,mz)
       case default
         print*,'jump: no default value'
