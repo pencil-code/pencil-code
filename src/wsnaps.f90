@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.40 2003-11-26 15:21:57 mee Exp $
+! $Id: wsnaps.f90,v 1.41 2003-11-26 16:11:51 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -74,7 +74,7 @@ contains
 !
 !  write snapshot without label (typically, var.dat)
 !
-        call calc_viscosity(a)
+!        call calc_viscosity(a)
         call update_ghosts(a)
         call output(chsnap,a,msnap)
       endif
