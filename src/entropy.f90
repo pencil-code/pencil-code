@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.80 2002-07-02 18:12:00 dobler Exp $
+! $Id: entropy.f90,v 1.81 2002-07-02 19:57:36 dobler Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.80 2002-07-02 18:12:00 dobler Exp $")
+           "$Id: entropy.f90,v 1.81 2002-07-02 19:57:36 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -281,12 +281,11 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
-      real, dimension (nx) :: ugss,sij2,del2ss        !(later,below) ,del2lnrho
+      real, dimension (nx) :: ugss,sij2
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
-!     real, dimension (nx) :: heat
       integer :: i,j,ju
 !
-      intent(in) :: f,rho1
+      intent(in) :: f,uu,glnrho,rho1,lnrho
       intent(out) :: df,cs2,TT1
 !
 !  entropy gradient: needed for advection and pressure gradient
@@ -339,19 +338,15 @@ module Entropy
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) - ugss
       endif
 !
-!  "turbulent" entropy diffusion
-!
-      if (chi_t/=0.) then
-        if (headtt) print*,'"turbulent" entropy diffusion: chi_t=',chi_t
-        call del2(f,ient,del2ss)
-        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
-      endif
-!
 !  thermal conduction
-!  There seems to be cooling here as well which is now not captured
-!  if it is invoked on its own.
 !
-      if (hcond0/=0) call calc_heatcond(f,df,rho1,glnrho,gss,cs2)      
+      if ((hcond0 /= 0) .or. (chi_t /= 0)) &
+           call calc_heatcond(f,df,rho1,glnrho,gss)      
+!
+!  heating/cooling
+!
+      if (cheat /= 0) .or. (cool /= 0)) &
+           call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
 !  Calculate entropy related diagnostics
 !
@@ -361,7 +356,7 @@ module Entropy
 !
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine calc_heatcond(f,df,rho1,glnrho,gss,cs2)
+    subroutine calc_heatcond(f,df,rho1,glnrho,gss)
 !
 !  heat conduction
 !
@@ -374,53 +369,82 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
-      real, dimension (nx) :: rho1,cs2,chi
+      real, dimension (nx) :: rho1,chi
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
-      real, dimension (nx) :: heat,prof
-      real :: ssref,z_prev=-1.23e20
+      real :: z_prev=-1.23e20
 !
       save :: z_prev,hcond,glhc
 !
-      intent(in) :: f,rho1,glnrho,cs2
+      intent(in) :: f,rho1,glnrho,gss
       intent(out) :: df
 !
 !  Heat conduction / entropy diffusion
 !
       if (headtt) print*,'calc_heatcond: lgravz=',lgravz
-      if (lgravz) then
-        ! For vertical geometry, we only need to calculate this for each
-        ! new value of z -> speedup by about 8% at 32x32x64
-        if (z_mn(1) /= z_prev) then
+      if ((hcond0 /= 0) .or. (chi_t /= 0)) then
+        call del2(f,ient,del2ss)
+      endif
+      if (hcond0 /= 0) then
+        if (lgravz) then
+          ! For vertical geometry, we only need to calculate this for each
+          ! new value of z -> speedup by about 8% at 32x32x64
+          if (z_mn(1) /= z_prev) then
+            call heatcond(x_mn,y_mn,z_mn,hcond)
+            call gradloghcond(x_mn,y_mn,z_mn, glhc)
+            z_prev = z_mn(1)
+          endif
+        endif
+        if (lgravr) then
           call heatcond(x_mn,y_mn,z_mn,hcond)
           call gradloghcond(x_mn,y_mn,z_mn, glhc)
-          z_prev = z_mn(1)
         endif
+        call del2(f,ilnrho,del2lnrho)
+        chi = rho1*hcond
+        glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
+        glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+        call dot_mn(glnT,glnThcond,g2)
+        thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+      else
+        thdiff = 0
+        ! not really needed, I (wd) guess -- but be sure before you
+        ! remove them
+        hcond = 0
+        glhc = 0
       endif
-      if (lgravr) then
-        call heatcond(x_mn,y_mn,z_mn,hcond)
-        call gradloghcond(x_mn,y_mn,z_mn, glhc)
+!
+!  "turbulent" entropy diffusion
+!
+      if (chi_t/=0.) then
+        if (headtt) then
+          print*,'"turbulent" entropy diffusion: chi_t=',chi_t
+          if (hcond0 /= 0) then
+            print*,"WARNING: hcond0 and chi_t combined don't seem to make sense"
+          endif
+        endif
+!        df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
+        thdiff = chi_t*del2ss
       endif
-      chi = rho1*hcond
-      glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
-      glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
-      call dot_mn(glnT,glnThcond,g2)
-      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
-
+!
+!  check for NaNs initially
+!
       if (headt) then
-        if (notanumber(glhc))   print*,'NaNs in glhc'
-        if (notanumber(rho1))   print*,'NaNs in rho1'
-        if (notanumber(hcond)) print*,'NaNs in hcond'
-        if (notanumber(chi))    print*,'NaNs in chi'
-        if (notanumber(del2ss)) print*,'NaNs in del2ss'
+        if (notanumber(glhc))      print*,'NaNs in glhc'
+        if (notanumber(rho1))      print*,'NaNs in rho1'
+        if (notanumber(hcond))     print*,'NaNs in hcond'
+        if (notanumber(chi))       print*,'NaNs in chi'
+        if (notanumber(del2ss))    print*,'NaNs in del2ss'
         if (notanumber(del2lnrho)) print*,'NaNs in del2lnrho'
-        if (notanumber(glhc))   print*,'NaNs in glhc'
+        if (notanumber(glhc))      print*,'NaNs in glhc'
         if (notanumber(1/hcond))   print*,'NaNs in 1/hcond'
-        if (notanumber(glnT))   print*,'NaNs in glnT'
-        if (notanumber(glnThcond))     print*,'NaNs in glnThcond'
-        if (notanumber(g2))     print*,'NaNs in g2'
-        if (notanumber(thdiff)) print*,'NaNs in thdiff'
-!        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
+        if (notanumber(glnT))      print*,'NaNs in glnT'
+        if (notanumber(glnThcond)) print*,'NaNs in glnThcond'
+        if (notanumber(g2))        print*,'NaNs in g2'
+        if (notanumber(thdiff))    print*,'NaNs in thdiff'
+        !
+        !  most of these should trigger the following trap
+        !
+        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
@@ -431,6 +455,31 @@ module Entropy
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 !
       if (headtt) print*,'calc_heatcond: added thdiff'
+!
+!  check maximum diffusion from thermal diffusion
+!
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi)
+!
+    endsubroutine calc_heatcond
+!***********************************************************************
+    subroutine calc_heat_cool(f,df,rho1,cs2,TT1)
+!
+!  heating and cooling
+!
+!  02-jul-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx) :: rho1,cs2,TT1
+      real, dimension (nx) :: heat,prof
+      real :: ssref
+!
+      intent(in) :: f,rho1,cs2
+      intent(out) :: df
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
@@ -468,11 +517,9 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif
 !
-!  check maximum diffusion from thermal diffusion
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,chi)
-!
-    endsubroutine calc_heatcond
+    endsubroutine calc_heat_cool
 !***********************************************************************
     subroutine rprint_entropy(lreset)
 !
