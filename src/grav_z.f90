@@ -1,21 +1,33 @@
-! $Id: grav_z.f90,v 1.16 2002-06-30 17:44:52 brandenb Exp $
+! $Id: grav_z.f90,v 1.17 2002-07-08 06:51:51 brandenb Exp $
 
 module Gravity
 
-!
-!  Vertical gravity (for convection tests, etc.)
-!
-
-  use Cparam
+!  Vertical gravity (for convection in a slab or a full star)
+!  (The full star geometry is currently in grav_r, but in may well
+!  be possible to migrate it in here.)
 
   implicit none
 
-  real :: z1,z2,ztop,zref=0.
+  real :: z1,z2,zref=0.,zinfty=1.5
   real :: gravz=-1.
   character (len=30) :: grav_profile='const'
 
+!  The gravity potential must always be negative. However, in an plane
+!  atmosphere with constant gravity, the potential goes to zero at
+!  some position which is referred to as "zinfty".
+
+!AB: Wolfgang, you should explain here the meaning of z1 and z2,
+!AB: as well as zref.
+
+!AB: Nils, could you have a look how in galactic physics (Binney & Tremaine)
+!AB: the coefficient in front of .5*z^2 is called (vertical epicyclic frequency?)
+!AB: We should introduce that instead of keeping a double meaning of gravz.
+
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,grav_profile
+       z1,z2,zref,gravz,grav_profile,zinfty
+
+!  It would be rather unusual to change the profile during the
+!  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
        zref,gravz,grav_profile
@@ -41,7 +53,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.16 2002-06-30 17:44:52 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.17 2002-07-08 06:51:51 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -74,7 +86,6 @@ module Gravity
 !
       use Cdata
       use Sub
-      use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
 !
@@ -94,25 +105,56 @@ module Gravity
       if(ip==0) print*,f !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential(xmn,ymn,zmn,rmn, pot)
+    subroutine potential(xmn,ymn,zmn,pot,grav,rmn)
 !
 !  gravity potential
 !  21-jan-02/wolf: coded
+!   8-jul-02/axel: activated and used for initial conditions
 !
-      use Cdata, only: nx
+      use Cdata, only: nx,lroot
 !
-!  the following looks stupid, but otherwise it's not ok,
-!  especially in 1-D
-!AB: But for gravz, potential is never used, right??
-!
-      real, dimension (mx) :: xmn
+      real, dimension (nx) :: xmn,pot,r
       real :: ymn,zmn
-      real, dimension (nx,1,1) :: rmn, pot
+      real, optional, dimension (nx) :: rmn
+      real, optional, dimension (nx,3) :: grav
+      logical, save :: first=.true.
 !
-      pot = -gravz*zmn
-      if (grav_profile=='linear') stop 'potential: surprise!'
+      intent(in) :: xmn,ymn,zmn,rmn
+      intent(out) :: pot,grav
 !
-      if(ip==0) print*,xmn,ymn,rmn !(keep compiler quiet)
+!  identifier
+!
+      if (lroot.and.first) print*,'potential: zinfty=',zinfty
+!
+!  different profiles, calculate also gz=-dpot/dz
+!
+      select case(grav_profile)
+        case('const')
+          pot=abs(gravz)*(zmn-zinfty)
+          if(present(grav)) then
+            grav(:,1:2)=0.
+            grav(:,3)=-abs(gravz)
+          endif
+        case('linear')
+          pot=.5*abs(gravz)*(zmn**2-zinfty**2)
+          if(present(grav)) then
+            grav(:,1:2)=0.
+            grav(:,3)=-abs(gravz)*zmn
+          endif
+        case('radial')
+          if (present(rmn)) then
+            r=rmn
+          else
+            r=sqrt(xmn**2+ymn**2+zmn**2)
+          endif
+          !(not implemented yet; just laying out the idea)
+          pot=.5*gravz*r**2/(1.+r**4)
+          if(present(grav)) then
+            grav(:,1:3)=0.
+          endif
+      endselect
+      first=.false.
+!
     endsubroutine potential
 !***********************************************************************
 

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.50 2002-07-06 20:29:17 brandenb Exp $
+! $Id: start.f90,v 1.51 2002-07-08 06:51:51 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -11,6 +11,7 @@
 !
         use Cdata
         use General
+        use Initcond
         use Mpicomm
         use Sub
         use Register
@@ -31,13 +32,15 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.50 2002-07-06 20:29:17 brandenb Exp $")
+             "$Id: start.f90,v 1.51 2002-07-08 06:51:51 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
         xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
         Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
+!
+!AB:  Wolfgang, could you explain what these are used for?
 !
         z1=0.; z2=1.; zref=0.
 !
@@ -97,12 +100,12 @@
 !
         f = 0.
         if (lroot) print* !(empty line)
+        call init_grav (f,xx,yy,zz)
         call init_hydro(f,xx,yy,zz)
         call init_lnrho(f,xx,yy,zz)
         call init_ent  (f,xx,yy,zz)
         call init_aa   (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)
-        call init_grav (f,xx,yy,zz)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file

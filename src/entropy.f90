@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.87 2002-07-07 18:34:04 dobler Exp $
+! $Id: entropy.f90,v 1.88 2002-07-08 06:51:51 brandenb Exp $
 
 module Entropy
 
@@ -11,8 +11,7 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.
   real :: chi_t=0.,ss0=0.,khor_ss=1.
-
-  character (len=labellen) :: initss='zero',pertss='zero'
+  character (len=labellen) :: initss='nothing',pertss='zero'
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -61,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.87 2002-07-07 18:34:04 dobler Exp $")
+           "$Id: entropy.f90,v 1.88 2002-07-08 06:51:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -79,6 +78,7 @@ module Entropy
       use Mpicomm
       use IO
       use Gravity
+      use Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
@@ -88,16 +88,9 @@ module Entropy
       intent(inout) :: f
 !
       select case(initss)
-
-      case('zero', '0')
-        f(:,:,:,ient) = 0.
-
-      case('isothermal')
-        !
-        !  ss = - (gamma-1)/gamma*ln(rho/rho0)
-        !
-        if (lroot) print*,'init_ent: isothermal stratification'
-        f(:,:,:,ient) = -gamma1/gamma*(f(:,:,:,ilnrho)-lnrho0)
+        case('nothing'); if(lroot) print*,'init_ent: nothing'
+        case('zero', '0'); f(:,:,:,ient) = 0.
+        case('isothermal'); if(lroot) print*,'init_ent: isothermal set in density'
 
       case('isobaric')
         !
@@ -350,6 +343,10 @@ module Entropy
 !
 !  thermal conduction
 !
+      if (Fheat/=0 .and. cheat==0) call calc_heatcond_simple(f,df,rho1,glnrho,gss)
+!
+!  more complex alternative
+!
       if ((hcond0 /= 0) .or. (chi_t /= 0)) &
            call calc_heatcond(f,df,rho1,glnrho,gss)
 !
@@ -365,6 +362,54 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
+!
+!  heat conduction
+!
+!   8-jul-02/axel: adapted from Wolfgang's more complex version
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond !,glhc
+      real, dimension (nx) :: rho1,chi
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+      real, dimension (nx) :: hcond
+!
+      intent(in) :: f,rho1,glnrho,gss
+      intent(out) :: df
+!
+!  This particular version assumes a simple polytrope, so mpoly is known
+!
+      hcond=(1.-1./gamma)*(mpoly+1.)*Fheat
+      if(headtt) print*,'calc_heatcond_simple: hcond=',hcond
+!
+!  Heat conduction
+!
+      call del2(f,ient,del2ss)
+      call del2(f,ilnrho,del2lnrho)
+      chi = rho1*hcond
+      glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
+      glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
+      call dot_mn(glnT,glnThcond,g2)
+      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+!
+!  add heat conduction to entropy equation
+!
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      if (headtt) print*,'calc_heatcond: added thdiff'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chi*del2ss
+!
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+!
+    endsubroutine calc_heatcond_simple
 !***********************************************************************
     subroutine calc_heatcond(f,df,rho1,glnrho,gss)
 !
@@ -388,6 +433,10 @@ module Entropy
 !
       intent(in) :: f,rho1,glnrho,gss
       intent(out) :: df
+!
+!  identifier
+!
+      if(headtt) print*,'calc_heatcond: lgravz=',lgravz
 !
 !  Heat conduction / entropy diffusion
 !
@@ -488,13 +537,18 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: rho1,cs2,TT1
       real, dimension (nx) :: heat,prof
-      real :: ssref
+      real :: ssref,ztop
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
 !
+!  identifier
+!
+      if(headtt) print*,'calc_heat_cool: lgravz=',lgravz
+!
 !  Vertical case:
 !  Heat at bottom, cool top layers
+!
       if (lgravz) then
 !
 !  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
@@ -524,7 +578,9 @@ module Entropy
         ! surface cooling towards s=0
         ! cooling profile; maximum = 1
 !        prof = 0.5*(1+tanh((r_mn-1.)/wcool))
-print*,'FIXME: what am I doing with ztop in spherical geometry?'
+!WD: 'FIXME: what am I doing with ztop in spherical geometry?'
+!AB: check whether the following makes sense (ztop no longer in gravity)
+        ztop=xyz0(3)+Lxyz(3)
         prof = step(r_mn,ztop,wcool)
         heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
       endif

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.41 2002-07-06 20:29:17 brandenb Exp $
+! $Id: hydro.f90,v 1.42 2002-07-08 06:51:51 brandenb Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.41 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: hydro.f90,v 1.42 2002-07-08 06:51:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -86,6 +86,7 @@ module Hydro
       use Sub
       use Global
       use Gravity
+      use Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
@@ -95,10 +96,11 @@ module Hydro
 !
       select case(inituu)
 
-      case('zero', '0')
-        if (lroot) print*,'init_hydro: zero velocity'
-        f(:,:,:,iux)=0.
+      case('zero', '0'); f(:,:,:,iux)=0.
+      case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
+      case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
 
+!AB: obsolete now?
       case('random-normal', '1') ! random ux (Gaussian distribution)
         if (lroot) print*,'init_hydro: Gaussian-distributed ux'
         call random_number(r)
@@ -199,6 +201,8 @@ module Hydro
 
 !       endselect
 !
+!AB: isn't this now also obsolete?
+!AB: Above we can add gaussian noise (both 3-d and only in ux)
       if (urand /= 0) then
         if (lroot) print*, 'Adding random uu fluctuations'
         if (urand > 0) then
@@ -279,11 +283,10 @@ module Hydro
         if (theta==0) then
           if (headtt) print*,'add Coriolis force; Omega=',Omega
           c2=2*Omega
-          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+ c2        *uu(:,2)
+          df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)
         else
           if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
-          if (qshear/=0) print*,'duu_dt: theta/=0 and theta/=0 maybe not ok/AB'
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)

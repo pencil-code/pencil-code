@@ -1,16 +1,22 @@
-! $Id: density.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $
+! $Id: density.f90,v 1.26 2002-07-08 06:51:51 brandenb Exp $
 
 module Density
+
+!  This module is used both for the initial condition and during run time.
+!  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
 
   use Cparam
   use Cdata
 
   implicit none
 
-  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1
+  real :: cs0=1., rho0=1.
+  real :: cs20, lnrho0
+  real :: ampllnrho=1., gamma=5./3., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0.
-  real :: cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0.
+  real :: cs2bot, cs2top, gamma1
   real :: radius_lnrho=.5,kx_lnrho=0.,ky_lnrho=0.,kz_lnrho=0.
+  real :: mpoly=1.5
   real :: eps_planet=.5
   character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
 
@@ -18,6 +24,7 @@ module Density
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
        rho_left,rho_right,cs2bot,cs2top, &
        initlnrho2,radius_lnrho,eps_planet, &
+       mpoly, &
        kx_lnrho,ky_lnrho,kz_lnrho
 
   namelist /density_run_pars/ &
@@ -57,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.25 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: density.f90,v 1.26 2002-07-08 06:51:51 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -77,66 +84,20 @@ module Density
       use Sub
       use Global
       use Gravity
+      use Initcond
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
-      real, dimension (nx,1) :: rmn
       real :: lnrhoint,cs2int
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
       select case(initlnrho)
-
-      case('zero', '0')
-        !
-        !  rho=0
-        !
-        if (lroot) print*,'uniform lnrho'
-        f(:,:,:,ilnrho)=0.
-
-      case('isothermal')
-        !
-        !  rho=0
-        !
-        if (lroot) print*,'init_lnrho: isothermal lnrho'
-        if (grav_profile=='const') then
-          if (lroot) print*,'lnrho=lnrho0+(gamma*gravz/cs20)*zz (const grav)'
-          f(:,:,:,ilnrho)=lnrho0+(gamma*gravz/cs20)*zz
-        elseif (grav_profile=='linear') then
-          if (lroot) print*,'lnrho=lnrho0+.5*(gamma*gravz/cs20)*zz**2 (discs)'
-          f(:,:,:,ilnrho)=lnrho0+(.5*gamma*gravz/cs20)*zz**2
-        endif
-        cs2bot=cs20; cs2top=cs20 !(possibly needed for b.c.)
-
-      case('hydrostatic-z', '1')
-        !
-        !  hydrostatic for T=const or polytropic atmosphere
-        !
-        if (gamma1==0.) then
-          if (lroot) print*,'lnrho=lnrho0+gravz*zz/cs0^2 (for isothermal atmosphere)'
-          f(:,:,:,ilnrho)=lnrho0+(gravz/cs0**2)*zz
-          cs2bot=cs20; cs2top=cs20 !(possibly needed for b.c.)
-        else
-          !
-          !  To maintain continuity with respect to the isothermal case,
-          !  one may want to specify cs20, and so zinfty is calculated from that.
-          !  On the other hand, for polytropic atmospheres it may be more
-          !  physical to specify zinfty, ie the top of the atmosphere.
-          !  This is done if zinfty is different from 0.
-          !
-          if (lroot) print*,'hydrostatic-z; z(n1),z(n2),cs20=',z(n1),z(n2),cs20
-          zinfty=-cs20/(gamma1*gravz)
-          if (lroot) print*,'rho=(1-z/zinfty)^gamma1; zinfty=',zinfty
-          f(:,:,n1:n2,ilnrho)=alog(1.-zz(:,:,n1:n2)/zinfty)/gamma1
-          !
-          !  set top/bot sounds speeds, in case we want to fix them via b.c.s
-          !  This assumes here that s=0; alternatively need to do it in entropy.
-          !
-          cs2bot=cs20*exp(alog(1.-z(n1)/zinfty)/gamma1)
-          cs2top=cs20*exp(alog(1.-z(n2)/zinfty)/gamma1)
-        endif
-
+        case('zero', '0'); f(:,:,:,ilnrho)=0.
+        case('isothermal'); call isothermal(f)
+        case('polytropic_simple'); call polytropic_simple(f)
+        case('hydrostatic-z', '1'); print*,'use polytropic_simple instead!'
       case('rho-jump', '2')
         !
         !  density jump (for shocks?)
@@ -169,9 +130,7 @@ module Density
         if (lgravr) then
           if (lroot) print*, &
                'radial density stratification (assumes s=const) -- NEEDS TO BE FIXED'
-! nok     call potential(x(l1:l2),y(m),z(n),rmn,pot) ! gravity potential
-          call potential(x,y(m),z(n),rmn,pot) ! gravity potential
-!          call potential(rr,pot) ! gravity potential
+          call potential(x(l1:l2),y(m),z(n),pot) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
 
           ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
@@ -427,6 +386,89 @@ module Density
       write(3,*) 'ilnrho=',ilnrho
 !
     endsubroutine rprint_density
+
+!***********************************************************************
+!  Here comes a collection of different density stratification routines
+!***********************************************************************
+    subroutine isothermal(f)
+!
+!  Isothermal stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!  When entropy is present, this module also initializes entropy.
+!
+!   8-jul-02/axel: incorporated/adapted from init_lnrho
+!
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: pot,tmp
+!
+!  Stratification depends on the gravity potential
+!
+      if (lroot) print*,'isothermal stratification'
+      do n=n1,n2
+      do m=m1,m2
+        call potential(x(l1:l2),y(m),z(n),pot)
+        tmp=-gamma*pot/cs20
+        f(l1:l2,m,n,ilnrho)=lnrho0-tmp
+        if(lentropy) f(l1:l2,m,n,ient)=gamma1/gamma*tmp
+      enddo
+      enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  The values calculated here may be revised in the entropy module.
+!
+      cs2bot=cs20
+      cs2top=cs20
+!
+    endsubroutine isothermal
+!***********************************************************************
+    subroutine polytropic_simple(f)
+!
+!  Polytropic stratification (for lnrho and ss)
+!  This routine should be independent of the gravity module used.
+!
+!  To maintain continuity with respect to the isothermal case,
+!  one may want to specify cs20 (=1), and so zinfty is calculated from that.
+!  On the other hand, for polytropic atmospheres it may be more
+!  physical to specify zinfty (=1), ie the top of the polyytopic atmosphere.
+!  This is done if zinfty is different from 0.
+!
+!   8-jul-02/axel: incorporated/adapted from init_lnrho
+!
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
+      real :: ggamma,ztop,zbot
+!
+      ggamma=1.+1./mpoly
+      if (lroot) print*,'polytropic_simple: mpoly=',mpoly
+      do n=n1,n2
+      do m=m1,m2
+        call potential(x(l1:l2),y(m),z(n),pot)
+        dlncs2=alog(-gamma*pot/((mpoly+1.)*cs20))
+        f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
+        if(lentropy) f(l1:l2,m,n,ient)=mpoly*(ggamma/gamma-1.)*dlncs2
+      enddo
+      enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  In spherical geometry, ztop is z at the outer edge of the box,
+!  so this calculation still makes sense.
+!
+      ztop=xyz0(3)+Lxyz(3)
+      call potential(zero,0.,ztop,ptop)
+      cs2top=-gamma/(mpoly+1.)*ptop(1)
+!
+!  In spherical geometry ztop should never be used.
+!  Even in slab geometry ztop is not normally used.
+!
+      zbot=xyz0(3)
+      call potential(zero,0.,zbot,pbot)
+      cs2bot=-gamma/(mpoly+1.)*pbot(1)
+!
+    endsubroutine polytropic_simple
 !***********************************************************************
 
 endmodule Density

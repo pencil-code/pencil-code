@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.10 2002-07-02 04:56:00 brandenb Exp $
+! $Id: nograv.f90,v 1.11 2002-07-08 06:51:51 brandenb Exp $
 
 module Gravity
 
@@ -10,7 +10,7 @@ module Gravity
 
   implicit none
 
-  real :: z1,z2,ztop,zref,gravz  !(used by Entropy and Density)
+  real :: z1,z2,zref,gravz  !(used by Entropy and Density)
   character (len=30) :: grav_profile='const'  !(used by Density)
 
   integer :: dummy              ! We cannot define empty namelists
@@ -39,7 +39,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.10 2002-07-02 04:56:00 brandenb Exp $")
+           "$Id: nograv.f90,v 1.11 2002-07-08 06:51:51 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -78,20 +78,22 @@ module Gravity
       if(ip==0) print*,f,df  !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
-    subroutine potential(xmn,ymn,zmn,rmn, pot)
+    subroutine potential(xmn,ymn,zmn,pot,grav,rmn)
 !
 !  gravity potential
 !  28-mar-02/axel: adapted from grav_z
 !
       use Cdata, only: nx,lroot
 !
-      real, dimension (nx,1,1) :: xmn,rmn, pot
+      real, dimension (nx) :: xmn,pot
       real :: ymn,zmn
+      real, optional, dimension (nx) :: rmn
+      real, optional, dimension (nx,3) :: grav
 !
       if (lroot) print*,'potential: should not have been called'
       pot = 0.
 !
-      if(ip==0) print*,xmn,ymn,zmn,rmn
+      if(ip==0) print*,xmn,ymn,zmn,rmn,grav
     endsubroutine potential
 !***********************************************************************
 

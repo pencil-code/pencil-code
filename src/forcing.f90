@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.14 2002-06-25 17:06:14 brandenb Exp $
+! $Id: forcing.f90,v 1.15 2002-07-08 06:51:51 brandenb Exp $
 
 module Forcing
 
@@ -9,13 +9,13 @@ module Forcing
   implicit none
 
   integer :: iforce=2,iforce2=0,kfountain=5
-  real :: force=0.,relhel=1.,height=pi,fountain=1.,widthff=.5
+  real :: force=0.,relhel=1.,height_ff=0.,fountain=1.,width_ff=.5
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /forcing_init_pars/ dummy
 
   namelist /forcing_run_pars/ &
-       iforce,force,relhel,height,widthff, &
+       iforce,force,relhel,height_ff,width_ff, &
        iforce2,kfountain,fountain
 
   contains
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.14 2002-06-25 17:06:14 brandenb Exp $")
+           "$Id: forcing.f90,v 1.15 2002-07-08 06:51:51 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -104,8 +104,8 @@ module Forcing
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
         close(9)
-        ifirst=1
       endif
+      ifirst=ifirst+1
 !
       call random_number(fran)
       phase=pi*(2*fran(1)-1.)
@@ -176,8 +176,8 @@ module Forcing
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
         close(9)
-        ifirst=1
       endif
+      ifirst=ifirst+1
 !
 !  generate random coefficients -1 < fran < 1
 !  ff=force*Re(exp(i(kx+phase)))
@@ -249,8 +249,9 @@ module Forcing
 !
 !  add possibility of z-profile in the forcing
 !
-      if (height/=0.) then
-        tmpz=(z/height)**2
+      if (height_ff/=0.) then
+        if (ifirst==1) print*,'forcing_hel: include z-profile'
+        tmpz=(z/height_ff)**2
         fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
       endif
 !
@@ -316,8 +317,8 @@ module Forcing
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-      if (height/=0.) then
-        tmpz=(z/height)**2
+      if (height_ff/=0.) then
+        tmpz=(z/height_ff)**2
         gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
       endif
 !
@@ -382,8 +383,8 @@ module Forcing
 !  g(z) and g'(z)
 !  use z-profile to cut off
 !
-      if (height/=0.) then
-        tmpz=(z/height)**2
+      if (height_ff/=0.) then
+        tmpz=(z/height_ff)**2
         gz=sz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
       endif
 !
@@ -430,16 +431,14 @@ module Forcing
 !
       kx=2*pi/Lx
       fx=cos(kx*x(l1:l2))
-      fz=1./cosh(z/widthff)**2
+      fz=1./cosh(z/width_ff)**2
       ffnorm=force*dt  !(dt for the timestep)
 !
-!  set forcing function
+!  add to velocity (here only y-component)
 !
       do n=n1,n2
       do m=m1,m2
-        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)
         f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*fx*fz(n)
-        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)
       enddo
       enddo
 !

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.65 2002-07-06 20:29:17 brandenb Exp $
+! $Id: cdata.f90,v 1.66 2002-07-08 06:51:51 brandenb Exp $
 
 module Cdata
 
@@ -12,7 +12,7 @@ module Cdata
   real, dimension (mz) :: z
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
-!
+ 
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,dx,dy,dz,dxmin,dxmax
@@ -29,7 +29,7 @@ module Cdata
 !AB: Are you sure this cannot be avoided?? It is no longer in Boundcond!!
   real :: hcond0=0,hcond1=0,hcond2=0,whcond=2*epsi
   real :: mpoly0,mpoly1,mpoly2
-  real :: cheat,wheat,cool,wcool,Fheat
+  real :: cheat,wheat,cool=0.,wcool,Fheat
   integer:: isothtop
 
   real :: Omega=0.,qshear=0.

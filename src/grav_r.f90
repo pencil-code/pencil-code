@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.18 2002-06-16 20:35:03 dobler Exp $
+! $Id: grav_r.f90,v 1.19 2002-07-08 06:51:51 brandenb Exp $
 
 module Gravity
 
@@ -15,17 +15,11 @@ module Gravity
   real, dimension (5) :: cpot = (/ 1., 0., 0., 1., 0. /)
 !  real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
 
+  real :: z1,z2,zref,gravz ! used by Entropy and Density
 
-  real :: z1,z2,ztop,zref,gravz ! used by Entropy and Density
-
-!WD Just to make this compile; I am sure there are parameters we need
   real :: dummy
-
-  namelist /grav_init_pars/ &
-       dummy
-
-  namelist /grav_run_pars/ &
-       dummy
+  namelist /grav_init_pars/ dummy
+  namelist /grav_run_pars/  dummy
 
   contains
 
@@ -49,8 +43,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-06-16 20:35:03 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-07-08 06:51:51 $")
 !
       lgrav = .true.
       lgravz = .false.

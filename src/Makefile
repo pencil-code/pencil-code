@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.75 2002-07-07 18:34:04 dobler Exp $
+### $Id: Makefile,v 1.76 2002-07-08 06:51:51 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -64,7 +64,8 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 ##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
 #FFLAGS=-O3 -static #(Nq[0-9]+)
 #FFLAGS=-fast -lm #(erland|igor|tycho)
-#FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
+#FFLAGS=-O4 -u -Wc,-malign-double	#(Mephisto)
+#FFLAGS=-O4 -u #(nl3)
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
 #LDMPI= # (Samos)
@@ -123,7 +124,7 @@ cparam.inc: Makefile Makefile.local
 code:
 	make start.x run.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o prints.o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
@@ -154,6 +155,7 @@ prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o
+initcond.o:  initcond.f90 cdata.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
 #
@@ -162,11 +164,11 @@ $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(SHEAR).o:	$(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
-$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(DENSITY).o slices.o $(FFT).o
-$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
-$(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
-$(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
+$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DENSITY).o slices.o $(FFT).o
+$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
+$(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o slices.o
+$(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o $(DEBUG).o
 nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
 
@@ -177,7 +179,7 @@ TAGS: $(TAG_SOURCE)
 
 # Clean up, but leave makefile and TAGS
 clean:
-	rm -f *.x *.o *.mod *.d
+	rm -f *.x *.o *.mod *.d *.inc
 	rm -f work.pc work.pcl
 
 # Clean up all

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.56 2002-07-07 18:34:04 dobler Exp $
+! $Id: run.f90,v 1.57 2002-07-08 06:51:51 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.56 2002-07-07 18:34:04 dobler Exp $")
+             "$Id: run.f90,v 1.57 2002-07-08 06:51:51 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -81,11 +81,9 @@
         call rglobal()      ! Read global variables (if there are)
 !
 !  read coordinates
-!  Wolfgang, why is the ztop in run, and not in some subroutine?
 !
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
-        ztop = z(n2)
 !
 !  read seed field parameters (only if forcing is turned on)
 !
