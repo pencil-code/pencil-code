@@ -1,0 +1,32 @@
+#!/bin/csh
+#
+# Name:   dx_list_varfiles
+# Author: ajwm (A.J.Mee@ncl.ac.uk)
+# Date:   02-12-2002
+# CVS: $Id: dx_list_varfiles,v 1.1 2002-12-10 17:22:25 mee Exp $
+# Description:
+#   Get list of VAR? files available or return 0 for var.dat only
+#   For reading into DX
+#
+#   Take one parameter, the processor number, default is 0
+#
+#
+#   02-dec-02/tony: coded
+#
+# ---------------------------------------------------------------------- #
+if (-r datadir.in) then
+  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+else
+  set datadir = "data"
+endif
+
+set processor = 'proc0'
+if ($#argv > 0) set processor = "proc$1"
+
+set found = `ls $datadir/$processor/VAR? | sed -e 's/^ls:.*$//; s/^.*VAR//' | sort`
+
+if ("$found" != "") then
+  echo "$found"
+else
+  echo "0"
+endif
