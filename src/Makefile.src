@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.10 2003-11-16 14:55:25 mcmillan Exp $
+### $Id: Makefile.src,v 1.11 2003-11-25 16:11:58 mcmillan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -155,6 +155,7 @@ FCCLEANER=
 ## Darwin:
 ## Power Macintosh
 #FC=f95
+#FFLAGS=-O3 
 #LDMPI=
 
 ## SunOS:
