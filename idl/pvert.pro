@@ -32,6 +32,10 @@ if (nprofs gt 1) then begin
   iyp = nign + spread( indgen(Nyp)*Nymax/Nyp, 0, Nxp )
   ixp = floor(ixp)
   iyp = floor(iyp)
+; floor() will have dropped a degenerate trailing dimension (any IDL
+; function will, this is crazy..), so let us reform again to be sure:
+  ixp = reform(ixp,Nxp,Nyp,/OVERWRITE)
+  iyp = reform(iyp,Nxp,Nyp,/OVERWRITE)
 endif
 
 save_state
