@@ -4,7 +4,7 @@
 #    source $HOME/f90/pencil_modular/sourceme.csh
 #  into your .cshrc
 #
-set cdpath = ( ../  ../../ ../../../ ~/ )
+set cdpath = ( . ../  ../../ ../../../ ~/ )
 set path=(. ../bin ../../bin ../../../bin ../../../../bin $HOME/bin $path)
 setenv IDL_PATH "+../idl:+../../idl:+../../../idl:tmp:+~/idl:<IDL_DEFAULT>"
 #
