@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.18 2002-07-20 17:43:53 dobler Exp $
+! $Id: forcing.f90,v 1.19 2002-07-21 21:34:59 dobler Exp $
 
 module Forcing
 
@@ -41,9 +41,22 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.18 2002-07-20 17:43:53 dobler Exp $")
+           "$Id: forcing.f90,v 1.19 2002-07-21 21:34:59 dobler Exp $")
 !
     endsubroutine register_forcing
+!***********************************************************************
+    subroutine forcing_run_hook()
+!
+!  read seed field parameters
+!
+      use Cdata
+      use Sub, only: inpui
+!
+      if (lroot.and.ip<14) print*, 'reading seed file'
+      call inpui(trim(directory)//'/seed.dat',seed,nseed)
+      call random_seed(put=seed(1:nseed))
+!
+    endsubroutine forcing_run_hook
 !***********************************************************************
     subroutine addforce(f)
 !

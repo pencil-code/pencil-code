@@ -4,7 +4,7 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2002-07-20 17:44:36 dobler Exp $',
+  cvsid='$Id: run.in,v 1.5 2002-07-21 21:34:59 dobler Exp $',
   ip=14,
   nt=1000, it1=50, isave=200, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
@@ -26,11 +26,7 @@
 /
 &entropy_run_pars
   cheat=0., wheat=0.1, cool=15., wcool=0.2,
-
-  ! The following quantities are taken from start.in if we don't
-  ! overwrite them here:
-  ! hcond0=6.e-3, hcond1=1., hcond2=.5, whcond=0.05,
-  ! mpoly0=1., mpoly1=3., mpoly2=0., isothtop=1,
+  hcond0=8.e-3
 /
 
 ! Nomenclature for boundary conditions:

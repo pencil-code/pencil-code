@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.23 2002-07-16 21:35:22 dobler Exp $
+! $Id: cparam.f90,v 1.24 2002-07-21 21:34:59 dobler Exp $
 
 module Cparam
 
@@ -44,7 +44,13 @@ module Cparam
 !  significant length of random number generator state
 !  Different compilers have different lengths:
 !    SGI: 64, Intel: 47, NAG: 1, Compaq: 2
-integer, parameter :: mseed=100
+  integer, parameter :: mseed=100
+!
+!  a marker value that is highly unlikely (``impossible'') to ever occur
+!  during a meaningful run.
+!  Maybe using NaN (how do you set this in F90?) would be better..
+!
+  real, parameter :: impossible=3.9085e37
 !
 endmodule Cparam
 

@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.28 2002-07-18 15:09:27 dobler Exp $
+; $Id: r.pro,v 1.29 2002-07-21 21:35:00 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -43,8 +43,7 @@ if (cpar gt 0) then begin
 ;  cs0=1. & nu=0.
   endif
   if (lentropy) then begin
-    hcond0=par2.hcond0 & hcond1=par2.hcond1
-    hcond2=par2.hcond2 & whcond=par2.whcond
+    hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
     cheat=par2.cheat & wheat=par2.wheat
     cool=par2.cool & wcool=par2.wcool
     Fheat=par2.Fheat

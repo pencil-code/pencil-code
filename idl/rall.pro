@@ -40,8 +40,7 @@ if (cpar gt 0) then begin
 ;  cs0=1. & nu=0.
   endif
   if (lentropy) then begin
-    hcond0=par2.hcond0 & hcond1=par2.hcond1
-    hcond2=par2.hcond2 & whcond=par2.whcond
+    hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2
     cheat=par2.cheat & wheat=par2.wheat
     cool=par2.cool & wcool=par2.wcool
     Fheat=par2.Fheat

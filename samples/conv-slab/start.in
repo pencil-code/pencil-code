@@ -4,7 +4,7 @@
 ! Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.2 2002-07-19 10:23:57 dobler Exp $',
+  cvsid='$Id: start.in,v 1.3 2002-07-21 21:34:59 dobler Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -0.5, -0.5, -0.68,        ! first corner of box
   Lxyz  =  1.,   1.,   2.,          ! box size
@@ -19,7 +19,7 @@
   urand=0.,
 /
 &density_init_pars
-  initlnrho='piecew-poly',
+  initlnrho='piecew-poly', widthlnrho=0.05
   cs0=.57735, gamma=1.6666666,
   rho0=1., ! rho0=6.7296,
 /
@@ -27,8 +27,7 @@
   z1=0., z2=1., zref=1.32, gravz=-1.,
 /
 &entropy_init_pars
-  initss='piecew-poly',
-  hcond0=8.e-3, hcond1=1., hcond2=.5, whcond=0.05,
+  initss='piecew-poly', widthss=0.05
   mpoly0=1., mpoly1=3., mpoly2=0., isothtop=1,
 /
 &magnetic_init_pars

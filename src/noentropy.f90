@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.28 2002-07-14 21:12:30 dobler Exp $
+! $Id: noentropy.f90,v 1.29 2002-07-21 21:34:59 dobler Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.28 2002-07-14 21:12:30 dobler Exp $")
+           "$Id: noentropy.f90,v 1.29 2002-07-21 21:34:59 dobler Exp $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -98,6 +98,13 @@ module Entropy
 !
       if(ip==1) print*,f,df,uu,rho1  !(compiler)
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine ss_run_hook()
+!
+!  called by run.f90 after reading parameters, but before the time loop
+!
+!
+    endsubroutine ss_run_hook
 !***********************************************************************
     subroutine rprint_entropy(lreset)
 !

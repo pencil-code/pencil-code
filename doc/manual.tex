@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.61 2002-07-21 12:25:41 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.62 2002-07-21 21:34:59 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -185,7 +185,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.61 $ $}
+\date{\today,~ $ $Revision: 1.62 $ $}
 
 % ====================================================================== %
 
@@ -214,7 +214,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.61 $ $}
+  \emph{\today,~ $ $Revision: 1.62 $ $}
 
 
 \end{center}
@@ -1555,34 +1555,18 @@ double precision, $\varepsilon\approx10^{-15}$.
                    convection).
                  \end{description}
                  \\
-  \var{ampl_ss} [$0.$]
-               & amplitude for some types of initial entropy profiles. \\
+  \var{ampl_ss} [$0.$], \\
+  \var{widthss} [$2\varepsilon$]
+               & amplitude and width for some types of initial entropy. \\
   \var{grads0} [$0.$]
                & initial entropy gradient for \code{initss=linprof}. \\
   \var{radius_ss} [$0.1$]
                & radius of bubble for \code{initss=isentropic}. \\
-  \var{hcond0} [$0.$], \\
-  \var{hcond1} [$1.$], \\
-  \var{hcond2} [$1.$]
-               & \label{hcond0123-init}%
-                 specific to the solar convection case
-                 \code{initss=piecew-poly}:
-                 heat conductivities $\lambda$ in the individual layers.
-                 \var{hcond0} is the value $\lambda_{\rm unst}$ in the
-                 unstable layer, \var{hcond1} is the \emph{ratio}
-                 $\lambda_{\rm stab}/\lambda_{\rm unst}$ for the stable
-                 layer, and \var{hcond2} is the \emph{ratio} 
-                 $\lambda_{\rm top}/\lambda_{\rm unst}$ for the top layer.
-                 The function $\lambda(z)$ is not discontinuous, as the
-                 transition between the different values is smoothed over
-                 the width \var{whcond}. \\
-  \var{whcond} [$2\varepsilon$]
-               & width of transition region between layers for
-                 \code{initss=piecew-poly}. \\
   \var{mpoly0} [$1.5$], \\
   \var{mpoly1} [$1.5$], \\
   \var{mpoly2} [$1.5$]
-               & specific to the solar convection case
+               & \label{mpoly0123-init}%
+                 specific to the solar convection case
                  \code{initss=piecew-poly}:
                  polytropic indices of unstable (\var{mpoly0}), stable
                  (\var{mpoly1}) and top layer (\var{mpoly2}).
@@ -1849,22 +1833,29 @@ the latest information, you should have a look at the code.
 \midrule
   \multicolumn{2}{c}{Namelist \name{entropy_run_pars}} \\
 \midrule
-  \var{hcond0} [start], \\
+  \var{hcond0} [$0.$], \\
   \var{hcond1} [start], \\
   \var{hcond2} [start]
-               & heat conductivities for solar convection case.
-                 See start parameters, p.~\pageref{hcond0123-init}. \\
-  \var{whcond} [start]
+               & specific to the solar convection case
+                 \code{initss=piecew-poly}:
+                 heat conductivities $\lambda$ in the individual layers.
+                 \var{hcond0} is the value $\lambda_{\rm unst}$ in the
+                 unstable layer, \var{hcond1} is the \emph{ratio}
+                 $\lambda_{\rm stab}/\lambda_{\rm unst}$ for the stable
+                 layer, and \var{hcond2} is the \emph{ratio} 
+                 $\lambda_{\rm top}/\lambda_{\rm unst}$ for the top layer.
+                 The function $\lambda(z)$ is not discontinuous, as the
+                 transition between the different values is smoothed over
+                 the width \var{widthss}.
+                 if \var{hcond1} or \var{hcond2} are not set, they are
+                 calculated according to the polytropic indices of the
+                 initial profile, $\lambda\propto m{+}1$. \\
+  \var{widthss} [start]
                & width of transition region between layers.
-                 See start parameters, p.~\pageref{hcond0123-init}. \\
-  \var{mpoly0} [start], \\
-  \var{mpoly1} [start], \\
-  \var{mpoly2} [start]
-               & polytropic exponents for solar convection case.
-                 See start parameters, p.~\pageref{hcond0123-init}. \\
+                 See start parameters, p.~\pageref{mpoly012-init}. \\
   \var{isothtop} [start]
                & flag for isothermal top layer for solar convection case.
-                 See start parameters, p.~\pageref{hcond0123-init}. \\
+                 See start parameters, p.~\pageref{mpoly012-init}. \\
   \var{cheat} [$0.$], \\
   \var{wheat} [$0.1$]
                & strength and width of heating region. \\
@@ -3017,7 +3008,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.61 2002-07-21 12:25:41 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.62 2002-07-21 21:34:59 dobler Exp $ $}
 
 
 \end{document}

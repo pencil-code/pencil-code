@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.68 2002-07-19 10:26:01 dobler Exp $
+! $Id: run.f90,v 1.69 2002-07-21 21:34:59 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.68 2002-07-19 10:26:01 dobler Exp $")
+             "$Id: run.f90,v 1.69 2002-07-21 21:34:59 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -86,27 +86,17 @@
         if (ip<=6.and.lroot) print*,'reading grid coordinates'
         call rgrid(trim(directory)//'/grid.dat')
 !
-!  read seed field parameters (only if forcing is turned on)
-!
         call get_nseed(nseed)   ! get state length of random number generator
-        if (lforcing) then
-          if (lroot.and.ip<14) print*,'reading seed file'
-          call get_nseed(nseed)   ! get state length of random number generator
-          call inpui(trim(directory)//'/seed.dat',seed,nseed)
-          call random_seed(put=seed(1:nseed))
-        else
-          !
-          !  initialise random number generator in processor-dependent fashion
-          !  see comments in start.f90 for details
-          !
-          call random_seed(get=seed(1:nseed))
-          seed(1) = 1001+iproc    ! different random numbers on different CPUs
-          call random_seed(put=seed(1:nseed))
-        endif
+!
+!  run hooks for individual modules
+!
+        call ss_run_hook()      ! calculate Fheat, ..
+        call forcing_run_hook() ! get random seed from file, ..
 !
 !  setup gravity (obtain coefficients cpot(1:5); initialize global array gg)
 !
         if (lgravr) call setup_grav()
+!
         call wglobal()
 
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.97 2002-07-20 17:43:53 dobler Exp $
+! $Id: entropy.f90,v 1.98 2002-07-21 21:34:59 dobler Exp $
 
 module Entropy
 
@@ -9,21 +9,22 @@ module Entropy
   implicit none
 
   real, dimension (nx) :: cs2,TT1
-  real :: radius_ss=0.1,ampl_ss=0.
+  real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi
   real :: cheat=0.,wheat=0.1,cool=0.,wcool=0.1
   real :: chi_t=0.,ss0=0.,khor_ss=1.
+  real :: hcond0=0.
+  real :: Fheat=impossible,hcond1=impossible,hcond2=impossible
   character (len=labellen) :: initss='nothing',pertss='zero'
 
   ! input parameters
   namelist /entropy_init_pars/ &
-       initss,pertss,grads0,radius_ss,ampl_ss, &
-       hcond0,hcond1,hcond2,whcond, &
-       mpoly0,mpoly1,mpoly2,isothtop,Fheat, &
+       initss,pertss,grads0,radius_ss,ampl_ss,widthss, &
+       mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,whcond,cheat,wheat,cool,wcool,Fheat, &
+       hcond0,hcond1,hcond2,widthss,cheat,wheat,cool,wcool,Fheat, &
        chi_t
 
   ! other variables (needs to be consistent with reset list below)
@@ -61,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.97 2002-07-20 17:43:53 dobler Exp $")
+           "$Id: entropy.f90,v 1.98 2002-07-21 21:34:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,14 +130,14 @@ module Entropy
         !
         if (lroot) print*,'piecewise polytropic vertical stratification (ss)'
         !
-        !  override hcond1,hcond2 according to polytropic equilibrium
-        !  solution
-        !
-        hcond1 = (mpoly1+1.)/(mpoly0+1.)
-        hcond2 = (mpoly2+1.)/(mpoly0+1.)
-        if (lroot) &
-             print*, &
-             'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+!         !  override hcond1,hcond2 according to polytropic equilibrium
+!         !  solution
+!         !
+!         hcond1 = (mpoly1+1.)/(mpoly0+1.)
+!         hcond2 = (mpoly2+1.)/(mpoly0+1.)
+!         if (lroot) &
+!              print*, &
+!              'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
         cs2int = cs0**2
         ss0 = 0.              ! reference value ss0 is zero
@@ -149,8 +150,6 @@ module Entropy
         call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
         ! stable layer
         call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
-        ! heat flux through polytropic atmosphere (for run.x later)
-        Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
 
       case('polytropic', '5')
         !
@@ -225,7 +224,7 @@ module Entropy
 !
 !  zint    -- z at top of layer
 !  zbot    -- z at bottom of layer
-!  zblend  -- smoothly blend (with width whcond) previous ss (for z>zblend)
+!  zblend  -- smoothly blend (with width widthss) previous ss (for z>zblend)
 !             with new profile (for z<zblend)
 !  isoth   -- flag for isothermal stratification;
 !  ssint   -- value of ss at interface, i.e. at the top on entry, at the
@@ -261,7 +260,7 @@ module Entropy
       ! smoothly blend the old value (above zblend) and the new one (below
       ! zblend) for the two regions:
       !
-      stp = step(z,zblend,whcond)
+      stp = step(z,zblend,widthss)
       p = spread(spread(stp,1,mx),2,my)
       f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
 !
@@ -282,6 +281,7 @@ module Entropy
       use Global
       use Slices
       use IO
+      use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
@@ -356,6 +356,8 @@ module Entropy
            call calc_heatcond_simple(f,df,rho1,glnrho,gss)
 !
 !  more complex alternative
+!WD: but often both will be called, which makes no sense. Should we hava
+!WD: a flag for the heat-conduction profile (similar to initss) in run.in?
 !
       if ((hcond0 /= 0) .or. (chi_t /= 0)) &
            call calc_heatcond(f,df,rho1,glnrho,gss)
@@ -372,6 +374,32 @@ module Entropy
       endif
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine ss_run_hook()
+!
+!  called by run.f90 after reading parameters, but before the time loop
+!
+!  21-jul-2002/wolf: coded
+!
+      use Cdata
+      use Gravity, only: gravz
+!
+      if (lgravz) then
+        !
+        !  calculate hcond1,hcond2 if they have not been set in run.in
+        !
+        if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
+        if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
+        !
+        !  calculate Fheat if it has not been set in run.in
+        !
+        if ((Fheat==impossible) .and. (bcz1(ient)=='c1')) then
+          Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+          print*, 'Calculated Fheat = ', Fheat
+        endif
+      endif
+!
+    endsubroutine ss_run_hook
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
 !
@@ -451,6 +479,11 @@ module Entropy
 !
 !  Heat conduction / entropy diffusion
 !
+      if(headtt) then
+        print*,'calc_heatcond: hcond0=',hcond0
+        print*,'Fheat=',Fheat
+      endif
+
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
         call del2(f,ient,del2ss)
       endif
@@ -513,7 +546,11 @@ module Entropy
         !
         !  most of these should trigger the following trap
         !
-        if (notanumber(thdiff)) call stop_it('NaNs in thdiff')
+        if (notanumber(thdiff)) then
+
+print*, 'm,n,y(m),z(n)=',m,n,y(m),z(n)
+call stop_it('NaNs in thdiff')
+endif
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
@@ -637,7 +674,7 @@ module Entropy
 !  NB: if you modify this profile, you *must* adapt gradloghcond below.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr
       use Sub, only: step
       use Gravity
 !
@@ -645,8 +682,8 @@ module Entropy
       real, dimension (nx) :: hcond
 !
       if (lgravz) then
-        hcond = 1 + (hcond1-1)*step(z,z1,-whcond) &
-                  + (hcond2-1)*step(z,z2,whcond)
+        hcond = 1 + (hcond1-1)*step(z,z1,-widthss) &
+                  + (hcond2-1)*step(z,z2,widthss)
         hcond = hcond0*hcond
       endif
 
@@ -664,7 +701,7 @@ module Entropy
 !  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
-      use Cdata, only: nx,lgravz,lgravr,hcond0,hcond1,hcond2,whcond
+      use Cdata, only: nx,lgravz,lgravr
       use Sub, only: der_step
       use Gravity
 !
@@ -673,8 +710,8 @@ module Entropy
 !
       if (lgravz) then
         glhc(:,1:2) = 0.
-        glhc(:,3) = (hcond1-1)*der_step(z,z1,-whcond) &
-                    + (hcond2-1)*der_step(z,z2,whcond)
+        glhc(:,3) = (hcond1-1)*der_step(z,z1,-widthss) &
+                    + (hcond2-1)*der_step(z,z2,widthss)
         glhc(:,3) = hcond0*glhc(:,3)
       endif
 

@@ -132,8 +132,6 @@ if (cpar gt 0) then begin
   endif
   ;
   if (lentropy) then begin
-    hcond0=par.hcond0 & hcond1=par.hcond1
-    hcond2=par.hcond2 & whcond=par.whcond
     mpoly0=par.mpoly0 & mpoly1=par.mpoly1
     mpoly2=par.mpoly2 & isothtop=par.isothtop
   endif

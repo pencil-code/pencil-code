@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.38 2002-07-20 17:43:53 dobler Exp $
+! $Id: density.f90,v 1.39 2002-07-21 21:34:59 dobler Exp $
 
 module Density
 
@@ -30,7 +30,7 @@ module Density
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top
 
-  ! other variables (needs to be consistent with reset list below)
+  ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_eth=0,i_ekin=0,i_rhom=0
 
   contains
@@ -64,7 +64,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.38 2002-07-20 17:43:53 dobler Exp $")
+           "$Id: density.f90,v 1.39 2002-07-21 21:34:59 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -331,7 +331,7 @@ module Density
       ! smoothly blend the old value (above zblend) and the new one (below
       ! zblend) for the two regions:
       !
-      stp = step(z,zblend,whcond)
+      stp = step(z,zblend,widthlnrho)
       p = spread(spread(stp,1,mx),2,my)
       f(:,:,:,ilnrho) = p*f(:,:,:,ilnrho) + (1-p)*tmp
 !
