@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.87 2002-08-14 15:22:45 nilshau Exp $
+### $Id: Makefile,v 1.88 2002-08-15 14:07:55 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -61,13 +61,14 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 #FC=pgf90 #(nq0)
+#FC=mpif77 #(fe[0-9])
 #FC=/usr/bin/mpif77 #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
 #FFLAGS=-O # (Samos)
 ##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
 #FFLAGS=-fast -DPGF90 #(nq0)
 #FFLAGS=-O3 #(nq0)
-#FFLAGS=-fast -lm #(erland|igor|tycho)
+#FFLAGS=-fast -lm #(erland|igor|tycho|fe[0-9])
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
 ##LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nq0)
