@@ -1,4 +1,4 @@
-;  $Id: r_ez.pro,v 1.9 2002-11-27 11:25:01 brandenb Exp $
+;  $Id: r_ez.pro,v 1.10 2002-12-04 22:41:26 tarek Exp $
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
 ;  which can sometimes fail (if nml2idl fails, for example).
@@ -21,7 +21,7 @@ close,1
 print,mx,my,mz,mvar
 ;
 default, datadir, datatopdir+'/proc0/'
-default, varfile='var.dat'
+default, varfile,'var.dat'
 f=fltarr(mx,my,mz,mvar)
 x=fltarr(mx)
 y=fltarr(my)
