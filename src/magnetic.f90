@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.114 2003-06-17 17:59:43 torkel Exp $
+! $Id: magnetic.f90,v 1.115 2003-06-30 16:52:18 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -86,7 +86,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.114 2003-06-17 17:59:43 torkel Exp $")
+           "$Id: magnetic.f90,v 1.115 2003-06-30 16:52:18 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -410,6 +410,11 @@ module Magnetic
           oxuxb_dotB0=oxuxb_dotB0/(B_ext(1)**2+B_ext(2)**2+B_ext(3)**2)
           call sum_mn_name(oxuxb_dotB0,i_oxuxbm)
         endif
+        !
+        !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
+        !   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
+        !   ( < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
+        !   ( < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 >
         !
         if (i_uxDxuxbm/=0) then
           call cross_mn(uu,bbb,uxb)

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.147 2003-06-29 16:52:25 theine Exp $
+! $Id: equ.f90,v 1.148 2003-06-30 16:52:18 brandenb Exp $
 
 module Equ
 
@@ -222,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.147 2003-06-29 16:52:25 theine Exp $")
+           "$Id: equ.f90,v 1.148 2003-06-30 16:52:18 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -248,7 +248,6 @@ module Equ
 !
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
-!  NOTE: in future, lradiation_exp will be renamed to lradiation_ray
 !
       if(lionization) call ioncalc(f)
       if(lradiation_ray) then

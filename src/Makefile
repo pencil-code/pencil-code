@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.194 2003-06-30 13:05:07 brandenb Exp $
+### $Id: Makefile,v 1.195 2003-06-30 16:52:18 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -222,6 +222,10 @@ start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
 run.x: $(run) Makefile.local
+	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
+
+linkonly:
+	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 
 read_videofiles.x: $(read_videofiles)

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.30 2003-06-30 12:07:29 dobler Exp $
+! $Id: radiation_exp.f90,v 1.31 2003-06-30 16:52:18 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.30 2003-06-30 12:07:29 dobler Exp $")
+           "$Id: radiation_exp.f90,v 1.31 2003-06-30 16:52:18 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -231,12 +231,12 @@ module Radiation
              Irad_zx(:,:,:,lrad,mrad,nrad)=Irad(:,m2+1:m2+rady0,:)
           endif
           if (nrad<0) then
-             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n1-radz0:n1-1)
-             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1-radz0:n1-1)
+             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n1:n1+radz0-1)
+             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n1:n1+radz0-1)
           endif
           if (nrad>0) then
-             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n2+1:n2+radz0)
-             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2+1:n2+radz0)
+             tau_xy(:,:,:,lrad,mrad,nrad)=tau(:,:,n2-radz0+1:n2)
+             Irad_xy(:,:,:,lrad,mrad,nrad)=Irad(:,:,n2-radz0+1:n2)
           endif
         endif
       enddo
@@ -330,6 +330,38 @@ module Radiation
 !
 !  Vertical direction:
 !
+!
+!  downward ray
+!  start at the top
+!
+!  top boundary (rays point downwards): I=0
+!
+      if(ipz==nprocz-1) then
+        do nrad=-radz,-1
+        do mrad=-rady,rady
+        do lrad=-radx,radx
+          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
+        enddo
+        enddo
+        enddo
+      else
+        !
+        !  receive from previous processor
+        !
+        if (first) print*,'radtransfer_comm: recv_Irad0_xym, zuneigh=',zuneigh,tag_xym
+        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
+        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
+      endif
+!
+!  send Ibuf_xy to ipz-1
+!
+      if(ipz/=0) then
+        if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
+        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
+                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
+        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
+      endif
+!
 !  upward ray:
 !  (starting this is optimal when ipz < nprocz/2;
 !  otherwise we better start the other way around)
@@ -362,37 +394,6 @@ module Radiation
         Ibuf_xy=Irad_xy(:,:,:,:,:,1:radz) &
                   +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
         call send_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xyp)
-      endif
-!
-!  downward ray
-!  start at the top
-!
-!  top boundary (rays point downwards): I=0
-!
-      if(ipz==nprocz-1) then
-        do nrad=-radz,-1
-        do mrad=-rady,rady
-        do lrad=-radx,radx
-          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
-        enddo
-        enddo
-        enddo
-      else
-        !
-        !  receive from previous processor
-        !
-        if (first) print*,'radtransfer_comm: recv_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        call recv_Irad0_xy(Ibuf_xy,zuneigh,radx0,rady0,radz0,tag_xym)
-        Irad0_xy(:,:,:,:,:,-radz:-1)=Ibuf_xy(:,:,:,:,:,1:radz)
-      endif
-!
-!  send Ibuf_xy to ipz-1
-!
-      if(ipz/=0) then
-        if (first) print*,'radtransfer_comm: send_Irad0_xym, zuneigh=',zuneigh,tag_xym
-        Ibuf_xy(:,:,:,:,:,1:radz)=Irad_xy(:,:,:,:,:,-radz:-1) &
-                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
-        call send_Irad0_xy(Ibuf_xy,zlneigh,radx0,rady0,radz0,tag_xym)
       endif
 !
 !  side boundaries : initially I=0
