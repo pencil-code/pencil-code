@@ -1,0 +1,27 @@
+!
+!  run parameters for forced helical MHD turbulence
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2003-08-01 13:42:51 brandenb Exp $',
+  nt=20, it1=5, cdt=0.4, cdtv=0.8, isave=500, itorder=3,
+  dsnap=10., dvid=20., dtmin=1e-9, ip=16, 
+  bcz = 's','s','a','s','s','s','a','s'
+/
+&hydro_run_pars
+/
+&density_run_pars
+  cdiffrho=0e-2
+/
+&grav_run_pars
+/
+&dustvelocity_run_pars
+  nud=2e-5, beta=1e-3
+/
+&dustdensity_run_pars
+  cdiffrhod=0e-2
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  nu=2e-5, nu_shock=2.
+/

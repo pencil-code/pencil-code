@@ -1,0 +1,27 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters for disc run
+!
+&init_pars
+ip=14
+  cvsid='$Id: start.in,v 1.1 2003-08-01 13:42:51 brandenb Exp $'
+  Lxyz=+4.,+8.,+0.4, xyz0=-2.,-4.,-0.2, 
+  lperi=T,T,F
+/
+&hydro_init_pars
+  inituu='zero',ampluu=.0,widthuu=.0,Omega=1.
+/
+&density_init_pars
+  initlnrho='planet',eps_planet=.4,radius_lnrho=0.7,rbound=1.
+  widthlnrho=.001,hh0=0.001
+/
+&grav_init_pars
+  nu_epicycle=1.,grav_profile='linear'
+/
+&dustvelocity_init_pars
+/
+&dustdensity_init_pars
+  initlnrhod='const_rhod', rhod_const=1e-3
+/
+&shear_init_pars
+  qshear=1.5,
+/
