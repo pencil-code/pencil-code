@@ -1,16 +1,16 @@
-; $Id: pc_read_slice.pro,v 1.5 2004-05-11 17:43:34 mee Exp $
+; $Id: pc_read_slice.pro,v 1.6 2004-05-11 18:03:28 mcmillan Exp $
 ;
 ;   Read slice files
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-11 17:43:34 $
-;  $Revision: 1.5 $
+;  $Date: 2004-05-11 18:03:28 $
+;  $Revision: 1.6 $
 ;
 ;  28-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_slice,field=field,plane=plane,slice=slice,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz, $
-                 object=object, dim1=dim1, dim2=dim2 $
+                 object=object, dim1=dim1, dim2=dim2, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   COMMON pc_precision, zero, one
