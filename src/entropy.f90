@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.99 2002-07-22 08:51:44 dobler Exp $
+! $Id: entropy.f90,v 1.100 2002-07-22 17:55:34 dobler Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.99 2002-07-22 08:51:44 dobler Exp $")
+           "$Id: entropy.f90,v 1.100 2002-07-22 17:55:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -165,6 +165,9 @@ module Entropy
         ssint = ss0
         ! only one layer
         call polytropic_ss_z(f,mpoly0,zz,tmp,zref,z0,z0+2*Lz,0,cs2int,ssint)
+        ! reset mpoly1, mpoly2 (unused) to make IDL routine `thermo.pro' work
+        mpoly1 = mpoly0
+        mpoly2 = mpoly0
 
       case default
         !

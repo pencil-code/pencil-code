@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.79 2002-07-19 12:41:35 dobler Exp $ 
+! $Id: sub.f90,v 1.80 2002-07-22 17:55:34 dobler Exp $ 
 
 module Sub 
 
@@ -862,7 +862,8 @@ module Sub
 !***********************************************************************
     subroutine del6(f,k,del6f)
 !
-!  calculate del6 of a scalar for hyperdiffusion
+!  calculate del6 (defined here as d^6/dx^6 + d^6/dy^6 + d^6/dz^6, rather
+!  than del2^3) of a scalar for hyperdiffusion
 !  8-jul-02/wolf: coded
 !
       use Cdata

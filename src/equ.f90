@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.89 2002-07-16 11:24:11 nilshau Exp $
+! $Id: equ.f90,v 1.90 2002-07-22 17:55:34 dobler Exp $
 
 module Equ
 
@@ -215,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.89 2002-07-16 11:24:11 nilshau Exp $")
+           "$Id: equ.f90,v 1.90 2002-07-22 17:55:34 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -432,7 +432,9 @@ module Equ
           call finalise_isendrcv_bdry(f)
         endif
         call del6_nodx(f,ivar,tmp)
-        df(l1:l2,m,n,ivar) = 1./64.*tmp
+! 1/64 would be fine for 1d runs, but in 3d we have higher wave numbers
+!        df(l1:l2,m,n,ivar) = 1./64.*tmp
+        df(l1:l2,m,n,ivar) = 1./192.*tmp
       enddo
 !
 !  Not necessary to do this in a (cache-efficient) loop updating in
