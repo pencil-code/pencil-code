@@ -26,7 +26,11 @@ f90: spread.f90
 	  -e '}'
 
 clean:
-	rm -rf *.x
+	rm -rf *.x work.pc work.pcl
 
+cleann:
+	make clean
+	rm -rf spread_[0-9]*.f90
+	
 
 # End of file

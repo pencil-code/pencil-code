@@ -2,41 +2,44 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.5 2004-04-28 16:49:58 brandenb Exp $
+$Id: README,v 1.6 2004-04-28 16:58:18 dobler Exp $
 
 
 1. Symptoms:
 
 The three short F90 programs should print
 
-    spread-tmp.x
      spread-tmp: Starting
      spread-tmp: <f> =    1.000000    
      spread-tmp: Done.
-     
-    spread_255.x
+ 
      spread_255: Starting
      spread_255: <f> =    1.000000    
      spread_255: Done.
-     
-    spread_256.x
+ 
      spread_256: Starting
      spread_256: <f> =    1.000000    
      spread_256: Done.
  
-However, with ifort (Intel Fortran compiler, version 8.0), one gets
+     spread_1791: Starting
+     spread_1791: <f> =   0.9999999    
+     spread_1791: Done.
+ 
+     spread_1792: Starting
+     spread_1792: <f> =    1.000000    
+     spread_1792: Done.
+ 
+However, with ifort (Intel Fortran compiler, version 8.0, 32-bit version),
+one gets:
 
-    spread-tmp.x
      spread-tmp: Starting
      spread-tmp: <f> =    1.000000    
      spread-tmp: Done.
      
-    spread_255.x
      spread_255: Starting
      spread_255: <f> =    1.000000    
      spread_255: Done.
      
-    spread_256.x
      spread_256: Starting
     forrtl: severe (174): SIGSEGV, segmentation fault occurred
     Image              PC        Routine            Line        Source
@@ -44,8 +47,24 @@ However, with ifort (Intel Fortran compiler, version 8.0), one gets
     spread_256.x       0804A078  Unknown               Unknown  Unknown
     spread_256.x       400A89ED  Unknown               Unknown  Unknown
     spread_256.x       08049C61  Unknown               Unknown  Unknown
+     spread_1791: Starting
+    forrtl: severe (174): SIGSEGV, segmentation fault occurred
+    Image              PC        Routine            Line        Source
+    spread_1791.x      08049E75  Unknown               Unknown  Unknown
+    spread_1791.x      0804A080  Unknown               Unknown  Unknown
+    spread_1791.x      400A89ED  Unknown               Unknown  Unknown
+    spread_1791.x      08049C61  Unknown               Unknown  Unknown
+     spread_1792: Starting
+    forrtl: severe (174): SIGSEGV, segmentation fault occurred
+    Image              PC        Routine            Line        Source
+    spread_1792.x      08049EA2  Unknown               Unknown  Unknown
+    spread_1792.x      0804A07C  Unknown               Unknown  Unknown
+    spread_1792.x      400A89ED  Unknown               Unknown  Unknown
+    spread_1792.x      08049C61  Unknown               Unknown  Unknown
+    make: *** [test] Error 174
 
-With ifort 8.0 Itanium
+
+With the 64-bit version of ifort 8.0 on Itanium:
 
     spread-tmp: Starting
     spread-tmp: <f> =    1.000000    
