@@ -1,0 +1,9 @@
+!
+!  In practice, the user will change the number of cpus (in y and z)
+!  and the number of mesh points, and recompile.
+!  Dependening on what is invoked under Makefile.local,
+!  one needs to adjust nvar.
+!  This part is now isolated in a separate cparam.local file.
+!
+integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
+integer, parameter :: nxgrid=128,nygrid=nxgrid,nzgrid=nxgrid,mvar=7
