@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.133 2003-11-06 13:51:07 mcmillan Exp $
+! $Id: hydro.f90,v 1.134 2003-11-06 20:19:18 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -60,6 +60,7 @@ module Hydro
   integer :: i_uxpt=0,i_uypt=0,i_uzpt=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
+  integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0,i_rumax=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
@@ -101,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.133 2003-11-06 13:51:07 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.134 2003-11-06 20:19:18 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -370,6 +371,7 @@ module Hydro
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock
       real, dimension (nx) :: ux2, uy2, uz2 ! ux^2, uy^2, uz^2
+      real, dimension (nx) :: uxuy, uxuz, uyuz
       real :: c2,s2
       integer :: i,j
 !
@@ -515,6 +517,18 @@ module Hydro
            uz2 = uu(:,3)*uu(:,3)
            call sum_mn_name(uz2,i_uz2m)
         endif
+        if (i_uxuym/=0) then
+           uxuy = uu(:,1)*uu(:,2)
+           call sum_mn_name(uxuy,i_uxuym)
+        endif
+        if (i_uxuzm/=0) then
+           uxuz = uu(:,1)*uu(:,3)
+           call sum_mn_name(uxuz,i_uxuzm)
+        endif
+        if (i_uyuzm/=0) then
+           uyuz = uu(:,2)*uu(:,3)
+           call sum_mn_name(uyuz,i_uyuzm)
+        endif
         !
         !  kinetic field components at one point (=pt)
         !
@@ -553,7 +567,7 @@ module Hydro
         !
         !  things related to vorticity
         !
-        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0) then
+        if (i_oum/=0 .or. i_o2m/=0 .or. i_omax/=0 .or. i_orms/=0 .or. lvid) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
@@ -569,6 +583,18 @@ module Hydro
             if(i_omax/=0) call max_mn_name(o2,i_omax,lsqrt=.true.)
             if(i_o2m/=0)  call sum_mn_name(o2,i_o2m)
           endif
+        endif
+        !
+        !  write oo-slices for output in wvid in run.f90
+        !  Note: ix is the index with respect to array with ghost zones.
+        !
+        if(lvid.and.lfirst) then
+          do j=1,3
+            oo_yz(m-m1+1,n-n1+1,j)=oo(ix-l1+1,j)
+            if (m.eq.iy)  oo_xz(:,n-n1+1,j)=oo(:,j)
+            if (n.eq.iz)  oo_xy(:,m-m1+1,j)=oo(:,j)
+            if (n.eq.iz2) oo_xy2(:,m-m1+1,j)=oo(:,j)
+          enddo
         endif
       endif
 !
@@ -757,6 +783,7 @@ module Hydro
         i_urms=0; i_umax=0; i_orms=0; i_omax=0
         i_ruxm=0; i_ruym=0; i_ruzm=0; i_rumax=0
         i_ux2m=0; i_uy2m=0; i_uz2m=0
+        i_uxuym=0; i_uxuzm=0; i_uyuzm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
         i_divu2m=0; i_epsK=0
@@ -775,6 +802,9 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'ux2m',i_ux2m)
         call parse_name(iname,cname(iname),cform(iname),'uy2m',i_uy2m)
         call parse_name(iname,cname(iname),cform(iname),'uz2m',i_uz2m)
+        call parse_name(iname,cname(iname),cform(iname),'uxuym',i_uxuym)
+        call parse_name(iname,cname(iname),cform(iname),'uxuzm',i_uxuzm)
+        call parse_name(iname,cname(iname),cform(iname),'uyuzm',i_uyuzm)
         call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
         call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
         call parse_name(iname,cname(iname),cform(iname),'ruxm',i_ruxm)
@@ -821,6 +851,9 @@ module Hydro
         write(3,*) 'i_ux2m=',i_ux2m
         write(3,*) 'i_uy2m=',i_uy2m
         write(3,*) 'i_uz2m=',i_uz2m
+        write(3,*) 'i_uxuym=',i_uxuym
+        write(3,*) 'i_uxuzm=',i_uxuzm
+        write(3,*) 'i_uyuzm=',i_uyuzm
         write(3,*) 'i_orms=',i_orms
         write(3,*) 'i_omax=',i_omax
         write(3,*) 'i_ruxm=',i_ruxm

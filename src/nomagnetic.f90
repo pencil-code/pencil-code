@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.40 2003-10-24 13:17:31 dobler Exp $
+! $Id: nomagnetic.f90,v 1.41 2003-11-06 20:19:18 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,6 +31,7 @@ module Magnetic
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
+  integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_uxDxuxbm=0
@@ -59,7 +60,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.40 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.41 2003-11-06 20:19:18 nilshau Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************

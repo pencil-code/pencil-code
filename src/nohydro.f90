@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.20 2003-10-24 13:17:31 dobler Exp $
+! $Id: nohydro.f90,v 1.21 2003-11-06 20:19:18 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -26,6 +26,7 @@ module Hydro
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
   integer :: i_ux2m=0, i_uy2m=0, i_uz2m=0
+  integer :: i_uxuym=0, i_uxuzm=0, i_uyuzm=0
   integer :: i_ruxm=0,i_ruym=0,i_ruzm=0
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
@@ -56,7 +57,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.20 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: nohydro.f90,v 1.21 2003-11-06 20:19:18 nilshau Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************

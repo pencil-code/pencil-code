@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.24 2003-11-02 04:00:18 theine Exp $
+! $Id: slices.f90,v 1.25 2003-11-06 20:19:18 nilshau Exp $
 
 !  This module produces slices for animation purposes
 
@@ -9,18 +9,19 @@ module Slices
   implicit none
 
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
+  real, dimension (nx,ny,3) :: oo_xy,oo_xy2
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
   real, dimension (nx,ny) :: divu_xy,divu_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
 
-  real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz
+  real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
   real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
 
-  real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz
+  real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz,oo_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
@@ -102,6 +103,19 @@ module Slices
         call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2),nx,ny)
+
+        call wslice(path//'ox.yz',oo_yz(:,:,1),x(ix),ny,nz)
+        call wslice(path//'oy.yz',oo_yz(:,:,2),x(ix),ny,nz)
+        call wslice(path//'oz.yz',oo_yz(:,:,3),x(ix),ny,nz)
+        call wslice(path//'ox.xz',oo_xz(:,:,1),y(iy),nx,nz)
+        call wslice(path//'oy.xz',oo_xz(:,:,2),y(iy),nx,nz)
+        call wslice(path//'oz.xz',oo_xz(:,:,3),y(iy),nx,nz)
+        call wslice(path//'ox.xy',oo_xy(:,:,1),z(iz),nx,ny)
+        call wslice(path//'oy.xy',oo_xy(:,:,2),z(iz),nx,ny)
+        call wslice(path//'oz.xy',oo_xy(:,:,3),z(iz),nx,ny)
+        call wslice(path//'ox.Xy',oo_xy2(:,:,1),z(iz2),nx,ny)
+        call wslice(path//'oy.Xy',oo_xy2(:,:,2),z(iz2),nx,ny)
+        call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
 !  Dust velocity
