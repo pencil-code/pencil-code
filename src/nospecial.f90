@@ -1,30 +1,32 @@
-! $Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $
+! $Id: nospecial.f90,v 1.5 2003-10-21 15:09:37 mee Exp $
 
-!  This module provide a way for users to specify custom (i.e. not in the standard Pencil Code)
-!  physics, diagnostics etc. 
+!  This module provide a way for users to specify custom 
+!  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
 !
-!  The module provides a set of standard hooks into the Pencil-Code and currently allows the following
-!  customizations:                                        
+!  The module provides a set of standard hooks into the Pencil-Code and 
+!  currently allows the following customizations:                                        
 !
-!   Description                                         | Relevant function call (hook)
-!  ------------------------------------------------------------------------------------------------
-!   Special variable registration (pre parameter read)   | register_special
-!   Special variable initialization (post parameter read)| initialize_special
-!
-!   Special initial condition                            | init_special
-!     this is called last so may be used to modify
-!     the mvar variables declared by this module
-!     or optionally modify any of the other f array 
-!     variables.  The latter, however, should be avoided
-!     where ever possible.
-!
-!
-!   Special term in the mass (density) equation          | special_calc_density
-!   Special term in the momentum (hydro) equation        | special_calc_hydro
-!   Special term in the entropy equation                 | special_calc_entropy
-!   Special term in the induction (magnetic) equation    | special_calc_magnetic
-!
-!   Special equation                                     | dspecial_dt
+!   Description                                     | Relevant function call 
+!  ---------------------------------------------------------------------------
+!   Special variable registration                   | register_special 
+!     (pre parameter read)                          |
+!   Special variable initialization                 | initialize_special 
+!     (post parameter read)                         |
+!                                                   |
+!   Special initial condition                       | init_special
+!    this is called last so may be used to modify   |
+!    the mvar variables declared by this module     |
+!    or optionally modify any of the other f array  |
+!    variables.  The latter, however, should be     |
+!    avoided where ever possible.                   |
+!                                                   |
+!   Special term in the mass (density) equation     | special_calc_density
+!   Special term in the momentum (hydro) equation   | special_calc_hydro
+!   Special term in the entropy equation            | special_calc_entropy
+!   Special term in the induction (magnetic)        | special_calc_magnetic 
+!      equation                                     |
+!                                                   |
+!   Special equation                                | dspecial_dt
 !     NOT IMPLEMENTED FULLY YET - HOOKS NOT PLACED INTO THE PENCIL-CODE 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -36,6 +38,35 @@
 !
 !***************************************************************
 
+!-------------------------------------------------------------------
+!
+! HOW TO USE THIS FILE
+! --------------------
+!
+! The rest of this file may be used as a template for your own
+! special module.  Lines which are double commented are intended
+! as examples of code.  Simply fill out the prototypes for the 
+! features you want to use.
+!
+! Save the file with a meaningful name, eg. geo_kws.f90 and place
+! it in the $PENCIL_HOME/src/special directory.  This path has
+! been created to allow users ot optionally check their contributions
+! in to the Pencil-Code CVS repository.  This may be useful if you
+! are working on/using the additional physics with somebodyelse or 
+! may require some assistance from one of the main Pencil-Code team.
+!
+! To use your additional physics code edit the Makefile.local in
+! the src directory under the run directory in which you wish to
+! use your additional physics.  Add a line with all the module 
+! selections to say something like:
+!
+!    SPECIAL=special/geo_kws
+!
+! Where geo_kws it replaced by the filename of your new module
+! upto and not including the .f90
+!
+!--------------------------------------------------------------------
+
 module Special
 
   use Cparam
@@ -46,12 +77,12 @@ module Special
   real :: dummy
 !!  character, len(50) :: initcustom
 
-!! input parameters
+! input parameters
   namelist /special_init_pars/ &
       dummy 
-!eg.    initcustom
+!!!eg.    initcustom
      
-!! run parameters
+! run parameters
   namelist /special_run_pars/ &
       dummy
 
@@ -64,8 +95,6 @@ module Special
 !!
 !!   integer :: i_POSSIBLEDIAGNOSTIC=0
 !!
-
-  
 
   contains
 
@@ -108,11 +137,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.5 2003-10-21 15:09:37 mee Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.4 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: nospecial.f90,v 1.5 2003-10-21 15:09:37 mee Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -220,7 +249,10 @@ module Special
 !!! see also integrate_mn_name
 !!        endif
 !!      endif
-!
+
+! Keep compiler quiet by ensuring every parameter is used
+      if (ip==0) print*,f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1
+
     endsubroutine dspecial_dt
 !***********************************************************************
     subroutine rprint_special(lreset)
@@ -347,7 +379,7 @@ module Special
 !!
 
 ! Keep compiler quiet by ensuring every parameter is used
-      if (ip==0) print*,f,df,uu,TT1,uij
+      if (ip==0) print*,f,df,uu,TT1,uij,rho1
 
     endsubroutine special_calc_magnetic
 !!***********************************************************************
