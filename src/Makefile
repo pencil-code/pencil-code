@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.180 2003-05-29 17:24:00 ngrs Exp $
+### $Id: Makefile,v 1.181 2003-06-10 17:33:16 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -6,6 +6,8 @@
 
 LIBSIG=
 LDMPI=-lmpi
+
+
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
@@ -96,7 +98,9 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F90FLAGS= # (fire)
 #F90FLAGS=
 #LDMPI=
-#FC=mpif90 # (Samos|fire|copson[0-9]*)
+##LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (copson) 
+##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
+#FC=mpif90 # (Samos|fire|copson)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])

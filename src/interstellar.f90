@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.25 2003-06-04 14:31:30 ngrs Exp $
+! $Id: interstellar.f90,v 1.26 2003-06-10 17:33:16 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -58,8 +58,10 @@ module Interstellar
   namelist /interstellar_init_pars/ dummy
 
   ! run parameters
+  logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
-      t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud
+      t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
+      uniform_zdist_SNI
 
   contains
 
@@ -86,7 +88,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.25 2003-06-04 14:31:30 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.26 2003-06-10 17:33:16 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -114,12 +116,12 @@ module Interstellar
       logical :: exist
 
       if (first) then
-         if (lroot.and.ip<14) then
-            print*, 'initialize_interstellar: reading seed file'
-            print*, 'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-         endif
          if (.not. lstart) then
             call inpui(trim(directory)//'/seed.dat',seed,nseed)
+            if (lroot.and.ip<14) then
+               print*, 'initialize_interstellar: reading seed file'
+               print*, 'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+            endif
             call random_seed_wrapper(put=seed(1:nseed))
          endif
 !
@@ -137,6 +139,10 @@ module Interstellar
          endif
          call mpibcast_real(interstellarsave,1)
          t_next_SNI=interstellarsave(1)
+      endif
+
+      if (lroot.and.uniform_zdist_SNI) then
+         print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
 
       if (lroot.and.ip<14) then
@@ -407,12 +413,20 @@ module Interstellar
     ipy_SN=(i-1)/ny
     !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
 !
-    do n=nzskip+1,nzgrid-nzskip
-      if (cum_prob_SNI(n-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(n)) &
-        z_SN=z0+(n-1)*dz
-    enddo
-    ipz_SN=(z_SN-z0)*nprocz/Lz
-    iproc_SN=ipz_SN*nprocy + ipy_SN
+
+    if (uniform_zdist_SNI) then
+       i=int(fran3(3)*nzgrid)+1
+       z_SN=z0+(i-1)*dz
+       ipz_SN=(i-1)/nz
+    else
+       do n=nzskip+1,nzgrid-nzskip
+          if (cum_prob_SNI(n-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(n)) &
+               z_SN=z0+(n-1)*dz
+       enddo
+       ipz_SN=(z_SN-z0)*nprocz/Lz
+       iproc_SN=ipz_SN*nprocy + ipy_SN
+    endif
+
     !if (lroot) print*, 'z',fran3(3),z_SN,ipz_SN,iproc_SN
 !
 !  Broadcast position to all processors from root;
