@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.40 2004-04-16 14:49:45 ajohan Exp $
+;  $Id: extra.pro,v 1.41 2004-04-19 08:18:59 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -129,7 +129,6 @@ if (ind(0) ne 0) then begin
   for i=0,ndustspec-1 do begin
     mdminus(i) = md00*deltamd^i
     mdplus(i)  = md00*deltamd^(i+1)
-    md(i)      = 0.5*(mdplus(i)+mdminus(i))
     ad(i)      = (3*md(i)*unit_md/(4*!pi*rhods))^(1/3.)
     fd(*,*,*,i) = nd(*,*,*,i)/(mdplus(i)-mdminus(i))
   endfor
