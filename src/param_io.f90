@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.145 2003-11-24 08:30:59 brandenb Exp $ 
+! $Id: param_io.f90,v 1.146 2003-11-24 15:04:05 mcmillan Exp $ 
 
 module Param_IO
 
@@ -476,7 +476,7 @@ module Param_IO
 !
       ix=min(ix,l2); iy=min(iy,m2); iz=min(iz,n2); iz2=min(iz2,n2)
       ix=max(ix,l1); iy=max(iy,m1); iz=max(iz,n1); iz2=max(iz2,n1)
-      if (lroot) write(*,'(x,a,4i4)') &
+      if (lroot) write(*,'(1x,a,4i4)') &
         'read_runpars: slice position (video files) ix,iy,iz,iz2 =',ix,iy,iz,iz2
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
