@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.109 2002-10-04 18:54:13 dobler Exp $
+### $Id: Makefile,v 1.110 2002-10-07 20:39:22 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -23,6 +23,7 @@ PSCALAR   = nopscalar
 GRAVITY   = nograv
 FORCING   = noforcing
 SHEAR     = noshear
+TIMEAVG   = notimeavg
 
 ## Overwrite settings that are local to each run directory
 include Makefile.local
@@ -135,7 +136,7 @@ physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY)
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
-run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
+run_deps_f90=$(comm_deps) equ.o timestep.o $(TIMEAVG).o wsnaps.o power_spectrum.o
 run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
@@ -156,8 +157,8 @@ slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f cdata.o
 sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o
-param_io.o:  param_io.f90 timestep.o $(physics)
-register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics)
+param_io.o:  param_io.f90 timestep.o $(TIMEAVG).o $(physics)
+register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(IO).o param_io.o $(physics) $(TIMEAVG).o
 prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
@@ -178,6 +179,8 @@ $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o 
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(GRAVITY).o slices.o
 $(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o
 $(IO).o:        $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
+$(TIMEAVG).o:   $(TIMEAVG).f90 cdata.o
+timeavg.o:      timeavg.f90 ctimeavg.local
 nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
 power_spectrum.o:power_spectrum.f90 cdata.o sub.o $(MPICOMM).o general.o
 

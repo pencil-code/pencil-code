@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.101 2002-10-07 20:04:36 dobler Exp $
+! $Id: run.f90,v 1.102 2002-10-07 20:39:22 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -26,6 +26,7 @@
         use Wsnaps
         use Boundcond
         use Power_spectrum
+        use Timeavg
 !
         implicit none
 !
@@ -49,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.101 2002-10-07 20:04:36 dobler Exp $")
+             "$Id: run.f90,v 1.102 2002-10-07 20:39:22 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -100,6 +101,7 @@
 !
         call ss_run_hook()      ! calculate radiative conductivity, etc.
         call forcing_run_hook() ! get random seed from file, ..
+        call timeavg_run_hook(f) ! initialize time averages
 !
 !  Write data to file for IDL
 !
@@ -176,17 +178,22 @@
           call rk_2n(f,df)
           count = count + 1     !  reliable loop count even for premature exit
           !
+          !  update time averages
+          !
+          if (ltavg) call update_timeavgs(f,dt)
+          !
           !  advance shear parameter and add forcing (if applicable)
           !
-          if (lshear) call advance_shear
+          if (lshear) call advance_shear()
           if (lforcing) call addforce(f)
           !
           !  in regular intervals, calculate certain averages
           !  and do other output.
           !
-          if(lout) call write_xyaverages
-          if(lout) call write_zaverages
-          if(lout) call prints
+          if(lout) call write_xyaverages()
+          if(lout) call write_zaverages()
+          if(lout) call write_timeavgs()
+          if(lout) call prints()
           if (ialive /= 0) then ! set ialive=0 to fully switch this off
             if (mod(it,ialive)==0) &
                  call outpui(trim(directory)//'/alive.info', &

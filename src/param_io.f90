@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.66 2002-10-07 11:28:25 nilshau Exp $ 
+! $Id: param_io.f90,v 1.67 2002-10-07 20:39:22 dobler Exp $ 
 
 module Param_IO
 
@@ -11,13 +11,14 @@ module Param_IO
   use Sub
   use General
   use Hydro
-  use Forcing
-  use Gravity
   use Entropy
   use Magnetic
-  use radiation
   use Pscalar
+  use Radiation
+  use Forcing
+  use Gravity
   use Shear
+  use Timeavg
  
   implicit none 
 
@@ -42,8 +43,7 @@ module Param_IO
        lrmwig_full,lrmwig_xyaverage, &
        test_nonblocking, &
        bcx,bcy,bcz, &
-       ttransient
- 
+       ttransient,tavg,idx_tavg 
   contains
 
 !***********************************************************************
