@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.261 2004-01-30 14:26:50 dobler Exp $
+! $Id: entropy.f90,v 1.262 2004-01-31 12:37:07 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.261 2004-01-30 14:26:50 dobler Exp $")
+           "$Id: entropy.f90,v 1.262 2004-01-31 12:37:07 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,10 +135,11 @@ module Entropy
 !
       use Cdata
       use Gravity, only: gravz,g0
-      use Density, only: cs0,cs20,mpoly
-      use Ionization, only: get_soundspeed
+      use Density, only: mpoly
 
       real :: beta1
+      real :: cp_tmp=5./2. !temporary assignment of cp ahead of ionization 
+                           !module; required here for spherical shell probs
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -230,18 +231,19 @@ module Entropy
 !
     select case(initss)
       case('geo-kws')
-        if (lroot) print*,'initialize_entropy: set sound speeds for spherical shell problem'
-        cs20 = cs0**2
+        if (lroot) print*,'initialize_entropy: set boundary temperatures and sound speeds for spherical shell problem'
 !       temperatures at shell boundaries
         beta1 = g0/(mpoly+1)
-        !TT_ext = T0
-        !TT_int = 1+beta1*(1/r_int-1)
-        TT_ext = gamma/gamma1*T0
-        TT_int = gamma/gamma1*(1+beta1*(1/r_int-1))
+        TT_ext = T0
+        TT_int = 1+beta1*(1/r_int-1)
+!       TT_ext = gamma/gamma1*T0
+!       TT_int = gamma/gamma1*(1+beta1*(1/r_int-1))
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
-        call get_soundspeed(log(TT_ext),cs2_ext)
-        call get_soundspeed(log(TT_int),cs2_int)
+        cs2_ext=gamma1*cp_tmp*TT_ext
+        cs2_int=gamma1*cp_tmp*TT_int
+!       call get_soundspeed(log(TT_ext),cs2_ext)
+!       call get_soundspeed(log(TT_int),cs2_int)
 !
     endselect
 !
@@ -640,7 +642,7 @@ module Entropy
           call calc_unitvects_sphere()
 !
           where (r_mn >= r_ext) TT = TT_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
+          where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)
           where (r_mn <= r_int) TT = TT_int
 !
           lnrho=f(l1:l2,m,n,ilnrho)

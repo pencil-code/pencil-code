@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.96 2003-12-04 09:03:38 brandenb Exp $
+! $Id: noionization.f90,v 1.97 2004-01-31 12:37:07 mcmillan Exp $
 
 !  Dummy routine for noionization
 
@@ -80,7 +80,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.96 2003-12-04 09:03:38 brandenb Exp $")
+           "$Id: noionization.f90,v 1.97 2004-01-31 12:37:07 mcmillan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -102,8 +102,8 @@ module Ionization
       if (lcalc_cp) then 
         cp=k_B/(mu*m_H)
       else if (initlnrho=='geo-kws') then
-        !cp=5./2.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
-        cp=1.       
+        if (lroot) print*,'initialize_ionization: set specific heat capacity for spherical shell problem'
+        cp=5./2.   ! use cp=gamma/(gamma-1), to reproduce kws scalings
       else
         cp=1.       
       endif

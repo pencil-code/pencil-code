@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.146 2004-01-30 16:07:30 ajohan Exp $
+! $Id: density.f90,v 1.147 2004-01-31 12:37:07 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -85,7 +85,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.146 2004-01-30 16:07:30 ajohan Exp $")
+           "$Id: density.f90,v 1.147 2004-01-31 12:37:07 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -120,6 +120,15 @@ module Density
     if(diffrho==0.) then
       diffrho=cdiffrho*dxmin*cs0
     endif
+!
+!   make sure all relevant parameters are set for spherical shell problems
+!
+    select case(initlnrho)
+      case('geo-kws')
+        if (lroot) print*,'initialize_density: set reference sound speed for spherical shell problem'
+        cs20=gamma
+        cs0=sqrt(cs20)
+    endselect
 !
     endsubroutine initialize_density
 !***********************************************************************
