@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.276 2004-03-05 15:31:29 dobler Exp $
+! $Id: entropy.f90,v 1.277 2004-03-08 12:40:01 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.276 2004-03-05 15:31:29 dobler Exp $")
+           "$Id: entropy.f90,v 1.277 2004-03-08 12:40:01 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -727,6 +727,8 @@ module Entropy
 !
           where (r_mn >= r_ext) TT = TT_ext
           where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)
+!         where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
+!         goes with alternate scaling in initialize_entropy
           where (r_mn <= r_int) TT = TT_int
 !
           lnrho=f(l1:l2,m,n,ilnrho)
