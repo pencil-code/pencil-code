@@ -12,6 +12,8 @@ set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
 if ($mpi) then
   echo "Running under MPI"
+  set mpirunops = ''
+
   # Compaq has `dmpirun' instead of `mpirun'; some mpiruns have specail path
   set hn = `hostname`
   if ($hn =~ mhd*.st-and.ac.uk) then
@@ -20,6 +22,7 @@ if ($mpi) then
     set mpirun = /opt/local/mpich/bin/mpirun
   else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master)) then
     set mpirun = /usr/lib/lam/bin/mpirun
+    set mpirunops = "-c2c"
   else if ($hn =~ nq*) then
     set mpirun = /usr/lib/lam/bin/mpirun
     set mpirun = /usr/bin/mpirun
@@ -30,8 +33,6 @@ if ($mpi) then
   if (`domainname` == "aegaeis") then
     set mpirunops = '-machinefile ~/mpiconf/mpihosts-martins'
   else
-    set mpirunops = ''
-  endif
   # Determine number of CPUS
   set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
   echo $ncpus CPUs
