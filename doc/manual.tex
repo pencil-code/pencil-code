@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.128 2002-10-08 20:49:06 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.129 2002-10-09 02:07:45 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.128 $ $}
+\date{\today,~ $ $Revision: 1.129 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.128 $ $}
+  \emph{\today,~ $ $Revision: 1.129 $ $}
 
   \vspace{\stretch{3}}
 
@@ -527,7 +527,7 @@ Leicester (Ukaff) is acknowledged. We also acknowledge use of the
 
 \clearpage
 \tableofcontents
-\clearpage
+\cleardoublepage
 \pagestyle{fancy}
 \pagenumbering{arabic}
 
@@ -957,7 +957,7 @@ version).
 % ---------------------------------------------------------------------- %
 
 If you have IDL, you can visualize the initial state with (see
-Sec.~\ref{S-IDL-routines} for details)
+Sect.~\ref{S-IDL-routines} for details)
 \begin{alltt}
   \prompt{unix > } idl
   \prompt{IDL >  } .r start
@@ -1020,7 +1020,7 @@ and lists
   \var{dtc}$=\delta t/({\cs}_0\,\delta x_{\rm min})$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
-\file{print.in}, see Sec.~\ref{diagnostic-IO}.
+\file{print.in}, see Sects~\ref{diagnostic-IO} and \ref{S-print.in-run-params}.
 
 To visualize the resulting state, run
 \begin{alltt}
@@ -1283,7 +1283,7 @@ and documenting the changes for others.
 
 \subsubsection{\file{start.in}, \file{run.in}, \file{print.in}}
 These files specify the startup and runtime parameters (see
-Sec.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
+Sect.~\ref{S-start-params} and \ref{S-all-run-params}), and the list of
 diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under CVS in
 the individual \file[samples/]{samples} directories.
@@ -1395,8 +1395,14 @@ Each of the directories can contain the following files:
   \file[seed.dat]{proc$N$/seed.dat} must all contain the same numbers,
   because globally coherent waves of given wavenumber are used;
 \item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
-  two-dimensional sections of variable $X$.
-  \footnote{WD: Axel, can you explain a bit more?}
+  two-dimensional sections of variable $X$, where $X$ stands for the
+  corresponding variable. The current list includes
+  \begin{verbatim}
+  bx.xy  bx.xz  by.xy  by.xz  bz.xy  bz.xz  divu.xy  lnrho.xz
+  ss.xz  ux.xy  ux.xz  uz.xy  uz.xz
+  \end{verbatim}
+  Each processor writes its own slice, so these need to
+  be reassembled if one wants to plot a full slice.
 \end{description}
 
 
@@ -1535,7 +1541,8 @@ Here is a list of the more important ones.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
-  \file{data/time_series.dat} and \file{data/index.pro} for subsequent processing in
+  \file{data/time_series.dat}, \file{data/dim_series.dat} and
+  \file{data/index.pro} for subsequent processing in
   \name{IDL} on another machine. This is particularly useful if collaborators
   want to check each others runs.
 \item[getconf.csh] See \S~\ref{start-run-getconf}
@@ -1861,15 +1868,35 @@ sheet boundary conditions and have stress-free instead).
 
 % ---------------------------------------------------------------------- %
 
+\subsection{Restarting a simulation}
+
+When a run stops at the end of a simulation, you can just resubmit
+the job again, and it will start from the latest snapshot saved in
+\file{data/proc*/var.dat}. The value if the latest time is saved in a
+separate file, \file{data/proc*/time.dat}.
+
+If you want to run on a different machine, you just need to copy the
+\file{data/proc*/var.dat} and \file{data/proc*/time.dat} files into a
+new directory tree. You may also need the \file{data/proc*/seed.dat}
+files for the random number generator. The easiest way to get all these
+other files is to run \cmd{start.csh} again on the new machine (or in
+a new directory) and then to overwrite the \file{data/proc*/var.dat}
+files with the correct ones.
+
+% ---------------------------------------------------------------------- %
+
 \subsection{One- and two-dimensional runs}
 
-If you want to run two-dimensional problems, set
-\var{nzgrid}=1 in \file{cparam.local}.
+If you want to run two-dimensional problems, set the number
+of mesh points in one direction to unity, e.g.\ \var{nygrid}=1
+or \var{nzgrid}=1 in \file{cparam.local}.
+Remember that the number of mesh points is still divisible by
+the number of processors.
 
-Similarly, for one-dimensional problems, set
-\var{nxgrid}=1, \var{nygrid}=1 in \file{cparam.local}.
+Similarly, for one-dimensional problems, set, for example,
+\var{nygrid}=1 and \var{nzgrid}=1 in \file{cparam.local}.
 
-See \emph{need 1d and 2d samples} for examples.
+See \emph{need 1d and 2d samples} with examples.
 
 % ---------------------------------------------------------------------- %
 
@@ -2106,7 +2133,7 @@ derivative.
 
 In the equation of motion, the pressure gradient term,
 $\varrho^{-1}\boldsymbol\nabla p$, can be expressed in
-terms of $\varrho$ and $s/c_{\rm p}$ to give
+terms of $\varrho$ and $s/c_p$ to give
 \begin{equation}
   \frac{D\uv}{Dt}
    =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
@@ -2581,8 +2608,16 @@ application on your specific hardware.
    1 & Mattias&8.7  &  $64^3$ & magn/noentro &        & 30-sep-02 & AB \\
    1 & Mattias&8.5  & $128^3$ & magn/noentro &        & 30-sep-02 & AB \\
    1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Nq4   &14.4  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   1 & Nq5   & 6.7  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   1 & fe1   & 5.1  & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
    2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
+   2 & Nq3+4 & 7.4  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   2 & Nq4+4 & 8.9  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   2 & Nq4+5 & 7.3  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   2 & Nq5+5 & 3.7  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
+   2 & fe1   & 3.45 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    2 & Nq2   & 9.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    2 & Nq1+2 & 8.3  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
    4 & Nq1+2 & 5.4  &  $64^3$ & magn/noentro &        & 11-sep-02 & AB \\
@@ -2593,7 +2628,9 @@ application on your specific hardware.
    4 & Rasm. & 2.02 &  $64^3$ & magn/noentro &  2x2   &  8-sep-02 & AB \\
    4 & Mhd   & 8.2  &  $64^2\times16$
                               & nomagn/entro &        & 23-jul-02 & AB \\
+   4 & fe1   & 2.09 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
+   8 & Nqall & 3.0  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
    8 & fe1   & 3.15 &  $64^3$ & magn/noentro &  1x8   &  8-sep-02 & AB \\
    8 & fe1   & 2.36 &  $64^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
@@ -2607,6 +2644,7 @@ application on your specific hardware.
    8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
    8 & fe1   & 0.99 & $256^3$ & magn/noentro &  2x4   &  8-sep-02 & AB \\
    8 & fe1   & 0.98 & $256^3$ & magn/noentro &  4x2   &  8-sep-02 & AB \\
+   8 & Mhd   & 1.46 &$160^2\times40$& nomagn/entro&46 Mb& 7-oct-02& AB \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
@@ -2619,6 +2657,7 @@ application on your specific hardware.
   16 & Sander& 0.53 & $256^3$ & magn/noentro &        &  8-sep-02 & AB \\
   32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
+  32 & fe1   & 0.168& $512^3$ &nomagn/noentro&        &  9-oct-02 & AB \\
   64 & fe1   & 0.24 & $256^3$ & magn/noentro &  8x8   &  2-sep-02 & AB \\
   64 & Gridur& 0.25 & $256^3$ & magn/noentro &        & 19-aug-02 & NE \\
   64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
@@ -2867,7 +2906,7 @@ Using \code{initlnrho='isothermal'} means
 \end{equation}
 The entropy is then initialized to
 \begin{equation} \label{constgrav-ss-init}
-  \frac{s}{c_{\rm p}}
+  \frac{s}{c_p}
   = (\gamma{-}1) \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
 In order that $\varrho=\varrho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
@@ -2878,10 +2917,10 @@ $z=z_{\rm ref}$, we have to choose $z_\infty=z_{\rm ref}$.
 For a polytropic equation of state, $p=K\varrho^\Gamma$, where generally
 $\Gamma\neq\gamma$, we can write
 \begin{equation}
-  -\nab h+T\nab s
-  = -\frac{1}{\varrho}\nab p
-  = -\nab\left(\frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}\right)
-\equiv-\nab\tilde{h},
+  -\grad h+T\grad s
+  = -\frac{1}{\varrho}\grad p
+  = -\grad\left(\frac{\Gamma K}{\Gamma{-}1}\varrho^{\Gamma{-}1}\right)
+\equiv-\grad\tilde{h},
 \end{equation}
 where we have introduced a pseudo enthalpy $\tilde{h}$ as
 \begin{equation}
@@ -2900,7 +2939,7 @@ index $m=1/(\Gamma{-}1)$. Thus, $\Gamma=1+1/m$, and
 This is consistent with a fixed entropy dependence,
 where $s$ only depends on $\varrho$ like
 \begin{equation}
-  \frac{s}{c_{\rm p}} = \left( \frac{\Gamma}{\gamma} - 1 \right)
+  \frac{s}{c_p} = \left( \frac{\Gamma}{\gamma} - 1 \right)
                         \ln\frac{\varrho}{\varrho_0} \; ,
 \end{equation}
 and implies that
@@ -2942,7 +2981,7 @@ and so the stratification is given by
   \ln\frac{\varrho}{\varrho_0}
   = m\,\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
   %
-  \frac{s}{c_{\rm p}}
+  \frac{s}{c_p}
   = \left(\frac{\Gamma}{\gamma}-1\right)
     m\,\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; .
 \end{equation}
@@ -2975,21 +3014,21 @@ to approach the Boussinesq case.
 Brandenburg et al.\ (1996) defined the Rayleigh number as
 \begin{equation}\label{Radef}
   \Ra = {gd^4\over\overline{\nu}\;\overline{\chi}}
-\left(-{\mbox{d}s/c_{\rm p}\over\mbox{d}z}\right)_{\rm hydrostat},
+\left(-{\mbox{d}s/c_p\over\mbox{d}z}\right)_{\rm hydrostat},
 \end{equation}
 where the (negative) entropy gradient was evaluated in the middle
 of the box for the associated hydrostatic reference solution, and
-$\overline\chi=K/(\overline\rho c_{\rm p})$ and either $\overline\nu=\nu$
+$\overline\chi=K/(\overline\rho c_p)$ and either $\overline\nu=\nu$
 (if $\nu$ was assumed constant) or $\overline\nu=\mu/\overline\rho$
 (if $\mu$ was assumed constant). Note that $\overline\rho$ is the average
 mass in the box per volume, which is conserved. For a polytrope we have
 \begin{equation}\label{sgradient}
-\left(-{\mbox{d}s/c_{\rm p}\over\mbox{d}z}\right)_{\rm hydrostat}
+\left(-{\mbox{d}s/c_p\over\mbox{d}z}\right)_{\rm hydrostat}
 =\left[1-(m+1)\left(1-{1\over\gamma}\right)\right]
 {1\over z_{\infty}-z_{\rm m}},
 \end{equation}
 where $z_{\rm m}=(z_1+z_2)/2$. This factor was also present in
-the definition of Hurlburt \& Toomre (1984), but their definition
+the definition of Hurlburt et al.\ \cite{HTM84}, but their definition
 differs slightly from Eq.~(\ref{Radef}). Since the Rayleigh number is
 proportional to $\rho^2$, their definition included the extra factor
 $[(z_{\infty}-z_{\rm m})/d]^2$. Therefore
@@ -3009,11 +3048,11 @@ Assuming that the density in the ghost zones has already been
 updated, we can calculate the entropy gradient from
 \begin{equation}\label{Fbot}
 F_{\rm bot}=-K{c_{\rm s}^2\over\gamma-1}\left(
-(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s/c_{\rm p}\over\dd z}\right),
+(\gamma-1){\dd\ln\varrho\over\dd z}+\gamma{\dd s/c_p\over\dd z}\right),
 \end{equation}
 which gives
 \begin{equation}\label{Fbot2}
-{\dd s/c_{\rm p}\over\dd z}=-{\gamma-1\over\gamma}\left(
+{\dd s/c_p\over\dd z}=-{\gamma-1\over\gamma}\left(
 {F_{\rm bot}\over K c_{\rm s}^2}+{\dd\ln\varrho\over\dd z}\right).
 \end{equation}
 
@@ -3067,7 +3106,7 @@ Assume $s=0$ (isentropy), so the equations in 2-D are
 \end{equation}
 where $u_y^{(0)}=-q\Omega x$.
 Express ${\bf u}$ in terms of a stream function, so
-${\bf u}=\nabla\times(\psi\hat{\bf z})$, or
+${\bf u}=\curl(\psi\hat{\bf z})$, or
 \begin{equation}\label{u-streamfunction}
   u_x = \psi_{,y},\quad u_y = -\psi_{,x}.
 \end{equation}
@@ -3125,7 +3164,10 @@ samples of the code.
 \begin{table}[htb]
   \begin{center}
     \caption{
-        Values on the different sides of the shock.
+        Combinations of $\rho$, $p$, and $s/c_p$ that are relevant
+        for the Sod shock tube problem with constant temperature
+        and different pressure ratios on the left and right hand
+        sides of the shock.
     }
     \label{Tshock1}
     \begin{tabular}{lll}
@@ -3135,6 +3177,30 @@ $\rho$  &  $p$  &  $s$  \\
    1.0  &  1.0  &  0.3065  \\
    0.1  &  0.1  &  1.2275  \\
    0.01 &  0.01 &  2.1486  \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
+\subsection{Temperature jump}
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+        Combinations of $c_{\rm s}^2$, $p$, and $s/c_p$ that are
+        relevant for the temperature shock problem with constant density,
+        $\varrho=1$, and different temperature ratios on the left and
+        right hand sides of the shock.
+    }
+    \label{Tshock2}
+    \begin{tabular}{lll}
+    \toprule
+$c_{\rm s}^2$  &  $s$  \\
+    \midrule
+   1.0    &$ 0.0$ \\
+   0.1    &$-2.3$ \\
+   0.01   &$-4.6$ \\
+$10^{-4}$ &$-9.2$ \\
     \bottomrule
     \end{tabular}
   \end{center}
@@ -4099,14 +4165,16 @@ possible inputs to the \file{print.in} file.
 \midrule
   \multicolumn{2}{c}{Module \name{hydro.f90}} \\
 \midrule
+  \var{u2m} & $\left<\uv^2\right>$ \\
   \var{urms} & $\left<\uv^2\right>^{1/2}$ \\
   \var{umax} & $\max(|\uv|)$ \\
+  \var{o2m} & $\left<\boldsymbol{\omega}^2\right>$ \\
   \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
   \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
   \var{oum} & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
-  \var{uxm} & $\left<u_x\right>$ \\
-  \var{uym} & $\left<u_y\right>$ \\
-  \var{uzm} & $\left<u_z\right>$ \\
+  \var{ruxm} & $\left<\varrho u_x\right>$ (mean $x$-momentum) \\
+  \var{ruym} & $\left<\varrho u_y\right>$ (mean $y$-momentum) \\
+  \var{ruzm} & $\left<\varrho u_z\right>$ (mean $z$-momentum) \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{density.f90}} \\
@@ -4118,20 +4186,26 @@ possible inputs to the \file{print.in} file.
 \midrule
   \multicolumn{2}{c}{Module \name{entropy.f90}} \\
 \midrule
-  \var{ssm} & $\left<s/c_{\rm p}\right>$ \\
+  \var{ssm} & $\left<s/c_p\right>$ \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{magnetic.f90}} \\
 \midrule
+  \var{b2m} & $\left<\Bv^2\right>$ \\
   \var{brms} & $\left<\Bv^2\right>^{1/2}$ \\
+  \var{b2m} & $\max(\Bv^2)$ \\
   \var{bmax} & $\max(|\Bv|)$ \\
+  \var{j2m} & $\left<\jv^2\right>$ \\
   \var{jrms} & $\left<\jv^2\right>^{1/2}$ \\
+  \var{jm2} & $\max(\jv^2)$ \\
   \var{jmax} & $\max(|\jv|)$ \\
   \var{abm} & $\left<\Av\cdot\Bv\right>$ \\
   \var{jbm} & $\left<\jv\cdot\Bv\right>$ \\
-  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ \\
-  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ \\
-  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \\
+  \var{vArms} & $\left<\Bv^2/varrho\right>^{1/2}$ \\
+  \var{vAmax} & $\max(\Bv^2/varrho)^{1/2}$ \\
+  \var{bmx} & $\left<\left<\Bv\right>_{yz}^2\right>^{1/2}$ (energy of $yz$-averaged mean field) \\
+  \var{bmy} & $\left<\left<\Bv\right>_{xz}^2\right>^{1/2}$ (energy of $xz$-averaged mean field) \\
+  \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ (energy of $xy$-averaged mean field) \\
 %
 \midrule
   \multicolumn{2}{c}{Module \name{pscalar.f90}} \\
@@ -4185,7 +4259,9 @@ of isotropic helical hydromagnetic turbulence''
 \bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.
 \emph{MNRAS} \textbf{276}, 651--662 (1995)
 ``Galactic fountains as magnetic pumps''
-
+\bibitem{HTM84}Hurlburt, N. E., Toomre, J., Massaguer, J. M.
+  \emph{Astrophys. J.} \textbf{282}, 557--573 (1984)
+  ``Two-dimensional compressible convection extending over multiple scale heights''
 \end{thebibliography}
 
 
@@ -4199,7 +4275,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.128 2002-10-08 20:49:06 dobler Exp $ $}
+$ $Id: manual.tex,v 1.129 2002-10-09 02:07:45 brandenb Exp $ $}
 
 
 \end{document}
