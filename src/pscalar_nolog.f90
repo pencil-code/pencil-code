@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.17 2004-02-11 14:53:33 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.18 2004-02-13 16:20:15 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -82,7 +82,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.17 2004-02-11 14:53:33 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.18 2004-02-13 16:20:15 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,6 +131,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
+        case('constant'); f(:,:,:,ilncc) = eps_ctog
         case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
         case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
         case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
@@ -148,7 +149,6 @@ module Pscalar
         case('propto-uy'); call wave_uu(ampllncc,f,ilncc,ky=ky_lncc)
         case('propto-uz'); call wave_uu(ampllncc,f,ilncc,kz=kz_lncc)
         case('cosx_cosy_cosz'); call cosx_cosy_cosz(ampllncc,f,ilncc,kx_lncc,ky_lncc,kz_lncc)
-        case('frac_of_rhogas'); f(:,:,:,ilncc) = eps_ctog*exp(f(:,:,:,ilnrho))
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
@@ -185,6 +185,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
+        case('constant'); f(:,:,:,ilncc) = eps_ctog
         case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
         case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
         case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
@@ -208,7 +209,6 @@ module Pscalar
         prof=.5*(1.+tanh(zz/widthlncc))
         f(:,:,:,ilncc)=-1.+2.*prof
         case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
-        case('frac_of_rhogas'); f(:,:,:,ilncc) = eps_ctog*exp(f(:,:,:,ilnrho))
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 
