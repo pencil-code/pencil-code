@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.60 2004-08-23 12:49:50 ajohan Exp $
+! $Id: grav_z.f90,v 1.61 2004-08-30 12:48:21 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,7 +32,7 @@ module Gravity
   real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0=0.,r0_pot=0.
+  real :: g0=0.,r0_pot=0.,kz_gg=1.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
   logical :: lgravz_dust=.true.,lgravz_gas=.true.,lnumerical_equilibrium=.false.
@@ -69,7 +69,7 @@ module Gravity
 !
   namelist /grav_init_pars/ &
        z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav, &
-       lnrho_bot,lnrho_top,ss_bot,ss_top
+       lnrho_bot,lnrho_top,ss_bot,ss_top,kz_gg
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.60 2004-08-23 12:49:50 ajohan Exp $")
+           "$Id: grav_z.f90,v 1.61 2004-08-30 12:48:21 ajohan Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -160,6 +160,7 @@ module Gravity
 !
       use Cdata
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -170,71 +171,70 @@ module Gravity
 !
       intent(in) :: f
 !
-!  different gravity profiles
+!  Gravity on the gas
 !
-      if (grav_profile=='const') then
-        if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
-        if(lhydro) &
-            df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
+      if (lhydro .and. lgravz_gas) then
 !
-!  linear gravity profile (for accretion discs)
+!  Different gravity profiles
 !
-      elseif (grav_profile=='const_zero') then
-        if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
-        if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-        if (z(n)<=zgrav) then
-          if (lhydro .and. lgravz_gas) &
-              df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
-        endif
-!
-!  linear gravity profile (for accretion discs)
-!
-      elseif (grav_profile=='linear') then
-        !if (nu_epicycle/=-gravz) then
-        !  if (lroot) print*,'Omega,nu_epicycle=',Omega,nu_epicycle
-        !endif
-        nu_epicycle2=nu_epicycle**2
-        if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-        if(lhydro .and. lgravz_gas) &
-            df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
+        select case (grav_profile)
+
+        case('const')       !  Constant gravity acceleration
+          if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) +gravz
+        case('const_zero')  !  Const. gravity acc. (but zero for z>zgrav)
+          if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
+          if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+          if (z(n)<=zgrav) df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
+        case('linear')      !  Linear gravity profile (for accretion discs)
+          nu_epicycle2=nu_epicycle**2
+          if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
+        case('Ferriere')
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
 !
-      elseif (grav_profile=='Ferriere') then
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate unuts.
 !AB: As it is now, it can never make much sense.
-        if(lhydro .and. lgravz_gas) &
-            df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
+          df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
               -(g_A*z(n)/sqrt(z(n)**2+g_B**2) + g_C*z(n)/g_D)
             !df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
             !-331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
-      else
-        if(lroot) print*,'duu_dt_grav: no gravity profile given'
+        case('default')     ! Catch unknown values
+          if(lroot) print*,'duu_dt_grav: No such gravity profile'
+
+        endselect
+
       endif
 !
-!  Loop over dust species
+!  Gravity on the dust
 !
-      if (ldustvelocity) then
+      if (ldustvelocity .and. lgravz_dust) then
         do k=1,ndustspec
 !
-!  different gravity profiles
+!  Different gravity profiles
 !
-          if (grav_profile=='const') then
-            if (ldustvelocity .and. lgravz_dust) &
-                df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + gravz
-!
-!  linear gravity profile (for accretion discs)
-!
-          elseif (grav_profile=='linear') then
+          select case (grav_profile)
+
+          case('const')
+            if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
+            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) + gravz
+          case('linear')
             nu_epicycle2=nu_epicycle**2
-            if (ldustvelocity .and. lgravz_dust) &
-                df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))-nu_epicycle2*z(n)
-          endif
-!
-!  End loop over dust species
-!          
+            if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
+            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k))-nu_epicycle2*z(n)
+          case('sinusoidal')
+            if(headtt) print*,'duu_dt_grav: sinusoidal grav, gravz=',gravz
+            !df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) - &
+            !    gravz*Omega**2*Lz*sin(kz_gg*z(n))
+            df(l1:l2,m,n,iudz(k)) = df(l1:l2,m,n,iudz(k)) - &
+                gravz*sin(kz_gg*z(n))
+          case('default')
+            call stop_it('duu_dt_grav: No such gravity profile')
+
+          endselect
         enddo
       endif
 !
