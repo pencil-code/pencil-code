@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.17 2004-05-14 12:06:59 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.18 2004-05-19 19:15:03 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-14 12:06:59 $
-;  $Revision: 1.17 $
+;  $Date: 2004-05-19 19:15:03 $
+;  $Revision: 1.18 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -35,6 +35,7 @@ pro pc_read_var,t=t,dx=dx,dy=dy,dz=dz,deltay=deltay, $
             object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
             variables=variables,tags=tags, TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL, $
             nameobject=nameobject, $
+            dim=dim,param=param, $
             datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -87,7 +88,7 @@ default, datadir, 'data'
 default,varfile,'var.dat'
 
 ; Get necessary dimensions, inheriting QUIET
-  pc_read_dim,object=dim,datadir=datadir,proc=proc,QUIET=QUIET 
+  if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,quiet=quiet
   if (n_elements(proc) eq 1) then begin
     procdim=dim
   endif else begin
@@ -96,7 +97,7 @@ default,varfile,'var.dat'
 
 ; and check pc_precision is set!                                                    
 pc_set_precision,dim=dim,quiet=quiet
-pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
+  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
 
 if keyword_set(TRIMALL) then TRIMXYZ=1L
 
