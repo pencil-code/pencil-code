@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.126 2004-10-12 08:22:25 ajohan Exp $
+! $Id: dustdensity.f90,v 1.127 2004-10-26 08:27:49 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -120,7 +120,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.126 2004-10-12 08:22:25 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.127 2004-10-26 08:27:49 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -453,7 +453,7 @@ module Dustdensity
               fdiffd = nd_diff_arr(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
             endif
 
-          case ('hyper6')
+          case ('hyper3')
 !
 !  Hyper diffusion
 !

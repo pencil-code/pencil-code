@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.84 2004-09-24 10:20:50 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.85 2004-10-26 08:27:49 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -109,7 +109,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.84 2004-09-24 10:20:50 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.85 2004-10-26 08:27:49 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -592,7 +592,7 @@ module Dustvelocity
               fviscd=nud(k)*(del2ud+1/3.*graddivud)
             endif
 
-          case('hyper6')
+          case('hyper3')
             call del6v(f,iuud(k),del6ud)
             fviscd=nud(k)*del6ud
 
