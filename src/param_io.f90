@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.193 2004-09-28 14:17:39 ajohan Exp $ 
+! $Id: param_io.f90,v 1.194 2005-02-01 21:45:01 brandenb Exp $ 
 
 module Param_IO
 
@@ -558,6 +558,19 @@ module Param_IO
         lwrite_slice_xy2=(ipz==nprocz-1)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==0)
+        lwrite_slice_yz=.true.
+!
+!  periphery of the box, but the other way around
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='q') then
+        if (ix<0)  ix=l2
+        if (iy<0)  iy=m2
+        if (iz<0)  iz=n2
+        if (iz2<0) iz2=n1
+        lwrite_slice_xy2=(ipz==0)
+        lwrite_slice_xy=(ipz==nprocz-1)
+        lwrite_slice_xz=(ipy==nprocy-1)
         lwrite_slice_yz=.true.
       else
         if (lroot) print*, &

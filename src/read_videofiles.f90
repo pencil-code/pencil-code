@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.17 2004-06-18 08:40:34 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.18 2005-02-01 21:45:01 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -85,6 +85,10 @@
         ipz_top=nprocz-1
         ipz_bottom=0
         ipy_front=0
+      elseif (slice_position=='q') then
+        ipz_top=0
+        ipz_bottom=nprocz-1
+        ipy_front=nprocy-1
       else
         print*,'slice_position cannot be interpreted by read_videofiles'
       endif
