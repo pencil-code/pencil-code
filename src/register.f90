@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.117 2003-11-24 22:11:55 brandenb Exp $
+! $Id: register.f90,v 1.118 2003-11-25 15:29:29 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -393,7 +393,7 @@ module Register
 !  (general variables that are defined in Cdata)
 !
       if (lreset) then
-        i_t=0; i_it=0; i_dt=0; i_dtc=0; i_walltime=0 ! general print.in params
+        i_t=0; i_it=0; i_dt=0; i_walltime=0 ! general print.in params
         i_rcylmphi=0; i_phimphi=0; i_zmphi=0; i_rmphi=0 ! general phiaver.in params
       endif
 !
@@ -404,7 +404,6 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'t',i_t)
         call parse_name(iname,cname(iname),cform(iname),'it',i_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
-        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
         call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
       enddo
 !
@@ -423,7 +422,6 @@ module Register
         write(3,*) 'i_t=',i_t
         write(3,*) 'i_it=',i_it
         write(3,*) 'i_dt=',i_dt
-        write(3,*) 'i_dtc=',i_dtc
         write(3,*) 'i_walltime=',i_walltime
         write(3,*) 'nname=',nname
 !

@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.38 2003-11-25 13:51:33 theine Exp $
+! $Id: visc_shock.f90,v 1.39 2003-11-25 15:29:29 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -33,6 +33,9 @@ module Viscosity
   ! run parameters
   namelist /viscosity_run_pars/ nu, nu_shock
  
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_dtnu=0
+
   contains
 
 !***********************************************************************
@@ -64,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.38 2003-11-25 13:51:33 theine Exp $")
+           "$Id: visc_shock.f90,v 1.39 2003-11-25 15:29:29 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -112,21 +115,22 @@ module Viscosity
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
-!      if (lreset) then
-!        i_TTm=0
-!      endif
+      if (lreset) then
+        i_dtnu=0
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
-!      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
-!      enddo
+      if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
+      enddo
 !
 !  write column where which ionization variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
+          write(3,*) 'i_dtnu=',i_dtnu
           write(3,*) 'ihyper3=',ihyper3
           write(3,*) 'ishock=',ishock
           write(3,*) 'itest=',itest
@@ -522,13 +526,20 @@ module Viscosity
 
       shock=f(l1:l2,m,n,ishock)
       call grad(f,ishock,gshock)
-
+!
+!  set viscous time step
+!
+      if (ldiagnos.and.i_dtnu/=0) then
+        call max_mn_name(spread(nu,1,nx)/dxmin**2,i_dtnu,l_dt=.true.)
+      endif
+!
+!  shock viscosity
+!
       if (nu_shock /= 0.) then
          !
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const
          !
-!         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
          if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
@@ -538,6 +549,9 @@ module Viscosity
             call multsv_add_mn(fvisc,nu_shock*divu,gshock,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,maxeffectivenu)
+           if (ldiagnos.and.i_dtnu/=0) then
+             call max_mn_name(spread(maxeffectivenu,1,nx)/dxmin**2,i_dtnu,l_dt=.true.)
+           endif
          else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"

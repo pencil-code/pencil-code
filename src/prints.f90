@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.56 2003-11-24 20:30:38 dobler Exp $
+! $Id: prints.f90,v 1.57 2003-11-25 15:29:29 brandenb Exp $
 
 module Print
 
@@ -62,7 +62,6 @@ module Print
 !
 !   3-may-02/axel: coded
 !  27-may-02/axel: it,t,dt added as extra save parameters
-!   7-jun-02/axel: dtc (=dt/cdt) added as extra save parameter
 !  08-oct-02/tony: added safe_character_assign when appending to fform
 !   8-may-03/tarek: changed .or. to +. Could not compile with NAGf95 with .or.
 !
@@ -88,10 +87,17 @@ module Print
         if (i_t/=0)   call save_name(tdiagnos,i_t)
         if (i_dt/=0)  call save_name(dt,i_dt)
         if (i_it/=0)  call save_name(1.*(it-1),i_it)
-        if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
         if (lmagnetic) call calc_mfield
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
+!
+!  whenever itype_name=-3, scale result by dt (for printing Courant time)
+!  This trick is necessary, because dt is not known at the time when
+!  the corresponding contribution to UUmax is known.
+!
+        do iname=1,nname
+          if(itype_name(iname)==-3) fname(iname)=dt*fname(iname)
+        enddo
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop

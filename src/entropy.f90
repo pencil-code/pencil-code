@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.252 2003-11-25 15:11:27 brandenb Exp $
+! $Id: entropy.f90,v 1.253 2003-11-25 15:29:28 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -70,7 +70,8 @@ module Entropy
        lsinus_heat
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
+  integer :: i_dtc=0,i_eth=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
+  integer :: i_dtchi=0
 
   contains
 
@@ -104,7 +105,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.252 2003-11-25 15:11:27 brandenb Exp $")
+           "$Id: entropy.f90,v 1.253 2003-11-25 15:29:28 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -851,6 +852,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if(ldiagnos) then
+        if (i_dtc/=0) call max_mn_name(cs2,i_dtc,l_dt=.true.)
         rho=exp(lnrho)
         if(i_eth/=0) then
           call sum_mn_name(rho*ee,i_eth)
@@ -945,6 +947,7 @@ module Entropy
       real, dimension (nx,3) :: glnrho,gss,gshock,glnTT
       real, dimension (nx) :: rho1,shock
       real, dimension (nx) :: thdiff,del2ss,g2,gshockgss
+      real :: chitotal_max
 !
       intent(in) :: f,glnrho,gss,shock,gshock
       intent(out) :: df
@@ -976,7 +979,14 @@ module Entropy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(chi_t+chi_shock*maxval(shock)))
+      if (lfirst.and.ldt) then
+        chitotal_max=chi_t+chi_shock*maxval(shock)
+        maxdiffus=amax1(maxdiffus,chitotal_max)
+        ! diagnose
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(spread(chitotal_max,1,nx)/dxmin**2,i_dtchi,l_dt=.true.)
+        endif
+      endif
 !
       if(ip==0) print*,rho1,glnrho !(keep compiler quiet)
     endsubroutine calc_heatcond_shock
@@ -995,7 +1005,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond !,glhc
-      real, dimension (nx) :: rho1,chix
+      real, dimension (nx) :: rho1,chix,chitotal
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
 !
@@ -1027,7 +1037,14 @@ module Entropy
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
+      if (lfirst.and.ldt) then
+        chitotal=gamma*chix+chi_t
+        maxdiffus=amax1(maxdiffus,maxval(chitotal))
+        ! diagnose
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(chitotal/dxmin**2,i_dtchi,l_dt=.true.)
+        endif
+      endif
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -1046,7 +1063,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
-      real, dimension (nx) :: rho1,chix
+      real, dimension (nx) :: rho1,chix,chitotal
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
       real :: z_prev=-1.23e20
@@ -1151,8 +1168,14 @@ endif
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,maxval(gamma*chix+chi_t))
-!--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
+      if (lfirst.and.ldt) then
+        chitotal=gamma*chix+chi_t
+        maxdiffus=amax1(maxdiffus,maxval(chitotal))
+        ! diagnose
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(chitotal/dxmin**2,i_dtchi,l_dt=.true.)
+        endif
+      endif
 !
     endsubroutine calc_heatcond
 !***********************************************************************
@@ -1335,10 +1358,13 @@ endif
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_eth=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
+        i_dtc=0; i_eth=0; i_ssm=0; i_ugradpm=0; i_ethtot=0
+        i_dtchi=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
+        call parse_name(iname,cname(iname),cform(iname),'dtchi',i_dtchi)
         call parse_name(iname,cname(iname),cform(iname),'ethtot',i_ethtot)
         call parse_name(iname,cname(iname),cform(iname),'eth',i_eth)
         call parse_name(iname,cname(iname),cform(iname),'ssm',i_ssm)
@@ -1348,6 +1374,8 @@ endif
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_dtc=',i_dtc
+        write(3,*) 'i_dtchi=',i_dtchi
         write(3,*) 'i_ethtot=',i_ethtot
         write(3,*) 'i_eth=',i_eth
         write(3,*) 'i_ssm=',i_ssm

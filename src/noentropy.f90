@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.49 2003-10-24 13:17:31 dobler Exp $
+! $Id: noentropy.f90,v 1.50 2003-11-25 15:29:29 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -33,7 +33,7 @@ module Entropy
   logical :: lcalc_heatcond_constchi=.false.
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ssm=0,i_ugradpm=0
+  integer :: i_dtc=0,i_ssm=0,i_ugradpm=0
 
   contains
 
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.49 2003-10-24 13:17:31 dobler Exp $")
+           "$Id: noentropy.f90,v 1.50 2003-11-25 15:29:29 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -126,6 +126,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
+        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
           call dot_mn(uu,glnrho,uglnrho)
           call sum_mn_name(cs2*uglnrho,i_ugradpm)
@@ -155,16 +156,18 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ssm=0; i_ugradpm=0
+        i_dtc=0; i_ssm=0; i_ugradpm=0
       endif
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
         call parse_name(iname,cname(iname),cform(iname),'ugradpm',i_ugradpm)
       enddo
 !
 !  write column where which magnetic variable is stored
 !
       if (lwr) then
+        write(3,*) 'i_dtc=',i_dtc
         write(3,*) 'i_ssm=',i_ssm
         write(3,*) 'i_ugradpm=',i_ugradpm
         write(3,*) 'nname=',nname

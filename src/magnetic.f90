@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.153 2003-11-25 12:54:45 mcmillan Exp $
+! $Id: magnetic.f90,v 1.154 2003-11-25 15:29:29 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -65,7 +65,7 @@ module Magnetic
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
   integer :: i_bxpt=0,i_bypt=0,i_bzpt=0
   integer :: i_aybym2=0,i_exaym2=0
-  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
+  integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
@@ -73,6 +73,7 @@ module Magnetic
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
   integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
   integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
+  integer :: i_dteta=0
 
   contains
 
@@ -108,7 +109,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.153 2003-11-25 12:54:45 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.154 2003-11-25 15:29:29 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -268,7 +269,7 @@ module Magnetic
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: eta_mn,divA            ! dgm: 
       real, dimension (nx,3) :: geta,eta_mn3,divA3   ! for eta_spatial
-      real :: tmp,eta_out1,B_ext21=1.
+      real :: etamax,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij
@@ -426,10 +427,10 @@ module Magnetic
 !
       if (leta_const) then
         fres=eta*del2A
+        etamax=eta
       else
-        eta_mn3=spread(eta_mn,2,3)
-        divA3=spread(divA,2,3)
-        fres=eta_mn3*del2A + geta*divA3
+        do j=1,3; fres(:,j)=eta_mn*del2A(:,j) + geta(:,j)*divA; enddo
+        etamax=maxval(eta_mn)
       endif
 !
 ! dgm: old section (without eta_spatial)
@@ -477,7 +478,11 @@ module Magnetic
           call dot2_mn(bb,b2tot)
           va2=b2tot*rho1
           maxadvec2=amax1(maxadvec2,va2)
-          maxdiffus=amax1(maxdiffus,eta)
+          maxdiffus=amax1(maxdiffus,etamax)
+          !  diagnose
+          if (ldiagnos.and.i_dteta/=0) then
+            call max_mn_name(spread(etamax,1,nx)/dxmin**2,i_dteta,l_dt=.true.)
+          endif
         endif
 
       if (lspecial) call special_calc_magnetic(f,df,uu,rho1,TT1,uij)
@@ -499,6 +504,7 @@ module Magnetic
         !
         if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
         if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
+        if (i_dtb/=0) call max_mn_name(sqrt(va2)/dxmin,i_dtb,l_dt=.true.)
         !
         ! <J.B>
         !
@@ -808,7 +814,7 @@ module Magnetic
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
         i_bxpt=0; i_bypt=0; i_bzpt=0
         i_aybym2=0; i_exaym2=0
-        i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
+        i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxbym=0; i_bxbzm=0; i_bybzm=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
@@ -817,11 +823,13 @@ module Magnetic
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
         i_uxjm=0; i_ujxbm=0
         i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
+        i_dteta=0
       endif
 !
 !  check for those quantities that we want to evaluate online
 !
       do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dteta',i_dteta)
         call parse_name(iname,cname(iname),cform(iname),'aybym2',i_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',i_exaym2)
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
@@ -838,6 +846,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
         call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
         call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
+        call parse_name(iname,cname(iname),cform(iname),'dtb',i_dtb)
         call parse_name(iname,cname(iname),cform(iname),'bx2m',i_bx2m)
         call parse_name(iname,cname(iname),cform(iname),'by2m',i_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',i_bz2m)
@@ -891,6 +900,7 @@ module Magnetic
 !  write column, i_XYZ, where our variable XYZ is stored
 !
       if (lwr) then
+        write(3,*) 'i_dteta=',i_dteta
         write(3,*) 'i_aybym2=',i_aybym2
         write(3,*) 'i_exaym2=',i_exaym2
         write(3,*) 'i_abm=',i_abm
@@ -907,6 +917,7 @@ module Magnetic
         write(3,*) 'i_jmax=',i_jmax
         write(3,*) 'i_vArms=',i_vArms
         write(3,*) 'i_vAmax=',i_vAmax
+        write(3,*) 'i_dtb=',i_dtb
         write(3,*) 'i_bx2m=',i_bx2m
         write(3,*) 'i_by2m=',i_by2m
         write(3,*) 'i_bz2m=',i_bz2m

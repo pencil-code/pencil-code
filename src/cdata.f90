@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.186 2003-11-25 09:25:47 nilshau Exp $
+! $Id: cdata.f90,v 1.187 2003-11-25 15:29:28 brandenb Exp $
 
 module Cdata
 
@@ -77,7 +77,7 @@ module Cdata
 !
   integer :: nname=0,nnamev=0,nnamez=0,nnamexy=0,nnamerz=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
-  integer :: ilabel_integrate=3,ilabel_surf=4
+  integer :: ilabel_max_dt=-3,ilabel_integrate=3,ilabel_surf=4
   integer :: nr_directions=1
   integer, parameter :: mname=100,mnamev=100,mnamez=20,mnamexy=6,mnamerz=20
   integer, dimension (mname) :: itype_name
@@ -94,7 +94,7 @@ module Cdata
   character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
   ! other variables (needs to be consistent with reset list in register.90)
-  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_walltime=0
+  integer :: i_t=0,i_it=0,i_dt=0,i_walltime=0
   integer :: i_rcylmphi=0,i_phimphi=0,i_zmphi=0,i_rmphi=0
 
   !  initialization of various switches; actual settings depends on the

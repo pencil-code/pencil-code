@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.16 2003-11-25 09:25:47 nilshau Exp $
+! $Id: visc_var.f90,v 1.17 2003-11-25 15:29:29 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -25,6 +25,7 @@ module Viscosity
   real :: nu_var, q_DJO=2., t0_DJO=0., nuf_DJO,ti_DJO=1.,tf_DJO
   real :: pp
   integer :: dummy, i_nu_var
+  integer :: i_dtnu=0
 
   ! input parameters
   namelist /viscosity_init_pars/ dummy
@@ -58,7 +59,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.16 2003-11-25 09:25:47 nilshau Exp $")
+           "$Id: visc_var.f90,v 1.17 2003-11-25 15:29:29 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -99,21 +100,22 @@ module Viscosity
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
 !
-!      if (lreset) then
-!        i_TTm=0
-!      endif
+      if (lreset) then
+        i_dtnu=0
+      endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-!      if(lroot.and.ip<14) print*,'rprint_ionization: run through parse list'
-!      do iname=1,nname
-!        call parse_name(iname,cname(iname),cform(iname),'yHm',i_yHm)
-!      enddo
+      if(lroot.and.ip<14) print*,'rprint_viscosity: run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtnu',i_dtnu)
+      enddo
 !
 !  write column where which ionization variable is stored
 !
       if (present(lwrite)) then
         if (lwrite) then
+          write(3,*) 'i_dtnu=',i_dtnu
           write(3,*) 'ihyper3=',ihyper3
           write(3,*) 'ishock=',ishock
           write(3,*) 'itest=',0
@@ -269,17 +271,22 @@ module Viscosity
       endselect
 
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
-!      else ! (nu=0)
-!        if (headtt) print*,'no viscous force: (nu=0)'
-!      endif
-
+!
+!  set viscous time step
+!
+      if (ldiagnos.and.i_dtnu/=0) then
+        call max_mn_name(spread(nu,1,nx)/dxmin**2,i_dtnu,l_dt=.true.)
+      endif
+!
       if(ip==0) print*,divu  !(keep compiler quiet)
     end subroutine calc_viscous_force
 
-
+!***********************************************************************
     subroutine write_viscosity
      open(1,file=trim(datadir)//'/visc_var.dat',position='append')
      write(1,*) it,t,nu_var
      close(1)
     end subroutine
+!***********************************************************************
+
 endmodule Viscosity

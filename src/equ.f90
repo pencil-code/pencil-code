@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.173 2003-11-25 12:04:28 theine Exp $
+! $Id: equ.f90,v 1.174 2003-11-25 15:29:28 brandenb Exp $
 
 module Equ
 
@@ -84,6 +84,7 @@ module Equ
                imax_count=imax_count+1
                if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
                if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
+               if(itype_name(iname)==-3) fname(iname)=fmax(imax_count)
             elseif(itype_name(iname)>0) then
                isum_count=isum_count+1
                if(itype_name(iname)==+1) fname(iname)=fsum(isum_count)/(nw*ncpus)
@@ -231,7 +232,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.173 2003-11-25 12:04:28 theine Exp $")
+           "$Id: equ.f90,v 1.174 2003-11-25 15:29:28 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
