@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.52 2003-06-18 14:01:24 ajohan Exp $ 
+! $Id: initcond.f90,v 1.53 2003-06-20 13:12:50 ajohan Exp $ 
 
 module Initcond 
  
@@ -490,7 +490,7 @@ module Initcond
 !
     endsubroutine stratification
 !***********************************************************************
-    subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width)
+    subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width,rbound)
 !
 !  Ellipsoidal planet solution (Goldreich, Narayan, Goodman 1987)
 !
@@ -498,16 +498,20 @@ module Initcond
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !  18-jun-03/anders: Renamed from planet to planet_hc
 !
+      use Sub
+
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,r_ell,xi
       real, dimension (mx,my) :: delS
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,rbound
       real :: gamma,eps2,radius2,width
       real :: gamma1,zinfty2,cs20,hh0
+      integer :: i,j,k
 !
 !  calculate sigma
 !
-      print*,'planet: qshear,eps=',qshear,eps
+      print*,'planet_hc: qshear,eps=',qshear,eps
+      print*,'planet_hc: Omega=', Omega
       eps2=eps**2
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
@@ -520,7 +524,8 @@ module Initcond
 !  calculate delta
 !
       delta2=(2.-sigma)*sigma
-      print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
+      print*,'planet_hc: sigma,delta2,radius',sigma,delta2,radius
+      print*,'planet_hc: width,rbound',width,rbound
       if (delta2<0.) then
         print*,'delta2<0 not allowed'
       else
@@ -535,64 +540,48 @@ module Initcond
       else
         zinfty2=impossible
       endif
-      print*,'planet: gamma,zinfty2=',gamma,zinfty2
+      print*,'planet_hc: gamma,zinfty2=',gamma,zinfty2
 !
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
 !  xi=1 inside vortex, and 0 outside
-!  NOTE: if width is too small, the vertical integration below may fail.
 !
-      rr2=delta2*(xx**2+eps2*yy**2)+zz**2
-      hh=+.5*Omega**2*(delta2*radius2-rr2)
-      if(delta==0.) then
-        if(lroot) print*,'planet: delta=0, so we ignore z-dependence of xi'
-        xi=.5+.5*tanh((radius2-xx**2-eps2*yy**2)/width**2)
-      else
-        if(lroot) print*,'planet: delta/=0, so we include z-dependence of xi'
-        xi=.5+.5*tanh((radius2-xx**2-eps2*yy**2-zz**2/delta2**2)/width**2)
-      endif
-      if(lroot) print*,'planet: minmax(xi),width=',minval(xi),maxval(xi),width
-!
-    if(nz.eq.1) then
-!
-!  Solution as in the old disc code
-!  add floor value (currently a constant)
-!
-      print*,'use h -> h+h0 and constant entropy'
-      !hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
-      hh=max(hh,ampl**gamma1/gamma1)
-      if(lentropy) f(:,:,:,ient)=0.
+     if (delta2 .eq. 0.) then    ! Pressure-less solution for eps=0.5
+      hh=0.5*Omega**2*zz**2+hh0  ! and delta2=0
+      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2))
+      xi=1./(exp((1./width)*(r_ell-rbound))+1.)
     else
-!
-!  add a constant to hh such that hh is "ampl" times in the vortex
-!
-!     print*,"with entropy: hot corona"
-!     hh0=.5*Omega**2*(zinfty2-delta2*radius2)/ampl
-!     hh=(hh+hh0)*xi+.5*Omega**2*(zinfty2-zz**2)*(1.-xi)
-!     if(lentropy) f(:,:,:,ient)=-alog(ampl)*xi
-!
-!  add a constant to hh such that hh is "ampl" times in the vortex
-!
+      rr2=xx**2+eps2*yy**2+zz**2/delta2
+      hh=+.5*delta2*Omega**2*(radius2-rr2)
+      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2)+delta2*zz**2)
+      xi=1./(exp((1./width)*(r_ell-rbound))+1.)   
+    endif
+
+    if(nz.eq.1) then
+      print*,'warning: does not work for nz=1!'
+    else
       print*,"with entropy: integrate hot corona"
       hh(:,:,n2)=1.  !(initial condition)
       f(:,:,:,ient)=-alog(ampl)*xi
       do n=n2-1,n1,-1
         delS=f(:,:,n+1,ient)-f(:,:,n,ient)
-        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
+        hh(:,:,n)= (hh(:,:,n+1)*(1.-.5*delS) + &
+             Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
       enddo
     endif
 !
-!  calculate mask function xi, which is 0 outside and 1 inside the vortex
-!  At present, width is not measured in sensible units...
+!  Velocity field (Kepler field subtracted)
 !
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
 !
 !  calculate density, depending on what gamma is
 !
-      print*,'planet: hmin,zinfty2=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
-      print*,'hh=amin1(1e-5*maxval(hh),hh)'
-      hh=amin1(1e-5*maxval(hh),hh)
+      print*,'planet_hc: min(hh), max(hh)=', &
+           minval(hh(l1:l2,m1:m2,n1:n2)),maxval(hh(l1:l2,m1:m2,n1:n2))
+      print*,'planet_hc: min(xi), max(xi)=',minval(xi),maxval(xi)
+      !print*,'hh=amin1(1e-5*maxval(hh),hh)'
+      !hh=amin1(1e-5*maxval(hh),hh)
       if(gamma1<0.) print*,'must have gamma gt 1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
