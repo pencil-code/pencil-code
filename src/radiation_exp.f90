@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.36 2003-07-01 17:40:14 theine Exp $
+! $Id: radiation_exp.f90,v 1.37 2003-07-01 18:46:34 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -77,7 +77,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.36 2003-07-01 17:40:14 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.37 2003-07-01 18:46:34 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -550,6 +550,7 @@ module Radiation
 !
       real, dimension(mx,my,mz) :: Irad0
       integer :: lrad,mrad,nrad,rad2
+      integer :: tag_xy=301,tag_yz=302,tag_zx=303
 !
 !  identifier
 !
@@ -565,13 +566,13 @@ module Radiation
           !
           !  set ghost zones, data from preceeding processor
           !
-          call radcomm_yz_recv(lrad,Irad0_yz)
+          call radcomm_yz_recv(lrad,radx0,Irad0_yz,tag_yz)
           if (lrad>0) Irad0(l1-radx0:l1-1,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
           if (lrad<0) Irad0(l2+1:l2+radx0,:,:)=Irad0_yz(:,:,:,lrad,mrad,nrad)
-          call radcomm_zx_recv(mrad,Irad0_zx)
+          call radcomm_zx_recv(mrad,rady0,Irad0_zx,tag_zx)
           if (mrad>0) Irad0(:,m1-rady0:m1-1,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
           if (mrad<0) Irad0(:,m2+1:m2+rady0,:)=Irad0_zx(:,:,:,lrad,mrad,nrad)
-          call radcomm_xy_recv(nrad,Irad0_xy)
+          call radcomm_xy_recv(nrad,radz0,Irad0_xy,tag_xy)
           if (nrad>0) Irad0(:,:,n1-radz0:n1-1)=Irad0_xy(:,:,:,lrad,mrad,nrad)
           if (nrad<0) Irad0(:,:,n2+1:n2+radz0)=Irad0_xy(:,:,:,lrad,mrad,nrad)
           !
@@ -583,13 +584,13 @@ module Radiation
           !
           if (lrad<0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l1:l1+radx0-1,:,:)
           if (lrad>0) Irad0_yz(:,:,:,lrad,mrad,nrad)=Irad0(l2-radx0+1:l2,:,:)
-          call radtransfer_comm_yz_send(lrad,Irad_yz)
+          call radcomm_yz_send(lrad,radx0,Irad_yz,tag_yz)
           if (mrad<0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m1:m1+rady0-1,:)
           if (mrad>0) Irad0_zx(:,:,:,lrad,mrad,nrad)=Irad0(:,m2-rady0+1:m2,:)
-          call radtransfer_comm_zx_send(lrad,Irad_zx)
+          call radcomm_zx_send(mrad,rady0,Irad_zx,tag_zx)
           if (nrad<0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n1:n1+radz0-1)
           if (nrad>0) Irad0_xy(:,:,:,lrad,mrad,nrad)=Irad0(:,:,n2-radz0+1:n2)
-          call radtransfer_comm_xy_send(lrad,Irad_xy)
+          call radcomm_xy_send(nrad,radz0,Irad_xy,tag_xy)
         endif
       enddo
       enddo

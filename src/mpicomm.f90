@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.86 2003-07-01 14:21:29 brandenb Exp $
+! $Id: mpicomm.f90,v 1.87 2003-07-01 18:46:34 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -571,6 +571,66 @@ module Mpicomm
          if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
 !
        endsubroutine finalise_shearing
+!***********************************************************************
+    subroutine radcomm_xy_send(nrad,radz0,Ibuf_xy,tag_xy)
+!
+!  send intensities
+!
+!   1-jul-03/axel: coded
+!
+      integer :: nrad,radz0,nbuf_xy,idest,tag_xy
+      real, dimension(mx,my,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+      if(nrad>0 .and. ipz/=nprocz-1) then
+         !  initiate send
+         call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
+                        MPI_COMM_WORLD,isend_xy,ierr)
+         !  finalize straight away
+         !
+         call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_xy_send
+!***********************************************************************
+    subroutine radcomm_xy_recv(nrad,radz0,Ibuf_xy,tag_xy)
+!
+!  receive intensities
+!
+!   1-jul-03/axel: coded
+!
+      integer :: nrad,radz0,nbuf_xy,idest,tag_xy
+      real, dimension(mx,my,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0
+!
+!  determine whether or not we are on a boundary point
+!  lower point, ray in positive direction
+!
+      if(nrad>0 .and. ipz==0) then
+         !call "lower boundary"
+         Ibuf_xy=1. !(for the time being)
+      elseif(nrad<0 .and. ipz==nprocz-1) then
+         !call "upper boundary"
+         Ibuf_xy=0. !(for the time being)
+      else
+         idest=ipz-sign(nrad,1)
+         !  initiate receive
+         call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
+                     MPI_COMM_WORLD,irecv_xy,ierr)
+         !  finalize straight away
+         call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
+      endif
+!
+    endsubroutine radcomm_xy_recv
 !***********************************************************************
     subroutine send_Irad0_xy(Ibuf_xy,idest,radx0,rady0,radz0,tag_xy)
 !
