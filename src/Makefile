@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.220 2003-08-08 17:31:00 dobler Exp $
+### $Id: Makefile,v 1.221 2003-08-08 18:17:24 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -170,11 +170,17 @@ CFLAGS=-O3 -DFUNDERSC=1
 
 ## AIX:
 #CFLAGS=-O3 -DFUNDERSC=0
+##-------------------
+## USE NON MP COMPILERS FOR INTERACTIVE RUNNING 
+##F77=xlf
+##FC=xlf90
+##-------------------
 #F77=mpxlf
 #FC=mpxlf90
-#FFLAGS=-O5 -qstrict
+##-------------------
+#FLAGS=-O5 -qstrict
 #F90FLAGS=-qsuffix=f=f90
-
+#LDMPI=
 
 ### End machine dependent
 LD=$(FC)
