@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.61 2002-06-12 11:32:39 brandenb Exp $
+! $Id: entropy.f90,v 1.62 2002-06-13 11:19:10 vpariev Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.61 $", &
-           "$Date: 2002-06-12 11:32:39 $")
+           "$Revision: 1.62 $", &
+           "$Date: 2002-06-13 11:19:10 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -529,13 +529,14 @@ module Entropy
 !
 !  Do the `c2' boundary condition (fixed temperature/sound speed) for
 !  entropy and density.
-!  NB: Sound speed is set to cs0, so this is mostly useful for top boundary.  
-!  Sound speed at the top, cs2top, is currently an input parameter
+!  NB: Sound speed is set to cs at the top for isoentropic density profile, 
+!  so this is mostly useful for top boundary.  
 !
         if (bcz2(ient) == "c2") then
           if (bcz1(ilnrho) /= "a2") &
                errmesg = "BOUNDCONDS: Inconsistent boundary conditions 4."
           !! tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs20/gamma)) / gamma
+          cs2top=cs20*(1-z(n2)/zinfty)
           tmp_xy = (-gamma1*f(:,:,n2,ilnrho) + alog(cs2top/cs20)) / gamma
           f(:,:,n2,ient) = tmp_xy
           do i=1,nghost
