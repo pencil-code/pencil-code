@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.123 2004-08-22 19:14:31 brandenb Exp $
+! $Id: mpicomm.f90,v 1.124 2004-08-27 12:08:31 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -54,13 +54,24 @@ module Mpicomm
 
   implicit none
 
-  interface mpibcast_real               ! Overload the `mpibcast_real' function
+  interface mpibcast_logical
+    module procedure mpibcast_logical_scl
+    module procedure mpibcast_logical_arr
+  endinterface
+
+  interface mpibcast_int
+    module procedure mpibcast_int_scl
+    module procedure mpibcast_int_arr
+  endinterface
+
+  interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
   endinterface
 
-  interface mpibcast_logical            ! Overload
-    module procedure mpibcast_logical_scl
+  interface mpibcast_char
+    module procedure mpibcast_char_scl
+    module procedure mpibcast_char_arr
   endinterface
 
   include 'mpif.h'
@@ -805,25 +816,89 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_periodic_ray
 !***********************************************************************
-    subroutine mpibcast_int(ibcast_array,nbcast_array)
+    subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
-      integer :: nbcast_array
-      integer, dimension(nbcast_array) :: ibcast_array
-!
-      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,root,MPI_COMM_WORLD,ierr)
-    endsubroutine mpibcast_int
-!***********************************************************************
-    subroutine mpibcast_logical_scl(lbcast_array,nbcast_array)
+!  Communicate logical scalar between processors
 !
       integer :: nbcast_array
       logical :: lbcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
 !
-      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,root,MPI_COMM_WORLD,ierr)
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
     endsubroutine mpibcast_logical_scl
+!***********************************************************************
+    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
+!
+!  Communicate logical array between processors
+!
+      integer :: nbcast_array
+      logical, dimension (nbcast_array) :: lbcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(lbcast_array,nbcast_array,MPI_LOGICAL,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_logical_arr
+!***********************************************************************
+    subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
+!
+!  Communicate integer scalar between processors
+!
+      integer :: nbcast_array
+      integer :: ibcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_int_scl
+!***********************************************************************
+    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
+!
+!  Communicate integer array between processors
+!
+      integer :: nbcast_array
+      integer, dimension(nbcast_array) :: ibcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(ibcast_array,nbcast_array,MPI_INTEGER,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_int_arr
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
-!  is being used when nbcast_array=1 (eg when dt is being communicated)
+!  Communicate real scalar between processors
 !
       integer :: nbcast_array
       real :: bcast_array
@@ -838,11 +913,12 @@ module Mpicomm
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
+!      
     endsubroutine mpibcast_real_scl
 !***********************************************************************
     subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
 !
-!  this works for the general case when nbcast_array is not 1
+!  Communicate real array between processors
 !
       integer :: nbcast_array
       real, dimension(nbcast_array) :: bcast_array
@@ -857,7 +933,48 @@ module Mpicomm
 !
       call MPI_BCAST(bcast_array,nbcast_array,MPI_REAL,ibcast_proc, &
           MPI_COMM_WORLD,ierr)
+!
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
+!
+!  Communicate character scalar between processors
+!
+      integer :: nbcast_array
+      character :: cbcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!
+    endsubroutine mpibcast_char_scl
+!***********************************************************************
+    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
+!
+!  Communicate character array between processors
+!
+      integer :: nbcast_array
+      character, dimension(nbcast_array) :: cbcast_array
+      integer, optional :: proc
+      integer :: ibcast_proc
+!
+      if (present(proc)) then
+        ibcast_proc=proc
+      else
+        ibcast_proc=root
+      endif
+!
+      call MPI_BCAST(cbcast_array,nbcast_array,MPI_CHARACTER,ibcast_proc, &
+          MPI_COMM_WORLD,ierr)
+!      
+    endsubroutine mpibcast_char_arr
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
 !

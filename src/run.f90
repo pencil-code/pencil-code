@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.194 2004-08-24 20:24:43 mee Exp $
+! $Id: run.f90,v 1.195 2004-08-27 12:08:31 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.194 2004-08-24 20:24:43 mee Exp $")
+             "$Id: run.f90,v 1.195 2004-08-27 12:08:31 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -261,22 +261,26 @@
             if (lroot) inquire(FILE="REINIT", EXIST=lreinit)
             call mpibcast_logical(lreinit, 1)
             if (lreinit) then
-              if (lroot) write(0,*) 'Found REINIT file -- reiniting variables:'
-              open(1,file='REINIT',action='read',form='formatted')
-              nreinit=1
-              !
-              !  read variable names from REINIT file
-              !
-              ierr=0
-              do while (ierr == 0)
-                read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
-                if (reinit_vars(nreinit) /= '') then
-                  if (lroot) write(0,*) '  '//reinit_vars(nreinit)
-                  nreinit=nreinit+1
-                endif
-              enddo
-              close(1)
-              nreinit=nreinit-1
+              if (lroot) then
+                write(0,*) 'Found REINIT file -- reiniting variables:'
+                open(1,file='REINIT',action='read',form='formatted')
+                nreinit=1
+                !
+                !  read variable names from REINIT file
+                !
+                ierr=0
+                do while (ierr == 0)
+                  read(1,'(A5)',IOSTAT=ierr) reinit_vars(nreinit)
+                  if (reinit_vars(nreinit) /= '') then
+                    write(0,*) '  '//reinit_vars(nreinit)
+                    nreinit=nreinit+1
+                  endif
+                enddo
+                close(1)
+                nreinit=nreinit-1
+              endif
+              call mpibcast_int(nreinit, 1)
+              call mpibcast_char(reinit_vars, 10)
               !
               !  reinit all variables present in REINIT file
               !

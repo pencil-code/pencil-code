@@ -14,13 +14,24 @@ module Mpicomm
 
   implicit none
 
-  interface mpibcast_real      ! Overload the `mpibcast_real' function
+  interface mpibcast_logical
+    module procedure mpibcast_logical_scl
+    module procedure mpibcast_logical_arr
+  endinterface
+
+  interface mpibcast_int
+    module procedure mpibcast_int_scl
+    module procedure mpibcast_int_arr
+  endinterface
+
+  interface mpibcast_real
     module procedure mpibcast_real_scl
     module procedure mpibcast_real_arr
   endinterface
 
-  interface mpibcast_logical   ! Overload
-    module procedure mpibcast_logical_scl
+  interface mpibcast_char
+    module procedure mpibcast_char_scl
+    module procedure mpibcast_char_arr
   endinterface
 
   integer :: ierr
@@ -230,43 +241,85 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_periodic_ray
 !***********************************************************************
-    subroutine mpibcast_int(ibcast_array,nbcast_array)
+    subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
-      integer, dimension(nbcast_array) :: ibcast_array,dummy
+      logical :: lbcast_array
+      integer, optional :: proc
 !    
-      dummy=ibcast_array
-    endsubroutine mpibcast_int
-!***********************************************************************
-    subroutine mpibcast_logical_scl(ibcast_array,nbcast_array)
+      if (ip == 0) print*, lbcast_array, nbcast_array, proc
 !
-      integer :: nbcast_array
-      logical :: ibcast_array,dummy
-!    
-      if (nbcast_array/=1) stop "problem in mpibcast_real_scl"
-      dummy=ibcast_array
     endsubroutine mpibcast_logical_scl
+!***********************************************************************
+    subroutine mpibcast_logical_arr(lbcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      logical, dimension(nbcast_array) :: lbcast_array
+      integer, optional :: proc
+!    
+      if (ip == 0) print*, lbcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_logical_arr
+!***********************************************************************
+    subroutine mpibcast_int_scl(ibcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      integer :: ibcast_array
+      integer, optional :: proc
+!    
+      if (ip == 0) print*, ibcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_int_scl
+!***********************************************************************
+    subroutine mpibcast_int_arr(ibcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array,dummy
+      integer, dimension(nbcast_array) :: ibcast_array
+      integer, optional :: proc
+!    
+      if (ip == 0) print*, ibcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_int_arr
 !***********************************************************************
     subroutine mpibcast_real_scl(bcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
-      real :: bcast_array,dummy
+      real :: bcast_array
       integer, optional :: proc
 !
-      if (nbcast_array/=1) stop "problem in mpibcast_real_scl"
-      dummy=bcast_array
-      if (ip == 0) print*, proc
+      if (ip == 0) print*, bcast_array, nbcast_array, proc
+!
     endsubroutine mpibcast_real_scl
 !***********************************************************************
     subroutine mpibcast_real_arr(bcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
-      real, dimension(nbcast_array) :: bcast_array,dummy
+      real, dimension(nbcast_array) :: bcast_array
       integer, optional :: proc
 !
-      dummy=bcast_array
-      if (ip == 0) print*, proc
+      if (ip == 0) print*, bcast_array, nbcast_array, proc
+!
     endsubroutine mpibcast_real_arr
+!***********************************************************************
+    subroutine mpibcast_char_scl(cbcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      character :: cbcast_array
+      integer, optional :: proc
+!
+      if (ip == 0) print*, cbcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_char_scl
+!***********************************************************************
+    subroutine mpibcast_char_arr(cbcast_array,nbcast_array,proc)
+!
+      integer :: nbcast_array
+      character, dimension(nbcast_array) :: cbcast_array
+      integer, optional :: proc
+!
+      if (ip == 0) print*, cbcast_array, nbcast_array, proc
+!
+    endsubroutine mpibcast_char_arr
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
 !
