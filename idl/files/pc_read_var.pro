@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.26 2004-06-22 14:16:07 mee Exp $
+; $Id: pc_read_var.pro,v 1.27 2004-09-08 20:26:24 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-22 14:16:07 $
-;  $Revision: 1.26 $
+;  $Date: 2004-09-08 20:26:24 $
+;  $Revision: 1.27 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -15,7 +15,7 @@ pro pc_read_var, t=t,                                            $
             TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL,                    $
             nameobject=nameobject,                               $
             dim=dim,param=param,                                 $
-            datadir=datadir,proc=proc,                           $
+            datadir=datadir,proc=proc,ADDITIONAL=ADDITIONAL,     $
             STATS=STATS,NOSTATS=NOSTATS,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
@@ -43,6 +43,8 @@ COMPILE_OPT IDL2,HIDDEN
     print, "variables: an array of textual names of variables that one would like to have   [string(*)]"
     print, "           returned in the object"
     print, ""
+    print, "/ADDITIONAL: Loads all variables stores in the files, PLUS and additional variables       "
+    print, "             specified with the variables=[] option."
     print, "   /MAGIC: call pc_magic_var to replace special variable names with their functional       "
     print, "           equivalents"
     print, ""
@@ -121,8 +123,18 @@ varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 
-if n_elements(variables) ne 0 then VALIDATE_VARIABLES=1
-default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+if n_elements(variables) ne 0 then begin
+  VALIDATE_VARIABLES=1
+  if keyword_set(ADDITIONAL) then begin
+    filevars=(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+    variables=[filevars,variables]    
+    if n_elements(tags) ne 0 then begin
+      tags=[filevars,tags]    
+    endif
+  endif
+endif else begin
+  default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
+endelse
 default,tags,variables
 
 if (n_elements(variables) ne n_elements(tags)) then begin
