@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.97 2003-11-20 15:42:58 mee Exp $
+# $Id: getconf.csh,v 1.98 2003-11-20 16:34:39 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -92,6 +92,45 @@ if ($hn =~ mhd*.st-and.ac.uk) then
 
 else if ($hn =~ *.kis.uni-freiburg.de) then
   set mpirun = /opt/local/mpich/bin/mpirun
+
+else if ($hn =~ giga[0-9][0-9]) then
+  echo "Nordita cluster"
+  if ($?PBS_NODEFILE) then
+    echo "PBS job"
+    cat $PBS_NODEFILE > lamhosts
+    set local_disc = 1
+    set one_local_disc = 0
+    set local_binary = 0
+  else
+    echo "Non-PBS, running on `hostname`"
+    echo `hostname` > lamhosts
+  endif
+  # lamboot with logging to file 
+  echo "lambooting.."
+  echo 'pidof lamd | xargs ps -lfwww :' > lamboot.log
+  pidof lamd | xargs ps -lfwww >> lamboot.log
+  echo '------------------------------------------------' >> lamboot.log
+  lamboot -v lamhosts >>& lamboot.log # discard output, or auto-test
+                                      # mysteriously hangs on Nq0
+  echo '------------------------------------------------' >> lamboot.log
+  echo 'pidof lamd | xargs ps -lfwww :' >> lamboot.log
+  pidof lamd | xargs ps -lfwww >> lamboot.log
+  #
+  set booted_lam = 1
+  echo "lamnodes:"
+  lamnodes
+  set mpirun = /opt/lam/bin/mpirun
+  set mpirun = /usr/bin/mpirun
+  set mpirunops = "-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1"#Fix bug in Redhat 9
+  if ($local_disc) then
+    setenv SCRATCH_DIR "/var/tmp"
+  endif
+
+  set local_disc     = 1
+  set one_local_disc = 0          # probably the more common case
+  set remote_top     = 1
+  set local_binary   = 0
+  setenv SCRATCH_DIR /work
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
   set mpirun = /usr/bin/mpiexec
@@ -355,7 +394,7 @@ set procdirs = \
 if ($local_disc) then
   echo "Creating directory structure on scratch disc(s)"
   foreach host ($nodelist)
-    $SSH $host "cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
+    $SSH $host "mkdir -p $SCRATCH_DIR/$procdirs $SCRATCH_DIR/$subdirs" 
   end
 endif
 
