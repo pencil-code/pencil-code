@@ -20,14 +20,17 @@ endif
 source getconf.csh
 
 #
-#  If we don't have a tmp subdirectory: give warning and make a local one
+#  If we don't have a tmp subdirectory: stop here (it is too easy to
+#  continue with an NFS directory until you fill everything up).
 #
-if (! -e tmp) then
+if (! -d tmp) then
   echo ""
-  echo ">> WARNING: need tmp directory; make local directory underneath"
-  echo ">> IN FUTURE: you may want to make a link to some fast scratch disk"
-  echo ""
-  mkdir tmp
+  echo ">>  STOPPING: need tmp directory"
+  echo ">>  Recommended: create tmp as link to directory on a fast scratch disk"
+  echo ">>  Not recommended: you can generate tmp with 'mkdir tmp', but that"
+  echo ">>  will most likely end up on your NFS file system and be slow"
+  echo
+  exit 0
 endif
 
 # Create list of subdirectories
