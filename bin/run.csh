@@ -76,9 +76,9 @@ endif
 
 # Run run.x
 date
-echo "$mpirun $mpirunops $npops $run_x"
-echo $mpirun $mpirunops $npops $run_x >! run_command.log
-time $mpirun $mpirunops $npops $run_x
+echo "$mpirun $mpirunops $npops $run_x $x_ops"
+echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
+time $mpirun $mpirunops $npops $run_x $x_ops
 date
 
 # On Horseshoe cluster, copy var.dat back to the data directory

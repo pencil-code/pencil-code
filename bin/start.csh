@@ -96,8 +96,8 @@ endif
 
 # Run start.x
 date
-echo "$mpirun $mpirunops $npops $start_x"
-time $mpirun $mpirunops $npops $start_x
+echo "$mpirun $mpirunops $npops $start_x $x_ops"
+time $mpirun $mpirunops $npops $start_x $x_ops
 echo ""
 date
 

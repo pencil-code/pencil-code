@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.57 2003-08-06 17:58:32 theine Exp $
+# $Id: getconf.csh,v 1.58 2003-08-13 12:15:50 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -12,76 +12,81 @@
 # Are we running the MPI version?
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
-# location of executables; can be overwritten below
+# Location of executables; can be overwritten below
 set start_x = "src/start.x"
 set run_x = "src/run.x"
 
-# settings for machines with local data disks
+set x_ops = ""         # arguments to both start.x and run.x
+
+# Settings for machines with local data disks
 set local_disc = 0  #use global file system by default (if set to zero)
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
 setenv SCP scp
 
-# any lam daemons to shutdown at the end of run.csh?
+# Any lam daemons to shutdown at the end of run.csh?
 set booted_lam = 0
 
-# choose machine specific settings
 echo `uname -a`
 set hn = `uname -n`
-if ($mpi) then
-  echo "Running under MPI"
-  set mpirunops = ''
-  if ($hn =~ mhd*.st-and.ac.uk) then
-    echo "St Andrews machine"
-    set mpirun = "dmpirun"
+if ($mpi) echo "Running under MPI"
 
-  else if ($hn =~ *.kis.uni-freiburg.de) then
-    set mpirun = /opt/local/mpich/bin/mpirun
+# Choose machine specific settings
+set mpirunops = ''
 
-  else if ($hn =~ sleipner) then
-    set mpirun = /usr/bin/poe
+if ($hn =~ mhd*.st-and.ac.uk) then
+  echo "St Andrews machine"
+  set mpirun = "dmpirun"
+
+else if ($hn =~ *.kis.uni-freiburg.de) then
+  set mpirun = /opt/local/mpich/bin/mpirun
+
+else if ($hn =~ sleipner) then
+  set mpirun = /usr/bin/poe
+  set local_disc = 1
+  setenv SCRATCH_DIR $SCRDIR
+  set start_x = $SCRATCH_DIR/start.x
+  set run_x = $SCRATCH_DIR/run.x
+
+else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
+          || ($hn =~ master) || ($hn =~ node*) ) then
+  set mpirun = /usr/lib/lam/bin/mpirun
+  set mpirunops = "-c2c -O"
+#  set mpirunops = "-c2c c8-13"
+
+else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
+  set mpirun = /opt/score/bin/mpirun
+  set mpirunops = ""
+#  set mpirun = /opt/score/bin/scout 
+#  set mpirunops = "-wait"
+
+else if ($hn =~ nq* || $hn =~ ns*) then
+  echo "Use options for the Nordita cluster"
+  if ($?PBS_NODEFILE ) then
+    echo "PBS job"
+    set nodelist = `cat $PBS_NODEFILE`
+    cat $PBS_NODEFILE > lamhosts
     set local_disc = 1
-    setenv SCRATCH_DIR $SCRDIR
-    set start_x = $SCRATCH_DIR/start.x
-    set run_x = $SCRATCH_DIR/run.x
-
-  else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master) || ($hn =~ node*)) then
-    set mpirun = /usr/lib/lam/bin/mpirun
-    set mpirunops = "-c2c -O"
-#    set mpirunops = "-c2c c8-13"
-
-  else if (($hn =~ copson.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
-    set mpirun = /opt/score/bin/mpirun
-    set mpirunops = ""
-#    set mpirun = /opt/score/bin/scout 
-#    set mpirunops = "-wait"
-
-  else if ($hn =~ nq* || $hn =~ ns*) then
-    echo "Use options for the Nordita cluster"
-    if ($?PBS_NODEFILE ) then
-      echo "PBS job"
-      set nodelist = `cat $PBS_NODEFILE`
-      cat $PBS_NODEFILE > lamhosts
-      set local_disc = 1
-    else
-      echo "Non-PBS, running on `hostname`"
-      echo `hostname` > lamhosts
-    endif
-    echo "lamnodes:"
-    lamboot lamhosts >& /dev/null # discard output, or auto-test
+  else
+    echo "Non-PBS, running on `hostname`"
+    echo `hostname` > lamhosts
+  endif
+  echo "lamnodes:"
+  lamboot lamhosts >& /dev/null # discard output, or auto-test
                                   # mysteriously hangs on Nq0
-    set booted_lam = 1
-    lamnodes
-    set mpirun = /usr/bin/mpirun
-    set mpirun = /opt/lam/bin/mpirun
-    set mpirunops = "-O -c2c -s n0"
-    if ($local_disc) then
-       setenv SCRATCH_DIR "/var/tmp"
-       set start_x = $SCRATCH_DIR/start.x
-       set run_x = $SCRATCH_DIR/run.x
-    endif
+  set booted_lam = 1
+  lamnodes
+  set mpirun = /usr/bin/mpirun
+  set mpirun = /opt/lam/bin/mpirun
+  set mpirunops = "-O -c2c -s n0"
+  if ($local_disc) then
+     setenv SCRATCH_DIR "/var/tmp"
+     set start_x = $SCRATCH_DIR/start.x
+     set run_x = $SCRATCH_DIR/run.x
+  endif
 
-  else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
+else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
+  if ($mpi) then
     if ($?RUNNINGMPICH) then
       echo "Running using MPICH"
       set mpirunops = "-machinefile $PBS_NODEFILE"
@@ -92,9 +97,9 @@ if ($mpi) then
       echo "Use LAM-MPI options for the Horseshoe cluster"
       set nodelist = `cat $PBS_NODEFILE`
       cat $PBS_NODEFILE > lamhosts
-#echo $nodelist > lamhosts.before
-#shift nodelist
-#cat $nodelist > lamhosts
+      #echo $nodelist > lamhosts.before
+      #shift nodelist
+      #cat $nodelist > lamhosts
       lamboot -v lamhosts
       set booted_lam = 1
       echo "lamnodes:"
@@ -106,35 +111,50 @@ if ($mpi) then
       set start_x = $SCRATCH_DIR/start.x
       set run_x = $SCRATCH_DIR/run.x
     endif
-
     setenv SCRATCH_DIR /scratch
     set local_disc = 1
-    setenv SSH rsh
+    setenv SSH rsh 
     setenv SCP rcp
-
-  else if ($hn == rasmussen) then
-    echo "Use options for Rasmussen"
-    echo "Non-MPI version"
-    limit stacksize unlimited
-    set mpirun = ''
-    set mpirunops = ''
-    set npops = ''
-    set ncpus = 1
-
-  else if ($hn == hwwsr8k) then
-    echo "Hitachi in Stuttgart"
-    set mpirun = mpiexec
-    set mpirunops = '-p multi -N 1' # change this for large runs..
-
-  else if ($hn == hwwsx5) then
-    echo "NEC-SX5 in Stuttgart"
-    set mpirun = mpiexec
-    
-  else
-    echo "Use mpirun as the default option; hostname is <$hn>"
-    set mpirun = mpirun
+  else # (no MPI)
+    echo "Batch job: non-MPI single processor run on Horseshoe cluster"
+    set nodelist = `cat $PBS_NODEFILE`
+    cat $PBS_NODEFILE > lamhosts
+    lamboot -v lamhosts 
+    set booted_lam = 1
+    echo "lamnodes:" 
+    lamnodes
+    set mpirunops =
+    set mpirun =  
+    setenv SCRATCH_DIR src
+    set start_x = $SCRATCH_DIR/start.x
+    set run_x = $SCRATCH_DIR/run.x
   endif
 
+else if ($hn == rasmussen) then
+  echo "Use options for Rasmussen"
+  limit stacksize unlimited
+  set mpirun = ''
+  set mpirunops = ''
+  set npops = ''
+  set ncpus = 1
+
+else if ($hn == hwwsr8k) then
+  echo "Hitachi in Stuttgart"
+  set mpirun = mpiexec
+  set mpirunops = '-p multi -N 1' # change this for large runs..
+  set x_ops = '-Fport(nmlist(2))'
+
+else if ($hn == hwwsx5) then
+  echo "NEC-SX5 in Stuttgart"
+  set mpirun = mpiexec
+    
+else
+  if ($mpi) echo "Use mpirun as the default option; hostname is <$hn>"
+  set mpirun = mpirun
+endif
+
+## MPI specific setup
+if ($mpi) then
   # Some mpiruns need special options
   if (`domainname` == "aegaeis") then
     set mpirunops = '-machinefile ~/mpiconf/mpihosts-martins'
@@ -159,31 +179,12 @@ if ($mpi) then
   endif
   
 else # no MPI
+
   echo "Non-MPI version"
   set mpirun = ''
   set mpirunops = ''
   set npops = ''
   set ncpus = 1
-
-  if ($hn == rasmussen) then
-    echo "Use options for Rasmussen"
-    limit stacksize unlimited
-  else if ($hn =~ s[0-9]*p[0-9]*) then
-    echo "Batch job: non-MPI single processor run on Horseshoe cluster"
-    set nodelist = `cat $PBS_NODEFILE`
-    cat $PBS_NODEFILE > lamhosts
-    lamboot -v lamhosts
-    set booted_lam = 1
-    echo "lamnodes:"
-    lamnodes
-    set mpirunops =
-    set mpirun = 
-setenv SCRATCH_DIR src
-    set start_x = $SCRATCH_DIR/start.x
-    set run_x = $SCRATCH_DIR/run.x
-  endif
-
-  endif
 
 endif
 
