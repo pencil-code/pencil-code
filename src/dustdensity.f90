@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.70 2004-04-19 14:31:54 ajohan Exp $
+! $Id: dustdensity.f90,v 1.71 2004-04-23 13:16:22 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -28,11 +28,12 @@ module Dustdensity
   character (len=labellen) :: initnd='zero'
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.
+  logical :: lbogusdustder=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, ldustgrowth, ldustcoagulation, &
-      lcalcdkern, supsatfac, lkeepinitnd
+      lcalcdkern, supsatfac, lkeepinitnd, lbogusdustder
 
   namelist /dustdensity_run_pars/ &
       rhod0, cdiffnd, cdiffnd_all, ldustgrowth, &
@@ -99,7 +100,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.70 2004-04-19 14:31:54 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.71 2004-04-23 13:16:22 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -369,21 +370,42 @@ module Dustdensity
 !
 !  Continuity equations
 !
-        call grad(f,ind(k),gnd(:,:,k))
-        call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-            udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+        if (.not. lbogusdustder) then
+          call grad(f,ind(k),gnd(:,:,k))
+          call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+              udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+
+          if (lmice) then
+            call grad(f,imi(k),gmi(:,:,k))
+            call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)
+            df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
+          endif
+        else
+          if (z(n) > 0.) then 
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+                uud(:,3,k)*(f(l1:l2,m,n+1,ind(k))-f(l1:l2,m,n,ind(k)))/dz
+          else
+            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+                uud(:,3,k)*(f(l1:l2,m,n,ind(k))-f(l1:l2,m,n-1,ind(k)))/dz
+          endif
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+              f(l1:l2,m,n,ind(k))*divud(:,k)
+          if (lmice) then
+            if (z(n) > 0.) then 
+              df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - &
+                  uud(:,3,k)*(f(l1:l2,m,n+1,imi(k))-f(l1:l2,m,n,imi(k)))/dz
+            else
+              df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - &
+                  uud(:,3,k)*(f(l1:l2,m,n,imi(k))-f(l1:l2,m,n-1,imi(k)))/dz
+            endif
+          endif
+        endif
 
         if (lmdvar) then
           call grad(f,imd(k),gmd(:,:,k))
           call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
           df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
-        endif
-
-        if (lmice) then
-          call grad(f,imi(k),gmi(:,:,k))
-          call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)
-          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
         endif
 !
 !  Mass diffusion, in units of dxmin*cs0
@@ -534,7 +556,7 @@ module Dustdensity
         do k=1,ndustspec
           dmdfac = surfd(k)*mfluxcond(l)
           if (lmice) then
-            if (dmdfac < 0. .and. mi(k) <= 0.001) then
+            if (dmdfac < 0. .and. mi(k)*nd(l,k) <= 1.0) then
               ! Do nothing when there is no ice in the dust grains
             elseif (nd(l,k) > 0.) then
               df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac/unit_md
