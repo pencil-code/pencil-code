@@ -20,4 +20,4 @@
   cs2=(1.+yyH+xHe)*ss_ion*TTT*dlnPdlnrho
   cp1tilde=dlnPdss/dlnPdlnrho
   eee=1.5*(1.+yyH+xHe)*ss_ion*TTT+yyH*ss_ion*TT_ion
-  ppp=1.5*llnrho*ss_ion*TTT
+  ppp=(1.+yyH+xHe)*exp(llnrho)*ss_ion*TTT
