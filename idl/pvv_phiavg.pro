@@ -266,16 +266,13 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     endelse
 
     ;; Net differential rotation Omega_max-Omega_min
-    dr = avg.rcyl[1]-avg.rcyl[0]
+    om = var3 / spread(avg.rcyl>1.e-20, 1, nz)
     ; Exclude points closest to axis
-    noaxis1 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+0.5*dr)
-    noaxis2 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+1.5*dr)
-    noaxis3 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+2.5*dr)
-    dom0 = minmax(var3_plot         , /RANGE)
-    dom1 = minmax(var3_plot[noaxis1], /RANGE)
-    dom2 = minmax(var3_plot[noaxis2], /RANGE)
-    dom3 = minmax(var3_plot[noaxis3], /RANGE)
-    
+    dom0 = minmax(om[0:*,*], /RANGE)
+    dom1 = minmax(om[1:*,*], /RANGE)
+    dom2 = minmax(om[2:*,*], /RANGE)
+    dom3 = minmax(om[3:*,*], /RANGE)
+
 
     print, 'component:    min         rms_global    rms_'+spher+'   max'
     print, '------------------------------------------------------------------'
