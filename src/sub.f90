@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.116 2003-05-30 15:56:15 mee Exp $ 
+! $Id: sub.f90,v 1.117 2003-06-15 09:28:10 brandenb Exp $ 
 
 module Sub 
 
@@ -1287,7 +1287,7 @@ module Sub
       if(present(mzout)) then; mzout1=mzout; else; mzout1=mz; endif
 !
       open(1,file=file)
-      write(1,'(4i7)') mxout1,myout1,mzout1,mvar
+      write(1,'(5i7)') mxout1,myout1,mzout1,mvar,maux
 !
 !  check for double precision
 !

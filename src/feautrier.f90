@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.25 2003-06-15 06:16:46 brandenb Exp $
+! $Id: feautrier.f90,v 1.26 2003-06-15 09:28:10 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,7 +14,8 @@ module Radiation
 
   implicit none
 
-  logical :: nocooling=.false.,output_Qrad=.false.
+  real, dimension (mx,my,mz) :: Srad,kaprho
+  logical :: nocooling=.false.,test_radiation=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
 !
@@ -27,10 +28,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad
+       radx,rady,radz,rad2max,output_Qrad,test_radiation
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,nocooling
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,nocooling
 
   contains
 
@@ -55,16 +56,17 @@ module Radiation
 !
 !  set indices for auxiliary variables
 !
-      iQrad = mvar + naux + 1
-      iSrad = mvar + naux + 2
-      ikappa = mvar + naux + 3
-      iTT = mvar + naux + 4
-      naux = naux + 4 
+      iQrad = mvar + naux +1; naux = naux + 1
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_radiation: radiation naux = ', naux
+        print*, 'iQrad = ', iQrad
+      endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.25 2003-06-15 06:16:46 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.26 2003-06-15 09:28:10 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -81,17 +83,27 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine source_function(f)
+    subroutine radcalc(f)
 !
-!  calculate source function
+!  calculate source function and opacity
 !
 !  24-mar-03/axel+tobi: coded
 !
       use Cdata
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: lnrho,ss,yH,kappa_,cs2,TT1,cp1tilde
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx) :: lnrho,ss,yH,TT,kappa
+!
+!  test
+!
+print*,'radcalc: test_radiation=',test_radiation
+      if(test_radiation) then
+        if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
+        Srad=1.
+        kaprho=1.
+        return
+      endif
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
@@ -100,15 +112,16 @@ module Radiation
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         call ioncalc(lnrho,ss,yH,kappa=kappa_)
-         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
-         f(l1:l2,m,n,iSrad)=sigmaSB/(pi*TT1**4)
-         f(l1:l2,m,n,ikappa)=kappa_
-         f(l1:l2,m,n,iTT)=1./TT1
+         yH=f(l1:l2,m,n,iyH)
+         TT=f(l1:l2,m,n,iTT)
+         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
+         kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+               *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+         kaprho(l1:l2,m,n)=kappa*exp(lnrho)
       enddo
       enddo
 !
-    endsubroutine source_function
+    endsubroutine radcalc
 !***********************************************************************
     function feautrier(f)
 !
@@ -134,10 +147,7 @@ module Radiation
       do lrad=l1,l2
          kaprho=f(lrad,mrad,n1:n2,ikappa)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral(z,kaprho)
-         Srad_=f(lrad,mrad,n1:n2,iSrad)
-         !print*,'kappa=',kappa(lrad,mrad,n1:n2)
-         !print*,'tau=',tau
-         !print*,'Srad=',Srad_
+         Srad_=Srad(lrad,mrad,n1:n2)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
 !  lower boundary: P=S
@@ -199,10 +209,7 @@ module Radiation
       do lrad=l1,l2
          kaprho=f(lrad,mrad,n1:n2,ikappa)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral_double(z,kaprho)
-         Srad_=f(lrad,mrad,n1:n2,iSrad)
-         !print*,'kappa=',kappa(lrad,mrad,n1:n2)
-         !print*,'tau=',tau
-         !print*,'Srad=',Srad_
+         Srad_=Srad(lrad,mrad,n1:n2)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
 !  lower boundary: P=S
@@ -237,11 +244,7 @@ module Radiation
 !         print*,'Prad',Prad_
       enddo
       enddo
-
-!print*,'her2'
-!print*,maxval(kaprho),maxval(tau),maxval(Srad_)
-!print*,minval(kaprho),minval(tau),minval(Srad_)
-!print*,maxval(Prad_),minval(Prad_)
+!
     endfunction feautrier_double
 !***********************************************************************
     subroutine radtransfer(f)
@@ -252,7 +255,6 @@ module Radiation
 !
       use Cdata
       use Sub
-      use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
 !
@@ -260,10 +262,8 @@ module Radiation
 !
       if(lroot.and.headt) print*,'radtransfer'
 !
-      call source_function(f)
-      f(:,:,:,iQrad)=-f(:,:,:,iSrad)
-      f(:,:,:,iQrad)=f(:,:,:,iQrad)+feautrier_double(f)
-!print*,'her',maxval(feautrier_double(f)),maxval(Qrad(l1:l2,m1:m2,n1:n2)),maxval(-Srad)
+      call radcalc(f)
+      f(:,:,:,iQrad)=-Srad+feautrier_double(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -385,8 +385,6 @@ module Radiation
       write(3,*) 'ify=',ify
       write(3,*) 'ifz=',ifz
       write(3,*) 'iQrad=',iQrad
-      write(3,*) 'iSrad=',iSrad
-      write(3,*) 'ikappa=',ikappa
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation

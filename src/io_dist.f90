@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.56 2003-06-13 09:26:11 nilshau Exp $
+! $Id: io_dist.f90,v 1.57 2003-06-15 09:28:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.56 2003-06-13 09:26:11 nilshau Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.57 2003-06-15 09:28:10 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -159,6 +159,7 @@ contains
     subroutine output_auxiliary(lun_output,nn1,nn2,a)
 !
 !  write auxiliary information into snapshot file
+!
 !  26-may-03/axel: adapted from output_vect
 !
       use Cdata
@@ -172,7 +173,7 @@ contains
 !  determine whether we want to write auxiliary output
 !  (currently we always do this provided maux>0)
 !
-      lauxiliary=(maux>0)
+      lauxiliary=(nn2>0)
       if(lauxiliary) write(lun_output) a(:,:,:,nn1+1:nn1+1+nn2)
 !
     endsubroutine output_auxiliary
@@ -181,6 +182,7 @@ contains
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for vector field
+!
 !  11-apr-97/axel: coded
 !
       use Cdata
@@ -192,8 +194,8 @@ contains
       real, dimension (mx,my,mz,nn) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nn =', nn
-      !
+      if (ip<=8.and.lroot) print*,'output_vect: nn =', nn
+!
       if (lserial_io) call start_serialize()
       open(lun_output,file=file,form='unformatted')
       write(lun_output) a
@@ -212,6 +214,7 @@ contains
 !
 !  write snapshot file, always write time and mesh, could add other things
 !  version for scalar field
+!
 !  11-apr-97/axel: coded
 !
       use Cdata
@@ -299,6 +302,7 @@ contains
     subroutine outpus(file,a,nn)
 !
 !  write snapshot file, always write mesh and time, could add other things
+!
 !  11-oct-98/axel: adapted
 !
       use Cdata
@@ -316,22 +320,27 @@ contains
     subroutine wgrid (file)
 !
 !  Write processor-local part of grid coordinates.
-!  21-jan-02/wolf: coded
 !
-      use Cdata, only: t,x,y,z,dx,dy,dz
+!  21-jan-02/wolf: coded
+!  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
+!
+      use Cdata, only: t,x,y,z,dx,dy,dz,Lx,Ly,Lz
 !
       character (len=*) :: file
 !
       open(1,FILE=file,FORM='unformatted')
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
+      write(1) Lx,Ly,Lz
 !
     endsubroutine wgrid
 !***********************************************************************
     subroutine rgrid (file)
 !
 !  Read processor-local part of grid coordinates.
+!
 !  21-jan-02/wolf: coded
+!  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
 !
       use Cdata
 !
@@ -341,19 +350,29 @@ contains
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
+      read(1,end=999) Lx,Ly,Lz
 !
-      dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
+997   dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
       dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
-
-      Lx=dx*nx*nprocx
-      Ly=dy*ny*nprocy
-      Lz=dz*nz*nprocz
 !
-      if (ip<=4) print*
-      if (ip<=4) print*,'dx,dy,dz=',dx,dy,dz
-      if (ip<=4) print*,'dxmin,dxmax=',dxmin,dxmax
+!  debug output
 !
-    endsubroutine rgrid
+      if (ip<=4.and.lroot) then
+        print*
+        print*,'Lx,Ly,Lz=',Lx,Ly,Lz
+        print*,'dx,dy,dz=',dx,dy,dz
+        print*,'dxmin,dxmax=',dxmin,dxmax
+      endif
+!
+!  give notification if Lx is not read in
+!  This should only happen when reading in old data files
+!  We should keep this for the time being
+!
+      goto 998
+999   print*,'note: Lx,Ly,Lz are not yet in grid.dat'
+      goto 997
+!
+998 endsubroutine rgrid
 !***********************************************************************
     subroutine wtime(file,tau)
 !

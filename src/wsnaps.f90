@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.27 2003-06-14 16:30:32 theine Exp $
+! $Id: wsnaps.f90,v 1.28 2003-06-15 09:28:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -65,7 +65,7 @@ contains
         call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call update_ghosts(a)
-          call output(chsnap//ch,a,mvar,noclose=.true.)
+          call output(chsnap//ch,a,msnap,noclose=.true.)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
         endif
 !
@@ -74,18 +74,18 @@ contains
 !  write snapshot without label (typically, var.dat)
 !
         call update_ghosts(a)
-        call output(chsnap,a,mvar,noclose=.true.)
+        call output(chsnap,a,msnap,noclose=.true.)
       endif
 !
 !  before closing, add possible extra (hard-to-get) output
 !  do this only if something was written according to the above logics 
 !
-      if(lsnap.or..not.llabel) then
-        if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
-        !call output_radiation(lun_output)
-        !call output_ionization(lun_output)
-        close(lun_output)
-      endif
+!     if(lsnap.or..not.llabel) then
+!       if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
+!       !call output_radiation(lun_output)
+!       !call output_ionization(lun_output)
+!       close(lun_output)
+!     endif
 !
     endsubroutine wsnap
 !***********************************************************************

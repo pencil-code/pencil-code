@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.8 2003-06-15 06:16:47 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.9 2003-06-15 09:28:10 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -28,10 +28,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad
+       radx,rady,radz,rad2max,output_Qrad,test_radiation
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,output_Qrad,nocooling,test_radiation
+       radx,rady,radz,rad2max,output_Qrad,test_radiation,nocooling
 
   contains
 
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.8 2003-06-15 06:16:47 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.9 2003-06-15 09:28:10 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -92,12 +92,14 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar), intent(in) :: f
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx) :: lnrho,ss,yH,TT,kappa
 !
 !  test
 !
+print*,'radcalc: test_radiation=',test_radiation
       if(test_radiation) then
+        if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
         Srad=1.
         kaprho=1.
         return
@@ -171,7 +173,7 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
 !
 !  identifier
 !

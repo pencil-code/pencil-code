@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.184 2003-06-15 06:16:46 brandenb Exp $
+### $Id: Makefile,v 1.185 2003-06-15 09:28:10 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -125,7 +125,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
 #FFLAGS= -O3 -w90 #(cosmo)
-#FC=ifc -I/usr/include #(cosmo|nl6)  
+#FC=ifc -I/usr/include #(cosmo)  
+#FC=ifc -I/usr/include #(nl6)  
 #LDMPI=-L/usr/lib -lmpi -llamf77mpi -llam -lpmpi -llammpi++ -llammpio #(cosmo)
 #LDMPI= # (Samos|fire)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
