@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.37 2004-04-02 20:51:45 dobler Exp $
+! $Id: cparam.f90,v 1.38 2004-05-25 12:41:35 dobler Exp $
 
 module Cparam
 
@@ -47,6 +47,10 @@ module Cparam
 !            date-and-time string
 !
   integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
+!
+!  number of slots in initlnrho etc.
+!
+  integer, parameter :: ninit=4
 !
 !  significant length of random number generator state
 !  Different compilers have different lengths:
