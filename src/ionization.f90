@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.93 2003-09-22 10:16:01 theine Exp $
+! $Id: ionization.f90,v 1.94 2003-09-24 10:10:00 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.93 2003-09-22 10:16:01 theine Exp $")
+           "$Id: ionization.f90,v 1.94 2003-09-24 10:10:00 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -1258,9 +1258,15 @@ module Ionization
         do i=1,nghost
           f(:,:,n1-i,iTT) = f(:,:,n1+i,iTT) 
         enddo
-        
+        !
+        ! NB: The 8*tiny(f) stuff was introduced to avoid division by zero
+        !   if K=0. It would be cleaner to leave K as it is and rewrite the
+        !   second line below as
+        !     f(:,:,1:n1-1,iyH)=2*sqrt(K)/(sqrt(K)+sqrt(K+4)) ,
+        !   desirably using a temporary variable for sqrt(K).
+        !        
         K=exp(lnrho_e-f(:,:,1:n1-1,ilnrho))*(f(:,:,1:n1-1,iTT)/TT_ion)**1.5 &
-                 *exp(-TT_ion/f(:,:,1:n1-1,iTT))
+                 *exp(-TT_ion/f(:,:,1:n1-1,iTT)) + 8*tiny(f)
         f(:,:,1:n1-1,iyH)=2./(1.+sqrt(1.+4./K ))
 
         yH_term=0.
@@ -1285,8 +1291,15 @@ module Ionization
         do i=1,nghost
           f(:,:,n2+i,iTT) = f(:,:,n2-i,iTT) 
         enddo
+        !
+        ! NB: The 8*tiny(f) stuff was introduced to avoid division by zero
+        !   if K=0. It would be cleaner to leave K as it is and rewrite the
+        !   second line below as
+        !     f(:,:,n2+1:mz,iyH)=2*sqrt(K)/(sqrt(K)+sqrt(K+4)) ,
+        !   desirably using a temporary variable for sqrt(K).
+        !
         K=exp(lnrho_e-f(:,:,n2+1:mz,ilnrho))*(f(:,:,n2+1:mz,iTT)/TT_ion)**1.5 &
-                 *exp(-TT_ion/f(:,:,n2+1:mz,iTT))
+                 *exp(-TT_ion/f(:,:,n2+1:mz,iTT)) + 8*tiny(f)
         f(:,:,n2+1:mz,iyH)=2./(1.+sqrt(1.+4./K ))
 
         yH_term=0.
