@@ -1,8 +1,8 @@
-;  $Id: thermodynamics.pro,v 1.10 2003-10-02 15:44:34 theine Exp $
+;  $Id: thermodynamics.pro,v 1.11 2003-10-09 16:40:59 brandenb Exp $
 
 xHe=par.xHe
 
-if (not lionization) then begin
+if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
   cs2=cs20*exp(gamma1*llnrho+gamma*sss)
   ppp=rho*cs2/gamma
@@ -14,6 +14,9 @@ endif else begin
     seedarray=fltarr(nx)
     seedarray[*]=yH0
     yyH=spread(spread(seedarray,1,ny),2,nz)
+    @data/pc_constants
+    TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
+    TTT=TT(l1:l2,m1:m2,n1:n2)
   end else begin
     print,'Using full ionisation equation of state...'
     if (iyH ne 0) then begin
