@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.147 2003-11-06 20:19:18 nilshau Exp $
+! $Id: magnetic.f90,v 1.148 2003-11-08 22:16:46 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -104,7 +104,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.147 2003-11-06 20:19:18 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.148 2003-11-08 22:16:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -179,6 +179,7 @@ module Magnetic
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
+      case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
       case('Alfven-circ-x')
@@ -911,6 +912,34 @@ module Magnetic
 !
       first = .false.
     endsubroutine calc_mfield
+!***********************************************************************
+    subroutine alfven_x(ampl,f,iuu,iaa,ilnrho,xx,kx)
+!
+!  Alfven wave propagating in the z-direction
+!  ux = cos(kz-ot), for B0z=1 and rho=1.
+!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
+!
+!  satisfies the equations
+!  dlnrho/dt = -ux'
+!  dux/dt = -cs2*(lnrho)'
+!  duy/dt = B0*By'  ==>  dux/dt = B0*Ay''
+!  dBy/dt = B0*uy'  ==>  dAy/dt = -B0*ux
+!
+!   8-nov-03/axel: coded
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx
+      real :: ampl,kx
+      integer :: iuu,iaa,ilnrho
+!
+!  ux and Ay
+!
+      f(:,:,:,ilnrho)=ampl*sin(kx*xx)
+      f(:,:,:,iuu+0)=+ampl*sin(kx*xx)
+      f(:,:,:,iuu+1)=+ampl*sin(kx*xx)
+      f(:,:,:,iaa+2)=-ampl*cos(kx*xx)
+!
+    endsubroutine alfven_x
 !***********************************************************************
     subroutine alfven_z(ampl,f,iuu,iaa,zz,kz)
 !
