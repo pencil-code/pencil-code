@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.112 2003-06-17 07:08:19 dobler Exp $ 
+! $Id: param_io.f90,v 1.113 2003-06-17 18:47:07 dobler Exp $ 
 
 module Param_IO
 
@@ -340,7 +340,7 @@ module Param_IO
 !  in the various modules
 !
       label='run_pars'
-                      read(1,NML=run_pars          ,ERR=99, IOSTAT=ierr)
+                         read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
       label='hydro_run_pars'
       if (lhydro       ) read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
       label='density_run_pars'
@@ -356,7 +356,7 @@ module Param_IO
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
       label='ionization_run_pars'
-      if (lionization  ) read(1,NML=ionization_run_pars    ,ERR=99, IOSTAT=ierr)
+      if (lionization  ) read(1,NML=ionization_run_pars   ,ERR=99, IOSTAT=ierr)
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
       label='dustvelocity_run_pars'
@@ -490,7 +490,7 @@ module Param_IO
           write(unit,*) '# t=', t
         endif
 !
-                        write(unit,NML=run_pars          )
+                           write(unit,NML=run_pars             )
         if (lhydro       ) write(unit,NML=hydro_run_pars       )
         if (lforcing     ) write(unit,NML=forcing_run_pars     )
         if (lgrav        ) write(unit,NML=grav_run_pars        )
@@ -533,7 +533,7 @@ module Param_IO
 !  small.
 !      if (lroot) then
         open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe' )
-                        write(1,NML=init_pars          )
+                           write(1,NML=init_pars             )
         if (lhydro       ) write(1,NML=hydro_init_pars       )
         if (ldensity     ) write(1,NML=density_init_pars     )
         ! no input parameters for forcing
@@ -577,7 +577,7 @@ module Param_IO
         if (ldustdensity ) read(1,NML=dustdensity_init_pars )
         if (linterstellar) read(1,NML=interstellar_init_pars)
         if (lshear       ) read(1,NML=shear_init_pars       )
-        ! no input parameters for viscosity        
+        ! no input parameters for viscosity
         close(1)
 !
       if (lroot.and.ip<14) then
