@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.5 2003-06-14 18:07:38 theine Exp $
+! $Id: radiation_exp.f90,v 1.6 2003-06-14 19:42:29 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -62,10 +62,15 @@ module Radiation
         print*, 'iQrad = ', iQrad
       endif
 !
+!  set indices for auxiliary variables
+!
+      iQrad = mvar + naux + 1
+      naux = naux + 1
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.5 2003-06-14 18:07:38 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.6 2003-06-14 19:42:29 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -274,6 +279,7 @@ module Radiation
       write(3,*) 'ifx=',ifx
       write(3,*) 'ify=',ify
       write(3,*) 'ifz=',ifz
+      write(3,*) 'iQrad=',iQrad
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation
