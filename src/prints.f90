@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.24 2002-06-25 14:55:39 dobler Exp $
+! $Id: prints.f90,v 1.25 2002-07-08 20:50:14 dobler Exp $
 
 module Print
 
@@ -73,7 +73,9 @@ module Print
         if(ldebug) print*,'bef. writing prints'
         write(line,trim(fform)) fname(1:nname)
         index_d=index(line,'. ')
-        line(index_d:index_d)=' '
+        if (index_d >= 1) then
+          line(index_d:index_d)=' '
+        endif
 !
 !  append to diagnostics file
 !
@@ -88,7 +90,7 @@ module Print
 !
       if(ldebug) print*,'exit prints'
       first = .false.
-    endsubroutine Prints
+    endsubroutine prints
 !***********************************************************************
     subroutine write_xyaverages
 !
