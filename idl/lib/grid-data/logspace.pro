@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   21-Jun-2001
-;;;  Version: 0.34
+;;;  Version: 0.35 (CVS: $Revision: 1.2 $)
 ;;;  Description:
 ;;;     Return a real vector of length N, containing logarithmically
 ;;;   equidistant values between 10^x1 and 10^x2 inclusively.
@@ -14,10 +14,10 @@
 ;;;     Alllows for the first 2 arguments to be written as a vector,
 ;;;   so `logspace(minmax(v),10)' works. 
 ;;;  Keywords:
-;;;   GHOST     -- set this to th enumber of ghost cells before x1 or
+;;;   GHOST     -- set this to the number of ghost cells before x1 or
 ;;;                after x2; GHOST can be a 2-element array
 ;;;                [left,right] or a scalar (applied to both sides)
-;;;   UNIQ      -- flag for returning a list of unique elements.
+;;;   UNIQUE    -- flag for returning a list of unique elements.
 ;;;                This implies that you may get less than N elements
 ;;;                (in many cases just one).
 ;;;                Useful if you call
@@ -29,7 +29,7 @@
 
 function logspace, x1, x2, n, $
                    GHOST=ghost, $
-                   UNIQ=unique
+                   UNIQUE=unique
   on_error,2
 
   if (n_elements(ghost) eq 0) then begin
@@ -50,7 +50,6 @@ function logspace, x1, x2, n, $
   endelse
   default, nn, 100
   n_real = nn - nghost[0] - nghost[1]
-
   list = 10^(xx1 + (findgen(nn)-nghost[0])*(xx2-xx1)/(n_real-1))
 
   if (unique) then list = list(uniq(list))

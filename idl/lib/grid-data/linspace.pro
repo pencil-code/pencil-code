@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   21-Jun-2001
-;;;  Version: 0.35 (CVS: $Revision: 1.2 $)
+;;;  Version: 0.35 (CVS: $Revision: 1.3 $)
 ;;;  Description:
 ;;;     Return a real vector of length N, containing equidistant values
 ;;;   between x1 and x2 inclusively.
@@ -15,10 +15,10 @@
 ;;;   so `linspace(minmax(v),10)' works. 
 ;;;  Keywords:
 ;;;   PERIODIC  -- flag for periodic grid (i.e. x[n-1]=x2-dx)
-;;;   GHOST     -- set this to the enumber of ghost cells before x1 or
+;;;   GHOST     -- set this to the number of ghost cells before x1 or
 ;;;                after x2; GHOST can be a 2-element array
 ;;;                [left,right] or a scalar (applied to both sides)
-;;;   UNIQ      -- flag for returning a list of unique elements.
+;;;   UNIQUE    -- flag for returning a list of unique elements.
 ;;;                This implies that you may get less than N elements
 ;;;                (in many cases just one).
 ;;;                Useful if you call
@@ -28,7 +28,7 @@
 function linspace, x1, x2, n, $
                    PERIODIC=peri, $
                    GHOST=ghost, $
-                   UNIQ=unique
+                   UNIQUE=unique
   on_error,2
 
   if (n_elements(ghost) eq 0) then begin
@@ -49,7 +49,6 @@ function linspace, x1, x2, n, $
     if (n_elements(n) ne 0) then nn = n
   endelse
   default, nn, 100
-
   n_real = nn - nghost[0] - nghost[1]
   list = xx1 + (findgen(nn)-nghost[0])*(xx2-xx1)/(n_real-1)
 
