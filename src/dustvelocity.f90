@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.45 2004-04-06 11:51:52 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.46 2004-04-12 09:59:59 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -28,7 +28,7 @@ module Dustvelocity
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: tausd1,nud_all=0.,betad_all=0.,tausd_all=0.
-  real :: mmon,mumon,surfmon
+  real :: mmon,mumon,surfmon,Eyoung,gsurften,vstcst
   double precision :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
@@ -107,7 +107,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.45 2004-04-06 11:51:52 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.46 2004-04-12 09:59:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,6 +161,12 @@ module Dustvelocity
       case ('ice')
         if (headtt) &
             print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
+!
+!  Surface tension and Young's modulus for sticking velocity
+!            
+        gsurften = 370. ! erg cm^-2 
+        Eyoung   = 7e10 ! dyn cm^-2
+        
         mumon = 18
         mmon  = mumon*1.6733e-24
         unit_md = mmon
@@ -174,6 +180,10 @@ module Dustvelocity
             ("initialize_dustvelocity: No valid dust chemistry specified.")
 
       endselect
+!
+!  Constant used in determination of sticking velocity
+!
+      vstcst = 2*9.6 * gsurften**(5/3.) * Eyoung**(-2/3.)
 !
 !  Dust physics parameters
 !

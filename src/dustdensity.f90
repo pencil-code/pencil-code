@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.57 2004-04-07 13:24:28 ajohan Exp $
+! $Id: dustdensity.f90,v 1.58 2004-04-12 09:59:59 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -26,16 +26,16 @@ module Dustdensity
   real :: cdiffnd_all, mdave0=1., adpeak=5e-4
   real :: supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero'
-  logical :: ldustnucleation=.false.,ldustgrowth=.true.,ldustcoagulation=.true.
+  logical :: ldustgrowth=.true.,ldustcoagulation=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
-      adpeak, ldustnucleation, ldustgrowth, ldustcoagulation, &
+      adpeak, ldustgrowth, ldustcoagulation, &
       lcalcdkern, supsatfac, lkeepinitnd
 
   namelist /dustdensity_run_pars/ &
-      rhod0, cdiffnd, cdiffnd_all, ldustnucleation, ldustgrowth, &
+      rhod0, cdiffnd, cdiffnd_all, ldustgrowth, &
       ldustcoagulation, lcalcdkern, supsatfac
       
 
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.57 2004-04-07 13:24:28 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.58 2004-04-12 09:59:59 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -149,9 +149,9 @@ module Dustdensity
 !
       integer :: i,j
 !
-      if (lroot) print*, 'initialize_dustdensity: ldustnucleation,' // &
+      if (lroot) print*, 'initialize_dustdensity: '// &
           'ldustgrowth,ldustcoagulation =', &
-          ldustnucleation,ldustgrowth,ldustcoagulation
+          ldustgrowth,ldustcoagulation
 !          
       if (ldustgrowth .and. .not. lpscalar) &
           call stop_it('initialize_dustdensity: ' // &
@@ -321,89 +321,42 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
-      real, dimension (nx,ndustspec) :: nd,divud,ndnew,rhodnew,rhoinew
-      real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,rho,rho1
-      real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm
-      real, dimension (nx) :: TT1,ugrhod
-      real, dimension (nx) :: mfluxcond, nofluxcond
+      real, dimension (nx,ndustspec) :: nd,divud
+      real, dimension (nx) :: ugnd,gnd2,del2nd,rho,rho1,TT1
       real, dimension (ndustspec) :: mice
       real :: diffnd
-      integer :: i,j,k,i_targ
+      integer :: k
 !
       intent(in)  :: uud,divud
       intent(out) :: df,gnd
-
 !
 !  identify module and boundary conditions
 !
-      if (headtt .or. ldebug)  print*,'dnd_dt: SOLVE dnd_dt'
-      if (headtt)              call identify_bcs('nd',ind(1))
-      if (lmdvar .and. headtt) call identify_bcs('rhod',irhod(1))
+      if (headtt  .or. ldebug)  print*,'dnd_dt: SOLVE dnd_dt'
+      if (headtt)               call identify_bcs('nd',ind(1))
+      if (lmdvar  .and. headtt) call identify_bcs('rhod',irhod(1))
+      if (lrhoice .and. headtt) call identify_bcs('rhoi',irhoi(1))
 !
 !  Recalculate grain masses from nd and rhod
 !
       if (lmdvar .and. itsub == 1) then
-        do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) > 0. .and. f(l1,m,n,irhod(k)) > 0.) then
-            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
-          else
-            md(k) = 0.5*(mdminus(k)+mdplus(k))
-          endif
-        enddo
+        call calc_grainmass(f)
 !
 !  Check for grain mass interval overflows
 !
-        do k=1,ndustspec
-          i_targ = k
-          if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
-            do j=k+1,ndustspec+1 
-              i_targ = j
-              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
-            enddo
-          elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
-            do j=k-1,0,-1
-              i_targ = j
-              if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
-            enddo
-          endif
-
-          if (i_targ == ndustspec+1) i_targ = ndustspec
-          
-          if (i_targ >= 1 .and. i_targ <= ndustspec) then
-            ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
-            rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
-            if (lrhoice) &
-                rhoinew(:,i_targ) = rhoinew(:,i_targ)+f(l1:l2,m,n,irhoi(k))
-          elseif (i_targ == 0) then
-            !if (lkeepinitnd) then
-            !  print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
-            !  call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
-            !endif
-            f(l1:l2,m,n,ilncc) = &
-                f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
-          endif
-        enddo
-        f(l1:l2,m,n,ind)   = ndnew(:,:)
-        f(l1:l2,m,n,irhod) = rhodnew(:,:)
-        if (lrhoice) f(l1:l2,m,n,irhoi) = rhoinew(:,:)
-        ndnew   = 0.
-        rhodnew = 0.
-        if (lrhoice) rhoinew = 0.
+        call redist_mdbins(f,rho1)
 !
-!  Must redo calculation of grain mass
+!  Must redo calculation of grain mass calculate ice mass in grains
 !        
-        do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) > 0. .and. f(l1,m,n,irhod(k)) > 0.) then
-            md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
-          else
-            md(k) = 0.5*(mdminus(k)+mdplus(k))
-          endif
-          if (lrhoice .and. f(l1,m,n,ind(k)) /= 0.) then
-            mice(k) = f(l1,m,n,irhoi(k))/f(l1,m,n,ind(k))
-          endif
-        enddo
+        call calc_grainmass(f)
+        if (lrhoice) then
+          do k=1,ndustspec
+            if (f(l1,m,n,ind(k)) /= 0.) then
+              mice(k) = f(l1,m,n,irhoi(k))/f(l1,m,n,ind(k))
+            endif
+          enddo
+        endif
 !
 !  Recalculate surface and cross section
 !
@@ -418,117 +371,27 @@ module Dustdensity
       enddo
       rho = exp(f(l1:l2,m,n,ilnrho))
 !
-!  Formation of the smallest dust particles due to condensation
-!  Currently not working (it is much more complex than sketched here)
-!
-      if (ldustnucleation) then
-        call stop_it('dnd_dt: Dust nucleation currently not implemented')
-        call get_nofluxcond(f,nofluxcond,rho)
-        dndfac = surfd(1)*nofluxcond*nd(:,1)
-        df(l1:l2,m,n,ind(1)) = df(l1:l2,m,n,ind(1)) + dndfac
-        df(l1:l2,m,n,ilncc)  = df(l1:l2,m,n,ilncc)  - md(1)*unit_md*rho1*dndfac
-      endif
-!
 !  Dust growth due to condensation on grains
 !
-      if (ldustgrowth) then
-        call get_mfluxcond(f,mfluxcond,rho,TT1)
-        do k=1,ndustspec
-          if (lmdvar) then
-            dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            if (lrhoice) then
-              if (dndfac(1) < 0. .and. &
-                  f(l1,m,n,irhoi(k))/f(l1,m,n,irhod(k)) <= 0.01) then
-                ! Do nothing when there is no ice in the dust grains
-              elseif (nd(1,k) >= 0.) then
-                df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
-                df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
-                df(l1:l2,m,n,irhoi(k)) = df(l1:l2,m,n,irhoi(k)) + dndfac/unit_md
-              endif
-            else
-              if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= 0.99*eps_ctog &
-                  .and. lkeepinitnd) then
-                ! Do nothing when dust mass is set to decrease below initial
-              elseif (nd(1,k) >= 0.) then
-                df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
-                df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
-              endif
-            endif
-          else
-            call stop_it('dnd_dt: Dust condensation only works with lmdvar')
-          endif
-        enddo
-      endif
+      if (ldustgrowth) call dust_condensation (f,df,rho,rho1,TT1,nd)
 !
 !  Calculate kernel of coagulation equation
 !
-      if (lcalcdkern .and. ldustcoagulation) then
-        do i=1,ndustspec
-          do j=i,ndustspec
-            call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
-                f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
-            deltaud_drift = sqrt(udiudj)
-            deltaud_therm = sqrt( 8*k_B/(pi*TT1) * &
-                (md(i)+md(j))/(md(i)*md(j)*unit_md) )
-            deltaud = sqrt(deltaud_drift**2+deltaud_therm**2)
-            dkern(:,i,j) = scolld(i,j)*deltaud
-            dkern(:,j,i) = dkern(:,i,j)
-          enddo
-        enddo
-      endif
+      if (lcalcdkern .and. ldustcoagulation) call coag_kernel(f,TT1)
 !
-!  Dust coagulation
+!  Dust coagulation due to sticking
 !
-      if (ldustcoagulation) then
-        do i=1,ndustspec
-          do j=i,ndustspec
-            dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
-            if (minval(dndfac) /= 0.) then
-              df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
-              df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
-              do k=j,ndustspec+1
-                if (md(i) + md(j) >= mdminus(k) &
-                    .and. md(i) + md(j) < mdplus(k)) then
-                  if (lmdvar) then
-                    df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k)) - dndfac
-                    df(l1:l2,m,n,irhod(i)) = &
-                        df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
-                    df(l1:l2,m,n,irhod(j)) = &
-                        df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
-                    df(l1:l2,m,n,irhod(k)) = &
-                        df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
-                    if (lrhoice) then
-                      df(l1:l2,m,n,irhoi(i)) = &
-                          df(l1:l2,m,n,irhoi(i)) + mice(i)*dndfac
-                      df(l1:l2,m,n,irhoi(j)) = &
-                          df(l1:l2,m,n,irhoi(j)) + mice(j)*dndfac
-                      df(l1:l2,m,n,irhoi(k)) = &
-                          df(l1:l2,m,n,irhoi(k)) - (mice(i)+mice(j))*dndfac
-                    endif
-                    exit
-                  else
-                    df(l1:l2,m,n,ind(k)) = &
-                        df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
-                    exit
-                  endif
-                endif
-              enddo
-            endif
-          enddo
-        enddo
-      endif
+      if (ldustcoagulation) call dust_coagulation(f,df,nd,mice)
 !
 !  Loop over dust layers
 !
       do k=1,ndustspec
 !
-!  calculate dust number density gradient and advection term
+!  Continuity equations
 !
         call grad(f,ind(k),gnd(:,:,k))
         call dot_mn(uud(:,:,k),gnd(:,:,k),ugnd)
-!
-!  continuity equations
-!
+
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
             ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
 
@@ -542,7 +405,7 @@ module Dustdensity
               mice(k)*(-ugnd - f(l1:l2,m,n,ind(k))*divud(:,k))
         endif
 !
-!  mass diffusion, in units of dxmin*cs0
+!  Mass diffusion, in units of dxmin*cs0
 !
         if (cdiffnd(k) /= 0.) then
           diffnd=cdiffnd(k)*dxmin*cs0
@@ -552,6 +415,8 @@ module Dustdensity
               df(l1:l2,m,n,ind(k)) + diffnd*(del2nd+nd(:,k)*gnd2)
           call max_for_dt(diffnd,maxdiffus)
         endif
+!
+!  Diagnostic output
 !
         if (ldiagnos) then
           if (i_ndm(k) /= 0) call sum_mn_name(nd(:,k),i_ndm(k))
@@ -598,6 +463,116 @@ module Dustdensity
 !
     endsubroutine dnd_dt
 !***********************************************************************
+    subroutine calc_grainmass(f)
+!
+!  Calculate dust grain mass in all bins
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: k
+
+      do k=1,ndustspec
+        if (f(l1,m,n,ind(k)) > 0. .and. f(l1,m,n,irhod(k)) > 0.) then
+          md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
+        else
+          md(k) = 0.5*(mdminus(k)+mdplus(k))
+        endif
+      enddo
+!
+    endsubroutine calc_grainmass
+!***********************************************************************
+    subroutine redist_mdbins(f,rho1)
+!
+!  Redistribute dust number density and dust density in mass bins
+!
+      use Mpicomm, only: stop_it
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,ndustspec) :: ndnew,rhodnew,rhoinew
+      real, dimension (nx) :: rho1
+      integer :: j,k,i_targ
+!   
+      do k=1,ndustspec
+        i_targ = k
+        if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
+          do j=k+1,ndustspec+1 
+            i_targ = j
+            if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
+          enddo
+        elseif (md(k) < mdminus(k)) then ! Gone to lower mass bin
+          do j=k-1,0,-1
+            i_targ = j
+            if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
+          enddo
+        endif
+
+        if (i_targ == ndustspec+1) i_targ = ndustspec
+        
+        if (i_targ >= 1 .and. i_targ <= ndustspec) then
+          ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
+          rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
+          if (lrhoice) &
+              rhoinew(:,i_targ) = rhoinew(:,i_targ)+f(l1:l2,m,n,irhoi(k))
+        elseif (i_targ == 0) then
+          !if (lkeepinitnd) then
+          !  print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+          !  call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
+          !endif
+          f(l1:l2,m,n,ilncc) = &
+              f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*unit_md*rho1
+        endif
+      enddo
+      f(l1:l2,m,n,ind)   = ndnew(:,:)
+      f(l1:l2,m,n,irhod) = rhodnew(:,:)
+      if (lrhoice) f(l1:l2,m,n,irhoi) = rhoinew(:,:)
+      ndnew   = 0.
+      rhodnew = 0.
+      if (lrhoice) rhoinew = 0.
+!
+    endsubroutine redist_mdbins
+!***********************************************************************
+    subroutine dust_condensation (f,df,rho,rho1,TT1,nd)
+!
+!  Calculate condensation of dust on existing dust surfaces
+!
+      use Mpicomm, only: stop_it
+      use Pscalar, only: eps_ctog
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,ndustspec) :: nd
+      real, dimension (nx) :: dndfac,rho,rho1,TT1,mfluxcond
+      integer :: k
+!
+      call get_mfluxcond(f,mfluxcond,rho,TT1)
+      do k=1,ndustspec
+        if (lmdvar) then
+          dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
+          if (lrhoice) then
+            if (dndfac(1) < 0. .and. &
+                f(l1,m,n,irhoi(k))/f(l1,m,n,irhod(k)) <= 0.01) then
+              ! Do nothing when there is no ice in the dust grains
+            elseif (nd(1,k) >= 0.) then
+              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
+              df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+              df(l1:l2,m,n,irhoi(k)) = df(l1:l2,m,n,irhoi(k)) + dndfac/unit_md
+            endif
+          else
+            if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= 0.99*eps_ctog &
+                .and. lkeepinitnd) then
+              ! Do nothing when dust mass is set to decrease below initial
+            elseif (nd(1,k) >= 0.) then
+              df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
+              df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
+            endif
+          endif
+        else
+          call stop_it &
+              ('dust_condensation: Dust condensation only works with lmdvar')
+        endif
+      enddo
+!
+    endsubroutine dust_condensation
+!***********************************************************************
     subroutine get_mfluxcond(f,mfluxcond,rho,TT1)
 !
 !  Calculate mass flux of condensing monomers
@@ -637,46 +612,96 @@ module Dustdensity
 !
     endsubroutine get_mfluxcond
 !***********************************************************************
-    subroutine get_nofluxcond(f,nofluxcond,rho)
+    subroutine coag_kernel(f,TT1)
 !
-!  Calculate number flux of condensing monomers
+!  Calculate mass flux of condensing monomers
 !
       use Cdata
-      use Mpicomm, only: stop_it
-      use Ionization, only: getmu,eoscalc
+      use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: nofluxcond,rho,lnTT,TT,pp,ppmon,ppsat,vth,epsmon
-      real, dimension (nx) :: supsatratio1
-      real, save :: mu
-      integer :: l
+      real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu
+      real, dimension (nx) :: TT1,udiudj,ul0
+      real :: tl0
+      real :: alphaSS=0.
+      integer :: i,j,l
 !
-      select case(dust_chemistry)
-
-      case ('ice')
-        epsmon = f(l1:l2,m,n,ilncc)
-        !call eoscalc(f,nx,lnTT=lnTT,pp=pp)
-        TT = exp(lnTT)
-        if (it == 1) call getmu(mu)
-        ppmon = pp*epsmon*mu/mumon
-        ppsat = 6.035e12*exp(-5938/TT)
-        vth = (3*k_B*TT/mmon)**0.5
-        supsatratio1 = ppsat/ppmon
-        nofluxcond = vth*epsmon*rho/mmon*(1-supsatratio1)
-
-        if (supsatfac1 /= 1.) then
-          do l=l1,l2
-            if (supsatratio1(l) <= 1. &
-                .and. supsatratio1(l) > supsatfac1) nofluxcond(l) = 0.
+      tl0 = 1/Omega
+      ul0 = 0.   !alphaSS*sqrt(cs2)
+      do i=1,ndustspec
+        do j=i,ndustspec
+          call dot_mn (f(l1:l2,m,n,iudx(i):iudz(i)), &
+              f(l1:l2,m,n,iudx(j):iudz(j)),udiudj)
+          deltaud_drift = sqrt(udiudj)
+          deltaud_therm = &
+              sqrt( 8*k_B/(pi*TT1)*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
+          deltaud_turbu = &
+              ul0*3*tausd(j)/(tausd(i)+tausd(j))*(tausd(j)/tl0)**0.5
+          deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
+!
+!  Stick only when relative velocity below sticking velocity
+!
+          do l=1,nx
+            if (deltaud(l) >= sqrt( vstcst*(ad(i)*ad(j)/(ad(i)+ad(j)))**(4/3.)/&
+                (md(i)*md(j))/(md(i)+md(j))) ) deltaud(l) = 0.
           enddo
-        endif
 
-      case default
-        call stop_it("get_nofluxcond: No valid dust chemistry specified.")
-
-      endselect
+          dkern(:,i,j) = scolld(i,j)*deltaud
+          dkern(:,j,i) = dkern(:,i,j)
+        enddo
+      enddo
 !
-    endsubroutine get_nofluxcond
+    endsubroutine coag_kernel
+!***********************************************************************
+    subroutine dust_coagulation(f,df,nd,mice)
+!
+!  Dust coagulation due to sticking
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,ndustspec) :: nd
+      real, dimension (nx) :: dndfac
+      real, dimension (ndustspec) :: mice
+      integer :: i,j,k
+!
+      do i=1,ndustspec
+        do j=i,ndustspec
+          dndfac = -dkern(:,i,j)*nd(:,i)*nd(:,j)
+          if (minval(dndfac) /= 0.) then
+            df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
+            df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
+            do k=j,ndustspec+1
+              if (md(i) + md(j) >= mdminus(k) &
+                  .and. md(i) + md(j) < mdplus(k)) then
+                if (lmdvar) then
+                  df(l1:l2,m,n,ind(k))   = df(l1:l2,m,n,ind(k)) - dndfac
+                  df(l1:l2,m,n,irhod(i)) = &
+                      df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
+                  df(l1:l2,m,n,irhod(j)) = &
+                      df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
+                  df(l1:l2,m,n,irhod(k)) = &
+                      df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
+                  if (lrhoice) then
+                    df(l1:l2,m,n,irhoi(i)) = &
+                        df(l1:l2,m,n,irhoi(i)) + mice(i)*dndfac
+                    df(l1:l2,m,n,irhoi(j)) = &
+                        df(l1:l2,m,n,irhoi(j)) + mice(j)*dndfac
+                    df(l1:l2,m,n,irhoi(k)) = &
+                        df(l1:l2,m,n,irhoi(k)) - (mice(i)+mice(j))*dndfac
+                  endif
+                  exit
+                else
+                  df(l1:l2,m,n,ind(k)) = &
+                      df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
+                  exit
+                endif
+              endif
+            enddo
+          endif
+        enddo
+      enddo
+!
+    endsubroutine dust_coagulation
 !***********************************************************************
     subroutine rprint_dustdensity(lreset,lwrite)
 !
