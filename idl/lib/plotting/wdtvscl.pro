@@ -1,4 +1,4 @@
-;;;;;;;;;;;;;;;;;;;;;;;           -*-IDL-*-
+;;;;;;;;;;;;;;;;;;;;;;;
 ;;;   wdtvscl.pro   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
@@ -27,6 +27,7 @@ PRO wdtvscl, data, x, y, channel, $
     dat_min = -MAX(abs(data))
     dat_max = MAX(abs(data))
   ENDELSE
+
 ;;; Make a homogeneous field as bright as possible
 ;  IF ((dat_min EQ dat_max) AND (!D.NAME='PS')) THEN BEGIN
 ;    dat_min = dat_min - 100
