@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.37 2003-08-29 13:27:35 dobler Exp $
+# CVS: $Id: auto-test,v 1.38 2003-08-29 14:36:32 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -97,7 +97,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.37 2003-08-29 13:27:35 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.38 2003-08-29 14:36:32 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -436,12 +436,15 @@ sub postprocess {
     my $pid = open2(\*POSTPROCD,\*UNPROCD, "$postproc 2>&1");
     die "Couldn't start $postproc" unless defined($pid);
     # fork() a child to avoid deadlock if $text is large
-    if (my $child_id=fork()) {		# parent --> read output
+    my $child_id;
+
+    if ($child_id=fork()) {		# parent --> read output
 	close UNPROCD;		# important
 	local $/ = undef;	# get it all at once
 	$text = <POSTPROCD>;
 	close POSTPROCD;	# not necessary, I guess
-	waitpid($child_id,0);	# not really needed her, but avoids zombies
+	waitpid($child_id,0);	# wait for child to finish to avoid zombie
+	wait();			# bizarre enough there is another zombie..
     } else {			# child --> write to postproc
 	die "Cannot fork: $!" unless defined($child_id);
 	$nosummary = 1;		# don't waffle when exiting
