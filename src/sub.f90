@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.96 2002-10-22 16:58:19 brandenb Exp $ 
+! $Id: sub.f90,v 1.97 2002-10-23 12:58:07 dobler Exp $ 
 
 module Sub 
 
@@ -1966,8 +1966,8 @@ module Sub
         call stop_it('DATE_TIME_STRING: string arg too short')
 !
       call date_and_time(VALUES=values)
-      write(date,'(I2,"-",A3,"-",I4," ",I2,":",I2,":",I2)') &
-           values(3), month(values(3)), values(1), &
+      write(date,'(I2.2,"-",A3,"-",I4.2," ",I2.2,":",I2.2,":",I2.2)') &
+           values(3), month(values(2)), values(1), &
            values(5), values(6), values(7)
 !
     endsubroutine date_time_string
