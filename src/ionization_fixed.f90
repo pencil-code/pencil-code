@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.43 2004-02-06 16:23:32 dobler Exp $
+! $Id: ionization_fixed.f90,v 1.44 2004-02-11 14:52:40 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -33,7 +33,7 @@ module Ionization
 
 ! integers specifying which independent variables to use in eoscalc
 ! (only relevant in ionization.f90)
-  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
+  integer, parameter :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3,ilnrho_lnTT=4
 
   ! Constants use in calculation of thermodynamic quantities
   real :: lnTTss,lnTTlnrho,lnTT0
@@ -87,7 +87,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.43 2004-02-06 16:23:32 dobler Exp $")
+          "$Id: ionization_fixed.f90,v 1.44 2004-02-11 14:52:40 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -450,35 +450,46 @@ module Ionization
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
       real :: lnrho_,ss_,lnTT_,TT_,rho_,ee_,pp_
+      integer :: i=0
 !
+      if (i .eq. 0) then
+        print*,lnTTss,lnTTlnrho,lnTT0
+        i = 1
+      endif
+
       select case (ivars)
 
       case (ilnrho_ss)
-        lnrho_=var1
-        ss_=var1
-        lnTT_=lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
-        TT_=exp(lnTT_)
-        rho_=exp(lnrho_)
-        ee_=1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
-        pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
+        lnrho_ = var1
+        ss_    = var2
+        lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
+        TT_    = exp(lnTT_)
+        rho_   = exp(lnrho_)
+        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
 
       case (ilnrho_ee)
-        lnrho_=var1
-        ee_=var2
-        TT_=(2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
-        lnTT_=log(TT_)
-        ss_=(lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        rho_=exp(lnrho_)
-        pp_=(1+yH0+xHe)*rho_*TT_*ss_ion
+        lnrho_ = var1
+        ee_    = var2
+        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
+        lnTT_  = log(TT_)
+        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        rho_   = exp(lnrho_)
+        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
 
       case (ilnrho_pp)
-        lnrho_=var1
-        pp_=var2
-        rho_=exp(lnrho_)
-        TT_=pp_/((1+yH0+xHe)*ss_ion*rho_)
-        lnTT_=log(TT_)
-        ss_=(lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        ee_=1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        lnrho_ = var1
+        pp_    = var2
+        rho_   = exp(lnrho_)
+        TT_    = pp_/((1+yH0+xHe)*ss_ion*rho_)
+        lnTT_  = log(TT_)
+        ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
+        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+
+      case (ilnrho_lnTT)
+        lnrho_ = var1
+        lnTT_  = var2
+        ss_    = (lnTT_-lnTTlnrho*lnrho_-lnTT0)/lnTTss
 
      end select
 
@@ -664,6 +675,46 @@ module Ionization
       enddo
 !
     endsubroutine isothermal_entropy
+!***********************************************************************
+    subroutine isothermal_lnrho_ss(f,T0,rho0)
+!
+!  Isothermal stratification for lnrho and ss (for yH=0!)
+!
+!  Uses T=T0 everywhere in the box and rho=rho0 in the mid-plane
+!
+!  Currently only works with grav_profile='linear', but can easily be
+!  generalised.
+!
+!  11-feb-04/anders: Programmed more or less from scratch
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0,rho0
+      real :: ss,lnTT
+      integer :: l
+!
+!  First calculate hydrostatic density stratification when T=T0
+!
+      do m=m1,m2
+        do n=n1,n2
+          f(l1:l2,m,n,ilnrho) = &
+              -(Omega*z(n))**2/(2*(1.+xHe)*ss_ion*T0)+log(rho0)
+        enddo
+      enddo
+!
+!  Then calculate entropy as a function of T0 and lnrho
+!
+      do l=l1,l2
+        do m=m1,m2
+          do n=n1,n2
+            call eoscalc_point(ilnrho_lnTT,f(l,m,n,ilnrho),log(T0),ss=ss)
+            f(l,m,n,iss) = ss
+          enddo
+        enddo
+      enddo
+!
+    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)

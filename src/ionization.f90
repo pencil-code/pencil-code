@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.154 2004-02-06 16:07:20 theine Exp $
+! $Id: ionization.f90,v 1.155 2004-02-11 14:52:40 ajohan Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -41,7 +41,7 @@ module Ionization
   public :: bc_ss_temp_x,bc_ss_temp_y,bc_ss_temp_z
   public :: bc_ss_stemp_x,bc_ss_stemp_y,bc_ss_stemp_z
 ! Initial conditions
-  public :: isothermal_entropy
+  public :: isothermal_entropy,isothermal_lnrho_ss
 ! integers specifying which independent variables to use in eoscalc
   integer, parameter, public :: ilnrho_ss=1,ilnrho_ee=2,ilnrho_pp=3
 
@@ -112,7 +112,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.154 2004-02-06 16:07:20 theine Exp $")
+           "$Id: ionization.f90,v 1.155 2004-02-11 14:52:40 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -984,6 +984,19 @@ module Ionization
       enddo
 !
     endsubroutine isothermal_entropy
+!***********************************************************************
+    subroutine isothermal_lnrho_ss(f,T0,rho0)
+!
+!  Isothermal stratification for lnrho and ss (for yH=0!)
+!
+!  Currently only implemented for ionization_fixed.
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0,rho0
+!
+      if (ip==0) print*,f,T0,rho0
+!
+    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)

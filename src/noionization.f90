@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.97 2004-01-31 12:37:07 mcmillan Exp $
+! $Id: noionization.f90,v 1.98 2004-02-11 14:52:40 ajohan Exp $
 
 !  Dummy routine for noionization
 
@@ -80,7 +80,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.97 2004-01-31 12:37:07 mcmillan Exp $")
+           "$Id: noionization.f90,v 1.98 2004-02-11 14:52:40 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -482,6 +482,19 @@ module Ionization
       cs2top=cs20
 !
     endsubroutine isothermal_entropy
+!***********************************************************************
+    subroutine isothermal_lnrho_ss(f,T0,rho0)
+!
+!  Isothermal stratification for lnrho and ss (for yH=0!)
+!
+!  Currently only implemented for ionization_fixed.
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, intent(in) :: T0,rho0
+!
+      if (ip==0) print*,f,T0,rho0
+!
+    endsubroutine isothermal_lnrho_ss
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
