@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.17 2003-12-09 13:47:21 ajohan Exp $
+;  $Id: varcontent.pro,v 1.18 2003-12-29 17:28:41 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -118,16 +118,16 @@ for idust=0,n_elements(iuud)-1 do begin
   varcontent[iuud(idust)].skip     = 2
 endfor
 
-for idust=0,n_elements(ilnrhod)-1 do begin
+for idust=0,n_elements(ind)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[ilnrhod(idust)].variable = 'Dust log density ' + sidust + $
-      ' (lnrhod'+sidust+')'
-  varcontent[ilnrhod(idust)].idlvar   = 'lnrhod'+sidust
-  varcontent[ilnrhod(idust)].idlinit    = INIT_SCALAR
-  varcontent[ilnrhod(idust)].idlvarloc= 'lnrhod'+sidust+'_loc'
-  varcontent[ilnrhod(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[ind(idust)].variable = 'Dust log number density ' + sidust + $
+      ' (nd'+sidust+')'
+  varcontent[ind(idust)].idlvar   = 'nd'+sidust
+  varcontent[ind(idust)].idlinit    = INIT_SCALAR
+  varcontent[ind(idust)].idlvarloc= 'nd'+sidust+'_loc'
+  varcontent[ind(idust)].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
