@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.4 2004-09-16 15:29:47 ajohan Exp $
+! $Id: grav_x.f90,v 1.5 2004-09-16 15:43:56 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.4 2004-09-16 15:29:47 ajohan Exp $")
+           "$Id: grav_x.f90,v 1.5 2004-09-16 15:43:56 ajohan Exp $")
 !
       lgrav =.true.
       lgravx=.true.
@@ -92,7 +92,7 @@ module Gravity
       use CData
       use Mpicomm, only: stop_it
 !
-!  Different gravity profiles (gas)
+!  Different gravity profiles
 !
       select case (grav_profile)
 
@@ -137,7 +137,8 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
-      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+      if (ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
+!
     endsubroutine init_gg
 !***********************************************************************
     subroutine duu_dt_grav(f,df,uu,rho1)
@@ -159,15 +160,15 @@ module Gravity
 !
 !  Add gravity acceleration on gas and dust
 !
-      if(lhydro .and. lgravx_gas) &
+      if (lhydro .and. lgravx_gas) &
           df(l1:l2,m,n,iux) = df(l1:l2,m,n,iux) + gravx_pencil
-      if(ldustvelocity .and. lgravx_dust) then
+      if (ldustvelocity .and. lgravx_dust) then
         do k=1,ndustspec
           df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + gravx_pencil
         enddo
       endif
 !
-      if(ip==0) print*,f,uu,rho1 !(keep compiler quiet)
+      if (ip==0) print*,f,uu,rho1 !(keep compiler quiet)
 !        
     endsubroutine duu_dt_grav
 !***********************************************************************
@@ -185,8 +186,8 @@ module Gravity
 !
       call stop_it("potential_global: not implemented for grav_x")
 !
-      if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
-           pot(1,1,1),pot0  !(keep compiler quiet)
+      if (ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
+          pot(1,1,1),pot0  !(keep compiler quiet)
 !
     endsubroutine potential_global
 !***********************************************************************
