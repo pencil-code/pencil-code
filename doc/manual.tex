@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.112 2002-09-30 13:08:07 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.113 2002-09-30 13:54:05 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -313,7 +313,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.112 $ $}
+\date{\today,~ $ $Revision: 1.113 $ $}
 
 % ====================================================================== %
 
@@ -345,7 +345,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.112 $ $}
+  \emph{\today,~ $ $Revision: 1.113 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1638,7 +1638,7 @@ The three entries specifying the location, size and periodicity of the box
 are just given for demonstration purposes here --- in fact a periodic box
 from $-\pi$ to $-\pi$ in all three directions is the default.
 In this run, for reproducibility, we use a random number generator from
-the Numerical Recipies \cite{NR}, rather than the compiler's builtin
+the Numerical Recipes \cite{NR}, rather than the compiler's built-in
 generator.
 The adiabatic index $\gamma$ is set explicitly to $1$ (the default would have
 been 5/3) to achieve an isothermal equation of state.
@@ -2081,7 +2081,7 @@ The reason for this choice of variables is that entropy is the natural
 physical variable for (at least) convection processes: the sign of the
 entropy gradient determines convective (in)stability, the
 \emph{Rayleigh number} is proportional to the entropy gradient
-of the associated hystrostatic reference solution, etc.
+of the associated hydrostatic reference solution, etc.
 The equation solved is
 \begin{equation}
   \varrho T\frac{Ds}{Dt}
@@ -3754,7 +3754,7 @@ the latest set of parameters, you need to look at the code.
   \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
 \midrule
   \var{nu} [$0.$]
-               & kinematical viscosity. \\
+               & kinematic viscosity. \\
   \var{ivisc} [\code{'nu-const'}]
                & select form of viscous term; currently valid choices are
                  \begin{description}
@@ -3970,7 +3970,7 @@ the latest set of parameters, you need to look at the code.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.112 2002-09-30 13:08:07 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.113 2002-09-30 13:54:05 brandenb Exp $ $}
 
 
 \end{document}
