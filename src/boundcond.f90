@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.57 2003-09-06 18:55:30 theine Exp $
+! $Id: boundcond.f90,v 1.58 2003-10-13 01:30:37 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -70,7 +70,7 @@ module Boundcond
 !
       case default
         if (bcx1(1)=='she') then
-          if (headtt) print*, &
+          if (ip<12.and.headtt) print*, &
                'boundconds_x: use shearing sheet boundary condition'
           call initiate_shearing(f)
           if (nprocy>1 .OR. (.NOT. lmpicomm)) call finalise_shearing(f)
