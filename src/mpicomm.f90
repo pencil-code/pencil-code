@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.73 2003-05-08 16:10:35 tarek Exp $
+! $Id: mpicomm.f90,v 1.74 2003-05-27 06:41:26 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1114,8 +1114,8 @@ subroutine transform_fftpack_1d(a_re,a_im)
 !
 !  Normalize
 !
-  a_re=a_re/nwgrid
-  a_im=a_im/nwgrid
+  a_re=a_re/nx
+  a_im=a_im/nx
   if(lroot .AND. ip<10) print*,'fft has finished'
 !
 endsubroutine transform_fftpack_1d
