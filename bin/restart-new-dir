@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: restart-new-dir,v 1.2 2003-04-02 12:24:50 brandenb Exp $
+#$Id: restart-new-dir,v 1.3 2003-05-20 20:41:47 brandenb Exp $
 #
 #  Example:
 #     restart-new-dir ../hydro256e
@@ -21,4 +21,4 @@ cp data/param* $1/data
 copy-proc-to-proc grid.dat $1
 copy-proc-to-proc seed.dat $1
 copy-proc-to-proc dim.dat $1
-#copy-proc-to-proc var.dat $1 #
+copy-proc-to-proc var.dat $1
