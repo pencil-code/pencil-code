@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.35 2002-11-09 08:31:56 brandenb Exp $
+! $Id: forcing.f90,v 1.36 2002-11-16 09:41:13 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.35 2002-11-09 08:31:56 brandenb Exp $")
+           "$Id: forcing.f90,v 1.36 2002-11-16 09:41:13 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -450,7 +450,7 @@ module Forcing
       call mpibcast_real(rho_uu_ff,1)
 !
 !  scale forcing function
-!  but do this only when rho_uu_ff>0.; neveral allow it to change sign
+!  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
       if(headt) print*,'divide forcing function by rho_uu_ff=',rho_uu_ff
       force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
