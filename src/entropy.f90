@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.151 2003-04-10 06:58:24 brandenb Exp $
+! $Id: entropy.f90,v 1.152 2003-04-10 10:10:36 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -19,6 +19,8 @@ module Entropy
   real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.
   !parameters for Sedov type initial condition
+  real :: center1_x=0., center1_y=0., center1_z=0.
+  real :: center2_x=0., center2_y=0., center2_z=0.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
@@ -31,7 +33,9 @@ module Entropy
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss,widthss,epsilon_ss, &
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
-       khor_ss, thermal_background, thermal_peak, thermal_scaling
+       khor_ss, thermal_background, thermal_peak, thermal_scaling, &
+       center1_x, center1_y, center1_z, &
+       center2_x, center2_y, center2_z
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -75,7 +79,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.151 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: entropy.f90,v 1.152 2003-04-10 10:10:36 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,8 +165,14 @@ module Entropy
 
       case('sedov') 
         if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
-         call blob(thermal_peak,f,ient,radius_ss,0.,0.,0.)
-         f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
+         call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
+      !   f(:,:,:,ient) = f(:,:,:,ient) + (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
+
+      case('sedov-dual') 
+        if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
+         call blob(thermal_peak,f,ient,radius_ss,center1_x,center1_y,center1_z)
+         call blob(thermal_peak,f,ient,radius_ss,center2_x,center2_y,center2_z)
+      !   f(:,:,:,ient) = (alog(f(:,:,:,ient) + thermal_background)+alog(thermal_scaling))/gamma 
    
       case('isobaric')
         !
