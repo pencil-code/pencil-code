@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.23 2002-07-29 09:13:22 brandenb Exp $
+! $Id: grav_z.f90,v 1.24 2002-07-29 23:39:51 brandenb Exp $
 
 module Gravity
 
@@ -20,7 +20,7 @@ module Gravity
 !  density module) is the height where rho=cs2=0.
 
   integer :: ngrav=10
-  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=1e30
+  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=1e30,nu_epicycle=1.
   character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -43,20 +43,14 @@ module Gravity
 !      |  m = m1 (stable bottom layer)
 !      |
 !
-
-!AB: Nils, could you have a look how in galactic physics (Binney & Tremaine)
-!AB: the coefficient in front of .5*z^2 is called (vertical epicyclic
-!AB: frequency?)
-!AB: We should introduce that instead of keeping a double meaning of gravz.
-
   namelist /grav_init_pars/ &
-       z1,z2,zref,gravz,grav_profile,zgrav
+       z1,z2,zref,gravz,nu_epicycle,grav_profile,zgrav
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       zref,gravz,grav_profile,zgrav
+       zref,gravz,nu_epicycle,grav_profile,zgrav
 
   contains
 
@@ -79,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.23 2002-07-29 09:13:22 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.24 2002-07-29 23:39:51 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -122,6 +116,7 @@ module Gravity
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real :: nu_epicycle2
 !
 !  different gravity profiles
 !
@@ -138,8 +133,12 @@ module Gravity
 !  linear gravity profile (for accretion discs)
 !
       elseif (grav_profile=='linear') then
-        if (headtt) print*,'duu_dt_grav: linear gravz=',gravz
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz*z(n)
+        if (nu_epicycle/=-gravz) then
+          if (lroot) print*,'print: just wondering, is nu_epicycle ok?'
+        endif
+        nu_epicycle2=nu_epicycle**2
+        if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
       else
         if(lroot) print*,'no gravity profile given'
       endif
@@ -174,7 +173,7 @@ module Gravity
       use Cdata, only: nx,lroot
 !
       real, dimension (nx) :: xmn,pot,r
-      real :: ymn,zmn
+      real :: ymn,zmn,nu_epicycle2
       real, optional :: pot0
       real, optional, dimension (nx) :: rmn
       real, optional, dimension (nx,3) :: grav
@@ -223,11 +222,12 @@ module Gravity
 !  gravity increases linearly with height (for accretion discs)
 !
         case('linear')
-          pot=-.5*gravz*(zmn**2-zinfty**2)
-          if (present(pot0)) pot0 = .5*gravz*zinfty**2 !(potential at z=0)
+          nu_epicycle2=nu_epicycle**2
+          pot=.5*nu_epicycle2*(zmn**2-zinfty**2)
+          if (present(pot0)) pot0=-.5*nu_epicycle2*zinfty**2 !(potential at z=0)
           if (present(grav)) then
             grav=0.
-            if(zmn<=zgrav) grav(:,3)=gravz*zmn
+            if(zmn<=zgrav) grav(:,3)=-nu_epicycle2*zmn
           endif
 !
 !  radial profile; not currently implemented
