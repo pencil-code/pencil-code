@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.22 2002-06-18 07:59:40 dobler Exp $
+; $Id: r.pro,v 1.23 2002-06-20 21:17:53 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -23,10 +23,10 @@ undefine, read_all
 default, datadir, 'tmp'
 default, file, 'var.dat'
 ;
-if (iuu ne 0)    then uu    = fltarr(mx,my,mz,3)*one
-if (ilnrho ne 0) then lnrho = fltarr(mx,my,mz  )*one
-if (ient ne 0)   then ss = fltarr(mx,my,mz  )*one
-if (iaa ne 0)    then aa = fltarr(mx,my,mz,3)*one
+if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
+if (ldensity)   then lnrho = fltarr(mx,my,mz  )*one
+if (lentropy)   then ss    = fltarr(mx,my,mz  )*one
+if (lmagnetic)  then aa    = fltarr(mx,my,mz,3)*one
 ;
 ;  Read startup parameters
 ;
