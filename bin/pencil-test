@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-08-29 14:34:57 $
-# $Revision: 1.13 $
+# $Date: 2003-08-29 14:40:16 $
+# $Revision: 1.14 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -132,8 +132,8 @@ my $t1 = time();
 $date = scalar localtime();
 if ($html) {
     print <<"END_FOOT";
-    <p>
-    $date
+<p>
+$date
 </pre>
 </body>
 </html>
