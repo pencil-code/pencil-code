@@ -1,16 +1,17 @@
-; $Id: pc_read_var.pro,v 1.4 2003-08-04 17:59:58 theine Exp $
+; $Id: pc_read_var.pro,v 1.5 2003-10-10 12:25:45 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2003-08-04 17:59:58 $
-;  $Revision: 1.4 $
+;  $Date: 2003-10-10 12:25:45 $
+;  $Revision: 1.5 $
 ;
 ;  27-nov-02/tony: coded 
 ;
 ;  
 pro pc_read_var,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,deltay=deltay, all=all, $
                 uu=uu, lnrho=lnrho, ss=ss, aa=aa, lncc=lncc, ee=ee, ff=ff, $
+                uud=uud, lnrhod=lnrhod, $
                 object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
   COMMON pc_precision, zero, one
@@ -83,21 +84,27 @@ iss=0
 iaa=0
 ie=0
 ilncc=0 
-if (params.lhydro)     then iuu=1
-if (params.ldensity)   then ilnrho=1    
-if (params.lentropy)   then iss=1  
-if (params.lmagnetic)  then iaa=1
-if (params.lradiation) then ie=1 
-if (params.lpscalar)   then ilncc=1 
+iuud=0 
+ilnrhod=0 
+if (params.lhydro)        then iuu=1
+if (params.ldensity)      then ilnrho=1    
+if (params.lentropy)      then iss=1  
+if (params.lmagnetic)     then iaa=1
+if (params.lradiation)    then ie=1 
+if (params.lpscalar)      then ilncc=1 
+if (params.ldustvelocity) then iuud=1
+if (params.ldustdensity)  then ilnrhod=1    
 
 
-if (params.lhydro)     then uu    = fltarr(mx,my,mz,3)*one
-if (params.ldensity)   then lnrho = fltarr(mx,my,mz  )*one
-if (params.lentropy)   then ss    = fltarr(mx,my,mz  )*one
-if (params.lmagnetic)  then aa    = fltarr(mx,my,mz,3)*one
-if (params.lradiation) then ff    = fltarr(mx,my,mz,3)*one
-if (params.lradiation) then ee    = fltarr(mx,my,mz  )*one
-if (params.lpscalar )  then lncc  = fltarr(mx,my,mz  )*one
+if (params.lhydro)        then uu     = fltarr(mx,my,mz,3)*one
+if (params.ldensity)      then lnrho  = fltarr(mx,my,mz  )*one
+if (params.lentropy)      then ss     = fltarr(mx,my,mz  )*one
+if (params.lmagnetic)     then aa     = fltarr(mx,my,mz,3)*one
+if (params.lradiation)    then ff     = fltarr(mx,my,mz,3)*one
+if (params.lradiation)    then ee     = fltarr(mx,my,mz  )*one
+if (params.lpscalar )     then lncc   = fltarr(mx,my,mz  )*one
+if (params.ldustvelocity) then uud    = fltarr(mx,my,mz,3)*one
+if (params.ldustdensity)  then lnrhod = fltarr(mx,my,mz  )*one
 
 ; Get a unit number
 GET_LUN, file
@@ -117,13 +124,16 @@ if (cgrid gt 0) then begin
   if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'MHD with entropy'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,aa
-  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa ne 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss eq 0 and iaa ne 0 $ 
+           and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro without entropy, but with magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,aa
-  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and ie ne 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and ie ne 0 $
+           and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, density and radiation'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,ee,ff
-  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa eq 0 then begin
+  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iaa eq 0 $
+           and iuud eq 0 and ilnrhod eq 0 then begin
       if ( not keyword_set(QUIET) ) then print,'hydro with entropy, but no magnetic field'
       if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss
       if keyword_set(ASSOCIATE) then begin
@@ -150,6 +160,11 @@ if (cgrid gt 0) then begin
   end else if iuu eq 0 and ilnrho eq 0 and iss eq 0 and iaa eq 0 and ie ne 0 then begin
       if ( not keyword_set(QUIET) ) then print,'just radiation'
       if not keyword_set(ASSOCIATE) then readu,file,ee,ff
+  end else if iuu ne 0 and ilnrho ne 0 and iss ne 0 and iuud ne 0 $
+           and ilnrhod ne 0 then begin
+      if ( not keyword_set(QUIET) ) then $
+          print,'hydro with entropy, density, dustvelocity and dustdensity'
+      if not keyword_set(ASSOCIATE) then readu,file,uu,lnrho,ss,uud,lnrhod
   end else begin
       if ( not keyword_set(QUIET) ) then print,'not prepared...'
   end
@@ -160,7 +175,10 @@ if (cgrid gt 0) then begin
       readu,file, t, x, y, z, dx, dy, dz
   end
 
-  if not keyword_set(ASSOCIATE) then close,file
+  if not keyword_set(ASSOCIATE) then begin
+    close,file
+    FREE_LUN,file
+  endif
 
  end else begin
   message, 'ERROR: cannot find file '+ filename
@@ -209,6 +227,5 @@ print, '  var            minval         maxval          mean           rms'
     print, '             t = ', t
 endif
 
+
 end
-
-

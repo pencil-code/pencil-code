@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.4 2002-12-05 16:16:40 mee Exp $
+; $Id: pc_read_dim.pro,v 1.5 2003-10-10 12:25:45 ajohan Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-12-05 16:16:40 $
-;  $Revision: 1.4 $
+;  $Date: 2003-10-10 12:25:45 $
+;  $Revision: 1.5 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -111,6 +111,7 @@ if (found gt 0) then begin
   readf,file,nghostx,nghosty,nghostz
   readf,file,nprocx,nprocy,nprocz
   close,file 
+  FREE_LUN,file
 end else begin
   message, 'ERROR: cannot find file ' + filename
 end
