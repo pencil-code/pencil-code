@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.148 2003-11-24 16:03:35 mcmillan Exp $ 
+! $Id: sub.f90,v 1.149 2003-11-24 18:49:45 dobler Exp $ 
 
 module Sub 
 
@@ -282,11 +282,10 @@ module Sub
 !  The following Gaussian profile sums up to approximately one. Since we
 !  are now explicitly normalizing, this is no longer important.
 !
-      width = .5*drcyl
+!      width = .5*drcyl
+      width = .7*drcyl
       do ir=1,nrcyl
         r0 = rcyl(ir)
-!        phiavg_profile(ir,:) &
-!             = 0.06349*dx*dy/(r0*width)*exp(-0.5*((rcyl_mn-r0)/width)**2)
         phiavg_profile(ir,:) = exp(-0.5*((rcyl_mn-r0)/width)**4)
       enddo
 !
