@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.24 2002-06-12 09:02:24 brandenb Exp $
+! $Id: mpicomm.f90,v 1.25 2002-06-12 09:46:03 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -279,8 +279,6 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      use Boundcond
-
       real, dimension (mx,my,mz,mvar) :: f
       character (len=160) :: errmesg
 !
@@ -331,13 +329,6 @@ module Mpicomm
 !
       if (ip<7.and.ipy==3.and.ipz==0) &
         print*,'MPICOMM recv ul: ',iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
-!
-!  Now do the boundary conditions
-!  Periodic boundary conds. are what we get by default (communication has
-!  already occured, which may sometimes be unnecessary)
-!
-      call boundconds(f,errmesg)
-      if (errmesg /= "") call stop_it(trim(errmesg))
 !
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time

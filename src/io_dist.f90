@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.24 2002-06-09 10:13:01 brandenb Exp $
+! $Id: io_dist.f90,v 1.25 2002-06-12 09:46:03 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -192,7 +192,6 @@ contains
 !  21-jan-02/wolf: coded
 !
       use Cdata, only: t,x,y,z,dx,dy,dz
-!      use Mpicomm
 !
       character (len=*) :: file
 !
@@ -208,7 +207,6 @@ contains
 !  21-jan-02/wolf: coded
 !
       use Cdata, only: x,y,z,dx,dy,dz
-!      use Mpicomm
 !
       real :: tdummy
       character (len=*) :: file

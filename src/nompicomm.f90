@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.29 2002-06-12 09:02:24 brandenb Exp $
+! $Id: nompicomm.f90,v 1.30 2002-06-12 09:46:03 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -132,24 +132,13 @@ module Mpicomm
 !***********************************************************************
     subroutine finalise_isendrcv_bdry(f)
 !
-      use General
-!--   use Boundcond
-!??   use Entropy
+      use Cparam
 !
 !  apply boundary conditions
 !
       real, dimension (mx,my,mz,mvar) :: f
-      character (len=160) :: errmesg
 !
-!  Boundary conditions
-!
-!     call boundconds(f,errmesg)
-!     if (errmesg /= "") call stop_it(trim(errmesg))
-!
-!  treat entropy boundary condition separately
-!
-!??   if (lentropy) call bc_ss(f)
-!
+      if (ip==0) print*,f
     endsubroutine finalise_isendrcv_bdry
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.61 2002-06-12 09:02:24 brandenb Exp $
+! $Id: equ.f90,v 1.62 2002-06-12 09:46:03 brandenb Exp $
 
 module Equ
 
@@ -194,8 +194,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.61 $", &
-           "$Date: 2002-06-12 09:02:24 $")
+           "$Revision: 1.62 $", &
+           "$Date: 2002-06-12 09:46:03 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -205,8 +205,7 @@ module Equ
 !  initiate communication and do boundary conditions
 !
       call initiate_isendrcv_bdry(f)
-      call boundconds(f,errmesg)
-      if (errmesg /= "") call stop_it(trim(errmesg))
+      call boundconds(f,errmesg); if (errmesg/="") call stop_it(trim(errmesg))
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed

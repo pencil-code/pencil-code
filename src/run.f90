@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.42 2002-06-12 09:02:24 brandenb Exp $
+! $Id: run.f90,v 1.43 2002-06-12 09:46:03 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -21,6 +21,7 @@
         use Slices
         use Print
         use Timestep
+        use Wsnaps
 !
         implicit none
 !
@@ -43,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.42 $", &
-             "$Date: 2002-06-12 09:02:24 $")
+             "$Revision: 1.43 $", &
+             "$Date: 2002-06-12 09:46:03 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -115,10 +116,10 @@
           endif
 !
 !  remove wiggles in lnrho in sporadic time intervals
-!  This is necessary is the Reynolds number is large.
-!  iwig=500 is a typical value.
+!  This is necessary if the Reynolds number is large.
+!  iwig=500 is a typical value. For iwig=0 no action is taken.
 !
-        if (mod(it,iwig).eq.0) call rmwig(f)
+        if (iwig/=0.and.mod(it,iwig).eq.0) call rmwig(f)
 !
 !  time advance
 !

@@ -101,7 +101,7 @@ physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY)
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) debug_c.o
-run_deps_f90=$(comm_deps) equ.o timestep.o
+run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
 run_deps=$(run_deps_f90) debug_c.o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
@@ -127,8 +127,9 @@ prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
+wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
 #
-$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o boundcond.o
+$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
