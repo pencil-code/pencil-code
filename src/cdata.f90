@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.200 2003-12-10 14:47:20 nilshau Exp $
+! $Id: cdata.f90,v 1.201 2003-12-12 08:04:38 nilshau Exp $
 
 module Cdata
 
@@ -124,7 +124,7 @@ module Cdata
   logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
-  logical :: lvisc_shock=.false.,lvisc_hyper3=.false.
+  logical :: lvisc_shock=.false.,lvisc_hyper=.false.
   logical :: lcosmicray=.false.
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.

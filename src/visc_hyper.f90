@@ -1,4 +1,4 @@
-! $Id: visc_hyper3.f90,v 1.4 2003-12-10 14:47:20 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.1 2003-12-12 08:04:38 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -49,20 +49,20 @@ module Viscosity
       first = .false.
 !
       lviscosity = .true.
-      lvisc_hyper3 = .true.
+      lvisc_hyper = .true.
 !
       ihyper = mvar + naux + 1
       naux = naux + 3 
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: hyper3 viscosity nvar = ', nvar
+        print*, 'register_viscosity: hyper viscosity nvar = ', nvar
         print*, 'ihyper = ', ihyper
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper3.f90,v 1.4 2003-12-10 14:47:20 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.1 2003-12-12 08:04:38 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -73,10 +73,10 @@ module Viscosity
 !
 !  Writing files for use with IDL
 !
-      if (naux < maux) aux_var(aux_count)=',hyper3 $'
-      if (naux == maux) aux_var(aux_count)=',hyper3'
+      if (naux < maux) aux_var(aux_count)=',hyper $'
+      if (naux == maux) aux_var(aux_count)=',hyper'
       aux_count=aux_count+3
-      if (lroot) write(15,*) 'hyper3 = fltarr(mx,my,mz)*one'
+      if (lroot) write(15,*) 'hyper = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_viscosity
 !***********************************************************************

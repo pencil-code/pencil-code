@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.184 2003-12-06 13:52:21 ajohan Exp $
+! $Id: equ.f90,v 1.185 2003-12-12 08:04:38 nilshau Exp $
 
 module Equ
 
@@ -233,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.184 2003-12-06 13:52:21 ajohan Exp $")
+           "$Id: equ.f90,v 1.185 2003-12-12 08:04:38 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -267,7 +267,7 @@ module Equ
 !
       if (lionization)    call ioncalc(f)
       if (lradiation_ray) call radtransfer(f)
-      if (lvisc_shock.or.lvisc_hyper3) then
+      if (lvisc_shock.or.lvisc_hyper) then
         if ((lvisc_first.and.lfirst).or..not.lvisc_first) call calc_viscosity(f)
       endif
 !
