@@ -1,0 +1,65 @@
+$Id: .TEST.020708.0016,v 1.1 2002-07-08 06:15:56 brandenb Exp $
+brandenb@nl3:/home/brandenb/f90/pencil_modular/runs/forced/hel1
+
+Linux nl3 2.2.12-20 #1 Mon Sep 27 10:40:35 EDT 1999 i686 unknown
+Non-MPI version
+Mon Jul  8 00:16:45 MDT 2002
+   src/start.x
+CVS: hydro.f90          v. 1.41         (brandenb  ) 2002/07/06 20:29:17
+CVS: density.f90        v. 1.25         (brandenb  ) 2002/07/06 20:29:17
+CVS: forcing.f90        v. 1.14         (brandenb  ) 2002/06/25 17:06:14
+CVS: noentropy.f90      v. 1.25         (brandenb  ) 2002/07/06 20:29:17
+CVS: magnetic.f90       v. 1.65         (brandenb  ) 2002/07/06 20:29:17
+CVS: nopscalar.f90      v. 1.1          (brandenb  ) 2002/07/06 21:00:14
+CVS: nograv.f90         v. 1.10         (brandenb  ) 2002/07/02 04:56:00
+CVS: noshear.f90        v. 1.1          (nilshau   ) 2002/07/04 10:10:55
+CVS: start.f90          v. 1.50         (brandenb  ) 2002/07/06 20:29:17
+CVS: start.in           v. 1.16         (brandenb  ) 2002/07/05 17:40:29
+ mx,my,mz= 38 38 38
+
+ verify(!): cs2bot,cs2top=   0.0000000E+00   0.0000000E+00
+ Beltrami field (neg-hel): ky,i=   1.0000000 5
+
+0.070u 0.030s 0:00.30 33.3%	0+0k 0+0io 188pf+0w
+
+Mon Jul  8 00:16:45 MDT 2002
+
+Linux nl3 2.2.12-20 #1 Mon Sep 27 10:40:35 EDT 1999 i686 unknown
+Non-MPI version
+Mon Jul  8 00:16:46 MDT 2002
+   src/run.x
+CVS: hydro.f90          v. 1.41         (brandenb  ) 2002/07/06 20:29:17
+CVS: density.f90        v. 1.25         (brandenb  ) 2002/07/06 20:29:17
+CVS: forcing.f90        v. 1.14         (brandenb  ) 2002/06/25 17:06:14
+CVS: noentropy.f90      v. 1.25         (brandenb  ) 2002/07/06 20:29:17
+CVS: magnetic.f90       v. 1.65         (brandenb  ) 2002/07/06 20:29:17
+CVS: nopscalar.f90      v. 1.1          (brandenb  ) 2002/07/06 21:00:14
+CVS: nograv.f90         v. 1.10         (brandenb  ) 2002/07/02 04:56:00
+CVS: noshear.f90        v. 1.1          (nilshau   ) 2002/07/04 10:10:55
+CVS: run.f90            v. 1.56         (dobler    ) 2002/07/07 18:34:04
+CVS: run.in             v. 1.17         (brandenb  ) 2002/06/24 17:45:28
+ ldebug,ip= F 14
+ mx,my,mz= 38 38 38
+ ENTER: pde
+CVS: equ.f90            v. 1.80         (dobler    ) 2002/07/07 18:32:07
+ SOLVE duu_dt
+ viscous force: nu*del2v
+ maximum squared avection speed
+ maxadvec2,u2=   0.0000000E+00   0.0000000E+00
+ Calculate maxima and rms values...
+ SOLVE dlnrho_dt
+ SOLVE daa_dt
+ opening k.dat
+ average k=   3.1341600
+
+ --it-----t--------dt-------umax-------urms-------brms-------jrms-------jmax-------orms-------omax-------vAmax-------abm--------jbm--------oum-------rhom---
+    0    0.000  7.76E-02  0.000E+00  0.000E+00   1.00E-01   1.00E-01   1.00E-01   0.00E+00   0.00E+00   1.00E-01  -1.00E-02  -1.00E-02   0.00E+00  1.000000
+    1    0.078  7.76E-02  2.440E-02  2.440E-02   1.00E-01   1.00E-01   1.00E-01   6.90E-02   6.90E-02   1.00E-01  -9.99E-03  -9.99E-03   1.68E-03  1.000000
+    2    0.155  7.76E-02  4.867E-02  3.446E-02   9.99E-02   9.99E-02   1.01E-01   1.06E-01   1.50E-01   1.00E-01  -9.98E-03  -9.98E-03   3.65E-03  1.000000
+    3    0.233  7.76E-02  7.169E-02  4.211E-02   9.99E-02   9.99E-02   1.02E-01   1.29E-01   2.18E-01   1.01E-01  -9.98E-03  -9.98E-03   5.41E-03  1.000000
+
+ Wall clock time [sec]=   8.6750002  (+/-    1.0000000E-03 )
+ Wall clock time/timestep/meshpoint [microsec]=  66.1849976
+
+4.330u 0.050s 0:08.79 49.8%	0+0k 0+0io 222pf+0w
+Mon Jul  8 00:16:55 MDT 2002
