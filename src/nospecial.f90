@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.1 2003-10-07 14:20:10 mee Exp $
+! $Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $
 
 !  This module provide a way for users to specify custom (i.e. not in the standard Pencil Code)
 !  physics, diagnostics etc. 
@@ -108,11 +108,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.1 2003-10-07 14:20:10 mee Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.1 2003-10-07 14:20:10 mee Exp $")
+           "$Id: nospecial.f90,v 1.2 2003-10-09 11:14:27 theine Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -270,7 +270,7 @@ module Special
       use Cdata
       
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx), intent(in) :: uu,glnrho,divu,lnrho 
 
 !!
@@ -301,7 +301,7 @@ module Special
       use Cdata
       
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx), intent(in) :: uu,glnrho,divu,rho1,u2,uij 
 
 !!
@@ -334,7 +334,7 @@ module Special
       use Cdata
       
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx), intent(in) :: uu,rho1,TT1,uij 
 
 !!
@@ -367,7 +367,7 @@ module Special
       use Cdata
       
       real, dimension (mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: df
+      real, dimension (mx,my,mz,mvar), intent(inout) :: df
       real, dimension (nx), intent(in) :: uu,glnrho,divu,rho1,lnrho,cs2,TT1 
 
 !!
