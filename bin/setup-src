@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.12 2002-10-11 08:48:14 dobler Exp $
+# CVS $Id: setup-src,v 1.13 2003-01-19 10:47:16 brandenb Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -48,7 +48,7 @@ cd $src
 #  LINK all *.f90, *.f, and the Makefile to local src directory
 #
 set n=0
-foreach file ($srcdir/*.f90 $srcdir/*.f $srcdir/Makefile $srcdir/*.c)
+foreach file ($srcdir/*.f90 $srcdir/*.f $srcdir/Makefile $srcdir/*.c $srcdir/.cvsignore)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .

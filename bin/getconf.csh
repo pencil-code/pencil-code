@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.43 2002-11-26 10:47:45 mattias Exp $
+# $Id: getconf.csh,v 1.44 2003-01-19 10:47:16 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -77,8 +77,9 @@ if ($mpi) then
       lamboot -v lamhosts
       echo "lamnodes:"
       lamnodes
-      set mpirunops = "-O -c2c -s n0 N -v" #(direct; should be faster)
+      # set mpirunops = "-O -c2c -s n0 N -v" #(direct; should be faster)
       # set mpirunops = "-O -s n0 N -lamd" #(with debug options on; is slower)
+      set mpirunops = "-O -s n0 N -ger" #(with debug options on; is slower)
       set mpirun = mpirun
       set start_x = $SCRATCH_DIR/start.x
       set run_x = $SCRATCH_DIR/run.x

@@ -1,9 +1,9 @@
 #!/bin/csh
-#$Id: mkproc-tree,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#$Id: mkproc-tree,v 1.2 2003-01-19 10:47:16 brandenb Exp $
 #
 #  Makes a processor directory tree
 #
-#  Usage:
+#  Usage (need to be in data dir!):
 #    mkproc-tree 128
 #  generates 128 proc directories. Can be used for storing old slice data.
 #

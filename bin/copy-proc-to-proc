@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-proc-to-proc,v 1.1 2002-11-14 16:31:42 brandenb Exp $
+#$Id: copy-proc-to-proc,v 1.2 2003-01-19 10:47:16 brandenb Exp $
 #
 #  Example:
 #     copy-proc-to-proc grid.dat ../hydro256e
@@ -9,6 +9,7 @@
 #  will copy all var.dat files fron current directory to var.dat in
 #  another run directory.
 #  Used for restarting in a different directory.
+#  Target dir tree needs to exist already.
 
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)

@@ -1,0 +1,24 @@
+#!/bin/csh
+#$Id: restart-new-dir,v 1.1 2003-01-19 10:47:16 brandenb Exp $
+#
+#  Example:
+#     restart-new-dir ../hydro256e
+
+#  copies all files necessary for restarting into the
+#  existing directory tree underneath $1
+
+# to be done by hand:
+#mkdir rot512_Om0b
+#gt rot512_Om0b
+#mkdatadir
+#cd data
+#mkproc-tree 128
+#gb
+#restart-new-dir ../rot512_Om0b
+
+cp data/dim $1/data
+cp data/param* $1/data
+copy-proc-to-proc grid.dat $1
+copy-proc-to-proc seed.dat $1
+copy-proc-to-proc dim.dat $1
+#copy-proc-to-proc var.dat $1 #
