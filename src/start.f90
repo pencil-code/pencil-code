@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.79 2003-04-09 11:04:19 theine Exp $
+! $Id: start.f90,v 1.80 2003-04-09 13:22:50 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -18,6 +18,7 @@
         use Register
         use Global
         use Param_IO
+        use Wsnaps
 !
         implicit none
 !
@@ -33,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.79 2003-04-09 11:04:19 theine Exp $")
+             "$Id: start.f90,v 1.80 2003-04-09 13:22:50 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -111,6 +112,12 @@
 !
 !        rr=sqrt(xx**2+yy**2+zz**2)
 !
+!  Allow modules to do any physics modules do parameter dependent
+!  initialization. And final pre-timestepping setup.
+!  (must be done before need_XXXX can be used, for example)
+!
+        call initialize_modules(f)
+!
 !  different initial conditions
 !  initialize all variables to zero;
 !  the following init routines do then only need to add to f.
@@ -139,9 +146,9 @@
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat
 !
-        if (lwrite_ic) call output(trim(directory_snap)//'/VAR0',f,mvar)
+        if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,.false.)
         if (.not.lnowrite) then
-          call output(trim(directory_snap)//'/var.dat',f,mvar)
+          call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.28 2003-04-09 10:21:17 theine Exp $
+! $Id: ionization.f90,v 1.29 2003-04-09 13:22:50 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -13,7 +13,7 @@ module Ionization
 
   ! global array for yH (very useful to avoid double calculation and
   ! to allow output along with file), but could otherwise be avoided.
-  real, dimension (mx,my,mz) :: yyH
+  real, dimension (mx,my,mz) :: yyH=0.5
 
   !  secondary parameters calculated in initialize
   real :: m_H
@@ -26,7 +26,7 @@ module Ionization
   character (len=labellen) :: cionization='hydrogen'
 
   ! input parameters
-  namelist /ionization_init_pars/ cionization
+  namelist /ionization_init_pars/ cionization,output_yH
 
   ! run parameters
   namelist /ionization_run_pars/  cionization,output_yH
@@ -54,7 +54,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.28 2003-04-09 10:21:17 theine Exp $")
+           "$Id: ionization.f90,v 1.29 2003-04-09 13:22:50 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -106,8 +106,7 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar), intent(in) :: f
-      real, dimension (mx,my,mz), save :: yyHlast=.5
-      real :: lnrho,ss
+      real :: lnrho,ss,yH
       integer :: l
 !
       do n=n1,n2
@@ -115,8 +114,9 @@ module Ionization
       do l=l1,l2
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
-         yyH(l,m,n)=rtsafe(lnrho,ss,yyHlast(l,m,n))
-         yyHlast(l,m,n)=yyH(l,m,n)
+         yH=yyH(l,m,n)
+         call rtsafe(lnrho,ss,yH)
+         yyH(l,m,n)=yH
       enddo
       enddo
       enddo
@@ -251,15 +251,16 @@ module Ionization
       endif
     endsubroutine ioncalc
 !***********************************************************************
-    function rtsafe(lnrho,ss,yHlast)
+    subroutine rtsafe(lnrho,ss,yH)
 !
 !   safe newton raphson algorithm (adapted from NR)
 !
-!   23-feb-03/tobi: minor changes
+!   09-apr-03/tobi: changed to subroutine
 !
-      real, intent (in)    :: lnrho,ss,yHlast
-      real                 :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp,rtsafe
-      real, parameter      :: yHacc=1.e-5
+      real, intent (in)    :: lnrho,ss
+      real, intent (inout) :: yH
+      real                 :: yH0,yH1,dyHold,dyH,fl,fh,f,df,temp
+      real, parameter      :: yHacc=1e-5
       integer              :: i
       integer, parameter   :: maxit=100
 
@@ -267,41 +268,47 @@ module Ionization
       yH0=yHacc
       dyHold=1.-2.*yHacc
       dyH=dyHold
-
-      rtsafe=yH0
-      call saha(rtsafe,lnrho,ss,fh,df)
-      if (fh.le.0.) return
-      rtsafe=yH1
-      call saha(rtsafe,lnrho,ss,fl,df)
-      if (fl.ge.0.) return
-    
-      rtsafe=yHlast
-      call saha(rtsafe,lnrho,ss,f,df)
-
+!
+!  return if y is too close to 0 or 1
+!
+      call saha(yH0,lnrho,ss,fh,df)
+      if (fh.le.0.) then
+         yH=yH0
+         return
+      endif
+      call saha(yH1,lnrho,ss,fl,df)
+      if (fl.ge.0.) then
+         yH=yH1
+         return
+      endif
+!
+!  otherwise find root
+!
+      call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
-         if (((rtsafe-yH0)*df-f)*((rtsafe-yH1)*df-f).gt.0. &
+         if (((yH-yH0)*df-f)*((yH-yH1)*df-f).gt.0. &
               .or.abs(2.*f).gt.abs(dyHold*df)) then
             dyHold=dyH
             dyH=.5*(yH0-yH1)
-            rtsafe=yH1+dyH
-            if (yH1.eq.rtsafe) return
+            yH=yH1+dyH
+            if (yH1.eq.yH) return
          else
             dyHold=dyH
             dyH=f/df
-            temp=rtsafe
-            rtsafe=rtsafe-dyH
-            if (temp.eq.rtsafe) return
+            temp=yH
+            yH=yH-dyH
+            if (temp.eq.yH) return
          endif
          if (abs(dyH).lt.yHacc) return
-         call saha(rtsafe,lnrho,ss,f,df)
+         call saha(yH,lnrho,ss,f,df)
          if (f.lt.0.) then
-            yH1=rtsafe
+            yH1=yH
          else
-            yH0=rtsafe
+            yH0=yH
          endif
       enddo
-      print *,'rtsafe exceeded maximum iterations',f
-    endfunction rtsafe
+      print *,'rtsafe: exceeded maximum iterations',f
+    endsubroutine rtsafe
 
 !***********************************************************************
     subroutine saha(yH,lnrho,ss,f,df)

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.103 2003-04-01 22:18:30 theine Exp $ 
+! $Id: param_io.f90,v 1.104 2003-04-09 13:22:50 brandenb Exp $ 
 
 module Param_IO
 
@@ -52,7 +52,8 @@ module Param_IO
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density, &
-       random_gen,lserial_io
+       random_gen,lserial_io, &
+       bcx,bcy,bcz
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
@@ -129,6 +130,12 @@ module Param_IO
       logical, optional :: print,file
       character (len=30) :: label='[none]'
 !
+!  set default values
+!
+      bcx(1:nvar)='p'
+      bcy(1:nvar)='p'
+      bcz(1:nvar)='p'
+!
 !  open namelist file
 !
       open(1,FILE='start.in',FORM='formatted')
@@ -203,10 +210,21 @@ module Param_IO
         if (Sshear==impossible) Sshear=-qshear*Omega
       endif
 !
-      return
+!  parse boundary conditions; compound conditions of the form `a:s' allow
+!  to have different variables at the lower and upper boundaries
+!
+      call parse_bc(bcx,bcx1,bcx2)
+      call parse_bc(bcy,bcy1,bcy2)
+      call parse_bc(bcz,bcz1,bcz2)
+      if (lroot.and.ip<14) then
+        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
+        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
+        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
+      endif
 !
 !  in case of i/o error: print sample input list
 !
+      return
 99    if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'

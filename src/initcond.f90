@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.32 2003-04-08 18:26:19 brandenb Exp $ 
+! $Id: initcond.f90,v 1.33 2003-04-09 13:22:50 brandenb Exp $ 
 
 module Initcond 
  
@@ -246,7 +246,7 @@ module Initcond
       open(19,file='stratification.dat')
       do n=1,mz
         read(19,*) ztmp,lnrho0(n),SS0(n)
-        print*,ztmp,lnrho0(n),SS0(n)
+        if(ip<5) print*,ztmp,lnrho0(n),SS0(n)
         f(:,:,n,ilnrho)=lnrho0(n)
         f(:,:,n,ient)=SS0(n)
       enddo

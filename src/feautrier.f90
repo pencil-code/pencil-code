@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.14 2003-04-08 17:41:31 brandenb Exp $
+! $Id: feautrier.f90,v 1.15 2003-04-09 13:22:50 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -28,10 +28,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max
+       radx,rady,radz,rad2max,output_Qrad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,nocooling,output_Qrad
+       radx,rady,radz,rad2max,output_Qrad,nocooling
 
   contains
 
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.14 2003-04-08 17:41:31 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.15 2003-04-09 13:22:50 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
