@@ -6,7 +6,7 @@
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   18-Aug-2000
 ;;;  Version: 1.37
-;;;  CVS: $Revision: 1.7 $
+;;;  CVS: $Revision: 1.8 $
 ;;;
 ;;;  Description:
 ;;;   Given either a 3d array on a 2d grid (e.g. B(0:64,0:64,15,0:3)),
@@ -49,6 +49,7 @@
 ;;;                     will plot an x-z section
 ;;;   AUTOXYTITLE   --- Automatically generate XTITLE and YTITLE based
 ;;;                     on PERMUTE (and assuming the canonical order x-y-z)
+;;;   NEGATE3       --- Multiply 3rd component (the colour-coded one) with -1
 ;;;   PS_RGB        --- A (n_cols,3) array defining the red, green, and
 ;;;                     blue values of the PostScript colortable
 ;;;   PS_COL_MIN    --- Index of the first colour (usually the darkest
@@ -83,7 +84,7 @@
 PRO plot_3d_vect, arg1, arg2, arg3, $
                   arg4, arg5, $
                   SAMPLE=sample, $
-                  PERMUTE=perm, AUTOXYTITLE=autoxy, $
+                  PERMUTE=perm, AUTOXYTITLE=autoxy, NEGATE3=negate3, $
                   PS_RGB=ps_rgb, PS_COL_MIN=ps_col_min, $
                   TV_RGB=tv_rgb, $
                   PS_ENH=ps_enh, $
@@ -93,9 +94,11 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
                   TRUE_COLOR=true_col, $
                   PS_FULL_RANGE=ps_full_range, $
                   XRANGE=xrange, YRANGE=yrange, $
-                  DEBUG=debug, _EXTRA=extra
+                  DEBUG=debug, HELP=help, _EXTRA=extra
 
   COMMON display1, visual, called, tv_rgb_list ; Remember these variables
+
+  if (keyword_set(help)) then extract_help, 'plot_3d_vect'
 
 ;  ON_ERROR, 2                   ;Return to caller if an error occurs
 
@@ -104,6 +107,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
   default, ps_col_min, 0
   default, bits, 8
   default, perm, [0,1,2]
+  default, negate3, 0
   default, debug, 0
 
   xytit = '!8' + ['x','y','z'] + '!X'
@@ -219,6 +223,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
   ;;    Even permutation (parity=+1) --> right-handed system
   ;;    Odd  permutation (parity=-1) --> left-handed system
   parity = sign(perm[1]-perm[0])+sign(perm[2]-perm[1])+sign(perm[0]-perm[2])
+  if (negate3) then parity = -parity
   vec_x = vec_all[*,*,perm[0]]
   vec_y = vec_all[*,*,perm[1]]
   vec_z = vec_all[*,*,perm[2]]*parity
