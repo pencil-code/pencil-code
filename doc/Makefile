@@ -35,6 +35,7 @@ manual.pdf: manual.dvi
 
 # To generate manual.ps, we need to temporarily replace
 # `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
+# [A really ugly hack..]
 manual.ps: manual.tex
 	perl -i.bak1 -0777 -pe \
 	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
@@ -47,14 +48,28 @@ manual.ps: manual.tex
 manual.ps.gz: manual.ps
 	gzip -f manual.ps
 
-body.ps: manual.dvi
+# To generate body/appendix.ps, we need to temporarily replace
+# `\usepackage[dvipdfm]{hyperref' by `\usepacakge{hyperref}':
+body.ps: manual.tex
+	perl -i.bak1 -0777 -pe \
+	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
+	$(MAKE) manual.dvi
+	perl -i.bak2 -0777 -pe \
+	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
 	last=`perl -000 -ne 'print $$1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
 	dvips -l "$$last" manual.dvi -o body.ps
+	rm -f manual.dvi	# or it might get used by next `make manual.pdf'
 
-appendix.ps: manual.dvi
+appendix.ps: manual.tex
+	perl -i.bak1 -0777 -pe \
+	  's/^(\s*\\usepackage)\[dvipdfm\](\{hyperref\})/$$1$$2/m' manual.tex
+	$(MAKE) manual.dvi
+	perl -i.bak2 -0777 -pe \
+	  's/^(\s*\\usepackage)(\{hyperref\})/$$1\[dvipdfm\]$$2/m' manual.tex
 	first=`perl -000 -ne 'print $$1+1 if (/=======LAST_BODY_PAGE=======\s*\[([0-9]+)\]/s)' manual.log`; \
 	echo "first = <$$first>"; \
 	dvips -p "$$first" manual.dvi -o appendix.ps
+	rm -f manual.dvi	# or it might get used by next `make manual.pdf'
 
 faq: www/faq.html
 
