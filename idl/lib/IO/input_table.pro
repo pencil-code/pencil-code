@@ -4,8 +4,8 @@
 
 ;;;
 ;;; Author:  wd (dobler@uni-sw.gwdg.de)
-;;; $Date: 2003-09-04 14:20:13 $
-;;; $Revision: 1.6 $
+;;; $Date: 2004-03-12 12:36:09 $
+;;; $Revision: 1.7 $
 ;;;
 ;;; 21/08/2003 - ajwm (A.J.Mee@ncl.ac.uk) 
 ;;;   Added STOP_AT and resume with FILEPOSITION behaviour to handle
@@ -13,7 +13,8 @@
 ;;;
 ;;; Usage:
 ;;;   IDL> data = input_table(FILE)
-;;;   IDL> data = input_table(FILE, OPTIONS)
+;;;   IDL> data = input_table(FILE, COMMENT_CHAR='%', /DOUBLE)
+;;;   IDL> data = input_table(FILE, STOP_AT='(\?\?\?|\*\*\*)', FILEPOS=nan_pos)
 ;;;
 ;;; Options:
 ;;;   COMMENT_CHAR, DOUBLE, VERBOSE, STOP_AT, FILEPOSITION
@@ -28,11 +29,12 @@
 ;;;   string must not be preceeded by white space in the data file,
 ;;;   i.e. the line must begin directly with it.
 ;;; - /DOUBLE tells INPUT_TABLE to read double precision values; the
-;;;   default are FLOATs;;; - /VERBOSE tells INPUT_TABLE to waffle a lot.
+;;;   default are FLOATs
+;;; - /VERBOSE tells INPUT_TABLE to waffle a lot.
 ;;; - STOP_AT may be set on entry to a regular expression to test against
-;;;   each line of input.  When a match INPUT_TABLE stops reading data
-;;;   returning the current file position in FILEPOSITION and the content
-;;;   of the matching line in STOP_AT
+;;;   each line of input.  When a line matches, INPUT_TABLE stops
+;;;   reading data, returning the current file position in
+;;;   FILEPOSITION and the content of the matching line in STOP_AT
 ;;; - FILEPOSITION contains the position in the file from which to start
 ;;;   processing the data and upon exit contains the file position at
 ;;;   which processing was terminated using STOP_AT or -1 if the end of
@@ -117,6 +119,7 @@ function input_table, filename, $
     is_comm = (strmid(line,0,clen) eq cchar)
 
     if (not is_comm) then begin
+      ;; If this is first data line, determine number of columns
       if (N_cols eq 0) then begin
         N_cols = n_elements(strsplit(line,'[\ ]',/REGEX,/EXTRACT))
 
@@ -143,13 +146,20 @@ function input_table, filename, $
       endif
     
       if (slen gt 0) then begin
-        if (stregex(line,STOP_AT,/BOOLEAN)) then begin     
+        if (stregex(line,STOP_AT,/BOOLEAN)) then begin
           point_lun,-in_file,fileposition ; Save file position
           stop_at=line                    ; Return the line
           found_stop=-1                   ; Exit the loop
+          if (verb) then begin
+            print, 'Found stop regexp at'
+            print, '  position ', strtrim(fileposition,2)
+            print, '  line no. ', strtrim(iline,2), ' (starting from 0)'
+            print, '  line = <'+line+'>'
+          endif
         endif
       endif
 
+      ;; Read one line and store in data[:,:]
       if (not found_stop) then begin
         is_empty = (strlen(line) eq 0)
         if (not (is_empty)) then begin ; a data line
