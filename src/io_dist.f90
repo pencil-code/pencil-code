@@ -191,17 +191,20 @@ contains
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: mm,nn
+      use Mpicomm, only: imn,mm,nn
 !
-      integer :: ndim,imn
+      integer :: ndim
       real, dimension (nx,ndim) :: a
       character (LEN=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: nn =', nn
+      if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: ndim =', ndim
 !
-      call output_stenciled_c(file, a, ndim, &
+!       call output_stenciled_c(file, a, ndim, &
+!                               imn, mm(imn), nn(imn), t, &
+!                               nx, ny, nz, nghost, len(file))
+      call output_stenciled_c("tmp/proc0/glhc.dat", a, ndim, &
                               imn, mm(imn), nn(imn), t, &
-                              nx, ny, nz, nghost, len(file))
+                              nx, ny, nz, nghost, 18)
 !
     endsubroutine output_stenc_vect
 !***********************************************************************

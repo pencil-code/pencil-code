@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.25 $", &
-           "$Date: 2002-02-23 15:59:48 $")
+           "$Revision: 1.26 $", &
+           "$Date: 2002-02-24 21:02:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -62,7 +62,7 @@ use IO
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real, dimension (mz) :: stp
-      real :: ampl,beta,cs2int,ssint
+      real :: ampl,beta1,cs2int,ssint
       integer :: init
 !
       if (lgravz) then
@@ -74,16 +74,17 @@ use IO
         case(4)               ! piecewise polytropic
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           ! top region
-          beta = gravz/(mpoly2+1)*gamma/gamma1
+          ! NB: beta1 i not dT/dz, but dcs2/dz = (gamma-1)c_pdT/dz
+          beta1 = gamma*gravz/(mpoly2+1)
           f(:,:,:,ient) = (1-mpoly2*gamma1)/gamma &
-                          * alog(1 + beta*(zz-ztop)/cs20)
+                          * alog(1 + beta1*(zz-ztop)/cs20)
           ! unstable region
           ssint = (1-mpoly2*gamma1)/gamma & ! ss at layer interface z=z2
-                  * alog(1 + beta*(z2-ztop)/cs20)
-          cs2int = cs20 + beta*(z2-ztop) ! cs2 at layer interface z=z2
-          beta = gravz/(mpoly0+1)*gamma/gamma1
+                  * alog(1 + beta1*(z2-ztop)/cs20)
+          cs2int = cs20 + beta1*(z2-ztop) ! cs2 at layer interface z=z2
+          beta1 = gamma*gravz/(mpoly0+1)
           tmp = ssint + (1-mpoly0*gamma1)/gamma &
-                        * alog(1 + beta*(zz-z2)/cs2int)
+                        * alog(1 + beta1*(zz-z2)/cs2int)
           ! smoothly blend the solutions for the two regions:
           stp = step(z,z2,whcond)
           p = spread(spread(stp,1,mx),2,my)
@@ -91,11 +92,11 @@ use IO
           f(:,:,:,ient) = p*f(:,:,:,ient)  + (1-p)*tmp
           ! bottom (stable) region
           ssint = ssint + (1-mpoly0*gamma1)/gamma & ! ss at layer interface
-                          * alog(1 + beta*(z1-z2)/cs2int)
-          cs2int = cs2int + beta*(z1-z2) ! cs2 at layer interface z=z1
-          beta = gravz/(mpoly1+1)*gamma/gamma1
+                          * alog(1 + beta1*(z1-z2)/cs2int)
+          cs2int = cs2int + beta1*(z1-z2) ! cs2 at layer interface z=z1
+          beta1 = gamma*gravz/(mpoly1+1)
           tmp = ssint + (1-mpoly1*gamma1)/gamma &
-                        * alog(1 + beta*(zz-z1)/cs2int)
+                        * alog(1 + beta1*(zz-z1)/cs2int)
           ! smoothly blend the solutions for the two regions:
           stp = step(z,z1,whcond)
           p = spread(spread(stp,1,mx),2,my)
@@ -204,6 +205,7 @@ use IO
       if (headt) then
         call output_stenc(trim(directory)//'/chi.dat',chi,1)
         call output_stenc(trim(directory)//'/lambda.dat',lambda,1)
+        call output_stenc(trim(directory)//'/glhc.dat',glhc,3)
       endif
 
       if (headt) then
@@ -257,6 +259,7 @@ endif
     subroutine heatcond(x,y,z,hcond)
 !
 !  calculate the heat conductivity lambda
+!  NB: if you modify this profile, you *must* adapt gradloghcond below.
 !  23-jan-2002/wolf: coded
 !
       use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
@@ -281,6 +284,7 @@ endif
     subroutine gradloghcond(x,y,z,glhc)
 !
 !  calculate grad(log lambda), where lambda is the heat conductivity
+!  NB: *Must* be in sync with heatcond() above.
 !  23-jan-2002/wolf: coded
 !
       use Cdata, only: nx,lgravz,lgravr,z0,z1,z2,ztop, &
@@ -291,8 +295,10 @@ endif
       real, dimension (nx,3) :: glhc
 !
       if (lgravz) then
-        glhc(:,1:2) = 0
-        glhc(:,  3) = (hcond1-hcond0)*der_step(z,z2,whcond)      
+        glhc(:,1:2) = 0.
+        glhc(:,3) = (hcond1-1)*der_step(z,z1,-whcond) &
+                    + (hcond2-1)*der_step(z,z2,whcond)
+        glhc(:,3) = hcond0*glhc(:,3)
       endif
 
       if (lgravr) then
