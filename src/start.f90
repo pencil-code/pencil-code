@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.132 2004-06-02 16:27:09 bingert Exp $
+! $Id: start.f90,v 1.133 2004-06-02 21:23:10 mee Exp $
 !
 !***********************************************************************
       program start
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.132 2004-06-02 16:27:09 bingert Exp $")
+             "$Id: start.f90,v 1.133 2004-06-02 21:23:10 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -189,6 +189,8 @@
             z=z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
             zprim=c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
             zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
+          case default
+            call stop_it('start: Unknown grid_func for no equidistant z-grid')
           endselect
         else
           z=z00+zeta_grid*dz
