@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.20 2002-11-16 19:05:54 dobler Exp $
+# CVS: $Id: auto-test,v 1.21 2002-11-17 14:42:02 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -33,7 +33,6 @@ use constant QUIET=>1;
 use Cwd;
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
-use Data::Dumper;
 
 
 # ---------------------------------------------------------------------- #
@@ -87,7 +86,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.20 2002-11-16 19:05:54 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.21 2002-11-17 14:42:02 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0 };
@@ -97,6 +96,7 @@ my $clean = $opts{'clean'} ? 1 : 0;
 
 ## Debugging output:
 if ($debug) {
+    use Data::Dumper;
     print STDERR Dumper(\%opts);
     print STDERR
 	"(\$t_comp,\$t_start,\$t_run,\$t_res)"
