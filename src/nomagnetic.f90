@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.46 2004-04-26 16:05:16 dobler Exp $
+! $Id: nomagnetic.f90,v 1.47 2004-05-31 15:43:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,18 +57,20 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.46 2004-04-26 16:05:16 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.47 2004-05-31 15:43:02 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic()
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
 !  24-nov-2002/tony: dummy routine
 
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+      if(ip==0) print*,'f=',f
     endsubroutine initialize_magnetic
-
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
 !

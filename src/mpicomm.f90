@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.119 2004-04-17 16:29:17 ajohan Exp $
+! $Id: mpicomm.f90,v 1.120 2004-05-31 15:43:02 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -133,7 +133,7 @@ module Mpicomm
 !  23-nov-02/axel: corrected problem with ny=4 or less
 !
       use General
-      use Cdata, only: lmpicomm
+      use Cdata, only: lmpicomm,lprocz_slowest
 !
 !  get processor number, number of procs, and whether we are root
 !
@@ -175,9 +175,15 @@ module Mpicomm
 !  position on the processor grid
 !  x is fastest direction, z slowest
 !
-      ipx = 0
-      ipy = modulo(iproc, nprocy)
-      ipz = iproc/(nprocy)
+      if (lprocz_slowest) then
+        ipx = 0
+        ipy = modulo(iproc, nprocy)
+        ipz = iproc/(nprocy)
+       else
+        ipx = 0
+        ipy = iproc/(nprocz)
+        ipz = modulo(iproc, nprocz)
+       endif
 !
 !  set up `lower' and `upper' neighbours
 !

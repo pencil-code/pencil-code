@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.191 2004-05-31 13:44:27 nilshau Exp $
+! $Id: magnetic.f90,v 1.192 2004-05-31 15:43:02 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -39,12 +39,14 @@ module Magnetic
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
   real :: mu_r=-0.5
+  real :: rescale_aa=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
+  logical :: reinitalize_aa=.false.
   character (len=40) :: kinflow=''
   real :: nu_ni,nu_ni1,alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -69,7 +71,8 @@ module Magnetic
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,eta_shock,wresistivity, &
-       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction
+       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction, &
+       reinitalize_aa,rescale_aa
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -127,7 +130,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.191 2004-05-31 13:44:27 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.192 2004-05-31 15:43:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -148,12 +151,24 @@ module Magnetic
 !
     endsubroutine register_magnetic
 !***********************************************************************
-    subroutine initialize_magnetic()
+    subroutine initialize_magnetic(f)
 !
 !  Perform any post-parameter-read initialization
 !
-!  24-nov-2002/tony: dummy routine - nothing to do at present
-
+!  24-nov-02/tony: dummy routine - nothing to do at present
+!  20-may-03/axel: reinitalize_aa added
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+!
+!  set to zero and then rescale the magnetic field
+!  (in future, could call something like init_aa_simple)
+!
+      if (reinitalize_aa) then
+        f(:,:,:,iax:iaz)=rescale_aa*f(:,:,:,iax:iaz)
+      endif
+!
     endsubroutine initialize_magnetic
 !***********************************************************************
     subroutine init_aa(f,xx,yy,zz)
@@ -181,6 +196,7 @@ module Magnetic
       select case(initaa)
 
       case('zero', '0'); f(:,:,:,iax:iaz) = 0.
+      case('rescale'); f(:,:,:,iax:iaz)=amplaa*f(:,:,:,iax:iaz)
       case('mode'); call modev(amplaa,coefaa,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('modeb'); call modeb(amplaa,coefbb,f,iaa,kx_aa,ky_aa,kz_aa,xx,yy,zz)
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)

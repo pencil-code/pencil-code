@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.132 2004-05-29 06:30:38 brandenb Exp $
+! $Id: register.f90,v 1.133 2004-05-31 15:43:02 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -219,7 +219,7 @@ module Register
       call initialize_density()
       call initialize_forcing(lstarting)  ! get random seed from file, ..
       call initialize_entropy() ! calculate radiative conductivity, etc.
-      call initialize_magnetic()
+      call initialize_magnetic(f)
       call initialize_radiation()
       call initialize_pscalar(f)
       call initialize_chiral(f)

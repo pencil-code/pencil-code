@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.174 2004-05-29 06:30:38 brandenb Exp $ 
+! $Id: param_io.f90,v 1.175 2004-05-31 15:43:02 brandenb Exp $ 
 
 module Param_IO
 
@@ -60,6 +60,7 @@ module Param_IO
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io,lread_oldsnap,lread_oldsnap_nomag, &
        lwrite_aux,lcalc_cp,pretend_lnTT, &
+       lprocz_slowest, &
        bcx,bcy,bcz,r_int,r_ext,mu0
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &

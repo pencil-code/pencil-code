@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.229 2004-05-29 06:30:38 brandenb Exp $
+! $Id: cdata.f90,v 1.230 2004-05-31 15:43:02 brandenb Exp $
 
 module Cdata
 
@@ -80,11 +80,12 @@ module Cdata
 !
   integer :: lpoint=(l1+l2)/2,mpoint=(m1+m2)/2,npoint=(n1+n2)/2
 !
-!  pencil-related stuff
+!  pencil-related stuff (also MPI-related stuff)
 !
   integer :: imn,m,n
   integer, dimension (ny*nz) :: mm,nn
   logical, dimension (ny*nz) :: necessary=.false.
+  logical :: lprocz_slowest=.true.
 !
 !  in this section are all the things related to printing
 !
