@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.278 2004-03-13 15:20:51 mee Exp $
+! $Id: entropy.f90,v 1.279 2004-03-13 17:46:29 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.278 2004-03-13 15:20:51 mee Exp $")
+           "$Id: entropy.f90,v 1.279 2004-03-13 17:46:29 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -793,17 +793,17 @@ module Entropy
       absz=abs(z(n))
       do m=m1,m2 
 !  cold gas profile n_c (eq 6)
-        n_c=0.340*(0.859*exp(-min((z(n)/0.127)**2,70.)) +         &
-                   0.047*exp(-min((z(n)/0.318)**2,70.)) +         &
-                   0.094*exp(-min(absz/0.403,70.)))     
+        n_c=0.340*(0.859*exp(-min((z(n)*kpc/0.127)**2,70.)) +         &
+                   0.047*exp(-min((z(n)*kpc/0.318)**2,70.)) +         &
+                   0.094*exp(-min(absz*kpc/0.403,70.)))     
 !  warm gas profile n_w (eq 7)
-        n_w=0.226*(0.456*exp(-min((z(n)/0.127)**2,70.)) +         &
-                   0.403*exp(-min((z(n)/0.318)**2,70.)) +         &
-                   0.141*exp(-min(absz/0.403,70.)))
+        n_w=0.226*(0.456*exp(-min((z(n)*kpc/0.127)**2,70.)) +         &
+                   0.403*exp(-min((z(n)*kpc/0.318)**2,70.)) +         &
+                   0.141*exp(-min(absz*kpc/0.403,70.)))
 !  ionized gas profile n_i (eq 9)
-        n_i=0.0237*exp(-absz) + 0.0013* exp(-min(absz/0.150,70.))
+        n_i=0.0237*exp(-absz*kpc) + 0.0013* exp(-min(absz*kpc/0.150,70.))
 !  hot gas profile n_h (eq 13)
-        n_h=0.00048*exp(-absz/1.5)         
+        n_h=0.00048*exp(-absz*kpc/1.5)         
 !  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
         rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)
         lnrho=alog(rho)
