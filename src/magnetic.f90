@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.218 2004-08-20 11:25:40 nilshau Exp $
+! $Id: magnetic.f90,v 1.219 2004-08-24 18:51:45 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.218 2004-08-20 11:25:40 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.219 2004-08-24 18:51:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -341,7 +341,7 @@ module Magnetic
 !  22-nov-01/nils: coded
 !   1-may-02/wolf: adapted for pencil_modular
 !  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
-!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set to 1 to prevent division by 0.
+!   8-aug-03/axel: introduced B_ext21=1./B_ext**2, and set =1 to avoid div. by 0
 !  12-aug-03/christer: added alpha effect (alpha in the equation above)
 !  26-may-04/axel: ambipolar diffusion added
 !  18-jun-04/axel: Hall term added
@@ -382,11 +382,9 @@ module Magnetic
 
       real, dimension (nx,3) :: graddiva,bglnrho
       real, dimension (nx,3) :: nubglnrho,tmp1,tmp2
-
-
 !
-      intent(in)  :: f,uu,rho1,TT1,uij,bb,shock,gshock
-      intent(out) :: bij,va2
+      intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
+      intent(out)    :: bij,va2
       intent(inout)  :: df     
 !
 !  identify module and boundary conditions

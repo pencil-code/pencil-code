@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.323 2004-08-24 18:04:19 mee Exp $
+! $Id: entropy.f90,v 1.324 2004-08-24 18:51:45 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.323 2004-08-24 18:04:19 mee Exp $")
+           "$Id: entropy.f90,v 1.324 2004-08-24 18:51:45 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1036,7 +1036,7 @@ module Entropy
 !     real :: Kperp,Kpara
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho,rho1,lnrho,shock,gshock
+      intent(in)  :: f,uu,glnrho,divu,rho1,lnrho,shock,gshock,bb,bij
       intent(out) :: df,cs2,TT1
 !
 !  identify module and boundary conditions

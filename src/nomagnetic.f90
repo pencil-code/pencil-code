@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.48 2004-07-30 18:06:50 mcmillan Exp $
+! $Id: nomagnetic.f90,v 1.49 2004-08-24 18:51:45 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.48 2004-07-30 18:06:50 mcmillan Exp $")
+           "$Id: nomagnetic.f90,v 1.49 2004-08-24 18:51:45 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -114,7 +114,11 @@ module Magnetic
       real, dimension (nx,3) :: uu,bb,gshock
       real, dimension (nx) :: rho1,TT1,va2,shock
 !
-!  set alven speed to zero for proper time stepping
+      intent(in)     :: f,uu,rho1,TT1,uij,bb,shock,gshock
+      intent(out)    :: bij,va2
+      intent(inout)  :: df
+!
+!  set Alfven speed to zero for proper time stepping
 !
       va2=0
 !
