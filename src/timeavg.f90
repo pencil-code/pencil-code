@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.1 2002-10-07 20:39:22 dobler Exp $ 
+! $Id: timeavg.f90,v 1.2 2002-10-07 21:16:37 dobler Exp $ 
 
 module Timeavg
 
@@ -66,22 +66,16 @@ module Timeavg
       init1=.false.             ! somehow the initialization above doen
                                 ! not seem to work on Cincinnatus
       if (tavg <= 0) return
-print*, 'PRESENT 1: ', present(init),init1
       if (present(init)) init1=init
-print*, 'PRESENT 1: ', present(init),init1
 !
       weight = min(dt/tavg,1.)
       do i=1,mtavg
         idx = idx_tavg(i)
-        if (idx > 0) then
+        if (idx > 0) then       ! should always be the case
           if (init1) then
-print*, 'Initializing...'
             f_tavg(:,:,:,i) = a(:,:,:,idx)
-print*, '  minmax = ', minval(f_tavg), maxval(f_tavg)
           else
-print*, 'Averaging...'
             f_tavg(:,:,:,i) = weight*a(:,:,:,idx) + (1-weight)*f_tavg(:,:,:,i)
-print*, '  minmax = ', minval(f_tavg), maxval(f_tavg)
           endif
         endif
       enddo
