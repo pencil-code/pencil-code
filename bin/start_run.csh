@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.33 2004-09-01 16:55:44 dobler Exp $
+# CVS: $Id: start_run.csh,v 1.34 2004-09-22 09:39:11 ajohan Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -95,8 +95,8 @@ endif
 
 # Run start.x
 date
-echo "$mpirun $mpirunops $npops $start_x $x_ops"
-time $mpirun $mpirunops $npops $start_x $x_ops
+echo "$mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops"
+time $mpirun $mpirunops $npops $mpirunops2 $start_x $x_ops
 set start_status=$status	# save for exit
 if ($start_status) exit $start_status	# something went wrong
 echo ""
@@ -134,9 +134,9 @@ endif
 
 # Run run.x
 date
-echo "$mpirun $mpirunops $npops $run_x $x_ops"
-echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
-time $mpirun $mpirunops $npops $run_x $x_ops
+echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
+echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
+time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status		# save for exit
 date
 
