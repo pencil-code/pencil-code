@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.1 2003-03-06 14:25:51 brandenb Exp $
+! $Id: grav_self.f90,v 1.2 2003-04-04 05:46:55 brandenb Exp $
 
 module Gravity
 
@@ -14,6 +14,7 @@ module Gravity
   endinterface
 
   real, dimension (mx,my,mz) :: phi
+  real :: lnrho_bot,ss_bot
   real :: grav=1.
   integer :: iterations_selfgrav=100
   logical :: ldebug_selfgrav=.false.,lself_gravity=.true.
@@ -58,7 +59,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.1 2003-03-06 14:25:51 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.2 2003-04-04 05:46:55 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.

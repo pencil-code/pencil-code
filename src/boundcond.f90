@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.39 2002-11-14 14:29:29 dobler Exp $
+! $Id: boundcond.f90,v 1.40 2003-04-04 05:46:55 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -241,6 +241,8 @@ module Boundcond
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==ient)   call bc_ss_temp_z(f,topbot)
+              case ('cp')       ! constant pressure
+                if (j==ilnrho) call bc_lnrho_pressure_z(f,topbot)
               case ('sT')       ! symmetric temp.
                 if (j==ient) call bc_ss_stemp_z(f,topbot)
               case ('c2')       ! complex

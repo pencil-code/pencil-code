@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.70 2003-03-11 08:34:55 brandenb Exp $
+! $Id: density.f90,v 1.71 2003-04-04 05:46:55 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.70 2003-03-11 08:34:55 brandenb Exp $")
+           "$Id: density.f90,v 1.71 2003-04-04 05:46:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -682,14 +682,14 @@ module Density
 !  This assumes that the density is already set (ie density _must_ register
 !  first!)
 !
-!  check whether we want to do top or bottom (this is precessor dependent)
+!  check whether we want to do top or bottom (this is processor dependent)
 !
       select case(topbot)
 !
 !  bottom boundary
 !
       case('bot')
-        if (lroot) print*,'bc_lnrho_temp_x: bot not yet implemented'
+        if (lroot) print*,'bc_lnrho_temp_z: bot not yet implemented'
         call stop_it("")
 !
 !  top boundary
@@ -719,6 +719,67 @@ module Density
       endselect
 !
     endsubroutine bc_lnrho_temp_z
+!***********************************************************************
+    subroutine bc_lnrho_pressure_z(f,topbot)
+!
+!  boundary condition for lnrho: constant pressure
+!
+!   4-apr-2003/axel: coded
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: tmp
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0
+!
+!  Constant pressure, i.e. antisymmetric
+!  This assumes that the entropy is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is processor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('top')
+        if (lroot) print*,'bc_lnrho_pressure_z: bot not implemented'
+        call stop_it("")
+!
+!  top boundary
+!
+      case('bot')
+        if (ldebug) print*,'bc_lnrho_pressure_z: lnrho_bot,ss_bot=',lnrho_bot,ss_bot
+!
+!  set first boundary value for entropy, and then ghost points antisymmetrically
+!  set density value such that pressure is constant at the bottom
+!
+        if(lentropy) then
+          f(:,:,n1,ient)=ss_bot
+          do i=1,nghost; f(:,:,n1-i,ient)=2*f(:,:,n1,ient)-f(:,:,n1+i,ient); enddo
+          f(:,:,n1,ilnrho)=lnrho_bot+ss_bot-f(:,:,n1,ient)
+        else
+          f(:,:,n1,ilnrho)=lnrho_bot
+        endif
+!
+!  make density antisymmetric about boundary
+!  another possibility might be to enforce hydrostatics
+!
+        do i=1,nghost
+          f(:,:,n1-i,ilnrho)=2*f(:,:,n1,ilnrho)-f(:,:,n1+i,ilnrho)
+        enddo
+!
+      case default
+        if(lroot) print*,"invalid argument for 'bc_lnrho_pressure_z'"
+        call stop_it("")
+      endselect
+!
+    endsubroutine bc_lnrho_pressure_z
 !***********************************************************************
 
 endmodule Density

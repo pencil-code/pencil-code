@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.20 2003-03-06 14:25:51 brandenb Exp $
+! $Id: nograv.f90,v 1.21 2003-04-04 05:46:55 brandenb Exp $
 
 module Gravity
 
@@ -16,6 +16,7 @@ module Gravity
   endinterface
 
   real :: z1,z2,zref,zgrav,gravz,zinfty  !(used by Entropy and Density)
+  real :: lnrho_bot,ss_bot
   character (len=labellen) :: grav_profile='const'  !(used by Density)
   logical :: lself_gravity=.false.
 
@@ -45,7 +46,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.20 2003-03-06 14:25:51 brandenb Exp $")
+           "$Id: nograv.f90,v 1.21 2003-04-04 05:46:55 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
