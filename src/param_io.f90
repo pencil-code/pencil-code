@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $ 
+! $Id: param_io.f90,v 1.20 2002-06-14 17:30:07 dobler Exp $ 
 
 module Param_IO
 
@@ -54,7 +54,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $
+!   $Id: param_io.f90,v 1.20 2002-06-14 17:30:07 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -107,7 +107,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.19 2002-06-13 15:55:49 brandenb Exp $
+!   $Id: param_io.f90,v 1.20 2002-06-14 17:30:07 dobler Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -181,7 +181,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,lgravz,lgravr,lentropy,lmagnetic,lforcing
+           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing
 !
       if (lroot) then
         open(1,FILE='tmp/param.nml',DELIM='apostrophe')
