@@ -1,7 +1,7 @@
 program test
 
   integer, parameter        :: mx=<N>, my=2, mz=2
-  real, dimension(mx,my,mz) :: f
+  real, dimension(mx,my,mz) :: f=-10.
   real, dimension(mx)       :: fx=1.0
 
   write(0,*) 'spread_<N>: Starting'
