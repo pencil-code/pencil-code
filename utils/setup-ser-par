@@ -1,0 +1,50 @@
+#!/bin/csh
+#                       setup-ser-par
+#                      ---------------
+# Description:
+#   Set up the present run directory for comparing serial and parallel
+#   runs for the same parameters.
+# Usage:
+#   setup-par
+#   (cd src-ser; make)
+#   (cd src-par; make)
+#   run-ser-par
+#   idl
+#     @read-ser-par
+
+if ($#argv > 0) goto usage
+
+# Are we in a run directory?
+if (! -e ./start.in) goto usage
+
+if (! -d src-ser) then
+  cp -r src src-ser
+  rm -rf src-par/CVS		# mustn't copy CVS subdirectory
+endif
+  
+setup-src src-ser
+cp -r src-ser src-par
+rm -rf src-par/CVS		# mustn't copy CVS subdirectory
+
+# Set nompi for src-ser:
+perl -i -pe 's/MPICOMM\s*=\s*mpicomm/MPICOMM   = nompicomm/' src-ser/Makefile.local
+perl -i -pe 's/ncpus=[0-9]+/ncpus=1/; s/nprocy=[0-9]+/nprocy=1/; s/nprocz=[0-9]+/nprocz=1/;' src-ser/cparam.local
+# Set CPU layout to 2x2 for parallel run
+perl -i -pe 's/MPICOMM\s*=\s*nompicomm/MPICOMM   =   mpicomm/' src-par/Makefile.local
+perl -i -pe 's/ncpus=[0-9]+/ncpus=4/; s/nprocy=[0-9]+/nprocy=2/; s/nprocz=[0-9]+/nprocz=2/;' src-par/cparam.local
+
+## Move original src and data directories
+mv src src-orig
+mv data data-orig && mkdir data-orig/data-{ser,par}
+ln -s data-orig/data-{ser,par} .
+
+goto exit
+
+# ---------------------------------------------------------------------- #
+usage:
+
+echo "Usage:  setup-par [old-dir]"
+echo "Run from a run directory, or give run directory as argument"
+
+
+exit:

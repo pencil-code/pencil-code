@@ -1,0 +1,55 @@
+#!/bin/csh
+
+# Name:   run-ser-par
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   24-Jun-2003
+# Description:
+#   (start and run serial and parallel version of a code. Assumes
+#   everything has been set up using setup-ser-par and compiled
+#   afterwards.
+# Usage:
+#   setup-par
+#   (cd src-ser; make)
+#   (cd src-par; make)
+#   run-ser-par
+#   idl
+#     @read-ser-par
+
+# Consistency checks (ere we remove the data directory..)
+if (! ((-l data-ser) && (-d data-ser))) then
+  echo "Cannot find data-ser"
+  exit 1
+endif
+if (! ((-l data-par) && (-d data-par))) then
+  echo "Cannot find data-par"
+  exit 1
+endif
+
+# Make sure src and data don't exist, so we can link to them
+if (-e src) then
+  mv src src.saved
+  echo "Irritating: src should have been renamed to src-orig"
+endif
+#
+if (-l data) rm data
+if (-d data) then
+  mv data data.saved
+  echo "Irritating: data was no link"
+endif
+
+# Link and run serial
+ln -fs src-ser src
+ln -fs data-ser data
+start.csh
+run.csh
+rm -f src data
+
+# Link and run parallel
+ln -fs src-par src
+ln -fs data-par data
+start.csh
+run.csh
+rm -f src data
+
+
+# End of file run-ser-par
