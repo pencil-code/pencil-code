@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.102 2002-10-16 14:42:19 brandenb Exp $
+! $Id: equ.f90,v 1.103 2002-11-03 07:57:26 brandenb Exp $
 
 module Equ
 
@@ -98,6 +98,15 @@ module Equ
     subroutine xyaverages
 !
 !  calculate xy-averages (as functions of z)
+!  NOTE: the whole xy-average is present in one and the same fsumz,
+!  but the result is not complete on any of the processors, unless
+!  mpireduce_sum has been called. This procedure is simplest; in
+!  principle one could do this without nprocz in fsumz, but then one
+!  needs complicated communication procedures to collect results first
+!  in processors with the same ipz and different ipy, and then assemble
+!  result from the subset of ipz processors which have ipy=0 back on
+!  the root processor.
+!
 !   6-jun-02/axel: coded
 !
       use Mpicomm
@@ -119,6 +128,10 @@ module Equ
     subroutine zaverages
 !
 !  calculate z-averages (as functions of x and y)
+!  NOTE: the whole z-average is present in one and the same fsumxy,
+!  but the result is not complete on any of the processors, unless
+!  mpireduce_sum has been called.
+!
 !  19-jun-02/axel: coded
 !
       use Mpicomm
@@ -228,7 +241,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.102 2002-10-16 14:42:19 brandenb Exp $")
+           "$Id: equ.f90,v 1.103 2002-11-03 07:57:26 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
