@@ -43,8 +43,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-05-02 12:47:51 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-05-02 14:43:27 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -106,7 +106,7 @@ module Magnetic
           xx1 =  ct*cp*xx + ct*sp*yy - st*zz  - shift(1)
           yy1 = -   sp*xx +    cp*yy          - shift(2)
           zz1 =  st*cp*xx + st*sp*yy + ct*zz  - shift(3)
-          call norm_ring(xx1,yy1,zz1,R0,width,tmpv)
+          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
           tmpv = tmpv*fring
           ! calculate D*tmpv
           f(:,:,:,iax) = f(:,:,:,iax) &
@@ -191,9 +191,10 @@ module Magnetic
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine norm_ring(xx,yy,zz,R0,width,vv)
+    subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv)
 !
-!  Generate vector potential for a flux ring of radius R0 and thickness
+!  Generate vector potential for a flux ring of magnetic flux FRING,
+!  current Iring (not correctly normalized), radius R0 and thickness
 !  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
 !
 !  1-may-02/wolf: coded
@@ -201,12 +202,24 @@ module Magnetic
       use Cdata, only: mx,my,mz,mvar
 !
       real, dimension (mx,my,mz,3) :: vv
-      real, dimension (mx,my,mz)   :: xx,yy,zz,tmp
-      real :: R0,width
+      real, dimension (mx,my,mz)   :: xx,yy,zz,phi,tmp
+      real :: fring,Iring,R0,width
+!
+      vv = 0.
+!
+!  magnetic ring
 !
       tmp = sqrt(xx**2+yy**2)-R0
-      vv = 0.
-      vv(:,:,:,3) = -0.5*(1+tanh(tmp/width)) * 0.5/width/cosh(zz/width)**2
+      vv(:,:,:,3) = - 0.5*fring*(1+tanh(tmp/width)) &
+                      * 0.5/width/cosh(zz/width)**2
+!
+!  current ring (to twist the B-lines)
+!
+      tmp = tmp*2 + zz**2 + width**2
+      tmp = Iring*alog(tmp)     ! Now the A_phi component
+      phi = atan2(yy,xx)
+      vv(:,:,:,1) = - tmp*sin(phi)
+      vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
 !***********************************************************************
