@@ -119,17 +119,17 @@ general.o:   general.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
-sub.o:       sub.f90 cdata.o deriv.o general.o $(IO).o $(MPICOMM).o
-register.o:  register.f90 cdata.o sub.o $(MPICOMM).o $(physics)
-equ.o:       equ.f90 cdata.o slices.o sub.o deriv.o $(physics) $(MPICOMM).o 
-timestep.o:  timestep.f90 cdata.o equ.o $(FORCING.o) $(MPICOMM).o
+sub.o:       sub.f90 cdata.o deriv.o $(MPICOMM).o general.o $(IO).o
+register.o:  register.f90 cdata.o $(MPICOMM).o sub.o $(physics)
+equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) slices.o
+timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 #
 $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
-$(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(GLOBAL).o $(MPICOMM).o
+$(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:   $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
-$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o slices.o
+$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o
 #
 debug_c.o:   debug_c.c

@@ -20,6 +20,23 @@ module Io
     module procedure output_stenc_scal
   endinterface
 
+  ! Interface to external C function
+  ! Does not work, since stenc can be either a 1-d or a 2-d array and the
+  ! C function does not care.
+  !   interface output_stenciled_c
+  !     subroutine output_stenciled_c(filename,stenc,&
+  !                                   ndim,i,iy,iz,t, &
+  !                                   nx,ny,nz,nghost,fnlen)
+  !       use Cdata, only: mx
+  
+  !       real,dimension(mx,*) :: stenc
+  !       real,dimension(mx) :: stenc
+  !       real :: t
+  !       integer :: ndim,i,iy,iz,nx,ny,nz,nghost,fnlen
+  !       character (LEN=*) :: filename
+  !     endsubroutine output_stenciled_c
+  !   endinterface
+
 contains
 
 !***********************************************************************

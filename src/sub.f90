@@ -1196,7 +1196,7 @@ module Sub
         real, dimension(size(f,1)) :: g
 
         g = f
-        notanumber_1 = (any(f /= g) .or. any(f .eq. g+1))
+        notanumber_1 = (any(f /= g) .or. any(f == g+1))
 !
       endfunction notanumber_1
 !***********************************************************************
@@ -1214,7 +1214,7 @@ module Sub
         real, dimension(size(f,1),size(f,2),size(f,3)) :: g
 
         g = f
-        notanumber_3 = (any(f /= g) .or. any(f .eq. g+1))
+        notanumber_3 = (any(f /= g) .or. any(f == g+1))
 !
       endfunction notanumber_3
 !***********************************************************************
