@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.130 2003-09-19 17:32:37 brandenb Exp $
+! $Id: magnetic.f90,v 1.131 2003-09-19 21:25:35 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -90,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.130 2003-09-19 17:32:37 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.131 2003-09-19 21:25:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -311,7 +311,7 @@ module Magnetic
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
           if(bthresh_per_brms/=0) call calc_bthresh
-          call vecout(41,trim(directory_snap)//'/bvec',bb,bthresh,nbvec)
+          call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
         endif
 !
 !  possibility to add external field
