@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.24 2003-12-08 18:36:18 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.25 2003-12-09 10:34:01 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -23,10 +23,10 @@ module Dustvelocity
 
   ! init parameters
   real, dimension(ndustspec) :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
-  real, dimension(ndustspec) :: taud=0.,beta=0.,nud=0.
-  real :: taud1,nud_all=0.,beta_all=0.,taud_all=0.,ampluud_all=0.
+  real, dimension(ndustspec) :: tausd=0.,beta=0.,nud=0.
+  real :: tausd1,nud_all=0.,beta_all=0.,tausd_all=0.,ampluud_all=0.
   logical, dimension(ndustspec) :: lfeedback_gas=.true.,lgravzd=.true.
-  logical :: lfeedback_gas_all=.false.,lgravzd_all=.false.
+  logical :: lfeedback_gas_all=.true.,lgravzd_all=.true.
   character (len=labellen), dimension(ndustspec) :: inituud='zero'
   character (len=labellen) :: inituud_all=''
 
@@ -35,7 +35,7 @@ module Dustvelocity
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, nud_all, beta, beta_all, taud, taud_all, &
+       nud, nud_all, beta, beta_all, tausd, tausd_all, &
        lfeedback_gas, lfeedback_gas_all, lgravzd, lgravzd_all
 
   ! other variables (needs to be consistent with reset list below)
@@ -77,7 +77,7 @@ module Dustvelocity
         if (idust .eq. 1) then
           iuud(1) = nvar+1
         else
-          iuud(idust) = iuud(idust-1)+3
+          iuud(idust) = iuud(idust-1)+4
         endif
         iudx(idust) = iuud(idust)
         iudy(idust) = iuud(idust)+1
@@ -95,7 +95,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.24 2003-12-08 18:36:18 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.25 2003-12-09 10:34:01 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,48 +129,101 @@ module Dustvelocity
 !
    integer :: idust
 !
-!  If *_all set, make all empty *(:) = *_all
+!  If *_all set, make all primordial *(:) = *_all
 !
       if (nud_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: nud_all=',nud_all
         do idust=1,ndustspec
           if (nud(idust) .eq. 0.) nud(idust)=nud_all
         enddo
       endif
 !      
       if (inituud_all .ne. '') then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: inituud_all=',inituud_all
         do idust=1,ndustspec
-          if (inituud(idust) .eq. '') inituud(idust) = inituud_all
+          if (inituud(idust) .eq. 'zero') inituud(idust) = inituud_all
         enddo
       endif
 !
       if (ampluud_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: ampluud_all=',ampluud_all
         do idust=1,ndustspec
           if (ampluud(idust) .eq. 0.) ampluud(idust) = ampluud_all
         enddo
       endif
 !
       if (beta_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: beta_all=',beta_all
         do idust=1,ndustspec
           if (beta(idust) .eq. 0.) beta(idust) = beta_all
         enddo
       endif
 !
-      if (taud_all .ne. 0.) then
+      if (tausd_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: tausd_all=',tausd_all
         do idust=1,ndustspec
-          if (taud(idust) .eq. 0.) taud(idust) = taud_all
+          if (tausd(idust) .eq. 0.) tausd(idust) = tausd_all
         enddo
       endif
 !
       if (.not. lfeedback_gas_all) then
+        if (lroot .and. ip<6) &
+            print*, &
+                'initialize_dustvelocity: lfeedback_gas_all=',lfeedback_gas_all
         do idust=1,ndustspec
           lfeedback_gas(idust) = .false.
         enddo
       endif
 !
       if (.not. lgravzd_all) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustvelocity: lgravzd_all=',lgravzd_all
         do idust=1,ndustspec
           lgravzd(idust) = .false.
         enddo
+      endif
+!
+!  Copy boundary conditions after first dust species to end of array
+!
+      bcx(ilnrhod(ndustspec)+1:)  = bcx(ilnrhod(1)+1:)
+      bcx1(ilnrhod(ndustspec)+1:) = bcx1(ilnrhod(1)+1:)
+      bcx2(ilnrhod(ndustspec)+1:) = bcx2(ilnrhod(1)+1:)
+
+      bcy(ilnrhod(ndustspec)+1:)  = bcy(ilnrhod(1)+1:)
+      bcy1(ilnrhod(ndustspec)+1:) = bcy1(ilnrhod(1)+1:)
+      bcy2(ilnrhod(ndustspec)+1:) = bcy2(ilnrhod(1)+1:)
+
+      bcy(ilnrhod(ndustspec)+1:)  = bcy(ilnrhod(1)+1:)
+      bcy1(ilnrhod(ndustspec)+1:) = bcy1(ilnrhod(1)+1:)
+      bcy2(ilnrhod(ndustspec)+1:) = bcy2(ilnrhod(1)+1:)
+!
+!  Copy boundary conditions on first dust species to all species
+!
+      do idust=2,ndustspec
+        bcx(iudx(ndustspec):ilnrhod(ndustspec))=bcx(iudx(1):ilnrhod(1))
+        bcx1(iudx(ndustspec):ilnrhod(ndustspec))=bcx1(iudx(1):ilnrhod(1))
+        bcx2(iudx(ndustspec):ilnrhod(ndustspec))=bcx2(iudx(1):ilnrhod(1))
+        
+        bcy(iudx(ndustspec):ilnrhod(ndustspec))=bcy(iudx(1):ilnrhod(1))
+        bcy1(iudx(ndustspec):ilnrhod(ndustspec))=bcy1(iudx(1):ilnrhod(1))
+        bcy2(iudx(ndustspec):ilnrhod(ndustspec))=bcy2(iudx(1):ilnrhod(1))
+        
+        bcz(iudx(ndustspec):ilnrhod(ndustspec))=bcz(iudx(1):ilnrhod(1))
+        bcz1(iudx(ndustspec):ilnrhod(ndustspec))=bcz1(iudx(1):ilnrhod(1))
+        bcz2(iudx(ndustspec):ilnrhod(ndustspec))=bcz2(iudx(1):ilnrhod(1))
+      enddo
+!
+      if (ndustspec>1 .and. lroot .and. ip<14) then
+        print*, 'initialize_dustvelocity: ', &
+            'Copied bcs on first dust species to all others'
+        print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
+        print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
+        print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
       endif
 !
     endsubroutine initialize_dustvelocity
@@ -237,7 +290,7 @@ module Dustvelocity
 !  no pressure gradient force for dust!
 !
 !  18-mar-03/axel+anders: adapted from hydro
-!   8-aug-03/anders: added taud as possible input parameter instead of beta
+!   8-aug-03/anders: added tausd as possible input parameter instead of beta
 !
       use Cdata
       use Sub
@@ -327,19 +380,19 @@ module Dustvelocity
 !  calculate viscous and drag force
 !
 !  add dust diffusion (mostly for numerical reasons) in either of
-!  the two formulations (ie with either constant beta or constant taud)
+!  the two formulations (ie with either constant beta or constant tausd)
 !
         call del2v(f,iuud(idust),del2ud)
         maxdiffus=amax1(maxdiffus,nud(idust))
 !
-!  if taud is set then assume that beta=rhod/taud,
+!  if tausd is set then assume that beta=rhod/tausd,
 !  otherwise use beta
 !
-        if (taud(idust) /= 0.) then
-          taud1=1./taud(idust)
+        if (tausd(idust) /= 0.) then
+          tausd1=1./tausd(idust)
           df(l1:l2,m,n,iudx(idust):iudz(idust)) = &
               df(l1:l2,m,n,iudx(idust):iudz(idust)) + &
-              nud(idust)*del2ud-taud1*(uud-uu)
+              nud(idust)*del2ud-tausd1*(uud-uu)
         elseif (beta(idust) /= 0.) then
           rhod1=exp(-f(l1:l2,m,n,ilnrhod(idust)))
           do j=1,3; fac(:,j)=beta(idust)*rhod1; enddo
@@ -348,16 +401,16 @@ module Dustvelocity
               nud(idust)*del2ud-fac*(uud-uu)
         else
           call stop_it( &
-              "duud_dt: Both tau_d and beta specified. Specify only one!")
+              "duud_dt: Both tausd and beta specified. Specify only one!")
         endif
 !
 !  add drag force on gas (if Mdust_to_Mgas is large enough)
 !
         if(lfeedback_gas(idust)) then
           rho1=exp(-f(l1:l2,m,n,ilnrho))
-          if (taud(idust) /= 0.) then
+          if (tausd(idust) /= 0.) then
             rhod=exp(f(l1:l2,m,n,ilnrhod(idust)))
-            do j=1,3; taug1(:,j)=rhod*rho1*taud1; enddo
+            do j=1,3; taug1(:,j)=rhod*rho1*tausd1; enddo
             df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-taug1*(uu-uud)
           elseif (beta(idust) /= 0.) then
             do j=1,3; fac(:,j)=beta(idust)*rho1; enddo
@@ -486,7 +539,7 @@ module Dustvelocity
           if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
           if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
           if (z(n)<=zgrav) then
-            if (ldustvelocity .and. lgravzd(idust)) &
+            if (lgravzd(idust)) &
                 df(l1:l2,m,n,iudz(idust))=df(l1:l2,m,n,iudz(idust))+gravz
           endif
 !
@@ -498,7 +551,7 @@ module Dustvelocity
         !endif
           nu_epicycle2=nu_epicycle**2
           if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-          if (ldustvelocity .and. lgravzd(idust)) &
+          if (lgravzd(idust)) &
               df(l1:l2,m,n,iudz(idust)) = &
               df(l1:l2,m,n,iudz(idust))-nu_epicycle2*z(n)
 !
@@ -509,7 +562,7 @@ module Dustvelocity
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
 !AB: These numbers should be inserted in the appropriate unuts.
 !AB: As it is now, it can never make much sense.
-          if(ldustvelocity .and. lgravzd(idust)) &
+          if(lgravzd(idust)) &
               df(l1:l2,m,n,iudz(idust)) = df(l1:l2,m,n,iudz(idust)) &
               -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
         else
@@ -539,16 +592,16 @@ module Dustvelocity
 !
       intent(in)  :: f
 !
+!  print identifier
+!
+      if (headtt.or.ldebug) &
+          print*,'shearingdust: Sshear,qshear=',Sshear,qshear
+!
 !  Loop over dust layers
 !
       do idust=1,ndustspec 
 !
-!  print identifier
-!
-        if (headtt.or.ldebug) &
-            print*,'shearingdust: Sshear,qshear=',Sshear,qshear
-!
-! Same for dust velocity
+!  Correct Coriolis force term for all dust layers 
 !
         if (theta==0) then
           df(l1:l2,m,n,iudy(idust)) = df(l1:l2,m,n,iudy(idust)) &
