@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.104 2003-02-02 20:05:37 dobler Exp $
+! $Id: magnetic.f90,v 1.105 2003-02-03 10:30:29 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -85,7 +85,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.104 2003-02-02 20:05:37 dobler Exp $")
+           "$Id: magnetic.f90,v 1.105 2003-02-03 10:30:29 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,9 @@ module Magnetic
         call dot2_mn(bb,b2)
         if (i_abm/=0)    call sum_mn_name(ab,i_abm)
         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+!        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+!!! TMP: setting b2 to zero
+        if (i_b2mphi/=0) call phisum_mn_name_rz(b2*0+1,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
@@ -411,7 +413,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      integer :: iname,inamez,ixy
+      integer :: iname,inamez,ixy,irz
       logical :: lreset
 !
 !  reset everything in case of RELOAD
@@ -466,8 +468,8 @@ module Magnetic
 !
 !  check for those quantities for which we want phi-averages
 !
-      do inamez=1,nnamez
-        call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mphi',i_b2mphi)
+      do irz=1,nnamerz
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',i_b2mphi)
       enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored
