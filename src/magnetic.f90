@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.30 2002-05-30 07:12:45 brandenb Exp $
+! $Id: magnetic.f90,v 1.31 2002-05-30 15:31:46 brandenb Exp $
 
 module Magnetic
 
@@ -67,8 +67,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.30 $", &
-           "$Date: 2002-05-30 07:12:45 $")
+           "$Revision: 1.31 $", &
+           "$Date: 2002-05-30 15:31:46 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +236,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
     !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
     !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
-      df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)+uxB+eta*del2A
+      df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
 !  Note that eta_out is total eta in halo (not eta_out+eta)
@@ -255,7 +255,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !  add eta mu_0 J2/rho to entropy equation
 !  Need to check whether entropy equation has been registered
 !
-      if (ient>0) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
+      if (lentropy) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
 !
 !  For the timestep calculation, need maximum Alfven speed.
 !  This must include the imposed field (if there is any)

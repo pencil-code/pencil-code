@@ -32,7 +32,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O3 -u
 #LDMPI=
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen)
-#FC=pgf90	#(Norhpc)
+#FC=pgf90	#(Nq[0-9]+)
 #FFLAGS=-O2 -Minfo 	#(Norhpc)
 #FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
