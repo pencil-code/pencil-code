@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.46 2002-08-15 19:09:51 nilshau Exp $
+! $Id: density.f90,v 1.47 2002-09-12 05:59:01 brandenb Exp $
 
 module Density
 
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.46 2002-08-15 19:09:51 nilshau Exp $")
+           "$Id: density.f90,v 1.47 2002-09-12 05:59:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -509,11 +509,13 @@ module Density
       endif
 !
 !  check whether zinfty lies outside the domain (otherwise density
-!  would vanish within the domain)
+!  would vanish within the domain). At the moment we are not properly
+!  testing the lower boundary on the case of a disk (commented out).
 !
       ztop=xyz0(3)+Lxyz(3)
       zbot=xyz0(3)
-      if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
+      !-- if(zinfty<amin1(ztop,zgrav) .or. (-zinfty)>amin1(zbot,zgrav)) then
+      if(zinfty<amin1(ztop,zgrav)) then
         if(lroot) print*,'polytropic_simple: domain too big; zinfty=',zinfty
         call stop_it('rho and cs2 will vanish within domain')
       endif
