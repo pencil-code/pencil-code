@@ -35,11 +35,12 @@ endif
 if ($?varfile) then
   set i=0
   foreach node ($nodelist)
+
+    echo 'work on node i='$i
     if ($debug) echo "node=$node; targetdir=$targetdir"
     $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/$varfile $targetdir/proc$i/"
     $SSH $node "cp $SCRATCH_DIR/$varfile $targetdir/proc$i/"
     set i = `expr $i + 1`
-    echo 'i=' $i
   end
 else
 

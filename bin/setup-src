@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.13 2003-01-19 10:47:16 brandenb Exp $
+# CVS $Id: setup-src,v 1.14 2003-05-23 09:34:02 brandenb Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -28,7 +28,7 @@ set bindir = $PENCIL_HOME/bin
 set srcdir = $PENCIL_HOME/src
 
 ## Link csh scripts
-foreach script (start.csh run.csh getconf.csh)
+foreach script (start.csh start_run.csh run.csh getconf.csh)
   if (-e $bindir/$script) then
     ln -s $bindir/$script .
   else
