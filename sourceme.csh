@@ -4,7 +4,7 @@
 #
 #  You may or may not want to put the lines
 #    setenv PENCIL_HOME [...]
-#    source $HOME/f90/pencil_modular/sourceme.csh
+#    source $HOME/f90/pencil-code/sourceme.csh
 #  into your .cshrc
 #
 
@@ -15,8 +15,8 @@ if (! $?PENCIL_HOME) then
   #
   # Try to identify position of the code's home directory:
   #
-  foreach _dir ( . .. ../.. ../../.. ../../../.. pencil pencil_modular \
-                f90/pencil f90/pencil_modular)
+  foreach _dir ( . .. ../.. ../../.. ../../../.. pencil pencil-code \
+                f90/pencil f90/pencil-code)
     if ( (-e $_dir/sourceme.csh) && \
          (-d $_dir/bin)          && \
 	 (-d $_dir/doc)          && \
