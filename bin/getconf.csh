@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.79 2003-09-03 15:51:44 dobler Exp $
+# $Id: getconf.csh,v 1.80 2003-09-03 17:04:25 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -65,11 +65,11 @@ set mpirunops = ''
 # machines.XXX files or lam-bhost.der, although this is hardly necessary.
 if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
-  set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//`
+  set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
 else if ($?JOB_ID) then
   if ($debug) echo "Scout [?] job"
   if (-e $HOME/.score/ndfile.$JOB_ID) then
-    set nodelist = `cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//`
+    set nodelist = `cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//'`
   else
     echo "JOB_ID=$JOB_ID, but can't find ~/.score/ndfile.$JOB_ID -- aborting"
     kill $$			# full-featured suicide
@@ -90,8 +90,8 @@ else if ($hn =~ *.kis.uni-freiburg.de) then
   set mpirun = /opt/local/mpich/bin/mpirun
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
-    set mpirun = /usr/bin/mpiexec
-    setenv LANG en_US
+  set mpirun = /usr/bin/mpiexec
+  setenv LANG en_US
 
 else if ( ($hn =~ cincinnatus*) || ($hn =~ owen*) \
           || ($hn =~ master) || ($hn =~ node*) ) then
