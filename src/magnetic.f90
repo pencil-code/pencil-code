@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.213 2004-07-11 14:49:47 brandenb Exp $
+! $Id: magnetic.f90,v 1.214 2004-07-11 14:51:15 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -140,7 +140,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.213 2004-07-11 14:49:47 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.214 2004-07-11 14:51:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -446,7 +446,8 @@ module Magnetic
 !  external current (currently for spheromak experiments)
 !
       if (ljj_ext) then
-        call get_global(jj_ext,m,n,'jj_ext')
+        call get_global(ee_ext,m,n,'ee_ext')
+        !call get_global(jj_ext,m,n,'jj_ext')
         !jj=jj+jj_ext
         jj=jj-ee_ext*displacement_gun
       endif
