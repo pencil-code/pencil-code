@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.108 2002-10-25 16:33:43 brandenb Exp $
+! $Id: run.f90,v 1.109 2002-10-25 16:46:35 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.108 2002-10-25 16:33:43 brandenb Exp $")
+             "$Id: run.f90,v 1.109 2002-10-25 16:46:35 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -84,9 +84,11 @@
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
+!  NOTE: for io_dist, rtime doesn't read the time, only for io_mpio.
 !
         if (ip<=6.and.lroot) print*,'reading var files'
         call input(trim(directory_snap)//'/var.dat',f,mvar,1)
+        call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)
 !
 !  read coordinates
