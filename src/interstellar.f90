@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.78 2004-03-04 17:46:08 mee Exp $
+! $Id: interstellar.f90,v 1.79 2004-03-05 10:41:05 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -56,7 +56,7 @@ module Interstellar
   double precision, parameter :: solar_mass_cgs=1.989e33
   real, parameter :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
-  double precision, parameter :: ampl_SN_cgs=10D50
+  double precision, parameter :: ampl_SN_cgs=10D51
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
@@ -114,7 +114,9 @@ module Interstellar
       uniform_zdist_SNI, ltestSN, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion, &
-      center_SN_x, center_SN_y, center_SN_z, frac_ecr, frac_eth, lSN_eth, lSN_ecr
+      center_SN_x, center_SN_y, center_SN_z, &
+      frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
+      h_SNI, SNI_area_rate
 
   contains
 
@@ -141,7 +143,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.78 2004-03-04 17:46:08 mee Exp $")
+           "$Id: interstellar.f90,v 1.79 2004-03-05 10:41:05 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -220,8 +222,8 @@ module Interstellar
 
       if (unit_system=='cgs') then
         TT_SN_min=TT_SN_min_cgs / unit_temperature
-        SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
-        h_SNI=h_SNI_cgs / unit_length
+        if (SNI_area_rate==impossible) SNI_area_rate=SNI_area_rate_cgs * unit_length**2 * unit_time
+        if (h_SNI==impossible)         h_SNI=h_SNI_cgs / unit_length
         h_SNII=h_SNII_cgs / unit_length
         solar_mass=solar_mass_cgs / unit_mass
         rho_crit=rho_crit_cgs / unit_density
@@ -230,6 +232,9 @@ module Interstellar
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
+
+      t_interval_SNI = SNI_area_rate * Lxyz(1) * Lxyz(2)
+
 
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
