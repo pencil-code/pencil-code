@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.74 2003-08-21 12:53:00 ajohan Exp $ 
+! $Id: initcond.f90,v 1.75 2003-08-28 11:29:50 ajohan Exp $ 
 
 module Initcond 
  
@@ -660,7 +660,7 @@ module Initcond
         enddo
       enddo
       rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      if(lroot) print*,'planet_hc: rho0=',rho0
+      print*,'planet_hc: rho0=',rho0
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !
     endsubroutine planet_hc
@@ -780,7 +780,7 @@ module Initcond
         enddo
       enddo
       rho0 = exp(-lnrhosum_box/(mx*my*mz))
-      if (lroot) print*,'planet_hc: rho0=',rho0
+      print*,'planet_hc: rho0=',rho0
       f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
 !      
     endsubroutine planet
