@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.91 2003-08-30 18:09:46 theine Exp $
+! $Id: radiation_exp.f90,v 1.92 2003-09-03 19:06:32 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.91 2003-08-30 18:09:46 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.92 2003-09-03 19:06:32 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -637,26 +637,31 @@ module Radiation
 !--------------------
 !
       if (lrad>0) then
-        select case(bc_rad1(1))
 !
 ! no incoming intensity
 !
-        case ('0'); Irad0_yz=0.
+        if (bc_rad1(1)=='0') then
+          Irad0_yz=0.
+        endif
 !
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (mrad==0.and.nrad==0) then
-                      Irad0_yz(:,m1:m2,n1:n2)=Irad(l2-radx0+1:l2,m1:m2,n1:n2) &
-                                         /(1-emtau(l2-radx0+1:l2,m1:m2,n1:n2))
-                    else
-                      Irad0_yz=Irad(l2-radx0+1:l2,:,:)
-                    endif
+        if (bc_rad1(1)=='p') then
+          if (mrad==0.and.nrad==0) then
+            Irad0_yz(:,m1:m2,n1:n2)=Irad(l2-radx0+1:l2,m1:m2,n1:n2) &
+                               /(1-emtau(l2-radx0+1:l2,m1:m2,n1:n2))
+          else
+            Irad0_yz=Irad(l2-radx0+1:l2,:,:)
+          endif
+        endif
 !
 ! set intensity equal to source function
 !
-        case ('S'); Irad0_yz=Srad(l1-radx0:l1-1,:,:)
-        endselect
+        if (bc_rad1(1)=='S') then
+          Irad0_yz=Srad(l1-radx0:l1-1,:,:)
+        endif
+!
       endif
 !
 !--------------------
@@ -664,27 +669,31 @@ module Radiation
 !--------------------
 !
       if (lrad<0) then
-        select case(bc_rad2(1))
 !
 ! no incoming intensity
 !
-        case ('0'); Irad0_yz=0.
+        if (bc_rad2(1)=='0') then
+          Irad0_yz=0.
+        endif
 !
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (mrad==0.and.nrad==0) then
-                      Irad0_yz(:,m1:m2,n1:n2)=Irad(l1:l1+radx0-1,m1:m2,n1:n2) &
-                                         /(1-emtau(l1:l1+radx0-1,m1:m2,n1:n2))
-                    else
-                      Irad0_yz=Irad(l1:l1+radx0-1,:,:)
-                    endif
+        if (bc_rad2(1)=='p') then
+          if (mrad==0.and.nrad==0) then
+            Irad0_yz(:,m1:m2,n1:n2)=Irad(l1:l1+radx0-1,m1:m2,n1:n2) &
+                               /(1-emtau(l1:l1+radx0-1,m1:m2,n1:n2))
+          else
+            Irad0_yz=Irad(l1:l1+radx0-1,:,:)
+          endif
+        endif
 !
 ! set intensity equal to source function
 !
-        case ('S'); Irad0_yz=Srad(l2+1:l2+radx0,:,:)
+        if (bc_rad2(1)=='S') then
+          Irad0_yz=Srad(l2+1:l2+radx0,:,:)
+        endif
 !
-        endselect
       endif
 !
     endsubroutine radboundary_yz_set
@@ -706,31 +715,34 @@ module Radiation
 !
       if (mrad>0) then
 !
-        select case(bc_rad1(2))
-!
 ! no incoming intensity
 !
-        case ('0'); Irad0_zx=0.
+        if (bc_rad1(2)=='0') then
+          Irad0_zx=0.
+        endif
 !
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (nprocy>1) then
-                      call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
-                    else
-                      if (lrad==0.and.nrad==0) then
-                        Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m2-rady0+1:m2,n1:n2) &
-                                           /(1-emtau(l1:l2,m2-rady0+1:m2,n1:n2))
-                      else
-                        Irad0_zx=Irad(:,m2-rady0+1:m2,:)
-                      endif
-                    endif
+        if (bc_rad1(2)=='p') then
+          if (nprocy>1) then
+            call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
+          else
+            if (lrad==0.and.nrad==0) then
+              Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m2-rady0+1:m2,n1:n2) &
+                                 /(1-emtau(l1:l2,m2-rady0+1:m2,n1:n2))
+            else
+              Irad0_zx=Irad(:,m2-rady0+1:m2,:)
+            endif
+          endif
+        endif
 !
 ! set intensity equal to source function
 !
-        case ('S'); Irad0_zx=Srad(:,m1-rady0:m1-1,:)
+        if (bc_rad1(2)=='S') then
+          Irad0_zx=Srad(:,m1-rady0:m1-1,:)
+        endif
 !
-        endselect
       endif
 !
 !--------------------
@@ -738,31 +750,35 @@ module Radiation
 !--------------------
 !
       if (mrad<0) then
-        select case(bc_rad2(2))
 !
 ! no incoming intensity
 !
-        case ('0'); Irad0_zx=0.
+        if (bc_rad2(2)=='0') then
+          Irad0_zx=0.
+        endif
 !
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (nprocy>1) then
-                      call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
-                    else
-                      if (lrad==0.and.nrad==0) then
-                        Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m1:m1+rady0-1,n1:n2) &
-                                           /(1-emtau(l1:l2,m1:m1+rady0-1,n1:n2))
-                      else
-                        Irad0_zx=Irad(:,m1:m1+rady0-1,:)
-                      endif
-                    endif
+        if (bc_rad2(2)=='p') then
+          if (nprocy>1) then
+            call radboundary_zx_recv(rady0,mrad,idir,Irad0_zx)
+          else
+            if (lrad==0.and.nrad==0) then
+              Irad0_zx(l1:l2,:,n1:n2)=Irad(l1:l2,m1:m1+rady0-1,n1:n2) &
+                                 /(1-emtau(l1:l2,m1:m1+rady0-1,n1:n2))
+            else
+              Irad0_zx=Irad(:,m1:m1+rady0-1,:)
+            endif
+          endif
+        endif
 !
 ! set intensity equal to source function
 !
-        case ('S'); Irad0_zx=Srad(:,m2+1:m2+rady0,:)
+        if (bc_rad2(2)=='S') then
+          Irad0_zx=Srad(:,m2+1:m2+rady0,:)
+        endif
 !
-        endselect
       endif
 !
     endsubroutine radboundary_zx_set
@@ -787,39 +803,44 @@ module Radiation
 !
       if (nrad>0) then
 !
-        select case(bc_rad1(3))
-!
 !  no incoming intensity
 !
-        case ('0'); Irad0_xy=0.
+        if (bc_rad1(3)=='0') then
+          Irad0_xy=0.
+        endif
 !
 !  integrated from infinity using a characteristic scale height
 !
-        case ('e'); kaprho_top=kaprho(:,:,n1-1:n1-radz0)
-                    Srad_top=Srad(:,:,n1-1:n1-radz0)
-                    TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
-                    H_top=(1.+yHmin+xHe)*ss_ion*TT_top/gravz
-                    tau_top=kaprho_top*H_top
-                    Irad0_xy=Srad_top*(1.-exp(-tau_top))
+        if (bc_rad1(3)=='e') then
+          kaprho_top=kaprho(:,:,n1-1:n1-radz0)
+          Srad_top=Srad(:,:,n1-1:n1-radz0)
+          TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
+          H_top=(1.+yHmin+xHe)*ss_ion*TT_top/gravz
+          tau_top=kaprho_top*H_top
+          Irad0_xy=Srad_top*(1.-exp(-tau_top))
+        endif
 !
 !  periodic boundary consition
 !
-        case ('p'); if (nprocz>1) then
-                      call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
-                    else
-                      if (lrad==0.and.mrad==0) then
-                        Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n2-radz0+1:n2) &
-                                           /(1-emtau(l1:l2,m1:m2,n2-radz0+1:n2))
-                      else
-                        Irad0_xy=Irad(:,:,n2-radz0+1:n2)
-                      endif
-                    endif
+        if (bc_rad1(3)=='p') then
+          if (nprocz>1) then
+            call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
+          else
+            if (lrad==0.and.mrad==0) then
+              Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n2-radz0+1:n2) &
+                                 /(1-emtau(l1:l2,m1:m2,n2-radz0+1:n2))
+            else
+              Irad0_xy=Irad(:,:,n2-radz0+1:n2)
+            endif
+          endif
+        endif
 !
 !  set intensity equal to source function
 !
-        case ('S'); Irad0_xy=Srad(:,:,n1-radz0:n1-1)
+        if (bc_rad1(3)=='S') then
+          Irad0_xy=Srad(:,:,n1-radz0:n1-1)
+        endif
 !
-        endselect
       endif
 !
 !--------------------
@@ -828,40 +849,45 @@ module Radiation
 !
       if (nrad<0) then
 !
-        select case(bc_rad2(3))
-!
 ! no incoming intensity
 !
-        case ('0'); Irad0_xy=0.
+        if (bc_rad2(3)=='0') then
+          Irad0_xy=0.
+        endif
 !
 ! integrated from infinity using a characteristic scale height
 !
-        case ('e'); kaprho_top=kaprho(:,:,n2+1:n2+radz0)
-                    Srad_top=Srad(:,:,n2+1:n2+radz0)
-                    TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
-                    H_top=-(1.+yHmin+xHe)*ss_ion*TT_top/gravz
-                    tau_top=kaprho_top*H_top
-                    Irad0_xy=Srad_top*(1.-exp(-tau_top))
+        if (bc_rad2(3)=='e') then
+          kaprho_top=kaprho(:,:,n2+1:n2+radz0)
+          Srad_top=Srad(:,:,n2+1:n2+radz0)
+          TT_top=sqrt(sqrt(Srad_top*pi/sigmaSB))
+          H_top=-(1.+yHmin+xHe)*ss_ion*TT_top/gravz
+          tau_top=kaprho_top*H_top
+          Irad0_xy=Srad_top*(1.-exp(-tau_top))
+        endif
 !
 ! periodic boundary consition (currently only implemented for
 ! rays parallel to an axis
 !
-        case ('p'); if (nprocz>1) then
-                      call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
-                    else
-                      if (lrad==0.and.mrad==0) then
-                        Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n1:n1+radz0-1) &
-                                           /(1-emtau(l1:l2,m1:m2,n1:n1+radz0-1))
-                      else
-                        Irad0_xy=Irad(:,:,n1:n1+radz0-1)
-                      endif
-                    endif
+        if (bc_rad2(3)=='p') then
+          if (nprocz>1) then
+            call radboundary_xy_recv(radz0,nrad,idir,Irad0_xy)
+          else
+            if (lrad==0.and.mrad==0) then
+              Irad0_xy(l1:l2,m1:m2,:)=Irad(l1:l2,m1:m2,n1:n1+radz0-1) &
+                                 /(1-emtau(l1:l2,m1:m2,n1:n1+radz0-1))
+            else
+              Irad0_xy=Irad(:,:,n1:n1+radz0-1)
+            endif
+          endif
+        endif
 !
 ! set intensity equal to source function
 !
-        case ('S'); Irad0_xy=Srad(:,:,n2+1:n2+radz0)
+        if (bc_rad2(3)=='S') then
+          Irad0_xy=Srad(:,:,n2+1:n2+radz0)
+        endif
 !
-        endselect
       endif
 !
     endsubroutine radboundary_xy_set
