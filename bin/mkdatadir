@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.26 2003-11-19 13:54:34 mee Exp $
+#  $Id: mkdatadir,v 1.27 2003-11-23 00:09:01 mee Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -39,6 +39,8 @@ else if ($hn =~ tac*) then
   set str='s/usr\/tac/scratch/g'
 else if ($hn =~ embla) then
   set str='s/home\/u./work/g'
+else if ($hn =~ giga*) then
+  set str='s/home/work/g'
 else if ($hn =~ gridur) then
   set str='s/home\/u./work/g'
 else if ($hn =~ nw17) then
@@ -66,3 +68,5 @@ sed -e $str .tmp >! .scr
 cat .scr
 mkdir -p `cat .scr`
 ln -s `cat .scr` data
+#Tidy up temporary files
+rm -f .scr .tmp
