@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.102 2004-02-11 23:53:47 mee Exp $
+# $Id: getconf.csh,v 1.103 2004-02-13 11:11:45 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -131,12 +131,6 @@ else if ($hn =~ giga[0-9][0-9]) then
   if ($local_disc) then
     setenv SCRATCH_DIR "/var/tmp"
   endif
-
-  set local_disc     = 1
-  set one_local_disc = 0          # probably the more common case
-  set remote_top     = 1
-  set local_binary   = 0
-  setenv SCRATCH_DIR /work
 
 else if (($hn =~ sleipner) || ($hn =~ fenris) || ($hn =~ hugin) || ($hn =~ munin)) then
   set mpirun = /usr/bin/mpiexec
