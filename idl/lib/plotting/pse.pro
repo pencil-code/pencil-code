@@ -63,7 +63,8 @@ pro pse, $
   help, OUTPUT=hist, /RECALL_COMMANDS ; get history list
   ; drop uninteresting first line `Recall buffer length'; reverse to
   ; chronological order
-  hist = hist[1:*] & nhist = n_elements(hist)
+  if (n_elements(hist) ge 2) then hist = hist[1:*]
+  nhist = n_elements(hist)
   psa_class = ['psa','psl','epsf']
   cmdlist = '' & i=0 & last = 0 & no_psa = 0
   while (not last) do begin
