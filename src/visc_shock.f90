@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.4 2002-11-26 10:15:57 mee Exp $
+! $Id: visc_shock.f90,v 1.5 2002-11-26 10:34:24 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -49,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.4 2002-11-26 10:15:57 mee Exp $")
+           "$Id: visc_shock.f90,v 1.5 2002-11-26 10:34:24 mee Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -327,7 +327,7 @@ module Viscosity
 
       if ( icalculated<it ) call calc_viscosity(f)
  !          call grad(spread(shock_characteristic,4,1),1,gshock_characteristic)
- !           call multmv_mn(sij,spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3) * glnrho,sglnrho)
+ !           call multmv_mn(sij,glnrho,sglnrho)
  !           call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
 
 !            fvisc=2*sglnrho+nu*(del2u+1./3.*graddivu)
@@ -345,7 +345,7 @@ module Viscosity
 !         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2*rho1
 !       case('nu-const', '2')
          if (headtt) print*,'viscous heating: ivisc=',ivisc
-         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*nu*sij2 + TT1*nu_shock*(shock_characteristic(l1:l2,m,n)**2)
+         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*2.*(nu+nu_shock*shock_characteristic(l1:l2,m,n))*sij2
 !       case default
 !         if (lroot) print*,'ivisc=',trim(ivisc),' -- this could never happen'
 !         call stop_it("")
@@ -390,7 +390,7 @@ module Viscosity
             call multmv_mn(sij,spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3) * glnrho,sglnrho)
             call multmv_mn(sij,gshock_characteristic,sgshock_characteristic)
 
-            fvisc=2*sglnrho+nu*(del2u+1./3.*graddivu)
+            fvisc=2*spread((nu_shock*shock_characteristic(l1:l2,m,n) + nu),2,3)*(sglnrho+((del2u+1./3.*graddivu)/2.))
             fvisc=fvisc + 2*nu_shock*sgshock_characteristic
 !ajwm what's this???
             maxdiffus=amax1(maxdiffus,nu)
