@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.5 2003-03-25 20:27:47 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.6 2003-03-26 05:49:49 brandenb Exp $
 
 module Radiation
 
@@ -56,7 +56,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.5 2003-03-25 20:27:47 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.6 2003-03-26 05:49:49 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -135,10 +135,10 @@ module Radiation
 !
       call source_function(f)
 !
-!  set boundary values, I=0 at the top, I=S at the bottom
-!  bottom boundary:
+!  set boundary values
+!  bottom boundary (rays point upwards): I=S
 !
-      do nrad=-radz,-1
+      do nrad=+1,+radz
       do mrad=-rady,rady
       do lrad=-radx,radx
         Intensity_xy(:,:,:,lrad,mrad,nrad)=Source(:,:,n1-radz0:n1-1)
@@ -146,9 +146,9 @@ module Radiation
       enddo
       enddo
 !
-!  top boundary:
+!  top boundary (rays point downwards): I=0
 !
-      do nrad=+1,+radz
+      do nrad=-radz,-1
       do mrad=-rady,rady
       do lrad=-radx,radx
         Intensity_xy(:,:,:,lrad,mrad,nrad)=0.
@@ -184,6 +184,7 @@ module Radiation
           !
           call transfer(f,Intensity,lrad,mrad,nrad)
           Qrad=Qrad+frac*Intensity
+write(27) Intensity,lrad,mrad,nrad
           !
           !  safe boundary values for next processor (or opposite boundary)
           !
@@ -197,6 +198,7 @@ module Radiation
       enddo
       enddo
       enddo
+write(28) Qrad,Source
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -215,10 +217,14 @@ module Radiation
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
+      logical, save :: first=.true.
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'transfer'
+      if(first) then
+        print*,'transfer'
+        first=.false.
+      endif
 !
 !  calculate start and stop values
 !
@@ -276,7 +282,7 @@ module Radiation
 !
       do n=1,mz
       do m=1,my
-        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+Qrad(l1:l2,m,n)
+        !df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+Qrad(l1:l2,m,n)
       enddo
       enddo
 !
