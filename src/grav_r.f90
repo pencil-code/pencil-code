@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.22 2002-07-18 23:09:50 dobler Exp $
+! $Id: grav_r.f90,v 1.23 2002-07-19 17:56:30 dobler Exp $
 
 module Gravity
 
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.22 2002-07-18 23:09:50 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.23 2002-07-19 17:56:30 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -134,6 +134,14 @@ module Gravity
         n=nn(imn)
         m=mm(imn)
 !
+!  set x_mn, y_mn, z_mn and r_mn
+!
+!
+        x_mn = x(l1:l2)
+        y_mn = spread(y(m),1,nx)
+        z_mn = spread(z(n),1,nx)
+        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
+!
 !  evr is the radial unit vector
 !
         evr(:,1) = x_mn
@@ -170,7 +178,8 @@ module Gravity
 !
 !  evr is the radial unit vector
 !
-if (.false.) then
+if (.false.) then               ! switch between the two methods for timing
+!if (.true.) then               ! switch between the two methods for timing
       evr(:,1) = x_mn
       evr(:,2) = y_mn
       evr(:,3) = z_mn
@@ -188,7 +197,6 @@ if (.false.) then
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 else
       call get_global(gg_mn,m,n,'gg')
-if (maxval(abs(gg_mn)) /= 0) print*,m,n,minval(gg_mn),maxval(gg_mn)
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 endif
 !
