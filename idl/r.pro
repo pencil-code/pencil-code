@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.41 2002-11-12 08:11:42 dobler Exp $
+; $Id: r.pro,v 1.42 2003-04-05 21:20:58 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.41 2002-11-12 08:11:42 dobler Exp $
+;;; $Id: r.pro,v 1.42 2003-04-05 21:20:58 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -114,7 +114,6 @@ if (lshear) then begin
 end else begin
   readu,1, t, x, y, z, dx, dy, dz
 end
-close,1
 ;
 xx = spread(x, [1,2], [my,mz])
 yy = spread(y, [0,2], [mx,mz])
@@ -160,6 +159,26 @@ if (lmagnetic) then begin
 end
 ;
 print,'t = ',t
+;
+if (par.lradiation ne 0) then begin
+  if (par2.output_Qrad) then begin
+    Qrad=fltarr(mx,my,mz)*one
+    readu,1,Qrad
+    print, FORMAT=fmt, 'Qrad   =', $
+      minmax(Qrad), mean(Qrad,/DOUBLE), rms(Qrad,/DOUBLE)
+  end
+end
+;
+if (par.lionization ne 0) then begin
+  if (par2.output_yH) then begin
+    yH=fltarr(mx,my,mz)*one
+    readu,1,yH
+    print, FORMAT=fmt, 'yH   =', $
+      minmax(yH), mean(yH,/DOUBLE), rms(yH,/DOUBLE)
+  end
+end
+;
+close,1
 ;
 END
 
