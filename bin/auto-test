@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.4 2002-08-13 14:13:54 dobler Exp $
+# CVS: $Id: auto-test,v 1.5 2002-08-13 17:53:57 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -72,7 +72,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.4 2002-08-13 14:13:54 dobler Exp $' . "\n";
+    die '$Id: auto-test,v 1.5 2002-08-13 17:53:57 dobler Exp $' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
@@ -170,7 +170,6 @@ sub test_run {
 	my $dir = shift;
 	print "    Running..";
 	test_shell_cmd('run.csh',$dir,"running");	# returns the output
-	my_ok(0,0,"",$dir,"running");
     }
 }
 
@@ -221,7 +220,7 @@ sub test_rundir {
 	}
 	else
 	{
-	    print "    No tmp directory; generating tmp -> $tmpdir\n";
+	    print "        No tmp directory; generating tmp -> $tmpdir\n";
 	}
 	system("mkdir -p $tmpdir; ln -s $tmpdir tmp");
 	$created_tmp = 1;
