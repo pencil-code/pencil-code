@@ -26,7 +26,8 @@ pro pse, $
          FIXBB=fixbb, DEBUG=debug
 
   COMMON _ps_fonts, _old_P_FONT
-  COMMON _ps1,_oldthick,_fname,_olddev
+  ; COMMON _ps1,_oldthick,_fname,_olddev
+  COMMON _ps1,_fname,_oldsysvars
   ON_ERROR, 2
 
   default, fixbb, 0
@@ -38,24 +39,32 @@ pro pse, $
         SCALE_FACTOR=1.
     device, /CLOSE
   endif
-  dev = _olddev
+
+  ;; Restore old system variables
+  dev = _oldsysvars.d.name      ; !d is read-only
+  ; Ensure meaningful device name
   if (dev eq '') then dev=strtrim(GETENV("IDL_DEVICE"))
   if (dev eq '') then dev = 'X' 
   set_plot, dev
-;; Reset !P.FONT
+  !p = _oldsysvars.p
+  !x = _oldsysvars.x
+  !y = _oldsysvars.y
+  !z = _oldsysvars.z
+
+;; Reset !P.FONT  ;; (probably obsolete now that we restore all of !p)
   IF (n_elements(_old_P_FONT) gt 1) THEN BEGIN
     !P.FONT = _old_P_FONT[1]
     _old_P_FONT = 0
   ENDIF
-;; Reset drawing thicknesses
-  IF (n_elements(_oldthick) gt 1) THEN BEGIN
-    !P.CHARTHICK = _oldthick[1]
-    !P.THICK = _oldthick[2]
-    !X.THICK = _oldthick[3]
-    !Y.THICK = _oldthick[4]
-    !Z.THICK = _oldthick[5]
-    _oldthick = 0
-  ENDIF
+; ;; Reset drawing thicknesses
+;   IF (n_elements(_oldthick) gt 1) THEN BEGIN
+;     !P.CHARTHICK = _oldthick[1]
+;     !P.THICK = _oldthick[2]
+;     !X.THICK = _oldthick[3]
+;     !Y.THICK = _oldthick[4]
+;     !Z.THICK = _oldthick[5]
+;     _oldthick = 0
+;   ENDIF
 
   ;;;
   ;;; Insert some additional info into the just written (E)PS file:

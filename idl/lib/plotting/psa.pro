@@ -3,8 +3,8 @@
 ;;;;;;;;;;;;;;;;;
 
 ;;; Author:  wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;; $Date: 2005-02-04 00:01:33 $
-;;; $Revision: 1.3 $
+;;; $Date: 2005-03-30 19:27:01 $
+;;; $Revision: 1.4 $
 
 ;;;   Switch output device to PostScript
 ;;;   Usage:
@@ -33,7 +33,9 @@ pro psa, $
 ;; Key word NOPSFONTS or NO_PS_FONTS activates vector fonts
   ON_ERROR,2
 
-  COMMON _ps1,_oldthick,_fname,_olddev
+  ; COMMON _ps1,_oldthick,_fname,_olddev
+  ;; Why not just save all of !p, !d, !x, !y, !z?
+  COMMON _ps1,_fname,_oldsysvars
 
   ;; Lengths (in cm) for LANDSCAPE (use minimum of A4 and letter to
   ;; make sure this prints correctly)
@@ -43,7 +45,8 @@ pro psa, $
   width  = paperwidth-2*margin
   height = paperheight-2*margin
 
-  _olddev=!d.name
+  ; _olddev=!d.name
+  _oldsysvars = { p: !p, d: !d, x: !x, y: !y, z: !z }
   SET_PLOT,'ps'
 
   ;; If /COLOR keyword is given, set BITS_PER_PIXEL=8 or we will get
