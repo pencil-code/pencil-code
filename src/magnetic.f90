@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.132 2003-09-30 12:02:19 brandenb Exp $
+! $Id: magnetic.f90,v 1.133 2003-09-30 12:39:58 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -54,7 +54,7 @@ module Magnetic
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
-  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0
+  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_jxum=0,i_ujxbm
   integer :: i_b2mphi=0
 
   contains
@@ -91,7 +91,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.132 2003-09-30 12:02:19 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.133 2003-09-30 12:39:58 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -235,11 +235,11 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
-      real, dimension (nx,3) :: gpxb,glnrho
+      real, dimension (nx,3) :: gpxb,glnrho,jxu
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0
+      real, dimension (nx) :: gpxb_dotB0,jxu_dotB0,ujxb
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j
@@ -435,6 +435,23 @@ module Magnetic
           if (i_uxbmz/=0) call sum_mn_name(uxb(:,3),i_uxbmz)
         endif
         !
+        !  calculate <jxu>.B0/B0^2
+        !
+        if (i_jxum/=0) then
+          call cross_mn(jj,uu,jxu)
+          jxu_dotB0=B_ext(1)*jxu(:,1)+B_ext(2)*jxu(:,2)+B_ext(3)*jxu(:,3)
+          jxu_dotB0=jxu_dotB0*B_ext21
+          call sum_mn_name(jxu_dotB0,i_jxum)
+        endif
+        !
+        !  calculate <u.(jxb)>
+        !
+        if (i_ujxbm/=0) then
+          call cross_mn(jj,bbb,jxb)
+          call dot_mn(uu,jxb,ujxb)
+          call sum_mn_name(ujxb,i_ujxbm)
+        endif
+        !
         !  magnetic triple correlation term (for imposed field)
         !
         if (i_jxbxbm/=0) then
@@ -616,7 +633,7 @@ module Magnetic
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
         i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
-        i_b2mphi=0
+        i_b2mphi=0; i_jxum=0; i_ujxbm=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -645,6 +662,8 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'uxbmx',i_uxbmx)
         call parse_name(iname,cname(iname),cform(iname),'uxbmy',i_uxbmy)
         call parse_name(iname,cname(iname),cform(iname),'uxbmz',i_uxbmz)
+        call parse_name(iname,cname(iname),cform(iname),'jxum',i_jxum)
+        call parse_name(iname,cname(iname),cform(iname),'ujxbm',i_ujxbm)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',i_gpxbm)
@@ -701,6 +720,8 @@ module Magnetic
       write(3,*) 'i_uxbmx=',i_uxbmx
       write(3,*) 'i_uxbmy=',i_uxbmy
       write(3,*) 'i_uxbmz=',i_uxbmz
+      write(3,*) 'i_jxum=',i_jxum
+      write(3,*) 'i_ujxbm=',i_ujxbm
       write(3,*) 'i_oxuxbm=',i_oxuxbm
       write(3,*) 'i_jxbxbm=',i_jxbxbm
       write(3,*) 'i_gpxbm=',i_gpxbm
