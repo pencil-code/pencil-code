@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.89 2003-07-02 18:13:28 brandenb Exp $
+! $Id: mpicomm.f90,v 1.90 2003-07-02 18:43:37 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -765,7 +765,8 @@ module Mpicomm
 !  determine whether or not we are on a boundary point
 !  lower point, ray in positive direction
 !
-      if(nrad>0 .and. ipz/=nprocz-1) then
+      if( (nrad>0.and.ipz/=nprocz-1) .or. &
+          (nrad<0.and.ipz/=0) ) then
 !
 !  send: idest is next processor along ray
 !
@@ -773,7 +774,9 @@ module Mpicomm
 !
 !  initiate send
 !
-         print*,'radcomm_xy_send: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
+         print 100,'radcomm_xy_send: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
+100      format(a,4i5)
+!
          call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                         MPI_COMM_WORLD,isend_xy,ierr)
 !
@@ -822,7 +825,9 @@ module Mpicomm
 !
 !  initiate receive
 !
-         print*,'radcomm_xy_recv: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
+         print 100,'radcomm_xy_recv: nrad,ipz,idest,tag_xy=',nrad,ipz,idest,tag_xy
+100      format(a,4i5)
+!
          call MPI_IRECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,tag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
