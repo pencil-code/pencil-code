@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.17 2003-12-08 18:36:18 ajohan Exp $
+! $Id: dustdensity.f90,v 1.18 2003-12-09 10:35:30 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -68,9 +68,9 @@ module Dustdensity
 !
       do idust=1,ndustspec
         if (idust .eq. 1) then
-          ilnrhod(1) = nvar+1         ! indix to access lam
+          ilnrhod(1) = iuud(1)+3         ! indix to access lam
         else
-          ilnrhod(idust) = ilnrhod(idust-1)+1
+          ilnrhod(idust) = ilnrhod(idust-1)+4
         endif  
         nvar = nvar+1                 ! add 1 variable pr. dust layer
 !
@@ -84,7 +84,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.17 2003-12-08 18:36:18 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.18 2003-12-09 10:35:30 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -115,23 +115,23 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded 
+!  08-dec-03/anders: Copy *_all parameters to whole array
       integer :: idust
 !
 !  If *_all set, make all empty *(:) = *_all
 !
-      if (ampllnrhod_all .ne. 0.) then
-        do idust=1,ndustspec
-          if (ampllnrhod(idust) .eq. 0.) ampllnrhod(idust)=ampllnrhod_all
-        enddo
-      endif
-!           
       if (initlnrhod_all .ne. '') then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: initlnrhod_all=',initlnrhod_all
         do idust=1,ndustspec
-          if (initlnrhod(idust) .eq. '') initlnrhod(idust)=initlnrhod_all
+          if (initlnrhod(idust) .eq. 'zero') initlnrhod(idust)=initlnrhod_all
         enddo
       endif
 !           
       if (dust_to_gas_ratio_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: dust_to_gas_ratio_all=', &
+            dust_to_gas_ratio_all
         do idust=1,ndustspec
           if (dust_to_gas_ratio(idust) .eq. 0.) &
               dust_to_gas_ratio(idust)=dust_to_gas_ratio_all
@@ -139,42 +139,64 @@ module Dustdensity
       endif
 !           
       if (kx_lnrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: kx_lnrhod_all=',kx_lnrhod_all
         do idust=1,ndustspec
           if (kx_lnrhod(idust) .eq. 0.) kx_lnrhod(idust)=kx_lnrhod_all
         enddo
       endif
 !           
       if (ky_lnrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: ky_lnrhod_all=',ky_lnrhod_all
         do idust=1,ndustspec
           if (ky_lnrhod(idust) .eq. 0.) ky_lnrhod(idust)=ky_lnrhod_all
         enddo
       endif
 !           
       if (kz_lnrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: kz_lnrhod_all=',kz_lnrhod_all
         do idust=1,ndustspec
           if (kz_lnrhod(idust) .eq. 0.) kz_lnrhod(idust)=kz_lnrhod_all
         enddo
       endif
 !           
       if (amplrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: amplrhod_all=',amplrhod_all
         do idust=1,ndustspec
           if (amplrhod(idust) .eq. 0.) amplrhod(idust)=amplrhod_all
         enddo
       endif
 !           
-      if (rhod_const_all .ne. 0.) then
+      if (ampllnrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: ampllnrhod_all=',ampllnrhod_all
         do idust=1,ndustspec
-          if (rhod_const(idust) .eq. 0.) rhod_const(idust)=rhod_const_all
+          if (ampllnrhod(idust) .eq. 0.) ampllnrhod(idust)=ampllnrhod_all
+        enddo
+      endif
+!           
+      if (rhod_const_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: rhod_const_all=',rhod_const_all
+        do idust=1,ndustspec
+          if (rhod_const(idust) .eq. 1.) rhod_const(idust)=rhod_const_all
         enddo
       endif
 !           
       if (lnrhod_const_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: lnrhod_const_all=',lnrhod_const_all
         do idust=1,ndustspec
           if (lnrhod_const(idust) .eq. 0.) lnrhod_const(idust)=lnrhod_const_all
         enddo
       endif
 !           
       if (cdiffrhod_all .ne. 0.) then
+        if (lroot .and. ip<6) &
+            print*, 'initialize_dustdensity: cdiffrhod_all=',cdiffrhod_all
         do idust=1,ndustspec
           if (cdiffrhod(idust) .eq. 0.) cdiffrhod(idust)=cdiffrhod_all
         enddo
