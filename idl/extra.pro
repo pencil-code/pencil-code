@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.35 2004-02-26 15:54:24 ajohan Exp $
+;  $Id: extra.pro,v 1.36 2004-02-27 15:45:36 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -96,6 +96,7 @@ if (ind(0) ne 0) then begin
   mdminus = fltarr(ndustspec)
   ad      = fltarr(ndustspec)
   nd      = fltarr(nx,ny,nz,ndustspec)
+  fd      = fltarr(nx,ny,nz,ndustspec)
   if (lmdvar) then rhod = fltarr(nx,ny,nz,ndustspec)
 
   for k=0,ndustspec-1 do begin
@@ -113,8 +114,11 @@ if (ind(0) ne 0) then begin
     mdplus(i)  = md0*deltamd^(i+1)
     md(i)      = 0.5*(mdplus(i)+mdminus(i))
     ad(i)      = (3*md(i)/(4*!pi*rhods))^(1/3.)
+    fd(*,*,*,i) = nd(*,*,*,i)/(mdplus(i)-mdminus(i))
   endfor
+
   nd = reform(nd)
+  fd = reform(fd)
   if (lmdvar) then rhod = reform(rhod)
 endif
 ;
