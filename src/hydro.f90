@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.114 2003-10-12 22:13:17 mee Exp $
+! $Id: hydro.f90,v 1.115 2003-10-13 12:23:48 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -39,7 +39,7 @@ module Hydro
   ! run parameters
 !ajwm - sij declaration moved to cdata.f90
   real :: theta=0.
-  real :: tdamp=0.,dampu=0.,dampuext=0.,dampuint=0.,rdampext=1.2,rdampint=1.2,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,dampuext=0.,dampuint=0.,rdampint=0.0,rdampext=impossible,wdamp=0.2
   real :: frec_ux=100,ampl_osc_ux=1e-3
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.
@@ -99,7 +99,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.114 2003-10-12 22:13:17 mee Exp $")
+           "$Id: hydro.f90,v 1.115 2003-10-13 12:23:48 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
