@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.28 2004-04-16 07:36:33 ajohan Exp $
+! $Id: visc_const.f90,v 1.29 2004-07-03 02:13:14 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -59,7 +59,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.28 2004-04-16 07:36:33 ajohan Exp $")
+           "$Id: visc_const.f90,v 1.29 2004-07-03 02:13:14 theine Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -204,7 +204,7 @@ module Viscosity
           if (headtt) print*,'viscous force: nu*del2v'
           call del2v(f,iuu,del2u)
           fvisc=nu*del2u
-          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
 
         case('rho_nu-const', '1')
           !
@@ -219,7 +219,7 @@ module Viscosity
           do i=1,3
             fvisc(:,i)=murho1*(del2u(:,i)+1./3.*graddivu(:,i))
           enddo
-          call max_for_dt(murho1,maxdiffus)
+          diffus_nu=max(diffus_nu,murho1*dxyz_2)
 
         case('nu-const')
           !
@@ -231,7 +231,8 @@ module Viscosity
           if(ldensity) then
             call multmv_mn(sij,glnrho,sglnrho)
             fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            call max_for_dt(nu,maxdiffus)
+            diffus_nu=max(diffus_nu,nu*dxyz_2)
+
           else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -244,7 +245,7 @@ module Viscosity
           if (headtt) print*,'viscous force: nu*del6v'
           call del6v(f,iuu,del6u)
           fvisc=nu*del6u
-          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
         case default
           !
           !  Catch unknown values
@@ -262,7 +263,7 @@ module Viscosity
 !  set viscous time step
 !
       if (ldiagnos.and.i_dtnu/=0) then
-        call max_mn_name(spread(nu,1,nx)/dxmin**2/cdtvDim,i_dtnu,l_dt=.true.)
+        call max_mn_name(diffus_nu/cdtv,i_dtnu,l_dt=.true.)
       endif
 !
       if(ip==0) print*,divu  !(keep compiler quiet)

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.176 2004-06-22 04:00:02 brandenb Exp $
+! $Id: hydro.f90,v 1.177 2004-07-03 02:13:14 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.176 2004-06-22 04:00:02 brandenb Exp $")
+           "$Id: hydro.f90,v 1.177 2004-07-03 02:13:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -508,10 +508,12 @@ module Hydro
 !
       if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock)
 !
-!  maximum squared avection speed
+!  ``uu/dx'' for timestep
 !
-      if (headtt.or.ldebug) print*,'duu_dt: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
-      if (lfirst.and.ldt) call max_for_dt(u2,maxadvec2)
+      if (lfirst.and.ldt) advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                                   abs(uu(:,2))*dy_1(  m  )+ &
+                                   abs(uu(:,3))*dz_1(  n  )
+      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  damp motions in some regions for some time spans if desired
 !
@@ -584,7 +586,7 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (i_dtu/=0)    call max_mn_name(sqrt(u2)/dxmin/cdt,i_dtu,l_dt=.true.)
+        if (i_dtu/=0)    call max_mn_name(advec_uu/cdt,i_dtu,l_dt=.true.)
         if (i_urms/=0)   call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0)   call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_uzrms/=0)  call sum_mn_name(uu(:,3)**2,i_uzrms,lsqrt=.true.)

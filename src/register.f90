@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.137 2004-06-30 17:29:07 dobler Exp $
+! $Id: register.f90,v 1.138 2004-07-03 02:13:14 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -124,6 +124,7 @@ module Register
       use Print
 !      use Hydro
 !      use Density
+      use Deriv,        only: initialize_deriv
       use Timeavg,      only: initialize_timeavg
       use Gravity,      only: initialize_gravity
       use Forcing,      only: initialize_forcing
@@ -214,6 +215,7 @@ module Register
 !  run initialization of individual modules
 !
 !      call initialize_io
+      call initialize_deriv
       call initialize_prints
 !ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages
@@ -236,7 +238,10 @@ module Register
       call initialize_viscosity()
       call initialize_special()
 !
-!  timestep: if dt=0 (ie not initialized), ldt=.true.
+!  timestep: distinguish two cases,
+!  (a) dt explicitly given in run.in -> ldt=.false.
+!  (b) dt not given in run.in        -> ldt=.true.  -> calculate dt dynamically
+!  Note that ldt will not change unless you RELOAD parameters.
 !
 !ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
 !AB: maybe not, because initialize_modules can also be run from start.f90,
@@ -279,6 +284,7 @@ module Register
       use Gravity,      only: rprint_gravity
       use Special,      only: rprint_special
       use Viscosity,    only: rprint_viscosity
+      use Shear,        only: rprint_shear
 !
       integer :: iname,inamev,inamez,inamexy,inamerz
       integer :: ix_,iy_,iz_,iz2_,io_stat
@@ -387,6 +393,7 @@ module Register
       call rprint_gravity     (lreset,LWRITE=lroot)
       call rprint_special     (lreset,LWRITE=lroot)
       call rprint_viscosity   (lreset,LWRITE=lroot)
+      call rprint_shear       (lreset,LWRITE=lroot)
 
       if (lroot) close(3)
 !

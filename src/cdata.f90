@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.238 2004-07-02 10:09:10 brandenb Exp $
+! $Id: cdata.f90,v 1.239 2004-07-03 02:13:13 theine Exp $
 
 module Cdata
 
@@ -7,13 +7,20 @@ module Cdata
   Use Cparam
 
   integer :: itorder=3
-  real, dimension (mx) :: x,xiprim,xiprim2
-  real, dimension (my) :: y,psiprim,psiprim2
-  real, dimension (mz) :: z,zetaprim,zetaprim2,zeta_grid
+  real, dimension (mx) :: x,xiprim,xiprim2,dx_1
+  real, dimension (my) :: y,psiprim,psiprim2,dy_1
+  real, dimension (mz) :: z,zetaprim,zetaprim2,zeta_grid,dz_1
   real, dimension (nrcyl) :: rcyl  ! used for phi-averages
+  real, dimension (nx) :: dxyz_2
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn,phi_mn
   real, dimension (nx,3) :: evr    ! spherical unit radius vector
-  real, dimension (nx) :: maxadvec2,maxdiffus,maxdss,maxdlnrho
+  real, dimension (nx) :: maxdss,maxdlnrho
+!  timestep related:
+  real, dimension (nx) :: advec_uu,advec_shear,advec_hall
+  real, dimension (nx) :: advec_cs2,advec_va2,advec_uud
+  real, dimension (nx) :: diffus_chiral,diffus_diffrho,diffus_cr,diffus_nud
+  real, dimension (nx) :: diffus_eta,diffus_nu,diffus_chi
+  real, dimension (nx) :: dt1_advec,dt1_diffus,dt1_max
 
   real, dimension (nx,3,3) :: sij,sdij  ! rate-of-strain tensor
 

@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.65 2004-06-27 15:11:57 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.66 2004-07-03 02:13:13 theine Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,6 +55,7 @@ module Dustvelocity
   integer, dimension(ndustspec) :: i_udmy=0,i_udmz=0
   integer, dimension(ndustspec) :: i_udxmxy=0,i_udymxy=0,i_udzmxy=0
   integer, dimension(ndustspec) :: i_divud2m=0,i_epsKd=0
+  integer, dimension(ndustspec) :: i_dtud=0,i_dtnud=0
 
   contains
 
@@ -105,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.65 2004-06-27 15:11:57 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.66 2004-07-03 02:13:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -533,7 +534,6 @@ module Dustvelocity
 !  the two formulations (ie with either constant betad or constant tausd)
 !
         call del2v(f,iuud(k),del2ud)
-        call max_for_dt(nud(k),maxdiffus)
 !
 !  Stopping time of dust is calculated in get_stoppingtime
 !
@@ -579,11 +579,20 @@ module Dustvelocity
         df(l1:l2,m,n,iudx(k):iudz(k)) = &
             df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
 !
-!  maximum squared advection speed
+!  ``uud/dx'' for timestep
 !
-        if ((headtt.or.ldebug) .and. (ip<6)) print*, &
-            'duud_dt: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2(:,k))
-        if (lfirst.and.ldt) call max_for_dt(ud2(:,k),maxadvec2)
+        if (lfirst.and.ldt) then
+          advec_uud=max(advec_uud,abs(uud(:,1,k))*dx_1(l1:l2)+ &
+                                  abs(uud(:,2,k))*dy_1(  m  )+ &
+                                  abs(uud(:,3,k))*dz_1(  n  ))
+          diffus_nud=max(diffus_nud,nud(k)*dxyz_2)
+          if (i_dtud(k)/=0) call max_mn_name(advec_uud/cdt,i_dtud(k),l_dt=.true.)
+          if (i_dtnud(k)/=0) call max_mn_name(diffus_nud/cdtv,i_dtnud(k),l_dt=.true.)
+        endif
+        if (headtt.or.ldebug) then
+          print*,'duud_dt: max(advec_uud) =',maxval(advec_uud)
+          print*,'duud_dt: max(diffus_nud) =',maxval(diffus_nud)
+        endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
@@ -755,6 +764,8 @@ module Dustvelocity
         write(3,*) 'iudx=intarr('//trim(sdustspec)//')'
         write(3,*) 'iudy=intarr('//trim(sdustspec)//')'
         write(3,*) 'iudz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_dtud=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_dtnud=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ud2m=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_udm2=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_od2m=intarr('//trim(sdustspec)//')'
@@ -788,6 +799,7 @@ module Dustvelocity
 !  (this needs to be consistent with what is defined above!)
 !
         if (lreset) then
+          i_dtud=0; i_dtnud=0
           i_ud2m(i)=0; i_udm2(i)=0; i_oudm(i)=0; i_od2m(i)=0
           i_udxpt(i)=0; i_udypt(i)=0; i_udzpt(i)=0
           i_udrms(i)=0; i_udmax(i)=0; i_odrms(i)=0; i_odmax(i)=0
@@ -802,6 +814,10 @@ module Dustvelocity
         do iname=1,nname
           call chn(i,sdust)
           if (ndustspec == 1) sdust=''
+          call parse_name(iname,cname(iname),cform(iname), &
+              'dtud'//trim(sdust),i_dtud(i))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'dtnud'//trim(sdust),i_dtnud(i))
           call parse_name(iname,cname(iname),cform(iname), &
               'ud2m'//trim(sdust),i_ud2m(i))
           call parse_name(iname,cname(iname),cform(iname), &
@@ -842,6 +858,10 @@ module Dustvelocity
 !
         if (lwr) then
           call chn(i-1,sdust)
+          if (i_dtud(i) .ne. 0) &
+              write(3,*) 'i_dtud['//trim(sdust)//']=',i_dtud(i)
+          if (i_dtnud(i) .ne. 0) &
+              write(3,*) 'i_dtnud['//trim(sdust)//']=',i_dtnud(i)
           if (i_ud2m(i) .ne. 0) &
               write(3,*) 'i_ud2m['//trim(sdust)//']=',i_ud2m(i)
           if (i_udm2(i) .ne. 0) &

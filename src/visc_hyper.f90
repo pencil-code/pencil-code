@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.10 2004-05-31 15:43:02 brandenb Exp $
+! $Id: visc_hyper.f90,v 1.11 2004-07-03 02:13:14 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.10 2004-05-31 15:43:02 brandenb Exp $")
+           "$Id: visc_hyper.f90,v 1.11 2004-07-03 02:13:14 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -339,7 +339,7 @@ module Viscosity
           if (headtt) print*,'viscous force: nu*(del6u+del4*graddivu/3)'
           call del6v(f,iuu,del6u)
           fvisc=nu*(del6u+hyper)
-          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
         elseif (ivisc .eq. 'hyper2') then
           !  viscous force:nu*(del4u+del2*graddivu/3)
@@ -348,7 +348,7 @@ module Viscosity
           if (headtt) print*,'viscous force: nu*(del4u+del2*graddivu/3)'
           call del4v(f,iuu,del4u)
           fvisc=nu*(del4u+hyper)
-          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
         else
           call stop_it('visc_hyper:no such ivisc')  

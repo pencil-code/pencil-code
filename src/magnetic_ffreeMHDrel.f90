@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.24 2004-06-30 04:38:12 theine Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.25 2004-07-03 02:13:14 theine Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.24 2004-06-30 04:38:12 theine Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.25 2004-07-03 02:13:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -327,14 +327,17 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+nu*del2S+curlBxB+curlExE+divEE
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+eta*del2A-EE
 !
-!  For the timestep calculation, need maximum Alfven speed.
-!  and maximum diffusion (for timestep)
-!  This must include the imposed field (if there is any)
+!  ``va^2/dx^2'' and ``eta/dx^2'' for timestep
 !
       if (lfirst.and.ldt) then
-        call max_for_dt(B2,maxadvec2)
-        call max_for_dt(nu,maxdiffus)
-        call max_for_dt(eta,maxdiffus)
+        advec_va2=B2*dxyz_2
+        diffus_nu=nu*dxyz_2   ! isn't this done elsewhere ?
+        diffus_eta=eta*dxyz_2
+      endif
+      if (headtt.or.ldebug) then
+        print*,'daa_dt: max(advec_va2) =',maxval(advec_va2)
+        print*,'daa_dt: max(diffus_nu) =',maxval(diffus_nu)
+        print*,'daa_dt: max(diffus_eta) =',maxval(diffus_eta)
       endif
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.29 2004-06-11 08:07:35 ajohan Exp $
+! $Id: nohydro.f90,v 1.30 2004-07-03 02:13:14 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.29 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: nohydro.f90,v 1.30 2004-07-03 02:13:14 theine Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -132,12 +132,12 @@ module Hydro
         uu=0.
       endif
 !
-!  maximum squared avection speed (for timestep)
+!  uu/dx for timestep
 !
-      if (lfirst.and.ldt) then
-        call dot2_mn(uu,u2)
-        call max_for_dt(u2,maxadvec2)
-      endif
+      if (lfirst.and.ldt) advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                                   abs(uu(:,2))*dy_1(  m  )+ &
+                                   abs(uu(:,3))*dz_1(  n  )
+      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

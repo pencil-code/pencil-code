@@ -1,4 +1,4 @@
-! $Id: hydro_ffreeMHDrel.f90,v 1.16 2004-06-11 08:07:35 ajohan Exp $
+! $Id: hydro_ffreeMHDrel.f90,v 1.17 2004-07-03 02:13:14 theine Exp $
 
 !  This module solve the momentum equation for relativistic force-free MHD
 !  dS/dt = curlB x B +  curlE x E + divE E
@@ -101,7 +101,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_ffreeMHDrel.f90,v 1.16 2004-06-11 08:07:35 ajohan Exp $")
+           "$Id: hydro_ffreeMHDrel.f90,v 1.17 2004-07-03 02:13:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -354,10 +354,13 @@ module Hydro
 !
 !  the actual calculation happens all in magnetic_ffreeMHDrel.f90
 !
-!  maximum squared avection speed
+!  ``(uu+c)/dx'' for timestep
 !
-      if (headtt.or.ldebug) print*,'duu_dt: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
-      if (lfirst.and.ldt) call max_for_dt(u2+c2,maxadvec2)
+      if (lfirst.and.ldt) advec_uu=abs(uu(:,1))*dx_1(l1:l2)+ &
+                                   abs(uu(:,2))*dy_1(  m  )+ &
+                                   abs(uu(:,3))*dz_1(  n  )+ &
+                                   sqrt(c2*dxyz_2)
+      if (headtt.or.ldebug) print*,'duu_dt: max(advec_uu) =',maxval(advec_uu)
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

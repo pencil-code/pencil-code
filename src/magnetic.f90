@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.205 2004-06-30 14:13:46 ngrs Exp $
+! $Id: magnetic.f90,v 1.206 2004-07-03 02:13:14 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.205 2004-06-30 14:13:46 ngrs Exp $")
+           "$Id: magnetic.f90,v 1.206 2004-07-03 02:13:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -337,8 +337,8 @@ module Magnetic
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: b2b13
       real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
-      real, dimension (nx) :: ufres,rufres
-      real :: etatotal_max,tmp,eta_out1,B_ext21=1.
+      real, dimension (nx) :: ufres,rufres,etatotal
+      real :: tmp,eta_out1,B_ext21=1.
       integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij,bb,shock,gshock
@@ -484,30 +484,30 @@ module Magnetic
 
       case ('eta-const')
         fres=eta*del2A
-        etatotal_max=eta
+        etatotal=eta
       case ('hyper3')
         call del6v(f,iaa,del6A)
         fres=eta*del6A
-        etatotal_max=eta
+        etatotal=eta
       case ('hyper2')
         call del4v(f,iaa,del4A)
         fres=eta*del4A
-        etatotal_max=eta  
+        etatotal=eta  
       case ('shell')
         call eta_shell(eta_mn,geta)
         call div(f,iaa,divA)
         do j=1,3; fres(:,j)=eta_mn*del2A(:,j)+geta(:,j)*divA; enddo
-        etatotal_max=maxval(eta_mn)
+        etatotal=eta_mn
       case ('shock')
         if (eta_shock/=0) then
           call div(f,iaa,divA)
           eta_tot=eta+eta_shock*shock
           geta=eta_shock*gshock
           do j=1,3; fres(:,j)=eta_tot*del2A(:,j)+geta(:,j)*divA; enddo
-          etatotal_max=eta+eta_shock*maxval(shock)
+          etatotal=eta+eta_shock*shock
         else
           fres=eta*del2A
-          etatotal_max=eta
+          etatotal=eta
         endif
       case default
         if (lroot) print*,'daa_dt: no such ires:',iresistivity
@@ -539,7 +539,7 @@ module Magnetic
         nu_ni1=1./nu_ni
         call cross_mn(JxBr,bb,JxBrxB)
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+nu_ni1*JxBrxB
-        etatotal_max=etatotal_max+maxval(nu_ni1*va2)
+        etatotal=etatotal+nu_ni1*va2
       endif
 !
 !  Hall term
@@ -547,8 +547,13 @@ module Magnetic
       if (hall_term/=0.) then
         if (headtt) print*,'daa_dt: hall_term=',hall_term
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-hall_term*JxB
-        call dot2_mn(uu-hall_term*jj,hall_ueff2)
-        call max_for_dt(hall_ueff2,maxadvec2)
+        if (lfirst.and.ldt) then
+          advec_hall=abs(uu(:,1)-hall_term*jj(:,1))*dx_1(l1:l2)+ &
+                     abs(uu(:,2)-hall_term*jj(:,2))*dy_1(  m  )+ &
+                     abs(uu(:,3)-hall_term*jj(:,3))*dz_1(  n  )
+        endif
+        if (headtt.or.ldebug) print*,'duu_dt: max(advec_hall) =',&
+                                     maxval(advec_hall)
       endif
 !
 !  add alpha effect if alpha_effect /= 0
@@ -595,17 +600,21 @@ module Magnetic
         endif
       endif
 !
-!  For the timestep calculation, need maximum Alfven speed
-!  and maximum diffusion.
+!  ``va^2/dx^2'' and ``eta/dx^2'' for timestep
 !
-        if (lfirst.and.ldt) then
-          call max_for_dt(va2,maxadvec2)
-          call max_for_dt(etatotal_max,maxdiffus)
-          !  diagnose
-          if (ldiagnos.and.i_dteta/=0) then
-            call max_mn_name(spread(etatotal_max,1,nx)/dxmin**2/cdtvDim,i_dteta,l_dt=.true.)
-          endif
+      if (lfirst.and.ldt) then
+        advec_va2=((bb(:,1)*dx_1(l1:l2))**2+ &
+                   (bb(:,2)*dy_1(  m  ))**2+ &
+                   (bb(:,3)*dz_1(  n  ))**2)*mu01*rho1
+        diffus_eta=etatotal*dxyz_2
+        if (ldiagnos.and.i_dteta/=0) then
+          call max_mn_name(diffus_eta/cdtv,i_dteta,l_dt=.true.)
         endif
+      endif
+      if (headtt.or.ldebug) then
+        print*,'duu_dt: max(advec_va2) =',maxval(advec_va2)
+        print*,'duu_dt: max(diffus_eta) =',maxval(diffus_eta)
+      endif
 
       if (lspecial) call special_calc_magnetic(f,df,uu,rho1,TT1,uij)
 !
@@ -635,7 +644,7 @@ module Magnetic
         !
         if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
         if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
-        if (i_dtb/=0) call max_mn_name(sqrt(va2)/dxmin/cdt,i_dtb,l_dt=.true.)
+        if (i_dtb/=0) call max_mn_name(sqrt(advec_va2)/cdt,i_dtb,l_dt=.true.)
         !
         ! <J.B>
         !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.319 2004-06-30 04:38:11 theine Exp $
+! $Id: entropy.f90,v 1.320 2004-07-03 02:13:13 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.319 2004-06-30 04:38:11 theine Exp $")
+           "$Id: entropy.f90,v 1.320 2004-07-03 02:13:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1067,11 +1067,10 @@ module Entropy
 !
       if (headtt) print*,'dss_dt: lnTT,cs2,cp1tilde=',lnTT(1),cs2(1),cp1tilde(1)
 !
-!  use sound speed in Courant condition
+!  ``cs2/dx^2'' for timestep
 !
-      if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
-      if (ip<8.and.lroot.and.imn==1) print*, &
-                        'dss_dt: maxadvec2,cs2=',maxadvec2,cs2
+      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  don't print out cs20 (in runs with ionization is in not defined)
 !  and ideally it should be avoided from the entropy module altoghether
@@ -1216,7 +1215,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if(ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
         rho=exp(lnrho)
         if(i_eth/=0) call sum_mn_name(rho*ee,i_eth)
         if(i_ethtot/=0) call integrate_mn_name(rho*ee,i_ethtot)
@@ -1282,11 +1281,9 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        chitotal=gamma*chi+chi_t
-        call max_for_dt(chitotal, maxdiffus)
-        ! diagnose
+        diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
         endif
       endif
 !
@@ -1370,9 +1367,11 @@ module Entropy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !      
       if (lfirst.and.ldt) then
-         chitotal= Kappa0*rho1*(TT**2.5)
-         call max_for_dt(chitotal, maxdiffus)
-     endif
+        diffus_chi=max(diffus_chi,Kappa0*rho1*(TT**2.5)*dxyz_2)
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
+        endif
+      endif
 !     
     endsubroutine calc_heatcond_mpara
 !***********************************************************************
@@ -1437,8 +1436,10 @@ module Entropy
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + thdiff
 !
       if (lfirst.and.ldt) then
-         chitotal= Kisotr * TT**(-0.5) * bb21 / rho1 
-         call max_for_dt(chitotal, maxdiffus)
+         diffus_chi=max(diffus_chi,Kisotr*TT**(-0.5)*bb21/rho1*dxyz_2)
+        if (ldiagnos.and.i_dtchi/=0) then
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
+        endif
      endif
 !     
     endsubroutine calc_heatcond_mperp
@@ -1498,11 +1499,9 @@ module Entropy
 !  gamma*chi*del2ss
 !
       if (lfirst.and.ldt) then
-        chitotal_max=chi_t+chi_shock*maxval(shock)
-        call max_for_dt(chitotal_max,maxdiffus)
-        ! diagnose
+        diffus_chi=max(diffus_chi,(chi_t+chi_shock*shock)*dxyz_2)
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(spread(chitotal_max,1,nx)/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
         endif
       endif
 !
@@ -1556,11 +1555,9 @@ module Entropy
 !  gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        chitotal=gamma*chix+chi_t
-        call max_for_dt(maxval(chitotal),maxdiffus)
-        ! diagnose
+        diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
         endif
       endif
 !
@@ -1683,11 +1680,9 @@ module Entropy
 !    gamma*chix*del2ss
 !
       if (lfirst.and.ldt) then
-        chitotal=gamma*chix+chi_t
-        call max_for_dt(maxval(chitotal),maxdiffus)
-        ! diagnose
+        diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
         if (ldiagnos.and.i_dtchi/=0) then
-          call max_mn_name(chitotal/dxmin**2/cdtvDim,i_dtchi,l_dt=.true.)
+          call max_mn_name(diffus_chi/cdtv,i_dtchi,l_dt=.true.)
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.4 2003-06-16 04:41:11 brandenb Exp $
+! $Id: noshear.f90,v 1.5 2004-07-03 02:13:14 theine Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -40,7 +40,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.4 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: noshear.f90,v 1.5 2004-07-03 02:13:14 theine Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -50,7 +50,7 @@ module Shear
 
 ! dummy
 
-  endsubroutine initialize_shear
+    endsubroutine initialize_shear
 !***********************************************************************
     subroutine shearing(f,df)
 !
@@ -65,7 +65,7 @@ module Shear
       real, dimension (mx,my,mz,mvar) :: df
 !
       if(ip==0) print*,f,df !(to keep compiler quiet)
-    end subroutine shearing
+    endsubroutine shearing
 !***********************************************************************
     subroutine advance_shear
 !
@@ -79,6 +79,21 @@ module Shear
 !
       if (headtt.or.ldebug) print*,'advance_shear: deltay=const=',deltay
 !
-    end subroutine advance_shear
+    endsubroutine advance_shear
+!***********************************************************************
+    subroutine rprint_shear(lreset,lwrite)
+!
+!  dummy routine
+!
+!  02-jul-04/tobi: coded
+!
+      logical :: lreset
+      logical, optional :: lwrite
+
+      if (present(lwrite)) then
+        if (ip==0) print*,lreset
+      endif
+
+    endsubroutine rprint_shear
 !***********************************************************************
   end module Shear

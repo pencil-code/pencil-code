@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.218 2004-06-30 04:38:11 theine Exp $
+! $Id: equ.f90,v 1.219 2004-07-03 02:13:14 theine Exp $
 
 module Equ
 
@@ -251,7 +251,8 @@ module Equ
       real, dimension (nx,3,ndustspec) :: uud,gnd
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
-      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock,UUtemp,maxadvec
+      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock
+      real, dimension (nx) :: maxadvec,maxdiffus
       integer :: iv
 !
 !  print statements when they are first executed
@@ -260,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.218 2004-06-30 04:38:11 theine Exp $")
+           "$Id: equ.f90,v 1.219 2004-07-03 02:13:14 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -307,6 +308,10 @@ module Equ
 !  Turbulence parameters (alpha, scale height, etc.)      
       if (lcalc_turbulence_pars) call calc_turbulence_pars(f)
 !
+!  set inverse timestep to zero before entering loop over m and n
+!
+      if (lfirst.and.ldt) dt1_max=0.0
+!
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
 !  if test_nonblocking=.true., we communicate immediately as a test.
@@ -346,14 +351,26 @@ module Equ
           call phisum_mn_name_rz(r_mn   ,i_rmphi)
         endif
 !
-!  for each pencil, accumulate through the different routines
-!  maximum diffusion, maximum advection (keep as nx-array)
-!  and maximum heating
+!  For each pencil, accumulate through the different modules
+!  advec_XX and diffus_XX, which are essentially the inverse
+!  advective and diffusive timestep for that module.
+!  (note: advec_cs2 and advec_va2 are inverse _squared_ timesteps)
 !  
-        maxdiffus  = 0.
-        maxadvec2  = 0.
+        advec_uu=0.; advec_shear=0.; advec_hall=0.
+        advec_cs2=0.; advec_va2=0.; advec_uud=0;
+        diffus_chiral=0.; diffus_diffrho=0.; diffus_cr=0.
+        diffus_eta=0.; diffus_nu=0.; diffus_chi=0.; diffus_nud=0.
 !
-!  calculate inverse density
+!  The following is only kept for backwards compatibility.
+!  Will be deleted in the future.
+!
+        if (old_cdtv) then
+          dxyz_2 = max(dx_1(l1:l2)**2,dy_1(m)**2,dz_1(n)**2)
+        else
+          dxyz_2 = dx_1(l1:l2)**2+dy_1(m)**2+dz_1(n)**2
+        endif
+!
+!  Calculate inverse density and magnetic field
 !  WD: Also needed with heat conduction, so we better calculate it in all
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
@@ -452,15 +469,17 @@ module Equ
           !  sum or maximum of the advection terms?
           !  (lmaxadvec_sum=.false. by default)
           !
-          if (lmaxadvec_sum) then
-            maxadvec=sqrt(u2)+sqrt(cs2+va2)
-            if (ldiagnos.and.i_dtv/=0) then
-              call max_mn_name(maxadvec/dxmin/cdt,i_dtv,l_dt=.true.)
-            endif
-            UUtemp=max(maxadvec,cdt*maxdiffus/(cdtvDim*dxmin))
-            call max_mn(UUtemp,UUmax)
-          else
-            call max_mn(sqrt(maxadvec2)+(cdt*maxdiffus)/(cdtvDim*dxmin),UUmax)
+          maxadvec=advec_uu+advec_shear+advec_hall+sqrt(advec_cs2+advec_va2)
+          maxdiffus=max(diffus_nu,diffus_chi,diffus_eta,diffus_diffrho, &
+                        diffus_cr,diffus_nud,diffus_chiral)
+          dt1_advec=maxadvec/cdt
+          dt1_diffus=maxdiffus/cdtv
+
+          dt1_max=max(dt1_max,sqrt(dt1_advec**2+dt1_diffus**2))
+
+          if (ldiagnos.and.i_dtv/=0) then
+            call max_mn_name(maxadvec/cdt,i_dtv,l_dt=.true.)
+            !call max_mn_name(maxdiffus/cdtv,i_dtv,l_dt=.true.)
           endif
         endif
 !

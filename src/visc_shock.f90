@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.59 2004-06-30 04:38:12 theine Exp $
+! $Id: visc_shock.f90,v 1.60 2004-07-03 02:13:14 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -22,7 +22,7 @@ module Viscosity
 
   real :: nu_shock = 0.
   character (len=labellen) :: ivisc=''
-  real :: nutotal_max
+  real, dimension(nx) :: nutotal
   real :: nu_mol=0.
   logical :: lvisc_first=.false.,lshock_max5=.true.
 
@@ -71,7 +71,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.59 2004-06-30 04:38:12 theine Exp $")
+           "$Id: visc_shock.f90,v 1.60 2004-07-03 02:13:14 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -619,7 +619,6 @@ module Viscosity
 
       shock=f(l1:l2,m,n,ishock)
       call grad(f,ishock,gshock)
-      nutotal_max=nu
 !
 !  shock viscosity
 !
@@ -636,8 +635,8 @@ module Viscosity
             call multsv_mn(nu_shock*shock,tmp,fvisc)
             call multsv_add_mn(fvisc,nu_shock*divu,gshock,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            nutotal_max=nutotal_max+nu_shock*maxval(shock)
-            call max_for_dt(nutotal_max,maxdiffus)
+            nutotal=nu+nu_shock*shock
+            diffus_nu=max(diffus_nu,nutotal*dxyz_2)
          else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -655,7 +654,7 @@ module Viscosity
             if(ldensity) then
                call multmv_mn(sij,glnrho,sglnrho)
                fvisc=2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-               call max_for_dt(nu,maxdiffus)
+               diffus_nu=max(diffus_nu,nu*dxyz_2)
             else
                if(lfirstpoint) &
                     print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -668,7 +667,7 @@ module Viscosity
       endif
 !
       if (ldiagnos) then
-        if (i_dtnu/=0) call max_mn_name(spread(nutotal_max,1,nx)/dxmin**2/cdtvDim,i_dtnu,l_dt=.true.)
+        if (i_dtnu/=0) call max_mn_name(diffus_nu/cdtv,i_dtnu,l_dt=.true.)
         if (i_shockmax/=0) call max_mn_name(shock,i_shockmax)
       endif
 !

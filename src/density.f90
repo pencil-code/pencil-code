@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.171 2004-06-30 18:01:43 mcmillan Exp $
+! $Id: density.f90,v 1.172 2004-07-03 02:13:13 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.171 2004-06-30 18:01:43 mcmillan Exp $")
+           "$Id: density.f90,v 1.172 2004-07-03 02:13:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -788,15 +788,20 @@ module Density
         if (diffrho/=0.) then
           if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
-          call max_for_dt(diffrho,maxdiffus)
+          if (lfirst.and.ldt) diffus_diffrho=diffrho*dxyz_2
         endif
 !
         if (diffrho_shock/=0.) then
           call dot_mn(gshock,glnrho,gshockglnrho)
           if(headtt) print*,'dlnrho_dt: diffrho_shock=',diffrho_shock
-          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
-          call max_for_dt(diffrho_shock*maxval(shock),maxdiffus)
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+ &
+            diffrho_shock*shock*(del2lnrho+glnrho2)+diffrho_shock*gshockglnrho
+          if (lfirst.and.ldt) diffus_diffrho=diffrho_shock*shock*dxyz_2
         endif
+
+        if (headtt.or.ldebug) print*,'dlnrho_dt: max(diffus_diffrho) =', &
+                                     maxval(diffus_diffrho)
+
       endif
 !
 !  add advection of imposed constant gradient of lnrho (called gradlnrho0)

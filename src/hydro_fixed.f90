@@ -1,4 +1,4 @@
-! $Id: hydro_fixed.f90,v 1.6 2004-06-22 08:05:12 ajohan Exp $
+! $Id: hydro_fixed.f90,v 1.7 2004-07-03 02:13:14 theine Exp $
 
 !  This module takes care of velocities. Treats velocity components as auxiliary
 !  variables that do not undergo dynamical change. Useful for focusing on other
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_fixed.f90,v 1.6 2004-06-22 08:05:12 ajohan Exp $")
+           "$Id: hydro_fixed.f90,v 1.7 2004-07-03 02:13:14 theine Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -452,7 +452,7 @@ module Hydro
 !
       if (ldiagnos) then
         if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
-        if (i_dtu/=0)    call max_mn_name(sqrt(u2)/dxmin/cdt,i_dtu,l_dt=.true.)
+        if (i_dtu/=0)    call max_mn_name(advec_uu/cdt,i_dtu,l_dt=.true.)
         if (i_urms/=0)   call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0)   call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_uzrms/=0)  call sum_mn_name(uu(:,3)**2,i_uzrms,lsqrt=.true.)

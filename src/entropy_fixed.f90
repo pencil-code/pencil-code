@@ -1,4 +1,4 @@
-! $Id: entropy_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $
+! $Id: entropy_fixed.f90,v 1.6 2004-07-03 02:13:14 theine Exp $
 
 !  This module takes care of entropy. Treats entropy as an auxiliary variable
 !  that does not undergo dynamical change. Useful for focusing on other
@@ -115,7 +115,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $")
+           "$Id: entropy_fixed.f90,v 1.6 2004-07-03 02:13:14 theine Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -1017,7 +1017,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if(ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
         rho=exp(lnrho)
         if(i_eth/=0) call sum_mn_name(rho*ee,i_eth)
         if(i_ethtot/=0) call integrate_mn_name(rho*ee,i_ethtot)

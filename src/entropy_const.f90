@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.3 2004-06-22 04:00:02 brandenb Exp $
+! $Id: entropy_const.f90,v 1.4 2004-07-03 02:13:14 theine Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.3 2004-06-22 04:00:02 brandenb Exp $")
+           "$Id: entropy_const.f90,v 1.4 2004-07-03 02:13:14 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -176,7 +176,11 @@ module Entropy
       ss=profxss
       call pressure_gradient(f,cs2,cp1tilde)
       print*, it, m, n, maxval(cs2), maxval(ss)
-      if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
@@ -189,7 +193,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
           rho=1./rho1
           call dot_mn(uu,glnrho,uglnrho)

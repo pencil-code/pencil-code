@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.24 2004-05-19 10:47:34 ajohan Exp $
+! $Id: timestep.f90,v 1.25 2004-07-03 02:13:14 theine Exp $
 
 module Timestep
 
@@ -68,6 +68,7 @@ module Timestep
           df=alpha(itsub)*df  !(could be subsumed into pde, but could be dangerous!)
           ds=alpha(itsub)*ds
         endif
+
         call pde(f,df)
         ds=ds+1.
 !
@@ -75,10 +76,8 @@ module Timestep
 !  This is done here because it uses UUmax which was calculated in pde.
 !  Only do it on the root processor, then broadcast dt to all others.
 !
-        if (lfirst.and.lroot) then
-          if (ldt) dt=cdt*dxmin/UUmax
-          if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
-        endif
+        if (lroot.and.lfirst.and.ldt) dt=1.0/maxval(dt1_max)
+
         if (lfirst) call mpibcast_real(dt,1)
         if (ldt) dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)

@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.17 2004-06-30 07:38:44 bingert Exp $
+! $Id: deriv.f90,v 1.18 2004-07-03 02:13:13 theine Exp $
 
 module Deriv
   
@@ -14,6 +14,19 @@ module Deriv
   
   contains
 
+!***********************************************************************
+    subroutine initialize_deriv()
+!
+!  should be moved to grid.f90
+!
+      use Cdata, only: dx,dy,dz
+      use Cdata, only: dx_1,dy_1,dz_1
+
+      dx_1=1./dx
+      dy_1=1./dy
+      dz_1=1./dz
+
+    endsubroutine initialize_deriv
 !***********************************************************************
     subroutine der_main(f,k,df,j)
 !

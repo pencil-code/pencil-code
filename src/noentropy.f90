@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.61 2004-06-24 00:44:34 theine Exp $
+! $Id: noentropy.f90,v 1.62 2004-07-03 02:13:14 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.61 2004-06-24 00:44:34 theine Exp $")
+           "$Id: noentropy.f90,v 1.62 2004-07-03 02:13:14 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -114,7 +114,11 @@ module Entropy
       cs2=cs20*exp(gamma1*(lnrho-lnrho0))
       TT1=gamma1/cs2
 
-      if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
@@ -128,7 +132,7 @@ module Entropy
 !  Calculate entropy related diagnostics
 !
       if (ldiagnos) then
-        if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
+        if (i_dtc/=0) call max_mn_name(sqrt(advec_cs2)/cdt,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
           rho=1./rho1
           call dot_mn(uu,glnrho,uglnrho)

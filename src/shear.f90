@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.17 2004-02-03 14:30:06 ajohan Exp $
+! $Id: shear.f90,v 1.18 2004-07-03 02:13:14 theine Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -19,6 +19,8 @@ module Shear
 
   namelist /shear_run_pars/ &
        qshear,Sshear
+
+  integer :: i_dtshear=0
 
   contains
 
@@ -41,7 +43,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.17 2004-02-03 14:30:06 ajohan Exp $")
+           "$Id: shear.f90,v 1.18 2004-07-03 02:13:14 theine Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -132,7 +134,13 @@ module Shear
 !
 !  take shear into account for calculating time step
 !
-      if (lfirst.and.ldt) call max_for_dt(uy0**2,maxadvec2)
+      if (lfirst.and.ldt) advec_shear=abs(uy0*dy_1(m))
+!
+!  Calculate shearing related diagnostics
+!
+      if (ldiagnos) then
+        if (i_dtshear/=0) call max_mn_name(advec_shear/cdt,i_dtshear,l_dt=.true.)
+      endif
 !
     end subroutine shearing
 !***********************************************************************
@@ -164,5 +172,42 @@ module Shear
       if (headtt.or.ldebug) print*,'advance_shear: deltay=',deltay
 !
     end subroutine advance_shear
+!***********************************************************************
+    subroutine rprint_shear(lreset,lwrite)
+!
+!  reads and registers print parameters relevant to shearing
+!
+!   2-jul-04/tobi: adapted from entropy
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_dtshear=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'dtshear',i_dtshear)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      if (lwr) then
+        write(3,*) 'i_dtshear=',i_dtshear
+      endif
+!
+    endsubroutine rprint_shear
 !***********************************************************************
   end module Shear

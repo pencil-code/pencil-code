@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.13 2004-01-31 14:01:22 dobler Exp $
+! $Id: temperature.f90,v 1.14 2004-07-03 02:13:14 theine Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -88,7 +88,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.13 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: temperature.f90,v 1.14 2004-07-03 02:13:14 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -267,13 +267,15 @@ iss=ilnTT  !(need to think how to deal with this...)
       call grad(f,ilnTT,glnTT)
 !
 !  sound speed squared
-!  include in maximum advection speed (for timestep)
 !
       lnTT=f(l1:l2,m,n,ilnTT)
       cs2=gamma1*exp(lnTT)
-      if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
-      if (ip<8.and.lroot.and.imn==1) print*,'maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*,'entropy: cs20=',cs20
+!
+!  ``cs2/dx^2'' for timestep
+!
+      if (lfirst.and.ldt) advec_cs2=cs2*dxyz_2
+      if (headtt.or.ldebug) print*,'dss_dt: max(advec_cs2) =',maxval(advec_cs2)
 !
 !  subtract pressure gradient term in momentum equation
 !
@@ -361,7 +363,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
 !
-      if (lfirst.and.ldt) call max_for_dt((gamma*chi+chi_t),maxdiffus)
+      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chi+chi_t)*dxyz_2)
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
@@ -411,7 +413,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) call max_for_dt((gamma*chix+chi_t),maxdiffus)
+      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
 !
     endsubroutine calc_heatcond_simple
 !***********************************************************************
@@ -533,8 +535,7 @@ endif
 !  NB: With heat conduction, the second-order term for entropy is
 !    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) call max_for_dt((gamma*chix+chi_t),maxdiffus)
-!--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
+      if (lfirst.and.ldt) diffus_chi=max(diffus_chi,(gamma*chix+chi_t)*dxyz_2)
 !
     endsubroutine calc_heatcond
 !***********************************************************************
