@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 
 # Name:   adapt-mkfile
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2004-03-16 14:37:04 $
-# $Revision: 1.11 $
+# $Date: 2004-05-30 13:58:03 $
+# $Revision: 1.12 $
 # Description:
 #   Transform a makefile with machine-dependent information into one that
 #   is adapted to the machine we're running on.
@@ -71,8 +71,8 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { die $usage; }
 my $doll='\$';                  # Need this to trick CVS
 if ($opts{'v'} || $opts{'version'}) {
-    my $rev = '$Revision: 1.11 $';
-    my $date = '$Date: 2004-03-16 14:37:04 $';
+    my $rev = '$Revision: 1.12 $';
+    my $date = '$Date: 2004-05-30 13:58:03 $';
     $rev =~ s/${doll}Revision:\s*(\S+).*/$1/;
     $date =~ s/${doll}Date:\s*(\S+).*/$1/;
     die "$cmdname version $rev ($date)\n";
@@ -118,7 +118,7 @@ Line: while (<INPUT>) {
 	    if (/$anyhosttag/i) {
 		# Extract the host tag (retaining the outer brackets):
 		$hosttag = ($_ =~ /\#\s*(\(.*\))\s*$/)[0];
-		if ($host !~ /$hosttag/i) { $activate = 0; }
+		if ($host !~ /^$hosttag/i) { $activate = 0; }
 	    }
 	} else {		# Different OS
 	    $activate = 0;
@@ -208,7 +208,11 @@ matching host
 =item * <HOST> can contain any Perl regular expression and will be matched
 against the output from `uname -n'. Thus, C<#(mhd.)> will match mhd0,
 mhd1, mhd2, etc. Alternatively, we can use something like
-C<#(mhd0|mhd1)> or C<#(mhd[0-6])>
+C<#(mhd0|mhd1)> or C<#(mhd[0-6])>.
+
+<HOST> will be anchored at the beginning of the string to match (`uname
+-n`), but not at the end (where some operating systems append the domain
+name while others don't).
 
 =back
 
