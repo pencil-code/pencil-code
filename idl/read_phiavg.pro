@@ -8,11 +8,8 @@
 ;;;
 ;;;  Description:
 ;;;   Read phi-averages from file and return them in a structure
-;;;  File format:
-;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
-;;;    2. t, r_phiavg, z_phiavg, dr, dz
-;;;    1. data
-;;;    4. len(labels),labels
+;;;  Usage:
+;;;   avg = read_phiavg('data/averages/PHIAVG1')
 ;;;  Slots of returned structure:
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
@@ -22,8 +19,14 @@
 ;;;       <var1>   FLOAT Array[nr,nz] ; first averaged variable
 ;;;       <var2>   FLOAT Array[nr,nz] ; second averaged variable,
 ;;;       etc.
-;;;  The names <var1>, etc are the same as in the file phiaver.in,
-;;;  e.g. `b2mphi', etc.
+;;;    The names <var1>, etc are the same as in the file phiaver.in,
+;;;    e.g. `b2mphi', etc.
+;;;
+;;;  File format of PHIAVER files:
+;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
+;;;    2. t, r_phiavg, z_phiavg, dr, dz
+;;;    1. data
+;;;    4. len(labels),labels
 
 
 function parse_labels, line
