@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.43 2004-02-27 09:37:46 ajohan Exp $
+! $Id: dustdensity.f90,v 1.44 2004-02-27 16:03:42 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.43 2004-02-27 09:37:46 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.44 2004-02-27 16:03:42 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -315,7 +315,7 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
-      real, dimension (nx,ndustspec) :: nd,divud,deltand,deltarhod
+      real, dimension (nx,ndustspec) :: nd,divud,ndnew,rhodnew
       real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,rho,rho1
       real, dimension (nx) :: deltaud,deltaud_drift,deltaud_therm
       real, dimension (nx) :: TT1,ugrhod
@@ -336,11 +336,6 @@ module Dustdensity
 !  Recalculate grain masses from nd and rhod
 !
       if (lmdvar .and. itsub .eq. 1) then
-!
-!  Set small negative values to zero (give negative mass)
-!         
-        if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
-        if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
         do k=1,ndustspec
           if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
@@ -364,32 +359,34 @@ module Dustdensity
               if (md(k) .ge. mdminus(j) .and. md(k) .lt. mdplus(j)) exit
             enddo
           endif
-          if (i_targ .ge. 1 .and. i_targ .le. ndustspec) then
-            deltand(:,i_targ)   = deltand(:,i_targ) + f(l1:l2,m,n,ind(k))
-            deltarhod(:,i_targ) = deltarhod(:,i_targ) + f(l1:l2,m,n,irhod(k))
-            deltand(:,k)        = deltand(:,k) - f(l1:l2,m,n,ind(k))
-            deltarhod(:,k)      = deltarhod(:,k) - f(l1:l2,m,n,irhod(k))
+          if (i_targ .eq. -1) then
+            ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
+            rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
+          elseif (i_targ .ge. 1 .and. i_targ .le. ndustspec) then
+            ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
+            rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
           elseif (i_targ .eq. 0) then
             print*, 'dnd_dt: WARNING: Dust grains lost to gas!'
+            stop
             print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
-            deltand(:,k) = deltand(:,k) - f(l1:l2,n,m,ind(k))
-            deltarhod(:,k) = deltarhod(:,k) - f(l1:l2,n,m,irhod(k))
           elseif (i_targ .eq. ndustspec+1) then
-            call stop_it('dnd_dt: Hit maximum grain mass border!')
+            ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
+            rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
+            print*, 'dnd_dt: Hit maximum grain mass border!'
+            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+            !call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
-        f(l1:l2,m,n,ind)   = f(l1:l2,m,n,ind)   + deltand(:,:)
-        f(l1:l2,m,n,irhod) = f(l1:l2,m,n,irhod) + deltarhod(:,:)
-        deltand   = 0.
-        deltarhod = 0.
+        f(l1:l2,m,n,ind)   = ndnew(:,:)
+        f(l1:l2,m,n,irhod) = rhodnew(:,:)
+        ndnew   = 0.
+        rhodnew = 0.
 !
 !  Must redo calculation of grain mass
 !        
         do k=1,ndustspec
-          if (f(l1,m,n,ind(k)) .lt. 0.)   f(l1,m,n,ind(k))   = 0.
-          if (f(l1,m,n,irhod(k)) .lt. 0.) f(l1,m,n,irhod(k)) = 0.
           if (f(l1,m,n,ind(k)) .gt. 0. .and. f(l1,m,n,irhod(k)) .gt. 0.) then
             md(k) = f(l1,m,n,irhod(k))/f(l1,m,n,ind(k))
           else
@@ -537,7 +534,7 @@ module Dustdensity
 !
 !
 !
-!        UUmax = max( UUmax,maxval( -1/nd(:,k)*df(l1:l2,n,m,ind(k))*dxmin ) )
+!        UUmax = max( UUmax,maxval( -1/nd(:,k)*df(l1:l2,m,n,ind(k))*dxmin ) )
 !
 !  End loop over dust layers
 !
