@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.70 2004-06-02 16:27:09 bingert Exp $
+! $Id: io_dist.f90,v 1.71 2004-06-03 15:49:45 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.70 2004-06-02 16:27:09 bingert Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.71 2004-06-03 15:49:45 brandenb Exp $")
 !
     endsubroutine register_io
 !
@@ -360,6 +360,7 @@ contains
 !
 !  21-jan-02/wolf: coded
 !  15-jun-03/axel: Lx,Ly,Lz are now read in from file (Tony noticed the mistake)
+!   3-jun-04/bing: added xprim, yprim ,zprim, etc.
 !
       use Cdata
       use Mpicomm, only: stop_it
@@ -368,13 +369,15 @@ contains
       integer :: iostat
       character (len=*) :: file
 !
+!  if xprim etc is not written, just ignore it
+!
       open(1,FILE=file,FORM='unformatted')
       read(1) tdummy,x,y,z,dx,dy,dz
       read(1) dx,dy,dz
       read(1,IOSTAT=iostat) Lx,Ly,Lz
-      read(1) xprim, yprim ,zprim
+      read(1,end=990) xprim, yprim ,zprim
       read(1) xprim2,yprim2,zprim2
-      close(1)
+990   close(1)
 !
 !  give notification if Lx is not read in
 !  This should only happen when reading in old data files
