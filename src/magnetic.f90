@@ -5,7 +5,7 @@ module Magnetic
   implicit none
 
   real :: grav=1.
-  integer :: ient
+  integer :: iaa
 
   contains
 
@@ -42,8 +42,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.5 $", &
-           "$Date: 2002-01-17 11:42:43 $")
+           "$Revision: 1.6 $", &
+           "$Date: 2002-01-30 16:56:30 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
