@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.45 2004-02-06 16:23:32 dobler Exp $
+! $Id: nomagnetic.f90,v 1.46 2004-04-26 16:05:16 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.45 2004-02-06 16:23:32 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.46 2004-04-26 16:05:16 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -187,6 +187,15 @@ module Magnetic
 !***********************************************************************
     subroutine calc_mfield
     endsubroutine calc_mfield
+!***********************************************************************
+    subroutine bc_frozen_in_bb_z(topbot)
+!
+!  Dummy routine for frozen-in flux at boundary
+!
+      character (len=3) :: topbot
+!
+      if (ip==1) print*,topbot  !(to keep compiler quiet)
+    endsubroutine bc_frozen_in_bb_z
 !***********************************************************************
     subroutine bc_aa_pot(f,topbot)
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.185 2004-04-20 13:31:35 dobler Exp $
+! $Id: magnetic.f90,v 1.186 2004-04-26 16:05:16 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -43,6 +43,7 @@ module Magnetic
   logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
+  logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   character (len=40) :: kinflow=''
   real :: alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -118,7 +119,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.185 2004-04-20 13:31:35 dobler Exp $")
+           "$Id: magnetic.f90,v 1.186 2004-04-26 16:05:16 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -403,7 +404,7 @@ module Magnetic
       call curl_mn(bij,jj)
       if (mu01/=1.) jj=mu01*jj
 !
-!  calculate alven speed
+!  calculate Alfven speed
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
 !
@@ -476,7 +477,21 @@ module Magnetic
       end select
       if (headtt) print*,'daa_dt: iresistivity=',iresistivity
 !
-!  add to dA/dt
+!  Switch off diffusion of horizontal components in boundary slice if
+!  desired by boundconds
+!
+      if (lfrozen_bz_z_bot) then
+        !
+        ! Only need to do this for nonperiodic z direction, on bottommost
+        ! processor and in bottommost pencils
+        !
+        if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
+          fres(:,1) = 0.
+          fres(:,2) = 0.
+        endif
+      endif
+!
+!  Add to dA/dt
 !
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+fres
 !
@@ -659,8 +674,8 @@ module Magnetic
         !
         !  < u x curl(uxB) > = < E_i u_{j,j} - E_j u_{j,i} >
         !   ( < E_1 u2,2 + E1 u3,3 - E2 u2,1 - E3 u3,1 >
-        !   ( < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
-        !   ( < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 >
+        !     < E_2 u1,1 + E2 u3,3 - E1 u2,1 - E3 u3,2 >
+        !     < E_3 u1,1 + E3 u2,2 - E1 u3,1 - E2 u2,3 > )
         !
         if (i_uxDxuxbm/=0) then
           call cross_mn(uu,bbb,uxb)
@@ -1363,6 +1378,27 @@ module Magnetic
       vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine bc_frozen_in_bb_z(topbot)
+!
+!  Set flags to indicate that magnetic flux is frozen-in at the
+!  z boundary. The implementation occurs in daa_dt where magnetic
+!  diffusion is switched off in that layer.
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bz_z_bot = .true.    ! set flag
+      case('top')               ! top boundary
+        lfrozen_bz_z_top = .true.    ! set flag
+      case default
+        print*, "bc_frozen_in_bb_z: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+    endsubroutine bc_frozen_in_bb_z
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
 !

@@ -1,5 +1,7 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.22 2004-03-11 09:50:19 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.23 2004-04-26 16:05:16 dobler Exp $
 
+!  Relativistic treatment of force-free magnetic fields.
+!  Still quite experimental.
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
 !  routine is used instead which absorbs all the calls to the
@@ -100,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.22 2004-03-11 09:50:19 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.23 2004-04-26 16:05:16 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -899,6 +901,40 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
       vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine bc_frozen_in_bb_z(topbot)
+!
+!  Dummy routine for frozen-in flux at boundary
+!
+      character (len=3) :: topbot
+!
+
+      print*, 'WARNING:'
+      print*, '  bc_frozen_in_bb_z not implemented for magnetic_ffreeMHDrel !!'
+      if (ip==1) print*,topbot  !(to keep compiler quiet)
+!
+    endsubroutine bc_frozen_in_bb_z
+!***********************************************************************
+    subroutine bc_frozen_in_bb_z(topbot)
+!
+!  Set flags to indicate that magnetic flux is frozen-in at the
+!  z boundary. The implementation occurs in daa_dt where magnetic
+!  diffusion is switched off in that layer.
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+!
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bz_z_bot = .true.    ! set flag
+      case('top')               ! top boundary
+        lfrozen_bz_z_top = .true.    ! set flag
+      case default
+        print*, "bc_frozen_in_bb_z: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+    endsubroutine bc_frozen_in_bb_z
 !***********************************************************************
       subroutine bc_aa_pot(f,topbot)
 !

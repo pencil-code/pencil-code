@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.219 2004-04-16 14:32:09 ajohan Exp $
+! $Id: cdata.f90,v 1.220 2004-04-26 16:05:16 dobler Exp $
 
 module Cdata
 
@@ -151,9 +151,12 @@ module Cdata
   logical :: lpdfu=.false.,lpdfb=.false.,lpdfz1=.false.,lpdfz2=.false.
 !  logical, dimension(mvar + maux) :: lsnap ! flag which variables should be written
                                              ! to the snapshots
+  logical :: lfrozen_bcs_z=.false.
+  logical, dimension(mvar) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
 
   character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (len=labellen) :: force_lower_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()
   character (len=120) :: directory='',datadir_snap='',directory_snap=''

@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.61 2003-11-21 21:05:31 dobler Exp $
+! $Id: boundcond.f90,v 1.62 2004-04-26 16:05:16 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -282,6 +282,16 @@ module Boundcond
                 call bc_extrap0_2_1(f,topbot,j)
               case ('b3')       ! extrapolation with zero value (improved 'a')
                 call bc_extrap0_2_2(f,topbot,j)
+              case ('f')        ! freeze value
+                ! tell other modules not to change boundary value
+                call bc_freeze_var_z(topbot,j)
+                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+              case ('fB')       ! frozen-in B-field
+                ! tell other modules not to change boundary value
+                call bc_frozen_in_bb_z(topbot)
+                call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
+              case ('g')        ! set to given value(s) or function
+                call bc_force_z(f,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
@@ -941,6 +951,70 @@ module Boundcond
 !
     endsubroutine bc_db_x
 !***********************************************************************
+    subroutine bc_force_z(f,topbot,j)
+!
+!  Force values of j-th variable on vertical boundary topbot.
+!  This can either be used for freezing variables at the boundary, or for
+!  enforcing a certain time-dependent function of (x,y).
+!
+!  Currently this is hard-coded for velocity components (ux,uy) and quite
+!  useless. Plan is to read time-dependent velocity field from disc and
+!  apply it as boundary condition here.
+!
+!  26-apr-2004/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: i,j
+!
+      if (topbot /= 'bot') &
+           call stop_it("BC_FORCE_Z: only implemented for lower boundary yet")
+!
+      select case (force_lower_bound)
+      case ('uxy_sin-cos')
+        call bc_force_uxy_sin_cos(f,n1,j)
+      case ('uxy_convection')
+        call stop_it("BC_FORCE_Z: uxy_convection not implemented yet")
+      case default
+        if (lroot) print*, "No such value for force_lower_bound: <", &
+             trim(force_lower_bound),">"
+        call stop_it("")
+      endselect
+!
+!  Now fill ghost zones imposing antisymmetry w.r.t. the values just set:
+!
+      do i=1,nghost; f(:,:,n1-i,j)=2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
+!
+    endsubroutine bc_force_z
+!***********************************************************************
+    subroutine bc_force_uxy_sin_cos(f,iiz,j)
+!
+!  Set (ux, uy) = (cos y, sin x) in vertical layer
+!
+!  26-apr-2004/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: iiz,j
+      real :: kx,ky
+!
+      if (iuz == 0) call stop_it("BC_FORCE_UXY_SIN_COS: Bad idea...")
+!
+      if (j==iux) then
+        if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif 
+        f(:,:,iiz,j) = spread(cos(ky*y),1,mx)
+      elseif (j==iuy) then
+        if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif 
+        f(:,:,iiz,j) = spread(sin(kx*x),2,my)
+      elseif (j==iuz) then
+        f(:,:,n1,j) = 0.
+      endif
+!
+    endsubroutine bc_force_uxy_sin_cos
+!***********************************************************************
     subroutine bc_one_x(f,topbot,j)
 !
 !  Set bdry values to 1 for debugging purposes
@@ -1021,6 +1095,29 @@ module Boundcond
       endselect
 !
     endsubroutine bc_one_z
+!***********************************************************************
+    subroutine bc_freeze_var_z(topbot,j)
+!
+!  Tell other modules that variable with slot j is to be frozen in on
+!  given boundary
+!
+      use Cdata
+!
+      integer :: j
+      character (len=3) :: topbot
+!
+      lfrozen_bcs_z = .true.    ! set flag
+
+      select case(topbot)
+      case('bot')               ! bottom boundary
+        lfrozen_bot_var_z(j) = .true.
+      case('top')               ! top boundary
+        lfrozen_top_var_z(j) = .true.
+      case default
+        print*, "bc_freeze_var_z: ", topbot, " should be `top' or `bot'"
+      endselect
+!
+    endsubroutine bc_freeze_var_z
 !***********************************************************************
     subroutine update_ghosts(a)
 !

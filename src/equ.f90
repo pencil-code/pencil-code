@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.202 2004-04-16 14:32:09 ajohan Exp $
+! $Id: equ.f90,v 1.203 2004-04-26 16:05:16 dobler Exp $
 
 module Equ
 
@@ -230,6 +230,7 @@ module Equ
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
       real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
+      integer :: iv
 !
 !  print statements when they are first executed
 !
@@ -237,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.202 2004-04-16 14:32:09 ajohan Exp $")
+           "$Id: equ.f90,v 1.203 2004-04-26 16:05:16 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -375,6 +376,26 @@ module Equ
 !  Add shear if present
 !
         if (lshear)                     call shearing(f,df)
+!
+!  =======================================
+!  NO CALLS MODIFYING DF BEYOND THIS POINT
+!  =======================================
+!
+!  Freeze components of variables in boundary slice if specified by boundary
+!  condition 'f'
+!
+        if (lfrozen_bcs_z) then ! are there any frozen vars at all?
+          !
+          ! Only need to do this for nonperiodic z direction, on bottommost
+          ! processor and in bottommost pencils
+          !
+          if ((.not. lperi(3)) .and. (ipz == 0) .and. (n == n1)) then
+            do iv=1,nvar
+              if (lfrozen_bot_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+              if (lfrozen_top_var_z(iv)) df(l1:l2,m,n,iv) = 0.
+            enddo
+          endif
+        endif
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)

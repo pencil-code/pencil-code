@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.171 2004-04-10 20:44:28 dobler Exp $ 
+! $Id: param_io.f90,v 1.172 2004-04-26 16:05:16 dobler Exp $ 
 
 module Param_IO
 
@@ -74,7 +74,8 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum
+       lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
+       force_lower_bound
   contains
 
 !***********************************************************************
