@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.53 2004-03-24 11:21:39 mee Exp $
+! $Id: ionization_fixed.f90,v 1.54 2004-03-30 13:05:31 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -52,15 +52,17 @@ module Ionization
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  real :: yH0=.0,xHe=0.1,kappa_cst=1.
+  real :: yH0=0.,xHe=0.1,xH2=0.,kappa_cst=1.
   logical :: radcalc_test=.false.
   character (len=labellen) :: opacity_type='ionized_H'
 
   ! input parameters
-  namelist /ionization_init_pars/ yH0,xHe,opacity_type,kappa_cst,radcalc_test
+  namelist /ionization_init_pars/ yH0,xHe,xH2,opacity_type,kappa_cst, &
+      radcalc_test
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,xHe,opacity_type,kappa_cst,radcalc_test
+  namelist /ionization_run_pars/ yH0,xHe,xH2,opacity_type,kappa_cst, &
+      radcalc_test
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -104,7 +106,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.53 2004-03-24 11:21:39 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.54 2004-03-30 13:05:31 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -115,15 +117,19 @@ module Ionization
 !
     endsubroutine register_ionization
 !*******************************************************************
-    subroutine getmu(mu)
+    subroutine getmu(mu,mumol)
 !
 !  Calculate average particle mass in the gas relative to
 !
 !   12-aug-03/tony: implemented
+!   30-mar-04/anders: Added molecular hydrogen to ionization_fixed
 !
       real, intent(out) :: mu
+      real, optional :: mumol
 !
       mu=1.+3.97153*xHe
+
+      mumol = (1.+3.97153*xHe)/(1-xH2+xHe)
 !
 ! tobi: the real mean molecular weight would be:
 !
@@ -193,12 +199,18 @@ module Ionization
         xHe_term=0.
       endif
 !
+! Complain if xH2 not between 0 and 0.5
+!
+      if (xH2 < 0. .or. xH2 > 0.5) &
+          call stop_it('initialize_ionization: xH2 must be <= 0.5 and >= 0.0')
+!
 ! Set the reference sound speed (used for noionisation to impossible)
 !
-      lnTTss=(2./3.)/(1.+yH0+xHe)/ss_ion
+      lnTTss=(2./3.)/(1.+yH0+xHe-xH2)/ss_ion
       lnTTlnrho=2./3.
 !
-      lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/(1+yH0+xHe)-2.5)
+      lnTT0=lnTT_ion+(2./3.)*((yH_term+one_yH_term+xHe_term)/ &
+          (1+yH0+xHe-xH2)-2.5)
 !      
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
@@ -303,7 +315,7 @@ module Ionization
       real, dimension(nx) :: TT
 !
         yH=yH0
-        TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe)
+        TT=(2./3.)*TT_ion*(ee/ee_ion-yH0)/(1.+yH0+xHe-xH2)
         lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
 !
@@ -315,15 +327,16 @@ module Ionization
       real, dimension(nx) :: TT
 !      real, dimension(nx) :: yH,K
 !
-        TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
+        TT= pp / ((1. + yH0 + xHe - xH2) * ss_ion * exp(lnrho))
         lnTT=log(TT)
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
         yH=yH0
 !        TT= 1.5 * (EE/exp(lnrho)-yH0*ss_ion*TT_ion ) / &
-!              ((1.+yH0+xHe) * ss_ion)
+!              ((1.+yH0+xHe-xH2) * ss_ion)
 !        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
 !        yH=2./(1.+sqrt(1.+4./K))
-!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
+!        ss=((1.+yH0+xHe-xH2)*(1.5*log(TT/TT_ion)-lnrho+2.5) - yH_term- &
+!            one_yH_term-xHe_term)*ss_ion
 !
     end subroutine perturb_mass
 !***********************************************************************
@@ -335,7 +348,7 @@ module Ionization
       real, intent(out) :: rho
       real :: lnrho
 print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
-      lnrho = log(EE) - log(1.5*(1.+yH+xHe)*ss_ion*TT + yH*ee_ion)
+      lnrho = log(EE) - log(1.5*(1.+yH+xHe-xH2)*ss_ion*TT + yH*ee_ion)
 
       rho=exp(max(lnrho,-15.))
     end subroutine getdensity
@@ -388,8 +401,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       ss=f(l1:l2,m,n,iss)
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
-      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*exp(lnTT)
-      cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+      cs2=(5.0/3.0)*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
+      cp1tilde=(2.0/5.0)/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -409,8 +422,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
-      cs2=(5.0/3.0)*(1+yH0+xHe)*ss_ion*exp(lnTT)
-      cp1tilde=(2.0/5.0)/(1+yH0+xHe)/ss_ion
+      cs2=(5.0/3.0)*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
+      cp1tilde=(2.0/5.0)/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
@@ -430,7 +443,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       integer :: j
 !
       do j=1,3
-        glnTT(:,j)=(2.0/3.0)*(glnrho(:,j)+gss(:,j)/ss_ion/(1+yH0+xHe))
+        glnTT(:,j)=(2.0/3.0)*(glnrho(:,j)+gss(:,j)/ss_ion/(1+yH0+xHe-xH2))
       enddo
 !
     endsubroutine temperature_gradient
@@ -460,10 +473,10 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       TT=exp(lnTTi)
       yHi=yH0
 !
-      if (present(yH))       yH=yHi
-      if (present(lnTT))     lnTT=lnTTi
-      if (present(ee))       ee=1.5*(1+yHi+xHe)*ss_ion*TT+yHi*ss_ion*TT_ion
-      if (present(pp))       pp=(1+yHi+xHe)*exp(lnrho)*TT*ss_ion
+      if (present(yH))    yH=yHi
+      if (present(lnTT))  lnTT=lnTTi
+      if (present(ee))    ee=1.5*(1+yHi+xHe-xH2)*ss_ion*TT+yHi*ss_ion*TT_ion
+      if (present(pp))    pp=(1+yHi+xHe-xH2)*exp(lnrho)*TT*ss_ion
 !
       if (ldiagnos) then
         if (i_yHmax/=0) call max_mn_name(yHi,i_yHmax)
@@ -501,26 +514,26 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
         TT_    = exp(lnTT_)
         rho_   = exp(lnrho_)
-        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
-        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
+        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
 
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
-        TT_    = (2.0/3.0)*TT_ion*(ee_/ee_ion-yH0)/(1+yH0+xHe)
+        TT_    = (2.0/3.0)*TT_ion*(ee_/ee_ion-yH0)/(1+yH0+xHe-xH2)
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         rho_   = exp(lnrho_)
-        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
 
       case (ilnrho_pp)
         lnrho_ = var1
         pp_    = var2
         rho_   = exp(lnrho_)
-        TT_    = pp_/((1+yH0+xHe)*ss_ion*rho_)
+        TT_    = pp_/((1+yH0+xHe-xH2)*ss_ion*rho_)
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
 
       case (ilnrho_lnTT)
         lnrho_ = var1
@@ -565,26 +578,26 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
         lnTT_  = lnTTss*ss_+lnTTlnrho*lnrho_+lnTT0
         TT_    = exp(lnTT_)
         rho_   = exp(lnrho_)
-        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
-        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
+        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
 
       case (ilnrho_ee)
         lnrho_ = var1
         ee_    = var2
-        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe)
+        TT_    = (2.0/3.0)*TT_ion*(ee/ee_ion-yH0)/(1+yH0+xHe-xH2)
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
         rho_   = exp(lnrho_)
-        pp_    = (1+yH0+xHe)*rho_*TT_*ss_ion
+        pp_    = (1+yH0+xHe-xH2)*rho_*TT_*ss_ion
 
       case (ilnrho_pp)
         lnrho_ = var1
         pp_    = var2
         rho_   = exp(lnrho_)
-        TT_    = pp_/((1+yH0+xHe)*ss_ion*rho_)
+        TT_    = pp_/((1+yH0+xHe-xH2)*ss_ion*rho_)
         lnTT_  = log(TT_)
         ss_    = (lnTT_-(lnTTlnrho*lnrho_)-lnTT0)/lnTTss
-        ee_    = 1.5*(1+yH0+xHe)*ss_ion*TT_+yH0*ee_ion
+        ee_    = 1.5*(1+yH0+xHe-xH2)*ss_ion*TT_+yH0*ee_ion
 
       case (ilnrho_lnTT)
         lnrho_ = var1
@@ -725,7 +738,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       endif
 !
       TT_xy=exp(lnTTss*ss_xy+lnTTlnrho*lnrho_xy+lnTT0)
-      H_xy=(1.+yH0+xHe)*ss_ion*TT_xy/gravz
+      H_xy=(1.+yH0+xHe-xH2)*ss_ion*TT_xy/gravz
 !
     endsubroutine scale_height_xy
 !***********************************************************************
@@ -773,7 +786,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do m=m1,m2
 !
         lnrho=f(l1:l2,m,n,ilnrho)
-        ss=ss_ion*((1+yH0+xHe)*(1.5*log(T0/TT_ion)-lnrho+2.5) & 
+        ss=ss_ion*((1+yH0+xHe-xH2)*(1.5*log(T0/TT_ion)-lnrho+2.5) & 
                    -yH_term-one_yH_term-xHe_term)
         f(l1:l2,m,n,iss)=ss
 !
@@ -809,7 +822,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do m=m1,m2
         do n=n1,n2
           f(l1:l2,m,n,ilnrho) = &
-              -(Omega*z(n))**2/(2*(1.+xHe)*ss_ion*T0)+log(rho0)
+              -(Omega*z(n))**2/(2*(1.+xHe-xH2)*ss_ion*T0)+log(rho0)
         enddo
       enddo
 !
