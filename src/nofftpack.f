@@ -1,4 +1,4 @@
-!  $Id: nofftpack.f,v 1.2 2002-12-09 12:57:34 brandenb Exp $
+!  $Id: nofftpack.f,v 1.3 2003-05-19 14:51:12 mee Exp $
 !
 !  Dummy routine, to avoid never seeing the compiler warnings from fftpack.
 !
@@ -26,5 +26,18 @@
         wsave(i)=0.
       enddo
       if(iprint.eq.0) print*,'Use FFTPACK=fftpack; ',n
+      iprint=1
+      END
+!***********************************************************************
+      SUBROUTINE CFFTB (N,C,WSAVE)
+      DIMENSION C(*), WSAVE(*)
+      save iprint
+!
+!  Dummy routine: put c=0 to prevent further damage
+!
+      do i=1,4*n+15
+        wsave(i)=0.
+      enddo
+      if(iprint.eq.0) print*,'Use FFTPACK=fftpack; ',n,c(1),wsave(1)
       iprint=1
       END
