@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.70 2002-10-04 18:02:27 dobler Exp $
+! $Id: start.f90,v 1.71 2002-11-05 11:08:25 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.70 2002-10-04 18:02:27 dobler Exp $")
+             "$Id: start.f90,v 1.71 2002-11-05 11:08:25 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -54,7 +54,11 @@
 !  postprocess input parameters
 !
         gamma1 = gamma-1.
-        call wparam()
+!
+!  I don't think there was a good reason to write param.nml twice (but
+!  leave this around for some time [wd; rev. 1.71, 5-nov-2002]
+!        call wparam()
+!
         call directory_names()
 !
         if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.79 2002-11-04 14:46:13 dobler Exp $ 
+! $Id: param_io.f90,v 1.80 2002-11-05 11:08:25 dobler Exp $ 
 
 module Param_IO
 
@@ -463,9 +463,16 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lradiation,lpscalar,lforcing,lshear
+           lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
+           lforcing,lgravz,lgravr,lshear
 !
-      if (lroot) then
+!  Write this file from each processor; needed for pacx-MPI (grid-style
+!  computations across different platforms), where the data/ directories
+!  are different for the different computers involved.
+!    Need to do this in a cleverer way if it implies performance
+!  penalties, but this is not likely, since the file written is quite
+!  small.
+!      if (lroot) then
         open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe' )
                         write(1,NML=init_pars          )
         if (lhydro    ) write(1,NML=hydro_init_pars    )
@@ -480,7 +487,7 @@ module Param_IO
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                        write(1,NML=lphysics         ) 
-      endif
+!      endif
 !
     endsubroutine wparam
 !***********************************************************************
