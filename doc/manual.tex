@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.161 2003-05-30 16:31:48 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.162 2003-06-04 14:47:12 ngrs Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-05-30 16:31:48 $ $,~ $ $Revision: 1.161 $ $}
+\date{$ $Date: 2003-06-04 14:47:12 $ $,~ $ $Revision: 1.162 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-05-30 16:31:48 $ $,~ $ $Revision: 1.161 $ $}
+  \emph{$ $Date: 2003-06-04 14:47:12 $ $,~ $ $Revision: 1.162 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1416,7 +1416,7 @@ it).
 
 \paragraph{\file[param2.nml]{data/param2.nml}}
 Complete set of runtime parameters, printed as Fortran namelist.
-This file is read \name{IDL} (if you use it).
+This file is read by \name{IDL} (if you use it).
 
 \paragraph{\file[index.pro]{data/index.pro}}
 Can be used as include file in \name{IDL} and contains the column in which
@@ -1426,6 +1426,11 @@ These positions depend on whether \name{entropy} or \name{noentropy}, etc,
 are invoked.
 This is a temporary solution and the file may disappear in future
 releases.
+
+\paragraph{\file[interstellar.dat]{data/interstellar.dat}} 
+Unformatted file containing the time at which the next supernova event will 
+occur, under certain supernova schemes.  
+(Only needed by the \name{interstellar} module.)
 
 \paragraph{\file[proc$N$]{data/proc0}, \file[proc1]{data/proc1}, \ldots}
 These are the directories containing data from the individual processors.
@@ -1449,11 +1454,6 @@ Each of the directories can contain the following files:
 \item[{\file[X.xy]{$X$.xy}, \file[X.xz]{$X$.xz}, \file[X.yz]{$X$.yz}}]
   two-dimensional sections of variable $X$, where $X$ stands for the
   corresponding variable. The current list includes
-\item[\file{interstellar.dat}] ASCII file containing the time at which the
-  next Supernova event will occur.  Like \file{seed.dat}, for 
-  multi-processor runs the files 
-  \file[interstellar.dat]{proc$N$/interstellar.dat} must contain the same 
-  numbers.
 \begin{verbatim}
   bx.xy  bx.xz  by.xy  by.xz  bz.xy  bz.xz  divu.xy  lnrho.xz
   ss.xz  ux.xy  ux.xz  uz.xy  uz.xz
@@ -1628,7 +1628,7 @@ snapshots, both of which reside in the directory
 The parameter \var{isav} determines the frequency at which the
 \emph{current snapshot} \file[var.dat]{data/proc$N$/var.dat} is written.
 If you keep this frequency too high, the code will spend a lot of time on
-I/O, in particular for big large jobs; a too low frequency makes it
+I/O, in particular for large jobs; too low a frequency makes it
 difficult to follow the evolution interactively during test runs.
 
 The \emph{permanent snapshots} \file[VAR$N$]{data/proc*/VAR$N$} are
@@ -1673,15 +1673,14 @@ Here is a list of the more important ones.
   directories and compare the results to the reference output.
   These tests are carried out routinely to ensure that the \name{CVS}
   version of the code is in a usable state.
-\item[copy-snapshots] Copy snapshots from a processor-local directory to
-  the global directory.
-  To be started in the background before \file{run.x} is invoked.
-  Used by \file{start.csh} and \file{run.csh} on network connected processors.
 \item[cleanf95] Can be use to clean up the output from the Intel x86 Fortran
   95 compiler (ifc).
 \item[copy-proc-to-proc] Used for restarting in a different directory.
   Example \cmd{copy-proc-to-proc seed.dat ../hydro256e}.
-\item[copy-snapshots] [Wolfgang, please add!]
+\item[copy-snapshots] Copy snapshots from a processor-local directory to
+  the global directory.
+  To be started in the background before \file{run.x} is invoked.
+  Used by \file{start.csh} and \file{run.csh} on network connected processors.
 \item[copy-var-to-var] Copies all \file{var.dat} files from current directory
   to file{var.dat} in another run directory.
   Used for restarting in a different directory.
@@ -1707,9 +1706,12 @@ Here is a list of the more important ones.
   generate \file[cparam.inc]{src/cparam.inc}, which specifies the number
   \var{mvar} of fundamental variables, and \var{maux} of auxiliary 
   variables. Called by the \file{Makefile}.
+\item[mkdatadir] Creates a link to a data directory in a suitable workspace.
+  By default this is on \samp{/var/tmp/}, but different locations
+  are specified for different machines.
 \item[mkdotin] Generate minimal \file{start.in}, \file{run.in} files
   based on \file{Makefile} and \file{Makefile.local}.
-\item[mkinpars] Wrapper around \item{mkdotin} --- needs proper
+\item[mkinpars] Wrapper around \samp{mkdotin} --- needs proper
   documentation.
 \item[mkproc-tree] Generates a multi-processor(\file{proc$N$}/), directory 
   structure. Useful when copying data files in a processor tree, 
@@ -2370,7 +2372,6 @@ basic message is to watch out for such effects and to try varying
 Edit \file[Makefile.local]{src/Makefile.local} and add the line
   \begin{alltt}
   FFLAGS_GENERAL=-r8
-  MPICOMM=mpicomm_double
   \end{alltt}
 In addition, if you are running MPI, replace 
   \begin{alltt}
@@ -5037,7 +5038,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.161 2003-05-30 16:31:48 mee Exp $ $}
+$ $Id: manual.tex,v 1.162 2003-06-04 14:47:12 ngrs Exp $ $}
 
 
 \end{document}
