@@ -1,7 +1,16 @@
-! $Id: entropy_const.f90,v 1.2 2004-06-22 01:52:14 dobler Exp $
+! $Id: entropy_const.f90,v 1.3 2004-06-22 04:00:02 brandenb Exp $
 
-!  This module is for systems with a spacially fixed entropy
-!  distribution
+!  This module is for systems with spatially fixed entropy
+!  distribution. This implies Ds/Dt=u.grads only, which is used
+!  in Ds/Dt=(1/gamma)*Dlnp/Dt-Dlnrho/Dt, for example.
+!  This procedure has been used in the context of accretion discs
+!  (see von Rekowski et al., 2003, A&A 398, 825). The shock jump
+!  relations are modified (see Sect 9.3.6 of Brandenburg 2003, in
+!  "Computational aspects...", ed. Ferriz-Mas & Nunez, Taylor & Francis,
+!  or astro-ph/0109497.
+
+!  This current implementation has temporarly been used to immitate
+!  a corona in solar context.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -21,7 +30,7 @@ module Entropy
   implicit none
 
   real :: dummy,xss_corona,wss_corona,ss_corona
-  real, dimension(nx) :: profxss_corona,dprofxss_corona
+  real, dimension(nx) :: profxss,dprofxss
   character (len=labellen) :: iss_profile='nothing'
 
   ! parameters necessary for consistency with other modules,
@@ -71,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.2 2004-06-22 01:52:14 dobler Exp $")
+           "$Id: entropy_const.f90,v 1.3 2004-06-22 04:00:02 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -99,10 +108,10 @@ module Entropy
 !  set profiles
 !
       if (iss_profile=='nothing') then
-        profxss_corona=1.
+        profxss=1.
       elseif (iss_profile=='corona') then
-        profxss_corona=ss_corona*.5*(1.+tanh((x(l1:l2)-xss_corona)/wss_corona))
-        dprofxss_corona=ss_corona*.5/(wss_corona*cosh((x(l1:l2)-xss_corona)/wss_corona)**2)
+        profxss=ss_corona*.5*(1.+tanh((x(l1:l2)-xss_corona)/wss_corona))
+        dprofxss=ss_corona*.5/(wss_corona*cosh((x(l1:l2)-xss_corona)/wss_corona)**2)
       endif
 !
       if(lroot) then
@@ -164,7 +173,7 @@ module Entropy
 !  sound speed squared and inverse temperature
 !
       TT1=0.
-      ss=profxss_corona
+      ss=profxss
       call pressure_gradient(f,cs2,cp1tilde)
       print*, it, m, n, maxval(cs2), maxval(ss)
       if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
@@ -172,7 +181,7 @@ module Entropy
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
       if (lhydro) then
-        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-cs2*(glnrho(:,1)+dprofxss_corona)
+        df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)-cs2*(glnrho(:,1)+dprofxss)
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-cs2*(glnrho(:,2))
         df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-cs2*(glnrho(:,3))
       endif

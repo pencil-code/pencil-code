@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.175 2004-06-18 08:40:32 brandenb Exp $
+! $Id: hydro.f90,v 1.176 2004-06-22 04:00:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.175 2004-06-18 08:40:32 brandenb Exp $")
+           "$Id: hydro.f90,v 1.176 2004-06-22 04:00:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -479,7 +479,10 @@ module Hydro
 !
 !  Coriolis force, -2*Omega x u
 !  Omega=(-sin_theta, 0, cos_theta)
-!  theta corresponds to latitude
+!  theta corresponds to latitude, but to have the box located on the
+!  right hand side of the sphere (grav still pointing dowward and then
+!  Omega to the left), one should choose Omega=-90 for the equator,
+!  for example.
 !
       if (Omega/=0.) then
         if (theta==0) then
