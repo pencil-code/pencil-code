@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.11 2002-05-29 04:57:20 brandenb Exp $
+! $Id: prints.f90,v 1.12 2002-05-29 07:09:06 brandenb Exp $
 
 module Print
 
@@ -33,7 +33,7 @@ module Print
 !
       if (i_t/=0) call save_name(tdiagnos,i_t)
       if (i_dt/=0) call save_name(dt,i_dt)
-      if (i_it/=0) call save_name(float(it),i_it)
+      if (i_it/=0) call save_name(float(it-1),i_it)
 !
 !  produce the format
 !  must set cform(1) explicitly, and then do iname>=2 in loop

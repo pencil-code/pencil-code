@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.6 2002-05-29 04:57:20 brandenb Exp $
+! $Id: hydro.f90,v 1.7 2002-05-29 07:09:06 brandenb Exp $
 
 module Hydro
 
@@ -6,15 +6,14 @@ module Hydro
 
   implicit none
 
+  integer :: init=0
+  real :: ampl=0.,urand=0.
+
+  namelist /hydro_init_pars/ &
+       ampl,init,urand
+
   ! other variables (needs to be consistent with reset list below)
   integer :: i_t=0,i_it=0,i_dt=0,i_u2m=0,i_um2=0,i_oum,i_o2m
-
-! real :: ampl=0.
-
-!AB: Wolfgang, before we do this, I want to make sure you agree
-!AB: it would require changing input files etc
-! namelist /hydro_init_pars/ &
-!      ampl,init,urand
 
   contains
 
@@ -35,6 +34,8 @@ module Hydro
       if (.not. first) call stop_it('register_hydro called twice')
       first = .false.
 !
+      lhydro = .true.
+!
       iuu = nvar+1             ! indices to access uu and lam
       iux = iuu
       iuy = iuu+1
@@ -52,8 +53,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-05-29 07:09:06 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -62,7 +63,7 @@ module Hydro
 !
     endsubroutine register_hydro
 !***********************************************************************
-    subroutine init_hydro(f,init,ampl,xx,yy,zz)
+    subroutine init_hydro(f,xx,yy,zz)
 !
 !  initialise uu and lnrho; called from start.f90
 !  Should be located in the Hydro module, if there was one.
@@ -80,7 +81,6 @@ module Hydro
       real, dimension (nx,1) :: rmn
       real :: zmax,lnrho0
       real :: beta1,lnrhoint,cs2int
-real :: ampl  !!(AB: do be removed when added to namelist)
       integer :: init,i
 !
 !  init corresponds to different initializations (called from start).

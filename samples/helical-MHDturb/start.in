@@ -3,8 +3,10 @@
 ,,,				Lx,Ly,Lz
 ,,,				iperx,ipery,iperz
 ,,,				z1,z2,ztop
-1e-3,-1,0.			ampl,init,urand
 ,1.,,0.,0.,			cs0,gamma,rho0,gravz,grads0
+&hydro_init_pars
+  ampl=1e-3, init=-1
+/
 &magnetic_init_pars
 initaa=0,amplaa=1e-3
 /

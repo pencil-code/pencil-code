@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.28 2002-05-29 04:57:20 brandenb Exp $
+! $Id: magnetic.f90,v 1.29 2002-05-29 07:09:06 brandenb Exp $
 
 module Magnetic
 
@@ -66,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.28 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.29 $", &
+           "$Date: 2002-05-29 07:09:06 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -76,7 +76,7 @@ module Magnetic
 !
     endsubroutine register_aa
 !***********************************************************************
-    subroutine init_aa(f,init,xx,yy,zz)
+    subroutine init_aa(f,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here all different routines (such as rings)
@@ -113,9 +113,9 @@ module Magnetic
 !  where AA0(xxx) is the canonical ring and D the rotation matrix
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
+!  The array was already initialized to zero before calling this routine.
 !
       elseif (initaa==2) then
-      f(:,:,:,iax:iaz) = 0.
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
@@ -149,16 +149,20 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
           zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
           call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
           ! calculate D*tmpv
-          f(:,:,:,iax) = f(:,:,:,iax) &
-               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3)
-          f(:,:,:,iay) = f(:,:,:,iay) &
-               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3)
-          f(:,:,:,iaz) = f(:,:,:,iaz) &
-               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3)
+          f(:,:,:,iax) = f(:,:,:,iax) + amplaa*( &
+               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
+          f(:,:,:,iay) = f(:,:,:,iay) + amplaa*( &
+               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
+          f(:,:,:,iaz) = f(:,:,:,iaz) + amplaa*( &
+               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
         enddo
       endif
       if (lroot) print*, 'Magnetic flux rings initialized'
-      elseif (initaa==2) then
+!
+!  some other (crazy) initial condition
+!  (was useful to initialize all points with finite values)
+!
+      elseif (initaa==3) then
         f(:,:,:,iax) = spread(spread(sin(2*x),2,my),3,mz)*&
                        spread(spread(sin(3*y),1,mx),3,mz)*&
                        spread(spread(cos(1*z),1,mx),2,my)

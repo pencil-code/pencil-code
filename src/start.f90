@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.30 2002-05-29 04:57:20 brandenb Exp $
+! $Id: start.f90,v 1.31 2002-05-29 07:09:06 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -24,8 +24,7 @@
 !
 !  define parameters
 !
-        integer :: init,i
-real :: ampl  !(AB: to be removed when added to namelist)
+        integer :: i
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
 !
@@ -35,8 +34,8 @@ real :: ampl  !(AB: to be removed when added to namelist)
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.30 $", &
-             "$Date: 2002-05-29 04:57:20 $")
+             "$Revision: 1.31 $", &
+             "$Date: 2002-05-29 07:09:06 $")
 !
 !  set default input
 !
@@ -54,10 +53,10 @@ real :: ampl  !(AB: to be removed when added to namelist)
         read(1,*) Lx,Ly,Lz
         read(1,*) iperx,ipery,iperz
         read(1,*) z1,z2,ztop
-        read(1,*) ampl,init,urand
         read(1,*) cs0,gamma,rho0,gravz,grads0
         !
         ! forcing needs no init parameters
+        if (lhydro)    read(1,NML=hydro_init_pars   )
         if (lentropy)  read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
         close(1)
@@ -70,10 +69,10 @@ real :: ampl  !(AB: to be removed when added to namelist)
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
           print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
           print*, 'z1,z2,ztop=', z1,z2,ztop
-          print*, 'ampl,init,urand=', ampl,init,urand
           print*, 'cs0,gamma,rho0,gravz,grads0=', cs0,gamma,rho0,gravz,grads0
           !
           ! forcing needs no init parameters
+          if (lhydro   ) write(*,NML=hydro_init_pars   )
           if (lentropy ) write(*,NML=entropy_init_pars )
           if (lmagnetic) write(*,NML=magnetic_init_pars)
 
@@ -115,10 +114,10 @@ real :: ampl  !(AB: to be removed when added to namelist)
 !  different initial conditions
 !
         f = 0.
-        call init_hydro(f,init,ampl,xx,yy,zz)
-        call init_ent  (f,init,xx,yy,zz)
-        call init_aa   (f,init,xx,yy,zz)
-        call init_grav (f,init,xx,yy,zz)
+        call init_hydro(f,xx,yy,zz)
+        call init_ent  (f,xx,yy,zz)
+        call init_aa   (f,xx,yy,zz)
+        call init_grav (f,xx,yy,zz)
 !
 !  write to disk
 !

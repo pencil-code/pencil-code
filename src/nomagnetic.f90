@@ -37,12 +37,12 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.5 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.6 $", &
+           "$Date: 2002-05-29 07:09:06 $")
 !
     endsubroutine register_aa
 !***********************************************************************
-    subroutine init_aa(f,init,xx,yy,zz)
+    subroutine init_aa(f,xx,yy,zz)
 !
 !  initialise magnetic field; called from start.f90
 !  3-may-2002/wolf: dummy routine
@@ -52,8 +52,6 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
-      real    :: ampl
-      integer :: init
 !
     endsubroutine init_aa
 !***********************************************************************

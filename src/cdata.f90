@@ -32,7 +32,6 @@ module Cdata
   integer:: isothtop
 
   integer, dimension (2) :: seed
-!  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
@@ -50,7 +49,7 @@ module Cdata
   real, dimension (mname) :: fname
   character (len=30) :: cname(mname),cform(mname),cform_extra(mname_extra)
 
-  logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
+  logical :: lmpicomm=.false., lhydro=.true., lentropy=.false., lmagnetic=.false.
   logical :: lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt,headtt,ldt,lfirst,ldiagnos

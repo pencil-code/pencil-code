@@ -264,8 +264,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.45 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.46 $", &
+           "$Date: 2002-05-29 07:09:06 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -419,7 +419,7 @@ module Equ
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
         if (ldiagnos) then
-          tdiagnos = t !(diagnostic quantities are for THIS time)
+          tdiagnos = t !(diagnostics are for THIS time)
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)

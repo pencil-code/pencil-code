@@ -5,13 +5,14 @@ module Entropy
 
   implicit none
 
+  integer :: initss
   real, dimension (nx) :: cs2,TT1
 
 
   ! input parameters
   
   namelist /entropy_init_pars/ &
-       hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2,isothtop
+       initss,hcond0,hcond1,hcond2,whcond,mpoly0,mpoly1,mpoly2,isothtop
 
   ! run parameters
 
@@ -51,8 +52,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.44 $", &
-           "$Date: 2002-05-29 04:57:20 $")
+           "$Revision: 1.45 $", &
+           "$Date: 2002-05-29 07:09:06 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -61,21 +62,20 @@ module Entropy
 !
     endsubroutine register_ent
 !***********************************************************************
-    subroutine init_ent(f,init,xx,yy,zz)
+    subroutine init_ent(f,xx,yy,zz)
 !
 !  initialise entropy; called from start.f90
 !  7-nov-2001/wolf: coded
 !
       use Cdata
-      use sub, only: step
-use Mpicomm
-use IO
+      use Sub, only: step
+      use Mpicomm
+      use IO
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
       real, dimension (mz) :: stp
       real :: beta1,cs2int,ssint
-      integer :: init
 !
       if (lgravz) then
         !
@@ -86,7 +86,7 @@ use IO
         if (lroot) &
              print*, 'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
         !
-        select case(init)
+        select case(initss)
         case(1)               ! density stratification
           ss0 = (alog(cs20) - gamma1*alog(rho0)-alog(gamma))/gamma
           f(:,:,:,ient) = ss0 + (-alog(gamma) + alog(cs20))/gamma &
