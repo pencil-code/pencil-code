@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.5 2002-12-09 12:40:58 ngrs Exp $
+! $Id: interstellar.f90,v 1.6 2002-12-09 13:18:01 ngrs Exp $
 
 !  This modules solves contains ISM and SNe routines.
 !  Still in development. 
@@ -66,7 +66,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.5 2002-12-09 12:40:58 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.6 2002-12-09 13:18:01 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -517,7 +517,6 @@ find_SN: do n=n1,n2
     real, dimension(mx,my,mz,mvar) :: f,df
     real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
     real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
-    real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1
     real :: dz_SN,yshift
     real :: width_SN,width_shell_outer,width_shell_inner,c_SN,lnrhol,ssl
     real :: mass,mass_cavity,mass_check,mass_shell,c_shell
