@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.3 2005-01-12 14:11:30 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.4 2005-01-23 15:35:03 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -156,8 +156,8 @@ endif
 ;  Put in to object.
 ;
 makeobject="object = CREATE_STRUCT(name=objectname,[" + $
-    arraytostring(variables,QUOTE="'",/noleader) + "]," + $
-    arraytostring(variables,/noleader) + ")"
+    arraytostring(variables,QUOTE="'",/noleader) + ",'t']," + $
+    arraytostring(variables,/noleader) + ',t' + ")"
 if (execute(makeobject) ne 1) then begin
   message, 'ERROR Evaluating variables: ' + makeobject, /INFO
   undefine,object
