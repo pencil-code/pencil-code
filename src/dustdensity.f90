@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.4 2003-06-16 04:41:10 brandenb Exp $
+! $Id: dustdensity.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -57,7 +57,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.4 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: dustdensity.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,7 +131,8 @@ module Dustdensity
       use Sub
       use Density, only: cs0
 !
-      real, dimension (mx,my,mz,mvar+maux) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uud,glnrhod
       real, dimension (nx) :: lnrhod,divud,uglnrhod,glnrhod2
       real, dimension (nx) :: del2lnrhod
