@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.5 2002-11-24 13:14:59 mee Exp $ 
+! $Id: timeavg.f90,v 1.6 2003-02-02 17:16:32 dobler Exp $ 
 
 module Timeavg
 
@@ -96,6 +96,7 @@ module Timeavg
 !   9-oct-02/wolf: adapted from wsnaps
 !
       use Cdata
+      use General
       use Mpicomm
       use Sub
       use Io
@@ -111,7 +112,8 @@ module Timeavg
 !  file keeps the information about number and time of last snapshot
 !
       if (llabel) then
-        file=trim(datadir)//'/tavgsnap.dat'
+        ! file=trim(datadir)//'/tavgsnap.dat'
+        call safe_character_assign(file, trim(datadir)//'/tavgsnap.dat')
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in out1, but only available to root processor
