@@ -1,4 +1,4 @@
-;  $Id: pc_dust_aux.pro,v 1.9 2004-08-17 10:28:10 ajohan Exp $
+;  $Id: pc_dust_aux.pro,v 1.10 2004-08-17 11:15:24 ajohan Exp $
 ;
 ;  Calculate auxiliary dust variables such as distribution function f
 ;
@@ -13,6 +13,13 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
   cmd='grep ndustspec '+datadir+'/index.pro'
   spawn, cmd, result
   res=execute(result[0])
+
+  ldustdensity_log=safe_get_tag(param,'ldustdensity_log')
+  if (ldustdensity_log) then begin
+    nd_loc=exp(nd)
+  endif else begin
+    nd_loc=nd
+  endelse
 
   result=0.
 
@@ -42,15 +49,15 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
     mdplus=fltarr(ndustspec)
     mdminus=fltarr(ndustspec)
     for i=0,ndustspec-1 do begin
-      mdminus(i) = md00*deltamd^i
-      mdplus(i)  = md00*deltamd^(i+1)
-      md(i) = 0.5*(mdplus(i)+mdminus(i))
+      mdminus[i] = md00*deltamd^i
+      mdplus[i]  = md00*deltamd^(i+1)
+      md[i] = 0.5*(mdplus[i]+mdminus[i])
     endfor
     result=md
 
   endif else if (var eq 'fd') then begin
 
-    sized=size(nd)
+    sized=size(nd_loc)
     md00 = param.md0
     if (md00 eq 0.) then md00 = 4/3.*!pi*(param.ad0)^3*rhods/unit_md
     mdminus=fltarr(ndustspec)
@@ -66,16 +73,24 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
       delta = mdplus-mdminus
     endelse
     
-    result=nd/delta
+    result=nd_loc/delta
 
   endif else if (var eq 'rhod') then begin
 
-    sized=size(nd)
+    sized=size(nd_loc)
     sizemd=size(md)
     if (sized[0] ne sizemd[0]) then begin
-      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])
+      if (ndustspec eq 1) then begin
+        result=nd_loc*md[0]
+      endif else begin
+        result=total(nd_loc*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])
+      endelse
     endif else begin
-      result=total(nd*md,sized[0])
+      if (ndustspec eq 1) then begin
+        result=nd_loc*md[0]
+      endif else begin
+        result=total(nd_loc*md,sized[0])
+      endelse
     endelse
 
   endif else if (var eq 'ppmon') then begin
@@ -98,12 +113,20 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
 
   endif else if (var eq 'epsd') then begin
 
-    sized=size(nd)
+    sized=size(nd_loc)
     sizemd=size(md)
     if (sized[0] ne sizemd[0]) then begin
-      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/exp(lnrho)
+      if (ndustspec eq 1) then begin
+        result=md[0]*nd_loc*unit_md/exp(lnrho)
+      endif else begin
+        result=total(nd_loc*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/exp(lnrho)
+      endelse
     endif else begin
-      result=total(nd*md,sized[0])*unit_md/exp(lnrho)
+      if (ndustspec eq 1) then begin
+        result=nd_loc*md[0]*unit_md/exp(lnrho)
+      endif else begin
+        result=total(nd_loc*md,sized[0])*unit_md/exp(lnrho)
+      endelse
     endelse
 
   endif else if (var eq 'unit_md') then begin
@@ -112,12 +135,12 @@ function pc_dust_aux,nd=nd,md=md,mi=mi,lnrho=lnrho,ss=ss,lncc=lncc,var=var, $
 
   endif else if (var eq 'mdave') then begin
 
-    sized=size(nd)
+    sized=size(nd_loc)
     sizemd=size(md)
     if (sized[0] ne sizemd[0]) then begin
-      result=total(nd*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/total(nd,sized[0])
+      result=total(nd_loc*spread(md,indgen(sized[0]-1),sized[1:sized[0]]),sized[0])*unit_md/total(nd_loc,sized[0])
     endif else begin
-      result=total(nd*md,sized[0])*unit_md/total(nd,sized[0])
+      result=total(nd_loc*md,sized[0])*unit_md/total(nd_loc,sized[0])
     endelse
 
   endif else begin
