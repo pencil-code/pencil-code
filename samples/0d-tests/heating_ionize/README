@@ -1,4 +1,4 @@
-$Id: README,v 1.2 2003-08-08 17:50:56 brandenb Exp $
+$Id: README,v 1.3 2003-10-12 02:48:02 brandenb Exp $
 
 In this test we solve an ODE with the Pencil Code (hence 0-D).
 
@@ -10,3 +10,6 @@ Our units are [rho]=1e-6 g/cm^3, [u]=km/s, [x]=Mm, [T]=K.
 idl.png shows the resulting temperature as a function of thermal energy.
 This result is plotted using plot_result.csh
 
+In order for the run not to last too long on slow machines, we have
+changed the file run.in to run longer and fewer time steps. The original
+file used for making the figure is still available as "run.in-fig.pTTss".
