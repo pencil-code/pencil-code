@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.5 2004-09-16 15:43:56 ajohan Exp $
+! $Id: grav_x.f90,v 1.6 2004-09-18 07:54:29 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -74,7 +74,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.5 2004-09-16 15:43:56 ajohan Exp $")
+           "$Id: grav_x.f90,v 1.6 2004-09-18 07:54:29 brandenb Exp $")
 !
       lgrav =.true.
       lgravx=.true.
@@ -116,6 +116,10 @@ module Gravity
       case('sinusoidal')
         if(headtt) print*,'initialize_gravity: sinusoidal grav, gravx=',gravx
         gravx_pencil = -gravx*sin(kx_gg*x(l1:l2))
+
+      case('kepler')
+        if(headtt) print*,'initialize_gravity: kepler grav, gravx=',gravx
+        gravx_pencil = -gravx/x(l1:l2)**2
 
       case default
         if (lroot) print*,'initialize_gravity: grav_profile not defined'

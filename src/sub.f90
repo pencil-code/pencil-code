@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.197 2004-09-12 09:49:34 brandenb Exp $ 
+! $Id: sub.f90,v 1.198 2004-09-18 07:54:29 brandenb Exp $ 
 
 module Sub 
 
@@ -720,6 +720,31 @@ module Sub
       g=g+tmp
 !
     end subroutine div
+!***********************************************************************
+    subroutine div_mn(aij,b,a)
+!
+!  calculate divergence from derivative matrix
+!  18-sep-04/axel: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: aij
+      real, dimension (nx,3) :: a
+      real, dimension (nx) :: b
+!
+      intent(in) :: aij,a
+      intent(out) :: b
+!
+      b=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
+!
+!  adjustments for spherical corrdinate system
+!  (WORKS CURRENTLY ONLY FOR 1-D IN THE RADIAL DIRECTION)
+!
+      if (lspherical) then
+        b=b+2.*r1_mn*a(:,1)
+      endif
+!
+    endsubroutine div_mn
 !***********************************************************************
     subroutine curl_mn(aij,b,a)
 !

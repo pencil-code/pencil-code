@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.252 2004-09-16 14:45:58 ajohan Exp $
+! $Id: cdata.f90,v 1.253 2004-09-18 07:54:29 brandenb Exp $
 
 module Cdata
 
@@ -184,6 +184,9 @@ module Cdata
                                              ! to the snapshots
   logical :: lfrozen_bcs_z=.false.
   logical, dimension(mvar) :: lfrozen_bot_var_z=.false.,lfrozen_top_var_z=.false.
+
+  ! possibility to set boundary values
+  real, dimension(mvar) :: fbcx1=0.,fbcx2=0.
 
   character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2

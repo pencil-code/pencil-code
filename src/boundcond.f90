@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.71 2004-08-25 08:50:51 bingert Exp $
+! $Id: boundcond.f90,v 1.72 2004-09-18 07:54:29 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -53,6 +53,7 @@ module Boundcond
       use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar) :: fbcx12
       integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
@@ -77,9 +78,9 @@ module Boundcond
         else
           do k=1,2                ! loop over 'bot','top'
             if (k==1) then
-              topbot='bot'; bc12=bcx1; ip_ok=0
+              topbot='bot'; bc12=bcx1; fbcx12=fbcx1; ip_ok=0
             else
-              topbot='top'; bc12=bcx2; ip_ok=nprocx-1
+              topbot='top'; bc12=bcx2; fbcx12=fbcx2; ip_ok=nprocx-1
             endif
             !
             do j=1,mvar
@@ -106,6 +107,8 @@ module Boundcond
                   call bc_db_x(f,topbot,j)
                 case ('1')        ! f=1 (for debugging)
                   call bc_one_x(f,topbot,j)
+                case ('set')      ! set boundary value
+                  call bc_sym_x(f,-1,topbot,j,REL=.true.,val=fbcx12)
                 case ('')         ! do nothing; assume that everything is set
                 case default
                   print*, &
@@ -389,7 +392,7 @@ module Boundcond
 !
     endsubroutine bc_per_z
 !***********************************************************************
-    subroutine bc_sym_x(f,sgn,topbot,j,rel)
+    subroutine bc_sym_x(f,sgn,topbot,j,rel,val)
 !
 !  Symmetry boundary conditions.
 !  (f,-1,topbot,j)            --> antisymmetry             (f  =0)
@@ -403,6 +406,7 @@ module Boundcond
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mvar), optional :: val
       integer :: sgn,i,j
       logical, optional :: rel
       logical :: relative
@@ -412,6 +416,7 @@ module Boundcond
       select case(topbot)
 
       case('bot')               ! bottom boundary
+        if (present(val)) f(l1,:,:,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l1-i,:,:,j)=2*f(l1,:,:,j)+sgn*f(l1+i,:,:,j); enddo
         else
@@ -420,6 +425,7 @@ module Boundcond
         endif
 
       case('top')               ! top boundary
+        if (present(val)) f(l2,:,:,j)=val(j)
         if (relative) then
           do i=1,nghost; f(l2+i,:,:,j)=2*f(l2,:,:,j)+sgn*f(l2-i,:,:,j); enddo
         else
@@ -1216,7 +1222,6 @@ module Boundcond
 !
     endsubroutine update_ghosts
 !***********************************************************************
-     
      subroutine uu_driver(f)
 ! 
 !    Use of velocity field produced by a program of Boris Gudiksen

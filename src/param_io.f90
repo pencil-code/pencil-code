@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.190 2004-09-11 09:39:57 brandenb Exp $ 
+! $Id: param_io.f90,v 1.191 2004-09-18 07:54:29 brandenb Exp $ 
 
 module Param_IO
 
@@ -78,6 +78,7 @@ module Param_IO
        lread_oldsnap_nomag,lread_oldsnap_nopscalar, &
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
+       fbcx1,fbcx2, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
