@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.279 2004-03-13 17:46:29 mee Exp $
+! $Id: entropy.f90,v 1.280 2004-03-14 05:11:40 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.279 2004-03-13 17:46:29 mee Exp $")
+           "$Id: entropy.f90,v 1.280 2004-03-14 05:11:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -824,7 +824,7 @@ module Entropy
           call mpibcast_real_nonroot(fmpi1,1,0)
           cs2bot=fmpi1(1) 
           fmpi1=(/ cs2top /)
-          call mpibcast_real_nonroot(fmpi1,nprocs-1,0)
+          call mpibcast_real_nonroot(fmpi1,ncpus-1,0)
           cs2top=fmpi1(1)
 
 
