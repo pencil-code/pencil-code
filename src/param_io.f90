@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.56 2002-09-26 21:12:15 brandenb Exp $ 
+! $Id: param_io.f90,v 1.57 2002-09-27 07:56:08 dobler Exp $ 
 
 module Param_IO
 
@@ -24,7 +24,11 @@ module Param_IO
   ! run parameters
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
-  character (len=labellen) :: random_gen_tmp='system'
+  !
+  ! The following fixes namelist problems withi MIPSpro 7.3.1.3m 
+  ! under IRIX -- at least for the moment
+  !
+  character (len=labellen) :: mips_is_buggy='system'
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,random_gen
@@ -32,7 +36,7 @@ module Param_IO
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
-       directory_snap,random_gen_tmp, &
+       directory_snap,random_gen, &
        bcx,bcy,bcz, &
        ttransient
  
@@ -194,7 +198,7 @@ module Param_IO
 !
       ldebug=lroot.and.(ip<7)
       if (lroot) print*,'ldebug,ip=',ldebug,ip
-      random_gen=random_gen_tmp
+!      random_gen=random_gen_tmp
 !
 !  Give online feedback if called with the PRINT optional argument
 !  Note: Some compiler's [like Compaq's] code crashes with the more
