@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.100 2002-10-07 11:28:25 nilshau Exp $
+! $Id: run.f90,v 1.101 2002-10-07 20:04:36 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.100 2002-10-07 11:28:25 nilshau Exp $")
+             "$Id: run.f90,v 1.101 2002-10-07 20:04:36 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -247,7 +247,7 @@
           wall_clock_time = time2-time1
           print*
           print*, 'Wall clock time [sec]=', Wall_clock_time, &
-               ' (+/- ', mpiwtick(),')'
+               ' (+/- ', real(mpiwtick()),')'
           if (it>1) print*, 'Wall clock time/timestep/meshpoint [microsec]=', &
                wall_clock_time/count/nw/ncpus/1e-6
           print*
