@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.65 2002-10-05 13:23:54 dobler Exp $ 
+! $Id: param_io.f90,v 1.66 2002-10-07 11:28:25 nilshau Exp $ 
 
 module Param_IO
 
@@ -36,7 +36,7 @@ module Param_IO
        directory_snap,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
-       dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
+       dsnap,dvid,dtmin,dspec,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
        directory_snap,random_gen, &
        lrmwig_full,lrmwig_xyaverage, &

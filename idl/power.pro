@@ -1,6 +1,6 @@
-PRO power,file1,file2,last,k=k,spec1=spec1,spec2=spec2,i=i
+PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i
 ;
-;  $Id: power.pro,v 1.6 2002-10-05 06:41:16 brandenb Exp $
+;  $Id: power.pro,v 1.7 2002-10-07 11:28:25 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -13,10 +13,18 @@ PRO power,file1,file2,last,k=k,spec1=spec1,spec2=spec2,i=i
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
 ;
-default,file1,'poweru.dat'
-default,file2,'powerb.dat'
+default,var1,'u'
+default,var2,'b'
 default,last,1
-
+;
+if (var1 eq 'u') then file1='poweru.dat'
+if (var2 eq 'u') then file2='poweru.dat'
+if (var1 eq 'b') then file1='powerb.dat'
+if (var2 eq 'b') then file2='powerb.dat'
+if (var1 eq 'a') then file1='powera.dat'
+if (var2 eq 'a') then file2='powera.dat'
+if (var2 eq '')  then file2=''
+;
 !p.multi=[0,1,1]
 !p.charsize=2
 
@@ -54,7 +62,8 @@ k=findgen(imax)
 i=1
 close,1
 openr,1, datatopdir+'/'+file1
-    while not eof(1) do begin 
+    while not eof(1) do begin
+       readf,1,time 
        readf,1,spectrum
        i=i+1
     endwhile
@@ -76,25 +85,30 @@ endif
 i=1 
 openr,1, datatopdir+'/'+file1
     while not eof(1) do begin 
+       readf,1,time
        readf,1,spectrum1
        spec1(*,i-1)=spectrum1
        maxy=max(spectrum1(1:*))
        miny=min(spectrum1(1:*))
        if (file2 ne '') then begin
+	   readf,2,time
 	   readf,2,spectrum2
            spec2(*,i-1)=spectrum2
            if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
            if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        endif
+print,time
+ttime='t=' + string(time)
+print,ttime
        if (last eq 0) then begin
-         plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
+         plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1,xtitle='k',ytitle='P(k)',title=ttime
          if (file2 ne '') then oplot,k,spectrum2,col=122
          wait,.1
        endif
        i=i+1
     endwhile
     if (last eq 1) then begin
-      plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
+      plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1,xtitle='k',ytitle='P(k)',title=ttime
       if (file2 ne '') then oplot,k,spectrum2,col=122
     endif
     close,1

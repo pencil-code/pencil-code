@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.99 2002-10-06 07:22:46 brandenb Exp $
+! $Id: run.f90,v 1.100 2002-10-07 11:28:25 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.99 2002-10-06 07:22:46 brandenb Exp $")
+             "$Id: run.f90,v 1.100 2002-10-07 11:28:25 nilshau Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -207,12 +207,7 @@
           !
           !  save spectrum snapshot
           !
-          if ((t>spect) .AND. (dspect .NE. impossible)) then
-             spect=spect+dspect 
-             if (vel_spec) call power(f,'u')
-             if (mag_spec) call power(f,'b')
-             if (vec_spec) call power(f,'a')
-          endif
+          if (dspec .NE. impossible) call powersnap(f)
           !
           headt=.false.
           if ((it < nt) .and. (dt < dtmin)) then
@@ -232,9 +227,11 @@
 !
 !  save spectrum snapshot
 !
-        if (vel_spec) call power(f,'u')
-        if (mag_spec) call power(f,'b')
-        if (vec_spec) call power(f,'a')
+        if (dspec .NE. impossible) then
+           if (vel_spec) call power(f,'u')
+           if (mag_spec) call power(f,'b')
+           if (vec_spec) call power(f,'a')
+        endif
 !
 !  write seed parameters (only if forcing is turned on)
 !

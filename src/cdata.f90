@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.99 2002-10-04 11:00:42 nilshau Exp $
+! $Id: cdata.f90,v 1.100 2002-10-07 11:28:25 nilshau Exp $
 
 module Cdata
 
@@ -17,7 +17,7 @@ module Cdata
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax
-  real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspect=impossible,spect=0
+  real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspec=impossible,tspec=0
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
