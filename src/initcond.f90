@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.56 2003-06-25 12:13:10 ajohan Exp $ 
+! $Id: initcond.f90,v 1.57 2003-06-26 10:45:26 ajohan Exp $ 
 
 module Initcond 
  
@@ -496,22 +496,18 @@ module Initcond
 !
 !   6-jul-02/axel: coded
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
-!  18-jun-03/anders: Renamed from planet to planet_hc
+!  26-Jul-03/anders: Revived from June 1 version
 !
-      use Sub
-
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,r_ell,xi
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi
       real, dimension (mx,my) :: delS
-      real :: ampl,sigma2,sigma,delta2,delta,eps,radius,rbound
-      real :: gamma,eps2,radius2,width
-      real :: gamma1,zinfty2,cs20
-      integer :: i,j,k
+      real :: ampl,sigma2,sigma,delta2,delta,eps,radius
+      real :: gamma,eps2,radius2,width,rbound
+      real :: gamma1,cs20,hh0
 !
 !  calculate sigma
 !
       print*,'planet_hc: qshear,eps=',qshear,eps
-      print*,'planet_hc: Omega=', Omega
       eps2=eps**2
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
@@ -524,78 +520,58 @@ module Initcond
 !  calculate delta
 !
       delta2=(2.-sigma)*sigma
-      print*,'planet_hc: sigma,delta2,radius',sigma,delta2,radius
-      print*,'planet_hc: width,rbound',width,rbound
-      if (delta2<0.) then
-        print*,'delta2<0 not allowed'
+      print*,'planet_hc: sigma,delta2,radius=',sigma,delta2,radius
+      if (delta2<=0.) then
+        print*,'delta2<=0 not allowed'
       else
         delta=sqrt(delta2)
       endif
 !
-!  calculate zinfty**2 (similar to polytropic_simple)
+!  calculate gamma1
 !
       gamma1=gamma-1.
-      if(gamma1/=0.) then
-        zinfty2=cs20/(.5*gamma1*Omega**2)
-      else
-        zinfty2=impossible
-      endif
-      print*,'planet_hc: gamma,zinfty2=',gamma,zinfty2
+      print*,'planet_hc: gamma=',gamma
 !
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
 !  xi=1 inside vortex, and 0 outside
+!  NOTE: if width is too small, the vertical integration below may fail.
 !
-     if (delta2 .eq. 0.) then    ! Pressure-less solution for eps=0.5
-      hh=0.5*Omega**2*zz**2      ! and delta2=0
-      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2))
-      xi=1./(exp((1./width)*(r_ell-rbound))+1.)
-    else
       rr2=xx**2+eps2*yy**2+zz**2/delta2
-      r_ell=sqrt(xx**2/radius2+yy**2/(radius2/eps2))!+delta2*zz**2)
-      xi=1./(exp((1./width)*(r_ell-rbound))+1.)
-      hh(:,:,n2)=+.5*delta2*Omega**2*(radius2 - &
-          xx(:,:,n2)**2-eps2*yy(:,:,n2)**2)*xi(:,:,n2)+1.   
-    endif
-
-    if(nz.eq.1) then
-      print*,'warning: does not work for nz=1!'
-    else
-      print*,"with entropy: integrate hot corona"
+      hh=+.5*delta2*Omega**2*(radius2-rr2)
+      xi=.5+.5*tanh(hh/width)
+ 
+      print*,"planet_hc: integrate hot corona"
+      hh(:,:,n2)=1.  !(initial condition)
       f(:,:,:,ient)=-alog(ampl)*xi
       do n=n2-1,n1,-1
         delS=f(:,:,n+1,ient)-f(:,:,n,ient)
-        hh(:,:,n)= (hh(:,:,n+1)*(1.-.5*delS) + &
+        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+ &
              Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
       enddo
-    endif
 !
-!  Velocity field (Kepler field subtracted)
+!  Calculate velocities (Kepler speed subtracted)
 !
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
 !
+      print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
+      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+!
 !  calculate density, depending on what gamma is
 !
-      print*,'planet_hc: min(hh), max(hh)=', &
-           minval(hh(l1:l2,m1:m2,n1:n2)),maxval(hh(l1:l2,m1:m2,n1:n2))
-      print*,'planet_hc: min(xi), max(xi)=',minval(xi),maxval(xi)
-      !print*,'hh=amin1(1e-5*maxval(hh),hh)'
-      !hh=amin1(1e-5*maxval(hh),hh)
-      if(gamma1<0.) print*,'must have gamma gt 1 for planet solution'
-!
-!  have to use explicit indices here, because ghostzones are not set
-!
       if(lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-            -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+        f(l1:l2,m1:m2,n1:n2,ilnrho)= &
+             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+             -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
         print*,'planet solution with entropy jump for gamma=',gamma
       else
         if(gamma==1.) then
           f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
           print*,'planet solution for gamma=1'
         else
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+          f(l1:l2,m1:m2,n1:n2,ilnrho)=&
+               alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           print*,'planet solution for gamma=',gamma
         endif
       endif
@@ -612,9 +588,10 @@ module Initcond
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
+      real, dimension (mx,my) :: delS
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
-      real :: gamma,eps2,radius2,width,a_ell,b_ell
-      real :: gamma1,ztop,cs20,hh0,dS
+      real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
+      real :: gamma1,ztop,cs20,hh0
       integer :: i,j,k
 !
 !  calculate sigma
@@ -648,8 +625,9 @@ module Initcond
 !
       b_ell = radius
       a_ell = radius/eps
+      c_ell = radius*delta
       r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
-      if (lroot) print*,'planet: Ellipse axes (b_ell,a_ell)=',b_ell,a_ell
+      if(lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=',b_ell,a_ell,c_ell
 !
 !  xi is 1 inside vortex and 0 outside
 !
@@ -659,7 +637,7 @@ module Initcond
 !  Calculate enthalpy inside vortex
 !
       hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
-           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
+           -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2
 !
 !  Calculate enthalpy outside vortex
 !
@@ -668,12 +646,23 @@ module Initcond
           do k=1,mz
             if(r_ell(i,j,k) .gt. 1) then
               hh(i,j,k) = &
-                   -0.5*Omega**2*zz(i,j,k)**2 + 0.5*Omega**2*ztop**2 + hh0
-              if(lentropy) f(i,j,k,ient)=2.*(1-xi(i,j,k))
+                   -0.5*Omega**2*zz(i,j,k)**2 + hh0!0.5*Omega**2*ztop**2 + hh0
             endif
           enddo
         enddo
       enddo
+
+      if (lentropy) then
+
+        f(:,:,:,ient)=-7*xi(:,:,:)
+        !hh(:,:,n2)=1.
+   
+        !print*,"with entropy: integrate hot corona"
+        !do n=n2-1,n1,-1
+        !  delS=f(:,:,n+1,ient)-f(:,:,n,ient)
+        !  hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
+        !enddo
+      endif
 !
 !  Calculate velocities (Kepler speed subtracted)
 !
@@ -692,12 +681,12 @@ module Initcond
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-             - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+            (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+            - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
         print*,'planet solution with entropy jump for gamma=',gamma
       else
-        if(gamma==1.) then
-          f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
+      if(gamma==1.) then
+        f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
           print*,'planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
