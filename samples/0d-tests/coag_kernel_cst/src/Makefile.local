@@ -15,6 +15,7 @@ ENTROPY  =noentropy
 MAGNETIC =nomagnetic
 RADIATION=noradiation
 PSCALAR  =nopscalar
+IONIZATION =   ionization_fixed
 
 GRAVITY  =nograv
 FORCING  =noforcing
@@ -27,3 +28,6 @@ DUSTVELOCITY=  dustvelocity
 
 FFTPACK  =nofftpack
 FFT      =nofft
+
+FFLAGS_GENERAL=-r8
+CFLAGS_GENERAL=-DDOUBLE_PRECISION

@@ -3,8 +3,8 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.4 2004-04-07 10:36:20 theine Exp $',
-  nt=10000000, it1=10000, cdt=0.4, cdtv=0.8, isave=50, itorder=3,
+  cvsid='$Id: run.in,v 1.5 2004-05-27 14:38:50 ajohan Exp $',
+  nt=10000000, it1=100, cdt=0.4, cdtv=0.8, isave=50, itorder=3,
   dsnap=10.0, dvid=10.0, dtmin=1e-9, ip=20
   bcz = 'p','p','p','p','p', dt=0.001
   tmax=10000.0
@@ -13,6 +13,8 @@
 /
 &density_run_pars
   cdiffrho=1e-3
+/
+&ionization_run_pars
 /
 &dustvelocity_run_pars
   ldustdrag=F
