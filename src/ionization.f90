@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.97 2003-09-25 09:07:50 theine Exp $
+! $Id: ionization.f90,v 1.98 2003-09-25 10:45:50 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -81,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.97 2003-09-25 09:07:50 theine Exp $")
+           "$Id: ionization.f90,v 1.98 2003-09-25 10:45:50 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -245,7 +245,9 @@ module Ionization
     endsubroutine ioncalc
 !***********************************************************************
     subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
-
+!
+!  DOCUMENT ME
+!
       use Mpicomm, only: stop_it
       
       real,intent(in) :: lnrho,EE
@@ -276,7 +278,9 @@ module Ionization
     end subroutine perturb_energy_point
 !***********************************************************************
     subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
-
+!
+!  DOCUMENT ME
+!
       use Mpicomm, only: stop_it
       
       real, dimension(nx) ,intent(in) :: lnrho,ee
@@ -306,7 +310,9 @@ module Ionization
     end subroutine perturb_energy_pencil
 !***********************************************************************
     subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
-
+!
+!  DOCUMENT ME
+!
       use Mpicomm, only: stop_it
       
       real,intent(in) :: lnrho,pp
@@ -337,6 +343,9 @@ module Ionization
     end subroutine perturb_mass_point
 !***********************************************************************
     subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+!
+!  DOCUMENT ME
+!
 
       use Mpicomm, only: stop_it
       
@@ -367,6 +376,9 @@ module Ionization
     end subroutine perturb_mass_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
+!
+!  DOCUMENT ME
+!
 
       use Mpicomm, only: stop_it
       
@@ -378,6 +390,8 @@ module Ionization
     end subroutine getdensity
 !***********************************************************************
     subroutine ionget_pencil(f,yH,TT)
+!
+!  DOCUMENT ME
 !
       use Cdata
 !
@@ -393,6 +407,8 @@ module Ionization
     endsubroutine ionget_pencil
 !***********************************************************************
     subroutine ionget_point(lnrho,ss,yH,TT)
+!
+!  DOCUMENT ME
 !
       use Cdata
 !
@@ -411,6 +427,8 @@ module Ionization
     endsubroutine ionget_point
 !***********************************************************************
     subroutine ionget_xy(f,yH,TT,boundary,radz0)
+!
+!  DOCUMENT ME
 !
       use Cdata
 !
@@ -548,8 +566,8 @@ module Ionization
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 !
-      yHmax=1
-      yHmin=0
+      yHmax=1-2*epsilon(yH)
+      yHmin=2*tiny(yH)
       dyH=1
       dyHold=dyH
       call saha(yH,lnrho,ss,f,df)
@@ -600,7 +618,7 @@ module Ionization
 !
     endsubroutine saha
 !***********************************************************************
-    subroutine rtsafe_EE(lnrho,ee,yH,iter)
+    subroutine rtsafe_ee(lnrho,ee,yH,iter)
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   25-aug-03/tony: modified from entropy based routine
@@ -613,10 +631,13 @@ module Ionization
       integer, optional    :: iter
       integer, parameter   :: maxit=1000
 
-      yHmax=min(ee/ss_ion/TT_ion,1.)
-      yHmin=0
+      yHmax=min(ee/ss_ion/TT_ion,1.)*(1-2*epsilon(yH))
+      yHmin=2*tiny(yH)
       dyH=1
       dyHold=dyH
+
+!write(0,*) '------------------------------------------------------------'
+!write(0,'(A)') '  ee/ss_ion/TT_ion       yH_         ee-yH_*ss*TT'
 !
 !  return if y is too close to 0 or 1
 !
@@ -633,6 +654,11 @@ module Ionization
 !
 !  otherwise find root
 !
+      !
+      !  Make sure the start value (from previous point) is not too large
+      !
+      yH = amin1(yH,yHmax)
+!write(0,*) '++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++'
       call saha_ee(yH,lnrho,ee,f,df)
       do i=1,maxit
          if (present(iter)) iter=i ! checking with present() avoids segfault
@@ -671,11 +697,20 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 
-      lnTT_=log(ee-yH*ss_ion*TT_ion) -  &
-           log(1.5 * (1.+yH+xHe) * ss_ion * TT_ion )
-      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
-      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+      !
+      !  TEMPORARY FIX
+      !  Please think about me and remove me then
+      !
+      real :: yH_
+      !
+      yH_ = amin1(yH,1.-2*epsilon(yH))
+
+!write(0,'(3(" ",1pG16.8))') ee/ss_ion/TT_ion,yH_,ee-yH_*ss_ion*TT_ion
+      lnTT_=log(ee-yH_*ss_ion*TT_ion) -  &
+           log(1.5 * (1.+yH_+xHe) * ss_ion * TT_ion )
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH_)-2.*log(yH_)
+      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH_+xHe)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH_)-2./yH_
 !
     endsubroutine saha_ee
 !***********************************************************************
@@ -691,8 +726,8 @@ module Ionization
       integer              :: i
       integer, parameter   :: maxit=100
 
-      yHmax=1-2*epsilon(1.)
-      yHmin=2*tiny(1.)
+      yHmax=1-2*epsilon(yH)
+      yHmin=2*tiny(yH)
       dyHold=yHmax-yHmin
       dyH=dyHold
 !
