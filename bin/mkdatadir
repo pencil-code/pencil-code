@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.28 2003-12-07 11:13:13 brandenb Exp $
+#  $Id: mkdatadir,v 1.29 2004-02-22 09:14:48 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -41,6 +41,7 @@ else if ($hn =~ nl3) then
   set str='s/home/scr/g'
 else if (($hn =~ nl6) || ($hn =~ nl11) || ($hn =~ wormhole)) then
   set str='s/home/data/g'
+  #set str='s/brandenb/brandenb\/storage/g'
 else if ($hn =~ tac*) then
   set str='s/usr\/tac/scratch/g'
 else if ($hn =~ embla) then
