@@ -70,7 +70,8 @@ for ivar = 0,3 do begin
 
 ;; overplot initial profiles
   if (n_elements(Tinit) le 0) then begin
-    message, 'No Tinit -- you should run thermo.pro', /INFO
+    if (ivar eq 0) then $
+        message, 'No Tinit -- you should run thermo.pro', /INFO
   endif else begin
     case ivar of
       0: oplot, laminit, z, LINE=2, COLOR=130, THICK=2
