@@ -29,7 +29,7 @@ if (-e "LOCK") then
   echo "rm LOCK"
   exit
 endif
-touch LOCK
+if (! -e "NEVERLOCK") touch LOCK
 
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
@@ -126,7 +126,7 @@ endif
 if ($booted_lam) lamhalt
 
 # remove LOCK file
-rm -f LOCK
+if (-e "LOCK") rm -f LOCK
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
