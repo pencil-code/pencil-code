@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.131 2003-09-19 21:25:35 brandenb Exp $
+! $Id: magnetic.f90,v 1.132 2003-09-30 12:02:19 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -54,6 +54,7 @@ module Magnetic
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxbm=0,i_oxuxbm=0,i_jxbxbm=0,i_gpxbm=0,i_uxDxuxbm=0
+  integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0
   integer :: i_b2mphi=0
 
   contains
@@ -90,7 +91,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.131 2003-09-19 21:25:35 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.132 2003-09-30 12:02:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -359,7 +360,7 @@ module Magnetic
 !  Note that eta_out is total eta in halo (not eta_out+eta)
 !
       if(height_eta/=0.) then
-        if (headtt) print*,'daa_dt: halo diffusivity; height_eta,eta_out=',height_eta,eta_out
+        if (headtt) print*,'daa_dt: height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
         eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
         df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)-eta_out1*jj
@@ -424,11 +425,14 @@ module Magnetic
         !
         !  calculate emf for alpha effect (for imposed field)
         !
-        if (i_uxbm/=0) then
+        if (i_uxbm/=0.or.i_uxbmx/=0.or.i_uxbmy/=0.or.i_uxbmz/=0) then
           call cross_mn(uu,bbb,uxb)
           uxb_dotB0=B_ext(1)*uxb(:,1)+B_ext(2)*uxb(:,2)+B_ext(3)*uxb(:,3)
           uxb_dotB0=uxb_dotB0*B_ext21
           call sum_mn_name(uxb_dotB0,i_uxbm)
+          if (i_uxbmx/=0) call sum_mn_name(uxb(:,1),i_uxbmx)
+          if (i_uxbmy/=0) call sum_mn_name(uxb(:,2),i_uxbmy)
+          if (i_uxbmz/=0) call sum_mn_name(uxb(:,3),i_uxbmz)
         endif
         !
         !  magnetic triple correlation term (for imposed field)
@@ -611,6 +615,7 @@ module Magnetic
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxbm=0; i_oxuxbm=0; i_jxbxbm=0.; i_gpxbm=0.; i_uxDxuxbm=0.
+        i_uxbmx=0; i_uxbmy=0; i_uxbmz=0
         i_b2mphi=0
       endif
 !
@@ -637,6 +642,9 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'by2m',i_by2m)
         call parse_name(iname,cname(iname),cform(iname),'bz2m',i_bz2m)
         call parse_name(iname,cname(iname),cform(iname),'uxbm',i_uxbm)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmx',i_uxbmx)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmy',i_uxbmy)
+        call parse_name(iname,cname(iname),cform(iname),'uxbmz',i_uxbmz)
         call parse_name(iname,cname(iname),cform(iname),'jxbxbm',i_jxbxbm)
         call parse_name(iname,cname(iname),cform(iname),'oxuxbm',i_oxuxbm)
         call parse_name(iname,cname(iname),cform(iname),'gpxbm',i_gpxbm)
@@ -690,6 +698,9 @@ module Magnetic
       write(3,*) 'i_by2m=',i_by2m
       write(3,*) 'i_bz2m=',i_bz2m
       write(3,*) 'i_uxbm=',i_uxbm
+      write(3,*) 'i_uxbmx=',i_uxbmx
+      write(3,*) 'i_uxbmy=',i_uxbmy
+      write(3,*) 'i_uxbmz=',i_uxbmz
       write(3,*) 'i_oxuxbm=',i_oxuxbm
       write(3,*) 'i_jxbxbm=',i_jxbxbm
       write(3,*) 'i_gpxbm=',i_gpxbm

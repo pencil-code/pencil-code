@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.103 2003-09-10 11:13:24 brandenb Exp $
+! $Id: hydro.f90,v 1.104 2003-09-30 12:02:19 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -20,7 +20,7 @@ module Hydro
   real :: uy_left=0.,uy_right=0.
   real :: initpower=1.,cutoff=0.
   character (len=labellen) :: inituu='zero'
-
+  real, dimension(3) :: gradH0=(/0.,0.,0./)
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
@@ -39,7 +39,7 @@ module Hydro
        nu,ivisc, &            !ajwm - kept for backward comp. should 
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,rdamp,wdamp,frec_ux,ampl_osc_ux, &
-       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot
+       tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -86,7 +86,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.103 2003-09-10 11:13:24 brandenb Exp $")
+           "$Id: hydro.f90,v 1.104 2003-09-30 12:02:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -272,6 +272,10 @@ module Hydro
         ! initial spectrum k^power
         call powern(ampluu,initpower,cutoff,f,iux,iuz)
   
+      case('power_randomphase') 
+        ! initial spectrum k^power
+        call power_randomphase(ampluu,initpower,cutoff,f,iux,iuz)
+  
       case default
         !
         !  Catch unknown values
@@ -431,6 +435,14 @@ module Hydro
 !
       if (tau_damp_ruxm/=0.) call damp_ruxm(f,df)
       if (tau_damp_ruym/=0.) call damp_ruym(f,df)
+!
+!  add pressure gradient (e.g., from gas pressure in discs)
+!
+      do j=1,3
+        if (gradH0(j)/=0.) then
+          df(l1:l2,m,n,iuu+j-1)=df(l1:l2,m,n,iuu+j-1)-gradH0(j)
+        endif
+      enddo
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.27 2003-09-29 15:25:16 nilshau Exp $
+! $Id: general.f90,v 1.28 2003-09-30 12:02:19 brandenb Exp $
 
 module General
 
@@ -407,6 +407,21 @@ module General
       call safe_character_assign(str1, trim(str1) // trim(str2) // trim(str3))
 !
     endsubroutine safe_character_append_3
+!***********************************************************************
+    subroutine input_array(file,a,dimx,dimy,dimz,dimv)
+!
+!  Generalized form of input, allows specifying dimension
+!  27-sep-03/axel: coded
+!
+      character (len=*) :: file
+      integer :: dimx,dimy,dimz,dimv
+      real, dimension (dimx,dimy,dimz,dimv) :: a
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) a
+      close(1)
+!
+    endsubroutine input_array
 !***********************************************************************
     function spline_derivative(z,f)
 !

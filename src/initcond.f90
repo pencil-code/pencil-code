@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.82 2003-09-19 21:02:24 brandenb Exp $ 
+! $Id: initcond.f90,v 1.83 2003-09-30 12:02:19 brandenb Exp $ 
 
 module Initcond 
  
@@ -1330,10 +1330,10 @@ module Initcond
             ! change to k^n spectrum
             u_re =(k2)**(.25*initpower-.5)*u_re 
             u_im =(k2)**(.25*initpower-.5)*u_im 
-            ! cutoff
+            ! cutoff (changed to hyperviscous cutoff filter)
             if (cutoff .ne. 0.) then
-              u_re = u_re*exp(-k2/cutoff**2.) 
-              u_im = u_im*exp(-k2/cutoff**2.) 
+              u_re = u_re*exp(-(k2/cutoff**2.)**2) 
+              u_im = u_im*exp(-(k2/cutoff**2.)**2) 
             endif   
             ! back to real space 
             call transform_fftpack(u_re,u_im,-1)
@@ -1342,7 +1342,7 @@ module Initcond
             if (lroot .and. (cutoff.eq.0)) then 
               print*,'powern: k^',initpower,' spectrum : var  i=',i
             else
-              print*,'powern: with cutoff : k^n*exp(-k^2/k0^2) w/ n=', &
+              print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
                      initpower,', k0 =',cutoff,' : var  i=',i
             endif 
           enddo !i            
@@ -1351,6 +1351,69 @@ module Initcond
     endif !(ampl.eq.0)
 !
     endsubroutine powern
+
+!***********************************************************************
+    subroutine power_randomphase(ampl,initpower,cutoff,f,i1,i2)
+!
+!   Produces k^initpower*exp(-k**2/cutoff**2)  spectrum.
+!   Still just one processor (but can be remeshed afterwards).
+!
+!   07-may-03/tarek: coded
+!
+      integer :: i,i1,i2
+      real, dimension (nx,ny,nz) :: k2
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx,ny,nz) :: u_re,u_im,r
+      real :: ampl,initpower,mhalf,cutoff
+ 
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
+      else
+!
+!  calculate k^2
+!
+        k2=      (spread(spread(cshift &
+          ((/(i-(nx+1)/2,i=0,nx-1)/),+(nx+1)/2)*2*pi/Lx,2,ny),3,nz))**2.
+        k2= k2 + (spread(spread(cshift &
+          ((/(i-(ny+1)/2,i=0,ny-1)/),+(ny+1)/2)*2*pi/Ly,1,nx),3,nz))**2.
+        k2= k2 + (spread(spread(cshift &
+          ((/(i-(nz+1)/2,i=0,nz-1)/),+(nz+1)/2)*2*pi/Lz,1,nx),2,ny))**2.
+
+        k2(1,1,1) = 1.  ! Avoid division by zero 
+!
+!  To get shell integrated power spectrum E ~ k^n, we need u ~ k^m
+!  and since E(k) ~ u^2 k^2 we have n=2m+2, so m=n/2-1.
+!  Further, since we operate on k^2, we need m/2 (called mhalf below)
+!
+        mhalf=.5*(.5*initpower-1)
+!
+!  generate all 3 velocity components separately
+!
+        do i=i1,i2
+          ! generate k^n spectrum with random phase (between -pi and pi)
+          call random_number_wrapper(r); u_re=ampl*k2**mhalf*cos(pi*(2*r-1))
+          call random_number_wrapper(r); u_im=ampl*k2**mhalf*sin(pi*(2*r-1))
+          ! cutoff (changed to hyperviscous cutoff filter)
+          if (cutoff .ne. 0.) then
+            u_re = u_re*exp(-(k2/cutoff**2.)**2) 
+            u_im = u_im*exp(-(k2/cutoff**2.)**2) 
+          endif   
+          ! back to real space 
+          call transform_fftpack(u_re,u_im,-1)
+          f(l1:l2,m1:m2,n1:n2,i)=u_re
+          
+          if (lroot .and. (cutoff.eq.0)) then 
+            print*,'powern: k^',initpower,' spectrum : var  i=',i
+          else
+            print*,'powern: with cutoff : k^n*exp(-k^4/k0^4) w/ n=', &
+                   initpower,', k0 =',cutoff,' : var  i=',i
+          endif 
+        enddo !i            
+
+      endif !(ampl.eq.0)
+!
+    endsubroutine power_randomphase
 
 !***********************************************************************
 endmodule Initcond

@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.8 2003-09-30 12:02:19 brandenb Exp $
 
 module Hydro
 
@@ -14,6 +14,8 @@ module Hydro
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
   integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
+  integer :: i_Marms=0,i_Mamax=0
+  real :: frec_ux=100,ampl_osc_ux=1e-3
 
   contains
 
@@ -40,8 +42,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2003-06-16 04:41:10 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2003-09-30 12:02:19 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -72,7 +74,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_uu
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -82,10 +84,13 @@ module Hydro
 !
       use Cdata
       use Magnetic
+      use General
       use Sub
+      use IO
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: divu,u2,rho1
 !
@@ -95,7 +100,8 @@ module Hydro
 !
       if (kinflow=='file') then
         if (first) then
-          call input(trim(directory)//'/uu.dat',uuu,3,0)
+          print*,'duu_dt: read array uu.dat'
+          call input_array(trim(directory)//'/uu.dat',uuu,nx,ny,nz,3)
           first=.false.
         else
           do j=1,3
@@ -178,6 +184,14 @@ module Hydro
       write(3,*) 'iuz=',iuz
 !
     endsubroutine rprint_hydro
+!***********************************************************************
+    subroutine calc_mflow
+!
+!  dummy routine 
+!          
+!  19-jul-03/axel: adapted from hydro
+!   
+    endsubroutine calc_mflow
 !***********************************************************************
 
 endmodule Hydro

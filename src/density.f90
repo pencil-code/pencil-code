@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.113 2003-09-12 16:16:20 mee Exp $
+! $Id: density.f90,v 1.114 2003-09-30 12:02:19 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -73,7 +73,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.113 2003-09-12 16:16:20 mee Exp $")
+           "$Id: density.f90,v 1.114 2003-09-30 12:02:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -570,11 +570,11 @@ module Density
 !  makes sense really only for periodic boundary conditions
 !  This gradient can have arbitary direction.
 !
-        do j=1,3
-          if (gradlnrho0(j)/=0.) then
-            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-gradlnrho0(j)*uu(:,j)
-          endif
-        enddo
+      do j=1,3
+        if (gradlnrho0(j)/=0.) then
+          df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-gradlnrho0(j)*uu(:,j)
+        endif
+      enddo
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
