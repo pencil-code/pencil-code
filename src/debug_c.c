@@ -34,12 +34,12 @@
    Use the `-DFUNDERSC=1' option in the makefile to set this.
 */
 
-#if (FUNDERSC == 2)
-#  define FTNIZE(name) name##__
-#elif (FUNDERSC == 0)
+#if (FUNDERSC == 0)
 #  define FTNIZE(name) name
-#else
+#elif (FUNDERSC == 1)
 #  define FTNIZE(name) name##_
+#else
+#  define FTNIZE(name) name##__
 #endif
 
 /*

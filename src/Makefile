@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.139 2003-01-15 13:06:04 mee Exp $
+### $Id: Makefile,v 1.140 2003-01-17 16:47:00 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -118,8 +118,15 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## HI-UX/MPP:
 #FC=f90
-#FFLAGS=-I/usr/mpi/include -O4 -pvec -parallel=0
+#F77=$(FC)
+#FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
+#CFLAGS=-O4 -DFUNDERSC=0
 #LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
+
+## SUPER-UX:
+#FC=f90
+#F77=$(FC)
+#FFLAGS=-C hopt
 
 ## AIX:
 #FC=xlf90
@@ -133,10 +140,11 @@ LD=$(FC)
 LDFLAGS=$(FFLAGS)
 # -Mpencil.map
 
+## Generic rules:
 .SUFFIXES: .f90 .mod
 
 .f.o:
-	$(F77) $(OPTFLAGS) -c $*.f
+	$(F77) $(FFLAGS) -c $*.f
 .f90.o:
 	$(FC) $(FFLAGS) -c $*.f90
 .mod.o:
