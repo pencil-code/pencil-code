@@ -14,7 +14,7 @@ module Debugging
   contains
 
 !***********************************************************************
-    subroutine output_stenc_vect(file,a,nn,imn)
+    subroutine output_stenc_vect(file,a,ndim,imn)
 !
 !  Write snapshot file of stenciled vector data.
 !  Wrapper to the C routine output_stenciled_c.
@@ -22,18 +22,21 @@ module Debugging
 !  15-feb-02/wolf: coded
 !
       use Cdata
+      use Mpicomm, only: mm,nn
 !
-      integer :: nn,imn
-      real, dimension (mx,nn) :: a
+      integer :: ndim,imn
+      real, dimension (mx,ndim) :: a
       character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: nn =', nn
 !
-      call output_stenciled_c(file,a,nn,imn,t,nx,ny,nz,len(file))
+      call output_stenciled_c(file, a, ndim, &
+                              imn, mm(imn), nn(imn), t, &
+                              nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_stenc_vect
 !***********************************************************************
-    subroutine output_stenc_scal(file,a,nn,imn)
+    subroutine output_stenc_scal(file,a,ndim,imn)
 !
 !  Write snapshot file of stenciled scalar data.
 !  Wrapper to the C routine output_stenciled_c.
@@ -41,16 +44,20 @@ module Debugging
 !  15-feb-02/wolf: coded
 !
       use Cdata
-      use Mpicomm, only: lroot,stop_it
+      use Mpicomm, only: mm,nn,lroot,stop_it
+
 !
-      integer :: nn,imn
+      integer :: ndim,imn
       real, dimension (mx) :: a
       character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
-      if (nn /= 1) call stop_it("OUTPUT called with scalar field, but nn/=1")
+      if (ndim /= 1) &
+           call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
-      call output_stenciled_c(file,a,nn,imn,t,nx,ny,nz,len(file))
+      call output_stenciled_c(file, a, ndim, &
+                              imn, mm(imn), nn(imn), t, &
+                              nx, ny, nz, nghost, len(file))
 !
     endsubroutine output_stenc_scal
 !***********************************************************************

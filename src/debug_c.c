@@ -46,18 +46,30 @@
 /* ---------------------------------------------------------------------- */
 
 int output_stenciled_c_(char *filename, REAL *stenc, FINT *ndim,
-			FINT *i, REAL *t,
-			FINT *nx, FINT *ny, FINT *nz,
+			FINT *i, FINT *iy, FINT *iz, REAL *t,
+			FINT *nx, FINT *ny, FINT *nz, FINT *nghost,
 			FINT *fnlen)
 /* Writes a scalar field to a file mimicking the Fortran record structure
    of the file. This subroutine is called once for each stencil.
+   fnlen   -- length of filename (needed due to unclear Fortran--C mapping of
+              strings)
+   i,ix,iy -- position of stencil. i is the loop index.
 */
 {
+  REAL zero=0;
   static FILE *file;
   static char *fname;
-  int ilast;
+  int nstenc,ilast,bcount,j;
+  long int mx,my,mz;
+  long int datasize,pos;
 
-  ilast = (*ny)*(*nz);
+  mx = *nx + 2*(*nghost);
+  my = *ny + 2*(*nghost);
+  mz = *nz + 2*(*nghost);
+
+  nstenc = (*ny)*(*nz);		/* Number of stencils (sans ghosts) */
+  ilast = nstenc;
+
   if (*i == 1) {
     /* Called for the first time:
        - open file
@@ -73,17 +85,47 @@ int output_stenciled_c_(char *filename, REAL *stenc, FINT *ndim,
       fprintf(stderr, "debug_c.c: Can't open file %s\n", fname);
       abort;
     }
+    datasize = mx*my*mz*sizeof(REAL);
+    bcount = datasize;
+    fwrite(&bcount, sizeof(bcount), 1, file);
   }
 
+  /* Neither first nor last call:
+     - position appropriately
+     - write nghosts zeros, one stencil, nghost zeros
+  */
+  pos = sizeof(FINT) + mx*(*iy-1 + my*(*iz-1))*sizeof(REAL);
+if (*i == 1){
+  fprintf(stderr,"i=%d, iy=%d, iz=%d, pos=%d\n", *i, *iy,*iz,pos);
+}
+  fseek(file, pos, SEEK_SET);
+  for (j=0;j<*nghost;j++) {
+    fwrite(&zero, sizeof(REAL), 1, file);
+  }
+  fwrite(stenc, sizeof(REAL), *nx, file);
+  for (j=0;j<*nghost;j++) {
+    fwrite(&zero, sizeof(REAL), 1, file);
+  }
 
 
 
   if (*i == ilast) {
     /* Last call:
+       - position after data block
        - write byte count
        - write time as short record
        - close file
     */
+    datasize = mx*my*mz*sizeof(REAL);
+    pos = (long int)(datasize+sizeof(FINT));
+    fseek(file, pos, SEEK_SET);
+    bcount = datasize;
+    fwrite(&bcount, sizeof(bcount), 1, file);
+    /* Write time record */
+    bcount = sizeof(REAL);
+    fwrite(&bcount, sizeof(bcount), 1, file);
+    fwrite(t, sizeof(REAL), 1, file);
+    fwrite(&bcount, sizeof(bcount), 1, file);
     fclose(file);
     free(fname);
   }

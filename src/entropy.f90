@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-02-15 16:16:40 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-02-18 20:48:43 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,7 +166,9 @@ module Entropy
       call dot_mn(g1,g2,g1_g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
 
-      call output_stenc(trim(directory)//'/chi.dat',chi,1,imn)
+      if (lfirst) then
+       call output_stenc(trim(directory)//'/chi.dat',chi,1,imn)
+      endif
 
 if (notanumber(thdiff)) print*, 'NaNs in thdiff'
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff

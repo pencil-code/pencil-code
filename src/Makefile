@@ -44,7 +44,7 @@ DEBUGGING=debugging
 #FFLAGS=-O # (Samos)
 #LDMPI= # (Samos)
 #CC=cc
-#CFLAGS=-O3 -DFUNDERSC=1
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall
 
 ## SunOS:
 #FC=pghpf #(Lomond)
