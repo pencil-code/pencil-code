@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.2 2003-08-29 16:16:02 dobler Exp $
+! $Id: read_vectorfiles.f90,v 1.3 2003-09-02 13:43:12 dobler Exp $
 
 !***********************************************************************
       program read_vectorfiles
@@ -25,7 +25,7 @@
 !
       do iproc=0,ncpus-1
         lun=10+iproc
-        call chn(iproc,chproc)
+        call chn(iproc,chproc,'read_vectorfiles')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(fullname,trim(path)//'/bvec.dat')
         open(lun,file=fullname,form='unformatted')

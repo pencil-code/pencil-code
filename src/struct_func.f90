@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.18 2003-06-16 04:41:11 brandenb Exp $
+! $Id: struct_func.f90,v 1.19 2003-09-02 13:43:12 dobler Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -218,7 +218,7 @@ endif
   !  Writing output file
   !
   if (iproc==root) then
-     call chn(ivec,var)
+     call chn(ivec,var,'structure')
      if(llpdf) then
         if (ip<10) print*,'Writing pdf of variable',var &
              ,'to ',trim(datadir)//trim(filetowrite)//trim(var)//'.dat'
@@ -241,6 +241,6 @@ endif
      endif
   endif
   !
-end subroutine structure
+endsubroutine structure
 !***********************************************************************
-end module struct_func
+endmodule struct_func

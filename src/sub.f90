@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.135 2003-08-29 16:16:02 dobler Exp $ 
+! $Id: sub.f90,v 1.136 2003-09-02 13:43:12 dobler Exp $ 
 
 module Sub 
 
@@ -1629,7 +1629,7 @@ module Sub
 !  if enum=.true. we do want to generate character from nout for file name
 !  do this before nout has been updated to new value
 !
-      if (enum) call chn(nout,ch)
+      if (enum) call chn(nout,ch,'update_snaptime: '//trim(file))
 !
 !  Mark lout=.true. when time has exceeded the value of tout
 !

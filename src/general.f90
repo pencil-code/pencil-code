@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.25 2003-08-29 16:16:02 dobler Exp $
+! $Id: general.f90,v 1.26 2003-09-02 13:43:11 dobler Exp $
 
 module General
 
@@ -318,9 +318,10 @@ module General
                                            ! masking to ensure nonzero value.
     endfunction ran
 !***********************************************************************
-    subroutine chn(n,ch)
+    subroutine chn(n,ch,label)
 !
       character (len=4) :: ch
+      character (len=*), optional :: label
       integer :: n
 !
       intent(in) :: n
@@ -340,8 +341,9 @@ module General
       elseif (n.lt.10000) then
         write(ch(1:4),'(i4)') n
       else
-        print*,'n=',n
-        stop "chn: n too large"
+        if (present(label)) print*, 'CHN: <', label, '>'
+        print*,'CHN: n=',n
+        stop "CHN: n too large"
       endif
 !
     endsubroutine chn

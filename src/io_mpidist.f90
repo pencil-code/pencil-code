@@ -1,4 +1,4 @@
-! $Id: io_mpidist.f90,v 1.6 2003-08-14 10:27:47 dobler Exp $
+! $Id: io_mpidist.f90,v 1.7 2003-09-02 13:43:12 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpidist.f90   !!!
@@ -98,7 +98,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.6 2003-08-14 10:27:47 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.7 2003-09-02 13:43:12 dobler Exp $")
 !
       io_initialized=.true.
 !
@@ -137,7 +137,7 @@ contains
         datadir_snap = datadir
       endif
 !
-      call chn(iproc,chproc)
+      call chn(iproc,chproc,'directory_names')
       call safe_character_assign(directory, trim(datadir)//'/proc'//chproc)
       call safe_character_assign(directory_snap, &
                                             trim(datadir_snap)//'/proc'//chproc)

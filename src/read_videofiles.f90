@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.5 2003-08-28 08:58:21 mee Exp $
+! $Id: read_videofiles.f90,v 1.6 2003-09-02 13:43:12 dobler Exp $
 
 !***********************************************************************
       program rvid_box
@@ -48,7 +48,7 @@
       ipz=nprocz-1
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
-        call chn(iproc,chproc)
+        call chn(iproc,chproc,'rvid_box: top xy')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
@@ -67,7 +67,7 @@
       ipz=0
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
-        call chn(iproc,chproc)
+        call chn(iproc,chproc,'rvid_box: bottom xy')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
@@ -86,7 +86,7 @@
       ipy=0
       do ipz=0,nprocz-1
         iproc=ipy+nprocy*ipz
-        call chn(iproc,chproc)
+        call chn(iproc,chproc,'rvid_box: front xz')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
@@ -104,7 +104,7 @@
       do ipz=0,nprocz-1
       do ipy=0,nprocy-1
         iproc=ipy+nprocy*ipz
-        call chn(iproc,chproc)
+        call chn(iproc,chproc,'rvid_box: left yz')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
