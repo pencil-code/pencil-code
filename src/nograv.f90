@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.26 2003-08-28 08:57:11 mee Exp $
+! $Id: nograv.f90,v 1.27 2003-10-08 16:27:20 mcmillan Exp $
 
 module Gravity
 
@@ -18,6 +18,7 @@ module Gravity
   real :: z1,z2,zref,zgrav,gravz,zinfty,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
+  real :: g0,r_int,r_ext
   character (len=labellen) :: grav_profile='const'  !(used by Density)
 
   integer :: dummy              ! We cannot define empty namelists
@@ -49,7 +50,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.26 2003-08-28 08:57:11 mee Exp $")
+           "$Id: nograv.f90,v 1.27 2003-10-08 16:27:20 mcmillan Exp $")
 !
       lgrav = .false.
       lgravz = .false.
