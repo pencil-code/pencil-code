@@ -1,9 +1,10 @@
 pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
                amin=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
-               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane
+               proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
+	       shell=shell,r_int=r_int,r_ext=r_ext,zoom=zoom
 ;
-; $Id: rvid_plane.pro,v 1.8 2004-04-23 06:45:52 brandenb Exp $
+; $Id: rvid_plane.pro,v 1.9 2004-04-27 13:13:14 ngrs Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -30,6 +31,11 @@ default,tmin,0.
 default,tmax,1e38
 default,iplane,0
 default,wait,.03
+default,r_int,0.5
+default,r_ext,1.0
+default,zoom,1.0
+default,dimfile,'dim.dat'
+default,varfile,'var.dat'
 ;
 if keyword_set(proc) then begin
   file_slice=datadir+'/proc0/slice_'+field+'.'+extension
@@ -42,12 +48,14 @@ print,!d.y_size
 ;
 mx=0L & my=0L & mz=0L & nvar=0L & prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
+nprocx=0L & nprocy=0L & nprocz=0L
 ;
 close,1
 openr,1,datadir+'/'+'dim.dat'
 readf,1,mx,my,mz,nvar
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
+readf,1,nprocx,nprocy,nprocz
 close,1
 ;
 ;  double precision?
@@ -57,12 +65,107 @@ if prec eq 'D' then unit=1d0 else unit=1e0
 nx=mx-2*nghostx
 ny=my-2*nghosty
 nz=mz-2*nghostz
+ncpus = nprocx*nprocy*nprocz
+;
+if keyword_set(shell) then begin
+  ;
+  ; to mask outside shell, need full grid;  read from varfiles, as in rall.pro
+  ;
+  datalocdir=datadir+'/proc0'
+  mxloc=0L & myloc=0L & mzloc=0L
+  ;
+  close,1
+  openr,1,datalocdir+'/'+dimfile
+  readf,1,mxloc,myloc,mzloc
+  close,1
+  ;
+  nxloc=mxloc-2*nghostx
+  nyloc=myloc-2*nghosty
+  nzloc=mzloc-2*nghostz
+  ;
+  one=unit & zero=0.0*unit
+  x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
+  xloc=fltarr(mxloc)*one & yloc=fltarr(myloc)*one & zloc=fltarr(mzloc)*one
+  readstring=''
+  ;
+  for i=0,ncpus-1 do begin        ; read data from individual files
+    datalocdir=datadir+'/proc'+strtrim(i,2)
+    ; read processor position
+    dummy=''
+    ipx=0L &ipy=0L &ipz=0L
+    close,1
+    openr,1,datalocdir+'/'+dimfile
+    readf,1, dummy
+    readf,1, dummy
+    readf,1, dummy
+    readf,1, ipx,ipy,ipz
+    close,1
+    openr,1, datalocdir+'/'+varfile, /F77
+    if (execute('readu,1'+readstring) ne 1) then $
+          message, 'Error reading: ' + 'readu,1'+readstring
+    readu,1, t, xloc, yloc, zloc
+    close,1
+    ;
+    ;  Don't overwrite ghost zones of processor to the left (and
+    ;  accordingly in y and z direction makes a difference on the
+    ;  diagonals)
+    ;
+    if (ipx eq 0) then begin
+      i0x=ipx*nxloc & i1x=i0x+mxloc-1
+      i0xloc=0 & i1xloc=mxloc-1
+    endif else begin
+      i0x=ipx*nxloc+nghostx & i1x=i0x+mxloc-1-nghostx
+      i0xloc=nghostx & i1xloc=mxloc-1
+    endelse
+    ;
+    if (ipy eq 0) then begin
+      i0y=ipy*nyloc & i1y=i0y+myloc-1
+      i0yloc=0 & i1yloc=myloc-1
+    endif else begin
+      i0y=ipy*nyloc+nghosty & i1y=i0y+myloc-1-nghosty
+      i0yloc=nghosty & i1yloc=myloc-1
+    endelse
+    ;
+    if (ipz eq 0) then begin
+      i0z=ipz*nzloc & i1z=i0z+mzloc-1
+      i0zloc=0 & i1zloc=mzloc-1
+    endif else begin
+      i0z=ipz*nzloc+nghostz & i1z=i0z+mzloc-1-nghostz
+      i0zloc=nghostz & i1zloc=mzloc-1
+    endelse
+    ;
+    x[i0x:i1x] = xloc[i0xloc:i1xloc]
+    y[i0y:i1y] = yloc[i0yloc:i1yloc]
+    z[i0z:i1z] = zloc[i0zloc:i1zloc]
+    ;
+  endfor
+  ; 
+  xx = spread(x, [1,2], [my,mz])
+  yy = spread(y, [0,2], [mx,mz])
+  zz = spread(z, [0,1], [mx,my])
+  rr = sqrt(xx^2+yy^2+zz^2)
+  
+  ; assume slices are all central for now -- perhaps generalize later
+  ; nb: need pass these into boxbotex_scl for use after scaling of image;
+  ;     otherwise pixelisation can be severe...
+  ; nb: at present using the same z-value for both horizontal slices;
+  ;     hardwired into boxbotex_scl, also.
+  ix=mx/2 & iy=my/2 & iz=mz/2 & iz2=iz
+  if extension eq 'xy' then rrxy =rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz)
+  if extension eq 'Xy' then rrxy2=rr(nghostx:mx-nghostx-1,nghosty:my-nghosty-1,iz2)
+  if extension eq 'xz' then rrxz =rr(nghostx:mx-nghostx-1,iy,nghostz:mz-nghostz-1)
+  if extension eq 'yz' then rryz =rr(ix,nghosty:my-nghosty-1,nghostz:mz-nghostz-1)
+  ;
+endif
 ;
 t=0.*unit & islice=0
 ;
 if extension eq 'xy' then plane=fltarr(nx,ny)*unit
+if extension eq 'Xy' then plane=fltarr(nx,ny)*unit
 if extension eq 'xz' then plane=fltarr(nx,nz)*unit
+if extension eq 'yz' then plane=fltarr(ny,nz)*unit
 help,plane
+;
 slice_xpos=0.*unit
 slice_ypos=0.*unit
 slice_zpos=0.*unit
@@ -101,18 +204,49 @@ end else begin
   readu,1,plane,t,slice_z2pos
 end
 ;
+; rescale data with optional parameter zoom
+;
+plane2=rebinbox(plane,zoom)
+;
+; do masking, if shell set
+;
+if keyword_set(shell) then begin
+  white=255
+  if extension eq 'xy' then begin
+    zrr = rebinbox(reform(rrxy,nx,ny),zoom)
+    indxy=where(zrr lt r_int or zrr gt r_ext)
+    plane2(indxy)=white
+  endif
+  if extension eq 'Xy' then begin
+    zrr2 = rebinbox(reform(rrxy2,nx,ny),zoom)
+    indxy2=where(zrr2 lt r_int or zrr2 gt r_ext)
+    plane2(indxy2)=white
+  endif
+  if extension eq 'xz' then begin
+    yrr = rebinbox(reform(rrxz,nx,nz),zoom,/zdir)
+    indxz=where(yrr lt r_int or yrr gt r_ext)
+    plane2(indxz)=white
+  endif
+  if extension eq 'yz' then begin
+    xrr = rebinbox(reform(rryz,ny,nz),zoom,/zdir)
+    indyz=where(xrr lt r_int or xrr gt r_ext)
+    plane2(indyz)=white
+  endif
+endif
+;
 if keyword_set(test) then begin
-  print,t,min([plane,xy,xz,yz]),max([plane,xy,xz,yz])
+  print,t,min([plane2,xy,xz,yz]),max([plane2,xy,xz,yz])
 end else begin
   if t ge tmin and t le tmax then begin
     if ijump eq njump then begin
-      ;if iy ne -1 then plot,plane(*,iy),yr=[amin,amax],ps=ps
-      ;if ix ne -1 then plot,plane(ix,*),yr=[amin,amax],ps=ps
+      ;if iy ne -1 then plot,plane2(*,iy),yr=[amin,amax],ps=ps
+      ;if ix ne -1 then plot,plane2(ix,*),yr=[amin,amax],ps=ps
       ;
       ;  show image scaled between amin and amax and filling whole screen
       ;
-      tvscl,plane,iplane
-      ;tv,congrid(bytscl(plane,min=amin,max=amax),!d.x_size,!d.y_size)
+      ;tvscl,plane2,iplane
+      tvscl,bytscl(plane2,min=amin,max=amax)
+      ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
       ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
         istr2 = strtrim(string(itpng,'(I20.4)'),2) ;(only up to 9999 frames)
@@ -136,12 +270,12 @@ end else begin
           mpeg_put, mpegID, window=2, FRAME=itmpeg, /ORDER
           itmpeg=itmpeg+1 ;(counter)
         end
-        print,islice,itmpeg,t,min([plane]),max([plane])
+        print,islice,itmpeg,t,min([plane2]),max([plane2])
       end else begin
         ;
         ; default: output on the screen
         ;
-        print,islice,t,min([plane]),max([plane])
+        print,islice,t,min([plane2]),max([plane2])
       end
       ijump=0
       wait,wait
