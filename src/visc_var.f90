@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $
+! $Id: visc_var.f90,v 1.6 2003-07-19 05:40:34 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -12,6 +12,7 @@ module Viscosity
   implicit none
 
 !  real :: nu=0.
+  logical :: lvisc_shock=.false.
   character (len=labellen) :: ivisc='nu-const'
   real :: nu_var, q_DJO=2., t0_DJO=0., nuf_DJO,ti_DJO=1.,tf_DJO
   real :: pp
@@ -48,7 +49,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $")
+           "$Id: visc_var.f90,v 1.6 2003-07-19 05:40:34 brandenb Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -184,14 +185,14 @@ module Viscosity
           endif
 
         case('nu-DJO')
-         !  Ditlivsen et at. show that
+         !  Ditlevsen, Jensen, and Olesen (Phys Rev Lett) show that
          !  E=k^q*psi((t*k^(3+q)/2),nu t^{-(1-q)/(3+q)}), t_code=t-t0
          !  Viscosity is choosen here such that second argument remains constant
-         !  with time. q and t0  must be guest apriori. q=3.67 might be a good 
+         !  with time. q and t0  must be guessed a priori. q=3.67 might be a good 
          !  choice.
          
          !  if nu is given in namelist this will correspond to nu at t=1. 
-         !  alternativly nu_min=nu(t_max) and t_max can be set in namelist 
+         !  alternatively, nu_min=nu(t_max) and t_max can be set in namelist 
          ! 
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const

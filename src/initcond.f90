@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.62 2003-07-17 23:00:05 brandenb Exp $ 
+! $Id: initcond.f90,v 1.63 2003-07-19 05:40:34 brandenb Exp $ 
 
 module Initcond 
  
@@ -1108,10 +1108,11 @@ module Initcond
     endsubroutine diffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,f,i1,i2)
-!   Produces k^initpower spectrum.
-!   Still just one processor.
 !
-!   07-may-03 tarek : coded
+!   Produces k^initpower spectrum.
+!   Still just one processor (but can be remeshed afterwards).
+!
+!   07-may-03/tarek: coded
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
@@ -1153,7 +1154,6 @@ module Initcond
     endif !(ampl.eq.0)
 !
     endsubroutine powern
-
 
 !***********************************************************************
 endmodule Initcond
