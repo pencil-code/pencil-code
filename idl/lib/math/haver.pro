@@ -1,7 +1,7 @@
 function haver,f,xvertical=xvertical,yvertical=yvertical
 ;
 ;  Horizontal average of 3-d or 2-d scalar
-;  $Id: haver.pro,v 1.3 2004-01-15 14:12:18 dobler Exp $
+;  $Id: haver.pro,v 1.4 2004-07-14 12:30:43 dobler Exp $
 ;
         sizef=size(f)
         dim=sizef[0]
@@ -25,8 +25,8 @@ function haver,f,xvertical=xvertical,yvertical=yvertical
             for n=0,sizef[2]-1 do h[n]=aver(f[*,n])
           endelse
         endif else begin
-          print,"error: I don't know how to handle this array"
-          return,0
+          print,"% HAVER: size(f) = ", sizef
+          message,"Don't know how to handle array"
         endelse
         return,h
 end
