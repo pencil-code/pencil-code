@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.52 2003-10-20 16:27:20 dobler Exp $
+! $Id: grav_r.f90,v 1.53 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.52 2003-10-20 16:27:20 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.53 2003-10-24 12:09:15 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -312,7 +312,7 @@ endif
       if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine rprint_gravity(lreset)
+    subroutine rprint_gravity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for gravity advance
 !  dummy routine
@@ -321,19 +321,25 @@ endif
 !
       use Cdata
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
-      write(3,*) 'i_curlggrms=',i_curlggrms
-      write(3,*) 'i_curlggmax=',i_curlggmax
-      write(3,*) 'i_divggrms=',i_divggrms
-      write(3,*) 'i_divggmax=',i_divggmax
-      write(3,*) 'igg=',igg
-      write(3,*) 'igx=',igx
-      write(3,*) 'igy=',igy
-      write(3,*) 'igz=',igz
+      if (lwr) then
+        write(3,*) 'i_curlggrms=',i_curlggrms
+        write(3,*) 'i_curlggmax=',i_curlggmax
+        write(3,*) 'i_divggrms=',i_divggrms
+        write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'igg=',igg
+        write(3,*) 'igx=',igx
+        write(3,*) 'igy=',igy
+        write(3,*) 'igz=',igz
+      endif
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_gravity

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.38 2003-10-20 16:27:21 dobler Exp $
+! $Id: nomagnetic.f90,v 1.39 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -59,7 +59,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.38 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: nomagnetic.f90,v 1.39 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -103,7 +103,7 @@ module Magnetic
       if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb !(keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine rprint_magnetic(lreset)
+    subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
 !  dummy routine
@@ -112,48 +112,54 @@ module Magnetic
 !
       use Cdata
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !  idl needs this even if everything is zero
 !
-      write(3,*) 'i_abm=',i_abm
-      write(3,*) 'i_jbm=',i_jbm
-      write(3,*) 'i_b2m=',i_b2m
-      write(3,*) 'i_bm2=',i_bm2
-      write(3,*) 'i_j2m=',i_j2m
-      write(3,*) 'i_jm2=',i_jm2
-      write(3,*) 'i_epsM=',i_epsM
-      write(3,*) 'i_brms=',i_brms
-      write(3,*) 'i_bmax=',i_bmax
-      write(3,*) 'i_jrms=',i_jrms
-      write(3,*) 'i_jmax=',i_jmax
-      write(3,*) 'i_vArms=',i_vArms
-      write(3,*) 'i_vAmax=',i_vAmax
-      write(3,*) 'i_bx2m=',i_bx2m
-      write(3,*) 'i_by2m=',i_by2m
-      write(3,*) 'i_bz2m=',i_bz2m
-      write(3,*) 'i_uxbm=',i_uxbm
-      write(3,*) 'i_oxuxbm=',i_oxuxbm
-      write(3,*) 'i_jxbxbm=',i_jxbxbm
-      write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
-      write(3,*) 'nname=',nname
-      write(3,*) 'iaa=',iaa
-      write(3,*) 'iax=',iax
-      write(3,*) 'iay=',iay
-      write(3,*) 'iaz=',iaz
-      write(3,*) 'nnamez=',nnamez
-      write(3,*) 'i_bxmz=',i_bxmz
-      write(3,*) 'i_bymz=',i_bymz
-      write(3,*) 'i_bzmz=',i_bzmz
-      write(3,*) 'i_bmx=',i_bmx
-      write(3,*) 'i_bmy=',i_bmy
-      write(3,*) 'i_bmz=',i_bmz
-      write(3,*) 'nnamexy=',nnamexy
-      write(3,*) 'i_bxmxy=',i_bxmxy
-      write(3,*) 'i_bymxy=',i_bymxy
-      write(3,*) 'i_bzmxy=',i_bzmxy
-      write(3,*) 'i_b2mphi=',i_b2mphi
+      if (lwr) then
+        write(3,*) 'i_abm=',i_abm
+        write(3,*) 'i_jbm=',i_jbm
+        write(3,*) 'i_b2m=',i_b2m
+        write(3,*) 'i_bm2=',i_bm2
+        write(3,*) 'i_j2m=',i_j2m
+        write(3,*) 'i_jm2=',i_jm2
+        write(3,*) 'i_epsM=',i_epsM
+        write(3,*) 'i_brms=',i_brms
+        write(3,*) 'i_bmax=',i_bmax
+        write(3,*) 'i_jrms=',i_jrms
+        write(3,*) 'i_jmax=',i_jmax
+        write(3,*) 'i_vArms=',i_vArms
+        write(3,*) 'i_vAmax=',i_vAmax
+        write(3,*) 'i_bx2m=',i_bx2m
+        write(3,*) 'i_by2m=',i_by2m
+        write(3,*) 'i_bz2m=',i_bz2m
+        write(3,*) 'i_uxbm=',i_uxbm
+        write(3,*) 'i_oxuxbm=',i_oxuxbm
+        write(3,*) 'i_jxbxbm=',i_jxbxbm
+        write(3,*) 'i_uxDxuxbm=',i_uxDxuxbm
+        write(3,*) 'nname=',nname
+        write(3,*) 'iaa=',iaa
+        write(3,*) 'iax=',iax
+        write(3,*) 'iay=',iay
+        write(3,*) 'iaz=',iaz
+        write(3,*) 'nnamez=',nnamez
+        write(3,*) 'i_bxmz=',i_bxmz
+        write(3,*) 'i_bymz=',i_bymz
+        write(3,*) 'i_bzmz=',i_bzmz
+        write(3,*) 'i_bmx=',i_bmx
+        write(3,*) 'i_bmy=',i_bmy
+        write(3,*) 'i_bmz=',i_bmz
+        write(3,*) 'nnamexy=',nnamexy
+        write(3,*) 'i_bxmxy=',i_bxmxy
+        write(3,*) 'i_bymxy=',i_bymxy
+        write(3,*) 'i_bzmxy=',i_bzmxy
+        write(3,*) 'i_b2mphi=',i_b2mphi
+      endif
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_magnetic

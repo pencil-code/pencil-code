@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.10 2003-10-20 16:27:21 dobler Exp $
+! $Id: pscalar_nolog.f90,v 1.11 2003-10-24 12:09:15 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -76,7 +76,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.10 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: pscalar_nolog.f90,v 1.11 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -311,7 +311,7 @@ module Pscalar
 !
     endsubroutine dlncc_dt
 !***********************************************************************
-    subroutine rprint_pscalar(lreset)
+    subroutine rprint_pscalar(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
 !
@@ -320,7 +320,11 @@ module Pscalar
       use Sub
 !
       integer :: iname,inamez
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -351,16 +355,18 @@ module Pscalar
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_rhoccm=',i_rhoccm
-      write(3,*) 'i_ccmax=',i_ccmax
-      write(3,*) 'i_lnccm=',i_lnccm
-      write(3,*) 'i_ucm=',i_ucm
-      write(3,*) 'i_uudcm=',i_uudcm
-      write(3,*) 'i_lnccmz=',i_lnccmz
-      write(3,*) 'i_Cz2m=',i_Cz2m
-      write(3,*) 'i_Cz4m=',i_Cz4m
-      write(3,*) 'i_Crmsm=',i_Crmsm
-      write(3,*) 'ilncc=',ilncc
+      if (lwr) then
+        write(3,*) 'i_rhoccm=',i_rhoccm
+        write(3,*) 'i_ccmax=',i_ccmax
+        write(3,*) 'i_lnccm=',i_lnccm
+        write(3,*) 'i_ucm=',i_ucm
+        write(3,*) 'i_uudcm=',i_uudcm
+        write(3,*) 'i_lnccmz=',i_lnccmz
+        write(3,*) 'i_Cz2m=',i_Cz2m
+        write(3,*) 'i_Cz4m=',i_Cz4m
+        write(3,*) 'i_Crmsm=',i_Crmsm
+        write(3,*) 'ilncc=',ilncc
+      endif
 !
     endsubroutine rprint_pscalar
 !***********************************************************************

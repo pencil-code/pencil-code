@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.83 2003-10-24 10:49:49 mcmillan Exp $
+! $Id: noionization.f90,v 1.84 2003-10-24 12:09:15 dobler Exp $
 
 !  Dummy routine for noionization
 
@@ -91,7 +91,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.83 2003-10-24 10:49:49 mcmillan Exp $")
+           "$Id: noionization.f90,v 1.84 2003-10-24 12:09:15 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -155,7 +155,7 @@ module Ionization
       mu=1.+2.97153*xHe  
     endsubroutine getmu
 !*******************************************************************
-    subroutine rprint_ionization(lreset)
+    subroutine rprint_ionization(lreset,lwrite)
 !
 !  Writes iyH and iTT to index.pro file
 !
@@ -164,13 +164,19 @@ module Ionization
       use Cdata
       use Sub
 ! 
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  write column where which ionization variable is stored
 !
-      write(3,*) 'nname=',nname
-      write(3,*) 'iyH=',iyH
-      write(3,*) 'iTT=',iTT
+      if (lwr) then
+        write(3,*) 'nname=',nname
+        write(3,*) 'iyH=',iyH
+        write(3,*) 'iTT=',iTT
+      endif
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization

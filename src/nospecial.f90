@@ -1,4 +1,4 @@
-! $Id: nospecial.f90,v 1.6 2003-10-22 15:29:59 dobler Exp $
+! $Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $
 
 !  This module provide a way for users to specify custom 
 !  (i.e. not in the standard Pencil Code) physics, diagnostics etc. 
@@ -137,11 +137,11 @@ module Special
 !
 !
 !  identify CVS version information (if checked in to a CVS repository!)
-!  CVS should automatically update everything between $Id: nospecial.f90,v 1.6 2003-10-22 15:29:59 dobler Exp $ 
+!  CVS should automatically update everything between $Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $ 
 !  when the file in committed to a CVS repository.
 !
       if (lroot) call cvs_id( &
-           "$Id: nospecial.f90,v 1.6 2003-10-22 15:29:59 dobler Exp $")
+           "$Id: nospecial.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $")
 !
 !
 !  Perform some sanity checks (may be meaningless if certain things haven't 
@@ -255,7 +255,7 @@ module Special
 
     endsubroutine dspecial_dt
 !***********************************************************************
-    subroutine rprint_special(lreset)
+    subroutine rprint_special(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to special
 !
@@ -264,7 +264,11 @@ module Special
       use Cdata
       use Sub
 
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 
 !!
 !!!   SAMPLE IMPLEMENTATION
@@ -283,8 +287,9 @@ module Special
 !!      enddo
 !!
 !!!  write column where which magnetic variable is stored
-!!
-!!      write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
+!!      if (lwr) then
+!!        write(3,*) 'i_SPECIAL_DIAGNOSTIC=',i_SPECIAL_DIAGNOSTIC
+!!      endif
 !!
 
     endsubroutine rprint_special

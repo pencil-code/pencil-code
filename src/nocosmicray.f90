@@ -1,4 +1,4 @@
-! $Id: nocosmicray.f90,v 1.6 2003-10-20 16:27:20 dobler Exp $
+! $Id: nocosmicray.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -50,7 +50,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nocosmicray.f90,v 1.6 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: nocosmicray.f90,v 1.7 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_cosmicray
 !***********************************************************************
@@ -106,7 +106,7 @@ module CosmicRay
       if(ip==0) print*,f,df,uu,rho1,divu,bij,bb
     endsubroutine decr_dt
 !***********************************************************************
-    subroutine rprint_cosmicray(lreset)
+    subroutine rprint_cosmicray(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for cosmic rays
 !
@@ -114,7 +114,11 @@ module CosmicRay
 !
       use Sub
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -125,8 +129,10 @@ module CosmicRay
 !
 !  write column where which magnetic variable is stored
 !
-!      write(3,*) 'i_lnccmz=',i_lnccmz
-      write(3,*) 'iecr=',iecr
+      if (lwr) then
+!        write(3,*) 'i_lnccmz=',i_lnccmz
+        write(3,*) 'iecr=',iecr
+      endif
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************

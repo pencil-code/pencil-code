@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.16 2003-10-20 16:27:20 dobler Exp $
+! $Id: nodensity.f90,v 1.17 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -51,7 +51,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.16 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: nodensity.f90,v 1.17 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -103,7 +103,7 @@ module Density
       if(ip==0) print*,f,df,uu,divu,shock,gshock
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine rprint_density(lreset)
+    subroutine rprint_density(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for compressible part
 !
@@ -112,7 +112,11 @@ module Density
       use Cdata
       use Sub
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -123,11 +127,13 @@ module Density
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ekintot=',i_ekintot
-      write(3,*) 'i_ekin=',i_ekin
-      write(3,*) 'i_rhom=',i_rhom
-      write(3,*) 'nname=',nname
-      write(3,*) 'ilnrho=',ilnrho
+      if (lwr) then
+        write(3,*) 'i_ekintot=',i_ekintot
+        write(3,*) 'i_ekin=',i_ekin
+        write(3,*) 'i_rhom=',i_rhom
+        write(3,*) 'nname=',nname
+        write(3,*) 'ilnrho=',ilnrho
+      endif
 !
     endsubroutine rprint_density
 !***********************************************************************

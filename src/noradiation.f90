@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.20 2003-10-20 16:27:21 dobler Exp $
+! $Id: noradiation.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $
 
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -46,7 +46,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.20 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: noradiation.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -126,7 +126,7 @@ module Radiation
       if(ip==0) print*,f,df,rho1,divu,uu,uij,TT1,gamma !(keep compiler quiet)
     endsubroutine de_dt
 !*******************************************************************
-    subroutine rprint_radiation(lreset)
+    subroutine rprint_radiation(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for radiative part
 !
@@ -135,25 +135,31 @@ module Radiation
       use Cdata
       use Sub
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  write column where which radiative variable is stored
 !
-      write(3,*) 'i_frms=',i_frms
-      write(3,*) 'i_fmax=',i_fmax
-      write(3,*) 'i_Erad_rms=',i_Erad_rms
-      write(3,*) 'i_Erad_max=',i_Erad_max
-      write(3,*) 'i_Egas_rms=',i_Egas_rms
-      write(3,*) 'i_Egas_max=',i_Egas_max
-      write(3,*) 'nname=',nname
-      write(3,*) 'ie=',ie
-      write(3,*) 'ifx=',ifx
-      write(3,*) 'ify=',ify
-      write(3,*) 'ifz=',ifz
-      write(3,*) 'iQrad=',iQrad
-      write(3,*) 'iSrad=',iSrad
-      write(3,*) 'ikappa=',ikappa
-      write(3,*) 'iTT=',iTT
+      if (lwr) then
+        write(3,*) 'i_frms=',i_frms
+        write(3,*) 'i_fmax=',i_fmax
+        write(3,*) 'i_Erad_rms=',i_Erad_rms
+        write(3,*) 'i_Erad_max=',i_Erad_max
+        write(3,*) 'i_Egas_rms=',i_Egas_rms
+        write(3,*) 'i_Egas_max=',i_Egas_max
+        write(3,*) 'nname=',nname
+        write(3,*) 'ie=',ie
+        write(3,*) 'ifx=',ifx
+        write(3,*) 'ify=',ify
+        write(3,*) 'ifz=',ifz
+        write(3,*) 'iQrad=',iQrad
+        write(3,*) 'iSrad=',iSrad
+        write(3,*) 'ikappa=',ikappa
+        write(3,*) 'iTT=',iTT
+      endif
 !
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation

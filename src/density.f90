@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.130 2003-10-24 11:25:11 dobler Exp $
+! $Id: density.f90,v 1.131 2003-10-24 12:09:15 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -81,7 +81,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.130 2003-10-24 11:25:11 dobler Exp $")
+           "$Id: density.f90,v 1.131 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -651,7 +651,7 @@ module Density
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
-    subroutine rprint_density(lreset)
+    subroutine rprint_density(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for compressible part
 !
@@ -661,7 +661,11 @@ module Density
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -681,11 +685,13 @@ module Density
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ekintot=',i_ekintot
-      write(3,*) 'i_ekin=',i_ekin
-      write(3,*) 'i_rhom=',i_rhom
-      write(3,*) 'nname=',nname
-      write(3,*) 'ilnrho=',ilnrho
+      if (lwr) then
+        write(3,*) 'i_ekintot=',i_ekintot
+        write(3,*) 'i_ekin=',i_ekin
+        write(3,*) 'i_rhom=',i_rhom
+        write(3,*) 'nname=',nname
+        write(3,*) 'ilnrho=',ilnrho
+      endif
 !
     endsubroutine rprint_density
 !***********************************************************************

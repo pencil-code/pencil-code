@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.47 2003-10-20 16:27:20 dobler Exp $
+! $Id: noentropy.f90,v 1.48 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.47 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: noentropy.f90,v 1.48 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -135,7 +135,7 @@ module Entropy
       if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
-    subroutine rprint_entropy(lreset)
+    subroutine rprint_entropy(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to entropy
 !
@@ -145,7 +145,11 @@ module Entropy
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -160,10 +164,12 @@ module Entropy
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ssm=',i_ssm
-      write(3,*) 'i_ugradpm=',i_ugradpm
-      write(3,*) 'nname=',nname
-      write(3,*) 'iss=',iss
+      if (lwr) then
+        write(3,*) 'i_ssm=',i_ssm
+        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'nname=',nname
+        write(3,*) 'iss=',iss
+      endif
 !
     endsubroutine rprint_entropy
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.105 2003-10-24 11:25:11 dobler Exp $
+! $Id: register.f90,v 1.106 2003-10-24 12:09:15 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -321,25 +321,25 @@ module Register
 !  For the convenience of idl users, the indices of variables in
 !  the f-array and the time_series.dat files are written to data/index.pro
 !
-      open(3,file=trim(datadir)//'/index.pro')
-      call rprint_general(lreset)
-      call rprint_hydro(lreset)
-      call rprint_density(lreset)
-      call rprint_entropy(lreset)
-      call rprint_magnetic(lreset)
-      call rprint_radiation(lreset)
-      call rprint_ionization(lreset)
-      call rprint_pscalar(lreset)
-      call rprint_dustvelocity(lreset)
-      call rprint_dustdensity(lreset)
-      call rprint_cosmicray(lreset)
-      call rprint_gravity(lreset)
-      call rprint_special(lreset)
-      close(3)
+      if (lroot) open(3,file=trim(datadir)//'/index.pro')
+      call rprint_general     (lreset,LWRITE=lroot)
+      call rprint_hydro       (lreset,LWRITE=lroot)
+      call rprint_density     (lreset,LWRITE=lroot)
+      call rprint_entropy     (lreset,LWRITE=lroot)
+      call rprint_magnetic    (lreset,LWRITE=lroot)
+      call rprint_radiation   (lreset,LWRITE=lroot)
+      call rprint_ionization  (lreset,LWRITE=lroot)
+      call rprint_pscalar     (lreset,LWRITE=lroot)
+      call rprint_dustvelocity(lreset,LWRITE=lroot)
+      call rprint_dustdensity (lreset,LWRITE=lroot)
+      call rprint_cosmicray   (lreset,LWRITE=lroot)
+      call rprint_gravity     (lreset,LWRITE=lroot)
+      call rprint_special     (lreset,LWRITE=lroot)
+      if (lroot) close(3)
 !
     endsubroutine rprint_list
 !***********************************************************************
-    subroutine rprint_general(lreset)
+    subroutine rprint_general(lreset,lwrite)
 !
 !  reads and registers *general* print parameters
 !
@@ -349,7 +349,11 @@ module Register
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -371,14 +375,16 @@ module Register
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_t=',i_t
-      write(3,*) 'i_it=',i_it
-      write(3,*) 'i_dt=',i_dt
-      write(3,*) 'i_dtc=',i_dtc
-      write(3,*) 'i_walltime=',i_walltime
-      write(3,*) 'nname=',nname
+      if (lwr) then
+        write(3,*) 'i_t=',i_t
+        write(3,*) 'i_it=',i_it
+        write(3,*) 'i_dt=',i_dt
+        write(3,*) 'i_dtc=',i_dtc
+        write(3,*) 'i_walltime=',i_walltime
+        write(3,*) 'nname=',nname
 !ajwm Not really the correct place to put this...?
-      write(3,*) 'ishock=',ishock
+        write(3,*) 'ishock=',ishock
+      endif
 !
     endsubroutine rprint_general
 !***********************************************************************

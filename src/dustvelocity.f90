@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.20 2003-10-24 11:25:11 dobler Exp $
+! $Id: dustvelocity.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -78,7 +78,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.20 2003-10-24 11:25:11 dobler Exp $")
+           "$Id: dustvelocity.f90,v 1.21 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -348,7 +348,7 @@ module Dustvelocity
 !
     endsubroutine duud_dt
 !***********************************************************************
-    subroutine rprint_dustvelocity(lreset)
+    subroutine rprint_dustvelocity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
 !
@@ -359,7 +359,11 @@ module Dustvelocity
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -398,34 +402,36 @@ module Dustvelocity
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ud2m=',i_ud2m
-      write(3,*) 'i_udm2=',i_udm2
-      write(3,*) 'i_od2m=',i_od2m
-      write(3,*) 'i_oudm=',i_oudm
-      write(3,*) 'i_udrms=',i_udrms
-      write(3,*) 'i_udmax=',i_udmax
-      write(3,*) 'i_rdudmax=',i_rdudmax
-      write(3,*) 'i_odrms=',i_odrms
-      write(3,*) 'i_odmax=',i_odmax
-      write(3,*) 'i_udmx=',i_udmx
-      write(3,*) 'i_udmy=',i_udmy
-      write(3,*) 'i_udmz=',i_udmz
-      write(3,*) 'i_divud2m=',i_divud2m
-      write(3,*) 'i_epsKd=',i_epsKd
-      write(3,*) 'nname=',nname
-      write(3,*) 'iuud=',iuud
-      write(3,*) 'iudx=',iudx
-      write(3,*) 'iudy=',iudy
-      write(3,*) 'iudz=',iudz
-      write(3,*) 'i_udxpt=',i_udxpt
-      write(3,*) 'i_udypt=',i_udypt
-      write(3,*) 'i_udzpt=',i_udzpt
-      write(3,*) 'i_udxmz=',i_udxmz
-      write(3,*) 'i_udymz=',i_udymz
-      write(3,*) 'i_udzmz=',i_udzmz
-      write(3,*) 'i_udxmxy=',i_udxmxy
-      write(3,*) 'i_udymxy=',i_udymxy
-      write(3,*) 'i_udzmxy=',i_udzmxy
+      if (lwr) then
+        write(3,*) 'i_ud2m=',i_ud2m
+        write(3,*) 'i_udm2=',i_udm2
+        write(3,*) 'i_od2m=',i_od2m
+        write(3,*) 'i_oudm=',i_oudm
+        write(3,*) 'i_udrms=',i_udrms
+        write(3,*) 'i_udmax=',i_udmax
+        write(3,*) 'i_rdudmax=',i_rdudmax
+        write(3,*) 'i_odrms=',i_odrms
+        write(3,*) 'i_odmax=',i_odmax
+        write(3,*) 'i_udmx=',i_udmx
+        write(3,*) 'i_udmy=',i_udmy
+        write(3,*) 'i_udmz=',i_udmz
+        write(3,*) 'i_divud2m=',i_divud2m
+        write(3,*) 'i_epsKd=',i_epsKd
+        write(3,*) 'nname=',nname
+        write(3,*) 'iuud=',iuud
+        write(3,*) 'iudx=',iudx
+        write(3,*) 'iudy=',iudy
+        write(3,*) 'iudz=',iudz
+        write(3,*) 'i_udxpt=',i_udxpt
+        write(3,*) 'i_udypt=',i_udypt
+        write(3,*) 'i_udzpt=',i_udzpt
+        write(3,*) 'i_udxmz=',i_udxmz
+        write(3,*) 'i_udymz=',i_udymz
+        write(3,*) 'i_udzmz=',i_udzmz
+        write(3,*) 'i_udxmxy=',i_udxmxy
+        write(3,*) 'i_udymxy=',i_udymxy
+        write(3,*) 'i_udzmxy=',i_udzmxy
+      endif
 !
     endsubroutine rprint_dustvelocity
 !***********************************************************************

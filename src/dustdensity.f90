@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.13 2003-10-24 11:25:11 dobler Exp $
+! $Id: dustdensity.f90,v 1.14 2003-10-24 12:09:15 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -66,7 +66,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.13 2003-10-24 11:25:11 dobler Exp $")
+           "$Id: dustdensity.f90,v 1.14 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -209,7 +209,7 @@ module Dustdensity
 !
     endsubroutine dlnrhod_dt
 !***********************************************************************
-    subroutine rprint_dustdensity(lreset)
+    subroutine rprint_dustdensity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for compressible part
 !
@@ -219,7 +219,11 @@ module Dustdensity
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -237,9 +241,11 @@ module Dustdensity
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_rhodm=',i_rhodm
-      write(3,*) 'nname=',nname
-      write(3,*) 'ilnrhod=',ilnrhod
+      if (lwr) then
+        write(3,*) 'i_rhodm=',i_rhodm
+        write(3,*) 'nname=',nname
+        write(3,*) 'ilnrhod=',ilnrhod
+      endif
 !
     endsubroutine rprint_dustdensity
 !***********************************************************************

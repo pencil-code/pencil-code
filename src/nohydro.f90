@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.18 2003-10-20 16:27:20 dobler Exp $
+! $Id: nohydro.f90,v 1.19 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -56,7 +56,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.18 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: nohydro.f90,v 1.19 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -136,7 +136,7 @@ module Hydro
                                                !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine rprint_hydro(lreset)
+    subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
 !
@@ -146,7 +146,11 @@ module Hydro
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -173,38 +177,40 @@ module Hydro
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_u2m=',i_u2m
-      write(3,*) 'i_um2=',i_um2
-      write(3,*) 'i_o2m=',i_o2m
-      write(3,*) 'i_oum=',i_oum
-      write(3,*) 'i_urms=',i_urms
-      write(3,*) 'i_umax=',i_umax
-      write(3,*) 'i_ux2m=',i_ux2m
-      write(3,*) 'i_uy2m=',i_uy2m
-      write(3,*) 'i_uz2m=',i_uz2m
-      write(3,*) 'i_orms=',i_orms
-      write(3,*) 'i_omax=',i_omax
-      write(3,*) 'i_ruxm=',i_ruxm
-      write(3,*) 'i_ruym=',i_ruym
-      write(3,*) 'i_ruzm=',i_ruzm
-      write(3,*) 'i_umx=',i_umx
-      write(3,*) 'i_umy=',i_umy
-      write(3,*) 'i_umz=',i_umz
-      write(3,*) 'i_Marms=',i_Marms
-      write(3,*) 'i_Mamax=',i_Mamax
-      write(3,*) 'i_divu2m=',i_divu2m
-      write(3,*) 'i_epsK=',i_epsK
-      write(3,*) 'nname=',nname
-      write(3,*) 'iuu=',iuu
-      write(3,*) 'iux=',iux
-      write(3,*) 'iuy=',iuy
-      write(3,*) 'iuz=',iuz
-      write(3,*) 'i_uxmz=',i_uxmz
-      write(3,*) 'i_uymz=',i_uymz
-      write(3,*) 'i_uzmz=',i_uzmz
-      write(3,*) 'i_uxmxy=',i_uxmxy
-      write(3,*) 'i_uymxy=',i_uymxy
-      write(3,*) 'i_uzmxy=',i_uzmxy
+      if (lwr) then
+        write(3,*) 'i_u2m=',i_u2m
+        write(3,*) 'i_um2=',i_um2
+        write(3,*) 'i_o2m=',i_o2m
+        write(3,*) 'i_oum=',i_oum
+        write(3,*) 'i_urms=',i_urms
+        write(3,*) 'i_umax=',i_umax
+        write(3,*) 'i_ux2m=',i_ux2m
+        write(3,*) 'i_uy2m=',i_uy2m
+        write(3,*) 'i_uz2m=',i_uz2m
+        write(3,*) 'i_orms=',i_orms
+        write(3,*) 'i_omax=',i_omax
+        write(3,*) 'i_ruxm=',i_ruxm
+        write(3,*) 'i_ruym=',i_ruym
+        write(3,*) 'i_ruzm=',i_ruzm
+        write(3,*) 'i_umx=',i_umx
+        write(3,*) 'i_umy=',i_umy
+        write(3,*) 'i_umz=',i_umz
+        write(3,*) 'i_Marms=',i_Marms
+        write(3,*) 'i_Mamax=',i_Mamax
+        write(3,*) 'i_divu2m=',i_divu2m
+        write(3,*) 'i_epsK=',i_epsK
+        write(3,*) 'nname=',nname
+        write(3,*) 'iuu=',iuu
+        write(3,*) 'iux=',iux
+        write(3,*) 'iuy=',iuy
+        write(3,*) 'iuz=',iuz
+        write(3,*) 'i_uxmz=',i_uxmz
+        write(3,*) 'i_uymz=',i_uymz
+        write(3,*) 'i_uzmz=',i_uzmz
+        write(3,*) 'i_uxmxy=',i_uxmxy
+        write(3,*) 'i_uymxy=',i_uymxy
+        write(3,*) 'i_uzmxy=',i_uzmxy
+      endif
 !
     endsubroutine rprint_hydro
 !***********************************************************************

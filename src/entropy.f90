@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.224 2003-10-24 11:25:11 dobler Exp $
+! $Id: entropy.f90,v 1.225 2003-10-24 12:09:15 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -100,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.224 2003-10-24 11:25:11 dobler Exp $")
+           "$Id: entropy.f90,v 1.225 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1250,7 +1250,7 @@ endif
 !
     endsubroutine calc_tau_ss_exterior
 !***********************************************************************
-    subroutine rprint_entropy(lreset)
+    subroutine rprint_entropy(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to entropy
 !
@@ -1260,7 +1260,11 @@ endif
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -1280,14 +1284,16 @@ endif
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ethtot=',i_ethtot
-      write(3,*) 'i_eth=',i_eth
-      write(3,*) 'i_TTm=',i_TTm
-      write(3,*) 'i_yHm=',i_yHm
-      write(3,*) 'i_ssm=',i_ssm
-      write(3,*) 'i_ugradpm=',i_ugradpm
-      write(3,*) 'nname=',nname
-      write(3,*) 'iss=',iss
+      if (lwr) then
+        write(3,*) 'i_ethtot=',i_ethtot
+        write(3,*) 'i_eth=',i_eth
+        write(3,*) 'i_TTm=',i_TTm
+        write(3,*) 'i_yHm=',i_yHm
+        write(3,*) 'i_ssm=',i_ssm
+        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'nname=',nname
+        write(3,*) 'iss=',iss
+      endif
 !
     endsubroutine rprint_entropy
 !***********************************************************************

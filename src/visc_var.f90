@@ -1,4 +1,4 @@
-! $Id: visc_var.f90,v 1.11 2003-10-23 12:55:09 tarek Exp $
+! $Id: visc_var.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -58,7 +58,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_var.f90,v 1.11 2003-10-23 12:55:09 tarek Exp $")
+           "$Id: visc_var.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -84,7 +84,7 @@ module Viscosity
     endsubroutine initialize_viscosity
 
 !***********************************************************************
-!    subroutine rprint_viscosity(lreset)
+!    subroutine rprint_viscosity(lreset,lwrite)
 !!
 !!  reads and registers print parameters relevant for compressible part
 !!
@@ -94,7 +94,11 @@ module Viscosity
 !      use Sub
 !!
 !      integer :: iname
-!      logical :: lreset
+!      logical :: lreset,lwr
+!      logical, optional :: lwrite
+!!
+!      lwr = .false.
+!      if (present(lwrite)) lwr=.true.
 !!
 !!  reset everything in case of reset
 !!  (this needs to be consistent with what is defined above!)
@@ -112,8 +116,10 @@ module Viscosity
 !!
 !!  write column where which viscosity variables stored
 !!
-!      write(3,*) 'q_DJO=',q_DJO
-!      write(3,*) 't0_DJO=',t0_DJO
+!      if (lwr) then
+!        write(3,*) 'q_DJO=',q_DJO
+!        write(3,*) 't0_DJO=',t0_DJO
+!      endif
 !!
 !    endsubroutine rprint_viscosity
 

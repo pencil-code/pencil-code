@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.15 2003-10-24 11:25:11 dobler Exp $
+! $Id: grav_self.f90,v 1.16 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -83,7 +83,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.15 2003-10-24 11:25:11 dobler Exp $")
+           "$Id: grav_self.f90,v 1.16 2003-10-24 12:09:15 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -285,7 +285,7 @@ module Gravity
 !!
 !    endsubroutine self_gravity
 !***********************************************************************
-    subroutine rprint_gravity(lreset)
+    subroutine rprint_gravity(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for gravity advance
 !
@@ -295,7 +295,11 @@ module Gravity
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
@@ -315,14 +319,16 @@ module Gravity
 !
 !  write column, i_XYZ, where our variable XYZ is stored
 !
-      write(3,*) 'i_curlggrms=',i_curlggrms
-      write(3,*) 'i_curlggmax=',i_curlggmax
-      write(3,*) 'i_divggrms=',i_divggrms
-      write(3,*) 'i_divggmax=',i_divggmax
-      write(3,*) 'igg=',igg
-      write(3,*) 'igx=',igx
-      write(3,*) 'igy=',igy
-      write(3,*) 'igz=',igz
+      if (lwr) then
+        write(3,*) 'i_curlggrms=',i_curlggrms
+        write(3,*) 'i_curlggmax=',i_curlggmax
+        write(3,*) 'i_divggrms=',i_divggrms
+        write(3,*) 'i_divggmax=',i_divggmax
+        write(3,*) 'igg=',igg
+        write(3,*) 'igx=',igx
+        write(3,*) 'igy=',igy
+        write(3,*) 'igz=',igz
+      endif
 !
     endsubroutine rprint_gravity
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.11 2003-10-20 16:27:21 dobler Exp $
+! $Id: nohydro_file.f90,v 1.12 2003-10-24 12:09:15 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,8 +50,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2003-10-20 16:27:21 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2003-10-24 12:09:15 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -146,7 +146,7 @@ module Hydro
       if(ip==0) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
-    subroutine rprint_hydro(lreset)
+    subroutine rprint_hydro(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for hydro part
 !
@@ -156,7 +156,11 @@ module Hydro
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -177,19 +181,21 @@ module Hydro
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_u2m=',i_u2m
-      write(3,*) 'i_um2=',i_um2
-      write(3,*) 'i_o2m=',i_o2m
-      write(3,*) 'i_oum=',i_oum
-      write(3,*) 'i_urms=',i_urms
-      write(3,*) 'i_umax=',i_umax
-      write(3,*) 'i_orms=',i_orms
-      write(3,*) 'i_omax=',i_omax
-      write(3,*) 'nname=',nname
-      write(3,*) 'iuu=',iuu
-      write(3,*) 'iux=',iux
-      write(3,*) 'iuy=',iuy
-      write(3,*) 'iuz=',iuz
+      if (lwr) then
+        write(3,*) 'i_u2m=',i_u2m
+        write(3,*) 'i_um2=',i_um2
+        write(3,*) 'i_o2m=',i_o2m
+        write(3,*) 'i_oum=',i_oum
+        write(3,*) 'i_urms=',i_urms
+        write(3,*) 'i_umax=',i_umax
+        write(3,*) 'i_orms=',i_orms
+        write(3,*) 'i_omax=',i_omax
+        write(3,*) 'nname=',nname
+        write(3,*) 'iuu=',iuu
+        write(3,*) 'iux=',iux
+        write(3,*) 'iuy=',iuy
+        write(3,*) 'iuz=',iuz
+      endif
 !
     endsubroutine rprint_hydro
 !***********************************************************************

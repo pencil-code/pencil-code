@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.9 2003-10-20 16:27:21 dobler Exp $
+! $Id: temperature.f90,v 1.10 2003-10-24 12:09:15 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -88,7 +88,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.9 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: temperature.f90,v 1.10 2003-10-24 12:09:15 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -643,7 +643,7 @@ endif
 !
     endsubroutine calc_tau_ss_exterior
 !***********************************************************************
-    subroutine rprint_entropy(lreset)
+    subroutine rprint_entropy(lreset,lwrite)
 !
 !  reads and registers print parameters relevant to entropy
 !
@@ -653,7 +653,11 @@ endif
       use Sub
 !
       integer :: iname
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -669,10 +673,12 @@ endif
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_ssm=',i_ssm
-      write(3,*) 'i_ugradpm=',i_ugradpm
-      write(3,*) 'nname=',nname
-      write(3,*) 'ilnTT=',ilnTT
+      if (lwr) then
+        write(3,*) 'i_ssm=',i_ssm
+        write(3,*) 'i_ugradpm=',i_ugradpm
+        write(3,*) 'nname=',nname
+        write(3,*) 'ilnTT=',ilnTT
+      endif
 !
     endsubroutine rprint_entropy
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.8 2003-10-20 16:27:21 dobler Exp $
+! $Id: nopscalar.f90,v 1.9 2003-10-24 12:09:15 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -50,7 +50,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.8 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: nopscalar.f90,v 1.9 2003-10-24 12:09:15 dobler Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -106,7 +106,7 @@ module Pscalar
       if(ip==0) print*,f,df,uu,glnrho
     endsubroutine dlncc_dt
 !***********************************************************************
-    subroutine rprint_pscalar(lreset)
+    subroutine rprint_pscalar(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
 !
@@ -114,7 +114,11 @@ module Pscalar
 !
       use Sub
 !
-      logical :: lreset
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=.true.
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -125,11 +129,13 @@ module Pscalar
 !
 !  write column where which magnetic variable is stored
 !
-      write(3,*) 'i_rhoccm=',i_rhoccm
-      write(3,*) 'i_ccmax=',i_ccmax
-      write(3,*) 'i_lnccm=',i_lnccm
-      write(3,*) 'i_lnccmz=',i_lnccmz
-      write(3,*) 'ilncc=',ilncc
+      if (lwr) then
+        write(3,*) 'i_rhoccm=',i_rhoccm
+        write(3,*) 'i_ccmax=',i_ccmax
+        write(3,*) 'i_lnccm=',i_lnccm
+        write(3,*) 'i_lnccmz=',i_lnccmz
+        write(3,*) 'ilncc=',ilncc
+      endif
 !
     endsubroutine rprint_pscalar
 !***********************************************************************
