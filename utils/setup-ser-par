@@ -6,37 +6,79 @@
 #   runs for the same parameters.
 # Usage:
 #   setup-par
-#   (cd src-ser; make)
-#   (cd src-par; make)
+#   (cd src-ser; make) && (cd src-par; make)
 #   run-ser-par
 #   idl
 #     @read-ser-par
+# Revert with:
+#   mv src-orig src ; rm -r src-{ser,par} ; mv data-orig data ; rm data-{ser,par} ; rm -r data/data-{ser,par}
 
 if ($#argv > 0) goto usage
 
 # Are we in a run directory?
 if (! -e ./start.in) goto usage
 
-if (! -d src-ser) then
-  cp -r src src-ser
-  rm -rf src-par/CVS		# mustn't copy CVS subdirectory
+# Save original src/ directory
+if (-d src) then
+  if (-d src-orig) then
+    echo "Inconsistency: Remove either src/ or src-orig/"
+    exit 1
+  else
+    mv src src-orig
+  endif
 endif
-  
-setup-src src-ser
-cp -r src-ser src-par
-rm -rf src-par/CVS		# mustn't copy CVS subdirectory
 
-# Set nompi for src-ser:
-perl -i -pe 's/MPICOMM\s*=\s*mpicomm/MPICOMM   = nompicomm/' src-ser/Makefile.local
-perl -i -pe 's/ncpus=[0-9]+/ncpus=1/; s/nprocy=[0-9]+/nprocy=1/; s/nprocz=[0-9]+/nprocz=1/;' src-ser/cparam.local
-# Set CPU layout to 2x2 for parallel run
-perl -i -pe 's/MPICOMM\s*=\s*nompicomm/MPICOMM   =   mpicomm/' src-par/Makefile.local
-perl -i -pe 's/ncpus=[0-9]+/ncpus=4/; s/nprocy=[0-9]+/nprocy=2/; s/nprocz=[0-9]+/nprocz=2/;' src-par/cparam.local
+# Create and set up src-ser/ and src-par/
+foreach label (ser par)
+  if (-d "src-$label") then
+    echo "src-$label/ already exists.. leaving it alone"
+    # MPIO doesn't work under lam
+    perl -i.bak -pe 's{/lam/}{/mpich/}g' src-$label/makefile
+  else
+    if ($label == par) then
+      set ncpus  = 4
+      set nprocy = 2
+    else
+      set ncpus  = 1
+      set nprocy = 1
+    endif
+    set nprocz = `expr $ncpus / $nprocy`
+    cp -rp src-orig src-$label
+    rm -rf src-$label/CVS		# mustn't copy CVS subdirectory
+    setup-src src-$label
+    # Set mpi and mpio for src-$label:
+    perl -i -p -e 's/MPICOMM\s*=\s*nompicomm/MPICOMM   =   mpicomm/;' \
+               -e 's/IO\s*=\s*io.*/IO        =   io_mpio/;' \
+	       src-$label/Makefile.local
+    perl -i -p -e "s/ncpus=[0-9]+/ncpus=$ncpus/;" \
+               -e "s/nprocy=[0-9]+/nprocy=$nprocy/;" \
+	       -e "s/nprocz=[0-9]+/nprocz=$nprocz/;" \
+	       src-$label/cparam.local
+    (cd src-$label; make makefile)
+  endif
+end
 
-## Move original src and data directories
-mv src src-orig
-mv data data-orig && mkdir data-orig/data-{ser,par}
-ln -s data-orig/data-{ser,par} .
+## Move and set up data directories
+if (-d data) then
+  if (-d data-orig) then
+    echo "Inconsistency: Remove either data/ or data-orig/"
+    exit 1
+  else
+    mv data data-orig
+    if (! -d data-orig/ser) mkdir data-orig/data-ser
+    if (! -d data-orig/par) mkdir data-orig/data-par
+    if (! -e data-ser) then
+      ln -s data-orig/data-ser .
+    else
+      echo "data-ser/ already exists.. leaving alone"
+    endif
+    if (! -e data-par) then
+      ln -s data-orig/data-par .
+    else
+      echo "data-par/ already exists.. leaving alone"
+    endif
+  endif
+endif
 
 goto exit
 

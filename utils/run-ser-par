@@ -40,6 +40,7 @@ endif
 # Link and run serial
 ln -fs src-ser src
 ln -fs data-ser data
+mkdir -p data/allprocs
 start.csh
 run.csh
 rm -f src data
@@ -47,9 +48,15 @@ rm -f src data
 # Link and run parallel
 ln -fs src-par src
 ln -fs data-par data
+mkdir -p data/allprocs
 start.csh
 run.csh
 rm -f src data
 
+echo "Diffing.."
+diff -u data-{ser,par}/time_series.dat
+
+echo "Cmping binary data files.."
+cmp data-{ser,par}/allprocs/var.dat
 
 # End of file run-ser-par
