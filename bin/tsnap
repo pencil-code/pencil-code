@@ -1,0 +1,102 @@
+#!/bin/sh
+# -*-perl-*-
+#
+# Name:   tsnap
+# Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+# Date:   2-Oct-1999
+# Version: 0.5
+# Description:
+#   Extract time information from a snapshot file. Assumes the following to be
+#   written to the file:
+#     write a
+#     write t [,x,y,z]
+# Usage:  tsnap  [-s|--sort]  <file1> [<file2> ..]
+
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"	# -x: start from the following line
+# Line numbers in perl warnings are counted from the following line as
+# line zero.
+#======================================================================#
+#! /good_path/perl -w 
+
+require 5;
+use strict;
+use Getopt::Long;
+
+my (%opts);	# Variables written by GetOptions
+my ($usage,$file,$N,$N_swap,$endi);
+my $nn=0; my $nn1=0; my $t=0;	# Initialise these for Antares
+
+# Process command line:
+$usage = "Usage:  $0  [-s|--sort]  <file1> [<file2> ..]\n";
+die $usage unless (@ARGV > 0);
+
+# Initialise
+$opts{'help'} = '';
+$opts{'sort'} = '';
+GetOptions(\%opts, "--help", "--sort");
+
+if ($opts{'help'}) { die $usage; }
+if ($opts{'sort'}) { @ARGV = sort by_first_num(@ARGV);}
+
+# Process files
+foreach $file (@ARGV) {
+    if (!open(INPUT,"<$file")) {
+        print STDERR "Can't open input file $file\n";
+        next;
+    }
+    # The first four bytes contain the size nx*ny*nz*nw*4 of f (first
+    # record size) 
+    read INPUT, $nn, 4;
+    $N = unpack("I",$nn);	# Interpret $N as a 4-byte integer
+
+    $N_swap = unpack("I",reverse($nn));	# Same in swapped byte order
+    # Skip $N bytes and check record end for consistency
+    if (!defined($N) || $N == 0) { print "$file:\t  (corrupt)\n"; next; }
+    if (seek(INPUT,$N+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
+	&& seek(INPUT,4,1) && read(INPUT, $t, 4)) {
+	$endi=0;
+	$t = unpack("f",$t);
+    } elsif (seek(INPUT,$N_swap+4,0) && read(INPUT,$nn1,4) && ($nn1 eq $nn)
+	     && seek(INPUT,4,1) && read(INPUT, $t, 4)) {
+	$endi=1;
+	$t = unpack("f",reverse($t));
+    } else {
+	print "$file:\t  (Corrupt)\n";
+	next;
+    }
+    printf("$file:\t  t = %-12.6g", $t);
+    if ($endi) { print "  (swapped byte order)"; }
+    print "\n";
+}
+# ----------------------------------------------------------------------
+sub by_first_num {
+# Sort (file names, ...) by the value of the first digit sequence they
+# contain. Put all strings containing no numerals alphabetically sorted at
+# the end:
+#   sort by_first_num(qw(VAR11 var.dat VAR1 bla.dat VAR3))
+#     ==>  (VAR1 VAR3 VAR11 bla.dat var.dat)
+
+    my ($a1,$b1,$unparsed);
+
+    # Extract the numerical part from the tail of $a, $b
+    ($a1,$b1) = ($a,$b);
+    $a1 =~ s|(.*/)?\D*(\d*\.?\d*]*).*|$2|;
+    $b1 =~ s|(.*/)?\D*(\d*\.?\d*]*).*|$2|;
+    if ($a1 ne '') {		# NOT `if ($a1)', since $a1='0' would give false
+	if ($b1 ne '') {
+	    return ($a1 <=> $b1);
+	} else { return -1; }
+    } else {
+	if ($b1 ne '') { return 1; } else { $a cmp $b; }
+    }
+}
