@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.48 2004-04-12 14:37:43 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.49 2004-04-13 09:42:41 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -108,7 +108,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.48 2004-04-12 14:37:43 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.49 2004-04-13 09:42:41 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -185,9 +185,10 @@ module Dustvelocity
 
       endselect
 !
-!  Constant used in determination of sticking velocity
+!  Constant used in determination of sticking velocity 
+!    (extra factor 2 from Dominik & Tielens, 1997, end of Sec. 3.2)
 !
-      ustcst = sqrt(2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
+      ustcst = sqrt(2* 2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
 !
 !  Dust physics parameters
 !
