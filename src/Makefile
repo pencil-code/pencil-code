@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.230 2003-08-28 15:24:58 dobler Exp $
+### $Id: Makefile,v 1.231 2003-08-29 11:02:08 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -102,7 +102,8 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
-#FC=ifc -i_dynamic -I/home/ajohan/opt/include #(nw46|ns0|nq1)
+#FC=ifc -i_dynamic -I/home/ajohan/opt/include #(nw46|nq1)
+#FC=ifc -i_dynamic #(ns0)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
 #FC=ifc -I/usr/lib/lam/include #(morvern)  
@@ -116,7 +117,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
-#LDMPI=-llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
+#LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46|ns0|nq1)
 #LDMPI=-L/opt/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -lnsl -lutil #(cosmo|nw17|nl6|nl11|wormhole)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
@@ -126,7 +127,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
 #FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 #(nl3)
-#FFLAGS=-O3 -w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
+#FFLAGS=-O3 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6|nl11|wormhole)  
 #FC=ifc #(sandin)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(cosmo|sandin|nl11|wormhole)  
@@ -137,6 +138,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
 #F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
+#F77FLAGS=-w90 #(nw46|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 
 
 ## SunOS:
@@ -233,9 +235,9 @@ cparam.inc: Makefile Makefile.local
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
-	sed -e 's/\(MPI_[A-Z_]*\)\([ ]*(\)/\1_\2/' mpicomm.f90 | sed -e 's/\(MPI_[A-Z_]*\)\([ ]*!\)/\1_\2/' > mpicomm_.f90
+	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm.f90 > mpicomm_.f90
 mpicomm_double_.f90: mpicomm_double.f90
-	sed -e 's/\(MPI_[A-Z_]*\)\([ ]*(\)/\1_\2/' mpicomm_double.f90 | sed -e 's/\(MPI_[A-Z_]*\)\([ ]*!\)/\1_\2/' > mpicomm_double_.f90
+	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
 	make start.x run.x read_videofiles.x read_vectorfiles.x
