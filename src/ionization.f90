@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.92 2003-09-18 17:49:06 theine Exp $
+! $Id: ionization.f90,v 1.93 2003-09-22 10:16:01 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -39,12 +39,13 @@ module Ionization
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   real :: xHe=0.1
+  logical :: lionstat=.false.
 
   ! input parameters
-  namelist /ionization_init_pars/ xHe
+  namelist /ionization_init_pars/ xHe,lionstat
 
   ! run parameters
-  namelist /ionization_run_pars/ xHe
+  namelist /ionization_run_pars/ xHe,lionstat
 
   contains
 
@@ -80,7 +81,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.92 2003-09-18 17:49:06 theine Exp $")
+           "$Id: ionization.f90,v 1.93 2003-09-22 10:16:01 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -206,36 +207,41 @@ module Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: lnrho,ss,yH,lnTT_
-      integer :: lstart,lstop,mstart,mstop,nstart,nstop
-      integer :: l
-      real :: ionstat,noionstat
-!
-!      open(1,file=trim(datadir)//'/testsn.dat',position='append')
-      
+      real :: avgiter=0
+      integer :: l,iter
+      integer :: maxiter=0
+      logical,save :: first=.true.
+
       do n=1,mz
       do m=1,my
       do l=1,mx
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,iss)
          yH=f(l,m,n,iyH)
-         call rtsafe(lnrho,ss,yH)
+         call rtsafe(lnrho,ss,yH,iter)
+         maxiter=max(iter,maxiter)
+         avgiter=avgiter+iter
          f(l,m,n,iyH)=yH
          lnTT_=(2./3.)*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
                            +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
                            +xHe_term)/(1.+yH+xHe) &
                           +lnrho-2.5)
          f(l,m,n,iTT)=exp(lnTT_)*TT_ion
-
-noionstat=2./3.*(ss/ss_ion-(1.+xHe)*(2.5-lnrho)+ lnrho_H+xHe_term)
-ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
-
-!write (1,'(1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') exp(lnTT_)*TT_ion,ss,lnrho,yH,ionstat,noionstat
-
       enddo
       enddo
       enddo
-!     close(1)
-!
+      
+      if (lionstat) then
+        avgiter=avgiter/(mx*my*mz)
+        open(1,file=trim(datadir)//'/iterations.dat',position='append')
+        if (first) then !write headline
+          write (1,*) 'iterations | average iterations | maximum iterations'
+          first=.false.
+        endif
+        write(1,*) 'it,avgiter,maxiter =',it,avgiter,maxiter
+        close(1)
+      endif
+
     endsubroutine ioncalc
 !***********************************************************************
     subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
@@ -529,7 +535,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
-    subroutine rtsafe(lnrho,ss,yH)
+    subroutine rtsafe(lnrho,ss,yH,iter)
 !
 !   safe newton raphson algorithm (adapted from NR) !
 !   09-apr-03/tobi: changed to subroutine
@@ -537,20 +543,22 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       real, intent (in)    :: lnrho,ss
       real, intent (inout) :: yH
       real                 :: yHmin,yHmax,dyHold,dyH,fl,fh,f,df,temp
-      real, parameter      :: yHacc=10*epsilon(1.)
+      real, parameter      :: yHacc=1e-5
       integer              :: i
-      integer, parameter   :: maxit=1000000
+      integer, optional    :: iter
+      integer, parameter   :: maxit=1000
 !
       yHmax=1
       yHmin=0
-      dyHold=1
       dyH=1
+      dyHold=dyH
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
-         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
-              .or.abs(2.*f).gt.abs(dyHold*df)) then
+         iter=i
+         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f)>0. &
+              .or.abs(2*f)>abs(dyHold*df)) then
             dyHold=dyH
-            dyH=.5*(yHmin-yHmax)
+            dyH=0.5*(yHmin-yHmax)
             yH=yHmax+dyH
             if (yHmax==yH) return
          else
@@ -562,13 +570,13 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
          endif
          if (abs(dyH)<yHacc*yH) return
          call saha(yH,lnrho,ss,f,df)
-         if (f.lt.0.) then
+         if (f<0) then
             yHmax=yH
          else
             yHmin=yH
          endif
       enddo
-      print *,'rtsafe: exceeded maximum iterations',f
+      print *,'rtsafe: exceeded maximum iterations. maxit,f,yH=',maxit,f,yH
 !
     endsubroutine rtsafe
 !***********************************************************************
