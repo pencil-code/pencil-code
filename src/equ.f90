@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.84 2002-07-09 11:39:22 brandenb Exp $
+! $Id: equ.f90,v 1.85 2002-07-09 18:35:13 dobler Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.84 2002-07-09 11:39:22 brandenb Exp $")
+           "$Id: equ.f90,v 1.85 2002-07-09 18:35:13 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -373,8 +373,6 @@ module Equ
 !  collect the result in df, from where it is applied to f after the
 !  loop.
 !
-!  since this is a global operation.
-!
 !  8-Jul-02/wolf: coded
 !
       use Cdata
@@ -399,6 +397,7 @@ module Equ
 !  initiate communication and do boundary conditions
 !  need to call boundconds, because it also deals with x-boundaries!
 !AB: We don't need to communicate all variables though; just lnrho
+!WD: I wouldn't care, since this should be applied quite infrequently
 !
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
