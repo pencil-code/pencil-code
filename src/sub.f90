@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.110 2003-02-03 14:49:13 dobler Exp $ 
+! $Id: sub.f90,v 1.111 2003-02-03 20:15:44 dobler Exp $ 
 
 module Sub 
 
@@ -162,8 +162,10 @@ module Sub
 !***********************************************************************
     subroutine phisum_mn_name_rz(a,iname)
 !
-!  successively calculate sum over phi of a, which is supplied at each call.
+!  Successively calculate sum over phi of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
+!  The fnamerz aray has one extra slice in z where we put ones and sum
+!  them up in order to get the normalization correct.
 !
 !   2-feb-03/wolf: adapted from xysum_mn_name_z
 !
@@ -184,6 +186,15 @@ module Sub
         fnamerz(ir,n_nghost,ipz+1,iname) &
            = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
       enddo
+!
+!  sum up ones for normalization; store result in fnamerz(:,0,:,1)
+!
+      if (iname==1) then
+        do ir=1,nrcyl
+          fnamerz(ir,0,ipz+1,iname) &
+               = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))   
+        enddo
+      endif
 !
     endsubroutine phisum_mn_name_rz
 !***********************************************************************

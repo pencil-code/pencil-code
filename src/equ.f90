@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.121 2003-02-03 14:49:13 dobler Exp $
+! $Id: equ.f90,v 1.122 2003-02-03 20:15:44 dobler Exp $
 
 module Equ
 
@@ -164,14 +164,13 @@ module Equ
       use Cdata
       use Sub
 !
-      real, dimension (nrcyl,nz,nprocz,mnamerz) :: fsumrz
+      real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fsumrz
 !
 !  communicate over all processors
 !  the result is only present on the root processor
 !
       if(nnamerz>0) then
-        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*nz*nprocz)
-!        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
+        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrcyl*(nz+1)*nprocz)
       endif
 !
     endsubroutine phiaverages_rz
@@ -209,7 +208,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.121 2003-02-03 14:49:13 dobler Exp $")
+           "$Id: equ.f90,v 1.122 2003-02-03 20:15:44 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -253,7 +252,7 @@ module Equ
 !
 !  calculate profile for phi-averages if needed
 !
-        if (ldiagnos) call calc_phiavg_profile()
+        if (ldiagnos .and. (nnamerz>0)) call calc_phiavg_profile()
 !
 !  for each pencil, accummulate through the different routines
 !  maximum diffusion, maximum advection (keep as nx-array)

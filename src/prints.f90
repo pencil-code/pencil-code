@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.36 2003-02-03 14:49:13 dobler Exp $
+! $Id: prints.f90,v 1.37 2003-02-03 20:15:44 dobler Exp $
 
 module Print
 
@@ -179,7 +179,9 @@ module Print
 !
       if(lroot.and.nnamerz>0) then
         open(1,FILE=trim(datadir)//'/phiaverages.dat',FORM='unformatted')
-        write(1) fnamerz(:,:,:,1:nnamerz)
+print*,'MINMAX a: ', minval(fnamerz(:,0,:,1)), maxval(fnamerz(:,0,:,1))
+print*,'MINMAX b: ', minval(fnamerz(:,0,:,:)), maxval(fnamerz(:,0,:,:))
+        write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
         write(1) t,rcyl,z(n1:n2),drcyl,dz
         close(1)
       endif

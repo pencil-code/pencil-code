@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.125 2003-02-03 14:49:13 dobler Exp $
+! $Id: cdata.f90,v 1.126 2003-02-03 20:15:44 dobler Exp $
 
 module Cdata
 
@@ -57,7 +57,7 @@ module Cdata
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
-  real, dimension (nrcyl,nz,nprocz,mnamerz) :: fnamerz
+  real, dimension (nrcyl,0:nz,nprocz,mnamerz) :: fnamerz
   real, dimension (nrcyl,nx) :: phiavg_profile
   character (LEN=30) :: cname(mname),cform(mname)
   character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
