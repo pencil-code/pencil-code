@@ -1,10 +1,10 @@
-; $Id: pc_read_grid.pro,v 1.4 2002-11-28 22:54:59 tarek Exp $
+; $Id: pc_read_grid.pro,v 1.5 2004-03-23 12:45:19 ajohan Exp $
 ;
 ;   Read grid.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2002-11-28 22:54:59 $
-;  $Revision: 1.4 $
+;  $Date: 2004-03-23 12:45:19 $
+;  $Revision: 1.5 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -69,7 +69,7 @@ dummy=findfile(filename, COUNT=cgrid)
 if (cgrid gt 0) then begin
   IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
 
-  openr,file,filename
+  openr,file,filename,/F77
   readu,file, t,x,y,z
   readu,file, dx,dy,dz
   close,file 
