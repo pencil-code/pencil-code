@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.231 2004-01-31 15:32:10 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.232 2004-03-04 07:53:49 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}
+%\date{$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}\\
+  \emph{$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -588,6 +588,8 @@ Leicester (Ukaff) is acknowledged. We also acknowledge use of the
 
 
 % ====================================================================== %
+
+\part{Using the Pencil Code}
 
 \section{System Requirements}
 
@@ -3140,161 +3142,6 @@ other forces.
 
 % ====================================================================== %
 
-\section{Adapting the code}
-
-\subsection{Adding new output diagnostics}
-
-With the implementation of new physics and the development of new procedures
-it will become necessary to monitor new diagnostic quantities that
-have not yet been implemented in the code.
-In the following, we describe the steps necessary to set up a new
-diagnostic variable.
-
-This is nontrivial as, in order to keep latency effects low on
-multi-processor machines, the code minimizes the number of global
-reduction operations by assembling all quantities that need the maximum
-taken in \var{fmax}, and those that need to be summed up over all
-processors (mostly for calculating mean quantities) in \var{fsum} (see
-subroutine \code{diagnostic} in file \file[equ.f90]{src/equ.f90}).
-
-As a sample variable, let us consider \var{jbm} (the volume average
-$\bigl<\jv\cdot\Bv\bigr>$).
-Only the module \name{magnetic} will be affected, as you can see (the
-diagnostic quantity \var{jbm} is already implemented) with
-\begin{alltt}
-  \prompt{unix> } grep -i jbm src/*.f90
-\end{alltt}
-
-If we pretend for the sake of the exercise that no trace of \var{jbm} was
-in the code, and we were only now adding it, we would need to do the following
-\begin{enumerate}
-\item add the variable \var{i_jbm} to the \emph{module variables} of
-  \name{Magnetic} in both \file{magnetic.f90} and \file{nomagnetic.f90}:
-  \begin{alltt}
-  integer :: i_jbm=0
-  \end{alltt}
-  The variable \var{i_jbm} is needed for matching the position of \var{jbm}
-  with the list of diagnostic variables specified in \file{print.in}.
-\item in the subroutine \code{daa_dt} in \file{magnetic.f90}, declare and
-  calculate the quantity \var{jb} (the average of which will be
-  \var{jbm}), and call \code{sum_mn_name}
-  \begin{alltt}
-  real, dimension (nx) :: jb  {\sl! jj\(\,\cdot\,\)BB}
-  {\sl[\ldots]}
-  if (ldiagnos) then          {\sl! only calculate if diagnostics is required}
-    if (i_jbm/=0) then        {\sl! anybody asked for jbm?}
-      call dot_mn(jj,bb,jb)   {\sl! assuming jj and bb are known}
-      call sum_mn_name(jb,i_jbm)
-    endif
-  endif
-  \end{alltt}
-\item in the subroutine \code{rprint_magnetic} in both
-  \file{magnetic.f90}, add the following:
-  \begin{alltt}
-  !
-  !  reset everything in case of RELOAD
-  !  (this needs to be consistent with what is defined above!)
-  !
-  if (lreset) then  {\sl! need to reset list of diagnostic variables?}
-    {\sl[\ldots]}
-    i_jbm=0
-    {\sl[\ldots]}
-  endif
-  !
-  !  check for those quantities that we want to evaluate online
-  !
-  do iname=1,nname
-    {\sl[\ldots]}
-    call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
-    {\sl[\ldots]}
-  enddo
-  {\sl[\ldots]}
-  !
-  !  write column, i_XYZ, where our variable XYZ is stored
-  !
-  {\sl[\ldots]}
-  write(3,*) 'i_jbm=',i_jbm
-  {\sl[\ldots]}
-  \end{alltt}
-\item in the subroutine \code{rprint_magnetic} in \file{nomagnetic.f90}, add
-  the following (newer versions of the code may not require this any more):
-  \begin{alltt}
-  !
-  !  write column, i_jbm, where our variable jbm is stored
-  !  idl needs this even if everything is zero
-  !
-  {\sl[\ldots]}
-  write(3,*) 'i_jbm=',i_jbm
-  {\sl[\ldots]}
-  \end{alltt}
-\item and don't forget to add your new variable to \file{print.in}:
-  \begin{alltt}
-  jbm(f10.5)
-  \end{alltt}
-\end{enumerate}
-
-If, instead of a mean value, you want a new maximum quantity, you need to
-replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
-
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Outputting new horizontal averages}
-\label{S-new-hor-averages}
-
-Currently, only the horizontally $xy$-averaged $x$ and $y$ components
-of the magnetic and velocity fields can be written.
-This is determined by the existence
-and content of the file \file{xyaver.in}; a new line of averages is
-written every time \file{var.dat} is updated (i.e.\ every \var{it1}th time
-steps).
-New such variables can be added by using the existing averaging
-procedures as examples.
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Other averages}
-\label{S-other-averages}
-
-There is the possibility to output also $xz$ and $yz$
-averages. This is done by averaging first in the $z$-direction only, so
-the result (which is available on the root processor) depends on $x$
-and $y$. From these planes we calculate then (on the root processor)
-the $xz$ and $yz$ averages.
-The energies of the so defined mean magnetic fields
-are referred to as \var{bmy} and \var{bmx}, respectively,
-and the energies of the so defined mean velocity fields
-are referred to as \var{umy}, \var{umx}, and \var{umz}, respectively,
-(The last letter indicates the direction on which the averaged
-quantity still depends.)
-
-{\it Disadvantage}: one needs to set the file \file{zaver.in} with
-the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
-rather big file \file[zaverages.dat]{data/zaverages.dat}.
-
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Adding new physics modules}
-
-If you want to add new physics to the code, you will in many cases want to
-add a new module \name{newphysics} together with the corresponding
-\name{nonewphysics} module.
-For a module involving a new variable, the \name{pscalar} module is a good
-prototype.
-The grep command
-\begin{alltt}
-  \prompt{unix> } grep -i pscalar src/*
-\end{alltt}
-gives you a good overview of which files you need to edit or add.
-
-If you just want to add a few new terms to the equation of motion or
-other evolution equations, \name{grav_z} or \name{forcing} may be a good
-starting point.
-
-
-% ====================================================================== %
-
 \section{Troubleshooting / Frequently Asked Questions}
 \label{FAQ}
 \index{FAQ}\index{Frequently Asked Questions}
@@ -3662,13 +3509,284 @@ the code; this then produces all the necessary auxiliary files, but it
 doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 \file{slice} files.
 
+
+% ====================================================================== %
+
+\part{Programming the Pencil Code}
+
+\section{Adapting the code}
+
+\subsection{Adding new output diagnostics}
+
+With the implementation of new physics and the development of new procedures
+it will become necessary to monitor new diagnostic quantities that
+have not yet been implemented in the code.
+In the following, we describe the steps necessary to set up a new
+diagnostic variable.
+
+This is nontrivial as, in order to keep latency effects low on
+multi-processor machines, the code minimizes the number of global
+reduction operations by assembling all quantities that need the maximum
+taken in \var{fmax}, and those that need to be summed up over all
+processors (mostly for calculating mean quantities) in \var{fsum} (see
+subroutine \code{diagnostic} in file \file[equ.f90]{src/equ.f90}).
+
+As a sample variable, let us consider \var{jbm} (the volume average
+$\bigl<\jv\cdot\Bv\bigr>$).
+Only the module \name{magnetic} will be affected, as you can see (the
+diagnostic quantity \var{jbm} is already implemented) with
+\begin{alltt}
+  \prompt{unix> } grep -i jbm src/*.f90
+\end{alltt}
+
+If we pretend for the sake of the exercise that no trace of \var{jbm} was
+in the code, and we were only now adding it, we would need to do the following
+\begin{enumerate}
+\item add the variable \var{i_jbm} to the \emph{module variables} of
+  \name{Magnetic} in both \file{magnetic.f90} and \file{nomagnetic.f90}:
+  \begin{alltt}
+  integer :: i_jbm=0
+  \end{alltt}
+  The variable \var{i_jbm} is needed for matching the position of \var{jbm}
+  with the list of diagnostic variables specified in \file{print.in}.
+\item in the subroutine \code{daa_dt} in \file{magnetic.f90}, declare and
+  calculate the quantity \var{jb} (the average of which will be
+  \var{jbm}), and call \code{sum_mn_name}
+  \begin{alltt}
+  real, dimension (nx) :: jb  {\sl! jj\(\,\cdot\,\)BB}
+  {\sl[\ldots]}
+  if (ldiagnos) then          {\sl! only calculate if diagnostics is required}
+    if (i_jbm/=0) then        {\sl! anybody asked for jbm?}
+      call dot_mn(jj,bb,jb)   {\sl! assuming jj and bb are known}
+      call sum_mn_name(jb,i_jbm)
+    endif
+  endif
+  \end{alltt}
+\item in the subroutine \code{rprint_magnetic} in both
+  \file{magnetic.f90}, add the following:
+  \begin{alltt}
+  !
+  !  reset everything in case of RELOAD
+  !  (this needs to be consistent with what is defined above!)
+  !
+  if (lreset) then  {\sl! need to reset list of diagnostic variables?}
+    {\sl[\ldots]}
+    i_jbm=0
+    {\sl[\ldots]}
+  endif
+  !
+  !  check for those quantities that we want to evaluate online
+  !
+  do iname=1,nname
+    {\sl[\ldots]}
+    call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+    {\sl[\ldots]}
+  enddo
+  {\sl[\ldots]}
+  !
+  !  write column, i_XYZ, where our variable XYZ is stored
+  !
+  {\sl[\ldots]}
+  write(3,*) 'i_jbm=',i_jbm
+  {\sl[\ldots]}
+  \end{alltt}
+\item in the subroutine \code{rprint_magnetic} in \file{nomagnetic.f90}, add
+  the following (newer versions of the code may not require this any more):
+  \begin{alltt}
+  !
+  !  write column, i_jbm, where our variable jbm is stored
+  !  idl needs this even if everything is zero
+  !
+  {\sl[\ldots]}
+  write(3,*) 'i_jbm=',i_jbm
+  {\sl[\ldots]}
+  \end{alltt}
+\item and don't forget to add your new variable to \file{print.in}:
+  \begin{alltt}
+  jbm(f10.5)
+  \end{alltt}
+\end{enumerate}
+
+If, instead of a mean value, you want a new maximum quantity, you need to
+replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Outputting new horizontal averages}
+\label{S-new-hor-averages}
+
+Currently, only the horizontally $xy$-averaged $x$ and $y$ components
+of the magnetic and velocity fields can be written.
+This is determined by the existence
+and content of the file \file{xyaver.in}; a new line of averages is
+written every time \file{var.dat} is updated (i.e.\ every \var{it1}th time
+steps).
+New such variables can be added by using the existing averaging
+procedures as examples.
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Other averages}
+\label{S-other-averages}
+
+There is the possibility to output also $xz$ and $yz$
+averages. This is done by averaging first in the $z$-direction only, so
+the result (which is available on the root processor) depends on $x$
+and $y$. From these planes we calculate then (on the root processor)
+the $xz$ and $yz$ averages.
+The energies of the so defined mean magnetic fields
+are referred to as \var{bmy} and \var{bmx}, respectively,
+and the energies of the so defined mean velocity fields
+are referred to as \var{umy}, \var{umx}, and \var{umz}, respectively,
+(The last letter indicates the direction on which the averaged
+quantity still depends.)
+
+{\it Disadvantage}: one needs to set the file \file{zaver.in} with
+the entries \var{bxmxy}, \var{bymxy}, \var{bzmxy}, which produces a
+rather big file \file[zaverages.dat]{data/zaverages.dat}.
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Adding new physics modules}
+
+If you want to add new physics to the code, you will in many cases want to
+add a new module \name{newphysics} together with the corresponding
+\name{nonewphysics} module.
+For a module involving a new variable, the \name{pscalar} module is a good
+prototype.
+The grep command
+\begin{alltt}
+  \prompt{unix> } grep -i pscalar src/*
+\end{alltt}
+gives you a good overview of which files you need to edit or add.
+
+If you just want to add a few new terms to the equation of motion or
+other evolution equations, \name{grav_z} or \name{forcing} may be a good
+starting point.
+
+% ====================================================================== %
+
+\section{Useful internals}
+
+%%%
+\subsection{Global variables}
+
+The following variables are defined in \file{cdata.f90} and are available
+in any routine that \cmd{use}s the module \name{Cdata}.
+
+ \begin{longtable}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}}
+               & \multicolumn{1}{c}{\emph{Meaning}} \\
+\midrule
+  \multicolumn{2}{c}{real}\\
+\midrule
+  \var{t}
+               & simulated time $t$.\\
+\midrule
+  \multicolumn{2}{c}{integer}\\
+\midrule
+  \var[nxgrid]{n[xyz]grid}
+               & global number of grid points (excluding ghost cells) in
+                 $x$, $y$ and $z$ direction. \\
+  \var{nx}, \var{ny}, \var{nz}
+               & number of grid points (excluding ghost cells) as seen by
+                 the current processor, i.\,e.~\code{ny=nygrid/nprocy},
+                 etc. \\
+  \var{mx}, \var{my}, \var{mz}
+               & number of grid points seen by the current processor,
+                 but \emph{including ghost cells}.
+                 Thus, the total box for the \var[]{ivar}th variable
+                 (on the given processor) is given by
+                 \code{f(1:mx,1:my,1:mz,ivar)}. \\
+  \var{l1}, \var{l2}
+               & smallest and largest $x$-index for the physical domain
+               (i.\,e.~excluding ghost cells) on the given processor. \\
+  \var{m1}, \var{m2}
+               & smallest and largest $y$-index for physical domain. \\
+  \var{n1}, \var{n2}
+               & smallest and largest $z$-index for physical domain,
+                 i.\,e.~the physical part of the \var[]{ivar}th variable
+                 is given by \code{f(l1:l2,m1:m2,n1:n2,ivar)} \\
+  \var{m}, \var{n}
+               & pencil indexing variables:
+                 During each time-substep the box is traversed in
+                 $x$-pencils of length \var{mx} such that the current
+                 pencil of the \var[]{ivar}th variable is
+                 \code{f(l1:l2,m,n,ivar)}. \\
+\midrule
+  \multicolumn{2}{c}{logical}\\
+\midrule
+  \var{lroot}
+               & true only for MPI root processor. \\
+  \var{lfirst}
+               & true only during very first time-substep. \\
+  \var{headt}
+               & true only for very first full time step (comprising 3
+                 substeps for the 3rd-order Runge--Kutta scheme) on root
+                 processor. \\
+  \var{headtt}
+               & \code{= (lfirst .and. lroot)}:
+                 true only during very first time-substep on root processor. \\
+  \var{lout}
+               & true when diagnostic output is about to be written. \\
+\bottomrule
+\end{longtable}
+
+
+%%%
+\subsection{Subroutines and functions}
+
+\begin{description}
+\item[\code{output(file,a,nv)}]
+  (module \name{IO}):
+  Write (in each \file[procN/]{proc$N$} directory) the content of the
+  global array \emph{a} to a file called \emph{file}, where \emph{a} has
+  dimensions \var{mx}$\times$\var{my}$\times$\var{mz}$\times$\var{nv},
+  or \var{mx}$\times$\var{my}$\times$\var{mz} if \code{nv=1}.
+\item[\code{output_pencil(file,a,nv)}]
+  (module \name{IO}):
+  Same as \code{output()}, but for a pencil variable, i.\,e.~an auxiliary
+  variable that only ever exists on a pencil (e.\,g.~the magnetic field
+  strength \var{bb} in \file{magnetic.f90}, or the squared sound speed
+  \var{cs2} in \file{entropy.f90}).
+  The file has the same structure as those written by \code{output()},
+  because the values of \emph{a} on the different pencils are accumulated
+  in the file.
+  This involves a quite nontrivial access pattern to the file and has thus
+  been coded in \name{C} (\file[debug_c.c]{src/debug_c.c}).
+\item[\code{cross(a,b,c)}]
+  (module \name{Sub}):
+  Calculate the cross product of two vectors \emph{a} and \emph{b} and
+  store in \emph{c}.
+  The vectors must either all be of size
+  \var{mx}$\times$\var{my}$\times$\var{mz}$\times$3 (global arrays), or of
+  size \var{nx}$\times$3 (pencil arrays).
+\item[\code{dot(a,b,c)}]
+  (module \name{Sub}):
+  Calculate the dot product of two vectors \emph{a} and \emph{b} and
+  store in \emph{c}.
+  The vectors must either be of size
+  \var{mx}$\times$\var{my}$\times$\var{mz}$\times$3 (\emph{a} and
+  \emph{b}) and \var{mx}$\times$\var{my}$\times$\var{mz} (\emph{c}),
+  or of size \var{nx}$\times$3 (\emph{a} and \emph{b}) and
+  \var{nx} (\emph{c}).
+\item[\code{dot2(a,c)}]
+  (module \name{Sub}):
+  Same as \code{dot(a,a,c)}.
+\end{description}
+
+
+
 % ====================================================================== %
 \typeout{=======LAST_BODY_PAGE=======}
 \appendix
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-01-31 15:32:10 $ $,~ $ $Revision: 1.231 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-04 07:53:49 $ $,~ $ $Revision: 1.232 $ $}
 
 \section{Timings}
 
@@ -6416,7 +6534,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.231 2004-01-31 15:32:10 dobler Exp $ $}
+$ $Id: manual.tex,v 1.232 2004-03-04 07:53:49 dobler Exp $ $}
 
 
 \end{document}
@@ -6483,4 +6601,4 @@ $ $Id: manual.tex,v 1.231 2004-01-31 15:32:10 dobler Exp $ $}
 % LocalWords:  BJNRST Ferri cleanf rundir cvsci gpgrowth mkdatadir mkdotin pacx
 % LocalWords:  mkinpars mkproc mkwww scpdatadir backtick pTTss gcc glibc LD IGG
 % LocalWords:  Milano IECR ILNTT NOERASE checkin cvsstat pkeff NEWDIR copson ks
-% LocalWords:  hyperviscous geodynamo DM coords
+% LocalWords:  hyperviscous geodynamo DM coords substeps dec
