@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.43 2004-04-04 16:07:08 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.44 2004-04-05 13:23:11 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -80,7 +80,7 @@ module Dustvelocity
       ldustvelocity = .true.
 !
       do i=1,ndustspec
-        if (i .eq. 1) then
+        if (i == 1) then
           iuud(1) = nvar+1
         else
           if (lmdvar) then
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.43 2004-04-04 16:07:08 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.44 2004-04-05 13:23:11 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -116,7 +116,7 @@ module Dustvelocity
 !
       do i=1,ndustspec
         call chn(i,sdust)
-        if (ndustspec .eq. 1) sdust = ''
+        if (ndustspec == 1) sdust = ''
         if (lroot) then
           if (maux == 0) then
             if (nvar < mvar) write(4,*) ',uud'//trim(sdust)//' $'
@@ -183,7 +183,7 @@ module Dustvelocity
         md(i) = 0.5*(mdminus(i)+mdplus(i))
       enddo
 
-      if (ndustspec .eq. 1) md(1) = md0
+      if (ndustspec == 1) md(1) = md0
 
       select case(dust_geometry)
 
@@ -224,7 +224,7 @@ module Dustvelocity
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: nud_all=',nud_all
         do i=1,ndustspec
-          if (nud(i) .eq. 0.) nud(i)=nud_all
+          if (nud(i) == 0.) nud(i)=nud_all
         enddo
       endif
 !      
@@ -232,7 +232,7 @@ module Dustvelocity
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: betad_all=',betad_all
         do i=1,ndustspec
-          if (betad(i) .eq. 0.) betad(i) = betad_all
+          if (betad(i) == 0.) betad(i) = betad_all
         enddo
       endif
 !
@@ -240,7 +240,7 @@ module Dustvelocity
         if (lroot .and. ip<6) &
             print*, 'initialize_dustvelocity: tausd_all=',tausd_all
         do i=1,ndustspec
-          if (tausd(i) .eq. 0.) tausd(i) = tausd_all
+          if (tausd(i) == 0.) tausd(i) = tausd_all
         enddo
       endif
 !
@@ -451,7 +451,7 @@ module Dustvelocity
 !
         if (Omega/=0.) then
           if (theta==0) then
-            if (headtt .and. k .eq. 1) &
+            if (headtt .and. k == 1) &
                 print*,'duud_dt: add Coriolis force; Omega=',Omega
             c2=2*Omega
             df(l1:l2,m,n,iudx(k)) = df(l1:l2,m,n,iudx(k)) + &
@@ -459,7 +459,7 @@ module Dustvelocity
             df(l1:l2,m,n,iudy(k)) = df(l1:l2,m,n,iudy(k)) - &
                 c2*uud(:,1,k)
           else
-            if (headtt .and. k .eq. 1) print*, &
+            if (headtt .and. k == 1) print*, &
                 'duud_dt: Coriolis force; Omega,theta=',Omega,theta
             c2=2*Omega*cos(theta*pi/180.)
             s2=2*Omega*sin(theta*pi/180.)
@@ -489,9 +489,9 @@ module Dustvelocity
 !
           do i=1,3; tausd13(:,i) = tausd1; enddo
 
-          if (draglaw .eq. 'epstein_var') then
+          if (draglaw == 'epstein_var') then
             do l=1,nx
-              if (tausd1(l) .gt. 1./(3*dt)) then
+              if (tausd1(l) > 1./(3*dt)) then
                 f(l1-1+l,m,n,iudx(k)) = f(l1-1+l,m,n,iux)
                 f(l1-1+l,m,n,iudy(k)) = f(l1-1+l,m,n,iuy)
                 f(l1-1+l,m,n,iudz(k)) = f(l1-1+l,m,n,iuz) - &
@@ -655,7 +655,7 @@ module Dustvelocity
         csrho  = sqrt(cs2)*rho
         tausd1 = csrho*rhodsad1(k)
       case default
-         call stop_it("get_stoppingtime: No valid drag law specified.")
+        call stop_it("get_stoppingtime: No valid drag law specified.")
 
       endselect
 !
@@ -741,7 +741,7 @@ module Dustvelocity
         if(lroot.and.ip<14) print*,'rprint_dustvelocity: run through parse list'
         do iname=1,nname
           call chn(i,sdust)
-          if (ndustspec .eq. 1) sdust=''
+          if (ndustspec == 1) sdust=''
           call parse_name(iname,cname(iname),cform(iname), &
               'ud2m'//trim(sdust),i_ud2m(i))
           call parse_name(iname,cname(iname),cform(iname), &

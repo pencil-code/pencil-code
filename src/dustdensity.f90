@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.51 2004-04-04 19:52:29 theine Exp $
+! $Id: dustdensity.f90,v 1.52 2004-04-05 13:23:11 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -40,8 +40,8 @@ module Dustdensity
       
 
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_rhodm,i_ssratm,i_ssratmax
-  integer, dimension(ndustspec) :: i_ndm=0
+  integer :: i_ndmt,i_rhodmt,i_ssrm,i_ssrmax
+  integer, dimension(ndustspec) :: i_ndm=0,i_rhodm=0
 
   contains
 
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.51 2004-04-04 19:52:29 theine Exp $")
+           "$Id: dustdensity.f90,v 1.52 2004-04-05 13:23:11 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -166,7 +166,7 @@ module Dustdensity
 !
 !  If *_all set, make all empty *(:) = *_all
 !
-      if (cdiffnd_all .ne. 0.) then
+      if (cdiffnd_all /= 0.) then
         if (lroot .and. ip<6) &
             print*, 'initialize_dustdensity: cdiffnd_all=',cdiffnd_all
         do i=1,ndustspec
@@ -213,7 +213,7 @@ module Dustdensity
         print*,'init_nd: Initial dust distribution of MRN77'
         do k=1,ndustspec
           mdpeak = 4/3.*pi*adpeak**3*rhods/unit_md
-          if (md(k) .le. mdpeak) then
+          if (md(k) <= mdpeak) then
             f(:,:,:,ind(k)) = ad(k)**(-3.5)*3/(4*pi*rhods)**(1/3.)* &
                 (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*unit_md**(1/3.)
           else
@@ -229,18 +229,18 @@ module Dustdensity
               f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodtot*unit_md)
         enddo
         
-        f(:,:,n1:n1+5,ind(:)) = 0.
-        f(:,:,n2-5:n2,irhod(:)) = 0.
+        !f(:,:,n1:n1+5,ind(:)) = 0.
+        !f(:,:,n2-5:n2,irhod(:)) = 0.
         
       case('const_nd'); f(:,:,:,ind) = nd_const
       case('frac_of_gas_loc')
-        if (eps_dtog .lt. 0.) &
+        if (eps_dtog < 0.) &
             call stop_it("init_nd: Negative eps_dtog!")
         do k=1,ndustspec
           f(:,:,:,ind(k)) = eps_dtog*exp(f(:,:,:,ilnrho))/(md(k)*unit_md)
         enddo
       case('frac_of_gas_glo')
-        if (eps_dtog .lt. 0.) &
+        if (eps_dtog < 0.) &
             call stop_it("init_nd: Negative eps_dtog!")
         do i=1,mx
           do j=1,my
@@ -335,7 +335,7 @@ module Dustdensity
 !
         do k=1,ndustspec
           i_targ = -1
-          if (md(k) >= mdplus(k)) then      ! Gone to higher mass bin
+          if (md(k) >= mdplus(k)) then     ! Gone to higher mass bin
             do j=k+1,ndustspec+1 
               i_targ = j
               if (md(k) >= mdminus(j) .and. md(k) < mdplus(j)) exit
@@ -416,7 +416,7 @@ module Dustdensity
                 .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
             elseif (nd(1,k) >= 0.) then
-              print*, k, rho, TT1, mfluxcond(:), nd(:,k)
+              !print*, k, rho, TT1, mfluxcond(:), nd(:,k)
               df(l1:l2,m,n,irhod(k)) = df(l1:l2,m,n,irhod(k)) + dndfac/unit_md
               df(l1:l2,m,n,ilncc)    = df(l1:l2,m,n,ilncc)    - rho1*dndfac
             endif
@@ -508,13 +508,26 @@ module Dustdensity
 !
         if (ldiagnos) then
           if (i_ndm(k) /= 0) call sum_mn_name(nd(:,k),i_ndm(k))
-          if (i_rhodm /= 0) then
+          if (i_rhodm(k) /= 0) then
+            if (lmdvar) call sum_mn_name(f(l1:l2,m,n,irhod(k)),i_rhodm(k))
+            if (.not. lmdvar) call sum_mn_name(md(k)*nd(:,k),i_rhodm(k))
+          endif
+          if (i_ndmt /= 0) then
             if (lfirstpoint .and. k /= 1) then
               lfirstpoint = .false.
-              call sum_mn_name(nd(:,k)*md(k),i_rhodm)
+              call sum_mn_name(nd(:,k),i_ndmt)
               lfirstpoint = .true.
             else
-              call sum_mn_name(nd(:,k)*md(k),i_rhodm)
+              call sum_mn_name(nd(:,k),i_ndmt)
+            endif
+          endif
+          if (i_rhodmt /= 0) then
+            if (lfirstpoint .and. k /= 1) then
+              lfirstpoint = .false.
+              call sum_mn_name(nd(:,k)*md(k),i_rhodmt)
+              lfirstpoint = .true.
+            else
+              call sum_mn_name(nd(:,k)*md(k),i_rhodmt)
             endif
           endif
         endif
@@ -557,8 +570,8 @@ module Dustdensity
 
         mfluxcond = vth*epsmon*rho*(1-supsatratio1)
         if (ldiagnos) then
-          if (i_ssratm/=0) call sum_mn_name(1/supsatratio1(:),i_ssratm)
-          if (i_ssratmax/=0) call max_mn_name(1/supsatratio1(:),i_ssratmax)
+          if (i_ssrm/=0) call sum_mn_name(1/supsatratio1(:),i_ssrm)
+          if (i_ssrmax/=0) call max_mn_name(1/supsatratio1(:),i_ssrmax)
         endif
 
       case default
@@ -595,10 +608,10 @@ module Dustdensity
         supsatratio1 = ppsat/ppmon
         nofluxcond = vth*epsmon*rho/mmon*(1-supsatratio1)
 
-        if (supsatfac1 .ne. 1.) then
+        if (supsatfac1 /= 1.) then
           do l=l1,l2
-            if (supsatratio1(l) .le. 1. &
-                .and. supsatratio1(l) .gt. supsatfac1) nofluxcond(l) = 0.
+            if (supsatratio1(l) <= 1. &
+                .and. supsatratio1(l) > supsatfac1) nofluxcond(l) = 0.
           enddo
         endif
 
@@ -619,7 +632,7 @@ module Dustdensity
       use Sub
       use General, only: chn
 !
-      integer :: iname,i
+      integer :: iname,k
       logical :: lreset,lwr
       logical, optional :: lwrite
       character (len=4) :: sdust,sdustspec,snd1,srhod1
@@ -637,8 +650,10 @@ module Dustdensity
 !  reset everything in case of reset
 !
       if (lreset) then
-        i_ndm = 0
-        i_rhodm = 0
+        i_ndm    = 0
+        i_ndmt   = 0
+        i_rhodm  = 0
+        i_rhodmt = 0
       endif
 !
 !  Define arrays for multiple dust species
@@ -648,12 +663,13 @@ module Dustdensity
         write(3,*) 'ind=intarr('//trim(sdustspec)//')'
         write(3,*) 'irhod=intarr('//trim(sdustspec)//')'
         write(3,*) 'i_ndm=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
       endif
 !
 !  Loop over dust species (for species-dependent diagnostics)
 !
-      do i=1,ndustspec
-        call chn(i-1,sdust)
+      do k=1,ndustspec
+        call chn(k-1,sdust)
         if (ndustspec .eq. 1) sdust=''
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -661,14 +677,18 @@ module Dustdensity
         if(lroot.and.ip<14) print*,'rprint_dustdensity: run through parse list'
         do iname=1,nname
           call parse_name(iname,cname(iname),cform(iname), &
-              'ndm'//trim(sdust),i_ndm(i))
+              'ndm'//trim(sdust),i_ndm(k))
+          call parse_name(iname,cname(iname),cform(iname), &
+              'rhodm'//trim(sdust),i_rhodm(k))
         enddo
 !
 !  write column where which variable is stored
 !
         if (lwr) then
-          if (i_ndm(i) .ne. 0) &
-              write(3,*) 'i_ndm('//trim(sdust)//')=',i_ndm(i)
+          if (i_ndm(k) /= 0) &
+              write(3,*) 'i_ndm('//trim(sdust)//')=',i_ndm(k)
+          if (i_rhodm(k) /= 0) &
+              write(3,*) 'i_rhodm('//trim(sdust)//')=',i_rhodm(k)
         endif
 !
 !  End loop over dust layers
@@ -678,14 +698,16 @@ module Dustdensity
 !  Non-species-dependent diagnostics
 !
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'rhodm',i_rhodm)
-        call parse_name(iname,cname(iname),cform(iname),'ssratm',i_ssratm)
-        call parse_name(iname,cname(iname),cform(iname),'ssratmax',i_ssratmax)
+        call parse_name(iname,cname(iname),cform(iname),'ndmt',i_ndmt)
+        call parse_name(iname,cname(iname),cform(iname),'rhodmt',i_rhodmt)
+        call parse_name(iname,cname(iname),cform(iname),'ssrm',i_ssrm)
+        call parse_name(iname,cname(iname),cform(iname),'ssrmax',i_ssrmax)
       enddo
       if (lwr) then
-        if (i_rhodm .ne. 0) write(3,*) 'i_rhodm=',i_rhodm
-        if (i_ssratm .ne. 0) write(3,*) 'i_ssratm=',i_ssratm
-        if (i_ssratmax .ne. 0) write(3,*) 'i_ssratmax=',i_ssratmax
+        if (i_ndmt /= 0)   write(3,*) 'i_ndmt=',i_ndmt
+        if (i_rhodmt /= 0) write(3,*) 'i_rhodmt=',i_rhodmt
+        if (i_ssrm /= 0)   write(3,*) 'i_ssrm=',i_ssrm
+        if (i_ssrmax /= 0) write(3,*) 'i_ssrmax=',i_ssrmax
       endif
 !
 !  Write dust index in short notation
