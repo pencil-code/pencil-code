@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.10 2002-08-26 10:33:49 nilshau Exp $ 
+! $Id: initcond.f90,v 1.11 2002-09-11 17:38:14 brandenb Exp $ 
 
 module Initcond 
  
@@ -261,34 +261,100 @@ module Initcond
 !
     endsubroutine crazy
 !***********************************************************************
-    subroutine htube(ampl,f,i,xx,yy,zz,radius,epsilon_nonaxi)
+    subroutine htube(ampl,f,i1,i2,xx,yy,zz,radius,epsilon_nonaxi)
 !
-!  Horizontal flux tube (for vector potential)
+!  Horizontal flux tube (for vector potential, or passive scalar)
 !
 !   7-jun-02/axel+vladimir: coded
+!  11-sep-02/axel: allowed for scalar field (if i1=i2)
 !
-      integer :: i
+      integer :: i1,i2
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
       if (ampl==0) then
-        f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
       else
         ky=2*pi/Ly
-        print*,'implement y-dependent flux tube in xz-plane; i=',i
-        print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+        if(lroot) then
+          print*,'implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+        endif
         modulate=1.+epsilon_nonaxi*sin(ky*yy)
+!
 ! completely quenched "gaussian"
+!
         tmp=.5*ampl/modulate*exp(-(xx**2+zz**2)/(max((radius*modulate)**2-xx**2-zz**2,1e-6)))
-        if ((ip<=8).and.lroot) print*,'horizontal flux tube: i=',i
-        f(:,:,:,i  )=+zz*tmp
-        f(:,:,:,i+1)=0.
-        f(:,:,:,i+2)=-xx*tmp
+!
+!  check whether vector or scalar
+!
+        if(i1==i2) then
+          if(lroot) print*,'htube: set scalar'
+          f(:,:,:,i1)=tmp
+        elseif(i1+2==i2) then
+          if(lroot) print*,'htube: set vector'
+          f(:,:,:,i1 )=+zz*tmp
+          f(:,:,:,i1+1)=0.
+          f(:,:,:,i1+2)=-xx*tmp
+        else
+          if(lroot) print*,'htube: bad value of i2=',i2
+        endif
       endif
 !
     endsubroutine htube
+!***********************************************************************
+    subroutine htube2(ampl,f,i1,i2,xx,yy,zz,radius,epsilon_nonaxi)
+!
+!  Horizontal flux tube (for vector potential, or passive scalar)
+!
+!   7-jun-02/axel+vladimir: coded
+!  11-sep-02/axel: allowed for scalar field (if i1=i2)
+!
+      integer :: i1,i2
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
+      real :: ampl,radius,epsilon_nonaxi,ky
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+      else
+        ky=2*pi/Ly
+        if(lroot) then
+          print*,'implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+        endif
+!
+!  constant, when epsilon_nonaxi; otherwise modulation about zero
+!
+        if(epsilon_nonaxi==0) then
+          modulate=1.
+        else
+          modulate=epsilon_nonaxi*sin(ky*yy)
+        endif
+!
+! completely quenched "gaussian"
+!
+        tmp=.5*ampl*modulate*exp(-(xx**2+zz**2)/radius**2)
+!
+!  check whether vector or scalar
+!
+        if(i1==i2) then
+          if(lroot) print*,'htube: set scalar'
+          f(:,:,:,i1)=tmp
+        elseif(i1+2==i2) then
+          if(lroot) print*,'htube: set vector'
+          f(:,:,:,i1 )=+zz*tmp
+          f(:,:,:,i1+1)=0.
+          f(:,:,:,i1+2)=-xx*tmp
+        else
+          if(lroot) print*,'htube: bad value of i2=',i2
+        endif
+      endif
+!
+    endsubroutine htube2
 !***********************************************************************
     subroutine hlayer(ampl,f,i,xx,yy,zz,zflayer,width)
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.83 2002-09-03 16:35:04 brandenb Exp $
+! $Id: magnetic.f90,v 1.84 2002-09-11 17:38:14 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.83 2002-09-03 16:35:04 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.84 2002-09-11 17:38:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,8 +119,8 @@ module Magnetic
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
-      case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz, &
-                                            radius,epsilonaa)
+      case('hor-fluxtube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
+      case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
@@ -160,7 +160,7 @@ module Magnetic
 !  assume that ghost zones have already been set.
 !
       if (lpress_equil) then
-        print*,'adjust lnrho to have pressure equilibrium; cs0=',cs0
+        if(lroot) print*,'adjust lnrho to have pressure equilib; cs0=',cs0
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)

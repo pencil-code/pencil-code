@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.9 2002-07-31 20:39:12 brandenb Exp $
+! $Id: pscalar.f90,v 1.10 2002-09-11 17:38:14 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -16,10 +16,11 @@ module Pscalar
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5
-  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.
+  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
 
   namelist /pscalar_init_pars/ &
-       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc
+       initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
+       radius_lncc,epsilon_lncc
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -61,7 +62,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.9 2002-07-31 20:39:12 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.10 2002-09-11 17:38:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,6 +91,8 @@ module Pscalar
         case('wave-x'); call wave(ampllncc,f,ilncc,kx=kx_lncc)
         case('wave-y'); call wave(ampllncc,f,ilncc,ky=ky_lncc)
         case('wave-z'); call wave(ampllncc,f,ilncc,kz=kz_lncc)
+        case('hor-fluxtube'); call htube(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
+        case('hor-tube'); call htube2(ampllncc,f,ilncc,ilncc,xx,yy,zz,radius_lncc,epsilon_lncc)
         case default; call stop_it('init_lncc: bad initlncc='//trim(initlncc))
       endselect
 !
