@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.125 2002-10-04 17:15:20 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.125 $ $}
+\date{\today,~ $ $Revision: 1.126 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.125 $ $}
+  \emph{\today,~ $ $Revision: 1.126 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1296,10 +1296,10 @@ If \file{datadir.in} doe not exist, the data directory is \file{data/}.
 \subsubsection{\file{reference.out}}
 If present, \file{reference.out} contains the output you should obtain in
 the given run directory, provided you have not changed any parameters.
-To see whether the results of your run are OK, compare \file{n.dat} to
+To see whether the results of your run are OK, compare \file{time_series.dat} to
 \file{reference.out}:
 \begin{alltt}
-  \prompt{unix> } diff data/n.dat reference.out
+  \prompt{unix> } diff data/time_series.dat reference.out
 \end{alltt}
 
 \subsubsection{\file{start.csh}, \file{run.csh}, \file{getconf.csh}}
@@ -1337,9 +1337,9 @@ The global array dimensions.
 
 \paragraph{\file[legend.dat]{data/legend.dat}}
 The header line specifying the names of the diagnostic variables in
-\file{n.dat}.
+\file{time_series.dat}.
 
-\paragraph{\file[n.dat]{data/n.dat}}
+\paragraph{\file[time_series.dat]{data/time_series.dat}}
 Time series of diagnostic variables (also printed to stdout).
 
 \paragraph{\file[tsnap.dat]{data/tsnap.dat}, \file[tvid.dat]{data/tvid.dat}}
@@ -1364,7 +1364,7 @@ This file is read \name{IDL} (if you use it).
 
 \paragraph{\file[index.pro]{data/index.pro}}
 Can be used as include file in \name{IDL} and contains the column in which
-certain variables appear in the diagnostics file (\file{n.dat}).
+certain variables appear in the diagnostics file (\file{time_series.dat}).
 It also contains the positions of variables in the \file{VAR$N$} files.
 These positions depend on whether \name{entropy} or \name{noentropy}, etc,
 are invoked.
@@ -1467,7 +1467,7 @@ The \file{Makefile} you need will have the following section:
 Every \var{it1} time steps (\var{it1} is a runtime parameter, see
 Sect.~\ref{S-all-run-params}), the code writes monitoring output to
 \name{stdout}
-and, parallel to this, to the file \file[n.dat]{data/n.dat}.
+and, parallel to this, to the file \file[time_series.dat]{data/time_series.dat}.
 The variables that appear in this listing and the output format are
 defined in the file \file{print.in} and can be changed without touching
 the code (even while the code is running).
@@ -1531,7 +1531,7 @@ Here is a list of the more important ones.
 \item[cvs-add-rundir] Add the current run directory to the CVS repository.
 \item[cvsci_run] Similar to \cmd{cvs-add-rundir}, but it also checks in
   the \file{*.in} and \file{src/*.local} files. It also checks in the files
-  \file{data/n.dat} and \file{data/index.pro} for subsequent processing in
+  \file{data/time_series.dat} and \file{data/index.pro} for subsequent processing in
   \name{IDL} on another machine. This is particularly useful if collaborators
   want to check each others runs.
 \item[getconf.csh] See \S~\ref{start-run-getconf}
@@ -1564,7 +1564,7 @@ Here is a list of the more important ones.
 \item[timestr] Generate a unique time string that can be appended to file
   names from shell scripts through the backtick mechanism
 \item[x] Check the execution of the current run: prints legend and the last
- few lines of the \file{n.dat} file. It also appends this result to a file
+ few lines of the \file{time_series.dat} file. It also appends this result to a file
  called \file{SPEED}, which contains also the current wall clock time, so
  you can work out the speed of the code (without being affected by i/o time).
 \end{description}
@@ -2217,7 +2217,7 @@ module.
 In conservative form, the equation for a passive scalar is
 \begin{equation}
 {\partial\over\partial t}(\varrho c)+
-\Div\left[\varrho c\uv-\varrho{\cal D}{\partial c\over\partial t}\right].
+\Div\left[\varrho c\uv-\varrho{\cal D}{\partial c\over\partial t}\right]=0.
 \end{equation}
 Here $c$ denotes the concentration (per unit mass) of the passive scalar and
 ${\cal D}$ its diffusion constant (assumed constant).
@@ -4167,7 +4167,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.125 2002-10-04 17:15:20 dobler Exp $ $}
+$ $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $ $}
 
 
 \end{document}

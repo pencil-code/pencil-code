@@ -31,7 +31,7 @@ exec $perl -x -S $0 "$@"        # -x: start from the following line
 use strict;
 use Getopt::Long;
 
-my @ts_files = qw( data/n.dat run.out run.log mhd.out mhd.log );
+my @ts_files = qw( data/time_series.dat run.out run.log mhd.out mhd.log );
 my $ts_file;
 my $tmpfile = 'data/growth.tmp';
 my $gpscript = 'data/gplot.tmp';

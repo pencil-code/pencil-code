@@ -44,7 +44,7 @@ foreach dir ($subdirs)
     rm -f $dir/*.xy $dir/*.xz >& /dev/null
   endif
 end
-if (-e $datadir/n.dat && ! -z $datadir/n.dat) mv $datadir/n.dat $datadir/n.`timestr`
+if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
 # Run start.x

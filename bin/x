@@ -1,15 +1,15 @@
 #
 #  The script prints the header (legend) and the
-#  last few lines of the n.dat file.
+#  last few lines of the time_series.dat file.
 #
 echo ""
 cat data/legend.dat
-tail data/n.dat
+tail data/time_series.dat
 #
 #  This script also appends the last line of
-#  the n.dat file at this moment to the SPEED file.
+#  the time_series.dat file at this moment to the SPEED file.
 #  It is called that way because it allows you,
 #  among other things, to assess easily the speed
 #   of the simulation.
 #
-(date;cat data/proc0/alive.info;tail -1 data/n.dat;echo "") >>SPEED
+(date;cat data/proc0/alive.info;tail -1 data/time_series.dat;echo "") >>SPEED

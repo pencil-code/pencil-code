@@ -5,12 +5,12 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   12-Nov-2001
-;;;  $Id: evol.pro,v 1.9 2002-10-02 20:11:14 dobler Exp $
+;;;  $Id: evol.pro,v 1.10 2002-10-06 07:23:18 brandenb Exp $
 ;;;
 ;;;  Description:
-;;;   Time evolution (from n.dat).
+;;;   Time evolution (from time_series.dat).
 
-default, nfile, datatopdir + '/n.dat'
+default, nfile, datatopdir + '/time_series.dat'
 
 default, oldfile, ''
 default, oldmtime, 0
@@ -25,7 +25,7 @@ s = texsyms()
 ; close,1
 ; mtime = fs.mtime
 ;;; ..so we do this in Perl:
-spawn,"perl -e '@s=stat("""+datatopdir+"/n.dat""); print $s[9]';", res
+spawn,"perl -e '@s=stat("""+datatopdir+"/time_series.dat""); print $s[9]';", res
 mtime = ulong64(res[0])
 
 ;; Re-read file only if it has changed
