@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.93 2003-11-16 15:28:59 ajohan Exp $ 
+! $Id: initcond.f90,v 1.94 2003-11-18 16:26:47 ajohan Exp $ 
 
 module Initcond 
  
@@ -984,86 +984,37 @@ module Initcond
 !      
     endsubroutine planet
 !***********************************************************************
-    subroutine baroclinic(f,xx,yy,zz,gamma,t_fct_type,hires_q_z, &
-                          TT_til0,alpha_TT,rho0,dlnrhobdx)
+    subroutine baroclinic(f,xx,yy,zz,gamma,rho0,dlnrhobdx,dssdz,cs20)
 !
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
       integer :: i,j,k,izmid,hires_q_z,mz_hr,izmid_hr
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,I_int,rho,TT_til,dlnrhodx
-      real, dimension (hires_q_z*mz) :: z_hr,I_int_z,TT_til_hr,dPhidz_hr
-      real :: gamma,TT_til0,alpha_TT,rho0,dlnrhobdx,dz_hr
-      character (len=labellen) :: t_fct_type
+      real, dimension (mx,my,mz) :: xx,yy,zz,sz,I_int
+      real :: gamma,rho0,dlnrhobdx,dssdz,cs20
 !
-!  Temperature
+!  Put entropy in array
 !
-      select case(t_fct_type)
-        case('linear_z')
-          TT_til = TT_til0 + alpha_TT * abs(zz)
-          TT_til_hr = TT_til0 + alpha_TT * abs(z_hr)
+      f(:,:,:,iss) = dssdz*abs(zz)
 !
-!  Need high resolution in z to calculate integral
-!
-          mz_hr    = hires_q_z*mz
-!
-!  Index number of mid-plane
-!
-          izmid    = mz/2
-          izmid_hr = mz_hr/2
-!
-!  Calculate high resolution z array
+!  Need vertical entropy later
 !      
-          dz_hr = (zz(1,1,mz)-zz(1,1,1))/mz_hr
-          z_hr(1)=zz(1,1,1)
-          do i=2,mz_hr; z_hr(i)=z_hr(i-1)+dz_hr; enddo
+      sz = dssdz*abs(zz)
 !
-!  The potential is Omega**2*( -r0^2 + r0*xx - xx^2 + 0.5*zz^2 )
+!  Integral for calculating hydrostatic equilibrium density
 !
-          dPhidz_hr = Omega**2*z_hr
-!
-!  Integral for calculating hydrostatic equlibrium density
-!
-          I_int_z(izmid_hr:mz_hr) = spline_integral(z_hr(izmid_hr:mz_hr), &
-              1/TT_til_hr(izmid_hr:mz_hr)*dPhidz_hr(izmid_hr:mz_hr))
-          I_int_z(izmid_hr:1:-1) = spline_integral(z_hr(izmid_hr:1:-1), &
-              1/TT_til_hr(izmid_hr:1:-1)*dPhidz_hr(izmid_hr:1:-1))
-          if (lroot .and. ip<14) print*,I_int_z(1),I_int_z(mz_hr)
-!
-!  Put high resolution integral back into normal resolution array
-!
-          do i=1,mx
-            do j=1,my
-              do k=1,mz
-                I_int(i,j,k) = I_int_z(hires_q_z*(k-1)+1)
-              enddo
-            enddo
-          enddo
-      endselect
+      I_int = 1/(dssdz**2) * ( 1 - exp(-sz) * (1+dssdz*abs(zz)) )
 !
 !  Solution to hydrostatic equlibrium in the z-direction
 !
-      do k=1,mz
-        f(:,:,k,ilnrho) = alog(rho0) - &
-            alog(TT_til(:,:,k)/TT_til(:,:,izmid)) - I_int(:,:,k)
-      enddo
-!
-!  The derivative of the density in the x direction only gets a
-!  contribution from the derivative of the background density ln rhob
-!  (here assume ln rhob << ln rho)
-!
-      rho = exp(f(:,:,:,ilnrho))
-      dlnrhodx(:,:,:) = dlnrhobdx
+      f(:,:,:,ilnrho) = 1/(gamma-1) * alog( exp( (1-gamma)*sz ) * &
+          ((1-gamma)/cs20 * I_int + 1) )
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
-!  (potential term vanishes when velocities measured relative to -1.5 O x.)
 !
-      f(:,:,:,iuy) = 1/(2*Omega)*TT_til*dlnrhodx(:,:,:)
-!
-!  Entropy is calculated from temperature and density ( P = T~*rho )
-!
-      f(:,:,:,iss) = 1/gamma*alog(TT_til(:,:,:)*rho(:,:,:)) - f(:,:,:,ilnrho)
+      f(:,:,:,iuy) = cs20/(2*Omega) * exp( gamma*f(:,:,:,iss) + &
+          (gamma-1)*f(:,:,:,ilnrho) )*dlnrhobdx/gamma
 !
     endsubroutine baroclinic
 !***********************************************************************
