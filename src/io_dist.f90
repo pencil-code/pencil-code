@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.82 2004-09-29 10:59:27 ajohan Exp $
+! $Id: io_dist.f90,v 1.83 2004-11-22 21:13:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.82 2004-09-29 10:59:27 ajohan Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.83 2004-11-22 21:13:31 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -351,17 +351,28 @@ contains
 !  15-jun-03/axel: Lx,Ly,Lz are now written to file (Tony noticed the mistake)
 !
       use Cdata
+      use Mpicomm, only: stop_it_if_any
 !
       character (len=*) :: file
+      logical :: ioerr
 !
-      open(1,FILE=file,FORM='unformatted')
+      ioerr = .true.            ! will be overridden unless we go 911
+      open(1,FILE=file,FORM='unformatted',err=911)
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       write(1) Lx,Ly,Lz
       write(1) dx_1,dy_1,dz_1
       write(1) dx_tilde,dy_tilde,dz_tilde
       close(1)
+      ioerr = .false.
 !
+!  Something went wrong. Catches cases that would make mpich 1.x hang,
+!  provided that this is the first collective write call
+!
+911   call stop_it_if_any(ioerr, &
+          "Cannot open " // trim(file) // " (or similar) for writing" // &
+          " -- is data/ visible from all nodes?")
+
     endsubroutine wgrid
 !***********************************************************************
     subroutine rgrid (file)

@@ -1,4 +1,4 @@
-! $Id: io_mpidist.f90,v 1.10 2004-08-20 16:14:26 dobler Exp $
+! $Id: io_mpidist.f90,v 1.11 2004-11-22 21:13:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpidist.f90   !!!
@@ -98,7 +98,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.10 2004-08-20 16:14:26 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpidist.f90,v 1.11 2004-11-22 21:13:31 dobler Exp $")
 !
       io_initialized=.true.
 !
@@ -486,13 +486,24 @@ contains
 !  21-jan-02/wolf: coded
 !
       use Cdata, only: t,x,y,z,dx,dy,dz
+      use Mpicomm, only: stop_it_if_any
 !
       character (len=*) :: file
+      logical :: ioerr
 !
+      ioerr = .true.            ! will be overridden unless we go 911
       open(1,FILE=file,FORM='unformatted')
       write(1) t,x,y,z,dx,dy,dz
       write(1) dx,dy,dz
       close(1)
+      ioerr = .false.
+!
+!  Something went wrong. Catches cases that would make mpich 1.x hang,
+!  provided that this is the first collective write call
+!
+911   call stop_it_if_any(ioerr, &
+          "Cannot open " // trim(file) // " (or similar) for writing" // &
+          " -- is data/ visible from all nodes?")
 !
     endsubroutine wgrid
 !***********************************************************************

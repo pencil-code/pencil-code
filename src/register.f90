@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.141 2004-09-12 07:47:14 brandenb Exp $
+! $Id: register.f90,v 1.142 2004-11-22 21:13:31 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -21,9 +21,9 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm,      only: mpicomm_init, stop_it
+      use Mpicomm,      only: mpicomm_init,stop_it,stop_it_if_any
       use Sub 
-      use Param_IO,     only: get_datadir, get_snapdir
+      use Param_IO,     only: get_datadir,get_snapdir
       use IO,           only: register_io
       use Gravity,      only: register_gravity
       use Hydro,        only: register_hydro
@@ -43,6 +43,8 @@ module Register
       use Viscosity,    only: register_viscosity
       use Special,      only: register_special
 !
+      logical :: ioerr
+!
 !  initialize all mpi stuff
 !
       call mpicomm_init
@@ -54,13 +56,15 @@ module Register
 !
 !  Writing files for use with IDL
 !
+      ioerr = .true.            ! will be overridden unless we go 911
       if (lroot) then
-        open(15,file=trim(datadir)//'/def_var.pro')
-        open(4,file=trim(datadir)//'/variables.pro')
+        open(15,FILE=trim(datadir)//'/def_var.pro',ERR=911)
+        open(4,FILE=trim(datadir)//'/variables.pro',ERR=911)
         write(4,*) 'close,1'
         write(4,*) "openr,1, datadir+'/'+varfile, /F77"
         write(4,*) 'readu,1 $'
       endif
+      ioerr = .false.
 !
       call register_io
 !
@@ -105,6 +109,14 @@ module Register
 !
       call get_datadir(datadir)
       call get_snapdir(datadir_snap)
+!
+!  Something went wrong. Catches cases that would make mpich 1.x hang,
+!  provided that this is the first attempt to write a file
+!
+
+911   call stop_it_if_any(ioerr, &
+          "Cannot open data/def_var.pro for writing" // &
+          " -- is data/ visible from root node?")
 !
     endsubroutine register_modules
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.29 2004-08-20 16:14:26 dobler Exp $
+! $Id: io_mpio.f90,v 1.30 2004-11-22 21:13:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -110,7 +110,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.29 2004-08-20 16:14:26 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.30 2004-11-22 21:13:31 dobler Exp $")
 !
 !  consistency check
 !
@@ -491,6 +491,8 @@ contains
 !  write grid positions for var to file
 !  20-sep-02/wolf: coded
 !
+      use Mpicomm, only: stop_it_if_any
+
       real, dimension(*) :: var ! x, y or z
       integer :: nglobal,nlocal,mlocal,ipvar
       integer :: filetype,memtype
@@ -503,6 +505,13 @@ contains
       call MPI_FILE_OPEN(MPI_COMM_WORLD, file, &
                ior(MPI_MODE_CREATE,MPI_MODE_WRONLY), &
                MPI_INFO_NULL, fhandle, ierr)
+      ! Abort if ierr=.true. on any processor.
+      ! Possibly, MPI would realize  problems and abort, but who knows..
+      call stop_it_if_any(ierr, &
+           "Cannot MPI_FILE_OPEN " // trim(file) // &
+           " (or similar) for writing" // &
+           " -- is data/ visible from all nodes?")
+
       call MPI_FILE_SET_VIEW(fhandle, data_start, MPI_REAL, filetype, &
                "native", MPI_INFO_NULL, ierr)
 !

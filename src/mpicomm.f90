@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.128 2004-10-07 20:25:09 theine Exp $
+! $Id: mpicomm.f90,v 1.129 2004-11-22 21:13:31 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -988,7 +988,10 @@ module Mpicomm
 !***********************************************************************
     subroutine stop_it(msg)
 !
-!  Print message and stop
+!  Print message and stop.
+!  With at least some MPI implementations, this only stops if all
+!  processors agree to call stop_it(). To stop (collectively) if only one
+!  or a few processors find some condition, use stop_it_if_any().
 !  6-nov-01/wolf: coded
 !
       character (len=*) :: msg
@@ -997,6 +1000,27 @@ module Mpicomm
       call mpifinalize
       STOP
     endsubroutine stop_it
+!***********************************************************************
+    subroutine stop_it_if_any(stop_flag,msg)
+!
+!  Conditionally print message and stop.
+!  This works unilaterally, i.e. if STOP_FLAG is true on _any_ processor,
+!  we will all stop.
+!  22-nov-04/wolf: coded
+!
+      logical :: stop_flag
+      character (len=*) :: msg
+      logical :: global_stop_flag
+!
+!  Get global OR of stop_flag and distribute it, so all processors agree
+!  on whether to call stop_it():
+!
+      call MPI_ALLREDUCE(stop_flag,global_stop_flag,1,MPI_LOGICAL, &
+                         MPI_LOR,MPI_COMM_WORLD,ierr)
+!
+      if (global_stop_flag) call stop_it(msg)
+!
+    endsubroutine stop_it_if_any
 !***********************************************************************
     subroutine transp(a,var)
 !

@@ -388,6 +388,18 @@ module Mpicomm
       STOP
     endsubroutine stop_it
 !***********************************************************************
+    subroutine stop_it_if_any(stop_flag,msg)
+!
+!  Conditionally print message and stop.
+!  22-nov-04/wolf: coded
+!
+      logical :: stop_flag
+      character (len=*) :: msg
+!
+      if (stop_flag) call stop_it(msg)
+!
+    endsubroutine stop_it_if_any
+!***********************************************************************
     subroutine transp(a,var)
 !
 !  Doing a transpose (dummy version for single processor)
