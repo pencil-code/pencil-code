@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.144 2002-12-09 19:28:34 mee Exp $
+! $Id: entropy.f90,v 1.145 2002-12-12 11:16:16 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.144 2002-12-09 19:28:34 mee Exp $")
+           "$Id: entropy.f90,v 1.145 2002-12-12 11:16:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -422,8 +422,9 @@ module Entropy
       if ((luminosity /= 0) .or. (cool /= 0)) &
            call calc_heat_cool(f,df,rho1,cs2,TT1)
 !
-      if (linterstellar) &
-        call calc_heat_cool_interstellar(df,rho1,TT1)
+!ngrs: switch off for debug
+!      if (linterstellar) &
+!        call calc_heat_cool_interstellar(df,rho1,TT1)
 !
 !  possibility of entropy relaxation in exterior region
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.101 2002-11-24 13:14:59 mee Exp $
+! $Id: magnetic.f90,v 1.102 2002-12-12 11:16:16 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -84,7 +84,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.101 2002-11-24 13:14:59 mee Exp $")
+           "$Id: magnetic.f90,v 1.102 2002-12-12 11:16:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -113,6 +113,7 @@ module Magnetic
       use Cdata
       use Mpicomm
       use Density
+      use Gravity, only: gravz
       use Sub
       use Initcond
 !
@@ -129,7 +130,8 @@ module Magnetic
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
-      case('hor-fluxlayer'); call hlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
+      case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
+      case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)

@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.12 2002-12-11 17:32:17 ngrs Exp $
+! $Id: visc_shock.f90,v 1.13 2002-12-12 11:16:16 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.12 2002-12-11 17:32:17 ngrs Exp $")
+           "$Id: visc_shock.f90,v 1.13 2002-12-12 11:16:16 brandenb Exp $")
 
 
 ! Check we arn't registering too many auxilliary variables
@@ -410,6 +410,8 @@ module Viscosity
            + nu_shock * f(l1:l2,m,n,ishock) * divu**2)
 
       maxheating=amax1(maxheating,df(l1:l2,m,n,ient))
+!
+      if(ip==0) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -427,7 +429,6 @@ module Viscosity
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
       real, dimension (nx,3) :: gshock_characteristic
       real, dimension (nx) :: rho1, divu
-      integer :: i
 
       intent (in) :: f, glnrho, rho1
       intent (out) :: df
@@ -482,6 +483,7 @@ module Viscosity
             if (headtt) print*,'no viscous force: (nu=0)'
          endif
       endif
-
+!
+      if(ip==0) print*,rho1 !(to keep compiler quiet)
     end subroutine calc_viscous_force
 endmodule Viscosity

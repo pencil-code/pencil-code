@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.20 2002-11-23 17:50:01 brandenb Exp $ 
+! $Id: initcond.f90,v 1.21 2002-12-12 11:16:16 brandenb Exp $ 
 
 module Initcond 
  
@@ -418,7 +418,34 @@ module Initcond
 !
     endsubroutine htube2
 !***********************************************************************
-    subroutine hlayer(ampl,f,i,xx,yy,zz,zflayer,width)
+    subroutine magsupport(ampl,f,zz,gravz,cs0,rho0)
+!
+!  magnetically supported horizontal flux layer
+!  (for aa):  By^2 = By0^2 * exp(-z/H),
+!  where H=2*cs20/abs(gravz) and ampl=cs0*sqrt(2*rho0)
+!  should be used when invoking this routine.
+!  Here, ampl=pmag/pgas.
+!
+!   7-dec-02/axel: coded
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: zz
+      real :: ampl,H,A0,gravz,cs0,rho0,lnrho0
+!
+      if (ampl==0) then
+        if (lroot) print*,'magsupport: do nothing'
+      else
+        lnrho0=alog(rho0)
+        H=(1+ampl)*cs0**2/abs(gravz)
+        A0=-2*H*ampl*cs0*sqrt(2*rho0)
+        if (lroot) print*,'magsupport; H,A0=',H,A0
+        f(:,:,:,iaa)=A0*exp(-.5*zz/H)
+        f(:,:,:,ilnrho)=lnrho0-zz/H
+      endif
+!
+    endsubroutine magsupport
+!***********************************************************************
+    subroutine hfluxlayer(ampl,f,i,xx,yy,zz,zflayer,width)
 !
 !  Horizontal flux layer (for vector potential)
 !
@@ -441,7 +468,7 @@ module Initcond
       endif
 !
       if (ip==1) print*,xx,yy
-    endsubroutine hlayer
+    endsubroutine hfluxlayer
 !***********************************************************************
     subroutine uniform_x(ampl,f,i,xx,yy,zz)
 !
@@ -616,6 +643,27 @@ module Initcond
       f(:,:,:,ivar) = ampl*tmp
 !
     endsubroutine trilinear
+!***********************************************************************
+    subroutine cos_cos_sin(ampl,f,ivar,xx,yy,zz)
+!
+!  Produce a profile that is linear in any non-periodic direction, but
+!  periodic in periodic ones (for testing purposes).
+!
+!  7-dec-02/axel: coded
+!
+      integer :: ivar
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,kx,ky,kz
+!
+      if (lroot) print*, 'uu: trilinear in ', ivar
+!
+      kx=2*pi/Lx*3
+      ky=2*pi/Ly*3
+      kz=pi/Lz
+      f(:,:,:,ivar) = ampl*cos(kx*xx)*cos(ky*yy)*sin(kz*zz)
+!
+    endsubroutine cos_cos_sin
 !***********************************************************************
 
 endmodule Initcond
