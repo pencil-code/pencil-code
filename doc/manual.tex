@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.241 2004-03-31 06:08:24 ajohan Exp $
+%%  CVS: $Id: manual.tex,v 1.242 2004-03-31 12:19:50 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -372,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}
+%\date{$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}\\
+  \emph{$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3159,7 +3159,7 @@ and
 
 In its present configuration only hydrogen ionization is explicitly included.
 Other constituents (currently He and H$_2$) can have fixed values.
-The pressure is always proportional to the total number of particles, i.e.\
+The pressure is proportional to the total number of particles, i.e.\
 \begin{equation}
 p=(n_{\rm HI}+n_{\rm HII}+n_{\rm H_2}+n_{\rm e}+n_{\rm He}+...)k_{\rm B}T.
 \end{equation}
@@ -3173,14 +3173,25 @@ Substituting $n_{\rm H}=n_{\rm Htot}-2n_{\rm H_2}$, we have
 \begin{equation}
 p=(1-x_{\rm H_2}+x_{\rm e}+x_{\rm He}+...)n_{\rm Htot}k_{\rm B}T.
 \end{equation}
-The mean molecular weight is not directly involved anywhere, but it
-would be (except for some gram/mole stuff)
+This can be written in the more familiar form
+\begin{equation}
+p={{\cal R}\over\mu}\rho T,
+\end{equation}
+where ${\cal R}=k_{\rm B}/m_{\rm u}$ and
+$m_{\rm u}$ is the atomic mass unit (which is for all practical
+purposes the same as $m_{\rm Htot}$) and
 \begin{equation}
 \mu={n_{\rm H}+2n_{\rm H_2}+n_{\rm e}+4n_{\rm He}\over
 n_{\rm H}+n_{\rm H_2}+n_{\rm He}}
-={1+4x_{\rm He}\over1-x_{\rm H_2}+x_{\rm e}+x_{\rm He}},
+={1+4x_{\rm He}\over1-x_{\rm H_2}+x_{\rm e}+x_{\rm He}}
 \end{equation}
-where the factor 4 is really to be substituted for 3.97153.
+is the mean molecular weight (which is here dimensionless; see
+Kippenhahn \& Weigert 1990, p.\ 102).
+The factor 4 is really to be substituted for 3.97153.
+%AB: need to check more carefully:
+Some of the familiar relations take still the usual form, in particular
+$e=c_vT$ and $h=c_pT$ with $c_v={3\over2}{\cal R}/\mu$ and
+$c_p={5\over2}{\cal R}/\mu$.
 
 The number ratio, $x_{\rm He}$, is more commonly expressed as the mass
 ratio, $Y=m_{\rm He}n_{\rm He}/(m_{\rm H}n_{\rm Htot}+m_{\rm He}n_{\rm e}n_{\rm He})$,
@@ -3208,7 +3219,8 @@ As a replacement, one can use \code{IONIZATION=ionization\_fixed},
 where the degree of ionization can be given by hand.
 Here the normalization of the entropy is the same as for
 \code{IONIZATION=ionization}.
-This case is described in more detail below.
+This case is described in more detail below.\footnote{We omit here
+the contribution of H$_2$.}
 
 We treat the gas as being composed of partially ionized hydrogen and neutral
 helium. These are four different particle species, each of which regarded as
@@ -3344,10 +3356,10 @@ $S_{\rm mon}$ is the saturation level of the monomer given by
 \begin{equation}
   S_{\rm mon} = \frac{P_{\rm mon}}{P_{\rm sat}} \, .
 \end{equation}
-Here $P_{\rm sat}$ is the saturated vapour pressure of the monomer. Currently
+Here $P_{\rm sat}$ is the saturated vapor pressure of the monomer. Currently
 only water ice has been implemented in the code.
 \\ \\
-All dust species fulfil the continuity equation
+All dust species fulfill the continuity equation
 \begin{equation}
   {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0.
 \end{equation} 
@@ -4092,7 +4104,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-31 12:19:50 $ $,~ $ $Revision: 1.242 $ $}
 
 \section{Timings}
 
@@ -6969,6 +6981,9 @@ initial condition.
   ``Two-dimensional compressible convection extending over multiple scale
   heights''
 
+\bibitem{KW90} Kippenhahn, R. \& Weigert, A.
+  \emph{Stellar structure and evolution}{Springer: Berlin} (1990)
+
 \bibitem{KR80} Krause, F., R\"adler, K.-H.,
   \emph{Mean-Field Magneto\-hy\-dro\-dy\-na\-mics and Dynamo Theory\/},
   Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
@@ -7000,7 +7015,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.241 2004-03-31 06:08:24 ajohan Exp $ $}
+$ $Id: manual.tex,v 1.242 2004-03-31 12:19:50 brandenb Exp $ $}
 
 
 \end{document}
