@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $
+! $Id: noforcing.f90,v 1.13 2004-01-26 14:46:02 brandenb Exp $
 
 module Forcing
 
@@ -12,6 +12,9 @@ module Forcing
  
   namelist /forcing_init_pars/ dummy
   namelist /forcing_run_pars/  dummy
+
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_rufm=0
 
   contains
 
@@ -35,7 +38,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noforcing.f90,v 1.12 2003-11-14 16:14:23 dobler Exp $")
+           "$Id: noforcing.f90,v 1.13 2004-01-26 14:46:02 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -61,6 +64,44 @@ module Forcing
 !
       if(ip==1) print*,df !(to remove compiler warnings)
     endsubroutine addforce
+!***********************************************************************
+    subroutine rprint_forcing(lreset,lwrite)
+!
+!  reads and registers print parameters relevant for hydro part
+!
+!  26-jan-04/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_rufm=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rufm',i_rufm)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      if (lwr) then
+        write(3,*) 'i_rufm=',i_rufm
+      endif
+!
+    endsubroutine rprint_forcing
 !***********************************************************************
 
 endmodule Forcing

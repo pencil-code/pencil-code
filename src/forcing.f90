@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.56 2003-11-24 22:11:55 brandenb Exp $
+! $Id: forcing.f90,v 1.57 2004-01-26 14:46:02 brandenb Exp $
 
 module Forcing
 
@@ -31,6 +31,9 @@ module Forcing
        zff_ampl,zff_hel, &
        lmagnetic_forcing
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_rufm=0
+
   contains
 
 !***********************************************************************
@@ -53,7 +56,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.56 2003-11-24 22:11:55 brandenb Exp $")
+           "$Id: forcing.f90,v 1.57 2004-01-26 14:46:02 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -254,8 +257,9 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx,rho1
+      real, dimension (nx) :: radius,tmpx,rho1,ruf
       real, dimension (mz) :: tmpz
+      real, dimension (nx,3) :: variable_rhs,forcing_rhs
       real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
@@ -422,19 +426,28 @@ module Forcing
 !
 !  loop the two cases separately, so we don't check for r_ff during
 !  each loop cycle which could inhibit (pseudo-)vectorisation
+!  calculate energy input from forcing; must use lout (not ldiagnos)
 !
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,cmplx(coef1,coef2),force_ampl)
-        do j=1,3
-          if(extent(j)) then
-            jf=j+ifff-1
-            do n=n1,n2
-              do m=m1,m2
-                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+profz_ampl(n)*force_ampl*rho1 &
+        do n=n1,n2
+          do m=m1,m2
+            do j=1,3
+              if(extent(j)) then
+                jf=j+ifff-1
+                forcing_rhs(:,j)=profz_ampl(n)*force_ampl &
                   *real(cmplx(coef1(j),profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))
-              enddo
+                f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+rho1*forcing_rhs(:,j)
+              endif
             enddo
+          enddo
+          if (lout) then
+            if (i_rufm/=0) then
+              variable_rhs=f(l1:l2,m,n,iffx:iffz)
+              call dot_mn(variable_rhs,forcing_rhs,ruf)
+              call sum_mn_name(ruf,i_rufm)
+            endif
           endif
         enddo
       else                      ! with radial profile
@@ -1256,6 +1269,44 @@ module Forcing
       if (ip.le.9) print*,'hel_vec: forcing OK'
 !
     end subroutine hel_vec
+!***********************************************************************
+    subroutine rprint_forcing(lreset,lwrite)
+!
+!  reads and registers print parameters relevant for hydro part
+!
+!  26-jan-04/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset,lwr
+      logical, optional :: lwrite
+!
+      lwr = .false.
+      if (present(lwrite)) lwr=lwrite
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_rufm=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'rufm',i_rufm)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      if (lwr) then
+        write(3,*) 'i_rufm=',i_rufm
+      endif
+!
+    endsubroutine rprint_forcing
 !***********************************************************************
 
 endmodule Forcing

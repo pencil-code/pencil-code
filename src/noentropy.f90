@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.51 2003-11-28 17:00:00 theine Exp $
+! $Id: noentropy.f90,v 1.52 2004-01-26 14:46:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.51 2003-11-28 17:00:00 theine Exp $")
+           "$Id: noentropy.f90,v 1.52 2004-01-26 14:46:02 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -98,7 +98,7 @@ module Entropy
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,gshock
-      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho,shock
+      real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho,shock,rho
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,shock,gshock
@@ -128,8 +128,9 @@ module Entropy
       if (ldiagnos) then
         if (i_dtc/=0) call max_mn_name(sqrt(cs2)/dxmin/cdt,i_dtc,l_dt=.true.)
         if (i_ugradpm/=0) then
+          rho=1./rho1
           call dot_mn(uu,glnrho,uglnrho)
-          call sum_mn_name(cs2*uglnrho,i_ugradpm)
+          call sum_mn_name(rho*cs2*uglnrho,i_ugradpm)
         endif
       endif
 !

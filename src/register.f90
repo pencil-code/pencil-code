@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.122 2004-01-21 16:13:58 brandenb Exp $
+! $Id: register.f90,v 1.123 2004-01-26 14:46:02 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -356,6 +356,7 @@ module Register
       call rprint_general     (lreset,LWRITE=lroot)
       call rprint_hydro       (lreset,LWRITE=lroot)
       call rprint_density     (lreset,LWRITE=lroot)
+      call rprint_forcing     (lreset,LWRITE=lroot)
       call rprint_entropy     (lreset,LWRITE=lroot)
       call rprint_magnetic    (lreset,LWRITE=lroot)
       call rprint_radiation   (lreset,LWRITE=lroot)
