@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.4 2002-05-04 15:49:26 brandenb Exp $
+! $Id: prints.f90,v 1.5 2002-05-08 15:26:29 dobler Exp $
 
 module Print
 
@@ -33,7 +33,8 @@ module Print
         fform=trim(fform)//comma//cform(iname)
       enddo
       fform=trim(fform)//')'
-print*,fform
+print*,'PRINTS: form = ',fform
+print*,'PRINTS: args = ',it-1,t_diag,dt,fname(1:nname)
 !
 !  this needs to be made more sophisticated of course...
 !
