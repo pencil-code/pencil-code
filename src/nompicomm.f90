@@ -42,11 +42,10 @@ module Mpicomm
 !   6-jun-02/axel: generalized to allow for ny=1
 !
       use General
-      use Cdata, only: lmpicomm,directory
+      use Cdata, only: lmpicomm
 !
 !  sets iproc in order that we write in the correct directory
 !
-      character (len=4) :: chproc
       integer :: m,n
 !
 !  for single cpu machine, set processor to zero

@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.40 2002-10-02 20:11:14 dobler Exp $
+! $Id: io_dist.f90,v 1.41 2002-10-05 07:51:16 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -69,7 +69,6 @@ contains
 !
 !  20-sep-02/wolf: coded
 !
-      use Cdata, only: datadir,directory_snap
       use General
       use Sub
       use Mpicomm, only: lroot,stop_it
@@ -81,7 +80,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.40 2002-10-02 20:11:14 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.41 2002-10-05 07:51:16 brandenb Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
