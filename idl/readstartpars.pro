@@ -35,7 +35,8 @@ if (cpar gt 0) then begin
   if (lmagnetic) then begin
     eta=par2.eta
     b_ext=par2.b_ext
-print,'AXEL'
+;print,'AXEL'
+print,'Specht'
   endif
 endif else begin
   if (quiet le 4) then print, 'Warning: cannot find file ', pfile
