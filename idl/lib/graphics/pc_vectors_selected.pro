@@ -1,4 +1,4 @@
-;  $Id: pc_vectors_selected.pro,v 1.5 2003-08-20 16:09:42 nilshau Exp $
+;  $Id: pc_vectors_selected.pro,v 1.6 2003-08-22 13:12:51 brandenb Exp $
 ;
 PRO pc_vectors_selected,l,m,n,U,V,W,X,Y,Z,length=length,ax=ax,az=az,nbox=nbox,$
 	color=color,symsize=symsize,scale=scale,black=black,field=field,$
@@ -202,7 +202,7 @@ z0=min(z) & z1=max(z)
 	  ;  set color and vector length
 	  ;
           if autocol eq 0 then col=color else $
-                               col=fix(icol0(0)+icol0(1)*(mag(i)-minmag0)/(maxmag0-minmag0))
+                               col=fix(icol0(0)+(icol0(1)-icol0(0))*(mag(i)-minmag0)/(maxmag0-minmag0))
           ;
           ;sym=symsize*mag(i)/maxmag0
 ;

@@ -1,12 +1,21 @@
-;  $Id: pc_rvector.pro,v 1.9 2003-08-20 16:09:42 nilshau Exp $
+;  $Id: pc_rvector.pro,v 1.10 2003-08-22 13:12:51 brandenb Exp $
 ;
 ;  Reads pre-selected vectors and plots in a 3-D box.
 ;  Data must be preprocessed with read_vectorfiles.x
 ;
 ;  18-aug-03/axel: coded
 ;
-pro pc_rvector,nxyz=nxyz,png=png,cltbl=cltbl,backval=backval
+pro pc_rvector,nxyz=nxyz,png=png,cltbl=cltbl,backval=backval,dir=dir,help=help
 ;
+if keyword_set(help) then begin
+  print,'pc_rvector,nxyz=nxyz,png=png,cltbl=cltbl,backval=backval,dir=dir,help=help'
+  print,'dir is target directory; default is current working directory'
+  print,'Typical calling sequence:'
+  print,"pc_rvector,dir='PNG/',/png"
+  return
+endif
+;
+default,dir,''
 default,nxyz,64*2
 default,cltbl,5
 default,backval,1
@@ -43,8 +52,8 @@ while not eof(lun) do begin
     if nread gt 0 then begin
       pc_vectors_selected,ll-4,mm-4,nn-1,bbx,bby,bbz,$
         indgen(nxyz),indgen(nxyz),indgen(nxyz),$
-        ax=30,az=30,len=5,back=backval
-      xyouts,-5,-5,'!8t!6='+string(t,fo=fo),siz=siz,col=255-backval
+        ax=30,az=30,len=5,back=backval,field=2
+      xyouts,-12,-10,'!8t!6='+string(t,fo=fo),siz=siz,col=255-backval
       wait,.05
       ;
       if keyword_set(png) then begin
@@ -54,7 +63,7 @@ while not eof(lun) do begin
         ;  write png file
         ;
         tvlct, red, green, blue, /GET
-        imgname = 'img_'+istr2+'.png'
+        imgname = dir+'img_'+istr2+'.png'
         write_png, imgname, image, red, green, blue
         itpng=itpng+1 ;(counter)
       endif
