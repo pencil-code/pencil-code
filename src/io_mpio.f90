@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.5 2002-09-24 17:35:17 brandenb Exp $
+! $Id: io_mpio.f90,v 1.6 2002-09-27 14:14:19 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.5 2002-09-24 17:35:17 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.6 2002-09-27 14:14:19 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -533,8 +533,8 @@ contains
       character (len=*) :: file
 !
       if (lroot) then
-        open(1,FILE=file,FORM='unformatted')
-        write(1) tau
+        open(1,FILE=file)
+        write(1,*) tau
         close(1)
       endif
 !
@@ -550,8 +550,8 @@ contains
       real :: tau
       character (len=*) :: file
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) tau
+      open(1,FILE=file)
+      read(1,*) tau
       close(1)
 !
     endsubroutine rtime

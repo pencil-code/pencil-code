@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.34 2002-09-26 16:21:25 brandenb Exp $
+! $Id: io_dist.f90,v 1.35 2002-09-27 14:14:19 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.34 2002-09-26 16:21:25 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.35 2002-09-27 14:14:19 dobler Exp $")
 
 !
 !  set directory name for the output (one subdirectory for each processor)
@@ -302,8 +302,8 @@ contains
       real :: tau
       character (len=*) :: file
 !
-      open(1,FILE=file,FORM='unformatted')
-      write(1) tau
+      open(1,FILE=file)
+      write(1,*) tau
       close(1)
 !
     endsubroutine wtime
@@ -316,8 +316,8 @@ contains
       real :: tau
       character (len=*) :: file
 !
-      open(1,FILE=file,FORM='unformatted')
-      read(1) tau
+      open(1,FILE=file)
+      read(1,*) tau
       close(1)
 !
     endsubroutine rtime
