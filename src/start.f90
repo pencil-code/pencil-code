@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.51 2002-07-08 06:51:51 brandenb Exp $
+! $Id: start.f90,v 1.52 2002-07-09 01:39:31 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,17 +32,13 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.51 2002-07-08 06:51:51 brandenb Exp $")
+             "$Id: start.f90,v 1.52 2002-07-09 01:39:31 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
         xyz0 = (/  -pi,  -pi,  -pi /) ! first corner
         Lxyz = (/ 2*pi, 2*pi, 2*pi /) ! box lengths
         lperi =(/.true.,.true.,.true. /) ! all directions periodic
-!
-!AB:  Wolfgang, could you explain what these are used for?
-!
-        z1=0.; z2=1.; zref=0.
 !
 !  read parameters from start.in
 !  call also rprint_list, because it writes iuu, ilnrho, ient, and iaa to disk.

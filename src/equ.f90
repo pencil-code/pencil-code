@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.82 2002-07-08 23:34:25 brandenb Exp $
+! $Id: equ.f90,v 1.83 2002-07-09 01:39:31 brandenb Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.82 2002-07-08 23:34:25 brandenb Exp $")
+           "$Id: equ.f90,v 1.83 2002-07-09 01:39:31 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -361,7 +361,7 @@ module Equ
 !
     endsubroutine pde
 !***********************************************************************
-      subroutine rmwig(f,df,ivar)
+      subroutine rmwig(f,df,ivar,explog)
 !
 !  Remove small scale oscillations (`wiggles') from a component of f,
 !  normally from lnrho. Sometimes necessary since Nyquist oscillations in
@@ -371,8 +371,8 @@ module Equ
 !    Since this is a global operation, we need to do a full loop through
 !  imn here (including communication and boundary conditions[?]) and
 !  collect the result in df, from where it is applied to f after the
-!  loop.  
-!    
+!  loop.
+!
 !  since this is a global operation.
 !
 !  8-Jul-02/wolf: coded
@@ -384,6 +384,7 @@ module Equ
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx) :: tmp
+      logical, optional :: explog
       integer :: ivar
 !
       if (lroot) then
@@ -397,10 +398,19 @@ module Equ
 !
 !  initiate communication and do boundary conditions
 !  need to call boundconds, because it also deals with x-boundaries!
+!AB: We don't need to communicate all variables though; just lnrho
 !
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       call boundconds_x(f)
+!
+!  Check whether we want to smooth on the actual variable, or on exp(f)
+!  The latter can be useful if the variable is lnrho or lncc.
+!
+      if (explog) then
+        f(l1:l2,m1:m2,n1:n2,ivar)=exp(f(l1:l2,m1:m2,n1:n2,ivar))
+        if(lroot) print*,'turns the whole array into exp(f), ivar=',ivar
+      endif
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed
@@ -414,16 +424,23 @@ module Equ
           call boundconds_y(f)
           call boundconds_z(f)
         endif
-
-        call del6_nodx(f,ilnrho,tmp)
-        df(l1:l2,m,n,ilnrho) = 1./64.*tmp
+        call del6_nodx(f,ivar,tmp)
+        df(l1:l2,m,n,ivar) = 1./64.*tmp
       enddo
 !
 !  Not necessary to do this in a (cache-efficient) loop updating in
 !  timestep, since this routine will be applied only infrequently.
 !
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-           f(l1:l2,m1:m2,n1:n2,ilnrho) + df(l1:l2,m1:m2,n1:n2,ilnrho)
+      f(l1:l2,m1:m2,n1:n2,ivar) = &
+           f(l1:l2,m1:m2,n1:n2,ivar) + df(l1:l2,m1:m2,n1:n2,ivar)
+!
+!  Check whether we want to smooth on the actual variable, or on exp(f)
+!  The latter can be useful if the variable is lnrho or lncc.
+!
+      if (explog) then
+        f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
+        if(lroot) print*,'turns the whole array back into alog(f), ivar=',ivar
+      endif
 !
     endsubroutine rmwig
 !***********************************************************************
