@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.22 2003-07-30 10:07:21 dobler Exp $
+! $Id: io_mpio.f90,v 1.23 2003-08-13 15:30:07 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -103,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.22 2003-07-30 10:07:21 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.23 2003-08-13 15:30:07 mee Exp $")
 !
 !  consistency check
 !
@@ -228,9 +228,9 @@ contains
       integer :: nv,mode                  ,i
       real, dimension (mx,my,mz,nv) :: a
 !
-      if (ip<=8) print*,'INPUT: mx,my,mz,nv=',mx,my,mz,nv
+      if (ip<=8) print*,'input: mx,my,mz,nv=',mx,my,mz,nv
       if (.not. io_initialized) &
-           call stop_it("INPUT: Need to call init_io first")
+           call stop_it("input: Need to call init_io first")
 !
       call commit_io_type_vect(nv)
 !
@@ -265,9 +265,9 @@ contains
       real, dimension (mx,my,mz,nv) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_VECTOR: nv =', nv
+      if ((ip<=8) .and. lroot) print*,'output_vect: nv =', nv
       if (.not. io_initialized) &
-           call stop_it("OUTPUT: Need to call init_io first")
+           call stop_it("output_vect: Need to call init_io first")
 !
       call commit_io_type_vect(nv) ! will free old type if new one is needed
       !
@@ -304,10 +304,10 @@ contains
       integer :: nv
       character (len=*) :: file
 
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
+      if ((ip<=8) .and. lroot) print*,'output_scal: ENTER'
       if (.not. io_initialized) &
-           call stop_it("OUTPUT: Need to call init_io first")
-      if (nv /= 1) call stop_it("OUTPUT called with scalar field, but nv/=1")
+           call stop_it("output_scal: Need to call init_io first")
+      if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       !
       !  open file and set view (specify which file positions we can access)
       !
@@ -346,7 +346,7 @@ contains
            print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
       if (headt .and. (imn==1)) write(*,'(A)') &
-           ' OUTPUT_PENCIL: Writing to ' // trim(file) // &
+           'output_pencil_vect: Writing to ' // trim(file) // &
            ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(file, a, ndim, &
@@ -377,7 +377,7 @@ contains
            call stop_it("OUTPUT called with scalar field, but ndim/=1")
 !
       if (headt .and. (imn==1)) print*, &
-           'OUTPUT_PENCIL: Writing to ', trim(file), &
+           'output_pencil_scal: Writing to ', trim(file), &
            ' for debugging -- this may slow things down'
 !
       call output_penciled_scal_c(file, a, ndim, &
@@ -398,7 +398,7 @@ contains
       character (len=*) :: file
       real, dimension (mx,my,mz,nv) :: a
 !
-      call stop_it("OUTPUS doesn't work with io_mpio yet -- but wasn't used anyway")
+      call stop_it("outpus: doesn't work with io_mpio yet -- but wasn't used anyway")
 !
       open(1,file=file,form='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
@@ -601,8 +601,7 @@ contains
       Ly=dy*ny*nprocy
       Lz=dz*nz*nprocz
 !
-      if (ip<=4) print*
-      if (ip<=4) print*,'dt,dx,dy,dz=',dt,dx,dy,dz
+      if (ip<=4) print*,'rgrid: dt,dx,dy,dz=',dt,dx,dy,dz
 !
     endsubroutine rgrid
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.121 2003-08-12 16:33:17 christer Exp $
+! $Id: magnetic.f90,v 1.122 2003-08-13 15:30:07 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -82,18 +82,18 @@ module Magnetic
       nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_aa:  nvar = ', nvar
-        print*, 'iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
+        print*, 'register_magnetic: nvar = ', nvar
+        print*, 'register_magnetic: iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.121 2003-08-12 16:33:17 christer Exp $")
+           "$Id: magnetic.f90,v 1.122 2003-08-13 15:30:07 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_aa: nvar > mvar')
+        call stop_it('register_magnetic: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -174,7 +174,7 @@ module Magnetic
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'No such such value for initaa: ', trim(initaa)
+        if (lroot) print*, 'init_aa: No such such value for initaa: ', trim(initaa)
         call stop_it("")
 
       endselect
@@ -198,7 +198,7 @@ module Magnetic
 !  assume that ghost zones have already been set.
 !
       if (lpress_equil) then
-        if(lroot) print*,'adjust lnrho to have pressure equilib; cs0=',cs0
+        if(lroot) print*,'init_aa: adjust lnrho to have pressure equilib; cs0=',cs0
         do n=n1,n2
         do m=m1,m2
           call curl(f,iaa,bb)
@@ -244,7 +244,7 @@ module Magnetic
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE daa_dt'
+      if (headtt.or.ldebug) print*,'daa_dt: SOLVE'
       if (headtt) then
         call identify_bcs('Ax',iax)
         call identify_bcs('Ay',iay)
@@ -317,7 +317,7 @@ module Magnetic
       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
-      if (headtt) print*,'B_ext=',B_ext
+      if (headtt) print*,'daa_dt: B_ext=',B_ext
 !
 !  calculating the current jj, and simultaneously del2A.
 !
@@ -356,7 +356,7 @@ module Magnetic
 !  Note that eta_out is total eta in halo (not eta_out+eta)
 !
       if(height_eta/=0.) then
-        if (headtt) print*,'halo diffusivity; height_eta,eta_out=',height_eta,eta_out
+        if (headtt) print*,'daa_dt: halo diffusivity; height_eta,eta_out=',height_eta,eta_out
         tmp=(z(n)/height_eta)**2
         eta_out1=eta_out*(1.-exp(-tmp**5/amax1(1.-tmp,1e-5)))-eta
         df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-eta_out1*jj
@@ -507,7 +507,7 @@ module Magnetic
 !  calculate bthresh as a certain fraction of brms
 !
       bthresh=bthresh_scl*bthresh_per_brms*brms
-print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
+print*,'calc_bthresh: brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
     endsubroutine calc_bthresh
 !***********************************************************************
@@ -681,9 +681,11 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
         if (i_bmx/=0) then
           if(i_bymxy==0.or.i_bzmxy==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
-            if(first) print*,"      We proceed, but you'll get bmx=0"
+            if(first) print*,"calc_mfield:                  WARNING"
+            if(first) print*, &
+                    "calc_mfield: NOTE: to get bmx, bymxy and bzmxy must also be set in zaver"
+            if(first) print*, &
+                    "calc_mfield:       We proceed, but you'll get bmx=0"
             bmx=0.
           else
             do l=1,nx
@@ -699,9 +701,11 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
         if (i_bmy/=0) then
           if(i_bxmxy==0.or.i_bzmxy==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
-            if(first) print*,"      We proceed, but you'll get bmy=0"
+            if(first) print*,"calc_mfield:                  WARNING"
+            if(first) print*, &
+                    "calc_mfield: NOTE: to get bmy, bxmxy and bzmxy must also be set in zaver"
+            if(first) print*, &
+                    "calc_mfield:       We proceed, but you'll get bmy=0"
             bmy=0.
           else
             do j=1,nprocy
@@ -721,10 +725,13 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
         if (i_bmz/=0) then
           if(i_bxmz==0.or.i_bymz==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
-            if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*,"      We proceed, but you'll get bmz=0"
+            if(first) print*,"calc_mfield:                  WARNING"
+            if(first) print*, &
+                    "calc_mfield: NOTE: to get bmz, bxmz and bymz must also be set in xyaver"
+            if(first) print*, &
+                    "calc_mfield:       This may be because we renamed zaver.in into xyaver.in"
+            if(first) print*, &
+                    "calc_mfield:       We proceed, but you'll get bmz=0"
             bmz=0.
           else
             bmz=sqrt(sum(fnamez(:,:,i_bxmz)**2+fnamez(:,:,i_bymz)**2)/(nz*nprocz))
@@ -780,7 +787,7 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !
 !  ux and Ay
 !
-      print*,'Alfven wave with rotation; O,kz=',O,kz
+      print*,'alfvenz_rot: Alfven wave with rotation; O,kz=',O,kz
       fac=-O+sqrt(O**2+kz**2)
       f(:,:,:,iuu+0)=+ampl*cos(kz*zz)*fac/kz
       f(:,:,:,iuu+1)=-ampl*sin(kz*zz)*fac/kz
@@ -823,7 +830,7 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
-          print*, 'Initialising magnetic flux rings'
+          print*, 'fluxrings: Initialising magnetic flux rings'
         endif
         do i=1,2
           if (i==1) then
@@ -859,7 +866,7 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
                - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
         enddo
       endif
-      if (lroot) print*, 'Magnetic flux rings initialized'
+      if (lroot) print*, 'fluxrings: Magnetic flux rings initialized'
 !
     endsubroutine fluxrings
 !***********************************************************************
@@ -892,7 +899,7 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
                               * 0.5/width/cosh(zz/width)**2
 
       case default
-        call stop_it('No such fluxtube profile')
+        call stop_it('norm_ring: No such fluxtube profile')
       endselect
 !
 !  current ring (to twist the B-lines)
@@ -930,9 +937,9 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !  pontential field condition at the bottom
 !
       case('bot')
-        if (headtt) print*,'potential field boundary condition at the bottom'
+        if (headtt) print*,'bc_aa_pot: potential field boundary condition at the bottom'
         if (nprocy/=1) &
-             call stop_it("potential field: doesn't work yet with nprocy/=1")
+             call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n1+1,iax+j)
           f3=f(l1:l2,m1:m2,n1+2,iax+j)
@@ -948,9 +955,9 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
 !  pontential field condition at the top
 !
       case('top')
-        if (headtt) print*,'potential field boundary condition at the top'
+        if (headtt) print*,'bc_aa_pot: potential field boundary condition at the top'
         if (nprocy/=1) &
-             call stop_it("potential field: doesn't work yet with nprocy/=1")
+             call stop_it("bc_aa_pot: potential field doesn't work yet with nprocy/=1")
         do j=0,1
           f2=f(l1:l2,m1:m2,n2-1,iax+j)
           f3=f(l1:l2,m1:m2,n2-2,iax+j)
@@ -963,7 +970,7 @@ print*,'brms,bthresh_per_brms,bthresh=',brms,bthresh_per_brms,bthresh
         call potentdiv(fz,f2,f3,+1)
         f(l1:l2,m1:m2,n2:mz,iaz)=-fz
       case default
-        if(lroot) print*,"invalid argument for 'bc_aa_pot'"
+        if(lroot) print*,"bc_aa_pot: invalid argument"
       endselect
 !
       endsubroutine bc_aa_pot

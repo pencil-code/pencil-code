@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.49 2003-08-08 08:49:38 dobler Exp $
+! $Id: forcing.f90,v 1.50 2003-08-13 15:30:07 mee Exp $
 
 module Forcing
 
@@ -41,7 +41,7 @@ module Forcing
       logical, save :: first=.true.
       logical :: lstart
 !
-      if (.not. first) call stop_it('register_forcing called twice')
+      if (.not. first) call stop_it('register_forcing: called twice')
       first = .false.
 !
       lforcing = .true.
@@ -49,7 +49,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.49 2003-08-08 08:49:38 dobler Exp $")
+           "$Id: forcing.f90,v 1.50 2003-08-13 15:30:07 mee Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -68,7 +68,7 @@ module Forcing
         if(ip<4) print*,'initialize_forcing: not needed in start'
       else
         if (first) then
-           if (lroot.and.ip<14) print*, 'reading seed file'
+           if (lroot.and.ip<14) print*, 'initialize_forcing: reading seed file'
            call inpui(trim(directory)//'/seed.dat',seed,nseed)
            call random_seed_wrapper(put=seed(1:nseed))
         endif
@@ -79,7 +79,7 @@ module Forcing
         if(work_ff/=0.) then
           force=1.
           lwork_ff=.true.
-          if(lroot) print*,'reset force=1., because work_ff is set'
+          if(lroot) print*,'initialize_forcing: reset force=1., because work_ff is set'
         endif
       endif
 !
@@ -100,14 +100,14 @@ module Forcing
 !  for turbulent decay experiments.
 !
       if (t>tforce_stop) then
-        if (headtt.or.ldebug) print*,'FORCING: t>tforce_stop; no forcing'
+        if (headtt.or.ldebug) print*,'addforce: t>tforce_stop; no forcing'
       else
-        if (headtt.or.ldebug) print*,'FORCING: addforce started'
+        if (headtt.or.ldebug) print*,'addforce: addforce started'
 !
 !  calculate and add forcing function
 !
         select case(iforce)
-        case ('zero'); if (headt) print*,'No forcing'
+        case ('zero'); if (headt) print*,'addforce: No forcing'
         case ('irrotational');  call forcing_irro(f)
         case ('helical', '2');  call forcing_hel(f)
         case ('fountain', '3'); call forcing_fountain(f)
@@ -116,22 +116,22 @@ module Forcing
         case ('diffrot');       call forcing_diffrot(f,force)
         case ('blobs');         call forcing_blobs(f)
         case ('hel_smooth');    call forcing_hel_smooth(f)
-        case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
+        case default; if(lroot) print*,'addforce: No such forcing iforce=',trim(iforce)
         endselect
 !
 !  add *additional* forcing function
 !
         select case(iforce2)
-        case ('zero'); if(headtt .and. lroot) print*,'No additional forcing'
+        case ('zero'); if(headtt .and. lroot) print*,'addforce: No additional forcing'
         case ('irrotational'); call forcing_irro(f)
         case ('helical');      call forcing_hel(f)
         case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
         case ('diffrot');      call forcing_diffrot(f,force2)
-        case default; if(lroot) print*,'No such forcing iforce2=',trim(iforce2)
+        case default; if(lroot) print*,'addforce: No such forcing iforce2=',trim(iforce2)
         endselect
 !
-        if (headtt.or.ldebug) print*,'FORCING: done addforce'
+        if (headtt.or.ldebug) print*,'addforce: done addforce'
       endif
 !
     endsubroutine addforce
@@ -160,12 +160,12 @@ module Forcing
       integer :: ik,j,jf
 !
       if (ifirst==0) then
-        if (lroot) print*,'irrotational forcing; opening k.dat'
+        if (lroot) print*,'forcing_irro: opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (lroot) print*,'average k=',kav
+        if (lroot) print*,'forcing_irro: average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'dimension mk in forcing_irro is insufficient'
+          if (lroot) print*,'forcing_irro: dimension mk in forcing_irro is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -179,7 +179,7 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
-      if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+      if (ip<=6) print*,'forcing_irro: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -244,12 +244,12 @@ module Forcing
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
 !
       if (ifirst==0) then
-        if (lroot) print*,'helical forcing; opening k.dat'
+        if (lroot) print*,'forcing_hel: opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (lroot) print*,'average k=',kav
+        if (lroot) print*,'forcing_hel: average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'dimension mk in forcing_hel is insufficient'
+          if (lroot) print*,'forcing_hel: dimension mk in forcing_hel is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -270,7 +270,7 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
-      if(ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+      if(ip<=6) print*,'forcing_hel: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
       kx0=kkx(ik)
       ky=kky(ik)
@@ -285,7 +285,7 @@ module Forcing
         kx=kx0+ky*deltay/Lx
       endif
 !
-      if(headt.or.ip<5) print*, 'kx0,kx,ky,kz=',kx0,kx,ky,kz
+      if(headt.or.ip<5) print*, 'forcing_hel: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
@@ -332,8 +332,8 @@ module Forcing
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip.le.9) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
-      if (ip.le.9) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip.le.9) print*,'forcing_hel: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.9) print*,'forcing_hel: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
@@ -370,16 +370,16 @@ module Forcing
         fz = fz*tmpz
       endif
 !
-      if (ip.le.5) print*,'fx=',fx
-      if (ip.le.5) print*,'fy=',fy
-      if (ip.le.5) print*,'fz=',fz
+      if (ip.le.5) print*,'forcing_hel: fx=',fx
+      if (ip.le.5) print*,'forcing_hel: fy=',fy
+      if (ip.le.5) print*,'forcing_hel: fz=',fz
 !
 !  prefactor
 !
       coef(1)=cmplx(k*kex,relhel*kkex)
       coef(2)=cmplx(k*key,relhel*kkey)
       coef(3)=cmplx(k*kez,relhel*kkez)
-      if (ip.le.5) print*,'coef=',coef
+      if (ip.le.5) print*,'forcing_hel: coef=',coef
 !
 !  In the past we always forced the du/dt, but in some cases
 !  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
@@ -427,7 +427,7 @@ module Forcing
         enddo
       endif
 !
-      if (ip.le.9) print*,'forcing OK'
+      if (ip.le.9) print*,'forcing_hel: forcing OK'
 !
     endsubroutine forcing_hel
 !***********************************************************************
@@ -478,7 +478,7 @@ module Forcing
 !  scale forcing function
 !  but do this only when rho_uu_ff>0.; never allow it to change sign
 !
-      if(headt) print*,'divide forcing function by rho_uu_ff=',rho_uu_ff
+      if(headt) print*,'calc_force_ampl: divide forcing function by rho_uu_ff=',rho_uu_ff
       force_ampl=work_ff/(.1+amax1(0.,rho_uu_ff))
 !
     endsubroutine calc_force_ampl
@@ -511,12 +511,12 @@ module Forcing
       real :: k2,k,ex,ey,ez,kde,sig=1.,fact
 !
       if (ifirst==0) then
-        if (lroot) print*,'helical forcing; opening k.dat'
+        if (lroot) print*,'force_hel_noshear: opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (lroot) print*,'average k=',kav
+        if (lroot) print*,'force_hel_noshear: average k=',kav
         if(nk.gt.mk) then
-          if (lroot) print*,'dimension mk in forcing_hel is insufficient'
+          if (lroot) print*,'force_hel_noshear: dimension mk in forcing_hel is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -534,12 +534,12 @@ module Forcing
       call random_number_wrapper(fran)
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
-      if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
+      if (ip<=6) print*,'force_hel_noshear: ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
 !
       kx=kkx(ik)
       ky=kky(ik)
       kz=kkz(ik)
-      if(ip.le.4) print*, 'kx,ky,kz=',kx,ky,kz
+      if(ip.le.4) print*, 'force_hel_noshear: kx,ky,kz=',kx,ky,kz
 !
       k2=float(kx**2+ky**2+kz**2)
       k=sqrt(k2)
@@ -578,8 +578,8 @@ module Forcing
 !  we have to set force=0.07.
 !
       ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
-      if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
-      if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip.le.12) print*,'force_hel_noshear: k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.12) print*,'force_hel_noshear: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       !!(debug...) write(21,'(f10.4,3i3,f7.3)') t,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
@@ -598,7 +598,7 @@ module Forcing
 !  possibly multiply forcing by z-profile
 !
       if (height_ff/=0.) then
-        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
+        if (lroot .and. ifirst==1) print*,'forcing_hel_noshear: include z-profile'
         tmpz=(z/height_ff)**2
         fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
       endif
@@ -607,7 +607,7 @@ module Forcing
 !
       if (r_ff/=0.) then
         if (lroot .and. ifirst==1) &
-             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+             print*,'forcing_hel_noshear: applying sgn(z)*xi(r) profile'
         !
         ! only z-dependent part can be done here; radial stuff needs to go
         ! into the loop
@@ -616,9 +616,9 @@ module Forcing
         fz = fz*tmpz
       endif
 !
-      if (ip.le.5) print*,'fx=',fx
-      if (ip.le.5) print*,'fy=',fy
-      if (ip.le.5) print*,'fz=',fz
+      if (ip.le.5) print*,'force_hel_noshear: fx=',fx
+      if (ip.le.5) print*,'force_hel_noshear: fy=',fy
+      if (ip.le.5) print*,'force_hel_noshear: fz=',fz
 !
 !  prefactor
 !
@@ -626,7 +626,7 @@ module Forcing
       coef(1)=cmplx(k*float(kex),sig*float(kkex))
       coef(2)=cmplx(k*float(key),sig*float(kkey))
       coef(3)=cmplx(k*float(kez),sig*float(kkez))
-      if (ip.le.5) print*,'coef=',coef
+      if (ip.le.5) print*,'force_hel_noshear: coef=',coef
 !
 ! loop the two cases separately, so we don't check for r_ff during
 ! each loop cycle which could inhibit (pseudo-)vectorisation
@@ -659,7 +659,7 @@ module Forcing
         enddo
       endif
 !
-      if (ip.le.12) print*,'forcing OK'
+      if (ip.le.12) print*,'force_hel_noshear: forcing OK'
 !
     endsubroutine forcing_hel_noshear
 !***********************************************************************
@@ -682,7 +682,7 @@ module Forcing
 !
 !  identify ourselves
 !
-      if (headtt.or.ldebug) print*,'Roberts forcing'
+      if (headtt.or.ldebug) print*,'forcing_roberts: ENTER'
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -752,7 +752,7 @@ module Forcing
 !
 !  identify ourselves
 !
-      if (headtt.or.ldebug) print*,'fountain forcing'
+      if (headtt.or.ldebug) print*,'forcing_fountain: ENTER'
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
 !  divided by sqrt(dt), because square of forcing is proportional
@@ -910,7 +910,7 @@ module Forcing
 !
 !  identifier
 !
-      if(headt) print*,'forcing_diffrot'
+      if(headt) print*,'forcing_diffrot: ENTER'
 !
 !  need to multiply by dt (for Euler step).
 !
@@ -955,7 +955,7 @@ module Forcing
 !
 !  identifier
 !
-      if(headt) print*,'forcing_blobs'
+      if(headt) print*,'forcing_blobs: ENTER'
 !
 !  the last forcing time is recorded in tforce.dat
 !
@@ -991,13 +991,13 @@ module Forcing
       real, save :: kav
 !
       if (ifirst==0) then
-         if (lroot) print*,'helical forcing; opening k.dat'
+         if (lroot) print*,'forcing_hel_smooth: opening k.dat'
          open(9,file='k.dat')
          read(9,*) nk,kav
-         if (lroot) print*,'average k=',kav
+         if (lroot) print*,'forcing_hel_smooth: average k=',kav
          if(nk.gt.mk) then
             if (lroot) print*, &
-                 'dimension mk in forcing_hel_smooth is insufficient'
+                 'forcing_hel_smooth: dimension mk in forcing_hel_smooth is insufficient'
             print*,'nk=',nk,'mk=',mk
             call mpifinalize
          end if
@@ -1095,7 +1095,7 @@ module Forcing
         kx=kx0+ky*deltay/Lx
       endif
 !
-      if(headt.or.ip<5) print*, 'kx0,kx,ky,kz=',kx0,kx,ky,kz
+      if(headt.or.ip<5) print*, 'hel_vec: kx0,kx,ky,kz=',kx0,kx,ky,kz
       k2=kx**2+ky**2+kz**2
       k=sqrt(k2)
 !
@@ -1142,8 +1142,9 @@ module Forcing
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip.le.9) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
-      if (ip.le.9) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip.le.9) print*,'hel_vec: k,kde,ffnorm,kav,dt,cs0=',k,kde, &
+                                                        ffnorm,kav,dt,cs0
+      if (ip.le.9) print*,'hel_vec: k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       !!(debug...) write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
@@ -1162,7 +1163,7 @@ module Forcing
 !  possibly multiply forcing by z-profile
 !
       if (height_ff/=0.) then
-        if (lroot .and. ifirst==1) print*,'forcing_hel: include z-profile'
+        if (lroot .and. ifirst==1) print*,'hel_vec: include z-profile'
         tmpz=(z/height_ff)**2
         fz=fz*exp(-tmpz**5/amax1(1.-tmpz,1e-5))
       endif
@@ -1171,7 +1172,7 @@ module Forcing
 !
       if (r_ff/=0.) then
         if (lroot .and. ifirst==1) &
-             print*,'forcing_hel: applying sgn(z)*xi(r) profile'
+             print*,'hel_vec: applying sgn(z)*xi(r) profile'
         !
         ! only z-dependent part can be done here; radial stuff needs to go
         ! into the loop
@@ -1180,16 +1181,16 @@ module Forcing
         fz = fz*tmpz
       endif
 !
-      if (ip.le.5) print*,'fx=',fx
-      if (ip.le.5) print*,'fy=',fy
-      if (ip.le.5) print*,'fz=',fz
+      if (ip.le.5) print*,'hel_vec: fx=',fx
+      if (ip.le.5) print*,'hel_vec: fy=',fy
+      if (ip.le.5) print*,'hel_vec: fz=',fz
 !
 !  prefactor
 !
       coef(1)=cmplx(k*kex,relhel*kkex)
       coef(2)=cmplx(k*key,relhel*kkey)
       coef(3)=cmplx(k*kez,relhel*kkez)
-      if (ip.le.5) print*,'coef=',coef
+      if (ip.le.5) print*,'hel_vec: coef=',coef
 !
 ! loop the two cases separately, so we don't check for r_ff during
 ! each loop cycle which could inhibit (pseudo-)vectorisation
@@ -1222,7 +1223,7 @@ module Forcing
         enddo
       endif
 !
-      if (ip.le.9) print*,'forcing OK'
+      if (ip.le.9) print*,'hel_vec: forcing OK'
 !
     end subroutine hel_vec
 !***********************************************************************

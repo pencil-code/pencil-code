@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.61 2003-08-03 09:26:55 brandenb Exp $
+! $Id: io_dist.f90,v 1.62 2003-08-13 15:30:07 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -82,7 +82,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.61 2003-08-03 09:26:55 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.62 2003-08-13 15:30:07 mee Exp $")
 !
     endsubroutine register_io
 !
@@ -132,9 +132,9 @@ contains
 !
       if (lserial_io) call start_serialize()
       open(1,file=file,form='unformatted')
-      if (ip<=8) print*,'open, mx,my,mz,nv=',mx,my,mz,nv
+      if (ip<=8) print*,'input: open, mx,my,mz,nv=',mx,my,mz,nv
       read(1) a
-      if (ip<=8) print*,'read ',file
+      if (ip<=8) print*,'input: read ',file
       if (mode==1) then
 !
 !  check whether we want to read deltay from snapshot
@@ -145,9 +145,9 @@ contains
           read(1) t,x,y,z,dx,dy,dz
         endif
 !
-        if (ip<=3) print*,'ip,x',ip,x
-        if (ip<=3) print*,'y',y
-        if (ip<=3) print*,'z',z
+        if (ip<=3) print*,'input: ip,x=',ip,x
+        if (ip<=3) print*,'input: y=',y
+        if (ip<=3) print*,'input: z=',z
 !
       endif
 !
@@ -218,8 +218,8 @@ contains
       real, dimension (mx,my,mz) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
-      if (nv /= 1) call stop_it("OUTPUT called with scalar field, but nv/=1")
+      if ((ip<=8) .and. lroot) print*,'output_scal'
+      if (nv /= 1) call stop_it("output_scal: called with scalar field, but nv/=1")
       if (lserial_io) call start_serialize()
       open(lun_output,file=file,form='unformatted')
       write(lun_output) a
@@ -247,7 +247,7 @@ contains
            print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
       if (headt .and. (imn==1)) write(*,'(A)') &
-           ' OUTPUT_PENCIL: Writing to ' // trim(file) // &
+           'output_pencil: Writing to ' // trim(file) // &
            ' for debugging -- this may slow things down'
 !
        call output_penciled_vect_c(file, a, ndim, &
@@ -275,10 +275,10 @@ contains
            print*,'output_pencil_scal('//file//')'
 !
       if (ndim /= 1) &
-           call stop_it("OUTPUT called with scalar field, but ndim/=1")
+           call stop_it("output_pencil_scal: called with scalar field, but ndim/=1")
 !
       if (headt .and. (imn==1)) print*, &
-           'OUTPUT_PENCIL: Writing to ', trim(file), &
+           'output_pencil_scal: Writing to ', trim(file), &
            ' for debugging -- this may slow things down'
 !
       call output_penciled_scal_c(file, a, ndim, &
@@ -347,10 +347,9 @@ contains
 !  debug output
 !
       if (ip<=4.and.lroot) then
-        print*
-        print*,'Lx,Ly,Lz=',Lx,Ly,Lz
-        print*,'dx,dy,dz=',dx,dy,dz
-        print*,'dxmin,dxmax=',dxmin,dxmax
+        print*,'rgrid: Lx,Ly,Lz=',Lx,Ly,Lz
+        print*,'rgrid: dx,dy,dz=',dx,dy,dz
+        print*,'rgrid: dxmin,dxmax=',dxmin,dxmax
       endif
 !
 !  should stop if dxmin=0
@@ -362,7 +361,7 @@ contains
 !  We should keep this for the time being
 !
       goto 998
-999   print*,'note: Lx,Ly,Lz are not yet in grid.dat'
+999   print*,'rgrid: Lx,Ly,Lz are not yet in grid.dat'
       goto 997
 !
 998 endsubroutine rgrid

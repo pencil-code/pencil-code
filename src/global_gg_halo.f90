@@ -1,4 +1,4 @@
- ! $Id: global_gg_halo.f90,v 1.2 2002-07-19 19:09:15 dobler Exp $
+ ! $Id: global_gg_halo.f90,v 1.3 2003-08-13 15:30:07 mee Exp $
 
 module Global
 
@@ -68,8 +68,8 @@ module Global
         gg(l1:l2,m,n,1:3) = var
 
       case default
-        if (lroot) print*, 'No such value for label', trim(label)
-        call stop_it('SET_GLOBAL_VECT')
+        if (lroot) print*, 'set_global_vect: No such value for label', trim(label)
+        call stop_it('set_global_vect')
 
       endselect
 !
@@ -91,8 +91,8 @@ module Global
         halo(l1:l2,m,n) = var
 
       case default
-        if (lroot) print*, 'No such value for label', trim(label)
-        call stop_it('SET_GLOBAL_VECT')
+        if (lroot) print*, 'set_global_scal: No such value for label', trim(label)
+        call stop_it('set_global_scal')
 
       endselect
 !
@@ -116,8 +116,8 @@ module Global
         var = gg(l1:l2,m,n,1:3)
 
       case default
-        if (lroot) print*, 'No such value for label', trim(label)
-        call stop_it('SET_GLOBAL_VECT')
+        if (lroot) print*, 'get_global_vect: No such value for label', trim(label)
+        call stop_it('get_global_vect')
 
       endselect
 !
@@ -139,8 +139,8 @@ module Global
         var = halo(l1:l2,m,n)
 
       case default
-        if (lroot) print*, 'No such value for label', trim(label)
-        call stop_it('SET_GLOBAL_VECT')
+        if (lroot) print*, 'get_global_scal: No such value for label', trim(label)
+        call stop_it('get_global_scal')
 
       endselect
 !

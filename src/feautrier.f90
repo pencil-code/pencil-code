@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.34 2003-08-04 17:56:02 mee Exp $
+! $Id: feautrier.f90,v 1.35 2003-08-13 15:30:07 mee Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -49,7 +49,7 @@ module Radiation
 !
       logical, save :: first=.true.
 !
-      if(.not. first) call stop_it('register_radiation called twice')
+      if(.not. first) call stop_it('register_radiation: called twice')
       first = .false.
 !
       lradiation = .true.
@@ -67,13 +67,13 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.34 2003-08-04 17:56:02 mee Exp $")
+           "$Id: feautrier.f90,v 1.35 2003-08-13 15:30:07 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('register_feautrier: naux > maux')
+        call stop_it('register_radiation: naux > maux')
       endif
 !
 !  Writing files for use with IDL
@@ -180,16 +180,16 @@ module Radiation
 !
          call tridag(a,b,c,Srad_,Prad_,err=err)
          if (err) then
-            print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
+            print*,'feautrier: lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
                             f(lrad,mrad,n2-5:n2,ilnrho)
-            print*,'ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
+            print*,'feautrier: ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
                          f(lrad,mrad,n2-5:n2,iss)
-            print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
+            print*,'feautrier: tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
             stop
          endif
 !
          feautrier(lrad,mrad,n1:n2)=Prad_
-!         print*,'Prad',Prad_
+!         print*,'feautrier: Prad',Prad_
       enddo
       enddo
     endfunction feautrier
@@ -247,12 +247,12 @@ module Radiation
 !
          call tridag_double(a,b,c,Srad_,Prad_,err=err)
          if (err) then
-            print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
+            print*,'feautrier_double: lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
                             f(lrad,mrad,n2-5:n2,ilnrho)
-            print*,'ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
+            print*,'feautrier_double: ss=',f(lrad,mrad,n1:n1+5,iss),'...', &
                          f(lrad,mrad,n2-5:n2,iss)
-            print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
-            print*,'kappa=',f(lrad,mrad,n1:n1+5,ikappa),'...', &
+            print*,'feautrier_double: tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
+            print*,'feautrier_double: kappa=',f(lrad,mrad,n1:n1+5,ikappa),'...', &
                             f(lrad,mrad,n2-5:n2,ikappa)
             stop
          endif
@@ -362,7 +362,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer1'
+      if(lroot.and.headt) print*,'radtransfer1: ENTER'
 !
       call radcalc(f)
       do l=l1,l2
@@ -428,9 +428,9 @@ module Radiation
 !  identifier
 !
 !!$
-!!$print*,'output_Qrad,lun=',output_Qrad,lun,size(Qrad)
+!!$print*,'output_radiation: lun=',output_Qrad,lun,size(Qrad)
 !!$
-!!$      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
+!!$      if(lroot.and.headt) print*,'output_radiation: Qrad(4,4,4) =',Qrad(4,4,4)
 !!$      if(output_Qrad) write(2) 'help'
 !!$      if(output_Qrad) write(90) 'help'
 !!$!
@@ -517,7 +517,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==0) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
     end subroutine bc_ee_inflow_x
 !***********************************************************************
@@ -530,7 +530,7 @@ module Radiation
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
-      if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
+      if (ip==0) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
     end subroutine bc_ee_outflow_x
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $
+! $Id: grav_z.f90,v 1.39 2003-08-13 15:30:07 mee Exp $
 
 module Gravity
 
@@ -74,13 +74,13 @@ module Gravity
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_grav called twice')
+      if (.not. first) call stop_it('register_gravity: called twice')
       first = .false.
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.38 2003-08-10 10:02:50 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.39 2003-08-13 15:30:07 mee Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -173,7 +173,7 @@ module Gravity
         if(ldustvelocity) df(l1:l2,m,n,iudz) = df(l1:l2,m,n,iudz) & 
              -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
-        if(lroot) print*,'no gravity profile given'
+        if(lroot) print*,'duu_dt_grav: no gravity profile given'
       endif
 !
       if(ip==0) print*,f(1,1,1,1),uu,rho1 !(keep compiler quiet)
@@ -190,7 +190,7 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0
 !
-      call stop_it("potential_global in grav_z not implemented")
+      call stop_it("potential_global: not implemented for grav_z")
 !
       if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
            pot(1,1,1),pot0  !(keep compiler quiet)
@@ -219,7 +219,7 @@ module Gravity
 !
 !  identifier
 !
-      if (lroot.and.first) print*,'potential: zinfty=',zinfty
+      if (lroot.and.first) print*,'potential_penc: zinfty=',zinfty
 !
 !  different profiles, calculate also gz=-dpot/dz
 !  remember, gravz=-1 (at least negative) for z pointing upwards.
@@ -236,7 +236,7 @@ module Gravity
 !  gravity is set to zero above z=zgrav
 !
       case('const_zero')
-        if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+        if(zgrav==impossible.and.lroot) print*,'potential_penc: zgrav is not set!'
         if(zmn<=zgrav) then
           pot=-gravz*(zmn-zinfty)
           if (present(grav)) then
@@ -248,7 +248,7 @@ module Gravity
           if (present(grav)) grav=0.
         endif
         if (present(pot0)) then !(potential at z=0)
-          if(zgrav==impossible.and.lroot) print*,'zgrav is not set!'
+          if(zgrav==impossible.and.lroot) print*,'potential_penc: zgrav is not set!'
           if(0.<=zgrav) then
             pot0 = gravz*zinfty
           else

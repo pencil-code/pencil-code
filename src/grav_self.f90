@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.7 2003-06-27 04:47:06 brandenb Exp $
+! $Id: grav_self.f90,v 1.8 2003-08-13 15:30:07 mee Exp $
 
 module Gravity
 
@@ -66,14 +66,14 @@ module Gravity
       nvar = nvar+3            ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_hydro:  nvar = ', nvar
-        print*, 'igx,igy,igz = ', igx,igy,igz
+        print*, 'register_gravity:  nvar = ', nvar
+        print*, 'register_gravity: igx,igy,igz = ', igx,igy,igz
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.7 2003-06-27 04:47:06 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.8 2003-08-13 15:30:07 mee Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -134,7 +134,7 @@ module Gravity
 !
 !  different gravity profiles
 !
-      if (headtt) print*,'SOLVE dgg_dt'
+      if (headtt) print*,'duu_dt_grav: SOLVE'
 !
 !  advance gravity, dg/dt = 4pi*G*rho*uu
 !
@@ -181,7 +181,7 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0
 !
-      call stop_it("potential_global in grav_self not implemented")
+      call stop_it("potential_globali: not implemented for grav_self")
 !
       if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
            pot(1,1,1),pot0  !(keep compiler quiet)
@@ -210,7 +210,7 @@ module Gravity
 !
 !  identifier
 !
-      if (headt) print*,'potential'
+      if (headt) print*,'potential_penc: ENTER'
 !
 !  different profiles, calculate also gz=-dpot/dz
 !  remember, gravz=-1 (at least negative) for z pointing upwards.

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.73 2003-08-10 22:02:54 mee Exp $
+! $Id: ionization.f90,v 1.74 2003-08-13 15:30:07 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -56,7 +56,7 @@ module Ionization
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_ionization called twice')
+      if (.not. first) call stop_it('register_ionization: called twice')
       first = .false.
 !
 !  set indices for auxiliary variables
@@ -66,14 +66,14 @@ module Ionization
 
       if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
-        print*, 'iyH = ', iyH
-        print*, 'iTT = ', iTT
+        print*, 'register_ionization: iyH = ', iyH
+        print*, 'register_ionization: iTT = ', iTT
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.73 2003-08-10 22:02:54 mee Exp $")
+           "$Id: ionization.f90,v 1.74 2003-08-13 15:30:07 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -138,9 +138,9 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,ss_ion,kappa0=', &
+        print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
-        print*,'lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
+        print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
     endsubroutine initialize_ionization

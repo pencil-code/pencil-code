@@ -1,4 +1,4 @@
-! $Id: filter.f90,v 1.1 2003-07-29 09:43:36 brandenb Exp $
+! $Id: filter.f90,v 1.2 2003-08-13 15:30:07 mee Exp $
 
 module Filter
 
@@ -43,7 +43,7 @@ module Filter
 !
       if (lroot.and.ip<14) then
         write(*,'(" ",A,I2," -",I2,A,G12.5)') &
-               'RMWIG: removing wiggles in variable ', ivar1,ivar2, ', t=', t
+               'rmwig: removing wiggles in variable ', ivar1,ivar2, ', t=', t
       endif
 !
 !  Check whether we want to smooth the actual variable f, or exp(f)
@@ -51,7 +51,7 @@ module Filter
 !
       if (present(explog)) then
         f(:,:,:,ilnrho)=exp(f(:,:,:,ilnrho))
-        if(lroot) print*,'RMWIG: turn f into exp(f), ilnrho=',ilnrho
+        if(lroot) print*,'rmwig: turn f into exp(f), ilnrho=',ilnrho
       endif
 !
 !  Apply boundconds and smooth in all three directions consecutively
@@ -75,7 +75,7 @@ module Filter
 !
       if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        if(lroot) print*,'RMWIG: turn f back into alog(f), ilnrho=',ilnrho
+        if(lroot) print*,'rmwig: turn f back into alog(f), ilnrho=',ilnrho
       endif
 !
     endsubroutine rmwig
@@ -131,7 +131,7 @@ module Filter
              f(l1:l2,m1:m2,n1:n2,ivar) + awig*df(l1:l2,m1:m2,n1:n2,ivar)
       enddo
 !
-!-- print*,'WRITE df (from der6) for testing; idir=',idir
+!-- print*,'rmwig_1d: WRITE df (from der6) for testing; idir=',idir
 !-- if (idir==1) call wsnap(trim(directory)//'/XX',df,.false.)
 !-- if (idir==2) call wsnap(trim(directory)//'/YY',df,.false.)
 !-- if (idir==3) call wsnap(trim(directory)//'/ZZ',df,.false.)
@@ -171,10 +171,10 @@ module Filter
 !
       if (lroot.and.ip<14) then
         if (ivar == ilnrho) then
-          print*,'RMWIG: removing wiggles in lnrho, t=',t
+          print*,'rmwig_old: removing wiggles in lnrho, t=',t
         else
           write(*,'(" ",A,I2,A,G12.5)') &
-               'RMWIG: removing wiggles in variable', ivar, ', t=', t
+               'rmwig_old: removing wiggles in variable', ivar, ', t=', t
         endif
       endif
 !
@@ -183,7 +183,7 @@ module Filter
 !AB: We don't need to communicate all variables though; just lnrho
 !WD: I wouldn't care, since this should be applied quite infrequently
 !
-      if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
+      if (ldebug) print*,'rmwig_old: bef. initiate_isendrcv_bdry'
       call boundconds(f)
       call initiate_isendrcv_bdry(f)
 !
@@ -192,7 +192,7 @@ module Filter
 !
       if (present(explog)) then
         f(:,:,:,ivar)=exp(f(:,:,:,ivar))
-        if(lroot) print*,'RMWIG: turn f into exp(f), ivar=',ivar
+        if(lroot) print*,'rmwig_old: turn f into exp(f), ivar=',ivar
       endif
 !
 !  do loop over y and z
@@ -222,7 +222,7 @@ module Filter
 !
       if (present(explog)) then
         f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
-        if(lroot) print*,'RMWIG: turn f back into alog(f), ivar=',ivar
+        if(lroot) print*,'rmwig_old: turn f back into alog(f), ivar=',ivar
       endif
 !
     endsubroutine rmwig_old
@@ -262,10 +262,10 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
       if (lroot) then
         if (ivar == ilnrho) then
-          print*,'RMWIG: removing wiggles in xyaverage of rho, t=',t,rhom1,rhom2
+          print*,'rmwig_xyaverage: removing wiggles in xyaverage of rho, t=',t,rhom1,rhom2
         else
           write(*,'(" ",A,I3,A,G12.5)') &
-          'RMWIG: removing wiggles in xyaverage of variable ', ivar, 't=', t
+          'rmwig_xyaverage: removing wiggles in xyaverage of variable ', ivar, 't=', t
         endif
       endif
 !
@@ -293,10 +293,10 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
       if (lroot) then
         if (ivar == ilnrho) then
-          print*,'RMWIG: removing wiggles in xyaverage of lnrho, t=',t
+          print*,'rmwig_lnxyaverage: removing wiggles in xyaverage of lnrho, t=',t
         else
           write(*,'(" ",A,I3,A,G12.5)') &
-          'RMWIG: removing wiggles in xyaverage of variable ', ivar, 't=', t
+          'rmwig_lnxyaverage: removing wiggles in xyaverage of variable ', ivar, 't=', t
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.72 2003-08-13 14:17:05 ajohan Exp $ 
+! $Id: initcond.f90,v 1.73 2003-08-13 15:30:07 mee Exp $ 
 
 module Initcond 
  
@@ -41,9 +41,9 @@ module Initcond
       if (present(ky)) ky1=ky
       if (present(kz)) kz1=kz
       if (ampl==0) then
-        if (lroot) print*,'ampl=0 in sinx*sinz wave; kx,kz=',kx1,kz1
+        if (lroot) print*,'sinxsinz: ampl=0 in sinx*sinz wave; kx,kz=',kx1,kz1
       else
-        if (lroot) print*,'sinx*sinz wave; ampl,kx,kz=',ampl,kx1,kz1
+        if (lroot) print*,'sinxsinz: sinx*sinz wave; ampl,kx,kz=',ampl,kx1,kz1
         j=i+1
         f(:,:,:,j)=f(:,:,:,j)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
                                    *spread(spread(cos(ky1*y),1,mx),3,mz)&
@@ -73,7 +73,7 @@ module Initcond
         k=kx
         k2=k**2
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in hat; kx=',k
+          if (lroot) print*,'hat: ampl=0; kx=',k
         else
           if (lroot) print*,'hat: kx,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-x**2)),2,my),3,mz)
@@ -86,7 +86,7 @@ module Initcond
         k=ky
         k2=k**2
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in hat; ky=',k
+          if (lroot) print*,'hat: ampl=0; ky=',k
         else
           if (lroot) print*,'hat: ky,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-y**2)),1,mx),3,mz)
@@ -99,7 +99,7 @@ module Initcond
         k=kz
         k2=k**2
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in hat; kz=',k
+          if (lroot) print*,'hat: ampl=0; kz=',k
         else
           if (lroot) print*,'hat: kz,i,ampl=',k,i,ampl
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(.5+.5*tanh(k2*(width2-z**2)),1,mx),2,my)
@@ -126,9 +126,9 @@ module Initcond
       if (present(kx)) then
         k=kx
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
+          if (lroot) print*,'gaussian: ampl=0; kx=',k
         else
-          if (lroot) print*,'wave: kx,i=',k,i
+          if (lroot) print*,'gaussian: kx,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*x)**2),2,my),3,mz)
         endif
       endif
@@ -138,9 +138,9 @@ module Initcond
       if (present(ky)) then
         k=ky
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
+          if (lroot) print*,'gaussian: ampl=0; ky=',k
         else
-          if (lroot) print*,'wave: ky,i=',k,i
+          if (lroot) print*,'gaussian: ky,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*y)**2),1,mx),3,mz)
         endif
       endif
@@ -150,9 +150,9 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
+          if (lroot) print*,'gaussian: ampl=0; kz=',k
         else
-          if (lroot) print*,'wave: kz,i=',k,i
+          if (lroot) print*,'gaussian: kz,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(exp(-(k*z)**2),1,mx),2,my)
         endif
       endif
@@ -193,9 +193,9 @@ module Initcond
       if (present(kx)) then
         k=kx
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
+          if (lroot) print*,'parabola: ampl=0; kx=',k
         else
-          if (lroot) print*,'wave: kx,i=',k,i
+          if (lroot) print*,'parabola: kx,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*x)**2),2,my),3,mz)
         endif
       endif
@@ -205,9 +205,9 @@ module Initcond
       if (present(ky)) then
         k=ky
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
+          if (lroot) print*,'parabola: ampl=0; ky=',k
         else
-          if (lroot) print*,'wave: ky,i=',k,i
+          if (lroot) print*,'parabola: ky,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*y)**2),1,mx),3,mz)
         endif
       endif
@@ -217,9 +217,9 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
+          if (lroot) print*,'parabola: ampl=0; kz=',k
         else
-          if (lroot) print*,'wave: kz,i=',k,i
+          if (lroot) print*,'parabola: kz,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread((-(k*z)**2),1,mx),2,my)
         endif
       endif
@@ -244,7 +244,7 @@ module Initcond
       if (present(kx)) then
         k=kx
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
+          if (lroot) print*,'wave: ampl=0; kx=',k
         else
           if (lroot) print*,'wave: kx,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(sin(k*x),2,my),3,mz)
@@ -256,7 +256,7 @@ module Initcond
       if (present(ky)) then
         k=ky
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
+          if (lroot) print*,'wave: ampl=0; ky=',k
         else
           if (lroot) print*,'wave: ky,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(sin(k*y),1,mx),3,mz)
@@ -268,7 +268,7 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
+          if (lroot) print*,'wave: ampl=0; kz=',k
         else
           if (lroot) print*,'wave: kz,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+ampl*spread(spread(sin(k*z),1,mx),2,my)
@@ -295,9 +295,9 @@ module Initcond
       if (present(kx)) then
         k=kx
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kx=',k
+          if (lroot) print*,'wave_uu: ampl=0; kx=',k
         else
-          if (lroot) print*,'wave: kx,i=',k,i
+          if (lroot) print*,'wave_uu: kx,i=',k,i
           f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*x),2,my),3,mz)*f(:,:,:,iux))
         endif
       endif
@@ -307,9 +307,9 @@ module Initcond
       if (present(ky)) then
         k=ky
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; ky=',k
+          if (lroot) print*,'wave_uu: ampl=0; ky=',k
         else
-          if (lroot) print*,'wave: ky,i=',k,i
+          if (lroot) print*,'wave_uu: ky,i=',k,i
           f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*y),1,mx),3,mz)*f(:,:,:,iuy))
         endif
       endif
@@ -319,9 +319,9 @@ module Initcond
       if (present(kz)) then
         k=kz
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in wave; kz=',k
+          if (lroot) print*,'wave_uu: ampl=0; kz=',k
         else
-          if (lroot) print*,'new wave: kz,i=',k,i,iuz
+          if (lroot) print*,'wave_uu: kz,i=',k,i,iuz
           f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*z),1,mx),2,my)*f(:,:,:,iuz))
         endif
       endif
@@ -393,7 +393,7 @@ module Initcond
             +.5*(fright-fleft)*width*alog_cosh_xwidth
         f(:,:,:,i)=f(:,:,:,i)-spread(spread(prof,2,my),3,mz)
       case default
-        print*,'jump: no default value'
+        print*,'bjump: no default value'
 !
       endselect
 !
@@ -416,15 +416,15 @@ module Initcond
 !  set x-dependent Beltrami field
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kx; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in Beltrami field; kx=',k
+          if (lroot) print*,'beltrami: ampl=0; kx=',k
         elseif (ampl>0) then
-          if (lroot) print*,'Beltrami field (pos-hel): kx,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (pos-hel): kx,i=',k,i
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x),2,my),3,mz)
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x),2,my),3,mz)
         elseif (ampl<0) then
-          if (lroot) print*,'Beltrami field (neg-hel): kx,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (neg-hel): kx,i=',k,i
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*x),2,my),3,mz)
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*x),2,my),3,mz)
         endif
@@ -433,15 +433,15 @@ module Initcond
 !  set y-dependent Beltrami field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=ky; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in Beltrami field; ky=',k
+          if (lroot) print*,'beltrami: ampl=0; ky=',k
         elseif (ampl>0) then
-          if (lroot) print*,'Beltrami field (pos-hel): ky,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (pos-hel): ky,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y),1,mx),3,mz)
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y),1,mx),3,mz)
         elseif (ampl<0) then
-          if (lroot) print*,'Beltrami field (neg-hel): ky,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (neg-hel): ky,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*y),1,mx),3,mz)
           j=i+2; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*y),1,mx),3,mz)
         endif
@@ -450,15 +450,15 @@ module Initcond
 !  set z-dependent Beltrami field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kz; if(k==0) print*,'beltrami: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in Beltrami field; kz=',k
+          if (lroot) print*,'beltrami: ampl=0; kz=',k
         elseif (ampl>0) then
-          if (lroot) print*,'Beltrami field (pos-hel): kz,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (pos-hel): kz,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z),1,mx),2,my)
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z),1,mx),2,my)
         elseif (ampl<0) then
-          if (lroot) print*,'Beltrami field (neg-hel): kz,i=',k,i
+          if (lroot) print*,'beltrami: Beltrami field (neg-hel): kz,i=',k,i
           j=i;   f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(cos(k*z),1,mx),2,my)
           j=i+1; f(:,:,:,j)=f(:,:,:,j)+fac*spread(spread(sin(k*z),1,mx),2,my)
         endif
@@ -482,11 +482,11 @@ module Initcond
 !  set x-dependent sin wave
 !
       if (present(kx)) then
-        k=kx; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kx; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in sin wave; kx=',k
+          if (lroot) print*,'soundwave: ampl=0; kx=',k
         else
-          if (lroot) print*,'sin wave: kx,i=',k,i
+          if (lroot) print*,'soundwave: kx,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*x),2,my),3,mz)
         endif
       endif
@@ -494,11 +494,11 @@ module Initcond
 !  set y-dependent sin wave field
 !
       if (present(ky)) then
-        k=ky; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=ky; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in sin wave; ky=',k
+          if (lroot) print*,'soundwave: ampl=0; ky=',k
         else
-          if (lroot) print*,'sin wave: ky,i=',k,i
+          if (lroot) print*,'soundwave: ky,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*y),1,mx),3,mz)
         endif
       endif
@@ -506,11 +506,11 @@ module Initcond
 !  set z-dependent sin wave field
 !
       if (present(kz)) then
-        k=kz; if(k==0) print*,'k must not be zero!'; fac=sqrt(abs(ampl/k))
+        k=kz; if(k==0) print*,'soundwave: k must not be zero!'; fac=sqrt(abs(ampl/k))
         if (ampl==0) then
-          if (lroot) print*,'ampl=0 in sin wave; kz=',k
+          if (lroot) print*,'soundwave: ampl=0; kz=',k
         else
-          if (lroot) print*,'sin wave: kz,i=',k,i
+          if (lroot) print*,'soundwave: kz,i=',k,i
           f(:,:,:,i)=f(:,:,:,i)+fac*spread(spread(sin(k*z),1,mx),2,my)
         endif
       endif
@@ -543,13 +543,13 @@ module Initcond
 !
       do n=1,mz
         read(19,*) ztmp,lnrho0(n),SS0(n)
-        if(ip<5) print*,ztmp,lnrho0(n),SS0(n)
+        if(ip<5) print*,"stratification: ",ztmp,lnrho0(n),SS0(n)
         f(:,:,n,ilnrho)=lnrho0(n)
         f(:,:,n,iss)=SS0(n)
       enddo
       close(19)
 !
-      if(ip<1) print*,ampl,xx,yy,zz !(to keep compiler quiet)
+      if(ip==0) print*,ampl,xx,yy,zz !(to keep compiler quiet)
     endsubroutine stratification
 !***********************************************************************
     subroutine planet_hc(ampl,f,xx,yy,zz,eps,radius,gamma,cs20,width,rbound)
@@ -574,7 +574,7 @@ module Initcond
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
       if (sigma2<0.) then
-        print*,'sigma2<0 not allowed; choose another value of eps_planet'
+        print*,'planet_hc: sigma2<0 not allowed; choose another value of eps_planet'
       else
         sigma=sqrt(sigma2)
       endif
@@ -584,7 +584,7 @@ module Initcond
       delta2=(2.-sigma)*sigma
       print*,'planet_hc: sigma,delta2,radius=',sigma,delta2,radius
       if (delta2<=0.) then
-        print*,'delta2<=0 not allowed'
+        print*,'planet_hc: delta2<=0 not allowed'
       else
         delta=sqrt(delta2)
       endif
@@ -619,7 +619,7 @@ module Initcond
 !
       print*,'planet_hc: hmin=',minval(hh(l1:l2,m1:m2,n1:n2))
 
-      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+      if(gamma1<0.) print*,'planet_hc: must have gamma>1 for planet solution'
 !
 !  calculate density, depending on what gamma is
 !
@@ -627,15 +627,15 @@ module Initcond
         f(l1:l2,m1:m2,n1:n2,ilnrho)= &
              (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
              -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        print*,'planet solution with entropy jump for gamma=',gamma
+        print*,'planet_hc: planet solution with entropy jump for gamma=',gamma
       else
         if(gamma==1.) then
           f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
-          print*,'planet solution for gamma=1'
+          print*,'planet_hc: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho)=&
                alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          print*,'planet solution for gamma=',gamma
+          print*,'planet_hc: planet solution for gamma=',gamma
         endif
       endif
 !
@@ -664,7 +664,7 @@ module Initcond
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
       if (sigma2<0.) then
-        print*,'sigma2<0 not allowed; choose another value of eps_planet'
+        print*,'planet: sigma2<0 not allowed; choose another value of eps_planet'
       else
         sigma=sqrt(sigma2)
       endif
@@ -676,7 +676,7 @@ module Initcond
       delta2=(2.-sigma)*sigma
       if (lroot) print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
       if (delta2<0.) then
-        print*,'delta2<0 not allowed'
+        print*,'planet: delta2<0 not allowed'
       else
         delta=sqrt(delta2)
       endif
@@ -727,7 +727,7 @@ module Initcond
            hh0,minval(hh(l1:l2,m1:m2,n1:n2))
       if (lentropy .and. lroot) print*,'planet: smin,smax', &
            minval(f(:,:,:,iss)), maxval(f(:,:,:,iss))
-      if(gamma1<0.) print*,'must have gamma>1 for planet solution'
+      if(gamma1<0.) print*,'planet: must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
 !
@@ -735,15 +735,15 @@ module Initcond
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
             - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
-        if (lroot) print*,'planet solution with entropy jump for gamma=',gamma
+        if (lroot) print*,'planet: planet solution with entropy jump for gamma=',gamma
       else
       if(gamma==1.) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
-          if (lroot) print*,'planet solution for gamma=1'
+          if (lroot) print*,'planet: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
                alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          if (lroot) print*,'planet solution for gamma=',gamma
+          if (lroot) print*,'planet: planet solution for gamma=',gamma
         endif
       endif
 !
@@ -772,8 +772,8 @@ module Initcond
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl
 !
-      if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
-      j=j; f(:,:,:,j)=f(:,:,:,j)+ampl*&
+      if (lroot) print*, 'crazy: sinusoidal magnetic field: for debugging purposes'
+      j=i; f(:,:,:,j)=f(:,:,:,j)+ampl*&
         spread(spread(sin(2*x),2,my),3,mz)*&
         spread(spread(sin(3*y),1,mx),3,mz)*&
         spread(spread(cos(1*z),1,mx),2,my)
@@ -781,7 +781,7 @@ module Initcond
         spread(spread(sin(5*x),2,my),3,mz)*&
         spread(spread(sin(1*y),1,mx),3,mz)*&
         spread(spread(cos(2*z),1,mx),2,my)
-      j=j+2; f(:,:,:,j)=f(:,:,:,j)+ampl*&
+      j=i+2; f(:,:,:,j)=f(:,:,:,j)+ampl*&
         spread(spread(sin(3*x),2,my),3,mz)*&
         spread(spread(sin(4*y),1,mx),3,mz)*&
         spread(spread(cos(2*z),1,mx),2,my)
@@ -802,12 +802,12 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'htube: set variable to zero; i1,i2=',i1,i2
       else
         ky=2*pi/Ly
         if(lroot) then
-          print*,'implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
-          print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+          print*,'htube: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'htube: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         endif
         modulate=1.+epsilon_nonaxi*sin(ky*yy)
 !
@@ -846,12 +846,12 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'htube2: set variable to zero; i1,i2=',i1,i2
       else
         ky=2*pi/Ly
         if(lroot) then
-          print*,'implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
-          print*,'radius,epsilon_nonaxi=',radius,epsilon_nonaxi
+          print*,'htube2: implement y-dependent flux tube in xz-plane; i1,i2=',i1,i2
+          print*,'htube2: radius,epsilon_nonaxi=',radius,epsilon_nonaxi
         endif
 !
 !  constant, when epsilon_nonaxi; otherwise modulation about zero
@@ -869,15 +869,15 @@ module Initcond
 !  check whether vector or scalar
 !
         if(i1==i2) then
-          if(lroot) print*,'htube: set scalar'
+          if(lroot) print*,'htube2: set scalar'
           f(:,:,:,i1)=tmp
         elseif(i1+2==i2) then
-          if(lroot) print*,'htube: set vector'
+          if(lroot) print*,'htube2: set vector'
           f(:,:,:,i1 )=+zz*tmp
           f(:,:,:,i1+1)=0.
           f(:,:,:,i1+2)=-xx*tmp
         else
-          if(lroot) print*,'htube: bad value of i2=',i2
+          if(lroot) print*,'htube2: bad value of i2=',i2
         endif
       endif
 !
@@ -903,7 +903,7 @@ module Initcond
         lnrho0=alog(rho0)
         H=(1+ampl)*cs0**2/abs(gravz)
         A0=-2*H*ampl*cs0*sqrt(2*rho0)
-        if (lroot) print*,'magsupport; H,A0=',H,A0
+        if (lroot) print*,'magsupport: H,A0=',H,A0
         f(:,:,:,iaa)=A0*exp(-.5*zz/H)
         f(:,:,:,ilnrho)=lnrho0-zz/H
       endif
@@ -923,10 +923,10 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'HLAYER: set variable to zero; i=',i
+        if (lroot) print*,'hfluxlayer: set variable to zero; i=',i
       else
-        if (lroot) print*,'horizontal flux layer; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl,width
+        if (lroot) print*,'hfluxlayer: horizontal flux layer; i=',i
+        if ((ip<=16).and.lroot) print*,'hfluxlayer: ampl,width=',ampl,width
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=ampl*tanh((zz-zflayer)/width)
         f(:,:,:,i+2)=0.
@@ -948,13 +948,13 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'halfcos_x: set variable to zero; i=',i
       else
-        print*,'uniform x-field ; i=',i
+        print*,'halscos_x: half cosine x-field ; i=',i
         kz=0.5*pi/Lz
         zbot=xyz0(3)
         ztop=xyz0(3)+Lxyz(3)
-        if ((ip<=16).and.lroot) print*,'ampl,kz=',ampl,kz
+        if ((ip<=16).and.lroot) print*,'halfcos_x: ampl,kz=',ampl,kz
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=-ampl*sin(kz*(zz-zbot))
         f(:,:,:,i+2)=0.
@@ -976,10 +976,10 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'uniform_x: set variable to zero; i=',i
       else
-        print*,'uniform x-field ; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl=',ampl
+        print*,'uniform_x: uniform x-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_x: ampl=',ampl
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=-ampl*zz
         f(:,:,:,i+2)=0.
@@ -1001,10 +1001,10 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'uniform_y: set variable to zero; i=',i
       else
-        print*,'uniform x-field ; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl=',ampl
+        print*,'uniform_y: uniform y-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_y: ampl=',ampl
         f(:,:,:,i  )=ampl*zz
         f(:,:,:,i+1)=0.
         f(:,:,:,i+2)=0.
@@ -1026,10 +1026,10 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'uniform_z: set variable to zero; i=',i
       else
-        print*,'uniform x-field ; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl=',ampl
+        print*,'uniform_z: uniform z-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'uniform_z: ampl=',ampl
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=+ampl*xx
         f(:,:,:,i+2)=0.
@@ -1051,11 +1051,11 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
-        if (lroot) print*,'set variable to zero; i=',i
+        if (lroot) print*,'vfield: set variable to zero; i=',i
       else
         kx=2*pi/Lx
-        print*,'implement x-dependent vertical field'
-        if ((ip<=8).and.lroot) print*,'x-dependent vertical field'
+        print*,'vfield: implement x-dependent vertical field'
+        if ((ip<=8).and.lroot) print*,'vfield: x-dependent vertical field'
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=ampl*sin(kx*xx)
         f(:,:,:,i+2)=0.
@@ -1078,9 +1078,9 @@ module Initcond
 !
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'gaunoise_vect: set variable to zero; i1,i2=',i1,i2
       else
-        if ((ip<=8).and.lroot) print*,'set_random_vect: i1,i2=',i1,i2
+        if ((ip<=8).and.lroot) print*,'gaunoise_vect: i1,i2=',i1,i2
         do i=i1,i2
           if (modulo(i-i1,2)==0) then
             call random_number_wrapper(r)
@@ -1091,7 +1091,7 @@ module Initcond
           endif
           !call smooth_3d(tmp,ismo)  !(may want to smooth)
           f(:,:,:,i)=ampl*tmp
-          if (lroot) print*,'set gaussian noise: variable i=',i
+          if (lroot) print*,'gaunoise_vect: variable i=',i
         enddo
       endif
 !
@@ -1110,12 +1110,12 @@ module Initcond
 !
 !  set gaussian random noise vector
 !
-      if ((ip<=8).and.lroot) print*,'set_random_scal: i=',i
+      if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
       call random_number_wrapper(r)
       call random_number_wrapper(p)
       tmp=sqrt(-2*alog(r))*sin(2*pi*p)
       f(:,:,:,i)=ampl*tmp
-      print*,'set gaussian noise: variable i=',i
+      print*,'gaunoise_scal: variable i=',i
 !
     endsubroutine gaunoise_scal
 !***********************************************************************
@@ -1132,7 +1132,7 @@ module Initcond
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
       real :: ampl
 !
-      if (lroot) print*, 'uu: trilinear in ', ivar
+      if (lroot) print*, 'trilinear: ivar = ', ivar
 !
 !  x direction
 !
@@ -1174,7 +1174,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,ky,kz
 !
-      if (lroot) print*, 'uu: trilinear in ', ivar
+      if (lroot) print*, 'cos_cos_sin: ivar = ', ivar
 !
       kx=2*pi/Lx*3
       ky=2*pi/Ly*3
@@ -1195,13 +1195,13 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,ky,kz
 !
-      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
+      if (lroot) print*, 'tor_pert: sinusoidal modulation of ivar = ', ivar
 !
       ky=2*pi/Ly
       kz=2.*pi/Lz
       f(:,:,:,ivar) = ampl*cos(ky*yy)*cos(kz*zz)
 !
-      print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
+      if (ip==0) print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
     endsubroutine tor_pert
 !***********************************************************************
     subroutine diffrot(ampl,f,ivar,xx,yy,zz)
@@ -1215,11 +1215,11 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
-      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
+      if (lroot) print*, 'diffrot: sinusoidal modulation of ivar = ', ivar
 !
       f(:,:,:,ivar) = ampl*cos(xx)*cos(zz)
 !
-      print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
+      if (ip==0) print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
     endsubroutine diffrot
 !***********************************************************************
     subroutine olddiffrot(ampl,f,ivar,xx,yy,zz)
@@ -1233,7 +1233,7 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,kz
 !
-      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
+      if (lroot) print*, 'olddiffrot: sinusoidal modulation of ivar = ', ivar
 !
       kx=.5*pi/Lx
       kz=.5*pi/Lz
@@ -1257,7 +1257,7 @@ module Initcond
  
       if (ampl==0) then
         f(:,:,:,i1:i2)=0
-        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+        if (lroot) print*,'powern: set variable to zero; i1,i2=',i1,i2
       else
         call gaunoise_vect(ampl,f,i1,i2) ! which has a k^2. spectrum
 
@@ -1290,9 +1290,9 @@ module Initcond
             f(l1:l2,m1:m2,n1:n2,i)=u_re
             
             if (lroot .and. (cutoff.eq.0)) then 
-              print*,'powern :  k^',initpower,' spectrum : var  i=',i
+              print*,'powern: k^',initpower,' spectrum : var  i=',i
             else
-              print*,'powern w/ cutoff : k^n*exp(-k^2/k0^2) w/ n=', &
+              print*,'powern: with cutoff : k^n*exp(-k^2/k0^2) w/ n=', &
                      initpower,', k0 =',cutoff,' : var  i=',i
             endif 
           enddo !i            

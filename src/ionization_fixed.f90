@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.5 2003-08-10 10:02:50 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.6 2003-08-13 15:30:07 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -61,7 +61,7 @@ module Ionization
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_ionization called twice')
+      if (.not. first) call stop_it('register_ionization: called twice')
       first = .false.
 !
       iyH = 0
@@ -74,13 +74,13 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.5 2003-08-10 10:02:50 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.6 2003-08-13 15:30:07 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
-        call stop_it('Register_ionization: naux > maux')
+        call stop_it('register_ionization: naux > maux')
       endif
 !
     endsubroutine register_ionization
@@ -101,7 +101,7 @@ module Ionization
 !  since m_e and chiH, as well as hbar are all very small
 !  it is better to divide m_e and chiH separately by hbar.
 !
-      if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
+      if(headtt) print*,'initialize_ionization: assume cp is not 1, yH0=',yH0
       mu=1.+3.97153*xHe  
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
@@ -115,13 +115,13 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
+        print*,'initialize_ionization: TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
       endif
 !
       if (yH0>0.) then
         yH_term=yH0*(2*log(yH0)-lnrho_e-lnrho_p)
       elseif (yH0<0.) then
-        call stop_it('error (initialize_ionization): yH0 must not be lower than zero')
+        call stop_it('initialize_ionization: yH0 must not be lower than zero')
       else
         yH_term=0.
       endif
@@ -129,7 +129,7 @@ module Ionization
       if (yH0<1.) then
         one_yH_term=(1.-yH0)*(log(1.-yH0)-lnrho_H)
       elseif (yH0>1.) then
-        call stop_it('error (initialize_ionization): yH0 must not be greater than one')
+        call stop_it('initialize_ionization: yH0 must not be greater than one')
       else
         one_yH_term=0.
       endif
@@ -137,7 +137,7 @@ module Ionization
       if (xHe>0.) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
       elseif (xHe<0.) then
-        call stop_it('error (initialize_ionization): xHe lower than zero makes no sense')
+        call stop_it('initialize_ionization: xHe lower than zero makes no sense')
       else
         xHe_term=0.
       endif
@@ -159,9 +159,9 @@ module Ionization
 !
       if(lroot) then
         print*,'initialize_ionization: reference values for ionization'
-        print*,'TT_ion,ss_ion,kappa0=', &
+        print*,'initialize_ionization: TT_ion,ss_ion,kappa0=', &
                 TT_ion,ss_ion,kappa0
-        print*,'lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
+        print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
 !

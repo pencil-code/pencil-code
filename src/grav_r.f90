@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.37 2003-08-11 18:50:14 dobler Exp $
+! $Id: grav_r.f90,v 1.38 2003-08-13 15:30:07 mee Exp $
 
 module Gravity
 
@@ -50,12 +50,12 @@ module Gravity
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call stop_it('register_grav called twice')
+      if (.not. first) call stop_it('register_grav: called twice')
       first = .false.
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.37 2003-08-11 18:50:14 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.38 2003-08-13 15:30:07 mee Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -96,30 +96,30 @@ module Gravity
       select case(ipotential)
 
         case ('zero')           ! zero potential
-          if (lroot) print*, 'zero gravity potential'
+          if (lroot) print*, 'initialize_gravity: zero gravity potential'
           cpot = 0.
 
         case ('solar')          ! solar case
-          if (lroot) print*, 'solar gravity potential'
+          if (lroot) print*, 'initialize_gravity: solar gravity potential'
           cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
 
         case ('M5-dwarf')       ! M5 dwarf
-          if (lroot) print*, 'M5 dwarf gravity potential'
+          if (lroot) print*, 'initialize_gravity: M5 dwarf gravity potential'
           cpot = (/ 2.3401, 0.44219, 2.5952, 1.5986, 0.20851 /)
 
         case ('simple')         ! simple potential for tests
-          if (lroot) print*, 'very simple gravity potential'
+          if (lroot) print*, 'initialize_gravity: very simple gravity potential'
           cpot =  (/ 1., 0., 0., 1., 0. /)
 
         case ('simple-2')       ! another simple potential for tests
-          if (lroot) print*, 'simple gravity potential'
+          if (lroot) print*, 'initialize_gravity: simple gravity potential'
           cpot =  (/ 1., 1., 0., 1., 1. /)
 
         case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'No such value for ipotential: ', trim(ipotential)
+        if (lroot) print*, 'initialize_gravity: No such value for ipotential: ', trim(ipotential)
         call stop_it("")
         
       endselect

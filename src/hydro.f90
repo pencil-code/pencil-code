@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.98 2003-08-02 21:50:46 brandenb Exp $
+! $Id: hydro.f90,v 1.99 2003-08-13 15:30:07 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -78,18 +78,18 @@ module Hydro
       nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_hydro:  nvar = ', nvar
-        print*, 'iux,iuy,iuz = ', iux,iuy,iuz
+        print*, 'register_hydro:  nvar = ', nvar
+        print*, 'register_hydro: iux,iuy,iuz = ', iux,iuy,iuz
       endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.98 2003-08-02 21:50:46 brandenb Exp $")
+           "$Id: hydro.f90,v 1.99 2003-08-13 15:30:07 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_hydro: nvar > mvar')
+        call stop_it('register_hydro: nvar > mvar')
       endif
 !
 !  Writing files for use with IDL
@@ -139,7 +139,7 @@ module Hydro
 !
       select case(inituu)
 
-      case('zero', '0'); if(lroot) print*,'zero velocity'
+      case('zero', '0'); if(lroot) print*,'init_uu: zero velocity'
       case('gaussian-noise'); call gaunoise(ampluu,f,iux,iuz)
       case('gaussian-noise-x'); call gaunoise(ampluu,f,iux,iux)
       case('xjump'); call jump(f,iux,uu_left,uu_right,widthuu,'x')
@@ -161,7 +161,7 @@ module Hydro
         !
         !  sound wave (should be consistent with density module)
         !
-        if (lroot) print*,'x-wave in uu; ampluu=',ampluu
+        if (lroot) print*,'init_uu: x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(kx_uu*xx)
 
       case('sound-wave2')
@@ -169,7 +169,7 @@ module Hydro
         !  sound wave (should be consistent with density module)
         !
         crit=cs20-grav_const/kx_uu**2
-        if (lroot) print*,'x-wave in uu; crit,ampluu=',crit,ampluu
+        if (lroot) print*,'init_uu: x-wave in uu; crit,ampluu=',crit,ampluu
         if (crit>0.) then
           f(:,:,:,iux)=+ampluu*cos(kx_uu*xx)*sqrt(abs(crit))
         else
@@ -180,7 +180,7 @@ module Hydro
         !
         !  shock tube test (should be consistent with density module)
         !
-        if (lroot) print*,'init_hydro: polytopic standing shock'
+        if (lroot) print*,'init_uu: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthuu))
         f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
 
@@ -188,7 +188,7 @@ module Hydro
         !
         !  blob-like velocity perturbations (bullets)
         !
-        if (lroot) print*,'init_hydro: velocity blobs'
+        if (lroot) print*,'init_uu: velocity blobs'
         !f(:,:,:,iux)=f(:,:,:,iux)+ampluu*exp(-(xx**2+yy**2+(zz-1.)**2)/widthuu)
         f(:,:,:,iuz)=f(:,:,:,iuz)-ampluu*exp(-(xx**2+yy**2+zz**2)/widthuu)
 
@@ -196,7 +196,7 @@ module Hydro
         !
         !  circularly polarised Alfven wave in x direction
         !
-        if (lroot) print*,'init_hydro: circular Alfven wave -> x'
+        if (lroot) print*,'init_uu: circular Alfven wave -> x'
         f(:,:,:,iuy) = ampluu*sin(kx_uu*xx)
         f(:,:,:,iuz) = ampluu*cos(kx_uu*xx)
 
@@ -204,14 +204,14 @@ module Hydro
         !
         !  constant x-velocity
         !
-        if (lroot) print*,'constant x-velocity'
+        if (lroot) print*,'init_uu: constant x-velocity'
         f(:,:,:,iux) = ampluu
 
       case('const-uy')
         !
         !  constant y-velocity
         !
-        if (lroot) print*,'constant y-velocity'
+        if (lroot) print*,'init_uu: constant y-velocity'
         f(:,:,:,iuy) = ampluu
 
       case('tang-discont-z')
@@ -220,15 +220,15 @@ module Hydro
         !  ux=uu_lower for z<0 and ux=uu_upper for z>0. This can
         !  be set up together with 'rho-jump' in density.
         !
-        if (lroot) print*,'tangential discontinuity of uux at z=0'
-        if (lroot) print*,'uu_lower=',uu_lower,' uu_upper=',uu_upper
-        if (lroot) print*,'widthuu=',widthuu
+        if (lroot) print*,'init_uu: tangential discontinuity of uux at z=0'
+        if (lroot) print*,'init_uu: uu_lower=',uu_lower,' uu_upper=',uu_upper
+        if (lroot) print*,'init_uu: widthuu=',widthuu
         prof=.5*(1.+tanh(zz/widthuu))
         f(:,:,:,iux)=uu_lower+(uu_upper-uu_lower)*prof
 
 !  Add some random noise to see the development of instability
 !WD: Can't we incorporate this into the urand stuff?
-        print*, 'ampluu=',ampluu
+        print*, 'init_uu: ampluu=',ampluu
         call random_number_wrapper(r)
         call random_number_wrapper(p)
 !        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
@@ -244,7 +244,7 @@ module Hydro
         !  Not a big success (convection starts much slower than with
         !  random or 'up-down' ..
         !
-        if (lroot) print*,'uu: truncated Fourier'
+        if (lroot) print*,'init_uu: truncated Fourier'
         prof = ampluu*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical Gaussian
         tmp = kx_uu*xx + ky_uu*yy               ! horizontal phase
         kabs = sqrt(kx_uu**2+ky_uu**2)
@@ -257,7 +257,7 @@ module Hydro
         !
         !  flow upwards in one spot, downwards in another; not soneloidal
         ! 
-        if (lroot) print*,'uu: up-down'
+        if (lroot) print*,'init_uu: up-down'
         prof = ampluu*exp(-0.5*(zz-z1)**2/widthuu**2) ! vertical profile
         tmp = sqrt((xx-(x0+0.3*Lx))**2+(yy-(y0+0.3*Ly))**2) ! dist. from spot 1
         f(:,:,:,iuz) = prof*exp(-0.5*(tmp**2)/widthuu**2)
@@ -272,7 +272,7 @@ module Hydro
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'No such such value for inituu: ', trim(inituu)
+        if (lroot) print*, 'init_uu: No such such value for inituu: ', trim(inituu)
         call stop_it("")
 
       endselect
@@ -282,14 +282,14 @@ module Hydro
 !  top of the initialization so far.
 !
       if (urand /= 0) then
-        if (lroot) print*, 'Adding random uu fluctuations'
+        if (lroot) print*, 'init_uu: Adding random uu fluctuations'
         if (urand > 0) then
           do i=iux,iuz
             call random_number_wrapper(tmp)
             f(:,:,:,i) = f(:,:,:,i) + urand*(tmp-0.5)
           enddo
         else
-          if (lroot) print*, '  ..multiplicative fluctuations'
+          if (lroot) print*, 'init_uu:  ... multiplicative fluctuations'
           do i=iux,iuz
             call random_number_wrapper(tmp)
             f(:,:,:,i) = f(:,:,:,i) * urand*(tmp-0.5)
@@ -329,7 +329,7 @@ module Hydro
 !
 !  identify module and boundary conditions
 !
-      if (headtt.or.ldebug) print*,'SOLVE duu_dt'
+      if (headtt.or.ldebug) print*,'duu_dt: SOLVE'
       if (headtt) then
         call identify_bcs('ux',iux)
         call identify_bcs('uy',iuy)
@@ -344,7 +344,7 @@ module Hydro
 !  calculate velocity gradient matrix
 !
       if (lroot .and. ip < 5) &
-           print*,'call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
+           print*,'duu_dt: call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
       call gij(f,iuu,uij)
       divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
 !
@@ -361,7 +361,7 @@ module Hydro
 !
 !  advection term
 !
-      if (ldebug) print*,'call multmv_mn(uij,uu,ugu)'
+      if (ldebug) print*,'duu_dt: call multmv_mn(uij,uu,ugu)'
       call multmv_mn(uij,uu,ugu)
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
 !
@@ -371,12 +371,12 @@ module Hydro
 !
       if (Omega/=0.) then
         if (theta==0) then
-          if (headtt) print*,'add Coriolis force; Omega=',Omega
+          if (headtt) print*,'duu_dt: add Coriolis force; Omega=',Omega
           c2=2*Omega
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)
         else
-          if (headtt) print*,'Coriolis force; Omega,theta=',Omega,theta
+          if (headtt) print*,'duu_dt: Coriolis force; Omega,theta=',Omega,theta
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
@@ -395,7 +395,7 @@ module Hydro
 !
 !  maximum squared avection speed
 !
-      if (headtt.or.ldebug) print*,'hydro: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
+      if (headtt.or.ldebug) print*,'duu_dt:: maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
 !
 !  damp motions in some regions for some time spans if desired
@@ -420,7 +420,7 @@ module Hydro
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
       if (ldiagnos) then
-        if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
+        if (headtt.or.ldebug) print*,'duu_dt: Calculate maxima and rms values...'
         if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
         if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
@@ -590,7 +590,7 @@ module Hydro
 !  warn about the damping term
 !
         if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
-          print*, 'Damping velocities until time ', tdamp
+          print*, 'udamping: Damping velocities until time ', tdamp
         endif
 !
 !  1. damp motion during time interval 0<t<tdamp.
@@ -748,9 +748,11 @@ module Hydro
 !
         if (i_umx/=0) then
           if(i_uymxy==0.or.i_uzmxy==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
-            if(first) print*,"      We proceed, but you'll get umx=0"
+            if(first) print*, 'calc_mflow:                    WARNING'
+            if(first) print*, &
+                    "calc_mflow: NOTE: to get umx, uymxy and uzmxy must also be set in zaver"
+            if(first) print*, &
+                    "calc_mflow:      We proceed, but you'll get umx=0"
             umx=0.
           else
             do l=1,nx
@@ -767,9 +769,11 @@ module Hydro
 !
         if (i_umy/=0) then
           if(i_uxmxy==0.or.i_uzmxy==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
-            if(first) print*,"      We proceed, but you'll get umy=0"
+            if(first) print*, 'calc_mflow:                    WARNING'
+            if(first) print*, &
+                    "calc_mflow: NOTE: to get umy, uxmxy and uzmxy must also be set in zaver"
+            if(first) print*, &
+                    "calc_mflow:       We proceed, but you'll get umy=0"
             umy=0.
           else
             do j=1,nprocy
@@ -790,10 +794,13 @@ module Hydro
 !
         if (i_umz/=0) then
           if(i_uxmz==0.or.i_uymz==0.or.i_uzmz==0) then
-            if(first) print*
-            if(first) print*,"NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
-            if(first) print*,"      This may be because we renamed zaver.in into xyaver.in"
-            if(first) print*,"      We proceed, but you'll get umz=0"
+            if(first) print*,"calc_mflow:                    WARNING"
+            if(first) print*, &
+                    "calc_mflow: NOTE: to get umz, uxmz, uymz and uzmz must also be set in xyaver"
+            if(first) print*, &
+                    "calc_mflow:       This may be because we renamed zaver.in into xyaver.in"
+            if(first) print*, &
+                    "calc_mflow:       We proceed, but you'll get umz=0"
             umz=0.
           else
             umz=sqrt(sum(fnamez(:,:,i_uxmz)**2 &

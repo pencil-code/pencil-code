@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.104 2003-08-04 02:16:35 theine Exp $
+! $Id: mpicomm.f90,v 1.105 2003-08-13 15:30:07 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -209,7 +209,7 @@ module Mpicomm
 !
       if (ip<5) &
            write(*,'(A,I4,"(",2I4,"): ",8I4)') &
-           'MPICOMM neighbors ', &
+           'mpicomm_init: MPICOMM neighbors ', &
            iproc,ipy,ipz, &
            ylneigh,llcorn,zlneigh,ulcorn,yuneigh,uucorn,zuneigh,lucorn
 !
@@ -273,7 +273,7 @@ module Mpicomm
 !  communication sample
 !
       if (ip<7.and.ipy==0.and.ipz==3) &
-        print*,'MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
+        print*,'initiate_isendrcv_bdry: MPICOMM send lu: ',iproc,lubufo(nx/2+4,:,1,2),' to ',lucorn
 !
     endsubroutine initiate_isendrcv_bdry
 !***********************************************************************
@@ -364,7 +364,8 @@ module Mpicomm
 !  communication sample
 !
       if (ip<7.and.ipy==3.and.ipz==0) &
-        print*,'MPICOMM recv ul: ',iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
+        print*,'finalise_isendrcv_bdry: MPICOMM recv ul: ', &
+                        iproc,ulbufi(nx/2+4,:,1,2),' from ',ulcorn
 !
 !  make sure the other precessors don't carry on sending new data
 !  which could be mistaken for an earlier time
@@ -547,7 +548,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_recv'
+      if(lroot.and.ip<5) print*,'radboundary_zx_recv: ENTER'
 !
 !  buffer sizes
 !
@@ -584,7 +585,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_recv'
+      if(lroot.and.ip<5) print*,'radboundary_xy_recv: ENTER'
 !
 !  buffer sizes
 !
@@ -621,7 +622,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_send'
+      if(lroot.and.ip<5) print*,'radboundary_zx_send: ENTER'
 !
 !  buffer size
 !
@@ -658,7 +659,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_send'
+      if(lroot.and.ip<5) print*,'radboundary_xy_send: ENTER'
 !
 !  buffer size
 !
@@ -905,7 +906,7 @@ module Mpicomm
         do px=0,nprocy-1
           if(px/=ipy) then
             partner=px+ipz*nprocy ! = iproc + (px-ipy)
-            if(ip<=6) print*,'MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
+            if(ip<=6) print*,'transp: MPICOMM: ipy,ipz,px,partner=',ipy,ipz,px,partner
             send_buf_y=a(px*ny+1:(px+1)*ny,:,:)
             if (px<ipy) then      ! above diagonal: send first, receive then
               call MPI_SEND(send_buf_y,sendc_y,MPI_REAL,partner,ytag,MPI_COMM_WORLD,ierr)
@@ -944,7 +945,7 @@ module Mpicomm
       elseif (var=='z') then
         if(nygrid/=nzgrid) then
           print*,'transp: need to have nygrid=nzgrid for var==z'
-          call stop_it('Inconsistency: nygrid/=nzgrid')
+          call stop_it('transp: inconsistency - nygrid/=nzgrid')
         endif
 !
 !  Send information to different processors (x-z transpose)
@@ -977,7 +978,7 @@ module Mpicomm
         enddo
 !
       else
-        if (lroot) print*,'TRANSP: No clue what var=', var, 'is supposed to mean'
+        if (lroot) print*,'transp: No clue what var=', var, 'is supposed to mean'
       endif
 !
 !  Synchronize; not strictly necessary, so Axel will prabably remove it..
@@ -997,7 +998,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
   real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
 
   ! Doing the x field
-  if(lroot .AND. ip<10) print*,'doing fft of x-component'
+  if(lroot .AND. ip<10) print*,'transform: doing fft of x-component'
   call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
   call transp(a1,'y')
   call transp(b1,'y')
@@ -1007,7 +1008,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
   call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
 
   ! Doing the y field
-  if(lroot .AND. ip<10) print*,'doing fft of y-component'
+  if(lroot .AND. ip<10) print*,'transform: doing fft of y-component'
   call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
   call transp(a2,'y')
   call transp(b2,'y')
@@ -1017,7 +1018,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
   call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
 
   ! Doing the z field
-  if(lroot .AND. ip<10) print*,'doing fft of z-component'
+  if(lroot .AND. ip<10) print*,'transform: doing fft of z-component'
   call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
   call transp(a3,'y')
   call transp(b3,'y')
@@ -1030,7 +1031,7 @@ subroutine transform(a1,a2,a3,b1,b2,b3)
 !
   a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
   b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finished'
+  if(lroot .AND. ip<10) print*,'transform: fft has finished'
 !
 endsubroutine transform
 !***********************************************************************
@@ -1043,7 +1044,7 @@ subroutine transform_i(a_re,a_im)
 !
   real,dimension(nx,ny,nz) :: a_re,a_im
 
-  if(lroot .AND. ip<10) print*,'doing three FFTs'
+  if(lroot .AND. ip<10) print*,'transform_i: doing three FFTs'
   call fft(a_re,a_im, nx*ny*nz, nx, nx,-1)
   call transp(a_re,'y')
   call transp(a_im,'y')
@@ -1056,7 +1057,7 @@ subroutine transform_i(a_re,a_im)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finished'
+  if(lroot .AND. ip<10) print*,'transform_i: fft has finished'
 !
 endsubroutine transform_i
 !***********************************************************************
@@ -1087,7 +1088,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !
   call cffti(nx,wsavex)
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in x'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1102,7 +1103,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !  The length of the array in the y-direction is nx
 !  (remember: nxgrid=nygrid=nzgrid!)
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in y'
+  if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in y'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1120,7 +1121,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !
 !  The length of the array in the z-direction is also nx
 !
-    if(lroot .AND. ip<10) print*,'doing FFTpack in z'
+    if(lroot .AND. ip<10) print*,'transform_fftpack: doing FFTpack in z'
     do n=1,nz
     do m=1,ny
       ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1135,7 +1136,7 @@ subroutine transform_fftpack(a_re,a_im,dummy)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finished'
+  if(lroot .AND. ip<10) print*,'transform_fftpack: fft has finished'
 !
 endsubroutine transform_fftpack
 !***********************************************************************
@@ -1154,10 +1155,10 @@ subroutine transform_nr(a_re,a_im)
 !  This Fourier transform would work, but it's very slow!
 !  Even the compilation is very slow, so we better get rid of it!
 !
-  print*,'fft_nr currently disabled!'
+  print*,'transform_nr: currently disabled!'
   call stop_it("")
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in x'
+  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in x'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1172,7 +1173,7 @@ subroutine transform_nr(a_re,a_im)
 !  The length of the array in the y-direction is nx
 !  (remember: nxgrid=nygrid=nzgrid!)
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in y'
+  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in y'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1186,7 +1187,7 @@ subroutine transform_nr(a_re,a_im)
 !
 !  The length of the array in the z-direction is also nx
 !
-  if(lroot .AND. ip<10) print*,'doing FFT_nr in z'
+  if(lroot .AND. ip<10) print*,'transform_nr: doing FFT_nr in z'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1200,7 +1201,7 @@ subroutine transform_nr(a_re,a_im)
 !
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
-  if(lroot .AND. ip<10) print*,'fft has finished'
+  if(lroot .AND. ip<10) print*,'transform_nr: fft has finished'
 !
 endsubroutine transform_nr
 !***********************************************************************
@@ -1221,15 +1222,15 @@ subroutine transform_fftpack_1d(a_re,a_im)
 !  check whether nxgrid=nygrid=nzgrid
 !
   if(nxgrid/=nygrid .or. nxgrid/=nzgrid) then
-    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
-    call stop_it("must have nxgrid=nygrid=nzgrid!")
+    print*,'transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!'
+    call stop_it("transform_fftpack_1d: must have nxgrid=nygrid=nzgrid!")
   endif
 !
 !  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
 !
   call cffti(nx,wsavex)
 !
-  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  if(lroot .AND. ip<10) print*,'transform_fftpack_1d: doing FFTpack in x'
   do n=1,nz
   do m=1,ny
     ax=cmplx(a_re(:,m,n),a_im(:,m,n))
@@ -1243,7 +1244,7 @@ subroutine transform_fftpack_1d(a_re,a_im)
 !
   a_re=a_re/nxgrid
   a_im=a_im/nxgrid
-  if(lroot .AND. ip<10) print*,'fft has finished'
+  if(lroot .AND. ip<10) print*,'transform_fftpack_1d: fft has finished'
 !
 endsubroutine transform_fftpack_1d
 !***********************************************************************

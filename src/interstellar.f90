@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.41 2003-08-13 11:44:57 mee Exp $
+! $Id: interstellar.f90,v 1.42 2003-08-13 15:30:07 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -100,17 +100,17 @@ module Interstellar
       linterstellar = .true.
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_interstellar'
+        print*, 'register_interstellar: ENTER'
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.41 2003-08-13 11:44:57 mee Exp $")
+           "$Id: interstellar.f90,v 1.42 2003-08-13 15:30:07 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call stop_it('Register_interstellar: nvar > mvar')
+        call stop_it('register_interstellar: nvar > mvar')
       endif
 !
     endsubroutine register_interstellar
@@ -208,7 +208,7 @@ module Interstellar
 !
 !  identifier
 !
-      if(headtt) print*,'calc_heat_cool_interstellar'
+      if(headtt) print*,'calc_heat_cool_interstellar: ENTER'
 !
 !  define T in K, for calculation of both UV heating and radiative cooling
 !
@@ -271,7 +271,7 @@ module Interstellar
 !
 !  identifier  
 !
-      if(headtt) print*,'check_SN'
+      if(headtt) print*,'check_SN: ENTER'
 !
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
@@ -296,7 +296,7 @@ module Interstellar
 !
 !  identifier
 !
-    if(headtt) print*,'check_SNI'
+    if(headtt) print*,'check_SNI: ENTER'
 !
     l_SNI=.false.
     if (t >= t_next_SNI) then
@@ -306,7 +306,7 @@ module Interstellar
        if (lroot) then
           call random_number_wrapper(franSN)   
           t_next_SNI=t_next_SNI + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-          if (ip<14) print*,'Next SNI at time: ',t_next_SNI
+          if (ip<14) print*,'check_SNI: Next SNI at time = ',t_next_SNI
           interstellarsave(1)=t_next_SNI
        endif
        call mpibcast_real(t_next_SNI,1)
@@ -337,7 +337,7 @@ module Interstellar
 !
 !  identifier
 !
-    if(headtt) print*,'check_SNII'
+    if(headtt) print*,'check_SNII: ENTER'
 !
     if (.not. l_SNI) then         ! only do if no SNI this step
 !
@@ -366,11 +366,11 @@ module Interstellar
        if (nygrid/=1) dv=dv*dy
        if (nzgrid/=1) dv=dv*dz
        mass_cloud_dim=fsum1(1)*dv*tosolarMkpc3
-       !print*,'check_SNII, iproc,fsum1:',iproc,fsum1(1)
+       !print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
        ! need convert to dimensional units, for rate/probability calculation only. 
        ! don't overwrite mass_cloud (on individual processors), as it's re-used.
        !if (lroot .and. ip < 14) &
-       !     print*,'check_SNII, mass_cloud_dim:',mass_cloud_dim
+       !     print*,'check_SNII: mass_cloud_dim:',mass_cloud_dim
        !
        freq_SNII=frac_heavy*frac_converted*mass_cloud_dim/mass_SN/tau_cloud
        prob_SNII=freq_SNII*dt
@@ -380,7 +380,7 @@ module Interstellar
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
        ! if (lroot .and. ip < 14) &
-       !      print*,'check_SNII, rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
+       !      print*,'check_SNII: rate,prob,rnd:',rate_SNII,prob_SNII,franSN(1)
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
           !   communicate and store them here, to avoid recalculation.
@@ -391,7 +391,7 @@ module Interstellar
              call mpibcast_real_nonroot(fmpi1,1,icpu-1)
              mass_cloud_byproc(icpu)=fmpi1(1)
           enddo
-          ! if (lroot.and.ip<14) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
+          ! if (lroot.and.ip<14) print*,'check_SNII: mass_cloud_byproc:',mass_cloud_byproc
           call position_SNII(f,mass_cloud_byproc)
           call explode_SN(f,2)
        endif
@@ -423,7 +423,7 @@ module Interstellar
 !
 !  identifier
 !
-    if(headtt) print*,'position_SNI'
+    if(headtt) print*,'position_SNI: ENTER'
     
     !
     !  NB: this routine not usefully parallelised -- could all be done on root.
@@ -440,8 +440,8 @@ module Interstellar
     if (lperi(2)) then; y0=xyz0(2)+.5*dy; else; y0=xyz0(2); endif
     if (lperi(3)) then; z0=xyz0(3)+.5*dz; else; z0=xyz0(3); endif
     
-    !if (lroot) print*, 'dx,dy,dz',dx,dy,dz
-    !if (lroot) print*, 'x0,y0,z0,Lx,Ly,Lz',x0,y0,z0,Lx,Ly,Lz
+    !if (lroot) print*, 'position_SNI: dx,dy,dz=',dx,dy,dz
+    !if (lroot) print*, 'position_SNI: x0,y0,z0,Lx,Ly,Lz=',x0,y0,z0,Lx,Ly,Lz
     
     !
     !  Pick SN position (x_SN,y_SN,z_SN)
@@ -459,20 +459,20 @@ module Interstellar
           x_SN=x0+(i-1)*dx
           l_SN=(i-1)
        endif
-       !if (lroot) print*, 'x',fran3(1),x_SN
+       !if (lroot) print*, 'position_SNI: fran3(1),x = ',fran3(1),x_SN
 
        if (ltestSN) then
           i=int(nygrid/2)+1
           y_SN=y0+(i-1)*dy
           ipy_SN=(i-1)/ny  ! uses integer division
           m_SN=(i-1)-(ipy_SN*ny)+nghost
-          !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
+          !if (lroot) print*, 'position_SNI: fran3(2),y_SN,ipy_SN=',fran3(2),y_SN,ipy_SN
        else
           i=int(fran3(2)*nygrid)+1
           y_SN=y0+(i-1)*dy
           ipy_SN=(i-1)/ny  ! uses integer division
           m_SN=(i-1)-(ipy_SN*ny)+nghost
-          !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
+          !if (lroot) print*, 'position_SNI: fran3(2),i,y_SN,ipy_SN=',fran3(2),i,y_SN,ipy_SN
        endif
 
        if (ltestSN) then
@@ -498,7 +498,7 @@ module Interstellar
           !  The following should never be needed, but just in case floating point 
           !  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
           cum_prob_SNI(nzgrid-nzskip+1:nzgrid)=1.0   
-          !if (lroot) print*, 'cum_prob_SNI',cum_prob_SNI
+          !if (lroot) print*, 'position_SNI: cum_prob_SNI=',cum_prob_SNI
           
           do i=nzskip+1,nzgrid-nzskip
              if (cum_prob_SNI(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(i)) &
@@ -511,7 +511,8 @@ module Interstellar
           enddo
        endif
        iproc_SN=ipz_SN*nprocy + ipy_SN
-       !if (lroot) print*, 'z',fran3(3),z_SN,ipz_SN,iproc_SN
+       !if (lroot) print*, 'position_SNI: fran3(3),z_SN,ipz_SN,iproc_SN=', &
+       !                fran3(3),z_SN,ipz_SN,iproc_SN
     endif
 
 !
@@ -591,7 +592,7 @@ module Interstellar
 !
 !  identifier
 !
-      if(headtt) print*,'position_SNI'
+      if(headtt) print*,'position_SNII: ENTER'
 !
 !  Construct cumulative distribution function, using mass_cloud_byproc.
 !  NB: icpu=iproc+1 (iproc in [0,ncpus-1], icpu in [1,ncpus] )
@@ -603,9 +604,9 @@ module Interstellar
     enddo
     cum_prob_byproc(:)=cum_prob_byproc(:)/cum_prob_byproc(ncpus)
     if (lroot) then
-      print*,'position_SNII, mass_cloud_byproc:',mass_cloud_byproc
-      print*,'position_SNII, cum_prob_byproc:',cum_prob_byproc
-      print*,'position_SNII, mass_cloud:',mass_cloud
+      print*,'position_SNII: mass_cloud_byproc=',mass_cloud_byproc
+      print*,'position_SNII: cum_prob_byproc=',cum_prob_byproc
+      print*,'position_SNII: mass_cloud=',mass_cloud
     endif
 !     
 !  Use random number to detemine which processor SN is on.
@@ -620,7 +621,7 @@ module Interstellar
         exit
       endif
     enddo
-    if (lroot) print*, 'position_SNII, franSN(1),iproc_SN:',franSN(1),iproc_SN
+    if (lroot) print*, 'position_SNII: franSN(1),iproc_SN=',franSN(1),iproc_SN
 !
 !  Use random number to pick SNII location on the right processor.
 !  (No obvious reason to re-use the original random number for this.)
@@ -644,7 +645,7 @@ find_SN: do n=n1,n2
                  cum_prob_onproc=cum_mass/mass_cloud
                  if (franSN(1) <= cum_prob_onproc) then
                     x_SN=x(l); y_SN=y(m); z_SN=z(n); rho_SN=rho; TT_SN=TT
-                    print*,'position_SNII,cum_mass,cum_prob_onproc,franSN(1):', &
+                    print*,'position_SNII: cum_mass,cum_prob_onproc,franSN(1)=', &
                                           cum_mass,cum_prob_onproc,franSN(1)
                     exit find_SN
                  endif
@@ -652,7 +653,7 @@ find_SN: do n=n1,n2
              enddo
            enddo
          enddo find_SN
-         print*,'position_SNII (iproc_SN):',iproc,x_SN,y_SN,z_SN,rho_SN
+         print*,'position_SNII: iproc_SN,x_SN,y_SN,z_SN,rho_SN=',iproc,x_SN,y_SN,z_SN,rho_SN
      endif
     fmpi5=(/ x_SN, y_SN, z_SN, rho_SN, TT_SN /)
     call mpibcast_real_nonroot(fmpi5,5,iproc_SN)
@@ -660,7 +661,8 @@ find_SN: do n=n1,n2
     rho_SN=fmpi5(4); TT_SN=fmpi5(5)
 !
     if (lroot) &
-         print*, 'position_SNII (root):',iproc,x_SN,y_SN,z_SN,rho_SN,TT_SN
+         print*, 'position_SNII: iproc,x_SN,y_SN,z_SN,rho_SN,TT_SN=', &
+                                                             iproc,x_SN,y_SN,z_SN,rho_SN,TT_SN
 !
     endsubroutine position_SNII
 !***********************************************************************
@@ -698,7 +700,7 @@ find_SN: do n=n1,n2
       !
       !  identifier
       !
-      if(lroot.and.ip<14) print*,'explode_SN, itype_SN:',itype_SN
+      if(lroot.and.ip<14) print*,'explode_SN: itype_SN=',itype_SN
       !
       width_SN=point_width*dxmin      
       idim=0                         !allow for 1-d, 2-d and 3-d profiles...
@@ -711,7 +713,7 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<=14) print*,'width_SN,c_SN', width_SN,c_SN
+      if (lroot.and.ip<=14) print*,'explode_SN: width_SN,c_SN=', width_SN,c_SN
         
       !
       !  Now deal with (if nec.) mass relocation
@@ -724,7 +726,7 @@ find_SN: do n=n1,n2
 !      TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
 
       if(lroot) print*, &
-         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH_SN, yH_SN_new :',TT_SN,TT_SN_new,TT_SN_min, yH_SN, yH_SN_new
+         'explode_SN: TT_SN, TT_SN_new, TT_SN_min, yH_SN, yH_SN_new=',TT_SN,TT_SN_new,TT_SN_min, yH_SN, yH_SN_new
 
       if (TT_SN_new < TT_SN_min) then
          lmove_mass=.not.lnever_move_mass
@@ -739,7 +741,7 @@ find_SN: do n=n1,n2
          call ionget(lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new)
 
          if(lroot) print*, &
-            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new :',TT_SN_new,rho_SN_new
+            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=',TT_SN_new,rho_SN_new
 
          call calcmassprofileintegral_SN(f,width_SN,profile_integral)
          fmpi1_tmp=(/ profile_integral /)
@@ -748,7 +750,7 @@ find_SN: do n=n1,n2
          profile_integral=fmpi1(1)*dv
          mass_shell=-(rho_SN_new-rho_SN)*profile_integral
          if (lroot.and.ip<14) &
-           print*, 'explode_SN: mass_shell:',mass_shell
+           print*, 'explode_SN: mass_shell=',mass_shell
          mass_gain=0.
       endif
       
@@ -807,7 +809,7 @@ find_SN: do n=n1,n2
 !      EE2_SN=fmpi3(3)*dv; 
 
       if (lroot.and.ip<14) print*, &
-           'explode_SN: mass_gain:',mass_gain
+           'explode_SN: mass_gain=',mass_gain
      
       if (lroot) then
          open(1,file=trim(datadir)//'/time_series.dat',position='append')

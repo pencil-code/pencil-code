@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.23 2003-08-11 18:50:14 dobler Exp $
+! $Id: general.f90,v 1.24 2003-08-13 15:30:07 mee Exp $
 
 module General
 
@@ -352,7 +352,7 @@ module General
 !  prints time in seconds
 !
       call system_clock(count=time2,count_rate=count_rate)
-      print*,label,(time2-time1)/real(count_rate)
+      print*,"chk_time: ",label,(time2-time1)/real(count_rate)
       time1=time2
 !
     endsubroutine chk_time
@@ -639,7 +639,7 @@ module General
       n=size(b)
       bet=b(1)
       if (bet.eq.0.) then
-         print*,'tridag_ser: Error at code stage 1'
+         print*,'tridag: Error at code stage 1'
          if (present(err)) err=.true.
          return
       endif
@@ -649,7 +649,7 @@ module General
          gam(j)=c(j-1)/bet
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
-            print*,'tridag_ser: Error at code stage 2'
+            print*,'tridag: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
@@ -679,7 +679,7 @@ module General
       n=size(b)
       bet=b(1)
       if (bet.eq.0.) then
-         print*,'tridag_ser: Error at code stage 1'
+         print*,'tridag_double: Error at code stage 1'
          if (present(err)) err=.true.
          return
       endif
@@ -689,7 +689,7 @@ module General
          gam(j)=c(j-1)/bet
          bet=b(j)-a(j-1)*gam(j)
          if (bet.eq.0.) then
-            print*,'tridag_ser: Error at code stage 2'
+            print*,'tridag_double: Error at code stage 2'
             if (present(err)) err=.true.
             return
          endif
