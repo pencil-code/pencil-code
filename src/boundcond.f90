@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.64 2004-06-09 21:55:00 theine Exp $
+! $Id: boundcond.f90,v 1.65 2004-06-22 10:21:18 bingert Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -293,7 +293,7 @@ module Boundcond
                 call bc_frozen_in_bb_z(topbot)
                 call bc_sym_z(f,-1,topbot,j,REL=.true.) ! antisymm wrt boundary
               case ('g')        ! set to given value(s) or function
-                call bc_force_z(f,topbot,j)
+                 call bc_force_z(f,topbot,j)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
@@ -978,7 +978,7 @@ module Boundcond
       case ('uxy_sin-cos')
         call bc_force_uxy_sin_cos(f,n1,j)
       case ('uxy_convection')
-        call stop_it("BC_FORCE_Z: uxy_convection not implemented yet")
+        call uu_driver(f)
       case ('kepler')
         call bc_force_kepler(f,n1,j)
       case default
@@ -1178,5 +1178,77 @@ module Boundcond
 !
     endsubroutine update_ghosts
 !***********************************************************************
+     
+     subroutine uu_driver(f)
+! 
+!    Use of velocity field produced by a program of Boris Gudiksen
+!    Units:  [v] = km /s
+!            [t] = s
+!
+!    27-mai-04/bing:coded
+!
+       Use Sub
+       Use Cdata
 
+       real, dimension (mx,my,mz,mvar+maux) :: f
+       real, dimension (nx,ny) :: uxd,uyd,uxl,uxr,uyl,uyr
+       integer :: lend,iostat=0,i=0,jpp
+       real :: tl=0.,tr=0.
+              
+       intent (inout) :: f
+       
+       
+! Read the time table
+        if (t*unit_time < tl .or. t*unit_time>=tr .and. iostat .ne. -2) then
+          
+          inquire(IOLENGTH=lend) tl
+          close (10)
+          open (10,file='driver/time_k',form='unformatted',status='unknown',recl=lend,access='direct')
+!
+          iostat = 0
+          i=0
+          do while (iostat .eq. 0)
+             i=i+1
+             read (10,rec=i,iostat=iostat) tl          
+             read (10,rec=i+1,iostat=iostat) tr
+             if (iostat .ne. 0) then
+                print*,'No more snapshots of velocity field available!!!!'
+                i=i-1
+                read (10,rec=i,iostat=iostat) tl          
+                read (10,rec=i+1,iostat=iostat) tr
+                iostat=-2                     ! EOF is reached
+             else
+                if(t*unit_time>=tl .and. t*unit_time<tr) iostat=-1 ! correct time step is reached
+             endif
+          enddo
+          close (10)
+          print*,'tmin,t,tmax',tl,t*unit_time,tr
+          
+! Read velocity field
+          open (10,file='driver/vel_k.dat',form='unformatted',status='unknown',recl=lend*nx*ny,access='direct')
+          read (10,rec=(2*i-1)) uxl
+          read (10,rec=2*i)     uyl
+          
+          read (10,rec=2*i+1)   uxr 
+          read (10,rec=2*i+2)   uyr
+          close (10)       
+!      
+!   simple linear interploation between timesteps
+          if (tr .ne. tl) then
+             uxd  = (t*unit_time - tl) * (uxr - uxl) / (tr - tl) + uxl
+             uyd  = (t*unit_time - tl) * (uyr - uyl) / (tr - tl) + uyl       
+          endif
+       endif
+       
+! Fill the ghost cells and the bottom layer with vel. field
+       f(l1:l2,m1:m2,n1:n2,iuz) = 0.
+       do jpp=1,l1 
+          f(l1:l2,m1:m2,jpp,iux) = uxd(:,:)/1.e5
+          f(l1:l2,m1:m2,jpp,iuy) = uyd(:,:)/1.e5
+         
+       enddo
+       if (notanumber(uxd))    print*,'uxd'
+       if (notanumber(uyd))    print*,'uyd'
+     endsubroutine uu_driver
+!***********************************************************************
 endmodule Boundcond
