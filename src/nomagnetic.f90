@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.33 2003-06-17 16:57:14 torkel Exp $
+! $Id: nomagnetic.f90,v 1.34 2003-08-06 07:31:14 brandenb Exp $
 
 module Magnetic
 
@@ -9,6 +9,7 @@ module Magnetic
   character (len=40) :: kinflow=''
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: kx_aa=0.,ky_aa=0.,kz_aa=0.
+  real :: brms=0.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /magnetic_init_pars/ dummy
@@ -49,7 +50,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.33 2003-06-17 16:57:14 torkel Exp $")
+           "$Id: nomagnetic.f90,v 1.34 2003-08-06 07:31:14 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.128 2003-08-03 15:36:28 brandenb Exp $ 
+! $Id: sub.f90,v 1.129 2003-08-06 07:31:14 brandenb Exp $ 
 
 module Sub 
 
@@ -1617,7 +1617,7 @@ module Sub
 !
     endsubroutine out2
 !***********************************************************************
-    subroutine vecout (lun,file,vv,thresh,nthresh)
+    subroutine vecout (lun,file,vv,thresh,nvec)
 !
 !  write vectors to disc if their length exceeds thresh
 !
@@ -1629,7 +1629,7 @@ module Sub
       real, dimension(nx,3) :: vv
       real, dimension(nx) :: v2
       real :: thresh,thresh2,dummy=0.
-      integer :: l,lun,nthresh
+      integer :: l,lun,nvec
 !
 !  return if thresh=0 (default)
 !
@@ -1638,9 +1638,9 @@ module Sub
 !  open files when first data point
 !
       if(lfirstpoint) then
-        open(lun,file=file,form='unformatted',position='append')
+        open(lun,file=file//'.dat',form='unformatted',position='append')
         write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
-        nthresh=0
+        nvec=0
       endif
 !
 !  write data
@@ -1650,15 +1650,17 @@ module Sub
       do l=1,nx
         if(v2(l)>=thresh2) then
           write(lun) l,m-nghost,n-nghost,vv(l,:)
-          nthresh=nthresh+1
+          nvec=nvec+1
         endif
       enddo
 !
-!  close file
+!  close file, and write number of vectors to a separate file
 !
       if(llastpoint) then
         close(lun)
-        if(lroot) print*,'nthresh=',nthresh
+        open(lun,file=file//'.num',position='append')
+        write(lun,*) t,nvec
+        close(lun)
       endif
 !
     endsubroutine vecout

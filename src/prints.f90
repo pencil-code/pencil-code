@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.41 2003-05-08 14:30:58 tarek Exp $
+! $Id: prints.f90,v 1.42 2003-08-06 07:31:14 brandenb Exp $
 
 module Print
 
@@ -44,12 +44,14 @@ module Print
 !  27-may-02/axel: it,t,dt added as extra save parameters
 !   7-jun-02/axel: dtc (=dt/cdt) added as extra save parameter
 !  08-oct-02/tony: added safe_character_assign when appending to fform
+!   8-may-03/tarek: changed .or. to +. Could not compile with NAGf95 with .or.
 !
       use Cdata
       use Sub
       use Hydro
       use Magnetic
       use Pscalar
+      use Mpicomm
       use General, only: safe_character_assign
 !
       logical,save :: first=.true.
@@ -111,7 +113,6 @@ module Print
 !
 !  if the line contains unreadible characters, then comment out line
 !
-!  TY: changed .or. to +. Could not compile with NAG f95 with .or.
         index_a=(index(line,'***') +  index(line,'???'))
         if (index_a > 0) then
           line(1:1)='#'
@@ -127,6 +128,14 @@ module Print
         write(6,'(a)') trim(line)
         close(1)
 !
+      endif
+!
+!  calculate brms (this requires that brms is set in print.in)
+!  broadcast result to other processors
+!
+      if (i_brms/=0) then
+        if (iproc==0) brms=fname(i_brms)
+        call mpibcast_real(brms,1)
       endif
 !
       if(ldebug) print*,'exit prints'

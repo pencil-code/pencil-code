@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.118 2003-08-04 17:56:02 mee Exp $
+! $Id: magnetic.f90,v 1.119 2003-08-06 07:31:14 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -12,7 +12,6 @@ module Magnetic
   implicit none
 
   character (len=labellen) :: initaa='zero',initaa2='zero'
-
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
@@ -23,7 +22,8 @@ module Magnetic
   real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
-  real :: bthresh=0.
+  real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
+  integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
 
@@ -43,7 +43,7 @@ module Magnetic
        eta,B_ext, &
        height_eta,eta_out,tau_aa_exterior, &
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
-       bthresh
+       bthresh,bthresh_per_brms
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -88,7 +88,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.118 2003-08-04 17:56:02 mee Exp $")
+           "$Id: magnetic.f90,v 1.119 2003-08-06 07:31:14 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -150,6 +150,7 @@ module Magnetic
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
+      case('halfcos-Bx'); call halfcos_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
       case('uniform-Bz'); call uniform_z(amplaa,f,iaa,xx,yy,zz)
@@ -236,7 +237,7 @@ module Magnetic
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
-      integer :: j,nbthresh
+      integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij
 !
@@ -304,7 +305,8 @@ module Magnetic
             if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
-          call vecout(41,trim(directory_snap)//'/bvec.dat',bb,bthresh,nbthresh)
+          if(bthresh_per_brms/=0) call calc_bthresh
+          call vecout(41,trim(directory_snap)//'/bvec',bb,bthresh,nbvec)
         endif
 !
 !  possibility to add external field
@@ -452,6 +454,38 @@ module Magnetic
       endif
 !     
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine calc_bthresh()
+!
+!  calculate bthresh from brms, give warnings if there are problems
+!
+!   6-aug-03/axel: coded
+!
+      use Cdata
+!
+!  give warning if brms is not set in prints.in
+!
+      if(i_brms==0) then
+        if(lroot.and.lfirstpoint) then
+          print*,'magnetic: need to set brms in print.in to get bthresh'
+        endif
+      endif
+!
+!  if nvec exceeds nbvecmax (=1/4) of points per processor, then begin to
+!  increase scaling factor on bthresh. These settings will stay in place
+!  until the next restart
+!
+      if(nbvec>nbvecmax.and.lfirstpoint) then
+        print*,'calc_bthresh: processor ',iproc,': bthresh_scl,nbvec,nbvecmax=', &
+                                                   bthresh_scl,nbvec,nbvecmax
+        bthresh_scl=bthresh_scl*1.2
+      endif
+!
+!  calculate bthresh as a certain fraction of brms
+!
+      bthresh=bthresh_scl*bthresh_per_brms*brms
+!
+    endsubroutine calc_bthresh
 !***********************************************************************
     subroutine calc_tau_aa_exterior(f,df)
 !

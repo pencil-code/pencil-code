@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.68 2003-08-05 03:53:29 brandenb Exp $ 
+! $Id: initcond.f90,v 1.69 2003-08-06 07:31:14 brandenb Exp $ 
 
 module Initcond 
  
@@ -922,6 +922,34 @@ module Initcond
 !
       if (ip==1) print*,xx,yy
     endsubroutine hfluxlayer
+!***********************************************************************
+    subroutine halfcos_x(ampl,f,i,xx,yy,zz)
+!
+!  Uniform B_x field (for vector potential)
+!
+!  19-jun-02/axel: coded
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl,kz,zbot,ztop
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        print*,'uniform x-field ; i=',i
+        kz=0.5*pi/Lz
+        zbot=xyz0(3)
+        ztop=xyz0(3)+Lxyz(3)
+        if ((ip<=16).and.lroot) print*,'ampl,kz=',ampl,kz
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=-ampl*sin(kz*(zz-zbot))
+        f(:,:,:,i+2)=0.
+      endif
+!
+      if (ip==1) print*,xx,yy
+    endsubroutine halfcos_x
 !***********************************************************************
     subroutine uniform_x(ampl,f,i,xx,yy,zz)
 !
