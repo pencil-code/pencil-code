@@ -1,10 +1,10 @@
-! $Id: io_dist.f90,v 1.39 2002-10-02 17:29:20 dobler Exp $
+! $Id: io_dist.f90,v 1.40 2002-10-02 20:11:14 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!
 
-!!!  Distributed IO (i.e. each process writes its own file tmp/procX)
+!!!  Distributed IO (i.e. each process writes its own file data/procX)
 !!!  07-Nov-2001/wd: Put into separate module, so one can choose
 !!!  alternative IO mechanism.
 
@@ -81,20 +81,13 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.39 2002-10-02 17:29:20 dobler Exp $")
-!
-!  initialize datadir and directory_snap (where var.dat and VAR# go)
-!  -- may be overwritten in *.in parameter file
-!
-      datadir = 'tmp'
-      directory_snap = ''
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.40 2002-10-02 20:11:14 dobler Exp $")
 !
     endsubroutine register_io
 !***********************************************************************
     subroutine directory_names()
 !
 !  Set up the directory names:
-!  initialize datadir to `data' (would have been `tmp' with older runs)
 !  set directory name for the output (one subdirectory for each processor)
 !  if  datadir_snap (where var.dat, VAR# go) is empty, initialize to datadir
 !

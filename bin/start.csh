@@ -16,21 +16,22 @@ endif
 source getconf.csh
 
 #
-#  If we don't have a tmp subdirectory: stop here (it is too easy to
+#  If we don't have a data subdirectory: stop here (it is too easy to
 #  continue with an NFS directory until you fill everything up).
 #
-if (! -d tmp) then
+if (! -d "$datadir") then
   echo ""
-  echo ">>  STOPPING: need tmp directory"
-  echo ">>  Recommended: create tmp as link to directory on a fast scratch disk"
-  echo ">>  Not recommended: you can generate tmp with 'mkdir tmp', but that"
-  echo ">>  will most likely end up on your NFS file system and be slow"
+  echo ">>  STOPPING: need $datadir directory"
+  echo ">>  Recommended: create $datadir as link to directory on a fast scratch"
+  echo ">>  Not recommended: you can generate $datadir with 'mkdir $datadir', "
+  echo ">>  but that will most likely end up on your NFS file system and be"
+  echo ">>  slow"
   echo
   exit 0
 endif
 
 # Create list of subdirectories
-set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"tmp/proc";' 'i; }' | bc`
+set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"data/proc";' 'i; }' | bc`
 foreach dir ($subdirs)
   # Make sure a sufficient number of subdirectories exist
   if (! -e $dir) then
@@ -43,8 +44,8 @@ foreach dir ($subdirs)
     rm -f $dir/*.xy $dir/*.xz >& /dev/null
   endif
 end
-if (-e tmp/n.dat && ! -z tmp/n.dat) mv tmp/n.dat tmp/n.`timestr`
-rm -f tmp/*.dat tmp/*.nml tmp/param*.pro tmp/index*.pro >& /dev/null
+if (-e $datadir/n.dat && ! -z $datadir/n.dat) mv $datadir/n.dat $datadir/n.`timestr`
+rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
 # Run start.x
 date

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.93 2002-10-02 16:08:29 dobler Exp $
+! $Id: run.f90,v 1.94 2002-10-02 20:11:14 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,18 +48,18 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.93 2002-10-02 16:08:29 dobler Exp $")
+             "$Id: run.f90,v 1.94 2002-10-02 20:11:14 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
 !
         ix=1+(mx-1)/2; iy=1+(my-1)/2; iz=1+(mz-1)/2
-!        dtmin=1e-6  !!(AB: this should be an input parameter, better dimless)
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
 !
         call rparam()
+print*,'RUN: datadir=',datadir
 !
 !  derived parameters (that may still be overwritten)
 !  [might better be put into another routine, possibly even in rparam or
@@ -79,6 +79,7 @@
 !  set up directory names `directory' and `directory_snap'
 !
       call directory_names()
+!
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.98 2002-10-01 16:02:44 brandenb Exp $
+! $Id: equ.f90,v 1.99 2002-10-02 20:11:14 dobler Exp $
 
 module Equ
 
@@ -156,7 +156,7 @@ module Equ
 !
 !  Output vid-data in 'tvid' time intervals
 !
-      file='tmp/tvid.dat'
+      file=trim(datadir)//'/tvid.dat'
       if (ifirst==0) then
         open(41,file=chdir//'/divu.xy',form='unformatted')
         open(42,file=chdir//'/ux.xy',form='unformatted')
@@ -227,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.98 2002-10-01 16:02:44 brandenb Exp $")
+           "$Id: equ.f90,v 1.99 2002-10-02 20:11:14 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !

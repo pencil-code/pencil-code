@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.18 2002-09-27 07:42:17 dobler Exp $
+# CVS: $Id: auto-test,v 1.19 2002-10-02 20:11:15 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -62,7 +62,7 @@ my $usage =
   Test compilation and results on a set of sample directories to
   validate the pencil code. Uses Perl because we need to do pattern matching
   to extract the relevant output lines.
-    If you don't have a tmp directory, $cmdname creates a link to
+    If you don't have a data directory, $cmdname creates a link to
   $tmpdir -- both link and directory are removed after each run.
 Options:
   -h,  --help           \tShow usage overview
@@ -84,7 +84,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.18 2002-09-27 07:42:17 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.19 2002-10-02 20:11:15 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
@@ -305,7 +305,7 @@ sub compare_results {
 sub test_rundir {
 # Test compilation, starting, running and results
     my $dir = shift;
-    my $created_tmp = 0;
+    my $created_datadir = 0;
 
     $test_status = 0;		#  so far, everything is OK
 
@@ -330,21 +330,21 @@ sub test_rundir {
     test_compile($dir);
     return if ($test_status);
 
-    # Ensure we have a tmp directory and test starting and running
-    return unless ($t_start);	# no need for a tmp directory unless we start
+    # Ensure we have a data directory and test starting and running
+    return unless ($t_start);	# no need for a data directory unless we start
 				# the code
-    if (! -d 'tmp') {
-	if (-l 'tmp') {
-	    print "        tmp is file or empty link;\n"
-		. "        removing and generating tmp -> $tmpdir\n";
-	    system("rm", "tmp");
+    if (! -d 'data') {
+	if (-l 'data') {
+	    print "        data is file or empty link;\n"
+		. "        removing and generating data -> $tmpdir\n";
+	    system("rm", "data");
 	}
 	else
 	{
-	    print "        No tmp directory; generating tmp -> $tmpdir\n";
+	    print "        No data directory; generating data -> $tmpdir\n";
 	}
-	system("mkdir -p $tmpdir; ln -s $tmpdir tmp");
-	$created_tmp = 1;
+	system("mkdir -p $tmpdir; ln -s $tmpdir data");
+	$created_datadir = 1;
     }
     test_start($dir);
     goto cleanup if ($test_status);
@@ -357,8 +357,8 @@ sub test_rundir {
 
     # Clean up if necessary
   cleanup:
-    if ($created_tmp) {
-	system("rm", "tmp");
+    if ($created_datadir) {
+	system("rm", "data");
 	system("rm", "-r", "$tmpdir");
     }
 }

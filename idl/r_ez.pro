@@ -1,4 +1,4 @@
-;  $Id: r_ez.pro,v 1.6 2002-08-21 03:33:22 brandenb Exp $
+;  $Id: r_ez.pro,v 1.7 2002-10-02 20:11:14 dobler Exp $
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
 ;  which can sometimes fail (if the perl script fails,
@@ -16,12 +16,12 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @zder2_6th_ghost
 ;
 mx=1 & my=1 & mz=1 & nvar=1
-openr,1,'tmp/dim.dat'
+openr,1,datatopdir+'/dim.dat'
 readf,1,mx,my,mz,mvar
 close,1
 print,mx,my,mz,mvar
 ;
-dir='tmp/proc0/'
+dir=datatopdir+'/proc0/'
 file='var.dat'
 f=fltarr(mx,my,mz,mvar)
 x=fltarr(mx)
@@ -33,7 +33,7 @@ readu,1,t,x,y,z,dx,dy,dz,deltay
 close,1
 print,'t=',t
  
-@tmp/index
+@data/index
 
 ;  calculate bb
 if iax ne 0 then bb=curl(f(*,*,*,iax-1:iaz-1))

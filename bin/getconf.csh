@@ -64,7 +64,6 @@ if ($mpi) then
   # Determine number of CPUS
   set ncpus = `perl -ne '$_ =~ /^\s*integer\b[^\\!]*ncpus\s*=\s*([0-9]*)/i && print $1' src/cparam.local`
   echo $ncpus CPUs
-  # Number of processors
   set npops = "-np $ncpus"
 else # no MPI
   echo "Non-MPI version"
@@ -73,5 +72,15 @@ else # no MPI
   set npops = ''
   set ncpus = 1
 endif
-  
+
+# Determine data directory (defaults to `data')
+if (-r datadir.in) then
+  set datadir = `cat datadir.in | sed 's/ *\([^ ]*\).*/\1/'`
+else
+  set datadir = "data"
+endif
+
+echo "datadir = $datadir"
+exit
+
 # End of file getconf.csh

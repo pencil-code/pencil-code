@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.20 2002-09-11 17:10:25 brandenb Exp $
+;;;  $Id: rall.pro,v 1.21 2002-10-02 20:11:14 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -33,7 +33,7 @@ pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Generating and reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m '+datatopdir+'/param2.nml > '+datatopdir+'/param2.pro'
   resolve_routine, 'param2', /IS_FUNCTION
   par2=param2()
   if (lhydro) then begin
@@ -80,7 +80,7 @@ nzloc=mzloc-2*nghostz
 ;
 ;  read data
 ;
-default, dataopdir, 'tmp'
+default, dataopdir, 'data'
 default, file, 'var.dat'
 ;
 x = fltarr(mx) & y = fltarr(my) & z = fltarr(mz)

@@ -5,14 +5,14 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.38 2002-08-18 13:16:11 brandenb Exp $
+;;; $Id: start.pro,v 1.39 2002-10-02 20:11:14 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
 ; compiled below
   message, $
-      "This dummy  function should never be called" $
-      + "-- make sure you have `tmp' in your !path ."
+      "This dummy  function should never be called" $
+      + "-- make sure you have `data' in your !path ."
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
@@ -31,7 +31,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @lenstr
 ;
 default, proc, 0
-default, datatopdir, 'tmp'
+default, datatopdir, 'data'
 default, file, 'var.dat'
 datadir=datatopdir+'/proc'+str(proc)
 ;
@@ -63,7 +63,7 @@ zero = 0*one
 ;
 ;  the following files contain the positions of variables in f
 ;
-@tmp/index
+@data/index
 print,'nname=',nname
 ;
 ;  Read grid
@@ -100,11 +100,11 @@ nz=mz-2*nghostz
 ;
 ;  Read startup parameters
 ;
-pfile=datatopdir+'/'+'param.nml'
+pfile=datatopdir+'/param.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param -m tmp/param.nml > tmp/param.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param -m '+datatopdir+'/param.nml > '+datatopdir+'/param.pro'
   resolve_routine, 'param', /IS_FUNCTION
   par=param()
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]

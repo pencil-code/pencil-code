@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.67 2002-10-02 15:49:57 dobler Exp $
+! $Id: start.f90,v 1.68 2002-10-02 20:11:14 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.67 2002-10-02 15:49:57 dobler Exp $")
+             "$Id: start.f90,v 1.68 2002-10-02 20:11:14 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -129,9 +129,9 @@
         endif
         call wdim(trim(directory)//'/dim.dat')
 !
-!  also write full dimensions to tmp/ :
+!  also write full dimensions to data/ :
 !
-        if (lroot) call wdim('tmp/dim.dat', &
+        if (lroot) call wdim(trim(datadir)//'/dim.dat', &
              nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
 !
 !  write global variables:

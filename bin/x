@@ -3,8 +3,8 @@
 #  last few lines of the n.dat file.
 #
 echo ""
-cat tmp/legend.dat
-tail tmp/n.dat
+cat data/legend.dat
+tail data/n.dat
 #
 #  This script also appends the last line of
 #  the n.dat file at this moment to the SPEED file.
@@ -12,4 +12,4 @@ tail tmp/n.dat
 #  among other things, to assess easily the speed
 #   of the simulation.
 #
-(date;cat tmp/proc0/alive.info;tail -1 tmp/n.dat;echo "") >>SPEED
+(date;cat data/proc0/alive.info;tail -1 data/n.dat;echo "") >>SPEED

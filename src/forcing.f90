@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.30 2002-09-26 16:21:25 brandenb Exp $
+! $Id: forcing.f90,v 1.31 2002-10-02 20:11:14 dobler Exp $
 
 module Forcing
 
@@ -46,7 +46,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.30 2002-09-26 16:21:25 brandenb Exp $")
+           "$Id: forcing.f90,v 1.31 2002-10-02 20:11:14 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -913,7 +913,7 @@ module Forcing
 !
 !  the last forcing time is recorded in tforce.dat
 !
-      file='tmp/tforce.dat'
+      file=trim(datadir)//'/tforce.dat'
       if (ifirst==0) then
         call out1 (trim(file),tforce,nforce,dforce,t)
         ifirst=1

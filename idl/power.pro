@@ -5,15 +5,14 @@ default,file1,'poweru.dat'
 !p.multi=[0,1,1]
 !p.charsize=2
 
-datadir='tmp'
 mx=0L & my=0L & mz=0L & nvar=0L
 prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
-;  Reading number of grid points from 'tmp/dim.dat'
+;  Reading number of grid points from 'data/dim.dat'
 ;
 close,1
-openr,1,datadir+'/'+'dim.dat'
+openr,1,datatopdir+'/'+'dim.dat'
 readf,1,mx,my,mz,nvar
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.61 2002-10-02 16:37:52 dobler Exp $ 
+! $Id: param_io.f90,v 1.62 2002-10-02 20:11:14 dobler Exp $ 
 
 module Param_IO
 
@@ -33,18 +33,40 @@ module Param_IO
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
-       datadir,directory_snap,random_gen
+       directory_snap,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,dspect,tmax,iwig,awig,ialive, &
        vel_spec,mag_spec,vec_spec, &
-       datadir,directory_snap,random_gen, &
+       directory_snap,random_gen, &
        lrmwig_full,lrmwig_xyaverage, &
        bcx,bcy,bcz, &
        ttransient
  
   contains
 
+!***********************************************************************
+    subroutine get_datadir(dir)
+!
+!  read datadir from file, or set default value
+!
+!   2-oct-02/wolf: coded
+!
+      character (len=*) :: dir
+      logical :: exist
+!
+      dir = 'data'              ! default
+!
+!  check for existence of datadir.in
+!
+      inquire(FILE='datadir.in',EXIST=exist)
+      if (exist) then
+        open(1,FILE='datadir.in',FORM='formatted')
+        read(1,*) dir
+        close(1)
+      endif
+!
+    endsubroutine get_datadir
 !***********************************************************************
     subroutine read_inipars()
 !
@@ -325,7 +347,7 @@ module Param_IO
            lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lradiation,lpscalar,lforcing,lshear
 !
       if (lroot) then
-        open(1,FILE='tmp/param.nml',DELIM='apostrophe' )
+        open(1,FILE=trim(datadir)//'/param.nml',DELIM='apostrophe' )
                         write(1,NML=init_pars          )
         if (lhydro    ) write(1,NML=hydro_init_pars    )
         if (ldensity  ) write(1,NML=density_init_pars  )
@@ -352,7 +374,7 @@ module Param_IO
 !
       use Cdata
 !
-        open(1,FILE='tmp/param.nml')
+        open(1,FILE=trim(datadir)//'/param.nml')
                         read(1,NML=init_pars          )
         if (lhydro    ) read(1,NML=hydro_init_pars    )
         if (ldensity  ) read(1,NML=density_init_pars  )
@@ -378,7 +400,7 @@ module Param_IO
       use Cdata
 !
       if (lroot) then
-        open(1,FILE='tmp/param2.nml',DELIM='apostrophe')
+        open(1,FILE=trim(datadir)//'/param2.nml',DELIM='apostrophe')
                         write(1,NML=run_pars          )
         if (lhydro    ) write(1,NML=hydro_run_pars    )
         if (ldensity  ) write(1,NML=density_run_pars  )

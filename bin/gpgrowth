@@ -31,10 +31,10 @@ exec $perl -x -S $0 "$@"        # -x: start from the following line
 use strict;
 use Getopt::Long;
 
-my @ts_files = qw( tmp/n.dat run.out run.log mhd.out mhd.log );
+my @ts_files = qw( data/n.dat run.out run.log mhd.out mhd.log );
 my $ts_file;
-my $tmpfile = 'tmp/growth.tmp';
-my $gpscript = 'tmp/gplot.tmp';
+my $tmpfile = 'data/growth.tmp';
+my $gpscript = 'data/gplot.tmp';
 #my $numeral = '(?:[+-]?[0-9]*\.?[0-9]\.?[0-9]*(?:[EeDd][+-]?[0-9]+)?)';
 my ($rows,$cols) = get_tty_rc(); # get terminal size
 $rows--;

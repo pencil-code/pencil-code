@@ -1,10 +1,10 @@
-! $Id: wsnaps.f90,v 1.8 2002-09-21 16:35:50 dobler Exp $
+! $Id: wsnaps.f90,v 1.9 2002-10-02 20:11:14 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!
 
-!!!  Distributed IO (i.e. each process writes its own file tmp/procX)
+!!!  Distributed IO (i.e. each process writes its own file data/procX)
 !!!  07-Nov-2001/wd: Put into separate module, so one can choose
 !!!  alternative IO mechanism.
 
@@ -40,7 +40,7 @@ contains
 !  file keeps the information about number and time of last snapshot
 !
       if (llabel) then
-        file='tmp/tsnap.dat'
+        file=trim(datadir)//'/tsnap.dat'
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in out1, but only available to root processor

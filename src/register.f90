@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.47 2002-09-21 14:05:53 dobler Exp $
+! $Id: register.f90,v 1.48 2002-10-02 20:11:14 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -23,6 +23,7 @@ module Register
       use Mpicomm
       use Sub
       use IO
+      use Param_io
       use Gravity
       use Hydro
       use Forcing
@@ -60,6 +61,10 @@ module Register
 !  initialize headt for root processor only
 !
       if (lroot) headt=.true.
+!
+!  read or set datadir
+!
+      call get_datadir(datadir)
 !
     endsubroutine initialize
 !***********************************************************************
@@ -117,9 +122,9 @@ module Register
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in
-!  the f-array and the n.dat files are written to tmp/index.pro
+!  the f-array and the n.dat files are written to data/index.pro
 !
-      open(3,file='tmp/index.pro')
+      open(3,file=trim(datadir)//'/index.pro')
       call rprint_general(lreset)
       call rprint_hydro(lreset)
       call rprint_density(lreset)

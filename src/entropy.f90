@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.126 2002-10-02 06:45:17 brandenb Exp $
+! $Id: entropy.f90,v 1.127 2002-10-02 20:11:14 dobler Exp $
 
 module Entropy
 
@@ -68,7 +68,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.126 2002-10-02 06:45:17 brandenb Exp $")
+           "$Id: entropy.f90,v 1.127 2002-10-02 20:11:14 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -901,7 +901,7 @@ endif
         rho_xy=exp(f(:,:,n1,ilnrho))
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,ient))
 !
-!  chech whether we have chi=constant at bottom, in which case
+!  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
 !
         if(lcalc_heatcond_constchi) then

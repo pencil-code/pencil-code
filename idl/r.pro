@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.36 2002-09-19 07:36:53 brandenb Exp $
+; $Id: r.pro,v 1.37 2002-10-02 20:11:14 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.36 2002-09-19 07:36:53 brandenb Exp $
+;;; $Id: r.pro,v 1.37 2002-10-02 20:11:14 dobler Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -21,7 +21,7 @@ if ((n_elements(started) le 0) or (n_elements(read_all) gt 0)) then begin
 endif
 undefine, read_all
 ;
-default, datadir, 'tmp'
+default, datadir, 'data'
 default, file, 'var.dat'
 ;
 if (lhydro)     then uu    = fltarr(mx,my,mz,3)*one
@@ -38,7 +38,7 @@ pfile=datatopdir+'/'+'param2.nml'
 dummy=findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Generating and reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m tmp/param2.nml > tmp/param2.pro'
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m '+datatopdir+'/param2.nml > '+datatopdir+'/param2.pro'
   resolve_routine, 'param2', /IS_FUNCTION
   par2=param2()
   if (lhydro) then begin

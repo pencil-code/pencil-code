@@ -1,14 +1,14 @@
-; $Id: rslice_xy.pro,v 1.2 2002-08-21 03:33:22 brandenb Exp $
+; $Id: rslice_xy.pro,v 1.3 2002-10-02 20:11:14 dobler Exp $
 ;
 ;  reads xy slices
 ;  this routine is not very general yet and needs to be adjusted
 ;  before it can be general purpose.
 ;
-file_slice='tmp/proc0/uz.xy'
-file_slice='tmp/proc0/bx.xy'
-file_slice='tmp/proc0/divu.xy'
-file_slice='tmp/proc0/lnrho.xy'
-file_slice='tmp/proc0/ux.xy'
+file_slice=datatopdir+'/proc0/uz.xy'
+file_slice=datatopdir+'/proc0/bx.xy'
+file_slice=datatopdir+'/proc0/divu.xy'
+file_slice=datatopdir+'/proc0/lnrho.xy'
+file_slice=datatopdir+'/proc0/ux.xy'
 ;
 t=0.
 xy_slice=fltarr(nx,ny)

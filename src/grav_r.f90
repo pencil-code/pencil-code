@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.28 2002-09-24 14:22:51 brandenb Exp $
+! $Id: grav_r.f90,v 1.29 2002-10-02 20:11:14 dobler Exp $
 
 module Gravity
 
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.28 2002-09-24 14:22:51 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.29 2002-10-02 20:11:14 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -201,7 +201,7 @@ else
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
 endif
 !
-if (headtt) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
+if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
       if(ip==0) print*,f  !(to keep compiler quiet)
     endsubroutine duu_dt_grav

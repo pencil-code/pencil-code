@@ -1,13 +1,13 @@
 pro rslice_xy_all,file,plane
 ;
-; $Id: rslice_xy_all.pro,v 1.2 2002-08-23 07:15:21 nilshau Exp $
+; $Id: rslice_xy_all.pro,v 1.3 2002-10-02 20:11:14 dobler Exp $
 ;
 ; This program reads video snapshots from all the processors
 ; in the xy or xz plane.
 ;
 ;
 dummy=''
-datatopdir='tmp'
+;datatopdir='data'
 close,1
 openr,1,datatopdir+'/'+'dim.dat'
 readf,1,dummy
@@ -18,7 +18,7 @@ close,1
 ;
 ; Assuming same size on every processor
 ;
-datadir='tmp/proc0'
+datadir=datatopdir+'/proc0'
 close,1
 openr,1,datadir+'/dim.dat'
 readf,1, nnx,nny,nnz,nna
@@ -52,8 +52,8 @@ slice_glob=fltarr(nx,grid*nprocgrid)
 for i=1,nprocgrid do begin
   j=fix((i-1)*deltaproc)
   close,i
-  print,'Reading tmp/proc'+str(j)+'/'+file
-  openr,i,'tmp/proc'+str(j)+'/'+file,/f77
+  print,'Reading data/proc'+str(j)+'/'+file
+  openr,i,datatopdir+'/proc'+str(j)+'/'+file,/f77
 end
 ;
 while not eof(1) do begin

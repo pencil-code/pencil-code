@@ -1,4 +1,4 @@
-; $Id: rzaver.pro,v 1.2 2002-08-11 04:00:11 brandenb Exp $
+; $Id: rzaver.pro,v 1.3 2002-10-02 20:11:14 dobler Exp $
 ;
 ;  reads the zaver.dat file
 ;
@@ -6,7 +6,7 @@ t=0.
 bmxy=fltarr(nx,ny*nprocy,nnamexy)
 ;
 close,1
-openr,1,'tmp/zaverages.dat'
+openr,1,datatopdir+'/zaverages.dat'
 ;
 fo='(8e10.3)'
 default,w,.1

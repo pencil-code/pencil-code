@@ -18,7 +18,7 @@ if ($hn =~ s[0-9]*p[0-9]*) then
   set nodelist = `cat $PBS_NODEFILE`
   set i=0
   foreach node ($nodelist)
-    rcp tmp/proc$i/var.dat ${node}:/scratch
+    rcp $datadir/proc$i/var.dat ${node}:/scratch
     set i=`expr $i + 1`
     echo 'i=' $i
   end

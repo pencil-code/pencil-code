@@ -24,7 +24,7 @@ if ($#argv > 0) then
 endif
 
 set srcdir = /scratch
-set targetdir = $PBS_O_WORKDIR/tmp
+set targetdir = $PBS_O_WORKDIR/data
 set nodelist = `cat $PBS_NODEFILE`
 
 if ($debug) then

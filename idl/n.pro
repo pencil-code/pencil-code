@@ -1,12 +1,12 @@
-;  $Id: n.pro,v 1.22 2002-08-21 03:33:22 brandenb Exp $
+;  $Id: n.pro,v 1.23 2002-10-02 20:11:14 dobler Exp $
 ;
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
 ;
-@tmp/index
+@data/index
 print,'nname=',nname
 ;
-filen='tmp/n.dat'
+filen=datatopdir+'/n.dat'
 ;a=rtable(filen,nname)
 a=input_table(filen)
 if defined(i_t) ne 0 then tt=reform(a(i_t-1,*))

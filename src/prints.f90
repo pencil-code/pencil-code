@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.29 2002-08-19 06:48:46 brandenb Exp $
+! $Id: prints.f90,v 1.30 2002-10-02 20:11:14 dobler Exp $
 
 module Print
 
@@ -65,7 +65,7 @@ module Print
 !  (might want to do only once after each lreset)
 !
         if(first) then
-          open(1,file='tmp/legend.dat')
+          open(1,file=trim(datadir)//'/legend.dat')
           write(1,'(" ",A)') trim(legend)
           close(1)
         endif
@@ -88,7 +88,7 @@ module Print
 !
 !  append to diagnostics file
 !
-        open(1,file='tmp/n.dat',position='append')
+        open(1,file=trim(datadir)//'/n.dat',position='append')
         if(first) write(1,'("#",A)') trim(legend)
         !write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
@@ -112,7 +112,7 @@ module Print
       logical,save :: first=.true.
 !
       if(lroot.and.nnamez>0) then
-        open(1,file='tmp/xyaverages.dat',position='append')
+        open(1,file=trim(datadir)//'/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
         write(1,'(1p,8e10.3)') fnamez(:,:,1:nnamez)
         close(1)
@@ -131,7 +131,7 @@ module Print
       logical,save :: first=.true.
 !
       if(lroot.and.nnamexy>0) then
-        open(1,file='tmp/zaverages.dat',position='append')
+        open(1,file=trim(datadir)//'/zaverages.dat',position='append')
         write(1,'(1pe12.5)') t
         write(1,'(1p,8e10.3)') fnamexy(:,:,:,1:nnamexy)
         close(1)
