@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.55 2003-11-17 19:19:39 brandenb Exp $
+! $Id: grav_r.f90,v 1.56 2003-11-18 10:55:24 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -30,7 +30,7 @@ module Gravity
   real :: nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
-  real :: g0
+  real :: g0=0.
 
   character (len=labellen) :: ipotential='zero'
 
@@ -65,7 +65,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.55 2003-11-17 19:19:39 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.56 2003-11-18 10:55:24 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -90,7 +90,8 @@ module Gravity
 !
       real, dimension (nx,3) :: evr,gg_mn
       real, dimension (nx) :: g_r
-      real :: g_int,g_ext
+      real :: r0pot
+      integer, parameter :: npot=10  !(exponent for smoothed potential)
 
       logical, save :: first=.true.
 ! geodynamo - set to false on condition of 1/r potential
@@ -143,8 +144,7 @@ module Gravity
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: 1/r potential in spherical shell'
           lpade=.false.
-          g_int = g0/r_int**2
-          g_ext = g0/r_ext**2
+          r0pot=.5*r_int  !(reasonable value)
 ! end geodynamo
 
         case default
@@ -185,11 +185,9 @@ module Gravity
                                   cpot(3)**2  /), r_mn) &
                        / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
 
-! geodynamo; 1/r potential in a spherical shell
+! geodynamo; smoothed 1/r potential in a spherical shell
         else
-          where (r_mn >= r_ext) g_r=-g_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) g_r=-g0/r_mn**2
-          where (r_mn <= r_int) g_r=-g_int
+          g_r=-g0*r_mn**(npot-1)*(r_mn**npot+r0pot**npot)**(-1./float(npot)-1.)
 ! end geodynamo
         endif
 !
