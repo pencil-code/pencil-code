@@ -1,5 +1,17 @@
 PRO power,file1,file2,last,k=k,spec1=spec1,spec2=spec2,i=i
-
+;
+;  $Id: power.pro,v 1.5 2002-10-05 06:35:35 brandenb Exp $
+;  24-sep-02/nils: coded
+;   5-oct-02/axel: comments added
+;
+;  This routine reads in the power spectra generated during the run
+;  (provided dspec is set to a time interval small enough to produce
+;  enough spectra.) The time of the snapshot is not currently written.
+;  By default, spec1 is kinetic energy and spec2 magnetic energy.
+;  The routine plots the spectra for the last time saved in the file.
+;  All times are stored in the arrays spec1 and spec2.
+;  The index of the first time is 1, and of the last time it is i-2.
+;
 default,file1,'poweru.dat'
 default,file2,'powerb.dat'
 default,last,1
@@ -12,6 +24,8 @@ prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
 ;  Reading number of grid points from 'data/dim.dat'
+;  Need both mx and nghostx to work out nx.
+;  Assume nx=ny=nz
 ;
 datatopdir='data'
 close,1
@@ -56,7 +70,7 @@ if (file2 ne '') then begin
   spec2=fltarr(imax,i-1)
 endif
 ;
-;  Plotting the results
+;  Plotting the results for last time frame
 ;
 i=1 
 openr,1, datatopdir+'/'+file1
@@ -84,7 +98,5 @@ openr,1, datatopdir+'/'+file1
     endif
     close,1
 close,2
-
-
 
 END
