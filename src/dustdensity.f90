@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.86 2004-05-18 09:59:18 ajohan Exp $
+! $Id: dustdensity.f90,v 1.87 2004-05-19 11:07:12 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.86 2004-05-18 09:59:18 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.87 2004-05-19 11:07:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -496,7 +496,7 @@ module Dustdensity
             ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
           elseif (i_targ == 0) then        !  Underflow below lower boundary
             f(3+l,m,n,ilncc) = alog(exp(f(3+l,m,n,ilncc)) + &
-                 nd(l,k)*md(k)*unit_md*exp(-f(l,m,n,ilnrho)))
+                 nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho)))
           endif
         enddo
         f(3+l,m,n,ind(:)) = ndnew(:)
