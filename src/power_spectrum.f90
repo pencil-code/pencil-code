@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -390,9 +390,10 @@ module  power_spectrum
 !  one could in principle reuse the df array for memory purposes.
 !
   integer, parameter :: nk=nx/2
-  integer :: i,im,in,ivec
+  integer :: i,im,in,ivec,ikx,iky,ikz
+  integer :: kxx,kyy,kzz
   real, dimension (mx,my,mz,mvar+maux) :: f
-  real, dimension(nx,ny,nz) :: a1,b1
+  real, dimension(nx,ny,nz) :: a1,b1,a2
   real, dimension(nx) :: bb
   real, dimension(nk) :: spectrumx=0.,spectrumx_sum=0
   real, dimension(nk) :: spectrumy=0.,spectrumy_sum=0
@@ -403,11 +404,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.36 2003-09-10 14:01:50 nilshau Exp $")
-  !
-  spectrumx=0
-  spectrumy=0
-  spectrumz=0
+       "$Id: power_spectrum.f90,v 1.37 2003-09-12 06:43:54 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -429,26 +426,72 @@ module  power_spectrum
      print*,'There are no such sp=',sp
   endif
   b1=0
+  a2=a1
   !
   !  Doing the Fourier transform
   !
   call transform_fftpack_1d(a1,b1)
-  if (onedall) call transform_fftpack(a1,b1)
+  !if (onedall) call transform_fftpack(a1,b1)
   !
   !    Stopping the run if FFT=nofft
   !
   if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
   !
-  !  integration over shells
+  ! Spectra in x-direction
   !
   if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
-  do m=1,ny
-     do n=1,nz
-        spectrumx=spectrumx+a1(1:nx/2,m,n)**2+b1(1:nx/2,m,n)**2
-        if (onedall) spectrumy=spectrumy+a1(m,1:nx/2,n)**2+b1(m,1:nx/2,n)**2
-        if (onedall) spectrumz=spectrumz+a1(m,n,1:nx/2)**2+b1(m,n,1:nx/2)**2
-     enddo
+  do ikz=1,nz
+  do iky=1,ny
+  do ikx=1,nk
+    kxx=ikx-1
+  !  if (kxx<=(nk-1)) then
+      spectrumx(kxx+1)=spectrumx(kxx+1) &
+           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+   ! endif
   enddo
+  enddo
+  enddo
+  !
+  ! Doing fourier spectra in all directions if onedall=T
+  !
+  if (onedall) then
+    !
+    ! Spectra in y-direction
+    !
+    a1=a2
+    b1=0
+    call transp(a1,'y')
+    call transform_fftpack_1d(a1,b1)
+    do ikz=1,nz
+    do iky=1,ny
+    do ikx=1,nk
+      kxx=ikx-1
+ !     if (kxx<=(nk-1)) then
+      spectrumy(kxx+1)=spectrumy(kxx+1) &
+           +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+ !   endif
+    enddo
+    enddo
+    enddo  
+    !
+    ! Spectra in z-direction
+    !
+    a1=a2
+    b1=0
+    call transp(a1,'z')
+    call transform_fftpack_1d(a1,b1)
+    do ikz=1,nz
+    do iky=1,ny
+    do ikx=1,nk
+      kxx=ikx-1
+!      if (kxx<=(nk-1)) then
+        spectrumz(kxx+1)=spectrumz(kxx+1) &
+             +a1(ikx,iky,ikz)**2+b1(ikx,iky,ikz)**2
+!      endif
+    enddo
+    enddo
+    enddo
+  endif
   !
   !  Summing up the results from the different processors
   !  The result is available only on root
