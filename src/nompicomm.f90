@@ -220,27 +220,6 @@ module Mpicomm
 !
     endsubroutine radboundary_zx_periodic_ray
 !***********************************************************************
-    subroutine radboundary_xy_periodic_ray(nrad, &
-                                           Qrad_send_xy,tau_send_xy, &
-                                           Qrad0_xy,tau0_xy, &
-                                           Qrad_tot_xy,tau_tot_xy)
-!
-!  6-nov-03/tobi: dummy created
-!
-      integer, intent(in) :: nrad
-      real, dimension(nx,ny), intent(in) :: Qrad_send_xy,tau_send_xy
-      real, dimension(nx,ny), intent(out) :: Qrad0_xy,tau0_xy
-      real, dimension(nx,ny), intent(out) :: Qrad_tot_xy,tau_tot_xy
-!
-      if (ip==0) then
-         print*,nrad
-         print*,Qrad_send_xy(1,1),tau_send_xy(1,1)
-         Qrad0_xy=0; tau0_xy=0
-         Qrad_tot_xy=0; tau_tot_xy=0
-      endif
-!
-    endsubroutine radboundary_xy_periodic_ray
-!***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !
       integer :: nbcast_array
