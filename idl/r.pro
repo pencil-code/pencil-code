@@ -9,7 +9,7 @@
 ;
 ;  read data
 ;
-if (n_elements(xx) le 0) then
+if (n_elements(xx) le 0) then begin
   message, "You need to run start.pro first: use `.rnew start'"
 endif
 ;
