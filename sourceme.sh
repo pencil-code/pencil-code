@@ -24,6 +24,7 @@ if [ -z $PENCIL_HOME ]; then
 	 [ -d $_dir/samples ]         \
        ); then
       PENCIL_HOME=`cd $_dir; echo $PWD`
+      export PENCIL_HOME
       break
     fi
   done
