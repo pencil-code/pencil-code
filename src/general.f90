@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.20 2003-04-11 17:59:31 brandenb Exp $
+! $Id: general.f90,v 1.21 2003-06-16 04:41:10 brandenb Exp $
 
 module General
 
@@ -525,7 +525,7 @@ module General
 !
 !  solves tridiagonal system
 !
-!  01-apr/tobi: from numerical recipes
+!  01-apr-03/tobi: from numerical recipes
 !
       implicit none
       real, dimension(:), intent(in) :: a,b,c,r
@@ -564,7 +564,7 @@ module General
 !
 !  solves tridiagonal system
 !
-!  01-apr/tobi: from numerical recipes
+!  01-apr-03/tobi: from numerical recipes
 !  11-apr-03/axel: double precision version
 !
       implicit none

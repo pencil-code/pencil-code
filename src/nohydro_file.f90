@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.6 2002-11-24 13:14:59 mee Exp $
+! $Id: nohydro_file.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $
 
 module Hydro
 
@@ -40,8 +40,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-11-24 13:14:59 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2003-06-16 04:41:10 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -84,7 +84,8 @@ module Hydro
       use Magnetic
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: divu,u2,rho1
 !

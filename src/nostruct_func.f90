@@ -1,4 +1,4 @@
-! $Id: nostruct_func.f90,v 1.6 2003-03-06 14:24:37 brandenb Exp $
+! $Id: nostruct_func.f90,v 1.7 2003-06-16 04:41:11 brandenb Exp $
 !
 module  struct_func
   !
@@ -11,7 +11,7 @@ module  struct_func
 !***********************************************************************
     subroutine structure(f,ivec,b_vec,variabl)
 !
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension (nx,ny,nz) :: b_vec
   integer :: ivec
   character (len=*) :: variabl

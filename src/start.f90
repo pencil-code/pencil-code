@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.98 2003-06-14 20:37:58 theine Exp $
+! $Id: start.f90,v 1.99 2003-06-16 04:41:11 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -29,7 +29,7 @@
 !
         integer :: i
 !       logical :: lock=.false.
-        real, dimension (mx,my,mz,mvar) :: f
+        real, dimension (mx,my,mz,mvar+maux) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
 !
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.98 2003-06-14 20:37:58 theine Exp $")
+             "$Id: start.f90,v 1.99 2003-06-16 04:41:11 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !

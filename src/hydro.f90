@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.89 2003-05-08 14:30:58 tarek Exp $
+! $Id: hydro.f90,v 1.90 2003-06-16 04:41:10 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -84,7 +84,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.89 2003-05-08 14:30:58 tarek Exp $")
+           "$Id: hydro.f90,v 1.90 2003-06-16 04:41:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,7 +119,7 @@ module Hydro
       use Gravity
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
       real :: kabs,crit
       integer :: i
@@ -300,7 +300,8 @@ module Hydro
       use Sub
       use IO
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2
@@ -470,7 +471,8 @@ module Hydro
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: rho,ux
       real, dimension(1) :: fsum_tmp,fsum
       real :: tau_damp_ruxm1
@@ -509,7 +511,8 @@ module Hydro
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: rho,uy
       real, dimension(1) :: fsum_tmp,fsum
       real :: tau_damp_ruym1
@@ -543,7 +546,8 @@ module Hydro
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: pdamp
       integer :: i
 !  

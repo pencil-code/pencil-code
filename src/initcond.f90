@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.49 2003-06-09 12:10:03 ajohan Exp $ 
+! $Id: initcond.f90,v 1.50 2003-06-16 04:41:10 brandenb Exp $ 
 
 module Initcond 
  
@@ -29,7 +29,7 @@ module Initcond
 !  26-jul-02/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,kx1=pi/2.,ky1=0.,kz1=pi/2.
 !
@@ -59,7 +59,7 @@ module Initcond
 !   2-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,width,k=1.,width2,k2
 !
@@ -115,7 +115,7 @@ module Initcond
 !   2-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -167,7 +167,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl,radius,radius21
 !
       radius21=1./radius**2
@@ -182,7 +182,7 @@ module Initcond
 !   2-may-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -233,7 +233,7 @@ module Initcond
 !   6-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -284,7 +284,7 @@ module Initcond
 !  14-apr-03/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.
 !
@@ -335,7 +335,7 @@ module Initcond
 !  19-sep-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: profx
       real, dimension (my) :: profy
       real, dimension (mz) :: profz
@@ -372,7 +372,7 @@ module Initcond
 !   9-oct-02/wolf+axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: prof,alog_cosh_xwidth
       real :: fleft,fright,width
       character(len=*) :: dir
@@ -407,7 +407,7 @@ module Initcond
 !   5-jul-02/axel: made additive (if called twice), kx,ky,kz are optional
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: kx,ky,kz
       real :: ampl,k=1.,fac
 !
@@ -472,7 +472,7 @@ module Initcond
 !
 !   8-apr-03/axel: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (mz) :: lnrho0,SS0
       real :: ztmp,ampl
@@ -497,7 +497,7 @@ module Initcond
 !   6-jul-02/axel: coded
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
       real :: rbound,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell
@@ -614,7 +614,7 @@ module Initcond
 !  19-may-02/axel: coded
 !
       integer :: i,j
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl
 !
       if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
@@ -641,7 +641,7 @@ module Initcond
 !  11-sep-02/axel: allowed for scalar field (if i1=i2)
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
@@ -685,7 +685,7 @@ module Initcond
 !  11-sep-02/axel: allowed for scalar field (if i1=i2)
 !
       integer :: i1,i2
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
@@ -738,7 +738,7 @@ module Initcond
 !
 !   7-dec-02/axel: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: zz
       real :: ampl,H,A0,gravz,cs0,rho0,lnrho0
 !
@@ -762,7 +762,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,zflayer,width
 !
@@ -787,7 +787,7 @@ module Initcond
 !  19-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
@@ -812,7 +812,7 @@ module Initcond
 !  27-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
@@ -837,7 +837,7 @@ module Initcond
 !  14-jun-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx
       real :: ampl,kx
 !
@@ -863,7 +863,7 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (mx,my,mz) :: r,p,tmp
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl
 !
 !  set gaussian random noise vector
@@ -897,7 +897,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz) :: r,p,tmp
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: ampl
 !
 !  set gaussian random noise vector
@@ -920,7 +920,7 @@ module Initcond
 ! 23-nov-02/axel: included scaling factor ampl, corrected lperi argument
 !
       integer :: ivar
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz
       real :: ampl
 !
@@ -962,7 +962,7 @@ module Initcond
 !  7-dec-02/axel: coded
 !
       integer :: ivar
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,ky,kz
 !
@@ -983,7 +983,7 @@ module Initcond
 !  12-feb-03/ulf: coded
 !
       integer :: ivar
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,ky,kz
 !
@@ -1004,7 +1004,7 @@ module Initcond
 !
       integer :: i,i1,i2
       real, dimension (nx,ny,nz) :: k2
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,ny,nz) :: u_re,u_im
       real :: ampl,initpower
       

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.83 2003-06-14 17:11:38 brandenb Exp $
+! $Id: register.f90,v 1.84 2003-06-16 04:41:11 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -109,7 +109,7 @@ module Register
       use Viscosity
       use Param_IO
 
-      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       double precision :: unit_mass,unit_energy,unit_time,unit_flux
       logical :: lstart
 !

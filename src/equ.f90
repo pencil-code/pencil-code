@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.144 2003-06-15 21:13:25 brandenb Exp $
+! $Id: equ.f90,v 1.145 2003-06-16 04:41:10 brandenb Exp $
 
 module Equ
 
@@ -209,7 +209,8 @@ module Equ
       use Density
 !
       logical :: early_finalize
-      real, dimension (mx,my,mz,mvar+maux) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,udij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
@@ -221,7 +222,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.144 2003-06-15 21:13:25 brandenb Exp $")
+           "$Id: equ.f90,v 1.145 2003-06-16 04:41:10 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -404,7 +405,7 @@ module Equ
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average,rhom1,rhom2
       integer :: ivar
@@ -449,7 +450,7 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       use Mpicomm
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mz) :: xyaver,xyaver_smooth
       real :: del_average
       integer :: ivar
@@ -549,7 +550,8 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       use Sub
       use Boundcond
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       logical, optional :: explog
       integer :: ivar
       real :: awig
@@ -611,7 +613,8 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       use Deriv
 !-- use Wsnaps
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       real :: awig
       integer :: ivar,idir
@@ -675,7 +678,8 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
       use Sub
       use Boundcond
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: tmp
       logical, optional :: explog
       integer :: ivar

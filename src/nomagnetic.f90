@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.31 2003-05-07 08:20:14 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.32 2003-06-16 04:41:11 brandenb Exp $
 
 module Magnetic
 
@@ -48,7 +48,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.31 2003-05-07 08:20:14 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.32 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -69,7 +69,7 @@ module Magnetic
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
@@ -83,7 +83,8 @@ module Magnetic
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1
@@ -153,7 +154,7 @@ module Magnetic
 !  14-jun-2002/axel: adapted from similar
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_aa_pot

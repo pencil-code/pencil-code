@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.28 2003-06-15 09:28:10 brandenb Exp $
+! $Id: wsnaps.f90,v 1.29 2003-06-16 04:41:11 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -106,7 +106,7 @@ contains
       use Power_spectrum
       use Struct_func
 !
-      real, dimension (mx,my,mz,mvar) :: a
+      real, dimension (mx,my,mz,mvar+maux) :: a
       real, dimension (nx,ny,nz) :: b_vec
       character (len=135) :: file
       character (len=4) :: ch

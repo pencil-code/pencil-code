@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.13 2003-05-20 14:21:53 pkapyla Exp $
+! $Id: slices.f90,v 1.14 2003-06-16 04:41:11 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -63,7 +63,7 @@ module Slices
 !
 !  13-nov-02/axel: added more fields, use wslice.
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       character (len=*) :: path
       integer :: j
 !

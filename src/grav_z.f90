@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.34 2003-06-04 10:44:36 brandenb Exp $
+! $Id: grav_z.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $
 
 module Gravity
 
@@ -80,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.34 2003-06-04 10:44:36 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -104,7 +104,7 @@ module Gravity
 ! 
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to store gg)
@@ -125,7 +125,8 @@ module Gravity
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1
       real :: nu_epicycle2

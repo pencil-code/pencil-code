@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.24 2003-04-28 02:13:34 brandenb Exp $
+! $Id: radiation.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.24 2003-04-28 02:13:34 brandenb Exp $")
+           "$Id: radiation.f90,v 1.25 2003-06-16 04:41:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -100,7 +100,7 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if(ip==0) print*,f !(keep compiler quiet)
     endsubroutine radtransfer
@@ -124,7 +124,8 @@ module Radiation
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
       if(ip==0) print*,f,df !(keep compiler quiet)
     endsubroutine radiative_cooling
@@ -145,7 +146,7 @@ module Radiation
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
       real :: nr1,nr2
       integer :: l12
@@ -222,7 +223,8 @@ module Radiation
       use Cdata
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gradE,uu
       real, dimension (nx,3,3) :: uij, P_tens
       real, dimension (nx) :: E_rad,divu,rho1,source,Edivu,ugradE,divF
@@ -393,7 +395,8 @@ module Radiation
       use Sub
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: gradE,n_vec,tmp,gradDFF
       real, dimension (nx,3,3) :: P_tens,f_mat,n_mat
       real, dimension (nx) :: E_rad,rho1,diffus_speed
@@ -487,7 +490,7 @@ module Radiation
       use Cdata
       use Density, only:cs20, lnrho0,gamma
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx) :: cs2,lnrho,gamma1,TT1,source
       integer :: i,j
 !
@@ -514,7 +517,7 @@ module Radiation
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
       if (topbot=='bot') then
@@ -541,7 +544,7 @@ module Radiation
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
       if (topbot=='bot') then 

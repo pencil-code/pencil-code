@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $
+! $Id: pscalar_nolog.f90,v 1.6 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -67,7 +67,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $")
+           "$Id: pscalar_nolog.f90,v 1.6 2003-06-16 04:41:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -84,7 +84,7 @@ module Pscalar
 !
 !  24-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -108,7 +108,7 @@ module Pscalar
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  identify module
 !
@@ -163,7 +163,7 @@ module Pscalar
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz,prof
 !
       select case(initlncc)
@@ -219,7 +219,8 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,gcc,glnrho
       real, dimension (nx) :: cc,rho,ugcc,diff_op,del2cc
       integer :: j
@@ -385,7 +386,8 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, save, dimension (nx,ny,nz,3) :: bunit,hhh
       real, dimension (nx,3,3) :: g
       real, dimension (nx,3) :: gcc

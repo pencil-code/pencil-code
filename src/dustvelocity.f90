@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.4 2003-06-04 10:44:36 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.4 2003-06-04 10:44:36 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,7 +101,7 @@ module Dustvelocity
       use Gravity
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -139,7 +139,7 @@ module Dustvelocity
       use Sub
       use IO
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f,df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud,fac
       real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz,rho1,rhod1

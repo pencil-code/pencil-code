@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.10 2002-11-24 13:14:59 mee Exp $
+! $Id: nohydro.f90,v 1.11 2003-06-16 04:41:10 brandenb Exp $
 
 module Hydro
 
@@ -42,7 +42,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.10 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nohydro.f90,v 1.11 2003-06-16 04:41:10 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -67,7 +67,7 @@ module Hydro
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
@@ -85,7 +85,8 @@ module Hydro
       use Magnetic
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: divu,u2,rho1

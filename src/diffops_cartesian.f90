@@ -1,4 +1,4 @@
-! $Id: diffops_cartesian.f90,v 1.1 2003-04-10 10:16:57 mee Exp $ 
+! $Id: diffops_cartesian.f90,v 1.2 2003-06-16 04:41:10 brandenb Exp $ 
 
 module DiffOps
   implicit none
@@ -20,7 +20,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: g, tmp
       integer :: k,k1
 !
@@ -43,7 +43,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
@@ -69,7 +69,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp
       integer :: k
@@ -116,7 +116,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1
@@ -148,7 +148,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1,i
@@ -190,7 +190,7 @@ contains
       intent(in) :: f,k
       intent(out) :: del2f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz
       integer :: k
 !
@@ -208,7 +208,7 @@ contains
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -238,7 +238,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: fjji,fijj
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
       real, dimension (nx) :: tmp
@@ -294,7 +294,7 @@ contains
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k
@@ -359,7 +359,7 @@ contains
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
@@ -384,7 +384,7 @@ contains
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !

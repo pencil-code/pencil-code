@@ -127,7 +127,7 @@ module Mpicomm
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalise_isendrcv_bdry
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: dummy
 !
       dummy=f(1,1,1,1)  !(prevent compiler warning "unused variable ...")
@@ -140,14 +140,14 @@ module Mpicomm
 !
 !  apply boundary conditions
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==0) print*,'FINALIZE_ISENDRCV_BDRY: f=',f
     endsubroutine finalise_isendrcv_bdry
 !***********************************************************************
     subroutine initiate_shearing(f)
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: dummy
 !    
       dummy=f(1,1,1,1)
@@ -160,7 +160,7 @@ module Mpicomm
 !  for one processor, use periodic boundary conditions
 !  but in this dummy routine this is done in finalise_isendrcv_bdry
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       double precision    :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
       integer :: displs
 !

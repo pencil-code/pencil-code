@@ -1,4 +1,4 @@
-! $Id: nointerstellar.f90,v 1.6 2003-05-20 15:38:38 brandenb Exp $
+! $Id: nointerstellar.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -44,7 +44,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nointerstellar.f90,v 1.6 2003-05-20 15:38:38 brandenb Exp $")
+           "$Id: nointerstellar.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $")
 !
 !      if (nvar > mvar) then
 !        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -88,7 +88,7 @@ module Interstellar
 !
     use Cdata
 !
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
 !
 ! (to keep compiler quiet)
       if (ip==0) print*,'SN check',f(1,1,1,1)

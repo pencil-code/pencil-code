@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.6 2003-02-02 17:16:32 dobler Exp $ 
+! $Id: timeavg.f90,v 1.7 2003-06-16 04:41:11 brandenb Exp $ 
 
 module Timeavg
 
@@ -27,7 +27,7 @@ module Timeavg
 !
 !  7-oct-02/wolf: coded
 !
-      real, dimension(mx,my,mz,mvar) :: a
+      real, dimension(mx,my,mz,mvar+maux) :: a
       integer :: i
 
       intent (in) :: a
@@ -59,7 +59,7 @@ module Timeavg
 !
 !  7-oct-02/wolf: coded
 !
-      real, dimension(mx,my,mz,mvar) :: a
+      real, dimension(mx,my,mz,mvar+maux) :: a
       real :: dt,weight
       integer :: i,idx
       logical, optional :: init

@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.32 2003-03-18 23:27:09 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -29,7 +29,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.32 2003-03-18 23:27:09 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -141,7 +141,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,k,ikx,iky,ikz,im,in,ivec
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension(nx,ny,nz) :: a_re,a_im,b_re,b_im
   real, dimension(nx) :: bbi
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.32 2003-03-18 23:27:09 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -284,7 +284,7 @@ module  power_spectrum
 !
   integer, parameter :: nk=nx/2
   integer :: i,im,in,ivec
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   real, dimension(nx,ny,nz) :: a1,b1
   real, dimension(nx) :: bb
   real, dimension(nk) :: spectrum=0.,spectrum_sum=0
@@ -295,7 +295,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.32 2003-03-18 23:27:09 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.33 2003-06-16 04:41:11 brandenb Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.

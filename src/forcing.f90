@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.44 2003-04-26 09:21:06 brandenb Exp $
+! $Id: forcing.f90,v 1.45 2003-06-16 04:41:10 brandenb Exp $
 
 module Forcing
 
@@ -48,7 +48,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.44 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: forcing.f90,v 1.45 2003-06-16 04:41:10 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -92,7 +92,7 @@ module Forcing
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  if t>tforce_stop, then turn off forcing
 !  This can be useful for producing good initial conditions
@@ -147,7 +147,7 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -228,7 +228,7 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx,rho1
       real, dimension (mz) :: tmpz
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -441,7 +441,7 @@ module Forcing
       use Hydro
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho,udotf
       real, dimension (1) :: fsum_tmp,fsum
@@ -497,7 +497,7 @@ module Forcing
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx
       real, dimension (mz) :: tmpz
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
@@ -671,7 +671,7 @@ module Forcing
       use Mpicomm
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
       real, dimension (my) :: sy,cy
@@ -741,7 +741,7 @@ module Forcing
       use Mpicomm
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: sxx,cxx
       real, dimension (mx) :: sx,cx
       real, dimension (my) :: sy,cy
@@ -810,7 +810,7 @@ module Forcing
       use Mpicomm
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: fx
       real, dimension (mz) :: fz
       real :: kx,ffnorm
@@ -843,7 +843,7 @@ module Forcing
       use Mpicomm
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,nz) :: xx,zz,r2,tmp,fx,fz
       real :: ffnorm,ry2,fy,ytwist1,ytwist2
 !
@@ -902,7 +902,7 @@ module Forcing
       use Mpicomm
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
       real :: ffnorm,ffnorm2,kx,kz
 !
@@ -945,7 +945,7 @@ module Forcing
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, save :: tforce=0.
       integer, save :: ifirst=0
       integer, save :: nforce=0
@@ -980,7 +980,7 @@ module Forcing
       use Cdata
       use Hydro
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: force1,force2,force_vec
       real :: phase1,phase2,p_weight
       real :: kx01,ky1,kz1,kx02,ky2,kz2
@@ -1071,7 +1071,7 @@ module Forcing
       use Sub
       use Hydro
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: phase,ffnorm
       real :: kav
       real, dimension (nx) :: radius,tmpx

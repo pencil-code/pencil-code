@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.39 2003-04-10 06:58:24 brandenb Exp $
+! $Id: noentropy.f90,v 1.40 2003-06-16 04:41:10 brandenb Exp $
 
 module Entropy
 
@@ -44,7 +44,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.39 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: noentropy.f90,v 1.40 2003-06-16 04:41:10 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -67,7 +67,7 @@ module Entropy
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
@@ -82,7 +82,8 @@ module Entropy
       use Density
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho
       integer :: j,ju
@@ -192,7 +193,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_flux
@@ -204,7 +205,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_temp_old
@@ -216,7 +217,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_temp_x
@@ -228,7 +229,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_temp_y
@@ -240,7 +241,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_temp_z
@@ -252,7 +253,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_stemp_x
@@ -264,7 +265,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_stemp_y
@@ -276,7 +277,7 @@ module Entropy
 !  12-jun-2002/axel: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_stemp_z
@@ -286,7 +287,7 @@ module Entropy
 !  dummy routine for entropy boundary condition
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
     endsubroutine bc_ss_energy

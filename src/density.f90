@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.90 2003-06-15 06:16:46 brandenb Exp $
+! $Id: density.f90,v 1.91 2003-06-16 04:41:10 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.90 2003-06-15 06:16:46 brandenb Exp $")
+           "$Id: density.f90,v 1.91 2003-06-16 04:41:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -104,7 +104,7 @@ module Density
       use Initcond
       use Initcond_spec
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real :: lnrhoint,cs2int,pot0,lnrho_left,lnrho_right
       real :: zbot,ztop
@@ -370,7 +370,7 @@ module Density
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,lnrhoint
@@ -408,7 +408,7 @@ module Density
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f,df
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
       real, dimension (nx) :: del2lnrho
@@ -503,7 +503,7 @@ module Density
 !
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: pot,tmp
 !
 !  Stratification depends on the gravity potential
@@ -548,7 +548,7 @@ module Density
       use Gravity
       use Mpicomm, only: stop_it
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: pot,dlncs2,ptop,pbot,zero=0.
       real :: ggamma,ztop,zbot,zinfty2
 !
@@ -628,7 +628,7 @@ module Density
 !
       use Mpicomm
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: absz,n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
@@ -715,7 +715,7 @@ module Density
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: tmp
       integer :: i
 !
@@ -776,7 +776,7 @@ module Density
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i,l
 !
       if(ldebug) print*,'ENTER: bc_lnrho_temp_z, cs20,cs0=',cs20,cs0

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.26 2003-06-15 09:28:10 brandenb Exp $
+! $Id: feautrier.f90,v 1.27 2003-06-16 04:41:10 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.26 2003-06-15 09:28:10 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.27 2003-06-16 04:41:10 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -97,7 +97,6 @@ module Radiation
 !
 !  test
 !
-print*,'radcalc: test_radiation=',test_radiation
       if(test_radiation) then
         if(lroot) print*,'radcalc: put Srad=kaprho=1 (as a test)'
         Srad=1.
@@ -136,7 +135,7 @@ print*,'radcalc: test_radiation=',test_radiation
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: feautrier
-      real, dimension(nz) :: kaprho,tau,Srad_,Prad_
+      real, dimension(nz) :: kaprho_,tau,Srad_,Prad_
       real, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
       logical :: err=.false.
@@ -145,15 +144,17 @@ print*,'radcalc: test_radiation=',test_radiation
 !
       do mrad=m1,m2
       do lrad=l1,l2
-         kaprho=f(lrad,mrad,n1:n2,ikappa)*exp(f(lrad,mrad,n1:n2,ilnrho))
-         tau=spline_integral(z,kaprho)
+         kaprho_=kaprho(lrad,mrad,n1:n2)
+         tau=spline_integral(z,kaprho_)
          Srad_=Srad(lrad,mrad,n1:n2)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
-!  lower boundary: P=S
 !
          b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
          c(1)=-2./(tau(2)-tau(1))**2
+!
+!  lower boundary: P=S
+!
          a(nz)=0.
          b(nz)=1.
 !
@@ -173,8 +174,6 @@ print*,'radcalc: test_radiation=',test_radiation
             print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
                          f(lrad,mrad,n2-5:n2,ient)
             print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
-            print*,'kappa=',f(lrad,mrad,n1:n1+5,ikappa),'...', &
-                            f(lrad,mrad,n2-5:n2,ikappa)
             stop
          endif
 !
@@ -198,7 +197,7 @@ print*,'radcalc: test_radiation=',test_radiation
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: feautrier_double
-      double precision, dimension(nz) :: kaprho,tau,Srad_,Prad_
+      double precision, dimension(nz) :: kaprho_,tau,Srad_,Prad_
       double precision, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
       logical :: err=.false.
@@ -207,15 +206,21 @@ print*,'radcalc: test_radiation=',test_radiation
 !
       do mrad=m1,m2
       do lrad=l1,l2
-         kaprho=f(lrad,mrad,n1:n2,ikappa)*exp(f(lrad,mrad,n1:n2,ilnrho))
-         tau=spline_integral_double(z,kaprho)
+         kaprho_=kaprho(lrad,mrad,n1:n2)
+         !!tau=spline_integral_double(z,kaprho_)
+         tau=z(n1:n2)
          Srad_=Srad(lrad,mrad,n1:n2)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
+!
+         !b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
+         !c(1)=-2./(tau(2)-tau(1))**2
+!
+         b(1)=1.+3./(tau(2)-tau(1))
+         c(1)=-4./(tau(2)-tau(1))
+!
 !  lower boundary: P=S
 !
-         b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
-         c(1)=-2./(tau(2)-tau(1))**2
          a(nz)=0.
          b(nz)=1.
 !
@@ -263,7 +268,8 @@ print*,'radcalc: test_radiation=',test_radiation
       if(lroot.and.headt) print*,'radtransfer'
 !
       call radcalc(f)
-      f(:,:,:,iQrad)=-Srad+feautrier_double(f)
+      !f(:,:,:,iQrad)=-Srad+feautrier_double(f)
+      f(:,:,:,iQrad)=+Srad+feautrier_double(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -330,7 +336,7 @@ print*,'radcalc: test_radiation=',test_radiation
       use Sub
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
       real :: nr1,nr2
       integer :: l12
@@ -347,7 +353,8 @@ print*,'radcalc: test_radiation=',test_radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx,3,3) :: uij
@@ -396,7 +403,7 @@ print*,'radcalc: test_radiation=',test_radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
@@ -409,7 +416,7 @@ print*,'radcalc: test_radiation=',test_radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
@@ -425,18 +432,18 @@ print*,'radcalc: test_radiation=',test_radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real, dimension(nx) :: lnrho,ss,source,TT1,cs2,cp1tilde
+      real, dimension(nx) :: lnrho,ss,yH,TT
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !
+      if(lionization) call ioncalc(f)
       do n=n1,n2
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
-         source=sigmaSB/(pi*TT1**4)
-         f(l1:l2,m,n,iQrad) = source
+         call ionset(f,ss,lnrho,yH,TT)
+         f(l1:l2,m,n,iQrad)=sigmaSB*TT**4/pi
       enddo
       enddo
 !

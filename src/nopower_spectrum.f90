@@ -1,4 +1,4 @@
-! $Id: nopower_spectrum.f90,v 1.4 2003-03-06 14:20:09 brandenb Exp $
+! $Id: nopower_spectrum.f90,v 1.5 2003-06-16 04:41:11 brandenb Exp $
 !
 module  power_spectrum
   !
@@ -11,7 +11,7 @@ module  power_spectrum
 !***********************************************************************
     subroutine power(f,sp)
 !
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   character (len=1) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -20,7 +20,7 @@ module  power_spectrum
 !***********************************************************************
   subroutine powerhel(f,sp)
 !
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   character (len=3) :: sp
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
@@ -29,7 +29,7 @@ module  power_spectrum
 !***********************************************************************
     subroutine power_1d(f,sp,ivec)
 !
-  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (mx,my,mz,mvar+maux) :: f
   character (len=1) :: sp
   integer :: ivec
   !

@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.4 2003-04-10 06:58:24 brandenb Exp $
+! $Id: temperature.f90,v 1.5 2003-06-16 04:41:11 brandenb Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -79,7 +79,7 @@ ient=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.4 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: temperature.f90,v 1.5 2003-06-16 04:41:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -145,7 +145,7 @@ ient=ilnTT  !(need to think how to deal with this...)
       use Gravity
       use Initcond
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       intent(in) :: xx,yy,zz
@@ -191,7 +191,7 @@ ient=ilnTT  !(need to think how to deal with this...)
       use Sub, only: step
       use Gravity, only: gravz
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp,p,zz
       real, dimension (mz) :: stp
       real :: mpoly,zint,zbot,zblend,beta1,cs2int,ssint
@@ -239,7 +239,8 @@ ient=ilnTT  !(need to think how to deal with this...)
       use Slices
       use IO
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho,glnTT
       real, dimension (nx) :: uglnTT,uglnrho,divu
       real, dimension (nx) :: lnrho,lnTT,ss,rho1,cs2,TT1
@@ -318,7 +319,8 @@ ient=ilnTT  !(need to think how to deal with this...)
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnP
       real, dimension (nx) :: rho1
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
@@ -368,7 +370,8 @@ ient=ilnTT  !(need to think how to deal with this...)
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond !,glhc
       real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
@@ -417,7 +420,8 @@ ient=ilnTT  !(need to think how to deal with this...)
       use IO
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
       real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
@@ -538,7 +542,8 @@ endif
       use Sub
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,TT1
       real, dimension (nx) :: heat,prof
       real :: ssref,zbot,ztop
@@ -616,7 +621,8 @@ endif
       use Cdata
       use Gravity
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real :: scl
 !
       intent(in) :: f
@@ -738,7 +744,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
@@ -833,7 +839,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my) :: tmp_xy
       integer :: i
 !
@@ -894,7 +900,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: tmp
       integer :: i
 !
@@ -951,7 +957,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: tmp
       integer :: i
 !
@@ -1008,7 +1014,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real :: tmp
       integer :: i
 !
@@ -1065,7 +1071,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1114,7 +1120,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_y, cs20,cs0=',cs20,cs0
@@ -1163,7 +1169,7 @@ endif
       use Gravity
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss_stemp_x, cs20,cs0=',cs20,cs0
@@ -1212,7 +1218,7 @@ endif
       use Cdata
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my) :: cs2_2d
       integer :: i
 !

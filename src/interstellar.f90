@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.30 2003-06-11 22:40:53 mee Exp $
+! $Id: interstellar.f90,v 1.31 2003-06-16 04:41:10 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -88,7 +88,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.30 2003-06-11 22:40:53 mee Exp $")
+           "$Id: interstellar.f90,v 1.31 2003-06-16 04:41:10 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,7 +215,7 @@ module Interstellar
 !
     use Cdata
 !
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
     logical :: l_SNI=.false.   !only allow SNII if no SNI this step
                                !(may not be worth keeping)
 !
@@ -240,7 +240,7 @@ module Interstellar
     use Mpicomm
     use General
 !
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
     real, dimension(1) :: franSN
     logical :: l_SNI
 !
@@ -275,7 +275,7 @@ module Interstellar
     use General
     use Mpicomm
 ! 
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
     real, dimension(nx) :: lnrho,rho,rho_cloud,ss,TT
 !    real :: lnrho,rho,rho_cloud,ss,TT
     real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII,dv
@@ -359,7 +359,7 @@ module Interstellar
     use Mpicomm
     use General
 !
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
 !
     real, dimension(nzgrid) :: cum_prob_SNI
     real :: zn
@@ -500,7 +500,7 @@ module Interstellar
     use General
     use Mpicomm
 !
-    real, dimension(mx,my,mz,mvar) :: f
+    real, dimension(mx,my,mz,mvar+maux) :: f
     real, dimension(ncpus) :: mass_cloud_byproc
     real, dimension(0:ncpus) :: cum_prob_byproc
     real, dimension(1) :: franSN
@@ -600,7 +600,7 @@ find_SN: do n=n1,n2
       use Mpicomm
       use Ionization
       !
-      real, intent(inout), dimension(mx,my,mz,mvar) :: f
+      real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
       integer, intent(in) :: itype_SN
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
@@ -746,7 +746,7 @@ find_SN: do n=n1,n2
 !
       use CData
 
-      real, intent(in), dimension(mx,my,mz,mvar) :: f
+      real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
       real, intent(in) :: width_SN
       real, intent(out) :: profile_integral
       real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y

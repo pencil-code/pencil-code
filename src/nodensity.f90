@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.9 2003-06-13 09:25:24 nilshau Exp $
+! $Id: nodensity.f90,v 1.10 2003-06-16 04:41:10 brandenb Exp $
 
 module Density
 
@@ -41,7 +41,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.9 2003-06-13 09:25:24 nilshau Exp $")
+           "$Id: nodensity.f90,v 1.10 2003-06-16 04:41:10 brandenb Exp $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -65,7 +65,7 @@ module Density
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
@@ -80,7 +80,8 @@ module Density
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu
 !

@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.4 2003-05-05 18:48:52 brandenb Exp $
+! $Id: grav_self.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $
 
 module Gravity
 
@@ -72,7 +72,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.4 2003-05-05 18:48:52 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -96,7 +96,7 @@ module Gravity
 ! 
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to store gg)
@@ -106,14 +106,15 @@ module Gravity
 !***********************************************************************
     subroutine duu_dt_grav(f,df,uu,rho1)
 !
-!  advance gravity and add to duu/dt
+!  advance pseudo selfgravity and add to duu/dt
 !
 ! 22-apr-03/axel: coded
 !
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,curlgg
       real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2
       integer :: j
@@ -223,7 +224,7 @@ module Gravity
 !      use Cdata
 !      use Sub
 !!
-!      real, dimension (mx,my,mz,mvar) :: f
+!      real, dimension (mx,my,mz,mvar+maux) :: f
 !      real, dimension (mx,my,mz) :: resid
 !      real :: fac,diag,om_diag,om=0.9
 !      integer :: iter

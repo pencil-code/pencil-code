@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.13 2003-06-13 09:28:58 nilshau Exp $
+! $Id: noradiation.f90,v 1.14 2003-06-16 04:41:11 brandenb Exp $
 
 
 module Radiation
@@ -37,7 +37,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.13 2003-06-13 09:28:58 nilshau Exp $")
+           "$Id: noradiation.f90,v 1.14 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -50,7 +50,7 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if(ip==0) print*,f !(keep compiler quiet)
     endsubroutine radtransfer
@@ -74,7 +74,8 @@ module Radiation
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
       if(ip==0) print*,f,df !(keep compiler quiet)
     endsubroutine radiative_cooling
@@ -92,7 +93,7 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
@@ -105,7 +106,8 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx,3,3) :: uij
@@ -154,7 +156,7 @@ module Radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
@@ -167,7 +169,7 @@ module Radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !

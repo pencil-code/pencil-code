@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.18 2003-06-13 11:56:11 nilshau Exp $
+! $Id: radiation_ray.f90,v 1.19 2003-06-16 04:41:11 brandenb Exp $
 
 module Radiation
 
@@ -59,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.18 2003-06-13 11:56:11 nilshau Exp $")
+           "$Id: radiation_ray.f90,v 1.19 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -337,7 +337,7 @@ write(28) Intensity,nrad
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
@@ -352,7 +352,8 @@ write(28) Intensity,nrad
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx,3,3) :: uij

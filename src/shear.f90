@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.9 2002-11-24 13:14:59 mee Exp $
+! $Id: shear.f90,v 1.10 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.9 2002-11-24 13:14:59 mee Exp $")
+           "$Id: shear.f90,v 1.10 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -71,7 +71,8 @@ module Shear
       use Hydro, only:theta
 !
       integer :: j
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: uy0,dfdy
 !
       intent(in)  :: f

@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.21 2003-06-15 06:16:47 brandenb Exp $
+! $Id: visc_shock.f90,v 1.22 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.21 2003-06-15 06:16:47 brandenb Exp $")
+           "$Id: visc_shock.f90,v 1.22 2003-06-16 04:41:11 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -85,7 +85,7 @@ module Viscosity
 !
       use IO
 
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
 
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
@@ -340,7 +340,7 @@ module Viscosity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: df
 !
 !ajwm If using mx,my,mz do we need degenerate n(xyz)grid=1 cases??
@@ -399,7 +399,8 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,TT1,cs2
       real, dimension (nx) :: sij2, divu
       real, dimension (nx,3) :: glnrho
@@ -431,7 +432,8 @@ module Viscosity
       use Mpicomm
       use Sub
 
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: glnrho, del2u, graddivu, fvisc, sglnrho,tmp
       real, dimension (nx,3) :: gshock_characteristic
       real, dimension (nx) :: rho1, divu

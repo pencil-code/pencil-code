@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.77 2003-06-06 18:04:04 brandenb Exp $
+! $Id: mpicomm.f90,v 1.78 2003-06-16 04:41:10 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -257,7 +257,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  So far no distribution over x
 !
@@ -320,7 +320,7 @@ module Mpicomm
 !
 !  21-may-02/axel: communication of corners added
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       character (len=160) :: errmesg
       integer :: j
 !
@@ -412,7 +412,7 @@ module Mpicomm
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       double precision :: deltay_dy, frak, c1, c2, c3, c4, c5, c6
       integer :: i, ystep
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
@@ -497,7 +497,7 @@ module Mpicomm
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nghost,2*my-2*nghost,mz,mvar) :: fa, fb
       integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fal, irecv_stat_fan, irecv_stat_fbl, irecv_stat_fbn
       integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tna, isend_stat_tla, isend_stat_tnb, isend_stat_tlb

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.117 2003-06-15 09:28:10 brandenb Exp $ 
+! $Id: sub.f90,v 1.118 2003-06-16 04:41:11 brandenb Exp $ 
 
 module Sub 
 
@@ -441,7 +441,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: g, tmp
       integer :: k,k1
 !
@@ -790,7 +790,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k,k1
@@ -816,7 +816,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp
       integer :: k
@@ -863,7 +863,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1
@@ -895,7 +895,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: g
       real, dimension (nx) :: tmp1,tmp2
       integer :: k,k1,i
@@ -937,7 +937,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del2f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del2f,d2fdx,d2fdy,d2fdz
       integer :: k
 !
@@ -955,7 +955,7 @@ module Sub
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: del2f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -981,7 +981,7 @@ module Sub
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3) :: del6f
       real, dimension (nx) :: tmp
       integer :: i,k,k1
@@ -1011,7 +1011,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: fjji,fijj
       real, dimension (nx,3), optional :: del2,graddiv,curlcurl
       real, dimension (nx) :: tmp
@@ -1067,7 +1067,7 @@ module Sub
       use Cdata
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,3,3) :: g
       real, dimension (nx) :: tmp
       integer :: i,j,k
@@ -1132,7 +1132,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
@@ -1157,7 +1157,7 @@ module Sub
       intent(in) :: f,k
       intent(out) :: del6f
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: del6f,d6fdx,d6fdy,d6fdz
       integer :: k
 !
@@ -2053,7 +2053,7 @@ module Sub
       use Cdata
 !
       real, dimension (mx,my,mz) :: tmp
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  copy
 !
@@ -2214,7 +2214,7 @@ module Sub
 !  27-jul-02/axel: coded
 !
       integer :: i
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real,optional :: xblob,yblob,zblob
       real :: ampl,radius,x01=0.,y01=0.,z01=0.
 !

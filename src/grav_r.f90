@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.34 2003-05-05 18:48:52 brandenb Exp $
+! $Id: grav_r.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $
 
 module Gravity
 
@@ -54,7 +54,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.34 2003-05-05 18:48:52 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.35 2003-06-16 04:41:10 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -166,7 +166,7 @@ module Gravity
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
@@ -185,7 +185,8 @@ module Gravity
       use IO
       use Global
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: evr,gg_mn,uu
       real, dimension (nx) :: g_r,rho1
 !

@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.4 2002-11-24 13:14:59 mee Exp $ 
+! $Id: notimeavg.f90,v 1.5 2003-06-16 04:41:11 brandenb Exp $ 
 
 module Timeavg
 
@@ -23,7 +23,7 @@ module Timeavg
 !***********************************************************************
     subroutine initialize_timeavg(a)
 !
-      real, dimension(mx,my,mz,mvar) :: a
+      real, dimension(mx,my,mz,mvar+maux) :: a
       
       intent (in) :: a
 !
@@ -34,7 +34,7 @@ module Timeavg
     subroutine update_timeavgs(a,dt,init)
 !
 !
-      real, dimension(mx,my,mz,mvar) :: a
+      real, dimension(mx,my,mz,mvar+maux) :: a
       real :: dt
       logical, optional :: init
 

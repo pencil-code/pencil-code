@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.3 2002-11-24 13:14:59 mee Exp $
+! $Id: noshear.f90,v 1.4 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -40,7 +40,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.3 2002-11-24 13:14:59 mee Exp $")
+           "$Id: noshear.f90,v 1.4 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -61,7 +61,8 @@ module Shear
       use Cparam
       use Deriv
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
       if(ip==0) print*,f,df !(to keep compiler quiet)
     end subroutine shearing

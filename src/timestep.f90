@@ -1,4 +1,4 @@
-! $Id: timestep.f90,v 1.15 2002-08-22 05:14:56 brandenb Exp $
+! $Id: timestep.f90,v 1.16 2003-06-16 04:41:11 brandenb Exp $
 
 module Timestep
 
@@ -21,7 +21,8 @@ module Timestep
       use Cdata
       use Equ
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (3) :: alpha,beta,dt_beta
       real :: ds
       integer :: i,j

@@ -1,4 +1,4 @@
-! $Id: nopscalar.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $
+! $Id: nopscalar.f90,v 1.6 2003-06-16 04:41:11 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -41,7 +41,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nopscalar.f90,v 1.5 2003-05-25 21:06:15 brandenb Exp $")
+           "$Id: nopscalar.f90,v 1.6 2003-06-16 04:41:11 brandenb Exp $")
 !
     endsubroutine register_pscalar
 !***********************************************************************
@@ -52,7 +52,7 @@ module Pscalar
 !
 !  24-nov-02/tony: coded
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
 !  set to zero and then call the same initial condition
 !  that was used in start.csh
@@ -72,7 +72,7 @@ module Pscalar
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(prevent compiler warnings)
@@ -88,7 +88,8 @@ module Pscalar
 !
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glnrho
 !
       intent(in)  :: f,df,uu,glnrho

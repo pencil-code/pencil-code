@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.12 2003-06-16 02:03:41 theine Exp $
+! $Id: radiation_exp.f90,v 1.13 2003-06-16 04:41:11 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.12 2003-06-16 02:03:41 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.13 2003-06-16 04:41:11 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -182,7 +182,7 @@ module Radiation
 !
       use Cdata
 !
-      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(mx,my,mz,mvar+maux) :: f
       real, dimension(mx,my,mz) :: mean_intensity,Iup,Idown
       real :: dtau,emdtau
       integer :: lr,mr,nr
@@ -403,7 +403,8 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real :: formfactor=0.5
 !
 !  Add radiative cooling
@@ -451,7 +452,7 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
@@ -466,7 +467,8 @@ module Radiation
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx,3,3) :: uij
@@ -513,7 +515,7 @@ module Radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
@@ -526,7 +528,7 @@ module Radiation
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !

@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.6 2002-11-26 19:59:19 mee Exp $
+! $Id: deriv.f90,v 1.7 2003-06-16 04:41:10 brandenb Exp $
 
 module Deriv
 
@@ -23,7 +23,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
@@ -122,7 +122,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
@@ -174,7 +174,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: j,k
@@ -233,7 +233,7 @@ module Deriv
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: df
       real :: fac
       integer :: i,j,k

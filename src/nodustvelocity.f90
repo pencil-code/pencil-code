@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $
+! $Id: nodustvelocity.f90,v 1.4 2003-06-16 04:41:10 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -44,7 +44,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.3 2003-03-19 06:58:18 brandenb Exp $")
+           "$Id: nodustvelocity.f90,v 1.4 2003-06-16 04:41:10 brandenb Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -67,7 +67,7 @@ module Dustvelocity
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
       if (ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
@@ -85,7 +85,8 @@ module Dustvelocity
       use Sub
       use IO
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3) :: uu,uud
       real, dimension (nx) :: ud2,divud
