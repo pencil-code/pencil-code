@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.46 2003-04-02 12:24:50 brandenb Exp $
+# $Id: getconf.csh,v 1.47 2003-04-03 07:47:41 brandenb Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -42,17 +42,23 @@ if ($mpi) then
 #    set mpirunops = " c0-7"
 #    set mpirunops = "-c2c c8-13"
 
-  else if ($hn =~ nq*) then
+  else if ($hn =~ nq* || $hn =~ ns*) then
+echo "option 0"
     echo "Use options for the Nordita cluster"
     if ($?PBS_NODEFILE ) then
+echo "option 1"
       set nodelist = `cat $PBS_NODEFILE`
       cat $PBS_NODEFILE > lamhosts
       set local_disc = 1
+    else
+echo "option 2"
+      echo `hostname` >> lamhosts
     endif
-    lamboot -v lamhosts
     echo "lamnodes:"
+    lamboot -v lamhosts
     lamnodes
     set mpirun = /usr/bin/mpirun
+    set mpirun = /opt/lam/bin/mpirun
     set mpirunops = "-O -c2c -s n0"
     if ($local_disc) then
        setenv SCRATCH_DIR "/var/tmp"
