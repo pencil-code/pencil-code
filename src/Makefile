@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.110 2002-10-07 20:39:22 dobler Exp $
+### $Id: Makefile,v 1.111 2002-10-07 20:51:04 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -131,12 +131,12 @@ cparam.inc: Makefile Makefile.local
 code:
 	make start.x run.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
-run_deps_f90=$(comm_deps) equ.o timestep.o $(TIMEAVG).o wsnaps.o power_spectrum.o
+run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
 run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
