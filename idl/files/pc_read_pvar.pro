@@ -1,4 +1,4 @@
-; $Id: pc_read_pvar.pro,v 1.5 2005-01-24 12:12:59 ajohan Exp $
+; $Id: pc_read_pvar.pro,v 1.6 2005-01-26 10:22:12 ajohan Exp $
 ;
 ;   Read pvar.dat, or other PVAR file
 ;
@@ -36,7 +36,7 @@ if (execute(res) ne 1) then $
 ;  Define structure for data
 ;
 varcontent=REPLICATE( $
-    {varcontent_all, $
+    {varcontent_all_par, $
     variable   : 'UNKNOWN', $
     idlvar     : 'dummy', $
     idlinit    : 'fltarr(npar)*one', $
