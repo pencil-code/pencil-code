@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.127 2004-10-07 07:25:00 theine Exp $
+! $Id: mpicomm.f90,v 1.128 2004-10-07 20:25:09 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -237,7 +237,9 @@ module Mpicomm
 !
       call setup_mm_nn()
 !
-!  Define new communicator that includes all processors with common ipz
+!  Define MPI communicator MPI_COMM_ROW that includes all processes
+!  sharing the same value of ipz. The rank within MPI_COMM_WORLD is
+!  given by ipy.
 !
       call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipy, MPI_COMM_ROW, ierr)
 !
@@ -682,147 +684,40 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
-    subroutine radboundary_zx_periodic_ray(mrad, &
-                                           Qrad_send_zx,tau_send_zx, &
-                                           Qrad0_zx,tau0_zx, &
-                                           Qrad_tot_zx,tau_tot_zx) 
-!
-      integer, intent(in) :: mrad
-      real, dimension(nx,nz), intent(in) :: Qrad_send_zx,tau_send_zx
-      real, dimension(nx,nz), intent(out) :: Qrad0_zx,tau0_zx
-      real, dimension(nx,nz), intent(out) :: Qrad_tot_zx,tau_tot_zx
-      real, dimension(nx,nz) :: Qrad_recv_zx,tau_recv_zx
-      integer :: idest,isource,nQrad_zx,ntau_zx,ipystart,ipystop
+    subroutine radboundary_zx_periodic_ray(mrad,Qrad_zx,emtau_zx,Qrad0_zx)
+
+      use Cdata, only: directory_snap
+      integer :: mrad
+      real, dimension(mx,mz) :: Qrad_zx,emtau_zx,Qrad0_zx
+      real, dimension(mx,mz,0:nprocy-1) :: Qrad_zx_all,emtau_zx_all
+      real, dimension(mx,mz) :: Qrad_tot_zx,emtau_tot_zx
+      integer :: ipystart,ipystop
       integer :: m
-!
-      nQrad_zx=nx*nz
-      ntau_zx=nx*nz
-!
-      Qrad_tot_zx=0
-      tau_tot_zx=0
-!
-      if (mrad>0) then
-        ipystart=0
-        ipystop=nprocy-1
-      endif
-      if (mrad<0) then
-        ipystart=nprocy-1
-        ipystop=0
-      endif
-!
+
+      call MPI_ALLGATHER(emtau_zx,mx*mz,MPI_REAL,emtau_zx_all,mx*mz,MPI_REAL, &
+                         MPI_COMM_ROW,ierr)
+
+      call MPI_ALLGATHER(Qrad_zx,mx*mz,MPI_REAL,Qrad_zx_all,mx*mz,MPI_REAL, &
+                         MPI_COMM_ROW,ierr)
+
+      Qrad_tot_zx=0.0
+      emtau_tot_zx=1.0
+
+      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
+      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
+
+      do m=ipystart,ipystop,mrad
+        Qrad_tot_zx=Qrad_tot_zx*emtau_zx_all(:,:,m)+Qrad_zx_all(:,:,m)
+        emtau_tot_zx=emtau_tot_zx*emtau_zx_all(:,:,m)
+      enddo
+
+      Qrad0_zx=Qrad_tot_zx/(1-emtau_tot_zx)
+
       do m=ipystart,ipy-mrad,mrad
-        idest=ipz*nprocy+modulo(m,nprocy)
-        call MPI_SEND(Qrad_send_zx,nQrad_zx,MPI_REAL,idest,Qtag_peri_zx+idest, &
-                      MPI_COMM_WORLD,ierr)
-        call MPI_SEND(tau_send_zx,ntau_zx,MPI_REAL,idest,tautag_peri_zx+idest, &
-                      MPI_COMM_WORLD,ierr)
+        Qrad0_zx=Qrad0_zx*emtau_zx_all(:,:,m)+Qrad_zx_all(:,:,m)
       enddo
-!
-      do m=ipy+mrad,ipystop,mrad
-        idest=ipz*nprocy+modulo(m,nprocy)
-        call MPI_SEND(Qrad_send_zx,nQrad_zx,MPI_REAL,idest,Qtag_peri_zx+idest, &
-                      MPI_COMM_WORLD,ierr)
-        call MPI_SEND(tau_send_zx,ntau_zx,MPI_REAL,idest,tautag_peri_zx+idest, &
-                      MPI_COMM_WORLD,ierr)
-      enddo
-!
-      do m=ipystart,ipy-mrad,mrad
-        isource=ipz*nprocy+modulo(m,nprocy)
-        call MPI_RECV(Qrad_recv_zx,nQrad_zx,MPI_REAL,isource,Qtag_peri_zx+iproc, &
-                      MPI_COMM_WORLD,irecv_zx,ierr)
-        call MPI_RECV(tau_recv_zx,ntau_zx,MPI_REAL,isource,tautag_peri_zx+iproc, &
-                      MPI_COMM_WORLD,irecv_zx,ierr)
-        tau_tot_zx=tau_tot_zx+tau_recv_zx
-        Qrad_tot_zx=Qrad_tot_zx*exp(-tau_recv_zx)+Qrad_recv_zx
-      enddo
-!
-      tau0_zx=tau_tot_zx
-      Qrad0_zx=Qrad_tot_zx
-      tau_tot_zx=tau_tot_zx+tau_send_zx
-      Qrad_tot_zx=Qrad_tot_zx*exp(-tau_send_zx)+Qrad_send_zx
-!
-      do m=ipy+mrad,ipystop,mrad
-        isource=ipz*nprocy+modulo(m,nprocy)
-        call MPI_RECV(Qrad_recv_zx,nQrad_zx,MPI_REAL,isource,Qtag_peri_zx+iproc, &
-                      MPI_COMM_WORLD,irecv_zx,ierr)
-        call MPI_RECV(tau_recv_zx,ntau_zx,MPI_REAL,isource,tautag_peri_zx+iproc, &
-                      MPI_COMM_WORLD,irecv_zx,ierr)
-        tau_tot_zx=tau_tot_zx+tau_recv_zx
-        Qrad_tot_zx=Qrad_tot_zx*exp(-tau_recv_zx)+Qrad_recv_zx
-      enddo
-!
+
     endsubroutine radboundary_zx_periodic_ray
-!***********************************************************************
-    subroutine radboundary_xy_periodic_ray(nrad, &
-                                           Qrad_send_xy,tau_send_xy, &
-                                           Qrad0_xy,tau0_xy, &
-                                           Qrad_tot_xy,tau_tot_xy) 
-!
-      integer, intent(in) :: nrad
-      real, dimension(nx,ny), intent(in) :: Qrad_send_xy,tau_send_xy
-      real, dimension(nx,ny), intent(out) :: Qrad0_xy,tau0_xy
-      real, dimension(nx,ny), intent(out) :: Qrad_tot_xy,tau_tot_xy
-      real, dimension(nx,ny) :: Qrad_recv_xy,tau_recv_xy
-      integer :: idest,isource,nQrad_xy,ntau_xy,ipzstart,ipzstop
-      integer :: n
-!
-      nQrad_xy=nx*ny
-      ntau_xy=nx*ny
-!
-      Qrad_tot_xy=0
-      tau_tot_xy=0
-!
-      if (nrad>0) then
-        ipzstart=0
-        ipzstop=nprocz-1
-      endif
-      if (nrad<0) then
-        ipzstart=nprocy-1
-        ipzstop=0
-      endif
-!
-      do n=ipzstart,ipz-nrad,nrad
-        idest=ipz*nprocz+modulo(n,nprocz)
-        call MPI_SEND(Qrad_send_xy,nQrad_xy,MPI_REAL,idest,Qtag_peri_xy+idest, &
-                      MPI_COMM_WORLD,ierr)
-        call MPI_SEND(tau_send_xy,ntau_xy,MPI_REAL,idest,tautag_peri_xy+idest, &
-                      MPI_COMM_WORLD,ierr)
-      enddo
-!
-      do n=ipz+nrad,ipzstop,nrad
-        idest=ipz*nprocz+modulo(n,nprocz)
-        call MPI_SEND(Qrad_send_xy,nQrad_xy,MPI_REAL,idest,Qtag_peri_xy+idest, &
-                      MPI_COMM_WORLD,ierr)
-        call MPI_SEND(tau_send_xy,ntau_xy,MPI_REAL,idest,tautag_peri_xy+idest, &
-                      MPI_COMM_WORLD,ierr)
-      enddo
-!
-      do n=ipzstart,ipz-nrad,nrad
-        isource=ipz*nprocz+modulo(n,nprocz)
-        call MPI_RECV(Qrad_recv_xy,nQrad_xy,MPI_REAL,isource,Qtag_peri_xy+iproc, &
-                      MPI_COMM_WORLD,irecv_xy,ierr)
-        call MPI_RECV(tau_recv_xy,ntau_xy,MPI_REAL,isource,tautag_peri_xy+iproc, &
-                      MPI_COMM_WORLD,irecv_xy,ierr)
-        tau_tot_xy=tau_tot_xy+tau_recv_xy
-        Qrad_tot_xy=Qrad_tot_xy*exp(-tau_recv_xy)+Qrad_recv_xy
-      enddo
-!
-      tau0_xy=tau_tot_xy
-      Qrad0_xy=Qrad_tot_xy
-      tau_tot_xy=tau_tot_xy+tau_send_xy
-      Qrad_tot_xy=Qrad_tot_xy*exp(-tau_send_xy)+Qrad_send_xy
-!
-      do n=ipz+nrad,ipzstop,nrad
-        isource=ipz*nprocz+modulo(n,nprocz)
-        call MPI_RECV(Qrad_recv_xy,nQrad_xy,MPI_REAL,isource,Qtag_peri_xy+iproc, &
-                      MPI_COMM_WORLD,irecv_xy,ierr)
-        call MPI_RECV(tau_recv_xy,ntau_xy,MPI_REAL,isource,tautag_peri_xy+iproc, &
-                      MPI_COMM_WORLD,irecv_xy,ierr)
-        tau_tot_xy=tau_tot_xy+tau_recv_xy
-        Qrad_tot_xy=Qrad_tot_xy*exp(-tau_recv_xy)+Qrad_recv_xy
-      enddo
-!
-    endsubroutine radboundary_xy_periodic_ray
 !***********************************************************************
     subroutine mpibcast_logical_scl(lbcast_array,nbcast_array,proc)
 !

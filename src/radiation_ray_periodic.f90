@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.5 2004-10-05 09:22:13 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.6 2004-10-07 20:25:09 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.5 2004-10-05 09:22:13 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.6 2004-10-07 20:25:09 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -152,14 +152,14 @@ module Radiation
       if (rady>1) call stop_it("rady currently must not be greater than 1")
       if (radz>1) call stop_it("radz currently must not be greater than 1")
 
-      if (radx==1.and.nz>nx) then
+      if (radx==1.and.radz==1.and.nz>nx) then
         ! Could be fixed but it's probably not worth it...
-        call stop_it("initialize_radiation: For periodic boundaries in the"//&
+        call stop_it("initialize_radiation: For periodic boundaries in the "//&
                      "x-direction we need nz <= nx")
       endif
-      if (rady==1.and.nz>ny) then
+      if (rady==1.and.radz==1.and.nz>ny) then
         ! See above
-        call stop_it("initialize_radiation: For periodic boundaries in the"//&
+        call stop_it("initialize_radiation: For periodic boundaries in the "//&
                      "y-direction we need nz <= ny")
       endif
 !
@@ -167,15 +167,17 @@ module Radiation
 !
       idir=1
 
+      do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
-        rad2=1+lrad**2+mrad**2
-        if (rad2<=rad2max) then 
+        rad2=lrad**2+mrad**2+nrad**2
+        if ((rad2>0.and.rad2<=rad2max).and..not.(rad2==2.and.nrad==0)) then 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
           idir=idir+1
         endif
+      enddo
       enddo
       enddo
 !
@@ -201,7 +203,7 @@ module Radiation
 !
       weight=1.0/ndir
 !
-      if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',2*ndir
+      if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',ndir
 !
 !  Check boundary conditions
 !
@@ -239,34 +241,24 @@ module Radiation
 !  Loop over directions ``in the upper half room'' (nrad==1)
 !
       do idir=1,ndir
-!
-!  Do forward and backwards ray
-!
-      do nrad=1,-1,-2
 
         call raydirection
 
         if (lintrinsic) call Qintrinsic
 
-        if (lcommunicate) call Qcommunicate
+        if (lcommunicate) then
+          if (lperiodic_ray) then
+            call Qperiodic
+          else
+            call Qcommunicate
+          endif
+        endif
 
         if (lrevision) call Qrevision
 
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 
       enddo
-
-      enddo
-!
-!  Calculate periodic rays in the horizontal plane if desired
-!
-      !if (lhorizontal_rays) then
-
-      !  do idir=ndir+1,ndir+2
-
-      !  enddo
-
-      !endif
 
     endsubroutine radtransfer
 !***********************************************************************
@@ -286,6 +278,7 @@ module Radiation
 !
       lrad=dir(idir,1)
       mrad=dir(idir,2)
+      nrad=dir(idir,3)
 !
 !  Determine start and stop positions
 !
@@ -403,7 +396,9 @@ module Radiation
 !***********************************************************************
     subroutine Qcommunicate
 !
-!  set boundary intensities or receive from neighboring processors
+!  DOCUMENT ME!
+!
+!  This is for non-horizontal rays.
 !
 !  11-jul-03/tobi: coded
 !
@@ -521,6 +516,56 @@ module Radiation
       endif
 
     endsubroutine Qcommunicate
+!***********************************************************************
+    subroutine Qperiodic
+!
+!  DOCUMENT ME!
+!
+      use Mpicomm, only: radboundary_zx_periodic_ray
+      use IO, only: output
+
+      real, dimension(my,mz) :: Qrad0_yz
+      real, dimension(mx,mz) :: Qrad0_zx
+      real, dimension(mx,mz) :: Qrad_zx,emtau_zx
+      integer :: l,m,n
+!
+!  x-direction
+!
+      if (lrad/=0) then
+
+        do m=mmstart,mmstop
+        do n=nnstart,nnstop
+
+          Qrad0_yz(m,n)=Qrad(llstop,m,n)/(1-emtau(llstop,m,m))
+          Qrad0(llstart-lrad,m,n)=Qrad0_yz(m,n)
+
+        enddo
+        enddo
+
+      endif
+!
+!  y-direction
+!
+      if (mrad/=0) then
+
+        do n=nnstart,nnstop,nsign
+        do l=llstart,llstop,lsign
+          Qrad_zx(l,n)=Qrad(l,mmstop,n)
+          emtau_zx(l,n)=emtau(l,mmstop,n)
+        enddo
+        enddo
+
+        call radboundary_zx_periodic_ray(mrad,Qrad_zx,emtau_zx,Qrad0_zx)
+
+        do n=nnstart,nnstop,nsign
+        do l=llstart,llstop,lsign
+          Qrad0(l,mmstart-mrad,n)=Qrad0_zx(l,n)
+        enddo
+        enddo
+
+      endif
+
+    endsubroutine Qperiodic
 !***********************************************************************
     subroutine Qrevision
 !

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.63 2004-09-23 21:56:05 theine Exp $
+! $Id: radiation_ray.f90,v 1.64 2004-10-07 20:25:09 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -38,7 +38,6 @@ module Radiation
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
   integer :: ipystart,ipystop,ipzstart,ipzstop
-  logical :: lperiodic_ray,lperiodic_ray_x,lperiodic_ray_y,lperiodic_ray_z
   character (len=labellen) :: source_function_type='LTE',opacity_type='Hminus'
   real :: kappa_cst=1.0
   real :: Srad_const=1.0,amplSrad=1.0,radius_Srad=1.0
@@ -116,7 +115,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.63 2004-09-23 21:56:05 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.64 2004-10-07 20:25:09 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -355,11 +354,7 @@ module Radiation
 !
         if (lcommunicate) then
           do irad_rep=1,nrad_rep
-            if (lperiodic_ray) then
-              call Qperiodic_ray
-            else
-              call Qcommunicate
-            endif
+            call Qcommunicate
           enddo
         endif
 
@@ -454,13 +449,6 @@ module Radiation
       if (nrad>0) bc_ray_z=bc_rad1(3)
       if (nrad<0) bc_ray_z=bc_rad2(3)
 !
-!  are we dealing with a periodic ray?
-!
-      lperiodic_ray_x=bc_ray_x=='p'.and.mrad==0.and.nrad==0
-      lperiodic_ray_y=bc_ray_y=='p'.and.nrad==0.and.lrad==0
-      lperiodic_ray_z=bc_ray_z=='p'.and.lrad==0.and.mrad==0
-      lperiodic_ray=lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_z
-!
 !  determine start and stop processors
 !
       if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
@@ -551,96 +539,6 @@ module Radiation
       endif
 !
     endsubroutine Qintrinsic
-!***********************************************************************
-    subroutine Qperiodic_ray
-!
-!  calculate boundary intensities for rays parallel to a coordinate
-!  axis with periodic boundary conditions
-!
-!  11-jul-03/tobi: coded
-!
-      use Mpicomm, only: radboundary_zx_periodic_ray
-      use Mpicomm, only: radboundary_xy_periodic_ray
-      use Cdata
-!
-      real, dimension(ny,nz) :: Qrad_tot_yz,tau_tot_yz,Qrad_yz,tau_yz
-      real, dimension(ny,nz) :: Qrad0_yz,tau0_yz,emtau1_tot_yz
-      real, dimension(nx,nz) :: Qrad_tot_zx,tau_tot_zx,Qrad_zx,tau_zx
-      real, dimension(nx,nz) :: Qrad0_zx,tau0_zx,emtau1_tot_zx
-      real, dimension(nx,ny) :: Qrad_tot_xy,tau_tot_xy,Qrad_xy,tau_xy
-      real, dimension(nx,ny) :: Qrad0_xy,tau0_xy,emtau1_tot_xy
-!
-!  x-direction
-!
-      if (lperiodic_ray_x) then
-        Qrad_tot_yz=Qrad(llstop,m1:m2,n1:n2)
-        tau_tot_yz=tau(llstop,m1:m2,n1:n2)
-        Qrad0_yz=0
-        tau0_yz=0
-        where (tau_tot_yz>dtau_thresh1)
-          emtau1_tot_yz=1.0
-        elsewhere (tau_tot_yz<dtau_thresh2)
-          emtau1_tot_yz=tau_tot_yz*(1-0.5*tau_tot_yz*(1-0.33333333*tau_tot_yz))
-        elsewhere
-          emtau1_tot_yz=1-exp(-tau_tot_yz)
-        endwhere
-        Qrad0_yz=Qrad_tot_yz/emtau1_tot_yz*exp(-tau0_yz)+Qrad0_yz
-        Qrad0(llstart-lrad,m1:m2,n1:n2)=Qrad0_yz
-      endif
-!
-!  y-direction
-!
-      if (lperiodic_ray_y) then
-        if (nprocy==1) then
-          Qrad_tot_zx=Qrad(l1:l2,mmstop,n1:n2)
-          tau_tot_zx=tau(l1:l2,mmstop,n1:n2)
-          Qrad0_zx=0
-          tau0_zx=0
-        else
-          Qrad_zx=Qrad(l1:l2,mmstop,n1:n2)
-          tau_zx=tau(l1:l2,mmstop,n1:n2)
-          call radboundary_zx_periodic_ray(mrad,Qrad_zx,tau_zx, &
-                                           Qrad0_zx,tau0_zx, &
-                                           Qrad_tot_zx,tau_tot_zx)
-        endif
-        where (tau_tot_zx>dtau_thresh1)
-          emtau1_tot_zx=1.0
-        elsewhere (tau_tot_zx<dtau_thresh2)
-          emtau1_tot_zx=tau_tot_zx*(1-0.5*tau_tot_zx*(1-0.33333333*tau_tot_zx))
-        elsewhere
-          emtau1_tot_zx=1-exp(-tau_tot_zx)
-        endwhere
-        Qrad0_zx=Qrad_tot_zx/emtau1_tot_zx*exp(-tau0_zx)+Qrad0_zx
-        Qrad0(l1:l2,mmstart-mrad,n1:n2)=Qrad0_zx
-      endif
-!
-!  z-direction
-!
-      if (lperiodic_ray_z) then
-        if (nprocz==1) then
-          Qrad_tot_xy=Qrad(l1:l2,m1:m2,nnstop)
-          tau_tot_xy=tau(l1:l2,m1:m2,nnstop)
-          Qrad0_xy=0
-          tau0_xy=0
-        else
-          Qrad_xy=Qrad(l1:l2,m1:m2,nnstop)
-          tau_xy=tau(l1:l2,m1:m2,nnstop)
-          call radboundary_xy_periodic_ray(nrad,Qrad_xy,tau_xy, &
-                                           Qrad0_xy,tau0_xy, &
-                                           Qrad_tot_xy,tau_tot_xy)
-        endif
-        where (tau_tot_xy>dtau_thresh1)
-          emtau1_tot_xy=1.0
-        elsewhere (tau_tot_xy<dtau_thresh2)
-          emtau1_tot_xy=tau_tot_xy*(1-0.5*tau_tot_xy*(1-0.33333333*tau_tot_xy))
-        elsewhere
-          emtau1_tot_xy=1-exp(-tau_tot_xy)
-        endwhere
-        Qrad0_xy=Qrad_tot_xy/emtau1_tot_xy*exp(-tau0_xy)+Qrad0_xy
-        Qrad0(l1:l2,m1:m2,nnstart-nrad)=Qrad0_xy
-      endif
-!
-    endsubroutine Qperiodic_ray
 !***********************************************************************
     subroutine Qcommunicate
 !
