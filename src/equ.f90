@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.87 2002-07-11 12:25:31 nilshau Exp $
+! $Id: equ.f90,v 1.88 2002-07-15 14:04:36 nilshau Exp $
 
 module Equ
 
@@ -196,12 +196,14 @@ module Equ
       use Gravity
       use Entropy
       use Magnetic
+      use Radiation
       use Pscalar
       use Boundcond
       use IO
       use Shear
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
@@ -213,7 +215,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.87 2002-07-11 12:25:31 nilshau Exp $")
+           "$Id: equ.f90,v 1.88 2002-07-15 14:04:36 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -274,7 +276,7 @@ module Equ
 !  They all are needed for setting some variables even
 !  if their evolution is turned off.
 !
-        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2)
+        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
         call dss_dt   (f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
         call dlncc_dt (f,df,uu,glnrho)
@@ -291,6 +293,10 @@ module Equ
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
+!
+!  Evolution of radiative energy
+!
+        if (lradiation) call de_dt(f,df,rho1,divu,uu,uij,TT1)
 !
 !  Add shear if precent
 !

@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.79 2002-07-11 06:56:18 nilshau Exp $
+### $Id: Makefile,v 1.80 2002-07-15 14:04:36 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,6 +11,7 @@ HYDRO=hydro
 DENSITY=density
 ENTROPY=noentropy
 MAGNETIC=nomagnetic
+RADIATION=noradiation
 GRAVITY=nograv
 GLOBAL=noglobal
 FORCING=noforcing
@@ -125,7 +126,7 @@ code:
 	make start.x run.x
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
-physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o
+physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
@@ -166,6 +167,7 @@ $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DENSITY).o slices.o $(FFT).o
+$(RADIATION).o:	$(RADIATION).f90 cdata.o $(MPICOMM).o sub.o 
 $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o slices.o
 $(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o

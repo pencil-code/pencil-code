@@ -13,8 +13,9 @@ HYDRO=hydro
 DENSITY=density
 ENTROPY=noentropy
 MAGNETIC=nomagnetic
+RADIATION=noradiation
 PSCALAR=nopscalar
 
 GRAVITY=nograv
 FORCING=noforcing
-
+SHEAR=noshear

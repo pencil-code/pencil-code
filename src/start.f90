@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.55 2002-07-10 08:35:29 dobler Exp $
+! $Id: start.f90,v 1.56 2002-07-15 14:04:36 nilshau Exp $
 !
 !***********************************************************************
       program start
@@ -32,7 +32,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.55 2002-07-10 08:35:29 dobler Exp $")
+             "$Id: start.f90,v 1.56 2002-07-15 14:04:36 nilshau Exp $")
 !
 !  Initialise random number generator in processor-dependent fashion.
 !  Slightly tricky, since setting seed=(/iproc,0,0,0,0,0,0,0,.../)
@@ -111,6 +111,7 @@
         call init_lnrho(f,xx,yy,zz)
         call init_ent  (f,xx,yy,zz)
         call init_aa   (f,xx,yy,zz)
+        call init_rad  (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)
 !
 !  write to disk

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.45 2002-07-12 04:23:43 vpariev Exp $
+! $Id: hydro.f90,v 1.46 2002-07-15 14:04:36 nilshau Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.45 2002-07-12 04:23:43 vpariev Exp $")
+           "$Id: hydro.f90,v 1.46 2002-07-15 14:04:36 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -251,7 +251,7 @@ module Hydro
            minval(yy),maxval(zz) !(keep compiler from complaining)
     endsubroutine init_hydro
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
 !
 !  velocity evolution
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc

@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.6 2002-07-11 00:24:33 brandenb Exp $
+! $Id: nohydro.f90,v 1.7 2002-07-15 14:04:36 nilshau Exp $
 
 module Hydro
 
@@ -42,7 +42,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.6 2002-07-11 00:24:33 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.7 2002-07-15 14:04:36 nilshau Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -62,7 +62,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_hydro
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2,uij)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -75,6 +75,7 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: divu,u2,rho1
 !

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.40 2002-07-11 00:24:33 brandenb Exp $ 
+! $Id: param_io.f90,v 1.41 2002-07-15 14:04:36 nilshau Exp $ 
 
 module Param_IO
 
@@ -14,6 +14,7 @@ module Param_IO
   use Gravity
   use Entropy
   use Magnetic
+  use radiation
   use Pscalar
   use Shear
  
@@ -48,14 +49,15 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
-                     read(1,NML=init_pars         ,err=99)
-      if (lhydro   ) read(1,NML=hydro_init_pars   ,err=99)
-      if (ldensity ) read(1,NML=density_init_pars ,err=99)
-      if (lgrav    ) read(1,NML=grav_init_pars    ,err=99)
-      if (lentropy ) read(1,NML=entropy_init_pars ,err=99)
-      if (lmagnetic) read(1,NML=magnetic_init_pars,err=99)
-      if (lpscalar ) read(1,NML=pscalar_init_pars ,err=99)
-      if (lshear   ) read(1,NML=shear_init_pars   ,err=99)
+                      read(1,NML=init_pars          ,err=99)
+      if (lhydro    ) read(1,NML=hydro_init_pars    ,err=99)
+      if (ldensity  ) read(1,NML=density_init_pars  ,err=99)
+      if (lgrav     ) read(1,NML=grav_init_pars     ,err=99)
+      if (lentropy  ) read(1,NML=entropy_init_pars  ,err=99)
+      if (lmagnetic ) read(1,NML=magnetic_init_pars ,err=99)
+      if (lradiation) read(1,NML=radiation_init_pars,err=99)
+      if (lpscalar  ) read(1,NML=pscalar_init_pars  ,err=99)
+      if (lshear    ) read(1,NML=shear_init_pars    ,err=99)
       close(1)
 !
 !  output on the console, but only when root processor
@@ -64,14 +66,15 @@ module Param_IO
       if(lroot) call cvs_id(cvsid)
 !
       if (lroot.and.ip<14) then
-                       write(*,NML=init_pars         )
-        if (lhydro   ) write(*,NML=hydro_init_pars   )
-        if (ldensity ) write(*,NML=density_init_pars )
-        if (lgrav)     write(*,NML=grav_init_pars    )
-        if (lentropy ) write(*,NML=entropy_init_pars )
-        if (lmagnetic) write(*,NML=magnetic_init_pars)
-        if (lpscalar ) write(*,NML=pscalar_init_pars )
-        if (lshear   ) write(*,NML=shear_init_pars   )
+                        write(*,NML=init_pars          )
+        if (lhydro    ) write(*,NML=hydro_init_pars    )
+        if (ldensity  ) write(*,NML=density_init_pars  )
+        if (lgrav     ) write(*,NML=grav_init_pars     )
+        if (lentropy  ) write(*,NML=entropy_init_pars  )
+        if (lmagnetic ) write(*,NML=magnetic_init_pars )
+        if (lradiation) write(*,NML=radiation_init_pars)
+        if (lpscalar  ) write(*,NML=pscalar_init_pars  )
+        if (lshear    ) write(*,NML=shear_init_pars    )
       endif
 !
 !  set gamma1, cs20, and lnrho0
@@ -86,14 +89,15 @@ module Param_IO
 99    if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
-                       print*,'&init_pars               /'
-        if (lhydro   ) print*,'&hydro_init_pars         /'
-        if (ldensity ) print*,'&density_init_pars       /'
-        if (lgrav    ) print*,'&grav_init_pars          /'
-        if (lentropy ) print*,'&entropy_init_pars       /'
-        if (lmagnetic) print*,'&magnetic_init_pars      /'
-        if (lpscalar ) print*,'&pscalar_init_pars       /'
-        if (lshear   ) print*,'&shear_init_pars         /'
+                        print*,'&init_pars                /'
+        if (lhydro    ) print*,'&hydro_init_pars          /'
+        if (ldensity  ) print*,'&density_init_pars        /'
+        if (lgrav     ) print*,'&grav_init_pars           /'
+        if (lentropy  ) print*,'&entropy_init_pars        /'
+        if (lmagnetic ) print*,'&magnetic_init_pars       /'
+        if (lradiation) print*,'&radiation_init_pars      /'
+        if (lpscalar  ) print*,'&pscalar_init_pars        /'
+        if (lshear    ) print*,'&shear_init_pars          /'
         print*,'------END sample namelist -------'
         print*
       endif
@@ -131,15 +135,16 @@ module Param_IO
 !  read through all items that *may* be present
 !  in the various modules
 !
-                     read(1,NML=run_pars         ,err=99)
-      if (lhydro   ) read(1,NML=hydro_run_pars   ,err=99)
-      if (ldensity ) read(1,NML=density_run_pars ,err=99)
-      if (lforcing ) read(1,NML=forcing_run_pars ,err=99)
-      if (lgrav    ) read(1,NML=grav_run_pars    ,err=99)
-      if (lentropy ) read(1,NML=entropy_run_pars ,err=99)
-      if (lmagnetic) read(1,NML=magnetic_run_pars,err=99)
-      if (lpscalar ) read(1,NML=pscalar_run_pars,err=99)
-      if (lshear   ) read(1,NML=shear_run_pars   ,err=99)
+                      read(1,NML=run_pars          ,err=99)
+      if (lhydro    ) read(1,NML=hydro_run_pars    ,err=99)
+      if (ldensity  ) read(1,NML=density_run_pars  ,err=99)
+      if (lforcing  ) read(1,NML=forcing_run_pars  ,err=99)
+      if (lgrav     ) read(1,NML=grav_run_pars     ,err=99)
+      if (lentropy  ) read(1,NML=entropy_run_pars  ,err=99)
+      if (lmagnetic ) read(1,NML=magnetic_run_pars ,err=99)
+      if (lradiation) read(1,NML=radiation_run_pars,err=99)
+      if (lpscalar  ) read(1,NML=pscalar_run_pars  ,err=99)
+      if (lshear    ) read(1,NML=shear_run_pars    ,err=99)
       close(1)
 !
 !  print cvs id from first line
@@ -205,15 +210,16 @@ module Param_IO
 99    if (lroot) then
         print*
         print*,'-----BEGIN sample namelist ------'
-                       print*,'&run_pars               /'
-        if (lhydro   ) print*,'&hydro_run_pars         /'
-        if (ldensity ) print*,'&density_run_pars       /'
-        if (lforcing ) print*,'&forcing_run_pars       /'
-        if (lgrav    ) print*,'&grav_run_pars          /'
-        if (lentropy ) print*,'&entropy_run_pars       /'
-        if (lmagnetic) print*,'&magnetic_run_pars      /'
-        if (lpscalar ) print*,'&pscalar_run_pars       /'
-        if (lshear   ) print*,'&shear_run_pars         /'
+                        print*,'&run_pars                /'
+        if (lhydro    ) print*,'&hydro_run_pars          /'
+        if (ldensity  ) print*,'&density_run_pars        /'
+        if (lforcing  ) print*,'&forcing_run_pars        /'
+        if (lgrav     ) print*,'&grav_run_pars           /'
+        if (lentropy  ) print*,'&entropy_run_pars        /'
+        if (lmagnetic ) print*,'&magnetic_run_pars       /'
+        if (lradiation) print*,'&radiation_run_pars      /'
+        if (lpscalar  ) print*,'&pscalar_run_pars        /'
+        if (lshear    ) print*,'&shear_run_pars          /'
         print*,'------END sample namelist -------'
         print*
       endif
@@ -230,14 +236,15 @@ module Param_IO
       use Cdata
 !
       if (lroot.and.ip<14) then
-                       write(*,NML=run_pars         )
-        if (lhydro   ) write(*,NML=hydro_run_pars   )
-        if (lforcing ) write(*,NML=forcing_run_pars )
-        if (lgrav    ) write(*,NML=grav_run_pars    )
-        if (lentropy ) write(*,NML=entropy_run_pars )
-        if (lmagnetic) write(*,NML=magnetic_run_pars)
-        if (lpscalar ) write(*,NML=pscalar_run_pars)
-        if (lshear)    write(*,NML=shear_run_pars   )
+                        write(*,NML=run_pars          )
+        if (lhydro    ) write(*,NML=hydro_run_pars    )
+        if (lforcing  ) write(*,NML=forcing_run_pars  )
+        if (lgrav     ) write(*,NML=grav_run_pars     )
+        if (lentropy  ) write(*,NML=entropy_run_pars  )
+        if (lmagnetic ) write(*,NML=magnetic_run_pars )
+        if (lradiation) write(*,NML=radiation_run_pars)
+        if (lpscalar  ) write(*,NML=pscalar_run_pars  )
+        if (lshear    ) write(*,NML=shear_run_pars    )
       endif
 !
     endsubroutine print_runpars
@@ -253,16 +260,17 @@ module Param_IO
            lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lpscalar,lforcing,lshear
 !
       if (lroot) then
-        open(1,FILE='tmp/param.nml',DELIM='apostrophe')
-                       write(1,NML=init_pars         )
-        if (lhydro   ) write(1,NML=hydro_init_pars   )
-        if (ldensity ) write(1,NML=density_init_pars )
+        open(1,FILE='tmp/param.nml',DELIM='apostrophe' )
+                        write(1,NML=init_pars          )
+        if (lhydro    ) write(1,NML=hydro_init_pars    )
+        if (ldensity  ) write(1,NML=density_init_pars  )
         ! no input parameters for forcing
-        if (lgrav    ) write(1,NML=grav_init_pars    )
-        if (lentropy ) write(1,NML=entropy_init_pars )
-        if (lmagnetic) write(1,NML=magnetic_init_pars)
-        if (lpscalar ) write(1,NML=pscalar_init_pars)
-        if (lshear   ) write(1,NML=shear_init_pars   )
+        if (lgrav     ) write(1,NML=grav_init_pars     )
+        if (lentropy  ) write(1,NML=entropy_init_pars  )
+        if (lmagnetic ) write(1,NML=magnetic_init_pars )
+        if (lradiation) write(1,NML=radiation_init_pars)
+        if (lpscalar  ) write(1,NML=pscalar_init_pars  )
+        if (lshear    ) write(1,NML=shear_init_pars    )
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                        write(1,NML=lphysics         ) 
@@ -280,14 +288,15 @@ module Param_IO
       use Cdata
 !
         open(1,FILE='tmp/param.nml')
-                       read(1,NML=init_pars         )
-        if (lhydro   ) read(1,NML=hydro_init_pars   )
-        if (ldensity ) read(1,NML=density_init_pars )
-        if (lgrav    ) read(1,NML=grav_init_pars    )
-        if (lentropy ) read(1,NML=entropy_init_pars )
-        if (lmagnetic) read(1,NML=magnetic_init_pars)
-        if (lpscalar ) read(1,NML=pscalar_init_pars)
-        if (lshear   ) read(1,NML=shear_init_pars   )
+                        read(1,NML=init_pars          )
+        if (lhydro    ) read(1,NML=hydro_init_pars    )
+        if (ldensity  ) read(1,NML=density_init_pars  )
+        if (lgrav     ) read(1,NML=grav_init_pars     )
+        if (lentropy  ) read(1,NML=entropy_init_pars  )
+        if (lmagnetic ) read(1,NML=magnetic_init_pars )
+        if (lradiation) read(1,NML=radiation_init_pars)
+        if (lpscalar  ) read(1,NML=pscalar_init_pars  )
+        if (lshear    ) read(1,NML=shear_init_pars    )
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -305,15 +314,16 @@ module Param_IO
 !
       if (lroot) then
         open(1,FILE='tmp/param2.nml',DELIM='apostrophe')
-                       write(1,NML=run_pars         )
-        if (lhydro   ) write(1,NML=hydro_run_pars   )
-        if (ldensity ) write(1,NML=density_run_pars )
-        if (lforcing ) write(1,NML=forcing_run_pars )
-        if (lgrav    ) write(1,NML=grav_run_pars    )
-        if (lentropy ) write(1,NML=entropy_run_pars )
-        if (lmagnetic) write(1,NML=magnetic_run_pars)
-        if (lpscalar ) write(1,NML=pscalar_run_pars)
-        if (lshear   ) write(1,NML=shear_run_pars   )
+                        write(1,NML=run_pars          )
+        if (lhydro    ) write(1,NML=hydro_run_pars    )
+        if (ldensity  ) write(1,NML=density_run_pars  )
+        if (lforcing  ) write(1,NML=forcing_run_pars  )
+        if (lgrav     ) write(1,NML=grav_run_pars     )
+        if (lentropy  ) write(1,NML=entropy_run_pars  )
+        if (lmagnetic ) write(1,NML=magnetic_run_pars )
+        if (lradiation) write(1,NML=radiation_run_pars)
+        if (lpscalar  ) write(1,NML=pscalar_run_pars  )
+        if (lshear    ) write(1,NML=shear_run_pars    )
       endif
 !
     endsubroutine wparam2

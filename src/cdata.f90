@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.72 2002-07-12 17:40:59 brandenb Exp $
+! $Id: cdata.f90,v 1.73 2002-07-15 14:04:36 nilshau Exp $
 
 module Cdata
 
@@ -38,6 +38,7 @@ module Cdata
   integer :: nseed
   integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
+  integer :: ie,iff,ifx,ify,ifz
   integer :: nt=0,it1=10
   integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
   integer :: ivisc
@@ -66,7 +67,7 @@ module Cdata
   logical :: lout,headt=.true.,headtt=.true.,ldt,lfirst,ldiagnos
   logical :: lwrite_ic=.false.,lnowrite=.false.
   logical :: lroot=.true.,ldebug=.false.
-  logical :: lshear=.false.,lpscalar=.false.
+  logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
   logical :: lfirstpoint
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
