@@ -3,7 +3,7 @@
 !  run parameters for forced helical MHD turbulence
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.27 2004-07-24 04:52:13 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.28 2004-09-12 10:42:11 ponty Exp $',
   nt=10, it1=2, cdt=0.4, cdtv=0.3, isave=10, itorder=3,
   dsnap=50, dvid=0.2,
   random_gen='system'
@@ -15,8 +15,7 @@
 &density_run_pars
 /
 &forcing_run_pars
-  iforce='helical', force=0.07, relhel=1.,
-  ! old_forcing_evector=T
+  iforce='helical', force=0.07, relhel=1.
 /
 &magnetic_run_pars
   eta=5e-3,
