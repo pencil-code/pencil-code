@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.136 2004-10-13 16:20:17 dobler Exp $
+# $Id: getconf.csh,v 1.137 2004-10-25 10:35:15 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -526,8 +526,11 @@ else if ($hn =~ opto[1-4]) then
     if ($hn =~ opto3) set hn2=opto4
     set mpirunops2 = `repeat 4 echo $hn; repeat $ncpus2 echo $hn2`
   endif
-  set local_disc = 0
-  set one_local_disc = 0 
+  set local_disc = 1
+  set one_local_disc = 0
+  setenv SSH rsh
+  setenv SCP rcp
+  setenv SCRATCH_DIR /var/tmp/$USER
 
 else
   echo "Generic setup; hostname is <$hn>"
