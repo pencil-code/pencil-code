@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.32 2004-02-03 15:52:19 ajohan Exp $
+! $Id: dustdensity.f90,v 1.33 2004-02-05 10:30:27 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -22,13 +22,13 @@ module Dustdensity
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(ndustspec) :: cdiffnd=0
-  real :: nd_const=1.,dkern_cst=1.,dust_to_gas_ratio=0.,rhod0=1.,nd00=0.
-  real :: cdiffnd_all, mdave0=1., adpeak=5e-6
+  real :: nd_const=1.,dkern_cst=1.,alpha_dtog=0.,rhod0=1.,nd00=0.
+  real :: cdiffnd_all, mdave0=1., adpeak=5e-4
   character (len=labellen) :: initnd='zero'
   logical :: lcalcdkern=.true.
 
   namelist /dustdensity_init_pars/ &
-      rhod0, initnd, dust_to_gas_ratio, nd_const, dkern_cst, nd00, mdave0, &
+      rhod0, initnd, alpha_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak
 
   namelist /dustdensity_run_pars/ &
@@ -86,7 +86,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.32 2004-02-03 15:52:19 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.33 2004-02-05 10:30:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -174,7 +174,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
-      real :: mdpeak
+      real :: mdpeak,rhodtot=0.
       integer :: i,j,k
 !
 !  different initializations of nd (called from start).
@@ -190,26 +190,35 @@ module Dustdensity
         do k=1,ndustspec
           mdpeak = 4/3.*pi*adpeak**3*rhods
           if (md(k) .le. mdpeak) then
-            f(:,:,:,ind(k)) = (md(k)/mdpeak)**(-0.833333)
+            f(:,:,:,ind(k)) = ad(k)**(-3.5)*3/(4*pi*rhods)**(1/3.)* &
+                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))
           else
-            f(:,:,:,ind(k)) = (md(k)/mdpeak)**(-2.000000)
+            f(:,:,:,ind(k)) = ad(k)**(-7)*3/(4*pi*rhods)**(1/3.)* &
+                (mdplus(k)**(1/3.)-mdminus(k)**(1/3.))*adpeak**(3.5)
           endif
-        enddo  
+          rhodtot = rhodtot + f(l1,m1,n1,ind(k))*md(k)
+        enddo
+
+        do k=1,ndustspec
+          f(:,:,:,ind(k)) = &
+              f(:,:,:,ind(k))*alpha_dtog*exp(f(:,:,:,ilnrho))/rhodtot
+        enddo
+        
       case('const_nd'); f(:,:,:,ind) = nd_const
       case('frac_of_gas_loc')
-        if (dust_to_gas_ratio .lt. 0.) &
-            call stop_it("init_nd: Negative dust_to_gas_ratio!")
+        if (alpha_dtog .lt. 0.) &
+            call stop_it("init_nd: Negative alpha_dtog!")
         do k=1,ndustspec
-          f(:,:,:,ind(k)) = dust_to_gas_ratio/md(k)*exp(f(:,:,:,ilnrho))
+          f(:,:,:,ind(k)) = alpha_dtog/md(k)*exp(f(:,:,:,ilnrho))
         enddo
       case('frac_of_gas_glo')
-        if (dust_to_gas_ratio .lt. 0.) &
-            call stop_it("init_nd: Negative dust_to_gas_ratio!")
+        if (alpha_dtog .lt. 0.) &
+            call stop_it("init_nd: Negative alpha_dtog!")
         do i=1,mx
           do j=1,my
             do k=1,ndustspec
               f(i,j,:,ind(k)) = &
-                  dust_to_gas_ratio/md(k)*exp(f(4,4,:,ilnrho))
+                  alpha_dtog/md(k)*exp(f(4,4,:,ilnrho))
             enddo
           enddo
         enddo
