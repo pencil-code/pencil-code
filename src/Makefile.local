@@ -5,17 +5,17 @@
 
 LIBSIG=-L$(HOME)/f90/lib
 LDMPI=-lmpi
-MPICOMM=nompicomm
-IO=io_dist
-GLOBAL=noglobal
 
-HYDRO=hydro
-DENSITY=density
-ENTROPY=noentropy
-MAGNETIC=nomagnetic
-RADIATION=noradiation
-PSCALAR=nopscalar
+MPICOMM   = nompicomm
+GLOBAL    = noglobal
 
-GRAVITY=nograv
-FORCING=noforcing
-SHEAR=noshear
+HYDRO     =   hydro
+DENSITY   =   density
+ENTROPY   = noentropy
+MAGNETIC  = nomagnetic
+RADIATION = noradiation
+PSCALAR   = nopscalar
+
+GRAVITY   = nograv
+FORCING   = noforcing
+SHEAR     = noshear
