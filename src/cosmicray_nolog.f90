@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.15 2004-07-03 02:13:13 theine Exp $
+! $Id: cosmicray_nolog.f90,v 1.16 2004-08-03 07:40:46 brandenb Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -41,7 +41,7 @@ module CosmicRay
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
-  real :: limiter_cr=1.
+  real :: limiter_cr=1.,blimiter_cr=0.
   logical :: simplified_cosmicray_tensor=.false.
   logical :: luse_diff_constants = .false.
 
@@ -49,7 +49,7 @@ module CosmicRay
        cosmicray_diff,Kperp,Kpara, &
        gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
        luse_diff_constants,ampl_Qcr, &
-       limiter_cr
+       limiter_cr,blimiter_cr
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
@@ -91,7 +91,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.15 2004-07-03 02:13:13 theine Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.16 2004-08-03 07:40:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -332,6 +332,7 @@ module CosmicRay
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
 !  20-mar-04/axel: implemented limiter for CR advection speed such that |H|<1
+!   2-aug-04/axel: implemented blimiter for CR tensor for |B| < blimiter_cr
 !
       use Sub
 !
@@ -339,8 +340,10 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
-      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi
-      real, dimension (nx) :: hhh2,quenchfactor
+      real, dimension (nx,3) :: gradB2,BuiBujgradB2
+      real, dimension (nx) :: tmp,b2,b21,del2ecr,tmpj,vKperp,vKpara,tmpi
+      real, dimension (nx) :: hhh2,quenchfactor,dquenchfactor
+      real :: blimiter_cr2
 !
 !  use global Kperp, Kpara ?
 ! 
@@ -358,8 +361,8 @@ module CosmicRay
 !  calculate unit vector of bb
 !
       call dot2_mn(bb,b2)
-      b1=1./max(tiny(b2),sqrt(b2))
-      call multsv_mn(b1,bb,bunit)
+      b21=1./max(tiny(b2),b2)
+      call multsv_mn(sqrt(b21),bb,bunit)
 !
 !  calculate first H_i (unless we use simplified_cosmicray_tensor)
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
@@ -367,25 +370,65 @@ module CosmicRay
       if(simplified_cosmicray_tensor) then
         tmp=0.
       else
-        do i=1,3
-          hhh(:,i)=0.
-          do j=1,3
-            tmpj(:)=0.
-            do k=1,3
-              tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
-            enddo
-            hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
+!
+!  calculate grad(B^2) = 2Bk*Bk,j
+!
+        do j=1,3
+          gradB2(:,j)=0.
+          do k=1,3
+            gradB2(:,j)=gradB2(:,j)+2.*bb(:,k)*bij(:,k,j)
           enddo
         enddo
-        call multsv_mn(b1,hhh,hhh)
+!
+!  calculate BuiBujgradB2(:,i) = bunit(:,i)*bunit(:,j)*gradB2(:,j)
+!
+        do i=1,3
+          tmp=0.
+          do j=1,3
+            tmp=tmp+bunit(:,i)*bunit(:,j)*gradB2(:,j)
+          enddo
+          BuiBujgradB2(:,i)=tmp
+        enddo
+!
+!  write as Hi=(Bj*Bi,j-Bhati*Bhatj*gradjB2)/B^2
+!
+        do i=1,3
+          tmp=0.
+          do j=1,3
+            tmp=tmp+bb(:,j)*bij(:,i,j)
+          enddo
+          hhh(:,i)=tmp-BuiBujgradB2(:,i)
+        enddo
+        call multsv_mn(b21,hhh,hhh)
 !
 !  limit the length of H such that dxmin*H < 1, so we also multiply
 !  by 1/sqrt(1.+dxmin^2*H^2).
 !  and dot H with ecr gradient
 !
-        call dot2_mn(hhh,hhh2)
-        quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
-        call multsv_mn(quenchfactor,hhh,hhh)
+        if (limiter_cr>0.) then
+          call dot2_mn(hhh,hhh2)
+          quenchfactor=1./sqrt(1.+(limiter_cr*dxmin)**2*hhh2)
+          call multsv_mn(quenchfactor,hhh,hhh)
+        endif
+!
+!  apply blimiter_cr, q=q(B^2), q(x)=x/(x0+x), q'(x)=x0/(x0+x)
+!  Ucr = q(B2)*Ucr_old + BiBj.
+!
+        if (blimiter_cr/=0.) then
+          blimiter_cr2=blimiter_cr**2
+          quenchfactor=b2/(blimiter_cr2+b2)
+          dquenchfactor=blimiter_cr2/(blimiter_cr2+b2)**2
+          call multsv_mn(quenchfactor,hhh,hhh)
+!
+!  add Hi = Hi + ni*nj*gradj(B^2)
+!
+          do i=1,3
+            hhh(:,i)=hhh(:,i)+dquenchfactor*BuiBujgradB2(:,i)
+          enddo
+        endif
+!
+!  apply -U_cr*grad(ecr)
+!
         call dot_mn(hhh,gecr,tmp)
       endif
 !
@@ -397,7 +440,11 @@ module CosmicRay
       do j=1,3 
         del2ecr=del2ecr+ecr_ij(:,j,j)
         do i=1,3
-          tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+          if (blimiter_cr==0.) then
+            tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+          else
+            tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)*quenchfactor
+          endif
         enddo
       enddo
 !
