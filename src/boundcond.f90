@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.56 2003-08-26 16:40:36 mee Exp $
+! $Id: boundcond.f90,v 1.57 2003-09-06 18:55:30 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -203,13 +203,14 @@ module Boundcond
 !  11-nov-02/wolf: unified bot/top, now handled by loop
 !
       use Cdata
-      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,chi, &
+      use Entropy, only: hcond0,hcond1,Fbot,FbotKbot,Ftop,FtopKtop,chi, &
                          lmultilayer,lcalc_heatcond_constchi
       use Magnetic
       use Density
       use Ionization
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
+      real :: Ftopbot,FtopbotK
       integer :: j,k,ip_ok
       character (len=bclen), dimension(mvar) :: bc12
       character (len=3) :: topbot
@@ -226,9 +227,17 @@ module Boundcond
       case default
         do k=1,2                ! loop over 'bot','top'
           if (k==1) then
-            topbot='bot'; bc12=bcz1; ip_ok=0
+            topbot='bot'
+            bc12=bcz1
+            ip_ok=0
+            Ftopbot=Fbot
+            FtopbotK=FbotKbot
           else
-            topbot='top'; bc12=bcz2; ip_ok=nprocz-1
+            topbot='top'
+            bc12=bcz2
+            ip_ok=nprocz-1
+            Ftopbot=Ftop
+            FtopbotK=FtopKtop
           endif
           !
           do j=1,mvar
@@ -250,9 +259,9 @@ module Boundcond
               case ('1s')       ! one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
-                if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Fbot,FbotKbot,chi, &
+                if (j==iss) call bc_ss_flux(f,topbot,hcond0,hcond1,Ftopbot,FtopbotK,chi, &
                                   lmultilayer,lcalc_heatcond_constchi)
-                if (j==iaa)  call bc_aa_pot(f,topbot)
+                if (j==iaa) call bc_aa_pot(f,topbot)
               case ('cT')       ! constant temp.
                 if (j==ilnrho) call bc_lnrho_temp_z(f,topbot)
                 if (j==iss)   call bc_ss_temp_z(f,topbot)

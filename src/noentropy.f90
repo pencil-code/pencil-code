@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.42 2003-08-26 16:40:36 mee Exp $
+! $Id: noentropy.f90,v 1.43 2003-09-06 18:55:30 theine Exp $
 
 module Entropy
 
@@ -18,9 +18,9 @@ module Entropy
 
   ! run parameters
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
-  real :: hcond0=0.
-  real :: Fbot=impossible,hcond1=impossible
-  real :: FbotKbot=impossible,chi=impossible
+  real :: hcond0=0.,hcond1=impossible,chi=impossible
+  real :: Fbot=impossible,FbotKbot=impossible
+  real :: Ftop=impossible,FtopKtop=impossible
   logical :: lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
 
@@ -49,7 +49,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.42 2003-08-26 16:40:36 mee Exp $")
+           "$Id: noentropy.f90,v 1.43 2003-09-06 18:55:30 theine Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.199 2003-08-28 08:57:11 mee Exp $
+! $Id: entropy.f90,v 1.200 2003-09-06 18:55:30 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -26,8 +26,9 @@ module Entropy
   real :: center2_x=0., center2_y=0., center2_z=0.
   real :: thermal_background=0., thermal_peak=0., thermal_scaling=1.
   real :: hcond0=0.
-  real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
-  real :: FbotKbot=impossible,Kbot=impossible
+  real :: hcond1=impossible,hcond2=impossible
+  real :: Fbot=impossible,FbotKbot=impossible,Kbot=impossible
+  real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
   real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
   real :: heat_uniform=0.
@@ -90,7 +91,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.199 2003-08-28 08:57:11 mee Exp $")
+           "$Id: entropy.f90,v 1.200 2003-09-06 18:55:30 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -147,11 +148,31 @@ module Entropy
           else
             FbotKbot=0.
           endif
+          !
+          !  calculate Ftop if it has not been set in run.in
+          !
+          if (Ftop==impossible) then
+            if (bcz2(iss)=='c1') then
+              Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+              if (lroot) print*, &
+                      'initialize_entropy: Calculated Ftop = ',Ftop
+            else
+              Ftop=0.
+            endif
+          endif
+          if (hcond0*hcond2 /= 0.) then
+            FtopKtop=Ftop/(hcond0*hcond2)
+          else
+            FtopKtop=0.
+          endif
+!
         else
           !
           !  Wolfgang, in future we should define chiz=chi(z) or Kz=K(z) here.
           !  calculate hcond and FbotKbot=Fbot/K
           !  (K=hcond is radiative conductivity)
+          !
+          !  calculate Fbot if it has not been set in run.in
           !
           if (Fbot==impossible) then
             if (bcz1(iss)=='c1') then
@@ -165,6 +186,22 @@ module Entropy
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)
           if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
+          !
+          !  calculate Ftop if it has not been set in run.in
+          !
+          if (Ftop==impossible) then
+            if (bcz2(iss)=='c1') then
+              Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+              if (lroot) print*, &
+                      'initialize_entropy: Calculated Ftop = ', Ftop
+            else
+              Ftop=0.
+            endif
+          endif
+          Ktop=gamma1/gamma*(mpoly+1.)*Ftop
+          FtopKtop=gamma/gamma1/(mpoly+1.)
+          if(lroot) print*,'initialize_entropy: Ftop,Ktop=',Ftop,Ktop
+!
         endif
       endif
 !
@@ -864,7 +901,7 @@ module Entropy
 !
       if(headtt) then
         print*,'calc_heatcond: hcond0=',hcond0
-        if (lgravz) print*,'calc_heatcond: Fbot=',Fbot
+        if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
       endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.62 2003-09-06 14:48:42 theine Exp $
+! $Id: noionization.f90,v 1.63 2003-09-06 18:55:30 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -75,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.62 2003-09-06 14:48:42 theine Exp $")
+           "$Id: noionization.f90,v 1.63 2003-09-06 18:55:30 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -289,7 +289,7 @@ module Ionization
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
+    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
@@ -303,7 +303,7 @@ module Ionization
       use Cdata
       use Gravity
 !
-      real, intent(in) :: Fbot, FbotKbot, hcond0, hcond1, chi
+      real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
@@ -320,33 +320,14 @@ module Ionization
       select case(topbot)
 !
 !  bottom boundary
-!
-      case('strange-bot')
-        if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 1.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n1,iss) &
-                       - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-        tmp_xy = Fbot/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = &
-               (2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
-               )/gamma &
-               + f(:,:,n1+i,iss)
-        enddo
-!
-!  bottom boundary
 !  ===============
 !
       case('bot')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0
         endif
-!       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
 !  calculate Fbot/(K*cs2)
 !
@@ -357,9 +338,9 @@ module Ionization
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
 !
         if(lcalc_heatcond_constchi) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+          tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
         else
-          tmp_xy=FbotKbot/cs2_xy
+          tmp_xy=FheatK/cs2_xy
         endif
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
@@ -373,19 +354,31 @@ module Ionization
 !  ============
 !
       case('top')
-        if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
-        if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 2.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n2,iss) &
-                       - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-        tmp_xy = FbotKbot * tmp_xy ! F_heat/(hcond T_0)
+        if (lmultilayer) then
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0*hcond1
+        else
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0
+        endif
+!
+!  calculate Ftop/(K*cs2)
+!
+        rho_xy=exp(f(:,:,n2,ilnrho))
+        cs2_xy=cs20*exp(gamma1*(f(:,:,n2,ilnrho)-lnrho0)+gamma*f(:,:,n2,iss))
+!
+!  check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!
+        if(lcalc_heatcond_constchi) then
+          tmp_xy=Fheat/(rho_xy*chi*cs2_xy)
+        else
+          tmp_xy=FheatK/cs2_xy
+        endif
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!
         do i=1,nghost
-          f(:,:,n2+i,iss) = &
-               (-2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
-               )/gamma &
-               + f(:,:,n2-i,iss)
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+gamma1/gamma* &
+              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-2*i*dz*tmp_xy)
         enddo
       case default
         print*,"bc_ss_flux: invalid argument"

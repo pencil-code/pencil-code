@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.84 2003-08-29 19:04:54 brandenb Exp $
+! $Id: ionization.f90,v 1.85 2003-09-06 18:55:30 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -78,7 +78,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.84 2003-08-29 19:04:54 brandenb Exp $")
+           "$Id: ionization.f90,v 1.85 2003-09-06 18:55:30 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -735,7 +735,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
     endsubroutine saha_pp
 !***********************************************************************
-    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
+    subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fheat,FheatK,chi, &
                 lmultilayer,lcalc_heatcond_constchi)
 !
 !  constant flux boundary condition for entropy (called when bcz='c1')
@@ -749,91 +749,82 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       use Cdata
       use Gravity
 !
-      real, intent(in) :: Fbot, FbotKbot, hcond0, hcond1, chi
+      real, intent(in) :: Fheat, FheatK, hcond0, hcond1, chi
       logical, intent(in) :: lmultilayer, lcalc_heatcond_constchi
       
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
+      real, dimension (mx,my) :: tmp_xy,TT_xy,rho_xy
       integer :: i
       
-!
-      call stop_it("bc_ss_flux: NOT IMPLEMENTED IN IONIZATION")
-      if(ldebug) print*,'bc_ss_flux: ENTER - cs20,cs0=',cs20,cs0
 !
 !  Do the `c1' boundary condition (constant heat flux) for entropy.
 !  check whether we want to do top or bottom (this is precessor dependent)
 !
       select case(topbot)
 !
-!  bottom boundary
-!
-      case('strange-bot')
-        if(headtt) print*,'bc_ss_flux: hcond0,hcond1=',hcond0,hcond1
-        if ((bcz1(ilnrho) /= "a2") .and. (bcz1(ilnrho) /= "a3"))&
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 1.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n1,iss) &
-                       - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-        tmp_xy = Fbot/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
-        do i=1,nghost
-          f(:,:,n1-i,iss) = &
-               (2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
-               )/gamma &
-               + f(:,:,n1+i,iss)
-        enddo
-!
-!  bottom boundary
-!  ===============
+!  bottom boundary (full ionization)
+!  =================================
 !
       case('bot')
         if (lmultilayer) then
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0*hcond1
         else
-          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0
+          if(headtt) print*,'bc_ss_flux: Fbot,hcond=',Fheat,hcond0
         endif
-!       if(bcz1(ilnrho)/="a2") call stop_it("bc_ss_flux: bad lnrho bc")
 !
 !  calculate Fbot/(K*cs2)
 !
         rho_xy=exp(f(:,:,n1,ilnrho))
-        cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,iss))
+        TT_xy=exp(f(:,:,n1,iTT))
 !
 !  check whether we have chi=constant at bottom, in which case
 !  we have the nonconstant rho_xy*chi in tmp_xy. 
 !
         if(lcalc_heatcond_constchi) then
-          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+          tmp_xy=Fheat/(rho_xy*chi*TT_xy)
         else
-          tmp_xy=FbotKbot/cs2_xy
+          tmp_xy=FheatK/TT_xy
         endif
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
 !
         do i=1,nghost
-          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+gamma1/gamma* &
-              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+2*i*dz*tmp_xy)
+          f(:,:,n1-i,iss)=f(:,:,n1+i,iss)+ss_ion*(2+xHe)* &
+              (f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho)+3*i*dz*tmp_xy)
         enddo
 !
-!  top boundary
-!  ============
+!  top boundary (no ionization)
+!  ============================
 !
       case('top')
-        if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
-        if ((bcz2(ilnrho) /= "a2") .and. (bcz2(ilnrho) /= "a3")) &
-             call stop_it("bc_ss_flux: Inconsistent boundary conditions 2.")
-        tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
-                 * exp(-gamma*f(:,:,n2,iss) &
-                       - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-        tmp_xy = FbotKbot * tmp_xy ! F_heat/(hcond T_0)
+        if (lmultilayer) then
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0*hcond1
+        else
+          if(headtt) print*,'bc_ss_flux: Ftop,hcond=',Fheat,hcond0
+        endif
+!
+!  calculate Fbot/(K*cs2)
+!
+        rho_xy=exp(f(:,:,n2,ilnrho))
+        TT_xy=exp(f(:,:,n2,iTT))
+!
+!  check whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!
+        if(lcalc_heatcond_constchi) then
+          tmp_xy=Fheat/(rho_xy*chi*TT_xy)
+        else
+          tmp_xy=FheatK/TT_xy
+        endif
+!
+!  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
+!
         do i=1,nghost
-          f(:,:,n2+i,iss) = &
-               (-2*i*dz*tmp_xy &
-                + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
-               )/gamma &
-               + f(:,:,n2-i,iss)
+          f(:,:,n2+i,iss)=f(:,:,n2-i,iss)+ss_ion*(1+xHe)* &
+              (f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho)-3*i*dz*tmp_xy)
         enddo
+!
       case default
         print*,"bc_ss_flux: invalid argument"
         call stop_it("")
