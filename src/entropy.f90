@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.193 2003-08-16 05:52:46 brandenb Exp $
+! $Id: entropy.f90,v 1.194 2003-08-19 02:19:12 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -90,7 +90,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.193 2003-08-16 05:52:46 brandenb Exp $")
+           "$Id: entropy.f90,v 1.194 2003-08-19 02:19:12 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -391,36 +391,19 @@ module Entropy
 !                  to allow isothermal condition for arbitrary density
 !
 !
+      use Mpicomm, only: stop_it
       use Gravity
       use Ionization
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension(nx) :: tmp, pot
 !
+      if (lionization.or.lionization_fixed) &
+       call stop_it("isothermal_entropy: NOT IMPLEMENTED FOR IONIZATION CASES")
       do n=n1,n2
       do m=m1,m2
-        if (lionization_fixed) then
-           call potential(x(l1:l2),y(m),z(n),pot)
-!        if (lionization_fixed) then
-           call isothermal_density_ion(pot,tmp)
-!print*,'isothermal_entropy: ',minval(tmp),maxval(tmp)
-           f(l1:l2,m,n,ilnrho)=lnrho0+tmp/TT0
-           f(l1:l2,m,n,iss) = ((1. + yH0 + xHe) &
-                * (1.5*log(TT0/TT_ion)+lnrho_e-f(l1:l2,m,n,ilnrho)+2.5)  &
-                +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)))*ss_ion
-
-           if (yH0.ne.0.) f(l1:l2,m,n,iss) = &
-                f(l1:l2,m,n,iss) - (2.*yH0*log(yH0) * ss_ion)
-           if (xHe.ne.0.) f(l1:l2,m,n,iss) = &
-                f(l1:l2,m,n,iss) - (xHe*log(xHe)* ss_ion)
-           if (yH0.ne.1.) f(l1:l2,m,n,iss) = &
-                f(l1:l2,m,n,iss) - ((1.-yH0)*log(1.-yH0) * ss_ion)
-
-!print*,'isothermal_entropy: ',minval(f(l1:l2,m,n,iss)),maxval(f(l1:l2,m,n,iss))
-        else
           f(l1:l2,m,n,iss)= -gamma1*(f(l1:l2,m,n,ilnrho)-lnrho0)/gamma
                   ! + other terms for sound speed not equal to cs_0
-        endif
       enddo
       enddo
 
