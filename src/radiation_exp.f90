@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.39 2003-07-02 15:18:36 theine Exp $
+! $Id: radiation_exp.f90,v 1.40 2003-07-02 15:19:43 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.39 2003-07-02 15:18:36 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.40 2003-07-02 15:19:43 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -207,9 +207,9 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-        call radtransfer_intrinsic(f,lrad,mrad,nrad)
+        call radtransfer_intrinsic  (f,lrad,mrad,nrad)
         call radtransfer_communicate(  lrad,mrad,nrad)
-        call radtransfer_revision(f,lrad,mrad,nrad)
+        call radtransfer_revision   (f,lrad,mrad,nrad)
         endif
       enddo
       enddo
