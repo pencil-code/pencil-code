@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.86 2002-07-10 17:54:05 dobler Exp $
+! $Id: equ.f90,v 1.87 2002-07-11 12:25:31 nilshau Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.86 2002-07-10 17:54:05 dobler Exp $")
+           "$Id: equ.f90,v 1.87 2002-07-11 12:25:31 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -402,10 +402,10 @@ module Equ
 !WD: I wouldn't care, since this should be applied quite infrequently
 !
       if (ldebug) print*,'RMWIG: bef. initiate_isendrcv_bdry'
-      call initiate_isendrcv_bdry(f)
       call boundconds_x(f)
       call boundconds_y(f)
       call boundconds_z(f)
+      call initiate_isendrcv_bdry(f)
 !
 !  Check whether we want to smooth on the actual variable, or on exp(f)
 !  The latter can be useful if the variable is lnrho or lncc.
