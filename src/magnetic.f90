@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.134 2003-10-03 17:41:09 brandenb Exp $
+! $Id: magnetic.f90,v 1.135 2003-10-07 14:20:10 mee Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -92,7 +92,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.134 2003-10-03 17:41:09 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.135 2003-10-07 14:20:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,6 +231,7 @@ module Magnetic
       use Sub
       use Slices
       use IO, only: output_pencil
+      use Special, only: special_calc_magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -382,6 +383,8 @@ module Magnetic
           maxadvec2=amax1(maxadvec2,va2)
           maxdiffus=amax1(maxdiffus,eta)
         endif
+
+      if (lspecial) call special_calc_magnetic(f,df,uu,rho1,TT1,uij)
 !
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).

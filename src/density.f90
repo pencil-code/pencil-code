@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.114 2003-09-30 12:02:19 brandenb Exp $
+! $Id: density.f90,v 1.115 2003-10-07 14:20:10 mee Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -73,7 +73,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.114 2003-09-30 12:02:19 brandenb Exp $")
+           "$Id: density.f90,v 1.115 2003-10-07 14:20:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -530,6 +530,7 @@ module Density
 !   7-jun-02/axel: incoporated from subroutine pde
 !
       use Sub
+      use Special, only: special_calc_density
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -575,6 +576,8 @@ module Density
           df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-gradlnrho0(j)*uu(:,j)
         endif
       enddo
+
+      if (lspecial) call special_calc_density(f,df,uu,glnrho,divu,lnrho)
 !
     endsubroutine dlnrho_dt
 !***********************************************************************

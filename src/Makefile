@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.241 2003-10-06 10:05:47 theine Exp $
+### $Id: Makefile,v 1.242 2003-10-07 14:20:10 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -34,6 +34,7 @@ GRAVITY      = nograv
 FORCING      = noforcing
 SHEAR        = noshear
 TIMEAVG      = notimeavg
+SPECIAL      = nospecial
 
 ## This allows us to add -r8 for double precision in Makefile.local
 FFLAGS_GENERAL=
@@ -218,7 +219,7 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 ## Abbreviations
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
-physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o
+physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
@@ -355,11 +356,11 @@ $(VISCOSITY).o:    $(VISCOSITY).f90 cdata.o cparam.o $(DENSITY).o sub.o
 $(SHEAR).o:	   $(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:      $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o
 $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
-$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o
-$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o
+$(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o $(SPECIAL).o
+$(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o $(SPECIAL).o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
-$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o 
-$(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o 
+$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o $(SPECIAL).o
+$(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o $(SPECIAL).o 
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
@@ -372,6 +373,7 @@ $(FFT).o:	   cdata.o
 nodebug.o:         nodebug.f90 cdata.o $(MPICOMM).o
 $(POWER).o:        $(POWER).f90 cdata.o sub.o $(MPICOMM).o general.o
 $(STRUCT_FUNC).o:  $(STRUCT_FUNC).f90 cdata.o sub.o $(MPICOMM).o general.o
+$(SPECIAL).o:      $(SPECIAL).f90 cdata.o $(MPICOMM).o sub.o $(INITCOND_SPEC).o $(GLOBAL).o
 #axeltest $(INITCOND_SPEC).o:$(INITCOND_SPEC).f90
 
 # DO NOT DELETE

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.96 2003-10-07 13:28:29 mcmillan Exp $
+! $Id: register.f90,v 1.97 2003-10-07 14:20:10 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -39,6 +39,7 @@ module Register
       use Interstellar, only: register_interstellar
       use Shear,        only: register_shear
       use Viscosity,    only: register_viscosity
+      use Special,      only: register_special
 !
 !  initialize all mpi stuff
 !
@@ -73,6 +74,7 @@ module Register
       call register_gravity
       call register_interstellar
       call register_shear
+      call register_special
 !
 !  Writing files for use with IDL
 !
@@ -126,6 +128,7 @@ module Register
       use Interstellar, only: initialize_interstellar
       use Shear,        only: initialize_shear
       use Viscosity,    only: initialize_viscosity
+      use Special,      only: initialize_special
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstart
@@ -245,6 +248,7 @@ module Register
       use Dustvelocity, only: rprint_dustvelocity
       use Dustdensity,  only: rprint_dustdensity
       use Gravity,      only: rprint_gravity
+      use Special,      only: rprint_special
 !
       integer :: iname,inamez,inamexy,inamerz
       logical :: lreset,exist
@@ -318,6 +322,7 @@ module Register
       call rprint_dustvelocity(lreset)
       call rprint_dustdensity(lreset)
       call rprint_gravity(lreset)
+      call rprint_special(lreset)
       close(3)
 !
     endsubroutine rprint_list

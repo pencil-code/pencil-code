@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.109 2003-10-07 13:50:48 ajohan Exp $
+! $Id: hydro.f90,v 1.110 2003-10-07 14:20:10 mee Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -91,7 +91,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.109 2003-10-07 13:50:48 ajohan Exp $")
+           "$Id: hydro.f90,v 1.110 2003-10-07 14:20:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,6 +329,7 @@ module Hydro
       use Sub
       use IO
       use Slices
+      use Special, only: special_calc_hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -452,6 +453,10 @@ module Hydro
           df(l1:l2,m,n,iuu+j-1)=df(l1:l2,m,n,iuu+j-1)-gradH0(j)
         endif
       enddo
+
+    
+      if (lspecial) call special_calc_hydro(f,df,uu,glnrho,divu,rho1,u2,uij)
+    
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.205 2003-09-24 12:45:44 dobler Exp $
+! $Id: entropy.f90,v 1.206 2003-10-07 14:20:10 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -92,7 +92,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.205 2003-09-24 12:45:44 dobler Exp $")
+           "$Id: entropy.f90,v 1.206 2003-10-07 14:20:10 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -675,6 +675,7 @@ module Entropy
       use Ionization
       use Sub
       use Global
+      use Special, only: special_calc_entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
@@ -770,6 +771,10 @@ module Entropy
 !  possibility of entropy relaxation in exterior region
 !
       if (tau_ss_exterior/=0.) call calc_tau_ss_exterior(f,df)
+!
+!
+!
+      if (lspecial) call special_calc_entropy(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
 !
 !  Calculate entropy related diagnostics
 !
