@@ -5,6 +5,6 @@
 ! you modify it. It is included by cparam.f90 .
 !
 
-integer, parameter :: mvar=1804, maux=0
-integer, parameter :: ndustspec=360
+integer, parameter :: mvar=1824, maux=0
+integer, parameter :: ndustspec=364
 
