@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.123 2002-11-14 13:25:11 dobler Exp $
+### $Id: Makefile,v 1.124 2002-11-14 14:03:07 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -198,7 +198,7 @@ $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GLOBAL).o $(HYDRO).o $(IO).o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(DENSITY).o slices.o $(FFT).o
-$(RADIATION).o:	$(RADIATION).f90 cdata.o $(MPICOMM).o sub.o $(MPICOMM).o
+$(RADIATION).o:	$(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DENSITY).o
 $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(GRAVITY).o slices.o
 $(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o
