@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.208 2004-02-11 13:22:59 nilshau Exp $
+! $Id: cdata.f90,v 1.209 2004-02-18 08:15:05 dobler Exp $
 
 module Cdata
 
@@ -22,14 +22,9 @@ module Cdata
   real :: t,dt=0.
   real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0
   real :: cdtvDim
-
-!ajwm - start of array based time constraints.
-!  real, dimension (mdtmax)  :: dtmax,cdtmax
-!  integer :: i_
-
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
-  real :: r_int=0.0,r_ext=impossible   ! for spherical shell problems
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
+  real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
   real :: ttransient=0.
   real, dimension (2) :: fran1,fran2
 
@@ -49,7 +44,7 @@ module Cdata
 !ajwm replaced nu, causes error in forcing to resolve
   real :: nu=0.,cmu,cnu2
   real :: tdiagnos,t2davgfirst
-  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
+!! not used?  real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum,epsK_hyper
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
