@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.52 2003-09-01 12:43:43 mee Exp $
+! $Id: interstellar.f90,v 1.53 2003-09-03 17:13:58 dobler Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -113,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.52 2003-09-01 12:43:43 mee Exp $")
+           "$Id: interstellar.f90,v 1.53 2003-09-03 17:13:58 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -811,14 +811,15 @@ find_SN: do n=n1,n2
            'explode_SN: mass_gain=',mass_gain
      
       if (lroot) then
-         open(1,file=trim(datadir)//'/time_series.dat',position='append')
-         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
-         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
-         close(1)
+! [wd] Doesn't belong into time_series.dat and screws up auto-test:
+!         open(1,file=trim(datadir)//'/time_series.dat',position='append')
+!         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+!                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+!                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
+!         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
+!                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
+!                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
+!         close(1)
       endif
       
     endsubroutine explode_SN
