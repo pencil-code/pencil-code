@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.173 2003-06-23 17:47:40 theine Exp $
+%%  CVS: $Id: manual.tex,v 1.174 2003-06-24 16:19:08 theine Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}
+\date{$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}
+  \emph{$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3089,7 +3089,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-24 16:19:08 $ $,~ $ $Revision: 1.174 $ $}}}
 
 \section{Timings}
 
@@ -4044,6 +4044,58 @@ In Ref.~\cite{Ref-1} the accuracy of some nonlinear equations is tested.
   \end{tabular}
 \end{table}
 
+\subsection{Ionization}
+\index{Ionization}
+\label{S-Ioni}
+
+The specific entropy of each particle species (neutral Hydrogen, electrons, protons and neutral Helium) may be written as
+\[
+\frac{s_i}{s_0}=x_i\left(\ln\left[\frac{1}{x_{\rm tot}}
+\frac{\rho_i}{\rho}\left(\frac{T}{T_0}\right)^{3/2}\right]
++\frac{5}{2}\right)\ ,
+\]
+where
+\[
+x_{\rm H}=1-y\ ,\quad x_{\rm e}=x_{\rm p}=y\ ,\quad x_{\rm tot}=1+y+x_{\rm He}
+\]
+\[
+s_0=\frac{k_{\rm B}}{\mu m_{\rm H}}\ ,\quad
+T_0=\frac{\chi_{\rm H}}{k_{\rm B}}\ ,
+\]
+and
+\[
+\rho_i=\mu m_{\rm H}\left(\frac{m_i\chi_{\rm H}}{2\pi\hbar^2}\right)^{3/2}\ .
+\]
+The specific entropy of mixing is
+\[
+\frac{s_{\rm mix}}{s_0}=-\sum_ix_i\ln\frac{x_i}{x_{\rm tot}}\ .
+\]
+Summing up everything, we get the total specific entropy 
+\begin{align}
+\frac{s}{s_0}&=\sum_i\frac{s_i}{s_0}+\frac{s_{\rm mix}}{s_0}
+=\sum_ix_i\left(\ln\left[\frac{1}{x_i}\frac{\rho_i}{\rho}
+\left(\frac{T}{T_0}\right)^{3/2}\right]+\frac{5}{2}\right)\\
+&=\sum_ix_i\ln\frac{\rho_i}{x_i}
++x_{\rm tot}\left(\ln\left[\frac{1}{\rho}
+\left(\frac{T}{T_0}\right)^{3/2}\right]+\frac{5}{2}\right)\ .
+\end{align}
+Solving for $T$ gives
+\begin{align}
+\frac{3}{2}\ln\frac{T}{T_0}&={\textstyle\frac{\frac{s}{s_0}
++\sum_ix_i\ln\frac{x_i}{\rho_i}}{x_{\rm tot}}}
++\ln\rho-\frac{5}{2} \\
+&={\textstyle\frac{\frac{s}{s_0}
++(1-y)\ln\frac{1-y}{\rho_{\rm H}}+y\ln\frac{y^2}{\rho_{\rm e}\rho_{\rm p}}
++x_{\rm He}\ln\frac{x_{\rm He}}{\rho_{\rm He}}}{x_{\rm tot}}}
++\ln\rho-\frac{5}{2}
+\end{align}
+Using this expression and the constants defined above, we may obtain the
+ionization fraction $y$ for given $\ln\rho$ and $s$ by finding the root of
+\[
+f(y)=\ln\left[\frac{\rho_{\rm e}}{\rho}\left(\frac{T(y)}{T_0}\right)^{3/2}\frac{1-y}{y^2}\right]-\frac{T_0}{T(y)}
+\]
+
+% --------------------------------------------------------------------- %
 
 \subsection{Radiative transfer}
 \index{Radiative transfer}
@@ -5238,7 +5290,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.173 2003-06-23 17:47:40 theine Exp $ $}
+$ $Id: manual.tex,v 1.174 2003-06-24 16:19:08 theine Exp $ $}
 
 
 \end{document}
