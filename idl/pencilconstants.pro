@@ -20,6 +20,7 @@
 ; constants and in code units
 ;
   if (unit_system eq 'cgs') then begin
+    hbar=hbar_cgs/(unit_energy*unit_time)
     k_B=k_B_cgs/(unit_energy/unit_temperature)
     m_p=m_p_cgs/unit_mass
     m_e=m_e_cgs/unit_mass
@@ -28,6 +29,7 @@
     sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature^4)
     kappa_es=kappa_es_cgs/(unit_length^2/unit_mass)     
   endif else if (unit_system eq 'SI') then begin
+    hbar=hbar_cgs/(unit_energy*unit_time)
     k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
     m_p=m_p_cgs*1e-3/unit_mass
     m_e=m_e_cgs*1e-3/unit_mass
@@ -37,4 +39,20 @@
     kappa_es=kappa_es_cgs*1e-1/(unit_length^2/unit_mass)
   endif
 ;
-end
+  m_H=m_p+m_e
+  m_He=3.97153*m_H
+  lnmHme=alog(m_H/m_e)
+  lnmpme=alog(m_p/m_e)
+  lnmHeme=alog(m_He/m_e)
+  lnmHmp=alog(m_H/m_p)
+  fHe=par.fHe
+  lnfHe=alog(fHe)
+  mu=1.+3.97153*fHe
+  chiH=13.6*eV
+  chiH_=0.75*eV
+  TT_ion=chiH/k_B
+  TT_ion_=chiH_/k_B
+  lnrho_ion=1.5*alog((m_e/hbar)*(chiH/hbar)/2./!pi)+alog(m_H)+alog(mu)
+  lnrho_ion_=1.5*alog((m_e/hbar)*(chiH_/hbar)/2./!pi)+alog(m_H)+alog(mu)
+  ss_ion=k_B/m_H/mu
+  kappa0=sigmaH_/m_H/mu

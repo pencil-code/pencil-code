@@ -1,4 +1,4 @@
-; $Id: r2.pro,v 1.2 2003-06-16 12:21:10 theine Exp $
+; $Id: r2.pro,v 1.3 2003-06-16 21:17:36 theine Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r2.pro,v 1.2 2003-06-16 12:21:10 theine Exp $
+;;; $Id: r2.pro,v 1.3 2003-06-16 21:17:36 theine Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -107,6 +107,12 @@ if (lentropy) then $
 if (lpscalar) then $
     print, FORMAT=fmt, 'lncc   =', $
       minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
+if (lionization) then begin
+    print, FORMAT=fmt, 'yH     =', $
+      minmax(yH(*,*,*)),mean(yH(*,*,*),/DOUBLE),rms(yH(*,*,*),/DOUBLE)
+    print, FORMAT=fmt, 'TT     =', $
+      minmax(TT(*,*,*)),mean(TT(*,*,*),/DOUBLE),rms(TT(*,*,*),/DOUBLE)
+end
 if (lradiation_fld) then begin
     for j=0,2 do begin
       print, FORMAT=fmt, 'ff_'+xyz[j]+'   =', $
@@ -117,9 +123,7 @@ if (lradiation_fld) then begin
 end
 if (lradiation AND NOT lradiation_fld) then begin
     print, FORMAT=fmt, 'Qrad   =', $
-    minmax(Qrad(l1:l2,m1:m2,n1:n2)), mean(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(Qrad(l1:l2,m1:m2,n1:n2),/DOUBLE)
-    print, FORMAT=fmt, 'TT     =', $
-    minmax(TT(l1:l2,m1:m2,n1:n2)), mean(TT(l1:l2,m1:m2,n1:n2),/DOUBLE), rms(TT(l1:l2,m1:m2,n1:n2),/DOUBLE)
+      minmax(Qrad(*,*,*)),mean(Qrad(*,*,*),/DOUBLE),rms(Qrad(*,*,*),/DOUBLE)
 end
 if (lmagnetic) then begin
     for j=0,2 do $
@@ -134,18 +138,6 @@ if (par.lvisc_shock ne 0) then begin
     nu_shock=fltarr(mx,my,mz)*one
     readu,1,nu_shock
 endif
-;
-;
-if (par.lionization ne 0) then begin
-  if (par.output_yH) then begin
-    yyH=fltarr(mx,my,mz)*one
-    readu,1,yyH
-    print, FORMAT=fmt, 'yyH   =', $
-      minmax(yyH), mean(yyH,/DOUBLE), rms(yyH,/DOUBLE)
-  end
-end
-;
-close,1
 ;
 END
 
