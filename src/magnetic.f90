@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.156 2003-11-25 15:53:09 mcmillan Exp $
+! $Id: magnetic.f90,v 1.157 2003-11-26 17:17:46 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -110,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.156 2003-11-25 15:53:09 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.157 2003-11-26 17:17:46 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -688,7 +688,7 @@ module Magnetic
       prof=step(r_mn,r_int,wresistivity)
       eta_mn=d_int*(1-prof)
       prof=step(r_mn,r_ext,wresistivity)
-      eta_mn=eta_mn+d_ext*prof
+      eta_mn=eta+eta_mn+d_ext*prof
 !
 !     calculate radial derivative of steps and gradient of eta
 !
