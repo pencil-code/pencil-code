@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.127 2002-10-08 18:17:24 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.126 $ $}
+\date{\today,~ $ $Revision: 1.127 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.126 $ $}
+  \emph{\today,~ $ $Revision: 1.127 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1288,8 +1288,9 @@ diagnostic variables to print (see \ref{diagnostic-IO}).
 They specify the setup of a given simulation and are kept under CVS in
 the individual \file[samples/]{samples} directories.
 
-\subsection{\file{datadir.in}}
-If this file exists, it must contain the name of the data directory,
+\subsubsection{\file{datadir.in}}
+If this file exists, it must contain the name of an existing directory,
+which will be used as \dfn{data directory},
 i.\,e.~the directory where all results are written.
 If \file{datadir.in} doe not exist, the data directory is \file{data/}.
 
@@ -1341,6 +1342,9 @@ The header line specifying the names of the diagnostic variables in
 
 \paragraph{\file[time_series.dat]{data/time_series.dat}}
 Time series of diagnostic variables (also printed to stdout).
+You can use this file directly for plotting with \name{Gnuplot},
+\name{IDL}, \name{Xmgrace} or similar tools (see also
+\S\ref{S-Visualization}).
 
 \paragraph{\file[tsnap.dat]{data/tsnap.dat}, \file[tvid.dat]{data/tvid.dat}}
 Time when the next snapshot \file{VAR$N$} or animation slice should be
@@ -1730,21 +1734,24 @@ A full list of input parameters is given in Appendix~\ref{S-all-parameters}.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{A comment regarding the viscosity}
+\subsection{Minimum amount of viscosity}
 \label{viscosity}
 
-We emphasise that the code works with constant diffusion coefficients
+We emphasize that the code works with constant diffusion coefficients
 (viscosity $\nu$, thermal diffusivity $\chi$, magnetic diffusivity $\eta$,
-or passive scalar diffusivity ${\cal D}$). If any of these numbers are
-too small, you would need to have more meshpoints; otherwise the code
-develops wiggles (`ringing') and blows up. A useful criterion is based
-on the mesh Reynolds number based on the maximum velocity,
+or passive scalar diffusivity ${\cal D}$).
+If any of these numbers is too small, you would need to have more
+meshpoints to get consistent numerical solutions; otherwise the code
+develops wiggles (`ringing') and will eventually crash.
+A useful criterion is given by the
+mesh Reynolds number based on the maximum velocity,
 \begin{equation}
   \mbox{Re}_{\rm mesh}=\max(|\uv|)\max(\delta x,\delta y,\delta z)/\nu,
 \end{equation}
-which should not exceed a certain value with can be problem-dependent.
+which should not exceed a certain value which can be problem-dependent.
 Often the largest possible value of $\mbox{Re}_{\rm mesh}$ is around 5.
-Similarly there exist also mesh Peclet and mesh magnetic Reynolds numbers.
+Similarly there exist mesh Peclet and mesh magnetic Reynolds numbers that
+should not be too small.
 
 % ---------------------------------------------------------------------- %
 
@@ -1869,7 +1876,21 @@ See \emph{need 1d and 2d samples} for examples.
 \subsection{Visualization}
 \label{S-Visualization}
 
-\subsubsection{Data explorer networks}
+\subsubsection{Gnuplot}
+\label{S-gnuplot}
+Simple visualization can easily be done using \name{Gnuplot}.
+For example, suppose you have the variables
+\begin{verbatim}
+  ---it-----t-------dt-------urms-----umax-----rhom-----ssm------dtc---
+\end{verbatim}
+in \file{time_series.dat} and want to plot $u_{\rm rms}(t)$.
+Just start gnuplot and type
+\begin{alltt}
+  \prompt{gnuplot> } plot "data/time_series.dat" using (\$2):(\$4) with lines
+\end{alltt}
+
+
+\subsubsection{Data explorer}
 \label{S-openDX}
 
 A few networks for \name{DX} (\name{data explorer}) are available.
@@ -1877,10 +1898,11 @@ It is quite easy to read in a snapshot file from \name{DX} (the only
 tricky thing are four extra bytes at the beginning of the file,
 representing a Fortran record marker), and we should
 document this here and have the Fortran code write a \texttt{.general}
-file.\footnote{WD: Do this\ldots}
+file.
+[This is kind of available and needs to be documented]
 
 
-\subsubsection{IDL routines}
+\subsubsection{IDL}
 \label{S-IDL-routines}
 
 In \file[idl/]{\$PENCIL_HOME/idl}, we provide a number of general-purpose
@@ -2511,15 +2533,17 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 In the following table we list the results of timings of the code on
 different machines.
 Shown is (among other quantities) the wall clock time per mesh point
-(excluding the ghost zones) and per full 3-stage time step.
+(excluding the ghost zones) and per full 3-stage time step, a quantity
+that is printed by the code at the end of a run.\footnote{
+  Note that when using \file{nompicomm.f90}, the timer currently used will
+  overflow on some machines (after about 50 minutes), so you should not
+  blindly trust the timings given by the code.
+}
 
 As these results were assembled during the development phase of the code
 (that hasn't really finished yet,\ldots), you may not get the same numbers,
 but they should give some orientation of what to expect for your specific
 application on your specific hardware.
-Note that the timer currently used will overflow on some machines (after
-about 50 minutes), so you should not blindly trust the timings given by
-the code.
 
 
 % ---------------------------------------------------------------------- %
@@ -2942,7 +2966,7 @@ to approach the Boussinesq case.
 
 Brandenburg et al.\ (1996) defined the Rayleigh number as
 \begin{equation}\label{Radef}
-\mbox{Ra}={gd^4\over\overline{\nu}\;\overline{\chi}}
+  \Ra = {gd^4\over\overline{\nu}\;\overline{\chi}}
 \left(-{\mbox{d}s/c_{\rm p}\over\mbox{d}z}\right)_{\rm hydrostat},
 \end{equation}
 where the (negative) entropy gradient was evaluated in the middle
@@ -2962,8 +2986,8 @@ differs slightly from Eq.~(\ref{Radef}). Since the Rayleigh number is
 proportional to $\rho^2$, their definition included the extra factor
 $[(z_{\infty}-z_{\rm m})/d]^2$. Therefore
 \begin{equation}\label{Rdef}
-\mbox{Ra}_{\rm HT}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
-\left({\overline\rho\over\rho_{\rm top}}\right)^2\mbox{Ra}
+  \Ra_{\rm HT}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
+  \left({\overline\rho\over\rho_{\rm top}}\right)^2\Ra
 \end{equation}
 
 %\subsubsection{Relation to the setup of Hurlburt \& Toomre}
@@ -3464,7 +3488,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{`sound-wave'}] (sound wave in $x$ direction),
                  \item[\code{`shock-tube'}] (polytropic standing shock),
                  \item[\code{`bullets'}] (blob-like velocity perturbations),
-                 \item[\code{`Alfven-circ-x'}] (circularly polarised
+                 \item[\code{`Alfven-circ-x'}] (circularly polarized
                    Alfven wave in x direction),
                  \item[\code{`const-ux'}] (constant x-velocity),
                  \item[\code{`const-uy'}] (constant y-velocity),
@@ -3659,7 +3683,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                    $z$-direction; this also sets the velocity),
                  \item[\code{`Alfvenz-rot'}] (same as \code{`Alfven-z'}, but
                    with rotation),
-                 \item[\code{`Alfven-circ-x'}] (circularly polarised
+                 \item[\code{`Alfven-circ-x'}] (circularly polarized
                    Alfven wave in x direction),
                  \item[\code{`'}] (),
                  \item[\code{`crazy'}] (for testing purposes).
@@ -4167,7 +4191,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.127 2002-10-08 18:17:24 dobler Exp $ $}
 
 
 \end{document}
@@ -4181,7 +4205,7 @@ $ $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $ $}
 % LocalWords:  SPH CVS tex wd MHD makeindex pdflatex MPI Dobler nonperiodic src
 % LocalWords:  nonmagnetic nomagnetic IDL DX OpenDX csh Perl Perl Cygwin tgz mv
 % LocalWords:  tarball unix somewhere cd gunzip xf mhd passwd CVSROOT cshrc sh
-% LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp struct Weyl
+% LocalWords:  setenv cvs cvspass code's dP sourceme mkdir tmp struct Weyl vidx
 % LocalWords:  isotrop keepaspectratio spher gravz README cparam idl dx nograv
 % LocalWords:  nohydro nodensity noentropy rhs noforcing rr noglobal fft FFT io
 % LocalWords:  nofft dist mpicomm nompicomm DFUNDERSCORE nodebug mkfile var dat
@@ -4190,7 +4214,7 @@ $ $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $ $}
 % LocalWords:  hcond whcond mpoly isothtop ampl init urand cs nt dt cdt CFL bc
 % LocalWords:  cdtv Alfv isave isave iorder iorder Kutta dsnap dsnap dvid dtmin
 % LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho tvid std
-% LocalWords:  wcool iforce relhel tsnap isothermality initaa jbm
+% LocalWords:  wcool iforce relhel tsnap isothermality initaa jbm Peclet Eq Ra
 % LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
 % LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
 % LocalWords:  ODEs PDEs iterform ccccccc pscalar nopscalar urms rhom Lxyz xyz
@@ -4214,4 +4238,7 @@ $ $Id: manual.tex,v 1.126 2002-10-06 07:27:13 brandenb Exp $ $}
 % LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB Fbot
 % LocalWords:  ttransient fe aug Gridur isentropy Eqs idxsty uplink equ sep nr
 % LocalWords:  zaverages Flannery Teukolsky Vetterling rllrlrll Rasm ptimings
-% LocalWords:  Marsaglia
+% LocalWords:  Marsaglia Gnuplot gnuplot Mattias vind polytrope Hurlburt Toomre
+% LocalWords:  noradiation mpio ux uy discont trunc xjump kb sinxsinz Alfvenz
+% LocalWords:  orms omax uxm uym uzm eth ekin brms bmax jrms jmax abm bmz ccmax
+% LocalWords:  rhoccm Torkelsson Rieutord Tuominen Hazlehurst Shukurov
