@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.14 2003-12-30 13:17:54 dobler Exp $
+# $Id: nl2idl,v 1.15 2004-02-24 14:17:02 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -98,7 +98,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.14 2003-12-30 13:17:54 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.15 2004-02-24 14:17:02 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -322,17 +322,17 @@ sub expand_line {
 	} else {		# star first
 	    if ($apo == $star+1) { # n*'string'
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*(\'[^\']*\')[ ,]?(.*)/ );
+		    ( $line =~ /^([^*]*?)([0-9]+)\*(\'[^\']*\')[ ,]?(.*)/ );
 	    } elsif ($quo == $star+1) { # n*"string"
 		($pre,$mul,$val,$post) =
-		    ( $line =~ /^([^*]*)([0-9]+)\*(\"[^\"]*\")[ ,]?(.*)/ );
+		    ( $line =~ /^([^*]*?)([0-9]+)\*(\"[^\"]*\")[ ,]?(.*)/ );
 	    } else {		# n*<number|(complex, number)|T|F>
 		if (substr($line,$star+1,1) eq '(') { # n*(complex, number)
 		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*)([0-9]+)\*(\([^\)]+\))[ ,]?(.*)/ );
+			( $line =~ /^([^*]*?)([0-9]+)\*(\([^\)]+\))[ ,]?(.*)/ );
 		} else {	# n*<number|T|F>
 		    ($pre,$mul,$val,$post) =
-			( $line =~ /^([^*]*)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
+			( $line =~ /^([^*]*?)([0-9]+)\*([^ ,]+)[ ,]?(.*)/ );
 		}
 	    }
 	    if (checkdef("(\$pre,\$mul,\$val,\$post)=",
