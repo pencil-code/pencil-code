@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.155 2003-04-22 17:35:45 tarek Exp $
+%%  CVS: $Id: manual.tex,v 1.156 2003-04-22 17:41:53 tarek Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-04-22 17:35:45 $ $,~ $ $Revision: 1.155 $ $}
+\date{$ $Date: 2003-04-22 17:41:53 $ $,~ $ $Revision: 1.156 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-04-22 17:35:45 $ $,~ $ $Revision: 1.155 $ $}
+  \emph{$ $Date: 2003-04-22 17:41:53 $ $,~ $ $Revision: 1.156 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2404,7 +2404,7 @@ The equation of motion is accordingly
       - \grad\Phi_{\rm grav}
       + \frac{\jv\times\Bv}{\varrho}  \nonumber \\
     & &+ \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
-      + 2\Strain\cdot\grad\ln\varrho\right) + \zeta\left(\Div\uv\right); 
+      + 2\Strain\cdot\grad\ln\varrho\right) + \zeta\left(\grad\Div\uv\right); 
 \end{eqnarray}
 Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
@@ -2412,7 +2412,7 @@ the magnetic flux density, $\nu$ is kinematic viscosity,
 \begin{equation} \label{Eq-S-traceless}
   {\mathsf S}_{ij} = \frac{1}{2}\left({\partial u_i\over\partial x_j}
                  + {\partial u_j\over\partial x_i}
-                 -\frac{2}{3} \delta_{ij}\grad\Div\uv\right)
+                 -\frac{2}{3} \delta_{ij}\Div\uv\right)
 \end{equation}
 is the traceless rate-of-strain tensor and $\zeta$ describes some bulk
 viscosity.
@@ -4867,7 +4867,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.155 2003-04-22 17:35:45 tarek Exp $ $}
+$ $Id: manual.tex,v 1.156 2003-04-22 17:41:53 tarek Exp $ $}
 
 
 \end{document}
