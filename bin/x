@@ -1,4 +1,5 @@
-#  $Id: x,v 1.7 2002-10-21 07:59:07 brandenb Exp $
+#!/bin/csh
+#  $Id: x,v 1.8 2002-10-28 13:04:53 nilshau Exp $
 #
 #  The script prints the header (legend) and the
 #  last few lines of the time_series.dat file.
