@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.174 2004-04-02 16:29:59 mee Exp $
+! $Id: run.f90,v 1.175 2004-04-02 16:55:38 mee Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.174 2004-04-02 16:29:59 mee Exp $")
+             "$Id: run.f90,v 1.175 2004-04-02 16:55:38 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -304,7 +304,6 @@
           if ((it < nt) .and. (dt < dtmin)) then
             if (lroot) &
                 write(0,*) 'run: Time step has become too short: dt = ', dt
-            call wsnap(trim(directory_snap)//'/VAR',f,mvar_io,ENUM=.true.)
             save_lastsnap=.false.
             exit Time_loop
           endif
