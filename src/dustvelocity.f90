@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.47 2004-04-12 13:17:02 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.48 2004-04-12 14:37:43 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -29,7 +29,7 @@ module Dustvelocity
   real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1.
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
-  real :: mmon,mumon,surfmon,Eyoung,gsurften,ustcst
+  real :: mmon,mumon,surfmon,ustcst
   double precision :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
@@ -108,7 +108,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.47 2004-04-12 13:17:02 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.48 2004-04-12 14:37:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -144,6 +144,7 @@ module Dustvelocity
       use Pscalar, only: unit_rhocc
 !
       integer :: k,l
+      real :: gsurften,Eyoung,nu_Poisson,Eyoungred
 !
 !  Output grain mass discretization type
 !
@@ -165,8 +166,10 @@ module Dustvelocity
 !
 !  Surface tension and Young's modulus for sticking velocity
 !
-        gsurften = 370. ! erg cm^-2 
-        Eyoung   = 7e10 ! dyn cm^-2
+        gsurften   = 370. ! erg cm^-2 
+        Eyoung     = 7e10 ! dyn cm^-2
+        nu_Poisson = 0.25 !
+        Eyoungred  = Eyoung/(2*(1-nu_Poisson**2))
         
         mumon = 18
         mmon  = mumon*1.6733e-24
@@ -184,7 +187,7 @@ module Dustvelocity
 !
 !  Constant used in determination of sticking velocity
 !
-      ustcst = sqrt(2*9.6 * gsurften**(5/3.) * Eyoung**(-2/3.))
+      ustcst = sqrt(2*9.6 * gsurften**(5/3.) * Eyoungred**(-2/3.))
 !
 !  Dust physics parameters
 !
