@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.21 2002-05-04 09:11:59 brandenb Exp $
+! $Id: run.f90,v 1.22 2002-05-04 12:41:52 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -40,8 +40,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.21 $", &
-             "$Date: 2002-05-04 09:11:59 $")
+             "$Revision: 1.22 $", &
+             "$Date: 2002-05-04 12:41:52 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -134,6 +134,7 @@
 !  time advance
 !
           call rk_2n(f,df)
+print*,'after prints; fname(1)=',fname(1)
           if(lout) call prints
 print*,'after prints'
           call wsnap(trim(directory)//'/VAR',f)

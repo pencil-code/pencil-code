@@ -160,6 +160,7 @@ module Equ
       nmax_count=imax_count
       nsum_count=isum_count
 print*,'diagnostics, nmax_count, nsum_count=',nmax_count, nsum_count
+print*,'diagnostics; fname=',fname(1)
 print*,'fsum=',fsum_tmp(1:nsum_count)
 print*,'fmax=',fmax_tmp(1:nmax_count)
 !
@@ -350,8 +351,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.33 $", &
-           "$Date: 2002-05-04 12:39:41 $")
+           "$Revision: 1.34 $", &
+           "$Date: 2002-05-04 12:41:52 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -509,30 +510,24 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 !
         if (lfirst.and.lout) then
           t_diag = t            ! diagnostic quantities are for this time
-          oo(:,1)=uij(:,3,2)-uij(:,2,3)
-          oo(:,2)=uij(:,1,3)-uij(:,3,1)
-          oo(:,3)=uij(:,2,1)-uij(:,1,2)
-          o2=oo(:,1)**2+oo(:,2)**2+oo(:,3)**2
-          ou=oo(:,1)*uu(:,1)+oo(:,2)*uu(:,2)+oo(:,3)*uu(:,3)
-          divu2=divu**2
-          rho=exp(f(l1:l2,m,n,ilnrho))
-!
-!  urms and max velocity
-!  This hydro part is not yet converted to new method...
-!
-          !if (i_urms/=0) call max_mn (u2,u2max)
-!
-          call max_mn (u2,u2max)
-          call rms2_mn(u2,urms)
-          call max_mn (o2,o2max)
-          call rms2_mn(o2,orms)
-          call max_mn (ou,oumax)
-          call rms_mn (ou,ourms)
-          call max_mn (divu2,divu2max)
-          call rms2_mn(divu2,divurms)
-          call mean_mn(rho,rmean)
-          call max_mn (rho,rmax)
-          call rms_mn (rho,rrms)
+!         oo(:,1)=uij(:,3,2)-uij(:,2,3)
+!         oo(:,2)=uij(:,1,3)-uij(:,3,1)
+!         oo(:,3)=uij(:,2,1)-uij(:,1,2)
+!         o2=oo(:,1)**2+oo(:,2)**2+oo(:,3)**2
+!         ou=oo(:,1)*uu(:,1)+oo(:,2)*uu(:,2)+oo(:,3)*uu(:,3)
+!         divu2=divu**2
+!         rho=exp(f(l1:l2,m,n,ilnrho))
+!         call max_mn (u2,u2max)
+!         call rms2_mn(u2,urms)
+!         call max_mn (o2,o2max)
+!         call rms2_mn(o2,orms)
+!         call max_mn (ou,oumax)
+!         call rms_mn (ou,ourms)
+!         call max_mn (divu2,divu2max)
+!         call rms2_mn(divu2,divurms)
+!         call mean_mn(rho,rmean)
+!         call max_mn (rho,rmax)
+!         call rms_mn (rho,rrms)
         endif
 !
 !  end of loops over m and n
