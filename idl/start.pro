@@ -9,6 +9,9 @@
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
 ; compiled below
+  message, $
+      "This dummy  function should never be called" $
+      + "-- make sure you have `tmp' in your !path ."
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
