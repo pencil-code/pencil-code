@@ -44,10 +44,10 @@ if ($?varfile) then		# explicit filename given
     echo "copy-snapshots: working on $node.."
     if ($debug) then
       echo "node=$node"
-      printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile :\n"
-      $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile"
-      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile :\n"
-      $SSH $node "ls -ltd $targetdir/proc*/"
+      printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/{proc*,allprocs}/$varfile :\n"
+      $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/{proc*,allprocs}/$varfile"
+      printf "\n$SSH $node ls -ltd $targetdir/{proc*,allprocs}/$varfile :\n"
+      $SSH $node "ls -ltd $targetdir/{proc*,allprocs}/"
       echo
     endif
     # Copy all files you find (not efficient on dual-CPU systems, unless
@@ -55,7 +55,7 @@ if ($?varfile) then		# explicit filename given
     # Extremely awkward due to quoting rules:
     set cmd1 = "cd $SCRATCH_DIR; "
     set cmd2 = 'for f in `'
-    set cmd3 = "ls proc*/$varfile"
+    set cmd3 = "ls proc*/$varfile allprocs/$varfile"
     set cmd4 = '`; do cp '
     set cmd5 = "$SCRATCH_DIR/"
     set cmd6 = '$f '
@@ -64,8 +64,8 @@ if ($?varfile) then		# explicit filename given
     set remcmd = "$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
     if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
     $SSH $node sh -c "'$remcmd'"
-    printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile :\n"
-    $SSH $node "ls -ltd $targetdir/proc*/$varfile"
+    printf "\n$SSH $node ls -ltd $targetdir/{proc*,allprocs}/$varfile :\n"
+    $SSH $node "ls -ltd $targetdir/{proc*,allprocs}/$varfile"
   end
 
 else
@@ -74,7 +74,18 @@ else
   # start.csh). Quite some silly hack.
   echo "Determining size of var.dat:"
   set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
-  set size = $lsout[5]
+  if (!$status) then
+    set size = $lsout[5]
+  else
+    echo "Can't find proc0/var.dat in $targetdir, trying allprocs/var.dat"
+    set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
+    if (!$status) then
+      set size = $lsout[5]
+    else
+      echo "Can't find allprocs/var.dat either -- aborting"
+      exit 1
+    endif
+  endif
   echo "  $size"
 
   while (1)
@@ -83,7 +94,7 @@ else
     foreach node ($nodelist)
       if ($debug) echo "node=$node"
       echo '$targetdir' $targetdir
-      foreach file (`$SSH $node "cd $SCRATCH_DIR; ls proc*/VAR[0-9]*"`)
+      foreach file (`$SSH $node "cd $SCRATCH_DIR; ls {proc*,allprocs}/VAR[0-9]*"`)
 	set lsout = (`$SSH $node ls -l "$SCRATCH_DIR/$file"`)
         set VARsize = $lsout[5]
         if ($VARsize >= $size) then
