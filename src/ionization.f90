@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.102 2003-10-01 12:42:38 theine Exp $
+! $Id: ionization.f90,v 1.103 2003-10-01 16:33:31 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.102 2003-10-01 12:42:38 theine Exp $")
+           "$Id: ionization.f90,v 1.103 2003-10-01 16:33:31 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -152,9 +152,21 @@ module Ionization
         print*,'initialize_ionization: lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_=', &
                 lnrho_e,lnrho_H,lnrho_p,lnrho_He,lnrho_e_
       endif
-!      open(1,file=trim(datadir)//'/testsn.dat',position='append')
-!      write (1,"('#',A)") '--TT---ss----lnrho---yH---ionstat--noionstat---'
-!    close(1)
+!
+      open (1,file=trim(datadir)//'/pc_constants.pro')
+        write (1,*) 'TT_ion=',TT_ion
+        write (1,*) 'TT_ion_=',TT_ion_
+        write (1,*) 'lnrho_e=',lnrho_e
+        write (1,*) 'lnrho_H=',lnrho_H
+        write (1,*) 'lnrho_p=',lnrho_p
+        write (1,*) 'lnrho_He=',lnrho_He
+        write (1,*) 'lnrho_e_=',lnrho_e_
+        write (1,*) 'ss_ion=',ss_ion
+        write (1,*) 'ee_ion=',ee_ion
+        write (1,*) 'kappa0=',kappa0
+        write (1,*) 'sigmaSB=',sigmaSB
+      close (1)
+!
     endsubroutine initialize_ionization
 !*******************************************************************
     subroutine rprint_ionization(lreset)
@@ -547,7 +559,11 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
+!
+      print ('(A)'),'rtsafe: exceeded maximum iterations.'
+      print ('(A,5I4)'),'it,itsub,l,m,n=',it,itsub,l,m,n
+      print ('(A,3(1pG15.3))'),'lnrho,ss,yH=',lnrho,ss,yH
+      print ('(A)'),'------------------------------------'
 !
     endsubroutine rtsafe
 !***********************************************************************
@@ -614,7 +630,11 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
+!
+      print ('(A)'),'rtsafe: exceeded maximum iterations.'
+      print ('(A,5I4)'),'it,itsub,l,m,n=',it,itsub,l,m,n
+      print ('(A,3(1pG15.3))'),'lnrho,ss,yH=',lnrho,ee,yH
+      print ('(A)'),'------------------------------------'
 !
     endsubroutine rtsafe_ee
 !***********************************************************************
@@ -677,7 +697,11 @@ module Ionization
           yHmin=yH
         endif
       enddo
-      print ('(A,5I4)'),'rtsafe: exceeded maximum iterations.  it,itsub,l,m,n=',it,itsub,l,m,n
+!
+      print ('(A)'),'rtsafe: exceeded maximum iterations.'
+      print ('(A,5I4)'),'it,itsub,l,m,n=',it,itsub,l,m,n
+      print ('(A,3(1pG15.3))'),'lnrho,ss,yH=',lnrho,pp,yH
+      print ('(A)'),'------------------------------------'
 !
     endsubroutine rtsafe_pp
 !***********************************************************************
