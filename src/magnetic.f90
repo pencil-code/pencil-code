@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.158 2003-11-27 10:13:48 brandenb Exp $
+! $Id: magnetic.f90,v 1.159 2003-11-27 13:22:31 mcmillan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -33,7 +33,6 @@ module Magnetic
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
-  real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
   ! dgm: for hyper diffusion in any spatial variation of eta
@@ -52,6 +51,7 @@ module Magnetic
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
   real :: eta=0.,height_eta=0.,eta_out=0.
+  real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
@@ -110,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.158 2003-11-27 10:13:48 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.159 2003-11-27 13:22:31 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
