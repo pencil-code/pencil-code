@@ -1,4 +1,4 @@
-! $Id: noshear.f90,v 1.5 2004-07-03 02:13:14 theine Exp $
+! $Id: noshear.f90,v 1.6 2004-07-21 23:00:03 brandenb Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear are invoked, a corresponding replacement dummy
@@ -40,16 +40,17 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noshear.f90,v 1.5 2004-07-03 02:13:14 theine Exp $")
+           "$Id: noshear.f90,v 1.6 2004-07-21 23:00:03 brandenb Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
     subroutine initialize_shear()
 !
 !  21-nov-02/tony: coded
-
-! dummy
-
+!  17-jul-04/axel: Sshear=0 is needed for forcing_hel to work correctly.
+!
+      Sshear=0.
+!
     endsubroutine initialize_shear
 !***********************************************************************
     subroutine shearing(f,df)
