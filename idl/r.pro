@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.39 2002-10-05 12:52:15 dobler Exp $
+; $Id: r.pro,v 1.40 2002-11-02 13:34:02 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.39 2002-10-05 12:52:15 dobler Exp $
+;;; $Id: r.pro,v 1.40 2002-11-02 13:34:02 brandenb Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -73,6 +73,9 @@ openr,1, datadir+'/'+varfile, /F77
   end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
     print,'hydro with entropy, but no magnetic field'
     readu,1,uu,lnrho,ss
+  end else if iuu ne 0 and ilnrho ne 0 and ilncc ne 0 and iaa eq 0 then begin
+    print,'hydro with entropy, but no magnetic field'
+    readu,1,uu,lnrho,lncc
   end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
     print,'hydro with no entropy and no magnetic field'
     readu,1,uu,lnrho
@@ -126,6 +129,9 @@ if (ldensity) then $
 if (lentropy) then $
     print, FORMAT=fmt, 'ss     =', $
       minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+if (lpscalar) then $
+    print, FORMAT=fmt, 'lncc   =', $
+      minmax(lncc), mean(lncc,/DOUBLE), rms(lncc,/DOUBLE)
 if (lradiation) then $
     for j=0,2 do $
       print, FORMAT=fmt, 'ff_'+xyz[j]+'   =', $
