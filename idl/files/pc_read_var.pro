@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.20 2004-05-27 20:26:45 mee Exp $
+; $Id: pc_read_var.pro,v 1.21 2004-05-30 13:52:02 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-27 20:26:45 $
-;  $Revision: 1.20 $
+;  $Date: 2004-05-30 13:52:02 $
+;  $Revision: 1.21 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -150,7 +150,8 @@ if (n_elements(variables) ne n_elements(tags)) then begin
   message, 'ERROR: variables and tags arrays differ in size' 
 endif
 
-if keyword_set(MAGIC) then pc_magic_var,variables,tags,param=param
+if keyword_set(MAGIC) then pc_magic_var,variables,tags,param=param, $
+    datadir=datadir
 
 ; Get a unit number
 GET_LUN, file

@@ -1,5 +1,6 @@
-pro pc_magic_var,variables,tags,param=param
+pro pc_magic_var,variables,tags,param=param,datadir=datadir
 
+  default, datadir, 'data'
 ; Allow param to be passed it if already loaded (eg. when called from inside another pc_ routine)
   if n_elements(param) eq 0 then pc_read_param,object=param,datadir=datadir
 
@@ -53,6 +54,10 @@ pro pc_magic_var,variables,tags,param=param
     endif else if variables[iv] eq 'epsd' then begin
       variables[iv]='pc_dust_aux(lnrho=lnrho,nd=nd,md=md,param=param,/epsd)'
       tags[iv]='epsd'
+    endif else if variables[iv] eq 'smon' then begin
+      variables[iv]='pc_dust_aux(lnrho=lnrho,ss=ss,nd=nd,md=md,' + $
+          'param=param,datadir=datadir,/smon)'
+      tags[iv]='smon'
     endif else if variables[iv] eq 'unit_md' then begin
       variables[iv]='pc_dust_aux(param=param,/unit_md)'
       tags[iv]='unit_md'
