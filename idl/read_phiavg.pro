@@ -10,6 +10,8 @@
 ;;;   Read phi-averages from file and return them in a structure
 ;;;  Usage:
 ;;;   avg = read_phiavg('data/averages/PHIAVG1')
+;;;  Keywords:
+;;;   TONLY  -- If true, return just the time t (as a scalar)
 ;;;  Slots of returned structure:
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
@@ -56,26 +58,36 @@ function parse_labels, line
 end
 ; ---------------------------------------------------------------------- ;
 function read_phiavg, file, $
-                      VARS=vars, DEBUG=debug
+                      VARS=vars, TONLY=t_only, DEBUG=debug
 
   default, debug, 0
+  default, t_only, 0
 
   if (n_elements(vars) gt 0) then begin
     message, /INFO, $
         'VARS keyword (for selecting only certain vars) not yet implemented'
   endif
 
-  close, 1
-  openr, 1, file, /F77
-
-  nr=1L & nz=1L & nvars=1L & nprocz=1L
-  readu, 1, nr, nz, nvars, nprocz
-  if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
+  get_lun, lun
+  close, lun
+  openr, lun, file, /F77
 
   t = 0.
+  if (t_only) then begin
+    readu, lun
+    readu, lun, t
+    close, lun
+    free_lun, lun
+    return, t
+  endif
+
+  nr=1L & nz=1L & nvars=1L & nprocz=1L
+  readu, lun, nr, nz, nvars, nprocz
+  if (debug) then print,'nr,nz,nvars,nprocz=',nr,nz,nvars,nprocz
+
   rcyl = fltarr(nr)
   z    = fltarr(nz)
-  readu, 1, t, rcyl, z
+  readu, lun, t, rcyl, z
   if (debug) then begin
     print,'t=',t
     print,'rcyl in ', minmax(rcyl)
@@ -83,22 +95,25 @@ function read_phiavg, file, $
   endif
 
   vars = fltarr(nr,nz,nvars)
-  readu, 1, vars
+  readu, lun, vars
   if (debug) then print, 'vars in ', minmax(vars)
 
-  point_lun, -1, position       ; save current file position
+  point_lun, -lun, position       ; save current file position
   llen = 0L                     ; length of labels line
-  readu, 1, llen
+  readu, lun, llen
   if (debug) then print, 'llen=', llen
   if ((llen le 0) or (llen gt 4096)) then $
       message, "Can't believe I'm excpected to read a string of length " $
       + strtrim(llen,2)
   format = '(A' + strtrim(llen,2)+')'
   lline = string('',FORMAT=format) ; predefine string of correct length
-  point_lun, 1, position        ; rewind
-  readu, 1, llen, lline
+  point_lun, lun, position        ; rewind
+  readu, lun, llen, lline
   lline = strtrim(lline)
   if (debug) then print, 'lline: <', lline, '>'
+
+  close, lun
+  free_lun, lun
 
   ;; Cycle through labels and construct structure definition
   labels = parse_labels(lline)
