@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.41 2004-04-19 08:18:59 ajohan Exp $
+;  $Id: extra.pro,v 1.42 2004-04-19 13:29:05 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -108,13 +108,20 @@ if (ind(0) ne 0) then begin
   endif else begin
     lmdvar=0
   endelse
-  md      = fltarr(ndustspec)
+  
+  if (imi(0) ne 0) then begin
+    lmice=1
+  endif else begin
+    lmice=0
+  endelse
+
   mdplus  = fltarr(ndustspec)
   mdminus = fltarr(ndustspec)
   ad      = fltarr(ndustspec)
   nd      = fltarr(nx,ny,nz,ndustspec)
   fd      = fltarr(nx,ny,nz,ndustspec)
   if (lmdvar) then md = fltarr(nx,ny,nz,ndustspec)
+  if (lmice)  then mi = fltarr(nx,ny,nz,ndustspec)
 
   for k=0,ndustspec-1 do begin
     sdust = strtrim(string(k),2)
@@ -122,6 +129,10 @@ if (ind(0) ne 0) then begin
     res = execute(string)
     if (lmdvar) then begin
       string = 'md(*,*,*,'+sdust+') = md'+sdust+'(l1:l2,m1:m2,n1:n2)'
+      res = execute(string)
+    endif
+    if (lmice) then begin
+      string = 'mi(*,*,*,'+sdust+') = mi'+sdust+'(l1:l2,m1:m2,n1:n2)'
       res = execute(string)
     endif
   endfor
@@ -136,6 +147,7 @@ if (ind(0) ne 0) then begin
   nd = reform(nd)
   fd = reform(fd)
   if (lmdvar) then md = reform(md)
+  if (lmice)  then mi = reform(mi)
 endif
 ;
 END
