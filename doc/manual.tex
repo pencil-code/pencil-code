@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.172 2003-06-19 08:45:25 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.173 2003-06-23 17:47:40 theine Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -340,7 +340,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-06-19 08:45:25 $ $,~ $ $Revision: 1.172 $ $}
+\date{$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}
 
 % ====================================================================== %
 
@@ -373,7 +373,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-06-19 08:45:25 $ $,~ $ $Revision: 1.172 $ $}
+  \emph{$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2627,6 +2627,58 @@ shock viscosity.
 
 \subsection{Ionization}
 
+We treat the gas as a composition of partially ionized hydrogen and neutral
+helium. These are four different particle species, each of which regarded as
+a perfect gas.
+
+The ionization fraction $y$, which gives the ratio of ionized hydrogen to the
+total amount of hydrogen $n_{\rm H}$, is obtained from the Saha equation,
+which in this case may be written as
+
+\[
+\frac{y^2}{1-y}=\frac{1}{n_{\rm H}}
+\left(\frac{m_{\rm e}k_{\rm B}T}{2\pi\hbar^2}\right)^{3/2}
+\exp\left(-\frac{\chi_{\rm H}}{k_{\rm B}T}\right)\ .
+\]
+
+The temperature $T$ cannot be obtained directly from the Pencil Code's
+independent variables $\ln\rho$ and $s$, but is itself dependent on $y$.
+Hence, the calculation of $y$ essentially becomes a root finding problem.
+
+The entropy of a perfect gas consisting of particles of type $i$ is known from
+the Sackur-Tetrode equation
+
+\[
+S_i=k_{\rm B}N_i\left(\ln\left[\frac{1}{n_{\rm tot}}
+                               \left(\frac{m_ik_{\rm B}T}
+                                     {2\pi\hbar^2}\right)^{3/2}\right]
+                      +\frac{5}{2}\right)\ .
+\]
+
+Here $N_i$ is the number of particles of a single species and $n_{\rm tot}$
+is the total number density of all particle species.
+
+Summing up the individual entropies plus the entropy of mixing
+$S_{\rm mix}=N_{\rm tot}k_{\rm B}\sum_ip_i\ln p_i$ we can get a closed
+expression for the specific entropy $s$ in terms of $y$, $\ln\rho$ and $T$,
+which may be solved for $T$.
+
+For given $\ln\rho$ and $s$ we are then able to calculate the ionization
+fraction $y$ by finding the root of
+
+\[
+f(y)=\ln\left[\frac{1-y}{y^2}\frac{1}{n_{\rm H}}
+              \left(\frac{m_{\rm e}k_{\rm B}T(y)}
+                    {2\pi\hbar^2}\right)^{3/2}\right]
+     -\frac{\chi_{\rm H}}{k_{\rm B}T(y)}\ .
+\]
+
+In the ionized case, several thermodynamic quantities of the gas become
+dependent on the ionization fraction $y$ such its as pressure
+$P=(1\!+y+f)n_{\rm H}k_{\rm B}T$ and its internal energy
+$E=\frac{3}{2}(1+y+f)n_{\rm H}k_{\rm B}T+y\chi_{\rm H}$, where $f$ gives the
+ratio of neutral helium to the total amount of hydrogen.
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Radiative transfer}
@@ -3037,7 +3089,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-06-19 08:45:25 $ $,~ $ $Revision: 1.172 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-06-23 17:47:40 $ $,~ $ $Revision: 1.173 $ $}}}
 
 \section{Timings}
 
@@ -5186,7 +5238,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.172 2003-06-19 08:45:25 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.173 2003-06-23 17:47:40 theine Exp $ $}
 
 
 \end{document}
