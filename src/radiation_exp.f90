@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.3 2003-06-14 15:37:22 theine Exp $
+! $Id: radiation_exp.f90,v 1.4 2003-06-14 15:43:36 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.3 2003-06-14 15:37:22 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.4 2003-06-14 15:43:36 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -101,7 +101,7 @@ module Radiation
 !  Solves the transfer equation using Feautrier's method
 !  At the moment for vertical rays only
 !
-!  01-apr/tobi: coded
+!  12-may-03/tobi: coded
 !
       use Cdata
       use General

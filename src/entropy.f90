@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.162 2003-06-13 21:33:55 theine Exp $
+! $Id: entropy.f90,v 1.163 2003-06-14 15:43:36 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.162 2003-06-13 21:33:55 theine Exp $")
+           "$Id: entropy.f90,v 1.163 2003-06-14 15:43:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -439,7 +439,7 @@ module Entropy
 !  include in maximum advection speed (for timestep)
 !
       ss=f(l1:l2,m,n,ient)
-      yH=f(l1:l2,m,n,iion)
+      yH=f(l1:l2,m,n,iyH)
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
