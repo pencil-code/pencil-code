@@ -11,6 +11,17 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
+# Prevent code from running twice (and removing files by accident)
+if (-e "LOCK") then
+  echo ""
+  echo "run.csh: found LOCK file"
+  echo "This may indicate that the code is currently running in this directory"
+  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
+  echo "rm LOCK"
+  exit
+endif
+touch LOCK
+
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
@@ -62,6 +73,9 @@ endif
 
 # Shut down lam if we have started it
 if ($booted_lam) lamhalt
+
+# remove LOCK file
+rm -f LOCK
 
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh

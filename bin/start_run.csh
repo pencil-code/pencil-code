@@ -17,6 +17,16 @@ if ($?PBS_O_WORKDIR) then
   cd $PBS_O_WORKDIR
 endif
 
+# Prevent code from running twice (and removing files by accident)
+if (-e "LOCK") then
+  echo ""
+  echo "start_run.csh: found LOCK file"
+  echo "This may indicate that the code is currently running in this directory"
+  echo "If this is a mistake (eg after a crash), remove the LOCK file by hand:"
+  echo "rm LOCK"
+  exit
+endif
+
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
