@@ -1,5 +1,5 @@
 ;
-;  $Id: pc_particles_to_density.pro,v 1.2 2005-01-30 09:57:07 ajohan Exp $
+;  $Id: pc_particles_to_density.pro,v 1.3 2005-02-17 12:25:25 ajohan Exp $
 ;
 ;  Convert positions of particles to a number density field.
 ;
@@ -32,7 +32,7 @@ for k=0L,npar-1 do begin
   iy=where( disty eq min(disty) )
 
   for n=0,nz-1 do begin
-    distz[n]=abs(xxp[k,2]-x[n])
+    distz[n]=abs(xxp[k,2]-z[n])
   endfor
   iz=where( distz eq min(distz) )
 
