@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.129 2004-04-10 17:04:27 mee Exp $
+! $Id: register.f90,v 1.130 2004-05-17 17:00:34 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -191,7 +191,7 @@ module Register
 !
       if (lroot.and.ip<14) then
          if (lionization.or.lradiation.or.lradiation_ray.or.linterstellar) then
-            print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+            write(*,'(a,1p,4e14.6)') ' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
          endif
       endif
 !
