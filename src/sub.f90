@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.163 2004-02-17 22:48:50 dobler Exp $ 
+! $Id: sub.f90,v 1.164 2004-02-18 02:28:08 brandenb Exp $ 
 
 module Sub 
 
@@ -2964,6 +2964,7 @@ nameloop: do
       use Cdata
 !
       real, dimension(nx) :: maxf,f,mask
+      real                :: rmax_dt=0.
 !
       intent(in)    :: f
       intent(inout) :: maxf
@@ -2986,7 +2987,7 @@ nameloop: do
       use Cdata
 !
       real, dimension(nx) :: maxf,mask
-      real                :: f
+      real                :: f,rmax_dt=0.
 !
       intent(in)    :: f
       intent(inout) :: maxf
