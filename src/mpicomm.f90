@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.66 2002-11-14 12:31:32 dobler Exp $
+! $Id: mpicomm.f90,v 1.67 2002-11-19 20:17:08 ngrs Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -91,7 +91,7 @@ module Mpicomm
 !  The arrays leftneigh and rghtneigh give the processor numbers
 !  to the left and to the right.
 !
-!  Before the communication has been completed, the nhost=3 layers next
+!  Before the communication has been completed, the nghost=3 layers next
 !  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
 !  In the mean time we can calculate the interior points sufficiently far
 !  away from the boundary points. Here we calculate the order in which
@@ -180,7 +180,7 @@ module Mpicomm
 !   3 |  0   1   2   3 |  0
 !  ---+----------------+---
 !  15 | 12  13  14  15 | 12
-!  should print (3,15,12,13,1,5,5,7) for iproc=0
+!  should print (3,15,12,13,1,5,4,7) for iproc=0
 !
       if (ip<5) &
            write(*,'(A,I4,"(",2I4,"): ",8I4)') &

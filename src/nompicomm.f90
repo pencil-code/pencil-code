@@ -32,7 +32,7 @@ module Mpicomm
 !***********************************************************************
     subroutine mpicomm_init()
 !
-!  Before the communication has been completed, the nhost=3 layers next
+!  Before the communication has been completed, the nghost=3 layers next
 !  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
 !  In the mean time we can calculate the interior points sufficiently far
 !  away from the boundary points. Here we calculate the order in which
