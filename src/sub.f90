@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.108 2003-02-02 16:54:02 dobler Exp $ 
+! $Id: sub.f90,v 1.109 2003-02-02 20:05:38 dobler Exp $ 
 
 module Sub 
 
@@ -123,7 +123,7 @@ module Sub
       integer :: iname,n_nghost
 !
 !  Initialize to zero, including other parts of the z-array
-!  which later be merged with an mpi reduce command.
+!  which are later merged with an mpi reduce command.
 !
       if (lfirstpoint) fnamez(:,:,iname)=0.
 !
@@ -147,9 +147,8 @@ module Sub
       real, dimension (nx) :: a
       integer :: iname,m_nghost
 !
-!  always initialize to zero, including other parts of the z-array
-!  which later be merged with an mpi reduce command.
-!  Thus, it must be zero if is not set otherwise.
+!  Initialize to zero, including other parts of the xy-array
+!  which are later merged with an mpi reduce command.
 !
       if (lfirstpoint) fnamexy(:,:,:,iname)=0.
 !
@@ -161,30 +160,56 @@ module Sub
 !
     endsubroutine zsum_mn_name_xy
 !***********************************************************************
-    subroutine phisum_mn_name(a,iname)
+    subroutine phisum_mn_name_rz(a,iname)
 !
 !  successively calculate sum over phi of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
 !
-!   5-jun-02/axel: adapted from sum_mn_name
+!   2-feb-03/wolf: adapted from xysum_mn_name_z
 !
       use Cdata
 !
       real, dimension (nx) :: a
-      integer :: iname,n_nghost
+      integer :: iname,n_nghost,ir
 !
-!  always initialize to zero, including other parts of the z-array
-!  which later be merged with an mpi reduce command.
-!  Thus, it must be zero if is not set otherwise.
+!  Initialize to zero, including other parts of the rz-array
+!  which are later merged with an mpi reduce command.
 !
-      if (lfirstpoint) fnamez(:,:,iname)=0.
+      if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
       n_nghost=n-nghost
-      fnamez(n_nghost,ipz+1,iname)=fnamez(n_nghost,ipz+1,iname)+sum(a)
+      do ir=1,nr
+        fnamerz(ir,n_nghost,ipz+1,iname) &
+           = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
+      enddo
 !
-    endsubroutine phisum_mn_name
+    endsubroutine phisum_mn_name_rz
+!***********************************************************************
+    subroutine calc_phiavg_profile()
+!
+!  Calculate profile for phi-averaging for given pencil
+!
+!   2-feb-03/wolf: coded
+!
+      use Cdata
+!
+      real :: r0,width
+      integer :: ir
+!
+!  Just for crude testing; the following Gaussian profile sums up to
+!  approximately one. Eventually, we will sum up unity together with the
+!  data to get the exact normalization for arbitrary profiles.
+!
+      width = dx
+      do ir=1,nr
+        r0 = rcyl(ir)
+        phiavg_profile(ir,:) &
+             = 0.06349*dx*dy/(r0*width)*exp(-0.5*((rcyl_mn-r0)/width)**2)
+      enddo
+!
+    endsubroutine calc_phiavg_profile
 !***********************************************************************
     subroutine max_mn(a,res)
 !

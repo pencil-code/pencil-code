@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.103 2003-02-02 16:54:02 dobler Exp $
+! $Id: magnetic.f90,v 1.104 2003-02-02 20:05:37 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -49,6 +49,7 @@ module Magnetic
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
   integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
   integer :: i_uxuxBm=0
+  integer :: i_b2mphi=0
 
   contains
 
@@ -84,7 +85,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.103 2003-02-02 16:54:02 dobler Exp $")
+           "$Id: magnetic.f90,v 1.104 2003-02-02 20:05:37 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -233,8 +234,9 @@ module Magnetic
         aa=f(l1:l2,m,n,iax:iaz)
         call dot_mn(aa,bb,ab)
         call dot2_mn(bb,b2)
-        if (i_abm/=0) call sum_mn_name(ab,i_abm)
-        if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
+        if (i_abm/=0)    call sum_mn_name(ab,i_abm)
+        if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
+        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
@@ -421,6 +423,7 @@ module Magnetic
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
         i_uxuxBm=0
+        i_b2mphi=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -461,6 +464,12 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
       enddo
 !
+!  check for those quantities for which we want phi-averages
+!
+      do inamez=1,nnamez
+        call parse_name(inamez,cnamez(inamez),cformz(inamez),'b2mphi',i_b2mphi)
+      enddo
+!
 !  write column, i_XYZ, where our variable XYZ is stored
 !
       write(3,*) 'i_abm=',i_abm
@@ -493,6 +502,7 @@ module Magnetic
       write(3,*) 'i_bxmxy=',i_bxmxy
       write(3,*) 'i_bymxy=',i_bymxy
       write(3,*) 'i_bzmxy=',i_bzmxy
+      write(3,*) 'i_b2mphi=',i_b2mphi
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

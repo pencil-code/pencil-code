@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.119 2003-02-02 17:46:03 brandenb Exp $
+! $Id: equ.f90,v 1.120 2003-02-02 20:05:37 dobler Exp $
 
 module Equ
 
@@ -150,31 +150,31 @@ module Equ
       endif
 !
     endsubroutine zaverages_xy
-! !***********************************************************************
-!     subroutine phiaverages_rz()
-! !
-! !  calculate azimuthal averages (as functions of r_cyl,z)
-! !  NOTE: these averages depend on (r and) z, so after summation they
-! !  are still distributed over nprocz CPUs; hence the dimensions of fsumrz
-! !  (and fnamerz).
-! !
-! !  9-dec-02/wolf: coded
-! !
-!       use Mpicomm
-!       use Cdata
-!       use Sub
-! !
-!       real, dimension (nr,nz,nprocz,mnamerz) :: fsumrz
-! !
-! !  communicate over all processors
-! !  the result is only present on the root processor
-! !
-!       if(nnamerz>0) then
-!         call mpireduce_sum(fnamerz,fsumrz,nnamerz*nrz*nprocz)
-! !        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
-!       endif
-! !
-!     endsubroutine phiaverages_rz
+!***********************************************************************
+    subroutine phiaverages_rz()
+!
+!  calculate azimuthal averages (as functions of r_cyl,z)
+!  NOTE: these averages depend on (r and) z, so after summation they
+!  are still distributed over nprocz CPUs; hence the dimensions of fsumrz
+!  (and fnamerz).
+!
+!  9-dec-02/wolf: coded
+!
+      use Mpicomm
+      use Cdata
+      use Sub
+!
+      real, dimension (nr,nz,nprocz,mnamerz) :: fsumrz
+!
+!  communicate over all processors
+!  the result is only present on the root processor
+!
+      if(nnamerz>0) then
+        call mpireduce_sum(fnamerz,fsumrz,nnamerz*nr*nz*nprocz)
+!        if(lroot) fnamerz=fsumrz/(nx*ny*nprocy)
+      endif
+!
+    endsubroutine phiaverages_rz
 !***********************************************************************
     subroutine pde(f,df)
 !
@@ -209,7 +209,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.119 2003-02-02 17:46:03 brandenb Exp $")
+           "$Id: equ.f90,v 1.120 2003-02-02 20:05:37 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -241,14 +241,19 @@ module Equ
           call boundconds_z(f)
         endif
 !
-!  coordinates are needed all the time
-!  (but not for isotropic turbulence!)
-!  There are many other ciscumstances where this is not needed.
+!  coordinates are needed frequently
+!  --- but not for isotropic turbulence; and there are many other
+!  circumstances where this is not needed.
 !
         x_mn = x(l1:l2)
         y_mn = spread(y(m),1,nx)
         z_mn = spread(z(n),1,nx)
-        r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)
+        rcyl_mn = sqrt(x_mn**2+y_mn**2) ! Needed for phi-averages
+        r_mn    = sqrt(x_mn**2+y_mn**2+z_mn**2)
+!
+!  calculate profile for phi-averages if needed
+!
+        if (ldiagnos) call calc_phiavg_profile()
 !
 !  for each pencil, accummulate through the different routines
 !  maximum diffusion, maximum advection (keep as nx-array)

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.90 2003-02-02 15:12:52 brandenb Exp $ 
+! $Id: param_io.f90,v 1.91 2003-02-02 20:05:37 dobler Exp $ 
 
 module Param_IO
 
@@ -344,8 +344,9 @@ module Param_IO
       endif
 !
 !  Write parameters to log file
-!  [No longer used, since at the time when read_runpars() is calleed, t
+!  [No longer used, since at the time when read_runpars() is called, t
 !  is not known yet]
+!
       if (present(file)) then
         if (file) then
           if (present(annotation)) then

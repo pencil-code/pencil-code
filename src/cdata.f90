@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.123 2003-02-02 15:12:52 brandenb Exp $
+! $Id: cdata.f90,v 1.124 2003-02-02 20:05:37 dobler Exp $
 
 module Cdata
 
@@ -10,7 +10,8 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
+  real, dimension (nr) :: rcyl  ! used for phi-averages
+  real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn,rcyl_mn
   real, dimension (nx) :: maxadvec2,maxdiffus, maxheating
 
   real, dimension (nx,3,3) :: sij  ! rate-of-strain tensor
@@ -48,7 +49,7 @@ module Cdata
 !
 !  in this section are all the things related to printing
 !
-  integer :: nname=0,nnamez=0,nnamexy=0
+  integer :: nname=0,nnamez=0,nnamexy=0,nnamerz=0
   integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
   integer :: nr_directions=1
   integer, parameter :: mname=100,mnamez=20,mnamexy=6,mnamerz=6
@@ -56,9 +57,12 @@ module Cdata
   real, dimension (mname) :: fname
   real, dimension (nz,nprocz,mnamez) :: fnamez
   real, dimension (nx,ny,nprocy,mnamexy) :: fnamexy
-  real, dimension (nx/2,nz,nprocz,mnamerz) :: fnamerz
-  character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
-  character (len=30) :: cnamexy(mnamexy),cformxy(mnamexy)
+  real, dimension (nr,nz,nprocz,mnamerz) :: fnamerz
+  real, dimension (nr,nx) :: phiavg_profile
+  character (LEN=30) :: cname(mname),cform(mname)
+  character (LEN=30) :: cnamexy(mnamexy),cformxy(mnamexy)
+  character (LEN=30) :: cnamez(mnamez),cformz(mnamez)
+  character (LEN=30) :: cnamerz(mnamerz),cformrz(mnamerz)
 
   ! other variables (needs to be consistent with reset list in register.90)
   integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0

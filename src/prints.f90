@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.34 2003-01-23 10:52:16 nilshau Exp $
+! $Id: prints.f90,v 1.35 2003-02-02 20:05:37 dobler Exp $
 
 module Print
 
@@ -143,6 +143,25 @@ module Print
       first = .false.
 !
     endsubroutine write_zaverages
+!***********************************************************************
+    subroutine write_phiaverages
+!
+!  Read and register print parameters gathered from the different
+!  modules and marked in `phiaver.in'
+!
+!   2-jan-03/wolf: adapted from write_xyaverages
+!
+      logical,save :: first=.true.
+!
+      if(lroot.and.nnamerz>0) then
+        open(1,file=trim(datadir)//'/phiaverages.dat',position='append')
+        write(1,'(1pe12.5)') t
+        write(1,'(1p,8e11.3)') fnamerz(:,:,:,1:nnamerz)
+        close(1)
+      endif
+      first = .false.
+!
+    endsubroutine write_phiaverages
 !***********************************************************************
 
 endmodule Print

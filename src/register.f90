@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.58 2003-02-02 15:12:52 brandenb Exp $
+! $Id: register.f90,v 1.59 2003-02-02 20:05:37 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -163,7 +163,7 @@ module Register
       use Radiation
       use Pscalar
 !
-      integer :: iname,inamez,ixy
+      integer :: iname,inamez,inamexy,inamerz
       logical :: lreset,exist
 !
 !  read in the list of variables to be printed
@@ -194,13 +194,26 @@ module Register
       inquire(file='zaver.in',exist=exist)
       if (exist) then
         open(1,file='zaver.in')
-        do ixy=1,mnamexy
-          read(1,*,end=97) cnamexy(ixy)
+        do inamexy=1,mnamexy
+          read(1,*,end=97) cnamexy(inamexy)
         enddo
-97      nnamexy=ixy-1
+97      nnamexy=inamexy-1
         close(1)
       endif
       if (lroot.and.ip<14) print*,'nnamexy=',nnamexy
+!
+!  read in the list of variables for phi-averages
+!
+      inquire(file='phiaver.in',exist=exist)
+      if (exist) then
+        open(1,file='phiaver.in')
+        do inamerz=1,mnamerz
+          read(1,*,end=96) cnamerz(inamerz)
+        enddo
+96      nnamerz=inamerz-1
+        close(1)
+      endif
+      if (lroot.and.ip<14) print*,'nnamerz=',nnamerz
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.125 2003-02-02 15:12:52 brandenb Exp $
+! $Id: run.f90,v 1.126 2003-02-02 20:05:37 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.125 2003-02-02 15:12:52 brandenb Exp $")
+             "$Id: run.f90,v 1.126 2003-02-02 20:05:37 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -219,6 +219,7 @@
           !
           if(lout) call write_xyaverages()
           if(lout.and.lwrite_zaverages) call write_zaverages()
+          if(lout) call write_phiaverages()
           if(lout) call prints()
           !
           !  Setting ialive=1 can be useful on flaky machines!
