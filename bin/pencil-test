@@ -1,0 +1,88 @@
+#!/bin/sh
+# -*-perl-*-
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"     # -x: start from the following line
+#======================================================================#
+#! /Good_Path/perl -w 
+# line 17
+#
+# Name:   pencil-test
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   16-Nov-2002
+# Description:
+#   Run the pencil code's auto-test on some remote host(s) and wrap
+#   results in HTML if required. Can be used from crontab.
+# Usage:
+#   pencil-test [-html] [-clean] [-update] host1 [host2 [host3 ..]]
+# Crontab entry:
+#  05 01 * * *     $HOME/bin/pencil-test -html -update HOST > $HOME/public_html/pencil-code/tests/HOST.html
+
+use strict;
+use Getopt::Long;
+
+my (%opts);	# Variables written by GetOptions
+
+## Process command line
+GetOptions(\%opts,
+	   qw( -H --html
+	       -c --clean
+	       -u --update
+	                   ));
+my $html   = ($opts{H} || $opts{html}   || 0);
+my $clean  = ($opts{c} || $opts{clean}  || 0);
+my $update = ($opts{u} || $opts{update} || 0);
+
+my $usage = "Usage:
+  pencil-test [-html] [-clean] [-update] host1 [host2 [host3 ..]]\n";
+die $usage if (! @ARGV);
+
+## Print header
+if ($html) {
+    print <<"END_HEAD";
+<html>
+<head></head>
+<body>
+
+END_HEAD
+}
+
+## Run test(s)
+my $first = 1;
+foreach my $host (@ARGV) {
+    # Identify host
+    if ($html) {
+	unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
+	print "<h2>$host:</h2>\n\n<pre>\n";
+    } else {
+	unless ($first) { print "\n\n" };
+	print "  $host:\n================\n";
+    }
+    # Construct and execute remote command
+    my @cmd = ("ssh", "$host");
+    my $remcmd = 'cd $PENCIL_HOME';
+    if ($update) { $remcmd .= "; cvs update >& /dev/null"};
+    $remcmd .= "; ./bin/auto-test -s";
+    if ($clean) { $remcmd .= " -c"};
+    push @cmd, $remcmd;
+    system @cmd;
+#    print "<",join("> <",@cmd,">\n");
+    $first = 0;
+}
+if ($html) {
+    print <<"END_FOOT";
+</pre>
+</body>
+</html>
+END_FOOT
+}
+
+# End of file pencil-test
