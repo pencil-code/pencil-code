@@ -1,6 +1,10 @@
 #!/bin/csh
 
+# Under OSF1, a newly started csh does not inherit PATH:
+set path = ( $path ../../../bin )
+
 ## Generate start.in and run.in if necessary
+echo $path
 if (! -e start.in) then
   mkdotin --start src/Makefile src/Makefile.local
   echo "Generated start.in"
