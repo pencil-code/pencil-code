@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.158 2004-02-11 13:22:59 nilshau Exp $ 
+! $Id: param_io.f90,v 1.159 2004-02-12 07:12:38 mee Exp $ 
 
 module Param_IO
 
@@ -106,7 +106,8 @@ module Param_IO
 !
 !   2-nov-02/axel: adapted from get_datadir
 !
-      character (len=*) :: dir
+      character (len=*) :: dir 
+      character (len=len(dir)) :: tdir
       character (len=10) :: a_format
       logical :: exist
 !
@@ -120,10 +121,11 @@ module Param_IO
 !        read(1,'(a)') dir
 ! ..so we do it like this:
         a_format = '(a)'
-        read(1,a_format) dir
+        read(1,a_format) tdir
         close(1)
+        if (len(trim(tdir)) .gt. 0) call parse_shell(tdir,dir)
       endif
-      if(lroot.and.ip<6) print*,'get_snapdir: dir=',trim(dir)
+      if(lroot.and.ip<20) print*,'get_snapdir: dir=',trim(dir)
 !
     endsubroutine get_snapdir
 !***********************************************************************

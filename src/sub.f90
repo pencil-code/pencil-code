@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.158 2004-02-07 20:30:12 brandenb Exp $ 
+! $Id: sub.f90,v 1.159 2004-02-12 07:12:38 mee Exp $ 
 
 module Sub 
 
@@ -34,6 +34,12 @@ module Sub
     module procedure max_for_dt_1_1_1_nx
   endinterface
 
+  INTERFACE getenv
+    SUBROUTINE GETENV (VAR, VALUE) 
+      CHARACTER(LEN=*) VAR, VALUE 
+    END SUBROUTINE 
+  END INTERFACE
+ 
   contains
 
 !***********************************************************************
@@ -2580,6 +2586,67 @@ module Sub
       endif
 !
       endsubroutine parse_name
+!***********************************************************************
+      subroutine parse_shell(strin,strout)
+!
+!  Parse strin replacing all $XXXX sequences with appropriate
+!  values from the environment.  Return the parsed result in strout
+!
+        use General, only: safe_character_assign
+!
+      character (len=*) :: strin, strout
+      character (len=255) :: envname, envvalue, chunk
+      character (len=1) :: chr 
+      character (len=*), parameter :: envnamechars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890_-'
+      integer :: inptr, inlen, envstart, nameptr
+!
+      intent(in)    :: strin
+      intent(inout)   :: strout
+!
+      inptr=1
+      inlen=len(trim(strin))
+      strout=''
+
+dlrloop:do
+        envstart =index(strin(inptr:inlen),'$')
+        if (envstart .le. 0) exit;
+        chunk = trim(strin(inptr:envstart-1))
+        if (envstart .gt. inptr) call safe_character_assign(strout,trim(strout)//trim(chunk))
+        inptr = envstart + 1;
+        if (inptr .gt. inlen) exit dlrloop
+
+        nameptr = inptr 
+nameloop: do 
+          chr = trim(strin(nameptr:nameptr))
+          if (index(envnamechars,chr) .gt. 0) then
+            nameptr=nameptr+1
+          else
+            exit nameloop
+          endif
+
+          if (nameptr .ge. inlen) then
+            nameptr=inlen
+            exit nameloop
+          endif
+        enddo nameloop
+        
+        if ((nameptr-1) .ge. inptr) then
+         envname=trim(strin(inptr:nameptr-1))
+         call getenv(trim(envname),envvalue)
+         call safe_character_assign(strout,trim(strout)//trim(envvalue))
+        endif
+
+        inptr=nameptr
+        if (inptr .gt. inlen) exit dlrloop
+ 
+      enddo dlrloop
+
+      if (inptr .le. inlen) then
+         chunk = trim(strin(inptr:inlen))
+         call safe_character_assign(strout,trim(strout)//trim(chunk))
+      endif
+!
+      endsubroutine parse_shell
 !***********************************************************************
       subroutine remove_file(fname)
 !
