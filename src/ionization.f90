@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.65 2003-08-03 13:28:11 theine Exp $
+! $Id: ionization.f90,v 1.66 2003-08-03 13:31:19 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -73,7 +73,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.65 2003-08-03 13:28:11 theine Exp $")
+           "$Id: ionization.f90,v 1.66 2003-08-03 13:31:19 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -181,7 +181,6 @@ module Ionization
 !   13-jun-03/tobi: coded
 !
       use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real :: lnrho,ss,yH,lnTT_
@@ -204,19 +203,6 @@ module Ionization
       enddo
       enddo
       enddo
-!
-      if (notanumber(f(:,:,:,iyH))) then
-        print*,'WATCH IT yH1!!!'
-      endif
-      if (any(f(:,:,:,iyH)>=1.)) then
-        print*,'WATCH IT yH2!!!'
-      endif
-      if (any(f(:,:,:,iyH)<=0.)) then
-        print*,'WATCH IT yH3!!!'
-      endif
-      if (notanumber(f(:,:,:,iTT))) then
-        print*,'WATCH IT TT!!!'
-      endif
 !
     endsubroutine ioncalc
 !***********************************************************************
