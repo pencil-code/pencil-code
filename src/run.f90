@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.192 2004-07-30 18:06:50 mcmillan Exp $
+! $Id: run.f90,v 1.193 2004-08-02 13:12:26 mcmillan Exp $
 !
 !***********************************************************************
       program run
@@ -56,7 +56,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.192 2004-07-30 18:06:50 mcmillan Exp $")
+             "$Id: run.f90,v 1.193 2004-08-02 13:12:26 mcmillan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -123,10 +123,10 @@
             do ivar=iaz+1,mvar
               f(:,:,:,ivar)=f(:,:,:,ivar-3)
             enddo
-! dgm
             f(:,:,:,iax:iaz)=0. 
-            call pert_aa(f)
           endif
+! dgm
+          call pert_aa(f)
 !
 !  read data without passive scalar into new run with passive scalar
 !
