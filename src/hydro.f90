@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.86 2003-02-13 10:01:54 torkel Exp $
+! $Id: hydro.f90,v 1.87 2003-03-31 14:04:07 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -82,7 +82,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.86 2003-02-13 10:01:54 torkel Exp $")
+           "$Id: hydro.f90,v 1.87 2003-03-31 14:04:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -349,17 +349,14 @@ module Hydro
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
         endif
       endif
-
 !
 !  calculate grad(lnrho) here: needed for ivisc='nu-const' and continuity
 !
       if(lneed_glnrho) call grad(f,ilnrho,glnrho)
-
 !
 ! calculate viscous force
 !
       if (lviscosity) call calc_viscous_force(f,df,glnrho,divu,rho1)
-
 !
 !  maximum squared avection speed
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.21 2003-03-29 21:41:41 brandenb Exp $
+! $Id: ionization.f90,v 1.22 2003-03-31 14:04:07 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.21 2003-03-29 21:41:41 brandenb Exp $")
+           "$Id: ionization.f90,v 1.22 2003-03-31 14:04:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -107,17 +107,16 @@ module Ionization
       use General
       use Sub
 !
-      real, dimension (nx),optional :: Temperature
+      logical, save :: first=.true.
+      real, dimension (nx), intent(out), optional :: Temperature
       real, dimension (nx) :: lnrho,ss,cs2,TT1,cp1tilde
       real, dimension (nx) :: dlnPdlnrho,dlnPdss,yH,TT,rho,ee,lnTT
       real :: ss0=-5.5542
 !
-      intent(out) :: Temperature
-!
 !  calculate cs2, 1/T, and cp1tilde
 !
       if(cionization=='hydrogen') then
-        if(headtt) print*,'thermodynamics based on hydrogen ionization'
+        if(headtt.and.first) print*,'thermodynamics based on hydrogen ionization'
         call ionfrac(lnrho,ss,yH)
         call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
                                  dlnPdss=dlnPdss, &
@@ -134,7 +133,7 @@ module Ionization
 !  neutral gas case: cp-cv=1*kB/mp, ie cp=2.5*kB/mp
 !
       elseif(cionization=='neutral') then
-        if(headtt) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
+        if(headtt.and.first) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
         dlnPdlnrho=gamma
         dlnPdss=gamma1
         !lnTT=gamma1*(lnrho+ss/ss_ion-ss0)
@@ -142,6 +141,7 @@ module Ionization
         TT=exp(lnTT); TT1=1./TT
         cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdss/dlnPdlnrho
+        if(headtt) print*,'thermodynamics: gamma1,lnTT,cs2=',gamma1,lnTT,cs2
         if (ldiagnos.and.i_eth/=0) then
           rho=exp(lnrho)
           ee=cs2/(gamma*gamma1)
@@ -150,6 +150,7 @@ module Ionization
       endif
       if(present(Temperature)) Temperature=TT
 !
+      first = .false.
     endsubroutine thermodynamics
 !***********************************************************************
     subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
@@ -174,7 +175,6 @@ module Ionization
       endif
       if (present(dlnPdlnrho).or.present(dlnPdss)) then
          f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-!print*,'m_H/m_p=',m_H/m_p
          dlnTT_dy=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH)
          dfdy=dlnTT_dy*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
       endif
