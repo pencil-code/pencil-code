@@ -9,6 +9,9 @@
 ;;;    in program scripts and subroutines (instead of silently
 ;;;    aborting like DELVAR does).
 ;;;    Based on undefine.pro by D. Fanning.
+;;;  Usage:
+;;;    undefine, var
+;;;    undefine, var1, var2
 
 pro wdundefine, var1, var2, var3, var4, var5, var6, var7, var8
 
@@ -22,4 +25,6 @@ pro wdundefine, var1, var2, var3, var4, var5, var6, var7, var8
    if (n_elements(var6) gt 0) then tmp = size(temporary(var6))
    if (n_elements(var7) gt 0) then tmp = size(temporary(var7))
    if (n_elements(var8) gt 0) then tmp = size(temporary(var8))
+
 end
+; End of file wdundefine.pro
