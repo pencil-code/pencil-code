@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.15 2002-10-25 09:44:25 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -259,7 +259,6 @@ module  power_spectrum
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !
       use Io
-      use Boundcond
 !
       real, dimension (mx,my,mz,mvar) :: a
       character (len=135) :: file
@@ -286,7 +285,6 @@ module  power_spectrum
 !
       call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
       if (lspec) then
-         call update_ghosts(a)
          if (vel_spec) call power(a,'u')
          if (mag_spec) call power(a,'b')
          if (vec_spec) call power(a,'a')
