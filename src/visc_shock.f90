@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.49 2003-11-29 19:13:20 brandenb Exp $
+! $Id: visc_shock.f90,v 1.50 2003-11-30 18:22:47 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -22,7 +22,7 @@ module Viscosity
 
   real :: nu_shock = 0.
   character (len=labellen) :: ivisc=''
-  real :: maxeffectivenu
+  real :: nutotal_max
   integer :: itest
   logical :: lvisc_first=.false.,lvisc_addnu=.false.,lshock_max5=.true.
 
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.49 2003-11-29 19:13:20 brandenb Exp $")
+           "$Id: visc_shock.f90,v 1.50 2003-11-30 18:22:47 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -211,14 +211,6 @@ module Viscosity
       else
          f(:,:,:,ishock) = 0.
       end if
-!
-!  max effective nu is the max of shock viscosity and the ordinary viscosity
-!
-      if (lvisc_addnu) then
-        maxeffectivenu=nu+maxval(f(:,:,:,ishock))*nu_shock
-      else
-        maxeffectivenu=amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
-      endif
 !f(:,:,:,iux:iuz)=savef
 !
 !ajwm debug only line:-
@@ -650,16 +642,7 @@ module Viscosity
 
       shock=f(l1:l2,m,n,ishock)
       call grad(f,ishock,gshock)
-!
-!  set viscous time step
-!
-      if (ldiagnos) then
-        if (i_dtnu/=0) then
-          dtnu=maxeffectivenu/dxmin**2/cdtvDim
-          call max_mn_name(dtnu,i_dtnu,l_dt=.true.)
-        endif
-        if (i_shockmax/=0) call max_mn_name(shock,i_shockmax)
-      endif
+      nutotal_max=nu
 !
 !  shock viscosity
 !
@@ -676,7 +659,8 @@ module Viscosity
             call multsv_mn(nu_shock*shock,tmp,fvisc)
             call multsv_add_mn(fvisc,nu_shock*divu,gshock,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
-            maxdiffus=amax1(maxdiffus,maxeffectivenu)
+            nutotal_max=nutotal_max+nu_shock*maxval(shock)
+            maxdiffus=amax1(maxdiffus,nutotal_max)
          else
             if(lfirstpoint) &
                  print*,"ldensity better be .true. for ivisc='nu-const'"
@@ -704,6 +688,11 @@ module Viscosity
          else ! (nu=0)
             if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
          endif
+      endif
+!
+      if (ldiagnos) then
+        if (i_dtnu/=0) call max_mn_name(spread(nutotal_max,1,nx)/dxmin**2/cdtvDim,i_dtnu,l_dt=.true.)
+        if (i_shockmax/=0) call max_mn_name(shock,i_shockmax)
       endif
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)

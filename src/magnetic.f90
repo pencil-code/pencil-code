@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.163 2003-11-29 18:29:43 theine Exp $
+! $Id: magnetic.f90,v 1.164 2003-11-30 18:22:47 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -111,7 +111,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.163 2003-11-29 18:29:43 theine Exp $")
+           "$Id: magnetic.f90,v 1.164 2003-11-30 18:22:47 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -271,7 +271,7 @@ module Magnetic
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
       real, dimension (nx) :: eta_mn,divA,eta_tot        ! dgm: 
-      real :: etamax,tmp,eta_out1,B_ext21=1.
+      real :: etatotal_max,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1,uij,shock,gshock
@@ -422,31 +422,32 @@ module Magnetic
 
       case ('eta-const')
         fres=eta*del2A
-        etamax=eta
+        etatotal_max=eta
       case ('hyper6')
         call del6v(f,iaa,del6A)
         fres=eta*del6A
-        etamax=eta
+        etatotal_max=eta
       case ('shell')
         call eta_shell(eta_mn,geta)
         call div(f,iaa,divA)
         do j=1,3; fres(:,j)=eta_mn*del2A(:,j)+geta(:,j)*divA; enddo
-        etamax=maxval(eta_mn)
+        etatotal_max=maxval(eta_mn)
       case ('shock')
         if (eta_shock/=0) then
           call div(f,iaa,divA)
           eta_tot=eta+eta_shock*shock
           geta=eta_shock*gshock
           do j=1,3; fres(:,j)=eta_tot*del2A(:,j)+geta(:,j)*divA; enddo
-          etamax=eta+eta_shock*maxval(shock)
+          etatotal_max=eta+eta_shock*maxval(shock)
         else
           fres=eta*del2A
-          etamax=eta
+          etatotal_max=eta
         endif
       case default
         if (lroot) print*,'daa_dt: no such ires:',iresistivity
         call stop_it("")
       end select
+      if (headtt) print*,'daa_dt: iresistivity=',iresistivity
 !
 !  add to dA/dt
 !
@@ -481,10 +482,10 @@ module Magnetic
         va2=b2tot*rho1
         if (lfirst.and.ldt) then
           maxadvec2=amax1(maxadvec2,va2)
-          maxdiffus=amax1(maxdiffus,etamax)
+          maxdiffus=amax1(maxdiffus,etatotal_max)
           !  diagnose
           if (ldiagnos.and.i_dteta/=0) then
-            call max_mn_name(spread(etamax,1,nx)/dxmin**2/cdtvDim,i_dteta,l_dt=.true.)
+            call max_mn_name(spread(etatotal_max,1,nx)/dxmin**2/cdtvDim,i_dteta,l_dt=.true.)
           endif
         endif
 
