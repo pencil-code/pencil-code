@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.45 2003-06-16 04:41:10 brandenb Exp $
+! $Id: forcing.f90,v 1.46 2003-07-29 09:43:36 brandenb Exp $
 
 module Forcing
 
@@ -10,7 +10,8 @@ module Forcing
 
   implicit none
 
-  real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
+  real :: force=0.,force2=0.
+  real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
   integer :: kfountain=5
@@ -22,7 +23,7 @@ module Forcing
 
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
-       iforce2,kfountain,fountain,tforce_stop, &
+       iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff
 
   contains
@@ -48,7 +49,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.45 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: forcing.f90,v 1.46 2003-07-29 09:43:36 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -112,7 +113,7 @@ module Forcing
         case ('fountain', '3'); call forcing_fountain(f)
         case ('horiz-shear');   call forcing_hshear(f)
         case ('twist');         call forcing_twist(f)
-        case ('diffrot');       call forcing_diffrot(f)
+        case ('diffrot');       call forcing_diffrot(f,force)
         case ('blobs');         call forcing_blobs(f)
         case ('hel_smooth');    call forcing_hel_smooth(f)
         case default; if(lroot) print*,'No such forcing iforce=',trim(iforce)
@@ -126,6 +127,7 @@ module Forcing
         case ('helical');      call forcing_hel(f)
         case ('fountain');     call forcing_fountain(f)
         case ('horiz-shear');  call forcing_hshear(f)
+        case ('diffrot');      call forcing_diffrot(f,force2)
         case default; if(lroot) print*,'No such forcing iforce2=',trim(iforce2)
         endselect
 !
@@ -893,7 +895,7 @@ module Forcing
 !
     endsubroutine forcing_twist
 !***********************************************************************
-    subroutine forcing_diffrot(f)
+    subroutine forcing_diffrot(f,force_ampl)
 !
 !  add differential rotation
 !
@@ -904,7 +906,7 @@ module Forcing
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx,nz) :: fx,fz,tmp
-      real :: ffnorm,ffnorm2,kx,kz
+      real :: force_ampl,ffnorm,ffnorm2,kx,kz
 !
 !  identifier
 !
@@ -912,19 +914,17 @@ module Forcing
 !
 !  need to multiply by dt (for Euler step).
 !
-      ffnorm=force*dt  !(dt for the timestep)
+      ffnorm=force_ampl*dt  !(dt for the timestep)
 !
-!  prepare velocity, Uy=sinkx*sinkz
+!  prepare velocity, Uy=cosx*cosz
 !
-      kx=.5*pi/Lx
-      kz=.5*pi/Lz
-      fx=spread(sin(kx*x(l1:l2)),2,nz)
-      fz=spread(sin(kz*z(n1:n2)),1,nx)
+      fx=spread(cos(x(l1:l2)),2,nz)
+      fz=spread(cos(z(n1:n2)),1,nx)
 !
 !  this forcing term is balanced by diffusion operator;
-!  need to multiply by nu*k^2
+!  need to multiply by nu*k^2, but k=sqrt(1+1) for the forcing
 !
-      ffnorm2=ffnorm*nu*(kx**2+kz**2)
+      ffnorm2=ffnorm*nu*2
       tmp=ffnorm2*fx*fz
 !
 !  add

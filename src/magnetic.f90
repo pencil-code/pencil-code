@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.115 2003-06-30 16:52:18 brandenb Exp $
+! $Id: magnetic.f90,v 1.116 2003-07-29 09:43:36 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -44,7 +44,7 @@ module Magnetic
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
+  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
@@ -86,7 +86,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.115 2003-06-30 16:52:18 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.116 2003-07-29 09:43:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -144,11 +144,13 @@ module Magnetic
       case('propto-ux'); call wave_uu(amplaa,f,iaa,kx=kx_aa)
       case('propto-uy'); call wave_uu(amplaa,f,iaa,ky=ky_aa)
       case('propto-uz'); call wave_uu(amplaa,f,iaa,kz=kz_aa)
+      case('diffrot'); call diffrot(amplaa,f,iay,xx,yy,zz)
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
       case('uniform-Bx'); call uniform_x(amplaa,f,iaa,xx,yy,zz)
       case('uniform-By'); call uniform_y(amplaa,f,iaa,xx,yy,zz)
+      case('uniform-Bz'); call uniform_z(amplaa,f,iaa,xx,yy,zz)
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
@@ -228,7 +230,7 @@ module Magnetic
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
-      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
+      real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
@@ -250,14 +252,20 @@ module Magnetic
       call curl(f,iaa,bb)
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
-        call dot_mn(aa,bb,ab)
         call dot2_mn(bb,b2)
-        if (i_abm/=0)    call sum_mn_name(ab,i_abm)
         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
         if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
         if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
+        if (i_abm/=0) then
+           call dot_mn(aa,bb,ab)
+           call sum_mn_name(ab,i_abm)
+        endif
+        if (i_ubm/=0) then
+           call dot_mn(uu,bb,ub)
+           call sum_mn_name(ub,i_ubm)
+        endif
         if (i_bx2m/=0) then
            bx2 = bb(:,1)*bb(:,1)
            call sum_mn_name(bx2,i_bx2m)
@@ -487,7 +495,7 @@ module Magnetic
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
+        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
@@ -501,6 +509,7 @@ module Magnetic
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+        call parse_name(iname,cname(iname),cform(iname),'ubm',i_ubm)
         call parse_name(iname,cname(iname),cform(iname),'b2m',i_b2m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
@@ -550,6 +559,7 @@ module Magnetic
 !
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
+      write(3,*) 'i_ubm=',i_ubm
       write(3,*) 'i_b2m=',i_b2m
       write(3,*) 'i_bm2=',i_bm2
       write(3,*) 'i_j2m=',i_j2m

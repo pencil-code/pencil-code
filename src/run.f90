@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.146 2003-07-14 17:27:14 dobler Exp $
+! $Id: run.f90,v 1.147 2003-07-29 09:43:36 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -25,6 +25,7 @@
         use Timestep
         use Wsnaps
         use Boundcond
+        use Filter
         use Power_spectrum
         use Timeavg
         use Interstellar
@@ -52,7 +53,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.146 2003-07-14 17:27:14 dobler Exp $")
+             "$Id: run.f90,v 1.147 2003-07-29 09:43:36 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -198,8 +199,8 @@
           if (iwig/=0) then
             if (mod(it,iwig).eq.0) then
               if (lrmwig_xyaverage) call rmwig_xyaverage(f,ilnrho)
-              if (lrmwig_full) call rmwig(f,df,ilnrho,awig)
-              if (lrmwig_rho) call rmwig(f,df,ilnrho,awig,explog=.true.)
+              if (lrmwig_full) call rmwig(f,df,ilnrho,ilnrho,awig)
+              if (lrmwig_rho) call rmwig(f,df,ilnrho,ilnrho,awig,explog=.true.)
             endif
           endif
           !

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.105 2003-07-28 16:30:17 dobler Exp $
+! $Id: start.f90,v 1.106 2003-07-29 09:43:36 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -20,6 +20,7 @@
         use Global
         use Param_IO
         use Wsnaps
+        use Filter
 !
         implicit none
 !
@@ -32,15 +33,20 @@
 !       logical :: lock=.false.
         logical :: exist
         real, dimension (mx,my,mz,mvar+maux) :: f
+        real, dimension (mx,my,mz,mvar) :: df
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
+!
+real, dimension (mx,my,mz) :: tmpxyz !for filter
+real, dimension (nx) :: tmp !for filter
+integer :: ivar,ifilter
 !
         call register_modules()         ! register modules, etc.
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.105 2003-07-28 16:30:17 dobler Exp $")
+             "$Id: start.f90,v 1.106 2003-07-29 09:43:36 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -157,6 +163,18 @@
           call ioncalc(f)
         endif
         if(lradiation_ray) call radtransfer(f)
+!
+!  filter initial velocity
+!  NOTE: this procedure is currently not very efficient,
+!  because for all variables boundary conditions and communication
+!  are done again and again for each variable.
+!
+        if(nfilter/=0) then
+          do ifilter=1,nfilter
+            call rmwig(f,df,iux,iuz,awig)
+          enddo
+          if(lroot) print*,'DONE: filter initial velocity, nfilter=',nfilter
+        endif
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file

@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.63 2003-07-19 05:40:34 brandenb Exp $ 
+! $Id: initcond.f90,v 1.64 2003-07-29 09:43:36 brandenb Exp $ 
 
 module Initcond 
  
@@ -921,6 +921,31 @@ module Initcond
       if (ip==1) print*,xx,yy
     endsubroutine uniform_y
 !***********************************************************************
+    subroutine uniform_z(ampl,f,i,xx,yy,zz)
+!
+!  Uniform B_x field (for vector potential)
+!
+!  24-jul-03/axel: adapted from uniform_x
+!
+      integer :: i
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl
+!
+      if (ampl==0) then
+        f(:,:,:,i:i+2)=0
+        if (lroot) print*,'set variable to zero; i=',i
+      else
+        print*,'uniform x-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'ampl=',ampl
+        f(:,:,:,i  )=0.
+        f(:,:,:,i+1)=+ampl*xx
+        f(:,:,:,i+2)=0.
+      endif
+!
+      if (ip==1) print*,yy,zz
+    endsubroutine uniform_z
+!***********************************************************************
     subroutine vfield(ampl,f,i,xx)
 !
 !  Vertical field, for potential field test
@@ -1096,6 +1121,24 @@ module Initcond
       integer :: ivar
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl
+!
+      if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
+!
+      f(:,:,:,ivar) = ampl*cos(xx)*cos(zz)
+!
+      print*,'yy(1,1,1)=',yy(1,1,1) !(to keep compiler quiet)
+    endsubroutine diffrot
+!***********************************************************************
+    subroutine olddiffrot(ampl,f,ivar,xx,yy,zz)
+!
+!  Set up profile for differential rotation
+!
+!  16-jul-03/axel: coded
+!
+      integer :: ivar
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,kx,kz
 !
       if (lroot) print*, 'sinusoidal modulation of uu: ', ivar
@@ -1105,7 +1148,7 @@ module Initcond
       f(:,:,:,ivar) = ampl*sin(kx*xx)*cos(kz*zz)
 !
       print*,'xx(1,1,1)=',xx(1,1,1) !(to keep compiler quiet)
-    endsubroutine diffrot
+    endsubroutine olddiffrot
 !***********************************************************************
     subroutine powern(ampl,initpower,f,i1,i2)
 !

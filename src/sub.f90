@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.124 2003-07-21 00:48:32 brandenb Exp $ 
+! $Id: sub.f90,v 1.125 2003-07-29 09:43:36 brandenb Exp $ 
 
 module Sub 
 
@@ -114,6 +114,7 @@ module Sub
 !  successively calculate sum of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true. ultimately multiply by dv 
 !  to get the integral
+!AB: please explain; so at the moment its still the same as sum_mn_name!?
 !
 !   30-may-03/tony: adapted form sum_mn_name
 !
@@ -848,6 +849,24 @@ module Sub
       c(:,3)=a(:,1)*b(:,2)-a(:,2)*b(:,1)
 !
     endsubroutine cross_mn
+!***********************************************************************
+    subroutine cross1(a,b,c)
+!
+!  cross product, c = a x b, for amplitude vectors
+!  (independent of position)
+!
+      use Cdata
+!
+      real, dimension (3) :: a,b,c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c(1)=a(2)*b(3)-a(3)*b(2)
+      c(2)=a(3)*b(1)-a(1)*b(3)
+      c(3)=a(1)*b(2)-a(2)*b(1)
+!
+    endsubroutine cross1
 !***********************************************************************
     subroutine gij(f,k,g)
 !
@@ -1597,6 +1616,45 @@ module Sub
       endif
 !
     endsubroutine out2
+!***********************************************************************
+    subroutine vecout (lun,file,vv,thresh)
+!
+!  write vectors to disc if their length exceeds thresh
+!
+!  22-jul-03/axel: coded
+!
+      use Cdata
+!
+      character (len=*) :: file
+      real, dimension(nx,3) :: vv
+      real, dimension(nx) :: v2
+      real :: thresh,thresh2,dummy
+      integer :: l,lun
+!
+!  return if thresh=0 (default)
+!
+      if(thresh==0.) return
+!
+!  open files when first data point
+!
+      if(lfirstpoint) then
+        open(lun,file=file,form='unformatted',position='append')
+        write(lun) 0,0,0,t,dummy,dummy  !(marking first line)
+      endif
+!
+!  write data
+!
+      thresh2=thresh**2
+      v2=vv(:,1)**2+vv(:,2)**2+vv(:,3)**2
+      do l=1,nx
+        if(v2(l)>=thresh2) write(lun) l,m-nghost,n-nghost,vv(l,:)
+      enddo
+!
+!  close file
+!
+      if(llastpoint) close(lun)
+!
+    endsubroutine vecout
 !***********************************************************************
     subroutine debugs (a,label)
 !

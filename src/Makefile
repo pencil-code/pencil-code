@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.199 2003-07-17 23:00:05 brandenb Exp $
+### $Id: Makefile,v 1.200 2003-07-29 09:43:36 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -204,7 +204,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 code:
 	make start.x run.x read_videofiles.x
 
-technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
+technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(DEBUG).o
@@ -256,6 +256,7 @@ prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(IO).o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
+filter.o:    filter.f90 cdata.o sub.o boundcond.o
 initcond.o:  initcond.f90 cdata.o $(MPICOMM).o general.o sub.o
 kepvor.o : kepvor.f90 cdata.o general.o
 noinitcond_spec.o: noinitcond_spec.f90 cdata.o general.o

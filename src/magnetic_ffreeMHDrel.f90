@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.3 2003-07-22 07:03:19 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.4 2003-07-29 09:43:36 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -14,25 +14,26 @@ module Magnetic
   character (len=labellen) :: initaa='zero',initaa2='zero'
 
   ! input parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./)
+  real, dimension(3) :: A0=(/0.,0.,1./),B_ext=(/0.,0.,0./),k_aa=(/0.,0.,0./)
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
-  real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
+  real :: amplaa=0.
   real :: radius=.1,epsilonaa=1e-2,widthaa=.5,z0aa=0.
   real :: by_left=0.,by_right=0.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
+  real :: bthresh=0.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
 
   namelist /magnetic_init_pars/ &
-       eta,B_ext, &
+       eta,A0,B_ext,k_aa, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,z0aa,widthaa,by_left,by_right, &
-       initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
+       initaa,initaa2,amplaa,amplaa2, &
        kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
@@ -40,9 +41,10 @@ module Magnetic
   real :: tau_aa_exterior=0.
 
   namelist /magnetic_run_pars/ &
-       eta,B_ext,B2min, &
+       eta,B_ext,B2min,k_aa, &
        height_eta,eta_out,tau_aa_exterior, &
-       kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
+       kinflow,ABC_A,ABC_B,ABC_C, &
+       bthresh
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dive2m=0,i_divee2m=0
@@ -88,7 +90,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.3 2003-07-22 07:03:19 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.4 2003-07-29 09:43:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -135,8 +137,13 @@ module Magnetic
       real, dimension (mx,my,mz)      :: xx,yy,zz,cosphi,sinphi
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
-      real :: omega
+      real, dimension (3) :: A0xB0,kxA0,A0xkxA0
+      real :: omega,kx_aa,ky_aa,kz_aa
+      integer :: j
 !
+      kx_aa=k_aa(1)
+      ky_aa=k_aa(2)
+      kz_aa=k_aa(3)
       select case(initaa)
 
       case('zero'); f(:,:,:,iax:iaz) = 0.
@@ -145,22 +152,44 @@ module Magnetic
         !  wave
         !
         if(lroot) print*,'init_aa: B_ext=',B_ext
-        if(lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
+        if(lroot) print*,'init_aa: k_aa=',k_aa
+        if(lroot) print*,'init_aa: A0=',A0
         !
         !  calculate frequency, sin(phi), cos(phi)
         !
-        omega=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
+        !omega=sqrt(kx_aa**2+ky_aa**2+kz_aa**2)
+        omega=kx_aa**2+ky_aa**2+kz_aa**2
         sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
         !
-        !  E points in the z-direction
+        !  calculate amplitudes
         !
-        f(:,:,:,iaz)=sinphi
+        call cross1(A0,B_ext,A0xB0)
+        call cross1(k_aa,A0,kxA0)
+        call cross1(A0,kxA0,A0xkxA0)
+print*,'A0=',A0
+print*,'A0xB0=',A0xB0
+print*,'A0xkxA0=',A0xkxA0
         !
-        !  S = (A0 x B0)*omega*cos(phi) + 
+        !  Calculate A and S
         !
-        f(:,:,:,iux)=-B_ext(2)*omega*cosphi+kx_aa*omega*cosphi**2
-        f(:,:,:,iuy)=+B_ext(1)*omega*cosphi+ky_aa*omega*cosphi**2
+        do j=1,3
+          f(:,:,:,iaa-1+j)=A0(j)*sinphi
+          f(:,:,:,iuu-1+j)=(A0xB0(j)+A0xkxA0(j)*cosphi)*omega*cosphi*omega
+        enddo
+        !
+      case('current')
+        !
+        !  wave
+        !
+        if(lroot) print*,'init_aa: B_ext=',B_ext
+        if(lroot) print*,'init_aa: k_aa=',kx_aa,ky_aa,kz_aa
+        !
+        sinphi=amplaa*sin(kx_aa*xx+ky_aa*yy+kz_aa*zz)
+        cosphi=amplaa*cos(kx_aa*xx+ky_aa*yy+kz_aa*zz)
+        !
+        f(:,:,:,iay)=cosphi
+        f(:,:,:,iuy)=sinphi**2
         !
       case default
         !
@@ -243,11 +272,11 @@ module Magnetic
 !  Note; for diagnostics purposes keep copy of original field
 !
       call curl(f,iaa,BB)
-      if(ldiagnos) bbb=bb
-      if(B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
-      if(B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
-      if(B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
+      bbb=bb !(keep copy of original B)
       if(headtt) print*,'B_ext=',B_ext
+      do j=1,3
+        if(B_ext(j)/=0.) bb(:,j)=bb(:,j)+B_ext(j)
+      enddo
       call dot2_mn(BB,B2)
       B21=1./amax1(B2,B2min)
 !
@@ -352,6 +381,7 @@ module Magnetic
             if (n.eq.iz)  bb_xy(:,m-m1+1,j)=bb(:,j)
             if (n.eq.iz2) bb_xy2(:,m-m1+1,j)=bb(:,j)
           enddo
+          call vecout(41,trim(directory_snap)//'/bvec.dat',bbb,bthresh)
         endif
 !
 !  calculate max and rms current density
