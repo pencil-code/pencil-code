@@ -5,7 +5,7 @@ include Makefile.local
 
 ## Default settings
 FC=f90
-CFLAGS=$(CFLAGS) -DFUNDERSC=1
+CFLAGS=-O3 -DFUNDERSC=1
 
 ### Begin machine dependent
 
@@ -17,6 +17,7 @@ CFLAGS=$(CFLAGS) -DFUNDERSC=1
 #FFLAGS= -64 -O3 -mips4 #(ukaff|origin)
 #F77=$(FC)
 #MPICOMM=mpicomm#(ukaff)
+CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## OSF1:
 #FC=f90 #(Mhd.)
