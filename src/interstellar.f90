@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.74 2004-03-02 13:13:55 mee Exp $
+! $Id: interstellar.f90,v 1.75 2004-03-02 17:30:03 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -54,15 +54,15 @@ module Interstellar
   real :: TT_SN_min_cgs=1.e7
   double precision, parameter :: SNI_area_rate_cgs=1.330982784D-52
   double precision, parameter :: solar_mass_cgs=1.989e33
-  real :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
-  real, parameter :: rho_crit_cgs=1e-24.,TT_crit_cgs=4000.
+  real, parameter :: h_SNI_cgs=1.00295e19,h_SNII_cgs=2.7774e18
+  real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
   real :: SNI_area_rate=impossible
   real :: h_SNI=impossible,h_SNII=impossible
-  real, parameter :: solar_mass=impossible
-  real, parameter :: rho_crit=impossible,TT_crit=impossible
+  real :: solar_mass=impossible
+  real :: rho_crit=impossible,TT_crit=impossible
 
 
   real, parameter :: rhoUV_cgs=0.1
@@ -108,7 +108,7 @@ module Interstellar
   logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
       ampl_SN,tau_cloud, &
-      uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
+      uniform_zdist_SNI, ltestSN, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z
@@ -138,7 +138,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.74 2004-03-02 13:13:55 mee Exp $")
+           "$Id: interstellar.f90,v 1.75 2004-03-02 17:30:03 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -159,7 +159,7 @@ module Interstellar
       use Cdata
       use General
       use Sub, only: inpui,inpup
-      use Mpicomm, only: mpibcast_real
+      use Mpicomm, only: mpibcast_real, stop_it
       use Ionization, only: getmu
 !
       logical, save :: first=.true.
@@ -238,6 +238,11 @@ module Interstellar
           '--it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-----------z_SN-----------rho_SN---------EE_SN&
           &-----l_SN--m_SN--n_SN-----'
          close(1)
+      endif
+
+      if (ltestSN) then
+        t_interval_SNI=1.E10
+        t_next_SNI=1.E10
       endif
 !
     endsubroutine initialize_interstellar
