@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.4 2002-07-05 13:08:07 nilshau Exp $
+! $Id: wsnaps.f90,v 1.5 2002-07-07 18:32:07 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -30,7 +30,7 @@ contains
 !
       real, dimension (mx,my,mz,mvar) :: a
       character (len=4) :: ch
-      character (len=9) :: file
+      character (len=80) :: file
       character (len=*) :: chsnap
       logical lsnap,llabel
       integer, save :: ifirst,nsnap
@@ -40,20 +40,20 @@ contains
 !  file keeps the information about number and time of last snapshot
 !
       if (llabel) then
-        file='tsnap.dat'
+        file='tmp/tsnap.dat'
 !
 !  at first call, need to initialize tsnap
 !  tsnap calculated in out1, but only available to root processor
 !
         if (ifirst==0) then
-          call out1 (file,tsnap,nsnap,dsnap,t)
+          call out1 (trim(file),tsnap,nsnap,dsnap,t)
           ifirst=1
         endif
 !
 !  Check whether we want to output snapshot. If so, then
 !  update ghost zones for var.dat (cheap, since done infrequently)
 !
-        call out2 (file,tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
+        call out2 (trim(file),tsnap,nsnap,dsnap,t,lsnap,ch,.true.)
         if (lsnap) then
           call initiate_isendrcv_bdry(a)
           call boundconds(a)

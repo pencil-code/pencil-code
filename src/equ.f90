@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.79 2002-07-06 20:29:17 brandenb Exp $
+! $Id: equ.f90,v 1.80 2002-07-07 18:32:07 dobler Exp $
 
 module Equ
 
@@ -150,13 +150,13 @@ module Equ
       integer, save :: ifirst,nvid
 !
       character (len=4) :: ch
-      character (len=9) :: file
+      character (len=80) :: file
       character (len=*) :: chdir
       logical lvid
 !
 !  Output vid-data in 'tvid' time intervals
 !
-      file='tvid.dat'
+      file='tmp/tvid.dat'
       if (ifirst==0) then
         open(41,file=chdir//'/divu.xy',form='unformatted')
         open(42,file=chdir//'/ux.xy',form='unformatted')
@@ -165,10 +165,10 @@ module Equ
         open(45,file=chdir//'/uz.xz',form='unformatted')
         open(46,file=chdir//'/lnrho.xz',form='unformatted')
         open(47,file=chdir//'/ss.xz',form='unformatted')
-        call out1 (file,tvid,nvid,dvid,t)
+        call out1 (trim(file),tvid,nvid,dvid,t)
         ifirst=1
       else
-        call out2 (file,tvid,nvid,dvid,t,lvid,ch,.false.)
+        call out2 (trim(file),tvid,nvid,dvid,t,lvid,ch,.false.)
         if (lvid) then
           write(41) divu_xy(:,:),t
           write(42) uu_xy(:,:,1),t
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.79 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: equ.f90,v 1.80 2002-07-07 18:32:07 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
