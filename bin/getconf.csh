@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.48 2003-04-04 17:48:38 brandenb Exp $
+# $Id: getconf.csh,v 1.49 2003-04-22 10:52:09 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -21,6 +21,9 @@ set local_disc = 0  #use global file system by default (if set to zero)
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
 setenv SCP scp
+
+# any lam daemons to shutdown at the end of run.csh?
+set booted_lam = 0
 
 # choose machine specific settings
 echo `uname -a`
@@ -43,19 +46,20 @@ if ($mpi) then
 #    set mpirunops = "-c2c c8-13"
 
   else if ($hn =~ nq* || $hn =~ ns*) then
-echo "option 0"
     echo "Use options for the Nordita cluster"
     if ($?PBS_NODEFILE ) then
-echo "option 1"
+      echo "PBS job"
       set nodelist = `cat $PBS_NODEFILE`
       cat $PBS_NODEFILE > lamhosts
       set local_disc = 1
     else
-echo "option 2"
-      echo `hostname` >> lamhosts
+      echo "Non-PBS, running on `hostname`"
+      echo `hostname` > lamhosts
     endif
     echo "lamnodes:"
-    lamboot -v lamhosts
+    lamboot lamhosts >& /dev/null # discard output, or auto-test
+                                  # mysteriously hangs on Nq0
+    set booted_lam = 1
     lamnodes
     set mpirun = /usr/bin/mpirun
     set mpirun = /opt/lam/bin/mpirun
@@ -81,6 +85,7 @@ echo "option 2"
 #shift nodelist
 #cat $nodelist > lamhosts
       lamboot -v lamhosts
+      set booted_lam = 1
       echo "lamnodes:"
       lamnodes
       # set mpirunops = "-O -c2c -s n0 N -v" #(direct; should be faster)
@@ -153,6 +158,7 @@ else # no MPI
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts
     lamboot -v lamhosts
+    set booted_lam = 1
     echo "lamnodes:"
     lamnodes
     set mpirunops =

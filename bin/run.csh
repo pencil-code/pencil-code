@@ -60,6 +60,9 @@ if ($local_disc) then
   killall copy-snapshots
 endif
 
+# Shut down lam if we have started it
+if ($booted_lam) lamhalt
+
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h -o run.`timestr` -e run.`timestr` run.csh
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/run.x
@@ -70,4 +73,3 @@ endif
 # qsub -l nodes=4:ppn=1,mem=500mb,cput=24:00:00 -q p-long run.csh
 # qsub -l ncpus=16,mem=1gb,cput=400:00:00 -q parallel run.csh
 # qsub -l nodes=128,walltime=10:00:00 -q workq run.csh
-

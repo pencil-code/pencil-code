@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.27 2003-04-22 08:54:48 dobler Exp $
+# CVS: $Id: auto-test,v 1.28 2003-04-22 10:52:09 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -50,7 +50,7 @@ my @runsdir = qw( forced/hydro1 radiation/rad1);
 
 my $tmpdir = "/var/tmp/pencil-tmp-$$";
 my $cfloat = '([+-]?)(?=\d|\.\d)\d*(\.\d*)?([Ee]([+-]?\d+))?'; # regexp
-                                                                 # for C float
+                                                               # for C float
 my $noheader = "Couldn't find header line";
 my $res;
 my ($t_comp,$t_start,$t_run,$t_res) = (1,1,1,1); # test everything by default
@@ -72,7 +72,7 @@ Options:
   -v,  --version        \tPrint version number
   -C,  --clean          \tClean up (make cleann) before compiling
   -c,  --compile-only   \tTest compilation only
-  -nr, --norun          \tTest compilation and starting only
+  -n,  --norun          \tTest compilation and starting only
   -t,  --time           \tPrint CPU time used
   -s,  --short          \tPrint short directory names only";
 
@@ -86,7 +86,7 @@ GetOptions(\%opts,
 	            --debug
 	       -C   --clean
                -c   --compile-only
-	       -nr  --norun
+	       -n   --norun
 	       -t   --time
 	       -s   --short
                              ));
@@ -94,10 +94,10 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.27 2003-04-22 08:54:48 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.28 2003-04-22 10:52:09 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
-if ($opts{'nr'} || $opts{'norun'}) { $t_run=0 };
+if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
 my $debug = (              $opts{'debug'} || 0);
 my $short = ($opts{'s'} || $opts{'short'} || 0);
 my $time  = ($opts{'t'} || $opts{'time'}  || 0);
@@ -191,8 +191,9 @@ sub test_shell_cmd {
     my $phase = (shift || "<Unkonwn phase>");
     my $quiet = (shift || 0);	# flag for suppressing the `ok'
 
-    if ($debug) { print "Running `$cmd`\n" };
+    if ($debug) { print STDERR "Running `$cmd`" };
     my $res = `$cmd 2>&1`;
+    if ($debug) { print STDERR " ..done \n" };
     chomp($res);
     my_ok($?,0,$res,$dir,$phase,$quiet); # $? = 0 means success
     $res;			# Return output so we can analyze it if desired
