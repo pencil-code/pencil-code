@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.131 2002-11-12 16:07:58 dobler Exp $
+! $Id: entropy.f90,v 1.132 2002-11-13 18:33:03 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -71,7 +71,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.131 2002-11-12 16:07:58 dobler Exp $")
+           "$Id: entropy.f90,v 1.132 2002-11-13 18:33:03 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -104,6 +104,7 @@ module Entropy
         case('zero', '0'); f(:,:,:,ient) = 0.
         case('blob'); call blob(ampl_ss,f,ient,radius_ss,0.,0.,.5)
         case('isothermal'); if(lroot) print*,'init_ent: isotherm set in density'
+        case('Ferriere'); if(lroot) print*,'init_ent: Ferriere set in density'
         case('xjump'); call jump(f,ient,ss_left,ss_right,widthss,'x')
         case('hor-fluxtube'); call htube(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
         case('hor-tube'); call htube2(ampl_ss,f,ient,ient,xx,yy,zz,radius_ss,epsilon_ss)
@@ -736,6 +737,77 @@ endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*rho1*heat
 !
     endsubroutine calc_heat_cool
+!***********************************************************************
+    subroutine calc_heat_cool_interstellar(f,df,rho1,cs2,TT1)
+!
+!  adapted from calc_heat_cool
+!
+!  02-jul-02/wolf: coded
+!
+      use Cdata
+      use Mpicomm
+      use Density, only : rho0
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx) :: rho1,cs2,TT1
+      real, dimension (nx) :: rho,TT,heat,cool
+      real :: ssref,zbot,ztop
+      real :: TTunits=27.8,Lambdaunits=3.29e-18
+      real :: rhoUV=0.1,TUV=7000.,T0UV=12000.,cUV=5.e-4
+      real, dimension(6) ::                                                 &
+        coolT=(/ 500.,     2000.,    8000.,    1.e5,    4.e7,     1.e9 /),  &
+        coolH=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /),  &
+        coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
+      integer :: i,l
+!
+      intent(in) :: f,rho1,cs2
+      intent(out) :: df
+!
+!  identifier
+!
+      if(headtt) print*,'calc_heat_cool_interstellar'
+!
+!  define T in K, for calculation of both UV heating and rad. cooling
+!
+      !TT=TTunits*cs2/gamma1          ! should be identical...
+      TT=TTunits/TT1 
+      rho=1.0/rho1
+!
+!  add T-dept radiative cooling, from Rosen et al., ApJ, 413, 137, 1993
+!  cooling is Lambda*rho^2, with (eq 7)
+!     Lambda=coolH(i)*TT*coolB(i),   for coolT(i) <= T < coolT(i+1)
+!  nb: our coefficients coolH(i) differ from those in Rosen et al. by
+!   factor (mu mp)^2, with mu=1.2, since Rosen works in number density, n.
+!   (their cooling = Lambda*n^2,  rho=mu mp n.)
+!  The factor Lambdaunits converts from cgs units to code units.
+!  We've increased coolT(1), to avoid creating gas too cold to resolve.
+!
+      cool=0.0
+      do l=l1,l2
+        do i=1,5
+          if (coolT(i) <= TT(l) .and. TT(l) < coolT(i+1)) then
+            cool(l)=cool(l) + Lambdaunits*rho(l)*coolH(i)*TT(l)**coolB(i)
+          endif
+        end do
+      end do
+!
+!  add UV heating, cf. Wolfire et al., ApJ, 443, 152, 1995
+!  with the values above, this gives about 0.012 erg/g/s (T < ~1.e4 K)
+!  nb: need rho0 from density_[init/run]_pars, if i want to implement
+!      the the arm/interarm scaling.
+!
+      heat=rhoUV*(rho0/1.38)**1.4*Lambdaunits*coolH(3)*TUV**coolB(3)*   &
+                               0.5*(1.0+tanh(cUV*(T0UV-TT)))
+!      heat=rhoUV*Lambdaunits*coolH(3)*TUV**coolB(3)*         &
+!                               0.5*(1.0+tanh(cUV*(T0UV-TT)))
+!
+!  heat and cool were calculated in terms of de/dt [~ erg/g/s], 
+!  so rho1 factor not needed to get ds/dt [~ erg/g/s/K] in the following:
+!
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1*(heat - cool)
+!
+    endsubroutine calc_heat_cool_interstellar
 !***********************************************************************
     subroutine calc_tau_ss_exterior(f,df)
 !

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.25 2002-09-19 07:35:08 brandenb Exp $
+! $Id: grav_z.f90,v 1.26 2002-11-13 18:33:03 ngrs Exp $
 
 module Gravity
 
@@ -73,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.25 2002-09-19 07:35:08 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.26 2002-11-13 18:33:03 ngrs Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -140,6 +140,14 @@ module Gravity
         nu_epicycle2=nu_epicycle**2
         if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
         df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
+!
+!  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!   at solar radius.  (for interstellar runs)
+!
+      elseif (grav_profile=='Ferriere') then
+!  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
+        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
+             -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
         if(lroot) print*,'no gravity profile given'
       endif
@@ -235,6 +243,17 @@ module Gravity
             if(zmn<=zgrav) grav(:,3)=-nu_epicycle2*zmn
           endif
 !
+!  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
+!
+        case('Ferriere')
+          pot=331.5*(4.4*(sqrt(zmn**2+0.2**2)-0.2)+1.7*zmn**2/2.)
+          if (present(pot0)) pot0=331.5*(4.4*(sqrt(0.2**2)-0.2))
+          if (present(grav)) then
+            grav=0.
+            if(zmn<=zgrav) grav(:,3)= &
+              -331.5*(4.4*zmn/sqrt(zmn**2+(0.2)**2) + 1.7*zmn)
+          endif
+!
 !  radial profile; not currently implemented
 !
         case('radial')
@@ -249,6 +268,9 @@ module Gravity
           if (present(grav)) then
             grav(:,1:3)=0.
           endif
+      case default
+        print*,'potential_penc: no default profile'
+        stop
       endselect
       first=.false.
 !

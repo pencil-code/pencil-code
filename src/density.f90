@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.55 2002-11-12 16:07:58 dobler Exp $
+! $Id: density.f90,v 1.56 2002-11-13 18:33:03 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.55 2002-11-12 16:07:58 dobler Exp $")
+           "$Id: density.f90,v 1.56 2002-11-13 18:33:03 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -265,6 +265,8 @@ module Density
 
       case('planet')
         call planet(amplrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma)
+
+      case('Ferriere'); call ferriere(f)
 
       case default
         !
@@ -552,6 +554,78 @@ module Density
       cs2bot=-gamma/(mpoly+1.)*pbot(1)
 !
     endsubroutine polytropic_simple
+!***********************************************************************
+    subroutine ferriere(f)
+!
+!  density profile from K. Ferriere, ApJ 497, 759, 1998, 
+!   eqns (6), (7), (9), (13), (14) [with molecular H, n_m, neglected]
+!   at solar radius.  (for interstellar runs)
+!  entropy set assuming constant T for each gas component (eqn 15)
+!  nb: this allows for thermal pressure only -- significant underestimate.
+!
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx) :: pot,tmp
+      real :: absz,n_c,n_w,n_i,n_h
+!  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
+!  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
+      real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6,k_B=0.0144
+      real :: rho,lnrho,pp,pp0,ss0
+!
+!  at present the gravity potential is not used -- we may want it 
+!  in future for creating a hydrostatic entropy profile, however (?)
+!  (will require communication)
+!
+      if (lroot) print*,'Ferriere density profile'
+!
+      do n=n1,n2
+      absz=abs(z(n))
+      do m=m1,m2
+        call potential(x(l1:l2),y(m),z(n),pot)
+!  cold gas profile n_c (eq 6)
+        n_c=0.340*(0.859*exp(-amin1((z(n)/0.127)**2,70.)) +         &
+                   0.047*exp(-amin1((z(n)/0.318)**2,70.)) +         &
+                   0.094*exp(-amin1(absz/0.403,70.)))     
+!  warm gas profile n_w (eq 7)
+        n_w=0.226*(0.456*exp(-amin1((z(n)/0.127)**2,70.)) +         &
+                   0.403*exp(-amin1((z(n)/0.318)**2,70.)) +         &
+                   0.141*exp(-amin1(absz/0.403,70.)))
+!  ionized gas profile n_i (eq 9)
+        n_i=0.0237*exp(-absz) + 0.0013* exp(-amin1(absz/0.150,70.))
+!  hot gas profile n_h (eq 13)
+        n_h=0.00048*exp(-absz/1.5)         
+!  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
+        rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)
+        lnrho=alog(rho)
+        f(l1:l2,m,n,ilnrho)=lnrho
+!  define entropy via pressure, assuming fixed T for each component
+        if(lentropy) then
+!  first define reference values at midplane.  
+!  (scale with rho0, for various runs: rho0(solar)=1.38)
+          pp0=k_B*(rho0/1.38) *                                               &
+           (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+          cs20=gamma*pp0/rho0
+          cs0=sqrt(cs20)
+!          ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero
+!          print*,'rho0,pp0,cs0,ss0,gamma',rho0,pp0,cs0,ss0,gamma
+!  thermal pressure (eq 13)
+          pp=k_B*(rho0/1.38) *                                                &
+           (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
+          !f(l1:l2,m,n,ient)=alog(gamma*pp/cs20*rho0**gamma1/rho**gamma)/gamma
+          f(l1:l2,m,n,ient)=alog(gamma*pp/cs20)/gamma +                      &
+                                     gamma1/gamma*lnrho0 - lnrho
+        endif
+      enddo
+      enddo
+!
+!  cs2 values at top and bottom may be needed to boundary conditions.
+!  The values calculated here may be revised in the entropy module.
+!
+      cs2bot=cs20   !not sensible values here...
+      cs2top=cs20
+!
+    endsubroutine ferriere
 !***********************************************************************
     subroutine bc_lnrho_temp_z(f,topbot)
 !
