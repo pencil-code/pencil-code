@@ -33,8 +33,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.7 $", &
-           "$Date: 2002-04-03 20:28:36 $")
+           "$Revision: 1.8 $", &
+           "$Date: 2002-04-04 17:06:16 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -67,25 +67,29 @@ module Gravity
 !
       use Cdata
       use Sub
-      use Global
+!      use Global
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: er,gg
-      real, dimension (nx) :: r,g_r
+      real, dimension (nx,3) :: evr,gg
+      real, dimension (nx) :: r_mn,g_r
 !
-      ! Maybe we could get er explicitly, without taking the gradient?
-      call grad(rr,1,gg)        ! er = grad(rr) radial unit vector
-      r = rr(l1:l2,m,n)         ! There *must* be a way without global rr
-      g_r = - r * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
-                            3*(cpot(1)*cpot(5)-cpot(3)), &
-                            4*cpot(1)*cpot(3), &
-                            cpot(5)*cpot(2)-cpot(3)*cpot(4), &
-                            2*cpot(2)*cpot(3), &
-                            cpot(3)**2  /), r) &
-                 / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r)**2
-!      g_r = - r**2 * poly( (/ 3., 0., 1. /), r) &
-!                   / poly( (/ 1., 0., 1., 1. /), r)**2
-      gg = gg*spread(g_r,2,3)
+!  evr is the radial unit vector
+!
+      evr(:,1) = x(l1:l2)
+      evr(:,2) = y(m)
+      evr(:,3) = z(n)
+      r_mn = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2) + epsi
+      evr = evr / spread(r_mn,2,3)
+      g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
+                              3*(cpot(1)*cpot(5)-cpot(3)), &
+                              4*cpot(1)*cpot(3), &
+                              cpot(5)*cpot(2)-cpot(3)*cpot(4), &
+                              2*cpot(2)*cpot(3), &
+                              cpot(3)**2  /), r_mn) &
+                   / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
+!      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
+!                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
+      gg = evr*spread(g_r,2,3)
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg
 !
     endsubroutine duu_dt_grav
