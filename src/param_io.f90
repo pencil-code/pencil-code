@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.129 2003-08-10 23:30:02 mee Exp $ 
+! $Id: param_io.f90,v 1.130 2003-08-11 12:11:09 nilshau Exp $ 
 
 module Param_IO
 
@@ -397,85 +397,85 @@ module Param_IO
                          read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='hydro_run_pars'
       if (lhydro       ) read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='density_run_pars'
       if (ldensity     ) read(1,NML=density_run_pars      ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='forcing_run_pars'
       if (lforcing     ) read(1,NML=forcing_run_pars      ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='grav_run_pars'
       if (lgrav        ) read(1,NML=grav_run_pars         ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='entropy_run_pars'
       if (lentropy     ) read(1,NML=entropy_run_pars      ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='magnetic_run_pars'
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='ionization_run_pars'
       if (lionization  ) read(1,NML=ionization_run_pars   ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='dustvelocity_run_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_run_pars ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='dustdensity_run_pars'
       if (ldustdensity ) read(1,NML=dustdensity_run_pars  ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='interstellar_run_pars'
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='shear_run_pars'
       if (lshear       ) read(1,NML=shear_run_pars        ,ERR=99, IOSTAT=ierr)
       if (lsgifix) then
          close (1)
-         open(1,FILE='start.in',FORM='formatted')
+         open(1,FILE='run.in',FORM='formatted')
       endif
       label='viscosity_run_pars'
       if (lviscosity   ) read(1,NML=viscosity_run_pars    ,ERR=99, IOSTAT=ierr)
