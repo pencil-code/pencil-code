@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.21 2003-04-04 05:46:55 brandenb Exp $
+! $Id: nograv.f90,v 1.22 2003-04-26 09:21:07 brandenb Exp $
 
 module Gravity
 
@@ -17,12 +17,15 @@ module Gravity
 
   real :: z1,z2,zref,zgrav,gravz,zinfty  !(used by Entropy and Density)
   real :: lnrho_bot,ss_bot
+  real :: grav_const=1.
   character (len=labellen) :: grav_profile='const'  !(used by Density)
-  logical :: lself_gravity=.false.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
   namelist /grav_run_pars/  dummy
+
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
 
   contains
 
@@ -46,7 +49,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.21 2003-04-04 05:46:55 brandenb Exp $")
+           "$Id: nograv.f90,v 1.22 2003-04-26 09:21:07 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
@@ -77,7 +80,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df)
+    subroutine duu_dt_grav(f,df,uu,rho1)
 !
 !  add nothing to duu/dt
 !
@@ -89,8 +92,10 @@ module Gravity
       use Slices
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: rho1
 !
-      if(ip==0) print*,f,df  !(keep compiler quiet)
+      if(ip==0) print*,f,df,uu,rho1  !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
@@ -130,14 +135,27 @@ module Gravity
       if(ip==0) print*,xmn,ymn,zmn,rmn,grav
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine self_gravity(f)
+    subroutine rprint_gravity(lreset)
 !
+!  reads and registers print parameters relevant for gravity advance
 !  dummy routine
 !
-      real, dimension (mx,my,mz,mvar) :: f
+!  26-apr-03/axel: coded
 !
-      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine self_gravity
+      use Cdata
+!
+      logical :: lreset
+!
+!  write column, i_XYZ, where our variable XYZ is stored
+!  idl needs this even if everything is zero
+!
+      write(3,*) 'i_curlggrms=',i_curlggrms
+      write(3,*) 'i_curlggmax=',i_curlggmax
+      write(3,*) 'i_divggrms=',i_divggrms
+      write(3,*) 'i_divggmax=',i_divggmax
+!
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_gravity
 !***********************************************************************
 
 endmodule Gravity

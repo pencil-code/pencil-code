@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.31 2003-04-04 05:46:55 brandenb Exp $
+! $Id: grav_z.f90,v 1.32 2003-04-26 09:21:06 brandenb Exp $
 
 module Gravity
 
@@ -22,8 +22,8 @@ module Gravity
   integer :: ngrav=10
   real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,ss_bot
+  real :: grav_const=1.
   character (len=labellen) :: grav_profile='const'
-  logical :: lself_gravity=.false.
 
 !  The gravity potential must always be negative. However, in an plane
 !  atmosphere with constant gravity, the potential goes to zero at
@@ -54,6 +54,9 @@ module Gravity
   namelist /grav_run_pars/ &
        zref,gravz,nu_epicycle,grav_profile,zgrav,lnrho_bot,ss_bot
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
+
   contains
 
 !***********************************************************************
@@ -75,7 +78,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.31 2003-04-04 05:46:55 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.32 2003-04-26 09:21:06 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -107,7 +110,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df)
+    subroutine duu_dt_grav(f,df,uu,rho1)
 !
 !  add duu/dt according to gravity
 !  (do we need f here?/AB)
@@ -120,6 +123,8 @@ module Gravity
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3) :: uu
+      real, dimension (nx) :: rho1
       real :: nu_epicycle2
 !
       intent(in)  :: f
@@ -158,7 +163,7 @@ module Gravity
         if(lroot) print*,'no gravity profile given'
       endif
 !
-      if(ip==0) print*,f(1,1,1,1) !(keep compiler quiet)
+      if(ip==0) print*,f(1,1,1,1),uu,rho1 !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
@@ -282,14 +287,27 @@ module Gravity
 !
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine self_gravity(f)
+    subroutine rprint_gravity(lreset)
 !
+!  reads and registers print parameters relevant for gravity advance
 !  dummy routine
 !
-      real, dimension (mx,my,mz,mvar) :: f
+!  26-apr-03/axel: coded
 !
-      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine self_gravity
+      use Cdata
+!
+      logical :: lreset
+!
+!  write column, i_XYZ, where our variable XYZ is stored
+!  idl needs this even if everything is zero
+!
+      write(3,*) 'i_curlggrms=',i_curlggrms
+      write(3,*) 'i_curlggmax=',i_curlggmax
+      write(3,*) 'i_divggrms=',i_divggrms
+      write(3,*) 'i_divggmax=',i_divggmax
+!
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_gravity
 !***********************************************************************
 
 endmodule Gravity

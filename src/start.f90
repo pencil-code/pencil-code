@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.84 2003-04-22 17:24:17 brandenb Exp $
+! $Id: start.f90,v 1.85 2003-04-26 09:21:07 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.84 2003-04-22 17:24:17 brandenb Exp $")
+             "$Id: start.f90,v 1.85 2003-04-26 09:21:07 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -142,10 +142,6 @@
         call init_rad  (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)
         call init_uud  (f,xx,yy,zz)
-!
-!  check whether we want self-gravity
-!
-        if(lself_gravity) call self_gravity(f)
 !
 !  check whether we want ionization
 !

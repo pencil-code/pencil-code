@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.20 2003-04-22 17:24:17 brandenb Exp $
+! $Id: feautrier.f90,v 1.21 2003-04-26 09:21:06 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,7 +14,7 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
+  real, dimension (mx,my,mz) :: Qrad,Srad
   logical :: nocooling=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.20 2003-04-22 17:24:17 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.21 2003-04-26 09:21:06 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -86,7 +86,6 @@ module Radiation
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         yH=yyH(l1:l2,m,n)
          call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
          Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
          TT(l1:l2,m,n)=TT_
@@ -105,6 +104,7 @@ module Radiation
 !
       use Cdata
       use General
+      use Ionization
 !
       real, dimension(mx,my,mz,mvar) :: f
       real, dimension(mx,my,mz) :: feautrier
@@ -169,6 +169,7 @@ module Radiation
 !
       use Cdata
       use General
+      use Ionization
 !
       real, dimension(mx,my,mz,mvar) :: f
       real, dimension(mx,my,mz) :: feautrier_double
@@ -252,6 +253,7 @@ module Radiation
 !  25-mar-03/axel+tobi: coded
 !
       use Cdata
+      use Ionization
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real :: formfactor=0.5
@@ -279,6 +281,7 @@ module Radiation
 !   5-apr-03/axel: coded
 !
       use Cdata
+      use Ionization
 !
       integer, intent(in) :: lun
 !

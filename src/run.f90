@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.129 2003-04-10 06:58:24 brandenb Exp $
+! $Id: run.f90,v 1.130 2003-04-26 09:21:07 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.129 2003-04-10 06:58:24 brandenb Exp $")
+             "$Id: run.f90,v 1.130 2003-04-26 09:21:07 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -194,10 +194,6 @@
           !  This allows pde to prepare some of the data
           !
           call wvid_prepare()
-          !
-          !  check whether we want self-gravity
-          !
-          if(lself_gravity) call self_gravity(f)
           !
           !  time advance
           !

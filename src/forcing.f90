@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.43 2003-04-10 06:58:24 brandenb Exp $
+! $Id: forcing.f90,v 1.44 2003-04-26 09:21:06 brandenb Exp $
 
 module Forcing
 
@@ -14,7 +14,7 @@ module Forcing
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
   integer :: kfountain=5
-  logical :: lwork_ff=.false.
+  logical :: lwork_ff=.false.,lmomentum_ff=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
   integer :: dummy              ! We cannot define empty namelists
@@ -23,7 +23,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,kfountain,fountain,tforce_stop, &
-       dforce,radius_ff,k1_ff,slope_ff,work_ff
+       dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff
 
   contains
 
@@ -48,7 +48,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.43 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: forcing.f90,v 1.44 2003-04-26 09:21:06 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -226,13 +226,14 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (nx) :: radius,tmpx
+      real, dimension (nx) :: radius,tmpx,rho1
       real, dimension (mz) :: tmpz
       real, dimension (mx,my,mz,mvar) :: f
       complex, dimension (mx) :: fx
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: coef
+      logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
@@ -254,6 +255,9 @@ module Forcing
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
         close(9)
+        extent(1)=nx.ne.1
+        extent(2)=ny.ne.1
+        extent(3)=nz.ne.1
       endif
       ifirst=ifirst+1
 !
@@ -375,35 +379,49 @@ module Forcing
       coef(3)=cmplx(k*kez,relhel*kkez)
       if (ip.le.5) print*,'coef=',coef
 !
-! loop the two cases separately, so we don't check for r_ff during
-! each loop cycle which could inhibit (pseudo-)vectorisation
+!  In the past we always forced the du/dt, but in some cases
+!  it may be better to force rho*du/dt (if lmomentum_ff=.true.)
+!  For compatibility with earlier results, lmomentum_ff=.false. by default.
+!
+      if(lmomentum_ff) then
+        rho1=exp(-f(l1:l2,m,n,ilnrho))
+      else
+        rho1=1.
+      endif
+!
+!  loop the two cases separately, so we don't check for r_ff during
+!  each loop cycle which could inhibit (pseudo-)vectorisation
 !
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
         do j=1,3
-          jf=j+iux-1
-          do n=n1,n2
-            do m=m1,m2
-              f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) &
-                +force_ampl*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+          if(extent(j)) then
+            jf=j+iux-1
+            do n=n1,n2
+              do m=m1,m2
+                f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) &
+                  +force_ampl*rho1*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
+              enddo
             enddo
-          enddo
+          endif
         enddo
       else                      ! with radial profile
         do j=1,3
-          jf=j+iux-1
-          do n=n1,n2
-            sig = relhel*tmpz(n)
-            coef(1)=cmplx(k*kex,sig*kkex)
-            coef(2)=cmplx(k*key,sig*kkey)
-            coef(3)=cmplx(k*kez,sig*kkez)
-            do m=m1,m2
-              radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
-              tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
-              f(l1:l2,m,n,jf) = &
-                   f(l1:l2,m,n,jf) + real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+          if(extent(j)) then
+            jf=j+iux-1
+            do n=n1,n2
+              sig = relhel*tmpz(n)
+              coef(1)=cmplx(k*kex,sig*kkex)
+              coef(2)=cmplx(k*key,sig*kkey)
+              coef(3)=cmplx(k*kez,sig*kkez)
+              do m=m1,m2
+                radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
+                tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))
+                f(l1:l2,m,n,jf) = &
+                     f(l1:l2,m,n,jf) + rho1*real(coef(j)*tmpx*fx(l1:l2)*fy(m)*fz(n))
+              enddo
             enddo
-          enddo
+          endif
         enddo
       endif
 !

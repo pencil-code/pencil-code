@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.2 2003-04-04 05:46:55 brandenb Exp $
+! $Id: grav_self.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $
 
 module Gravity
 
@@ -13,11 +13,8 @@ module Gravity
     module procedure potential_penc
   endinterface
 
-  real, dimension (mx,my,mz) :: phi
   real :: lnrho_bot,ss_bot
-  real :: grav=1.
-  integer :: iterations_selfgrav=100
-  logical :: ldebug_selfgrav=.false.,lself_gravity=.true.
+  real :: grav_const=1.
 
 !  NOTE: the following quantities are needed for compatibility
 !  with usage of quantities from grav_z in density.f90
@@ -30,13 +27,16 @@ module Gravity
 !  some position which is referred to as "zinfty".
 
   namelist /grav_init_pars/ &
-       iterations_selfgrav,ldebug_selfgrav
+    grav_const
 
 !  It would be rather unusual to change the profile during the
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-       iterations_selfgrav,ldebug_selfgrav
+    grav_const
+
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
 
   contains
 
@@ -45,7 +45,7 @@ module Gravity
 !
 !  initialise gravity flags
 !
-!  9-jan-02/wolf: coded
+! 22-apr-03/axel: coded
 !
       use Cdata
       use Mpicomm
@@ -56,10 +56,23 @@ module Gravity
       if(.not. first) call stop_it('register_grav called twice')
       first = .false.
 !
+      lselfgravity = .true.
+!
+      igg = nvar+1             ! indices to access gg
+      igx = igg
+      igy = igg+1
+      igz = igg+2
+      nvar = nvar+3            ! added 3 variables
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'Register_hydro:  nvar = ', nvar
+        print*, 'igx,igy,igz = ', igx,igy,igz
+      endif
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.2 2003-04-04 05:46:55 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,31 +104,59 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df)
+    subroutine duu_dt_grav(f,df,uu,rho1)
 !
-!  add duu/dt according to gravity
-!  (do we need f here?/AB)
+!  advance gravity and add to duu/dt
 !
-!  9-jan-02/wolf: coded
-! 28-jun-02/axel: added 'linear' gravity profile
-! 28-jul-02/axel: added 'const_zero' gravity profile
+! 22-apr-03/axel: coded
 !
       use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,mvar) :: grad_phi
+      real, dimension (nx,3) :: uu,curlgg
+      real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2
+      integer :: j
 !
       intent(in)  :: f
 !
 !  different gravity profiles
 !
-      if (headtt) print*,'duu_dt_grav='
-      call grad(phi,grad_phi)
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz)-grad_phi
+      if (headtt) print*,'SOLVE dgg_dt'
 !
-      if(ip==0) print*,f(1,1,1,1) !(keep compiler quiet)
-    endsubroutine duu_dt_grav
+!  advance gravity, dg/dt = 4pi*G*rho*uu
+!
+      rho=1./rho1
+      do j=0,2
+        df(l1:l2,m,n,igg+j)=df(l1:l2,m,n,igg+j)+grav_const*rho*uu(:,1+j)
+      enddo
+!
+!  add gravitational acceleration to momentum equation
+!
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+f(l1:l2,m,n,igx:igz)
+!
+!  check the degree of non-potential contamination
+!
+      if (ldiagnos) then
+        if (i_curlggrms/=0.or.i_curlggmax/=0) then
+          call curl(f,igg,curlgg)
+          call dot2_mn(curlgg,curlgg2)
+          if (i_curlggrms/=0) call sum_mn_name(curlgg2,i_curlggrms,lsqrt=.true.)
+          if (i_curlggmax/=0) call max_mn_name(curlgg2,i_curlggmax,lsqrt=.true.)
+        endif
+!
+!  for comparison, we also need divgg
+!
+        if (i_divggrms/=0.or.i_divggmax/=0) then
+          call div(f,igg,divgg)
+          divgg2=divgg**2
+          if (i_divggrms/=0) call sum_mn_name(divgg2,i_divggrms,lsqrt=.true.)
+          if (i_divggmax/=0) call max_mn_name(divgg2,i_divggmax,lsqrt=.true.)
+!
+        endif
+      endif
+!
+   endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz,pot,pot0)
 !
@@ -128,7 +169,7 @@ module Gravity
       real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0
 !
-      call stop_it("potential_global in grav_z not implemented")
+      call stop_it("potential_global in grav_self not implemented")
 !
       if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
            pot(1,1,1),pot0  !(keep compiler quiet)
@@ -162,62 +203,100 @@ module Gravity
 !  different profiles, calculate also gz=-dpot/dz
 !  remember, gravz=-1 (at least negative) for z pointing upwards.
 !
-      pot=phi(l1:l2,m,n)
-      if (present(pot0)) pot0=phi(l1,m1,n1)  !(potential at z=0)
+      pot=0.  !(not implemented)
+      if (present(pot0)) pot0=0.  !(not implemented)
       if (present(grav)) then
-        call grad(phi,grav)
+        grav=0.  !(not implemented)
+        !grav=f(l1:l2,m,n,igx:igz)
       endif
 !
       if(ip==0) print*,xmn,ymn,zmn,rmn !(keep compiler quiet)
     endsubroutine potential_penc
+!!***********************************************************************
+!    subroutine self_gravity(f)
+!!
+!!  calculates gravity potential and gravitational acceleration.
+!!  Routine is called prior to explicit time-advance via Runge-Kutta .
+!!
+!!   1-jan-03/axel: coded
+!!
+!      use Cdata
+!      use Sub
+!!
+!      real, dimension (mx,my,mz,mvar) :: f
+!      real, dimension (mx,my,mz) :: resid
+!      real :: fac,diag,om_diag,om=0.9
+!      integer :: iter
+!!
+!!  identifier
+!!
+!      if(lroot.and.headt) print*,'self_gravity'
+!!
+!      fac=1./dx**2
+!      diag=-2.*fac
+!      om_diag=om/diag
+!!  
+!!  SOR iterations
+!!
+!      do iter=1,iterations_selfgrav
+!        !
+!        !  x-direction
+!        !
+!        resid(2:mx-1,:,:)=fac*(phi(1:mx-2,:,:)-2*phi(2:mx-1,:,:)+phi(3:mx,:,:))
+!        resid(1     ,:,:)=fac*(phi(  mx  ,:,:)-2*phi(1     ,:,:)+phi(2   ,:,:))
+!        resid(  mx  ,:,:)=fac*(phi(  mx-1,:,:)-2*phi(  mx  ,:,:)+phi(1   ,:,:))
+!        !
+!        resid=resid-grav*(exp(f(:,:,:,ilnrho))-1.)
+!        phi=phi-om_diag*resid
+!        phi=phi-sum(phi(l1:l2,m1:m2,n1:n2))/nw
+!        !
+!        if(ldebug_selfgrav) then
+!          print*,iter,phi(l1,m1,n1)
+!        endif 
+!      enddo
+!!
+!!  debug output
+!!   
+!      if(ldebug_selfgrav) write(99) iter,phi
+!!
+!    endsubroutine self_gravity
 !***********************************************************************
-    subroutine self_gravity(f)
+    subroutine rprint_gravity(lreset)
 !
-!  calculates gravity potential and gravitational acceleration.
-!  Routine is called prior to explicit time-advance via Runge-Kutta .
+!  reads and registers print parameters relevant for gravity advance
 !
-!   1-jan-03/axel: coded
+!  26-apr-03/axel: coded
 !
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: resid
-      real :: fac,diag,om_diag,om=0.9
-      integer :: iter
+      integer :: iname
+      logical :: lreset
 !
-!  identifier
+!  reset everything in case of RELOAD
+!  (this needs to be consistent with what is defined above!)
 !
-      if(lroot.and.headt) print*,'self_gravity'
+      if (lreset) then
+        i_curlggrms=0; i_curlggmax=0; i_divggrms=0; i_divggmax=0
+      endif
 !
-      fac=1./dx**2
-      diag=-2.*fac
-      om_diag=om/diag
+!  check for those quantities that we want to evaluate online
 !
-!  SOR iterations
-!
-      do iter=1,iterations_selfgrav
-        !
-        !  x-direction
-        !
-        resid(2:mx-1,:,:)=fac*(phi(1:mx-2,:,:)-2*phi(2:mx-1,:,:)+phi(3:mx,:,:))
-        resid(1     ,:,:)=fac*(phi(  mx  ,:,:)-2*phi(1     ,:,:)+phi(2   ,:,:))
-        resid(  mx  ,:,:)=fac*(phi(  mx-1,:,:)-2*phi(  mx  ,:,:)+phi(1   ,:,:))
-        !
-        resid=resid-grav*(exp(f(:,:,:,ilnrho))-1.)
-        phi=phi-om_diag*resid
-        phi=phi-sum(phi(l1:l2,m1:m2,n1:n2))/nw
-        !
-        if(ldebug_selfgrav) then
-          print*,iter,phi(l1,m1,n1)
-        endif
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'curlggrms',i_curlggrms)
+        call parse_name(iname,cname(iname),cform(iname),'curlggmax',i_curlggmax)
+        call parse_name(iname,cname(iname),cform(iname),'divggrms',i_divggrms)
+        call parse_name(iname,cname(iname),cform(iname),'divggmax',i_divggmax)
       enddo
 !
-!  debug output
+!  write column, i_XYZ, where our variable XYZ is stored
 !
-      if(ldebug_selfgrav) write(99) iter,phi
+      write(3,*) 'i_curlggrms=',i_curlggrms
+      write(3,*) 'i_curlggmax=',i_curlggmax
+      write(3,*) 'i_divggrms=',i_divggrms
+      write(3,*) 'i_divggmax=',i_divggmax
 !
-    endsubroutine self_gravity
+    endsubroutine rprint_gravity
 !***********************************************************************
 
 endmodule Gravity

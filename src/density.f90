@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.79 2003-04-10 09:38:11 mee Exp $
+! $Id: density.f90,v 1.80 2003-04-26 09:21:06 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,7 +69,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.79 2003-04-10 09:38:11 mee Exp $")
+           "$Id: density.f90,v 1.80 2003-04-26 09:21:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -248,6 +248,13 @@ module Density
         !
         if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=lnrho_const+ampllnrho*sin(kx_lnrho*xx)
+
+      case('sound-wave2')
+        !
+        !  sound wave (should be consistent with hydro module)
+        !
+        if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
+        f(:,:,:,ilnrho)=lnrho_const+ampllnrho*cos(kx_lnrho*xx)
 
       case('shock-tube', '13')
         !

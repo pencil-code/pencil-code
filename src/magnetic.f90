@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.108 2003-02-03 21:17:08 dobler Exp $
+! $Id: magnetic.f90,v 1.109 2003-04-26 09:21:07 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -85,7 +85,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.108 2003-02-03 21:17:08 dobler Exp $")
+           "$Id: magnetic.f90,v 1.109 2003-04-26 09:21:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,6 +130,9 @@ module Magnetic
       case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
       case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
       case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
+      case('propto-ux'); call wave_uu(amplaa,f,iaa,kx=kx_aa)
+      case('propto-uy'); call wave_uu(amplaa,f,iaa,ky=ky_aa)
+      case('propto-uz'); call wave_uu(amplaa,f,iaa,kz=kz_aa)
       case('hor-tube'); call htube(amplaa,f,iax,iaz,xx,yy,zz,radius,epsilonaa)
       case('hor-fluxlayer'); call hfluxlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)
       case('mag-support'); call magsupport(amplaa,f,zz,gravz,cs0,rho0)
@@ -216,7 +219,6 @@ module Magnetic
       integer :: j
 !
       intent(in)  :: f,uu,rho1,TT1
-
 !
 !  identify module and boundary conditions
 !

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.73 2003-04-11 17:59:31 brandenb Exp $
+! $Id: register.f90,v 1.74 2003-04-26 09:21:07 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -213,6 +213,7 @@ module Register
       use Pscalar
       use Dustvelocity
       use Dustdensity
+      use Gravity
 !
       integer :: iname,inamez,inamexy,inamerz
       logical :: lreset,exist
@@ -280,6 +281,7 @@ module Register
       call rprint_pscalar(lreset)
       call rprint_dustvelocity(lreset)
       call rprint_dustdensity(lreset)
+      call rprint_gravity(lreset)
       close(3)
 !
     endsubroutine rprint_list

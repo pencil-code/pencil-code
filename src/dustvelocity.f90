@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.2 2003-03-18 20:31:05 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -9,7 +9,6 @@ module Dustvelocity
 
   use Cparam
   use Hydro
-  !use Density
 
   implicit none
 
@@ -52,7 +51,7 @@ module Dustvelocity
 !
       ldustvelocity = .true.
 !
-      iuud = nvar+1             ! indices to access uu
+      iuud = nvar+1             ! indices to access uud
       iudx = iuud
       iudy = iuud+1
       iudz = iuud+2
@@ -66,7 +65,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.2 2003-03-18 20:31:05 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.28 2002-11-24 13:14:59 mee Exp $
+! $Id: nomagnetic.f90,v 1.29 2003-04-26 09:21:07 brandenb Exp $
 
 module Magnetic
 
@@ -45,7 +45,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.28 2002-11-24 13:14:59 mee Exp $")
+           "$Id: nomagnetic.f90,v 1.29 2003-04-26 09:21:07 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -91,6 +91,7 @@ module Magnetic
 !
 !  reads and registers print parameters relevant for magnetic fields
 !  dummy routine
+!
 !   3-may-02/axel: coded
 !
       use Cdata

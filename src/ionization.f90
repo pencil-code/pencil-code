@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.31 2003-04-10 06:58:24 brandenb Exp $
+! $Id: ionization.f90,v 1.32 2003-04-26 09:21:07 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -13,7 +13,8 @@ module Ionization
 
   ! global array for yH (very useful to avoid double calculation and
   ! to allow output along with file), but could otherwise be avoided.
-  real, dimension (mx,my,mz) :: yyH=0.5
+  ! kappa and TT also now here
+  real, dimension (mx,my,mz) :: yyH=0.5,kappa,TT
 
   !  secondary parameters calculated in initialize
   real :: m_H,m_He,fHe,mu
@@ -54,7 +55,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.31 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: ionization.f90,v 1.32 2003-04-26 09:21:07 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -171,7 +172,6 @@ module Ionization
 !
       if(cionization=='hydrogen') then
         if(headtt.and.first) print*,'thermodynamics based on hydrogen ionization'
-        yH=yyH(l1:l2,m,n)
         call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
                                  dlnPdss=dlnPdss, &
                                  TT=TT)
@@ -213,13 +213,18 @@ module Ionization
 !
 !   28-mar-03/tobi: added kappa
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss,yH
+      real, dimension(nx),intent(in)   :: lnrho,ss
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
       real, dimension(nx)              :: lnTT_,f  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx)              :: dlnTT_dy,dlnTT_dlnrho,dlnTT_dss
       real, dimension(nx)              :: dfdy,dfdlnrho,dfdss
       real, dimension(nx)              :: dydlnrho,dydss
+      real, dimension(nx),intent(out)  :: yH
+!
+!  initialize yH from global yyH array
+!
+      yH=yyH(l1:l2,m,n)
 
       if (present(dlnPdlnrho).or.present(dlnPdss) &
            .or.present(TT).or.present(kappa)) then

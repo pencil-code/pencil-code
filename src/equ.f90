@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.133 2003-04-09 10:21:17 theine Exp $
+! $Id: equ.f90,v 1.134 2003-04-26 09:21:06 brandenb Exp $
 
 module Equ
 
@@ -212,7 +212,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.133 2003-04-09 10:21:17 theine Exp $")
+           "$Id: equ.f90,v 1.134 2003-04-26 09:21:06 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -309,7 +309,7 @@ module Equ
 !  AB: but it is not really a new dXX_dt, because XX=uu.
 !
         if (lhydro) then
-          if(lgrav) call duu_dt_grav(f,df)
+          if(lgrav) call duu_dt_grav(f,df,uu,rho1)
         endif
 !
 !  Magnetic field evolution

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.32 2003-04-04 05:46:55 brandenb Exp $
+! $Id: grav_r.f90,v 1.33 2003-04-26 09:21:06 brandenb Exp $
 
 module Gravity
 
@@ -19,19 +19,20 @@ module Gravity
   ! coefficients for potential
   real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
   real :: lnrho_bot,ss_bot
+  real :: grav_const=1.
 
   character (len=labellen) :: ipotential='zero'
 
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
-  logical :: lself_gravity=.false.
 
   namelist /grav_init_pars/ ipotential
 
   namelist /grav_run_pars/  ipotential
 
-
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
 
   contains
 
@@ -53,7 +54,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.32 2003-04-04 05:46:55 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.33 2003-04-26 09:21:06 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -173,7 +174,7 @@ module Gravity
       if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_gg
 !***********************************************************************
-    subroutine duu_dt_grav(f,df)
+    subroutine duu_dt_grav(f,df,uu,rho1)
 !
 !  add duu/dt according to gravity
 !
@@ -185,8 +186,8 @@ module Gravity
       use Global
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: evr,gg_mn
-      real, dimension (nx) :: g_r
+      real, dimension (nx,3) :: evr,gg_mn,uu
+      real, dimension (nx) :: g_r,rho1
 !
 !  evr is the radial unit vector
 !
@@ -214,7 +215,7 @@ endif
 !
 if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
-      if(ip==0) print*,f  !(to keep compiler quiet)
+      if(ip==0) print*,f,uu,rho1  !(to keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz, pot,pot0)
@@ -268,14 +269,27 @@ if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
       if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
     endsubroutine potential_penc
 !***********************************************************************
-    subroutine self_gravity(f)
+    subroutine rprint_gravity(lreset)
 !
+!  reads and registers print parameters relevant for gravity advance
 !  dummy routine
 !
-      real, dimension (mx,my,mz,mvar) :: f
+!  26-apr-03/axel: coded
 !
-      if(ip==0) print*,f(1,1,1,1)  !(to keep compiler quiet)
-    endsubroutine self_gravity
+      use Cdata
+!
+      logical :: lreset
+!
+!  write column, i_XYZ, where our variable XYZ is stored
+!  idl needs this even if everything is zero
+!
+      write(3,*) 'i_curlggrms=',i_curlggrms
+      write(3,*) 'i_curlggmax=',i_curlggmax
+      write(3,*) 'i_divggrms=',i_divggrms
+      write(3,*) 'i_divggmax=',i_divggmax
+!
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_gravity
 !***********************************************************************
 
 endmodule Gravity

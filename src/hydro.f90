@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.87 2003-03-31 14:04:07 brandenb Exp $
+! $Id: hydro.f90,v 1.88 2003-04-26 09:21:06 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -82,7 +82,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.87 2003-03-31 14:04:07 brandenb Exp $")
+           "$Id: hydro.f90,v 1.88 2003-04-26 09:21:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,7 +119,7 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: r,p,tmp,xx,yy,zz,prof
-      real :: kabs
+      real :: kabs,crit
       integer :: i
 !
 !  inituu corresponds to different initializations of uu (called from start).
@@ -146,6 +146,18 @@ module Hydro
         !
         if (lroot) print*,'x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(kx_uu*xx)
+
+      case('sound-wave2')
+        !
+        !  sound wave (should be consistent with density module)
+        !
+        crit=cs20-grav_const/kx_uu**2
+        if (lroot) print*,'x-wave in uu; crit,ampluu=',crit,ampluu
+        if (crit>0.) then
+          f(:,:,:,iux)=+ampluu*cos(kx_uu*xx)*sqrt(abs(crit))
+        else
+          f(:,:,:,iux)=-ampluu*sin(kx_uu*xx)*sqrt(abs(crit))
+        endif
 
       case('shock-tube', '13')
         !
@@ -459,7 +471,7 @@ module Hydro
       real, save :: ruxm=0.,rux_sum=0.
 !
 !  at the beginning of each timestep we calculate ruxm
-!  using the sum of ux over all meshpoints, ux_sum,
+!  using the sum of rho*ux over all meshpoints, rux_sum,
 !  that was calculated at the end of the previous step.
 !  This result is only known on the root processor and
 !  needs to be broadcasted.
@@ -467,7 +479,7 @@ module Hydro
       if(lfirstpoint) then
         fsum_tmp(1)=rux_sum
         call mpireduce_sum(fsum_tmp,fsum,1)
-        if(lroot) ruxm=rux_sum/(nw*ncpus)
+        if(lroot) ruxm=fsum(1)/(nw*ncpus)
         call mpibcast_real(ruxm,1)
       endif
 !
@@ -505,7 +517,7 @@ module Hydro
 !
       if(lfirstpoint) then
         fsum_tmp(1)=ruy_sum
-        call mpireduce_max(fsum_tmp,fsum,1)
+        call mpireduce_sum(fsum_tmp,fsum,1)
         if(lroot) ruym=fsum(1)/(nw*ncpus)
         call mpibcast_real(ruym,1)
       endif
