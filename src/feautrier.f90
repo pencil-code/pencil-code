@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.29 2003-06-19 11:31:05 brandenb Exp $
+! $Id: feautrier.f90,v 1.30 2003-06-21 15:26:52 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -66,7 +66,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.29 2003-06-19 11:31:05 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.30 2003-06-21 15:26:52 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -213,10 +213,11 @@ module Radiation
 !
       do mrad=m1,m2
       do lrad=l1,l2
-         kaprho_=kaprho(lrad,mrad,n1:n2)
-         tau=spline_integral_double(z,kaprho_)
-         !tau=z(n1:n2)
-         Srad_=Srad(lrad,mrad,n1:n2)
+         do nrad=n1,n2
+           kaprho_(nrad)=kaprho(lrad,mrad,n1+n2-nrad)
+           Srad_(nrad)=Srad(lrad,mrad,n1+n2-nrad)
+         enddo
+         tau=spline_integral_double(z,-kaprho_)
 !
 !  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
 !
@@ -252,12 +253,97 @@ module Radiation
             stop
          endif
 !
-         feautrier_double(lrad,mrad,n1:n2)=Prad_
-!         print*,'Prad',Prad_
+         do nrad=n1,n2
+            feautrier_double(lrad,mrad,nrad)=Prad_(n1+n2-nrad)
+         enddo
       enddo
       enddo
 !
     endfunction feautrier_double
+!***********************************************************************
+    function transx(chi,S)
+!
+!  Solve the transfer equation, given optical depth and source function.
+!
+!  The answer is q=p-s, where p is "Feautriers P".
+!
+!  "Steins trick" is used! storing the sum of the three elements in each
+!  row of the tridiagonal equation system, instead of the diagonal ele-
+!  ment.  This prevents the deterioration of the numerical precision for
+!  small optical depths.
+!
+!  This is a second order version.  For simulations, with rapidly
+!  varying absorption coefficients and source functions, this is to be
+!  preferred over spline and Hermitean versions because it is positive
+!  definite, in the sense that a positive source function is guaranteed
+!  to result in a positive average intensity p.  Also, the flux
+!  divergence is exactly equal to q, for the conventional definition
+!  of the flux.
+!
+!  Operation count: 5d+5m+11a = 21 flops
+!
+!  Timings:
+!            Alliant: 0.58 * 21 / 1.25 = 9.7 Mfl @ 31*31*31
+!
+!  Update history:
+!
+!  28-oct-87/aake: vector-concurrent version
+!  03-nov-87/aake: signs moved around to simplify stores, comments added
+!  05-nov-87/aake: first point is mmmz=1 again, was mmmz=2
+!  05-nov-87/aake: tested if/then/else timing on Alliant
+!  08-jan-88/aake: added surface intensity calculation
+!
+!***********************************************************************
+!
+      use Cdata
+!
+      real, dimension(nz), intent(in) :: chi,S
+      real, dimension(nz) :: transx
+      real, dimension(nz) :: sp1,sp2,sp3,Q
+      real :: dinv,dtau2
+!
+!  k=nz
+!
+      dtau2=.5*(chi(nz-1)+chi(nz))*dz
+      sp2(nz)=dtau2*(1.+.5*dtau2)
+      sp3(nz)=-1.
+      Q(nz)=S(nz-1)-(1.+dtau2)*S(nz)
+!
+!  2<k<nz [3d+2m+6a]
+!
+      do n=nz-1,2,-1
+        dinv=4./(chi(n-1)+2.*chi(n)+chi(n+1))/dz
+        sp1(n)=-2.*dinv/(chi(n)+chi(n+1))/dz
+        sp2(n)=1.
+        sp3(n)=-2.*dinv/(chi(n-1)+chi(n))/dz
+        Q(n)=sp1(n)*(S(n)-S(n+1))+sp3(n)*(S(n)-S(n-1))
+      enddo
+!
+!  k=1
+!
+      sp2(1)=1.
+      Q(1)=0.
+!
+!  eliminate subdiagonal, save factors in sp1 [1d+2m+4a]
+!
+      do n=nz,3,-1
+        sp1(n)=-sp1(n-1)/(sp2(n)-sp3(n))
+        Q(n-1)=Q(n-1)+sp1(n)*Q(n)
+        sp2(n-1)=sp2(n-1)+sp1(n)*sp2(n)
+        sp2(n)=sp2(n)-sp3(n)
+      enddo
+      sp2(2)=sp2(2)-sp3(2)
+!
+!  backsubstitute [1d+1m+1a]
+!
+      do n=2,nz
+        Q(n)=(Q(n)-sp3(n)*Q(n-1))/sp2(n)
+      enddo
+!
+!  return value
+!
+      transx=Q
+    endfunction transx
 !***********************************************************************
     subroutine radtransfer(f)
 !
@@ -266,16 +352,20 @@ module Radiation
 !  24-mar-03/axel+tobi: coded
 !
       use Cdata
-      use Sub
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
+      integer :: l
 !
 !  identifier
 !
       if(lroot.and.headt) print*,'radtransfer'
 !
       call radcalc(f)
-      f(:,:,:,iQrad)=-Srad+feautrier_double(f)
+      do l=l1,l2
+      do m=m1,m2
+        f(l,m,n1:n2,iQrad)=transx(kaprho(l,m,n1:n2),Srad(l,m,n1:n2))
+      enddo
+      enddo
 !
     endsubroutine radtransfer
 !***********************************************************************
