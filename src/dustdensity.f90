@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.18 2003-12-09 10:35:30 ajohan Exp $
+! $Id: dustdensity.f90,v 1.19 2003-12-09 13:42:08 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -84,7 +84,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.18 2003-12-09 10:35:30 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.19 2003-12-09 13:42:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -347,7 +347,7 @@ module Dustdensity
       integer :: iname,idust
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sidust
+      character (len=4) :: sidust,sdustspec
 !
 !  Write information to index.pro that should not be repeated for idust
 !
@@ -359,11 +359,18 @@ module Dustdensity
         write(3,*) 'nname=',nname
       endif
 !
+!  Define arrays for multiple dust species
+!
+      if (lwr) then
+        call chn(ndustspec,sdustspec)
+        write(3,*) 'ilnrhod=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rhodm=intarr('//trim(sdustspec)//')'
+      endif
+!
 !  Loop over dust layers
 !
       do idust=1,ndustspec
-        call chn(idust,sidust)
-        if (ndustspec .eq. 1) sidust=''
+        call chn(idust-1,sidust)
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -380,11 +387,11 @@ module Dustdensity
               'rhodm'//trim(sidust),i_rhodm(idust))
         enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which variable is stored
 !
         if (lwr) then
-          write(3,*) 'i_rhodm'//trim(sidust)//'=',i_rhodm(idust)
-          write(3,*) 'ilnrhod'//trim(sidust)//'=',ilnrhod(idust)
+          write(3,*) 'ilnrhod('//trim(sidust)//')=',ilnrhod(idust)
+          write(3,*) 'i_rhodm('//trim(sidust)//')=',i_rhodm(idust)
         endif
 !
 !  End loop over dust layers

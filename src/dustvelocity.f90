@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.25 2003-12-09 10:34:01 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.26 2003-12-09 13:41:34 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -7,7 +7,7 @@
 ! Declare (for generation of cparam.inc) the number of f array
 ! variables and auxiliary variables added by this module
 !
-! MVAR CONTRIBUTION 3*ndustspec
+! MVAR CONTRIBUTION 3
 ! MAUX CONTRIBUTION 0
 !
 !***************************************************************
@@ -95,7 +95,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.25 2003-12-09 10:34:01 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.26 2003-12-09 13:41:34 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -632,7 +632,7 @@ module Dustvelocity
       integer :: iname,idust
       logical :: lreset,lwr
       logical, optional :: lwrite
-      character (len=4) :: sidust
+      character (len=4) :: sidust,sdustspec
 !
 !  Write information to index.pro that should not be repeated for idust
 !
@@ -644,10 +644,42 @@ module Dustvelocity
         write(3,*) 'nname=',nname
       endif
 !
+!  Define arrays for multiple dust species
+!
+      if (lwr) then
+        call chn(ndustspec,sdustspec)
+        write(3,*) 'iuud=intarr('//trim(sdustspec)//')'
+        write(3,*) 'iudx=intarr('//trim(sdustspec)//')'
+        write(3,*) 'iudy=intarr('//trim(sdustspec)//')'
+        write(3,*) 'iudz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_ud2m=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udm2=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_od2m=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_oudm=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udrms=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udmax=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_rdudmax=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_odrms=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_odmax=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udmx=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udmy=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udmz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_divud2m=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_epsKd=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udxpt=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udypt=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udzpt=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udxmz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udymz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udzmz=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udxmxy=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udymxy=intarr('//trim(sdustspec)//')'
+        write(3,*) 'i_udzmxy=intarr('//trim(sdustspec)//')'
+      endif
+!
 !  Loop over dust layers
 !
       do idust=1,ndustspec
-!
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
@@ -703,38 +735,37 @@ module Dustvelocity
               'udzpt'//trim(sidust),i_udzpt(idust))
         enddo
 !
-!  write column where which magnetic variable is stored
+!  write column where which variable is stored
 !
         if (lwr) then
-          call chn(idust,sidust)
-          if (ndustspec .eq. 1) sidust = ''
-          write(3,*) 'i_ud2m'//trim(sidust)//'=',i_ud2m(idust)
-          write(3,*) 'i_udm2'//trim(sidust)//'=',i_udm2(idust)
-          write(3,*) 'i_od2m'//trim(sidust)//'=',i_od2m(idust)
-          write(3,*) 'i_oudm'//trim(sidust)//'=',i_oudm(idust)
-          write(3,*) 'i_udrms'//trim(sidust)//'=',i_udrms(idust)
-          write(3,*) 'i_udmax'//trim(sidust)//'=',i_udmax(idust)
-          write(3,*) 'i_rdudmax'//trim(sidust)//'=',i_rdudmax(idust)
-          write(3,*) 'i_odrms'//trim(sidust)//'=',i_odrms(idust)
-          write(3,*) 'i_odmax'//trim(sidust)//'=',i_odmax(idust)
-          write(3,*) 'i_udmx'//trim(sidust)//'=',i_udmx(idust)
-          write(3,*) 'i_udmy'//trim(sidust)//'=',i_udmy(idust)
-          write(3,*) 'i_udmz'//trim(sidust)//'=',i_udmz(idust)
-          write(3,*) 'i_divud2m'//trim(sidust)//'=',i_divud2m(idust)
-          write(3,*) 'i_epsKd'//trim(sidust)//'=',i_epsKd(idust)
-          write(3,*) 'iuud'//trim(sidust)//'=',iuud(idust)
-          write(3,*) 'iudx'//trim(sidust)//'=',iudx(idust)
-          write(3,*) 'iudy'//trim(sidust)//'=',iudy(idust)
-          write(3,*) 'iudz'//trim(sidust)//'=',iudz(idust)
-          write(3,*) 'i_udxpt'//trim(sidust)//'=',i_udxpt(idust)
-          write(3,*) 'i_udypt'//trim(sidust)//'=',i_udypt(idust)
-          write(3,*) 'i_udzpt'//trim(sidust)//'=',i_udzpt(idust)
-          write(3,*) 'i_udxmz'//trim(sidust)//'=',i_udxmz(idust)
-          write(3,*) 'i_udymz'//trim(sidust)//'=',i_udymz(idust)
-          write(3,*) 'i_udzmz'//trim(sidust)//'=',i_udzmz(idust)
-          write(3,*) 'i_udxmxy'//trim(sidust)//'=',i_udxmxy(idust)
-          write(3,*) 'i_udymxy'//trim(sidust)//'=',i_udymxy(idust)
-          write(3,*) 'i_udzmxy'//trim(sidust)//'=',i_udzmxy(idust)
+          call chn(idust-1,sidust)
+          write(3,*) 'iuud('//trim(sidust)//')=',iuud(idust)
+          write(3,*) 'iudx('//trim(sidust)//')=',iudx(idust)
+          write(3,*) 'iudy('//trim(sidust)//')=',iudy(idust)
+          write(3,*) 'iudz('//trim(sidust)//')=',iudz(idust)
+          write(3,*) 'i_ud2m('//trim(sidust)//')=',i_ud2m(idust)
+          write(3,*) 'i_udm2('//trim(sidust)//')=',i_udm2(idust)
+          write(3,*) 'i_od2m('//trim(sidust)//')=',i_od2m(idust)
+          write(3,*) 'i_oudm('//trim(sidust)//')=',i_oudm(idust)
+          write(3,*) 'i_udrms('//trim(sidust)//')=',i_udrms(idust)
+          write(3,*) 'i_udmax('//trim(sidust)//')=',i_udmax(idust)
+          write(3,*) 'i_rdudmax('//trim(sidust)//')=',i_rdudmax(idust)
+          write(3,*) 'i_odrms('//trim(sidust)//')=',i_odrms(idust)
+          write(3,*) 'i_odmax('//trim(sidust)//')=',i_odmax(idust)
+          write(3,*) 'i_udmx('//trim(sidust)//')=',i_udmx(idust)
+          write(3,*) 'i_udmy('//trim(sidust)//')=',i_udmy(idust)
+          write(3,*) 'i_udmz('//trim(sidust)//')=',i_udmz(idust)
+          write(3,*) 'i_divud2m('//trim(sidust)//')=',i_divud2m(idust)
+          write(3,*) 'i_epsKd('//trim(sidust)//')=',i_epsKd(idust)
+          write(3,*) 'i_udxpt('//trim(sidust)//')=',i_udxpt(idust)
+          write(3,*) 'i_udypt('//trim(sidust)//')=',i_udypt(idust)
+          write(3,*) 'i_udzpt('//trim(sidust)//')=',i_udzpt(idust)
+          write(3,*) 'i_udxmz('//trim(sidust)//')=',i_udxmz(idust)
+          write(3,*) 'i_udymz('//trim(sidust)//')=',i_udymz(idust)
+          write(3,*) 'i_udzmz('//trim(sidust)//')=',i_udzmz(idust)
+          write(3,*) 'i_udxmxy('//trim(sidust)//')=',i_udxmxy(idust)
+          write(3,*) 'i_udymxy('//trim(sidust)//')=',i_udymxy(idust)
+          write(3,*) 'i_udzmxy('//trim(sidust)//')=',i_udzmxy(idust)
         endif
 !
 !  End loop over dust layers
