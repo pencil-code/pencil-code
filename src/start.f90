@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.43 2002-06-16 20:35:03 dobler Exp $
+! $Id: start.f90,v 1.44 2002-06-17 20:06:40 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.43 $", &
-             "$Date: 2002-06-16 20:35:03 $")
+             "$Revision: 1.44 $", &
+             "$Date: 2002-06-17 20:06:40 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -56,7 +56,7 @@
         call read_inipars()
         call rprint_list(.false.)
 !
-!  write input parameters to a parameter file (for run.x and IDL)
+!  postprocess input parameters
 !
         gamma1 = gamma-1.
         call wparam()
@@ -123,6 +123,11 @@
 !  write global variables:
 !
         call wglobal()
+!
+!  Write input parameters to a parameter file (for run.x and IDL).
+!  Do this late enough, so init_entropy etc. can adjust them
+!
+        call wparam()
 !
 !  seed for random number generator, have to have the same on each
 !  processor as forcing is applied in (global) Beltrami modes

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.26 2002-06-15 19:29:55 dobler Exp $
+! $Id: hydro.f90,v 1.27 2002-06-17 20:06:40 dobler Exp $
 
 module Hydro
 
@@ -63,8 +63,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.26 $", &
-           "$Date: 2002-06-15 19:29:55 $")
+           "$Revision: 1.27 $", &
+           "$Date: 2002-06-17 20:06:40 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,6 +95,7 @@ module Hydro
 !  inituu corresponds to different initializations of uu (called from start).
 !  If init does't match, f=0 is assumed (default).
 !
+
       select case(inituu)
 
       case(0)

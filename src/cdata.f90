@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.53 2002-06-16 20:35:02 dobler Exp $
+! $Id: cdata.f90,v 1.54 2002-06-17 20:06:40 dobler Exp $
 
 module Cdata
 
@@ -14,7 +14,7 @@ module Cdata
 !
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
-  real :: t,dt=0.,cdt=0.,cdtv=0.,dx,dy,dz,dxmin,dxmax
+  real :: t,dt=0.,cdt=0.4,cdtv=0.08,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dtmin=0.
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
@@ -24,7 +24,6 @@ module Cdata
 !  real :: z1,z2,ztop,zref=0.
 !  real :: gravz=0.
   real :: grads0=0.   ! (1/c_p)ds/dz
-  real :: urand
 
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in
 ! wparam (Sub) as well, so they need to be declared here

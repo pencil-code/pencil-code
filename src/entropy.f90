@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.65 2002-06-16 20:35:03 dobler Exp $
+! $Id: entropy.f90,v 1.66 2002-06-17 20:06:40 dobler Exp $
 
 module Entropy
 
@@ -60,8 +60,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.65 $", &
-           "$Date: 2002-06-16 20:35:03 $")
+           "$Revision: 1.66 $", &
+           "$Date: 2002-06-17 20:06:40 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -90,15 +90,7 @@ module Entropy
       intent(inout) :: f
 !
       if (lgravz) then
-        !
-        !  override hcond1,hcond2 according to polytropic equilibrium solution
-        !  (AB: we may want to move this further down, because it is case specific)
-        !
-        hcond1 = (mpoly1+1.)/(mpoly0+1.)
-        hcond2 = (mpoly2+1.)/(mpoly0+1.)
-        if (lroot) &
-             print*, 'Note(case specific!): mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
-        !
+
         select case(initss)
 
         case(1)
@@ -125,6 +117,16 @@ module Entropy
           !
           !  piecewise polytropic convection setup
           !  cs0, rho0 and ss0=0 refer to height z=zref
+          !
+          !  override hcond1,hcond2 according to polytropic equilibrium
+          !  solution
+          !
+          hcond1 = (mpoly1+1.)/(mpoly0+1.)
+          hcond2 = (mpoly2+1.)/(mpoly0+1.)
+          if (lroot) &
+               print*, &
+               'Note: mpoly{1,2} override hcond{1,2} to ', hcond1, hcond2
+          !
           cs20=cs0**2
           ss0 = 0.
           ! top region
@@ -268,36 +270,27 @@ module Entropy
         df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient)+chi_t*del2ss
       endif
 !
-!--   call del2(f,ient,del2ss)
-!--   call del2(f,ilnrho,del2lnrho)
-!--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
+!  thermal conduction
 !
-!  Heat conduction / entropy diffusion
-!
-!--   call del2(f,ient,del2ss)
-!--   call del2(f,ilnrho,del2lnrho)
-!--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
+      call calc_heatcond(f,df,rho1,glnrho,gss,cs2)      
 !
 !  Calculate entropy related diagnostics
 !
-        if (ldiagnos) then
-          if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
-        endif
+      if (ldiagnos) then
+        if (i_ssm/=0) call sum_mn_name(ss,i_ssm)
+      endif
 !
     endsubroutine dss_dt
 !***********************************************************************
     subroutine calc_heatcond(f,df,rho1,glnrho,gss,cs2)
 !
-!  calculate right hand side of entropy equation
+!  heat conduction
 !
 !  17-sep-01/axel: coded
 !
       use Cdata
       use Mpicomm
       use Sub
-      use Global
-      use Slices
-      use IO
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
@@ -315,7 +308,7 @@ module Entropy
 !
 !  Heat conduction / entropy diffusion
 !
-      if (headtt) print*,'dss_dt: lgravz=',lgravz
+      if (headtt) print*,'calc_heatcond: lgravz=',lgravz
       if (lgravz) then
         ! For vertical geometry, we only need to calculate this for each
         ! new value of z -> speedup by about 8% at 32x32x64
@@ -331,7 +324,6 @@ module Entropy
       endif
       chi = rho1*lambda
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
-      if (headtt) print*,'dss_dt: lambda=',lambda
       glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
@@ -359,7 +351,7 @@ module Entropy
       endif
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 !
-      if (headtt) print*,'dss_dt: added thdiff'
+      if (headtt) print*,'calc_heatcond: added thdiff'
 !
 !  Vertical case:
 !  Heat at bottom, cool top layers
@@ -518,7 +510,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(lambda T_0)
           do i=1,nghost
             f(:,:,n1-i,ient) = &
-                 (2*i*dx*tmp_xy &
+                 (2*i*dz*tmp_xy &
                   + 2*gamma1*(f(:,:,n1+i,ilnrho)-f(:,:,n1,ilnrho)) &
                  )/gamma &
                  + f(:,:,n1+i,ient)
@@ -534,7 +526,7 @@ print*,'FIXME: what am I doing with ztop in spherical geometry?'
           tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(lambda T_0)
           do i=1,nghost
             f(:,:,n2+i,ient) = &
-                 (-2*i*dx*tmp_xy &
+                 (-2*i*dz*tmp_xy &
                   + 2*gamma1*(f(:,:,n2-i,ilnrho)-f(:,:,n2,ilnrho)) &
                  )/gamma &
                  + f(:,:,n2-i,ient)
