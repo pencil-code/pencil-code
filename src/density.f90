@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.166 2004-06-12 06:07:37 brandenb Exp $
+! $Id: density.f90,v 1.167 2004-06-18 12:19:03 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.166 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: density.f90,v 1.167 2004-06-18 12:19:03 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -717,8 +717,8 @@ module Density
       beta1 = g0/(mpoly+1)
 !
 !     densities at shell boundaries
-      lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
-      lnrho_ext = lnrho0
+      lnrho_int=mpoly*log(1+beta1*(1/r_int-1))
+      lnrho_ext=lnrho0
 !
         do imn=1,ny*nz
           n=nn(imn)

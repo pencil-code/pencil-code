@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.316 2004-06-12 06:07:37 brandenb Exp $
+! $Id: entropy.f90,v 1.317 2004-06-18 12:19:03 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.316 2004-06-12 06:07:37 brandenb Exp $")
+           "$Id: entropy.f90,v 1.317 2004-06-18 12:19:03 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -266,7 +266,7 @@ module Entropy
 !   make sure all relevant parameters are set for spherical shell problems
 !
       select case(initss(1))
-        case('geo-kws')
+        case('geo-kws','geo-benchmark')
           if (lroot) then
             print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
             if (abs(exp(lnTT0)-T0) > epsi) then
@@ -519,6 +519,13 @@ module Entropy
           if (lroot) print*,'init_ss: kws temperature in spherical shell'
           call shell_ss(f)
 
+        case ('geo-benchmark')
+          !
+          ! radial temperature profiles for spherical shell problem
+          !
+          if (lroot) print*,'init_ss: benchmark temperature in spherical shell'
+          call shell_ss(f)
+
         case default
           !
           !  Catch unknown values
@@ -769,7 +776,7 @@ module Entropy
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
-      if (initss(1)=='geo-kws') then
+      if (initss(1)=='geo-kws'.or.initss(1)=='geo-benchmark') then
         do m=m1,m2
         do n=n1,n2
 !
