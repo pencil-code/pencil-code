@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.106 2004-06-14 15:00:12 ajohan Exp $
+! $Id: dustdensity.f90,v 1.107 2004-06-27 15:13:29 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -30,11 +30,13 @@ module Dustdensity
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: lupw_ndmdmi=.false.,lupw_ndmi_1st=.false.,ldustnulling=.false.
   logical :: lnd_turb_diff=.false.,lmd_turb_diff=.false.,lmi_turb_diff=.false.
+  logical :: ldeltaud_thermal=.true., ldeltaud_turbulent=.true.
 
   namelist /dustdensity_init_pars/ &
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, ldustgrowth, ldustcoagulation, &
-      lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity
+      lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, &
+      ldeltaud_thermal, ldeltaud_turbulent
 
   namelist /dustdensity_run_pars/ &
       rhod0, nd_diff, md_diff, mi_diff, ldustgrowth, &
@@ -114,7 +116,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.106 2004-06-14 15:00:12 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.107 2004-06-27 15:13:29 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,6 +233,11 @@ module Dustdensity
         f(:,:,:,ind) = 0.
         f(:,:,:,ind(1)) = nd00
         if (eps_dtog /= 0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
+      case('firsttwo')
+        print*, 'init_nd: All dust particles in first and second bin.'
+        f(:,:,:,ind) = 0.
+        f(:,:,:,ind(1)) = nd00/2
+        f(:,:,:,ind(2)) = nd00/2
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
         print*,'init_nd: Initial dust distribution of MRN77'
         do k=1,ndustspec
@@ -621,32 +628,42 @@ module Dustdensity
       real :: deltaud,deltaud_drift,deltaud_therm,deltaud_turbu,deltaud_drift2
       real :: ust
       integer :: i,j,l
-!
-!  Relative turbulent velocity depends on stopping time regimes
-!
       do l=1,nx
         if (lmdvar) md(:) = f(3+l,m,n,imd(:))
         if (lmice)  mi(:) = f(3+l,m,n,imi(:))
         do i=1,ndustspec
           do j=i,ndustspec
+!
+!  Relative macroscopic speed
+!            
             call dot2 (f(3+l,m,n,iudx(j):iudz(j)) - &
                 f(3+l,m,n,iudx(i):iudz(i)),deltaud_drift2)
             deltaud_drift = sqrt(deltaud_drift2)
-            deltaud_therm = &
+!
+!  Relative thermal speed is only important for very light particles
+!            
+            if (ldeltaud_thermal) deltaud_therm = &
                 sqrt( 8*k_B/(pi*TT1(l))*(md(i)+md(j))/(md(i)*md(j)*unit_md) )
-            if ( (tausd1(l,i) > tl01 .and. tausd1(l,j) > tl01) .and. &
-                 (tausd1(l,i) < teta1 .and. tausd1(l,j) < teta1)) then
-              deltaud_turbu = &
-                  ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)*(1/(tl0*tausd1(l,j)))**0.5
-            elseif (tausd1(l,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
-                tausd1(l,i) > tl01 .and. tausd1(l,j) < tl01) then
-              deltaud_turbu = ul0
-            elseif (tausd1(l,i) < tl01 .and. tausd1(l,j) < tl01) then
-              deltaud_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
-            elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
-              deltaud_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
+!
+!  Relative turbulent speed depends on stopping time regimes
+!
+            if (ldeltaud_turbulent) then
+              if ( (tausd1(l,i) > tl01 .and. tausd1(l,j) > tl01) .and. &
+                   (tausd1(l,i) < teta1 .and. tausd1(l,j) < teta1)) then
+                deltaud_turbu = ul0*3/(tausd1(l,j)/tausd1(l,i)+1.)* &
+                    (1/(tl0*tausd1(l,j)))**0.5
+              elseif (tausd1(l,i) < tl01 .and. tausd1(1,j) > tl01 .or. &
+                  tausd1(l,i) > tl01 .and. tausd1(l,j) < tl01) then
+                deltaud_turbu = ul0
+              elseif (tausd1(l,i) < tl01 .and. tausd1(l,j) < tl01) then
+                deltaud_turbu = ul0*tl0*0.5*(tausd1(l,j) + tausd1(l,i))
+              elseif (tausd1(l,i) > teta1 .and. tausd1(l,j) > teta1) then
+                deltaud_turbu = ueta/teta*(tausd1(l,i)/tausd1(l,j)-1.)
+              endif
             endif
-            
+!
+!  Add all speed contributions quadratically
+!            
             deltaud = sqrt(deltaud_drift**2+deltaud_therm**2+deltaud_turbu**2)
 !
 !  Stick only when relative speed is below sticking speed
