@@ -1,4 +1,4 @@
-! $Id: cosmicray_nolog.f90,v 1.11 2004-03-20 16:41:36 brandenb Exp $
+! $Id: cosmicray_nolog.f90,v 1.12 2004-03-21 17:34:00 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -26,6 +26,8 @@ module CosmicRay
   ! input parameters
   real :: gammacr=4./3.,gammacr1
   real :: amplecr=.1,widthecr=.5,ecr_min=0.,ecr_const=0.
+  real :: x_pos_cr=.0,y_pos_cr=.0,z_pos_cr=.0
+  real :: x_pos_cr2=.0,y_pos_cr2=.0,z_pos_cr2=.0
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
 
   logical :: lnegl = .false.
@@ -34,7 +36,8 @@ module CosmicRay
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
-       gammacr, lnegl, lvariable_tensor_diff
+       gammacr, lnegl, lvariable_tensor_diff,x_pos_cr,y_pos_cr,z_pos_cr, &
+       x_pos_cr2, y_pos_cr2, z_pos_cr2
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0., ampl_Qcr=0.
@@ -84,7 +87,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray_nolog.f90,v 1.11 2004-03-20 16:41:36 brandenb Exp $")
+           "$Id: cosmicray_nolog.f90,v 1.12 2004-03-21 17:34:00 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -140,7 +143,7 @@ module CosmicRay
       select case(initecr)
         case('zero'); f(:,:,:,iecr)=0.
         case('const_ecr'); f(:,:,:,iecr)=ecr_const
-        case('blob'); call blob(amplecr,f,iecr,radius_ecr,0.,0.,0.)
+        case('blob'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr,y_pos_cr,0.)
         case('gaussian-x'); call gaussian(amplecr,f,iecr,kx=kx_ecr)
         case('gaussian-y'); call gaussian(amplecr,f,iecr,ky=ky_ecr)
         case('gaussian-z'); call gaussian(amplecr,f,iecr,kz=kz_ecr)
@@ -167,6 +170,7 @@ module CosmicRay
       select case(initecr2)
         case('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
         case('const_ecr'); f(:,:,:,iecr)=f(:,:,:,iecr)+ecr_const
+        case('blob2'); call blob(amplecr,f,iecr,radius_ecr,x_pos_cr2,y_pos_cr2,0.)
       endselect
 !
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.177 2004-03-19 20:02:40 brandenb Exp $
+! $Id: magnetic.f90,v 1.178 2004-03-21 17:34:00 snod Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -116,7 +116,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.177 2004-03-19 20:02:40 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.178 2004-03-21 17:34:00 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -191,6 +191,7 @@ module Magnetic
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
       case('cosxcosy'); call cosx_cosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
+      case('cosxcoscosy'); call cosx_coscosy_cosz(amplaa,f,iaz,kx_aa,ky_aa,0.)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)

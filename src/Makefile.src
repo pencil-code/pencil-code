@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.39 2004-03-19 09:45:39 snod Exp $
+### $Id: Makefile.src,v 1.40 2004-03-21 17:34:00 snod Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -107,6 +107,7 @@ FCCLEANER=
 ##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
 #FC=mpif90 # (Samos|fire|copson)
 #FFLAGS=-O3 -gm # (copson)
+#LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (nw43) 
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
@@ -152,6 +153,7 @@ FCCLEANER=
 #CC=icc #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
+#LDMPI=-L/opt/mpich/lib #(nw43)
 #LDMPI= # (Samos|fire|sandin)
 #LDMPI=-llammpio -llamf77mpi -lmpi -llam -lutil #(cosmo)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
