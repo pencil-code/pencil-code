@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.2 2002-11-13 22:37:03 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.3 2002-11-19 10:51:52 mee Exp $
 
 !***********************************************************************
       program rvid_box
@@ -25,6 +25,7 @@
       integer :: lun,lun1=1,lun2=2,lun3=3,lun4=4
       logical :: eof=.false.
       real :: t
+      real :: slice_xpos=0., slice_ypos=0., slice_zpos=0., slice_z2pos=0.
 !
       character (len=120) :: file='',fullname='',wfile=''
       character (len=120) :: datadir='data',path=''
@@ -51,12 +52,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.Xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
-        call rslice(trim(fullname),xy2_loc,nx,ny,t,it,lun,eof)
+        call rslice(trim(fullname),xy2_loc,slice_z2pos,nx,ny,t,it,lun,eof)
         if(eof) goto 999
         xy2(:,1+ipy*ny:ny+ipy*ny)=xy2_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xy2,nxgrid,nygrid,t,it,lun1)
+      call wslice(trim(wfile),xy2,slice_z2pos,nxgrid,nygrid,t,it,lun1)
 !
 !  Bottom xy-plane:
 !  need data where ipz=0
@@ -69,12 +70,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xy')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
-        call rslice(trim(fullname),xy_loc,nx,ny,t,it,lun,eof)
+        call rslice(trim(fullname),xy_loc,slice_zpos,nx,ny,t,it,lun,eof)
         if(eof) goto 999
         xy(:,1+ipy*ny:ny+ipy*ny)=xy_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xy,nxgrid,nygrid,t,it,lun2)
+      call wslice(trim(wfile),xy,slice_zpos,nxgrid,nygrid,t,it,lun2)
 !
 !  Front xz-plane:
 !  need data where ipy=0
@@ -87,12 +88,12 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.xz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
-        call rslice(trim(fullname),xz_loc,nx,nz,t,it,lun,eof)
+        call rslice(trim(fullname),xz_loc,slice_ypos,nx,nz,t,it,lun,eof)
         if(eof) goto 999
         xz(:,1+ipz*nz:nz+ipz*nz)=xz_loc
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),xz,nxgrid,nzgrid,t,it,lun3)
+      call wslice(trim(wfile),xz,slice_ypos,nxgrid,nzgrid,t,it,lun3)
 !
 !  Left side yz-plane:
 !  need data where ipx=0
@@ -105,20 +106,20 @@
         call safe_character_assign(file,'/slice_'//trim(field)//'.yz')
         call safe_character_assign(fullname,trim(path)//trim(file))
         if(it==1) print*,trim(fullname)
-        call rslice(trim(fullname),yz_loc,ny,nz,t,it,lun,eof)
+        call rslice(trim(fullname),yz_loc,slice_xpos,ny,nz,t,it,lun,eof)
         if(eof) goto 999
         yz(1+ipy*ny:ny+ipy*ny,1+ipz*nz:nz+ipz*nz)=yz_loc
       enddo
       enddo
       call safe_character_assign(wfile,trim(datadir)//trim(file))
-      call wslice(trim(wfile),yz,nygrid,nzgrid,t,it,lun4)
+      call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
 !
       enddo
 999   continue
       print*,'finished OK'
       end
 !***********************************************************************
-    subroutine rslice(file,a,ndim1,ndim2,t,it,lun,eof)
+    subroutine rslice(file,a,pos,ndim1,ndim2,t,it,lun,eof)
 !
 !  appending to an existing slice file
 !
@@ -129,10 +130,12 @@
       real, dimension (ndim1,ndim2) :: a
       integer :: it,lun
       logical :: eof
-      real :: t
+      real :: t,pos
 !
       if(it==1) open(lun,file=file,form='unformatted')
-      read(lun,end=999) a,t
+
+      pos=0.  ! By default (i.e. if missing from record)
+      read(lun,end=999) a,t,pos
       lun=lun+1
 !
 !  when end of file
@@ -143,7 +146,7 @@
 !
     endsubroutine rslice
 !***********************************************************************
-    subroutine wslice(file,a,ndim1,ndim2,t,it,lun)
+    subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun)
 !
 !  appending to an existing slice file
 !
@@ -153,10 +156,11 @@
       character (len=*) :: file
       real, dimension (ndim1,ndim2) :: a
       integer :: it,lun
-      real :: t
+      real :: t, pos
+
 !
       if(it==1) open(lun,file=file,form='unformatted')
-      write(lun) a,t
+      write(lun) a,t,pos
 !
     endsubroutine wslice
 !***********************************************************************

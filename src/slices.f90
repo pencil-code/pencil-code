@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.9 2002-11-13 22:37:03 brandenb Exp $
+! $Id: slices.f90,v 1.10 2002-11-19 10:51:52 mee Exp $
 
 !  This module produces slices for animation purposes
 
@@ -75,18 +75,18 @@ module Slices
           uu_xy(:,:,j)=f(l1:l2,m1:m2,iz,j+iuu-1)
           uu_xy2(:,:,j)=f(l1:l2,m1:m2,iz2,j+iuu-1)
         enddo
-        call wslice(path//'ux.yz',uu_yz(:,:,1),ny,nz)
-        call wslice(path//'uy.yz',uu_yz(:,:,2),ny,nz)
-        call wslice(path//'uz.yz',uu_yz(:,:,3),ny,nz)
-        call wslice(path//'ux.xz',uu_xz(:,:,1),nx,nz)
-        call wslice(path//'uy.xz',uu_xz(:,:,2),nx,nz)
-        call wslice(path//'uz.xz',uu_xz(:,:,3),nx,nz)
-        call wslice(path//'ux.xy',uu_xy(:,:,1),nx,ny)
-        call wslice(path//'uy.xy',uu_xy(:,:,2),nx,ny)
-        call wslice(path//'uz.xy',uu_xy(:,:,3),nx,ny)
-        call wslice(path//'ux.Xy',uu_xy2(:,:,1),nx,ny)
-        call wslice(path//'uy.Xy',uu_xy2(:,:,2),nx,ny)
-        call wslice(path//'uz.Xy',uu_xy2(:,:,3),nx,ny)
+        call wslice(path//'ux.yz',uu_yz(:,:,1),x(ix),ny,nz)
+        call wslice(path//'uy.yz',uu_yz(:,:,2),x(ix),ny,nz)
+        call wslice(path//'uz.yz',uu_yz(:,:,3),x(ix),ny,nz)
+        call wslice(path//'ux.xz',uu_xz(:,:,1),y(iy),nx,nz)
+        call wslice(path//'uy.xz',uu_xz(:,:,2),y(iy),nx,nz)
+        call wslice(path//'uz.xz',uu_xz(:,:,3),y(iy),nx,nz)
+        call wslice(path//'ux.xy',uu_xy(:,:,1),z(iz),nx,ny)
+        call wslice(path//'uy.xy',uu_xy(:,:,2),z(iz),nx,ny)
+        call wslice(path//'uz.xy',uu_xy(:,:,3),z(iz),nx,ny)
+        call wslice(path//'ux.Xy',uu_xy2(:,:,1),z(iz2),nx,ny)
+        call wslice(path//'uy.Xy',uu_xy2(:,:,2),z(iz2),nx,ny)
+        call wslice(path//'uz.Xy',uu_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
 !  logarithmic density
@@ -96,10 +96,10 @@ module Slices
         lnrho_xz=f(l1:l2,iy,n1:n2,ilnrho)
         lnrho_xy=f(l1:l2,m1:m2,iz,ilnrho)
         lnrho_xy2=f(l1:l2,m1:m2,iz2,ilnrho)
-        call wslice(path//'lnrho.yz',lnrho_yz,ny,nz)
-        call wslice(path//'lnrho.xz',lnrho_xz,nx,nz)
-        call wslice(path//'lnrho.xy',lnrho_xy,nx,ny)
-        call wslice(path//'lnrho.Xy',lnrho_xy2,nx,ny)
+        call wslice(path//'lnrho.yz',lnrho_yz,x(ix),ny,nz)
+        call wslice(path//'lnrho.xz',lnrho_xz,y(iy),nx,nz)
+        call wslice(path//'lnrho.xy',lnrho_xy,z(iz),nx,ny)
+        call wslice(path//'lnrho.Xy',lnrho_xy2,z(iz2),nx,ny)
       endif
 !
 !  Entropy
@@ -109,32 +109,32 @@ module Slices
         ss_xz=f(l1:l2,iy,n1:n2,ient)
         ss_xy=f(l1:l2,m1:m2,iz,ient)
         ss_xy2=f(l1:l2,m1:m2,iz2,ient)
-        call wslice(path//'ss.yz',ss_yz,ny,nz)
-        call wslice(path//'ss.xz',ss_xz,nx,nz)
-        call wslice(path//'ss.xy',ss_xy,nx,ny)
-        call wslice(path//'ss.Xy',ss_xy2,nx,ny)
+        call wslice(path//'ss.yz',ss_yz,x(ix),ny,nz)
+        call wslice(path//'ss.xz',ss_xz,y(iy),nx,nz)
+        call wslice(path//'ss.xy',ss_xy,z(iz),nx,ny)
+        call wslice(path//'ss.Xy',ss_xy2,z(iz2),nx,ny)
       endif
 !
 !  Magnetic field
 !
       if (lmagnetic) then
-        call wslice(path//'bx.yz',bb_yz(:,:,1),ny,nz)
-        call wslice(path//'by.yz',bb_yz(:,:,2),ny,nz)
-        call wslice(path//'bz.yz',bb_yz(:,:,3),ny,nz)
-        call wslice(path//'bx.xz',bb_xz(:,:,1),nx,nz)
-        call wslice(path//'by.xz',bb_xz(:,:,2),nx,nz)
-        call wslice(path//'bz.xz',bb_xz(:,:,3),nx,nz)
-        call wslice(path//'bx.xy',bb_xy(:,:,1),nx,ny)
-        call wslice(path//'by.xy',bb_xy(:,:,2),nx,ny)
-        call wslice(path//'bz.xy',bb_xy(:,:,3),nx,ny)
-        call wslice(path//'bx.Xy',bb_xy2(:,:,1),nx,ny)
-        call wslice(path//'by.Xy',bb_xy2(:,:,2),nx,ny)
-        call wslice(path//'bz.Xy',bb_xy2(:,:,3),nx,ny)
+        call wslice(path//'bx.yz',bb_yz(:,:,1),x(ix),ny,nz)
+        call wslice(path//'by.yz',bb_yz(:,:,2),x(ix),ny,nz)
+        call wslice(path//'bz.yz',bb_yz(:,:,3),x(ix),ny,nz)
+        call wslice(path//'bx.xz',bb_xz(:,:,1),y(iy),nx,nz)
+        call wslice(path//'by.xz',bb_xz(:,:,2),y(iy),nx,nz)
+        call wslice(path//'bz.xz',bb_xz(:,:,3),y(iy),nx,nz)
+        call wslice(path//'bx.xy',bb_xy(:,:,1),z(iz),nx,ny)
+        call wslice(path//'by.xy',bb_xy(:,:,2),z(iz),nx,ny)
+        call wslice(path//'bz.xy',bb_xy(:,:,3),z(iz),nx,ny)
+        call wslice(path//'bx.Xy',bb_xy2(:,:,1),z(iz2),nx,ny)
+        call wslice(path//'by.Xy',bb_xy2(:,:,2),z(iz2),nx,ny)
+        call wslice(path//'bz.Xy',bb_xy2(:,:,3),z(iz2),nx,ny)
       endif
 !
     endsubroutine wvid
 !***********************************************************************
-    subroutine wslice(file,a,ndim1,ndim2)
+    subroutine wslice(file,a,pos,ndim1,ndim2)
 !
 !  appending to an existing slice file
 !
@@ -143,9 +143,10 @@ module Slices
       integer :: ndim1,ndim2
       character (len=*) :: file
       real, dimension (ndim1,ndim2) :: a
+      real, intent(in) :: pos
 !
       open(1,file=file,form='unformatted',position='append')
-      write(1) a,t
+      write(1) a,t,pos
       close(1)
 !
     endsubroutine wslice

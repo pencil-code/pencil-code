@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.80 2002-11-05 11:08:25 dobler Exp $ 
+! $Id: param_io.f90,v 1.81 2002-11-19 10:51:52 mee Exp $ 
 
 module Param_IO
 
@@ -43,6 +43,7 @@ module Param_IO
        random_gen, &
        lrmwig_rho,lrmwig_full,lrmwig_xyaverage, &
        lwrite_zaverages,test_nonblocking, &
+       ix,iy,iz,iz2, &
        bcx,bcy,bcz, &
        ttransient,tavg,idx_tavg
   contains
