@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.48 2003-11-10 18:33:31 theine Exp $
+! $Id: radiation_ray.f90,v 1.49 2003-11-13 14:08:50 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -94,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.48 2003-11-10 18:33:31 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.49 2003-11-13 14:08:50 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -543,6 +543,7 @@ module Radiation
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata, only: ldebug,headt
+      use Slices, only: Isurf_xy
 !
       integer :: l,m,n
 !
@@ -560,6 +561,12 @@ module Radiation
       enddo
       enddo
       enddo
+!
+!  calculate surface intensity for upward rays
+!
+      if (lrad==0.and.mrad==0.and.nrad==1) then
+        Isurf_xy=Qrad(l1:l2,m1:m2,nnstop)+Srad(l1:l2,m1:m2,nnstop)
+      endif
 !
     endsubroutine Qrevision
 !***********************************************************************

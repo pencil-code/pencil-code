@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.27 2003-11-13 12:39:28 theine Exp $
+! $Id: slices.f90,v 1.28 2003-11-13 14:08:57 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -15,6 +15,7 @@ module Slices
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
+  real, dimension (nx,ny) :: Isurf_xy
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz,aa_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
@@ -219,7 +220,7 @@ module Slices
         call wslice(path//'yH.Xy',yH_xy2,z(iz2),nx,ny)
       endif
 !
-!  Heating rate
+!  Heating rate and surface intensity
 !
       if (lradiation_ray) then
         Qrad_yz=f(ix,m1:m2,n1:n2,iQrad)
@@ -230,6 +231,8 @@ module Slices
         call wslice(path//'Qrad.xz',Qrad_xz,y(iy),nx,nz)
         call wslice(path//'Qrad.xy',Qrad_xy,z(iz),nx,ny)
         call wslice(path//'Qrad.Xy',Qrad_xy2,z(iz2),nx,ny)
+!
+        call wslice(path//'Isurf.xy',Isurf_xy,z(iz2),nx,ny)
       endif
 !
 !  Magnetic field
