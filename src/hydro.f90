@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.34 2002-07-02 00:50:44 brandenb Exp $
+! $Id: hydro.f90,v 1.35 2002-07-02 17:08:54 nilshau Exp $
 
 module Hydro
 
@@ -19,11 +19,11 @@ module Hydro
 
   ! run parameters
   real, dimension (nx,3,3) :: sij
-  real :: Omega=0.,theta=0.
+  real :: theta=0.
   real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   namelist /hydro_run_pars/ &
        nu,ivisc, &
-       Omega,theta, &
+       theta, &
        tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.34 2002-07-02 00:50:44 brandenb Exp $")
+           "$Id: hydro.f90,v 1.35 2002-07-02 17:08:54 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -260,7 +260,7 @@ module Hydro
           c2=2*Omega*cos(theta*pi/180.)
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
-          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)+s2*uu(:,3)
+          df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-(c2-qshear)*uu(:,1)+s2*uu(:,3)
           df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
         endif
       endif

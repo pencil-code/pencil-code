@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $
+! $Id: equ.f90,v 1.69 2002-07-02 17:08:54 nilshau Exp $
 
 module Equ
 
@@ -198,6 +198,7 @@ module Equ
       use Magnetic
       use Boundcond
       use IO
+      use Rotation
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho
@@ -212,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.68 2002-06-27 22:02:59 brandenb Exp $")
+           "$Id: equ.f90,v 1.69 2002-07-02 17:08:54 nilshau Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -275,6 +276,10 @@ module Equ
 !  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
+!
+!  Add shear if precent
+!
+        if (lrotation) call shearing(f,df)
 !
 !  write slices for animation
 !  this needs to be put somewhere else for compactness

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.31 2002-06-27 22:02:59 brandenb Exp $ 
+! $Id: param_io.f90,v 1.32 2002-07-02 17:08:54 nilshau Exp $ 
 
 module Param_IO
 
@@ -14,6 +14,7 @@ module Param_IO
   use Gravity
   use Entropy
   use Magnetic
+  use Rotation
  
   implicit none 
 
@@ -22,11 +23,11 @@ module Param_IO
   integer :: iwig=0
 
   namelist /init_pars/ &
-       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite
+       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax,iwig, &
-       bcx,bcy,bcz
+       bcx,bcy,bcz,
  
   contains
 
@@ -49,6 +50,7 @@ module Param_IO
       if (lgrav)     read(1,NML=grav_init_pars  )
       if (lentropy)  read(1,NML=entropy_init_pars )
       if (lmagnetic) read(1,NML=magnetic_init_pars)
+      if (lrotation) read(1,NML=rotation_init_pars)
       close(1)
 !
 !  output on the console, but only when root processor
@@ -64,6 +66,7 @@ module Param_IO
         if (lgrav)     write(*,NML=grav_init_pars  )
         if (lentropy ) write(*,NML=entropy_init_pars )
         if (lmagnetic) write(*,NML=magnetic_init_pars)
+        if (lrotation) read(1,NML=rotation_init_pars)
       endif
 !
 !  set gamma1, cs20, and lnrho0
@@ -107,6 +110,7 @@ module Param_IO
       if (lgrav    ) read(1,NML=grav_run_pars  )
       if (lentropy ) read(1,NML=entropy_run_pars )
       if (lmagnetic) read(1,NML=magnetic_run_pars)
+      ! rotation needs no run parameters
       close(1)
 !
 !  print cvs id from first line
@@ -183,6 +187,7 @@ module Param_IO
         if (lgrav    ) write(*,NML=grav_run_pars  )
         if (lentropy ) write(*,NML=entropy_run_pars )
         if (lmagnetic) write(*,NML=magnetic_run_pars)
+        ! rotation needs no run parameters
       endif
 !
     endsubroutine print_runpars
@@ -195,7 +200,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing
+           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing,lrotation
 !
       if (lroot) then
         open(1,FILE='tmp/param.nml',DELIM='apostrophe')
@@ -206,6 +211,7 @@ module Param_IO
         if (lgrav    ) write(1,NML=grav_init_pars  )
         if (lentropy ) write(1,NML=entropy_init_pars )
         if (lmagnetic) write(1,NML=magnetic_init_pars)
+        if (lrotation) write(1,NML=rotation_init_pars)
         ! The following parameters need to be communicated to IDL
         ! Note: logicals will be written as Fortran integers
                        write(1,NML=lphysics         ) 
@@ -230,6 +236,7 @@ module Param_IO
         if (lgrav    ) read(1,NML=grav_init_pars  )
         if (lentropy ) read(1,NML=entropy_init_pars )
         if (lmagnetic) read(1,NML=magnetic_init_pars)
+        if (lrotation) read(1,NML=rotation_init_pars)
         close(1)
 !
       if (lroot.and.ip<14) then
@@ -254,6 +261,7 @@ module Param_IO
         if (lgrav    ) write(1,NML=grav_run_pars  )
         if (lentropy ) write(1,NML=entropy_run_pars )
         if (lmagnetic) write(1,NML=magnetic_run_pars)
+        ! rotation needs no run parameters
       endif
 !
     endsubroutine wparam2
