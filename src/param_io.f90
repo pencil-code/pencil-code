@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.39 2002-07-10 14:12:35 dobler Exp $ 
+! $Id: param_io.f90,v 1.40 2002-07-11 00:24:33 brandenb Exp $ 
 
 module Param_IO
 
@@ -21,7 +21,7 @@ module Param_IO
 
   ! run parameters
   real :: tmax=1e33
-  integer :: iwig=0
+  integer :: isave=100,iwig=0,ialive=0
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite
@@ -250,7 +250,7 @@ module Param_IO
       use Cdata
 !
       namelist /lphysics/ &
-           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lforcing,lshear
+           lhydro,ldensity,lgravz,lgravr,lentropy,lmagnetic,lpscalar,lforcing,lshear
 !
       if (lroot) then
         open(1,FILE='tmp/param.nml',DELIM='apostrophe')

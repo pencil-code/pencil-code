@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.64 2002-07-10 14:12:35 dobler Exp $
+! $Id: run.f90,v 1.65 2002-07-11 00:24:33 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -38,13 +38,13 @@
 !  call signal handler (for compaq machine only)
 !  currently disabled; want to put as include file
 !
-       call siginit
-       call signonbrutal
+!!     call siginit
+!!     call signonbrutal
 !
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.64 2002-07-10 14:12:35 dobler Exp $")
+             "$Id: run.f90,v 1.65 2002-07-11 00:24:33 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values

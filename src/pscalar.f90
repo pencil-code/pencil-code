@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.2 2002-07-08 06:51:51 brandenb Exp $
+! $Id: pscalar.f90,v 1.3 2002-07-11 00:24:33 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -24,7 +24,7 @@ module Pscalar
   real :: pscalar_diff=0.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar
+       pscalar_diff,nopscalar,tensor_pscalar_diff
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ccm=0,i_ccmax=0
@@ -60,7 +60,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.2 2002-07-08 06:51:51 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.3 2002-07-11 00:24:33 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,7 +130,7 @@ module Pscalar
 !
 !  passive scalar equation
 !
-        df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-uglncc
+        if(lhydro) df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-uglncc
 !
 !  diffusion operator
 !
@@ -142,6 +142,21 @@ module Pscalar
           df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
         endif
       endif
+!
+!  tensor diffusion (keep the isotropic one)
+!  dlnc/dt = ... + tensor_pscalar_diff*[Tij*Gi*Gj+Tij*Gij],
+!  where Gj=dlnc/dxj and Gij=d2lnc/(dxi*dxj) and 
+!
+        if (tensor_pscalar_diff/=0.) then
+          if(headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
+          call dot_mn(glncc+glnrho,glncc,diff_op)
+          call del2(f,ilncc,del2lncc)
+          diff_op=diff_op+del2lncc
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
+        endif
+      endif
+!
+!  diagnostics
 !
       if (ldiagnos) then
         cc=exp(f(l1:l2,m,n,ilncc))
