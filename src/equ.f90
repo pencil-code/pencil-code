@@ -268,7 +268,7 @@ module Equ
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
-      real, dimension(nx) :: rho,rho1,nurho1,nu_var,cs2,TT1,chi,diff,del2lam
+      real, dimension(nx) :: rho,rho1,nurho1,nu_var,chi,diff,del2lam
       real, dimension(nx) :: pdamp
       real :: diffrho
       integer :: i,j
@@ -278,8 +278,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.28 $", &
-           "$Date: 2002-05-01 19:57:05 $")
+           "$Revision: 1.29 $", &
+           "$Date: 2002-05-03 18:41:44 $")
 !
 !  initiate communication
 !
@@ -349,11 +349,11 @@ module Equ
         df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu + fvisc
 !
 !  entropy equation
+!  needs to be called once even with noentropy, because it is here that
+!  we set cs2 and TT1
 !
-        if (lentropy) then
+        if (lentropy .or. headtt) then
           call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
-        else
-          call stop_it('How do you get cs2, rho1, TT1?')
         endif
 !
 !  thermal part of eq. of motion (pressure force)

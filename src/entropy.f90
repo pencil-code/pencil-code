@@ -4,6 +4,7 @@ module Entropy
 
   implicit none
 
+  real, dimension (nx) :: cs2,TT1
   integer :: ient
 
   contains
@@ -39,8 +40,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.38 $", &
-           "$Date: 2002-05-01 19:57:05 $")
+           "$Revision: 1.39 $", &
+           "$Date: 2002-05-03 18:41:44 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

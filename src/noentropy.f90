@@ -8,7 +8,7 @@ module Entropy
 
   implicit none
 
-  real    :: cs2
+  real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
   integer :: ient
 
   contains
@@ -34,8 +34,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-05-03 17:47:45 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-05-03 18:41:44 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -53,7 +53,7 @@ module Entropy
       real :: ampl,beta1,cs2int,ssint
       integer :: init
 !
-      cs2 = cs20                ! Once and forever
+      cs2 = cs20                ! (Really needed?)
 !
     endsubroutine init_ent
 !***********************************************************************
@@ -66,7 +66,21 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho,gpprho
-      real, dimension (nx) :: divu,rho1,cs2,TT1,chi
+      real, dimension (nx) :: divu,rho1,chi
+      real, dimension (nx) :: cs2,TT1
+      logical, save :: first=.true.
+!
+      if (first) then
+        cs2 = cs20
+        TT1 = 1./cs20           ! Assumes R/mu = 1, ehich is probably OK,
+                                ! as the usual c_p = 1 does not work in the
+                                ! isothermal case
+        if (gamma /= 1) print*, 'Noentropy, thus resetting gamma to 1'
+        gamma = 1
+        first=.false.
+      else
+        print*,"Noentropy dss_dt: This can't happen"
+      endif
 !
     endsubroutine dss_dt
 !***********************************************************************
