@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.71 2002-07-04 14:52:39 dobler Exp $
+### $Id: Makefile,v 1.72 2002-07-04 15:01:59 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -7,14 +7,14 @@
 LIBSIG=-L$(HOME)/f90/lib  ##(Wolfgang, should we take this out?)
 LDMPI=-lmpi
 MPICOMM=nompicomm
-GLOBAL=noglobal
-GRAVITY=nograv
-FORCING=noforcing
-ENTROPY=noentropy
-MAGNETIC=nomagnetic
-SHEAR=shear
 HYDRO=hydro
 DENSITY=density
+ENTROPY=noentropy
+MAGNETIC=nomagnetic
+GRAVITY=nograv
+GLOBAL=noglobal
+FORCING=noforcing
+SHEAR=noshear
 IO=io_dist
 FFT=nofft
 DEBUG=debug_c
