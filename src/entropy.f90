@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.305 2004-05-01 13:34:21 ajohan Exp $
+! $Id: entropy.f90,v 1.306 2004-05-01 14:07:54 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.305 2004-05-01 13:34:21 ajohan Exp $")
+           "$Id: entropy.f90,v 1.306 2004-05-01 14:07:54 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1781,7 +1781,7 @@ module Entropy
       if(lshear_heat) then
         if (tau_nuturb /= 0. .and. lfirstpoint .and. itsub == 1) then
           nu_turb = nu_turb0*exp(-t/tau_nuturb)
-          if (nu_turb > nu_turb1) nu_turb = nu_turb1
+          if (nu_turb < nu_turb1) nu_turb = nu_turb1
         endif
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*nu_turb*(qshear*Omega)**2
       endif
