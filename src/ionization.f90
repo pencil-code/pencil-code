@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.87 2003-09-08 13:23:20 theine Exp $
+! $Id: ionization.f90,v 1.88 2003-09-09 09:08:45 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -40,7 +40,7 @@ module Ionization
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.,lionization_fixed=.false.
-  real :: yHacc=1e-5,xHe=0.1
+  real :: yHacc=1e-7,xHe=0.1
 
   ! input parameters
   namelist /ionization_init_pars/ xHe,yHacc
@@ -79,7 +79,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.87 2003-09-08 13:23:20 theine Exp $")
+           "$Id: ionization.f90,v 1.88 2003-09-09 09:08:45 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -538,27 +538,11 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
       integer              :: i
       integer, parameter   :: maxit=100
-
-      yHmax=1.-yHacc
-      yHmin=yHacc
-      dyHold=1.-2.*yHacc
+!
+      yHmax=1-yHacc
+      yHmin=1e-37
+      dyHold=yHmax-yHmin
       dyH=dyHold
-!
-!  return if y is too close to 0 or 1
-!
-      call saha(yHmin,lnrho,ss,fh,df)
-      if (fh.le.0.) then
-         yH=yHmin
-         return
-      endif
-      call saha(yHmax,lnrho,ss,fl,df)
-      if (fl.ge.0.) then
-         yH=yHmax
-         return
-      endif
-!
-!  otherwise find root
-!
       call saha(yH,lnrho,ss,f,df)
       do i=1,maxit
          if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
