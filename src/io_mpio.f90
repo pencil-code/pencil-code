@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.12 2002-11-24 13:14:59 mee Exp $
+! $Id: io_mpio.f90,v 1.13 2003-01-15 13:06:04 mee Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -96,7 +96,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.12 2002-11-24 13:14:59 mee Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.13 2003-01-15 13:06:04 mee Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -531,8 +531,24 @@ contains
         z(n2+i) = z(n2) + i*dz        
       enddo
 !
-      dxmax=max(dx,dy,dz)
-      dxmin=min(dx,dy,dz)
+      dxmax=0.
+      dxmin=HUGE(dxmin)
+
+      if (nxgrid/=1) then
+         dxmax=max(dxmax,dx)
+         dxmin=min(dxmin,dx)                  
+      endif
+
+      if (nygrid/=1) then
+         dxmax=max(dxmax,dy)
+         dxmin=min(dxmin,dy)                  
+      endif
+
+      if (nzgrid/=1) then
+         dxmax=max(dxmax,dz)
+         dxmin=min(dxmin,dz)                  
+      endif
+
       Lx=dx*nx*nprocx
       Ly=dy*ny*nprocy
       Lz=dz*nz*nprocz

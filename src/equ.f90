@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.115 2002-12-19 17:17:21 dobler Exp $
+! $Id: equ.f90,v 1.116 2003-01-15 13:06:04 mee Exp $
 
 module Equ
 
@@ -211,7 +211,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.115 2002-12-19 17:17:21 dobler Exp $")
+           "$Id: equ.f90,v 1.116 2003-01-15 13:06:04 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -312,6 +312,7 @@ module Equ
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
           facheat=dxmin/cdt
+
           call max_mn((facheat*maxheating)+ &
                sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
         endif

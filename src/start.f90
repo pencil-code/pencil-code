@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.73 2002-12-13 18:46:30 brandenb Exp $
+! $Id: start.f90,v 1.74 2003-01-15 13:06:04 mee Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.73 2002-12-13 18:46:30 brandenb Exp $")
+             "$Id: start.f90,v 1.74 2003-01-15 13:06:04 mee Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -54,7 +54,6 @@
 !  postprocess input parameters
 !
         gamma1 = gamma-1.
-!ajwm - Call run_hooks here???
 !
 !  I don't think there was a good reason to write param.nml twice (but
 !  leave this around for some time [wd; rev. 1.71, 5-nov-2002]

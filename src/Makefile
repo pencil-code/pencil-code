@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.138 2003-01-01 07:49:48 brandenb Exp $
+### $Id: Makefile,v 1.139 2003-01-15 13:06:04 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -237,3 +237,14 @@ clean:
 # Clean up all
 cleann: clean
 	rm -f makefile TAGS
+
+# Remove all build files, but keep executables
+run:
+	rm -f *.o *.mod *.d *.inc
+	rm -f work.pc work.pcl
+
+
+# Alternative to make run. To copy executables to parent directory.
+# Make clean(n) could then be run on the source.
+install:
+	cp *.x ../
