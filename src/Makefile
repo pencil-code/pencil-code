@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.238 2003-09-04 16:03:36 theine Exp $
+### $Id: Makefile,v 1.239 2003-09-10 12:12:05 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -330,7 +330,7 @@ read_vectorfiles.o: read_vectorfiles.f90 $(read_vectorfiles_deps)
 cparam.o:    cparam.f90 cparam.local cparam.inc
 cdata.o:     cdata.f90 cparam.o
 general.o:   general.f90 cparam.o cdata.o
-slices.o:    slices.f90 cdata.o sub.o
+slices.o:    slices.f90 cdata.o sub.o $(IONIZATION).o
 deriv.o:     deriv.f90 cdata.o
 fft.o:	     fft.f
 $(FFTPACK).o:   $(FFTPACK).f
@@ -358,13 +358,13 @@ $(FORCING).o:      $(FORCING).f90 cdata.o $(MPICOMM).o sub.o $(HYDRO).o
 $(ENTROPY).o:      $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(INTERSTELLAR).o $(IONIZATION).o
 $(MAGNETIC).o:     $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(FFT).o $(GRAVITY).o slices.o
 $(RADIATION).o:	   $(RADIATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC.o) $(DENSITY).o $(IONIZATION).o
-$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o 
+$(HYDRO).o:        $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(VISCOSITY).o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o $(VISCOSITY).o slices.o 
 $(DENSITY).o:      $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(INITCOND_SPEC).o $(GRAVITY).o 
 $(PSCALAR).o:      $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o
 $(DUSTVELOCITY).o: $(DUSTVELOCITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(HYDRO).o $(GRAVITY).o
 $(DUSTDENSITY).o:  $(DUSTDENSITY).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(DUSTVELOCITY).o
 $(INTERSTELLAR).o: $(INTERSTELLAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(IONIZATION).o #Expected deps!
-$(IONIZATION).o:   $(IONIZATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(DENSITY).o
+$(IONIZATION).o:   $(IONIZATION).f90 cdata.o $(MPICOMM).o sub.o initcond.o $(INITCOND_SPEC).o $(DENSITY).o $(GRAVITY).o
 $(IO).o:           $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 #$(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o ctimeavg.local
 $(TIMEAVG).o:      $(TIMEAVG).f90 cdata.o sub.o $(IO).o $(MPICOMM).o
