@@ -1,0 +1,39 @@
+#!/bin/csh
+
+# Name:   remote-top
+# Author: wd+ab
+# Date:    7-Oct-2002
+# $Id: remote-top,v 1.1 2002-10-07 18:02:50 brandenb Exp $
+# Description:
+#     does top -bn1 on all procs of nodelist, write to datadir
+
+set debug = 0
+
+if ($#argv > 0) then
+  if (($1 == "-v") || ($1 == "--verbose")) then
+    set debug = 1
+    shift
+  endif
+endif
+
+set targetdir = $PBS_O_WORKDIR/data
+set nodelist = `cat $PBS_NODEFILE`
+
+if ($debug) then
+  echo "targetdir = $targetdir"
+  echo "nodelist = $nodelist"
+endif
+
+while (1)
+  set i=0
+  foreach node ($nodelist)
+    if ($debug) echo "node=$node; targetdir=$targetdir"
+    rsh $node "top -bn1 > $targetdir/proc$i/top.log"
+    set i = `expr $i + 1`
+    echo 'i=' $i
+  end
+  sleep 20
+
+end
+
+# End of file

@@ -47,10 +47,16 @@ end
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
 
+# On Horseshoe cluster, copy executable to /scratch of master node
+if ($hn =~ s[0-9]*p[0-9]*) then
+  cp src/start.x /scratch/start.x
+  remote-top >& remote-top.log &
+endif
+
 # Run start.x
 date
-echo "$mpirun $mpirunops $npops src/start.x"
-time $mpirun $mpirunops $npops src/start.x
+echo "$mpirun $mpirunops $npops $start_x"
+time $mpirun $mpirunops $npops $start_x
 echo ""
 date
 

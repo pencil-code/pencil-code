@@ -37,6 +37,7 @@ if ($?varfile) then
   set i=0
   foreach node ($nodelist)
     if ($debug) echo "node=$node; targetdir=$targetdir"
+    rsh $node "ls -ltd $srcdir $srcdir/$varfile $targetdir/proc$i/"
     rsh $node "cp $srcdir/$varfile $targetdir/proc$i/"
     set i = `expr $i + 1`
     echo 'i=' $i

@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.7 2002-10-04 06:23:41 brandenb Exp $
+#  $Id: new,v 1.8 2002-10-07 18:02:50 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -15,7 +15,7 @@ cd $2
 #
 #  In the new run directory, call mkdatadir, and go there
 #
-$HOME/bin/mkdatadir
+$PENCIL_HOME/bin/mkdatadir
 mkdir src
 cd src
 #

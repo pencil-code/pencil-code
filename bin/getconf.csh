@@ -10,6 +10,10 @@
 # Are we running the MPI version?
 set mpi = `egrep -c '^[ 	]*MPICOMM[ 	]*=[ 	]*mpicomm' src/Makefile.local`
 
+# location of executables; can be overwritten below
+set start_x = "src/start.x"
+set run_x = "src/run.x"
+
 echo `uname -a`
 set hn = `hostname`
 if ($mpi) then
@@ -49,7 +53,10 @@ if ($mpi) then
     echo "lamndodes:"
     lamnodes
     set mpirun = mpirun
-    set mpirunops = "-O -s n0 N -lamd"
+    #set mpirunops = "-O -s n0 N -lamd"
+    set mpirunops = "-O -c2c -s n0 N -v"
+    set start_x = "/scratch/start.x"
+    set run_x = "/scratch/run.x"
 
   else
     echo "Use mpirun as the default option"
