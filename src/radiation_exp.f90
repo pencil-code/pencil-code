@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.84 2003-08-07 19:30:57 theine Exp $
+! $Id: radiation_exp.f90,v 1.85 2003-08-08 00:38:19 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -19,7 +19,6 @@ module Radiation
   integer, parameter :: radx0=1,rady0=1,radz0=1
   integer, parameter :: maxdir=190  ! 7^3 - 5^3 - 3^3 - 1^3 = 190
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
-  integer, dimension (mx,my,mz,3) :: pos
   logical, dimension (mx,my,mz) :: Iradset
   integer, dimension (maxdir,3) :: dir
   integer :: lrad,mrad,nrad,rad2
@@ -83,7 +82,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.84 2003-08-07 19:30:57 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.85 2003-08-08 00:38:19 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -139,18 +138,6 @@ module Radiation
       ndir=idir-1
 !
       print*,'initialize_radiation: ndir=',ndir
-!
-!  initialize position array
-!
-      do l=1,mx
-      do m=1,my
-      do n=1,mz
-         pos(l,m,n,1)=l
-         pos(l,m,n,2)=m
-         pos(l,m,n,3)=n
-      enddo
-      enddo
-      enddo
 !
 !  check boundary conditions
 !
@@ -290,12 +277,15 @@ module Radiation
 !
 !  determine start and stop positions
 !
-      if (lrad>=0) then; llstart=l1; llstop=mx; lsign=+1
-                   else; llstart=l2; llstop=1; lsign=-1; endif
-      if (mrad>=0) then; mmstart=m1; mmstop=my; msign=+1
-                   else; mmstart=m2; mmstop=1; msign=-1; endif
-      if (nrad>=0) then; nnstart=n1; nnstop=mz; nsign=+1
-                   else; nnstart=n2; nnstop=1; nsign=-1; endif
+      llstart=l1; llstop=l2; lsign=1
+      mmstart=m1; mmstop=m2; msign=1
+      nnstart=n1; nnstop=n2; nsign=1
+      if (lrad>0) then; llstart=l1; llstop=mx; lsign= 1; endif
+      if (lrad<0) then; llstart=l2; llstop= 1; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=my; msign= 1; endif
+      if (mrad<0) then; mmstart=m2; mmstop= 1; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=mz; nsign= 1; endif
+      if (nrad<0) then; nnstart=n2; nnstop= 1; nsign=-1; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -307,9 +297,9 @@ module Radiation
 !  Note: for dtau -> 0, the quantity (emdtau-1+dtau)/amax1(dtau,1e-38) goes
 !  linearly to zero. The amax1(dtau,dtaumin) construct avoids division by 0.
 !
-      do n=nnstart,nnstop,nsign
-      do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign 
+      do m=mmstart,mmstop,msign
+      do n=nnstart,nnstop,nsign
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           if (dtau<=1e-37) then
             emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)
@@ -322,7 +312,6 @@ module Radiation
                         +(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad)) &
                         *(emdtau-1+dtau)/dtau
           endif
-          pos(l,m,n,:)=pos(l-lrad,m-mrad,n-nrad,:)
       enddo
       enddo
       enddo
@@ -526,9 +515,9 @@ module Radiation
 !
 !  03-jul-03/tobi: coded
 !
-      use Cdata, only: m1,m2,lroot,ldebug,headt,m,n
+      use Cdata, only: lroot,ldebug,headt
 !
-      integer :: ll,mm,nn
+      integer :: m,n,raysteps
 !
 !  identifier
 !
@@ -536,36 +525,44 @@ module Radiation
 !
 !  initialize position array in ghost zones
 !
-      do l=llstop-lsign*radx0+lsign,llstop,lsign
-      do m=m1,m2
-      do n=n1,n2
-         ll=pos(l,m,n,1)
-         mm=pos(l,m,n,2)
-         nn=pos(l,m,n,3)
-         Irad0(l,m,n)=Irad0(ll,mm,nn)
-      enddo
-      enddo
-      enddo
-      do l=l1,l2
-      do m=mmstop-msign*rady0+msign,mmstop,msign
-      do n=n1,n2
-         ll=pos(l,m,n,1)
-         mm=pos(l,m,n,2)
-         nn=pos(l,m,n,3)
-         Irad0(l,m,n)=Irad0(ll,mm,nn)
-      enddo
-      enddo
-      enddo
-      do l=l1,l2
-      do m=m1,m2
-      do n=nnstop-nsign*radz0+nsign,nnstop,nsign
-         ll=pos(l,m,n,1)
-         mm=pos(l,m,n,2)
-         nn=pos(l,m,n,3)
-         Irad0(l,m,n)=Irad0(ll,mm,nn)
-      enddo
-      enddo
-      enddo
+      if (lrad/=0) then
+        do l=llstop-lsign*radx0+lsign,llstop,lsign
+        do m=mmstart,mmstop
+        do n=nnstart,nnstop
+          raysteps=(l-llstart)/lrad
+          if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
+          if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
+          Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
+        enddo
+        enddo
+        enddo
+      endif
+!
+      if (mrad/=0) then
+        do l=llstart,llstop
+        do m=mmstop-msign*rady0+msign,mmstop,msign
+        do n=nnstart,nnstop
+          raysteps=(m-mmstart)/mrad
+          if (nrad/=0) raysteps=min(raysteps,(n-nnstart)/nrad)
+          if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
+          Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
+        enddo
+        enddo
+        enddo
+      endif
+!
+      if (nrad/=0) then
+        do l=llstart,llstop
+        do m=mmstart,mmstop
+        do n=nnstop-nsign*radz0+nsign,nnstop,nsign
+          raysteps=(n-nnstart)/nrad
+          if (lrad/=0) raysteps=min(raysteps,(l-llstart)/lrad)
+          if (mrad/=0) raysteps=min(raysteps,(m-mmstart)/mrad)
+          Irad0(l,m,n)=Irad0(l-lrad*raysteps,m-mrad*raysteps,n-nrad*raysteps)
+        enddo
+        enddo
+        enddo
+      endif
 !
     endsubroutine propagate_intensity
 !***********************************************************************
