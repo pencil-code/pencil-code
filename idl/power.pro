@@ -1,7 +1,7 @@
 PRO power,var1,var2,last,w,k=k,spec1=spec1,spec2=spec2,i=i,tt=tt, $
-  noplot=noplot,tmin=tmin,tmax=tmax
+  noplot=noplot,tmin=tmin,tmax=tmax,tot=tot,lin=lin
 ;
-;  $Id: power.pro,v 1.15 2002-11-25 08:55:01 nilshau Exp $
+;  $Id: power.pro,v 1.16 2002-12-08 12:39:45 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -20,6 +20,8 @@ default,last,1
 default,w,0.1
 default,tmin,0
 default,tmax,1e34
+default,tot,0
+default,lin,0
 ;
 ;  plot only when iplot=1 (default)
 ;  can be turned off by using /noplot
@@ -106,26 +108,35 @@ openr,1, datatopdir+'/'+file1
        	maxy=max(spectrum1(1:*))
        	miny=min(spectrum1(1:*))
        	if (file2 ne '') then begin
-	   	readf,2,time
-	   	readf,2,spectrum2
-           	spec2(*,i-1)=spectrum2
-           	if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
-           	if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
+	  readf,2,time
+	  readf,2,spectrum2
+          spec2(*,i-1)=spectrum2
+          if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
+          if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        	endif
        	if (last eq 0) then begin
-		if (time ge tmin) then begin
-			if (time le tmax) then begin
- 		 		xrr=[1,imax]
-				yrr=[globalmin,globalmax]
-				!p.title='t=' + string(time)
-				!y.range=[globalmin,globalmax]
-         			if iplot eq 1 then begin
-				plot_oo,k,spectrum1
-         			if (file2 ne '') then oplot,k,spectrum2,col=122
-		                end
-         			wait,w
-			endif
+	  if (time ge tmin) then begin
+	    if (time le tmax) then begin
+	      xrr=[1,imax]
+	      yrr=[globalmin,globalmax]
+	      !p.title='t=' + string(time)
+	      !y.range=[globalmin,globalmax]
+              if iplot eq 1 then begin
+		plot_oo,k,spectrum1
+         	if (file2 ne '') then begin
+		  oplot,k,spectrum2,col=122
+		  if (tot eq 1) then begin
+		    oplot,k,spectrum1+spectrum2,col=47
+		  endif
 		endif
+	        if (lin ne 0) then begin
+		  fac=spectrum1(2)/k(2)^(lin)*1.5
+		  oplot,k(2:*),k(2:*)^(lin)*fac,lin=2
+		endif
+              	wait,w
+	      endif
+            endif
+	  endif
        	endif
        	i=i+1
     endwhile
@@ -133,7 +144,16 @@ openr,1, datatopdir+'/'+file1
 	!p.title='t=' + string(time)
 	!y.range=[miny,maxy]
 	plot_oo,k,spectrum1
-      	if (file2 ne '') then oplot,k,spectrum2,col=122
+      	if (file2 ne '') then begin
+		oplot,k,spectrum2,col=122
+		if (tot eq 1) then begin
+			oplot,k,spectrum1+spectrum2,col=47
+		endif
+	endif
+	if (lin ne 0) then begin
+		fac=spectrum1(2)/k(2)^(lin)*1.5
+		oplot,k(2:*),k(2:*)^(lin)*fac,lin=2
+	endif
     endif
 close,1
 close,2
