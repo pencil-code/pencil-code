@@ -1,11 +1,11 @@
 //
-// time: Thu Jul 11 22:23:37 2002
+// time: Tue Oct  1 22:40:22 2002
 //
 // version: 3.1.2 (format), 4.1.3 (DX)
 //
 //
 // MODULE main
-// workspace: width = 604, height = 621
+// workspace: width = 659, height = 621
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
@@ -27,12 +27,12 @@ main_Import_1_out_1 =
     // 
     // node Integer[1]: x = 236, y = 151, inputs = 11, label = Integer
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Integer_1"
-    // input[3]: defaulting = 0, visible = 0, type = 1, value = 563 
+    // input[3]: defaulting = 0, visible = 0, type = 1, value = 473 
     // input[5]: defaulting = 1, visible = 0, type = 1, value = -1000000
     // input[6]: defaulting = 1, visible = 0, type = 1, value = 1000000
     // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
     // input[9]: defaulting = 1, visible = 0, type = 1, value = 0
-    // output[1]: visible = 1, type = 1, value = 563 
+    // output[1]: visible = 1, type = 1, value = 473 
     //
     // 
     // node Sample[1]: x = 149, y = 226, inputs = 2, label = Sample
@@ -76,7 +76,7 @@ main_AutoColor_1_out_2 =
     main_AutoColor_1_in_10
     ) [instance: 1, cache: 1];
     // 
-    // node Import[2]: x = 261, y = 38, inputs = 6, label = Import
+    // node Import[2]: x = 267, y = 44, inputs = 6, label = Import
     // input[1]: defaulting = 0, visible = 1, type = 32, value = "tmp/lnrho.dx"
     //
 main_Import_2_out_1 = 
@@ -90,7 +90,7 @@ main_Import_2_out_1 =
     ) [instance: 2, cache: 1];
     // 
     // node Isosurface[1]: x = 313, y = 183, inputs = 6, label = Isosurface
-    // input[3]: defaulting = 0, visible = 1, type = 1, value = 1
+    // input[3]: defaulting = 0, visible = 1, type = 1, value = 5
     //
 main_Isosurface_1_out_1 = 
     Isosurface(
@@ -102,7 +102,7 @@ main_Isosurface_1_out_1 =
     main_Isosurface_1_in_6
     ) [instance: 1, cache: 1];
     // 
-    // node AutoColor[2]: x = 408, y = 318, inputs = 10, label = AutoColor
+    // node AutoColor[2]: x = 318, y = 326, inputs = 10, label = AutoColor
     // input[2]: defaulting = 0, visible = 0, type = 5, value = 0.5
     //
 main_AutoColor_2_out_1,
@@ -120,19 +120,32 @@ main_AutoColor_2_out_2 =
     main_AutoColor_2_in_10
     ) [instance: 2, cache: 1];
     // 
-    // node MapToPlane[1]: x = 470, y = 205, inputs = 3, label = MapToPlane
+    // node Compute[2]: x = 23, y = 208, inputs = 3, label = Compute
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "$0.x"
+    // expression: value = a.x
+    // name[2]: value = a
+    // name[3]: value = b
+    //
+main_Compute_2_out_1 = 
+    Compute(
+    main_Compute_2_in_1,
+    main_Import_1_out_1,
+    main_Compute_2_in_3
+    ) [instance: 2, cache: 1];
+    // 
+    // node MapToPlane[1]: x = 433, y = 169, inputs = 3, label = MapToPlane
     // input[2]: defaulting = 0, visible = 1, type = 8, value = [0 0 0]
     // input[3]: defaulting = 0, visible = 1, type = 8, value = [0 1 0]
     //
 main_MapToPlane_1_out_1 = 
     MapToPlane(
-    main_Import_2_out_1,
+    main_Compute_2_out_1,
     main_MapToPlane_1_in_2,
     main_MapToPlane_1_in_3
     ) [instance: 1, cache: 1];
     // 
-    // node Isosurface[2]: x = 522, y = 314, inputs = 6, label = Isosurface
-    // input[3]: defaulting = 0, visible = 1, type = 1, value = 20
+    // node Isosurface[2]: x = 432, y = 293, inputs = 6, label = Isosurface
+    // input[3]: defaulting = 0, visible = 1, type = 1, value = 5
     //
 main_Isosurface_2_out_1 = 
     Isosurface(
@@ -144,7 +157,7 @@ main_Isosurface_2_out_1 =
     main_Isosurface_2_in_6
     ) [instance: 2, cache: 1];
     // 
-    // node AutoColor[3]: x = 481, y = 453, inputs = 10, label = AutoColor
+    // node AutoColor[3]: x = 410, y = 406, inputs = 10, label = AutoColor
     //
 main_AutoColor_3_out_1,
 main_AutoColor_3_out_2 = 
@@ -161,16 +174,47 @@ main_AutoColor_3_out_2 =
     main_AutoColor_3_in_10
     ) [instance: 3, cache: 1];
     // 
-    // node Collect[1]: x = 297, y = 487, inputs = 3, label = Collect
+    // node Import[4]: x = 423, y = 45, inputs = 6, label = Import
+    // input[1]: defaulting = 0, visible = 1, type = 32, value = "tmp/lncc.dx"
+    //
+main_Import_4_out_1 = 
+    Import(
+    main_Import_4_in_1,
+    main_Import_4_in_2,
+    main_Import_4_in_3,
+    main_Import_4_in_4,
+    main_Import_4_in_5,
+    main_Import_4_in_6
+    ) [instance: 4, cache: 1];
+    // 
+    // node AutoColor[4]: x = 567, y = 264, inputs = 10, label = AutoColor
+    //
+main_AutoColor_4_out_1,
+main_AutoColor_4_out_2 = 
+    AutoColor(
+    main_Import_4_out_1,
+    main_AutoColor_4_in_2,
+    main_AutoColor_4_in_3,
+    main_AutoColor_4_in_4,
+    main_AutoColor_4_in_5,
+    main_AutoColor_4_in_6,
+    main_AutoColor_4_in_7,
+    main_AutoColor_4_in_8,
+    main_AutoColor_4_in_9,
+    main_AutoColor_4_in_10
+    ) [instance: 4, cache: 1];
+    // 
+    // node Collect[1]: x = 297, y = 487, inputs = 4, label = Collect
     //
 main_Collect_1_out_1 = 
     Collect(
     main_AutoColor_1_out_1,
-    main_Collect_1_in_2,
-    main_AutoColor_3_out_1
+    main_AutoColor_2_out_1,
+    main_AutoColor_3_out_1,
+    main_AutoColor_4_out_1
     ) [instance: 1, cache: 1];
     // 
-    // node Compute[1]: x = 535, y = 99, inputs = 3, label = Compute
+    // node Compute[1]: x = 590, y = 101, inputs = 3, label = Compute
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "mag($0)"
     // expression: value = mag(a)
     // name[2]: value = a
@@ -186,13 +230,13 @@ main_Compute_1_out_1 =
     // node Image[1]: x = 393, y = 559, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [-0.40438 0.70695 -0.513663]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-0.40438 -13.4333 -0.513663]
-    // input[7]: defaulting = 0, visible = 0, type = 5, value = 16.8036
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.495528 0.426491 0.13939]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [7.91592 -10.5839 5.00241]
+    // input[7]: defaulting = 0, visible = 0, type = 5, value = 11.5349
     // input[8]: defaulting = 0, visible = 0, type = 1, value = 804
     // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.799
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0 0 1]
-    // input[11]: defaulting = 1, visible = 0, type = 5, value = 61.4355
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [-0.102572 0.343233 0.933633]
+    // input[11]: defaulting = 1, visible = 0, type = 5, value = 44.3793
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -203,7 +247,7 @@ main_Compute_1_out_1 =
     // input[29]: defaulting = 0, visible = 0, type = 3, value = 1
     // input[41]: defaulting = 0, visible = 0, type = 32, value = "none"
     // depth: value = 24
-    // window: position = (0.4688,0.0342), size = 0.6391x0.6699
+    // window: position = (0.2398,0.2158), size = 0.6391x0.6699
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -260,19 +304,6 @@ main_Image_1_out_3 =
     main_Image_1_in_48,
     main_Image_1_in_49
     ) [instance: 1, cache: 1];
-    // 
-    // node Import[4]: x = 416, y = 43, inputs = 6, label = Import
-    // input[1]: defaulting = 0, visible = 1, type = 32, value = "tmp/ss.dx"
-    //
-main_Import_4_out_1 = 
-    Import(
-    main_Import_4_in_1,
-    main_Import_4_in_2,
-    main_Import_4_in_3,
-    main_Import_4_in_4,
-    main_Import_4_in_5,
-    main_Import_4_in_6
-    ) [instance: 4, cache: 1];
 // network: end of macro body
 CacheScene(main_Image_1_in_1, main_Image_1_out_1, main_Image_1_out_2);
 }
@@ -285,7 +316,7 @@ main_Import_1_in_6 = NULL;
 main_Import_1_out_1 = NULL;
 main_Integer_1_in_1 = "Integer_1";
 main_Integer_1_in_2 = NULL;
-main_Integer_1_in_3 = 563 ;
+main_Integer_1_in_3 = 473 ;
 main_Integer_1_in_4 = NULL;
 main_Integer_1_in_5 = NULL;
 main_Integer_1_in_6 = NULL;
@@ -294,7 +325,7 @@ main_Integer_1_in_8 = NULL;
 main_Integer_1_in_9 = NULL;
 main_Integer_1_in_10 = NULL;
 main_Integer_1_in_11 = NULL;
-main_Integer_1_out_1 = 563 ;
+main_Integer_1_out_1 = 473 ;
 main_Sample_1_out_1 = NULL;
 main_AutoGlyph_1_in_2 = "arrow";
 main_AutoGlyph_1_in_3 = 1.;
@@ -321,7 +352,7 @@ main_Import_2_in_5 = NULL;
 main_Import_2_in_6 = NULL;
 main_Import_2_out_1 = NULL;
 main_Isosurface_1_in_2 = NULL;
-main_Isosurface_1_in_3 = 1;
+main_Isosurface_1_in_3 = 5;
 main_Isosurface_1_in_4 = NULL;
 main_Isosurface_1_in_5 = NULL;
 main_Isosurface_1_in_6 = NULL;
@@ -335,11 +366,15 @@ main_AutoColor_2_in_7 = NULL;
 main_AutoColor_2_in_8 = NULL;
 main_AutoColor_2_in_9 = NULL;
 main_AutoColor_2_in_10 = NULL;
+main_AutoColor_2_out_1 = NULL;
+main_Compute_2_in_1 = "$0.x";
+main_Compute_2_in_3 = NULL;
+main_Compute_2_out_1 = NULL;
 main_MapToPlane_1_in_2 = [0 0 0];
 main_MapToPlane_1_in_3 = [0 1 0];
 main_MapToPlane_1_out_1 = NULL;
 main_Isosurface_2_in_2 = NULL;
-main_Isosurface_2_in_3 = 20;
+main_Isosurface_2_in_3 = 5;
 main_Isosurface_2_in_4 = NULL;
 main_Isosurface_2_in_5 = NULL;
 main_Isosurface_2_in_6 = NULL;
@@ -354,7 +389,23 @@ main_AutoColor_3_in_8 = NULL;
 main_AutoColor_3_in_9 = NULL;
 main_AutoColor_3_in_10 = NULL;
 main_AutoColor_3_out_1 = NULL;
-main_Collect_1_in_2 = NULL;
+main_Import_4_in_1 = "tmp/lncc.dx";
+main_Import_4_in_2 = NULL;
+main_Import_4_in_3 = NULL;
+main_Import_4_in_4 = NULL;
+main_Import_4_in_5 = NULL;
+main_Import_4_in_6 = NULL;
+main_Import_4_out_1 = NULL;
+main_AutoColor_4_in_2 = NULL;
+main_AutoColor_4_in_3 = NULL;
+main_AutoColor_4_in_4 = NULL;
+main_AutoColor_4_in_5 = NULL;
+main_AutoColor_4_in_6 = NULL;
+main_AutoColor_4_in_7 = NULL;
+main_AutoColor_4_in_8 = NULL;
+main_AutoColor_4_in_9 = NULL;
+main_AutoColor_4_in_10 = NULL;
+main_AutoColor_4_out_1 = NULL;
 main_Collect_1_out_1 = NULL;
 main_Compute_1_in_1 = "mag($0)";
 main_Compute_1_in_2 = NULL;
@@ -674,12 +725,12 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [-0.40438 0.70695 -0.513663];
-main_Image_1_in_6 = [-0.40438 -13.4333 -0.513663];
-main_Image_1_in_7 = 16.8036;
+main_Image_1_in_5 = [0.495528 0.426491 0.13939];
+main_Image_1_in_6 = [7.91592 -10.5839 5.00241];
+main_Image_1_in_7 = 11.5349;
 main_Image_1_in_8 = 804;
 main_Image_1_in_9 = 0.799;
-main_Image_1_in_10 = [0 0 1];
+main_Image_1_in_10 = [-0.102572 0.343233 0.933633];
 main_Image_1_in_11 = NULL;
 main_Image_1_in_12 = 0;
 main_Image_1_in_13 = NULL;
@@ -718,12 +769,6 @@ main_Image_1_in_46 = NULL;
 main_Image_1_in_47 = NULL;
 main_Image_1_in_48 = NULL;
 main_Image_1_in_49 = NULL;
-main_Import_4_in_1 = "tmp/ss.dx";
-main_Import_4_in_2 = NULL;
-main_Import_4_in_3 = NULL;
-main_Import_4_in_4 = NULL;
-main_Import_4_in_5 = NULL;
-main_Import_4_in_6 = NULL;
 Executive("product version 4 1 3");
 $sync
 main();
