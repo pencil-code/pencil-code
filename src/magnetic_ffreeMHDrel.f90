@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.3 2003-07-22 07:03:19 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -45,7 +45,8 @@ module Magnetic
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
+  integer :: i_dive2m=0,i_divee2m=0
+  integer :: i_e2m=0,i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_epsM=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
@@ -87,7 +88,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.2 2003-07-21 22:56:28 brandenb Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.3 2003-07-22 07:03:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -174,15 +175,9 @@ module Magnetic
 !***********************************************************************
     subroutine daa_dt(f,df,uu,rho1,TT1,uij)
 !
-!  magnetic field evolution
+!  solve relativistic force-free MHD equations 
 !
-!  calculate dA/dt=uxB+3/2 Omega_0 A_y x_dir -eta mu_0 J
-!  add JxB/rho to momentum equation
-!  add eta mu_0 J2/rho to entropy equation
-!
-!  22-nov-01/nils: coded
-!   1-may-02/wolf: adapted for pencil_modular
-!  17-jun-03/ulf:  added bx^2, by^2 and bz^2 as separate diagnostics
+!  21-jul-03/axel: turned to ffreeMHDrel, adapted from magnetic
 !
       use Cdata
       use Sub
@@ -205,7 +200,7 @@ module Magnetic
       real, dimension (nx,3) :: divS,curlS,curlB,curlE,del2S,del2A
       real, dimension (nx,3) :: SgB,BgS,BdivS,CxE,curlBxB,curlExE,divEE
       real, dimension (nx,3) :: glnrho
-      real, dimension (nx) :: B2,B21,divE,ou,o2,sij2
+      real, dimension (nx) :: B2,B21,E2,divE,divE2,divEE2,ou,o2,sij2
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
       real :: c2=1
 !
@@ -265,10 +260,11 @@ module Magnetic
 !
       call multmv_mn_transp(Bij,2*BB,CC)
 !
-!  calculate E = (BxS)/B2
+!  calculate E = (BxS)/B2, and then E2
 !
       call cross_mn(BB,SS,EE)
       call multvs_mn(EE,B21,EE)
+      call dot2_mn(EE,E2)
 !
 !  calculate divE = (S.curlB - B.curlS - C.E)/B2
 !
@@ -309,9 +305,13 @@ module Magnetic
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
         call dot_mn(aa,bbb,ab)
-        call dot2_mn(bbb,b2)
+        call dot2_mn(bbb,b2) !(squared field w/o imposed field)
+        call dot2_mn(divEE,divEE2)
         if (i_abm/=0)    call sum_mn_name(ab,i_abm)
         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
+        if (i_e2m/=0)    call sum_mn_name(e2,i_e2m)
+        if (i_dive2m/=0) call sum_mn_name(dive**2,i_dive2m)
+        if (i_divee2m/=0) call sum_mn_name(divee2,i_divee2m)
         if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
         if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
@@ -460,7 +460,8 @@ if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
+        i_dive2m=0; i_divee2m=0
+        i_e2m=0; i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_epsM=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
@@ -475,6 +476,9 @@ if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
         call parse_name(iname,cname(iname),cform(iname),'b2m',i_b2m)
+        call parse_name(iname,cname(iname),cform(iname),'e2m',i_e2m)
+        call parse_name(iname,cname(iname),cform(iname),'dive2m',i_dive2m)
+        call parse_name(iname,cname(iname),cform(iname),'divee2m',i_divee2m)
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
@@ -524,6 +528,9 @@ if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
       write(3,*) 'i_b2m=',i_b2m
+      write(3,*) 'i_e2m=',i_e2m
+      write(3,*) 'i_dive2m=',i_dive2m
+      write(3,*) 'i_divee2m=',i_divee2m
       write(3,*) 'i_bm2=',i_bm2
       write(3,*) 'i_j2m=',i_j2m
       write(3,*) 'i_jm2=',i_jm2

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.177 2003-07-07 10:19:53 brandenb Exp $
+! $Id: entropy.f90,v 1.178 2003-07-22 07:03:19 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -17,7 +17,9 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: ss_left,ss_right,chi=0.,chi_t=0.,ss0=0.,khor_ss=1.,ss_const=0.
+  real :: chi=0.,chi_t=0.,chi_shock=0.
+  real :: ss_left,ss_right
+  real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0., TT0=impossible,TT0top=impossible,TT0bot=impossible
   !parameters for Sedov type initial condition
   real :: center1_x=0., center1_y=0., center1_z=0.
@@ -45,7 +47,7 @@ module Entropy
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
-       chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
+       chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
        yH0,xHe,heat_uniform,lupw_ss
 
@@ -84,7 +86,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.177 2003-07-07 10:19:53 brandenb Exp $")
+           "$Id: entropy.f90,v 1.178 2003-07-22 07:03:19 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -632,6 +634,10 @@ module Entropy
         call calc_heatcond(f,df,rho1,glnrho,gss)
       endif
 !
+!  shock entropy diffusion
+!
+      if(chi_shock/=0.) call calc_heatcond_shock(f,df,rho1,glnrho,gss)
+!
 !  heating/cooling
 !
       if ((luminosity /= 0) .or. (cool /= 0) .or. (heat_uniform /= 0)) &
@@ -710,6 +716,14 @@ module Entropy
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
       if (headtt) print*,'calc_heatcond_simple: added thdiff'
 !
+!  shock entropy diffusivity
+!
+      if(chi_shock/=0.) then
+        if(lroot.and.ip<16) print*,'use shock diffusion'
+        call dot_mn(glnP,gss,g2)
+        thdiff = thdiff + chi_t*(del2ss+g2)
+      endif
+!
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
 !  gamma*chi*del2ss
@@ -718,6 +732,63 @@ module Entropy
 !
       if(ip==0) print*,rho1 !(to keep compiler quiet)
     endsubroutine calc_heatcond_constchi
+!***********************************************************************
+    subroutine calc_heatcond_shock(f,df,rho1,glnrho,gss)
+!
+!  Adds in shock entropy diffusion. There is potential for
+!  recycling some quantities from previous calculations.
+!
+!  20-jul-03/axel: adapted from calc_heatcond_constchi
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnP
+      real, dimension (nx) :: rho1
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+!
+      intent(in) :: f,glnrho,gss
+      intent(out) :: df
+!
+!  check that chi is ok
+!
+      if(headtt) print*,'calc_heatcond_shock: chi_shock==',chi_shock
+!
+!  Heat conduction
+!  Note: these routines require revision when ionization turned on
+!
+      call del2(f,ient,del2ss)
+      call del2(f,ilnrho,del2lnrho)
+      glnT = gamma*gss + gamma1*glnrho
+      glnP = gamma*gss + gamma*glnrho
+      call dot_mn(glnP,glnT,g2)
+!
+!  shock entropy diffusivity
+!XX
+      if(chi_shock/=0.) then
+        if(headtt) print*,'calc_heatcond_shock: use shock diffusion'
+        call dot_mn(glnP,gss,g2)
+        thdiff = (chi_t+chi_shock*f(l1:l2,m,n,ishock))*(del2ss+g2)
+      endif
+!
+!  add heat conduction to entropy equation
+!
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      if (headtt) print*,'calc_heatcond_shock: added thdiff'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chi*del2ss
+!
+!  NEED TO FIX THIS
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+!
+      if(ip==0) print*,rho1 !(to keep compiler quiet)
+    endsubroutine calc_heatcond_shock
 !***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
 !
@@ -1682,3 +1753,4 @@ endif
     end subroutine bc_ss_energy
 !***********************************************************************
 endmodule Entropy
+
