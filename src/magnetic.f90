@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.169 2003-12-13 19:10:12 theine Exp $
+! $Id: magnetic.f90,v 1.170 2004-01-07 19:02:11 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -113,7 +113,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.169 2003-12-13 19:10:12 theine Exp $")
+           "$Id: magnetic.f90,v 1.170 2004-01-07 19:02:11 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -272,7 +272,7 @@ module Magnetic
       real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock,rho1_JxB
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
-      real, dimension (nx) :: eta_mn,divA,eta_tot        ! dgm: 
+      real, dimension (nx) :: eta_mn,divA,eta_tot,del4A2        ! dgm: 
       real :: etatotal_max,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
@@ -542,6 +542,14 @@ module Magnetic
           if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
           if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
+        endif
+        !
+        ! epsM need del4A in cases with hyper resistivity
+        !
+        if (i_epsM/=0 .and. iresistivity.eq.'hyper3') then
+          call del4v(f,iaa,del4A)
+          call dot2_mn(del4A,del4A2)
+          if (i_epsM/=0) call sum_mn_name(eta*del4A2,i_epsM)
         endif
         !
         !  calculate surface integral <2ExA>*dS

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.201 2003-12-12 08:04:38 nilshau Exp $
+! $Id: cdata.f90,v 1.202 2004-01-07 19:02:11 nilshau Exp $
 
 module Cdata
 
@@ -48,7 +48,7 @@ module Cdata
   real :: nu=0.,cmu,cnu2
   real :: tdiagnos,t2davgfirst
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
-  real :: o2m,om2,oum
+  real :: o2m,om2,oum,epsK_hyper
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
   real :: grads0=0.   ! (1/c_p)ds/dz
   real :: Omega=0.,qshear=0.,Sshear=impossible

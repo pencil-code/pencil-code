@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.1 2003-12-12 08:04:38 nilshau Exp $
+! $Id: visc_hyper.f90,v 1.2 2004-01-07 19:02:11 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -52,7 +52,7 @@ module Viscosity
       lvisc_hyper = .true.
 !
       ihyper = mvar + naux + 1
-      naux = naux + 3 
+      naux = naux + 3
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: hyper viscosity nvar = ', nvar
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.1 2003-12-12 08:04:38 nilshau Exp $")
+           "$Id: visc_hyper.f90,v 1.2 2004-01-07 19:02:11 nilshau Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -144,6 +144,8 @@ module Viscosity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,3) :: tmp
+      real, dimension (nx,ny,nz) :: sij2
+      integer :: i,j
 !
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
 !
@@ -163,6 +165,37 @@ module Viscosity
         f(:,:,:,ihyper:ihyper+2)=tmp
       else
         call stop_it('visc_hyper:no such ivisc')          
+      endif
+!
+! find heating term (yet it only works for ivisc='hyper3')
+!
+      if (lout .and. (itsub.eq.itorder)) then
+        if (ivisc .eq. 'hyper3') then
+          sij2=0
+          do i=1,2
+            do j=i+1,3
+!
+! find uij and uji (stored in tmp in order to save space)
+!
+              call der_2nd_nof(f(:,:,:,iux+i-1),tmp(:,:,:,1),j) ! uij
+              call der_2nd_nof(f(:,:,:,iux+j-1),tmp(:,:,:,2),i) ! uji
+!
+! find (nabla2 uij) and (nable2 uji)
+!          
+              call del2_2nd_nof(tmp(:,:,:,1),tmp(:,:,:,3))
+              tmp(:,:,:,1)=tmp(:,:,:,3) ! nabla2 uij
+              call del2_2nd_nof(tmp(:,:,:,2),tmp(:,:,:,3))
+              tmp(:,:,:,2)=tmp(:,:,:,3) ! nabla2 uji
+!
+! find sij2 for full array
+!
+              sij2=sij2+tmp(l1:l2,m1:m2,n1:n2,1)*tmp(l1:l2,m1:m2,n1:n2,2) &
+                   +0.5*tmp(l1:l2,m1:m2,n1:n2,1)**2 &
+                   +0.5*tmp(l1:l2,m1:m2,n1:n2,2)**2 
+            enddo
+          enddo
+          epsK_hyper=2*nu*sum(exp(f(l1:l2,m1:m2,n1:n2,ilnrho))*sij2)
+        endif
       endif
 !
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
@@ -248,10 +281,13 @@ module Viscosity
         if (headtt.and.lroot) print*,'no viscous force: (nu=0)'
       endif
 !
+
+!print*,mean(fvisc)
+
       if(ip==0) print*,rho1,divu,shock,gshock !(to keep compiler quiet)
     end subroutine calc_viscous_force
 !***********************************************************************
-    subroutine derij_2nd(var,tmp,j)
+    subroutine der_2nd_nof(var,tmp,j)
 !
 !  24-nov-03/nils: coded
 !
@@ -299,7 +335,7 @@ module Viscosity
                             + 3.*var(:,:,mz  ))/(2.*dz) 
       endif
 !
-    end subroutine derij_2nd
+    end subroutine der_2nd_nof
 !***********************************************************************
     subroutine del2v_2nd(f,del2f,k)
 !
@@ -350,6 +386,30 @@ module Viscosity
       del2f=del2f+d2fd
 !
     endsubroutine del2_2nd
+!***********************************************************************
+    subroutine del2_2nd_nof(f,del2f)
+!
+!  calculate del2 of a scalar, get scalar
+!  same as del2_2nd but for the case where f is a scalar
+!  24-nov-03/nils: adapted from del2_2nd
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (mx,my,mz) :: del2f,d2fd
+      integer :: i
+!
+      intent (in) :: f
+      intent (out) :: del2f
+!
+      call der2_2nd_nof(f,d2fd,1)
+      del2f=d2fd
+      call der2_2nd_nof(f,d2fd,2)
+      del2f=del2f+d2fd
+      call der2_2nd_nof(f,d2fd,3)
+      del2f=del2f+d2fd
+!
+    endsubroutine del2_2nd_nof
 !***********************************************************************
     subroutine der2_2nd(f,der2f,i,j)
 !
@@ -419,6 +479,75 @@ module Viscosity
 !
     endsubroutine der2_2nd
 !***********************************************************************
+    subroutine der2_2nd_nof(f,der2f,j)
+!
+!  07-jan-04/nils: adapted from der2_2nd
+!  same as der2_2nd but for the case where f is a scalar
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (mx,my,mz) :: der2f
+      integer :: j
+!
+      intent (in) :: f,j
+      intent (out) :: der2f
+!
+      der2f=0.
+!
+      if (j==1 .and. nxgrid/=1) then
+        der2f(1     ,:,:) =    (+ 2.*f(1,:,:) &
+                               - 5.*f(2,:,:) &
+                               + 4.*f(3,:,:) &
+                               - 1.*f(4,:,:) ) &
+                               / (dx**2) 
+        der2f(2:mx-1,:,:) =    (+ 1.*f(1:mx-2,:,:) &
+                               - 2.*f(2:mx-1,:,:) &
+                               + 1.*f(3:mx  ,:,:) ) &
+                               / (dx**2) 
+        der2f(mx    ,:,:) =    (+ 2.*f(mx  ,:,:) &
+                               - 5.*f(mx-1,:,:) &
+                               + 4.*f(mx-2,:,:) &
+                               - 1.*f(mx-3,:,:) ) &
+                               / (dx**2) 
+      endif
+!
+     if (j==2 .and. nygrid/=1) then
+        der2f(:,1     ,:) =    (+ 2.*f(:,1,:) &
+                               - 5.*f(:,2,:) &
+                               + 4.*f(:,3,:) &
+                               - 1.*f(:,4,:) ) &
+                               / (dy**2) 
+        der2f(:,2:my-1,:) =    (+ 1.*f(:,1:my-2,:) &
+                               - 2.*f(:,2:my-1,:) &
+                               + 1.*f(:,3:my  ,:) ) &
+                               / (dy**2) 
+        der2f(:,my    ,:) =    (+ 2.*f(:,my  ,:) &
+                               - 5.*f(:,my-1,:) &
+                               + 4.*f(:,my-2,:) &
+                               - 1.*f(:,my-3,:) ) &
+                               / (dy**2) 
+      endif
+!
+     if (j==3 .and. nzgrid/=1) then
+        der2f(:,:,1     ) =    (+ 2.*f(:,:,1) &
+                               - 5.*f(:,:,2) &
+                               + 4.*f(:,:,3) &
+                               - 1.*f(:,:,4) ) &
+                               / (dz**2) 
+        der2f(:,:,2:mz-1) =    (+ 1.*f(:,:,1:mz-2) &
+                               - 2.*f(:,:,2:mz-1) &
+                               + 1.*f(:,:,3:mz  ) ) &
+                               / (dz**2) 
+        der2f(:,:,mz    ) =    (+ 2.*f(:,:,mz  ) &
+                               - 5.*f(:,:,mz-1) &
+                               + 4.*f(:,:,mz-2) &
+                               - 1.*f(:,:,mz-3) ) &
+                               / (dz**2) 
+      endif
+!
+    endsubroutine der2_2nd_nof
+!***********************************************************************
     subroutine divgrad_2nd(f,divgradf,k)
 !
 !  24-nov-03/nils: coded
@@ -439,29 +568,29 @@ module Viscosity
 !
       call der2_2nd(f,tmp,k1+1,1)
       divgradf(:,:,:,1)=tmp
-      call derij_2nd(f(:,:,:,k1+2),tmp,1)
-      call derij_2nd(tmp,tmp2,2)
+      call der_2nd_nof(f(:,:,:,k1+2),tmp,1)
+      call der_2nd_nof(tmp,tmp2,2)
       divgradf(:,:,:,1)=divgradf(:,:,:,1)+tmp2
-      call derij_2nd(f(:,:,:,k1+3),tmp,1)
-      call derij_2nd(tmp,tmp2,3)
+      call der_2nd_nof(f(:,:,:,k1+3),tmp,1)
+      call der_2nd_nof(tmp,tmp2,3)
       divgradf(:,:,:,1)=divgradf(:,:,:,1)+tmp2
 !
       call der2_2nd(f,tmp,k1+2,2)
       divgradf(:,:,:,2)=tmp
-      call derij_2nd(f(:,:,:,k1+1),tmp,1)
-      call derij_2nd(tmp,tmp2,2)
+      call der_2nd_nof(f(:,:,:,k1+1),tmp,1)
+      call der_2nd_nof(tmp,tmp2,2)
       divgradf(:,:,:,2)=divgradf(:,:,:,2)+tmp2
-      call derij_2nd(f(:,:,:,k1+3),tmp,2)
-      call derij_2nd(tmp,tmp2,3)
+      call der_2nd_nof(f(:,:,:,k1+3),tmp,2)
+      call der_2nd_nof(tmp,tmp2,3)
       divgradf(:,:,:,2)=divgradf(:,:,:,2)+tmp2
 !
       call der2_2nd(f,tmp,k1+3,3)
       divgradf(:,:,:,3)=tmp
-      call derij_2nd(f(:,:,:,k1+1),tmp,1)
-      call derij_2nd(tmp,tmp2,3)
+      call der_2nd_nof(f(:,:,:,k1+1),tmp,1)
+      call der_2nd_nof(tmp,tmp2,3)
       divgradf(:,:,:,3)=divgradf(:,:,:,3)+tmp2
-      call derij_2nd(f(:,:,:,k1+2),tmp,2)
-      call derij_2nd(tmp,tmp2,3)
+      call der_2nd_nof(f(:,:,:,k1+2),tmp,2)
+      call der_2nd_nof(tmp,tmp2,3)
       divgradf(:,:,:,3)=divgradf(:,:,:,3)+tmp2
 !
     endsubroutine divgrad_2nd

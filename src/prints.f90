@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.60 2003-12-07 08:42:14 brandenb Exp $
+! $Id: prints.f90,v 1.61 2004-01-07 19:02:11 nilshau Exp $
 
 module Print
 
@@ -90,6 +90,12 @@ module Print
         if (lmagnetic) call calc_mfield
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
+!
+!  in case of lvisc_hyper=true epsK is calculated for the whole array 
+!  at not just for one pencil, it must therefore be added outside the
+!  m,n loop. 
+!
+        if (lvisc_hyper) fname(i_epsK)=epsK_hyper/(nw*ncpus)
 !
 !  whenever itype_name=-3, scale result by dt (for printing Courant time)
 !  This trick is necessary, because dt is not known at the time when
