@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.2 2003-02-21 20:21:52 brandenb Exp $
+! $Id: noionization.f90,v 1.3 2003-02-23 07:41:27 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -46,9 +46,10 @@ module Ionization
 !
       use Cdata
       use General
+      use Sub
 !
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
-      real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS
+      real, dimension (nx) :: TT,dlnPdlnrho,dlnPdS,rho,ee
       real :: ss0=-5.5542
 !
 !  calculate cs2, 1/T, and cp1tilde
@@ -70,6 +71,14 @@ module Ionization
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
         cp1tilde=1.
+      endif
+!
+!  calculation of internal energy
+!
+      if (ldiagnos.and.i_eth/=0) then
+        rho=exp(lnrho)
+        ee=cs2/(gamma*gamma1) !(not correct with ionization)
+        call sum_mn_name(rho*ee,i_eth)
       endif
 !
     endsubroutine thermodynamics

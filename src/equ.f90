@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.123 2003-02-21 20:21:52 brandenb Exp $
+! $Id: equ.f90,v 1.124 2003-02-23 07:41:27 brandenb Exp $
 
 module Equ
 
@@ -199,7 +199,7 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
+      real, dimension (nx) :: lnrho,divu,u2,rho,rho1
       real :: fac, facheat
 !
 !  print statements when they are first executed
@@ -208,7 +208,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.123 2003-02-21 20:21:52 brandenb Exp $")
+           "$Id: equ.f90,v 1.124 2003-02-23 07:41:27 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -329,8 +329,8 @@ module Equ
             ! Nothing seems to depend on lhydro here:
             ! if(lhydro) then
             rho=exp(f(l1:l2,m,n,ilnrho))
-            if (gamma1/=0.) ee=cs2/(gamma*gamma1)             !(this needs to be calculated in ionization)
-            if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
+!           if (gamma1/=0.) ee=cs2/(gamma*gamma1)             !(this needs to be calculated in ionization)
+!           if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
           endif

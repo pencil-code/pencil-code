@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.7 2003-02-21 20:21:52 brandenb Exp $
+! $Id: ionization.f90,v 1.8 2003-02-23 07:41:27 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -51,7 +51,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.7 2003-02-21 20:21:52 brandenb Exp $")
+           "$Id: ionization.f90,v 1.8 2003-02-23 07:41:27 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,13 +75,23 @@ module Ionization
       logical :: exist
 !
 !  ionization parameters
+!  since m_e and chiH, as well as hbar are all very small
+!  it is better to divide m_e and chiH separately by hbar.
 !
       chiH=13.6*eV
       lnTT_ion=log(chiH/k_B)
       lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/(2*pi))+log(m_p+m_e)
       ss_ion=k_B/m_p
+      if(lroot) then
+        print*,'initialize_ionization: reference values for ionization'
+        print*,'lnTT_ion,exp(lnTT_ion)=',lnTT_ion,exp(lnTT_ion)
+        print*,'lnrho_ion,exp(lnrho_ion)=',lnrho_ion,exp(lnrho_ion)
+        print*,'ss_ion=',ss_ion
+      endif
 !
 !  to be removed
+!AB: Tobi, can you do that when you are done?
+!
       nqe=2.414703e15
       nqp=1.899883e20
 !
@@ -100,9 +110,10 @@ module Ionization
 !
       use Cdata
       use General
+      use Sub
 !
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1,cp1tilde
-      real, dimension (nx) :: yH,logTT,dlnPdlnrho,dlnPdS,TT
+      real, dimension (nx) :: yH,logTT,dlnPdlnrho,dlnPdS,TT,rho,ee
       real :: ss0=-5.5542
 !
 !  calculate cs2, 1/T, and cp1tilde
@@ -112,20 +123,19 @@ module Ionization
         call pressure_gradient(lnrho,ss,dlnPdlnrho,dlnPdS)
         call logtemperature(lnrho,ss,yH,logTT)
         TT=exp(logTT); TT1=1./TT
+!AB: Tobi plans to measure entropy in physical units, and not in kB/mp
+!AB: until this is the case, we cannot use T1=1/T, but have to use
+!AB: TT1=1/(ss_ion*TT)
+        TT1=TT1/ss_ion
 ! later: change logTT to TT and logtemperature to temperature
         cs2=(1.+yH)*ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
+        if (ldiagnos.and.i_eth/=0) then
+          rho=exp(lnrho)
+          ee=cs2/(gamma*gamma1) !(not correct with ionization)
+          call sum_mn_name(rho*ee,i_eth)
+        endif
       else
-!
-!  if ionization turned off, continue assuming cp=1
-!
-!       if(headtt) print*,'thermodynamics: assume cp=1'
-!
-!  old case: cp=1
-!  
-!       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
-!       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-!       cp1tilde=1.
 !
 !  new case: cp-cv=1, ie cp=2.5
 !
@@ -136,6 +146,11 @@ module Ionization
         TT=exp(logTT); TT1=1./TT
         cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
+        if (ldiagnos.and.i_eth/=0) then
+          rho=exp(lnrho)
+          ee=cs2/(gamma*gamma1) !(not correct with ionization)
+          call sum_mn_name(rho*ee,i_eth)
+        endif
       endif
 !
     endsubroutine thermodynamics
