@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.222 2004-07-24 07:47:14 brandenb Exp $
+! $Id: equ.f90,v 1.223 2004-08-25 08:34:04 bingert Exp $
 
 module Equ
 
@@ -261,7 +261,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.222 2004-07-24 07:47:14 brandenb Exp $")
+           "$Id: equ.f90,v 1.223 2004-08-25 08:34:04 bingert Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -376,9 +376,7 @@ module Equ
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
 !
-
-        call calculate_some_vars(f,rho1,bb)
-
+        call calculate_some_vars(f,rho1,bb,bij)
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
@@ -559,7 +557,7 @@ module Equ
 !
     endsubroutine debug_imn_arrays
 !***********************************************************************
-     subroutine calculate_some_vars(f,rho1,bb)
+     subroutine calculate_some_vars(f,rho1,bb,bij)
 !
 !   Calculation of some variables used by routines later at time
 !
@@ -571,9 +569,10 @@ module Equ
        real, dimension (mx,my,mz,mvar+maux) :: f
        real, dimension (nx) :: rho1
        real, dimension (nx,3) :: bb
+       real, dimension (nx,3,3) :: bij
 
        intent(in)  :: f
-       intent(out) :: rho1,bb
+       intent(out) :: rho1,bb,bij
        
        if (ldensity .or. ldensity_fixed) then
           call calculate_vars_rho(f,rho1)
@@ -582,7 +581,7 @@ module Equ
        endif
 
        if (lmagnetic) then
-          call calculate_vars_magnetic(f,bb)
+          call calculate_vars_magnetic(f,bb,bij)
        else
           bb=0.                 ! Default for nomagnetic.f90
        endif

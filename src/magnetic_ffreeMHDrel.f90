@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.26 2004-08-24 18:51:45 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.27 2004-08-25 08:34:04 bingert Exp $
 
 !  Relativistic treatment of force-free magnetic fields.
 !  Still quite experimental.
@@ -102,7 +102,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.26 2004-08-24 18:51:45 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.27 2004-08-25 08:34:04 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -493,7 +493,7 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb)
+    subroutine calculate_vars_magnetic(f,bb,bij)
 !
 !  calculate bb
 !  possibility to add external field
@@ -505,12 +505,15 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
       use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx,3) :: bb
+      real, dimension (nx,3,3) :: bij
+      real, dimension (nx,3) :: bb,dummy
 
+      
       intent(in)  :: f
-      intent(out) :: bb
+      intent(out) :: bb,bij
 
       call curl(f,iaa,bb)
+      call bij_etc(f,iaa,bij,dummy)
 !
 !  possibility to add external field
 !  Note; for diagnostics purposes keep copy of original field

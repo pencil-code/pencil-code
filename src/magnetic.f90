@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.219 2004-08-24 18:51:45 dobler Exp $
+! $Id: magnetic.f90,v 1.220 2004-08-25 08:34:04 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -144,7 +144,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.219 2004-08-24 18:51:45 dobler Exp $")
+           "$Id: magnetic.f90,v 1.220 2004-08-25 08:34:04 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -879,7 +879,7 @@ module Magnetic
           call sum_mn_name(b2b13,i_b2b13m)
         endif
         !
-      endif
+      endif      
 !
 !  debug output
 !
@@ -895,7 +895,7 @@ module Magnetic
 !     
     endsubroutine daa_dt
 !***********************************************************************
-    subroutine calculate_vars_magnetic(f,bb)
+    subroutine calculate_vars_magnetic(f,bb,bij)
 !
 !  Calculation of bb
 !
@@ -908,14 +908,17 @@ module Magnetic
       use Global, only: get_global
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx,3) :: bb
+      real, dimension (nx,3,3) :: bij
+      real, dimension (nx,3) :: bb,dummy
       real, dimension (nx,3) :: bb_ext,bb_ext_pot
       real :: B2_ext,c,s
-      
+
       intent(in)  :: f
-      intent(out) :: bb
+      intent(out) :: bb,bij
       
       call curl(f,iaa,bb)
+!
+      call bij_etc(f,iaa,bij,dummy)
 !
 !  Note; for diagnostics purposes keep copy of original field
 !
