@@ -1,7 +1,7 @@
 PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i,t=t, $
   noplot=noplot
 ;
-;  $Id: power.pro,v 1.12 2002-10-23 09:53:56 tarek Exp $
+;  $Id: power.pro,v 1.13 2002-10-23 13:52:12 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -74,8 +74,6 @@ openr,1, datatopdir+'/'+file1
     endwhile
 close,1
 spec1=fltarr(imax,i-1)
-urms=fltarr(i-1)
-brms=fltarr(i-1)
 t=fltarr(i-1)
 lasti=i-2
 ;
@@ -119,10 +117,7 @@ openr,1, datatopdir+'/'+file1
                   plot_oo,k,spectrum1
          	  if (file2 ne '') then oplot,k,spectrum2,col=122
                 end
-                ; Nils, are these being used??
-		urms(i-1)=total(spectrum1)/2.
-		brms(i-1)=total(spectrum2)/2.
-         	wait,.1
+         	wait,.2
        	endif
        	i=i+1
     endwhile
