@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.50 2003-05-20 18:38:46 mee Exp $
+# $Id: getconf.csh,v 1.51 2003-05-29 17:58:25 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -76,7 +76,7 @@ if ($mpi) then
        set run_x = $SCRATCH_DIR/run.x
     endif
 
-  else if ($hn =~ s[0-9]*p[0-9]*) then
+  else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     if ($?RUNNINGMPICH) then
       echo "Running using MPICH"
       set mpirunops = "-machinefile $PBS_NODEFILE"
@@ -126,7 +126,7 @@ if ($mpi) then
     set mpirun = mpiexec
     
   else
-    echo "Use mpirun as the default option"
+    echo "Use mpirun as the default option; hostname is <$hn>"
     set mpirun = mpirun
   endif
 
@@ -187,6 +187,8 @@ else
   set datadir = "data"
 endif
 echo "datadir = $datadir"
+echo "$datadir :"
+ls -l $datadir/
 
 # If local disc is used, write name into $datadir/directory_snap.
 # This will be read by the code, if the file exists.
@@ -198,9 +200,5 @@ else
 endif
 
 exit
-
-# If we are using local disk, the directory name is written into
-# data/directory_snap. This is read by the code during run time
-if ($local_disc) echo $SCRATCH_DIR >$datadir/directory_snap
 
 # End of file getconf.csh
