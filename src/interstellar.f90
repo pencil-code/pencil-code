@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.67 2003-11-19 16:41:51 theine Exp $
+! $Id: interstellar.f90,v 1.68 2003-11-20 17:10:04 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.67 2003-11-19 16:41:51 theine Exp $")
+           "$Id: interstellar.f90,v 1.68 2003-11-20 17:10:04 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -755,29 +755,31 @@ find_SN: do n=n1,n2
          ! must know the total moved mass BEFORE attempting mass relocation 
 
          ! ASSUME: SN will fully ionize the gas at its centre
-         call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
-         lnrho_SN_new=alog(rho_SN_new)
+         if (lmove_mass) then
+           call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
+           lnrho_SN_new=alog(rho_SN_new)
 
-         call eoscalc('lnrho|ss',lnrho_SN_new,ss_SN_new, &
+           call eoscalc('lnrho|ss',lnrho_SN_new,ss_SN_new, &
                                  yH=yH_SN_new,lnTT=lnTT_SN_new,ee=ee_SN)
-         TT_SN_new=exp(lnTT_SN_new)
-         call eoscalc('lnrho|ee',lnrho_SN_new,(ee_SN*rho_SN+c_SN)/rho_SN_new, &
+           TT_SN_new=exp(lnTT_SN_new)
+           call eoscalc('lnrho|ee',lnrho_SN_new,(ee_SN*rho_SN+c_SN)/rho_SN_new, &
                                  ss=ss_SN_new,lnTT=lnTT_SN_new,yH=yH_SN_new)
-         TT_SN_new=exp(lnTT_SN_new)
+           TT_SN_new=exp(lnTT_SN_new)
 
-         if(lroot.and.ip<=14) print*, &
-            'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
+           if(lroot.and.ip<=14) print*, &
+              'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
                                                      TT_SN_new,rho_SN_new
 
-         call calcmassprofileintegral_SN(f,width_SN,profile_integral)
-         fmpi1_tmp=(/ profile_integral /)
-         call mpireduce_sum(fmpi1_tmp,fmpi1,1) 
-         call mpibcast_real(fmpi1,1)
-         profile_integral=fmpi1(1)*dv
-         mass_shell=-(rho_SN_new-rho_SN)*profile_integral
-         if (lroot.and.ip<=14) &
-           print*, 'explode_SN: mass_shell=',mass_shell
-         mass_gain=0.
+           call calcmassprofileintegral_SN(f,width_SN,profile_integral)
+           fmpi1_tmp=(/ profile_integral /)
+           call mpireduce_sum(fmpi1_tmp,fmpi1,1) 
+           call mpibcast_real(fmpi1,1)
+           profile_integral=fmpi1(1)*dv
+           mass_shell=-(rho_SN_new-rho_SN)*profile_integral
+           if (lroot.and.ip<=14) &
+             print*, 'explode_SN: mass_shell=',mass_shell
+           mass_gain=0.
+         endif
       endif
       
 
