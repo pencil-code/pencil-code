@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.130 2002-10-11 16:12:39 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.131 2002-10-15 16:03:55 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.130 $ $}
+\date{\today,~ $ $Revision: 1.131 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.130 $ $}
+  \emph{\today,~ $ $Revision: 1.131 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2187,9 +2187,19 @@ derivative.
 \subsection{Equation of motion}
 \label{S-Eqn-of-motion}
 
-In the equation of motion, the pressure gradient term,
-$\varrho^{-1}\boldsymbol\nabla p$, can be expressed in
-terms of $\varrho$ and $s/c_p$ to give
+In the equation of motion, the pressure term,
+can be expressed as
+$-\varrho^{-1}\grad p = -\cs^2(\grad s/c_p+\grad\ln\varrho)$, 
+where the squared sound speed is given by
+\begin{equation}
+  \cs^2 = \gamma \frac{p}{\varrho}
+        = c_{\rm s0}^2\exp\left[\gamma s/c_p
+                                + (\gamma{-}1)\ln\frac{\varrho}{\varrho_0}
+                               \right],
+\end{equation}
+and $\gamma=c_p/c_v$ is the ratio of specific heats, or \emph{adiabatic index}.
+
+The equation of motion is accordingly
 \begin{equation}
   \frac{D\uv}{Dt}
    =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
@@ -2198,14 +2208,7 @@ terms of $\varrho$ and $s/c_p$ to give
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
       + 2\Strain\cdot\grad\ln\varrho\right) \; .
 \end{equation}
-The sound speed squared, $\cs^2 = \gamma p/\varrho$, is obtained
-in the form
-\begin{equation}
-c_{\rm s}^2=c_{\rm s0}^2\exp\left[(\gamma-1)\ln\varrho/\varrho_0
-+\gamma s/c_p\right],
-\end{equation}
-where $\gamma=c_p/c_v$ the ratio of specific heats or \emph{adiabatic index},
-$\Phi_{\rm grav}$ is the gravity potential,
+Here $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
 the magnetic flux density, $\nu$ is kinematic viscosity, and
 \begin{equation} \label{Eq-S-traceless}
@@ -3998,16 +4001,21 @@ the latest set of parameters, you need to look at the code.
   \var{nu} [$0.$]
                & kinematic viscosity. \\
   \var{ivisc} [\code{'nu-const'}]
-               & select form of viscous term; currently valid choices are
+               & select form of viscous term (see
+                 \S\ref{S-Eqn-of-motion}); currently valid choices are
                  \begin{description}
-                 \item[\code{'simplified'}] -- simplified viscous force
-                   $\Fv_{\rm visc}=\nu\Laplace\uv$
-                 \item[\code{'rho_nu-const'}] -- viscous force for
-                   $\mu\equiv\varrho\nu=\const$,
-                   $\Fv_{\rm visc}=(\mu/\varrho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$
                  \item[\code{'nu-const'}] -- viscous force for $\nu=\const$,
                    $\Fv_{\rm visc}=\nu(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv
                     + 2\mathsf{S}\cdot\grad\ln\varrho)$
+                 \item[\code{'rho_nu-const'}] -- viscous force for
+                   $\mu\equiv\varrho\nu=\const$,
+                   $\Fv_{\rm visc}=(\mu/\varrho)(\Laplace\uv+{\textstyle{1\over3}}\grad\Div\uv)$.
+                   With this option, the input parameter \var{nu} actually
+                   sets the value of $\mu/\varrho_0$
+                   (\var{rho0}=$\varrho_0$ is another input parameter, see
+                   pp.~\pageref{cs0-rho0-init} and \pageref{cs0-rho0-run})
+                 \item[\code{'simplified'}] -- simplified viscous force
+                   $\Fv_{\rm visc}=\nu\Laplace\uv$
                  \end{description}
                  \\
   \var{Omega} [$0.$]
@@ -4041,7 +4049,8 @@ the latest set of parameters, you need to look at the code.
   \var{cs0} [start], \\
   \var{rho0} [start], \\
   \var{gamma} [start]
-               & see start parameters, p.~\pageref{cs0-rho0-init} \\
+               & \label{cs0-rho0-run}%
+                 see start parameters, p.~\pageref{cs0-rho0-init} \\
   \var{cdiffrho} [$0.$]
                & Coefficient for mass diffusion (diffusion term will be
                  $c_{\rm diffrho}\,\delta x\, {\cs}_0$ . \\
@@ -4331,7 +4340,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.130 2002-10-11 16:12:39 dobler Exp $ $}
+$ $Id: manual.tex,v 1.131 2002-10-15 16:03:55 dobler Exp $ $}
 
 
 \end{document}
