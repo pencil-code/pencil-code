@@ -1,12 +1,12 @@
 #!/bin/csh
 #
-#  $Id: tsnap-all,v 1.1 2004-01-26 12:47:34 brandenb Exp $
+#  $Id: tsnap-all,v 1.2 2004-01-26 23:20:07 brandenb Exp $
 #
 #  Runs tsnap (to get time of snapshot) for all var.dat files
 #  If a number is given as argument it runs tsnap for all VAR files
 #
 if ($#argv == 1) then
-  tsnap data/proc*/VAR$1
+  tsnap data/proc*/VAR$1 | sort -nk 1.10
 else
-  tsnap data/proc*/var.dat
+  tsnap data/proc*/var.dat | sort -nk 1.10
 endif
