@@ -111,9 +111,9 @@ if not keyword_set(TEST) then begin
 
   m_H=1.6726D-24
   mu=param.mu
-  dx=data.dx*(units.length/3.086E18)
-  dy=data.dy*(units.length/3.086E18)
-  dz=data.dz*(units.length/3.086E18)
+  dx=data.dx ;*(units.length/3.086E18)
+  dy=data.dy ;*(units.length/3.086E18)
+  dz=data.dz ;*(units.length/3.086E18)
   nx=dim.nx
   ny=dim.ny
   nz=dim.nz
@@ -133,7 +133,7 @@ if not keyword_set(TEST) then begin
   n_cr=dot2(bb)
 
   length_unit=units.length/3.086D18
-  length_unit=1.
+ ; length_unit=1.
 endif else begin
 
 
