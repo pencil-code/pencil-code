@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.3 2002-12-28 17:04:04 brandenb Exp $
+! $Id: struct_func.f90,v 1.4 2003-01-06 20:30:15 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -42,6 +42,7 @@ module struct_func
   real, dimension (nx,ny,nz,3) :: u_vec,b_vec,z1_vec,z2_vec
   real, dimension (nx) :: bb 
   real, dimension (imax,3,qmax,3) :: sf,sf_sum,sfz1,sfz1_sum,sfz2,sfz2_sum
+  real, dimension (imax) :: totall 
   real, dimension (ny,nz,3) :: du,dz1,dz2
   real, dimension(n_pdf,imax,3,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
@@ -87,6 +88,7 @@ module struct_func
   !
   if (lsf) then 
      sf=0.
+     totall=0
      if (nr_directions .eq. 1) filetowriteu='/sf_sum_'
      if (nr_directions .ne. 1) filetowriteu='/sf_sum_transp_'           
      if (nr_directions .eq. 1) filetowritez1='/sfz1_sum_'
@@ -126,17 +128,18 @@ module struct_func
               !
               !  Calculates sf
               !
+              totall(separation)=totall(separation)+1
               do j=1,3
                  do q=1,qmax                          
                     sf(separation,j,q,direction) &
                          =sf(separation,j,q,direction) &
-                         +sum(abs(du(:,:,j)**q))
+                         +sum(abs(du(:,:,j))**q)
                     sfz1(separation,j,q,direction) &
                          =sfz1(separation,j,q,direction) &
-                         +sum(abs(dz1(:,:,j)**q))
+                         +sum(abs(dz1(:,:,j))**q)
                     sfz2(separation,j,q,direction) &
                          =sfz2(separation,j,q,direction) &
-                         +sum(abs(dz2(:,:,j)**q))
+                         +sum(abs(dz2(:,:,j))**q)
                  enddo
               enddo
            endif
@@ -187,10 +190,13 @@ module struct_func
   if(lsf) then
      call mpireduce_sum(sf,sf_sum,imax*3*qmax*3)  !Is this safe???
      sf_sum=sf_sum/(nw*ncpus)
+     sf_sum(imax,:,:,:)=2*sf_sum(imax,:,:,:)
      call mpireduce_sum(sfz1,sfz1_sum,imax*3*qmax*3)  !Is this safe???
      sfz1_sum=sfz1_sum/(nw*ncpus)
+     sfz1_sum(imax,:,:,:)=2*sfz1_sum(imax,:,:,:)
      call mpireduce_sum(sfz2,sfz2_sum,imax*3*qmax*3)  !Is this safe???
      sfz2_sum=sfz2_sum/(nw*ncpus)
+     sfz2_sum(imax,:,:,:)=2*sfz2_sum(imax,:,:,:)
   endif
   !
   !  Writing output file
@@ -214,7 +220,7 @@ module struct_func
                 ,'to ',trim(datadir)//trim(filetowriteu)//trim(var)//'.dat'
            open(1,file=trim(datadir)//trim(filetowriteu)//trim(var) &
                 //'.dat',position='append')
-           write(1,*) t
+           write(1,*) t,qmax
            write(1,'(1p,8e10.2)') sf_sum(:,j,:,:)
            close(1)
 !
@@ -222,7 +228,7 @@ module struct_func
                 ,'to ',trim(datadir)//trim(filetowritez1)//trim(var)//'.dat'
            open(1,file=trim(datadir)//trim(filetowritez1)//trim(var) &
                 //'.dat',position='append')
-           write(1,*) t
+           write(1,*) t,qmax
            write(1,'(1p,8e10.2)') sfz1_sum(:,j,:,:)
            close(1)
 !
@@ -230,7 +236,7 @@ module struct_func
                 ,'to ',trim(datadir)//trim(filetowritez2)//trim(var)//'.dat'
            open(1,file=trim(datadir)//trim(filetowritez2)//trim(var) &
                 //'.dat',position='append')
-           write(1,*) t
+           write(1,*) t,qmax
            write(1,'(1p,8e10.2)') sfz2_sum(:,j,:,:)
            close(1)
         endif
