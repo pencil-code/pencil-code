@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.48 2002-08-16 21:23:48 brandenb Exp $ 
+! $Id: param_io.f90,v 1.49 2002-08-26 10:33:49 nilshau Exp $ 
 
 module Param_IO
 
@@ -25,7 +25,7 @@ module Param_IO
   integer :: isave=100,iwig=0,ialive=0
 
   namelist /init_pars/ &
-       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite
+       cvsid,ip,xyz0,Lxyz,lperi,lwrite_ic,lnowrite,random_gen
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin,tmax,iwig,ialive, &

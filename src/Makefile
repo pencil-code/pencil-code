@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.88 2002-08-15 14:07:55 dobler Exp $
+### $Id: Makefile,v 1.89 2002-08-26 10:33:49 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -130,7 +130,7 @@ code:
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o initcond.o register.o prints.o
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o
-comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
+comm_deps=$(technical) $(IO).o sub.o param_io.o random_nr.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
@@ -149,6 +149,7 @@ run.o:       run.f90 $(run_deps)
 #
 cparam.o:    cparam.f90 cparam.local cparam.inc
 general.o:   general.f90
+random_nr.o: random_nr.f90
 cdata.o:     cdata.f90 cparam.o
 slices.o:    slices.f90 cdata.o
 deriv.o:     deriv.f90 cdata.o
@@ -159,7 +160,7 @@ prints.o:    prints.f90 cdata.o sub.o $(physics)
 equ.o:       equ.f90 cdata.o $(MPICOMM).o sub.o $(physics) boundcond.o \
              $(GLOBAL).o slices.o
 boundcond.o: boundcond.f90 cdata.o $(ENTROPY).o $(MAGNETIC).o $(DENSITY).o $(RADIATION).o $(HYDRO).o
-initcond.o:  initcond.f90 cdata.o
+initcond.o:  initcond.f90 cdata.o random_nr.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING.o)
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o boundcond.o
 #

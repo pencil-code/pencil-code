@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.86 2002-08-18 12:04:40 brandenb Exp $
+! $Id: cdata.f90,v 1.87 2002-08-26 10:33:49 nilshau Exp $
 
 module Cdata
 
@@ -38,7 +38,7 @@ module Cdata
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-  character (len=labellen) :: ivisc='nu-const'
+  character (len=labellen) :: ivisc='nu-const',random_gen='system'
 
 !
 !  in this section are all the things related to printing
