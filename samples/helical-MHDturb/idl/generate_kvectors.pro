@@ -5,7 +5,7 @@
 ;  non-helical) forcing of the velocity field
 ;
 ;  Author: axel
-;  CVS: $Id: generate_kvectors.pro,v 1.6 2002-10-05 04:33:12 brandenb Exp $
+;  CVS: $Id: generate_kvectors.pro,v 1.7 2003-03-15 18:18:33 brandenb Exp $
 ;
 ; Wave vectors are located in a subvolume of the box
 ;   -kmax <= kk:=(kx,ky,kz) <= kmax
@@ -31,6 +31,8 @@ kmax=6  & k1=2.0 & k2=3.0   ;(gives 60 vectors)
 kmax=16 & k1=14.95 & k2=15.05    ;(gives 294 vectors)
 kmax=10 & k1=2.5 & k2=3.5    ;(gives 98 vectors)
 kmax=6 & k1=1.0 & k2=2.0   ;(gives 20 vectors)
+kmax=6 & k1=1.0 & k2=2.01   ;(gives 26 vectors)
+kmax=6 & k1=1.0 & k2=3.0   ;(gives 86 vectors)
 ;
 kav=0.
 ;
@@ -43,7 +45,7 @@ for kz=-kmax,kmax do begin
   k=sqrt(float(kx^2+ky^2+kz^2))
   if k gt k1 and k lt k2 then begin
   kav=kav+k
-    ;print,kx,ky,kz,k,i
+    print,kx,ky,kz,k,i
     if i eq 0 then begin
       kkx=kx
       kky=ky
