@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.2 2004-10-01 15:59:34 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.3 2004-10-04 07:11:19 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -27,7 +27,7 @@ module Radiation
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
-  real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
+  real, dimension (mx,my,mz) :: Srad,lnchi,emtau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
   real, dimension (maxdir) :: weight
   real :: dtau_thresh1,dtau_thresh2
@@ -100,7 +100,7 @@ module Radiation
       lradiation=.true.
       lradiation_ray=.true.
 !
-!  set indices for auxiliary variables
+!  Set indices for auxiliary variables
 !
       iQrad = mvar + naux +1; naux = naux + 1
 !
@@ -113,10 +113,10 @@ module Radiation
 !
       varname(iQrad) = 'Qrad'
 !
-!  identify version number (generated automatically by CVS)
+!  Identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.2 2004-10-01 15:59:34 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.3 2004-10-04 07:11:19 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -146,7 +146,7 @@ module Radiation
       use Sub, only: parse_bc_rad
       use Mpicomm, only: stop_it
 !
-!  check that the number of rays does not exceed maximum
+!  Check that the number of rays does not exceed maximum
 !
       if (radx>1) call stop_it("radx currently must not be greater than 1")
       if (rady>1) call stop_it("rady currently must not be greater than 1")
@@ -163,7 +163,7 @@ module Radiation
                      "y-direction we need nz <= ny")
       endif
 !
-!  count
+!  Count
 !
       idir=1
 !
@@ -179,7 +179,7 @@ module Radiation
       enddo
       enddo
 !
-!  total number of directions
+!  Total number of directions
 !
       ndir=idir-1
 !
@@ -201,133 +201,19 @@ module Radiation
 !
       weight=1.0/ndir
 !
-      if (lroot.and.ip<14) print*,'initialize_radiation: ndir=',ndir
+      if (lroot.and.ip<14) print*,'initialize_radiation: ndir =',2*ndir
 !
 !  check boundary conditions
 !
-      if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad=',bc_rad
+      if (lroot.and.ip<14) print*,'initialize_radiation: bc_rad =',bc_rad
 !
       call parse_bc_rad(bc_rad,bc_rad1,bc_rad2)
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine source_function(f)
-!
-!  calculates source function
-!
-!  03-apr-04/tobi: coded
-!
-      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,pi,dx,dy,dz
-      use Mpicomm, only: stop_it
-      use Ionization, only: eoscalc
-      use IO, only: output
-
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx) :: lnTT
-      logical, save :: lfirst=.true.
-
-      select case (source_function_type)
-
-      case ('LTE')
-        do n=1,mz
-        do m=1,my
-          call eoscalc(f,mx,lnTT=lnTT)
-          Srad(:,m,n)=arad*exp(4*lnTT)
-        enddo
-        enddo
-
-      case ('blob')
-        if (lfirst) then
-          Srad=Srad_const &
-              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
-                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
-                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
-          lfirst=.false.
-        endif
-
-      case ('periodic')
-        if (lfirst) then
-          Srad=Srad_const &
-              +amplSrad*(spread(spread(cos(2*pi*(x/(Lx+dx))),2,my),3,mz) &
-                        *spread(spread(cos(2*pi*(y/(Ly+dy))),1,mx),3,mz) &
-                        *spread(spread(cos(2*pi*(z/(Lz+dz))),1,mx),2,my)+1.0)/2
-        endif
-        call output('Srad.dat',Srad,1)
-
-      case default
-        call stop_it('no such source function type: '//&
-                     trim(source_function_type))
-
-      end select
-
-    endsubroutine source_function
-!***********************************************************************
-    subroutine opacity(f)
-!
-!  calculates opacity
-!
-!  03-apr-04/tobi: coded
-!
-      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz
-      use Ionization, only: eoscalc
-      use Mpicomm, only: stop_it
-      use IO, only: output
-
-      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(mx) :: tmp,lnrho
-      logical, save :: lfirst=.true.
-
-      select case (opacity_type)
-
-      case ('Hminus')
-        do m=1,my
-        do n=1,mz
-          call eoscalc(f,mx,lnchi=tmp)
-          lnchi(:,m,n)=tmp
-        enddo
-        enddo
-
-      case ('kappa_cst')
-        do m=1,my
-        do n=1,mz
-          call eoscalc(f,mx,lnrho=lnrho)
-          lnchi(:,m,n)=log(kappa_cst)+lnrho
-        enddo
-        enddo
-
-      case ('blob')
-        if (lfirst) then
-          lnchi=lnchi_const &
-               +ampllnchi*spread(spread(exp(-(x/radius_lnchi)**2),2,my),3,mz) &
-                         *spread(spread(exp(-(y/radius_lnchi)**2),1,mx),3,mz) &
-                         *spread(spread(exp(-(z/radius_lnchi)**2),1,mx),2,my)
-          lfirst=.false.
-        endif
-
-      case ('periodic')
-        if (lfirst) then
-          lnchi=lnchi_const &
-               +ampllnchi*(spread(spread(cos(2*pi*(x/(Lx+dx))),2,my),3,mz) &
-                          *spread(spread(cos(2*pi*(y/(Ly+dy))),1,mx),3,mz) &
-                          *spread(spread(cos(2*pi*(z/(Lz+dz))),1,mx),2,my)+1.0)/2
-        endif
-        call output('lnchi.dat',lnchi,1)
-
-
-      case default
-        call stop_it('no such opacity type: '//trim(opacity_type))
-
-      endselect
-
-    endsubroutine opacity
-!***********************************************************************
     subroutine radtransfer(f)
 !
-!  Integration radioation transfer equation along rays
-!
-!  This routine is called before the communication part
-!  (certainly needs to be given a better name)
-!  All rays start with zero intensity
+!  Integration of the radiative transfer equation along rays
 !
 !  16-jun-03/axel+tobi: coded
 !
@@ -336,31 +222,25 @@ module Radiation
       use Mpicomm, only: mpireduce_sum, mpireduce_min, mpireduce_max
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      double precision :: t1,t2,fac_timing
-      double precision, save :: tintr,tcomm
-      real, dimension(1) :: tintr_sum,tintr_min,tintr_max
-      real, dimension(1) :: tcomm_sum,tcomm_min,tcomm_max
-      real, dimension(1) :: tintr_real,tcomm_real
-      integer :: irad_rep
 !
-!  identifier
+!  Identifier
 !
       if(ldebug.and.headt) print*,'radtransfer'
 !
-!  calculate source function and opacity
+!  Calculate source function and opacity
 !
       call source_function(f)
       call opacity(f)
 !
-!  initialize heating rate
+!  Initialize heating rate
 !
       f(:,:,:,iQrad)=0
 !
-!  loop over directions ``in the upper half room'' (nrad==1)
+!  Loop over directions ``in the upper half room'' (nrad==1)
 !
       do idir=1,ndir
 !
-!  do forward and backwards ray
+!  Do forward and backwards ray
 !
       do nrad=1,-1,-2
 
@@ -375,7 +255,18 @@ module Radiation
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 
       enddo
+
       enddo
+!
+!  Calculate periodic rays in the horizontal plane if desired
+!
+      !if (lhorizontal_rays) then
+
+      !  do idir=ndir+1,ndir+2
+
+      !  enddo
+
+      !endif
 
     endsubroutine radtransfer
 !***********************************************************************
@@ -457,8 +348,8 @@ module Radiation
       use Cdata, only: ldebug,headt,dx,dy,dz,directory_snap
       use IO, only: output
 !
-      real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2
-      real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p,emdtau_m
+      real :: Srad1st,Srad2nd,dlength,emdtau1,emdtau2,emdtau
+      real :: dtau_m,dtau_p,dSdtau_m,dSdtau_p
       integer :: l,m,n
       character(len=3) :: raydir
 !
@@ -472,7 +363,7 @@ module Radiation
 !
 !  set optical depth and intensity initially to zero
 !
-      tau=0
+      emtau=1
       Qrad=0
 !
 !  loop over all meshpoints
@@ -488,20 +379,20 @@ module Radiation
         Srad1st=(dSdtau_p*dtau_m+dSdtau_m*dtau_p)/(dtau_m+dtau_p)
         Srad2nd=2*(dSdtau_p-dSdtau_m)/(dtau_m+dtau_p)
         if (dtau_m>dtau_thresh1) then
-          emdtau_m=0.0
+          emdtau=0.0
           emdtau1=1.0
           emdtau2=-1.0
         elseif (dtau_m<dtau_thresh2) then
           emdtau1=dtau_m*(1-0.5*dtau_m*(1-0.33333333*dtau_m))
-          emdtau_m=1-emdtau1
+          emdtau=1-emdtau1
           emdtau2=-dtau_m**2*(0.5+0.33333333*dtau_m)
         else
-          emdtau_m=exp(-dtau_m)
-          emdtau1=1-emdtau_m
-          emdtau2=emdtau_m*(1+dtau_m)-1
+          emdtau=exp(-dtau_m)
+          emdtau1=1-emdtau
+          emdtau2=emdtau*(1+dtau_m)-1
         endif
-        tau(l,m,n)=tau(l-lrad,m-mrad,n-nrad)+dtau_m
-        Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau_m &
+        emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
+        Qrad(l,m,n)=Qrad(l-lrad,m-mrad,n-nrad)*emdtau &
                    -Srad1st*emdtau1-Srad2nd*emdtau2
 
       enddo
@@ -509,7 +400,7 @@ module Radiation
       enddo
 
       if (lrad_debug) then
-        call output(trim(directory_snap)//'/tau-'//raydirection_str//'.dat',tau,1)
+        call output(trim(directory_snap)//'/emtau-'//raydirection_str//'.dat',emtau,1)
         call output(trim(directory_snap)//'/Qintr-'//raydirection_str//'.dat',Qrad,1)
       endif
 !
@@ -531,12 +422,14 @@ module Radiation
       real, dimension(mx,my) :: Qrad0_xy
       integer :: steps
       integer :: l,m,n
-
+!
+!  Initialize Qrad0 to zero
+!
       Qrad0=0.0
 !
-!  non-periodic z-boundary
+!  Non-periodic z-boundary
 !
-!  set or receive boundary values
+!  Set or receive boundary values
 !
       if (ipz==ipzstart) then
         call radboundary_xy_set(Qrad0_xy)
@@ -550,11 +443,11 @@ module Radiation
       enddo
       enddo
 !
-!  periodic x-boundary
+!  Periodic x-boundary
 !
       if (lrad/=0) then
 !
-!  propagate values
+!  Propagate values
 !
         do m=mmstart-mrad,mmstop,msign
         do n=nnstart-nrad,nnstop,nsign
@@ -562,11 +455,11 @@ module Radiation
           if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
           if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
           Qrad0(llstop,m,n)=Qrad0(llstop-lrad*steps,m-mrad*steps,n-nrad*steps)
-          Qrad0_yz(m,n)=Qrad0(llstop,m,n)*exp(-tau(llstop,m,n))+Qrad(llstop,m,n)
+          Qrad0_yz(m,n)=Qrad0(llstop,m,n)*emtau(llstop,m,n)+Qrad(llstop,m,n)
         enddo
         enddo
 !
-!  add boundary contribution
+!  Add boundary contribution
 !
 !  TH: This should be done in the loop above. Right now it's in a seperate
 !      loop for the sake of analogy to the mrad/=0 case.
@@ -579,11 +472,11 @@ module Radiation
 
       endif
 !
-!  periodic y-boundary
+!  Periodic y-boundary
 !
       if (mrad/=0) then
 !
-!  propagate values
+!  Propagate values
 !
         do n=nnstart-nrad,nnstop,nsign
         do l=llstart-lrad,llstop,lsign
@@ -591,11 +484,11 @@ module Radiation
           if (nrad/=0) steps=min(steps,(n+nrad-nnstart)/nrad)
           if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
           Qrad0(l,mmstop,n)=Qrad0(l-lrad*steps,mmstop-mrad*steps,n-nrad*steps)
-          Qrad0_zx(l,n)=Qrad0(l,mmstop,n)*exp(-tau(l,mmstop,n))+Qrad(l,mmstop,n)
+          Qrad0_zx(l,n)=Qrad0(l,mmstop,n)*emtau(l,mmstop,n)+Qrad(l,mmstop,n)
         enddo
         enddo
 !
-!  if there are more than one processor in the y-direction
+!  If there are more than one processor in the y-direction
 !  send boundary values to the next one
 !
         if (nprocy>1) then
@@ -603,7 +496,7 @@ module Radiation
           call radboundary_zx_recv(mrad,idir,Qrad0_zx)
         endif
 !
-!  add boundary contribution
+!  Add boundary contribution
 !
         do n=nnstart-nrad,nnstop,nsign
         do l=llstart-lrad,llstop,lsign
@@ -613,8 +506,8 @@ module Radiation
 
       endif
 !
-!  non-periodic z-direction
-!  propagate and send boundary values
+!  Non-periodic z-direction
+!  Propagate and send boundary values
 !
       if (ipz/=ipzstop) then
 
@@ -624,7 +517,7 @@ module Radiation
           if (lrad/=0) steps=min(steps,(l+lrad-llstart)/lrad)
           if (mrad/=0) steps=min(steps,(m+mrad-mmstart)/mrad)
           Qrad0(l,m,nnstop)=Qrad0(l-lrad*steps,m-mrad*steps,nnstop-nrad*steps)
-          Qrad0_xy(l,m)=Qrad0(l,m,nnstop)*exp(-tau(l,m,nnstop))+Qrad(l,m,nnstop)
+          Qrad0_xy(l,m)=Qrad0(l,m,nnstop)*emtau(l,m,nnstop)+Qrad(l,m,nnstop)
         enddo
         enddo
 
@@ -658,7 +551,7 @@ module Radiation
       do m=mmstart,mmstop,msign
       do l=llstart,llstop,lsign
           Qrad0(l,m,n)=Qrad0(l-lrad,m-mrad,n-nrad)
-          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*exp(-tau(l,m,n))
+          Qrad(l,m,n)=Qrad(l,m,n)+Qrad0(l,m,n)*emtau(l,m,n)
       enddo
       enddo
       enddo
@@ -804,6 +697,116 @@ module Radiation
       endif
 !
     endsubroutine radiative_cooling
+!***********************************************************************
+    subroutine source_function(f)
+!
+!  calculates source function
+!
+!  03-apr-04/tobi: coded
+!
+      use Cdata, only: m,n,x,y,z,Lx,Ly,Lz,pi,dx,dy,dz
+      use Mpicomm, only: stop_it
+      use Ionization, only: eoscalc
+      use IO, only: output
+
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: lnTT
+      logical, save :: lfirst=.true.
+
+      select case (source_function_type)
+
+      case ('LTE')
+        do n=1,mz
+        do m=1,my
+          call eoscalc(f,mx,lnTT=lnTT)
+          Srad(:,m,n)=arad*exp(4*lnTT)
+        enddo
+        enddo
+
+      case ('blob')
+        if (lfirst) then
+          Srad=Srad_const &
+              +amplSrad*spread(spread(exp(-(x/radius_Srad)**2),2,my),3,mz) &
+                       *spread(spread(exp(-(y/radius_Srad)**2),1,mx),3,mz) &
+                       *spread(spread(exp(-(z/radius_Srad)**2),1,mx),2,my)
+          lfirst=.false.
+        endif
+
+      case ('periodic')
+        if (lfirst) then
+          Srad=Srad_const &
+              +amplSrad*spread(spread(cos(x)**2,2,my),3,mz) &
+                       *spread(spread(cos(y)**2,1,mx),3,mz) &
+                       *spread(spread(cos(z)**2,1,mx),2,my)
+        endif
+        call output('Srad.dat',Srad,1)
+
+      case default
+        call stop_it('no such source function type: '//&
+                     trim(source_function_type))
+
+      end select
+
+    endsubroutine source_function
+!***********************************************************************
+    subroutine opacity(f)
+!
+!  calculates opacity
+!
+!  03-apr-04/tobi: coded
+!
+      use Cdata, only: ilnrho,x,y,z,m,n,Lx,Ly,Lz,pi,dx,dy,dz
+      use Ionization, only: eoscalc
+      use Mpicomm, only: stop_it
+      use IO, only: output
+
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(mx) :: tmp,lnrho
+      logical, save :: lfirst=.true.
+
+      select case (opacity_type)
+
+      case ('Hminus')
+        do m=1,my
+        do n=1,mz
+          call eoscalc(f,mx,lnchi=tmp)
+          lnchi(:,m,n)=tmp
+        enddo
+        enddo
+
+      case ('kappa_cst')
+        do m=1,my
+        do n=1,mz
+          call eoscalc(f,mx,lnrho=lnrho)
+          lnchi(:,m,n)=log(kappa_cst)+lnrho
+        enddo
+        enddo
+
+      case ('blob')
+        if (lfirst) then
+          lnchi=lnchi_const &
+               +ampllnchi*spread(spread(exp(-(x/radius_lnchi)**2),2,my),3,mz) &
+                         *spread(spread(exp(-(y/radius_lnchi)**2),1,mx),3,mz) &
+                         *spread(spread(exp(-(z/radius_lnchi)**2),1,mx),2,my)
+          lfirst=.false.
+        endif
+
+      case ('periodic')
+        if (lfirst) then
+          lnchi=lnchi_const &
+               +ampllnchi*spread(spread(cos(x)**2,2,my),3,mz) &
+                         *spread(spread(cos(y)**2,1,mx),3,mz) &
+                         *spread(spread(cos(z)**2,1,mx),2,my)
+        endif
+        call output('lnchi.dat',lnchi,1)
+
+
+      case default
+        call stop_it('no such opacity type: '//trim(opacity_type))
+
+      endselect
+
+    endsubroutine opacity
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !
