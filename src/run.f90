@@ -72,7 +72,7 @@
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.2 2001-11-06 20:08:04 dobler Exp $'
+          print*,'$Id: run.f90,v 1.3 2001-11-12 10:47:13 dobler Exp $'
         endif
 !
 !  do loop in time
@@ -115,7 +115,8 @@
         endif
 !
         if(lroot) &
-             print*,'Wall clock time=',(time2-time1)/real(count_rate),count_rate
+             print*,'Wall clock time=',(time2-time1)/real(count_rate), &
+                    ' (+/- ', 1./count_rate,')'
         call mpifinalize
 !
       endprogram run

@@ -125,4 +125,4 @@ TAGS: $(TAG_SOURCE)
 clean:
 	rm -f *.x *.o *.mod
 	rm -f makefile
-	rm TAGS
+	rm -f TAGS

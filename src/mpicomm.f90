@@ -7,6 +7,9 @@
 ! NB: This was previously called mpicommyz.f90 and distributes in two
 ! directions.
 
+! NNB: The boundary conditions ibc(j) are not yet implemented (as opposed
+! to nompicomm)
+
 module Mpicomm
 
   use Cparam
@@ -67,6 +70,11 @@ module Mpicomm
       call MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierr)
       call MPI_COMM_RANK(MPI_COMM_WORLD, iproc , ierr)
       lroot = (iproc==root)
+!
+! temporary
+!
+      if (lroot) print*, &
+           'WARNING: boundary conditions ibc(j) not yet implemented'
 !
 !  consistency checks
 !

@@ -121,6 +121,10 @@ module Entropy
       TT1=gamma1/cs2
       df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+TT1*(-ugss+2.*nu*sij2)+thdiff
 !
+!  TEMPORARY: Add heat near bottom. Wrong: should be Heat/(T*rho)
+!
+      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+           + 0.1*spread(exp(-((z(n)+1.)/(2*dz))**2), 1,l2-l1+1)
     endsubroutine dss_dt
 !***********************************************************************
 

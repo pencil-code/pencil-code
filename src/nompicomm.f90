@@ -82,25 +82,32 @@ module Mpicomm
       f(:, 1:m1-1,:,:) = f(:,m2i:m2,:,:)
       f(:,m2+1:my,:,:) = f(:,m1:m1i,:,:)
 !
-!  Periodic boundary conditions in z
+!  Boundary conditions in z
 !
       do j=1,mvar
-        if (ibc(j)==0) then
+        select case(ibc(j))
+        case (0)                ! periodic
           f(:,:, 1:n1-1,j) = f(:,:,n2i:n2,j)
           f(:,:,n2+1:mz,j) = f(:,:,n1:n1i,j)
-        elseif (ibc(j)==1) then  !(symmetry)
+        case (1)                ! symmetry
           do i=1,nghost
             f(:,:,n1-i,j) = f(:,:,n1+i,j)
             f(:,:,n2+i,j) = f(:,:,n2-i,j)
           enddo
-        elseif (ibc(j)==-1) then  !(antisymmetry)
+        case (-1)               ! antisymmetry
           do i=1,nghost
             f(:,:,n1-i,j) = -f(:,:,n1+i,j)
             f(:,:,n2+i,j) = -f(:,:,n2-i,j)
           enddo
-        else
-          print*,"doesn't work; j=",j
-        endif
+        case (-2)               ! antisymmetry relative to boundary value
+          do i=1,nghost
+            f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j)
+            f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j)
+          enddo
+        case default
+          if (lroot) &
+               print*,"No such boundary condition ibc = ", ibc(j), " for j=", j
+        endselect
       enddo
 !
     endsubroutine initiate_isendrcv_bdry

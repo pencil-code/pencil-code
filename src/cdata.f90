@@ -7,7 +7,6 @@ module Cdata
   real, dimension (mx) :: x
   real, dimension (my) :: y
   real, dimension (mz) :: z
-  real :: ibc(mvar)
   real :: t,dt,dx,dy,dz
   real :: dsnap,dvid,dforce
   real :: cs,cs20,gamma,force,relhel
@@ -21,6 +20,7 @@ module Cdata
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
   integer :: ivisc,iforce
+  integer :: ibc(mvar)
   integer :: m,n,im,in
   integer, dimension (2) :: seed
 
