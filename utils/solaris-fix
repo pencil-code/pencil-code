@@ -1,0 +1,39 @@
+#!/bin/csh
+
+# Name:   solaris-fix
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   30-Dec-2003
+# Description:
+#   Solaris (in particular the compiler version `f90: Forte Developer 7
+#   Fortran 95 7.0 2002/03/09' on `SunOS granny.kis.uni-freiburg.de 5.8
+#   Generic_108528-21 sun4u sparc SUNW,Sun-Fire-880') is buggy and
+#   truncates some file names. Run this script to fix that.
+# Usage:
+#   start.csh
+#   solaris-fix
+#   run.csh
+#   solaris-fix
+#   idl
+#   [...]
+
+set data = data
+
+# Namelist files
+foreach f (param. param2.)
+  if (-e $data/$f) cp $data/$f $data/${f}nml
+end
+
+# IDL files
+foreach f (def_var. pc_constants. variables. index.)
+  if (-e $data/$f) cp $data/$f $data/${f}pro
+end
+
+# .dat files
+foreach f (time_series. legend. slice_position.)
+  if (-e $data/$f) cp $data/$f $data/${f}dat
+end
+
+
+exit:
+
+# End of file solaris-fix
