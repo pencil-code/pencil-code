@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.24 2003-04-01 22:12:47 theine Exp $
+! $Id: ionization.f90,v 1.25 2003-04-02 09:03:54 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -50,7 +50,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.24 2003-04-01 22:12:47 theine Exp $")
+           "$Id: ionization.f90,v 1.25 2003-04-02 09:03:54 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -79,8 +79,8 @@ module Ionization
       chiH_=0.75*eV
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
-      lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/(2.*pi))+log(m_H)
-      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/(2.*pi))+log(m_H)
+      lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)
+      lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)
       ss_ion=k_B/m_H
       kappa0=sigmaH_/m_H
       if(lroot) then
@@ -196,7 +196,7 @@ module Ionization
       if (present(TT).or.present(kappa)) TT=exp(lnTT_)*TT_ion
 
       if (present(kappa)) then
-         kappa=.25*(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+         kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
       endif
     endsubroutine ioncalc
