@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.172 2003-11-25 11:36:30 snod Exp $
+! $Id: equ.f90,v 1.173 2003-11-25 12:04:28 theine Exp $
 
 module Equ
 
@@ -231,7 +231,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.172 2003-11-25 11:36:30 snod Exp $")
+           "$Id: equ.f90,v 1.173 2003-11-25 12:04:28 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -352,7 +352,7 @@ module Equ
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
 !
 !  cosmic ray energy density
-        call decr_dt  (f,df,uu,rho1,divu,bij,bb)
+        if (lcosmicray) call decr_dt(f,df,uu,rho1,divu,bij,bb)
 !
 !  Evolution of radiative energy
 !
