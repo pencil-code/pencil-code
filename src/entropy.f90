@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.298 2004-04-10 17:04:27 mee Exp $
+! $Id: entropy.f90,v 1.299 2004-04-10 19:11:38 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.298 2004-04-10 17:04:27 mee Exp $")
+           "$Id: entropy.f90,v 1.299 2004-04-10 19:11:38 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -225,14 +225,18 @@ module Entropy
             if (bcz1(iss)=='c1') then
               Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
-                      'initialize_entropy: Calculated Fbot = ', Fbot
-            else
-              Fbot=0.
+                   'initialize_entropy: Calculated Fbot = ', Fbot
+              Kbot=gamma1/gamma*(mpoly+1.)*Fbot
+              FbotKbot=gamma/gamma1/(mpoly+1.)
+              if(lroot) print*,'initialize_entropy: Calculated Fbot,Kbot=', &
+                   Fbot,Kbot
+            ! else
+            !! Don't need Fbot in this case (?)
+            !  Fbot=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
+            !  if (lroot) print*, &
+            !       'initialize_entropy: Calculated Fbot = ', Fbot
             endif
           endif
-          Kbot=gamma1/gamma*(mpoly+1.)*Fbot
-          FbotKbot=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
           !
           !  calculate Ftop if it has not been set in run.in
           !
@@ -241,13 +245,14 @@ module Entropy
               Ftop=-gamma/(gamma-1)*hcond0*gravz/(mpoly+1)
               if (lroot) print*, &
                       'initialize_entropy: Calculated Ftop = ', Ftop
-            else
-              Ftop=0.
+              Ktop=gamma1/gamma*(mpoly+1.)*Ftop
+              FtopKtop=gamma/gamma1/(mpoly+1.)
+              if(lroot) print*,'initialize_entropy: Ftop,Ktop=',Ftop,Ktop
+            ! else
+            !! Don't need Ftop in this case (?)
+            !  Ftop=0.
             endif
           endif
-          Ktop=gamma1/gamma*(mpoly+1.)*Ftop
-          FtopKtop=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'initialize_entropy: Ftop,Ktop=',Ftop,Ktop
 !
         endif
       endif
