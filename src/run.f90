@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.94 2002-10-02 20:11:14 dobler Exp $
+! $Id: run.f90,v 1.95 2002-10-04 07:54:39 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.94 2002-10-02 20:11:14 dobler Exp $")
+             "$Id: run.f90,v 1.95 2002-10-04 07:54:39 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -59,7 +59,6 @@
 !  read_runpars)
 !
         call rparam()
-print*,'RUN: datadir=',datadir
 !
 !  derived parameters (that may still be overwritten)
 !  [might better be put into another routine, possibly even in rparam or
