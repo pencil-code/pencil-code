@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.131 2003-08-11 18:41:29 dobler Exp $ 
+! $Id: param_io.f90,v 1.132 2003-08-26 09:49:28 dobler Exp $ 
 
 module Param_IO
 
@@ -147,7 +147,7 @@ module Param_IO
 !
 !  open namelist file
 !
-      open(1,FILE='start.in',FORM='formatted')
+      open(1,FILE='start.in',FORM='formatted',STATUS='old')
 !
 !  read through all items that *may* be present
 !  in the various modules
@@ -155,77 +155,41 @@ module Param_IO
 
       label='init_pars'
                       read(1,NML=init_pars                 ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='hydro_init_pars'
       if (lhydro    ) read(1,NML=hydro_init_pars           ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='density_init_pars'
       if (ldensity     ) read(1,NML=density_init_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       ! no input parameters for forcing
       label='grav_init_pars'
       if (lgrav        ) read(1,NML=grav_init_pars         ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='entropy_init_pars'
       if (lentropy     ) read(1,NML=entropy_init_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='magnetic_init_pars'
       if (lmagnetic    ) read(1,NML=magnetic_init_pars     ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='radiation_init_pars'
       if (lradiation   ) read(1,NML=radiation_init_pars    ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='ionization_init_pars'
       if (lionization  ) read(1,NML=ionization_init_pars   ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='pscalar_init_pars'
       if (lpscalar     ) read(1,NML=pscalar_init_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='dustvelocity_init_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_init_pars ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='dustdensity_init_pars'
       if (ldustdensity ) read(1,NML=dustdensity_init_pars  ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='start.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'start.in')
       label='shear_init_pars'
       if (lshear       ) read(1,NML=shear_init_pars        ,ERR=99, IOSTAT=ierr)
       ! no input parameters for viscosity
@@ -383,100 +347,56 @@ module Param_IO
 ! find out if we should open and close the file everytime
 ! to fix the SGI reading problem
       inquire(FILE='SGIFIX',EXIST=lsgifix)
-
-
 !
 !  open namelist file
 !
-      open(1,file='run.in',form='formatted')
+      open(1,file='run.in',form='formatted',STATUS='old')
 !
 !  read through all items that *may* be present
 !  in the various modules
 !
       label='run_pars'
                          read(1,NML=run_pars              ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='hydro_run_pars'
       if (lhydro       ) read(1,NML=hydro_run_pars        ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='density_run_pars'
       if (ldensity     ) read(1,NML=density_run_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='forcing_run_pars'
       if (lforcing     ) read(1,NML=forcing_run_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='grav_run_pars'
       if (lgrav        ) read(1,NML=grav_run_pars         ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='entropy_run_pars'
       if (lentropy     ) read(1,NML=entropy_run_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='magnetic_run_pars'
       if (lmagnetic    ) read(1,NML=magnetic_run_pars     ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='radiation_run_pars'
       if (lradiation   ) read(1,NML=radiation_run_pars    ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='ionization_run_pars'
       if (lionization  ) read(1,NML=ionization_run_pars   ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='pscalar_run_pars'
       if (lpscalar     ) read(1,NML=pscalar_run_pars      ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='dustvelocity_run_pars'
       if (ldustvelocity) read(1,NML=dustvelocity_run_pars ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='dustdensity_run_pars'
       if (ldustdensity ) read(1,NML=dustdensity_run_pars  ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='interstellar_run_pars'
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='shear_run_pars'
       if (lshear       ) read(1,NML=shear_run_pars        ,ERR=99, IOSTAT=ierr)
-      if (lsgifix) then
-         close (1)
-         open(1,FILE='run.in',FORM='formatted')
-      endif
+      call sgi_fix(lsgifix,1,'run.in')
       label='viscosity_run_pars'
       if (lviscosity   ) read(1,NML=viscosity_run_pars    ,ERR=99, IOSTAT=ierr)
       label='[none]'
@@ -567,6 +487,20 @@ module Param_IO
       call stop_it('')
 !
     endsubroutine read_runpars
+!***********************************************************************
+    subroutine sgi_fix(lfix,lun,file)
+!
+!
+      logical :: lfix
+      integer :: lun
+      character (LEN=*) :: file
+!
+      if (lfix) then
+        close (lun)
+        open(lun, FILE=file,FORM='formatted')
+      endif
+!
+    endsubroutine sgi_fix
 !***********************************************************************
     subroutine print_runpars(file,annotation)
 !
