@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.185 2004-05-29 06:30:38 brandenb Exp $ 
+! $Id: sub.f90,v 1.186 2004-06-03 20:56:20 theine Exp $ 
 
 module Sub 
 
@@ -3234,6 +3234,27 @@ nameloop: do
       endif
 !
     endsubroutine blob
+!***********************************************************************
+    function hypergeometric2F1(a,b,c,z,tol)
+
+      real :: hypergeometric2F1,a,b,c,z,tol
+      real :: fac
+      integer :: n
+
+      fac=1
+      hypergeometric2F1=fac
+      n=1
+
+      do while (fac>tol)
+        fac=fac*a*b*z/c/n
+        hypergeometric2F1=hypergeometric2F1+fac
+        a=a+1
+        b=b+1
+        c=c+1
+        n=n+1
+      enddo
+
+    endfunction hypergeometric2F1
 !***********************************************************************
     subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,Kperp,Kpara,rhs,llog)
 !
