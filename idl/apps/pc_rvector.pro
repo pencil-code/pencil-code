@@ -1,3 +1,4 @@
+nxyz=32
 lun=41
 l=0L & m=0L & n=0L
 file='data/proc0/bvec.dat'
@@ -5,11 +6,13 @@ close,lun
 openr,lun,file,/f77
 while not eof(lun) do begin
   readu,lun,l,m,n,bx,by,bz
+  ;print,l,m,n
   if l eq 0 then begin
-    vecgdv_good,nn-4,mm-4,ll-1,bbx,bby,bbz,indgen(64),indgen(64),indgen(64),len=30
+    vecgdv_good,nn-4,mm-4,ll-1,bbx,bby,bbz,indgen(nxyz),indgen(nxyz),indgen(nxyz),len=30
     t=bx
     print,t,n_elements(ll)
     readnew=1
+     ;stop
   endif else begin
     if(readnew eq 1) then begin
       ll=l & mm=m & nn=n
