@@ -249,5 +249,47 @@ module Mpicomm
       STOP
     endsubroutine stop_it
 !***********************************************************************
+    subroutine transp(a,var)
+!
+!  Doing a transpose (dummy version for single processor)
+!
+!   5-sep-02/axel: adapted from version in mpicomm.f90
+!
+      real, dimension(nx,ny,nz) :: a
+      real, dimension(nz) :: tmp_z
+      real, dimension(ny) :: tmp_y
+      integer :: i,j
+      character :: var
+!
+      print*,'transp for single processor'
+!
+!  Doing x-y transpose if var='y'
+!
+if (var=='y') then
+!
+      do i=1,ny
+        do j=i+1,ny
+          tmp_z=a(i,j,:)
+          a(i,j,:)=a(j,i,:)
+          a(j,i,:)=tmp_z
+        enddo
+      enddo
+!
+!  Doing x-z transpose if var='z'
+!
+elseif (var=='z') then
+!
+      do i=1,nz
+        do j=i+1,nz
+          tmp_y=a(i,:,j)
+          a(i,:,j)=a(j,:,i)
+          a(j,:,i)=tmp_y
+        enddo
+      enddo
+!
+endif
+!
+ end subroutine transp
+!***********************************************************************
 
 endmodule Mpicomm

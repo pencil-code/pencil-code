@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.41 2002-09-04 21:52:01 nilshau Exp $
+! $Id: mpicomm.f90,v 1.42 2002-09-05 14:12:30 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -617,7 +617,7 @@ module Mpicomm
       real, dimension(nx,ny,nz) :: a
       real, dimension(nz) :: tmp_z
       real, dimension(ny) :: tmp_y
-      integer :: i,j,proc,sendc_y,recvc_y,sendc_z,recvc_z,px,py,pz
+      integer :: i,j,proc,sendc_y,recvc_y,sendc_z,recvc_z,px
       integer :: tag=100,partner,ierr
       character :: var
       integer, dimension(MPI_STATUS_SIZE) :: stat
@@ -648,11 +648,9 @@ if (var=='y') then
       do px=0,nprocy-1
         do i=1,ny
           do j=i+1,ny
-!            print*,'a) a(i,j,1)=',a(i,j,1),i,j,iproc
             tmp_z=a(i+px*ny,j,:)
             a(i+px*ny,j,:)=a(j+px*ny,i,:)
             a(j+px*ny,i,:)=tmp_z
-!            print*,'b) a(i,j,1)=',a(i,j,1),i,j,iproc
           enddo
         enddo
       enddo
@@ -661,7 +659,7 @@ if (var=='y') then
 !
 elseif (var=='z') then
 !
-!  Scatter information to different processors (x-z transpose)
+!  Send information to different processors (x-z transpose)
 !
        do px=0,nprocz-1
         if(px/=ipz) then
@@ -678,11 +676,9 @@ elseif (var=='z') then
       do px=0,nprocz-1
         do i=1,nz
           do j=i+1,nz
-!            print*,'a) a(i,j,1)=',a(i,j,1),i,j,iproc
             tmp_y=a(i+px*nz,:,j)
             a(i+px*nz,:,j)=a(j+px*nz,:,i)
             a(j+px*nz,:,i)=tmp_y
-!            print*,'b) a(i,j,1)=',a(i,j,1),i,j,iproc
           enddo
         enddo
       enddo
