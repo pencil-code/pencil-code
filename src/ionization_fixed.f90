@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.18 2003-10-09 00:47:54 theine Exp $
+! $Id: ionization_fixed.f90,v 1.19 2003-10-09 16:39:57 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.18 2003-10-09 00:47:54 theine Exp $")
+          "$Id: ionization_fixed.f90,v 1.19 2003-10-09 16:39:57 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -200,6 +200,9 @@ module Ionization
         write (1,*) 'ee_ion=',ee_ion
         write (1,*) 'kappa0=',kappa0
         write (1,*) 'Srad0=',Srad0
+        write (1,*) 'lnTTss=',lnTTss
+        write (1,*) 'lnTTlnrho=',lnTTlnrho
+        write (1,*) 'lnTT0=',lnTT0
       close (1)
 !
     endsubroutine initialize_ionization
@@ -326,13 +329,19 @@ module Ionization
 !
       yH=yH0
 !
+!  depending on the size of the array yH, ss and lnrho are
+!  evaluated either with or without ghostzones included
+!
       if (size(lnrho)==nx) lnrho=f(l1:l2,m,n,ilnrho)
       if (size(ss)==nx) ss=f(l1:l2,m,n,iss)
+!
+!  ghost zones included
 !
       if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
       if (size(ss)==mx) ss=f(:,m,n,iss)
 !
-
+!  calculate temperature
+!
       TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_pencil
