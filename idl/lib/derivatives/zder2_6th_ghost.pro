@@ -25,6 +25,10 @@ endif else begin
   tt = where(zprim2 eq 0)
   if (tt[0] ne -1) then  zprim2[tt] = 1e-10
 ;
+;  nonuniform mesh correction
+;  d2f/dz2 = f"/z'^2 - z"*f'/z'^3
+;          = f"/z'^2 - z"/z'^2 * df/dz
+;
   dz2=spread(spread(1./(180.*zprim^2),0,nx),1,ny)
   dd =d1*spread(spread(zprim2/zprim^2,0,nx),1,ny)
 endelse
@@ -34,6 +38,10 @@ endelse
                     -27.*(f[*,*,n1-2:n2-2]+f[*,*,n1+2:n2+2])$
                      +2.*(f[*,*,n1-3:n2-3]+f[*,*,n1+3:n2+3])$
                    )
-  d=d-dd
+;
+; apply correction only for nonuniform mesh
+;
+if not lequidist[2] then d=d-dd
+;
 return,d
 end
