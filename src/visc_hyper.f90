@@ -1,4 +1,4 @@
-! $Id: visc_hyper.f90,v 1.15 2004-10-25 13:03:55 ajohan Exp $
+! $Id: visc_hyper.f90,v 1.16 2004-10-25 13:12:10 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -65,7 +65,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper.f90,v 1.15 2004-10-25 13:03:55 ajohan Exp $")
+           "$Id: visc_hyper.f90,v 1.16 2004-10-25 13:12:10 ajohan Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -168,6 +168,7 @@ module Viscosity
       endif
 !
 ! find heating term (yet it only works for ivisc='hyper3')
+! the heating term is d/dt(0.5*rho*u^2) = -2*mu3*( S^(2) )^2
 !
       if (ldiagnos) then
         if (ivisc == 'hyper3') then
@@ -258,7 +259,7 @@ module Viscosity
                           + (  3.*f(:,my  ,:,iuy) &
                              - 4.*f(:,my-1,:,iuy) &
                              +    f(:,my-2,:,iuy))/(2.*dy)
-      end if
+      endif
 
       if (nzgrid/=1) then
          df(:,:,1     ) = df(:,:,1     ) &
@@ -271,9 +272,9 @@ module Viscosity
                           + (  3.*f(:,:,mz  ,iuz) &
                              - 4.*f(:,:,mz-1,iuz) &
                              +    f(:,:,mz-2,iuz))/(2.*dz)
-      end if
+      endif
+!      
     endsubroutine shock_divu
-
 !***********************************************************************
     subroutine calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
 !
@@ -290,7 +291,6 @@ module Viscosity
       real, dimension (nx) :: rho1,TT1,cs2
       real, dimension (nx) :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
-
 !
 !  traceless strain matrix squared
 !
@@ -304,8 +304,8 @@ module Viscosity
       !call max_for_dt(df(l1:l2,m,n,iss),maxheating)
 !
       !if(ip==0) print*,glnrho,rho1,cs2 !(to keep compiler quiet)
+!      
     endsubroutine calc_viscous_heat
-
 !***********************************************************************
     subroutine calc_viscous_force(f,df,glnrho,divu,rho1,shock,gshock,bij)
 !
