@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.161 2003-11-28 17:00:00 theine Exp $
+! $Id: magnetic.f90,v 1.162 2003-11-29 18:21:01 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -33,6 +33,7 @@ module Magnetic
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: amplaa2=0.,kx_aa2=impossible,ky_aa2=impossible,kz_aa2=impossible
   real :: bthresh=0.,bthresh_per_brms=0.,brms=0.,bthresh_scl=1.
+  real :: eta_shock=0.
   integer :: nbvec,nbvecmax=nx*ny*nz/4
   logical :: lpress_equil=.false.
   ! dgm: for hyper diffusion in any spatial variation of eta
@@ -60,7 +61,7 @@ module Magnetic
        kinflow,kx_aa,ky_aa,kz_aa,ABC_A,ABC_B,ABC_C, &
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
-       eta_int,eta_ext,wresistivity
+       eta_int,eta_ext,eta_shock,wresistivity
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -110,7 +111,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.161 2003-11-28 17:00:00 theine Exp $")
+           "$Id: magnetic.f90,v 1.162 2003-11-29 18:21:01 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -236,7 +237,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
 !
 !  magnetic field evolution
 !
@@ -255,25 +256,25 @@ module Magnetic
       use Slices
       use IO, only: output_pencil
       use Special, only: special_calc_magnetic
-!      use Mpicomm, only: stop_it
+      use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
-      real, dimension (nx,3) :: gpxb,glnrho,uxj
+      real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb,del6A,fres
+      real, dimension (nx,3) :: geta
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
-      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb
+      real, dimension (nx) :: gpxb_dotB0,uxj_dotB0,ujxb,shock
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real, dimension (nx) :: bxby, bxbz, bybz
-      real, dimension (nx) :: eta_mn,divA        ! dgm: 
-      real, dimension (nx,3) :: geta             ! for eta_spatial
+      real, dimension (nx) :: eta_mn,divA,eta_tot        ! dgm: 
       real :: etamax,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
-      intent(in)  :: f,uu,rho1,TT1,uij
+      intent(in)  :: f,uu,rho1,TT1,uij,shock,gshock
 !
 !  identify module and boundary conditions
 !
@@ -417,34 +418,34 @@ module Magnetic
 !
 !  calculate restive term
 !
-! dgm: 
-! 
-      call eta_spatial(f,eta_mn,geta,divA)
-!
-      if (lresistivity_hyper) then
-        call del6v(f,iaa,del6A)
-        del2A=del6A
-      endif
-!
-      if (leta_const) then
+      select case (iresistivity)
+
+      case ('eta-const')
         fres=eta*del2A
         etamax=eta
-      else
-        do j=1,3; fres(:,j)=eta_mn*del2A(:,j) + geta(:,j)*divA; enddo
+      case ('hyper6')
+        call del6v(f,iaa,del6A)
+        fres=eta*del6A
+        etamax=eta
+      case ('shell')
+        call eta_shell(eta_mn,geta)
+        call div(f,iaa,divA)
+        do j=1,3; fres(:,j)=eta_mn*del2A(:,j)+geta(:,j)*divA; enddo
         etamax=maxval(eta_mn)
-      endif
-!
-! dgm: old section (without eta_spatial)
-!        
-!       if (ires .eq. 'eta-const') then
-!         fres=eta*del2A
-!       elseif (ires .eq. 'hyper6') then
-!         call del6v(f,iaa,del6A)
-!         fres=eta*del6A
-!       else
-!         if (lroot) print*,'daa_dt: no such ires:',ires
-!         call stop_it("")
-!       endif
+      case ('shock')
+        if (eta_shock/=0) then
+          call div(f,iaa,divA)
+          eta_tot=eta+eta_shock*shock
+          geta=eta_shock*gshock
+          do j=1,3; fres(:,j)=eta_tot*del2A(:,j)+geta(:,j)*divA; enddo
+        else
+          fres=eta*del2A
+          etamax=eta
+        endif
+      case default
+        if (lroot) print*,'daa_dt: no such ires:',iresistivity
+        call stop_it("")
+      end select
 !
 !  add to dA/dt
 !
@@ -635,40 +636,6 @@ module Magnetic
       endif
 !     
     endsubroutine daa_dt
-!***********************************************************************
-    subroutine eta_spatial(f,eta_mn,geta,divA)
-!
-!   24-nov-03/dave: coded 
-!
-      use Cdata
-      use Sub, only: div
-      use MPIcomm, only: stop_it
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: eta_mn,divA
-      real, dimension (nx,3) :: geta
-!
-!   initialize gradient eta and divergence A
-!
-      eta_mn=0.
-      geta=0.
-      divA=0.
-!
-      if (iresistivity .eq. 'eta-const') then
-        leta_const=.true.
-      else if (iresistivity .eq. 'hyper6') then
-        leta_const=.true.
-        lresistivity_hyper=.true.
-      else if (iresistivity .eq. 'shell') then
-        leta_const=.false.
-        call eta_shell(eta_mn,geta)
-        call div(f,iaa,divA)
-      else
-        if (lroot) print*,'daa_dt: no such ires:',iresistivity
-        call stop_it("")
-      endif
-!
-    endsubroutine eta_spatial
 !***********************************************************************
     subroutine eta_shell(eta_mn,geta)
 !

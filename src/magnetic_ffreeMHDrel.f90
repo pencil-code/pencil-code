@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.16 2003-11-28 09:56:28 theine Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.17 2003-11-29 18:21:01 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -99,7 +99,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.16 2003-11-28 09:56:28 theine Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.17 2003-11-29 18:21:01 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -213,7 +213,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,va2)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,va2,shock,gshock)
 !
 !  solve relativistic force-free MHD equations 
 !
@@ -228,8 +228,8 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
-      real, dimension (nx,3) :: oo,oxu,bbb,uxDxuxb
-      real, dimension (nx) :: rho1,J2,TT1,ab,jb,bx,by,bz,va2
+      real, dimension (nx,3) :: oo,oxu,bbb,uxDxuxb,gshock
+      real, dimension (nx) :: rho1,J2,TT1,ab,jb,bx,by,bz,va2,shock
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
       real :: tmp,eta_out1
@@ -485,6 +485,8 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 if(ip<3.and.m==4.and.n==4) write(61) ss,Sij,curlS,divS,del2A,curlB
 if(ip<3.and.m==4.and.n==4) write(61) BB,B2,BgS,SgB,Bij,CC,EE,B21
 if(ip<3.and.m==4.and.n==4) write(61) divE,BdivS,CxE,curlBxB,curlE,curlExE,divEE
+!
+if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !     
     endsubroutine daa_dt
 !***********************************************************************
