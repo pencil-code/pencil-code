@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.8 2003-02-12 15:22:45 tarek Exp $
+#  $Id: mkdatadir,v 1.9 2003-03-03 18:41:50 mattias Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -24,7 +24,9 @@ else if ($hn =~ sander*) then
   set str='s/astro/scratch1\/astro/g'
 else if ($hn =~ nq*) then
   set str='s/home/nq1\/data/g'
-else if ($hn =~ nl*) then
+else if ($hn =~ nl0) then
+  set str='s/home/scr/g'
+else if ($hn =~ nl3) then
   set str='s/home/scr/g'
 else if ($hn =~ embla) then
   set str='s/home\/u./work/g'
