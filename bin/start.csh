@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.54 2004-04-02 20:51:46 dobler Exp $
+# CVS: $Id: start.csh,v 1.55 2004-06-03 17:25:53 brandenb Exp $
 
 #                       start.csh
 #                      -----------
@@ -28,8 +28,6 @@ if ($?QSUB_WORKDIR) then
   cd $QSUB_WORKDIR
 endif
 
-# ---------------------------------------------------------------------- #
-
 # Common setup for start.csh, run.csh, start_run.csh:
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
@@ -48,6 +46,21 @@ if (! -d "$datadir") then
   echo
   exit 0
 endif
+
+# ---------------------------------------------------------------------- #
+#  for testing backwards compatibility, it is useful to make sure
+#  start.x is never excecuted, and that the old var.dat etc files
+#  are not deleted. time_series.dat will be renamed, so we can write
+#  a fresh one to compare against.
+#
+if (-e NOSTART) then
+  echo "The file NOSTART exists, so we have to exit"
+  echo "and don't overwrite existing data"
+  mv $datadir/time_series.dat $datadir/time_series.`timestr`
+  exit
+endif
+
+# ---------------------------------------------------------------------- #
 
 # Create list of subdirectories
 # If the file NOERASE exists, the old directories are not erased
