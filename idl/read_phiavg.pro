@@ -7,11 +7,11 @@
 ;;;  Date:   11-Aug-2003
 ;;;
 ;;;  Description:
-;;;   Read phi-averages from file and return them in a structure
+;;;    Read phi-averages from file and return them in a structure
 ;;;  Usage:
-;;;   avg = read_phiavg('data/averages/PHIAVG1')
+;;;    avg = read_phiavg('data/averages/PHIAVG1')
 ;;;  Keywords:
-;;;   TONLY  -- If true, return just the time t (as a scalar)
+;;;    TONLY  -- If true, return just the time t (as a scalar)
 ;;;  Slots of returned structure:
 ;;;       t        FLOAT              ; time
 ;;;       rcyl     FLOAT Array[nr]    ; coordinate
@@ -24,7 +24,7 @@
 ;;;    The names <var1>, etc are the same as in the file phiaver.in,
 ;;;    e.g. `b2mphi', etc.
 ;;;
-;;;  File format of PHIAVER files:
+;;;  File format of PHIAVG files:
 ;;     3. nr_phiavg, nz_phiavg, nvars, nprocz
 ;;;    2. t, r_phiavg, z_phiavg, dr, dz
 ;;;    1. data
@@ -58,7 +58,10 @@ function parse_labels, line
 end
 ; ---------------------------------------------------------------------- ;
 function read_phiavg, file, $
-                      VARS=vars, TONLY=t_only, DEBUG=debug
+                      VARS=vars, TONLY=t_only, $
+                      DEBUG=debug, HELP=help
+
+  if (keyword_set(help)) then extract_help, 'read_phiavg'
 
   default, debug, 0
   default, t_only, 0
