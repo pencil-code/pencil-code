@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.8 2003-01-20 16:38:05 nilshau Exp $
+! $Id: struct_func.f90,v 1.9 2003-01-20 20:00:01 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -36,7 +36,7 @@ module struct_func
   !
   implicit none
   !
-  integer, parameter :: qmax=8, imax=nx/2
+  integer, parameter :: qmax=8, imax=lb_nxgrid
   integer, parameter :: n_pdf=101
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension (nx,ny,nz) :: vect,b_vec
@@ -47,7 +47,7 @@ module struct_func
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz) :: i_du
   integer :: l,ll,j,q,direction
-  integer :: separation,i,ivec
+  integer :: separation,i,ivec,sep
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
   character (len=*) :: variabl
@@ -60,28 +60,28 @@ module struct_func
   !
   if (variabl .eq. 'u') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
-     filetowrite='/sfu_'
+     filetowrite='/sfu-'
      sf=0.
      totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'b') then
      vect(:,:,:)=b_vec(:,:,:)
-     filetowrite='/sfb_'
+     filetowrite='/sfb-'
      sf=0.
      totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'z1') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)+b_vec(:,:,:)
-     filetowrite='/sfz1_'
+     filetowrite='/sfz1-'
      sf=0.
      totall=0
      llsf=.true.
      llpdf=.false.
   elseif (variabl .eq. 'z2') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
-     filetowrite='/sfz2_'
+     filetowrite='/sfz2-'
      sf=0.
      totall=0
      llsf=.true.
@@ -106,38 +106,42 @@ module struct_func
   !
   !  Beginning the loops
   !
+  sep=1
   do direction=1,nr_directions
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
         do ll=l+1,nx
            separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-           dvect=vect(l,:,:)-vect(ll,:,:)
-           if (llpdf) then !if pdf=.true.
-              i_du=1+int((dvect-pdf_min)*n_pdf/(pdf_max-pdf_min))
-              i_du=min(max(i_du,1),n_pdf)  !(make sure its inside array bdries)
-              !
-              !  Calculating pdf
-              !
-              do m=1,ny
-                 do n=1,nz
-                    p_du(i_du(m,n),separation,direction) &
-                         =p_du(i_du(m,n),separation,direction)+1
+           if (separation .eq. 2**(sep-1)) then
+              dvect=vect(l,:,:)-vect(ll,:,:)
+              if (llpdf) then !if pdf=.true.
+                 i_du=1+int((dvect-pdf_min)*n_pdf/(pdf_max-pdf_min))
+                 i_du=min(max(i_du,1),n_pdf)  !(make sure its inside array bdries)
+                 !
+                 !  Calculating pdf
+                 !
+                 do m=1,ny
+                    do n=1,nz
+                       p_du(i_du(m,n),sep,direction) &
+                            =p_du(i_du(m,n),sep,direction)+1
+                    enddo
                  enddo
-              enddo
-           endif
-           !
-           if (llsf) then
+              endif
               !
-              !  Calculates sf
-              !
-              totall(separation)=totall(separation)+1
-              do q=1,qmax                          
-                 sf(separation,q,direction) &
-                      =sf(separation,q,direction) &
-                      +sum(abs(dvect(:,:))**q)
-              enddo
+              if (llsf) then
+                 !
+                 !  Calculates sf
+                 !
+                 !totall(sep)=totall(sep)+1
+                 do q=1,qmax                          
+                    sf(sep,q,direction) &
+                         =sf(sep,q,direction) &
+                         +sum(abs(dvect(:,:))**q)
+                 enddo
+              endif
            endif
         enddo
+        sep=sep+1
      enddo
      if (nr_directions .gt. 1) then
         if (direction .eq. 1) then
@@ -175,8 +179,8 @@ module struct_func
      call chn(ivec,var)
      if(llpdf) then
         if (ip<10) print*,'Writing pdf of variable',var &
-             ,'to ',trim(datadir)//'/pdf_'//trim(var)//'.dat'
-        open(1,file=trim(datadir)//'/pdf_'//trim(var) &
+             ,'to ',trim(datadir)//'/pdf-'//trim(var)//'.dat'
+        open(1,file=trim(datadir)//'/pdf-'//trim(var) &
              //'.dat',position='append')
         write(1,*) t,n_pdf
         write(1,'(1p,8e10.2)') p_du_sum(:,:,:)
