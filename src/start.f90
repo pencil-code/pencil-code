@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.17 $", &
-             "$Date: 2002-02-23 15:59:48 $")
+             "$Revision: 1.18 $", &
+             "$Date: 2002-03-01 14:38:07 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -111,7 +111,7 @@
         call output(trim(directory)//'/var.dat',f,mvar)
         call wdim(trim(directory)//'/dim.dat')
 !  also write full dimensions to tmp/ :
-        if (lroot) call wdim('tmp/dim.dat',nygrid,nzgrid)
+        if (lroot) call wdim('tmp/dim.dat',nxgrid,nygrid,nzgrid)
 !  write global variables:
         call wglobal()
 

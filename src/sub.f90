@@ -724,7 +724,7 @@ module Sub
 !
     endsubroutine wsnap
 !***********************************************************************
-    subroutine wdim(file,myout,mzout)
+    subroutine wdim(file,mxout,myout,mzout)
 !
 !  write dimension to file
 !
@@ -733,28 +733,18 @@ module Sub
       use Cdata
 !
       character (LEN=*) :: file
-      integer, optional :: myout,mzout
-      integer :: myout1,mzout1
+      integer, optional :: mxout,myout,mzout
+      integer :: mxout1,myout1,mzout1
 !
-!  determine whether myout=my (as on each processor)
-!  or whether myout is different (eg when writing out full array)
+!  determine whether mxout=mx (as on each processor)
+!  or whether mxout is different (eg when writing out full array)
 !
-      if(present(myout)) then
-        myout1=myout
-      else
-        myout1=my
-      endif
-!
-!  Do the same for mz.
-!
-      if(present(mzout)) then
-        mzout1=mzout
-      else
-        mzout1=mz
-      endif
+      if(present(mxout)) then; mxout1=mxout; else; mxout1=mx; endif
+      if(present(myout)) then; myout1=myout; else; myout1=my; endif
+      if(present(mzout)) then; mzout1=mzout; else; myout1=mz; endif
 !
       open(1,file=file)
-      write(1,'(4i7)') mx,myout1,mzout1,mvar
+      write(1,'(4i7)') mxout1,myout1,mzout1,mvar
 !
 !  check for double precision
 !
@@ -766,7 +756,7 @@ module Sub
 !
 !  write number of ghost cells (could be different in x, y and z)
 !
-      write(1,*) 0, nghost, nghost
+      write(1,*) nghost, nghost, nghost
 !
       close(1)
     endsubroutine wdim
