@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.92 2002-10-16 14:42:19 brandenb Exp $
+! $Id: magnetic.f90,v 1.93 2002-10-27 19:38:11 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.92 2002-10-16 14:42:19 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.93 2002-10-27 19:38:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -126,7 +126,7 @@ module Magnetic
       case('Bz(x)', '3'); call vfield(amplaa,f,iaa,xx)
       case('xjump'); call bjump(f,iaz,by_left,by_right,widthaa,'x')
       case('fluxrings', '4'); call fluxrings(f,iaa,xx,yy,zz)
-      case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
+      case('sinxsinz'); call sinxsinz(amplaa,f,iaa,kx_aa,ky_aa,kz_aa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)

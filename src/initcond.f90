@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.16 2002-10-10 17:41:10 brandenb Exp $ 
+! $Id: initcond.f90,v 1.17 2002-10-27 19:38:11 brandenb Exp $ 
 
 module Initcond 
  
@@ -44,8 +44,9 @@ module Initcond
       else
         if (lroot) print*,'sinx*sinz wave; ampl,kx,kz=',ampl,kx1,kz1
         j=i+1
-        f(:,:,:,j)=f(:,:,:,j)+ampl*(spread(spread(sin(kx1*x),2,my),3,mz)&
-                                   *spread(spread(sin(kz1*z),1,mx),2,my))
+        f(:,:,:,j)=f(:,:,:,j)+ampl*(spread(spread(cos(kx1*x),2,my),3,mz)&
+                                   *spread(spread(cos(ky1*y),1,mx),3,mz)&
+                                   *spread(spread(cos(kz1*z),1,mx),2,my))
       endif
 !
     endsubroutine sinxsinz

@@ -377,11 +377,68 @@ subroutine transform_i(a_re,a_im)
   call fft(a_re,a_im, nx*ny*nz, nx, nx      ,-1)
   call fft(a_re,a_im, nx*ny*nz, ny, nx*ny   ,-1)
   call fft(a_re,a_im, nx*ny*nz, nz, nx*ny*nz,-1)
-  
-  ! Normalize
+!
+!  Normalize
+!
   a_re=a_re/nwgrid
   a_im=a_im/nwgrid
 !
 end subroutine transform_i
+!***********************************************************************
+subroutine transform_fftpack(a_re,a_im)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data
+!
+!  27-oct-02/axel: adapted from transform
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  complex,dimension(ny) :: ay
+  complex,dimension(nz) :: az
+  real,dimension(4*nx+15) :: wsavex
+  real,dimension(4*ny+15) :: wsavey
+  real,dimension(4*nz+15) :: wsavez
+  integer :: l,m,n
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  call cffti(nx,wsavex)
+  do m=1,ny
+  do n=1,nz
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in y'
+  call cffti(ny,wsavey)
+  do l=1,nx
+  do n=1,nz
+    ay=cmplx(a_re(l,:,n),a_im(l,:,n))
+    call cfftf(ny,ay,wsavey)
+    a_re(l,:,n)=real(ay)
+    a_im(l,:,n)=aimag(ay)
+  enddo
+  enddo
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in z'
+  call cffti(nz,wsavez)
+  do l=1,nx
+  do m=1,ny
+    az=cmplx(a_re(l,m,:),a_im(l,m,:))
+    call cfftf(nz,az,wsavez)
+    a_re(l,m,:)=real(az)
+    a_im(l,m,:)=aimag(az)
+  enddo
+  enddo
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+!
+end subroutine transform_fftpack
 !***********************************************************************
 endmodule Mpicomm
