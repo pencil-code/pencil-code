@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.39 2003-08-11 17:54:11 mee Exp $
+! $Id: interstellar.f90,v 1.40 2003-08-12 18:02:18 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -44,18 +44,19 @@ module Interstellar
 
 !  real, parameter :: cp1=27.8   !=R * gamma / (mu * (gamma-1))  27.8 
   real, parameter :: TTunits=46.6
-  real :: unit_Lambda
+  double precision :: unit_Lambda
   real, parameter :: tosolarMkpc3=1.483e7
 
   real, parameter :: rhoUV_cgs=0.1
   real, parameter :: TUV_cgs=7000.,T0UV_cgs=12000.,cUV_cgs=5.e-4
   double precision, parameter, dimension(6) ::  &
-    coolT_cgs=(/ 300.,     2000.,    8000.,    1.e5,    4.e7,     1.e9 /),  &
-    coolH_cgs=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /)
+  coolT_cgs=(/ 300.D0,     2000.D0,    8000.D0,    1.D5,    4.D7,     1.D9 /),  &
+  coolH_cgs=(/ 2.2380D-23, 1.0012D-30, 4.6240D-36, 1.7800D-18, 3.2217D-27, 0.D0   /)
   
   real :: rhoUV,TUV,T0UV,cUV
-  real, dimension(6) :: coolH, coolT, &
+  real, dimension(6) :: coolT, &
     coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
+  double precision, dimension(6) :: coolH 
   integer :: iproc_SN,ipy_SN,ipz_SN
   logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
                               ! origin and ONLY the type I scheme is used
@@ -105,7 +106,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.39 2003-08-11 17:54:11 mee Exp $")
+           "$Id: interstellar.f90,v 1.40 2003-08-12 18:02:18 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -164,18 +165,19 @@ module Interstellar
       if (lroot.and.uniform_zdist_SNI) then
          print*,'initialize_interstellar: using UNIFORM z-distribution of SNI'
       endif
-
+       
       if (unit_system=='cgs') then
-        unit_Lambda =  unit_energy / (unit_density**3*unit_time)
+        unit_Lambda =  unit_energy / (unit_density*unit_time*unit_mass)
       elseif (unit_system=='SI') then
-        unit_Lambda =  1e-2 * unit_energy / (unit_density**3*unit_time)
+        unit_Lambda =  1D-2 * unit_energy / (unit_density*unit_time*unit_mass)
       endif
+      print*,'initialize_interstellar: unit_Lambda',unit_Lambda
       coolH = coolH_cgs / unit_Lambda 
       coolT = coolT_cgs / unit_temperature
 
       if (lroot.and.ip<14) then
-         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
-         print*,'initialize_interstellar: finished'
+        print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
+        print*,'initialize_interstellar: finished'
       endif
 !
     endsubroutine initialize_interstellar
