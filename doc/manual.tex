@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.69 2002-07-24 11:46:03 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.70 2002-07-25 14:02:32 dobler Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -201,7 +201,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.69 $ $}
+\date{\today,~ $ $Revision: 1.70 $ $}
 
 % ====================================================================== %
 
@@ -230,7 +230,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.69 $ $}
+  \emph{\today,~ $ $Revision: 1.70 $ $}
 
 
 \end{center}
@@ -599,6 +599,33 @@ You should get output similar to
 Apart from the \env{PATH} variable, the environment variable
 \env{IDL_PATH} has been set to something like
 \texttt{./idl:../idl:+\$PENCIL_HOME/bin:./tmp:<IDL_DEFAULT>} .
+
+\paragraph{Note 1}
+If you  don't want to rely on the \file{sourceme.\{c,\}sh} scripts' (quite
+heuristic) ability to correctly identify the code's main directory, you
+can set the environment variable \env{PENCIL_HOME} explicitly before you
+run the source command.
+
+\paragraph{Note 2}
+The second time you source \file{sourceme.\{c,\}sh}, it will not add
+anything to your \env{PATH} variable.
+This is on purpose to avoid cluttering of your environment: you can
+source the file as often as you like (in your shell startup script, then
+manually and in addition in some script you have written), without
+thinking twice.
+If, however, at the first sourcing, the setting of \env{PENCIL_HOME} was
+wrong, this mechanism would keep you from ever adding the right directory
+to your \env{PATH}.
+In this case, you need to first undefine the environment variable
+\env{PENCIL_HOME}:
+\begin{alltt}
+  \prompt{csh> } unsetenv PENCIL_HOME
+  \prompt{csh> } source ./sourceme.csh
+  {\sl{}or}
+  \prompt{sh> } unset PENCIL_HOME
+  \prompt{sh> } . ./sourceme.sh
+\end{alltt}
+
 
 
 \subsubsection{Linking scripts and source files}
@@ -2407,13 +2434,6 @@ In practice, we may use the simplified viscous operator
 during the initial relaxation phase of a long run, provided this
 is not already part of a production run.
 
-%AB: we should not recommend this for production runs.
-%Thus, our recommendation is: compare results with the full viscous term to
-%an otherwise identical run with simplified viscosity.
-%If you don't find any relevant difference, you can carry out your
-%production runs with the simplified term, provided you do counter-checks
-%every now and then.
-
 
 % ====================================================================== %
 
@@ -3173,7 +3193,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.69 2002-07-24 11:46:03 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.70 2002-07-25 14:02:32 dobler Exp $ $}
 
 
 \end{document}
@@ -3215,6 +3235,7 @@ $ $Id: manual.tex,v 1.69 2002-07-24 11:46:03 brandenb Exp $ $}
 % LocalWords:  rms getconf sourced substep perldoc lmpi llam FC FFLAGS LDMPI mk
 % LocalWords:  SunOS UNICOS UX MPP AIX xyaver bmy bmx bxmxy bymxy bzmxy conv dz
 % LocalWords:  evol hsect hsections vsect vsections vsections texinfo nxgrid ke
-% LocalWords:  nygrid nzgrid ccc widthss ttransient brandenb Nils Pariev tcsh ls ln
-% LocalWords:  cincinnatus CEST mx mz lnrho pf nprocy ncpus nprocz
-% LocalWords:  nprocx MIPSpro
+% LocalWords:  nygrid nzgrid ccc widthss ttrans brandenb Nils Pariev tcsh ls ln
+% LocalWords:  cincinnatus CEST mx mz lnrho pf pararellism nprocy ncpus nprocz
+% LocalWords:  nprocx MIPSpro sourcing unsetenv alltt wsnaps timesteps kB
+% LocalWords:  ttransient
