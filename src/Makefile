@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.248 2003-10-13 11:48:52 mee Exp $
+### $Id: Makefile,v 1.249 2003-10-20 21:54:11 mee Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -223,7 +223,6 @@ LDFLAGS=$(FFLAGS) $(FFLAGS_GENERAL)
 
 technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o filter.o $(INITCOND_SPEC).o initcond.o register.o prints.o $(TIMEAVG).o
 physics=$(GLOBAL).o $(VISCOSITY).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(INTERSTELLAR).o $(ENTROPY).o $(IONIZATION).o $(MAGNETIC).o $(SHEAR).o $(PSCALAR).o $(RADIATION).o $(DUSTVELOCITY).o $(DUSTDENSITY).o $(SPECIAL).o $(COSMICRAY).o
-physics_src=$(GLOBAL).f90 $(VISCOSITY).f90 $(HYDRO).f90 $(DENSITY).f90 $(FORCING).f90 $(GRAVITY).f90 $(INTERSTELLAR).f90 $(ENTROPY).f90 $(IONIZATION).f90 $(MAGNETIC).f90 $(SHEAR).f90 $(PSCALAR).f90 $(RADIATION).f90 $(DUSTVELOCITY).f90 $(DUSTDENSITY).f90 $(SPECIAL).f90 $(COSMICRAY).f90
 comm_deps=$(technical) sub.o $(IO).o wsnaps.o param_io.o $(MPICOMM).o $(physics) $(FFT).o $(FFTPACK).o $(POWER).o $(STRUCT_FUNC).o
 start_deps_f90=$(comm_deps) $(DEBUG).o
 start_deps=$(start_deps_f90)
@@ -252,7 +251,7 @@ pacx-makefile: Makefile
 # Ignore cparam dependencies upon .f90 files to save a few time consuming
 # recompiles! Just check for switching of modules instead.
 cparam.inc: Makefile Makefile.local
-	mkcparam $(physics_src) -o cparam.inc
+	mkcparam $(physics:.o=.f90) -o cparam.inc
 mpicomm_double.f90: mpicomm.f90
 	sed -e 's/REAL/DOUBLE_PRECISION/g' mpicomm.f90 > mpicomm_double.f90
 mpicomm_.f90: mpicomm.f90
