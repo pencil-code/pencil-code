@@ -2,7 +2,7 @@
                            ukaff-namelist-bug
                           --------------------
 
-$Id: README,v 1.1 2002-06-12 17:25:17 dobler Exp $
+$Id: README,v 1.2 2002-06-12 17:39:26 dobler Exp $
 
 
 1. Symptoms:
@@ -35,6 +35,12 @@ $Id: README,v 1.1 2002-06-12 17:25:17 dobler Exp $
   ukaff>  make
   ukaff>  run.x
 
-3. Original date:
+3. Other compilers tested (OPK means problem could not be reproduced):
+   - Intel F95  (Linux)  OK
+   - NAG F95    (Linux)  OK
+   - Compaq F95 (Tru64)  OK
+   - Sun F95    (SunOS)  OK
+
+4. Original date:
 
   Wed Jun 12 18:19:51 BST 2002
