@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.21 2003-05-07 10:15:05 brandenb Exp $
+! $Id: pscalar.f90,v 1.22 2003-05-13 10:30:48 amjed Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -17,6 +17,7 @@ module Pscalar
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
   real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
+  real :: gradC0=0.
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
@@ -26,7 +27,7 @@ module Pscalar
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
 
   namelist /pscalar_run_pars/ &
-       pscalar_diff,nopscalar,tensor_pscalar_diff
+       pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
@@ -62,7 +63,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.21 2003-05-07 10:15:05 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.22 2003-05-13 10:30:48 amjed Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -181,6 +182,15 @@ module Pscalar
           call del2(f,ilncc,del2lncc)
           diff_op=diff_op+del2lncc
           df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
+        endif
+!
+!  add diffusion of imposed constant gradient of c
+!  restrict ourselves (for the time being) to z-gradient only
+!  makes sense really only for periodic boundary conditions
+!
+        if (gradC0/=0.) then
+          cc=exp(lncc)
+          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-gradC0*uu(:,3)/cc
         endif
 !
 !  tensor diffusion (but keep the isotropic one)
