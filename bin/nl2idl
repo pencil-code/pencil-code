@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.10 2002-10-16 14:34:22 dobler Exp $
+# $Id: nl2idl,v 1.11 2003-01-14 17:21:22 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -28,7 +28,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 use strict;
 use Getopt::Long;
 # Allow for `-Plp' as equivalent to `-P lp' etc:
-Getopt::Long::config("bundling");
+#Getopt::Long::config("bundling");
 
 my (%opts);	# Variables written by GetOptions
 my $funcname = "param";		# default name of idl function
@@ -79,15 +79,16 @@ if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
 my $oneline = ($opts{'1'} || $opts{'one-line'} || 0);
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
+my $opt;
 if ($debug) {
-    foreach my $opt (keys(%opts)) {
+    foreach $opt (keys(%opts)) {
 	print "\$opts{$opt} = `$opts{$opt}'\n";
     }
     print "\@ARGV = `@ARGV'\n";
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.10 2002-10-16 14:34:22 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.11 2003-01-14 17:21:22 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -150,9 +151,11 @@ merge_nls(\%nlists);
 
 ## Print IDL statements to generate the namelists as structures
 my ($br0,$br1);			# opening/closing brackets if needed
-foreach my $nl (keys %nlists) {
+my $nl;
+foreach $nl (keys %nlists) {
     print STDERR "$nl:\n" if $debug;
-    while (my ($var, $val) = each %{$nlists{$nl}}) {
+    my ($var,$val);
+    while (($var, $val) = each %{$nlists{$nl}}) {
 	if (@$val > 1) {	# list of values
 	    ($br0,$br1) = ("[", "]");
 	} else {
@@ -247,7 +250,8 @@ sub parse_nl {
 	}
     }
     # Sort all entries from %nl into $($_[1]):
-    while (my ($var, $val) = each %nl) {
+    my ($var, $val);
+    while (($var, $val) = each %nl) {
 	if ($minimize) { trim_strings($val) };
 	${$_[1]}{$var} = $val;
     }
@@ -335,10 +339,11 @@ sub merge_nls {
 
     # use Data::Dumper;
     # print Dumper(\%nl);
-
-    foreach my $nl (keys %nl) {
+    my $nl;
+    foreach $nl (keys %nl) {
 	print "$nl:\n" if $debug;
-	while (my ($var, $val) = each %{$nlists{$nl}}) {
+        my ($var, $val);
+	while (($var, $val) = each %{$nlists{$nl}}) {
 	    $newl{'merged'}->{$var} = $val;
 	}
     }
