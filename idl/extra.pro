@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.34 2004-02-25 15:27:33 ajohan Exp $
+;  $Id: extra.pro,v 1.35 2004-02-26 15:54:24 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -114,8 +114,8 @@ if (ind(0) ne 0) then begin
     md(i)      = 0.5*(mdplus(i)+mdminus(i))
     ad(i)      = (3*md(i)/(4*!pi*rhods))^(1/3.)
   endfor
-  nnd = reform(nd)
-  if (lmdvar) then rrhod = reform(rhod)
+  nd = reform(nd)
+  if (lmdvar) then rhod = reform(rhod)
 endif
 ;
 END
