@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.212 2003-10-18 19:47:10 theine Exp $
+! $Id: entropy.f90,v 1.213 2003-10-20 16:26:32 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -27,6 +27,7 @@ module Entropy
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
+  real :: T_int,T_ext,cs2_int,cs2_ext
   real :: chi=0.,chi_t=0.,chi_shock=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
@@ -101,7 +102,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.212 2003-10-18 19:47:10 theine Exp $")
+           "$Id: entropy.f90,v 1.213 2003-10-20 16:26:32 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -367,6 +368,13 @@ module Entropy
           mpoly1 = mpoly0
           mpoly2 = mpoly0
 
+        case ('geo-kws')
+          !
+          ! radial temperature profiles for spherical shell problem
+          !
+          if (lroot) print*,'init_ss: kws temperature in spherical shell'
+          call shell_ss(f)
+
         case default
           !
           !  Catch unknown values
@@ -529,6 +537,54 @@ module Entropy
       f(:,:,:,iss) = p*f(:,:,:,iss)  + (1-p)*tmp
 !
     endsubroutine polytropic_ss_disc
+!***********************************************************************
+    subroutine shell_ss(f)
+!
+!  Initialize entropy based on specified radial temperature profile in
+!  a spherical shell
+!
+!  20-oct-03/dave -- coded
+!
+      use Density, only: gamma1,mpoly
+      use Gravity, only: g0
+      use Ionization, only: ionput,cp
+
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (nx) :: Temp
+      real :: beta1
+!     real :: ss_ext,ss_int
+!      integer :: ijk
+!
+      beta1 = g0/(mpoly+1)
+
+      if (initss=='geo-kws') then
+!       temperatures at shell boundaries
+        T_ext = T0
+        T_int = 1+beta1*(1/r_int-1)
+!       set up cooling parameters for spherical shell in terms of
+!       sound speeds
+        cs2_ext = T_ext*cp*gamma1
+        cs2_int = T_int*cp*gamma1
+!       corresponding values for entropy 
+        do imn=1,ny*nz
+          n=nn(imn)
+          m=mm(imn)
+
+! set x_mn, y_mn, z_mn and r_mn
+
+          x_mn = x(l1:l2)
+          y_mn = spread(y(m),1,nx)
+          z_mn = spread(z(n),1,nx)
+          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
+
+          where (r_mn >= r_ext) Temp = T_ext
+          where (r_mn < r_ext .AND. r_mn > r_int) Temp = 1+beta1*(1/r_mn-1)
+          where (r_mn <= r_int) Temp = T_int
+          call ionput(f,Temp,Temp)
+        enddo 
+      endif
+      
+   end subroutine shell_ss
 !***********************************************************************
     subroutine ferriere(f)
 !
