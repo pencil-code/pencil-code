@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.187 2004-10-03 20:03:24 nilshau Exp $
+! $Id: hydro.f90,v 1.188 2004-10-04 17:24:08 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -127,7 +127,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.187 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: hydro.f90,v 1.188 2004-10-04 17:24:08 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -413,11 +413,11 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,bij
+      real, dimension (nx,3,3) :: uij,bij,Jij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13,ss12,nu_smag
-      real, dimension (nx) :: pdamp
+      real, dimension (nx) :: pdamp,SJ
       real :: c2,s2
       integer :: i,j
 !
@@ -629,19 +629,29 @@ module Hydro
 !  mean heating term
 !
         if ((i_epsK/=0) .or. (i_epsK_LES/=0)) then
-           if (.not. lvisc_hyper) then
-             call multm2_mn(sij,sij2)
-             if (ivisc .eq. 'smagorinsky_simplified') then
-                 SS12=sqrt(2*sij2)
-                 nu_smag=(C_smag*dxmax)**2.*SS12     
-                 call sum_mn_name(2*nu_smag*rho*sij2,i_epsK_LES)
-              endif
-              rho=exp(f(l1:l2,m,n,ilnrho))
-              call sum_mn_name(2*nu*rho*sij2,i_epsK)
-           else
-              ! In this case the calculation is done in visc_hyper.f90
-              itype_name(i_epsK)=ilabel_sum
-           endif
+          if (.not. lvisc_hyper) then
+            call multm2_mn(sij,sij2)
+            if (ivisc .eq. 'smagorinsky_simplified') then
+              SS12=sqrt(2*sij2)
+              nu_smag=(C_smag*dxmax)**2.*SS12     
+              call sum_mn_name(2*nu_smag*rho*sij2,i_epsK_LES)
+            else if (ivisc .eq. 'smagorinsky_cross_simplified') then
+              do j=1,3
+                do i=1,3
+                  Jij(:,i,j)=.5*(bij(:,i,j)+bij(:,j,i))
+                enddo
+              enddo
+              call multmm_sc(sij,Jij,SJ)
+              SS12=sqrt(abs(SJ))
+              nu_smag=(C_smag*dxmax)**2.*SS12     
+              call sum_mn_name(2*nu_smag*rho*sij2,i_epsK_LES)
+            endif
+            rho=exp(f(l1:l2,m,n,ilnrho))
+            call sum_mn_name(2*nu*rho*sij2,i_epsK)
+          else
+            ! In this case the calculation is done in visc_hyper.f90
+            itype_name(i_epsK)=ilabel_sum
+          endif
         endif
 !
 !  this doesn't need to be as frequent (check later)

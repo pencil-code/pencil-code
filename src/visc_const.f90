@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.42 2004-10-03 20:03:24 nilshau Exp $
+! $Id: visc_const.f90,v 1.43 2004-10-04 17:24:08 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.42 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.43 2004-10-04 17:24:08 nilshau Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -195,7 +195,7 @@ module Viscosity
       real, dimension (nx,3) :: nusglnrho,tmp1,tmp2,gshock
       real, dimension (nx) :: murho1,rho1,divu,shock,SS12,nu_smag,sij2
       real, dimension (nx) :: ufvisc,rufvisc,SJ
-      integer :: i
+      integer :: i,j
 
       intent (in) :: f, glnrho, rho1
       intent (out) :: df,shock,gshock
@@ -267,9 +267,15 @@ module Viscosity
           if (headtt) print*,'viscous force: Smagorinsky_simplified'
           if (headtt) lvisc_LES=.true.
           if(ldensity) then
+            !
+            ! Find nu_smag
+            !
             call multm2_mn(sij,sij2)
             SS12=sqrt(2*sij2)
             nu_smag=(C_smag*dxmax)**2.*SS12
+            !
+            ! Calculate viscous force
+            !
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(nu_smag,sglnrho,nusglnrho)
@@ -300,9 +306,23 @@ module Viscosity
           if (headtt) print*,'viscous force: Smagorinsky_simplified'
           if (headtt) lvisc_LES=.true.
           if(ldensity) then
+            !
+            ! Need to calculate Jij
+            !
+            do j=1,3
+              do i=1,3
+                Jij(:,i,j)=.5*(bij(:,i,j)+bij(:,j,i))
+              enddo
+            enddo
+            !
+            ! Find nu_smag
+            !
             call multmm_sc(sij,Jij,SJ)
-            SS12=sqrt(SJ)
+            SS12=sqrt(abs(SJ))
             nu_smag=(C_smag*dxmax)**2.*SS12
+            !
+            ! Calculate viscous force
+            !
             call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(nu_smag,sglnrho,nusglnrho)
