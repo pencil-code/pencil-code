@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.26 2003-09-02 13:43:11 dobler Exp $
+! $Id: general.f90,v 1.27 2003-09-29 15:25:16 nilshau Exp $
 
 module General
 
@@ -23,7 +23,7 @@ module General
 !  state and default generator of random numbers
 !
   integer, save, dimension(mseed) :: rstate=0
-  character (len=labellen) :: random_gen='system'
+  character (len=labellen) :: random_gen='min_std'
 
   contains
 
