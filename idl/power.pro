@@ -47,6 +47,7 @@ spec1=fltarr(imax,i-1)
 ;  Opening file 2 if it is defined
 ;
 if (file2 ne '') then begin
+  close,2
   spectrum2=fltarr(imax)
   openr,2,datadir+'/'+file2
   spec2=fltarr(imax,i-1)
@@ -69,7 +70,7 @@ openr,1, datadir+'/'+file1
        endif
        plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1
        if (file2 ne '') then oplot,k,spectrum2,col=122
-;       wait,.5
+       wait,.1
        i=i+1
     endwhile
 close,1
