@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.144 2003-11-22 03:33:47 brandenb Exp $ 
+! $Id: sub.f90,v 1.145 2003-11-22 20:59:35 dobler Exp $ 
 
 module Sub 
 
@@ -219,7 +219,7 @@ module Sub
 !
 !  Successively calculate sum over phi of a, which is supplied at each call.
 !  Start from zero if lfirstpoint=.true.
-!  The fnamerz aray has one extra slice in z where we put ones and sum
+!  The fnamerz array has one extra slice in z where we put ones and sum
 !  them up in order to get the normalization correct.
 !
 !   2-feb-03/wolf: adapted from xysum_mn_name_z

@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.10 2003-08-08 08:49:38 dobler Exp $ 
+! $Id: timeavg.f90,v 1.11 2003-11-22 20:59:35 dobler Exp $ 
 
 module Timeavg
 
@@ -67,7 +67,7 @@ module Timeavg
 
       intent (in) :: a
 !
-      init1=.false.             ! somehow the initialization above doen
+      init1=.false.             ! somehow the initialization above does
                                 ! not seem to work on Cincinnatus
       if (tavg <= 0) return
       if (present(init)) init1=init
@@ -79,7 +79,10 @@ module Timeavg
           if (init1) then
             f_tavg(:,:,:,i) = a(:,:,:,idx)
           else
-            f_tavg(:,:,:,i) = weight*a(:,:,:,idx) + (1-weight)*f_tavg(:,:,:,i)
+!            f_tavg(:,:,:,i) = weight*a(:,:,:,idx) + (1-weight)*f_tavg(:,:,:,i)
+            ! numerically slightly better (probably irrelevant):
+            f_tavg(:,:,:,i) = f_tavg(:,:,:,i) &
+                              + weight*(a(:,:,:,idx)-f_tavg(:,:,:,i) )
           endif
         endif
       enddo
