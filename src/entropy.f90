@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.291 2004-03-29 13:52:08 theine Exp $
+! $Id: entropy.f90,v 1.292 2004-03-29 17:06:59 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.291 2004-03-29 13:52:08 theine Exp $")
+           "$Id: entropy.f90,v 1.292 2004-03-29 17:06:59 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -137,10 +137,9 @@ module Entropy
       use Cdata
       use Gravity, only: gravz,g0
       use Density, only: mpoly
+      use Ionization, only: lnTT0,get_soundspeed
 
       real :: beta1
-      real :: cp_tmp=5./2. !temporary assignment of cp ahead of ionization 
-                           !module; required here for spherical shell probs
 !
       lneed_sij = .true.   !let Hydro module know to precalculate some things
       lneed_glnrho = .true.
@@ -251,19 +250,24 @@ module Entropy
 !
     select case(initss(1))
       case('geo-kws')
-        if (lroot) print*,'initialize_entropy: set boundary temperatures and sound speeds for spherical shell problem'
+        if (lroot) then
+          print*,'initialize_entropy: set boundary temperatures for spherical shell problem'
+          if (abs(exp(lnTT0)-T0) > epsi) then
+            print*,'initialize_entropy: T0 is not consistent with cs20; using cs20'
+            T0=exp(lnTT0)
+          endif
+        endif
+!
 !       temperatures at shell boundaries
-        beta1 = g0/(mpoly+1)
-        TT_ext = T0
-        TT_int = 1+beta1*(1/r_int-1)
-!       TT_ext = gamma/gamma1*T0
-!       TT_int = gamma/gamma1*(1+beta1*(1/r_int-1))
+        beta1=g0/(mpoly+1)
+        TT_ext=T0
+        TT_int=1+beta1*(1/r_int-1)
+!       TT_ext=gamma/gamma1*T0
+!       TT_int=gamma/gamma1*(1+beta1*(1/r_int-1))
 !       set up cooling parameters for spherical shell in terms of
 !       sound speeds
-        cs2_ext=gamma1*cp_tmp*TT_ext
-        cs2_int=gamma1*cp_tmp*TT_int
-!       call get_soundspeed(log(TT_ext),cs2_ext)
-!       call get_soundspeed(log(TT_int),cs2_int)
+       call get_soundspeed(log(TT_ext),cs2_ext)
+       call get_soundspeed(log(TT_int),cs2_int)
 !
     endselect
 !
