@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.239 2003-09-10 12:12:05 dobler Exp $
+### $Id: Makefile,v 1.240 2003-09-22 11:41:15 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -254,7 +254,7 @@ mpicomm_double_.f90: mpicomm_double.f90
 	perl -pe 's/(MPI_[A-Z1-9_]*)([ (])/$$1_$$2/g' mpicomm_double.f90 > mpicomm_double_.f90
 
 code:
-	make -f $(PENCIL_MKFILE) start.x run.x read_videofiles.x read_vectorfiles.x
+	$(MAKE) -f $(PENCIL_MKFILE) start.x run.x read_videofiles.x read_vectorfiles.x
 
 start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(start) $(LDMPI) -o start.x 
@@ -269,7 +269,7 @@ linkonly:
 	$(LD) $(LDFLAGS) $(LDONLYFLAGS) $(run) $(LDMPI) $(LIBSIG) -o run.x 
 #shorthand for this
 l:
-	make -f $(PENCIL_MKFILE) linkonly
+	$(MAKE) -f $(PENCIL_MKFILE) linkonly
 
 # Needed for the underscore trick:
 mpicomm_.f90:      mpicomm.f90

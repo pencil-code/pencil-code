@@ -1,8 +1,8 @@
 default:
-	cd src; make
+	cd src; $(MAKE)
 clean:
-	cd src; make clean
+	cd src; $(MAKE) clean
 cleann:
-	cd src; make cleann
+	cd src; $(MAKE) cleann
 qeoclean:
 	rm -f start.csh.o[0-9]* start.csh.e[0-9]* run.csh.o[0-9]* run.csh.e[0-9]*
