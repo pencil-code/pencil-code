@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.19 2004-07-22 09:52:39 ajohan Exp $
+! $Id: nodustvelocity.f90,v 1.20 2004-07-23 07:44:15 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.19 2004-07-22 09:52:39 ajohan Exp $")
+           "$Id: nodustvelocity.f90,v 1.20 2004-07-23 07:44:15 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -82,9 +82,6 @@ module Dustvelocity
 !  Should be located in the Dustvelocity module, if there was one.
 !
 !  18-mar-03/axel: dummy routine
-!
-      use Cdata
-      use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
 !
