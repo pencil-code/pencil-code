@@ -42,9 +42,9 @@ if (! $?_sourceme) then		# called for the fist time?
     set path = ( $path $PENCIL_HOME/bin )
     #  Set IDL path
     if ($?IDL_PATH) then
-      setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}:./tmp:$IDL_PATH"
+      setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./tmp:$IDL_PATH"
     else
-      setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}:./tmp:<IDL_DEFAULT>"
+      setenv IDL_PATH "./idl:../idl:+${PENCIL_HOME}/idl:./tmp:<IDL_DEFAULT>"
     endif
     set _sourceme = 'set'
   else
