@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.41 2003-08-03 15:25:28 theine Exp $
+! $Id: noionization.f90,v 1.42 2003-08-04 14:24:51 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -28,8 +28,14 @@ module Ionization
   ! global ionization parameter for yH (here a scalar set to 0)
   !  real :: yyH=0.  shouldn't be used directly outside module so commented out
 
+  ! Constants use in calculation of thermodynamic quantities
+  real :: lnTTss, lnTTlnrho, lnTT0
+  real :: cs2TT
+  real :: eeTT, eeyH0
+  real :: cp
+
   ! global parameter for perfect gas EOS for either yH=0 or yH=1
-  real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
+  real :: dlnPdlnrho,dlnPdss
 
   ! secondary parameters calculated in initialize
   real,parameter :: twothirds=2./3.
@@ -76,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.41 2003-08-03 15:25:28 theine Exp $")
+           "$Id: noionization.f90,v 1.42 2003-08-04 14:24:51 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -98,6 +104,7 @@ module Ionization
       use General
 !
       real :: mu
+      real :: xHe_term=0., yH0_term=0., one_yH0_term=0.
 !
 !  check which type of thermodynamics we want
 !
@@ -108,6 +115,7 @@ module Ionization
 !  it is better to divide m_e and chiH separately by hbar.
 !
       if (lfixed_ionization) then
+        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
         mu=1.+3.97153*xHe  
         TT_ion=chiH/k_B
         TT_ion_=chiH_/k_B
@@ -131,20 +139,43 @@ module Ionization
         endif
 !
         yH0=amin1(amax1(yH0,yHacc),1.-yHacc)
-        lnTT0=log(TT_ion)+twothirds*((-1.5*(1.-yH0)*log(m_H/m_e) &
-                          -1.5*yH0*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
-                          +(1.-yH0)*log(1.-yH0)+2.*yH0*log(yH0)+xHe*log(xHe)) &
-                          /(1.+yH0+xHe)-lnrho_e-2.5)
 !
         dlnPdlnrho=1.+twothirds
         dlnPdss=twothirds/(1.+yH0+xHe) 
 !
-        coef_lr=dlnPdlnrho-1.
-        coef_ss=dlnPdss/ss_ion 
+!        coef_lr=dlnPdlnrho-1.
+!        coef_ss=dlnPdss/ss_ion 
         
+        lnTTss=dlnPdss/ss_ion
+        lnTTlnrho=dlnPdlnrho-1.
+
+! Handle degenerate cases in yH0 and xHe
+        if (xHe .ne. 0.) yH0_term=yH0*log(yH0)
+        if (yH0 .ne. 1.) one_yH0_term=(1.-yH0)*log(1.-yH0)
+        if (xHe .ne. 0.) xHe_term=xHe*log(xHe)
+
+        lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH0)*log(m_H/m_e) &
+                          -1.5*yH0*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
+                          +one_yH0_term+2.*yH0_term+xHe_term) &
+                          /(1.+yH0+xHe)-lnrho_e-2.5)
+        cs2TT=gamma1
+        eeTT=1./gamma1
+        eeyH0=0.        
+        cp=dlnPdss/dlnPdlnrho
+
         yHmin=yHacc
         yHmax=1.-yHacc
       else
+        if(headtt) print*,'thermodynamics: assume cp=1'
+
+        lnTTss=gamma
+        lnTTlnrho=gamma1
+        lnTT0=alog(cs20/gamma1)-gamma1*lnrho0
+        cs2TT=gamma1
+        eeTT=1./gamma1
+        eeyH0=0.
+        cp=1.
+
         yHmin=0.
         yHmax=1.
       endif
@@ -190,20 +221,16 @@ module Ionization
       real,intent(in) :: lnrho,TT
       real, intent(out) :: ss
 
-        ss = ((1. + yH0 + xHe) &
-                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
-                         +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
-                         -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+        ss = (log(TT)-lnTTlnrho*lnrho-lnTT0)/lnTTss
+
     end subroutine ioncalc_ss_point
 !***********************************************************************
     subroutine ioncalc_ss_penc(lnrho,TT,ss)
       real, dimension(nx), intent(in) :: lnrho,TT
       real, dimension(nx), intent(out) :: ss
 
-         ss = ((1. + yH0 + xHe) &
-                         * (1.5*log(TT/TT_ion)+lnrho_e-lnrho+2.5)  &
-                         +1.5*((1.-yH0)*log(m_H/m_e)+yH0*log(m_p/m_e)+xHe*log(m_He/m_e)) &
-                         -(1.-yH0)*log(1.-yH0)-2.*yH0*log(yH0)-xHe*log(xHe)) * ss_ion
+         ss = (log(TT)-lnTTlnrho*lnrho-lnTT0)/lnTTss
+
     end subroutine ioncalc_ss_penc
 !***********************************************************************
     subroutine isothermal_density_ion(pot,tmp)
@@ -229,11 +256,8 @@ module Ionization
       if (size(lnrho)==mx) lnrho=f(:,m,n,ilnrho)
       if (size(ss)==mx) ss=f(:,m,n,ient)
 !
-      if(lfixed_ionization) then
-        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
-      else
-        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
-      endif
+
+      TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_pencil
 !***********************************************************************
@@ -247,11 +271,7 @@ module Ionization
 !
       yH=yH0
 !
-      if(lfixed_ionization) then
-        TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
-      else
-        TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
-      endif
+      TT=exp(lnTTss*ss+lnTTlnrho*lnrho+lnTT0)
 !
     endsubroutine ionget_point
 !***********************************************************************
@@ -274,17 +294,9 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee
 !
-      if(lfixed_ionization) then
-        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
-        if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
-        if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      else
-        if(headtt) print*,'thermodynamics: assume cp=1'
-        if (present(cs2))      cs2=gamma1*TT
-        if (present(cp1tilde)) cp1tilde=1.  
-        if (present(ee))       ee=cs2/(gamma1*gamma)
-      endif
+      if (present(cs2))      cs2=cs2TT*TT
+      if (present(cp1tilde)) cp1tilde=cp
+      if (present(ee))       ee=eeTT*TT+eeyH0*yH0
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
@@ -307,17 +319,9 @@ module Ionization
       real, intent(in) :: lnrho,ss,yH,TT
       real, optional :: cs2,cp1tilde,ee
 !
-      if(lfixed_ionization) then
-        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
-        if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
-        if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
-      else
-        if(headtt) print*,'thermodynamics: assume cp=1'
-        if (present(cs2))      cs2=gamma1*TT
-        if (present(cp1tilde)) cp1tilde=1.  
-        if (present(ee))       ee=cs2/(gamma1*gamma)
-      endif
+      if (present(cs2))      cs2=cs2TT*TT
+      if (present(cp1tilde)) cp1tilde=cp
+      if (present(ee))       ee=eeTT*TT+eeyH0*yH0
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
