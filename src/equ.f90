@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.164 2003-11-15 19:46:12 brandenb Exp $
+! $Id: equ.f90,v 1.165 2003-11-23 11:08:40 brandenb Exp $
 
 module Equ
 
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.164 2003-11-15 19:46:12 brandenb Exp $")
+           "$Id: equ.f90,v 1.165 2003-11-23 11:08:40 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -404,6 +404,7 @@ module Equ
         call diagnostic
         call xyaverages_z
         call zaverages_xy
+        call phiaverages_rz
       endif
 !
     endsubroutine pde
