@@ -2,7 +2,7 @@
 ! Initialisation parameters for forced helical MHD turbulence
 !
 &init_pars
-cvsid='$Id: start.in,v 1.16 2002-06-18 16:23:55 dobler Exp $'
+cvsid='$Id: start.in,v 1.17 2002-06-20 14:49:45 dobler Exp $'
 /
 &hydro_init_pars
 /
@@ -10,7 +10,7 @@ cvsid='$Id: start.in,v 1.16 2002-06-18 16:23:55 dobler Exp $'
   gamma=1.
 /
 &magnetic_init_pars
-  initaa=12,amplaa=1e-0
+  initaa=4,amplaa=1e-0
   fring1=1e-0, Iring1=0., Rring1=1., wr1=0.3,
     axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
   fring2=1e-0, Iring2=0., Rring2=1., wr2=0.3,

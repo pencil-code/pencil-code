@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.52 2002-06-20 10:30:49 dobler Exp $
+! $Id: magnetic.f90,v 1.53 2002-06-20 14:49:45 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -79,8 +79,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.52 $", &
-           "$Date: 2002-06-20 10:30:49 $")
+           "$Revision: 1.53 $", &
+           "$Date: 2002-06-20 14:49:45 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -99,6 +99,7 @@ module Magnetic
 !   7-nov-2001/wolf: coded
 !
       use Cdata
+      use Mpicomm
       use Density
       use Sub
 !
@@ -162,7 +163,7 @@ module Magnetic
         !
         call vfield(amplaa,f,iaa,xx)
 
-      case(12)
+      case(4)
         !
         !  Magnetic flux rings. Constructed from a canonical ring which is the
         !  rotated and translated:
@@ -214,7 +215,7 @@ module Magnetic
         endif
         if (lroot) print*, 'Magnetic flux rings initialized'
 
-      case(3)
+      case(5)
         !
         !  some other (crazy) initial condition
         !  (was useful to initialize all points with finite values)
