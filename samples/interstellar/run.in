@@ -1,5 +1,5 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2004-03-17 11:43:35 mee Exp $',
+  cvsid='$Id: run.in,v 1.8 2004-03-19 15:43:40 mee Exp $',
   nt=5, it1=1, isave=50, itorder=3
   cdt=0.4, cdtv=0.08, dtmin=1e-9
   dsnap=2., dvid=2.
@@ -26,7 +26,7 @@
   lSN_ecr=F
   lSNI=T, lSNII=F
   ltestSN=T                !Position SN at centre of box only
-  point_width=4
+  width_SN=0.03125
 /
 &shear_run_pars
 /
