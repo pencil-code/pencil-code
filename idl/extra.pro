@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.38 2004-04-01 14:32:16 ajohan Exp $
+;  $Id: extra.pro,v 1.39 2004-04-16 14:35:29 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -101,7 +101,7 @@ if (ind(0) ne 0) then begin
     unit_md = mmon
   endif
   
-  if (irhod(0) ne 0) then begin
+  if (imd(0) ne 0) then begin
     lmdvar=1
   endif else begin
     lmdvar=0
@@ -112,14 +112,14 @@ if (ind(0) ne 0) then begin
   ad      = fltarr(ndustspec)
   nd      = fltarr(nx,ny,nz,ndustspec)
   fd      = fltarr(nx,ny,nz,ndustspec)
-  if (lmdvar) then rhod = fltarr(nx,ny,nz,ndustspec)
+  if (lmdvar) then md = fltarr(nx,ny,nz,ndustspec)
 
   for k=0,ndustspec-1 do begin
     sdust = strtrim(string(k),2)
     string = 'nd(*,*,*,'+sdust+') = nd'+sdust+'(l1:l2,m1:m2,n1:n2)'
     res = execute(string)
     if (lmdvar) then begin
-      string = 'rhod(*,*,*,'+sdust+') = rhod'+sdust+'(l1:l2,m1:m2,n1:n2)'
+      string = 'md(*,*,*,'+sdust+') = md'+sdust+'(l1:l2,m1:m2,n1:n2)'
       res = execute(string)
     endif
   endfor
@@ -134,7 +134,7 @@ if (ind(0) ne 0) then begin
 
   nd = reform(nd)
   fd = reform(fd)
-  if (lmdvar) then rhod = reform(rhod)
+  if (lmdvar) then md = reform(md)
 endif
 ;
 END

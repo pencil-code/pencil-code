@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.22 2004-04-06 11:52:20 ajohan Exp $
+;  $Id: varcontent.pro,v 1.23 2004-04-16 14:35:29 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -131,29 +131,29 @@ for idust=0,n_elements(ind)-1 do begin
 
 endfor
 
-for idust=0,n_elements(irhod)-1 do begin
+for idust=0,n_elements(imd)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[irhod(idust)].variable = 'Dust density ' + sidust + $
-      ' (rhod'+sidust+')'
-  varcontent[irhod(idust)].idlvar   = 'rhod'+sidust
-  varcontent[irhod(idust)].idlinit    = INIT_SCALAR
-  varcontent[irhod(idust)].idlvarloc= 'rhod'+sidust+'_loc'
-  varcontent[irhod(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[imd(idust)].variable = 'Dust density ' + sidust + $
+      ' (md'+sidust+')'
+  varcontent[imd(idust)].idlvar   = 'md'+sidust
+  varcontent[imd(idust)].idlinit    = INIT_SCALAR
+  varcontent[imd(idust)].idlvarloc= 'md'+sidust+'_loc'
+  varcontent[imd(idust)].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
-for idust=0,n_elements(irhoi)-1 do begin
+for idust=0,n_elements(imi)-1 do begin
   
   sidust = strtrim(string(idust),2)
 
-  varcontent[irhoi(idust)].variable = 'Ice density ' + sidust + $
-      ' (rhoi'+sidust+')'
-  varcontent[irhoi(idust)].idlvar   = 'rhoi'+sidust
-  varcontent[irhoi(idust)].idlinit    = INIT_SCALAR
-  varcontent[irhoi(idust)].idlvarloc= 'rhoi'+sidust+'_loc'
-  varcontent[irhoi(idust)].idlinitloc = INIT_SCALAR_LOC
+  varcontent[imi(idust)].variable = 'Ice density ' + sidust + $
+      ' (mi'+sidust+')'
+  varcontent[imi(idust)].idlvar   = 'mi'+sidust
+  varcontent[imi(idust)].idlinit    = INIT_SCALAR
+  varcontent[imi(idust)].idlvarloc= 'mi'+sidust+'_loc'
+  varcontent[imi(idust)].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
