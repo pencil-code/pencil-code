@@ -14,7 +14,7 @@ set debug = 0
 
 if ($#argv > 0) then
   if (($1 == "-v") || ($1 == "--verbose")) then
-    set $debug = 1
+    set debug = 1
   endif
 endif
 
