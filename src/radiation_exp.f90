@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.68 2003-07-11 17:30:10 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.69 2003-07-15 11:24:07 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.68 2003-07-11 17:30:10 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.69 2003-07-15 11:24:07 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -175,8 +175,6 @@ module Radiation
                    *spread(spread(cos(k*y),1,mx),3,mz)
         kaprho=spread(spread(cos(2*k*x),2,my),3,mz) &
               *spread(spread(cos(2*k*y),1,mx),3,mz)
-        Srad=1
-        kaprho=1
         return
       endif
 !
@@ -340,10 +338,10 @@ module Radiation
         else
           call radboundary_zx_recv(rady0,ylneigh,Irad0_zx,emtau0_zx)
         endif
-        Irad0_zx=Irad0_zx*emtau(:,m2-rady0+1:m2,:)+Irad(:,m2-rady0+1:m2,:)
         emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
+        Irad0_zx=Irad0_zx+Irad(:,m2-rady0+1:m2,:)/emtau0_zx
         if (ipy==nprocy-1) then
-          Irad0_zx=Irad0_zx/(1-emtau0_zx)
+          Irad0_zx=Irad0_zx/(1/emtau0_zx-1)
           call radboundary_zx_send(rady0,yuneigh,Irad0_zx)
         else
           call radboundary_zx_send(rady0,yuneigh,Irad0_zx,emtau0_zx)
