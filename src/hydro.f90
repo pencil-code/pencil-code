@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.90 2003-06-16 04:41:10 brandenb Exp $
+! $Id: hydro.f90,v 1.91 2003-06-16 09:19:22 nilshau Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -84,12 +84,22 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.90 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: hydro.f90,v 1.91 2003-06-16 09:19:22 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_hydro: nvar > mvar')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (maux == 0) then
+         if (nvar < mvar) write(4,*) ',uu $'
+         if (nvar == mvar) write(4,*) ',uu'
+      else
+         write(4,*) ',uu $'
+      endif
+      write(5,*) 'uu = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_hydro
 !***********************************************************************

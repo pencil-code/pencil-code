@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $
+! $Id: dustdensity.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -57,12 +57,22 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.5 2003-06-16 05:23:08 brandenb Exp $")
+           "$Id: dustdensity.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_hydro: nvar > mvar')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (maux == 0) then
+         if (nvar < mvar) write(4,*) ',lnrhod $'
+         if (nvar == mvar) write(4,*) ',lnrhod'
+      else
+         write(4,*) ',lnrhod $'
+      endif
+      write(5,*) 'lnrhod = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_dustdensity
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.19 2003-06-16 04:41:11 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.20 2003-06-16 09:19:22 nilshau Exp $
 
 module Radiation
 
@@ -56,10 +56,33 @@ module Radiation
       lradiation = .true.
       lradiation_ray = .true.
 !
+!  set indices for auxiliary variables
+!
+      iQrad = mvar + naux +1; naux = naux + 1
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'radiation_ray: radiation naux = ', naux
+        print*, 'iQrad = ', iQrad
+      endif
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.19 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.20 2003-06-16 09:19:22 nilshau Exp $")
+!
+! Check we aren't registering too many auxiliary variables
+!
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('radiation_ray: naux > maux')
+      endif
+!
+!  Writing files for use with IDL
+!
+      if (naux < maux) aux_var(aux_count)=',Qrad $'
+      if (naux == maux) aux_var(aux_count)=',Qrad'
+      aux_count=aux_count+1
+      write(5,*) 'Qrad = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_radiation
 !***********************************************************************

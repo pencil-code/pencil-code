@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.13 2003-06-16 04:41:11 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.14 2003-06-16 09:19:22 nilshau Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.13 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.14 2003-06-16 09:19:22 nilshau Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -84,6 +84,13 @@ module Radiation
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
         call stop_it('register_radiation: naux > maux')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (naux < maux) aux_var(aux_count)=',Qrad $'
+      if (naux == maux) aux_var(aux_count)=',Qrad'
+      aux_count=aux_count+1
+      write(5,*) 'Qrad = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_radiation
 !***********************************************************************

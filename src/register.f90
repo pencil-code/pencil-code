@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.84 2003-06-16 04:41:11 brandenb Exp $
+! $Id: register.f90,v 1.85 2003-06-16 09:19:22 nilshau Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -48,6 +48,14 @@ module Register
       nvar = 0 
       naux = 0 
 !
+!  Writing files for use with IDL
+!
+      open(5,file=trim(datadir)//'/def_var.pro')
+      open(4,file=trim(datadir)//'/variables.pro')
+      write(4,*) 'close,1'
+      write(4,*) "openr,1, datadir+'/'+varfile, /F77"
+      write(4,*) 'readu,1 $'
+!
       call register_io
 !
       call register_hydro
@@ -64,6 +72,14 @@ module Register
       call register_gravity
       call register_interstellar
       call register_shear
+!
+!  Writing files for use with IDL
+!
+      do aux_count=1,maux
+         write(4,'a10') aux_var(aux_count)
+      enddo
+      close(4)
+      close(5)
 !
       if (nvar /= mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.31 2003-06-16 04:41:11 brandenb Exp $
+! $Id: pscalar.f90,v 1.32 2003-06-16 09:19:22 nilshau Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -63,12 +63,22 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.31 2003-06-16 04:41:11 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.32 2003-06-16 09:19:22 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_lncc: nvar > mvar')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (maux == 0) then
+         if (nvar < mvar) write(4,*) ',lncc $'
+         if (nvar == mvar) write(4,*) ',lncc'
+      else
+         write(4,*) ',lncc $'
+      endif
+      write(5,*) 'lncc = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_pscalar
 !***********************************************************************

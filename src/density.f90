@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.92 2003-06-16 05:23:08 brandenb Exp $
+! $Id: density.f90,v 1.93 2003-06-16 09:19:22 nilshau Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -69,12 +69,22 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.92 2003-06-16 05:23:08 brandenb Exp $")
+           "$Id: density.f90,v 1.93 2003-06-16 09:19:22 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_hydro: nvar > mvar')
       endif
+!
+!  Writing files for use with IDL
+!
+      if (maux == 0) then
+         if (nvar < mvar) write(4,*) ',lnrho $'
+         if (nvar == mvar) write(4,*) ',lnrho'
+      else
+        write(4,*) ',lnrho $'
+     endif
+      write(5,*) 'lnrho = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_density
 !***********************************************************************

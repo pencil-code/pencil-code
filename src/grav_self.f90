@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $
+! $Id: grav_self.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $
 
 module Gravity
 
@@ -72,11 +72,21 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.5 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: grav_self.f90,v 1.6 2003-06-16 09:19:22 nilshau Exp $")
 !
       lgrav = .true.
       lgravz = .false.
       lgravr = .false.
+!
+!  Writing files for use with IDL
+!
+      if (maux == 0) then
+         if (nvar < mvar) write(4,*) ',gg $'
+         if (nvar == mvar) write(4,*) ',gg'
+      else
+         write(4,*) ',gg $'
+      endif
+      write(5,*) 'gg = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_gravity
 !***********************************************************************
