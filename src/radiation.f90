@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.15 2002-11-14 12:33:13 dobler Exp $
+! $Id: radiation.f90,v 1.16 2002-11-14 12:46:56 dobler Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -80,7 +80,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.15 2002-11-14 12:33:13 dobler Exp $")
+           "$Id: radiation.f90,v 1.16 2002-11-14 12:46:56 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -201,7 +201,7 @@ module Radiation
 !
 !  some abbreviations and physical quantities
 !
-      if (.NOT. ldensity) rho1=1
+!      if (.NOT. ldensity) rho1=1  ! now set in equ.f90
       gamma1=gamma-1
       E_rad=f(l1:l2,m,n,iE)
       if (lentropy) then

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.105 2002-11-14 12:31:32 dobler Exp $
+! $Id: equ.f90,v 1.106 2002-11-14 12:46:56 dobler Exp $
 
 module Equ
 
@@ -183,7 +183,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.105 2002-11-14 12:31:32 dobler Exp $")
+           "$Id: equ.f90,v 1.106 2002-11-14 12:46:56 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -235,7 +235,11 @@ module Equ
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
 !
-        if (ldensity) rho1=exp(-f(l1:l2,m,n,ilnrho))
+        if (ldensity) then
+          rho1=exp(-f(l1:l2,m,n,ilnrho))
+        else
+          rho1=1.               ! for all the modules that use it
+        endif
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
