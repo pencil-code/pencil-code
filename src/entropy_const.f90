@@ -1,4 +1,4 @@
-! $Id: entropy_const.f90,v 1.4 2004-07-03 02:13:14 theine Exp $
+! $Id: entropy_const.f90,v 1.5 2004-08-20 16:14:25 dobler Exp $
 
 !  This module is for systems with spatially fixed entropy
 !  distribution. This implies Ds/Dt=u.grads only, which is used
@@ -9,7 +9,7 @@
 !  "Computational aspects...", ed. Ferriz-Mas & Nunez, Taylor & Francis,
 !  or astro-ph/0109497.
 
-!  This current implementation has temporarly been used to immitate
+!  This current implementation has temporarily been used to imitate
 !  a corona in solar context.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
@@ -80,7 +80,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy_const.f90,v 1.4 2004-07-03 02:13:14 theine Exp $")
+           "$Id: entropy_const.f90,v 1.5 2004-08-20 16:14:25 dobler Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************

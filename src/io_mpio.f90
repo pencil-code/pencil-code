@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.28 2004-08-19 17:25:51 dobler Exp $
+! $Id: io_mpio.f90,v 1.29 2004-08-20 16:14:26 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -110,7 +110,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.28 2004-08-19 17:25:51 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.29 2004-08-20 16:14:26 dobler Exp $")
 !
 !  consistency check
 !
@@ -605,10 +605,15 @@ contains
         z(n2+i) = z(n2) + i*dz        
       enddo
 !
-      dxmin = huge(dxmin)       ! initialize in case all n[x-z]grid=1
-      dxmax = huge(dxmax)       ! ditto
-      dxmin = minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
-      dxmax = maxval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) /= 1) )
+!  Find minimum/maximum grid spacing. Note that
+!    minval( (/dx,dy,dz/), MASK=((/nxgrid,nygrid,nzgrid/) > 1) )
+!  will be undefined if all n[x-z]grid=1, so we have to add the fourth
+!  component with a test that is always true
+!
+      dxmin = minval( (/dx,dy,dz,huge(dx)/), &
+                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
+      dxmax = maxval( (/dx,dy,dz,epsilon(dx)/), &
+                MASK=((/nxgrid,nygrid,nzgrid,2/) > 1) )
 
       Lx=dx*nx*nprocx
       Ly=dy*ny*nprocy
