@@ -78,7 +78,7 @@ else
     set size = $lsout[5]
   else
     echo "Can't find proc0/var.dat in $targetdir, trying allprocs/var.dat"
-    set lsout = (`ls -l "$targetdir/proc0/var.dat"`)
+    set lsout = (`ls -l "$targetdir/allprocs/var.dat"`)
     if (! $status) then
       set size = $lsout[5]
     else
