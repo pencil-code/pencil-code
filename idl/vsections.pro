@@ -10,9 +10,7 @@
 ;;;   Plot velocity, density and entropy field in three horizontal
 ;;;   sections.
 
-;;; Unfinished..
-
-@symbols
+s = texsyms()
 
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; relative to absolute min and max of
@@ -63,23 +61,23 @@ hcol2 = !p.background           ; color for " "
 
 plot_3d_vect, uu[*,ny1,*,*],x,z, PERM=[0,2,1], $
     /KEEP, TITLE=tit+sy1+'!X', ZRANGE=zruu
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 ;
 plot_3d_vect, uu[*,ny2,*,*],x,z, PERM=[0,2,1], $
     /KEEP, TITLE=tit+sy2+'!X', ZRANGE=zruu
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 ;
 plot_3d_vect, uu[*,ny3,*,*],x,z, PERM=[0,2,1], $
     /KEEP, TITLE=tit+sy3+'!X', ZRANGE=zruu
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 
-tit = '!8s!6 and '+s_varrho+'!6 at '
+tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
@@ -91,21 +89,21 @@ endelse
 contourfill, ent[*,ny1,*],x,z, TITLE=tit+sy1+'!X', LEVELS=levent
 var = reform(lam[*,ny1,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 ;
 contourfill, ent[*,ny2,*],x,z, TITLE=tit+sy2+'!X', LEVELS=levent
 var = reform(lam[*,ny2,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 ;
 contourfill, ent[*,ny3,*],x,z, TITLE=tit+sy3+'!X', LEVELS=levent
 var = reform(lam[*,ny3,*])
 contour, var,x,z, /OVER, LEVELS=linspace(minmax(var),nrholevs)
-;opcircles, 1., LINE=2, THICK=2
+;opcircle, 1., LINE=2, THICK=2
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 

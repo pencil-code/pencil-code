@@ -1,6 +1,6 @@
-;;;;;;;;;;;;;;;;;;;;;;;;;
-;;;   vsections.pro   ;;;
-;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;   vsections2.pro   ;;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
@@ -10,7 +10,7 @@
 ;;;   Plot velocity, density and entropy field in three horizontal
 ;;;   sections. Same as vsections, but cuts x=const are shown
 
-@symbols
+s = texsyms()
 
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; relative to absolute min and max of
@@ -77,7 +77,7 @@ plot_3d_vect, uu[nx3,*,*,*],y,z, PERM=[0,2,1], $
 ophline,[z0,z1,z2,z3], LINE=hline, THICK=3, COLOR=hcol1
 ophline,[z0,z1,z2,z3], LINE=hline, COLOR=hcol2
 
-tit = '!8s!6 and '+s_varrho+'!6 at '
+tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
@@ -112,4 +112,4 @@ wget
 restore_state
 
 end
-; End of file vsections.pro
+; End of file vsections2.pro

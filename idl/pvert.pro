@@ -12,6 +12,8 @@
 default, pvert_layout, [0,2,2]
 default, nprofs, 10              ; set to N for only N profiles, 0 for all
 
+s = texsyms()
+
 nign = 3                        ; Number of close-to-bdry points to ignore
 
 ;
@@ -47,7 +49,7 @@ for ivar = 0,3 do begin
   case ivar of
     0: begin
       var = lam
-      title = 'log density'
+      title = '!6ln '+s.varrho
       xr = minmax(var)
       if (n_elements(laminit) gt 0) then xr = minmax([xr,laminit])
     end
@@ -58,13 +60,13 @@ for ivar = 0,3 do begin
     end
     2: begin
       var = ent
-      title = 'Entropy'
+      title = '!6Entropy !8s!X'
       xr = minmax(var)
       if (n_elements(entinit) gt 0) then xr = minmax([xr,entinit])
     end
     3: begin
       var = gamma/gamma1*exp(gamma*ent+gamma1*lam)
-      title = 'Temperature'
+      title = '!6Temperature !8T!X'
       xr = minmax(var)
       if (n_elements(Tinit) gt 0) then xr = minmax([xr,Tinit])
     end

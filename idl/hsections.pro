@@ -10,9 +10,7 @@
 ;;;   Plot velocity, density and entropy field in three horizontal
 ;;;   sections.
 
-;;; Unfinished..
-
-@symbols
+s = texsyms()
 
 default, absolute, 0            ; flag four absolute colour scaling (i.e.
                                 ; relative to absolute min and max of
@@ -58,13 +56,13 @@ endif else begin
 endelse
 
 plot_3d_vect, uu[*,*,nz1,*],x,y, /KEEP, TITLE=tit+sz1+'!X', ZRANGE=zruu
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 plot_3d_vect, uu[*,*,nz2,*],x,y, /KEEP, TITLE=tit+sz2+'!X', ZRANGE=zruu
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 plot_3d_vect, uu[*,*,nz3,*],x,y, /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 
-tit = '!8s!6 and !7r!6 at '
+tit = '!8s!6 and '+s.varrho+'!6 at '
 
 ;
 if (absolute) then begin
@@ -76,17 +74,17 @@ endelse
 contourfill, ent[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levent
 var = reform(lam[*,*,nz1])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levent
 var = reform(lam[*,*,nz2])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levent
 var = reform(lam[*,*,nz3])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
-opcircles, 1., LINE=2, THICK=2
+opcircle, 1., LINE=2, THICK=2
 
 wget
 
