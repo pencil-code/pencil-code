@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.203 2003-10-22 07:40:02 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.204 2003-10-23 10:22:06 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -345,7 +345,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-10-22 07:40:02 $ $,~ $ $Revision: 1.203 $ $}
+\date{$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
 
 % ====================================================================== %
 
@@ -378,7 +378,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-10-22 07:40:02 $ $,~ $ $Revision: 1.203 $ $}
+  \emph{$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
 
   \vspace{\stretch{3}}
 
@@ -2358,9 +2358,10 @@ basic message is to watch out for such effects and to try varying
 With many compilers, you can easily switch to double precision (8-byte
 floating point numbers) as follows.
 
-Edit \file[Makefile.local]{src/Makefile.local} and add the line
+Edit \file[Makefile.local]{src/Makefile.local} and add the lines
 \begin{alltt}
-  FFLAGS_GENERAL=-r8 \
+  FFLAGS_GENERAL=-r8
+  CFLAGS_GENERAL=-DDOUBLE_PRECISION \
 \end{alltt}
 In addition, if you are running MPI, replace 
 \begin{alltt}
@@ -2370,14 +2371,14 @@ by
 \begin{alltt}
   MPICOMM=mpicomm_double \
 \end{alltt}
-Using double precision may be important in turbulence runs where
+Using double precision might be important in turbulence runs where
 the resolution is $256^3$ meshpoints and above.
 The procedure \file[realtodouble.x]{postproc/src/realtodouble.x} can be
-used to produce
-\file{var.dat} and \file{grid.dat} files in double precision.
+used to convert existing
+\file{var.dat} and \file{grid.dat} files to double precision.
 % Note: the \code{kind} value on many compiles is 8 for double precision,
 % but with the NAG compiler it is 2.
-% wd: you shouldn't use explicit KIND values anyway
+% wd: One shouldn't use explicit KIND values anyway
 
 % ---------------------------------------------------------------------- %
 
@@ -3293,7 +3294,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-10-22 07:40:02 $ $,~ $ $Revision: 1.203 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
 
 \section{Timings}
 
@@ -5900,7 +5901,7 @@ initial condition.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.203 2003-10-22 07:40:02 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.204 2003-10-23 10:22:06 dobler Exp $ $}
 
 
 \end{document}
