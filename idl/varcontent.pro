@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.20 2004-03-04 10:48:59 mee Exp $
+;  $Id: varcontent.pro,v 1.21 2004-03-05 10:37:03 mee Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -99,11 +99,11 @@ varcontent[ilncc].idlinit    = INIT_SCALAR
 varcontent[ilncc].idlvarloc= 'lncc_loc'
 varcontent[ilncc].idlinitloc = INIT_SCALAR_LOC
 
-;varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
-;varcontent[iecr].idlvar   = 'ecr'
-;varcontent[iecr].idlinit    = INIT_SCALAR
-;varcontent[iecr].idlvarloc= 'ecr_loc'
-;varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
+varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
+varcontent[iecr].idlvar   = 'ecr'
+varcontent[iecr].idlinit    = INIT_SCALAR
+varcontent[iecr].idlvarloc= 'ecr_loc'
+varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
 for idust=0,n_elements(iuud)-1 do begin
 
