@@ -87,11 +87,12 @@ function texsyms, DEVICE=device
               geq         : '!6!S>!R_!X' , $ ; `ge' is reserved..
               uparrow     : '!7­!X', $
               downarrow   : '!7¯!X', $
-              leftarrow   : '!7¬!X', $
+              leftarrow   : '!7¬!X', $ 
               rightarrow  : '!7®!X', $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
-              tilde       : '!S!U !N!A!3~!R' $
+              tilde       : '!S!N!A!3~!R!X', $
+              bar         : '!S!N!A!3-!R!X' $
   }
   endif else begin ; Hershey fonts
     ; lowercase lsymbols
@@ -166,7 +167,8 @@ function texsyms, DEVICE=device
               rightarrow  : '!96!X', $
     ; harder stuff like tilde on top of symbol, etc
     ; Usage: PLOT, [...], TITLE=sym.tilde+'!8Q!X' to get \tilde{Q}, etc
-              tilde       : '!S!U!N!A!9A!R' $
+              tilde       : '!S!U!N!A!9A!R!X', $
+              bar         : '!S!U!N!A!3-!R!X' $
   }
   endelse
 
