@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-11-10 13:11:18 $
-;;;  $Revision: 1.5 $
+;;;  $Date: 2004-01-13 09:05:37 $
+;;;  $Revision: 1.6 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -76,7 +76,7 @@ ncols = n_elements(labels)
 ;
 ;  read table
 ;
-data = input_table(tsfile)
+data = input_table(tsfile,/DOUBLE)
 if ((size(data))[1] ne ncols) then begin
   message, /INFO, 'Inconsistency: label number different from column number'
 endif
