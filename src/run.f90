@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.155 2003-08-15 20:44:24 mee Exp $
+! $Id: run.f90,v 1.156 2003-08-22 09:50:49 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.155 2003-08-15 20:44:24 mee Exp $")
+             "$Id: run.f90,v 1.156 2003-08-22 09:50:49 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -179,7 +179,7 @@
             if (reload) then
               if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
               ! Re-read configuration
-	      dt=0.
+              dt=0.
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
               call rprint_list(.true.) !(Re-read output list)
               call initialize_modules(f,lstart=.false.)
