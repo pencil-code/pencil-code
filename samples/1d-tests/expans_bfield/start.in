@@ -1,0 +1,22 @@
+!                     -*-f90-*-   (for emacs)
+! Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2002-10-09 17:41:32 brandenb Exp $'
+  xyz0  =-750., 0.0, 0.0,      ! first corner of box
+  xyz1  = 50., 1.0, 1.0,      ! box size
+  lperi = F , T , T,          ! periodic direction?
+/
+&hydro_init_pars
+  inituu='xjump', uu_left=-4.6985, uu_right=-4.0577, widthuu=1.
+  uy_left=-1.085146, uy_right=-0.8349,
+/
+&density_init_pars
+  initlnrho='xjump', rho_left=1., rho_right=.7270, widthlnrho=1.
+/
+&entropy_init_pars
+  initss='xjump', ss_left=-0.5682, ss_right=-0.5682, widthss=1.
+/
+&magnetic_init_pars
+  initaa='xjump', by_left=1.9680, by_right=1.355, widthaa=1.
+/
