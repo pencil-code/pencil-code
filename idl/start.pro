@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.61 2004-01-06 15:37:05 dobler Exp $
+;;; $Id: start.pro,v 1.62 2004-04-10 18:56:36 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -55,7 +55,7 @@ default, maxtags, 120
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
-mx=0L & my=0L & mz=0L & nvar=0L
+mx=0L & my=0L & mz=0L & nvar=0L & naux=0L
 prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
@@ -69,10 +69,12 @@ close,1
 mw=mx*my*mz  ;(this must be calculated; its not in dim.dat)
 prec = (strtrim(prec,2))        ; drop leading zeros
 prec = strmid(prec,0,1)
-if ((prec eq 'S') or (prec eq 's')) then begin
+if ((prec eq 'S') or (prec eq 's')) then begin ; single precision
   one = 1.e0
-endif else if ((prec eq 'D') or (prec eq 'd')) then begin
+  nl2idl_d_opt = ''
+endif else if ((prec eq 'D') or (prec eq 'd')) then begin ; double precision
   one = 1.D0
+  nl2idl_d_opt = '-d'
 endif else begin
   if (quiet le 4) then print, "prec = `", prec, "' makes no sense to me"
   STOP
@@ -138,8 +140,8 @@ if (cpar gt 0) then begin
   endelse
   tmpfile = tmpdir+'/param.pro'
   ;; Write content of param.nml to temporary file:
-  spawn, '$PENCIL_HOME/bin/nl2idl -m '+datatopdir+'/param.nml > ' $
-         + tmpfile , result
+  spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -m ' + $
+      datatopdir+'/param.nml > ' + tmpfile , result
   ;; Compile that file. Should be easy, but is incredibly awkward, as
   ;; there is no way in IDL to compile a given file at run-time
   ;; outside the command line:

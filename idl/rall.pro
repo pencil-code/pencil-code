@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.39 2004-03-04 10:48:58 mee Exp $
+;;;  $Id: rall.pro,v 1.40 2004-04-10 18:56:36 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -93,8 +93,6 @@ for i=1,totalvars do begin
 ;If it's a vector quantity skip the required number of elements
   i=i+varcontent[i].skip
 end
-
-dummy=0.
 
 content = strmid(content,2)
 ;

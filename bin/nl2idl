@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.15 2004-02-24 14:17:02 dobler Exp $
+# $Id: nl2idl,v 1.16 2004-04-10 18:56:36 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -38,6 +38,8 @@ my $email = 'Wolfgang.Dobler@kis.uni-freiburg.de';
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $nlstart = "^\\s*&($id)";	# regexp for start of a namelist
 my $numeric = '(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[EeDd](?:[+-]?\d+))?'; # float
+my $float = '(?:[-+]?(?:\d+\.\d*|\d*\.\d+))'; # float with decimal point,
+				              # but w/o  exponential part
 my $prefix="  par";
 
 my %nlists;
@@ -56,6 +58,8 @@ Options:
   --help            \tShow usage overview
   -f <func>
   --function=<func> \tName the IDL function <func> (default is `$funcname')
+  -d
+  --double          \tMark floating-point values as double precision
   -m
   --minimize        \tMinimize strings by trimming trailing whitespace
   -1
@@ -77,6 +81,7 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	            --debug
                -f=s --function=s
+               -d   --double
 	       -m   --minimize
                -1   --one-line
 	       -M=i --maxtags=i
@@ -85,6 +90,7 @@ GetOptions(\%opts,
 
 if ($opts{'h'} || $opts{'help'}) { die "$usage\n"; }
 if ($opts{'debug'}) { $debug = 1 } else { $debug = 0 }
+my $double   = ($opts{'d'} || $opts{'double'}   || 0);
 my $oneline  = ($opts{'1'} || $opts{'one-line'} || 0);
 my $minimize = ($opts{'m'} || $opts{'minimize'} || 0);
 my $maxtags  = ($opts{'M'} || $opts{'maxtags'}  || 0);
@@ -98,7 +104,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.15 2004-02-24 14:17:02 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.16 2004-04-10 18:56:36 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
@@ -257,14 +263,22 @@ sub parse_nl {
 		$line = substr($line,1);
 	    } elsif ($ch =~ /[-+0-9\.]/) { # number
 		$line =~ s/^($numeric)[ ,]*(.*)$/$2/;
-		if ($debug) { print "\$nl{$var} <- $1\n" };
-	        push @{$nl{$var}}, $1;
+		my $val = $1;
+		if ($double) {	# append 'D0' to floats w/o exponential part
+		    $val =~ s/(^|\s|,)($float)($|\s|,)/$1$2D0$3/g;
+		}
+		if ($debug) { print "\$nl{$var} <- $val\n" };
+	        push @{$nl{$var}}, $val;
 	    } elsif ($ch =~ /\(/) { # complex number (x,y)
 		my $bracket = index($line,')',1); # closing bracket
-		if ($debug) {
-		    print "\$nl{$var} <- ", 'complex' . substr($line,0,$bracket+1),"\n";
+		my $val = substr($line,0,$bracket+1);
+		if ($double) {	# append 'D0' to floats w/o exponential part
+		    $val =~ s/(\(\s*)($float)(\s*,\s*)($float)(\s*\))/$1$2D0$3$4D0$5/g;
 		}
-		push @{$nl{$var}}, 'complex' . substr($line,0,$bracket+1);
+		if ($debug) {
+		    print "\$nl{$var} <- ", 'complex' . $val, "\n";
+		}
+		push @{$nl{$var}}, 'complex' . $val;
 		$line = substr($line,$bracket+1);
 	    } else {
 		if ($debug) { print "\$line = <$line>\n"};

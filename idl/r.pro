@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.55 2003-12-31 13:23:10 dobler Exp $
+; $Id: r.pro,v 1.56 2004-04-10 18:56:36 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.55 2003-12-31 13:23:10 dobler Exp $
+;;; $Id: r.pro,v 1.56 2004-04-10 18:56:36 dobler Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param2() routine will be
@@ -52,8 +52,6 @@ for iv=1,totalvars do begin
   ; For vector quantities skip the required number of elements
   iv=iv+varcontent[iv].skip
 end
-
-dummy=0.
 
 content = strmid(content,2)
 if (quiet le 2) then print,'File '+varfile+' contains: ', content

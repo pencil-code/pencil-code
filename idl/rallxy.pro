@@ -4,7 +4,7 @@
 
 ;;;
 ;;;  Author: nils/ adapted from rall.pro 20-nov-2003    
-;;;  $Id: rallxy.pro,v 1.2 2004-01-23 10:35:21 nilshau Exp $
+;;;  $Id: rallxy.pro,v 1.3 2004-04-10 18:56:36 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors in a xy-plane (select plane by 
@@ -101,8 +101,6 @@ for i=1,totalvars do begin
 ;If it's a vector quantity skip the required number of elements
   i=i+varcontent[i].skip
 end
-
-dummy=0.
 
 content = strmid(content,2)
 ;

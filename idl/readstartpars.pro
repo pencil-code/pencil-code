@@ -1,4 +1,4 @@
-;  $Id: readstartpars.pro,v 1.13 2004-01-06 15:37:05 dobler Exp $
+;  $Id: readstartpars.pro,v 1.14 2004-04-10 18:56:36 dobler Exp $
 ;
 ;  Read startup parameters
 ;
@@ -15,7 +15,7 @@ if (cpar gt 0) then begin
   endelse
   tmpfile = tmpdir+'/param2.pro'
   ;; Write content of param2.nml to temporary file:
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m '+datatopdir+'/param2.nml > ' $
+  spawn, '$PENCIL_HOME/bin/nl2idl '+nl2idl_d_opt+' -f param2 -m '+datatopdir+'/param2.nml > ' $
          + tmpfile , result
   ;; Compile that file. Should be easy, but is incredibly awkward, as
   ;; there is no way in IDL to compile a given file at run-time
