@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.123 2002-10-04 08:05:40 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.124 2002-10-04 17:14:40 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.123 $ $}
+\date{\today,~ $ $Revision: 1.124 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.123 $ $}
+  \emph{\today,~ $ $Revision: 1.124 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1162,8 +1162,8 @@ and \file{kinematic/} contains kinematic dynamo problems where the
 hydrodynamics is turned off entirely.
 The file \file{samples/README} should contain an up-to-date list and
 short description of the individual classes.\footnote{Our
-\file[pencil-runs/]{pencil-runs} directory also contains done some
-time ago. Occasionally, we try to update these, especially if we
+\file[pencil-runs/]{pencil-runs} directory also contains runs that were
+done some time ago. Occasionally, we try to update these, especially if we
 have changed names or other input convections.}
 
 The subdirectory \file[src/]{src} of each run directory contains a few local
@@ -2037,11 +2037,13 @@ some of the equations off (nomagnetic, noentropy, etc.).
 
 \subsection{Continuity equation}
 
+In the code the continuity equation,
+$\partial\varrho/\partial t+\Div\varrho\uv=0$,
+is written in terms of $\ln\varrho$,
 \begin{equation}
   \frac{D\ln\varrho}{Dt}
   = - \Div\uv \; .
 \end{equation}
-
 Here $\varrho$ denotes density, $\uv$ the fluid velocity, $t$ is time and
 $D/Dt \equiv \partial/\partial t + \uv\cdot\grad$ is the convective
 derivative.
@@ -2051,6 +2053,9 @@ derivative.
 \subsection{Equation of motion}
 \label{S-Eqn-of-motion}
 
+In the equation of motion, the pressure gradient term,
+$\varrho^{-1}\boldsymbol\nabla p$, can be expressed in
+terms of $\varrho$ and $s/c_{\rm p}$ to give
 \begin{equation}
   \frac{D\uv}{Dt}
    =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
@@ -2059,8 +2064,13 @@ derivative.
       + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
       + 2\Strain\cdot\grad\ln\varrho\right) \; .
 \end{equation}
-Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
-$\gamma=c_p/c_v$ the ratio of specific heats or \emph{adiabatic index},
+The sound speed squared, $\cs^2 = \gamma p/\varrho$, is obtained
+in the form
+\begin{equation}
+c_{\rm s}^2=c_{\rm s0}^2\exp\left[(\gamma-1)\ln\varrho/\varrho_0
++\gamma s/c_p\right],
+\end{equation}
+where $\gamma=c_p/c_v$ the ratio of specific heats or \emph{adiabatic index},
 $\Phi_{\rm grav}$ is the gravity potential,
 $\jv$ the electric current density, $\Bv$
 the magnetic flux density, $\nu$ is kinematic viscosity, and
@@ -2183,14 +2193,19 @@ module.
 
 \subsection{Transport equation for a passive scalar}
 
+In conservative form, the equation for a passive scalar is
+\begin{equation}
+{\partial\over\partial t}(\varrho c)+
+\Div\left[\varrho c\uv-\varrho{\cal D}{\partial c\over\partial t}\right].
+\end{equation}
+Here $c$ denotes the concentration (per unit mass) of the passive scalar and
+${\cal D}$ its diffusion constant (assumed constant).
+In the code this equation is solved in terms of $\ln c$,
 \begin{equation}
   \frac{D\ln c}{Dt}
   = {\cal D} \left[ \Laplace\ln c + (\grad\ln\varrho+\grad\ln c)\cdot\grad\ln c
                \right] \; .
 \end{equation}
-
-Here $c$ denotes the concentration (per unit mass) of the passive scalar and
-${\cal D}$ its diffusion constant (assumed constant).
 Using $\ln c$ instead of $c$ has the advantage that it enforces $c>0$ for all
 times.
 
@@ -3965,8 +3980,7 @@ the latest set of parameters, you need to look at the code.
                  \item[\code{'irrotational'}] (irrotational forcing),
                  \item[\code{'helical'}] (helical forcing),
                  \item[\code{'fountain'}] (forcing of ``fountain flow'';
-                   cf.~\emph{MNRAS} \textbf{276}, 651 (1995)
-                   for a reference),
+                   see Ref.~\cite{BMS95}),
                  \item[\code{'horizontal-shear'}] (forcing localized
                    horizontal sinusoidal shear).
                  \end{description}
@@ -4115,6 +4129,10 @@ of isotropic helical hydromagnetic turbulence''
 \bibitem{BH01} Brandenburg, A., \& Hazlehurst, J.
   \emph{Astron. Astrophys.} \textbf{370}, 1092--1102 (2001)
   ``Evolution of highly buoyant thermals in a stratified layer''
+\bibitem{BMS95}Brandenburg, A., Moss, D., \& Shukurov, A.
+\emph{MNRAS} \textbf{276}, 651--662 (1995)
+``Galactic fountains as magnetic pumps''
+
 \end{thebibliography}
 
 
@@ -4128,7 +4146,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.123 2002-10-04 08:05:40 dobler Exp $ $}
+$ $Id: manual.tex,v 1.124 2002-10-04 17:14:40 brandenb Exp $ $}
 
 
 \end{document}
