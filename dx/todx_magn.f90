@@ -11,6 +11,7 @@
 
 ! Include grid sizes
       include 'src/cparam.local'
+      include 'src/cparam.inc'
 
 ! This was taken from cparam.f90 file
   integer, parameter :: nghost=3
@@ -31,6 +32,7 @@
       real, dimension(mx,my,mz,3) :: bbb
       real :: x00,y00,z00,t,dx,dy,dz
       integer :: i,j,k,n
+      integer :: iux,iuy,iuz,ilnrho,ient,iax,iay,iaz
 
 ! Read snapshot file
       open(unit=17, file='./tmp/proc0/var.dat', form='unformatted')
@@ -46,25 +48,35 @@
       y00=y(nghost+1)
       z00=z(nghost+1)
       print*, 'x0=',x00,' y0=',y00,' z0=',z00
+
+      print*,'mvar=',mvar
       
 ! Write out velocity field for Dx
+      iux=1
+      iuy=2
+      iuz=3
       open(unit=18, file='./tmp/uuu_dx.bin', form='unformatted')
-      write(18) ((((real(f(i,j,k,n)),n=1,3),k=nghost+1,mz-nghost), &
+      write(18) ((((real(f(i,j,k,n)),n=iux,iuz),k=nghost+1,mz-nghost), &
        j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(18)
 
 ! Write out ln density field for Dx
+      if(mvar.ge.4) then
+      ilnrho=4
       open(unit=19, file='./tmp/lnrho_dx.bin', form='unformatted')
-      write(19) (((real(f(i,j,k,4)),k=nghost+1,mz-nghost), &
+      write(19) (((real(f(i,j,k,ilnrho)),k=nghost+1,mz-nghost), &
        j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(19)
+      endif
 
 ! Write out entropy field for Dx
+      if(mvar.ge.5) then
+      ient=5
       open(unit=20, file='./tmp/ss_dx.bin', form='unformatted')
-      write(20) (((real(f(i,j,k,5)),k=nghost+1,mz-nghost),  &
+      write(20) (((real(f(i,j,k,ient)),k=nghost+1,mz-nghost),  &
        j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(20)
-
+      endif
 
 ! Create .dx scripts describing the data in Data Explorer format
       open(unit=21, file='./tmp/uuu.dx')
@@ -92,6 +104,7 @@
       write(21,*) 'end'
       close(21)
 
+      if(mvar.ge.4) then         
       open(unit=22, file='./tmp/lnrho.dx')
       write(22,*) 'object 1 class gridpositions counts ', mx-2*nghost,  &
         my-2*nghost, mz-2*nghost
@@ -116,7 +129,9 @@
       write(22,*) 'component "data" value 3'
       write(22,*) 'end'
       close(22)
+      endif
 
+      if(mvar.ge.5) then
       open(unit=23, file='./tmp/ss.dx')
       write(23,*) 'object 1 class gridpositions counts ', mx-2*nghost, &
         my-2*nghost, mz-2*nghost
@@ -141,14 +156,18 @@
       write(23,*) 'component "data" value 3'
       write(23,*) 'end'
       close(23)
+      endif
 
 
 
-!      if(mvar.eq.8) then
-! Process magnetic part if mvar=8: no kinematic dynamo yet, needs to be added
+      if(mvar.ge.6) then
+! Process magnetic part if mvar>5: no kinematic dynamo yet, needs to be added
 ! Write out vector potential for Dx
+      iax=6
+      iay=7
+      iaz=8
       open(unit=18, file='./tmp/aaa_dx.bin', form='unformatted')
-      write(18) ((((real(f(i,j,k,n)),n=6,8),k=nghost+1,mz-nghost), &
+      write(18) ((((real(f(i,j,k,n)),n=iax,iaz),k=nghost+1,mz-nghost), &
         j=nghost+1,my-nghost),i=nghost+1,mx-nghost)
       close(18)
       
@@ -156,12 +175,12 @@
       do i=2,mx-1
          do j=2,my-1
             do k=2,mz-1
-               bbb(i,j,k,1)=(f(i,j+1,k,8)-f(i,j-1,k,8))/2./dy-  &
-       (f(i,j,k+1,7)-f(i,j,k-1,7))/2./dz
-               bbb(i,j,k,2)=(f(i,j,k+1,6)-f(i,j,k-1,6))/2./dz-  &
-       (f(i+1,j,k,8)-f(i-1,j,k,8))/2./dx
-               bbb(i,j,k,3)=(f(i+1,j,k,7)-f(i-1,j,k,7))/2./dx-  &
-       (f(i,j+1,k,6)-f(i,j-1,k,6))/2./dy               
+               bbb(i,j,k,1)=(f(i,j+1,k,iaz)-f(i,j-1,k,iaz))/2./dy-  &
+       (f(i,j,k+1,iay)-f(i,j,k-1,iay))/2./dz
+               bbb(i,j,k,2)=(f(i,j,k+1,iax)-f(i,j,k-1,iax))/2./dz-  &
+       (f(i+1,j,k,iaz)-f(i-1,j,k,iaz))/2./dx
+               bbb(i,j,k,3)=(f(i+1,j,k,iay)-f(i-1,j,k,iay))/2./dx-  &
+       (f(i,j+1,k,iax)-f(i,j-1,k,iax))/2./dy               
             enddo
          enddo
       enddo   
@@ -224,8 +243,9 @@
       close(25)
 
 
-!      endif
+      endif
 
 
       stop
       end
+
