@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.280 2004-12-27 07:18:26 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.281 2004-12-27 20:46:35 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-12-27 07:18:26 $ $,~ $ $Revision: 1.280 $ $}
+%\date{$ $Date: 2004-12-27 20:46:35 $ $,~ $ $Revision: 1.281 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-12-27 07:18:26 $ $,~ $ $Revision: 1.280 $ $}\\
+  \emph{$ $Date: 2004-12-27 20:46:35 $ $,~ $ $Revision: 1.281 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3934,12 +3934,14 @@ Typical values of $C_{\rm mesh}$ are around 3.
 \medskip
 
 {\em
-  The Pencil Code should compile successfully with \name{ifc} 8.0,
-  \name{ifc} 7.0 and earlier versions.
-  \name{ifc} 7.1 has bugs that prevent the Pencil Code from being compiled
-  (typically you will get an `internal compiler error' during compilation of
-  \file[hydro.f90]{src/hydro.f90}).
-  You can find the \name{ifc} compiler at
+  The Pencil Code should compile successfully with \name{ifc}~6.x,
+  \name{ifc}~7.0, sufficiently recent versions of \name{ifc} 7.1 (you
+  should get the latest version; if your's is too old, you will typically
+  get an `internal compiler error' during compilation of
+  \file[hydro.f90]{src/hydro.f90}), as well as with recent versions of
+  \name{ifort} 8.1 (8.0 may also work).
+
+  You can find the \name{ifort} compiler at
   \url{ftp://download.intel.com/software/products/compilers/downloads}.
 
   On many current (as of November 2003) Linux systems, there is a mismatch
@@ -4694,7 +4696,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-12-27 07:18:26 $ $,~ $ $Revision: 1.280 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-12-27 20:46:35 $ $,~ $ $Revision: 1.281 $ $}
 
 \section{Timings}
 
@@ -7775,7 +7777,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.280 2004-12-27 07:18:26 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.281 2004-12-27 20:46:35 dobler Exp $ $}
 
 
 \end{document}
