@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.9 2002-10-02 17:29:20 dobler Exp $
+! $Id: io_mpio.f90,v 1.10 2002-10-02 17:53:41 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -94,7 +94,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.9 2002-10-02 17:29:20 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_mpio.f90,v 1.10 2002-10-02 17:53:41 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
@@ -477,7 +477,6 @@ contains
 !
       character (len=*) :: file ! not used
 !
-print*, 'WGRID: ',trim(directory)//'/gridx.dat'
       call write_grid_data(trim(directory)//'/gridx.dat',nxgrid,nx,mx,ipx,x)
       call write_grid_data(trim(directory)//'/gridy.dat',nygrid,ny,my,ipy,y)
       call write_grid_data(trim(directory)//'/gridz.dat',nzgrid,nz,mz,ipz,z)
