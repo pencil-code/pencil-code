@@ -1,4 +1,4 @@
-! $Id: nodustvelocity.f90,v 1.21 2004-09-12 10:39:28 ponty Exp $
+! $Id: nodustvelocity.f90,v 1.22 2004-09-16 14:43:04 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -55,7 +55,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodustvelocity.f90,v 1.21 2004-09-12 10:39:28 ponty Exp $")
+           "$Id: nodustvelocity.f90,v 1.22 2004-09-16 14:43:04 ajohan Exp $")
 !
     endsubroutine register_dustvelocity
 !***********************************************************************
@@ -109,22 +109,6 @@ module Dustvelocity
       if(ip==0) print*,f,df,uu,uud,rho1,cs2,divud,rho1,ud2,udij
       !(keep compiler quiet)
     endsubroutine duud_dt
-!***********************************************************************
-    subroutine duud_dt_grav(f,df)
-!
-!  add duu/dt according to gravity
-!
-!  6-dec-03/anders: copied from duu_dt_grav
-!
-      use Cdata
-      use Sub
-!
-      real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz,mvar) :: df
-!
-      if(ip==0) print*,f,df !(keep compiler quiet)
-!
-    endsubroutine duud_dt_grav
 !***********************************************************************
     subroutine shearingdust(f,df)
 !
