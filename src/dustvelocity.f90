@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.12 2003-08-07 14:18:57 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.13 2003-08-08 17:44:42 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.12 2003-08-07 14:18:57 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.13 2003-08-08 17:44:42 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -144,6 +144,7 @@ module Dustvelocity
 !  no pressure gradient force for dust!
 !
 !  18-mar-03/axel+anders: adapted from hydro
+!   8-aug-03/anders: added taud as possible input parameter instead of beta
 !
       use Cdata
       use Sub
@@ -219,29 +220,28 @@ module Dustvelocity
           df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)            +s2*uud(:,2)
         endif
       endif
-
-!!
-!!  calculate grad(lnrho) here: needed continuity
-!!
-!      if(lneed_glnrho) call grad(f,ilnrho,glnrho)
 !
 !  calculate viscous and drag force
 !
-      if (taud /= 0 .and. beta /= 0) &
-        call stop_it("Both tau_d and beta specified. Please specify only one!")
-
+!  add dust diffusion (mostly for numerical reasons) in either of
+!  the two formulations (ie with either constant beta or constant taud)
+!
       call del2v(f,iuud,del2ud)
       maxdiffus=amax1(maxdiffus,nud)
+!
+!  if taud is set then assume that beta=rhod/taud,
+!  otherwise use beta
+!
       if (taud /= 0.) then
         taud1=1./taud
         df(l1:l2,m,n,iudx:iudz)= &
             df(l1:l2,m,n,iudx:iudz)+nud*del2ud-taud1*(uud-uu)
-      endif
-!
-      if (beta /= 0.) then
+      elseif (beta /= 0.) then
         rhod1=exp(-f(l1:l2,m,n,ilnrhod))
         do j=1,3; fac(:,j)=beta*rhod1; enddo
         df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-fac*(uud-uu)
+      else
+        call stop_it("Both tau_d and beta specified. Please specify only one!")
       endif
 !
 !  add drag force on gas (if Mdust_to_Mgas is large enough)
@@ -252,8 +252,7 @@ module Dustvelocity
           rhod=exp(f(l1:l2,m,n,ilnrhod))
           do j=1,3; taug1(:,j)=rhod*rho1*taud1; enddo
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-taug1*(uu-uud)
-        endif
-        if (beta /= 0.) then
+        elseif (beta /= 0.) then
           do j=1,3; fac(:,j)=beta*rho1; enddo
           df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-fac*(uu-uud)
         endif
@@ -263,16 +262,7 @@ module Dustvelocity
 !
       if (headtt.or.ldebug) print*,'hydro: maxadvec2,ud2=',maxval(maxadvec2),maxval(ud2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,ud2)
-!!
-!!  damp motions in some regions for some time spans if desired
-!!
-!      if ((tdamp /= 0) .or. (dampuext /= 0)) call udamping(f,df)
-!!
-!!  add the possibility of removing a mean flow in the y-direction
-!!
-!      if (tau_damp_ruxm/=0.) call damp_ruxm(f,df)
-!      if (tau_damp_ruym/=0.) call damp_ruym(f,df)
-!!
+!
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !  The length of the timestep is not known here (--> moved to prints.f90)
