@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.73 2003-08-30 17:21:06 dobler Exp $
+# $Id: getconf.csh,v 1.74 2003-08-30 18:01:25 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -248,10 +248,6 @@ endif
 ## MPI specific setup
 if ($mpi) then
   # Some mpiruns need special options
-  if (`domainname` == "aegaeis") then
-    set mpirunops = '-machinefile ~/mpiconf/mpihosts-martins'
-  endif
-
   if ($mpirun =~ *mpirun*) then
     set npops = "-np $ncpus"
   else if ($mpirun =~ *mpiexec*) then
