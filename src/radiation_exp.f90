@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.85 2003-08-08 00:38:19 theine Exp $
+! $Id: radiation_exp.f90,v 1.86 2003-08-08 05:07:26 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -24,6 +24,7 @@ module Radiation
   integer :: lrad,mrad,nrad,rad2
   integer :: idir,ndir
   real :: frac
+  real, parameter :: dtaumin=1e-37
   integer :: llstart,llstop,lsign
   integer :: mmstart,mmstop,msign
   integer :: nnstart,nnstop,nsign
@@ -82,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.85 2003-08-08 00:38:19 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.86 2003-08-08 05:07:26 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -301,7 +302,7 @@ module Radiation
       do m=mmstart,mmstop,msign
       do n=nnstart,nnstop,nsign
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
-          if (dtau<=1e-37) then
+          if (dtau<=dtaumin) then
             emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)
             Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)
           else
