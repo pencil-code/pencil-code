@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.21 2002-07-18 23:09:50 dobler Exp $
+! $Id: grav_z.f90,v 1.22 2002-07-18 23:53:05 brandenb Exp $
 
 module Gravity
 
@@ -78,7 +78,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.21 2002-07-18 23:09:50 dobler Exp $")
+           "$Id: grav_z.f90,v 1.22 2002-07-18 23:53:05 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -151,7 +151,7 @@ module Gravity
       call stop_it("potential_global in grav_z not implemented")
 !
       if(ip==0) print*,xx(1,1,1)+yy(1,1,1)+zz(1,1,1), &
-           pot(1,1,1) !(keep compiler quiet)
+           pot(1,1,1),pot0  !(keep compiler quiet)
 !
     endsubroutine potential_global
 !***********************************************************************
