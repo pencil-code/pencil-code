@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.122 2003-02-03 20:15:44 dobler Exp $
+! $Id: equ.f90,v 1.123 2003-02-21 20:21:52 brandenb Exp $
 
 module Equ
 
@@ -208,7 +208,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.122 2003-02-03 20:15:44 dobler Exp $")
+           "$Id: equ.f90,v 1.123 2003-02-21 20:21:52 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -314,7 +314,9 @@ module Equ
         if (lfirst.and.ldt) then
           fac=cdt/(cdtv*dxmin)
           facheat=dxmin/cdt
-
+!         if(ip<=14) print*,'facheat,maxheating(1)=',facheat,maxheating(1)
+!         if(ip<=14) print*,'maxadvec2(1),fac=',maxadvec2(1),fac
+!         if(ip<=14) print*,'maxdiffus(1),UUmax,dxmin=',maxdiffus(1),UUmax,dxmin
           call max_mn((facheat*maxheating)+ &
                sqrt(maxadvec2)+(fac*maxdiffus),UUmax)
         endif
@@ -327,7 +329,7 @@ module Equ
             ! Nothing seems to depend on lhydro here:
             ! if(lhydro) then
             rho=exp(f(l1:l2,m,n,ilnrho))
-            if (gamma1/=0.) ee=cs2/(gamma*gamma1)
+            if (gamma1/=0.) ee=cs2/(gamma*gamma1)             !(this needs to be calculated in ionization)
             if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)

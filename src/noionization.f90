@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.1 2003-02-02 15:12:52 brandenb Exp $
+! $Id: noionization.f90,v 1.2 2003-02-21 20:21:52 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -11,7 +11,7 @@ module Ionization
   implicit none
 
   !  These parameters are used if lionization were .true.
-  real, parameter :: k_B=1.380658e-16, m_p=1.672623e-24, kB_over_mp=k_B/m_p
+  real :: lnTT_ion,lnrho_ion,ss_ion
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -58,9 +58,8 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1'
         dlnPdlnrho=gamma
         dlnPdS=gamma1
-        TT=exp(gamma1*(lnrho+ss-ss0))
-        TT1=1./TT
-        cs2=kB_over_mp*TT*dlnPdlnrho
+        TT=exp(gamma1*(lnrho+ss-ss0)); TT1=1./TT
+        cs2=ss_ion*TT*dlnPdlnrho
         cp1tilde=dlnPdS/dlnPdlnrho
       else
 !

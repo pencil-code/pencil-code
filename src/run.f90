@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.126 2003-02-02 20:05:37 dobler Exp $
+! $Id: run.f90,v 1.127 2003-02-21 20:21:52 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.126 2003-02-02 20:05:37 dobler Exp $")
+             "$Id: run.f90,v 1.127 2003-02-21 20:21:52 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -109,6 +109,7 @@
 !
         call initialize_modules(f)
 !ajwm run_hooks renamed and moved to run_hooks subroutine
+!AB: do you mean "moved to initialize_modules subroutine"?
 !
 !  Write data to file for IDL
 !

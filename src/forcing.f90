@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.39 2003-01-17 17:40:31 nilshau Exp $
+! $Id: forcing.f90,v 1.40 2003-02-21 20:21:52 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.39 2003-01-17 17:40:31 nilshau Exp $")
+           "$Id: forcing.f90,v 1.40 2003-02-21 20:21:52 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -63,6 +63,7 @@ module Forcing
 !ajwm check this really should only be done once before
 !ajwm timestepping really starts, i.e. before time loop
 !ajwm and not after RELOAD
+!AB: I think we do *not* want to read seed.dat after RELOAD
 !
       if (first) then
          if (lroot.and.ip<14) print*, 'reading seed file'

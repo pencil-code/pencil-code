@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.92 2003-02-19 09:11:56 nilshau Exp $ 
+! $Id: param_io.f90,v 1.93 2003-02-21 20:21:52 brandenb Exp $ 
 
 module Param_IO
 
@@ -25,6 +25,15 @@ module Param_IO
  
   implicit none 
 
+  ! start parameters (units)
+  ! http://www.astro.wisc.edu/~dolan/constants.html
+
+  real, parameter :: hbar_cgs=1.0545726663e-27 ! [erg*s]
+  real, parameter :: k_B_cgs=1.38065812e-16    ! [erg/K]
+  real, parameter :: m_p_cgs=1.672623110e-24   ! [g]
+  real, parameter :: m_e_cgs=9.109389754e-28   ! [g]
+  real, parameter :: eV_cgs=1.602177250e-12    ! [erg]
+
   ! run parameters
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0
@@ -38,6 +47,7 @@ module Param_IO
 
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lwrite_ic,lnowrite, &
+       unit_system,unit_length,unit_velocity,unit_density, &
        random_gen,lserial_io
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
@@ -111,7 +121,7 @@ module Param_IO
 !
       use Mpicomm, only: stop_it
 !
-
+      real :: unit_mass,unit_energy,unit_time
       integer :: ierr
       logical, optional :: print,file
       character (len=30) :: label='[none]'
@@ -170,6 +180,26 @@ module Param_IO
         if (file) then
           call print_startpars(FILE=trim(datadir)//'/params.log')
         endif
+      endif
+!
+!  evaluate physical units used in ionization
+!  (and perhaps later in the interstellar module)
+!
+      unit_mass=unit_density*unit_length**3
+      unit_energy=unit_mass*unit_velocity**2
+      unit_time=unit_length/unit_velocity
+!
+      if (unit_system=='cgs') then
+        hbar=hbar_cgs/(unit_energy*unit_time)
+        k_B=k_B_cgs/(unit_energy/unit_temperature)
+        m_p=m_p_cgs/unit_mass
+        m_e=m_e_cgs/unit_mass
+        eV=eV_cgs/unit_energy
+      elseif (unit_system=='SI') then
+        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        m_p=m_p_cgs*1e-3/unit_mass
+        m_e=m_e_cgs*1e-3/unit_mass
+        eV=eV_cgs*1e-7/unit_energy
       endif
 !
 !  set gamma1, cs20, and lnrho0
