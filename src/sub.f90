@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.97 2002-10-23 12:58:07 dobler Exp $ 
+! $Id: sub.f90,v 1.98 2002-10-23 13:16:42 dobler Exp $ 
 
 module Sub 
 
@@ -1799,7 +1799,7 @@ module Sub
         inquire(FILE=fname,EXIST=exist)
         if (exist) then
           open(1,FILE=fname,ERR=666)
-          read(1,*,END=666,ERR=666) line
+          read(1,'(A)',END=666,ERR=666) line
           close(1)
           read_line_from_file = line
         endif

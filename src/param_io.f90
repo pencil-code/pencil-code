@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.70 2002-10-22 13:59:04 tarek Exp $ 
+! $Id: param_io.f90,v 1.71 2002-10-23 13:16:42 dobler Exp $ 
 
 module Param_IO
 
@@ -214,7 +214,7 @@ module Param_IO
 !
     endsubroutine print_startpars
 !***********************************************************************
-    subroutine read_runpars(print,file)
+    subroutine read_runpars(print,file,annotation)
 !
 !  read input parameters
 !
@@ -227,6 +227,7 @@ module Param_IO
 !
       integer :: ierr
       logical, optional :: print,file
+      character (len=*), optional :: annotation
       character (len=30) :: label='[none]'
 !
 !  set default values
@@ -295,7 +296,12 @@ module Param_IO
 !
       if (present(file)) then
         if (file) then
-          call print_runpars(FILE=trim(datadir)//'/params.log')
+          if (present(annotation)) then
+            call print_runpars(FILE=trim(datadir)//'/params.log', &
+                               ANNOTATION=annotation)
+          else
+            call print_runpars(FILE=trim(datadir)//'/params.log')
+          endif
         endif
       endif
 !  
@@ -370,7 +376,7 @@ module Param_IO
 !
     endsubroutine read_runpars
 !***********************************************************************
-    subroutine print_runpars(file)
+    subroutine print_runpars(file,annotation)
 !
 !  print input parameters
 !  14-sep-01/axel: inserted from run.f90
@@ -379,14 +385,19 @@ module Param_IO
 !
       use Cdata
 !
-      character (len=*), optional :: file
+      character (len=*), optional :: file,annotation
       integer :: unit=6         ! default unit is 6=stdout
       character (len=linelen) :: line
+      character (len=datelen) :: date
 !
       if (lroot) then
         line = read_line_from_file('RELOAD') ! get first line from file RELOAD
+        if ((line == '') .and. present(annotation)) then
+          line = trim(annotation)
+        endif
         if (present(file)) then
           unit = 1
+          call date_time_string(date)
           open(unit,FILE=file,position='append')
           write(unit,*) &
                '# -------------------------------------------------------------'
@@ -394,6 +405,7 @@ module Param_IO
           ! Add comment from `RELOAD' and time
           !
           write(unit,'(A,A)') ' # ', trim(line)
+          write(unit,'(A,A)') ' # Date: ', trim(date)
           write(unit,*) '# t=', t
         endif
 !
