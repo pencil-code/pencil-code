@@ -6,8 +6,8 @@
 1e-3,1,0.			ampl,init,urand
 50.,1.,1.,0.,0.,		cs0,gamma,rho0,gravz,grads0
 &magnetic_init_pars
-  fring1=1., Iring1=0., Rring1=1., wr1=0.3, axisr1=0.,0.,1., dispr1=0.,-.5,0.,
-  fring2=1., Iring2=0., Rring2=1., wr2=0.3, axisr2=1.,0.,0., dispr2=0.,.5,0.,
+  fring1=1., Iring1=0., Rring1=1., wr1=0.3, axisr1=0.,0.,1., dispr1=0.,-0.5,0.,
+  fring2=1., Iring2=0., Rring2=1., wr2=0.3, axisr2=1.,0.,0., dispr2=0.,0.5,0.,
 /
 
 # Meaning of init:
