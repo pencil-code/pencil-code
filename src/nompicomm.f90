@@ -230,32 +230,6 @@ module Mpicomm
 !
     endsubroutine radboundary_xy_periodic_ray
 !***********************************************************************
-    subroutine recv_density_zbot(lnrho_bot,lnrho)
-!
-!  20-feb-04/tobi: dummy created
-!
-      real, intent(in) :: lnrho_bot
-      real, intent(out) :: lnrho
-
-      if (ip==0) then
-        print*,lnrho_bot
-        lnrho=0
-      endif
-
-    endsubroutine recv_density_zbot
-!***********************************************************************
-    subroutine send_density_ztop(lnrho)
-!
-!  20-feb-04/tobi: dummy created
-!
-      real, intent(in) :: lnrho
-
-      if (ip==0) then
-        print*,lnrho
-      endif
-
-    endsubroutine send_density_ztop
-!***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
       integer :: nbcast_array
