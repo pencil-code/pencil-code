@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -123,7 +123,7 @@ module  power_spectrum
   !
   endsubroutine power
 !***********************************************************************
-  subroutine power_hel(f,sp)
+  subroutine powerhel(f,sp)
 !
 !  Since this routine is only used at the end of a time step,
 !  one could in principle reuse the df array for memory purposes.
@@ -142,7 +142,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.10 2002-10-22 12:34:28 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.11 2002-10-22 12:57:15 brandenb Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -229,18 +229,18 @@ module  power_spectrum
          ,'to ',trim(datadir)//'/power'//trim(sp)//'.dat'
     spectrum_sum=.5*spectrum_sum
     !
-    open(1,file=trim(datadir)//'/power'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/power_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) spectrum_sum
     close(1)
     !
-    open(1,file=trim(datadir)//'/power_hel'//trim(sp)//'.dat',position='append')
+    open(1,file=trim(datadir)//'/powerhel_'//trim(sp)//'.dat',position='append')
     write(1,*) t
     write(1,*) spectrum_hel_sum
     close(1)
   endif
   !
-  endsubroutine power_hel
+  endsubroutine powerhel
 !***********************************************************************
     subroutine powersnap(a)
 !
@@ -280,8 +280,8 @@ module  power_spectrum
          if (vel_spec) call power(a,'u')
          if (mag_spec) call power(a,'b')
          if (vec_spec) call power(a,'a')
-         if (ab_spec) call power_hel(a,'mag')
-         if (ou_spec) call power_hel(a,'kin')
+         if (ab_spec) call powerhel(a,'mag')
+         if (ou_spec) call powerhel(a,'kin')
       endif
 !
     endsubroutine powersnap
