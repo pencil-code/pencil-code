@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.33 $", &
-           "$Date: 2002-03-09 20:18:55 $")
+           "$Revision: 1.34 $", &
+           "$Date: 2002-04-04 16:24:51 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -215,6 +215,7 @@ use IO
         if (z_mn(1) /= z_prev) then
           call heatcond(x_mn,y_mn,z_mn,lambda)
           call gradloghcond(x_mn,y_mn,z_mn, glhc)
+          z_prev = z_mn(1)
         endif
       endif
       chi = rho1*lambda
