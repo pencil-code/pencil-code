@@ -49,14 +49,14 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #LDMPI=
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen)
-#FC=pgf90 #(Nq[0-9]+)
 #FC=ifc	#(Nq[0-9]+)
 #FC=/home/brandenb/bin/f95 #(Nq[0-9]+)
+#FC=pgf90 #(Nq[0-9]+)
 #FFLAGS=-O # (Samos)
-#FFLAGS= -fast -DPGF90 #(Nq[0-9]+) ##(old)
 ##FFLAGS=-O3 -I/usr/lib/lam/include -static #(Nq[0-9]+)
 #FFLAGS=-O3 -static #(Nq[0-9]+)
 #FFLAGS=-O4 -u -Wc,-malign-double	#(Nl3|Mephisto)
+#FFLAGS= -fast -DPGF90 #(Nq[0-9]+)
 #LDMPI=-llammpi++ -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(Nq[0-9]+)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall

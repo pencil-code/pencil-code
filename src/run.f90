@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.47 2002-06-16 05:37:26 brandenb Exp $
+! $Id: run.f90,v 1.48 2002-06-16 13:45:14 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.47 $", &
-             "$Date: 2002-06-16 05:37:26 $")
+             "$Revision: 1.48 $", &
+             "$Date: 2002-06-16 13:45:14 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -129,7 +129,7 @@
           if (lforcing) call addforce(f)
           if(lout) call write_xyaverages
           if(lout) call prints
-          call outpui(trim(directory)//'/alive.info',it,1) !(all procs alive?)
+          call outpui(trim(directory)//'/alive.info',spread(it,1,1),1) !(all procs alive?)
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))
 !
