@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.122 2002-12-28 11:19:20 brandenb Exp $
+! $Id: run.f90,v 1.123 2003-01-06 20:27:08 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.122 2002-12-28 11:19:20 brandenb Exp $")
+             "$Id: run.f90,v 1.123 2003-01-06 20:27:08 nilshau Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -282,7 +282,7 @@
 !  save spectrum snapshot
 !
         if(save_lastsnap) then
-          if(dspec /= impossible) call powersnap(f)
+          if(dspec /= impossible) call powersnap(f,.true.)
         endif
 !
 !  write seed parameters (only if forcing is turned on)
