@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.86 2002-07-06 20:29:17 brandenb Exp $
+! $Id: entropy.f90,v 1.87 2002-07-07 18:34:04 dobler Exp $
 
 module Entropy
 
@@ -11,13 +11,14 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.
   real :: chi_t=0.,ss0=0.,khor_ss=1.
+
   character (len=labellen) :: initss='zero',pertss='zero'
 
   ! input parameters
   namelist /entropy_init_pars/ &
        initss,pertss,grads0,radius_ss,ampl_ss, &
        hcond0,hcond1,hcond2,whcond, &
-       mpoly0,mpoly1,mpoly2,isothtop, &
+       mpoly0,mpoly1,mpoly2,isothtop,Fheat, &
        khor_ss
 
   ! run parameters
@@ -60,7 +61,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.86 2002-07-06 20:29:17 brandenb Exp $")
+           "$Id: entropy.f90,v 1.87 2002-07-07 18:34:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -154,6 +155,8 @@ module Entropy
         call polytropic_ss_z(f,mpoly0,zz,tmp,z2,z1,z2,0,cs2int,ssint)
         ! stable layer
         call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
+        ! heat flux through polytropic atmosphere (for run.x later)
+        Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
 
       case('polytropic', '5')
         !

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.55 2002-07-06 20:29:17 brandenb Exp $
+! $Id: run.f90,v 1.56 2002-07-07 18:34:04 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.55 2002-07-06 20:29:17 brandenb Exp $")
+             "$Id: run.f90,v 1.56 2002-07-07 18:34:04 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -61,15 +61,7 @@
 !  [might better be put into another routine, possibly even in rparam or
 !  read_runpars]
 !
-        if (gamma-1/=0) then
-          print*
-          print*,'Wolfgang, this Fheat belongs actually into grav_z,'
-          print*,'because it will be different with grav_r, and is rather'
-          print*,'useless if one runs discs!!'
-          print*
-          Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1) ! heat flux through
-                                                            ! polytropic atmosphere
-        endif
+!  [Currently none]
 !
 !  read parameters and output parameter list
 !
