@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.88 2003-09-09 09:08:45 theine Exp $
+! $Id: ionization.f90,v 1.89 2003-09-09 15:03:58 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -79,7 +79,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.88 2003-09-09 09:08:45 theine Exp $")
+           "$Id: ionization.f90,v 1.89 2003-09-09 15:03:58 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -539,7 +539,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       integer              :: i
       integer, parameter   :: maxit=100
 !
-      yHmax=1-yHacc
+      yHmax=1-1e-7
       yHmin=1e-37
       dyHold=yHmax-yHmin
       dyH=dyHold
