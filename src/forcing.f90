@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.58 2004-02-06 19:27:42 nilshau Exp $
+! $Id: forcing.f90,v 1.59 2004-02-20 19:12:14 nilshau Exp $
 
 module Forcing
 
@@ -57,7 +57,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.58 2004-02-06 19:27:42 nilshau Exp $")
+           "$Id: forcing.f90,v 1.59 2004-02-20 19:12:14 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -519,7 +519,8 @@ module Forcing
 !
       fsum_tmp(1)=rho_uu_ff
       call mpireduce_sum(fsum_tmp,fsum,1)
-      if(lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
+      if(lroot) rho_uu_ff=fsum(1)/(ncpus*nw)
+!      if(lroot) rho_uu_ff=rho_uu_ff/(ncpus*nw)
       call mpibcast_real(rho_uu_ff,1)
 !
 !  scale forcing function
@@ -1131,6 +1132,7 @@ module Forcing
 !
         fsum_tmp(1)=irufm
         call mpireduce_sum(fsum_tmp,fsum,1)
+        irufm=fsum(1)
         call mpibcast_real(irufm,1)
 !
 ! What should be added to force_vec in order to make the energy 
