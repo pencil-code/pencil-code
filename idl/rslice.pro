@@ -1,4 +1,4 @@
-; $Id: rslice.pro,v 1.3 2002-08-11 04:00:11 brandenb Exp $
+; $Id: rslice.pro,v 1.4 2002-08-17 08:40:37 brandenb Exp $
 ;
 ;  reads xz slices
 ;  this routine is not very general yet and needs to be adjusted
@@ -14,7 +14,7 @@ openr,1,file_slice,/f77
 while not eof(1) do begin
   readu,1,xz_slice,t
   print,t
-  plot,xz_slice(11,*),yr=[-1,1]*1e-3
+  ;plot,xz_slice(11,*),yr=[-1,1]*1e-3
   tvscl,xz_slice
   wait,.1
 end
