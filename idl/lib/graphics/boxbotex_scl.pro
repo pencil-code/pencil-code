@@ -301,8 +301,10 @@ endif else begin
   if xrot gt 0 then begin
     polyfill,verts(*,[4,5,6,7]),/t3d,pattern=zimgbot, transparent=mincol, $
         image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
-    polyfill,verts(*,[12,13,14,15]),/t3d,pattern=zimgbot, transparent=mincol, $
-        image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    if not keyword_set(nobottom) then begin
+      polyfill,verts(*,[12,13,14,15]),/t3d,pattern=zimgbot, transparent=mincol, $
+          image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]] 
+    endif
   endif else begin
     polyfill,verts(*,[0,1,2,3]),/t3d,pattern=zimgbot, $
         image_coord=[[0,0],[zs(1)-1,0],[zs(1)-1,zs(2)-1],[0,zs(2)-1]]
