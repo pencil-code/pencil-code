@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.14 $", &
-             "$Date: 2002-01-25 08:04:47 $")
+             "$Revision: 1.15 $", &
+             "$Date: 2002-02-14 16:59:38 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -41,8 +41,8 @@
         read(1,*) ip
         read(1,*) x0,y0,z0
         read(1,*) Lx,Ly,Lz
-        read(1,*) z1,z2,z3
         read(1,*) iperx,ipery,iperz
+        read(1,*) z1,z2,z3
         read(1,*) hcond0,hcond1,hcond2,whcond
         read(1,*) ampl,init,urand
         read(1,*) cs0,gamma,rho0,gravz,grads0
@@ -54,8 +54,8 @@
           print*, 'ip=', ip
           print*, 'x0,y0,z0=', x0,y0,z0
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
-          print*, 'z1,z2,z3=', z1,z2,z3
           print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
+          print*, 'z1,z2,z3=', z1,z2,z3
           print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
           print*, 'ampl,init,urand=', ampl,init,urand
           print*, 'cs0,gamma,gravz,grads0=', cs0,gamma,gravz,grads0
