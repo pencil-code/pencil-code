@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.154 2004-03-30 05:35:40 brandenb Exp $
+! $Id: hydro.f90,v 1.155 2004-04-06 11:07:19 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.154 2004-03-30 05:35:40 brandenb Exp $")
+           "$Id: hydro.f90,v 1.155 2004-04-06 11:07:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -991,6 +991,10 @@ module Hydro
       enddo
 !
 !  check for those quantities for which we want phi-averages
+!
+!  shorthand uumphi for all three components:
+!
+      call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'urmphi',i_urmphi)

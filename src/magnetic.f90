@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.181 2004-03-22 18:31:20 brandenb Exp $
+! $Id: magnetic.f90,v 1.182 2004-04-06 11:07:19 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -117,7 +117,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.181 2004-03-22 18:31:20 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.182 2004-04-06 11:07:19 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -904,6 +904,7 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Cdata
+      use Mpicomm, only: stop_it
       use Sub
 !
       integer :: iname,inamez,ixy,irz
@@ -997,6 +998,11 @@ module Magnetic
       enddo
 !
 !  check for those quantities for which we want phi-averages
+!
+!
+!  shorthand uumphi for all three components:
+!
+      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi',i_brmphi)

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.169 2004-03-27 13:43:14 theine Exp $ 
+! $Id: sub.f90,v 1.170 2004-04-06 11:07:19 dobler Exp $ 
 
 module Sub 
 
@@ -2659,7 +2659,7 @@ module Sub
 !***********************************************************************
       subroutine parse_name(iname,cname,cform,ctest,itest)
 !
-!  Parse name and format of print variable
+!  Parse name and format of scalar print variable
 !  On output, ITEST is set to INAME if CNAME matches CTEST
 !  and CFORM is set to the format given as default.
 !  E.g. if CTEST='bmax' *i.e. we are testing input line CNAME for 'bmax',
@@ -2669,57 +2669,92 @@ module Sub
 !
         use General, only: safe_character_assign
 !
-      character (len=*) :: cname,cform
-      character (len=*) :: ctest
-      integer :: iname,itest,iform0,iform1,iform2,length,index_i
+        character (len=*) :: cname,cform
+        character (len=*) :: ctest
+        integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
-      intent(in)    :: iname,cname,ctest
-      intent(inout) :: itest,cform
+        intent(in)    :: iname,cname,ctest
+        intent(inout) :: itest,cform
 !      intent(out)   :: cform
 !
 !  check whether format is given
 !
-      iform0=index(cname,' ')
-      iform1=index(cname,'(')
-      iform2=index(cname,')')
+        iform0=index(cname,' ')
+        iform1=index(cname,'(')
+        iform2=index(cname,')')
 !
 !  set format; use default if not given
 !
-      if (iform1>0) then
-        cform=cname(iform1+1:iform2-1)
-        length=iform1-1
-      else
-        cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
-                         !! 1p [does it?])
-        length=iform0-1
-      endif
+        if (iform1>0) then
+          cform=cname(iform1+1:iform2-1)
+          length=iform1-1
+        else
+          cform='1pE10.2'  !!(the nag-f95 compiler requires a comma after
+                           !! 1p [does it?])
+          length=iform0-1
+        endif
 !
 !  fix annoying Fortran 0p/1p stuff (Ew.d --> 1pEw.d, Fw.d --> 0pFw.d)
 !
-      if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E')) then
-        call safe_character_assign(cform, '1p'//trim(cform))
-      endif
-      if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
-        call safe_character_assign(cform, '0p'//trim(cform))
-      endif
-
+        if ((cform(1:1) == 'e') .or. (cform(1:1) == 'E')) then
+          call safe_character_assign(cform, '1p'//trim(cform))
+        endif
+        if ((cform(1:1) == 'f') .or. (cform(1:1) == 'F')) then
+          call safe_character_assign(cform, '0p'//trim(cform))
+        endif
 !
 !  if the name matches, we keep the name and can strip off the format.
 !  The remaining name can then be used for the legend.
 !
-      if (cname(1:length)==ctest .and. itest==0) then
-        itest=iname
-      endif
+        if (cname(1:length)==ctest .and. itest==0) then
+          itest=iname
+        endif
 !
 !  Integer formats are turned into floating point numbers
 !
-      index_i=index(cform,'i')
-      if (index_i/=0) then
-        cform(index_i:index_i)='f'
-        cform=trim(cform)//'.0'
-      endif
+        index_i=index(cform,'i')
+        if (index_i/=0) then
+          cform(index_i:index_i)='f'
+          cform=trim(cform)//'.0'
+        endif
 !
       endsubroutine parse_name
+!***********************************************************************
+      subroutine expand_cname(ccname,nname,vlabel,xlabel,ylabel,zlabel)
+!
+!  Expand string array cname with entries up to index nname such that
+!  vlabel is replaced by the three labels xlabel, ylabel, zlabel, and
+!  update nname accordingly.
+!
+!   1-apr-04/wolf: coded
+!
+        use Mpicomm, only: stop_it
+!
+        character (len=*), dimension(:) :: ccname
+        integer :: nname
+        character (len=*) :: vlabel,xlabel,ylabel,zlabel
+        integer :: mname
+        integer :: i
+!
+        intent(inout) :: ccname,nname
+        intent(in) :: vlabel,xlabel,ylabel,zlabel
+!
+        mname = size(ccname)
+        i = 1
+        do while (i <= nname)
+          if (ccname(i) == vlabel) then
+            if (nname+2 > mname) then ! sanity check
+              call stop_it("EXPAND_CNAME: Too many labels in list") 
+            endif
+            ccname(i+3:nname+2) = ccname(i+1:nname)
+            ccname(i:i+2) = (/xlabel,ylabel,zlabel/)
+            i = i+2
+            nname = nname+2
+          endif
+          i = i+1
+        enddo
+
+      endsubroutine expand_cname
 !***********************************************************************
       subroutine parse_shell(strin,strout)
 !
