@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.253 2003-11-25 15:29:28 brandenb Exp $
+! $Id: entropy.f90,v 1.254 2003-11-26 17:13:09 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -105,7 +105,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.253 2003-11-25 15:29:28 brandenb Exp $")
+           "$Id: entropy.f90,v 1.254 2003-11-26 17:13:09 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1194,7 +1194,7 @@ endif
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,cs2,ss,cp1tilde,TT1
       real, dimension (nx) :: heat,prof
-      real :: ssref,zbot,ztop,TTref,profile_buffer,xi,profile_cor
+      real :: ssref,zbot,ztop,profile_buffer,xi,profile_cor
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1276,7 +1276,7 @@ endif
       if(heat_uniform/=0.) heat=heat+heat_uniform
 !
 !  add "coronal" heating (to simulate a hot corona)
-!  assume a linearly increasing reference profile, TTref
+!  assume a linearly increasing reference profile
 !  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
 !
       if(tau_cor>0) then

@@ -203,8 +203,8 @@ module Mpicomm
       if (ip==0) then
          print*,mrad
          print*,Qrad_send_zx(1,1),tau_send_zx(1,1)
-         print*,Qrad0_zx(1,1),tau0_zx(1,1)
-         print*,Qrad_tot_zx(1,1),tau_tot_zx(1,1)
+         Qrad0_zx=0; tau0_zx=0
+         Qrad_tot_zx=0; tau_tot_zx=0
       endif
 !
     endsubroutine radboundary_zx_periodic_ray
@@ -224,8 +224,8 @@ module Mpicomm
       if (ip==0) then
          print*,nrad
          print*,Qrad_send_xy(1,1),tau_send_xy(1,1)
-         print*,Qrad0_xy(1,1),tau0_xy(1,1)
-         print*,Qrad_tot_xy(1,1),tau_tot_xy(1,1)
+         Qrad0_xy=0; tau0_xy=0
+         Qrad_tot_xy=0; tau_tot_xy=0
       endif
 !
     endsubroutine radboundary_xy_periodic_ray
