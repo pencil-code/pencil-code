@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.250 2003-11-21 07:15:07 theine Exp $
+! $Id: entropy.f90,v 1.251 2003-11-25 09:11:31 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -104,7 +104,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.250 2003-11-21 07:15:07 theine Exp $")
+           "$Id: entropy.f90,v 1.251 2003-11-25 09:11:31 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -576,8 +576,8 @@ module Entropy
 !
       use Gravity, only: g0
       use Density, only: mpoly
-
       use Ionization, only: getentropy
+      use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real, dimension (nx) :: lnrho,lnTT,TT,ss
@@ -587,25 +587,22 @@ module Entropy
       if (initss=='geo-kws') then
         do m=m1,m2
         do n=n1,n2
-
-          x_mn = x(l1:l2)
-          y_mn = spread(y(m),1,nx)
-          z_mn = spread(z(n),1,nx)
-          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
-
+!
+          call calc_unitvects_sphere()
+!
           where (r_mn >= r_ext) TT = TT_ext
           where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
           where (r_mn <= r_int) TT = TT_int
-
+!
           lnrho=f(l1:l2,m,n,ilnrho)
           lnTT=log(TT)
           call getentropy(lnrho,lnTT,ss)
           f(l1:l2,m,n,iss)=ss
-
+!
         enddo 
         enddo 
       endif
-      
+!      
    end subroutine shell_ss
 !***********************************************************************
     subroutine ferriere(f)

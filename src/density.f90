@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.138 2003-11-19 15:50:44 ajohan Exp $
+! $Id: density.f90,v 1.139 2003-11-25 09:11:31 mcmillan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -84,7 +84,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.138 2003-11-19 15:50:44 ajohan Exp $")
+           "$Id: density.f90,v 1.139 2003-11-25 09:11:31 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -569,12 +569,13 @@ module Density
 !  22-oct-03/dave -- coded
 !
       use Gravity, only: g0
-
+      use Sub, only: calc_unitvects_sphere
+!
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
       real :: beta1,lnrho_int,lnrho_ext
 !
       beta1 = g0/(mpoly+1)
-
+!
       if (initlnrho=='geo-kws') then
 !       densities at shell boundaries
         lnrho_int = mpoly*log(1+beta1*(1/r_int-1))
@@ -582,20 +583,15 @@ module Density
         do imn=1,ny*nz
           n=nn(imn)
           m=mm(imn)
-
-! set x_mn, y_mn, z_mn and r_mn
-
-          x_mn = x(l1:l2)
-          y_mn = spread(y(m),1,nx)
-          z_mn = spread(z(n),1,nx)
-          r_mn = sqrt(x_mn**2+y_mn**2+z_mn**2)      
-
+!
+          call calc_unitvects_sphere()
+!
           where (r_mn >= r_ext) f(l1:l2,m,n,ilnrho) = lnrho_ext
           where (r_mn < r_ext .AND. r_mn > r_int) f(l1:l2,m,n,ilnrho) = mpoly*log(1+beta1*(1/r_mn-1))
           where (r_mn <= r_int) f(l1:l2,m,n,ilnrho) = lnrho_int
         enddo 
       endif
-      
+!      
    end subroutine shell_lnrho
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
