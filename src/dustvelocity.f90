@@ -1,4 +1,4 @@
-  ! $Id: dustvelocity.f90,v 1.74 2004-08-26 10:02:31 ajohan Exp $
+  ! $Id: dustvelocity.f90,v 1.75 2004-08-28 12:11:27 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.74 2004-08-26 10:02:31 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.75 2004-08-28 12:11:27 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -154,7 +154,7 @@ module Dustvelocity
         endif
       endif
 
-      if (headtt) &
+      if (lroot) &
           print*, 'initialize_dustvelocity: dust_chemistry = ', dust_chemistry
 !
 !  Set dust chemistry
@@ -212,7 +212,7 @@ module Dustvelocity
 
         dimd1 = 0.333333
         
-        if (headtt) print*, 'initialize_dustvelocity: dust geometry = sphere'
+        if (lroot) print*, 'initialize_dustvelocity: dust geometry = sphere'
         
         call get_dustsurface
         call get_dustcrosssection
