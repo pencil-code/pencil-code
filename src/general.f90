@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.30 2003-11-14 17:54:08 dobler Exp $
+! $Id: general.f90,v 1.31 2003-11-18 12:41:43 dobler Exp $
 
 module General
 
@@ -117,6 +117,8 @@ module General
 !  Produces a matrix filled with random numbers calculated
 !  with the 'Minimal Standard' random number generator
 !
+      use Cdata, only: lroot
+!
       real, dimension(:) :: a
       integer :: i
 !
@@ -128,11 +130,14 @@ module General
         do i=1,size(a,1)
           a(i)=ran0(rstate(1))
         enddo
-      case default ! 'nr_f90'
+      case('nr_f90')
         do i=1,size(a,1)
           a(i)=mars_ran()
         enddo
-      endselect
+      case default
+        if (lroot) print*, 'No such random number generator: ', random_gen
+        STOP
+     endselect
 !
     endsubroutine random_number_wrapper_1
 !***********************************************************************
