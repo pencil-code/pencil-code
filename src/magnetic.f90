@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.113 2003-06-17 16:57:14 torkel Exp $
+! $Id: magnetic.f90,v 1.114 2003-06-17 17:59:43 torkel Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -34,7 +34,7 @@ module Magnetic
        kx_aa2,ky_aa2,kz_aa2, lpress_equil
 
   ! run parameters
-  real, dimension(3) :: B_ext=(/0.,1.e-4,0./)
+  real, dimension(3) :: B_ext=(/0.,0.,0./)
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: tau_aa_exterior=0.
 
@@ -86,7 +86,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.113 2003-06-17 16:57:14 torkel Exp $")
+           "$Id: magnetic.f90,v 1.114 2003-06-17 17:59:43 torkel Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
