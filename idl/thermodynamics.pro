@@ -1,4 +1,4 @@
-;  $Id: thermodynamics.pro,v 1.19 2004-05-06 10:35:55 ajohan Exp $
+;  $Id: thermodynamics.pro,v 1.20 2004-06-16 20:02:20 theine Exp $
 
 if (not lionization and not lionization_fixed) then begin
   print,'Using simple equation of state...'
@@ -9,7 +9,7 @@ if (not lionization and not lionization_fixed) then begin
   cs2=cs20*exp(gamma1*(llnrho-lnrho0)+gamma*sss)
   ppp=rho*cs2/gamma
   cp1tilde=1.
-  eee=cs2/gamma1
+  eee=cs2/(gamma*gamma1)
   TTT=TT0*exp(gamma*sss+gamma1*(llnrho-lnrho0))
 endif else begin
   xHe=par.xHe

@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.46 2004-04-27 08:23:55 ajohan Exp $
+;  $Id: extra.pro,v 1.47 2004-06-16 20:02:20 theine Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -34,6 +34,8 @@ if (ilnrho ne 0) then begin
     @thermodynamics.pro
   end
 ;ajwm NOT SO SURE THE ENTHALPY IS CORRECT EITHER
+;tobi: I think it is only correct for noionization, therefore should be moved
+;      to thermodynamics.pro
   hhh=cs2/gamma1  ;(enthalpy)
 ;
 end

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.114 2004-06-12 06:07:37 brandenb Exp $
+! $Id: noionization.f90,v 1.115 2004-06-16 20:02:20 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.114 2004-06-12 06:07:37 brandenb Exp $')
+           '$Id: noionization.f90,v 1.115 2004-06-16 20:02:20 theine Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -457,7 +457,7 @@ module Ionization
         if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
         if (present(lnTT)) lnTT=lnTT_
         if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-        if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+        if (present(pp)) pp=cs20*exp(gamma*(ss+lnrho)-gamma1*lnrho0)/gamma
       endif
 !
      if (ldiagnos.and.psize==nx) then
