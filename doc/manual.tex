@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.204 2003-10-23 10:22:06 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.205 2003-11-03 04:08:12 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -345,7 +345,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
+\date{$ $Date: 2003-11-03 04:08:12 $ $,~ $ $Revision: 1.205 $ $}
 
 % ====================================================================== %
 
@@ -378,7 +378,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
+  \emph{$ $Date: 2003-11-03 04:08:12 $ $,~ $ $Revision: 1.205 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3294,7 +3294,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-10-23 10:22:06 $ $,~ $ $Revision: 1.204 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-03 04:08:12 $ $,~ $ $Revision: 1.205 $ $}
 
 \section{Timings}
 
@@ -3343,8 +3343,10 @@ application on your specific hardware.
    1 & Nl6   & 6.8  &  $64^3$ & magn/noentro &        & 10-mar-03 & AB \\
    1 & Nl6   & 36.3 &  $64\times128\times64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
+   1 & Nl6   & 42.7 & $16^2{\times}256$                                  
+                     & nomagn/entro/rad6/ion &        & 22-oct-03 & AB \\
    1 & Nl6   & 37.6 & $16^2{\times}256$                                  
-                      & nomagn/entro/rad/ion &        & 22-oct-03 & AB \\
+                     & nomagn/entro/rad2/ion &        & 22-oct-03 & AB \\
    1 & Nl6   & 19.6 & $16^2{\times}256$                                  
                       & nomagn/entro/norad/ion &      & 22-oct-03 & AB \\
    1 & Nl6   &  8.7 & $16^2{\times}256$                                  
@@ -3375,6 +3377,10 @@ application on your specific hardware.
    4 & fe1   & 6.35 &  $64\times128\times64$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
    4 & fe1   & 2.09 & $128^3$ & magn/noentro &        &  9-oct-02 & AB \\
+   4 & fe1   & 7.55 & $16^2{\times}512$                                  
+                     & nomagn/entro/rad2/ion &  4x1   &  1-nov-03 & AB \\
+   4 & fe1   & 5.48 & $16^2{\times}512$                                  
+                     & nomagn/entro/rad2/ion &  1x4   &  1-nov-03 & AB \\
    4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
    4 & Hwwsx5& 1.8  & $256^3$ & convstar     & 8.2 Gb & 29-jan-03 & WD \\
    8 & Nqall & 3.0  & $128^3$ & magn/noentro &        &  8-oct-02 & AB \\
@@ -3403,6 +3409,8 @@ application on your specific hardware.
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
   16 & fe1   & 6.30 & $128\times256\times128$
                               & nomag/entro/dust &    & 19-sep-03 & AB \\
+% 16 & fe1   & 7.55 & $16^2{\times}512$                                  
+%                    & nomagn/entro/rad2/ion &  4x4   &  1-nov-03 & AB \\
   16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
   16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
   16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
@@ -5901,7 +5909,7 @@ initial condition.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.204 2003-10-23 10:22:06 dobler Exp $ $}
+$ $Id: manual.tex,v 1.205 2003-11-03 04:08:12 brandenb Exp $ $}
 
 
 \end{document}
