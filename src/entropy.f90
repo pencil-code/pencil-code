@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.218 2003-10-22 13:17:15 mcmillan Exp $
+! $Id: entropy.f90,v 1.219 2003-10-22 13:39:48 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -101,7 +101,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.218 2003-10-22 13:17:15 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.219 2003-10-22 13:39:48 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -563,7 +563,6 @@ module Entropy
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
-      call get_soundspeed(T0,cs20)
 
       if (initss=='geo-kws') then
 !       temperatures at shell boundaries
