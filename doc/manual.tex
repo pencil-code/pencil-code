@@ -4,9 +4,9 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.56 2002-07-18 23:09:50 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.57 2002-07-18 23:49:36 brandenb Exp $
 %%  Description:
-%     User manual for the MHD code 
+%     User manual for the pencil code 
 %   Process with:
 %     latex manual; makeindex manual; latex manual
 
@@ -70,7 +70,7 @@
   \markright{\thesection.\ #1}}
 \fancyhead{}                    % clear header
 \fancyhead[LE,RO]{\thepage}
-\fancyhead[CE]{\textsc{The MHD code}}
+\fancyhead[CE]{\textsc{The pencil code}}
 \fancyhead[CO]{\rightmark}
 %
 \fancyfoot{}
@@ -179,10 +179,10 @@
 
 % ---------------------------------------------------------------------- %
 
-\title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
+\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.56 $ $}
+\date{\today,~ $ $Revision: 1.57 $ $}
 
 % ====================================================================== %
 
@@ -211,7 +211,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.56 $ $}
+  \emph{\today,~ $ $Revision: 1.57 $ $}
 
 
 \end{center}
@@ -428,7 +428,7 @@ you can access it via anonymous CVS access.
 
 \begin{enumerate}
 \item Download the tarball from
-  \path{http://www.nordita.dk/~brandenb/MHD-code/download/pencil_modular.tgz}
+  \path{http://www.nordita.dk/~brandenb/pencil-code/download/pencil_modular.tgz}
 \item Put it into a convenient directory and unpack it:
   \begin{alltt}
   \prompt{unix> } mv pencil_modular.tgz somewhere/; cd somewhere
@@ -451,10 +451,9 @@ you can access it via anonymous CVS access.
   Alternatively, just copy the executable from a binary compatible
   machine.
 
-\item Get the password for anonymous \name{CVS} access to the MHD code
-\footnote{Wolfgang, we should make this automatically. Ideally, a new user
-should be able to register on our web site and get a password automatically.
-This needs then to be automatically put into the CVS passwd file.}
+\item Get the password for anonymous \name{CVS} access to the pencil code
+\footnote{In future, this should work automatically, to allow new users
+to just look into the code without hassle}
 
 \item Set your environment variable \env{CVSROOT} (you probably want to
   put this into your \file{.cshrc} or \file{.profile} setup files):
@@ -482,10 +481,10 @@ This needs then to be automatically put into the CVS passwd file.}
   \end{alltt}
   and check the code out:
   \begin{alltt}
-  \prompt{unix> } cvs checkout -d mhd f90/pencil_modular \
+  \prompt{unix> } cvs checkout -d pencil-code \
   \end{alltt} 
-  This creates a subdirectory \file{somewhere/mhd} and populates it with
-  the MHD code's subdirectories.
+  This creates a subdirectory \file{somewhere/pencil-code} and populates it with
+  the pencil-code's subdirectories.
 
 \end{enumerate}
 
@@ -523,7 +522,7 @@ Here is the upgrading procedure:
 
 You may find that the latest CVS version of the code produces errors.
 If you have reasons to believe that this is due to changes introduced on
-31 June 2000 (to give an example), you can check out the version prior to
+31 June 2002 (to give an example), you can check out the version prior to
 this by:
 \begin{enumerate}
 \item Go to the top directory of the code:
@@ -532,7 +531,7 @@ this by:
   \end{alltt}
 \item Run \cmd{cvs update}:
   \begin{alltt}
-  \prompt{unix> } cvs up -D "30 Jun 2000"\
+  \prompt{unix> } cvs up -D "30 Jun 2002"\
   \end{alltt}
 \end{enumerate}
 
@@ -562,19 +561,19 @@ The simplest way to achieve this is to go to the top directory of the code
 the two scripts \file{sourceme.csh} or \file{sourceme.sh} (depending on
 the type of shell you are using):
 \begin{alltt}
-  \prompt{csh> } cd pencil
+  \prompt{csh> } cd pencil-code
   \prompt{csh> } source ./sourceme.csh
 \end{alltt}
 for \name{tcsh} or \name{csh} users; or
 \begin{alltt}
-  \prompt{sh> } cd pencil
+  \prompt{sh> } cd pencil-code
   \prompt{sh> } . ./sourceme.sh
 \end{alltt}
 for users of \name{bash}, \name{Bourne shell}, or similar shells.
 You should get output similar to
 \begin{alltt}
-  PENCIL_HOME = </home/dobler/f90/pencil>
-  Adding /home/dobler/f90/pencil/bin to path
+  PENCIL_HOME = </home/dobler/f90/pencil-code>
+  Adding /home/dobler/f90/pencil-code/bin to path
 \end{alltt}
 Apart from the \env{PATH} variable, the environment variable
 \env{IDL_PATH} has been set to something like
@@ -769,8 +768,8 @@ and lists
 \item the rms velocity \var{urms}$=\sqrt{\left<\uv^2\right>}$;
 \item the maximum velocity \var{umax}$=\max |\uv|$;
 \item the mean density \var{rhom}$=\left<\varrho\right>$;
-\item the mean entropy \var{rhom}$=\left<s/c_p\right>$;
-\item the time step in units of the advective Courant step
+\item the mean entropy \var{ssm}$=\left<s/c_p\right>$;
+\item the time step in units of the acoustic Courant step
   \var{dtc}$=\delta t/[\min(\delta x,\delta y,\delta z)\,cs0]$.
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
@@ -827,7 +826,7 @@ isothermal, non-forced MHD) where the physics is already nontrivial.
 
 \begin{alltt}
   \prompt{unix> } cd somewhere/mhd
-  \prompt{unix> } source sourceme.csh \quad\#(to put pencil/bin into your path)
+  \prompt{unix> } source sourceme.csh \quad\#(to put pencil-code/bin into your path)
   \prompt{unix> } cd runs/sample/rings
   \prompt{unix> } lnsrc \quad\#(from \file{../../../bin}, which by now should be in your path)
   \prompt{unix> } cd src
@@ -873,7 +872,7 @@ without magnetic fields etc.
 
 The overall directory structure of the code is shown in
 Fig.~\ref{Fig-Structure}.
-Under \file{pencil}, there are currently the following
+Under \file{pencil-code}, there are currently the following
 files and directories:
 \begin{verbatim}
   CVS/    bin/  bugs/         doc/
@@ -1020,21 +1019,20 @@ simple test problems where an analytic solution was known.
     schemes.
     }\label{T-2N-RK3}
   \vspace{12pt}
-  \begin{tabular}{l@{\quad}l@{\quad}ccccccc}
+  \begin{tabular}{l@{\quad}l@{\quad}ccccccccc}
     \toprule
-    scheme            & nodes $(t_i-t_0)/\delta t$
+    scheme            & \multicolumn{3}{c}{intermediate fractions of $\delta t$}
                                       & $\alpha_2$
                                                  & $\alpha_3$
                                                             & $\beta_1$
                                                                     &$\beta_2$
                                                                             & $\beta_3$\\
     \midrule
-    symmetric         & $0,1/3,2/3$   &  $-2/3$  &   $-1$   & $1/3$ &  $1$  & $1/2$ \\
+    symmetric         & 0 & 1/3 & 2/3   &  $-2/3$  &   $-1$   & $1/3$ &  $1$  & $1/2$ \\
     {}[predictor/corrector]
-                      & $0,3/4,0$
-                        [????]        &  $-1/4$  &  $-4/3$  & $1/2$ & $2/3$ & $1/2$ \\
-    inhomogeneous     & $0,15/32,4/9$ & $-17/32$ & $-32/27$ & $1/4$ & $8/9$ & $3/4$ \\
-    Williamson (1980) & $0,4/9,15/32$ &  $-5/9$  &$-153/128$& $1/3$ &$15/16$& $8/15$\\
+                      & 0 & 1/2 & 1     &  $-1/4$  &  $-4/3$  & $1/2$ & $2/3$ & $1/2$ \\
+    inhomogeneous     & 0 & 15/32 & 4/9 & $-17/32$ & $-32/27$ & $1/4$ & $8/9$ & $3/4$ \\
+    Williamson (1980) & 0 & 4/9 & 15/32 &  $-5/9$  &$-153/128$& $1/3$ &$15/16$& $8/15$\\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -1209,7 +1207,7 @@ command
 \begin{alltt}
   \prompt{unix > } perldoc adapt-mkfile
 \end{alltt}
-provided \file{\$PENCIL_HOME/bin} is in you path.
+provided \file{\$PENCIL_HOME/bin} is in your path.
 
 To give you an idea of how to add you own machines, let us assume you have
 several Linux boxes running a compiler \cmd{f95} that needs the options
@@ -1651,9 +1649,10 @@ double precision, $\varepsilon\approx10^{-15}$.
 \midrule
   \var{qshear} [$0.$]
                & \label{qshear-init}%
-                 Degree of shear (???) for shearing-box simulations (the
+                 Degree of shear for shearing-box simulations (the
                  shearing-periodic boundaries are the $x$-boundaries and
-                 are sheared in the $y$-direction). \\
+                 are sheared in the $y$-direction). The shear velocity
+                 is ${\bf U}=-q\Omega x\,{\hat{\bf y}}$. \\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -2106,7 +2105,7 @@ To discuss:
 
 \section{The Equations}
 
-The equations solved by the MHD code are basically the standard
+The equations solved by the pencil code are basically the standard
 compressible MHD equations. However, the modular structure allows
 some variations of the MHD equations, as well as switching
 some of the equations off (nomagnetic, noentropy, etc.).
@@ -2126,21 +2125,23 @@ derivative.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Equation of motion}
+\subsection{Equation of motion (\var{ivisc}=2)}
 
 \begin{equation}
   \frac{D\uv}{Dt}
    =  -\cs^2\grad\biggl(\frac{s}{c_p} + \ln\varrho\biggr)
       - \grad\Phi
       + \frac{\jv\times\Bv}{\varrho}
-      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv \right) \; .
+      + \nu \left( \Laplace\uv + \frac{1}{3}\grad\Div\uv
+      + {\bf{\sf S}}\cdot{\bf{\nabla}}\ln\varrho\right) \; .
 \end{equation}
 Here, $\cs^2 = \gamma p/\varrho$ is the squared sound speed,
 $\gamma=c_p/c_v$ the ratio of specific heats of \emph{adiabatic index},
 $\Phi$ is the gravity potential, $\jv$ the electric current density, $\Bv$
 the magnetic flux density, and $\nu$ is kinematic viscosity.
-Note that the viscous term used here is only correct if the dynamical
-viscosity $\mu \equiv \varrho\nu = \const$ everywhere.
+If \var{ivisc}=1, it is assumed that 
+$\mu \equiv \varrho\nu = \const$ everywhere; in that
+case the input parameter $\nu$ is used to give the value of $\mu$.
 
 For isothermal hydrodynamics, see \S\ref{entropy} below.
 
@@ -2434,7 +2435,7 @@ Reading grid.dat..
 Reading param.nml..
 % Expression must be a structure in this context: PAR.
 % Execution halted at:  $MAIN$            104
-/home/brandenb/pencil/runs/forced/hel1/../../../idl/start.pro
+/home/brandenb/pencil-code/runs/forced/hel1/../../../idl/start.pro
 \end{Verbatim}
 
 \medskip
@@ -2583,9 +2584,9 @@ the code.
 
 The machines we have used can be characterized as follows:
 \begin{description}
-\item[Nl3:] 500\,MHz Pentium??? single CPU;
-  ??? memory;
-  RedHat Linux 6.2 ???
+\item[Nl3:] 500\,MHz Pentium III single CPU;
+  RedHat Linux 6.2;
+  256\,MB memory
 \item[Nq0:] 931\,MHz Pentium III single CPU;
   RedHat Linux 7.3;
   0.5\,GB memory
@@ -2628,7 +2629,7 @@ The machines we have used can be characterized as follows:
 
 \section{Some specific initial conditions}
 
-\subsection{Random magnetic fields: \var{initaa=0}}
+\subsection{Random magnetic fields: \var{initaa='gaussian-noise'}}
 
 The $\Av$-vector is set to normally distributed, uncorrelated(?) random
 numbers in all meshpoints for all three components.
@@ -2638,7 +2639,7 @@ and the power spectrum of $\Bv$ increases like $k^4$.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{Beltrami fields: \var{initaa=1}}
+\subsection{Beltrami fields: \var{initaa='Beltrami-z'}}
 
 \begin{equation}
 %\Av=\pmatrix{\cos z\cr\sin z\cr0}
@@ -2947,7 +2948,7 @@ horizontal sections for time $t=100$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.56 2002-07-18 23:09:50 dobler Exp $ $}
+$ $Id: manual.tex,v 1.57 2002-07-18 23:49:36 brandenb Exp $ $}
 
 
 \end{document}
