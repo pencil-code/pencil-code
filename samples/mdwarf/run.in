@@ -3,38 +3,34 @@
 !  Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.7 2004-04-07 10:36:35 theine Exp $',
+  cvsid='$Id: run.in,v 1.8 2004-05-25 11:51:38 dobler Exp $',
   ip=13,
-  nt=100, it1=20, isave=200, itorder=3,
+  nt=50, it1=20, isave=200, itorder=3,
   cdt=0.4, cdtv=0.08, dtmin=1e-6,
-  dsnap=2., dvid=1000., d2davg=.5
-  ttransient=0.,
+  dsnap=2., d2davg=.5, ! time intervals for writing snapshots and phi-averages
+  dvid=1000., slice_position='m' ! time interval and position for slices
   bcx = 'a','s','s','a2','sT','a','s','s',
   bcy = 's','a','s','a2','sT','s','a','s',
   bcz = 's','s','a','a2','sT','s','s','a',
   tavg = 10.,                   ! time constant for time averaging
 !  idx_tavg = 1,2,3,6,7,8,       ! average velocity and vector potential
-  !iwig=1000
   random_gen='nr_f90'
-  slice_position='m'
 /
 &hydro_run_pars
   nu=10.e-4, ivisc='nu-const',
-  dampu=0., tdamp=0.
   dampuext=5, rdampext=1.1, wdamp=0.1,
-  Omega=0.2, theta=0. ! amount and direction of angular velocity
+  Omega=0.5, theta=0.           ! amount and direction of angular velocity
 /
 &density_run_pars
-  ! cs2bot=1.1, cs2top=1.1,   ! misnomed and inconsequent:
-                            ! this is the boundary temperature
 /
 &grav_run_pars
 /
 &entropy_run_pars
-  hcond0=2.e-3,
+  iheatcond='chi-const'
+  chi=10e-4,
   luminosity=.01, wheat=0.18,
-  cooltype='cs2', cs2cool=1.2, cool=5., rcool=1., wcool=0.1,
+  cooltype='cs2-rho', cool=5., rcool=1.1, wcool=0.1,
 /
 &magnetic_run_pars
-  eta=3.e-4
+  eta=6.e-4
 /

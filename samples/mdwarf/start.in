@@ -3,28 +3,29 @@
 !  Initialisation parameters
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.3 2004-04-07 10:36:35 theine Exp $',
+  cvsid='$Id: start.in,v 1.4 2004-05-25 11:51:38 dobler Exp $',
   ip=14,                        ! debugging parameter
   xyz0  = -1.5,-1.5,-1.5,       ! first corner of box
   Lxyz  =  3. , 3. , 3.,        ! box size
   lperi =  F  , F  , F,         ! periodic direction?
   random_gen='nr_f90'
-/
+  r_ext = 1.
+//
 &hydro_init_pars
-  inituu='zero',
-  urand=0.05,
+ inituu='gaussian-noise-rprof',
+  ampluu=3e-2
 /
 &density_init_pars
-  initlnrho='hydrostatic-r',
+  initlnrho='isentropic-star',
   cs0=1.5, rho0=1.,             ! values at r=0
 /
 &grav_init_pars
   ipotential='M5-dwarf'
 /
 &entropy_init_pars
-  initss='zero'
+  initss='isentropic-star'
 /
 &magnetic_init_pars
-  initaa='gaussian-noise'
-  amplaa=1.e-4
+  initaa='gaussian-noise-rprof'
+  amplaa=1.e-6
 /
