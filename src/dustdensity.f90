@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.19 2003-12-09 13:42:08 ajohan Exp $
+! $Id: dustdensity.f90,v 1.20 2003-12-10 10:44:35 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -84,7 +84,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.19 2003-12-09 13:42:08 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.20 2003-12-10 10:44:35 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -371,6 +371,7 @@ module Dustdensity
 !
       do idust=1,ndustspec
         call chn(idust-1,sidust)
+        if (ndustspec .eq. 1) sidust=''
 !
 !  reset everything in case of reset
 !  (this needs to be consistent with what is defined above!)
