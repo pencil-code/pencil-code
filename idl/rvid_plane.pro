@@ -5,7 +5,7 @@ pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg,exponential=exponential
 ;
-; $Id: rvid_plane.pro,v 1.13 2004-09-10 17:53:55 mee Exp $
+; $Id: rvid_plane.pro,v 1.14 2004-09-23 11:17:14 mee Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -191,6 +191,11 @@ end else if keyword_set(mpeg) then begin
   ;Nwx=400 & Nwy=320
   ;Nwx=!d.x_size & Nwy=!d.y_size
   Nwx=zoom*nx & Nwy=zoom*ny
+  resolution=[Nwx,Nwy] ; set window size
+  print,'z-buffer resolution (in pixels)=',resolution
+  set_plot, 'z'                   ; switch to Z buffer
+  device, SET_RESOLUTION=resolution ; set window size
+  dev='z'
   if (!d.name eq 'X') then window,2,xs=Nwx,ys=Nwy
   mpeg_name = 'movie.mpg'
   print,'write mpeg movie: ',mpeg_name
