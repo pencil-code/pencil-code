@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.72 2004-07-24 14:33:08 ajohan Exp $
+  ! $Id: dustvelocity.f90,v 1.73 2004-08-23 13:38:02 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -33,7 +33,7 @@ module Dustvelocity
   real :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
-  character (len=labellen) :: inituud='zero'
+  character (len=labellen) :: inituud='zero',iviscd='simplified'
   character (len=labellen) :: draglaw='epstein_cst'
   character (len=labellen) :: dust_geometry='sphere', dust_chemistry='nothing'
 
@@ -43,7 +43,7 @@ module Dustvelocity
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, nud_all, betad, betad_all, tausd, tausd_all, draglaw, &
+       nud, nud_all, iviscd, betad, betad_all, tausd, tausd_all, draglaw, &
        ldustdrag, lfeedback_gas, lfeedback_gas_all
 
   ! other variables (needs to be consistent with reset list below)
@@ -106,7 +106,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.72 2004-07-24 14:33:08 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.73 2004-08-23 13:38:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -424,7 +424,7 @@ module Dustvelocity
       real, dimension (nx,3,3) :: udij
       real, dimension (nx,3,ndustspec) :: uud
       real, dimension (nx,ndustspec) :: divud,ud2
-      real, dimension (nx,3) :: uu,udgud,ood,del2ud,tausd13,tausg13
+      real, dimension (nx,3) :: uu,udgud,ood,del2ud,del6ud,tausd13,tausg13
       real, dimension (nx) :: rho1,cs2,od2,oud,udx,udy,udz,rho,rhod
       real, dimension (nx) :: csrho,tausg1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
@@ -563,8 +563,18 @@ module Dustvelocity
 !
 !  Add viscosity on dust
 !
-        df(l1:l2,m,n,iudx(k):iudz(k)) = &
-            df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
+        select case (iviscd)
+
+        case ('simplified')
+          df(l1:l2,m,n,iudx(k):iudz(k)) = &
+              df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del2ud
+
+        case('hyper6')
+          call del6v(f,iuud(k),del6ud)
+          df(l1:l2,m,n,iudx(k):iudz(k)) = &
+              df(l1:l2,m,n,iudx(k):iudz(k)) + nud(k)*del6ud
+
+        endselect
 !
 !  ``uud/dx'' for timestep
 !
