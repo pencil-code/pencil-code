@@ -1,8 +1,8 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
-          tot=tot,lin=lin,png=png,yrange=yrange
+          tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,compensate=compensate
 ;
-;  $Id: power.pro,v 1.21 2003-11-07 12:49:46 nilshau Exp $
+;  $Id: power.pro,v 1.22 2003-12-08 08:48:54 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -33,6 +33,7 @@ PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
 ;  lin   : Plots the line k^lin
 ;  png   : to write png file for making a movie
 ;  yrange: y-range for plot
+;  compensate: exponent for compensating power spectrum (default=0)
 ;
 ;  24-sep-02/nils: coded
 ;   5-oct-02/axel: comments added
@@ -46,6 +47,7 @@ default,tmax,1e34
 default,tot,0
 default,lin,0
 default,dir,''
+default,compensate,0
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -141,7 +143,8 @@ endif
 ;  Plotting the results for last time frame
 ;
 !x.title='!8k!3'
-!y.title='!8P!3(!8k!3)'
+fo='(f4.2)'
+if compensate eq 0. then !y.title='!8P!3(!8k!3)' else !y.title='!8k!6!u'+string(compensate,fo=fo)+' !8P!3(!8k!3)'
 !x.range=[1,imax]
 ;
 ;  check whether we want png files (for movies)
@@ -177,6 +180,13 @@ openr,1, datatopdir+'/'+file1
           if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
           if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        	endif
+        ;
+        ;  normalize?
+        ;
+        if keyword_set(norm) then begin
+          spectrum2=spectrum2/total(spectrum2)
+        endif
+        ;
        	if (last eq 0) then begin
 	  if (time ge tmin) then begin
 	    if (time le tmax) then begin
@@ -185,12 +195,12 @@ openr,1, datatopdir+'/'+file1
 	      !p.title='t='+str(time)
 	      default,yrange,[globalmin,globalmax]
               if iplot eq 1 then begin
-		plot_oo,k,spectrum1,back=255,col=0,yr=yrange
+		plot_oo,k,spectrum1*k^compensate,back=255,col=0,yr=yrange
 		;plot_oo,k,spectrum1
          	if (file2 ne '') then begin
-		  oplot,k,spectrum2,col=122
+		  oplot,k,spectrum2*k^compensate,col=122
 		  if (tot eq 1) then begin
-		    oplot,k,spectrum1+spectrum2,col=47
+		    oplot,k,(spectrum1+spectrum2)*k^compensate,col=47
 		  endif
 		endif
 	        if (lin ne 0) then begin
