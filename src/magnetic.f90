@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.157 2003-11-26 17:17:46 mcmillan Exp $
+! $Id: magnetic.f90,v 1.158 2003-11-27 10:13:48 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -65,7 +65,7 @@ module Magnetic
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
   integer :: i_bxpt=0,i_bypt=0,i_bzpt=0
-  integer :: i_aybym2=0,i_exaym2=0
+  integer :: i_aybym2=0,i_exaym2=0,i_exjm2=0
   integer :: i_brms=0,i_bmax=0,i_jrms=0,i_jmax=0,i_vArms=0,i_vAmax=0,i_dtb=0
   integer :: i_bx2m=0, i_by2m=0, i_bz2m=0
   integer :: i_bxbym=0, i_bxbzm=0, i_bybzm=0
@@ -110,7 +110,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.157 2003-11-26 17:17:46 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.158 2003-11-27 10:13:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -529,6 +529,10 @@ module Magnetic
         !
         if (i_exaym2/=0) call helflux(aa,uxb,jj)
         !
+        !  calculate surface integral <2ExJ>*dS
+        !
+        if (i_exjm2/=0) call curflux(uxb,jj)
+        !
         !  calculate B_ext21
         !
         B_ext21=B_ext(1)**2+B_ext(2)**2+B_ext(3)**2
@@ -791,6 +795,38 @@ module Magnetic
 !
     endsubroutine helflux
 !***********************************************************************
+    subroutine curflux(uxb,jj)
+!
+!  current helicity flux (preliminary)
+!
+!  27-nov-03/axel: adapted from helflux
+!
+      use Cdata
+      use Sub
+!
+      real, dimension (nx,3), intent(in) :: uxb,jj
+      real, dimension (nx,3) :: ee
+      real, dimension (nx) :: FCx,FCz
+      real :: FC
+!
+      ee=eta*jj-uxb
+!
+!  calculate current helicity flux in the X and Z directions
+!  Could speed up by only calculating here boundary points!
+!
+      FCx=2*(ee(:,2)*jj(:,3)-ee(:,3)*jj(:,2))*dsurfyz
+      FCz=2*(ee(:,1)*jj(:,2)-ee(:,2)*jj(:,1))*dsurfxy
+!
+!  sum up contribution per pencil
+!  and then stuff result into surf_mn_name for summing up all processors.
+!
+      FC=FCx(nx)-FCx(1)
+      if(ipz==0       .and.n==n1) FC=FC-sum(FCz)
+      if(ipz==nprocz-1.and.n==n2) FC=FC+sum(FCz)
+      call surf_mn_name(FC,i_exjm2)
+!
+    endsubroutine curflux
+!***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields
@@ -814,7 +850,7 @@ module Magnetic
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0; i_ubm=0; i_epsM=0
         i_bxpt=0; i_bypt=0; i_bzpt=0
-        i_aybym2=0; i_exaym2=0
+        i_aybym2=0; i_exaym2=0; i_exjm2=0
         i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0; i_dtb=0
         i_bx2m=0; i_by2m=0; i_bz2m=0
         i_bxbym=0; i_bxbzm=0; i_bybzm=0
@@ -833,6 +869,7 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'dteta',i_dteta)
         call parse_name(iname,cname(iname),cform(iname),'aybym2',i_aybym2)
         call parse_name(iname,cname(iname),cform(iname),'exaym2',i_exaym2)
+        call parse_name(iname,cname(iname),cform(iname),'exjm2',i_exjm2)
         call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
         call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
         call parse_name(iname,cname(iname),cform(iname),'ubm',i_ubm)
@@ -904,6 +941,7 @@ module Magnetic
         write(3,*) 'i_dteta=',i_dteta
         write(3,*) 'i_aybym2=',i_aybym2
         write(3,*) 'i_exaym2=',i_exaym2
+        write(3,*) 'i_exjm2=',i_exjm2
         write(3,*) 'i_abm=',i_abm
         write(3,*) 'i_jbm=',i_jbm
         write(3,*) 'i_ubm=',i_ubm

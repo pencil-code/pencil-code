@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.57 2003-11-25 15:29:29 brandenb Exp $
+! $Id: prints.f90,v 1.58 2003-11-27 10:13:48 brandenb Exp $
 
 module Print
 
@@ -157,12 +157,24 @@ module Print
 !
       endif                     ! (lroot)
 !
+!  For vector output (of bb or oo vectors) we need brms and orms
+!  on all processors. It suffices to have these for times when lout=.true.,
+!  but we need to broadcast the result to all procs.
+!
 !  calculate brms (this requires that brms is set in print.in)
 !  broadcast result to other processors
 !
       if (i_brms/=0) then
         if (iproc==0) brms=fname(i_brms)
         call mpibcast_real(brms,1)
+      endif
+!
+!  calculate orms (this requires that orms is set in print.in)
+!  broadcast result to other processors
+!
+      if (i_orms/=0) then
+        if (iproc==0) orms=fname(i_orms)
+        call mpibcast_real(orms,1)
       endif
 !
       if(ldebug) print*,'exit prints'

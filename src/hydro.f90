@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.140 2003-11-26 18:43:58 mcmillan Exp $
+! $Id: hydro.f90,v 1.141 2003-11-27 10:13:48 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -43,7 +43,9 @@ module Hydro
   real :: tdamp=0.,dampu=0.,wdamp=0.2
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
-  real :: ampl_diffrot=0.,othresh_per_orms=0.
+  real :: ampl_diffrot=0.
+  real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
+  integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.
 !
 ! geodynamo
@@ -52,7 +54,8 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
-       ldamp_fade,othresh_per_orms
+       ldamp_fade, &
+       othresh,othresh_per_orms
 ! end geodynamo
 
   ! other variables (needs to be consistent with reset list below)
@@ -103,7 +106,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.140 2003-11-26 18:43:58 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.141 2003-11-27 10:13:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -516,10 +519,12 @@ module Hydro
           if (n.eq.iz)  oo_xy(:,m-m1+1,j)=oo(:,j)
           if (n.eq.iz2) oo_xy2(:,m-m1+1,j)=oo(:,j)
         enddo
-          o2_yz(m-m1+1,n-n1+1)=o2(ix-l1+1)
-          if (m.eq.iy)  o2_xz(:,n-n1+1)=o2
-          if (n.eq.iz)  o2_xy(:,m-m1+1)=o2
-          if (n.eq.iz2) o2_xy2(:,m-m1+1)=o2
+        o2_yz(m-m1+1,n-n1+1)=o2(ix-l1+1)
+        if (m.eq.iy)  o2_xz(:,n-n1+1)=o2
+        if (n.eq.iz)  o2_xy(:,m-m1+1)=o2
+        if (n.eq.iz2) o2_xy2(:,m-m1+1)=o2
+        if(othresh_per_orms/=0) call calc_othresh
+        call vecout(41,trim(directory)//'/ovec',oo,othresh,novec)
       endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
@@ -638,6 +643,38 @@ module Hydro
       endif
 !
     endsubroutine duu_dt
+!***********************************************************************
+    subroutine calc_othresh()
+!
+!  calculate othresh from orms, give warnings if there are problems
+!
+!  24-nov-03/axel: adapted from calc_bthresh
+!
+      use Cdata
+!
+!  give warning if orms is not set in prints.in
+!
+      if(i_orms==0) then
+        if(lroot.and.lfirstpoint) then
+          print*,'calc_othresh: need to set orms in print.in to get othresh'
+        endif
+      endif
+!
+!  if nvec exceeds novecmax (=1/4) of points per processor, then begin to
+!  increase scaling factor on othresh. These settings will stay in place
+!  until the next restart
+!
+      if(novec>novecmax.and.lfirstpoint) then
+        print*,'calc_othresh: processor ',iproc,': othresh_scl,novec,novecmax=', &
+                                                   othresh_scl,novec,novecmax
+        othresh_scl=othresh_scl*1.2
+      endif
+!
+!  calculate othresh as a certain fraction of orms
+!
+      othresh=othresh_scl*othresh_per_orms*orms
+!
+    endsubroutine calc_othresh
 !***********************************************************************
     subroutine damp_ruxm(f,df)
 !

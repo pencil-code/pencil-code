@@ -1,4 +1,4 @@
-! $Id: read_vectorfiles.f90,v 1.3 2003-09-02 13:43:12 dobler Exp $
+! $Id: read_vectorfiles.f90,v 1.4 2003-11-27 10:13:48 brandenb Exp $
 
 !***********************************************************************
       program read_vectorfiles
@@ -20,6 +20,12 @@
       character (len=120) :: fullname=''
       character (len=120) :: datadir='data',path=''
       character (len=5) :: chproc=''
+      character (len=1) :: field='b'
+!
+!  read name of the field (must coincide with file extension)
+!
+      write(*,'(a)',ADVANCE='NO') 'magnetic field (b) or vorticity (o)? '
+      read*,field
 !
 !  open vector files in all directories
 !
@@ -27,10 +33,10 @@
         lun=10+iproc
         call chn(iproc,chproc,'read_vectorfiles')
         call safe_character_assign(path,trim(datadir)//'/proc'//chproc)
-        call safe_character_assign(fullname,trim(path)//'/bvec.dat')
+        call safe_character_assign(fullname,trim(path)//'/'//field//'vec.dat')
         open(lun,file=fullname,form='unformatted')
       enddo
-      open(lun2,file='data/bvec.dat',form='unformatted')
+      open(lun2,file='data/'//field//'vec.dat',form='unformatted')
 !
 !  loop over all times
 !

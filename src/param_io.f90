@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.149 2003-11-25 10:14:12 theine Exp $ 
+! $Id: param_io.f90,v 1.150 2003-11-27 10:13:48 brandenb Exp $ 
 
 module Param_IO
 
@@ -470,6 +470,17 @@ module Param_IO
         iz2=n2
         if(nprocy==1) then; iy=(m1+m2)/2; endif
         if(nprocz==1) then; iz=(n1+n2)/2; iz2=(iz+n2)/2; endif
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='e') then
+        ix=(l1+l2)/2
+        iy=m1
+        iz=n1
+        iz2=n2
+        if(nprocy==1) then; iy=(m1+m2)/2; endif
+        if(nprocz==1) then; iz2=(iz+n2)/2; endif
       endif
 !  
 !  make sure ix,iy,iz,iz2 are not outside the boundaries

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.118 2003-11-25 15:29:29 brandenb Exp $
+! $Id: register.f90,v 1.119 2003-11-27 10:13:48 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -347,7 +347,7 @@ module Register
 !
 !  set logical for 2-D averages
 !
-      lwrite_2Daverages=lwrite_zaverages.or.lwrite_phiaverages
+      lwrite_2daverages=lwrite_zaverages.or.lwrite_phiaverages
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in
