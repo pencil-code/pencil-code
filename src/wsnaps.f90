@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.25 2003-05-30 20:39:20 brandenb Exp $
+! $Id: wsnaps.f90,v 1.26 2003-05-31 04:25:14 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -15,7 +15,7 @@ module Wsnaps
 contains
 
 !***********************************************************************
-    subroutine wsnap(chsnap,a,llabel)
+    subroutine wsnap(chsnap,a,msnap,llabel)
 !
 !  Write snapshot file, labelled consecutively if llabel==.true.
 !  Otherwise just write a snapshot without label (used for var.dat)
@@ -23,6 +23,7 @@ contains
 !  30-sep-97/axel: coded
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tsnap.dat'
 !   5-apr-03/axel: possibility for additional (hard-to-get) output 
+!  31-may-03/axel: wsnap can write either w/ or w/o auxiliary variables
 !
       use Cdata
       use Mpicomm
@@ -32,7 +33,11 @@ contains
       use Sub
       use Io
 !
-      real, dimension (mx,my,mz,mvar+maux) :: a
+!  the dimension msnap can either be mvar+maux (for f-array in run.f90)
+!  or just mvar (for f-array in start.f90 or df-array in run.f90
+!
+      integer :: msnap
+      real, dimension (mx,my,mz,msnap) :: a
       character (len=4) :: ch
       character (len=135) :: file
       character (len=*) :: chsnap
@@ -75,12 +80,12 @@ contains
 !  before closing, add possible extra (hard-to-get) output
 !  do this only if something was written according to the above logics 
 !
-!     if(lsnap.or..not.llabel) then
-        call output_auxiliary(lun_output,mvar,maux,a)
+      if(lsnap.or..not.llabel) then
+        if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
         call output_radiation(lun_output)
         call output_ionization(lun_output)
         close(lun_output)
-!     endif
+      endif
 !
     endsubroutine wsnap
 !***********************************************************************

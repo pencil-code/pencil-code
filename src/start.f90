@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.88 2003-05-29 07:48:14 brandenb Exp $
+! $Id: start.f90,v 1.89 2003-05-31 04:25:14 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -35,15 +35,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.88 2003-05-29 07:48:14 brandenb Exp $")
-!!
-!!  stop the code if there is a LOCK file
-!!  This should prevent simultaneous running of the code in the same directory
-!!
-!            if (lroot) then
-!              inquire(FILE="LOCK", EXIST=lock)
-!              if(lock) call stop_it("LOCK file found")
-!            endif
+             "$Id: start.f90,v 1.89 2003-05-31 04:25:14 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -162,9 +154,9 @@
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat
 !
-        if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,.false.)
+        if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
         if (.not.lnowrite) then
-          call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
+          call wsnap(trim(directory_snap)//'/var.dat',f,mvar,.false.)
           call wtime(trim(directory)//'/time.dat',t)
         endif
         call wdim(trim(directory)//'/dim.dat')

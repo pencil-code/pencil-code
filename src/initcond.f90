@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.43 2003-05-30 20:39:20 brandenb Exp $ 
+! $Id: initcond.f90,v 1.44 2003-05-31 04:25:14 brandenb Exp $ 
 
 module Initcond 
  
@@ -539,6 +539,7 @@ module Initcond
 !  calculate hh
 !  add continuous vertical stratification to horizontal planet solution
 !  xi=1 inside vortex, and 0 outside
+!  NOTE: if width is too small, the vertical integration below may fail.
 !
       rr2=xx**2+eps2*yy**2+zz**2/delta2
       hh=+.5*delta2*Omega**2*(radius2-rr2)
