@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.25 2002-07-24 14:54:35 dobler Exp $
+! $Id: grav_r.f90,v 1.26 2002-07-26 05:03:15 brandenb Exp $
 
 module Gravity
 
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.25 2002-07-24 14:54:35 dobler Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.26 2002-07-26 05:03:15 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -71,7 +71,7 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to save gg to a file)
 !
-!
+      if(ip==0) print*,f,xx,yy,zz  !(to keep compiler quiet)
     endsubroutine init_grav
 !***********************************************************************
     subroutine setup_grav()
@@ -202,8 +202,7 @@ endif
 !
 if (headtt) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
 !
-
-!
+      if(ip==0) print*,f  !(to keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential_global(xx,yy,zz, pot,pot0)
@@ -219,7 +218,6 @@ if (headtt) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
 !
       real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
       real, optional :: pot0
-      real, dimension(1) :: pot1
 !
 !  remove this if you are sure rr is already calculated elsewhere      
 !
@@ -239,7 +237,7 @@ if (headtt) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
 !
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: nx,ny,nz
+      use Cdata, only: nx
       use Sub, only: poly
 !
       real, dimension (nx) :: xmn, pot
@@ -255,6 +253,7 @@ if (headtt) call output_pencil('tmp/proc0/gg0.dat',gg_mn,3)
         pot0 = cpot(1)            ! potential at r=0
       endif
 !
+      if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
     endsubroutine potential_penc
 !***********************************************************************
 

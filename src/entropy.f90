@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.104 2002-07-23 13:50:14 dobler Exp $
+! $Id: entropy.f90,v 1.105 2002-07-26 05:03:15 brandenb Exp $
 
 module Entropy
 
@@ -62,7 +62,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.104 2002-07-23 13:50:14 dobler Exp $")
+           "$Id: entropy.f90,v 1.105 2002-07-26 05:03:15 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,7 +284,6 @@ module Entropy
       use Global
       use Slices
       use IO
-      use Gravity, only: gravz
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: uu,glnrho,gss
