@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.32 2003-07-09 16:03:43 dobler Exp $
+! $Id: wsnaps.f90,v 1.33 2003-07-09 16:11:54 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -77,17 +77,6 @@ contains
         call output(chsnap,a,msnap)
       endif
 !
-!  before closing, add possible extra (hard-to-get) output
-!  do this only if something was written according to the above logics 
-!
-!     if(lsnap.or..not.llabel) then
-!       if (msnap>mvar) call output_auxiliary(lun_output,mvar,maux,a)
-!       !call output_radiation(lun_output)
-!       !call output_ionization(lun_output)
-!     endif
-!
-!
-       close(lun_output)        ! Need to close this in any case
     endsubroutine wsnap
 !***********************************************************************
    subroutine powersnap(a,lwrite_only)
