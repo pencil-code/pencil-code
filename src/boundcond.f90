@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.40 2003-04-04 05:46:55 brandenb Exp $
+! $Id: boundcond.f90,v 1.41 2003-04-05 08:43:38 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -235,6 +235,8 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j)
               case ('a2')       ! antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
+              case ('1s')        ! one-sided
+                call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
                 if (j==ient) call bc_ss_flux(f,topbot)
                 if (j==iaa)  call bc_aa_pot(f,topbot)
@@ -477,6 +479,53 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_onesided_z(f,topbot,j)
+!
+!  One-sided conditions.
+!  These expressions result from combining Eqs(207)-(210), astro-ph/0109497,
+!  corresponding to (9.207)-(9.210) in Ferriz-Mas proceedings.
+!
+!   5-apr-03/axel: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i,j,k
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        do i=1,nghost
+          k=n1-i
+          f(:,:,k,j)=7*f(:,:,k+1,j) &
+                   -21*f(:,:,k+2,j) &
+                   +35*f(:,:,k+3,j) &
+                   -35*f(:,:,k+4,j) &
+                   +21*f(:,:,k+5,j) &
+                    -7*f(:,:,k+6,j) &
+                      +f(:,:,k+7,j)
+        enddo
+
+      case('top')               ! top boundary
+        do i=1,nghost
+          k=n2+i
+          f(:,:,k,j)=7*f(:,:,k-1,j) &
+                   -21*f(:,:,k-2,j) &
+                   +35*f(:,:,k-3,j) &
+                   -35*f(:,:,k-4,j) &
+                   +21*f(:,:,k-5,j) &
+                    -7*f(:,:,k-6,j) &
+                      +f(:,:,k-7,j)
+        enddo
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_onesided_z
 !***********************************************************************
     subroutine bc_db_z(f,topbot,j)
 !
