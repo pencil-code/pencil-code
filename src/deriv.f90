@@ -1,4 +1,4 @@
-! $Id: deriv.f90,v 1.20 2004-07-17 02:06:42 theine Exp $
+! $Id: deriv.f90,v 1.21 2004-10-29 13:38:15 ajohan Exp $
 
 module Deriv
   
@@ -177,6 +177,80 @@ module Deriv
 
 !
     endsubroutine der2
+!***********************************************************************
+    subroutine der5(f,k,df,j,ignoredx)
+!
+!  Calculate 5th derivative of a scalar, get scalar
+!    Used for hyperdiffusion that affects small wave numbers as little as
+!  possible (useful for density).
+!    The optional flag IGNOREDX is useful for numerical purposes, where
+!  you want to affect the Nyquist scale in each direction, independent of
+!  the ratios dx:dy:dz.
+!
+!  29-oct-04/anders: adapted from der6
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: df,fac
+      integer :: j,k
+      logical, optional :: ignoredx
+      logical :: igndx
+!
+      intent(in)  :: f,k,j,ignoredx
+      intent(out) :: df
+!
+      if (present(ignoredx)) then
+        igndx = ignoredx
+      else
+        igndx = .false.
+      endif
+
+      if (.not. lequidist(j)) &
+          call stop_it('der5: NOT IMPLEMENTED for no equidistant grid')
+!
+      if (j==1) then
+        if (nxgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dx**5
+          endif
+          df=fac*(+2.5*(f(l1+1:l2+1,m,n,k)-f(l1-1:l2-1,m,n,k)) &
+                  -2.0*(f(l1+2:l2+2,m,n,k)-f(l1-2:l2-2,m,n,k)) &
+                  +0.5*(f(l1+3:l2+3,m,n,k)-f(l1-3:l2-3,m,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==2) then
+        if (nygrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dy**5
+          endif
+          df=fac*(+2.5*(f(l1:l2,m+1,n,k)-f(l1:l2,m-1,n,k)) &
+                  -2.0*(f(l1:l2,m+2,n,k)-f(l1:l2,m-2,n,k)) &
+                  +0.5*(f(l1:l2,m+3,n,k)-f(l1:l2,m-3,n,k)))
+        else
+          df=0.
+        endif
+      elseif (j==3) then
+        if (nzgrid/=1) then
+          if (igndx) then
+            fac=1.
+          else
+            fac=1./dz**5
+          endif
+          df=fac*(+2.5*(f(l1:l2,m,n+1,k)-f(l1:l2,m,n-1,k)) &
+                  -2.0*(f(l1:l2,m,n+2,k)-f(l1:l2,m,n-2,k)) &
+                  +0.5*(f(l1:l2,m,n+3,k)-f(l1:l2,m,n-3,k)))
+        else
+          df=0.
+        endif
+      endif
+!
+    endsubroutine der5
 !***********************************************************************
     subroutine der6(f,k,df,j,ignoredx,upwind)
 !
