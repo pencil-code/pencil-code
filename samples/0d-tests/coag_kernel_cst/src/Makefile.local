@@ -1,0 +1,29 @@
+###                             -*-Makefile-*-
+### Makefile for modular pencil code -- local part
+### Included by `Makefile'
+###
+
+LIBSIG=-L$(HOME)/f90/lib
+LDMPI=-lmpi
+
+MPICOMM  =nompicomm
+GLOBAL   =noglobal
+
+HYDRO    =  hydro
+DENSITY  =  density
+ENTROPY  =noentropy
+MAGNETIC =nomagnetic
+RADIATION=noradiation
+PSCALAR  =nopscalar
+
+GRAVITY  =nograv
+FORCING  =noforcing
+VISCOSITY=visc_const
+IO       =io_dist
+SHEAR    =noshear
+
+DUSTDENSITY =  dustdensity
+DUSTVELOCITY=  dustvelocity
+
+FFTPACK  =nofftpack
+FFT      =nofft
