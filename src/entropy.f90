@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.317 2004-06-18 12:19:03 mcmillan Exp $
+! $Id: entropy.f90,v 1.318 2004-06-24 13:18:04 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -28,7 +28,7 @@ module Entropy
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
-  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
+  real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.,ampl_TT=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.,Kisotr=0.
   real :: Kgperp=0.,Kgpara=0.
   real :: ss_left=1.,ss_right=1.
@@ -62,7 +62,7 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-       T0, kx_ss
+       T0,ampl_TT,kx_ss
 
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.317 2004-06-18 12:19:03 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.318 2004-06-24 13:18:04 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -772,32 +772,59 @@ module Entropy
       use Sub, only: calc_unitvects_sphere
 
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension (nx) :: lnrho,lnTT,TT,ss
+      real, dimension (nx) :: lnrho,lnTT,TT,ss,pert_TT
       real :: beta1
 !
       beta1 = g0/(mpoly+1)
-      if (initss(1)=='geo-kws'.or.initss(1)=='geo-benchmark') then
-        do m=m1,m2
-        do n=n1,n2
+      do imn=1,ny*nz
+        n=nn(imn)
+        m=mm(imn)
 !
-          call calc_unitvects_sphere()
+        call calc_unitvects_sphere()
+        call shell_ss_perturb(pert_TT)
 !
-          where (r_mn >= r_ext) TT = TT_ext
-          where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)
-!         where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
-!         goes with alternate scaling in initialize_entropy
-          where (r_mn <= r_int) TT = TT_int
+        where (r_mn >= r_ext) TT = TT_ext
+        where (r_mn < r_ext .AND. r_mn > r_int) TT = 1+beta1*(1/r_mn-1)+pert_TT
+!       where (r_mn < r_ext .AND. r_mn > r_int) TT = gamma/gamma1*(1+beta1*(1/r_mn-1))
+!       goes with alternate scaling in initialize_entropy
+        where (r_mn <= r_int) TT = TT_int
 !
-          lnrho=f(l1:l2,m,n,ilnrho)
-          lnTT=log(TT)
-          call getentropy(lnrho,lnTT,ss)
-          f(l1:l2,m,n,iss)=ss
+        lnrho=f(l1:l2,m,n,ilnrho)
+        lnTT=log(TT)
+        call getentropy(lnrho,lnTT,ss)
+        f(l1:l2,m,n,iss)=ss
 !
-        enddo 
-        enddo 
-      endif
+      enddo 
 !      
-   end subroutine shell_ss
+    end subroutine shell_ss
+!***********************************************************************
+    subroutine shell_ss_perturb(pert_TT)
+!
+!  Compute perturbation to initial temperature profile
+!
+!  22-june-04/dave -- coded
+!
+      use Sub, only: calc_phiavg_general
+
+      real, dimension (nx), intent(out) :: pert_TT
+      real, dimension (nx) :: xr,cos_4phi,sin_theta4
+      real :: ampl0=.885065
+!
+      select case(initss(1))
+!
+        case ('geo-kws')
+          pert_TT=0.
+!
+        case ('geo-benchmark')
+          call calc_phiavg_general()
+          xr=2*r_mn-r_int-r_ext              ! radial part of perturbation
+          cos_4phi=cos(4*phi_mn)             ! azimuthal part
+          sin_theta4=(rcyl_mn/r_mn)**4       ! meridional part
+          pert_TT=ampl0*ampl_TT*(1-3*xr**2+3*xr**4-xr**6)*sin_theta4*cos_4phi
+!
+      endselect
+!
+    end subroutine shell_ss_perturb
 !***********************************************************************
     subroutine ferriere(f)
 !
