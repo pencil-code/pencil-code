@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.108 2003-11-14 11:23:56 theine Exp $
+! $Id: register.f90,v 1.109 2003-11-14 15:28:11 theine Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -262,6 +262,9 @@ module Register
       use Special,      only: rprint_special
 !
       integer :: iname,inamev,inamez,inamexy,inamerz
+      integer :: ix_,iy_,iz_,iz2_,io_stat
+      integer :: isubstract
+      character(len=30) :: cnamev_
       logical :: lreset,exist
 !
 !  read in the list of variables to be printed
@@ -271,7 +274,7 @@ module Register
         read(1,*,end=99) cname(iname)
       enddo
 99    nname=iname-1
-      if (lroot.and.ip<14) print*,'nname=',nname
+      if (lroot.and.ip<14) print*,'rprint_list: nname=',nname
       close(1)
 !
 !  read in the list of variables for video slices
@@ -279,18 +282,29 @@ module Register
       inquire(file='video.in',exist=exist)
       if (exist) then
         lwrite_slices=.true.
+        isubstract=0
+        ix=n1; iy=m1; iz=n1; iz2=n2
         open(1,file='video.in')
         do inamev=1,mnamev
-          read(1,*,end=98) cnamev(inamev)
+          read(1,*,end=98,iostat=io_stat) ix_,iy_,iz_,iz2_
+          if (io_stat/=0) then
+            backspace(1)
+            read(1,*,end=98) cnamev(inamev-isubstract)
+          else
+            ix=ix_; iy=iy_; iz=iz_; iz2=iz2_
+            isubstract=isubstract+1
+          endif
         enddo
-98      nnamev=inamev-1
+98      nnamev=inamev-1-isubstract
         close(1)
       endif
-      if (lroot.and.ip<14) print*,'nnamev=',nnamev
+      if (lroot.and.ip<14) print*,'rprint_list: ix,iy,iz,iz2=',ix,iy,iz,iz2
+      if (lroot.and.ip<14) print*,'rprint_list: nnamev=',nnamev
+      if (lroot.and.ip<14) print*,'rprint_list: cnamev=',cnamev(1:nnamev)
 !
 !  read in the list of variables for xy-averages
 !
-      inquire(FILE='xyaver.in',EXIST=exist)
+      inquire(file='xyaver.in',exist=exist)
       if (exist) then
         open(1,file='xyaver.in')
         do inamez=1,mnamez
@@ -299,11 +313,11 @@ module Register
 97      nnamez=inamez-1
         close(1)
       endif
-      if (lroot.and.ip<14) print*,'nnamez=',nnamez
+      if (lroot.and.ip<14) print*,'rprint_list: nnamez=',nnamez
 !
 !  read in the list of variables for z-averages
 !
-      inquire(FILE='zaver.in',EXIST=exist)
+      inquire(file='zaver.in',exist=exist)
       if (exist) then
         open(1,file='zaver.in')
         do inamexy=1,mnamexy
@@ -314,11 +328,11 @@ module Register
       else
         lwrite_zaverages = .false. ! switch zaverages off
       endif
-      if (lroot.and.ip<14) print*,'nnamexy=',nnamexy
+      if (lroot.and.ip<14) print*,'rprint_list: nnamexy=',nnamexy
 !
 !  read in the list of variables for phi-averages
 !
-      inquire(FILE='phiaver.in',EXIST=exist)
+      inquire(file='phiaver.in',exist=exist)
       if (exist) then
         open(1,file='phiaver.in')
         do inamerz=1,mnamerz
@@ -329,7 +343,7 @@ module Register
       else
         lwrite_phiaverages = .false. ! switch phiaverages off
       endif
-      if (lroot.and.ip<14) print*,'nnamerz=',nnamerz
+      if (lroot.and.ip<14) print*,'rprint_list: nnamerz=',nnamerz
 !
 !  check which variables are set
 !  For the convenience of idl users, the indices of variables in
