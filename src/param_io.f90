@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.33 2002-07-02 18:51:41 dobler Exp $ 
+! $Id: param_io.f90,v 1.34 2002-07-03 16:44:39 dobler Exp $ 
 
 module Param_IO
 
@@ -45,9 +45,9 @@ module Param_IO
 !
                      read(1,NML=init_pars         )
       if (lhydro)    read(1,NML=hydro_init_pars   )
-      if (ldensity)  read(1,NML=density_init_pars   )
+      if (ldensity)  read(1,NML=density_init_pars )
       ! forcing needs no init parameters
-      if (lgrav)     read(1,NML=grav_init_pars  )
+      if (lgrav)     read(1,NML=grav_init_pars    )
       if (lentropy)  read(1,NML=entropy_init_pars )
       if (lmagnetic) read(1,NML=magnetic_init_pars)
       if (lrotation) read(1,NML=rotation_init_pars)

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.37 2002-07-03 14:52:05 brandenb Exp $
+! $Id: hydro.f90,v 1.38 2002-07-03 16:44:39 dobler Exp $
 
 module Hydro
 
@@ -9,13 +9,13 @@ module Hydro
   implicit none
 
   ! init parameters
-  real :: ampluu=0., widthuu=.1, urand=0.
+  real :: ampluu=0., widthuu=.1, urand=0., kx_uu=0., ky_uu=0., kz_uu=0.
   real :: uu_left=1.,uu_right=1.
   character (len=labellen) :: inituu='zero'
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
-       uu_left,uu_right
+       uu_left,uu_right,kx_uu,ky_uu,kz_uu
 
   ! run parameters
   real, dimension (nx,3,3) :: sij
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.37 2002-07-03 14:52:05 brandenb Exp $")
+           "$Id: hydro.f90,v 1.38 2002-07-03 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -128,6 +128,14 @@ module Hydro
         print*,'init_hydro: velocity blobs'
         !f(:,:,:,iux)=f(:,:,:,iux)+ampluu*exp(-(xx**2+yy**2+(zz-1.)**2)/widthuu)
         f(:,:,:,iuz)=f(:,:,:,iuz)-ampluu*exp(-(xx**2+yy**2+zz**2)/widthuu)
+
+      case('Alfven-circ-x')
+        !
+        !  circularly polarised Alfven wave in x direction
+        !
+        print*,'init_hydro: circular Alfven wave -> x'
+        f(:,:,:,iuy) = ampluu*sin(kx_uu*xx)
+        f(:,:,:,iuz) = ampluu*cos(kx_uu*xx)
 
       case default
         !

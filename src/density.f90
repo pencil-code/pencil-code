@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.21 2002-07-03 14:52:05 brandenb Exp $
+! $Id: density.f90,v 1.22 2002-07-03 16:44:39 dobler Exp $
 
 module Density
 
@@ -7,16 +7,17 @@ module Density
 
   implicit none
 
-  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
-          rho_left=1., rho_right=1., cdiffrho=0., &
-          cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0., &
-          radius_lnrho=.5
+  real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1
+  real :: rho_left=1., rho_right=1., cdiffrho=0.
+  real :: cs20, cs2bot, cs2top, gamma1, zinfty, lnrho0=0.
+  real :: radius_lnrho=.5,kx_lnrho=0.,ky_lnrho=0.,kz_lnrho=0.
   character (len=labellen) :: initlnrho='zero', initlnrho2='zero'
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
        rho_left,rho_right,cs2bot,cs2top, &
-       initlnrho2,radius_lnrho
+       initlnrho2,radius_lnrho, &
+       kx_lnrho,ky_lnrho,kz_lnrho
 
   namelist /density_run_pars/ &
        cs0,rho0,gamma,cdiffrho,cs2bot,cs2top
@@ -55,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.21 2002-07-03 14:52:05 brandenb Exp $")
+           "$Id: density.f90,v 1.22 2002-07-03 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -241,6 +242,14 @@ module Density
         if (lroot) print*,'polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+(alog(rho_right)-alog(rho_left))*prof
+
+      case('sin-xy')
+        !
+        !  sin profile in x and y
+        !  
+        if (lroot) print*,'lnrho: sin(x)*sin(y)'
+        f(:,:,:,ilnrho) = &
+             alog(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
 
       case default
         !

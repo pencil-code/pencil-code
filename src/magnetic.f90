@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.58 2002-07-03 14:52:05 brandenb Exp $
+! $Id: magnetic.f90,v 1.59 2002-07-03 16:44:39 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -20,6 +20,7 @@ module Magnetic
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5
   real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
+  real :: amplaa2=0.,kx_aa=0.,ky_aa=0.,kz_aa=0.
   logical :: lpress_equil
   character(len=40) :: kinflow=''
 
@@ -27,7 +28,7 @@ module Magnetic
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,widthaa, &
-       initaa,amplaa, &
+       initaa,amplaa,amplaa2,kx_aa,ky_aa,kz_aa, &
        lpress_equil
 
   ! run parameters
@@ -79,7 +80,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.58 2002-07-03 14:52:05 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.59 2002-07-03 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -103,14 +104,9 @@ module Magnetic
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz,3)    :: tmpv
-      real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
+      real, dimension (mx,my,mz)      :: xx,yy,zz
       real, dimension (nx,3) :: bb
       real, dimension (nx) :: b2
-      real, dimension(3) :: axis,disp
-      real    :: phi,theta,ct,st,cp,sp
-      real    :: fring,Iring,R0,width
-      integer :: i
 !
       select case(initaa)
 
@@ -170,55 +166,9 @@ module Magnetic
 
       case('fluxrings', '4')
         !
-        !  Magnetic flux rings. Constructed from a canonical ring which is the
-        !  rotated and translated:
-        !    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
-        !  where AA0(xxx) is the canonical ring and D the rotation matrix
-        !  corresponding to a rotation by phi around z, followed by a
-        !  rotation by theta around y.
-        !  The array was already initialized to zero before calling this
-        !  routine.
+        !  Magnetic flux rings
         !
-        if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
-          ! fringX is the magnetic flux, IringX the current
-          if (lroot) then
-            print*, 'Initialising magnetic flux rings'
-          endif
-          do i=1,2
-            if (i==1) then
-              fring = fring1      ! magnetic flux along ring
-              Iring = Iring1      ! current along ring (for twisted flux tube)
-              R0    = Rring1      ! radius of ring
-              width = wr1         ! ring thickness
-              axis  = axisr1 ! orientation
-              disp  = dispr1    ! position
-            else
-              fring = fring2
-              Iring = Iring2
-              R0    = Rring2
-              width = wr2
-              axis  = axisr2
-              disp  = dispr2
-            endif
-            phi   = atan2(axis(2),axis(1)+epsi)
-            theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-            ct = cos(theta); st = sin(theta)
-            cp = cos(phi)  ; sp = sin(phi)
-            ! Calculate D^(-1)*(xxx-disp)
-            xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
-            yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
-            zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
-            call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
-            ! calculate D*tmpv
-            f(:,:,:,iax) = f(:,:,:,iax) + amplaa*( &
-                 + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
-            f(:,:,:,iay) = f(:,:,:,iay) + amplaa*( &
-                 + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
-            f(:,:,:,iaz) = f(:,:,:,iaz) + amplaa*( &
-                 - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
-          enddo
-        endif
-        if (lroot) print*, 'Magnetic flux rings initialized'
+        call fluxrings(f,iaa,xx,yy,zz)
 
       case('crazy', '5')
         !
@@ -235,6 +185,15 @@ module Magnetic
                        spread(spread(sin(4*y),1,mx),3,mz)*&
                        spread(spread(cos(2*z),1,mx),2,my)
         if (lroot) print*, 'sinusoidal magnetic field: for debugging purposes'
+
+      case('Alfven-circ-x')
+        !
+        !  circularly polarised Alfven wave in x direction
+        !
+        print*,'init_aa: circular Alfven wave -> x'
+        f(:,:,:,iax) = amplaa2
+        f(:,:,:,iay) = amplaa*sin(kx_aa*xx)
+        f(:,:,:,iaz) = amplaa*cos(kx_aa*xx)
 
       case default
         !
@@ -580,6 +539,69 @@ module Magnetic
 !
       first = .false.
     endsubroutine calc_mfield
+!***********************************************************************
+    subroutine fluxrings(f,ivar,xx,yy,zz)
+!
+!  Magnetic flux rings. Constructed from a canonical ring which is the
+!  rotated and translated:
+!    AA(xxx) = D*AA0(D^(-1)*(xxx-xxx_disp)) ,
+!  where AA0(xxx) is the canonical ring and D the rotation matrix
+!  corresponding to a rotation by phi around z, followed by a
+!  rotation by theta around y.
+!  The array was already initialized to zero before calling this
+!  routine.
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,3)    :: tmpv
+      real, dimension (mx,my,mz)      :: xx,yy,zz,xx1,yy1,zz1
+      real, dimension(3) :: axis,disp
+      real    :: phi,theta,ct,st,cp,sp
+      real    :: fring,Iring,R0,width
+      integer :: i,ivar
+!
+      if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
+        ! fringX is the magnetic flux, IringX the current
+        if (lroot) then
+          print*, 'Initialising magnetic flux rings'
+        endif
+        do i=1,2
+          if (i==1) then
+            fring = fring1      ! magnetic flux along ring
+            Iring = Iring1      ! current along ring (for twisted flux tube)
+            R0    = Rring1      ! radius of ring
+            width = wr1         ! ring thickness
+            axis  = axisr1 ! orientation
+            disp  = dispr1    ! position
+          else
+            fring = fring2
+            Iring = Iring2
+            R0    = Rring2
+            width = wr2
+            axis  = axisr2
+            disp  = dispr2
+          endif
+          phi   = atan2(axis(2),axis(1)+epsi)
+          theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
+          ct = cos(theta); st = sin(theta)
+          cp = cos(phi)  ; sp = sin(phi)
+          ! Calculate D^(-1)*(xxx-disp)
+          xx1 =  ct*cp*(xx-disp(1)) + ct*sp*(yy-disp(2)) - st*(zz-disp(3))
+          yy1 = -   sp*(xx-disp(1)) +    cp*(yy-disp(2))
+          zz1 =  st*cp*(xx-disp(1)) + st*sp*(yy-disp(2)) + ct*(zz-disp(3))
+          call norm_ring(xx1,yy1,zz1,fring,Iring,R0,width,tmpv)
+          ! calculate D*tmpv
+          f(:,:,:,ivar  ) = f(:,:,:,ivar  ) + amplaa*( &
+               + ct*cp*tmpv(:,:,:,1) - sp*tmpv(:,:,:,2) + st*cp*tmpv(:,:,:,3))
+          f(:,:,:,ivar+1) = f(:,:,:,ivar+1) + amplaa*( &
+               + ct*sp*tmpv(:,:,:,1) + cp*tmpv(:,:,:,2) + st*sp*tmpv(:,:,:,3))
+          f(:,:,:,ivar+2) = f(:,:,:,ivar+2) + amplaa*( &
+               - st   *tmpv(:,:,:,1)                    + ct   *tmpv(:,:,:,3))
+        enddo
+      endif
+      if (lroot) print*, 'Magnetic flux rings initialized'
+!
+    endsubroutine fluxrings
 !***********************************************************************
     subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv)
 !
