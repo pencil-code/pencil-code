@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.62 2003-07-09 16:33:00 theine Exp $
+! $Id: radiation_exp.f90,v 1.63 2003-07-10 08:50:46 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.62 2003-07-09 16:33:00 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.63 2003-07-10 08:50:46 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -175,8 +175,8 @@ module Radiation
                    *spread(spread(cos(k*y),1,mx),3,mz)
         kaprho=spread(spread(cos(2*k*x),2,my),3,mz) &
               *spread(spread(cos(2*k*y),1,mx),3,mz)
-        !Srad=1.+.02*spread(spread(sin(k*y),1,mx),3,mz)
-        !kaprho=spread(spread(cos(2*k*y),1,mx),3,mz)
+        Srad=1
+        kaprho=1
         return
       endif
 !
@@ -376,11 +376,14 @@ module Radiation
         if (ipy==nprocy-1) then
           Irad0_zx=0
           emtau0_zx=1
+          print*,'intensity_periodic: 1a,Irad0_zx,emtau0_zx,ipy',Irad0_zx(4,1,4),emtau0_zx(4,1,4),ipy
         else
           call radboundary_zx_recv(rady0,ipy+1,Irad0_zx,emtau0_zx)
+          print*,'intensity_periodic: 1b,Irad0_zx,emtau0_zx,ipy',Irad0_zx(4,1,4),emtau0_zx(4,1,4),ipy
         endif
         Irad0_zx=Irad0_zx*emtau(:,m1:m1+rady0-1,:)+Irad(:,m1:m1+rady0-1,:)
         emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
+        print*,'intensity_periodic: 2,Irad0_zx,emtau0_zx,ipy',Irad0_zx(4,1,4),emtau0_zx(4,1,4),ipy
         if (ipy==0) then
           Irad0_zx=Irad0_zx/(1-emtau0_zx)
           call radboundary_zx_send(rady0,nprocy-1,Irad0_zx)
@@ -671,6 +674,7 @@ module Radiation
       select case(bc_rad1(2))
       case ('0'); Irad0_zx=0.
       case ('p'); call radboundary_zx_recv(rady0,nprocy-1,Irad0_zx)
+                  print*,'radboundary_zx_set: mrad,Irad0_zx(4,1,4)',mrad,Irad0_zx(4,1,4)
       case ('S'); Irad0_zx=Srad(:,m1-rady0:m1-1,:)
       endselect
     endif
@@ -681,6 +685,7 @@ module Radiation
       select case(bc_rad2(2))
       case ('0'); Irad0_zx=0.
       case ('p'); call radboundary_zx_recv(rady0,0,Irad0_zx)
+                  print*,'radboundary_zx_set: mrad,Irad0_zx(4,1,4)',mrad,Irad0_zx(4,1,4)
       case ('S'); Irad0_zx=Srad(:,m2+1:m2+rady0,:)
       endselect
     endif
