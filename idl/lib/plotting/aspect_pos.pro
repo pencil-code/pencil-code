@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-11-05 16:55:25 $
-;;;  $Revision: 1.3 $
+;;;  $Date: 2003-11-07 16:08:15 $
+;;;  $Revision: 1.4 $
 ;;;
 ;;;  Description:
 ;;;   Return position [X0, Y0, X1, Y1] for placing a graph with given
@@ -52,8 +52,6 @@ function aspect_pos, ratio, npos, nx, ny, MARGIN=margin
   ;; for !p.multi=[*,2,3]
   nposx = nx-1 - ((npos+nx-1) mod nx)
   nposy = ((npos+ntot-1) mod ntot) / nx
-
-print,'npos,nposx,nposy=',npos,nposx,nposy
 
   default, margin, 0.05 
   ;; Turn margin into 4-vector [x_left, x_right, y_bot, y_top]
