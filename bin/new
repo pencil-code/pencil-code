@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.10 2002-12-03 21:58:18 brandenb Exp $
+#  $Id: new,v 1.11 2003-07-20 06:49:19 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -35,6 +35,16 @@ cd src
 cp $CWD/$1/src/*.local .
 echo "Use *.local files from:" `pwd`; ls -l *.local
 cd ..
+#
+#  if there exists a bin/setup-src.local file
+#  it is being executed prior to setup-src
+#  This gives the possibility to link your own routines
+#  into src (setup-src below won't overwrite those)
+#
+if (-f $CWD/bin/setup-src.local) $CWD/bin/setup-src.local
+#
+#  continue with the usual setup procedure
+#
 $PENCIL_HOME/bin/setup-src
 #
 #  copy *.in and k.dat files into new directory
