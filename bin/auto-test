@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.28 2003-04-22 10:52:09 dobler Exp $
+# CVS: $Id: auto-test,v 1.29 2003-05-16 08:33:16 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -94,7 +94,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.28 2003-04-22 10:52:09 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.29 2003-05-16 08:33:16 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'n'} || $opts{'norun'}) { $t_run=0 };
@@ -192,7 +192,7 @@ sub test_shell_cmd {
     my $quiet = (shift || 0);	# flag for suppressing the `ok'
 
     if ($debug) { print STDERR "Running `$cmd`" };
-    my $res = `$cmd 2>&1`;
+    my $res = (`$cmd 2>&1` || "Very BAD: `$cmd' returned undef");
     if ($debug) { print STDERR " ..done \n" };
     chomp($res);
     my_ok($?,0,$res,$dir,$phase,$quiet); # $? = 0 means success
