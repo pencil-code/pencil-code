@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.140 2002-11-26 17:17:00 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.141 2002-11-28 09:51:22 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -334,7 +334,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.140 $ $}
+\date{\today,~ $ $Revision: 1.141 $ $}
 
 % ====================================================================== %
 
@@ -367,7 +367,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.140 $ $}
+  \emph{\today,~ $ $Revision: 1.141 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1910,7 +1910,7 @@ sheet boundary conditions and have stress-free instead).
 
 When a run stops at the end of a simulation, you can just resubmit
 the job again, and it will start from the latest snapshot saved in
-\file{data/proc*/var.dat}. The value if the latest time is saved in a
+\file{data/proc*/var.dat}. The value of the latest time is saved in a
 separate file, \file{data/proc*/time.dat}.
 
 If you want to run on a different machine, you just need to copy the
@@ -2491,7 +2491,7 @@ in the code, and we were only now adding it, we would need to do the following
   {\sl[\ldots]}
   \end{alltt}
 \item in the subroutine \code{rprint_magnetic} in \file{nomagnetic.f90}, add
-  the following (newer version of the code may not require this any more):
+  the following (newer versions of the code may not require this any more):
   \begin{alltt}
   !
   !  write column, i_jbm, where our variable jbm is stored
@@ -2615,18 +2615,15 @@ What is the problem?
   \file{Makefile}).
 }
 
-\subsubsection{Internal compiler error with Compaqs/Dec fortran}
-\ldots the Dec fortran optimiser has occasional problems with \var{nompicomm.f90}:
+\subsubsection{Internal compiler error with Compaq/Dec F90}
+The Dec Fortran optimizer has occasional problems with \var{nompicomm.f90}:
 \begin{Verbatim}
   make start.x run.x read_videofiles.x
   f90  -fast -O5 -tune ev6 -arch ev6  -c cparam.f90
-  f90  -fast -O5 -tune ev6 -arch ev6  -c cdata.f90
-  f90  -fast -O5 -tune ev6 -arch ev6  -c general.f90
-  f90  -fast -O5 -tune ev6 -arch ev6  -c deriv.f90
-  f90  -fast -O5 -tune ev6 -arch ev6  -c nofft.f90
+  [...]
   f90  -fast -O5 -tune ev6 -arch ev6  -c nompicomm.f90
-  otal vm  2755568 	otal vm  2765296 	otal vm  2775024 	
-  otal vm  2784752 	otal...
+  otal vm  2755568      otal vm  2765296        otal vm  2775024        
+  otal vm  2784752      otal...
   Assertion failure:  Compiler internal error - please submit problem r...
     GEM ASSERTION, Compiler internal error - please submit problem report
   Fatal error in: /usr/lib/cmplrs/fort90_540/decfort90 Terminated 
@@ -2639,11 +2636,11 @@ What is the problem?
 \medskip
 
 {\em
-  The occurrence of this problem depends upon the gridsize;
+  The occurrence of this problem depends upon the grid size;
   and the problem never seems to occur with \file{mpicomm.f90},
   except when \var{ncpus=1}.
   The problem can be avoided by switching off the loop transformation 
-  optimisation (part of the \var{-O5} optimisation), via:
+  optimization (part of the \var{-O5} optimization), via:
   \begin{Verbatim}
     #OPTFLAGS=-fast -O5 -notransform_loops
   \end{Verbatim}
@@ -3430,7 +3427,7 @@ This produces the forcing function $\fv$ of the form
 \begin{equation}
 \fv(\xv,t)=\mbox{Re}\{N\fv_{\kv(t)}\exp[i\kv(t)\cdot\xv+i\phi(t)]\},
 \end{equation}
-where $\kv(t)=(k_x,k_y,k_z)$ is a time dependent wavevector,
+where $\kv(t)=(k_x,k_y,k_z)$ is a time dependent wave vector,
 $\xv=(x,y,z)$ is position, and $\phi(t)$ with $|\phi|<\pi$ is
 a random phase. On dimensional grounds the normalization factor
 is chosen to be
@@ -4022,7 +4019,7 @@ double precision, $\varepsilon\approx10^{-15}$.
                    see \S~\ref{fluxrings}),
                  \item[\code{`fluxrings-kb'}] (malfunctioning),
                  \item[\code{`Alfven-circ-x'}] (circularly polarized
-                   Alfvén wave).
+                   Alfv\'en wave).
                  \item[\code{`sinxsinz'}] ($\sin x \sin z$),
                  \item[\code{`Alfven-z'}] (Alfv\'en wave traveling in the
                    $z$-direction; this also sets the velocity),
@@ -4567,7 +4564,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.140 2002-11-26 17:17:00 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.141 2002-11-28 09:51:22 dobler Exp $ $}
 
 
 \end{document}
@@ -4618,4 +4615,8 @@ $ $Id: manual.tex,v 1.140 2002-11-26 17:17:00 brandenb Exp $ $}
 % LocalWords:  noradiation mpio ux uy discont trunc xjump kb sinxsinz Alfvenz
 % LocalWords:  orms omax uxm uym uzm eth ekin brms bmax jrms jmax abm bmz ccmax
 % LocalWords:  rhoccm Torkelsson Rieutord Tuominen Hazlehurst Shukurov fidx Ctl
-% LocalWords:  logscale oct Nqall ruxm ruym ruzm jm vArms vAmax Massaguer
+% LocalWords:  logscale oct Nqall ruxm ruym ruzm jm vArms vAmax Massaguer ts ev
+% LocalWords:  openDX Eqn videofiles otal vm OPTFLAGS notransform ifc nov cyl
+% LocalWords:  convsample Chandrasekhar eqn timestep nonhelical hsection RK pp
+% LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS
+% LocalWords:  HTM BDS Subramanian Nachr
