@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.250 2004-05-29 03:31:49 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.251 2004-06-02 16:37:02 bingert Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -104,7 +104,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage[dvipdfm]{hyperref}
+\usepackage{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -370,7 +370,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-05-29 03:31:49 $ $,~ $ $Revision: 1.250 $ $}
+%\date{$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}
 
 % ====================================================================== %
 
@@ -405,7 +405,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-05-29 03:31:49 $ $,~ $ $Revision: 1.250 $ $}\\
+  \emph{$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -1559,6 +1559,29 @@ its parent directory, i.e.\
 and edit the \file{cparam.local} for the new resolution.
 
 % ---------------------------------------------------------------------- %
+\subsection{Using non equdistant grid}
+
+The non equidistant grid z=z($\zeta$) in the vertical direction is a function of a equidistant grid with 
+a gridspace of one.\\
+Therefor the first derivative is calculated by\\
+\begin{equation}
+\frac{df}{dz}=\frac{df}{d\zeta}\frac{d\zeta}{dz}=\frac{1}{z'}f'
+\end{equation}
+and the second derivative by\\
+\begin{equation}
+\frac{d^2f}{dz^2}=\frac{1}{z'^2}f''-\frac{z''}{z'^3}f'
+\end{equation}
+The non equidistant grid is implemented only for the vertical
+direction right now. The function is choosen to be\\
+\begin{equation}
+z(\zeta)=z_0 - L_z \frac{\sinh{a(\zeta_0-\zeta)}}{\sinh{a(\zeta_n-\zeta)}-\sinh{a(\zeta_0-\zeta)}}
+\end{equation}
+To select the non equidistant grid set grid_func='sinh' in start.in
+There you can also set the coefficient $a$ by setting
+'coef_grid'. If you start at a non zero height you have to set
+'zeta_grid0' too. 
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Diagnostic output}
 \label{diagnostic-IO}
@@ -2136,7 +2159,7 @@ The syntax of a namelist (in an input file like \file{start.in}) is
 --- in this example, the name of the namelist is \name{init_pars}, and we
 read just two variables (all other variables in
 the namelist retain their previous value): \var{ip}, which is set to $5$,
-and \var{Lxyz}, which is a vector of length three and is set to $(2,4,5)$.
+and \var{Lxyz}, which is a vector of length three and is set to $(2,4,2)$.
 
 While all parameters from the namelists can be set, in most cases
 reasonable default values are preset.
@@ -4207,7 +4230,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-05-29 03:31:49 $ $,~ $ $Revision: 1.250 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-06-02 16:37:02 $ $,~ $ $Revision: 1.251 $ $}
 
 \section{Timings}
 
@@ -7186,7 +7209,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.250 2004-05-29 03:31:49 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.251 2004-06-02 16:37:02 bingert Exp $ $}
 
 
 \end{document}
