@@ -1,13 +1,13 @@
 #!/bin/csh
 
-# An obscure script used by noone else than Axel Brandenburg. It won't work
-# for you, since you don't have his `mktmpw2'. So just ignore it
+# An obscure script used by no-one else than Axel Brandenburg. It won't work
+# for you, since you don't have his `mktmp'. So just ignore it
 
 set CWD=$cwd
 mkdir $2
 cd $2
 #
-$HOME/bin/mktmpw2
+$HOME/bin/mktmp
 mkdir src
 cd src
 #
