@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.64 2002-09-26 20:07:41 dobler Exp $
+! $Id: start.f90,v 1.65 2002-09-30 05:51:49 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -33,7 +33,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.64 2002-09-26 20:07:41 dobler Exp $")
+             "$Id: start.f90,v 1.65 2002-09-30 05:51:49 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -55,6 +55,8 @@
 !
         gamma1 = gamma-1.
         call wparam()
+!
+        if (any(xyz1 /= impossible)) Lxyz=xyz1-xyz0
         x0 = xyz0(1) ; y0 = xyz0(2) ; z0 = xyz0(3)
         Lx = Lxyz(1) ; Ly = Lxyz(2) ; Lz = Lxyz(3)
 !

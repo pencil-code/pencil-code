@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.87 2002-09-26 16:21:25 brandenb Exp $
+! $Id: run.f90,v 1.88 2002-09-30 05:51:49 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.87 2002-09-26 16:21:25 brandenb Exp $")
+             "$Id: run.f90,v 1.88 2002-09-30 05:51:49 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -158,7 +158,8 @@
           !
           if (iwig/=0) then
             if (mod(it,iwig).eq.0) then
-              call rmwig(f,df,ilnrho,awig)
+              if (lrmwig_xyaverage) call rmwig_xyaverage(f)
+              if (lrmwig_full) call rmwig(f,df,ilnrho,awig)
               !call rmwig(f,df,ilnrho,explog=.true.)
             endif
           endif

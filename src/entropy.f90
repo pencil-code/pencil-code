@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.124 2002-09-27 16:38:10 brandenb Exp $
+! $Id: entropy.f90,v 1.125 2002-09-30 05:51:49 brandenb Exp $
 
 module Entropy
 
@@ -11,12 +11,13 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cs2cool=0.,cool=0.,rcool=1.,wcool=0.1
-  real :: chi_t=0.,ss0=0.,khor_ss=1.
+  real :: chi=0.,chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
+  logical :: lcalc_heatcond_constchi=.false.
   character (len=labellen) :: initss='nothing',pertss='zero',cooltype='Temp'
 
   ! input parameters
@@ -30,7 +31,7 @@ module Entropy
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior, &
-       lmultilayer,Kbot
+       chi,lcalc_heatcond_constchi,lmultilayer,Kbot
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ssm=0
@@ -67,7 +68,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.124 2002-09-27 16:38:10 brandenb Exp $")
+           "$Id: entropy.f90,v 1.125 2002-09-30 05:51:49 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -366,6 +367,8 @@ module Entropy
 !
       if (lcalc_heatcond_simple) then
         call calc_heatcond_simple(f,df,rho1,glnrho,gss)
+      elseif (lcalc_heatcond_constchi) then
+        call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
       else
         !if ((hcond0 /= 0) .or. (chi_t /= 0)) &  !!(AB: needed?)
         call calc_heatcond(f,df,rho1,glnrho,gss)
@@ -429,6 +432,53 @@ module Entropy
 !
     endsubroutine ss_run_hook
 !***********************************************************************
+    subroutine calc_heatcond_constchi(f,df,rho1,glnrho,gss)
+!
+!  heat conduction for constant value of chi=K/(rho*cp)
+!
+!  29-sep-02/axel: adapted from calc_heatcond_simple
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+      use Gravity
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (nx,3) :: glnrho,gss,glnT,glnP
+      real, dimension (nx) :: rho1
+      real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
+!
+      intent(in) :: f,glnrho,gss
+      intent(out) :: df
+!
+!  check that chi is ok
+!
+      if(headtt) print*,'calc_heatcond_constchi: chi==',chi
+!
+!  Heat conduction
+!
+      call del2(f,ient,del2ss)
+      call del2(f,ilnrho,del2lnrho)
+      glnT = gamma*gss + gamma1*glnrho
+      glnP = gamma*gss + gamma*glnrho
+      call dot_mn(glnT,glnP,g2)
+      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+!
+!  add heat conduction to entropy equation
+!
+      df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
+      if (headtt) print*,'calc_heatcond_simple: added thdiff'
+!
+!  check maximum diffusion from thermal diffusion
+!  With heat conduction, the second-order term for entropy is
+!  gamma*chi*del2ss
+!
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+!--   if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
+!
+      if(ip==0) print*,rho1 !(to keep compiler quiet)
+    endsubroutine calc_heatcond_constchi
+!***********************************************************************
     subroutine calc_heatcond_simple(f,df,rho1,glnrho,gss)
 !
 !  heat conduction
@@ -442,7 +492,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond !,glhc
-      real, dimension (nx) :: rho1,chi
+      real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
 !
@@ -458,11 +508,11 @@ module Entropy
 !
       call del2(f,ient,del2ss)
       call del2(f,ilnrho,del2lnrho)
-      chi = rho1*hcond
+      chix = rho1*hcond
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
       glnThcond = glnT !... + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
       call dot_mn(glnT,glnThcond,g2)
-      thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+      thdiff = chix * (gamma*del2ss+gamma1*del2lnrho + g2)
 !
 !  add heat conduction to entropy equation
 !
@@ -471,9 +521,9 @@ module Entropy
 !
 !  check maximum diffusion from thermal diffusion
 !  With heat conduction, the second-order term for entropy is
-!  gamma*chi*del2ss
+!  gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
 !--   if (headtt) print*,'calc_heatcond_simple: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond_simple
@@ -492,7 +542,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: glnrho,gss,glnT,glnThcond,glhc
-      real, dimension (nx) :: rho1,chi
+      real, dimension (nx) :: rho1,chix
       real, dimension (nx) :: thdiff,del2ss,del2lnrho,g2
       real, dimension (nx) :: hcond
       real :: z_prev=-1.23e20
@@ -531,11 +581,11 @@ module Entropy
           call gradloghcond(x_mn,y_mn,z_mn, glhc)
         endif
         call del2(f,ilnrho,del2lnrho)
-        chi = rho1*hcond
+        chix = rho1*hcond
         glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
         glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot_mn(glnT,glnThcond,g2)
-        thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
+        thdiff = chix * (gamma*del2ss+gamma1*del2lnrho + g2)
       else
         thdiff = 0
         ! not really needed, I (wd) guess -- but be sure before you
@@ -563,7 +613,7 @@ module Entropy
         if (notanumber(glhc))      print*,'NaNs in glhc'
         if (notanumber(rho1))      print*,'NaNs in rho1'
         if (notanumber(hcond))     print*,'NaNs in hcond'
-        if (notanumber(chi))       print*,'NaNs in chi'
+        if (notanumber(chix))       print*,'NaNs in chix'
         if (notanumber(del2ss))    print*,'NaNs in del2ss'
         if (notanumber(del2lnrho)) print*,'NaNs in del2lnrho'
         if (notanumber(glhc))      print*,'NaNs in glhc'
@@ -583,7 +633,7 @@ endif
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
-        call output_pencil(trim(directory)//'/chi.dat',chi,1)
+        call output_pencil(trim(directory)//'/chi.dat',chix,1)
         call output_pencil(trim(directory)//'/hcond.dat',hcond,1)
         call output_pencil(trim(directory)//'/glhc.dat',glhc,3)
       endif
@@ -593,9 +643,9 @@ endif
 !
 !  check maximum diffusion from thermal diffusion
 !  NB: With heat conduction, the second-order term for entropy is
-!    gamma*chi*del2ss
+!    gamma*chix*del2ss
 !
-      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chi+chi_t))
+      if (lfirst.and.ldt) maxdiffus=amax1(maxdiffus,(gamma*chix+chi_t))
 !--   if (headtt) print*,'calc_heatcond: maxdiffus=',maxdiffus
 !
     endsubroutine calc_heatcond
@@ -810,7 +860,7 @@ endif
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my) :: tmp_xy,cs2_xy
+      real, dimension (mx,my) :: tmp_xy,cs2_xy,rho_xy
       integer :: i
 !
       if(ldebug) print*,'ENTER: bc_ss, cs20,cs0=',cs20,cs0
@@ -839,6 +889,7 @@ endif
         enddo
 !
 !  bottom boundary
+!  ===============
 !
       case('bot')
         if(headt) print*,'bc_ss_flux: Fbot,hcond=',Fbot,hcond0*hcond1
@@ -846,13 +897,19 @@ endif
 !
 !  calculate Fbot/(K*cs2)
 !
+        rho_xy=exp(f(:,:,n1,ilnrho))
         cs2_xy=cs20*exp(gamma1*(f(:,:,n1,ilnrho)-lnrho0)+gamma*f(:,:,n1,ient))
-        tmp_xy=FbotKbot/cs2_xy
 !
-        !tmp_xy=Fbot/(hcond0*hcond1*cs2_xy)
+!  chech whether we have chi=constant at bottom, in which case
+!  we have the nonconstant rho_xy*chi in tmp_xy. 
+!
+        if(lcalc_heatcond_constchi) then
+          tmp_xy=Fbot/(rho_xy*chi*cs2_xy)
+        else
+          tmp_xy=FbotKbot/cs2_xy
+        endif
 !
 !  enforce ds/dz + gamma1/gamma*dlnrho/dz = - gamma1/gamma*Fbot/(K*cs2)
-!  EXPERIMENTAL--->
 !
         do i=1,nghost
           f(:,:,n1-i,ient)=f(:,:,n1+i,ient)+gamma1/gamma* &
@@ -860,6 +917,7 @@ endif
         enddo
 !
 !  top boundary
+!  ============
 !
       case('top')
         if(headtt) print*,'bc_ss_flux: hcond0=',hcond0
@@ -868,7 +926,7 @@ endif
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n2,ient) &
                        - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-        tmp_xy = Fbot/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
+        tmp_xy = FbotKbot * tmp_xy ! F_heat/(hcond T_0)
         do i=1,nghost
           f(:,:,n2+i,ient) = &
                (-2*i*dz*tmp_xy &

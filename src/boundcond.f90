@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.31 2002-09-27 16:38:10 brandenb Exp $
+! $Id: boundcond.f90,v 1.32 2002-09-30 05:51:49 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -35,12 +35,18 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
 !
-      if(ldebug) print*,'ENTER: boundconds'
+      if(ldebug) print*,'ENTER: boundconds_x'
+!
+      select case(nxgrid)
+!
+      case(1)
+        if(headtt) print*,'no x-boundary'
 !
 !  Boundary conditions in x
 !  shearing sheet boundary condition (default)
 !  can still use other boundary conditions (even with shear)
 !
+      case default
       if (bcx1(1)=='she') then
          if (headtt) print*,'use shearing sheet boundary condition'
          call initiate_shearing(f)
@@ -61,7 +67,7 @@ module Boundcond
             case ('s')          ! symmetry
               do i=1,nghost; f(l1-i,:,:,j) = f(l1+i,:,:,j); enddo
             case ('a')          ! antisymmetry
-              f(l1,:,:,j) = 0.  ! ensure bdry value=0 (indep. of initial cond.)
+              f(l1,:,:,j) = 0.  ! ensure bdry value=0 (indep of initial cond)
               do i=1,nghost; f(l1-i,:,:,j) = -f(l1+i,:,:,j); enddo
             case ('a2')         ! antisymmetry relative to boundary value
               do i=1,nghost; f(l1-i,:,:,j) = 2*f(l1,:,:,j)-f(l1+i,:,:,j); enddo
@@ -99,7 +105,7 @@ module Boundcond
             case ('s')          ! symmetry
               do i=1,nghost; f(l2+i,:,:,j) = f(l2-i,:,:,j); enddo
             case ('a')          ! antisymmetry
-              f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep. of initial cond.)
+              f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep of initial cond)
               do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
             case ('a2')            ! antisymmetry relative to boundary value
               do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
@@ -125,6 +131,7 @@ module Boundcond
           endif
         enddo
       endif
+      endselect
 !
     endsubroutine boundconds_x
 !***********************************************************************
@@ -145,10 +152,16 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
 !
-      if(ldebug) print*,'ENTER: boundconds'
+      if(ldebug) print*,'ENTER: boundconds_y'
+!
+      select case(nygrid)
+!
+      case(1)
+        if(headtt) print*,'no y-boundary'
 !
 !  Boundary conditions in y
 !
+      case default
       do j=1,mvar 
         !
         ! `lower' bdry
@@ -164,7 +177,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,m1-i,:,j) = f(:,m1+i,:,j); enddo
           case ('a')              ! antisymmetry
-            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
+            f(:,m1,:,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
             do i=1,nghost; f(:,m1-i,:,j) = -f(:,m1+i,:,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,m1-i,:,j) = 2*f(:,m1,:,j)-f(:,m1+i,:,j); enddo
@@ -192,7 +205,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,m2+i,:,j) = f(:,m2-i,:,j); enddo
           case ('a')              ! antisymmetry
-            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
+            f(:,m2,:,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
             do i=1,nghost; f(:,m2+i,:,j) = -f(:,m2-i,:,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,m2+i,:,j) = 2*f(:,m2,:,j)-f(:,m2-i,:,j); enddo
@@ -208,6 +221,7 @@ module Boundcond
           endselect
         endif
       enddo
+      endselect
 !
     endsubroutine boundconds_y
 !***********************************************************************
@@ -229,10 +243,16 @@ module Boundcond
       real, dimension (mx,my,mz,mvar) :: f
       integer :: i,j
 !
-      if(ldebug) print*,'ENTER: boundconds'
+      if(ldebug) print*,'ENTER: boundconds_z'
+!
+      select case(nzgrid)
+!
+      case(1)
+        if(headtt) print*,'no z-boundary'
 !
 !  Boundary conditions in z
 !
+      case default
       do j=1,mvar
         !
         ! `lower' bdry
@@ -247,7 +267,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,:,n1-i,j) = f(:,:,n1+i,j); enddo
           case ('a')              ! antisymmetry
-            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
+            f(:,:,n1,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
             do i=1,nghost; f(:,:,n1-i,j) = -f(:,:,n1+i,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n1-i,j) = 2*f(:,:,n1,j)-f(:,:,n1+i,j); enddo
@@ -284,7 +304,7 @@ module Boundcond
           case ('s')              ! symmetry
             do i=1,nghost; f(:,:,n2+i,j) = f(:,:,n2-i,j); enddo
           case ('a')              ! antisymmetry
-            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep. of initial cond.)
+            f(:,:,n2,j) = 0.      ! ensure bdry value=0 (indep of initial cond)
             do i=1,nghost; f(:,:,n2+i,j) = -f(:,:,n2-i,j); enddo
           case ('a2')             ! antisymmetry relative to boundary value
             do i=1,nghost; f(:,:,n2+i,j) = 2*f(:,:,n2,j)-f(:,:,n2-i,j); enddo
@@ -312,6 +332,7 @@ module Boundcond
           endselect
         endif
       enddo
+      endselect
 !
     endsubroutine boundconds_z
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.96 2002-09-22 18:19:17 brandenb Exp $
+! $Id: equ.f90,v 1.97 2002-09-30 05:51:49 brandenb Exp $
 
 module Equ
 
@@ -227,7 +227,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.96 2002-09-22 18:19:17 brandenb Exp $")
+           "$Id: equ.f90,v 1.97 2002-09-30 05:51:49 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -373,6 +373,80 @@ module Equ
       endif
 !
     endsubroutine pde
+!***********************************************************************
+    subroutine rmwig_xyaverage(f)
+!
+!  28-Sep-02/axel: coded
+!
+      use Cdata
+      use Mpicomm
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mz) :: xyaver,xyaver_smooth
+      real :: del_average
+!
+!  calculate horizontal average and smooth in the vertical direction
+!
+      do n=1,mz
+        xyaver(n)=sum(f(l1:l2,m1:m2,n,ilnrho))/(nx*ny)
+      enddo
+      call smooth_4th(xyaver,xyaver_smooth,.true.)
+!
+      do n=1,mz
+        del_average=xyaver(n)-xyaver_smooth(n)
+        f(l1:l2,m1:m2,n,ilnrho)=f(l1:l2,m1:m2,n,ilnrho)-del_average
+      enddo
+!
+    endsubroutine rmwig_xyaverage
+!***********************************************************************
+      subroutine smooth_4th(a,b,lbdry)
+!
+!  28-Sep-02/axel: adapted from f77 version
+!
+      use Cdata
+!
+      real, dimension (mz) :: a(mz),b(mz)
+      real :: am1,a0,a1,a2,a3,a4
+      logical :: lbdry
+!
+!  smooth a vertical average
+!  Note: a and b must be different
+!  smoothing on the boundaries only when lbdry=.true.
+!
+      a2=-1./16.
+      a1=1./4.
+      a0=5./8.
+      do 100 n=3,mz-2
+        b(n)=a0*a(n)+a1*(a(n-1)+a(n+1))+a2*(a(n-2)+a(n+2))
+100   continue
+!
+!  next nearest points to the boundaries
+!
+      a3=1./16.
+      a2=-1./4.
+      a1=3./8.
+      a0=3./4.
+      am1=1./16.
+      b(   2)=am1*a( 1)+a0*a(   2)+a1*a(   3)+a2*a(   4)+a3*a(   5)
+      b(mz-1)=am1*a(mz)+a0*a(mz-1)+a1*a(mz-2)+a2*a(mz-3)+a3*a(mz-4)
+!
+!  points at the boundaries
+!
+      if (lbdry) then
+        a4=-1./16.
+        a3=1./4.
+        a2=-3./8.
+        a1=1./4.
+        a0=15./16.
+        b( 1)=a0*a( 1)+a1*a(   2)+a2*a(   3)+a3*a(   4)+a4*a(   5)
+        b(mz)=a0*a(mz)+a1*a(mz-1)+a2*a(mz-2)+a3*a(mz-3)+a4*a(mz-4)
+      else
+        b( 1)=a( 1)
+        b(mz)=a(mz)
+      endif
+!
+    endsubroutine smooth_4th
 !***********************************************************************
     subroutine rmwig(f,df,ivar,awig,explog)
 !
