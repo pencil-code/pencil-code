@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.13 2002-06-05 23:45:57 brandenb Exp $
+! $Id: prints.f90,v 1.14 2002-06-06 00:14:09 brandenb Exp $
 
 module Print
 
@@ -63,11 +63,10 @@ module Print
 !  also listed in print.in.
 !
       if(lroot) then
-        open(3,file='check')
-        write(3,trim(fform))  fname(1:nname)  ! write to `check'
-        write(6,trim(fform))  fname(1:nname)  ! write to standard output
-        write(20,trim(fform)) fname(1:nname)  ! write to `fort.20'
-        close(3)
+        open(1,file='tmp/n.dat',position='append')
+        write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
+        write(6,trim(fform)) fname(1:nname)  ! write to standard output
+        close(1)
       endif
       first = .false.
 !

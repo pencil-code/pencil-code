@@ -1,6 +1,6 @@
 t=0.
-bxmz=fltarr(nz)
-bymz=fltarr(nz)
+bxmz=fltarr(nz*nprocz)
+bymz=fltarr(nz*nprocz)
 ;
 close,1
 openr,1,'tmp/zaverages.dat'
