@@ -3,10 +3,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 ;;;
-;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 ;;;  Date:   18-Aug-2000
-;;;  Version: 1.36
-;;;  CVS: $Revision: 1.1 $
+;;;  Version: 1.37
+;;;  CVS: $Revision: 1.2 $
 ;;;
 ;;;  Description:
 ;;;   Given either a 3d array on a 2d grid (e.g. B(0:64,0:64,15,0:3)),
@@ -294,7 +294,7 @@ PRO plot_3d_vect, arg1, arg2, arg3, $
     if (n_elements(zrange) gt 0) then message, $
         "Warning: keyword ZRANGE not yet implemented for PS output", $
         /INFORMATIONAL
-    MY_TVSCL, $
+    wdtvscl, $
         interpolate(vec_z, $
                     (findgen(nx_s*ps_enh)+0.5)/ps_enh-0.5, $
                     (findgen(ny_s*ps_enh)+0.5)/ps_enh-0.5, $
