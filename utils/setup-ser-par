@@ -5,17 +5,42 @@
 #   Set up the present run directory for comparing serial and parallel
 #   runs for the same parameters.
 # Usage:
+#   setup-par [-c|-r]
+# Options:
+#   -c, --compile :  compile
+#   -r, --revert  :  revert to original state (i.e. undo a previous
+#                    setup-ser-par)
+# Typical usage:
 #   setup-par
-#   (cd src-ser; make) && (cd src-par; make)
+#   setup-par -c
 #   run-ser-par
 #   idl
 #     @read-ser-par
-# Revert with:
-#   mv src-orig src ; rm -r src-{ser,par} ; mv data-orig data ; rm data-{ser,par} ; rm -r data/data-{ser,par}
 
+
+# On some systems (Mhd machine), scripts like this don't inherit the PATH
 setenv PATH ${PATH}:${PENCIL_HOME}/bin:${PENCIL_HOME}/utils
 
-if ($#argv > 0) goto usage
+if ($#argv > 0) then
+  switch("$1")
+
+    case '-r':
+    case '--revert':
+      goto revert
+    breaksw
+    
+    case '-c':
+    case '--compile':
+      echo "Compiling.."
+      (cd src-ser; make) && (cd src-par; make)
+      echo "Done."
+      goto exit
+    breaksw
+
+    default:
+      goto usage
+  endsw
+endif
 
 # Are we in a run directory?
 if (! -e ./start.in) goto usage
@@ -85,10 +110,44 @@ endif
 goto exit
 
 # ---------------------------------------------------------------------- #
+revert:
+
+echo "Cleaning up.."
+
+## src directories
+if (-d src) then
+  echo "Warning: src exists; won't touch src-XXX directories"
+else
+  if (-d src-orig) then
+    mv src-orig src
+    rm -rf src-{ser,par}
+  else
+    echo "Warning: can't find src-orig directory; won't touch src-XXX directories"
+  endif
+endif
+
+## data directories
+if (-d data) then
+  echo "Warning: data exists; won't touch data-XXX directories"
+else
+  if (-d data-orig) then
+    mv data-orig data
+    rm -rf data/data-{ser,par}/	# (data-ser was subdirectory of /data-orig)
+    rm -f data-{ser,par}	# (should be links)
+  else
+    echo "Warning: can't find data-orig directory; won't touch data-XXX directories"
+  endif
+endif
+
+echo "Done."
+
+goto exit
+
+# ---------------------------------------------------------------------- #
 usage:
 
-echo "Usage:  setup-par [old-dir]"
-echo "Run from a run directory, or give run directory as argument"
+echo "Usage:  setup-ser-par [-c|-r]"
+echo "Set up a run directory for comparison of serial and parallel run"
 
 
 exit:

@@ -8,12 +8,41 @@
 #   everything has been set up using setup-ser-par and compiled
 #   afterwards.
 # Usage:
+#   run-ser-par [-s|-r]
+# Options:
+#   -s, --start : start.csh only
+#   -r, --run   : run.csh only
+# Typical usage:
 #   setup-par
-#   (cd src-ser; make)
-#   (cd src-par; make)
+#   setup-par -c
 #   run-ser-par
 #   idl
 #     @read-ser-par
+
+set start=0
+set run=0
+
+if ($#argv > 0) then
+  switch("$1")
+
+    case '-s':
+    case '--start':
+      set start=1
+    breaksw
+    
+    case '-r':
+    case '--run':
+      set run=1
+    breaksw
+
+    default:
+      goto usage
+    endsw
+  else
+    set start=1
+    set run=1
+endif
+
 
 # Consistency checks (ere we remove the data directory..)
 if (! ((-l data-ser) && (-d data-ser))) then
@@ -41,22 +70,41 @@ endif
 ln -fs src-ser src
 ln -fs data-ser data
 mkdir -p data/allprocs
-start.csh
-run.csh
+if ($start) start.csh
+if ($run) run.csh
 rm -f src data
 
 # Link and run parallel
 ln -fs src-par src
 ln -fs data-par data
 mkdir -p data/allprocs
-start.csh
-run.csh
+if ($start) start.csh
+if ($run) run.csh
 rm -f src data
 
-echo "Diffing.."
-diff -c data-{ser,par}/time_series.dat
+if ($run) then
+  echo "Diffing.."
+  diff -c data-{ser,par}/time_series.dat
+endif
 
 echo "Cmping binary data files.."
 cmp data-{ser,par}/allprocs/var.dat
+
+
+goto exit
+
+# ---------------------------------------------------------------------- #
+usage:
+
+echo "Usage:  run-ser-par [-s|-r]"
+echo "Run current setup in serial and parallel and compare"
+
+
+exit:
+
+# Analyse diff with:
+#   perl -MPOSIX -e '$pos=414205; ($nx,$ny,$nz)=(50,50,20); $p=floor($pos/4)-4; $px=$p%$nx; $py=floor($p/$nx)%$ny; $pz=floor($p/($nx*$ny))%$nz; $pv=floor($p/($nx*$ny*$nz)); print "Var $pv at ix=$px, iy=$py, iz=$pz\n"'
+# Reconstruct pos with:
+#   perl -e '($px,$py,$pz,$pv)=(46,21,3,2); ($nx,$ny,$nz)=(50,50,20); print "", ((($pv*$nz+$pz)*$ny+$py)*$nx+$px+4)*4,"\n"'
 
 # End of file run-ser-par
