@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.24 2004-06-03 21:07:47 mee Exp $
+; $Id: pc_read_var.pro,v 1.25 2004-06-08 13:11:13 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-06-03 21:07:47 $
-;  $Revision: 1.24 $
+;  $Date: 2004-06-08 13:11:13 $
+;  $Revision: 1.25 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -299,7 +299,7 @@ if keyword_set(VALIDATE_VARIABLES) then begin
   skipvariable=make_array(n_elements(variables),/INT,value=0)
   for iv=0,n_elements(variables)-1 do begin
   ;  res1=execute("testvariable=n_elements("+variables[iv]+")")
-    res=execute("testvariable="+variables[iv])
+    res=execute(tags[iv]+'='+variables[iv])
     if not res then begin
       if not keyword_set(QUIET) then print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
       skipvariable[iv]=1
