@@ -20,7 +20,7 @@
 ;;;
 
 pro contourfill, z, x, y, $
-                 NLEVELS=nlevels, LEVELS=levels, FILL=fill, GRID=grid, $
+                 NLEVELS=nlevels, LEVELS=levels_, FILL=fill, GRID=grid, $
                  COLORBAR=colbar, DEBUG=debug, $
                  C_COLORS=c_colors, _EXTRA=_extra
 
@@ -73,6 +73,7 @@ pro contourfill, z, x, y, $
 
   ;; non-trivial to keep IDL from using very first or very last color:
   ;; currently doesn't work for z-logarithmic plots
+  if (n_elements(levels_) gt 0) then levels=levels_
   default, levels, linspace(minmax(array),ghost=1)
 
   contour, array, x, y, LEVELS=levels, FILL=fill, _EXTRA=_extra
