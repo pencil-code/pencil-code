@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.83 2004-09-22 12:16:25 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.84 2004-09-24 10:20:50 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -109,7 +109,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.83 2004-09-22 12:16:25 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.84 2004-09-24 10:20:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -460,7 +460,7 @@ module Dustvelocity
 !
 !  Short stopping time approximation
 !
-      if (ldustvelocity_shorttausd .and. dt_beta(itsub) /= 0.) then
+      if (ldustvelocity_shorttausd) then
         if (headtt) print*, 'duud_dt: Short stopping time approximation'
         do k=1,ndustspec
           df(l1:l2,m,n,iudx(k)) = 1/dt_beta(itsub)*( &
