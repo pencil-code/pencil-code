@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.34 2002-11-09 08:23:00 brandenb Exp $
+! $Id: forcing.f90,v 1.35 2002-11-09 08:31:56 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.34 2002-11-09 08:23:00 brandenb Exp $")
+           "$Id: forcing.f90,v 1.35 2002-11-09 08:31:56 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -320,8 +320,8 @@ module Forcing
 !
       ffnorm=sqrt(1.+relhel**2) &
         *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
-      if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
-      if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
+      if (ip.le.9) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
+      if (ip.le.9) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
 !
 !  need to multiply by dt (for Euler step), but it also needs to be
@@ -401,7 +401,7 @@ module Forcing
         enddo
       endif
 !
-      if (ip.le.12) print*,'forcing OK'
+      if (ip.le.9) print*,'forcing OK'
 !
     endsubroutine forcing_hel
 !***********************************************************************

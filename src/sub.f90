@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.98 2002-10-23 13:16:42 dobler Exp $ 
+! $Id: sub.f90,v 1.99 2002-11-09 08:31:56 brandenb Exp $ 
 
 module Sub 
 
@@ -1134,13 +1134,15 @@ module Sub
         else
 !
 !  special treatment when dtout is negative
+!  now tout and nout refer to the next snapshopt to be written
 !
           if (dtout.lt.0.) then
             tout=alog10(t)
           else
-            tout=t
+            !  make sure the tout is a good time
+            if (dtout.ne.0.) tout=t-amod(t,abs(dtout))
           endif
-          nout=0
+          nout=1
           write(lun,*) tout,nout
         endif
         close(lun)
@@ -1157,6 +1159,7 @@ module Sub
 !
 !  special treatment when tt is negative
 !  this has to do with different integer arithmetic for negative numbers
+!  tout was the last good value for next output (e.g., after restarted)
 !
       tt=tout
       if (tt.lt.0.) then
@@ -1164,10 +1167,6 @@ module Sub
       else
         ttt=tt
       endif
-!
-!  make sure the tout is a good time
-!
-      if (dtout.ne.0.) tout=ttt+abs(dtout)-amod(tt,abs(dtout))
 !
     endsubroutine out1
 !***********************************************************************
@@ -1186,11 +1185,21 @@ module Sub
       real :: t,tt,tout,dtout
       integer :: lun,nout
 !
+!  use tt as a shorthand for either t or lg(t)
+!
       if (dtout.lt.0.) then
         tt=alog10(t)
       else
         tt=t
       endif
+!
+!  if lch=.false. we don't want to generate a running file number (eg in wvid)
+!  if lch=.true. we do want to generate character from nout for file name
+!  do this before nout has been updated to new value
+!
+      if (lch) call chn(nout,ch)
+!
+!  Mark lout=.true. when time has exceeded the value of tout
 !
       if (tt.ge.tout) then
         tout=tout+abs(dtout)
@@ -1204,15 +1213,15 @@ module Sub
         lun=1
         open(lun,file=file)
         write(lun,*) tout,nout
+        write(lun,*) 'NOTE: this file is written automatically by out2 in sub.f90;'
+        write(lun,*) 'first number is time of *next* snapshot to be written,'
+        write(lun,*) 'second number is number of the *previous* snapshot.'
+        write(lun,*) 'For example, if you want to force that next snapshot is'
+        write(lun,*) 'VAR20 at t=4.0 you write here the numbers "4.0, 19" (in free format).'
         close(lun)
       else
         lout=.false.
       endif
-!
-!  if lch=.false. we don't want to generate a running file number (eg in wvid)
-!  if lch=.true. we do want to generate character from nout for file name
-!
-      if (lch) call chn(nout,ch)
 !
     endsubroutine out2
 !***********************************************************************

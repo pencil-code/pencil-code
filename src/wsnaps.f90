@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.12 2002-10-25 13:04:25 nilshau Exp $
+! $Id: wsnaps.f90,v 1.13 2002-11-09 08:31:56 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -58,6 +58,7 @@ contains
         if (lsnap) then
           call update_ghosts(a)
           call output(chsnap//ch,a,mvar)
+          if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
         endif
 !
       else

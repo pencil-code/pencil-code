@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.111 2002-11-02 08:49:58 brandenb Exp $
+! $Id: run.f90,v 1.112 2002-11-09 08:31:56 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -33,7 +33,7 @@
         real, dimension (mx,my,mz,mvar) :: f,df
         double precision :: time1,time2
         integer :: count
-        logical :: stop=.false.,reload=.false.
+        logical :: stop=.false.,reload=.false.,save_lastsnap=.true.
         real :: wall_clock_time
 !
 !  initialize MPI and register physics modules
@@ -50,7 +50,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.111 2002-11-02 08:49:58 brandenb Exp $")
+             "$Id: run.f90,v 1.112 2002-11-09 08:31:56 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -222,30 +222,39 @@
           !
           if (dspec /= impossible) call powersnap(f)
           !
-          headt=.false.
+          !  do exit when timestep has become too short.
+          !  This may indicate an MPI communication problem,
+          !  so the data are useless and won't be saved!
+          !
           if ((it < nt) .and. (dt < dtmin)) then
             write(0,*) 'Time step has become too short: dt = ', dt
+            save_lastsnap=.false.
             exit Time_loop
           endif
-
+          !
+          headt=.false.
         enddo Time_loop
         if(lroot) time2=mpiwtime()
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
 !
-        call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
-        call wtime(trim(directory)//'/time.dat',t)
-        if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
+        if(save_lastsnap) then
+          call wsnap(trim(directory_snap)//'/var.dat',f,.false.)
+          call wtime(trim(directory)//'/time.dat',t)
+          if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
+        endif
 !
 !  save spectrum snapshot
 !
-        if (dspec /= impossible) then
-           if (vel_spec) call power(f,'u')
-           if (mag_spec) call power(f,'b')
-           if (vec_spec) call power(f,'a')
-           if (ab_spec)  call powerhel(f,'mag')
-           if (ou_spec)  call powerhel(f,'kin')
+        if(save_lastsnap) then
+          if(dspec /= impossible) then
+            if(vel_spec) call power(f,'u')
+            if(mag_spec) call power(f,'b')
+            if(vec_spec) call power(f,'a')
+            if(ab_spec)  call powerhel(f,'mag')
+            if(ou_spec)  call powerhel(f,'kin')
+          endif
         endif
 !
 !  write seed parameters (only if forcing is turned on)

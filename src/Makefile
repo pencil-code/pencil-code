@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.115 2002-11-04 18:37:22 stringfellow Exp $
+### $Id: Makefile,v 1.116 2002-11-09 08:31:56 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -73,17 +73,23 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FC=mpif90 # (Samos)
 #FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
 #FC=pgf90 #(nq0)
+#FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-9])
 #FC=mpif90 #(fe[0-9])
 #FC=mpif77 #(fe[0-9])
+##FC=ifc -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=/usr/bin/mpif77 #(nq0)
 #FC=pgf90 #(erland|igor|tycho)
 #FFLAGS=-O # (Samos)
+##LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-9])
+#FFLAGS=-O3 -ipo #PACX #(fe[0-9])
 #FFLAGS=-fast -lm #(erland|igor|tycho|fe[0-9])
+##FFLAGS=-O3 -ipo #(fe[0-9])
 #FFLAGS=-O4 -u -C -gline -Wc,-malign-double #(Mephisto)
 #FFLAGS=-O4 -u #(nl3)
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
-#F77=$(FC) -O4 -dusty
+#F77=$(FC) -O4
+#F77=$(FC) -O4 -dusty #(nl3|Mephisto)
 #F77=$(FC) -lm  #(tycho|erland)
 #F77=$(FC) -O3 #(Cincinnatus|Owen|Master)
 
@@ -130,9 +136,13 @@ LDFLAGS=$(FFLAGS)
 
 default: makefile cparam.inc code
 
+pacx: pacx-makefile cparam.inc code
 
 makefile: Makefile
 	adapt-mkfile Makefile makefile
+pacx-makefile: Makefile
+	pacx-adapt-mkfile Makefile pacx-makefile
+	cp pacx-makefile makefile
 cparam.inc: Makefile Makefile.local
 	mkcparam Makefile Makefile.local -o cparam.inc
 code:
