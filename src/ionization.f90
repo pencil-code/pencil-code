@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.3 2003-02-04 10:42:57 theine Exp $
+! $Id: ionization.f90,v 1.4 2003-02-04 10:52:36 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -49,7 +49,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.3 2003-02-04 10:42:57 theine Exp $")
+           "$Id: ionization.f90,v 1.4 2003-02-04 10:52:36 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -170,23 +170,23 @@ module Ionization
 !
       real, intent (in)  :: lnrho,ss
       real               :: yH_h,yH_l,dyH_old,dyH,fl,fh,f,df,temp,rtsafe
-      real, parameter    :: yHacc=1.e-5
+      real, parameter    :: yH_acc=1.e-5
       real, save         :: yH_last=.5
       integer            :: i
       integer, parameter :: maxit=100
 
-      yH_l=1.-yHacc
-      yH_h=yHacc
+      yH_l=1.-yH_acc
+      yH_h=yH_acc
       dyH_old=1.
       dyH=dyH_old
 
-      rtsafe=yHacc
+      rtsafe=yH_acc
       call saha(rtsafe,lnrho,ss,fl,df)
       if (fl.le.0.) then
-         rtsafe=yHacc
+         rtsafe=yH_acc
          return
       endif
-      rtsafe=1.-yHacc
+      rtsafe=1.-yH_acc
       call saha(rtsafe,lnrho,ss,fh,df)
       if (fh.ge.0.) then
          yH_last=rtsafe
@@ -218,7 +218,7 @@ module Ionization
                return
             endif
          endif
-         if (abs(dyH).lt.yHacc) then
+         if (abs(dyH).lt.yH_acc) then
             yH_last=rtsafe
             !niter=niter+i
             return
