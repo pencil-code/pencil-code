@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.127 2004-03-30 05:33:54 brandenb Exp $
+! $Id: register.f90,v 1.128 2004-04-08 12:47:08 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -346,6 +346,7 @@ module Register
         enddo
 95      nnamerz=inamerz-1
         close(1)
+!
       else
         lwrite_phiaverages = .false. ! switch phiaverages off
       endif
@@ -414,8 +415,16 @@ module Register
         call parse_name(iname,cname(iname),cform(iname),'walltime',i_walltime)
       enddo
 !
-!  check for those quantities for which we want phi-averages
+!  phi-averages
 !
+      !
+      !  expand some shorthand labels 
+      !
+      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
+      call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
+      !
+      !  some generic quantities (mostly coordinates for debugging)
+      !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'rcylmphi',i_rcylmphi)
         call parse_name(irz,cnamerz(irz),cformrz(irz),'phimphi', i_phimphi)

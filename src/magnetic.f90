@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.182 2004-04-06 11:07:19 dobler Exp $
+! $Id: magnetic.f90,v 1.183 2004-04-08 12:47:08 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -117,7 +117,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.182 2004-04-06 11:07:19 dobler Exp $")
+           "$Id: magnetic.f90,v 1.183 2004-04-08 12:47:08 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -998,11 +998,6 @@ module Magnetic
       enddo
 !
 !  check for those quantities for which we want phi-averages
-!
-!
-!  shorthand uumphi for all three components:
-!
-      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
 !
       do irz=1,nnamerz
         call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi',i_brmphi)

@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.13 2004-04-02 20:51:45 dobler Exp $ 
+! $Id: timeavg.f90,v 1.14 2004-04-08 12:47:08 dobler Exp $ 
 
 module Timeavg
 
@@ -36,10 +36,10 @@ module Timeavg
 !
       call update_timeavgs(a,0.,INIT=.true.)
 !
-!  Build list of indexes for f; defaults to indices 1 to mtavg, so
+!  Build list of indices for f; defaults to indices 1 to mtavg, so
 !  setting mtavg=mvar will automatically average all variables.
-!  Currently we do not check for (inefficient, but not terrible) multiple
-!  occurences of an index, which can occur when combining the defaulting
+!  Currently we do not check (inefficient, but not terrible) for multiple
+!  occurences of an index, which can occur when combining the default
 !  mechanism with setting of some indices.
 !
       do i=1,mtavg
