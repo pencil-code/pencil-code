@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.177 2004-10-27 14:52:56 ajohan Exp $
+! $Id: density.f90,v 1.178 2004-10-30 15:27:57 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -92,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.177 2004-10-27 14:52:56 ajohan Exp $")
+           "$Id: density.f90,v 1.178 2004-10-30 15:27:57 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -840,7 +840,7 @@ module Density
 !
       call grad(f,ilnrho,glnrho)
       call u_dot_gradf(f,ilnrho,glnrho,uu,uglnrho,UPWIND=lupw_lnrho)
-!
+! 
 !  continuity equation
 !
       if (ldensity_nolog) then
