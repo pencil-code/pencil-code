@@ -5,6 +5,7 @@ LDMPI=-lmpi
 MPICOMM=mpicomm
 FORCING=forcing
 ENTROPY=entropy
+MAGNETIC=magnetic
 
 ### Begin machine dependent
 
@@ -63,7 +64,7 @@ ENTROPY=entropy
 
 # Switch off MPI for all machines (unless commented out)
 #LDMPI=
-#MPICOMM=mpidummy
+#MPICOMM=nompi
 
 LD=$(FC)
 LDFLAGS=$(FFLAGS)
@@ -86,8 +87,8 @@ code:
 	make start.x run.x
 
 
-start_deps=cparam.o cdata.o slices.o deriv.o sub.o general.o $(MPICOMM).o $(FORCING).o
-run_deps=equ.o cparam.o cdata.o slices.o deriv.o sub.o general.o $(MPICOMM).o timestep.o $(FORCING).o $(ENTROPY).o
+start_deps=cparam.o cdata.o general.o slices.o deriv.o sub.o $(MPICOMM).o register.o $(FORCING).o $(ENTROPY).o $(MAGNETIC).o
+run_deps=$(start_deps) equ.o timestep.o
 
 start=start.o $(start_deps)
 start.x: $(start)
@@ -105,13 +106,15 @@ general.o:  general.f90
 cdata.o:    cdata.f90 cparam.o
 slices.o:   slices.f90 cdata.o
 deriv.o:    deriv.f90 cdata.o
-equ.o:      equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o
 sub.o:      sub.f90 cdata.o deriv.o $(MPICOMM).o
+register.o: register.f90 cdata.o sub.o $(MPICOMM).o $(ENTROPY).o $(MAGNETIC).o
+equ.o:      equ.f90 cdata.o general.o sub.o deriv.o $(ENTROPY).o
 timestep.o: timestep.f90 cdata.o $(FORCING.o) $(MPICOMM).o
 #
-$(MPICOMM).o: $(MPICOMM).f90 cdata.o general.o
-$(FORCING).o: $(FORCING).f90 cdata.o $(MPICOMM).o general.o sub.o
-$(ENTROPY).o: $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o
+$(MPICOMM).o:  $(MPICOMM).f90 cdata.o general.o
+$(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
+$(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
+$(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 
 
 clean:

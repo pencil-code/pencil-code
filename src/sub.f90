@@ -478,6 +478,20 @@ module Sub
 !
 !   endsubroutine del2v_graddiv
 !***********************************************************************
+    subroutine abort(msg)
+!
+!  Print message and stop
+!  6-nov-01/wolf: coded
+!
+      use Mpicomm
+!
+      character*(*) :: msg
+!      
+      if (lroot) write(0,'(A,A)') 'STOPPED: ', msg
+      call mpifinalize
+      STOP
+    endsubroutine abort
+!***********************************************************************
     subroutine input(file,a,nn,mode)
 !
 !  read snapshot file, possibly with mesh and time (if mode=1)
@@ -832,7 +846,7 @@ module Sub
 !  depending on whether or not file exists, we need to
 !  either read or write tout and nout from or to the file
 !
-      if (iproc==root) then
+      if (lroot) then
         inquire(file=file,exist=exist)
         lun=1
         open(lun,file=file)

@@ -16,11 +16,12 @@ module Mpicomm
     module procedure mpibcast_real_arr
   endinterface
 
-  logical, dimension (nx*ny) :: necessary=.false.
   integer, dimension (nx*ny) :: mm,nn
   integer :: ierr,imn
   integer :: iproc,root=0
   integer :: ipy,ipz
+  logical, dimension (nx*ny) :: necessary=.false.
+!  logical :: lroot=.true.       ! is this the root process?
 
   character directory*12
 
@@ -159,7 +160,6 @@ module Mpicomm
     endsubroutine mpireduce_sum
 !***********************************************************************
     subroutine mpifinalize
-      stop
     endsubroutine mpifinalize
 !***********************************************************************
 

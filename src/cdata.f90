@@ -16,15 +16,15 @@ module Cdata
          ,UUmax,cdt,pi,Lx,Ly,Lz &
          ,ibc(mvar)
 
+  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
   integer :: ivisc,iforce
   integer :: m,n,im,in
+  integer, dimension (2) :: seed
 
   logical :: lout,headt,ldt,lfirst
-
-  integer :: iu=1,ilnrho=4
-  integer, dimension (2) :: seed
+  logical :: lroot=.true.
 
   character*80 :: form1
 

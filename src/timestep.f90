@@ -39,7 +39,7 @@ module Timestep
         alpha=(/  0. ,  -5./9., -153./128. /)
         beta=(/ 1./3., 15./16.,    8./15.  /)
       else
-        if (iproc==root) print*,'Not implemented: itorder=',itorder
+        if (lroot) print*,'Not implemented: itorder=',itorder
         call mpifinalize
       endif
 !
@@ -61,7 +61,7 @@ module Timestep
 !  This only be done if we are on the root processor.
 !  Then need to broadcast dt to all processors.
 !
-        if (lfirst.and.iproc==root) then
+        if (lfirst.and.lroot) then
           if (ldt) dt=cdt*amin1(dx,dy,dz)/UUmax
           if (ip.lt.7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif

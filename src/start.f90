@@ -8,8 +8,10 @@
 !  01-sep-01/axel: adapted to MPI
 !
         use Cdata
-        use Sub
+        use General
         use Mpicomm
+        use Sub
+        use Register
 !
         implicit none
 !
@@ -20,7 +22,7 @@
         real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
 !
-        call mpicomm_init
+        call initialize         ! register modules, etc.
 !
 !  read input parameter (by each processor)
 !
@@ -32,7 +34,7 @@
 !
 !  output on the console, but only when root processor
 !
-        if (iproc==root)then
+        if (lroot)then
           print*,Lx,Ly,Lz
           print*,ampl,init
         endif
@@ -61,10 +63,10 @@
             tmp=sqrt(-2*alog(r))*sin(2*pi*p)
             f(:,:,:,1)=ampl*tmp
           case(1)
-            if (iproc==root) print*,'stratification'
+            if (lroot) print*,'stratification'
             f(:,:,:,4)=-zz
           case(2)
-            if (iproc==root) print*,'oblique sound wave'
+            if (lroot) print*,'oblique sound wave'
             f(:,:,:,4)=ampl*cos(xx+2*yy)*sqrt(5.)
             f(:,:,:,1)=ampl*cos(xx+2*yy)
             f(:,:,:,2)=ampl*cos(xx+2*yy)*2.

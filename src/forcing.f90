@@ -23,7 +23,7 @@ module Forcing
       sdt=sqrt(abs(dt))
       do n=n1,n2
       do m=m1,m2
-        df(l1:l2,m,n,iu:iu+2)=df(l1:l2,m,n,iu:iu+2)+sdt*fforce(l1:l2,m,n,:)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+sdt*fforce(l1:l2,m,n,:)
       enddo
       enddo
 !
@@ -48,12 +48,12 @@ module Forcing
       integer :: ik,j
 !
       if (ifirst==0) then
-        if (iproc==root) print*,'opening k.dat'
+        if (lroot) print*,'opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (iproc==root) print*,'average k=',kav
+        if (lroot) print*,'average k=',kav
         if(nk.gt.mk) then
-          if (iproc==root) print*,'dimension mk in forcing1 is insufficient'
+          if (lroot) print*,'dimension mk in forcing1 is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if
@@ -108,12 +108,12 @@ module Forcing
       real :: k2,k,ex,ey,ez,kde,sig=1.
 !
       if (ifirst==0) then
-        if (iproc==root) print*,'opening k.dat'
+        if (lroot) print*,'opening k.dat'
         open(9,file='k.dat')
         read(9,*) nk,kav
-        if (iproc==root) print*,'average k=',kav
+        if (lroot) print*,'average k=',kav
         if(nk.gt.mk) then
-          if (iproc==root) print*,'dimension mk in forcing1 is insufficient'
+          if (lroot) print*,'dimension mk in forcing1 is insufficient'
           print*,'nk=',nk,'mk=',mk
           call mpifinalize
         end if

@@ -35,10 +35,9 @@ module Equ
 !  print input parameters
 !  14-sep-01/axel: inserted from run.f90
 !
-      use Mpicomm
       use Cdata
 !
-      if (iproc==root) then
+      if (lroot) then
         print*,'nt,it1,dt,isave,itorder=',nt,it1,dt,isave,itorder
         print*,'dsnap,dvid,dforce',dsnap,dvid,dforce
         print*,'ip,ix,iy,iz',ip,ix,iy,iz
@@ -68,7 +67,7 @@ module Equ
 !
       fmax_tmp(1)=UUmax
       call mpireduce_max(fmax_tmp,fmax,1)
-      if(iproc==root) UUmax=sqrt(fmax(1))
+      if(lroot) UUmax=sqrt(fmax(1))
 !
     endsubroutine calc_uumax
 !***********************************************************************
@@ -102,7 +101,7 @@ module Equ
 !
 !  the result is present only on the root processor
 !
-      if(iproc==root) then
+      if(lroot) then
 !
 !   need to take sqare root
 !
@@ -131,14 +130,13 @@ module Equ
 !  calculate and print some useful quantities during the run
 !  29-sep-97/axel: coded
 !
-      use Mpicomm
       use Cdata
       use Sub
 !
 !  print max and rms values of u and divu (calculated in pde)
 !  do this only if we are on the root processor
 !
-      if(iproc==root) then
+      if(lroot) then
         write(6,form1) it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
         write(20,form1) it,t,urms,umax,orms,omax,ourms,oumax,rrms,rmax,divurms,divumax
         open(3,file='check')
@@ -206,8 +204,8 @@ module Equ
 !
 !  print statements when they are first executed
 !
-      headtt=headt.and.lfirst.and.iproc==root
-      if (headtt) print*,'$Id: equ.f90,v 1.1.1.1 2001-11-01 15:07:56 dobler Exp $'
+      headtt = headt .and. lfirst .and. lroot
+      if (headtt) print*,'$Id: equ.f90,v 1.2 2001-11-06 20:08:03 dobler Exp $'
 !
 !  initiate communication
 !
@@ -224,7 +222,7 @@ module Equ
 !
 !  do all the neccessary derivatives here
 !
-        call gij(f,iu,uij)
+        call gij(f,iuu,uij)
         call grad(f,ilnrho,glnrho)
 !
 !  viscosity operator
@@ -233,19 +231,19 @@ module Equ
           if (headtt) print*,'full viscous force'
           rho1=exp(-f(l1:l2,m,n,ilnrho))
           nurho1=nu*rho1
-          call del2v_etc(f,iu,del2u,graddiv=graddivu)
+          call del2v_etc(f,iuu,del2u,graddiv=graddivu)
           do i=1,3
             fvisc(:,i)=nurho1*(del2u(:,i)+1./3*graddivu(:,i))
           enddo
         else
           if (headtt) print*,'reduced viscous force'
-          call del2v(f,iu,del2u)
+          call del2v(f,iuu,del2u)
           fvisc=nu*del2u
         endif
 !
 !  abbreviations
 !
-        uu=f(l1:l2,m,n,iu:iu+2)
+        uu=f(l1:l2,m,n,iux:iuz)
 !
 !  auxiliary terms
 !
@@ -258,11 +256,11 @@ module Equ
 !
 !  entropy equation
 !
-        call dssdt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
+        call dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
 !
 !  momentum equation (forcing is now done in timestep)
 !
-        df(l1:l2,m,n,iu:iu+2)=df(l1:l2,m,n,iu:iu+2)-ugu-gpprho+fvisc
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu-gpprho+fvisc
 !
 !  continuity equation
 !

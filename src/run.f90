@@ -8,13 +8,15 @@
 !  17-aug-01/axel: ghost layers implemented
 !  11-sep-01/axel: adapted from burgers_phi
 !
-        use Mpicomm
         use Cdata
-        use Forcing
-        use Slices
+        use General
+        use Mpicomm
         use Sub
-        use Timestep
+        use Register
+        use Forcing
         use Equ
+        use Slices
+        use Timestep
 !
         implicit none
         integer :: time1,time2,count_rate
@@ -25,7 +27,7 @@
         call siginit
         call signonbrutal
 !
-        call mpicomm_init
+        call initialize         ! register modules, etc.
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -56,7 +58,7 @@
 !  read seed field parameters (only if forcing is turned on)
 !
         if (iforce/=0) then
-          if (iproc==root) print*,'read seed file'
+          if (lroot) print*,'read seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
           if (iproc < 10) print*,'iproc,seed=',iproc,seed
           call random_seed(put=seed)
@@ -66,11 +68,11 @@
 !  NOTE: headt=.true. in order to print header titles
 !
         headt=.true.
-        if(iproc==root) then
+        if(lroot) then
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
           print*,'start time loop'
-          print*,'$Id: run.f90,v 1.1.1.1 2001-11-01 15:07:56 dobler Exp $'
+          print*,'$Id: run.f90,v 1.2 2001-11-06 20:08:04 dobler Exp $'
         endif
 !
 !  do loop in time
@@ -97,7 +99,7 @@
           headt=.false.
           if (it>=nt) exit Time_loop
         enddo Time_loop
-        if(iproc==root) call system_clock(count=time2)
+        if(lroot) call system_clock(count=time2)
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
@@ -112,7 +114,7 @@
           call outpui(trim(directory)//'/seed.dat',seed,2)
         endif
 !
-        if(iproc==root) &
+        if(lroot) &
              print*,'Wall clock time=',(time2-time1)/real(count_rate),count_rate
         call mpifinalize
 !

@@ -1,4 +1,4 @@
-module Entropy
+module Magnetic
 
   use Cparam
 
@@ -10,10 +10,10 @@ module Entropy
   contains
 
 !***********************************************************************
-    subroutine register_ent()
+    subroutine register_aa()
 !
-!  initialise variables which should know that we solve an entropy
-!  equation: ient, etc; increase nvar accordingly
+!  Initialise variables which should know that we solve for the vector
+!  potential: iaa, etc; increase nvar accordingly
 !
 !  6-nov-01/wolf: coded
 !
@@ -22,31 +22,37 @@ module Entropy
 !
       logical, save :: first=.true.
 !
-      if (.not. first) call abort('register_ent called twice')
+      if (.not. first) call abort('register_aa called twice')
       first = .false.
 !
-      ient = nvar+1             ! index to access entropy
-      nvar = nvar+1
+      iaa = nvar+1              ! indices to access aa
+      iax = iaa
+      iay = iaa+1
+      iaz = iaa+2
+      nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'Register_ent:  nvar = ', nvar
-        print*, 'ient = ', ient
+        print*, 'Register_aa:  nvar = ', nvar
+        print*, 'iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
       endif
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-        call abort('Register_ent: nvar > mvar')
+        call abort('Register_aa: nvar > mvar')
       endif
 !
-    endsubroutine register_ent
+    endsubroutine register_aa
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
+    subroutine daa_dt(f,df,uu,uij,divu,glnrho,gpprho,cs2)
 !
 !  calculate right hand side of entropy equation
 !
-!  17-sep-01/axel: coded
+!  7-nov-01/wolf: [to be] coded
 !
-      use Mpicomm
+!  WARNING: this is just a verbatim copy of dssdt; needs to be adapted to
+! aa
+!
+!      use Mpicomm
       use Cdata
       use Slices
       use Sub
@@ -107,7 +113,7 @@ module Entropy
       !if (headt) print*,'add gravity'
       df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)-grav
 !
-    endsubroutine dss_dt
+    endsubroutine daa_dt
 !***********************************************************************
 
-endmodule Entropy
+endmodule Magnetic

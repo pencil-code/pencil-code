@@ -10,6 +10,7 @@
 module Mpicomm
 
   use Cparam
+  use Cdata, only: lroot
 
   implicit none
 
@@ -25,7 +26,6 @@ module Mpicomm
 
   real, dimension (nx,nghost,nz,mvar) :: lbufyi,ubufyi,lbufyo,ubufyo
   real, dimension (nx,ny,nghost,mvar) :: lbufzi,ubufzi,lbufzo,ubufzo
-  logical, dimension (ny*nz) :: necessary=.false.
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: nprocs,iproc,root=0
@@ -37,7 +37,9 @@ module Mpicomm
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
-  logical :: lroot              ! is this the root process?
+!! Moved to Cdata to save lots of `use Mpicomm':
+!  logical :: lroot              ! is this the root process?
+  logical, dimension (ny*nz) :: necessary=.false.
   character directory*12
 
   contains
