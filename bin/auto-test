@@ -18,14 +18,14 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.22 2002-11-20 09:49:00 dobler Exp $
+# CVS: $Id: auto-test,v 1.23 2002-12-02 14:33:13 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
 #   the Test/Test::Harness module and because we need to do pattern
 #   matching to extract the relevant output lines.
 # To Do:
-# - Remove directory from /var/tmp when wncountering Ctl-c
+# - Remove directory from /var/tmp when encountering Ctl-c
 # - Investigate the return status after namelist error or similar
 
 use strict;
@@ -34,6 +34,7 @@ use Cwd;
 use Getopt::Long;
 use vars qw{ %failed $ntests $test_status };
 
+$ntests=0;
 
 # ---------------------------------------------------------------------- #
 # Test the following subdirs of samples/ :
@@ -58,10 +59,11 @@ my (%opts);			# variables written by GetOptions
 my ($debug,$help,$short) = (0,0,0);
 
 my $usage =
-"Usage:  $cmdname [options]
-  Test compilation and results on a set of sample directories to
-  validate the pencil code. Uses Perl because we need to do pattern matching
-  to extract the relevant output lines.
+"Usage:  $cmdname [options] [dir1 [dir2 [..]]]
+  Test compilation and results on a set of sample directories (or on the
+  list of directories given in the command line) to validate the pencil code.
+  Uses Perl because we need to do pattern matching to extract the relevant
+  output lines.
     If you don't have a data directory, $cmdname creates a link to
   $tmpdir -- both link and directory are removed after
   each run.
@@ -87,7 +89,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.22 2002-11-20 09:49:00 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.23 2002-12-02 14:33:13 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0 };
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0 };
@@ -123,19 +125,24 @@ $ENV{PATH} .= ":$ENV{PENCIL_HOME}/bin";
 # Autoflush stdout:
 $| = 1;
 
-# Process dirs in samples/ directory
-for my $d (@sampdir) {
-    test_rundir("$topdir/samples/$d");
-}
-# Process dirs in runs/ directory
-if (-d "$topdir/runs") {
-    for my $d (@runsdir) {
-	test_rundir("$topdir/runs/$d");
+if (@ARGV) {			# Process dirs given in cmd line
+    for my $d (@ARGV) {
+	test_rundir("$d");
     }
-} else {
-    print "Not checking in $topdir/runs : no such directory\n";
+} else {			# No dirs in cmd line -> do standard program
+    # Process dirs in samples/ directory
+    for my $d (@sampdir) {
+	test_rundir("$topdir/samples/$d");
+    }
+    # Process dirs in runs/ directory
+    if (-d "$topdir/runs") {
+	for my $d (@runsdir) {
+	    test_rundir("$topdir/runs/$d");
+	}
+    } else {
+	print "Not checking in $topdir/runs : no such directory\n";
+    }
 }
-
 
 # ---------------------------------------------------------------------- #
 sub my_ok {
@@ -392,10 +399,9 @@ END {
 		print "  $dir ($phase)\n";
 	    }
 	} else {
-	    print "",
-	    ($ntests>1 ? "All $ntests tests succeeded." : "Test succeeded.");
-	    }
-	print "\n";
+	    if ($ntests == 1) { print "Test succeeded.\n" }
+	    elsif ($ntests > 1) { "All $ntests tests succeeded.\n" }	
+	}
     }
 }
 
