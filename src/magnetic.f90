@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.86 2002-09-27 16:16:01 dobler Exp $
+! $Id: magnetic.f90,v 1.87 2002-10-03 07:59:21 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.86 2002-09-27 16:16:01 dobler Exp $")
+           "$Id: magnetic.f90,v 1.87 2002-10-03 07:59:21 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -392,7 +392,7 @@ module Magnetic
       integer :: iname,inamez,ixy
       logical :: lreset
 !
-!  reset everything in case of reset
+!  reset everything in case of RELOAD
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
@@ -440,7 +440,7 @@ module Magnetic
         call parse_name(ixy,cnamexy(ixy),cformxy(ixy),'bzmxy',i_bzmxy)
       enddo
 !
-!  write column where which magnetic variable is stored
+!  write column, i_XYZ, where our variable XYZ is stored
 !
       write(3,*) 'i_abm=',i_abm
       write(3,*) 'i_jbm=',i_jbm
