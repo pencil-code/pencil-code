@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.25 2002-05-21 07:25:50 brandenb Exp $
+! $Id: magnetic.f90,v 1.26 2002-05-25 13:38:30 brandenb Exp $
 
 module Magnetic
 
@@ -6,17 +6,19 @@ module Magnetic
 
   implicit none
 
-  integer :: iaa
+  integer :: iaa,initaa=0
 
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
+  real :: amplaa=0.
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
-       fring2,Iring2,Rring2,wr2,axisr2,dispr2
+       fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
+       initaa,amplaa
 
   ! run parameters
   real, dimension(3) :: B_ext=(/0.,0.,0./)
@@ -64,8 +66,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.25 $", &
-           "$Date: 2002-05-21 07:25:50 $")
+           "$Revision: 1.26 $", &
+           "$Date: 2002-05-25 13:38:30 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -79,7 +81,10 @@ module Magnetic
 !  initialise magnetic field; called from start.f90
 !  AB: maybe we should here all different routines (such as rings)
 !  AB: and others, instead of accummulating all this in a huge routine.
-!  7-nov-2001/wolf: coded
+!   7-nov-2001/wolf: coded
+!
+!  Not sure what to do about init; I want to have an init parameter
+!  (called in initaa) to stear magnetic i.c. independently.
 !
       use Cdata
       use Sub
@@ -92,7 +97,10 @@ module Magnetic
       real    :: ampl,fring,Iring,R0,width
       integer :: init,i
 !
-      f(:,:,:,iax:iaz) = 0.
+!  initialize to zero
+!
+      if (initaa==0) then
+        call gaunoise(amplaa,f,iax,iaz)
 !
 !  Magnetic flux rings. Constructed from a canonical ring which is the
 !  rotated and translated:
@@ -101,7 +109,8 @@ module Magnetic
 !  corresponding to a rotation by phi around z, followed by a rotation by
 !  theta around y.
 !
-      if (init==1) then
+      elseif (initaa==1) then
+      f(:,:,:,iax:iaz) = 0.
       if (any((/fring1,fring2,Iring1,Iring2/) /= 0.)) then
         ! fringX is the magnetic flux, IringX the current
         if (lroot) then
@@ -144,7 +153,7 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         enddo
       endif
       if (lroot) print*, 'Magnetic flux rings initialized'
-      elseif (init==2) then
+      elseif (initaa==2) then
         f(:,:,:,iax) = spread(spread(sin(2*x),2,my),3,mz)*&
                        spread(spread(sin(3*y),1,mx),3,mz)*&
                        spread(spread(cos(1*z),1,mx),2,my)

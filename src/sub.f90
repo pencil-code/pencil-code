@@ -9,10 +9,15 @@ module Sub
     module procedure poly_3
   endinterface
 
-  interface notanumber              ! Overload the `notanumber' function
+  interface notanumber        ! Overload the `notanumber' function
     module procedure notanumber_1
     module procedure notanumber_2
     module procedure notanumber_3
+  endinterface
+
+  interface gaunoise        ! Overload the `set_random' function
+    module procedure gaunoise_vect
+    module procedure gaunoise_scal
   endinterface
 
   contains
@@ -1424,5 +1429,65 @@ module Sub
 !
       endsubroutine remove_file
 !***********************************************************************
+    subroutine gaunoise_vect(ampl,f,i1,i2)
+!
+!  Write snapshot file of penciled vector data (for debugging).
+!
+!  23-may-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i,i1,i2
+      real, dimension (mx,my,mz) :: r,p,tmp
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+!  set gaussian random noise vector
+!
+      if (ampl==0) then
+        f(:,:,:,i1:i2)=0
+        if (lroot) print*,'set variable to zero; i1,i2=',i1,i2
+      else
+        if ((ip<=8).and.lroot) print*,'set_random_vect: i1,i2=',i1,i2
+        do i=i1,i2
+          if (modulo(i-i1,2)==0) then
+            call random_number(r)
+            call random_number(p)
+            tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+          else
+            tmp=sqrt(-2*alog(r))*cos(2*pi*p)
+          endif
+          !call smooth_3d(tmp,ismo)  !(may want to smooth)
+          f(:,:,:,i)=ampl*tmp
+          if (lroot) print*,'set gaussian noise: variable i=',i
+        enddo
+      endif
+!
+    endsubroutine gaunoise_vect
+!***********************************************************************
+    subroutine gaunoise_scal(ampl,f,i)
+!
+!  Write snapshot file of penciled vector data (for debugging).
+!
+!  23-may-02/axel: coded
+!
+      use Cdata
+!
+      integer :: i
+      real, dimension (mx,my,mz) :: r,p,tmp
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl
+!
+!  set gaussian random noise vector
+!
+      if ((ip<=8).and.lroot) print*,'set_random_scal: i=',i
+      call random_number(r)
+      call random_number(p)
+      tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+      !call smooth_3d(tmp,ismo)  !(may want to smooth)
+      f(:,:,:,i)=ampl*tmp
+      print*,'set gaussian noise: variable i=',i
+!
+    endsubroutine gaunoise_scal
 
 endmodule Sub

@@ -8,10 +8,6 @@ module Forcing
 
   real, dimension (mx,my,mz,3) :: fforce=0   !(forcing function)
 
-  ! run parameters
-  real    :: force,relhel
-  integer :: iforce
-
   namelist /forcing_run_pars/ &
        iforce,force,relhel
 
@@ -39,8 +35,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: forcing.f90,v $", &
-           "$Revision: 1.4 $", &
-           "$Date: 2002-05-11 12:18:48 $")
+           "$Revision: 1.5 $", &
+           "$Date: 2002-05-25 13:38:30 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -61,6 +57,15 @@ module Forcing
       enddo
 !
     endsubroutine addforce
+!***********************************************************************
+    subroutine forcing_select
+!
+!  select different forcing routines
+!
+    if(iforce==1) call forcing1
+    if(iforce==2) call forcing2
+!
+    endsubroutine forcing_select
 !***********************************************************************
     subroutine forcing1
 !
@@ -98,8 +103,6 @@ module Forcing
       endif
 !
       call random_number(fran)
-      pi=2.*asin(1.)
-!
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst
@@ -162,8 +165,6 @@ module Forcing
 !  |k_i| < akmax
 !
       call random_number(fran)
-      pi=2.*asin(1.)
-!
       phase=pi*(2*fran(1)-1.)
       ik=nk*.9999*fran(2)+1
       if (ip<=6) print*,'ik,phase,kk=',ik,phase,kkx(ik),kky(ik),kkz(ik),dt,ifirst

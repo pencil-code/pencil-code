@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.27 2002-05-19 07:55:25 brandenb Exp $
+! $Id: start.f90,v 1.28 2002-05-25 13:38:30 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,8 +34,16 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.27 $", &
-             "$Date: 2002-05-19 07:55:25 $")
+             "$Revision: 1.28 $", &
+             "$Date: 2002-05-25 13:38:30 $")
+!
+!  set default input
+!
+        x0=-pi; Lx=2*pi; iperx=1
+        y0=-pi; Ly=2*pi; ipery=1
+        z0=-pi; Lz=2*pi; iperz=1
+        z1=0; z2=1; ztop=1.32
+        cs0=1; gamma=5./3.; rho0=1.
 !
 !  read input parameter (by each processor)
 !
@@ -81,10 +89,14 @@
         if (iperx /= 0) then; dx = Lx/nxgrid; else; dx = Lx/(nxgrid-1); endif
         if (ipery /= 0) then; dy = Ly/nygrid; else; dy = Ly/(nygrid-1); endif
         if (iperz /= 0) then; dz = Lz/nzgrid; else; dz = Lz/(nzgrid-1); endif
-
+!
+!  set x,y,z arrays
+!
         do i=1,mx; x(i)=x0+(i-nghost-1+ipx*nx)*dx; enddo
         do i=1,my; y(i)=y0+(i-nghost-1+ipy*ny)*dy; enddo
         do i=1,mz; z(i)=z0+(i-nghost-1+ipz*nz)*dz; enddo
+!
+!  write grid.dat file
 !
         call wgrid(trim(directory)//'/grid.dat')
 !
@@ -116,13 +128,12 @@
              nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
 !  write global variables:
         call wglobal()
-
 !
 !  seed for random number generator, have to have the same on each
 !  processor as forcing is applied in (global) Beltrami modes
 !
         seed(1)=1000
-        call outpui(trim(directory)//'/seed.dat',seed,1)
+        call outpui(trim(directory)//'/seed.dat',seed,2)
         if (iproc < 10) print*,'iproc,seed(1:2)=',iproc,seed
 !
         call mpifinalize

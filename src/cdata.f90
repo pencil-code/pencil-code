@@ -9,6 +9,8 @@ module Cdata
   real, dimension (mz) :: z
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
 !  real, dimension (nx) :: rmn
+!
+  real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real :: t,dt,dx,dy,dz,dxmin,dxmax
   real :: dsnap,dvid,dforce,dtmin
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
@@ -22,14 +24,13 @@ module Cdata
   real :: z1,z2,ztop
   real :: gravz,ss0,grads0      ! (1/c_p)ds/dz
   real :: urand,cheat,wheat,cool,wcool,Fheat
-  real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
 
   integer, dimension (2) :: seed
   integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
   integer :: iperx,ipery,iperz
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
-  integer :: ivisc,iforce,isothtop
+  integer :: ivisc,iforce=0,isothtop
   integer :: m,n
 !
 !  in this section are all the things related to printing

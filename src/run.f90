@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.26 2002-05-19 22:45:59 brandenb Exp $
+! $Id: run.f90,v 1.27 2002-05-25 13:38:30 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -42,8 +42,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.26 $", &
-             "$Date: 2002-05-19 22:45:59 $")
+             "$Revision: 1.27 $", &
+             "$Date: 2002-05-25 13:38:30 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -128,8 +128,9 @@
             endif
           endif
 !
-          if (iforce==1) call forcing1
-          if (iforce==2) call forcing2
+!  check for the possibility of forcing
+!
+          if (iforce/=0) call forcing_select
 !
 !  time advance
 !
