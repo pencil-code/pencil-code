@@ -102,10 +102,10 @@ run_deps=$(run_deps_f90) debug_c.o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 
-start.x: $(start)
+start.x: $(start) Makefile.local
 	$(LD) $(LDFLAGS) $(start) $(LDMPI) -o start.x 
 
-run.x: $(run)
+run.x: $(run) Makefile.local
 	$(LD) $(LDFLAGS) $(run) $(LDMPI) $(LIBSIG) -lsig -o run.x 
 
 start.o:     start.f90 $(start_deps)
