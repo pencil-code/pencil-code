@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.37 2003-08-01 22:01:38 brandenb Exp $
+! $Id: noionization.f90,v 1.38 2003-08-02 15:45:03 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -22,7 +22,7 @@ module Ionization
   end interface
 
   ! global ionization parameter for yH (here a scalar set to 0)
-!ajwm  real :: yyH=0.  shouldn't be used directly outside module
+  !  real :: yyH=0.  shouldn't be used directly outside module so commented out
 
   ! global parameter for perfect gas EOS for either yH=0 or yH=1
   real :: lnTT0,coef_ss,coef_lr,dlnPdlnrho,dlnPdss
@@ -72,7 +72,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.37 2003-08-01 22:01:38 brandenb Exp $")
+           "$Id: noionization.f90,v 1.38 2003-08-02 15:45:03 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -111,7 +111,7 @@ module Ionization
       lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
-      ss_ion=k_B/m_H/mu      ! AKA c_p for noionisation
+      ss_ion=k_B/m_H/mu      
       kappa0=sigmaH_/m_H/mu
 
 !  the following array subscripts may be used to avoid unnecessary
@@ -133,8 +133,8 @@ module Ionization
                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+xHe*log(xHe)) &
                         /(1.+yH+xHe)-lnrho_e-2.5)
 
-      dlnPdlnrho=5./3.    ! gamma?
-      dlnPdss=(2./3.)/(1.+yH0+xHe)  !(gamma - 1) / (\mu_{effective}/\mu) ?
+      dlnPdlnrho=5./3.    
+      dlnPdss=(2./3.)/(1.+yH0+xHe) 
 !
       coef_lr=dlnPdlnrho-1.
       coef_ss=dlnPdss/ss_ion 
@@ -218,7 +218,7 @@ module Ionization
       real, dimension (nx), intent(in) :: pot
       real, dimension (nx), intent(out) :: tmp
 
-      tmp=pot/(1+yH0+xHe)/ss_ion
+      tmp=pot/((1+yH0+xHe)*ss_ion)
     end subroutine isothermal_density_ion
 !***********************************************************************
     subroutine output_ionization(lun)
@@ -269,7 +269,7 @@ module Ionization
 !
     endsubroutine thermodynamics_penc
 !***********************************************************************
-    subroutine thermodynamics_arbpenc(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_arbpenc(lnrho,ss,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -285,7 +285,7 @@ module Ionization
       use Sub
       use Density, only:cs20,lnrho0,gamma
 !
-      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yH
+      real, dimension (nx), optional :: cs2,TT1,cp1tilde,ee,yHout
       real, dimension (nx), intent(in) :: lnrho,ss
       real, dimension (nx) :: TT
       logical :: ldummy
@@ -306,11 +306,11 @@ module Ionization
         if (present(ee))       ee=cs2/(gamma1*gamma)
       endif
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yH0
+      if (present(yHout)) yHout=yH0
 !
     endsubroutine thermodynamics_arbpenc
 !***********************************************************************
-    subroutine thermodynamics_arbpoint(lnrho,ss,TT1,cs2,cp1tilde,ee,yH)
+    subroutine thermodynamics_arbpoint(lnrho,ss,TT1,cs2,cp1tilde,ee,yHout)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -326,7 +326,7 @@ module Ionization
       use Sub
       use Density, only:cs20,lnrho0,gamma
 !
-      real, optional :: cs2,TT1,cp1tilde,ee, yH
+      real, optional :: cs2,TT1,cp1tilde,ee, yHout
       real, intent(in) :: lnrho,ss
       real :: TT
       logical :: ldummy
@@ -347,7 +347,7 @@ print*,"Thermo of arbpoint, TT=",TT
         if (present(ee))       ee=cs2/(gamma1*gamma)
       endif
       if (present(TT1)) TT1=1./TT
-      if (present(yH)) yH=yH0
+      if (present(yHout)) yHout=yH0
 !
     endsubroutine thermodynamics_arbpoint
 !***********************************************************************
