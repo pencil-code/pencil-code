@@ -200,7 +200,7 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
-    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
+    subroutine radboundary_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -213,9 +213,9 @@ module Mpicomm
          if (present(taubuf_yz)) print*,taubuf_yz
       endif
 !
-    endsubroutine radcomm_yz_recv
+    endsubroutine radboundary_yz_recv
 !***********************************************************************
-    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -228,9 +228,9 @@ module Mpicomm
          if (present(taubuf_zx)) print*,taubuf_zx
       endif
 !
-    endsubroutine radcomm_zx_recv
+    endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -243,9 +243,9 @@ module Mpicomm
          if (present(taubuf_xy)) print*,taubuf_xy
       endif
 !
-    endsubroutine radcomm_xy_recv
+    endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
+    subroutine radboundary_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -258,9 +258,9 @@ module Mpicomm
          if (present(taubuf_yz)) print*,taubuf_yz
       endif
 !
-    endsubroutine radcomm_yz_send
+    endsubroutine radboundary_yz_send
 !***********************************************************************
-    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
+    subroutine radboundary_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -273,9 +273,9 @@ module Mpicomm
          if (present(taubuf_zx)) print*,taubuf_zx
       endif
 !
-    endsubroutine radcomm_zx_send
+    endsubroutine radboundary_zx_send
 !***********************************************************************
-    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
 !
 !   2-jul-03/tony: dummy created
 !
@@ -288,7 +288,7 @@ module Mpicomm
          if (present(taubuf_xy)) print*,taubuf_xy
       endif
 !
-    endsubroutine radcomm_xy_send
+    endsubroutine radboundary_xy_send
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
