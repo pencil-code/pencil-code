@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.51 2003-08-29 11:37:08 mee Exp $
+! $Id: interstellar.f90,v 1.52 2003-09-01 12:43:43 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -74,7 +74,7 @@ module Interstellar
   logical :: lnever_move_mass
 !tony: disable SNII for debugging 
   logical :: lSNI=.true., lSNII=.false.
-  logical :: laverageSNheating = .false.
+  logical :: laverage_SN_heating = .false.
  ! real, parameter :: TT_SN_min=1.e8    ! vary for debug, tests
  
   integer :: dummy 
@@ -85,7 +85,7 @@ module Interstellar
   namelist /interstellar_run_pars/ &
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
-      lSNI, lSNII, laverageSNheating, coolingfunction_scalefactor, &
+      lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, &
       point_width, inner_shell_proportion, outer_shell_proportion
 
   contains
@@ -113,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.51 2003-08-29 11:37:08 mee Exp $")
+           "$Id: interstellar.f90,v 1.52 2003-09-01 12:43:43 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -266,10 +266,10 @@ module Interstellar
 !  Average SN heating (due to SNI and SNII)
 !  The amplitudes of both types is assumed the same (=ampl_SN)
 !
-      if (laverageSNheating) then
+      if (laverage_SN_heating) then
         norm=ampl_SN/sqrt(2*pi)
-        heat=heat+r_SNI *norm/h_SNI *exp(-(z(l1:l2)/h_SNI )**2)
-        heat=heat+r_SNII*norm/h_SNII*exp(-(z(l1:l2)/h_SNII)**2)
+        heat=heat+r_SNI *norm/h_SNI *exp(-(z(n)/h_SNI )**2)
+        heat=heat+r_SNII*norm/h_SNII*exp(-(z(n)/h_SNII)**2)
       endif
 !
 !  For clarity we have constructed the rhs in erg/s/volume [=rho*T*Ds/Dt]
@@ -680,13 +680,13 @@ find_SN: do n=n1,n2
       integer, intent(in) :: itype_SN
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
-      real :: profile_integral, mass_shell, mass_gain, pp_SN
+      real :: profile_integral, mass_shell, mass_gain
       real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new,dv
       
       real, dimension(nx) :: deltarho, deltaEE
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
-      real, dimension(nx) ::  lnrho, ss, yH, TT, rho_old, pp_old, ee_old
+      real, dimension(nx) ::  lnrho, ss, yH, TT, rho_old, ee_old
 
       logical :: lmove_mass=.false.
       integer :: idim
@@ -713,7 +713,7 @@ find_SN: do n=n1,n2
       !  Now deal with (if nec.) mass relocation
       !
       call ionget(lnrho_SN,ss_SN,yH_SN,TT_SN)
-      call thermodynamics(lnrho_SN,ss_SN,yH_SN,TT_SN,ee=ee_SN,pp=pp_SN)
+      call thermodynamics(lnrho_SN,ss_SN,yH_SN,TT_SN,ee=ee_SN)
 
       call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new, &
                 TT_SN_new,yH_SN_new)
@@ -733,10 +733,9 @@ find_SN: do n=n1,n2
          call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
-         call perturb_mass(lnrho_SN_new,pp_SN,ss_SN_new,TT_SN_new,yH_SN_new)
          call thermodynamics(lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new,ee=ee_SN)
          call perturb_energy(lnrho_SN_new, &
-                 ee_SN+(c_SN/rho_SN_new),ss_SN_new,TT_SN_new,yH_SN_new)
+                 (ee_SN*rho_SN+c_SN)/rho_SN_new,ss_SN_new,TT_SN_new,yH_SN_new)
 
          if(lroot.and.ip<=14) print*, &
             'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
@@ -759,36 +758,34 @@ find_SN: do n=n1,n2
 !write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
       do n=n1,n2
          do m=m1,m2
-            ! Apply perturbations
+            
+            ! Calculate the distances to the SN origin for all points
+            ! in the current pencil and store in the dr2_SN global array
+            call proximity_SN()
+            
+            ! Get the old energy
             lnrho=f(l1:l2,m,n,ilnrho)
             rho_old=exp(lnrho) 
             ss=f(l1:l2,m,n,iss)
             call ionget(f,yH,TT)
-            
-            call proximity_SN()
-            
-            deltarho(:)=0.
+            call thermodynamics(lnrho,ss,yH,TT,ee=ee_old)
+
+            ! Apply perturbations
+            call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
             if (lmove_mass) then
               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
-              ! Save the pressure
-              call thermodynamics(lnrho,ss,yH,TT,pp=pp_old)
-              ! Perturb the density
               lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
-              call perturb_mass(lnrho,pp_old,ss,TT,yH)
-              f(l1:l2,m,n,ilnrho)=lnrho
-              f(l1:l2,m,n,iss)=ss
-              if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
-              if (iTT.ne.0) f(l1:l2,m,n,iTT)=TT
+              call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho) &
+                                   ,ss,TT,yH)
+            else
+              call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
             endif
 
 
-            call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
-            ! Get the old energy
-            call thermodynamics(lnrho,ss,yH,TT,ee=ee_old)
-            ! Perturb the energy
-            call perturb_energy(lnrho,ee_old+deltaEE/exp(lnrho),ss,TT,yH)
+            ! Save changes 
+            f(l1:l2,m,n,ilnrho)=lnrho
             f(l1:l2,m,n,iss)=ss
             if (iTT.ne.0) f(l1:l2,m,n,iTT)=TT
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
@@ -1027,3 +1024,4 @@ find_SN: do n=n1,n2
     endsubroutine injectenergy_SN
 
 endmodule interstellar
+!***********************************************************************
