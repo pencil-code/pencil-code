@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.12 2003-01-21 12:42:28 nilshau Exp $
+! $Id: struct_func.f90,v 1.13 2003-01-21 19:17:57 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -36,7 +36,7 @@ module struct_func
   !
   implicit none
   !
-  integer, parameter :: qmax=8, imax=lb_nxgrid
+  integer, parameter :: qmax=8, imax=lb_nxgrid*2-2
   integer, parameter :: n_pdf=101
   real, dimension (mx,my,mz,mvar) :: f
   real, dimension (nx,ny,nz) :: vect,b_vec
@@ -46,7 +46,7 @@ module struct_func
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz) :: i_du1,i_du2
   integer :: l,ll,j,q,direction,ll1,ll2
-  integer :: i,ivec,lb_ll,separation
+  integer :: i,ivec,lb_ll,separation,exp1,exp2
   real :: pdf_max,pdf_min,normalization,dx_du
   character (len=4) :: var
   character (len=*) :: variabl
@@ -104,9 +104,14 @@ module struct_func
   do direction=1,nr_directions
      do l=1,nx
         if ((iproc==root) .and. (lpostproc)) print*,'l=',l
-        do lb_ll=1,lb_nxgrid
+        do lb_ll=1,lb_nxgrid*2-2
            !separation=min(mod(ll-l+nx,nx),mod(l-ll+nx,nx))
-           separation=2**(lb_ll-1)
+!           separation=2**(lb_ll-1)
+           exp2=mod((lb_ll),2)
+           if (lb_ll .eq. 1) exp2=0
+           exp1=int((lb_ll)/2)-exp2
+           separation=(2**exp1)*(3**exp2)
+!print*,lb_ll,exp1,exp2,separation
            ll1=mod(l+separation-1,nx)+1
            ll2=mod(l-separation+nx-1,nx)+1
            dvect1=vect(l,:,:)-vect(ll1,:,:)
