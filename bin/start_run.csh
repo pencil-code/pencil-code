@@ -102,6 +102,9 @@ time $mpirun $mpirunops $npops $start_x
 echo ""
 date
 
+# Clean up control and data files
+rm -f STOP RELOAD fort.20
+
 # On Horseshoe cluster, initialize automatic copying
 # of snapshots back to the data directory
 # Also, copy executable to $SCRATCH_DIR of master node
