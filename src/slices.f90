@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.32 2003-11-21 01:54:06 brandenb Exp $
+! $Id: slices.f90,v 1.33 2003-12-01 21:00:10 theine Exp $
 
 !  This module produces slices for animation purposes
 
@@ -45,7 +45,7 @@ module Slices
       use Sub
 !
       real, save :: tvid
-      integer, save :: ifirst,nvid
+      integer, save :: ifirst=0,nvid
 !
       character (len=4) :: ch
       character (len=130) :: file

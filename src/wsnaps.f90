@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.42 2003-11-27 19:19:36 mee Exp $
+! $Id: wsnaps.f90,v 1.43 2003-12-01 21:00:10 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -42,7 +42,7 @@ contains
       character (len=135) :: file
       character (len=*) :: chsnap
       logical lsnap,enum
-      integer, save :: ifirst,nsnap
+      integer, save :: ifirst=0,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
@@ -104,7 +104,7 @@ contains
       character (len=4) :: ch
       logical :: lspec,llwrite_only=.false.,ldo_all
       logical, optional :: lwrite_only
-      integer, save :: ifirst,nspec
+      integer, save :: ifirst=0,nspec
       real, save :: tspec
       integer :: ivec,im,in
       real, dimension (nx) :: bb 

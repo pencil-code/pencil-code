@@ -1,4 +1,4 @@
-! $Id: timeavg.f90,v 1.11 2003-11-22 20:59:35 dobler Exp $ 
+! $Id: timeavg.f90,v 1.12 2003-12-01 21:00:10 theine Exp $ 
 
 module Timeavg
 
@@ -108,7 +108,7 @@ module Timeavg
       character (len=80) :: file
       character (len=*) :: chsnap
       logical :: lsnap,enum
-      integer, save :: ifirst,nsnap
+      integer, save :: ifirst=0,nsnap
       real, save :: tsnap
 !
 !  Output snapshot with label in 'tsnap' time intervals
