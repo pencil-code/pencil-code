@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.58 2002-11-14 14:29:29 dobler Exp $
+! $Id: density.f90,v 1.59 2002-11-14 21:35:33 ngrs Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -67,7 +67,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.58 2002-11-14 14:29:29 dobler Exp $")
+           "$Id: density.f90,v 1.59 2002-11-14 21:35:33 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -563,26 +563,38 @@ module Density
 !  entropy set assuming constant T for each gas component (eqn 15)
 !  nb: this allows for thermal pressure only -- significant underestimate.
 !
+      use Mpicomm
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (nx) :: pot
+      real, dimension (nx,3) :: grav
       real :: absz,n_c,n_w,n_i,n_h
 !  T in K, k_B s.t. pp is in code units ( = 9.59e-15 erg/cm/s^2)
 !  (i.e. k_B = 1.381e-16 (erg/K) / 9.59e-15 (erg/cm/s^2) )
       real :: T_c=500.0,T_w=8.0e3,T_i=8.0e3,T_h=1.0e6,k_B=0.0144
-      real :: rho,lnrho,pp,pp0
-!
-!  at present the gravity potential is not used -- we may want it 
-!  in future for creating a hydrostatic entropy profile, however (?)
-!  (will require communication)
+      real :: rho,lnrho,pp,pp0,ppmin,rhobot,rhotop
+!  nb: pp(mz) needed for hydrostatic equilibrium (not currently used...)
+!      real, dimension(mz) :: pp
+      real, dimension(2) :: fmax_tmp,fmax
+      integer :: k
 !
       if (lroot) print*,'Ferriere density profile'
 !
+!  first define reference values of pp, cs2, at midplane.  
+!  thermal pressure multiplied by 6.0 to model non-thermal sources.
+!
+      pp0=6.0*k_B*(rho0/1.38) *                                               &
+       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
+      cs20=gamma*pp0/rho0
+      cs0=sqrt(cs20)
+!      ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero
+!      print*,'rho0,pp0,cs0,ss0,gamma',rho0,pp0,cs0,ss0,gamma
+!
+!!      do n=1,mz           ! don't need to set ghost-zones here
       do n=n1,n2
       absz=abs(z(n))
       do m=m1,m2
-        call potential(x(l1:l2),y(m),z(n),pot)
 !  cold gas profile n_c (eq 6)
         n_c=0.340*(0.859*exp(-amin1((z(n)/0.127)**2,70.)) +         &
                    0.047*exp(-amin1((z(n)/0.318)**2,70.)) +         &
@@ -601,29 +613,92 @@ module Density
         f(l1:l2,m,n,ilnrho)=lnrho
 !  define entropy via pressure, assuming fixed T for each component
         if(lentropy) then
-!  first define reference values at midplane.  
-!  (scale with rho0, for various runs: rho0(solar)=1.38)
-          pp0=k_B*(rho0/1.38) *                                               &
-           (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
-          cs20=gamma*pp0/rho0
-          cs0=sqrt(cs20)
-!          ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero
-!          print*,'rho0,pp0,cs0,ss0,gamma',rho0,pp0,cs0,ss0,gamma
 !  thermal pressure (eq 13)
-          pp=k_B*(rho0/1.38) *                                                &
+          pp=6.0*k_B*(rho0/1.38) *                                        &
            (1.09*n_c*T_c + 1.09*n_w*T_w + 2.09*n_i*T_i + 2.27*n_h*T_h)
-          !f(l1:l2,m,n,ient)=alog(gamma*pp/cs20*rho0**gamma1/rho**gamma)/gamma
-          f(l1:l2,m,n,ient)=alog(gamma*pp/cs20)/gamma +                      &
+          f(l1:l2,m,n,ient)=alog(gamma*pp/cs20)/gamma +                   &
                                      gamma1/gamma*lnrho0 - lnrho
+!  calculate cs2bot, top: needed for a2/c2 b.c.s (fixed T)
+!  need broadcast values; otherwise ipz=0 values took precedence (?)
+!  mpibcast didn't work (?), so now communicated via mpi_reducemax, below. 
+          if (n == n1 .and. ipz == 0 .and. m == m1 .and. ipy == 0) then
+            cs2bot=gamma*pp/rho
+            !call mpibcast_real(cs2bot,1)
+            !ierr=0
+            !call MPI_BCAST(cs2bot,1,MPI_REAL,ipz,MPI_COMM_WORLD,ierr)
+            !print*, 'ferriere: ipz=',ipz,'cs2bot=',cs2bot,'ierr=',ierr
+          endif
+          if (n == n2 .and. ipz == nprocz-1 .and. m == m1 .and. ipy == 0) then
+            cs2top=gamma*pp/rho
+            !ierr=0
+            !call MPI_BCAST(cs2top,1,MPI_REAL,ipz,MPI_COMM_WORLD,ierr)
+            !print*, 'ferriere: ipz=',ipz,'cs2top=',cs2top,'ierr=',ierr
+          endif
         endif
       enddo
       enddo
 !
-!  cs2 values at top and bottom may be needed to boundary conditions.
-!  The values calculated here may be revised in the entropy module.
+!  calculate ss, pp, via hydrostatic equilibrium: dp/dz=rho g_z
+!  nb: currently only makes sense for nprocz=1 (and assumes only z-dept).
+!  (disabled for now:  pp(nz) removed)
+!  first do positive z 
 !
-      cs2bot=cs20   !not sensible values here...
-      cs2top=cs20
+!!      n=mz/2+1
+!!      pp(n)=pp0
+!!!      lnrho=f(4,4,n,ilnrho)
+!!!      rho=exp(lnrho)
+!!!      print*,n,z(n),pp(n),rho,grav(1,3),dz
+!!!!      do n=mz/2+2,mz
+!!      do n=mz/2+2,n2
+!!      do m=m1,m2
+!!        call potential(x(l1:l2),y(m),z(n),pot,GRAV=grav)
+!!        lnrho=f(4,m,n,ilnrho)
+!!        rho=exp(lnrho)
+!!        pp(n)=pp(n-1) + rho*grav(1,3)*dz
+!!!        print*,n,z(n),pp(n),rho,grav(1,3),dz
+!!      enddo
+!!      enddo
+!!!
+!!!  now do negative z
+!!!
+!!      n=mz/2
+!!      pp(n)=pp0
+!!!      lnrho=f(4,4,n,ilnrho)
+!!!      rho=exp(lnrho)
+!!!      print*,n,z(n),pp(n),rho,grav(1,3),dz
+!!!!      do n=mz/2-1,n1,-1
+!!      do n=mz/2-1,1,-1
+!!      do m=m1,m2
+!!        call potential(x(l1:l2),y(m),z(n),pot,GRAV=grav)
+!!        lnrho=f(4,m,n,ilnrho)
+!!        rho=exp(lnrho)
+!!        pp(n)=pp(n+1) - rho*grav(1,3)*dz
+!!!        print*,n,z(n),pp(n),rho,grav(1,3),dz
+!!      enddo
+!!      enddo
+!! 
+!!!!      do n=1,mz
+!!      do n=n1,n2
+!!      lnrho=f(4,4,n,ilnrho)
+!!      do m=m1,m2
+!!        f(l1:l2,m,n,ient)=alog(gamma*pp(n)/cs20)/gamma +        &
+!!                                     gamma1/gamma*lnrho0 - lnrho
+!!      enddo
+!!!      print*,n,z(n),pp(n),f(4,4,n,ient)
+!!      enddo
+!!!
+!!!  cs2 values at top and bottom may be needed for boundary conditions.
+!!!  (the a2/c2 lnrho/ss combination needs them.)
+!!!  The values calculated here may be revised in the entropy module.
+!!!
+!!      cs2bot=gamma*pp(n1)/rhobot
+!!      cs2top=gamma*pp(n2)/rhotop
+!
+      fmax_tmp=(/ cs2bot, cs2top /)
+      call mpireduce_max(fmax_tmp,fmax,2)
+      call mpibcast_real(fmax,2)
+      cs2bot=fmax(1); cs2top=fmax(2)
+      !print*,'ferriere: on ipz',ipz,': cs2bot,top=',cs2bot,cs2top
 !
     endsubroutine ferriere
 !***********************************************************************
