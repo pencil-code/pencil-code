@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.85 2004-03-18 14:59:37 brandenb Exp $
+! $Id: interstellar.f90,v 1.86 2004-03-19 15:28:47 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -22,8 +22,6 @@ module Interstellar
   real :: t_interval_SNI=impossible
 
   
-  ! Mesh width (in points) of a SNe insertion
-  integer :: point_width=4
 
   ! normalisation factors for 1-d, 2-d, and 3-d profiles like exp(-r^6)
   ! ( 1d: 2    int_0^infty exp(-(r/a)^6)     dr) / a
@@ -58,6 +56,7 @@ module Interstellar
   real, parameter :: rho_crit_cgs=1.e-24,TT_crit_cgs=4000.
   double precision, parameter :: ampl_SN_cgs=1D51
   real :: r_SNI_yrkpc2=4.e-6, r_SNII_yrkpc2=3.e-5
+  real, parameter :: width_SN_cgs=3.086E19
 
   ! Minimum resulting central temperature of a SN explosion. Move mass to acheive this.
   real :: TT_SN_min=impossible
@@ -103,6 +102,7 @@ module Interstellar
   logical :: lSN_eth=.true., lSN_ecr=.true.
   real :: r_SNI=3.e+4, r_SNII=4.e+3
   real :: frac_ecr=0.1, frac_eth=0.9
+  real :: width_SN=impossible
   real :: average_SNI_heating=0., average_SNII_heating=0.
 
   real :: center_SN_x = impossible,  center_SN_y = impossible, center_SN_z = impossible 
@@ -116,7 +116,7 @@ module Interstellar
       ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, lnever_move_mass, &
       lSNI, lSNII, laverage_SN_heating, coolingfunction_scalefactor, heatingfunction_scalefactor, &
-      point_width, inner_shell_proportion, outer_shell_proportion, &
+      width_SN, inner_shell_proportion, outer_shell_proportion, &
       center_SN_x, center_SN_y, center_SN_z, &
       frac_ecr, frac_eth, lSN_eth, lSN_ecr, &
       h_SNI, SNI_area_rate
@@ -146,7 +146,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.85 2004-03-18 14:59:37 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.86 2004-03-19 15:28:47 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -233,6 +233,7 @@ module Interstellar
         r_SNI =r_SNI_yrkpc2  * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         r_SNII=r_SNII_yrkpc2 * (unit_time/yr_cgs) * (unit_length/kpc_cgs)**2
         if (ampl_SN == impossible) ampl_SN=ampl_SN_cgs / unit_energy 
+        if (width_SN == impossible) width_SN=width_SN_cgs / unit_length 
       else
         call stop_it('initialize_interstellar: SI unit conversions not implemented')
       endif
@@ -443,8 +444,8 @@ module Interstellar
              TT=exp(lnTT)
 
              rho_cloud(:)=0.0
-             !print*,'min,max TT:  ', min(TT), max(TT)
-             !print*,'min,max rho: ', min(rho), max(rho)
+             !print*,'min,max TT:  ', minval(TT), maxval(TT)
+             !print*,'min,max rho: ', minval(rho), maxval(rho)
 
              where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
                   rho_cloud(:)=rho(:)
@@ -452,7 +453,7 @@ module Interstellar
           enddo
        enddo
        fsum1_tmp=(/ mass_cloud /)
-       !print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
+!       print*,'check_SNII, iproc,fsum1_tmp:',iproc,fsum1_tmp(1)
        call mpireduce_sum(fsum1_tmp,fsum1,1) 
        call mpibcast_real(fsum1,1)
        dv=1.
@@ -460,7 +461,10 @@ module Interstellar
        if (nygrid/=1) dv=dv*dy
        if (nzgrid/=1) dv=dv*dz
        mass_cloud_dim=fsum1(1)*dv/solar_mass
-       !print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
+        if (lroot .and. ip < 14) &
+             print*,'check_SNII: mass_cloud_dim,fsum(1),dv,solar_mass:',mass_cloud_dim,fsum1(1),dv,solar_mass
+       !if (franSN(1) <= prob_SNII) then
+       !  print*,'check_SNII: iproc,fsum1:',iproc,fsum1(1)
        ! need convert to dimensional units, for rate/probability calculation only. 
        ! don't overwrite mass_cloud (on individual processors), as it's re-used.
        !if (lroot .and. ip < 14) &
@@ -473,10 +477,11 @@ module Interstellar
        if (Lxyz(2)/=0.) rate_SNII=rate_SNII/Lxyz(2)
        if (lroot) call random_number_wrapper(franSN)   
        call mpibcast_real(franSN,1)
-        if (lroot .and. ip < 16) &
+       if (lroot .and. ip < 14) then
              print*,'check_SNII: rate,prob,rnd:',freq_SNII,rate_SNII,prob_SNII,franSN(1)
              print*,'check_SNII: frac_heavy,frac_converted,mass_cloud_dim,mass_SN,tau_cloud',&
                                  frac_heavy,frac_converted,mass_cloud_dim,mass_SN,tau_cloud
+       endif
        if (franSN(1) <= prob_SNII) then
           !  position_SNII needs the mass_clouds for each processor;  
           !   communicate and store them here, to avoid recalculation.
@@ -757,7 +762,7 @@ find_SN: do n=n1,n2
       real, intent(inout), dimension(mx,my,mz,mvar+maux) :: f
       integer, intent(in) :: itype_SN
 
-      real :: width_SN,width_shell_outer,width_shell_inner,c_SN
+      real :: width_shell_outer,width_shell_inner,c_SN
       real :: profile_integral, mass_shell, mass_gain
       real :: EE_SN=0.
 !,EE2_SN=0.
@@ -776,7 +781,6 @@ find_SN: do n=n1,n2
       !
       if(lroot.and.ip<12) print*,'explode_SN: itype_SN=',itype_SN
       !
-      width_SN=point_width*dxmin      
       idim=0                         !allow for 1-d, 2-d and 3-d profiles...
       !
       !  check whether idim can be replaced by dimensionality
@@ -818,6 +822,7 @@ find_SN: do n=n1,n2
 
          ! ASSUME: SN will fully ionize the gas at its centre
          if (lmove_mass) then
+print*,ee_SN,rho_SN,c_SN
            call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
            lnrho_SN_new=log(rho_SN_new)
            ee_SN_new=frac_eth*(ee_SN*rho_SN+c_SN)/rho_SN_new
@@ -913,7 +918,7 @@ find_SN: do n=n1,n2
     endsubroutine explode_SN
 
 !***********************************************************************
-    subroutine calcmassprofileintegral_SN(f,width_SN,profile_integral)
+    subroutine calcmassprofileintegral_SN(f,width,profile_integral)
 !
 !  Calculate integral of mass cavity profile  
 !
@@ -922,7 +927,7 @@ find_SN: do n=n1,n2
       use Cdata
 
       real, intent(in), dimension(mx,my,mz,mvar+maux) :: f
-      real, intent(in) :: width_SN
+      real, intent(in) :: width
       real, intent(out) :: profile_integral
       real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
       real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
@@ -982,7 +987,7 @@ find_SN: do n=n1,n2
                     dx_SN_out_x1**2 + dy_SN_out_x1b**2 )   &
                     + dz_SN**2
             enddo
-            profile_integral = profile_integral + sum(exp(-(dr2_SN(:)/width_SN**2)**3))
+            profile_integral = profile_integral + sum(exp(-(dr2_SN(:)/width**2)**3))
          enddo
       enddo
 
@@ -1055,11 +1060,11 @@ find_SN: do n=n1,n2
        
     endsubroutine proximity_SN
 !***********************************************************************
-    subroutine makecavity_SN(deltarho,width_SN,depth,mass_shell, &
+    subroutine makecavity_SN(deltarho,width,depth,mass_shell, &
                              cnorm_dim,idim,mass_gain)   
       use Cdata
       !
-      real, intent(in) :: width_SN, depth, mass_shell, cnorm_dim
+      real, intent(in) :: width, depth, mass_shell, cnorm_dim
       real, intent(inout) :: mass_gain
       real, intent(out), dimension(nx) :: deltarho
       integer, intent(in) :: idim
@@ -1069,10 +1074,10 @@ find_SN: do n=n1,n2
       real :: width_shell_outer, width_shell_inner, c_shell
       ! real, dimension(1) :: fsum1,fsum1_tmp
 
-      width_shell_outer=outer_shell_proportion*width_SN
-      width_shell_inner=inner_shell_proportion*width_SN
+      width_shell_outer=outer_shell_proportion*width
+      width_shell_inner=inner_shell_proportion*width
 
-      deltarho(:) =  depth*exp(-(dr2_SN(:)/width_SN**2)**3)
+      deltarho(:) =  depth*exp(-(dr2_SN(:)/width**2)**3)
       
       c_shell=mass_shell /                                  &
            (cnorm_dim*((width_shell_outer**idim)-(width_shell_inner**idim)))
@@ -1093,10 +1098,10 @@ find_SN: do n=n1,n2
     endsubroutine makecavity_SN
 
 !***********************************************************************
-    subroutine injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
+    subroutine injectenergy_SN(deltaEE,width,c_SN,EE_SN)
       use Cdata
       !
-      real, intent(in) :: width_SN,c_SN
+      real, intent(in) :: width,c_SN
       real, intent(inout) :: EE_SN
       real, intent(out), dimension(nx) :: deltaEE
       !
@@ -1105,7 +1110,7 @@ find_SN: do n=n1,n2
       ! Whether mass moved or not, inject energy.
       !
 
-      profile_SN=exp(-(dr2_SN(:)/width_SN**2)**3)
+      profile_SN=exp(-(dr2_SN(:)/width**2)**3)
 
       deltaEE(:)=c_SN*profile_SN(:) ! spatial energy density 
       EE_SN=EE_SN+sum(deltaEE(:))   
