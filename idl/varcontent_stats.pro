@@ -1,5 +1,6 @@
 ;
 ;  Summarize data
+;  omit ghost zones in the analysis
 ;
 xyz = ['x', 'y', 'z']
 fmt = '(A9,A,4G15.6)'
@@ -13,17 +14,17 @@ if (quiet le 2) then begin
       for j=0,2 do begin
         cmd = "print, FORMAT=fmt,strmid('"+varname+"_'+xyz["+str(j) $
             + "]+'        ',0,8),'=', " $
-            + "minmax("+varname+"(*,*,*,"+str(j)+")), " $
-            + "mean("+varname+"(*,*,*,"+str(j)+"),/DOUBLE), " $
-            + "rms("+varname+"(*,*,*,"+str(j)+"),/DOUBLE)"
+            + "minmax("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+")), " $
+            + "mean("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+"),/DOUBLE), " $
+            + "rms("+varname+"(l1:l2,m1:m2,n1:n2,"+str(j)+"),/DOUBLE)"
         if (execute(cmd,1) ne 1) then $
             message, 'Error printing stats for ' + varcontent[iv].variable
       endfor
     endif else begin
       cmd = "print, FORMAT=fmt,strmid('"+varname+"        ',0,8),'=', " $
-        + "minmax("+varname+"(*,*,*)), " $
-        + "mean("+varname+"(*,*,*),/DOUBLE), " $
-        + "rms("+varname+"(*,*,*),/DOUBLE)"
+        + "minmax("+varname+"(l1:l2,m1:m2,n1:n2)), " $
+        + "mean("+varname+"(l1:l2,m1:m2,n1:n2),/DOUBLE), " $
+        + "rms("+varname+"(l1:l2,m1:m2,n1:n2),/DOUBLE)"
       if (execute(cmd,1) ne 1) then $
           message, 'Error printing stats for ' + varcontent[iv].variable
     endelse
