@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.69 2002-07-02 17:08:54 nilshau Exp $
+! $Id: equ.f90,v 1.70 2002-07-02 18:38:48 dobler Exp $
 
 module Equ
 
@@ -213,7 +213,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.69 2002-07-02 17:08:54 nilshau Exp $")
+           "$Id: equ.f90,v 1.70 2002-07-02 18:38:48 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -256,7 +256,12 @@ module Equ
 !  Better check that this is still true (after modifications)
 !  Otherwise, better always calculate rho1.
 !
-        if(ivisc==1.or.(lmagnetic.and.lhydro)) rho1=exp(-lnrho)
+!        if(ivisc==1.or.(lmagnetic.and.lhydro)) rho1=exp(-f(l1:l2,m,n,ilnrho))
+!
+!  WD: Also needed with heat conduction, so we better calculate it in all
+!  cases. Could alternatively have a switch lrho1known and check for it,
+!  or initialise to 1e35.
+        if (ldensity) rho1=exp(-f(l1:l2,m,n,ilnrho))
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
@@ -268,6 +273,7 @@ module Equ
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
+!  WD: there is some virtue in calling all of the dXX_dt in equ.f90
 !
         if (lhydro) then
           if(lgrav) call duu_dt_grav(f,df)
