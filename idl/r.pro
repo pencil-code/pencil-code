@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.54 2003-12-11 09:35:45 dobler Exp $
+; $Id: r.pro,v 1.55 2003-12-31 13:23:10 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,12 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.54 2003-12-11 09:35:45 dobler Exp $
+;;; $Id: r.pro,v 1.55 2003-12-31 13:23:10 dobler Exp $
+
+function param2
+; Dummy to keep IDL from complaining. The real param2() routine will be
+; compiled below
+end
 
 ;
 ;  read data

@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.36 2003-12-11 09:35:45 dobler Exp $
+;;;  $Id: rall.pro,v 1.37 2003-12-31 13:23:10 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -13,6 +13,11 @@
 ;;;   Overwrites nx, ny, etc, from start.pro, thus you need to run
 ;;;   start.pro after this if you want to continue working on data
 ;;;   from individual processors (e.g. if you want to run r.pro).
+
+function param2
+; Dummy to keep IDL from complaining. The real param2() routine will be
+; compiled below
+end
 
 ;
 ;  need to run start first: check whether this has been done

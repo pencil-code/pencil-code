@@ -1,40 +1,37 @@
-;  $Id: readstartpars.pro,v 1.11 2003-12-30 13:17:54 dobler Exp $
+;  $Id: readstartpars.pro,v 1.12 2003-12-31 13:23:10 dobler Exp $
 ;
 ;  Read startup parameters
 ;
 pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
+
   if (quiet le 2) then print, 'Reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m -M '+strtrim(maxtags,2) $
-         + ' '+datatopdir+'/param2.nml', result
-  res = flatten_strings(result)
-  ;; For people with an unclean shell: remove everything up to the
-  ;; opening brace:
-  brace = strpos(res,'{')
-  if (brace lt 0) then message, 'TROUBLE: no brace found in <'+res+'>'
-  if ((brace ne 0) and (quiet le 4)) then begin
-    print, "Your shell produces output when it shouldn't; you'd better"
-    print, "fix your prompt."
-    print, "Trying to clean up the mess.."
-    res = strmid(res,brace)
-  endif
-  ;; Execute the resulting line(s); format is `{ block1 } { block2 } ..'.
-  ;; Need to add each block in its own execute() call in order to
-  ;; remain below the limit of structure tags that can be set within
-  ;; one execute() statement (typically 398 or 570).
-  par2 = { dummy: 0 }            ; initialize structure for appending
-  brace = strpos(res,'}')
-  iblock = 0
-  repeat begin
-    iblock = iblock+1
-    print, "  param2.nml: block "+strtrim(iblock,2)
-    block = strmid(res,0,brace+1)
-    if (execute('par2 = create_struct(par2,'+block+')') ne 1) then $
-        message, 'There was a problem with param2.nml', /INFO
-    res = strmid(res,brace+1)
-    brace = strpos(res,'}')
-  endrep until (brace lt 0)
+  spawn, "bash -c 'for d in . $TMPDIR $TMP /tmp /var/tmp; do if [ -d $d -a -w $d ]; then echo $d; fi; done'", result
+  if (strlen(result[0])) le 0 then begin
+    message, "Can't find writeable directory for temporary files"
+  endif else begin
+    tmpdir = result[0]
+  endelse
+  tmpfile = tmpdir+'/param2.pro'
+  ;; Write content of param2.nml to temporary file:
+  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m '+datatopdir+'/param2.nml > ' $
+         + tmpfile , result
+  ;; Compile that file. Should be easy, but is incredibly awkward, as
+  ;; there is no way in IDL to compile a given file at run-time
+  ;; outside the command line:
+  ;; Save old path and pwd
+  _path = !path
+  cd, tmpdir, CURRENT=_pwd
+  !path = '.:'
+  resolve_routine, 'param2', /IS_FUNCTION
+  ;; Restore old path and pwd
+  !path = _path & cd, _pwd
+  ;; Delete temporary file
+  file_delete, tmpfile
+  par2 = param2()
+
+  ;; Abbreviate some frequently used parameters
   if (lhydro) then begin
     nu=par2.nu
   endif
