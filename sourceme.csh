@@ -41,8 +41,10 @@ if (! $?_sourceme_quiet) echo "PENCIL_HOME = <$PENCIL_HOME>"
 if (! $?_sourceme) then		# called for the fist time?
   if (-d $PENCIL_HOME/bin) then
     #  Set shell path
-    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils} to PATH"
-    set path = ( $path $PENCIL_HOME/bin $PENCIL_HOME/utils )
+    if (! $?_sourceme_quiet) echo "Adding $PENCIL_HOME/{bin,utils{,/axel}} to PATH"
+    set path = ( $path $PENCIL_HOME/bin \
+                       $PENCIL_HOME/utils \
+		       $PENCIL_HOME/utils/axel )
     #  Set path for DX macros
     if ($?DXMACROS) then
       setenv DXMACROS "${PENCIL_HOME}/dx/macros:$DXMACROS"
