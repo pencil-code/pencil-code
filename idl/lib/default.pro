@@ -2,7 +2,7 @@
 ;;;   default.pro   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-;;;  $Date: 2004-06-07 00:50:45 $
+;;;  $Date: 2004-06-07 00:51:37 $
 ;;;
 ;;;  Description:
 ;;;   Set variable or structure slot to default value unless it
@@ -39,8 +39,6 @@ pro default, var, val, STRUCT=struct, HELP=help, DEBUG=debug
     if ((nvar gt 1) and (n_elements(val) eq 1)) then $
         val = replicate(val,nvar)
     nval = n_elements(val)
-
-debug=1
 
     if (debug) then print, 'var, val = <', var, '>, <', val, '>' 
     ; sanity tests
