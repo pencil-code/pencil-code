@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.68 2004-04-19 08:49:24 ajohan Exp $
+! $Id: dustdensity.f90,v 1.69 2004-04-19 09:02:48 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.68 2004-04-19 08:49:24 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.69 2004-04-19 09:02:48 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -490,9 +490,9 @@ module Dustdensity
 !
           if (i_targ >= 1 .and. i_targ <= ndustspec .and. nd(l,k) /= 0.) then
             mdnew(i_targ) = (nd(l,k)*md(k) + &
-                ndnew(i_targ)*mdnew(i_targ))/(nd(l,k)+ndnew(i_targ))
-            if (lmice) minew(i_targ) = (f(3+l,m,n,ind(k))*mi(k) + &
-                ndnew(i_targ)*minew(i_targ))/(f(3+l,m,n,ind(k)) + ndnew(i_targ))
+                ndnew(i_targ)*mdnew(i_targ))/(nd(l,k) + ndnew(i_targ))
+            if (lmice) minew(i_targ) = (nd(l,k)*mi(k) + &
+                ndnew(i_targ)*minew(i_targ))/(nd(l,k) + ndnew(i_targ))
             ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
           elseif (i_targ == 0) then
 !
