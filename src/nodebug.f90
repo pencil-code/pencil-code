@@ -11,8 +11,7 @@
 subroutine output_penciled_vect_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
-  use Cdata, only: ip,mx,headt
-  use Mpicomm, only: imn
+  use Cdata, only: ip,mx,headt,imn
 
   real,dimension(mx,*) :: pencil
   real :: t
@@ -32,8 +31,7 @@ endsubroutine output_penciled_vect_c
 subroutine output_penciled_scal_c(filename,pencil,&
                                   ndim,i,iy,iz,t, &
                                   nx,ny,nz,nghost,fnlen)
-  use Cdata, only: ip,mx,headt
-  use Mpicomm, only: imn
+  use Cdata, only: ip,mx,headt,imn
 
   real,dimension(mx) :: pencil
   real :: t
