@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.79 2004-09-28 11:33:06 ajohan Exp $
+# CVS: $Id: run.csh,v 1.80 2004-10-13 13:46:22 brandenb Exp $
 
 #                       run.csh
 #                      ---------
@@ -105,7 +105,7 @@ endif
 
 # Write $PBS_JOBID to file (important when run is migrated within the same job)
 if ($?PBS_JOBID) then
-  echo $PBS_JOBID "  RUN STARTED  " `date` >> $datadir/jobid.dat
+  echo $PBS_JOBID "  RUN STARTED on " $PBS_O_QUEUE `date` >> $datadir/jobid.dat
 endif
 
 # Run run.x
