@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.53 2003-09-03 17:13:58 dobler Exp $
+! $Id: interstellar.f90,v 1.54 2003-09-09 12:22:19 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -113,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.53 2003-09-03 17:13:58 dobler Exp $")
+           "$Id: interstellar.f90,v 1.54 2003-09-09 12:22:19 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -777,12 +777,14 @@ find_SN: do n=n1,n2
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
               lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
-              call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho) &
-                                   ,ss,TT,yH)
-            else
-              call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
+       !       call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho) &
+              ! Keep specific energy constant
+ !             call perturb_energy(lnrho,ee_old,ss,TT,yH)
+ !           else
+ !             call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
             endif
-
+  
+            call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
 
             ! Save changes 
             f(l1:l2,m,n,ilnrho)=lnrho
