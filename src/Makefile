@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.213 2003-08-06 17:02:46 theine Exp $
+### $Id: Makefile,v 1.214 2003-08-06 20:03:23 theine Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -170,7 +170,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #CFLAGS=-O3 -DFUNDERSC=0
 #F77=mpxlf
 #FC=mpxlf90
-#FFLAGS=-O5
+#FFLAGS=-O5 -qstrict
 #F90FLAGS=-qsuffix=f=f90
 
 
