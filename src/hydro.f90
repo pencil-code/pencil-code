@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.149 2004-02-26 14:10:27 brandenb Exp $
+! $Id: hydro.f90,v 1.150 2004-03-04 07:47:34 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -108,7 +108,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.149 2004-02-26 14:10:27 brandenb Exp $")
+           "$Id: hydro.f90,v 1.150 2004-03-04 07:47:34 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -781,12 +781,13 @@ module Hydro
 !  damping terms (artificial, but sometimes useful):
 !
       use Cdata
+      use Mpicomm, only: stop_it
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension(nx) :: pdamp
-      real :: zbot,ztop
+      real :: zbot,ztop,t_infl,t_span,tau,pfade
       integer :: i
 !  
 !  warn about the damping term
@@ -801,22 +802,56 @@ module Hydro
       ztop=xyz0(3)+Lxyz(3)
 !
 !  1. damp motion during time interval 0<t<tdamp.
-!  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
+!  Damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0).
+!  With ldamp_fade=T, damping coefficient is smoothly fading out
 !
         if ((dampu .ne. 0.) .and. (t < tdamp)) then
-          ! damp motion provided t<tdamp
-          if (dampu > 0) then
-            if (ldamp_fade) then
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      - (tdamp-t)/tdamp*dampu*f(l1:l2,m,n,iux:iuz)
+          if (ldamp_fade) then  ! smoothly fade
+            !
+            ! smoothly fade out damping according to the following
+            ! function of time:
+            !
+            !    ^
+            !    |
+            !  1 +**************
+            !    |              ****
+            !    |                  **
+            !    |                    *
+            !    |                     **
+            !    |                       ****
+            !  0 +-------------+-------------**********---> t
+            !    |             |             |
+            !    0          Tdamp/2        Tdamp
+            !
+            ! i.e. for 0<t<Tdamp/2, full damping is applied, while for
+            ! Tdamp/2<t<Tdamp, damping goes smoothly (with continuous
+            ! derivatives) to zero.
+            !
+            t_infl = 0.75*tdamp ! position of inflection point
+            t_span = 0.5*tdamp   ! width of transition (1->0) region
+            tau = (t-t_infl)/t_span ! normalized t, tr. region is [-0.5,0.5]
+            if (tau <= -0.5) then
+              pfade = 1.
+            elseif (tau <= 0.5) then
+              pfade = 0.5*(1-tau*(3-4*tau**2))
             else
-              df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      - dampu*f(l1:l2,m,n,iux:iuz)
+              call stop_it("UDAMPING: Never got here.")
             endif
-          else 
+          else                ! don't fade, switch
+            pfade = 1.
+          endif
+          !
+          ! damp absolutely or relative to time step
+          !
+          if (dampu > 0) then   ! absolutely
+            df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
+                                    - pfade*dampu*f(l1:l2,m,n,iux:iuz)
+          else                  ! relative to dt
             if (dt > 0) then    ! dt known and good
               df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) &
-                                      + dampu/dt*f(l1:l2,m,n,iux:iuz)
+                                      + pfade*dampu/dt*f(l1:l2,m,n,iux:iuz)
+            else
+              call stop_it("UDAMP: dt <=0 -- what does this mean?")
             endif
           endif
         endif
