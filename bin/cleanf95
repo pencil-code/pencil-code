@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   cleanf95
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   10-Oct-2002
-# CVS: $Id: cleanf95,v 1.2 2002-10-10 12:01:06 dobler Exp $
+# CVS: $Id: cleanf95,v 1.3 2002-10-10 12:46:58 dobler Exp $
 # Description:
 #   Read standard input (piped from Intel Fortran compiler with 2>&1 | 
 #   i.e. from STDERR)
@@ -32,8 +32,9 @@ $| = 1;         # auto-flush output
 while(<STDIN>)
 {
   next if /^\s*(module|external)\s+(subroutine|function)\s+$identi\s*$/;
-  next if /^\s*(program|module)\s+$identi\s*$/i;
+  next if /^\s*(program|module)\s+$identi\s*$/;
   next if /^[0-9]+\s*lines compiled/i;
+  next if /^\s*$/;
  
   print STDERR $_;    
 }
