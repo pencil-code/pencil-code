@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.191 2004-02-03 14:30:06 ajohan Exp $
+! $Id: equ.f90,v 1.192 2004-02-06 15:13:49 bingert Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.191 2004-02-03 14:30:06 ajohan Exp $")
+           "$Id: equ.f90,v 1.192 2004-02-06 15:13:49 bingert Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -326,11 +326,9 @@ module Equ
 !  cases. Could alternatively have a switch lrho1known and check for it,
 !  or initialise to 1e35.
 !
-        if (ldensity) then
-          rho1=exp(-f(l1:l2,m,n,ilnrho))
-        else
-          rho1=1.               ! for all the modules that use it
-        endif
+
+        call calculate_some_vars(f,rho1,bb)
+
 !
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
@@ -469,4 +467,37 @@ module Equ
     endsubroutine debug_imn_arrays
 !***********************************************************************
 
+     subroutine calculate_some_vars(f,rho1,bb)
+!
+!   Calculation of rho1
+!
+!   06-febr-04/bing: coded
+!
+
+       use Sub
+       use Magnetic
+
+       real, dimension (mx,my,mz,mvar+maux) :: f       
+       real, dimension (nx) :: rho1
+       real, dimension (nx,3) :: bb
+
+
+       intent(out) :: rho1,bb
+       
+       if (ldensity) then
+          rho1=exp(-f(l1:l2,m,n,ilnrho))  
+       else
+          rho1=1.               ! Default for nodensity.f90
+       endif
+
+       if (lmagnetic) then
+          call calculate_vars_magnetic(f,bb)
+       else
+          bb=0.                 ! Default for nomagnetic.f90
+       endif
+
+       
+     endsubroutine calculate_some_vars
+!***********************************************************************
+     
 endmodule Equ

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.173 2004-01-31 14:01:22 dobler Exp $
+! $Id: magnetic.f90,v 1.174 2004-02-06 15:13:49 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -25,6 +25,7 @@ module Magnetic
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
+  real, dimension (nx,3) :: bbb
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., kx_aa=1.,ky_aa=1.,kz_aa=1.
@@ -113,7 +114,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.173 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: magnetic.f90,v 1.174 2004-02-06 15:13:49 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -265,7 +266,7 @@ module Magnetic
       real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: gpxb,glnrho,uxj,gshock
-      real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb,del6A,fres,del4A
+      real, dimension (nx,3) :: del2A,oo,oxu,uxDxuxb,del6A,fres,del4A
       real, dimension (nx,3) :: geta
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,ub,bx,by,bz,va2
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
@@ -276,7 +277,9 @@ module Magnetic
       real :: etatotal_max,tmp,eta_out1,B_ext21=1.
       integer :: j
 !
-      intent(in)  :: f,uu,rho1,TT1,uij,shock,gshock
+      intent(in)  :: f,uu,rho1,TT1,uij,bb,shock,gshock
+      intent(out) :: bij,va2
+      intent(inout)  :: df     
 !
 !  identify module and boundary conditions
 !
@@ -289,7 +292,7 @@ module Magnetic
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
-      call curl(f,iaa,bb)
+!     call curl(f,iaa,bb)  ! now calculate by CALCULATE_VARS_MAGNETIC
       call dot2_mn(bb,b2)
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
@@ -361,15 +364,6 @@ module Magnetic
           if(bthresh_per_brms/=0) call calc_bthresh
           call vecout(41,trim(directory)//'/bvec',bb,bthresh,nbvec)
         endif
-!
-!  possibility to add external field
-!  Note; for diagnostics purposes keep copy of original field
-!
-      if (ldiagnos) bbb=bb
-      if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
-      if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
-      if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
-      if (headtt) print*,'daa_dt: B_ext=',B_ext
 !
 !  calculating the current jj, and simultaneously del2A.
 !
@@ -664,6 +658,34 @@ module Magnetic
       endif
 !     
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine calculate_vars_magnetic(f,bb)
+!
+!   Calculation of bb
+!
+!   06-feb-04/bing: coded
+!      
+      use Cdata
+      use Sub
+
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (nx,3) :: bb
+      
+      intent(in)  :: f
+      intent(out) :: bb
+      
+      call curl(f,iaa,bb)
+!
+!  possibility to add external field
+!  Note; for diagnostics purposes keep copy of original field
+!
+       if (ldiagnos) bbb=bb
+       if (B_ext(1)/=0.) bb(:,1)=bb(:,1)+B_ext(1)
+       if (B_ext(2)/=0.) bb(:,2)=bb(:,2)+B_ext(2)
+       if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+B_ext(3)
+       if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
+
+    endsubroutine calculate_vars_magnetic
 !***********************************************************************
     subroutine eta_shell(eta_mn,geta)
 !

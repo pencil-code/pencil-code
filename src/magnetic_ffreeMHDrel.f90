@@ -1,4 +1,4 @@
-! $Id: magnetic_ffreeMHDrel.f90,v 1.19 2004-01-31 14:01:22 dobler Exp $
+! $Id: magnetic_ffreeMHDrel.f90,v 1.20 2004-02-06 15:13:49 bingert Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -26,6 +26,7 @@ module Magnetic
   real, dimension(3) :: A0=(/0.,0.,1./),B_ext=(/0.,0.,0./),k_aa=(/0.,0.,0./)
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
+  real, dimension (nx,3) :: bbb
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0.
@@ -99,7 +100,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic_ffreeMHDrel.f90,v 1.19 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: magnetic_ffreeMHDrel.f90,v 1.20 2004-02-06 15:13:49 bingert Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -213,7 +214,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij,va2,shock,gshock)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bb,va2,shock,gshock)
 !
 !  solve relativistic force-free MHD equations 
 !
@@ -228,7 +229,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: aa,jj=0,uxB,JxB,JxBr,oxuxb,jxbxb
-      real, dimension (nx,3) :: oo,oxu,bbb,uxDxuxb,gshock
+      real, dimension (nx,3) :: oo,oxu,uxDxuxb,gshock
       real, dimension (nx) :: rho1,J2,TT1,ab,jb,bx,by,bz,va2,shock
       real, dimension (nx) :: uxb_dotB0,oxuxb_dotB0,jxbxb_dotB0,uxDxuxb_dotB0
       real, dimension (nx) :: bx2, by2, bz2  ! bx^2, by^2 and bz^2
@@ -244,7 +245,7 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       real, dimension (nx) :: ux,uy,uz,ux2,uy2,uz2
       real :: c2=1
 !
-      intent(in)  :: f,uu,rho1,TT1,uij
+      intent(in)  :: f,uu,rho1,TT1,uij,bb
 !
 !  identify module and boundary conditions
 !
@@ -278,16 +279,10 @@ print*,'init_aa: A0xkxA0=',A0xkxA0
       call bij_etc(f,iaa,Bij,del2A)
       call curl_mn(Bij,curlB)
 !
-!  calculate B and 1/B^2
-!  possibility to add external field
-!  Note; for diagnostics purposes keep copy of original field
+!  calculate 1/bb^2
 !
-      call curl(f,iaa,BB)
-      bbb=bb !(keep copy of original B)
-      if(headtt) print*,'daa_dt: B_ext=',B_ext
-      do j=1,3
-        if(B_ext(j)/=0.) bb(:,j)=bb(:,j)+B_ext(j)
-      enddo
+!     call curl(f,iaa,BB)  ! now calculated by CALCULATE_VARS_MAGNETIC
+
       call dot2_mn(BB,B2)
       B21=1./amax1(B2,B2min)
 !
@@ -490,6 +485,26 @@ if(ip==0) print*,shock,gshock                !(keep compiler quiet)
 !     
     endsubroutine daa_dt
 !***********************************************************************
+    subroutine calculate_vars_magnetic(f,bb)
+!
+!  calculate bb
+!  possibility to add external field
+!  Note; for diagnostics purposes keep copy bbb of original field
+!
+!  06-feb-04/bing: coded
+!
+      call curl(f,iaa,bb)
+      bbb=bb !(keep copy of original B)
+      if(headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
+      do j=1,3
+         if(B_ext(j)/=0.) bb(:,j)=bb(:,j)+B_ext(j)
+      enddo
+      
+    endsubroutine calculate_vars_magnetic
+!***********************************************************************
+
+
+
     subroutine rprint_magnetic(lreset,lwrite)
 !
 !  reads and registers print parameters relevant for magnetic fields

@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.43 2003-11-29 18:21:01 theine Exp $
+! $Id: nomagnetic.f90,v 1.44 2004-02-06 15:13:49 bingert Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.43 2003-11-29 18:21:01 theine Exp $")
+           "$Id: nomagnetic.f90,v 1.44 2004-02-06 15:13:49 bingert Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -105,6 +105,23 @@ module Magnetic
       if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb !(keep compiler quiet)
       if(ip==0) print*,shock,gshock                !(keep compiler quiet)
     endsubroutine daa_dt
+!***********************************************************************
+    subroutine calculate_vars_magnetic(f,bb)
+!
+!   Calculation of bb
+!   dummy routine
+!
+!   06-febr-04/bing: coded
+!      
+      real, dimension (mx,my,mz,mvar+maux) :: f       
+      real, dimension (nx,3) :: bb
+      
+      intent(in)  :: f
+      intent(out) :: bb
+      
+      if (ip==1) print*,f(1,1,1,1),bb(1,1) ! (keep compiler quiet)
+     
+    endsubroutine calculate_vars_magnetic
 !***********************************************************************
     subroutine rprint_magnetic(lreset,lwrite)
 !
