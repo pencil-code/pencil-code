@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.11 2003-04-05 19:05:07 brandenb Exp $
+! $Id: noradiation.f90,v 1.12 2003-04-05 21:46:05 brandenb Exp $
 
 
 module Radiation
@@ -37,7 +37,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.11 2003-04-05 19:05:07 brandenb Exp $")
+           "$Id: noradiation.f90,v 1.12 2003-04-05 21:46:05 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -81,6 +81,7 @@ module Radiation
 !***********************************************************************
     subroutine output_radiation(lun)
       integer, intent(in) :: lun
+      if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.10 2003-04-05 21:39:56 brandenb Exp $
+! $Id: noionization.f90,v 1.11 2003-04-05 21:46:05 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -116,6 +116,7 @@ module Ionization
       if (present(dlnPdss)) dlnPdss=gamma1
       if (present(TT)) TT=exp(gamma1*(lnrho+ss-ss0))
       if (present(kappa)) kappa=kap
+      if (ip==0) print*,yH  !(to keep compiler quiet)
     endsubroutine ioncalc
 !***********************************************************************
     function ionfrac(lnrho,ss)
