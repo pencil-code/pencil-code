@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.95 2003-07-07 12:35:41 brandenb Exp $
+! $Id: mpicomm.f90,v 1.96 2003-07-07 13:42:32 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -88,6 +88,7 @@ module Mpicomm
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
   logical, dimension (ny*nz) :: necessary=.false.
+  integer, parameter :: tag_yz=301,tag_zx=302,tag_xy=303
 
   contains
 
@@ -572,16 +573,16 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radcomm_yz_recv(radx0,idest,tag_yz,Ibuf_yz)
+    subroutine radcomm_yz_recv(radx0,idest,Ibuf_yz)
 !
 !  receive intensities from x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
 !
 !   2-jul-03/axel: adapted from recv_Irad0_xy
 !
-      integer :: radx0
-      integer :: nbuf_yz,idest,tag_yz
+      integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      integer :: nbuf_yz
 !
 !  Identifier
 !
@@ -602,15 +603,15 @@ module Mpicomm
 !
     endsubroutine radcomm_yz_recv
 !***********************************************************************
-    subroutine radcomm_zx_recv(rady0,idest,tag_zx,Ibuf_zx)
+    subroutine radcomm_zx_recv(rady0,idest,Ibuf_zx)
 !
 !  send intensities
 !
 !   1-jul-03/axel: adapted from recv_Irad0_xy
 !
-      integer :: rady0
-      integer :: nbuf_zx,idest,tag_zx
+      integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      integer :: nbuf_zx
 !
 !  Identifier
 !
@@ -631,15 +632,15 @@ module Mpicomm
 !
     endsubroutine radcomm_zx_recv
 !***********************************************************************
-    subroutine radcomm_xy_recv(radz0,idest,tag_xy,Ibuf_xy)
+    subroutine radcomm_xy_recv(radz0,idest,Ibuf_xy)
 !
 !  receive intensities
 !
 !   1-jul-03/axel: coded
 !
-      integer :: radz0
-      integer :: nbuf_xy,idest,tag_xy
+      integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      integer :: nbuf_xy
 !
 !  Identifier
 !
@@ -660,16 +661,16 @@ module Mpicomm
 !
     endsubroutine radcomm_xy_recv
 !***********************************************************************
-    subroutine radcomm_yz_send(radx0,idest,tag_yz,Ibuf_yz)
+    subroutine radcomm_yz_send(radx0,idest,Ibuf_yz)
 !
 !  send intensities in x direction
 !  (At the moment we have only one processor in x, so this doesn't do anything)
 !
 !   2-jul-03/axel: adapted from send_Irad0_xy
 !
-      integer :: radx0
-      integer :: nbuf_yz,idest,tag_yz
+      integer :: radx0,idest
       real, dimension(radx0,my,mz) :: Ibuf_yz
+      integer :: nbuf_yz
 !
 !  Identifier
 !
@@ -690,15 +691,15 @@ module Mpicomm
 !
     endsubroutine radcomm_yz_send
 !***********************************************************************
-    subroutine radcomm_zx_send(rady0,idest,tag_zx,Ibuf_zx)
+    subroutine radcomm_zx_send(rady0,idest,Ibuf_zx)
 !
 !  send intensities
 !
 !   1-jul-03/axel: adapted from send_Irad0_xy
 !
-      integer :: rady0
-      integer :: nbuf_zx,idest,tag_zx
+      integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
+      integer :: nbuf_zx
 !
 !  Identifier
 !
@@ -719,15 +720,15 @@ module Mpicomm
 !
     endsubroutine radcomm_zx_send
 !***********************************************************************
-    subroutine radcomm_xy_send(radz0,idest,tag_xy,Ibuf_xy)
+    subroutine radcomm_xy_send(radz0,idest,Ibuf_xy)
 !
 !  send intensities
 !
 !   1-jul-03/axel: coded
 !
-      integer :: radz0
-      integer :: nbuf_xy,idest,tag_xy
+      integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
+      integer :: nbuf_xy
 !
 !  Identifier
 !

@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.55 2003-07-07 12:46:24 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.56 2003-07-07 13:42:32 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -31,7 +31,6 @@ module Radiation
 !
 !  mpi stuff
 !
-  integer, parameter :: tag_yz=301,tag_zx=302,tag_xy=303
   integer :: idest
 !
 !  default values for one pair of vertical rays
@@ -88,7 +87,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.55 2003-07-07 12:46:24 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.56 2003-07-07 13:42:32 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -409,7 +408,7 @@ module Radiation
                            /(1.-emtau(l2-radx0+1:l2,:,:))
             if (ipx/=0) then
                idest=ipx-1
-               call radcomm_yz_recv(radx0,idest,tag_yz,Irad0_yz)
+               call radcomm_yz_recv(radx0,idest,Irad0_yz)
             endif
             Irad0(l1-radx0:l1-1,:,:)=Irad0_yz
          endif
@@ -420,7 +419,7 @@ module Radiation
                                    /(1.-emtau(l1:l1+radx0-1,:,:))
             if (ipy/=nprocx-1) then
                idest=ipx+1
-               call radcomm_yz_recv(radx0,idest,tag_yz,Irad0_yz)
+               call radcomm_yz_recv(radx0,idest,Irad0_yz)
             endif
             Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
          endif
@@ -442,7 +441,7 @@ module Radiation
             if (ipy==0) Irad0_zx=0.
             if (ipy/=0) then
                idest=ipy-1
-               call radcomm_zx_recv(rady0,idest,tag_zx,Irad0_zx)
+               call radcomm_zx_recv(rady0,idest,Irad0_zx)
             endif
             Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
          endif
@@ -452,7 +451,7 @@ module Radiation
             if (ipy==nprocy-1) Irad0_zx=0.
             if (ipy/=nprocy-1) then
                idest=ipy+1
-               call radcomm_zx_recv(rady0,idest,tag_zx,Irad0_zx)
+               call radcomm_zx_recv(rady0,idest,Irad0_zx)
             endif
             Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
          endif
@@ -473,7 +472,7 @@ module Radiation
             if (ipz==0) call radboundary_xy(1,Irad0_xy)
             if (ipz/=0) then
                idest=ipz-1
-               call radcomm_xy_recv(radz0,idest,tag_xy,Irad0_xy)
+               call radcomm_xy_recv(radz0,idest,Irad0_xy)
             endif
             Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
          endif
@@ -483,7 +482,7 @@ module Radiation
             if (ipz==nprocz-1) call radboundary_xy(2,Irad0_xy)
             if (ipz/=nprocz-1) then
                idest=ipz+1
-               call radcomm_xy_recv(radz0,idest,tag_xy,Irad0_xy)
+               call radcomm_xy_recv(radz0,idest,Irad0_xy)
             endif
             Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
          endif
@@ -509,7 +508,7 @@ module Radiation
                Irad0_yz=Irad0(l2-radx0+1:l2,:,:) &
                        *emtau(l2-radx0+1:l2,:,:) &
                         +Irad(l2-radx0+1:l2,:,:)
-               call radcomm_yz_send(radx0,idest,tag_yz,Irad0_yz)
+               call radcomm_yz_send(radx0,idest,Irad0_yz)
             endif
          endif
 !
@@ -520,7 +519,7 @@ module Radiation
                Irad0_yz=Irad0(l1:l1+radx0-1,:,:) &
                        *emtau(l1:l1+radx0-1,:,:) &
                         +Irad(l1:l1+radx0-1,:,:)
-               call radcomm_yz_send(radx0,idest,tag_yz,Irad0_yz)
+               call radcomm_yz_send(radx0,idest,Irad0_yz)
             endif
          endif
 !
@@ -544,7 +543,7 @@ module Radiation
                Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
                        *emtau(:,m2-rady0+1:m2,:) &
                         +Irad(:,m2-rady0+1:m2,:)
-               call radcomm_zx_send(rady0,idest,tag_zx,Irad0_zx)
+               call radcomm_zx_send(rady0,idest,Irad0_zx)
             endif
          endif
 !
@@ -556,7 +555,7 @@ module Radiation
                Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
                        *emtau(:,m1:m1+rady0-1,:) &
                         +Irad(:,m1:m1+rady0-1,:)
-               call radcomm_zx_send(rady0,idest,tag_zx,Irad0_zx)
+               call radcomm_zx_send(rady0,idest,Irad0_zx)
             endif
          endif
 !
@@ -580,7 +579,7 @@ module Radiation
                Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
                        *emtau(:,:,n2-radz0+1:n2) &
                         +Irad(:,:,n2-radz0+1:n2)
-               call radcomm_xy_send(radz0,idest,tag_xy,Irad0_xy)
+               call radcomm_xy_send(radz0,idest,Irad0_xy)
             endif
          endif
 !
@@ -592,7 +591,7 @@ module Radiation
                Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
                        *emtau(:,:,n1:n1+radz0-1) &
                         +Irad(:,:,n1:n1+radz0-1)
-               call radcomm_xy_send(radz0,idest,tag_xy,Irad0_xy)
+               call radcomm_xy_send(radz0,idest,Irad0_xy)
             endif
          endif
 !
