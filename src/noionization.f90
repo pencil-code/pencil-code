@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.59 2003-08-26 16:40:36 mee Exp $
+! $Id: noionization.f90,v 1.60 2003-08-29 11:37:08 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -23,6 +23,11 @@ module Ionization
   interface perturb_energy              ! Overload subroutine perturb_energy
     module procedure perturb_energy_pencil
     module procedure perturb_energy_point
+  end interface
+
+  interface perturb_mass                ! Overload subroutine perturb_energy
+    module procedure perturb_mass_pencil
+    module procedure perturb_mass_point
   end interface
 
   ! secondary parameters calculated in initialize
@@ -70,7 +75,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.59 2003-08-26 16:40:36 mee Exp $")
+           "$Id: noionization.f90,v 1.60 2003-08-29 11:37:08 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -128,29 +133,57 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,EE,ss,TT)
+    subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
       use Mpicomm, only: stop_it
       
       real, intent(in) :: lnrho,EE
-      real, intent(out) :: ss,TT
+      real, intent(out) :: ss,TT,yH
 
       call stop_it("perturb_energy_point: NOT IMPLEMENTED IN NO IONIZATION")
       ss=0.
       TT=0.
+      yH=impossible
       if (ip==0) print*,lnrho,EE
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,EE,ss,TT)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
       use Mpicomm, only: stop_it
       
-      real, dimension(nx), intent(in) :: lnrho,EE
-      real, dimension(nx), intent(out) :: ss,TT
+      real, dimension(nx), intent(in) :: lnrho,ee
+      real, dimension(nx), intent(out) :: ss,TT,yH
 
       call stop_it("perturb_energy_pencil: NOT IMPLEMENTED IN NO IONIZATION")
       ss=0.
       TT=0.
-      if (ip==0) print*,lnrho,EE
+      yH=impossible
+      if (ip==0) print*,lnrho,ee
     end subroutine perturb_energy_pencil
+!***********************************************************************
+    subroutine perturb_mass_point(lnrho,EE,ss,TT,yH)
+      use Mpicomm, only: stop_it
+      
+      real, intent(in) :: lnrho,pp
+      real, intent(out) :: ss,TT,yH
+
+      call stop_it("perturb_mass_point: NOT IMPLEMENTED IN NO IONIZATION")
+      ss=0.
+      TT=0.
+      yH=impossible
+      if (ip==0) print*,lnrho,pp
+    end subroutine perturb_mass_point
+!***********************************************************************
+    subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+      use Mpicomm, only: stop_it
+      
+      real, dimension(nx), intent(in) :: lnrho,pp
+      real, dimension(nx), intent(out) :: ss,TT,yH
+
+      call stop_it("perturb_mass_pencil: NOT IMPLEMENTED IN NO IONIZATION")
+      ss=0.
+      TT=0.
+      yH=impossible
+      if (ip==0) print*,lnrho,pp
+    end subroutine perturb_mass_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
       use Mpicomm, only: stop_it
@@ -204,7 +237,7 @@ module Ionization
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -220,16 +253,17 @@ module Ionization
       use Sub
 !
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
-      real, dimension(nx), optional :: cs2,cp1tilde,ee
+      real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
       if (present(cs2)) cs2=gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
+      if (present(pp)) pp=gamma1*exp(gamma*ss-gamma1*(lnrho0)+alog(cs20/gamma1))/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -245,11 +279,12 @@ module Ionization
       use Sub
 !
       real, intent(in) :: lnrho,ss,yH,TT
-      real, optional :: cs2,cp1tilde,ee
+      real, optional :: cs2,cp1tilde,ee,pp
 !
       if (present(cs2)) cs2=gamma1*exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=exp(gamma*ss+gamma1*(lnrho-lnrho0)+alog(cs20/gamma1))/gamma
+      if (present(pp)) pp=gamma1*exp(gamma*ss-gamma1*(lnrho0)+alog(cs20/gamma1))/gamma
 !
       if (ip==0) print*,yH,TT
     endsubroutine thermodynamics_point

@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.50 2003-08-28 00:21:10 mee Exp $
+! $Id: interstellar.f90,v 1.51 2003-08-29 11:37:08 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -67,6 +67,8 @@ module Interstellar
                               ! Used in kompaneets test etc.
 
   ! input parameters
+  real :: outer_shell_proportion = 2.
+  real :: inner_shell_proportion = 1.5
   real :: TT_SN_min=1.e7
   real :: coolingfunction_scalefactor=1.
   logical :: lnever_move_mass
@@ -84,7 +86,7 @@ module Interstellar
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
       uniform_zdist_SNI, ltestSN, TT_SN_min, lnever_move_mass, &
       lSNI, lSNII, laverageSNheating, coolingfunction_scalefactor, &
-      point_width
+      point_width, inner_shell_proportion, outer_shell_proportion
 
   contains
 
@@ -111,7 +113,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.50 2003-08-28 00:21:10 mee Exp $")
+           "$Id: interstellar.f90,v 1.51 2003-08-29 11:37:08 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -678,16 +680,13 @@ find_SN: do n=n1,n2
       integer, intent(in) :: itype_SN
 
       real :: width_SN,width_shell_outer,width_shell_inner,c_SN
-      real :: profile_integral, mass_shell, mass_gain
+      real :: profile_integral, mass_shell, mass_gain, pp_SN
       real :: EE_SN=0.,EE2_SN=0.,rho_SN_new,lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new,dv
       
-      real, dimension(nx) :: deltarho, deltaEE, ee_old ,ee_new
-      real, dimension(nx) :: rho_old, TT_old, TT_new, ss_new,lnrho_new
+      real, dimension(nx) :: deltarho, deltaEE
       real, dimension(1) :: fmpi1, fmpi1_tmp
       real, dimension(2) :: fmpi2, fmpi2_tmp
-     ! the following not really wanted, but are required if we want
-     ! to use the thermodynamics function in the [No]Ionisation module
-      real, dimension(nx) ::  lnrho_old, ss_old, TT1_old, cs2_old, yH_old
+      real, dimension(nx) ::  lnrho, ss, yH, TT, rho_old, pp_old, ee_old
 
       logical :: lmove_mass=.false.
       integer :: idim
@@ -714,9 +713,10 @@ find_SN: do n=n1,n2
       !  Now deal with (if nec.) mass relocation
       !
       call ionget(lnrho_SN,ss_SN,yH_SN,TT_SN)
-      call thermodynamics(lnrho_SN,ss_SN,yH_SN,TT_SN,ee=ee_SN)
+      call thermodynamics(lnrho_SN,ss_SN,yH_SN,TT_SN,ee=ee_SN,pp=pp_SN)
 
-      call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new,TT_SN_new)
+      call perturb_energy(lnrho_SN,ee_SN+c_SN/rho_SN,ss_SN_new, &
+                TT_SN_new,yH_SN_new)
 
       if(lroot.and.ip<=14) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_SN_min, ee_SN =', &
@@ -733,8 +733,10 @@ find_SN: do n=n1,n2
          call getdensity((ee_SN*rho_SN)+c_SN,TT_SN_min,1.,rho_SN_new)
          lnrho_SN_new=alog(rho_SN_new)
 
+         call perturb_mass(lnrho_SN_new,pp_SN,ss_SN_new,TT_SN_new,yH_SN_new)
+         call thermodynamics(lnrho_SN_new,ss_SN_new,yH_SN_new,TT_SN_new,ee=ee_SN)
          call perturb_energy(lnrho_SN_new, &
-                       (ee_SN*rho_SN+c_SN)/rho_SN_new,ss_SN_new,TT_SN_new)
+                 ee_SN+(c_SN/rho_SN_new),ss_SN_new,TT_SN_new,yH_SN_new)
 
          if(lroot.and.ip<=14) print*, &
             'explode_SN: Relocate mass... TT_SN_new, rho_SN_new=', &
@@ -757,37 +759,43 @@ find_SN: do n=n1,n2
 !write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
       do n=n1,n2
          do m=m1,m2
+            ! Apply perturbations
+            lnrho=f(l1:l2,m,n,ilnrho)
+            rho_old=exp(lnrho) 
+            ss=f(l1:l2,m,n,iss)
+            call ionget(f,yH,TT)
+            
             call proximity_SN()
+            
             deltarho(:)=0.
             if (lmove_mass) then
-               call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
+              call makecavity_SN(deltarho,width_SN,rho_SN_new-rho_SN, &
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
+
+              ! Save the pressure
+              call thermodynamics(lnrho,ss,yH,TT,pp=pp_old)
+              ! Perturb the density
+              lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
+              call perturb_mass(lnrho,pp_old,ss,TT,yH)
+              f(l1:l2,m,n,ilnrho)=lnrho
+              f(l1:l2,m,n,iss)=ss
+              if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
+              if (iTT.ne.0) f(l1:l2,m,n,iTT)=TT
             endif
+
 
             call injectenergy_SN(deltaEE,width_SN,c_SN,EE_SN)
-            ! Apply perturbations
-            lnrho_old=f(l1:l2,m,n,ilnrho)
-            rho_old=exp(lnrho_old) 
-            ss_old=f(l1:l2,m,n,iss)
+            ! Get the old energy
+            call thermodynamics(lnrho,ss,yH,TT,ee=ee_old)
+            ! Perturb the energy
+            call perturb_energy(lnrho,ee_old+deltaEE/exp(lnrho),ss,TT,yH)
+            f(l1:l2,m,n,iss)=ss
+            if (iTT.ne.0) f(l1:l2,m,n,iTT)=TT
+            if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
+!
 
-            call ionget(f,yH_old,TT_old)
-            call thermodynamics(lnrho_old,ss_old,yH_old,TT_old,ee=ee_old)
-
-            ! use amax1 with rho_min to ensure rho doesn't go negative
-            if (lmove_mass) then
-              lnrho_new(:)=alog(amax1(rho_old(:)+deltarho(:),rho_min))
-            else
-              lnrho_new(:)=lnrho_old(:)
-            endif
-
-
-            call perturb_energy(lnrho_new, &
-                 ((ee_old*rho_old)+deltaEE)/exp(lnrho_new),ss_new,TT_new)
-            call thermodynamics(lnrho_new,ss_new,yH_old,TT_new,ee=ee_new)
+!            call thermodynamics(lnrho,ss,yH,TT,ee=ee_new)
 !write (1,'(f8.0, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') n,deltarho,rho_old,exp(lnrho_new),TT_old,TT_new,ss_old,ss_new,deltaEE,ee_old,ee_new
-
-            if (lmove_mass) f(l1:l2,m,n,ilnrho)=lnrho_new
-            f(l1:l2,m,n,iss)=ss_new
 
        enddo
       enddo
@@ -975,10 +983,8 @@ find_SN: do n=n1,n2
       real :: width_shell_outer, width_shell_inner, c_shell
       ! real, dimension(1) :: fsum1,fsum1_tmp
 
-!      width_shell_outer=2.0*width_SN
-!      width_shell_inner=1.5*width_SN
-      width_shell_outer=1.1*width_SN
-      width_shell_inner=0.8*width_SN
+      width_shell_outer=outer_shell_proportion*width_SN
+      width_shell_inner=inner_shell_proportion*width_SN
 
       deltarho(:) =  depth*exp(-(dr2_SN(:)/width_SN**2)**3)
       

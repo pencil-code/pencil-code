@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.11 2003-08-28 00:21:10 mee Exp $
+! $Id: ionization_fixed.f90,v 1.12 2003-08-29 11:37:08 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -21,6 +21,11 @@ module Ionization
   interface perturb_energy              ! Overload subroutine perturb_energy
     module procedure perturb_energy_pencil
     module procedure perturb_energy_point
+  end interface
+
+  interface perturb_mass                ! Overload subroutine perturb_energy
+    module procedure perturb_mass_pencil
+    module procedure perturb_mass_point
   end interface
 
   ! Constants use in calculation of thermodynamic quantities
@@ -74,7 +79,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.11 2003-08-28 00:21:10 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.12 2003-08-29 11:37:08 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -208,27 +213,28 @@ module Ionization
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,TT)
+    subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
       real,intent(in) :: lnrho,ee
-      real, intent(out) :: ss,TT
+      real, intent(out) :: ss,TT,yH
 !      real :: yH,K
 !
+        yH = yH0
         TT= (ee-ee0) / eeTT
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
-print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
 !        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
 !              (3. * (1.+yH0+xHe) * ss_ion )
 !        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
 !        yH=2./(1.+sqrt(1.+4./K))
 !        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
-!
+!      
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,TT)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
       real, dimension(nx), intent(in) :: lnrho,ee
-      real, dimension(nx), intent(out) :: ss,TT
+      real, dimension(nx), intent(out) :: ss,TT,yH
 !      real, dimension(nx) :: yH,K
 !
+        yH = yH0
         TT= (ee-ee0) / eeTT
         ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
 
@@ -239,6 +245,38 @@ print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
 !        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
 !
     end subroutine perturb_energy_pencil
+!***********************************************************************
+    subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
+      real,intent(in) :: lnrho,pp
+      real, intent(out) :: ss,TT,yH
+!      real :: yH,K
+!
+        TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
+        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
+        yH=yH0
+!        TT= (EE/exp(lnrho)-yH0*ss_ion*TT_ion*2. ) / &
+!              (3. * (1.+yH0+xHe) * ss_ion )
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
+!
+    end subroutine perturb_mass_point
+!***********************************************************************
+    subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+      real, dimension(nx), intent(in) :: lnrho,pp
+      real, dimension(nx), intent(out) :: ss,TT,yH
+!      real, dimension(nx) :: yH,K
+!
+        TT= pp / ((1. + yH0 + xHe) * ss_ion * exp(lnrho))
+        ss=(log(TT)-(lnTTlnrho*lnrho)-lnTT0)/lnTTss
+        yH=yH0
+!        TT= 1.5 * (EE/exp(lnrho)-yH0*ss_ion*TT_ion ) / &
+!              ((1.+yH0+xHe) * ss_ion)
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+!        ss=((1.+yH0+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term-one_yH_term-xHe_term)*ss_ion
+!
+    end subroutine perturb_mass_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 
@@ -283,7 +321,7 @@ print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -295,15 +333,16 @@ print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
 !  15-jun-03/axel: made compatible with current ionization routine
 !
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
-      real, dimension(nx), optional :: cs2,cp1tilde,ee
+      real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
       if (present(cs2))      cs2=cs2TT*TT
       if (present(cp1tilde)) cp1tilde=cp1tilde_
       if (present(ee))       ee=eeTT*TT+ee0
+      if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -315,11 +354,12 @@ print*,'perturb_energy_point: ee, ee0, eeTT = ',ee,ee0,eeTT
 !  15-jun-03/axel: made compatible with current ionization routine
 !
       real, intent(in) :: lnrho,ss,yH,TT
-      real, optional :: cs2,cp1tilde,ee
+      real, optional :: cs2,cp1tilde,ee,pp
 !
       if (present(cs2))      cs2=cs2TT*TT
       if (present(cp1tilde)) cp1tilde=cp1tilde_
       if (present(ee))       ee=eeTT*TT+ee0
+      if (present(pp))       pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
 !***********************************************************************

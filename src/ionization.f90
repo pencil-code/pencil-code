@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.82 2003-08-28 00:21:10 mee Exp $
+! $Id: ionization.f90,v 1.83 2003-08-29 11:37:08 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -24,6 +24,11 @@ module Ionization
   interface perturb_energy              ! Overload subroutine perturb_energy
     module procedure perturb_energy_pencil
     module procedure perturb_energy_point
+  end interface
+
+  interface perturb_mass                ! Overload subroutine perturb_energy
+    module procedure perturb_mass_pencil
+    module procedure perturb_mass_point
   end interface
 
   !  secondary parameters calculated in initialize
@@ -73,7 +78,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.82 2003-08-28 00:21:10 mee Exp $")
+           "$Id: ionization.f90,v 1.83 2003-08-29 11:37:08 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -231,13 +236,13 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
     endsubroutine ioncalc
 !***********************************************************************
-    subroutine perturb_energy_point(lnrho,ee,ss,TT)
+    subroutine perturb_energy_point(lnrho,ee,ss,TT,yH)
 
       use Mpicomm, only: stop_it
       
       real,intent(in) :: lnrho,EE
-      real, intent(out) :: ss,TT
-      real :: yH,yH_term,one_yH_term
+      real, intent(out) :: ss,TT,yH
+      real :: yH_term,one_yH_term
 !
 !        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
 !        yH=2./(1.+sqrt(1.+4./K))
@@ -262,13 +267,13 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
        
     end subroutine perturb_energy_point
 !***********************************************************************
-    subroutine perturb_energy_pencil(lnrho,ee,ss,TT)
+    subroutine perturb_energy_pencil(lnrho,ee,ss,TT,yH)
 
       use Mpicomm, only: stop_it
       
       real, dimension(nx) ,intent(in) :: lnrho,ee
-      real, dimension(nx) ,intent(out) :: ss,TT
-      real, dimension(nx) :: yH,yH_term,one_yH_term
+      real, dimension(nx) ,intent(out) :: ss,TT,yH
+      real, dimension(nx) :: yH_term,one_yH_term
       integer :: l
 
       do l=1,nx 
@@ -291,6 +296,67 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term- &
                   one_yH_term-xHe_term)*ss_ion
     end subroutine perturb_energy_pencil
+!***********************************************************************
+    subroutine perturb_mass_point(lnrho,pp,ss,TT,yH)
+
+      use Mpicomm, only: stop_it
+      
+      real,intent(in) :: lnrho,pp
+      real, intent(out) :: ss,TT,yH
+      real :: yH,yH_term,one_yH_term
+!
+!        K=exp(lnrho_e-lnrho)*(TT/TT_ion)**1.5*exp(-TT_ion/TT)
+!        yH=2./(1.+sqrt(1.+4./K))
+      yH=0.5
+      call rtsafe_pp(lnrho,pp,yH)
+      
+      if (yH>0.) then
+        yH_term=yH*(2*log(yH)-lnrho_e-lnrho_p)
+      else
+        yH_term=0.
+      endif
+      if (yH<1.) then
+        one_yH_term=(1.-yH)*(log(1.-yH)-lnrho_H)
+      else
+        one_yH_term=0.
+      endif
+      
+      TT=pp / &
+              ((1.+yH+xHe) * ss_ion * exp(lnrho))
+      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term - &
+                    one_yH_term-xHe_term)*ss_ion
+       
+    end subroutine perturb_mass_point
+!***********************************************************************
+    subroutine perturb_mass_pencil(lnrho,pp,ss,TT,yH)
+
+      use Mpicomm, only: stop_it
+      
+      real, dimension(nx) ,intent(in) :: lnrho,pp
+      real, dimension(nx) ,intent(out) :: ss,TT,yH
+      real, dimension(nx) :: yH_term,one_yH_term
+      integer :: l
+
+      do l=1,nx 
+        yH(l)=0.5
+        call rtsafe_pp(lnrho(l),pp(l),yH(l))
+      
+        if (yH(l)>0.) then
+          yH_term(l)=yH(l)*(2*log(yH(l))-lnrho_e-lnrho_p)
+        else
+          yH_term(l)=0.
+        endif
+        if (yH(l)<1.) then
+          one_yH_term(l)=(1.-yH(l))*(log(1.-yH(l))-lnrho_H)
+        else
+          one_yH_term(l)=0.
+        endif
+      enddo
+      TT= pp / &
+            ((1.+yH+xHe) * ss_ion * exp(lnrho) )
+      ss=((1.+yH+xHe)*(1.5*log(TT/TT_ion)-lnrho+2.5)-yH_term- &
+                  one_yH_term-xHe_term)*ss_ion
+    end subroutine perturb_mass_pencil
 !***********************************************************************
     subroutine getdensity(EE,TT,yH,rho)
 
@@ -336,7 +402,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !
     endsubroutine ionget_point
 !***********************************************************************
-    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_pencil(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -352,7 +418,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       use Sub
 !
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
-      real, dimension(nx), intent(out), optional :: cs2,cp1tilde,ee
+      real, dimension(nx), intent(out), optional :: cs2,cp1tilde,ee,pp
       real, dimension(nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension(nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
       real, dimension(nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
@@ -384,10 +450,11 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !  calculate internal energy for calculating thermal energy
 !
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_pencil
 !***********************************************************************
-    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee)
+    subroutine thermodynamics_point(lnrho,ss,yH,TT,cs2,cp1tilde,ee,pp)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -403,7 +470,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       use Sub
 !
       real, intent(in) ::lnrho,ss,yH,TT
-      real, intent(out), optional :: cs2,cp1tilde,ee
+      real, intent(out), optional :: cs2,cp1tilde,ee,pp
       real :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real :: dffdlnrho,dydlnrho,dlnPdlnrho
       real :: dlnTT_dss,dffdss,dydss,dlnPdss
@@ -435,6 +502,7 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
 !  calculate internal energy for calculating thermal energy
 !
       if (present(ee)) ee=1.5*(1.+yH+xHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(pp)) pp=(1.+yH+xHe)*exp(lnrho)*TT*ss_ion
 !
     endsubroutine thermodynamics_point
 !***********************************************************************
@@ -591,6 +659,81 @@ ionstat=2./3.*(ss/ss_ion-(2.+xHe)*(2.5-lnrho)+ lnrho_e+lnrho_p+xHe_term)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
 !
     endsubroutine saha_ee
+!***********************************************************************
+    subroutine rtsafe_pp(lnrho,pp,yH)
+!
+!   safe newton raphson algorithm (adapted from NR) !
+!   25-aug-03/tony: modified from entropy based routine
+!
+      real, intent (in)    :: lnrho,pp
+      real, intent (inout) :: yH
+      real                 :: yHmax,dyHold,dyH,fl,fh,f,df,temp
+      integer              :: i
+      integer, parameter   :: maxit=100
+
+      yHmax=1.-yHacc
+      yHmin=yHacc
+      dyHold=1.-2.*yHacc
+      dyH=dyHold
+!
+!  return if y is too close to 0 or 1
+!
+      call saha_pp(yHmin,lnrho,pp,fh,df)
+      if (fh.le.0.) then
+         yH=yHmin
+         return
+      endif
+      call saha_pp(yHmax,lnrho,pp,fl,df)
+      if (fl.ge.0.) then
+         yH=yHmax
+         return
+      endif
+!
+!  otherwise find root
+!
+      call saha_pp(yH,lnrho,pp,f,df)
+      do i=1,maxit
+         if (((yH-yHmin)*df-f)*((yH-yHmax)*df-f).gt.0. &
+              .or.abs(2.*f).gt.abs(dyHold*df)) then
+            dyHold=dyH
+            dyH=.5*(yHmin-yHmax)
+            yH=yHmax+dyH
+            if (yHmax.eq.yH) return
+         else
+            dyHold=dyH
+            dyH=f/df
+            temp=yH
+            yH=yH-dyH
+            if (temp.eq.yH) return
+         endif
+         if (abs(dyH).lt.yHacc) return
+         call saha_pp(yH,lnrho,pp,f,df)
+         if (f.lt.0.) then
+            yHmax=yH
+         else
+            yHmin=yH
+         endif
+      enddo
+      print *,'rtsafe: exceeded maximum iterations',f
+!
+    endsubroutine rtsafe_pp
+!!***********************************************************************
+    subroutine saha_pp(yH,lnrho,pp,f,df)
+!
+!   we want to find the root of f
+!
+!   25-aug-03/tony: coded from entropy based routine
+!
+      real, intent(in)  :: yH,lnrho,pp
+      real, intent(out) :: f,df
+      real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
+
+      lnTT_=log(pp) -  lnrho - log((1.+yH+xHe) * ss_ion * TT_ion )
+      f=lnrho_e-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
+      dlnTT_=((2./3.)*(lnrho_H-lnrho_p-f-exp(-lnTT_))-1)/(1.+yH+xHe)
+      df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
+!
+    endsubroutine saha_pp
 !***********************************************************************
     subroutine bc_ss_flux(f,topbot,hcond0,hcond1,Fbot, FbotKbot, chi, &
                 lmultilayer,lcalc_heatcond_constchi)
