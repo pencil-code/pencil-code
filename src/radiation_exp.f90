@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.72 2003-08-02 22:09:36 theine Exp $
+! $Id: radiation_exp.f90,v 1.73 2003-08-03 09:25:04 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.72 2003-08-02 22:09:36 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.73 2003-08-03 09:25:04 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -223,7 +223,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'radtransfer'
+      if(ldebug.and.headt) print*,'radtransfer'
 !
 !  calculate source function and opacity
 !
@@ -289,15 +289,16 @@ module Radiation
 !  All rays start with zero intensity
 !
 !  16-jun-03/axel+tobi: coded
+!   3-aug-03/axel: added amax1(dtau,dtaumin) construct
 !
       use Cdata
 !
       real, dimension(mx,my,mz,mvar+maux) :: f
-      real :: dlength,dtau,emdtau
+      real :: dlength,dtau,emdtau,dtaumin=1e-38
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'intensity_intrinsic'
+      if(ldebug.and.headt) print*,'intensity_intrinsic'
 !
 !  line elements
 !
@@ -308,7 +309,10 @@ module Radiation
       emtau=1.
       Irad=0.
 !
-!  loop
+!  loop over all meshpoints
+!
+!  Note: for dtau -> 0, the quantity (emdtau-1+dtau)/amax1(dtau,1e-38) goes
+!  linearly to zero. The amax1(dtau,dtaumin) construct avoids division by 0.
 !
       do n=nnstart,nnstop,ndir
       do m=mmstart,mmstop,mdir
@@ -319,8 +323,8 @@ module Radiation
           pos(l,m,n,:)=pos(l-lrad,m-mrad,n-nrad,:)
           Irad(l,m,n)=Irad(l-lrad,m-mrad,n-nrad)*emdtau &
                       +(1.-emdtau)*Srad(l-lrad,m-mrad,n-nrad) &
-                      +(emdtau-1+dtau)*(Srad(l,m,n) &
-                                       -Srad(l-lrad,m-mrad,n-nrad))/dtau
+                      +(Srad(l,m,n)-Srad(l-lrad,m-mrad,n-nrad)) &
+                      *(emdtau-1+dtau)/amax1(dtau,dtaumin)
       enddo
       enddo
       enddo
@@ -432,7 +436,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'intensity_communicate'
+      if(ldebug.and.headt) print*,'intensity_communicate'
 !
 !  receive boundary values
 !
@@ -463,7 +467,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'receive_intensity'
+      if(ldebug.and.headt) print*,'receive_intensity'
 !
 !  yz boundary plane
 !
@@ -512,13 +516,13 @@ module Radiation
 !
 !  03-jul-03/tobi: coded
 !
-      use Cdata, only: m1,m2,lroot,headt,m,n
+      use Cdata, only: m1,m2,lroot,ldebug,headt,m,n
 !
       integer :: ll,mm,nn
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'propagate_intensity'
+      if(ldebug.and.headt) print*,'propagate_intensity'
 !
 !  initialize position array in ghost zones
 !
@@ -570,7 +574,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'send_intensity'
+      if(ldebug.and.headt) print*,'send_intensity'
 !
 !  zx boundary plane
 !
@@ -720,7 +724,7 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'intensity_revision'
+      if(ldebug.and.headt) print*,'intensity_revision'
 !
 !  do the ray...
 !
