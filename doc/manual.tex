@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.190 2003-08-06 17:03:16 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.191 2003-08-08 20:06:29 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -36,10 +36,12 @@
 %     \env:     An environment variable:
 %                   this sets \env{CVSROOT}
 %     \file:    A file or directory name:
-%                   written to \file{~/tmp/var.dat}
+%                   written to \file{var.dat} in \file{data/}
+%               Please make sure that the index entries for directory
+%               names end in `/'.
 %               Like \name, \file accepts an optional argument that will
 %               override the index entry:
-%                   \file[var.dat]{~/tmp/var.dat}
+%                   \file[var.dat]{data/var.dat}
 %     \command,
 %     \cmd:     A command line:
 %                   use \command{rm -f *} at your own risk
@@ -341,7 +343,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-08-06 17:03:16 $ $,~ $ $Revision: 1.190 $ $}
+\date{$ $Date: 2003-08-08 20:06:29 $ $,~ $ $Revision: 1.191 $ $}
 
 % ====================================================================== %
 
@@ -374,7 +376,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-08-06 17:03:16 $ $,~ $ $Revision: 1.190 $ $}
+  \emph{$ $Date: 2003-08-08 20:06:29 $ $,~ $ $Revision: 1.191 $ $}
 
   \vspace{\stretch{3}}
 
@@ -957,24 +959,28 @@ contain only a short relative path.
 You are now ready to start the code:
 \begin{alltt}
   \prompt{unix> } start.csh\small
-  Linux cincinnatus 2.4.10-4GB #1 Tue Sep 25 12:33:54 GMT 2001 i686 unknown
+  Linux cincinnatus 2.4.18-4GB #1 Wed Mar 27 13:57:05 UTC 2002 i686 unknown
   Non-MPI version
-  Thu Jul 18 16:25:20 CEST 2002
+  datadir = data
+  Fri Aug  8 21:36:43 CEST 2003
      src/start.x
-  CVS: hydro.f90          v. 1.48         (dobler    ) 2002/07/19 10:26:01
-  {\sl{}[\ldots]}
-  CVS: start.in           v. 1.2          (dobler    ) 2002/07/19 10:23:57
-   mx,my,mz=          38          38          38
+  CVS: io_dist.f90        v. 1.61         (brandenb  ) 2003/08/03 09:26:55
+  {\sl{}[\ldots]}  
+  CVS: start.in           v. 1.4          (dobler    ) 2002/10/02 20:11:14
+   nxgrid,nygrid,nzgrid=          32          32          32
+   thermodynamics: assume cp=1
    
    uu: up-down
    piecewise polytropic vertical stratification (lnrho)
    init_lnrho: cs2bot,cs2top=   1.450000      0.3333330    
+   e.g. for ionization runs: cs2bot,cs2top not yet set
    piecewise polytropic vertical stratification (ss)
-   Note: mpoly{1,2} override hcond{1,2} to    2.000000      0.5000000    
    
-  0.060u 0.000s 0:00.24 25.0\%     0+0k 0+0io 126pf+0w
-  
-  Fri Jul 19 13:04:38 CEST 2002
+   start.x has completed successfully
+   
+  0.070u 0.020s 0:00.14 64.2%     0+0k 0+0io 180pf+0w
+
+  Fri Aug  8 21:36:43 CEST 2003
 \end{alltt}
 This runs \file[start.x]{src/start.x} to construct an initial condition based on
 the parameters set in \file{start.in}.
@@ -982,39 +988,10 @@ This initial condition is stored in \file[var.dat]{data/proc0/var.dat} (and
 in \file[var.dat]{data/proc1/var.dat}, etc.\ if you run the multiprocessor
 version).
 
-% ---------------------------------------------------------------------- %
-\begin{figure}[hbtp]
-  \centering
-  \includegraphics%
-    [width=1\textwidth,keepaspectratio]%
-    {pvert0}
-  \caption{Initial state of the three-layer convection model in
-    \file[conv-slab/]{samples/conv-slab}.
-    Shown are (from left to right) density $\varrho$, vertical velocity
-    $u_z$, entropy $s/c_p$ and temperature $T$ as functions of the
-    vertical coordinate $z$ for about ten different vertical lines in the
-    computational box.
-    The dashed lines denote domain boundaries:
-    $z<-0.68$ is the lower ghost zone (points have no physical significance);
-    $-0.68<z<0$ is a stably stratified layer ($ds/dz>0$);
-    $0<z<1$ is the unstable layer ($ds/dz<0$);
-    $1<z<1.32$ is the isothermal top layer;
-    $z>1.32$ is the upper ghost zone (points have no physical significance).
-  }
-  \label{Fig-pvert0}
-\end{figure}
-% ---------------------------------------------------------------------- %
-
-If you have IDL, you can visualize the initial state with (see
-Sect.~\ref{S-IDL-routines} for details)
-\begin{alltt}
-  \prompt{unix > } idl
-  \prompt{IDL >  } .r start
-  \prompt{IDL >  } .r r
-  \prompt{IDL >  } .r thermo
-  \prompt{IDL >  } .r pvert \
-\end{alltt}
-The result should look like in Fig.~\ref{Fig-pvert0}.
+If you visualize the profiles using \name{IDL} (see below),
+the result should bear some resemblance to Fig.~\ref{Fig-pvert1}, but with
+different values in the ghost zones (the correct values are set at
+run-time only) and a simpler velocity profile.
 
 \bigskip
 
@@ -1024,34 +1001,19 @@ Now we run the code:
 \end{alltt}
 This runs \file[run.x]{src/run.x} and carries out \var{nt} time steps, where
 \var{nt} and other run time parameters are specified in \file{run.in}.
-On a decent PC (1.7\,GHz), 1000 time steps take about 3 minutes.
+On a decent PC (1.7\,GHz), 50 time steps take about 10 seconds.
 
 The relevant part of the code's output looks like\\
 \begin{minipage}{1\textwidth}
 \bigskip
 \begin{small}
 \begin{alltt}
----it------t--------dt--------urms------umax------rhom------ssm-------dtc----
+ ---it------t--------dt--------urms------umax------rhom------ssm-------dtc----
       0     0.00  8.561E-03   0.00633   0.09560   14.4708  -0.44601  4.74E-01
-     50     0.43  8.555E-03   0.00498   0.04376   14.4706  -0.44563  4.74E-01
-    100     0.86  8.548E-03   0.00428   0.03027   14.4706  -0.44523  4.74E-01
-    150     1.28  8.551E-03   0.00380   0.02265   14.4707  -0.44491  4.74E-01
-    200     1.71  8.554E-03   0.00352   0.01872   14.4710  -0.44528  4.74E-01
-    250     2.14  8.551E-03   0.00310   0.01352   14.4716  -0.44515  4.74E-01
-    300     2.57  8.555E-03   0.00284   0.01506   14.4715  -0.44489  4.74E-01
-    350     2.99  8.555E-03   0.00257   0.01426   14.4713  -0.44461  4.74E-01
-    400     3.42  8.557E-03   0.00253   0.01304   14.4712  -0.44484  4.74E-01
-    450     3.85  8.557E-03   0.00261   0.01305   14.4713  -0.44504  4.74E-01
-    500     4.28  8.557E-03   0.00269   0.01375   14.4716  -0.44567  4.74E-01
-    550     4.71  8.559E-03   0.00266   0.01490   14.4716  -0.44604  4.74E-01
-    600     5.13  8.559E-03   0.00308   0.01481   14.4713  -0.44584  4.74E-01
-    650     5.56  8.560E-03   0.00333   0.01543   14.4712  -0.44555  4.74E-01
-    700     5.99  8.559E-03   0.00361   0.01604   14.4713  -0.44541  4.74E-01
-    750     6.42  8.559E-03   0.00402   0.01723   14.4715  -0.44562  4.74E-01
-    800     6.85  8.558E-03   0.00449   0.02000   14.4718  -0.44565  4.74E-01
-    850     7.27  8.558E-03   0.00507   0.02277   14.4716  -0.44542  4.74E-01
-    900     7.70  8.559E-03   0.00575   0.02599   14.4713  -0.44527  4.74E-01
-    950     8.13  8.560E-03   0.00658   0.02860   14.4712  -0.44543  4.74E-01
+     10     0.09  8.561E-03   0.00536   0.06398   14.4708  -0.44591  4.74E-01
+     20     0.17  8.560E-03   0.00527   0.04088   14.4709  -0.44583  4.74E-01
+     30     0.26  8.561E-03   0.00533   0.04437   14.4708  -0.44575  4.74E-01
+     40     0.34  8.559E-03   0.00517   0.04520   14.4708  -0.44569  4.74E-01
 \end{alltt}
 \end{small}
 \bigskip
@@ -1070,14 +1032,8 @@ and lists
 \end{enumerate}
 The entries in this list can be added, removed or reformatted in the file
 \file{print.in}, see Sects~\ref{diagnostic-IO} and \ref{S-print.in-run-params}.
-
-To visualize the resulting state, run
-\begin{alltt}
-  \prompt{IDL >  } .r r
-  \prompt{IDL >  } .r pvert \
-\end{alltt}
-and you should obtain something similar to Fig.~\ref{Fig-pvert1}, which
-corresponds to the state after 1000 time steps.
+The output is also saved in \file[time_series.dat]{data/time_series.dat}
+and should be identical to the content of \file{reference.out}.
 
 % ---------------------------------------------------------------------- %
 \begin{figure}[hbtp]
@@ -1085,16 +1041,33 @@ corresponds to the state after 1000 time steps.
   \includegraphics%
     [width=1\textwidth,keepaspectratio]%
     {pvert1}
-  \caption{Like in Fig.~\ref{Fig-pvert0}, but after 1000 time steps at
-    time $t=7.0$.
-    The dashed lines represents the initial condition.
+  \caption{Stratification of the three-layer convection model in
+    \file[conv-slab/]{samples/conv-slab} after $50$ timesteps ($t=0.428$).
+    Shown are (from left to right) density $\varrho$, vertical velocity
+    $u_z$, entropy $s/c_p$ and temperature $T$ as functions of the
+    vertical coordinate $z$ for about ten different vertical lines in the
+    computational box.
+    The dashed lines denote domain boundaries:
+    $z<-0.68$ is the lower ghost zone (points have no physical significance);
+    $-0.68<z<0$ is a stably stratified layer ($ds/dz>0$);
+    $0<z<1$ is the unstable layer ($ds/dz<0$);
+    $1<z<1.32$ is the isothermal top layer;
+    $z>1.32$ is the upper ghost zone (points have no physical significance).
   }
   \label{Fig-pvert1}
 \end{figure}
 % ---------------------------------------------------------------------- %
 
-For the evolution of velocity and the state at later times, see
-Sect.~\ref{S-ref-data} in the Appendix.
+If you have \name{IDL}, you can visualize the stratification with (see
+Sect.~\ref{S-IDL-routines} for details)
+\begin{alltt}
+  \prompt{unix > } idl
+  \prompt{IDL >  } .r start
+  \prompt{IDL >  } .r r
+  \prompt{IDL >  } .r thermo
+  \prompt{IDL >  } .r pvert \
+\end{alltt}
+The result should look like Fig.~\ref{Fig-pvert1}.
 
 
 \paragraph{Note:}
@@ -1116,37 +1089,11 @@ useful for all your other runs too.
 
 % ---------------------------------------------------------------------- %
 
-\subsection{A second test}
+\subsection{Further tests}
 
-We will add other simple examples (periodic, isothermal, non-forced MHD)
-where the physics is already nontrivial.
-The following is not available yet.
-
-\subsubsection{Interlocked flux rings}
-
-\begin{alltt}
-  \prompt{unix> } cd somewhere/pencil-code
-  \prompt{unix> } source sourceme.csh \quad\#(to put pencil-code/bin into your path)
-  \prompt{unix> } cd runs/sample/rings
-  \prompt{unix> } setup-src \quad\#(from \file[bin/]{../../../bin}, which by now should be in your path)
-  \prompt{unix> } cd src
-  \prompt{unix> } make
-  \prompt{unix> } cd ..
-  \prompt{unix> } mkdir data \quad{\sl\# (or [better] link directory on local disc to \file[data/]{data})}
-  \prompt{unix> } ./start.csh
-  \prompt{unix> } ./run.csh
-\end{alltt}
-
-The output should look like \ldots
-
-% ---------------------------------------------------------------------- %
-
-\subsection{Other test problems}
-
-\begin{alltt}
-   conv-slab  conv-slab-flat  helical-MHDturb  interlocked-fluxrings
-\end{alltt}
-
+There is a number of other tests in the \file{samples/} directory.
+You can use the script \file[autotest]{bin/autotest} to automatically run
+these tests and have the output compared to reference results.
 
 % ====================================================================== %
 
@@ -2482,12 +2429,16 @@ In addition one must edit
 \end{alltt}
 You should also make sure $nxgrid=nygrid=nzgrid$.
 
-Running the code will now create the files \name{powerb.dat} and 
-\name{poweru.dat} containing the three-dimensional 
+Running the code will now create the files \file{powerb.dat} and 
+\file{poweru.dat} containing the three-dimensional 
 magnetic and kinetic power spectra respectively. In addition to these 
 three-dimensional files we will also find the one-dimensional files
-\name{powerbx_x.dat}, \name{powerby_x.dat}, \name{powerbz_x.dat},
-\name{powerux_x.dat}, \name{poweruy_x.dat} and \name{poweruz_x.dat}.
+\file{powerbx_x.dat},
+\file[powerbx_x.dat]{powerby_x.dat}, % one index entry is enough..
+\file[powerbx_x.dat]{powerbz_x.dat},
+\file{powerux_x.dat},
+\file[powerux_x.dat]{poweruy_x.dat} and
+\file[powerux_x.dat]{poweruz_x.dat}.
 In these files the data are stored such that the first line contain the
 time of the snapshot, the following $nxgrid/2$ numbers represent the
 power at each wavenumber, from the smallest to the largest.
@@ -2531,10 +2482,18 @@ In addition one must edit
 You should also make sure $nxgrid=nygrid=nzgrid$.
 
 Running the code will now create the files: \\ 
-\name{sfu-1.dat}, \name{sfu-2.dat}, \name{sfu-3.dat} (velocity), \\ 
-\name{sfb-1.dat}, \name{sfb-2.dat}, \name{sfb-3.dat} (magnetic field), \\ 
-\name{sfz1-1.dat}, \name{sfz1-2.dat}, \name{sfz1-3.dat} (first Elsasser), \\ 
-\name{sfz2-1.dat}, \name{sfz2-2.dat}, \name{sfz2-3.dat} (second Elsasser), \\ 
+\file{sfu-1.dat},
+\file[sfu-1.dat]{sfu-2.dat},    % one index entry is enough
+\file[sfu-1.dat]{sfu-3.dat} (velocity), \\ 
+\file{sfb-1.dat},
+\file[sfb-1.dat]{sfb-2.dat},
+\file[sfb-1.dat]{sfb-3.dat} (magnetic field), \\ 
+\file{sfz1-1.dat},
+\file[sfz1-1.dat]{sfz1-2.dat},
+\file[sfz1-1.dat]{sfz1-3.dat} (first Elsasser variable), \\ 
+\file[sfz1-1.dat]{sfz2-1.dat},
+\file[sfz1-1.dat]{sfz2-2.dat},
+\file[sfz1-1.dat]{sfz2-3.dat} (second Elsasser variable), \\ 
 which contains the data of interest. 
 The first line in each file contains the time $t$ 
 and the number $qmax$, such that the largest moment
@@ -3313,7 +3272,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-08-06 17:03:16 $ $,~ $ $Revision: 1.190 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-08-08 20:06:29 $ $,~ $ $Revision: 1.191 $ $}}}
 
 \section{Timings}
 
@@ -4145,10 +4104,22 @@ $\sigma$ is called \var{relhel}.
 
 \subsection{Three-layered convection model}
 
+% ---------------------------------------------------------------------- %
+\begin{figure}[hbtp]
+  \centering
+  \includegraphics%
+    [width=0.8\textwidth,keepaspectratio]%
+    {pvert2}
+  \caption{Like in Fig.~\ref{Fig-pvert1}, but at time $t=50$.
+  }
+  \label{Fig-pvert2}
+\end{figure}
+% ---------------------------------------------------------------------- %
+
 In Sect.~\ref{S-getting-started} we have shown the early stages of the
 convection model located in \file[conv-slab/]{samples/conv-slab}.
 To arrive at fully developed convection, you will need to run the code for
-a larger number of time steps.
+many more time steps.
 Figure~\ref{Fig-pvert2} shows the vertical profiles of four basic
 quantities at time $t=50$.
 Figure~\ref{Fig-evol} shows the time evolution of rms and maximum
@@ -4158,24 +4129,12 @@ velocity for the model for $0<t<50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.8\textwidth,keepaspectratio]%
-    {pvert2}
-  \caption{Like in Fig.~\ref{Fig-pvert0}, but at time $t=50$.
-  }
-  \label{Fig-pvert2}
-\end{figure}
-% ---------------------------------------------------------------------- %
-
-% ---------------------------------------------------------------------- %
-\begin{figure}[hbtp]
-  \centering
-  \includegraphics%
-    [width=0.5\textwidth,keepaspectratio]%
+    [width=0.6\textwidth,keepaspectratio]%
     {evol}
   \caption{Time evolution of rms and maximum velocity for the model
     \file[conv-slab/]{samples/conv-slab}.
-     Plots of this type can be produced by running the IDL script
-     \file{evol.pro}.
+    Similar plots can be produced by running the IDL script
+    \file{ts.pro}.
   }
   \label{Fig-evol}
 \end{figure}
@@ -4188,12 +4147,12 @@ horizontal sections for time $t=50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.65\textwidth,height=0.65\textheight,keepaspectratio]%
+    [width=0.75\textwidth,height=0.65\textheight,keepaspectratio]%
     {hsect2}
-  \caption{Horizontal section $z=0.352$ at $t=50$.
-    Left: velocity field.
-    Right: entropy (color coded) and density (isocontours).
-    Plots of this type can be produced by running the IDL scripts
+  \caption{Horizontal sections for $t=50$.
+    Top: velocity field.
+    Bottom: entropy (color coded) and density (isocontours).
+    Plots of this type can be produced by running the IDL script
     \file{hsections.pro})
   }
   \label{Fig-hsection2}
@@ -4204,11 +4163,11 @@ horizontal sections for time $t=50$.
 \begin{figure}[hbtp]
   \centering
   \includegraphics%
-    [width=0.65\textwidth,height=0.65\textheight,keepaspectratio]%
+    [width=0.75\textwidth,height=0.65\textheight,keepaspectratio]%
     {vsect2}
   \caption{Vertical section $y=0.516$ at $t=50$.
-    Left: velocity field.
-    Right: entropy (color coded) and density (isocontours).
+    Top: velocity field.
+    Bottom: entropy (color coded) and density (isocontours).
     Plots of this type can be produced by running the IDL scripts
     \file{vsections.pro}) or \file{vsections2.pro}).
   }
@@ -4686,79 +4645,86 @@ modules.
 %  \begin{tabular}{lp{0.6\textwidth}}
   \begin{longtable}{lp{0.6\textwidth}}
     \toprule
-    hydro.f90      & Hydrodynamics: add variable $\uv$ with equation of
-                     motion; \\
-    nohydro.f90    & no variable $\uv$: useful for kinematic dynamo runs. \\
+    \file{hydro.f90}      & Hydrodynamics: add variable $\uv$ with equation of
+                            motion; \\
+    \file{nohydro.f90}    & no variable $\uv$: useful for kinematic dynamo
+                            runs. \\
     \midrule
-    density.f90    & Add variable $\ln\varrho$ with continuity equation \\
-    nodensity.f90  & no variable $\ln\varrho$: useful for Burgers' equation. \\
+    \file{density.f90}    & Add variable $\ln\varrho$ with continuity
+                            equation; \\
+    \file{nodensity.f90}  & no variable $\ln\varrho$: useful for Burgers'
+                            equation. \\
     \midrule
-    entropy.f90    & Add variable $s$ with entropy equation (energy
-                     equation); \\
-    noentropy.f90  & no variable $s$: isothermal hydrodynamics. \\
+    \file{entropy.f90}    & Add variable $s$ with entropy equation (energy
+                            equation); \\
+    \file{noentropy.f90}  & no variable $s$: isothermal hydrodynamics. \\
     \midrule
-    magnetic.f90   & Add variable $\Av$ (magnetic vector potential) with
-                     induction equation; \\
-    nomagnetic.f90 & no variable $\Av$: nonmagnetic hydrodynamics. \\
+    \file{magnetic.f90}   & Add variable $\Av$ (magnetic vector potential) with
+                            induction equation; \\
+    \file{nomagnetic.f90} & no variable $\Av$: nonmagnetic hydrodynamics. \\
     \midrule
-    pscalar.f90    & Add variable $\ln c$ (concentration) with
-                     advection-diffusion equation for transport of a
-                     passive scalar; \\
-    nopscalar.f90  & no passive scalar, no variable $\ln c$. \\
+    \file{pscalar.f90}    & Add variable $\ln c$ (concentration) with
+                            advection-diffusion equation for transport of a
+                            passive scalar; \\
+    \file{nopscalar.f90}  & no passive scalar, no variable $\ln c$. \\
     \midrule
-    radiation.f90  & Radiative transfer in the flux-limited diffusion
-                     approximation.
-                     \emph{Still experimental and not working correctly}. \\
-    noradiation.f90& No radiative transfer. \\
+    \file{radiation.f90}  & Radiative transfer in the flux-limited diffusion
+                            approximation.
+                            \emph{Still experimental and not working correctly}. \\
+    \file{noradiation.f90}& No radiative transfer. \\
     \midrule
-    visc_const.f90 & Constant fluid viscosity. \\
-    visc_shock.f90 & Constant fluid viscosity and variable shock viscosity (conserves energy) based upon 
-                     local strength of a shock. The shock profile is calculated from the velocity field.
+    \file{visc_const.f90} & Constant fluid viscosity. \\
+    \file{visc_shock.f90} & Constant fluid viscosity and variable shock
+                            viscosity (conserves energy) based upon 
+                            local strength of a shock.
+                            The shock profile is calculated from the
+                            velocity field.
                      \emph{Still experimental and not fully tested. }. \\
     \midrule
     \midrule
-    forcing.f90    & Add a forcing function to rhs of equation of motion
-                    (typically helical forcing) for forced turbulence
-                    calculations; \\
-    noforcing.f90  & no forcing. \\
+    \file{forcing.f90}    & Add a forcing function to rhs of equation of motion
+                            (typically helical forcing) for forced turbulence
+                            calculations; \\
+    \file{noforcing.f90}  & no forcing. \\
     \midrule
-    shear.f90      & Shearing-box boundary conditions; \\
-    noshear.f90    & no shearing box. \\
+    \file{shear.f90}      & Shearing-box boundary conditions; \\
+    \file{noshear.f90}    & no shearing box. \\
     \midrule
-    grav_z.f90     & Constant vertical gravity in equation of motion; \\
-    grav_r.f90     & radially symmetric gravity; \\
-    nograv.f90     & no gravity. \\
+    \file{grav_z.f90}     & Constant vertical gravity in equation of motion; \\
+    \file{grav_r.f90}     & radially symmetric gravity; \\
+    \file{nograv.f90}     & no gravity. \\
     \midrule
     \midrule
-    global_rr.f90  & Radius \verb|rr| as an additional global variable; \\
-    global_pot.f90 & radially symmetric gravity potential as additional
-                     global variables; \\
-    noglobal.f90   & no additional global variables. \\
+    \file{global_rr.f90}  & Radius \verb|rr| as an additional global variable; \\
+    \file{global_pot.f90} & radially symmetric gravity potential as additional
+                            global variables; \\
+    \file{noglobal.f90}   & no additional global variables. \\
     \midrule
-    fft.f          & Singleton (1968) FFT routine: needed for magnetic
-                     potential-field boundary condition; \\
-    nofft.f90      & no FFT: no need to bother about compiler warnings if
-                     you don't need this boundary condition. \\
+    \file{fft.f}          & Singleton (1968) FFT routine: needed for magnetic
+                            potential-field boundary condition; \\
+    \file{nofft.f90}      & no FFT: no need to bother about compiler warnings if
+                            you don't need this boundary condition. \\
     \midrule
-    io_dist.f90    & Distributed input/output: each processor writes to
-                     its own directory. \\
-    io_mpio.f90    & Parallel input/output through \name{MPI-IO}.
-                     \emph{Still experimental}. \\
+    \file{io_dist.f90}    & Distributed input/output: each processor writes to
+                            its own directory. \\
+    \file{io_mpio.f90}    & Parallel input/output through \name{MPI-IO}.
+                            \emph{Still experimental}. \\
     \midrule
-    mpicomm.f90    & Use \name{MPI} for communication on multiprocessor
-                     machines; \\
-    nompicomm.f90  & no parallelization: convenient for testing and
-                     smaller production runs on desktop or notebook
-                     computers. \\
+    \file{mpicomm.f90}    & Use \name{MPI} for communication on multiprocessor
+                            machines; \\
+    \file{nompicomm.f90}  & no parallelization: convenient for testing and
+                            smaller production runs on desktop or notebook
+                            computers. \\
     \midrule
-    debug_c.c      & Use I/O routines that allow to write auxiliary
-                     variables to a file (nontrivial in a Pencil Code);
-                     requires C compiler to be set up correctly and maybe
-                     requires appropriate compiler flags
-                     (\code{-DFUNDERSCORE}) for correctly interfacing C
-                     with Fortran (and may still not work in some cases); \\
-    nodebug.f90    & don't use these debugging routines, avoiding any
-                     C-Fortran interoperability problems. \\
+    \file{debug_c.c}      & Use I/O routines that allow to write auxiliary
+                            variables to a file (nontrivial in a Pencil Code);
+                            requires C compiler to be set up correctly and maybe
+                            requires appropriate compiler flags
+                            (\code{-DFUNDERSCORE}) for correctly interfacing C
+                            with Fortran (and may still not work in some
+                            cases); \\
+    \file{nodebug.f90}    & don't use these debugging routines, avoiding any
+                            C-Fortran interoperability problems. \\
     \bottomrule
   \end{longtable}
 %  \end{tabular}
@@ -5495,7 +5461,7 @@ possible inputs to the \file{print.in} file.
 \toprule
   \multicolumn{1}{c}{\emph{Variable}} & {\emph{Meaning}} \\
 \midrule
-  \multicolumn{2}{c}{Module \name{prints.f90}} \\
+  \multicolumn{2}{c}{Module \file{prints.f90}} \\
 \midrule
   \var{it} & number of time step \quad(since beginning of job only)\\
   \var{t} & $t$ \quad(since start.csh)\\
@@ -5504,7 +5470,7 @@ possible inputs to the \file{print.in} file.
   \var{walltime} & wall clock time since run.x started in seconds \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{hydro.f90}} \\
+  \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
   \var{u2m} & $\left<\uv^2\right>$ \\
   \var{urms} & $\left<\uv^2\right>^{1/2}$ \\
@@ -5518,21 +5484,21 @@ possible inputs to the \file{print.in} file.
   \var{ruzm} & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{density.f90}} \\
+  \multicolumn{2}{c}{Module \file{density.f90}} \\
 \midrule
   \var{rhom} & $\left<\varrho\right>$ \\
   \var{ekin} & $\left<{1\over2}\varrho\uv^2\right>$ \\
   \var{ekintot} & $\int_V{1\over2}\varrho\uv^2\, dv$ \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{entropy.f90}} \\
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
 \midrule
   \var{eth} & $\left<\varrho e\right>$ \\
   \var{ethtot} & $\int_V\varrho e\,dv$ \\
   \var{ssm} & $\left<s/c_p\right>$ \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{magnetic.f90}} \\
+  \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
   \var{b2m} & $\left<\Bv^2\right>$ \\
   \var{brms} & $\left<\Bv^2\right>^{1/2}$ \\
@@ -5551,13 +5517,13 @@ possible inputs to the \file{print.in} file.
   \var{bmz} & $\left<\left<\Bv\right>_{xy}^2\right>^{1/2}$ \quad(energy of $xy$-averaged mean field) \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{pscalar.f90}} \\
+  \multicolumn{2}{c}{Module \file{pscalar.f90}} \\
 \midrule
   \var{rhoccm} & $\left<\varrho c\right>$ \\
   \var{ccmax} & $\max(c)$ \\
 %
 \midrule
-  \multicolumn{2}{c}{Module \name{equ.f90}} \\
+  \multicolumn{2}{c}{Module \file{equ.f90}} \\
 \midrule
   \var{rhom} & $\left<\varrho\right>$ \quad(mass per volume)\\
   \var{eth} & $\left<\varrho e\right>$ \quad(thermal energy per volume)\\
@@ -5713,7 +5679,7 @@ initial condition.
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
 \midrule
-  Ferriere          & {}   & {}   & {}   & {}   & {}   & {}   & {}   
+  Ferri{\`e}re      & {}   & {}   & {}   & {}   & {}   & {}   & {}   
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   & {}   & {}   & {}   & {}   & {}
                     & {}   & {}   \\
@@ -5866,7 +5832,7 @@ initial condition.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.190 2003-08-06 17:03:16 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.191 2003-08-08 20:06:29 dobler Exp $ $}
 
 
 \end{document}
@@ -5922,4 +5888,12 @@ $ $Id: manual.tex,v 1.190 2003-08-06 17:03:16 brandenb Exp $ $}
 % LocalWords:  convsample Chandrasekhar eqn timestep nonhelical hsection RK pp
 % LocalWords:  vsection params remesh Marms Mamax Nstorage NS BNST KR BH BMS Gb
 % LocalWords:  HTM BDS Subramanian Nachr ajwm cdts postproc decfort idx Hwwsx
-% LocalWords:  WorkShop convstar jan reftex varfile datadir
+% LocalWords:  WorkShop convstar jan reftex varfile datadir Gyr realtodouble ok
+% LocalWords:  dspec vel fftpack oned powerb poweru powerbx powerby powerbz sfu
+% LocalWords:  powerux poweruy poweruz lsfu lsfb lsfz Elsasser FUNC func sfb lr
+% LocalWords:  sfz Saha Sackur Ioni exp umy umx umz mpi comm fno MHDturb feb uz
+% LocalWords:  initcond nomag apr giga nfilter ppowercomp Narayan Goldreich sim
+% LocalWords:  lupw Collatz Mehrstellen Verfahren hyperviscosity Galsgaard radi
+% LocalWords:  Raphson trans horizonatal Ylm rrr Coord diag Stegun acroread cgs
+% LocalWords:  visc walltime ekintot ethtot sedov Abramowitz Harri GNG
+% LocalWords:  BJNRST Ferri
