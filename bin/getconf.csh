@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.100 2004-02-09 15:52:52 mcmillan Exp $
+# $Id: getconf.csh,v 1.101 2004-02-10 18:40:42 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -71,11 +71,8 @@ if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
 else if ($?PE_HOSTFILE) then
-  if ($debug) echo "SGE PE job"
+  if ($debug) echo "SGE Parallel Environment job - $PE"
   set nodelist = `cat $PE_HOSTFILE | grep -v '^#' | sed 's/\ .*//'`
-  echo '--------------- PE_HOSTFILE ----------------'
-  cat $PE_HOSTFILE
-  echo '----------- PE_HOSTFILE - END --------------'
 else if ($?JOB_ID) then
   if (-e $HOME/.score/ndfile.$JOB_ID) then
     if ($debug) echo "Scout job"
@@ -83,8 +80,6 @@ else if ($?JOB_ID) then
   else
     # E.g. for wd running SGE on Kabul cluster
     echo "Apparently not a scout job"
-    PE_HOSTFILE=/usr/local/sge/default/spool/comp003/active_jobs/3078.1/pe_hostfile
-
   endif
 else
   if ($debug) echo "Setting nodelist to ($hn)"
@@ -267,36 +262,29 @@ else if ($hn =~ giga*) then
 
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
   echo "Copson Cluster - St. Andrews"
-  set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
-  # set mpirun = /opt/score/bin/scout 
-  if ($?PE_HOSTFILE) then
-    cat $PE_HOSTFILE | sed 's/\ .*//' > $TMPDIR/hostfile
-    echo '--------------- MPI HOSTFILE ----------------'
-    cat $TMPDIR/hostfile
-    echo '----------- MPI HOSTFILE - END --------------'   
-    set mpirunops = "-local -machinefile $TMPDIR/hostfile"
-  else if ($?JOB_ID) then
-    set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
-  endif
-#scout -wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID \
-# -nodes=$((NSLOTS-1))x2 src/start.x
-#scout -wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID \
-# -nodes=$((NSLOTS-1))x2 src/run.x     
-#    set mpirun = /opt/score/bin/mpirun
-#    set mpirunops = "-machinefile $PBS_NODEFILE"
-
-#  setenv SCRATCH_DIR /scratch/$JOB_ID
-#  if ($?JOB_ID) then
-#    if (-e $HOME/.score/ndfile.$JOB_ID) then
-#      set local_disc=1
-#      set one_local_disc=0
-#    else
-#      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
-#      set local_disc=0
-#    endif
-#  else
+  if ($?PE) then                            # Are we running under SGE?   
+    if ($PE =~ gm2) then                    # Using Myrinet?
+      cat $PE_HOSTFILE | sed 's/\([[:alnum:].-]*\)\ \([0-9]*\).*/for ( i=0 \; i < 2 \; i++ ){print "\1\\n"};/' | bc > $TMPDIR/hostfile
+      set mpirun = /usr/local/mpich-gm_INTEL/bin/mpirun 
+      set mpirunops = "-local -machinefile $TMPDIR/hostfile"
+      setenv SCRATCH_DIR $TMPDIR
+      set local_disc=0     ## Temporarily set to 0 while Keith fixes the junky TMPDIR stuff!
+      set one_local_disc=0
+    else if ($PE =~ score) then             # Using SCore?
+      #set mpirunops = "-wait -F $HOME/.score/ndfile.$JOB_ID -e /tmp/scrun.$JOB_ID"
+      #echo '--------------- PE_HOSTFILE ----------------'
+      #cat $PE_HOSTFILE
+      #echo '----------- PE_HOSTFILE - END --------------'
+      set mpirunops = "-wait -F $PE_HOSTFILE -e $TMPDIR/scrun.$JOB_ID"
+      set mpirun = /opt/score/bin/scout 
+      #setenv SCRATCH_DIR /scratch/$JOB_ID
+      setenv SCRATCH_DIR $TMPDIR
+      set local_disc=1
+      set one_local_disc=0
+    endif
+  else
     set local_disc=0
-#  endif
+  endif
 
 else if ($hn == rasmussen) then
   echo "Rasmussen"
@@ -409,7 +397,8 @@ set procdirs = \
 if ($local_disc) then
   echo "Creating directory structure on scratch disc(s)"
   foreach host ($nodelist)
-    $SSH $host "mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
+    $SSH $host "echo "On $host, it looks like:"; ls -l --color=none $SCRATCH_DIR; " 
+    # $SSH $host "mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
   end
 endif
 
