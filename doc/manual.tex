@@ -35,6 +35,10 @@
 \setcounter{tocdepth}{6} % Older versions of fancybox very annoyingly (and
                          % unnecessarily) resets this and make table of
                          % contents disappear
+
+\usepackage{booktabs}
+\usepackage{longtable}
+
 \usepackage{alltt}
 
 \usepackage{graphicx}
@@ -65,6 +69,12 @@
 
 %% Bold face \tt prompts (only works within `alltt' or \tt environment)
 \newcommand{\prompt}[1]{{\ttfamily\bfseries{}#1}}
+
+%% Margin and inline notes and remarks
+\newcommand\note[1]{\marginpar{\renewcommand{\baselinestretch}{0.8}
+        \raggedright\scriptsize\usefont{OT1}{phv}{mc}{n} #1}}
+\newcommand{\Note}[1]{\emph{[#1]}}
+
 
 %% keys, names, paths, files, etc.
 \newcommand{\code}[1]{\texttt{#1}}
@@ -140,7 +150,7 @@
 \newcommand{\uv}            {\vekt{u}}
 
 % \newcommand{\Vol}           {{\cal V}}
-% \newcommand{\vA}            {v_{\rm A}}
+\newcommand{\vA}            {v_{\rm A}}
 
 \newcommand{\xv}            {\vekt{x}}
 
@@ -388,12 +398,220 @@ is the shear tensor.
 % ====================================================================== %
 
 \section{Using the Code}
+\label{Input-params}
 
 Here's how to use the code \ldots
 
+% ---------------------------------------------------------------------- %
+\subsection{Start parameters}
+Here is a list of parameters that are set in \file{start.in}
+
+Any variable referred to as a \dfn{flag} can be set to any nonzero value
+to switch the corresponding feature on.
+
+Not all parameters are used for a given scenario.
+
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.6\textwidth}}
+%\begin{tabular}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}}
+               & \multicolumn{1}{c}{\emph{Meaning}} \\
+\midrule
+  \var{ip}     & (anti-)verbosity level: \code{ip=1} produces lots of
+                 diagnostic output, \code{ip=14} virtually none. \\
+  \var{[x-z]0},
+  \var{L[x-z]},
+  \var{iper[x-z]},
+               & determine the geometry of the box.
+                 If \code{iperx=0} (box \emph{not\/} periodic in $x$), $x$
+                 ranges from $x_0$ to $x_0+L_x$; if \code{iperx=1}
+                 (periodic box in $x$), the rightmost point is
+                 $x_0+L_x-\delta x$. In all cases, three ghost zones will
+                 be added. \\
+  \var{z1}, \var{z2}, \var{ztop}
+               & specific to the solar convection case.
+                 The stable layer is $z_0 < z < z_1$, the unstable layer
+                 $z_1 < z < z_2$, and the top (isothermal) layer is
+                 $z_2 < z < z_{\rm top}$
+                 \Note{How is this related to $L_z$??} \\
+  \var{hcond[0-2]}, \var{whcond}
+               & specific to the solar convection case: heat conductivities
+                 $\lambda$ in the individual layers. \var{hcond0} is the
+                 value $\lambda_{\rm unst}$ in the unstable layer,
+                 \var{hcond1} is the ratio
+                 $\lambda_{\rm stab}/\lambda_{\rm unst}$ for the stable
+                 layer, and \var{hcond2} is the ratio 
+                 $\lambda_{\rm top}/\lambda_{\rm unst}$ for the top layer.
+                 The function $\lambda(z)$ is not discontinuous, as the
+                 transition between the different values is smoothed over
+                 the width \var{whcond}. \\
+  \var{mpoly[0-2]}, \var{isothtop}
+               & specific to the solar convection case: polytropic indices
+                 of unstable (\var{mpoly0}), stable (\var{mpoly1}) and top
+                 layer (\var{mpoly2}).
+                 If the flag \var{isothtop} is set, the
+                 top layer is initialised to be isothermal, otherwise
+                 thermal (plus hydrostatic) equilibrium is assumed for all
+                 three layers, which results in a piecewise polytropic
+                 stratification. \\
+  \var{ampl}   & ??? \\
+  \var{init}   & ??? \\
+  \var{urand}  & amplitude of initial random velocity fluctuations \\
+  \var{gamma}  & adiabatic index of the gas (typically $\gamma=5/3$ in
+                 astrophysical applications \\
+  \var{cs0}, \var{rho0}
+               & reference values of sound speed $\cs$ and density
+                 $\varrho$. In the convection case, these are the values of
+                 $\cs$ and $\varrho$ at $z=z_{\rm top}$. \\
+  \var{gravz}  & vertical gravity $g_z$; normally $<0$. \\
+  \var{grads0} & [Not used for convection reference case] initial entropy
+                 gradient. \\
+\bottomrule
+%\end{tabular}
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+% ---------------------------------------------------------------------- %
+\subsection{Run parameters}
+\label{Run-params}
+
+Here is a list of parameters that are set in \file{run.in}.
+
+Note that formatted \name{Fortran} input allows for parameters to be
+skipped (indicated by possible whitespace, followed by a comma), which
+causes the corresponding variable to retain the value it had before the
+\cmd{read} command was called.
+In most cases, this default value will be the one set in \file{start.in}.
+
+Any variable referred to as a \dfn{flag} can be set to any nonzero value
+to switch the corresponding feature on.
+
+Not all parameters are used for a given scenario.
 
 
-    
+% ---------------------------------------------------------------------- %
+\begin{longtable}{lp{0.6\textwidth}}
+\toprule
+  \multicolumn{1}{c}{\emph{Variable}}
+               & \multicolumn{1}{c}{\emph{Meaning}} \\
+\midrule
+  \var{nt}     & number of time steps to carry out. \\
+  \var{it1}    & write monitoring output every \var{it1} time steps.\\
+  \var{dt}     & time step $\delta t$ if positive,
+                 $\delta t/\delta t_{\rm Courant}$ if negative. A typical
+                 value is \code{dt=0.4}. \\
+  \var{isave}  & update snapshot file \file{var.dat} every \var{isave}
+                 time steps. \\
+  \var{iorder} & order of time step. Set \code{iorder=1} for Euler
+                 stepping, \code{iorder=3} for the 3rd-order Runge-Kutta
+                 (2$N$) scheme. \\
+  \var{dsnap}  & save full snapshots \file{VAR$N$} every \var{dsnap} time
+                 units. \\
+  \var{dvid}   & write two-dimensional sections for generation of videos
+                 every \var{dsnap} time units. \\
+  \var{dforce} & force every \var{dforce} time units [???]. \\
+  \var{dtmin}  & abort if time step $\delta t < \delta t_{\rm min}$. \\
+  \var{tinit}  & ??? \\
+  \var{tdamp}  & damp velocities in the initial time interval
+                 $0 < t < t_{\rm damp}$. \\
+  \var{dampu}  & strength of initial damping of velocity. \\
+  \var{dampuext}, \var{rdamp}, \var{wdamp}
+               & permanently damp velocities at $|\xv| > r_{\rm damp}$
+                 with strength \var{dampuext}, with a smooth transition
+                 between damped and undamped of radial width \var{wdamp}. \\
+  \var{ip}     & (anti-)verbosity level: \code{ip=1} produces lots of
+                 diagnostic output, \code{ip=14} virtually none. \\
+  \var{i[x-z]} & monitor values of some variables in point with indices
+                 $(i_x,i_y,i_z)$. \\
+  \var{cs}, \var{rho}
+               & reference values of sound speed $\cs$ and density
+                 $\varrho$. In the convection case, these are the values of
+                 $\cs$ and $\varrho$ at $z=z_{\rm top}$. \\
+  \var{ivisc}  & switch for viscosity term
+                 \Note{which value gives which term?} \\
+  \var{cdtv}   & weight of diffusive/viscous relative to advective time
+                 step for determining the Courant step
+                 \begin{equation}
+                   \delta t_{\rm Cou}
+                   = \min\left( \frac{\delta x_{\rm min}}
+                                     {U_{\rm max}} ,
+                                c_{\delta t_v}
+                                \frac{\delta x_{\rm min}^2}
+                                     {D_{\rm max}}
+                         \right) \; ,
+                 \end{equation}
+                 where
+                 $\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
+                 $U_{\rm max} \equiv \max\left(|\uv|
+                                     + \sqrt{\cs^2{+}\vA^2}\right)$,
+                 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
+                 respectively;
+                 and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
+                 $\nu$ denotes kinematic viscosity,
+                 $\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
+                 $\eta$ the magnetic diffusivity.
+                 \\
+  \var{hcond[0-2]}, \var{whcond}
+               & heat conductivities, see Sec~\ref{Input-params}; leave
+                 these empty unless you want to override the settings from
+                 \file{start.in}. \\
+  \var{cdiffrho}
+               & ??? \\
+  \var{gravz}  & vertical gravity, see Sec~\ref{Input-params}; leave
+                 this empty unless you want to override the setting from
+                 \file{start.in}. \\
+  \var{cheat}, \var{wheat}
+               & heating term: add total amount \var{cheat} of heat per
+                 time unit in zone near bottom of width \var{wheat}.
+                 You probably rather want to use \var{Fheat} (see below). \\
+  \var{cool}, \var{wcool}
+               & cooling term: cool top layer of width \var{wcool} to
+                 reference temperature (given by ${\cs}_0$) by cooling term
+                 of strength \var{cool}. \\
+  \var{Fheat}  & heat flux through bottom boundary. \\
+  \var{iforce}, \var{force}, \var{relhel}
+               & on-off flag, strength and kinetic helicity of forcing
+                 terms. \\
+  \var{bc[x-z]}
+               & boundary conditions. Set these to a sequence of letters 
+                 like `p,p,p,p,p,p,p,p' for periodic boundaries, or
+                 `s,s,a,a2,c1:c2,s,s,a' for non-periodic ones.
+                 Each entry (between commas) corresponds to one of the
+                 variables, normally these are $u_x$, $u_y$, $u_z$,
+                 $\ln\varrho$, $s/c_p$, $A_x$, $A_x$ and $A_x$, in this
+                 order.
+                 \begin{description}
+                 \item[\option{p}] indicates periodicity
+                 \item[\option{a}] indicates antisymmetry w.\,r.\,t.~the
+                   boundary i.\,e.~vanishing value
+                 \item[\option{s}] indicates symmetry w.\,r.\,t.~the
+                   boundary, i.\,e.~vanishing first derivative
+                 \item[\option{a2}] indicates antisymmetry w.\,r.\,t.~the
+                   arbitrary value on the boundary, i.\,e.~vanishing
+                   second derivative
+                 \item[\option{c1}] is a special boundary condition for
+                   $\ln\varrho$ and $s$, which ensures constant heat flux
+                   through the boundary
+                 \item[\option{c2}] is a special boundary condition for
+                   $\ln\varrho$ and $s$, which ensures constant
+                   temperature at the boundary 
+                 \end{description}
+                 The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
+                 boundary condition $a$ at the left/lower boundary, but
+                 $b$ at the right/upper one. 
+                 \\
+  \var{form1}  & format for monitoring output. typically something like
+                 \code{'(i8,f11.5,1p,50(e10.3," "))'} for printing number
+                 of time step, time, and then a lot of different
+                 quantities. Make sure you allow for sufficiently many
+                 quantities here (you can always use a large multiplier to
+                 be on the safe side). \\
+\bottomrule
+\end{longtable}
+% ---------------------------------------------------------------------- %
+
+
 % ====================================================================== %
 
 \section{Experimenting with the \LaTeX{} macros}
