@@ -34,8 +34,6 @@ endif
 foreach label (ser par)
   if (-d "src-$label") then
     echo "src-$label/ already exists.. leaving it alone"
-    # MPIO doesn't work under lam
-    perl -i.bak -pe 's{/lam/}{/mpich/}g' src-$label/makefile
   else
     if ($label == par) then
       set ncpus  = 4
@@ -58,6 +56,8 @@ foreach label (ser par)
 	       src-$label/cparam.local
     (cd src-$label; make makefile)
   endif
+  # MPIO doesn't work under lam
+  perl -i.bak -pe 's{/lam/}{/mpich/}g' src-$label/makefile
 end
 
 ## Move and set up data directories
