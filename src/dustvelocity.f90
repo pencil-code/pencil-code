@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.57 2004-05-11 12:40:50 mee Exp $
+! $Id: dustvelocity.f90,v 1.58 2004-05-12 17:25:13 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -30,7 +30,7 @@ module Dustvelocity
   real :: rhods=1.,md0=1.,ad0=0.,dimd1=0.333333,deltamd=1.2
   real :: nud_all=0.,betad_all=0.,tausd_all=0.
   real :: mmon,mumon,mumon1,surfmon,ustcst
-  double precision :: unit_md
+  real :: unit_md
   logical, dimension(ndustspec) :: lfeedback_gas=.true.
   logical :: lfeedback_gas_all=.true.,ldustdrag=.true.
   character (len=labellen) :: inituud='zero'
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.57 2004-05-11 12:40:50 mee Exp $")
+           "$Id: dustvelocity.f90,v 1.58 2004-05-12 17:25:13 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
