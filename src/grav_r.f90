@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.26 2002-07-26 05:03:15 brandenb Exp $
+! $Id: grav_r.f90,v 1.27 2002-07-31 23:17:05 dobler Exp $
 
 module Gravity
 
@@ -22,7 +22,7 @@ module Gravity
   character (len=labellen) :: ipotential='zero'
 
   ! variables for compatibility with grav_z (used by Entropy and Density):
-  real :: z1,z2,zref,gravz,zinfty
+  real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
 
   namelist /grav_init_pars/ ipotential
@@ -51,7 +51,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.26 2002-07-26 05:03:15 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.27 2002-07-31 23:17:05 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .false.
