@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.12 2004-05-07 09:45:53 ajohan Exp $
+; $Id: pc_read_var.pro,v 1.13 2004-05-07 14:38:29 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 09:45:53 $
-;  $Revision: 1.12 $
+;  $Date: 2004-05-07 14:38:29 $
+;  $Revision: 1.13 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -33,7 +33,7 @@ end
 
 pro pc_read_var,t=t,dx=dx,dy=dy,dz=dz,deltay=deltay, $
                 object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
-                variables=variables,tags=tags, $
+                variables=variables,tags=tags, TRIMXYZ=TRIMXYZ, $
                 datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
 COMPILE_OPT IDL2,HIDDEN
   common cdat,x,y,z,nx,ny,nz,nw,ntmax,date0,time0
@@ -288,8 +288,19 @@ if (n_elements(proc) ne 1) then begin
   endfor
 endif
 
+if (keyword_set(TRIMXYZ)) then begin
+  x=x[dim.l1:dim.l2]
+  y=y[dim.m1:dim.m2]
+  z=z[dim.n1:dim.n2]
+endif
+
 ; Build structure of all the variables
-objectname=filename+arraytostring(tags,LIST='_')
+if (n_elements(proc) eq 1) then begin
+  objectname=filename+arraytostring(tags,LIST='_')
+endif else begin
+  objectname=datadir+varfile+arraytostring(tags,LIST='_')
+endelse
+
 makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
                                      arraytostring(tags,QUOTE="'") + $
                                      "],t,x,y,z,dx,dy,dz" + $

@@ -1,10 +1,10 @@
-; $Id: pc_read_param.pro,v 1.4 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_param.pro,v 1.5 2004-05-07 14:38:29 mee Exp $
 ;
 ;   Read param.nml
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.4 $
+;  $Date: 2004-05-07 14:38:29 $
+;  $Revision: 1.5 $
 ;
 ;  27-nov-02/tony: coded mostly from Wolgang's start.pro
 ;
@@ -166,9 +166,11 @@ if (found gt 0) then begin
     
                                 ;
     if (ldensity) then begin
+      if (not object.lionization) then begin
         cs0=object.cs0 & rho0=object.rho0
         gamma=object.gamma & gamma1=gamma-1.
         cs20 = cs0^2 & lnrho0 = alog(rho0)
+      endif
     endif
                                 ;
     if (lgravz) then begin

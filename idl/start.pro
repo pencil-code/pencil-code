@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.63 2004-05-05 17:10:31 mee Exp $
+;;; $Id: start.pro,v 1.64 2004-05-07 14:38:29 mee Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -186,9 +186,11 @@ if (cpar gt 0) then begin
   lradiation_fld = par.lradiation_fld
   ;
   if (ldensity) then begin
+    if (not lionization) then begin
     cs0=par.cs0 & rho0=par.rho0
     gamma=par.gamma & gamma1=gamma-1.
     cs20 = cs0^2 & lnrho0 = alog(rho0)
+    endif
   endif
   ;
   if (lgravz) then begin

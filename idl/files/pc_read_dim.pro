@@ -1,10 +1,10 @@
-; $Id: pc_read_dim.pro,v 1.12 2004-05-07 08:51:19 ajohan Exp $
+; $Id: pc_read_dim.pro,v 1.13 2004-05-07 14:38:29 mee Exp $
 ;
 ;   Read stuff from dim.dat
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-07 08:51:19 $
-;  $Revision: 1.12 $
+;  $Date: 2004-05-07 14:38:29 $
+;  $Revision: 1.13 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -165,11 +165,16 @@ object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar','maux', $
                         'nghostx','nghosty','nghostz', $
                         'nxgrid','nygrid','nzgrid', $
                         'mxgrid','mygrid','mzgrid', $
+                        'l1','l2','m1','m2','n1','n2', $
                         'ipx','ipy','ipz', $
                         'nprocx','nprocy','nprocz'], $
-                       mx,my,mz,mw,mvar,maux,precision,nx,ny,nz,nghostx,nghosty,nghostz, $
+                       mx,my,mz,mw,mvar,maux, $
+                       precision, $
+                       nx,ny,nz,  $
+                       nghostx,nghosty,nghostz, $
                        nxgrid, nygrid, nzgrid, $
                        mxgrid, mygrid, mzgrid, $
+                       l1,l2,m1,m2,n1,n2, $
                        ipx, ipy, ipz, $
                        nprocx,nprocy,nprocz)
 
@@ -185,6 +190,8 @@ if keyword_set(PRINT) then begin
   print, '     (mx,my,mz,mvar,maux) = (',mx,',',my,',',mz,',',mvar,',',maux,')'
   print, '                       mw = ',mw
   print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
+  print, '      (l1:l2,m1:m2,n1:n2) = (',l1,':',l2,',',m1,':',m1,':', $
+                                                        m2,',',n1,':',n2,')'
   print, '                precision = ', precision
   print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
   print, '   (nxgrid,nygrid,nzgrid) = (',nxgrid,',',nygrid,',',nzgrid,')'
