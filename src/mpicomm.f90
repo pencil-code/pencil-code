@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.126 2004-10-06 19:55:07 theine Exp $
+! $Id: mpicomm.f90,v 1.127 2004-10-07 07:25:00 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -239,7 +239,7 @@ module Mpicomm
 !
 !  Define new communicator that includes all processors with common ipz
 !
-      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipz, MPI_COMM_ROW, ierr)
+      call MPI_COMM_SPLIT(MPI_COMM_WORLD, ipz, ipy, MPI_COMM_ROW, ierr)
 !
     endsubroutine mpicomm_init
 !***********************************************************************
