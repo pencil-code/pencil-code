@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.189 2003-11-27 16:03:12 pkapyla Exp $
+! $Id: cdata.f90,v 1.190 2003-11-27 19:19:35 mee Exp $
 
 module Cdata
 
@@ -19,10 +19,17 @@ module Cdata
 
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
-  real :: t,dt=0.,cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0,ttransient=0.
+  real :: t,dt=0.
+  real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0
+
+!ajwm - start of array based time constraints.
+!  real, dimension (mdtmax)  :: dtmax,cdtmax
+!  integer :: i_
+
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: r_int=0.0,r_ext=impossible   ! for spherical shell problems
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
+  real :: ttransient=0.
   real :: tsforce=-10., dtforce=10
   real, dimension (2) :: fran1,fran2
 

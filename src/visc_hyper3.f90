@@ -1,4 +1,4 @@
-! $Id: visc_hyper3.f90,v 1.1 2003-11-25 09:25:47 nilshau Exp $
+! $Id: visc_hyper3.f90,v 1.2 2003-11-27 19:19:36 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for third order hyper viscosity 
@@ -21,7 +21,6 @@ module Viscosity
   implicit none
 
   character (len=labellen) :: ivisc=''
-  integer :: icalculated = -1
   real :: maxeffectivenu
 
   ! input parameters
@@ -62,7 +61,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_hyper3.f90,v 1.1 2003-11-25 09:25:47 nilshau Exp $")
+           "$Id: visc_hyper3.f90,v 1.2 2003-11-27 19:19:36 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -155,10 +154,6 @@ module Viscosity
       call del2v_2nd(f,tmp,ihyper3)
       f(:,:,:,ihyper3:ihyper3+2)=tmp
 !
-!  doesn't need to be calculated again for this time step
-!
-      icalculated = it
-!
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
       !maxeffectivenu = maxval(f(:,:,:,ihyper3))*nu
@@ -181,7 +176,6 @@ module Viscosity
       real, dimension (nx) :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
 
-      if ( icalculated<it ) call calc_viscosity(f)
 !
 !  traceless strain matrix squared
 !
@@ -215,8 +209,6 @@ module Viscosity
       real, dimension (nx) :: rho1,divu,shock
 !
       intent (out) :: df
-!
-      if ( icalculated<it ) call calc_viscosity(f)
 !
 !  viscous force:nu*(del6u+del4*graddivu/3)
 !  (Assuming rho*nu=const)

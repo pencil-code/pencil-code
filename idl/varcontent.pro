@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.11 2003-11-25 09:26:32 nilshau Exp $
+;  $Id: varcontent.pro,v 1.12 2003-11-27 19:19:36 mee Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -168,6 +168,12 @@ if (par.lwrite_aux ne 0) then begin
     varcontent[ishock].idlinit    = INIT_SCALAR
     varcontent[ishock].idlvarloc= 'shock_loc'
     varcontent[ishock].idlinitloc = INIT_SCALAR_LOC
+
+    varcontent[itest].variable = 'Test field'
+    varcontent[itest].idlvar   = 'test'
+    varcontent[itest].idlinit    = INIT_SCALAR
+    varcontent[itest].idlvarloc= 'test_loc'
+    varcontent[itest].idlinitloc = INIT_SCALAR_LOC
 
     varcontent[ihyper3].variable = 'Hyper diffusion (hyper3)'
     varcontent[ihyper3].idlvar   = 'hyper3'

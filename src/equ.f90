@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.176 2003-11-27 14:29:04 mcmillan Exp $
+! $Id: equ.f90,v 1.177 2003-11-27 19:19:36 mee Exp $
 
 module Equ
 
@@ -216,6 +216,7 @@ module Equ
       use Boundcond
       use Shear
       use Density
+      use Viscosity, only: calc_viscosity
 !
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
@@ -232,7 +233,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.176 2003-11-27 14:29:04 mcmillan Exp $")
+           "$Id: equ.f90,v 1.177 2003-11-27 19:19:36 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -264,8 +265,9 @@ module Equ
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
-      if(lionization) call ioncalc(f)
+      if(lionization)    call ioncalc(f)
       if(lradiation_ray) call radtransfer(f)
+      if(lvisc_shock .or. lvisc_hyper3) call calc_viscosity(f)
 !
 !  do loop over y and z
 !  set indices and check whether communication must now be completed

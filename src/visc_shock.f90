@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.41 2003-11-27 09:16:54 theine Exp $
+! $Id: visc_shock.f90,v 1.42 2003-11-27 19:19:36 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 1
+! MAUX CONTRIBUTION 2
 !
 !***************************************************************
 
@@ -22,9 +22,8 @@ module Viscosity
 
   real :: nu_shock = 0.
   character (len=labellen) :: ivisc=''
-  integer :: icalculated = -1
   real :: maxeffectivenu
-  !integer :: itest
+  integer :: itest
 
   ! input parameters
   integer :: dummy
@@ -56,9 +55,9 @@ module Viscosity
       lvisc_shock = .true.
 !
       ishock = mvar + naux + 1
-      !itest = mvar + naux + 2
-      naux = naux + 1
-      !naux = naux + 2
+      itest = mvar + naux + 2
+      !naux = naux + 1
+      naux = naux + 2
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: shock viscosity nvar = ', nvar
@@ -68,7 +67,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.41 2003-11-27 09:16:54 theine Exp $")
+           "$Id: visc_shock.f90,v 1.42 2003-11-27 19:19:36 mee Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -134,7 +133,7 @@ module Viscosity
           write(3,*) 'i_dtnu=',i_dtnu
           write(3,*) 'ihyper3=',ihyper3
           write(3,*) 'ishock=',ishock
-          !write(3,*) 'itest=',itest
+          write(3,*) 'itest=',itest
         endif
       endif
 !   
@@ -148,9 +147,13 @@ module Viscosity
 !  23-nov-02/tony: coded
 !
       use IO
+      use Sub, only: grad
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
+!      real, dimension (mx,my,mz,3) :: savef
+!      real, dimension (nx,3) :: tmpuu
+!      real :: radius 
 !
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
 !
@@ -160,15 +163,35 @@ module Viscosity
 !
 !  calculate (-divu)_+
 !
+!savef=f(:,:,:,iux:iuz)
+!        radius=dxmin*10.
+!        f(:,:,:,ishock)= spread(spread(exp((-x/radius)**2),2,my),3,mz) &
+!                        *spread(spread(exp((-y/radius)**2),1,mx),3,mz) &
+!                        *spread(spread(exp((-z/radius)**2),1,mx),2,my)
+        
+!         do n=n1,n2
+!         do m=m1,m2
+!           call grad(f,ishock,tmpuu)
+!           f(l1:l2,m,n,iux:iuz)=tmpuu    
+!         enddo
+!         enddo
+
          call shock_divu(f,f(:,:,:,ishock))
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
-         !f(:,:,:,ishock)=.1
-         !f(:,:,:,itest)=f(:,:,:,ishock)
+!         f(:,:,:,ishock)=0.
+!         f(mx/2,my/2,mz/2,ishock)=10.
+
 !
 !  take the max over 5 neighboring points and smooth
 !
          call shock_max5(f(:,:,:,ishock),tmp)
+
+! Save test data and scale to match the maximum expected result of smoothing 
+         f(:,:,:,itest)=tmp  
+
+         !f(:,:,:,itest)=f(:,:,:,ishock)
          call shock_smooth(tmp,f(:,:,:,ishock))
+         !f(:,:,:,ishock)=tmp
 !
 !  scale with dxmin**2
 !
@@ -177,13 +200,10 @@ module Viscosity
          f(:,:,:,ishock) = 0.
       end if
 !
-!  doesn't need to be calculated again for this time step
-!
-      icalculated = it
-!
 !  max effective nu is the max of shock viscosity and the ordinary viscosity
 !
       maxeffectivenu = amax1(maxval(f(:,:,:,ishock))*nu_shock,nu)
+!f(:,:,:,iux:iuz)=savef
 !
 !ajwm debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
@@ -343,10 +363,12 @@ module Viscosity
 !
 !  23-nov-02/tony: coded
 !
-      use Cdata
+      use Cdata, only: mx,my,mz
 !
       real, dimension (mx,my,mz) :: f
       real, dimension (mx,my,mz) :: smoothf, tmp
+      integer :: l,m,n
+
 !
 !  check for degeneracy
 !
@@ -407,6 +429,23 @@ module Viscosity
       else
          smoothf=tmp
       end if
+!
+!smoothf=0.
+!      do n=2,mz-1
+!      do m=2,my-1
+!      do l=2,mx-1
+!        smoothf(l,m,n) =  8. * (  f(l,m,n) ) +                                                    & 
+!                          4. * (  f(l,m-1,n  )+f(l+1,m,n  )+f(l-1,m,n  )+f(l,m+1,n  )             &
+!                                + f(l,m,n+1)+f(l,m,n-1)) +                                        & 
+!                          2. * (  f(l,m-1,n+1)+f(l+1,m,n+1)+f(l-1,m,n+1)+f(l,m+1,n+1)             &
+!                                + f(l+1,m-1,n)+f(l+1,m+1,n)+f(l-1,m-1,n)+f(l-1,m+1,n)             &
+!                                + f(l,m-1,n-1)+f(l+1,m,n-1)+f(l-1,m,n-1)+f(l,m+1,n-1) ) +         &
+!                               (  f(l+1,m-1,n+1)+f(l+1,m+1,n+1)+f(l-1,m-1,n+1)+f(l-1,m+1,n+1)     &
+!                                + f(l+1,m-1,n-1)+f(l+1,m+1,n-1)+f(l-1,m-1,n-1)+f(l-1,m+1,n-1) )  
+!      enddo
+!      enddo
+!      enddo
+!      smoothf = smoothf / 64.
 
     endsubroutine shock_smooth
 !***********************************************************************
@@ -484,8 +523,6 @@ module Viscosity
       real, dimension (nx) :: rho1,TT1,cs2
       real, dimension (nx) :: sij2, divu,shock
       real, dimension (nx,3) :: glnrho
-
-      if ( icalculated<it ) call calc_viscosity(f)
 !
 !  traceless strain matrix squared
 !
@@ -519,7 +556,6 @@ module Viscosity
       intent (in) :: f, glnrho, rho1
       intent (out) :: df,shock,gshock
 
-      if ( icalculated<it ) call calc_viscosity(f)
 !
 !  viscosity operator
 !  rho1 is pre-calculated in equ
