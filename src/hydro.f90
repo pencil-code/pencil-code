@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.174 2004-06-12 11:21:21 brandenb Exp $
+! $Id: hydro.f90,v 1.175 2004-06-18 08:40:32 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -40,7 +40,7 @@ module Hydro
 
   ! run parameters
   real :: theta=0.
-  real :: tdamp=0.,dampu=0.,wdamp=0.2
+  real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
   real :: ampl_diffrot=0.,Omega_int=0.
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.174 2004-06-12 11:21:21 brandenb Exp $")
+           "$Id: hydro.f90,v 1.175 2004-06-18 08:40:32 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -528,8 +528,11 @@ module Hydro
         else
           pdamp=1.
         endif
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-pdamp*tau_diffrot1* &
-                          (f(l1:l2,m,n,iuy)-ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
+        !df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-pdamp*tau_diffrot1* &
+        !                  (f(l1:l2,m,n,iuy)-ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
+                          (f(l1:l2,m,n,iuy)-ampl_diffrot*&
+                          cos(x(l1:l2))*cos(z(n))*pdamp)
       endif
 !
 !  add the possibility of removing a mean flow in the y-direction

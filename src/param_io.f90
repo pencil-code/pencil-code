@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.180 2004-06-15 14:06:32 mcmillan Exp $ 
+! $Id: param_io.f90,v 1.181 2004-06-18 08:40:33 brandenb Exp $ 
 
 module Param_IO
 
@@ -540,6 +540,19 @@ module Param_IO
         lwrite_slice_xy2=(ipz==nprocz/4)
         lwrite_slice_xy=(ipz==0)
         lwrite_slice_xz=(ipy==nprocy/2)
+        lwrite_slice_yz=.true.
+!
+!  slice position when the first meshpoint in z is the equator (sphere)
+!  For one z-processor, iz remains n1, but iz2 is set to the middle.
+!
+      elseif (slice_position=='c') then
+        if (ix<0)  ix=(l1+l2)/2
+        if (iy<0)  iy=m1
+        if (iz<0)  iz=n1
+        if (iz2<0) iz2=n2
+        lwrite_slice_xy2=(ipz==nprocz-1)
+        lwrite_slice_xy=(ipz==0)
+        lwrite_slice_xz=(ipy==0)
         lwrite_slice_yz=.true.
       else
         if (lroot) print*, &
