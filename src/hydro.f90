@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.178 2004-07-05 22:19:50 theine Exp $
+! $Id: hydro.f90,v 1.179 2004-07-09 22:54:18 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -125,7 +125,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.178 2004-07-05 22:19:50 theine Exp $")
+           "$Id: hydro.f90,v 1.179 2004-07-09 22:54:18 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -411,8 +411,8 @@ module Hydro
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
-      real, dimension (nx) :: u2u13
-      real, dimension(nx) :: pdamp
+      real, dimension (nx) :: u2u13,ss12,nu_smag
+      real, dimension (nx) :: pdamp
       real :: c2,s2
       integer :: i,j
 !
@@ -620,14 +620,18 @@ module Hydro
 !  mean heating term
 !
         if (i_epsK/=0) then
-          if (.not. lvisc_hyper) then
-            rho=exp(f(l1:l2,m,n,ilnrho))
-            call multm2_mn(sij,sij2)
-            call sum_mn_name(2*nu*rho*sij2,i_epsK)
-          else
-            ! In this case the calculation is done in visc_hyper.f90
-            itype_name(i_epsK)=ilabel_sum
-          endif
+           if (.not. lvisc_hyper) then
+              if (ivisc .eq. 'smagorinsky') then
+                 call multm2_mn(sij,SS12)            
+                 !nu_smag=(C_smag*dxmax)**2.*SS12     
+              endif
+              rho=exp(f(l1:l2,m,n,ilnrho))
+              call multm2_mn(sij,sij2)
+              call sum_mn_name(2*nu*rho*sij2,i_epsK)
+           else
+              ! In this case the calculation is done in visc_hyper.f90
+              itype_name(i_epsK)=ilabel_sum
+           endif
         endif
 !
 !  this doesn't need to be as frequent (check later)
