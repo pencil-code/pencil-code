@@ -140,7 +140,78 @@ module Equ
       use Cdata
       use Sub
 !
+      integer :: iname,imax_count,isum_count,nmax_count,nsum_count
+      real, dimension (mname) :: fmax_tmp,fsum_tmp,fmax,fsum
+!
+!  go through all print names, and sort into communicators
+!  corresponding to their type
+!
+      imax_count=0
+      isum_count=0
+      do iname=1,nname
+        if(itype_name(iname)<0) then
+          imax_count=imax_count+1
+          fmax_tmp(imax_count)=fname(iname)
+        elseif(itype_name(iname)>0) then
+          isum_count=isum_count+1
+          fsum_tmp(imax_count)=fname(iname)
+        endif
+      enddo
+      nmax_count=imax_count
+      nsum_count=isum_count
+print*,'diagnostics, nmax_count, nsum_count=',nmax_count, nsum_count
+print*,'fsum=',fsum_tmp(1:nsum_count)
+print*,'fmax=',fmax_tmp(1:nmax_count)
+!
+!  communicate over all processors
+!
+print*,'entered reduce'
+      call mpireduce_max(fmax_tmp,fmax,nmax_count)
+      call mpireduce_sum(fsum_tmp,fsum,nsum_count)
+!
+!  the result is present only on the root processor
+!
+print*,'entered reduce2, nw, ncpus=',nw,ncpus
+      if(lroot) then
+        fsum=fsum/(nw*ncpus)
+!
+!  sort back into original array
+!  need to take sqare root if |itype|=2
+!  THIS COULD BE SIMPLIFIED!!
+!
+      imax_count=0
+      isum_count=0
+      do iname=1,nname
+        if(itype_name(iname)<0) then
+print*,'iname,itype_name(iname)=',iname,itype_name(iname)
+          imax_count=imax_count+1
+          if(itype_name(iname)==-1) fname(iname)=fmax(imax_count)
+          if(itype_name(iname)==-2) fname(iname)=sqrt(fmax(imax_count))
+        elseif(itype_name(iname)>0) then
+          isum_count=isum_count+1
+          if(itype_name(iname)==+1) fname(iname)=fsum(imax_count)
+          if(itype_name(iname)==+2) fname(iname)=sqrt(fsum(imax_count))
+        endif
+      enddo
+      !nmax_count=imax_count
+      !nsum_count=isum_count
+!
+      endif
+!
+    endsubroutine diagnostic
+!***********************************************************************
+    subroutine diagnostic_old
+!
+!  calculate diagnostic quantities
+!   2-sep-01/axel: coded
+!
+      use Mpicomm
+      use Cdata
+      use Sub
+!
       real, dimension (mreduce) :: fmax_tmp,fsum_tmp,fmax,fsum
+!
+!  old procedure; keep still intact for the time being
 !
       fmax_tmp(1)=u2max
       fmax_tmp(2)=o2max
@@ -183,9 +254,9 @@ module Equ
 !
       endif
 !
-    endsubroutine diagnostic
+    endsubroutine diagnostic_old
 !***********************************************************************
-    subroutine prints
+    subroutine prints_old
 !
 !  calculate and print some useful quantities during the run
 !  29-sep-97/axel: coded
@@ -208,7 +279,7 @@ module Equ
         close(3)
       endif
 !
-    endsubroutine prints
+    endsubroutine prints_old
 !***********************************************************************
     subroutine wvid(chdir)
 !
@@ -276,10 +347,15 @@ module Equ
 !  print statements when they are first executed
 !
       headtt = headt .and. lfirst .and. lroot
+
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.29 $", &
-           "$Date: 2002-05-03 18:41:44 $")
+           "$Revision: 1.30 $", &
+           "$Date: 2002-05-04 09:11:59 $")
+!
+!  initialize counter for calculating and communicating print results
+!
+      ldiagnos= lfirst .and. lout
 !
 !  initiate communication
 !
@@ -363,7 +439,6 @@ module Equ
 !  magnetic part
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,cs2)
-
 !
 !  damping terms (artificial, but sometimes useful):
 !
@@ -430,6 +505,7 @@ module Equ
         endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
+!  (The corresponding things for magnetic fields etc happen inside magnetic etc)
 !
         if (lfirst.and.lout) then
           t_diag = t            ! diagnostic quantities are for this time
@@ -440,6 +516,12 @@ module Equ
           ou=oo(:,1)*uu(:,1)+oo(:,2)*uu(:,2)+oo(:,3)*uu(:,3)
           divu2=divu**2
           rho=exp(f(l1:l2,m,n,ilnrho))
+!
+!  urms and max velocity
+!  This hydro part is not yet converted to new method...
+!
+          !if (i_urms/=0) call max_mn (u2,u2max)
+!
           call max_mn (u2,u2max)
           call rms2_mn(u2,urms)
           call max_mn (o2,o2max)
@@ -463,7 +545,11 @@ module Equ
 !  calculate maximum speed for time step
 !
       if (lfirst.and.ldt) call calc_UUmax_viscmax
-      if (lfirst.and.lout) call diagnostic
+      if (ldiagnos) then
+        call diagnostic
+        !call diagnostic_old !!(should still be intact)
+      endif
+print*,'end of pde'
 !
     endsubroutine pde
 !***********************************************************************

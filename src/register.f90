@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-05-03 16:09:22 $")
+           "$Revision: 1.23 $", &
+           "$Date: 2002-05-04 09:11:59 $")
 !
 !
       if (nvar > mvar) then
@@ -85,6 +85,34 @@ module Register
       endif
 !
     endsubroutine register_hydro
+!***********************************************************************
+    subroutine rprint_list
+!
+      use Cdata
+      use Hydro
+      use Magnetic
+!
+!  read in output times from control file
+!   3-may-01/axel: coded
+!
+      integer :: iname
+!
+!  read in the list of variables to be printed
+!
+      open(1,file='print.in')
+      do iname=1,mname
+        read(1,*,end=99) cname(iname)
+      enddo
+      close(1)
+99    nname=iname-1
+      print*,'nname=',nname
+!
+!  check which variables are set
+!
+      call rprint_hydro
+      call rprint_magnetic
+!
+    endsubroutine rprint_list
 !***********************************************************************
     subroutine init_hydro(f,init,ampl,xx,yy,zz)
 !

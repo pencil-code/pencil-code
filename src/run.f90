@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.20 2002-05-02 20:02:27 brandenb Exp $
+! $Id: run.f90,v 1.21 2002-05-04 09:11:59 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -19,6 +19,7 @@
         use Forcing
         use Equ
         use Slices
+        use Print
         use Timestep
 !
         implicit none
@@ -39,8 +40,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.20 $", &
-             "$Date: 2002-05-02 20:02:27 $")
+             "$Revision: 1.21 $", &
+             "$Date: 2002-05-04 09:11:59 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -59,6 +60,10 @@
         call rparam             ! Read parameters from start.x;
                                 ! these may be overwritten by cread
         call cread(PRINT=.true.)
+!
+!  read the print parameter list
+!
+        call rprint_list
 !
 !  read data
 !  snapshot data are saved in the tmp subdirectory.
@@ -130,6 +135,7 @@
 !
           call rk_2n(f,df)
           if(lout) call prints
+print*,'after prints'
           call wsnap(trim(directory)//'/VAR',f)
           call wvid(trim(directory))
 !

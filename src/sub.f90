@@ -18,6 +18,56 @@ module Sub
   contains
 
 !***********************************************************************
+    subroutine max_mn_name(a,iname)
+!
+!  successively calculate maximum of a, where a is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!   1-apr-01/axel+wolf: coded
+!   4-may-02/axel: adapted for fname array
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname
+!
+      if (lfirstpoint) then
+        fname(iname)=maxval(a)
+      else
+        fname(iname)=amax1(fname(iname),maxval(a))
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_max
+!
+    endsubroutine max_mn_name
+!***********************************************************************
+    subroutine sum_mn_name(a,iname)
+!
+!  successively calculate sum of a, where a is supplied
+!  at each call. This routine initializes counter when m=n=1.
+!
+!   1-apr-01/axel+wolf: coded
+!   4-may-02/axel: adapted for fname array
+!
+      use Cdata
+!
+      real, dimension (nx) :: a
+      integer :: iname
+!
+      if (lfirstpoint) then
+        fname(iname)=sum(a)
+      else
+        fname(iname)=fname(iname)+sum(a)
+      endif
+!
+!  set corresponding entry in itype_name
+!
+      itype_name(iname)=ilabel_sum
+!
+    endsubroutine sum_mn_name
+!***********************************************************************
     subroutine max_mn(a,res)
 !
 !  successively calculate maximum of a, where a is supplied
@@ -823,7 +873,8 @@ module Sub
 !  21-jan-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
+!     use Mpicomm
+! ?AB Mpicomm is no longer used, because lroot is now in cdata
 !
         open(1,FILE='tmp/param.dat',FORM='unformatted')
         read(1) x0,y0,z0,Lx,Ly,Lz
@@ -838,6 +889,10 @@ module Sub
         print*, "rho0,gamma,gamma1=", rho0,gamma,gamma1
       endif
 !
+!  read the print parameter list
+!
+!     call rprint_list
+!  
     endsubroutine rparam
 !***********************************************************************
     subroutine wparam2 ()
@@ -1318,6 +1373,36 @@ module Sub
         enddo
 !
       endsubroutine parse_bc
+!***********************************************************************
+      subroutine parse_name(iname,cname,cform,ctest,itest)
+!
+!  Parse name and format of print variable
+!  On output, itest is set to iname if cname matches ctest
+!  and cform is set to the format given as default
+!
+      character*(*) :: cname,cform
+      character*(*) :: ctest
+      integer :: iname,itest,iform0,iform1,iform2,length
+!
+!  check whether format is given
+!
+      iform0=index(cname,' ')
+      iform1=index(cname,'(')
+      iform2=index(cname,')')
+!
+!  set format; use default if not given
+!
+      if (iform1>0) then
+        cform=cname(iform1:iform2)
+        length=iform1-1
+      else
+        cform='(1pe10.2)'
+        length=iform0-1
+      endif
+!
+      if (cname(1:length)==ctest) itest=iname
+!
+      endsubroutine parse_name
 !***********************************************************************
       subroutine remove_file(fname)
 !

@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.13 2002-05-02 20:02:27 brandenb Exp $
+! $Id: cparam.f90,v 1.14 2002-05-04 09:11:59 brandenb Exp $
 
 module Cparam
 
@@ -9,8 +9,8 @@ module Cparam
 !  The number of ghost zones is NOT counted.
 !
   integer, parameter :: ncpus=1,nprocz=1,nprocy=ncpus/nprocz,nprocx=1
-  integer, parameter :: nxgrid=20,nygrid=nxgrid,nzgrid=nxgrid
-  integer, parameter :: nghost=3,mk=3000,mvar=8
+  integer, parameter :: nxgrid=32,nygrid=nxgrid,nzgrid=nxgrid
+  integer, parameter :: nghost=3,mk=3000,mvar=7
   integer, parameter :: bclen=3
 !
 !  derived parameters

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.14 2002-05-02 20:02:27 brandenb Exp $
+! $Id: magnetic.f90,v 1.15 2002-05-04 09:11:59 brandenb Exp $
 
 module Magnetic
 
@@ -9,6 +9,7 @@ module Magnetic
   integer :: iaa
   real :: fring1,Iring1,Rring1,wr1,nr1x,nr1y,nr1z,r1x,r1y,r1z
   real :: fring2,Iring2,Rring2,wr2,nr2x,nr2y,nr2z,r2x,r2y,r2z
+  integer :: i_brms,i_bmax,i_jrms,i_jmax
 
   contains
 
@@ -45,8 +46,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-05-02 20:02:27 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-05-04 09:11:59 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -142,10 +143,22 @@ module Magnetic
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3) :: bb, aa, jj, uxB, uu, JxB, JxBr
       real, dimension (nx,3) :: del2A,dAdy,shearA
-      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0
+      real, dimension (nx) :: var1,rho1,J2,TT1,cs2,uy0,b2
 !
     !  aa=f(l1:l2,m,n,iax:iaz)
       call curl(f,iaa,bb)
+!
+!  calculate max and rms field
+!  at the moment (and in future?) calculate max(b^2) and mean(b^2).
+!
+      if (ldiagnos) then
+        call dot2_mn(bb,b2)
+        if (i_brms/=0) call sum_mn_name(b2,i_brms)
+        if (i_bmax/=0) call max_mn_name(b2,i_bmax)
+      endif
+!
+!  possibility to add external field
+!
       if (Bx_ext/=0.) bb(:,1)=bb(:,1)+Bx_ext
       if (By_ext/=0.) bb(:,2)=bb(:,2)+By_ext
       if (Bz_ext/=0.) bb(:,3)=bb(:,3)+Bz_ext
@@ -177,8 +190,9 @@ module Magnetic
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
 !
 !  add eta mu_0 J2/rho to entropy equation
+!  Need to check whether entropy equation has been registered
 !
-      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
+      if (ient>0) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
 !
 !  debug output
 !
@@ -194,13 +208,33 @@ module Magnetic
 !     
     endsubroutine daa_dt
 !***********************************************************************
+    subroutine rprint_magnetic
+!
+!  reads and registers print parameters relevant for magnetic fields
+!
+!   3-may-02/axel: coded
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+!
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
+      enddo
+!
+    endsubroutine rprint_magnetic
+!***********************************************************************
     subroutine norm_ring(xx,yy,zz,fring,Iring,R0,width,vv)
 !
 !  Generate vector potential for a flux ring of magnetic flux FRING,
 !  current Iring (not correctly normalized), radius R0 and thickness
 !  WIDTH in normal orientation (lying in the x-y plane, centred at (0,0,0)).
 !
-!  1-may-02/wolf: coded
+!   1-may-02/wolf: coded
 !
       use Cdata, only: mx,my,mz,mvar,Lz,pi
 !

@@ -32,10 +32,18 @@ module Cdata
   integer :: it,ix,iy,iz
   integer :: ivisc,iforce,isothtop
   integer :: m,n
+!
+!  in this section are all the things related to printing
+!
+  integer :: nname
+  integer :: ilabel_max=-1,ilabel_sum=1
+  integer, parameter :: mname=100
+  integer, dimension (mname) :: itype_name
+  real, dimension (mname) :: fname
 
   logical :: lmpicomm=.false., lentropy=.false., lmagnetic=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
-  logical :: lout,headt,headtt,ldt,lfirst
+  logical :: lout,headt,headtt,ldt,lfirst,ldiagnos
   logical :: lroot=.true.
   logical :: lfirstpoint
 
@@ -43,5 +51,6 @@ module Cdata
   character (LEN=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (LEN=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
   character (LEN=12) :: directory
+  character (LEN=30) :: cname(mname),cform(mname)
 
 endmodule Cdata

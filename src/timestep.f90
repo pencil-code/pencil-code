@@ -55,6 +55,7 @@ module Timestep
         endif
         call pde(f,df)
         ds=ds+1.
+print*,'timestep ok'
 !
 !  if we are in the first step we need to calculate timestep
 !  This can only be done using UUmax which was calculated in pde.
@@ -89,6 +90,7 @@ module Timestep
         enddo
         t=t+dt_beta(i)*ds
       enddo
+print*,'timestep ok2'
 !
     endsubroutine rk_2n
 !***********************************************************************
