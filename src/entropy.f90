@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.92 2002-07-11 06:56:18 nilshau Exp $
+! $Id: entropy.f90,v 1.93 2002-07-11 06:58:25 nilshau Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.92 2002-07-11 06:56:18 nilshau Exp $")
+           "$Id: entropy.f90,v 1.93 2002-07-11 06:58:25 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -830,7 +830,7 @@ module Entropy
       !  Set cs2 (temperature) in the ghost points to the value on
       !  the boundary
       !
-      cs2_2d=cs20*exp(gamma1*f(:,:,n2,ilnrho)+gamma*f(:,:,n2,ient))
+      cs2_2d=cs20*exp(gamma1*f(:,:,n1,ilnrho)+gamma*f(:,:,n1,ient))
       do i=1,nghost
          f(:,:,n1-i,ient)=1./gamma*(-gamma1*f(:,:,n1-i,ilnrho)-log(cs20)&
               +log(cs2_2d))
@@ -856,3 +856,7 @@ module Entropy
 !***********************************************************************
 
 endmodule Entropy
+
+
+
+
