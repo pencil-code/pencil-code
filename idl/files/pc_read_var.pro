@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.8 2004-05-05 17:10:31 mee Exp $
+; $Id: pc_read_var.pro,v 1.9 2004-05-06 09:29:55 ajohan Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-05 17:10:31 $
-;  $Revision: 1.8 $
+;  $Date: 2004-05-06 09:29:55 $
+;  $Revision: 1.9 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -99,7 +99,7 @@ if (params.ldustvelocity) then iuud=1
 if (params.ldustdensity)  then ilnrhod=1    
 
 
-if (params.lhydro)        then uum     = fltarr(mx,my,mz,3)*one
+if (params.lhydro)        then uum    = fltarr(mx,my,mz,3)*one
 if (params.ldensity)      then lnrhom = fltarr(mx,my,mz  )*one
 if (params.lentropy)      then ss     = fltarr(mx,my,mz  )*one
 if (params.lmagnetic)     then aa     = fltarr(mx,my,mz,3)*one
@@ -202,7 +202,7 @@ print, '  var            minval         maxval          mean           rms'
     if (params.lhydro) then $
       for j=0,2 do $
       print, FORMAT=fmt, 'uum_'+xyz[j]+'   =', $
-      minmax(uum(*,*,*,j)), mean(uum(*,*,*,j),/DOUBLE), rms(uum(*,*,*,j),/DOUBLE)
+      minmax(uum[*,*,*,j]), mean(uum[*,*,*,j],/DOUBLE), rms(uum[*,*,*,j],/DOUBLE)
     if (params.ldensity) then $
       print, FORMAT=fmt, 'lnrhom  =', $
       minmax(lnrhom), mean(lnrhom,/DOUBLE), rms(lnrhom,/DOUBLE)
@@ -215,14 +215,14 @@ print, '  var            minval         maxval          mean           rms'
     if (params.lradiation) then $
       for j=0,2 do $
       print, FORMAT=fmt, 'ff_'+xyz[j]+'   =', $
-      minmax(ff(*,*,*,j)), mean(ff(*,*,*,j),/DOUBLE), rms(ff(*,*,*,j),/DOUBLE)
+      minmax(ff[*,*,*,j]), mean(ff[*,*,*,j],/DOUBLE), rms(ff[*,*,*,j],/DOUBLE)
     if (params.lradiation) then $
       print, FORMAT=fmt, 'ee     =', $
       minmax(ee), mean(ee,/DOUBLE), rms(ee,/DOUBLE)
     if (params.lmagnetic) then begin
         for j=0,2 do $
           print, FORMAT=fmt, 'aa_'+xyz[j]+'   =', $
-          minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+          minmax(aa[*,*,*,j]), mean(aa[*,*,*,j],/DOUBLE), rms(aa[*,*,*,j],/DOUBLE)
         if (cpar gt 0) then begin
             eta=par2.eta
         end
