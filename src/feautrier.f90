@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.6 2003-04-02 07:46:53 brandenb Exp $
+! $Id: feautrier.f90,v 1.7 2003-04-02 11:43:12 theine Exp $
 
 module Radiation
 
@@ -11,7 +11,7 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
 !
 !  default values for one pair of vertical rays
 !
@@ -54,7 +54,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.6 2003-04-02 07:46:53 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.7 2003-04-02 11:43:12 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -74,7 +74,7 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT,kappa_
+      real, dimension(nx) :: lnrho,ss,yH,TT_,kappa_
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
@@ -84,8 +84,9 @@ module Radiation
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
          yH=ionfrac(lnrho,ss)
-         call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
-         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
+         call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
+         Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
+         TT(l1:l2,m,n)=TT_
          kappa(l1:l2,m,n)=kappa_
       enddo
       enddo
@@ -113,6 +114,9 @@ module Radiation
          kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral(z,kaprho)
          Srad_=Srad(lrad,mrad,n1:n2)
+         print*,'kappa=',kappa(lrad,mrad,n1:n2)
+         print*,'tau=',tau
+         print*,'Srad=',Srad_
 !
          b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
          c(1)=-2./(tau(2)-tau(1))**2
@@ -127,6 +131,7 @@ module Radiation
          call tridag(a,b,c,Srad_,Prad_)
 !
          feautrier(lrad,mrad,n1:n2)=Prad_
+         print*,'Prad',Prad_
       enddo
       enddo
     endfunction feautrier
@@ -150,10 +155,6 @@ module Radiation
       call source_function(f)
       Qrad=-Srad
       Qrad=Qrad+feautrier(f)
-print*,'Srad(4,4,:)=',Srad(4,4,:)
-print*,'Qrad(4,4,:)=',Qrad(4,4,:)
- write(28) Qrad,Srad
-!
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -171,12 +172,12 @@ print*,'Qrad(4,4,:)=',Qrad(4,4,:)
 !
       do n=n1,n2
       do m=m1,m2
-if(nocooling) then
-print*,'4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)=',4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n),n
-else
-        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-                           +4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)
-endif
+         if(.not. nocooling) then
+            df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+                              +4.*pi*kappa(l1:l2,m,n) &
+                               *Qrad(l1:l2,m,n) &
+                               /TT(l1:l2,m,n)
+         endif
       enddo
       enddo
 !
