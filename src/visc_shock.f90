@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.48 2003-11-29 19:04:21 brandenb Exp $
+! $Id: visc_shock.f90,v 1.49 2003-11-29 19:13:20 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -24,7 +24,7 @@ module Viscosity
   character (len=labellen) :: ivisc=''
   real :: maxeffectivenu
   integer :: itest
-  logical :: lvisc_first=.false.,lvisc_addnu=.false.,lsmooth5=.true.
+  logical :: lvisc_first=.false.,lvisc_addnu=.false.,lshock_max5=.true.
 
   ! input parameters
   integer :: dummy
@@ -32,7 +32,7 @@ module Viscosity
 
   ! run parameters
   namelist /viscosity_run_pars/ nu,nu_shock,lvisc_first,lvisc_addnu, &
-       lsmooth5
+       lshock_max5
  
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtnu=0,i_shockmax=0
@@ -69,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.48 2003-11-29 19:04:21 brandenb Exp $")
+           "$Id: visc_shock.f90,v 1.49 2003-11-29 19:13:20 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -190,9 +190,9 @@ module Viscosity
 !  Note that this means that we'd need 4 ghost zones, so
 !  we use one-sided formulae on processor boundaries.
 !  Alternatively, to get the same result with and without MPI
-!  you may want to try lsmooth5=.false. (default is .true.)  
+!  you may want to try lshock_max5=.false. (default is .true.)  
 !
-         if (lsmooth5) then
+         if (lshock_max5) then
            call shock_max5(f(:,:,:,ishock),tmp)
          else
            call shock_max3(f(:,:,:,ishock),tmp)
