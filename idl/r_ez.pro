@@ -9,7 +9,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 @yder2_6th_ghost
 @zder2_6th_ghost
 ;
-mx=1 & my=1 & mz=1 & mvar=1
+mx=1 & my=1 & mz=1 & nvar=1
 openr,1,'tmp/dim.dat'
 readf,1,mx,my,mz,mvar
 close,1

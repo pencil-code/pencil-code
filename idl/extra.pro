@@ -20,16 +20,18 @@ if (iaa ne 0) then aaa=aa(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
 if (ilnrho ne 0) then llnrho=lnrho(l1:l2,m1:m2,n1:n2)
+if (ilnrho ne 0) then rho=exp(llnrho)
 if (ient ne 0) then sss=ss(l1:l2,m1:m2,n1:n2)
 if (ient ne 0) then cs2=exp(gamma1*llnrho+gamma*sss)
+if (ient ne 0) then ppp=rho*cs2/gamma
 ;
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
 if (iaa ne 0) then begin
-  EMx=mean(means(means(bbb,3),2)^2)
-  EMy=mean(means(means(bbb,3),1)^2)
-  EMz=mean(means(means(bbb,2),1)^2)
-  print,'Emx,EMy,EMz=',Emx,EMy,EMz
+  bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
+  bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
+  bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
+  print,'bmx,bmy,bmz=',bmx,bmy,bmz
 end
 ;
 END
