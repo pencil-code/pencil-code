@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.223 2003-12-07 12:09:28 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.224 2003-12-07 19:02:30 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}
+%\date{$ $Date: 2003-12-07 19:02:30 $ $,~ $ $Revision: 1.224 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}\\
+  \emph{$ $Date: 2003-12-07 19:02:30 $ $,~ $ $Revision: 1.224 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -2190,6 +2190,21 @@ To fix the time step $\delta t$ to a value independent of velocities and
 diffusivities, explicitly set the run parameter \var{dt}, rather than
 \var{cdt} or \var{cdtv} (see p.~\pageref{dt-run}).
 
+If the time step exceeds the viscous time step the simulation  may
+actually run ok for quite some time. Inspection of images usually
+helps to recognize the problem. An example is shown in
+Fig.~\ref{Ftimestepoverviscous}.
+
+\begin{figure}[h!]\begin{center}\includegraphics[width=.99\textwidth]
+{timestepoverviscous}\end{center}\caption[]{
+Example of a velocity slice from a run where the time step is too long.
+Note the spurious checkerboard modulation in places, for example
+near $x=-0.5$ and $-2.5<y<-1.5$.
+This is an example of a hyperviscous turbulence simulations with
+$512^3$ meshpoints and a third order hyperviscosity of
+$\nu_3=5\times10^{-12}$.
+}\label{Ftimestepoverviscous}\end{figure}
+
 % ---------------------------------------------------------------------- %
 
 \subsection{Boundary conditions}
@@ -3605,7 +3620,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-12-07 19:02:30 $ $,~ $ $Revision: 1.224 $ $}
 
 \section{Timings}
 
@@ -6323,7 +6338,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.223 2003-12-07 12:09:28 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.224 2003-12-07 19:02:30 brandenb Exp $ $}
 
 
 \end{document}
