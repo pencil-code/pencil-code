@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.30 2004-02-02 14:21:00 ajohan Exp $
+! $Id: dustdensity.f90,v 1.31 2004-02-03 14:32:47 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -86,7 +86,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.30 2004-02-02 14:21:00 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.31 2004-02-03 14:32:47 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,7 +249,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dnd_dt(f,df,uu,uud,divud,gnd)
+    subroutine dnd_dt(f,df,uud,divud,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -262,14 +262,14 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: udij
-      real, dimension (nx,3,ndustspec) :: gnd
-      real, dimension (nx,ndustspec) :: nd,uu,uud,divud
+      real, dimension (nx,3,ndustspec) :: gnd,uud
+      real, dimension (nx,ndustspec) :: nd,divud
       real, dimension (nx) :: ugnd,gnd2,del2nd,udiudj,dndfac,deltaud
       real :: diffnd
       integer :: i,j,k
       logical :: lfirstpoint2
 !
-      intent(in)  :: uu,uud,divud
+      intent(in)  :: uud,divud
       intent(out) :: df,gnd
 !
 !  Check for grain mass interval overflows
@@ -320,20 +320,25 @@ module Dustdensity
             df(l1:l2,m,n,ind(i)) = df(l1:l2,m,n,ind(i)) + dndfac
             df(l1:l2,m,n,ind(j)) = df(l1:l2,m,n,ind(j)) + dndfac
             if (lmdvar) then
-              forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
-                  .and. md(i) + md(j) .lt. mdplus(k)) 
-                df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - dndfac
-                df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
-                df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
-                df(l1:l2,m,n,irhod(k)) = &
-                    df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
-              endforall
+              do k=j,ndustspec
+                if (md(i) + md(j) .ge. mdminus(k) &
+                    .and. md(i) + md(j) .lt. mdplus(k)) then
+                  df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - dndfac
+                  df(l1:l2,m,n,irhod(i)) = df(l1:l2,m,n,irhod(i)) + md(i)*dndfac
+                  df(l1:l2,m,n,irhod(j)) = df(l1:l2,m,n,irhod(j)) + md(j)*dndfac
+                  df(l1:l2,m,n,irhod(k)) = &
+                      df(l1:l2,m,n,irhod(k)) - (md(i)+md(j))*dndfac
+                endif
+              enddo  
             else
-              forall (k=1:ndustspec, md(i) + md(j) .ge. mdminus(k) &
-                  .and. md(i) + md(j) .lt. mdplus(k)) 
-                df(l1:l2,m,n,ind(k)) = &
-                    df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
-              endforall
+              do k=j,ndustspec
+                if (md(i) + md(j) .ge. mdminus(k) &
+                    .and. md(i) + md(j) .lt. mdplus(k)) then
+                  df(l1:l2,m,n,ind(k)) = &
+                      df(l1:l2,m,n,ind(k)) - dndfac*(md(i)+md(j))/md(k)
+                  exit
+                endif
+              enddo
             endif
           endif
         enddo
@@ -351,7 +356,7 @@ module Dustdensity
 !  calculate dustdensity gradient and advection term
 !
         call grad(f,ind(k),gnd(:,:,k))
-        call dot_mn(uud(:,k),gnd(:,:,k),ugnd)
+        call dot_mn(uud(:,:,k),gnd(:,:,k),ugnd)
 !
 !  continuity equation
 !
