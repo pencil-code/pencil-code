@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.189 2004-05-29 06:30:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.190 2004-05-30 23:10:53 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -38,6 +38,7 @@ module Magnetic
   real :: eta_shock=0.
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
+  real :: mu_r=-0.5
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
   logical :: llorentzforce=.true.,linduction=.true.
@@ -54,7 +55,7 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss
+       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r
 
   ! run parameters
   real :: eta=0.,height_eta=0.,eta_out=0.
@@ -126,7 +127,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.189 2004-05-29 06:30:38 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.190 2004-05-30 23:10:53 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -211,6 +212,7 @@ module Magnetic
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
+      case('force-free-jet'); call force_free_jet(f,xx,yy,zz)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -1405,6 +1407,102 @@ module Magnetic
       vv(:,:,:,2) =   tmp*cos(phi)
 !
     endsubroutine norm_ring
+!***********************************************************************
+    subroutine force_free_jet(f,xx,yy,zz)
+!
+!  Force free magnetic field configuration for jet simulations
+!  with a fixed accretion disk at the bottom boundary.
+!
+!  The input parameter mu_r specifies the radial dependency of
+!  the magnetic field in the disk.
+!
+!  Solves the laplace equation in cylindrical coordinates for the
+!  phi-component of the vector potential. A_r and A_z are taken to
+!  be zero.
+!
+!    nabla**2 A_phi - A_phi / r**2 = 0
+!
+!  For the desired boundary condition in the accretion disk
+!
+!    B_r=B0*r**(mu_r-1)  (z == 0)
+!
+!  the solution is
+!
+!    A_phi = -Hypergeometric2F1( (1-mu_r)/2, (2+mu_r)/2, 2, xi**2 )
+!            *xi*(r**2+z**2)**(mu_r/2)
+!
+!  where xi = sqrt(r**2/(r**2+z**2))
+!
+!
+!  TO DO:
+!
+!  1) Improve numerical algorithm for calculating the hypergeometric function
+!     as it currently converges very slowly
+!
+!  2) Add normalization of vector potential
+!
+!
+!  30-may-04/tobi: coded
+!
+      use Cdata
+      use Sub
+
+      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension(mx,my,mz), intent(in) :: xx,yy,zz
+      real, dimension(mx,my,mz) :: xi2,A_phi,fac,phi
+      real, parameter :: tol=1e-6
+      real :: a,b,c
+      integer :: i
+!
+!  Calculate hypergeometric function 2F1
+!
+      a=(1-mu_r)/2
+      b=(2+mu_r)/2
+      c=2
+      xi2=(xx**2+yy**2)/(xx**2+yy**2+zz**2)
+
+      i=1
+      fac=1
+      A_phi=fac
+
+      do while (any(fac>tol))
+        !print*,i,maxval(fac)
+        where (fac>tol)
+          fac=fac*a*b*xi2/c/i
+          A_phi=A_phi+fac
+        endwhere
+        a=a+1
+        b=b+1
+        c=c+1
+        i=i+1
+      enddo
+!
+!  Get full potential
+!
+      A_phi=-A_phi*sqrt(xi2)*(xx**2+yy**2+zz*2)**(mu_r/2)
+!
+!  Calculate azimuthal angle
+!
+      where (xx == 0.0)
+        where (yy < 0.0)
+          phi=-pi/2
+        else where
+          phi= pi/2
+        endwhere
+      else where
+        where (xx > 0.0)
+          phi=atan(yy/xx)
+        else where
+          phi=atan(yy/xx)+pi
+        endwhere
+      endwhere
+!
+!  Get x- and y-component of magnetic field from phi-component
+!
+      f(:,:,:,iax)=-sin(phi)*A_phi
+      f(:,:,:,iay)= cos(phi)*A_phi
+        
+    endsubroutine force_free_jet
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)
 !

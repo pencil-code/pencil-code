@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.62 2004-04-26 16:05:16 dobler Exp $
+! $Id: boundcond.f90,v 1.63 2004-05-30 23:10:53 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -106,6 +106,7 @@ module Boundcond
                   call bc_db_x(f,topbot,j)
                 case ('1')        ! f=1 (for debugging)
                   call bc_one_x(f,topbot,j)
+                case ('')         ! do nothing; assume that everything is set
                 case default
                   print*, &
                        "boundconds_x: No such boundary condition bcx1/2 = ", &
@@ -176,6 +177,7 @@ module Boundcond
                 if (j==iss) call bc_ss_stemp_y(f,topbot)
               case ('1')        ! f=1 (for debugging)
                 call bc_one_y(f,topbot,j)
+              case ('')         ! do nothing; assume that everything is set
               case default
                 print*, "boundconds_y: No such boundary condition bcy1/2 = ", &
                      bc12(j), " for j=", j
