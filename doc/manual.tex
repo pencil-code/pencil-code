@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.240 2004-03-30 22:25:54 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.241 2004-03-31 06:08:24 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -106,7 +106,7 @@
 
 %% Load hyperref after titlesec, or else (with dvipdfm) the \section links
 %% are one or two pages off
-\usepackage[dvipdfm]{hyperref}
+\usepackage{hyperref}
 %\usepackage{makeidx}
 \usepackage{index}      % Allow for multiple indexes (load after hyperref)
 
@@ -278,6 +278,8 @@
 % ---------------------------------------------------------------------- %
 %% Maths operators
 
+\newcommand{\de}      {\mathrm{d}}
+\newcommand{\De}      {\mathrm{D}}
 % \newcommand{\arcosh} {\mathop{\rm arcosh}\nolimits}
 % \newcommand{\arcoth} {\mathop{\rm arcoth}\nolimits}
 \newcommand{\atanh} {\mathop{\rm atanh}\nolimits}
@@ -295,6 +297,7 @@
 \newcommand{\erf}     {\mathop{\rm erf}\nolimits}
 
 \newcommand{\vekt}[1] {\mathbf{#1}}
+\renewcommand{\vec}[1]{{\boldsymbol #1}}
 \newcommand{\const}   {\mbox{\rm const}}
 
 %% Maths variables
@@ -369,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}
+%\date{$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}
 
 % ====================================================================== %
 
@@ -404,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}\\
+  \emph{$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3297,25 +3300,74 @@ is the optical depth ($s$ is the geometrical coordinate along the ray).
 
 \subsection{Dust equations}
 
-We treat gas and dust as two separate fluids.
-The governing equations can be written in the form
+The code treats gas and dust as two separate fluids. The dust and the gas
+interact through a drag force. This force can most generally be written as an
+additional term to the equation of motion as
 \begin{equation}
-\rho\left[{\partial\uv\over\partial t}+\uv\cdot\nab\uv-\fv(\uv)\right]
-=-\nab p+\Fv-\beta(\uv-\uv_{\rm d}),
+  \frac{\De \vec{u}_{\rm d}}{\De t} = \ldots - \frac{1}{\tau_{\rm s}} 
+  \left( \vec{u}_{\rm d} - \vec{u} \right)  \, .
 \end{equation}
+Here $\tau_{\rm s}$ is the so-called stopping time of the considered dust
+species. This measures the coupling strength between dust and gas. In the
+Epstein drag regime
 \begin{equation}
-\rho_{\rm d}\left[{\partial\uv_{\rm d}\over\partial t}+\uv_{\rm d}\cdot\nab\uv_{\rm d}
--\fv(\uv_{\rm d})\right]
-=\Fv_{\rm d}-\beta(\uv_{\rm d}-\uv),
+  \tau_{\rm s} = \frac{a_{\rm d} \rho_{\rm s}}{c_{\rm s} \rho} \, ,
 \end{equation}
+where $a_{\rm d}$ is the radius of the dust grain and $\rho_{\rm s}$ is the
+solid density of the dust grain.
+\\ \\
+Two other important effects work on the dust. The first is coagulation
+controlled by the discrete coagulation equation
 \begin{equation}
-{\partial\rho\over\partial t}+\nab\cdot(\rho\uv)=0,
+  \frac{\de n_k}{\de t} = \frac{1}{2} \sum_{i+j=k} A_{ij} n_i n_j
+  - n_k \sum_{i=1}^\infty A_{ik} n_i \, .
 \end{equation}
+In the code $N$ discrete dust species are considered. Also the bins are
+logarithmically spaced in order to give better mass resolution. It is also
+possible to keep track of both number density and mass density of each bin,
+corresponding to having a variable grain mass in each bin.
+\\ \\
+Dust condensation is controlled by the equation
 \begin{equation}
-{\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0,
+  \frac{\de N}{\de t} = \frac{1}{\tau_{\rm cond}} N^{\frac{d-1}{d}} \, .
+\end{equation}
+Here $N$ is the number of monomers in the dust grain (such as water molecules)
+and $d$ is the physical dimension of the dust grain. The condensation time
+$\tau_{\rm cond}$ is calculated from
+\begin{equation}
+  \frac{1}{\tau_{\rm cond}} = A_1 v_{\rm th} \alpha n_{\rm mon}
+  \left\{ 1-\frac{1}{S_{\rm mon}} \right\} \, , 
+\end{equation}
+where $A_1$ is the surface area of a monomer, $\alpha$ is the condensation
+efficiency, $n_{\rm mon}$ is the number density of monomers in the gas and
+$S_{\rm mon}$ is the saturation level of the monomer given by
+\begin{equation}
+  S_{\rm mon} = \frac{P_{\rm mon}}{P_{\rm sat}} \, .
+\end{equation}
+Here $P_{\rm sat}$ is the saturated vapour pressure of the monomer. Currently
+only water ice has been implemented in the code.
+\\ \\
+All dust species fulfil the continuity equation
+\begin{equation}
+  {\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0.
 \end{equation} 
-where $\fv(\uv)$ denotes the \name{Coriolis force} and $\Fv$ and $\Fv_{\rm d}$
-other forces.
+%\begin{equation}
+%\rho\left[{\partial\uv\over\partial t}+\uv\cdot\nab\uv-\fv(\uv)\right]
+%=-\nab p+\Fv-\beta(\uv-\uv_{\rm d}),
+%\end{equation}
+%\begin{equation}
+%\rho_{\rm d}\left[{\partial\uv_{\rm d}\over\partial t}+\uv_{\rm d}\cdot\nab\uv_{\rm d}
+%-\fv(\uv_{\rm d})\right]
+%=\Fv_{\rm d}-\beta(\uv_{\rm d}-\uv),
+%\end{equation}
+%\begin{equation}
+%{\partial\rho\over\partial t}+\nab\cdot(\rho\uv)=0,
+%\end{equation}
+%\begin{equation}
+%{\partial\rho_{\rm d}\over\partial t}+\nab\cdot(\rho_{\rm d}\uv_{\rm d})=0,
+%\end{equation} 
+%where $\fv(\uv)$ denotes the \name{Coriolis force} and $\Fv$ and $\Fv_{\rm d}$
+%other forces.
 
 % ---------------------------------------------------------------------- %
 
@@ -4040,7 +4092,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-03-30 22:25:54 $ $,~ $ $Revision: 1.240 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-03-31 06:08:24 $ $,~ $ $Revision: 1.241 $ $}
 
 \section{Timings}
 
@@ -6948,7 +7000,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.240 2004-03-30 22:25:54 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.241 2004-03-31 06:08:24 ajohan Exp $ $}
 
 
 \end{document}
