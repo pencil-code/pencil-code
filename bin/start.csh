@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.60 2004-11-02 19:22:03 dobler Exp $
+# CVS: $Id: start.csh,v 1.61 2004-11-02 19:27:30 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -66,7 +66,8 @@ endif
 #
 if (-e NOSTART) then
   echo "Found NOSTART file. Won't run start.x"
-  mv $datadir/time_series.dat $datadir/time_series.`timestr`
+  if (-e $datadir/time_series.dat) \
+      mv $datadir/time_series.dat $datadir/time_series.`timestr`
   exit
 endif
 
