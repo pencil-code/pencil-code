@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.96 2004-12-01 12:10:08 nilshau Exp $
+### $Id: Makefile.src,v 1.97 2004-12-08 02:03:48 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -142,6 +142,7 @@ FCCLEANER=
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
 #FFLAGS=-O3 -Wl,-rpath,/usr/opt/intel/lib #(ns0)
+#FFLAGS=-O3 -xW #(obelix)
 #FC=f95 #(karbala)
 #FC=pgf90 #(tycho|linux29|monolith)
 ##FC=ifort #(erland|bohm|igor|onsager)
@@ -173,17 +174,22 @@ FCCLEANER=
 #FFLAGS=-fast -xNW -tpp7 -vec_report0 #(cosmo)
 #FFLAGS=-O3 -ieee=full #(barilko)
 #FFLAGS= #(davey[12])
-#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix|kolmogorov)
+#FCCLEANER=2>&1 | cleanf95 #(giga[0-1][0-9]|wormhole|obelix)
 #FC=ifc -I/usr/lib/lam/include #(nw17|nl6|nl11|wormhole)  
 #FC=ifc -w95 #(sandin)
 #FC=f95 -dusty #(davey[12])  
-#FC=ifc -e90 #(kolmogorov)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(sandin|nl11)  
 #FC=ifc -I/usr/lib/lam/include -i_dynamic #(wormhole)
 #FC=ifort #(cosmo)
 #CC=icc #(cosmo)
-#CC=mpicc #(obelix)
-#CC=gcc -m32 #(kolmogorov)
+##FCCLEANER=2>&1 | cleanf95 #(Kolmogorov)
+##FC=ifc -e90 #(Kolmogorov)  
+##CC=gcc -m32 #(Kolmogorov)
+#FC=ifort -stand f90 #(Kolmogorov)
+#FFLAGS=-O3 #(Kolmogorov)
+#CC=gcc #(Kolmogorov)
+#CFLAGS=-O3 -DFUNDERSC=1 #(Kolmogorov)
+#LDMPI=-I/usr/include -llammpio -llamf77mpi -lmpi -llam -lutil #(Kolmogorov)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lmpi -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(wormhole)
 #LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(nw17|nl6|nl11)
 #LDMPI=-L/opt/mpich/lib #(nw43)
