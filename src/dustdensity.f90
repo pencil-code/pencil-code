@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.112 2004-07-07 13:06:25 ajohan Exp $
+! $Id: dustdensity.f90,v 1.113 2004-07-08 13:12:43 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -26,6 +26,7 @@ module Dustdensity
   real :: mdave0=1., adpeak=5e-4
   real :: supsatfac=1.,supsatfac1=1.
   character (len=labellen) :: initnd='zero'
+  logical :: ldustdensity_log=.false.
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.,ludstickmax=.true.
   logical :: lcalcdkern=.true.,lkeepinitnd=.false.,ldustcontinuity=.true.
   logical :: lupw_ndmdmi=.false.,lupw_ndmi_1st=.false.,ldustnulling=.false.
@@ -36,7 +37,7 @@ module Dustdensity
       rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
       adpeak, ldustgrowth, ldustcoagulation, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, &
-      ldeltaud_thermal, ldeltaud_turbulent
+      ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log
 
   namelist /dustdensity_run_pars/ &
       rhod0, nd_diff, md_diff, mi_diff, ldustgrowth, &
@@ -116,7 +117,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.112 2004-07-07 13:06:25 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.113 2004-07-08 13:12:43 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,7 +168,6 @@ module Dustdensity
 !  parameters.
 !
 !  24-nov-02/tony: coded 
-!  08-dec-03/anders: Copy *_all parameters to whole array
       use Mpicomm, only: stop_it
 !
       integer :: i,j
@@ -307,6 +307,12 @@ module Dustdensity
 !      
       if (lmice) f(:,:,:,imi) = 0.
 !
+!
+!
+      if (ldustdensity_log) then
+        do k=1,ndustspec; f(:,:,:,ind(k)) = alog(f(:,:,:,ind(k))); enddo
+      endif
+!
 !  sanity check
 !
       do k=1,ndustspec
@@ -358,7 +364,11 @@ module Dustdensity
 !
 !  Abbreviations
 !
-      nd  = f(l1:l2,m,n,ind)
+      if (ldustdensity_log) then
+        nd  = exp(f(l1:l2,m,n,ind))
+      else
+        nd  = f(l1:l2,m,n,ind)
+      endif
       rho = exp(f(l1:l2,m,n,ilnrho))
 !
 !  Continuity equations for nd, md and mi.
@@ -793,8 +803,12 @@ module Dustdensity
 !
 !  Continuity equations
 !
-        df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-            udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+        if (ldustdensity_log) then
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - udgnd - divud(:,k)
+        else
+          df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
+              udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+        endif
         if (lmdvar) df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
         if (lmice)  df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
       enddo
