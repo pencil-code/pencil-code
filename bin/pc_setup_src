@@ -1,0 +1,95 @@
+#!/bin/sh
+#                       pc_setup_src
+#                      --------------
+# Description:
+#   Link files into a local src directory
+#   Also link files from the bin directory ==> should be renamed
+# CVS $Id: pc_setup_src,v 1.1 2004-04-05 18:37:14 mee Exp $
+# Usage:
+#   setup-src  [src-dir]
+
+if [ -z "$PENCIL_HOME" ]; then
+  echo "You need to set PENCIL_HOME; consider sourcing sourceme.{,c}sh"
+  exit 1
+fi
+
+bindir=$PENCIL_HOME/bin
+srcdir=$PENCIL_HOME/src
+
+source $PENCIL_HOME/bin/pc_functions.sh
+
+src=./src
+[ $# -gt 0 ] && src="$1"
+
+
+## Link sh scripts
+for script in pc_start pc_start_run pc_run pc_config.sh pc_functions.sh
+do
+  if [ -e $bindir/$script ]; then
+    ln -s $bindir/$script .
+  else
+    echo "No such file: $bindir/$script"
+  fi
+done
+
+## Make a link to a root Makefile to allow make from the run directory
+ln -s $srcdir/Makefile.parent Makefile
+
+## src subdirectory
+if [ ! -d $src ]; then
+  echo "WARNING: No src directory found -- creating new one"
+  mkdir $src
+fi
+#
+cd $src
+#
+#  LINK all *.f90, *.f, and the Makefile to local src directory
+#
+n=0
+for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
+              $srcdir/Makefile.src $srcdir/.cvsignore $srcdir/*.inc
+do
+  if [ -e $file ]; then
+    filename=${file/*\//}
+    if [ ! -e $filename ]; then
+      ln -s $file .
+    else
+      # echo "$file:t already exists"
+      n=$(( $n + 1 ))
+      existf=$filename
+    fi
+  else
+    echo "No such file: $file"
+  fi
+done
+#
+#  COPY all *.local files into local src directory
+#
+n=0
+for file in $srcdir/*.local
+do
+  if [ -e $file ]; then
+    filename=${file/*\//}
+    if [ ! -e $filename ]; then
+      cp $file .
+    else
+      # echo "$file:t already exists"
+      n=$(( $n + 1 ))
+      existf=$filename
+    fi
+  else
+    echo "No such file: $file"
+  fi
+done
+#
+[ $n -eq 1 ] && echo "$existf already exists in $src"
+[ $n -gt 1 ] && echo "$n files already exist in $src"
+#
+#  Generate Makefile
+#
+set echo
+set verbose
+
+rm -f Makefile			# for old run directories
+$bindir/adapt-mkfile Makefile.src Makefile
+rm -f makefile			# for old run directories
