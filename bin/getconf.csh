@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.113 2004-03-29 13:58:48 theine Exp $
+# $Id: getconf.csh,v 1.114 2004-04-03 16:56:22 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -125,7 +125,7 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
     setenv SCRATCH_DIR /work/$JOB_ID 
-    set remove_scratch_root = 0
+    set remove_scratch_root = 1
   endif
 
 else if ($hn =~ giga[0-9][0-9]) then
