@@ -1,11 +1,11 @@
-pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,amax=amax,$
-               amin=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
+pro rvid_plane,field,mpeg=mpeg,png=png,tmin=tmin,tmax=tmax,max=amax,$
+               min=amin,extension=extension,nrepeat=nrepeat,wait=wait,$
                njump=njump,datadir=datadir,OLDFILE=OLDFILE,test=test,$
                proc=proc,ix=ix,iy=iy,ps=ps,iplane=iplane,$
                global_scaling=global_scaling,shell=shell,r_int=r_int,$
                r_ext=r_ext,zoom=zoom,colmpeg=colmpeg
 ;
-; $Id: rvid_plane.pro,v 1.11 2004-05-24 19:06:46 mee Exp $
+; $Id: rvid_plane.pro,v 1.12 2004-07-10 19:04:23 brandenb Exp $
 ;
 ;  reads and displays data in a plane (currently with tvscl)
 ;  and plots a curve as well (cross-section through iy)
@@ -273,8 +273,8 @@ end else begin
       ;
       ;  show image scaled between amin and amax and filling whole screen
       ;
-      ;tvscl,plane2,iplane
-      tvscl,bytscl(plane2,min=amin,max=amax),iplane
+      tv,bytscl(plane2,min=amin,max=amax),iplane
+      ;contourfill,plane2,lev=grange(amin,amax,60)
       ;tv,congrid(bytscl(plane2,min=amin,max=amax),!d.x_size,!d.y_size)
       ;xyouts,.93,1.13,'!8t!6='+string(t,fo="(f6.1)"),col=1,siz=2
       if keyword_set(png) then begin
