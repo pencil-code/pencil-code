@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.53 2003-07-14 17:23:45 dobler Exp $
+# $Id: getconf.csh,v 1.54 2003-07-29 14:56:20 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -38,7 +38,7 @@ if ($mpi) then
   else if ($hn =~ *.kis.uni-freiburg.de) then
     set mpirun = /opt/local/mpich/bin/mpirun
 
-  else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master)) then
+  else if (($hn =~ cincinnatus*) || ($hn =~ owen*) || ($hn =~ master) || ($hn =~ node*)) then
     set mpirun = /usr/lib/lam/bin/mpirun
     set mpirunops = "-c2c -O"
 #    set mpirunops = "-c2c c8-13"
