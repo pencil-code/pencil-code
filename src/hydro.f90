@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.115 2003-10-13 12:23:48 mcmillan Exp $
+! $Id: hydro.f90,v 1.116 2003-10-13 14:53:18 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -99,7 +99,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.115 2003-10-13 12:23:48 mcmillan Exp $")
+           "$Id: hydro.f90,v 1.116 2003-10-13 14:53:18 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,9 +124,22 @@ module Hydro
 !  parameters.
 !
 !  24-nov-02/tony: coded 
-!
-!  do nothing
-!
+!  13-oct-03/dave: check parameters and warn (if nec.) about velocity damping
+!  
+!  r_int and r_ext override rdampint and rdampext if both are set
+! 
+   if (r_int > epsi) then
+     rdampint = r_int
+   elseif (rdampint <= epsi) then
+     write(*,*) 'initialize_hydro: inner radius not yet set, dampuint= ',dampuint
+   endif     
+
+   if (r_ext < impossible) then         
+     rdampext = r_ext
+   elseif (rdampext == impossible) then
+     write(*,*) 'initialize_hydro: outer radius not yet set, dampuext= ',dampuext
+   endif
+
     endsubroutine initialize_hydro
 !***********************************************************************
     subroutine init_uu(f,xx,yy,zz)
@@ -673,7 +686,7 @@ module Hydro
           endif
         endif
 !
-!  2. damp motions for r_mn>1
+!  2. damp motions for r_mn > rdampext or r_ext AND r_mn < rdampint or r_int
 !
         if (lgravr) then
 ! geodynamo
@@ -688,10 +701,12 @@ module Hydro
             df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
           enddo
 
-          pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
-          do i=iux,iuz
-            df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
-          enddo
+          if (dampuint > 0.0) then
+            pdamp = 1 - step(r_mn,rdampint,wdamp) ! inner damping profile
+            do i=iux,iuz
+              df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuint*pdamp*f(l1:l2,m,n,i)
+            enddo
+          endif
 ! end geodynamo 
         endif
 !
