@@ -219,6 +219,12 @@ l1=3 & l2=mx-4
 m1=3 & m2=my-4
 n1=3 & n2=mz-4
 ;
+;  fix z3=ztop which was local top in start.pro
+;
+if (lgravz) then begin
+  ztop=z[n2] & z3=ztop
+endif
+;
 read_all = 1                    ; marker for r.pro
 
 end
