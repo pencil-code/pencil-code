@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-03-08 11:43:28 $
-# $Revision: 1.9 $
+# $Date: 2003-04-22 08:54:48 $
+# $Revision: 1.10 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -51,9 +51,10 @@ eval {
     Getopt::Long::config("bundling");
 };
 GetOptions(\%opts,
-	   qw( -H   --html
-	       -c   --clean
+	   qw( -h   --help
+	       -H   --html
 	       -u   --update
+	       -c   --clean
                -m=s --mail=s
                     --debug
 	                   ));
@@ -81,6 +82,7 @@ END_HEAD
 
 ## Run test(s)
 my $first = 1;
+my $t0 = time();
 foreach my $host (@ARGV) {
     # Identify host
     my ($shost) = ($host =~ /([^.]*)/); # host name sans domain
@@ -96,7 +98,7 @@ foreach my $host (@ARGV) {
     my @cmd = ("ssh", "$host");
     my $remcmd = '\'cd $PENCIL_HOME';
     if ($update) { $remcmd .= "; cvs update >& /dev/null"};
-    $remcmd .= "; ./bin/auto-test -s";
+    $remcmd .= "; ./bin/auto-test -s -t";
     if ($clean) { $remcmd .= " --clean"};
     push @cmd, $remcmd;
 #    system("@cmd |");
@@ -116,7 +118,14 @@ foreach my $host (@ARGV) {
    $first = 0;
 }
 
+my $t1 = time();
+
 ## Print footer
+
+# Better print CPU time via auto-test than wall-clock time
+# if ($html) { print "\n<p>\n" };
+# print "Wall clock time: ", $t1-$t0, "s\n";
+
 if ($html) {
     print <<"END_FOOT";
 </pre>
@@ -134,9 +143,9 @@ sub usage {
     while (<FILE>) {
         next unless /^\s*#\s*Usage:/m; # Paragraph _must_ contain `Usage:'
         # Drop `Author:', etc:
-        s/.*?\n(\s*#\s*(Description|Usage):\s*\n.*)/$1/s;
+        s/.*?\n(\s*\#\s*(Description|Usage):\s*\n.*)/$1/s;
         # Don't print comment sign:
-        s/^\s*# ?//mg;
+        s/^\s*\# ?//mg;
         last;
     }
     $_;
