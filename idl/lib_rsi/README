@@ -1,0 +1,10 @@
+$Id: README,v 1.1 2002-06-15 07:50:21 brandenb Exp $
+
+Here we keep important routines that should normally already be in your
+/usr/local/rsi/idl/lib.
+
+On some machines however, the versions may not be sufficiently
+up-to-date. In some cases this has caused problems, so for conienience
+we supply the neccessary version here.
+
+on mhd0, mean.pro, for example didn't cope with the /double keyword.
