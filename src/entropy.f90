@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.294 2004-04-01 14:27:23 ajohan Exp $
+! $Id: entropy.f90,v 1.295 2004-04-02 16:28:48 mee Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.294 2004-04-01 14:27:23 ajohan Exp $")
+           "$Id: entropy.f90,v 1.295 2004-04-02 16:28:48 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1421,23 +1421,20 @@ module Entropy
       intent(in) :: f,rho1,glnrho,gss
       intent(out) :: df
 !
-!  identifier
-!
-      if(headtt) print*,'calc_heatcond: lgravz=',lgravz
-!
 !  Heat conduction / entropy diffusion
 !
-      if(headtt) then
-        print*,'calc_heatcond: hcond0=',hcond0
-        if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
-      endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
         call del2(f,iss,del2ss)
       endif
 
       if (hcond0 /= 0) then
+        if(headtt) then
+          print*,'calc_heatcond: hcond0=',hcond0
+          if (lgravz) print*,'calc_heatcond: Fbot,Ftop=',Fbot,Ftop
+        endif
         if (lgravz) then
+          if(headtt) print*,'calc_heatcond: lgravz=',lgravz
           ! For vertical geometry, we only need to calculate this for each
           ! new value of z -> speedup by about 8% at 32x32x64
           if (z_mn(1) /= z_prev) then
@@ -1497,10 +1494,9 @@ module Entropy
         !  most of these should trigger the following trap
         !
         if (notanumber(thdiff)) then
-
-print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
-call stop_it('calc_heatcond: NaNs in thdiff')
-endif
+          print*, 'calc_heatcond: m,n,y(m),z(n)=',m,n,y(m),z(n)
+          call stop_it('calc_heatcond: NaNs in thdiff')
+        endif
       endif
 
       if (headt .and. lfirst .and. ip<=9) then
