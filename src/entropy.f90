@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.302 2004-04-23 06:44:56 brandenb Exp $
+! $Id: entropy.f90,v 1.303 2004-04-23 18:20:37 ngrs Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.302 2004-04-23 06:44:56 brandenb Exp $")
+           "$Id: entropy.f90,v 1.303 2004-04-23 18:20:37 ngrs Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -944,17 +944,20 @@ module Entropy
           f(:,:,:,iss)=alog(gamma*rpp(1))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(1)
           f(:,:,:,iuy)=rpv(1)
-        elsewhere ( (xx<0.) .and. (yy>=0.) )
+        endwhere
+        where ( (xx<0.) .and. (yy>=0.) )
           f(:,:,:,ilnrho)=alog(rpr(2))
           f(:,:,:,iss)=alog(gamma*rpp(2))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(2)
           f(:,:,:,iuy)=rpv(2)
-        elsewhere ( (xx<0.) .and. (yy<0.) )
+        endwhere
+        where ( (xx<0.) .and. (yy<0.) )
           f(:,:,:,ilnrho)=alog(rpr(3))
           f(:,:,:,iss)=alog(gamma*rpp(3))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(3)
           f(:,:,:,iuy)=rpv(3)
-        elsewhere ( (xx>=0.) .and. (yy<0.) )
+        endwhere
+        where ( (xx>=0.) .and. (yy<0.) )
           f(:,:,:,ilnrho)=alog(rpr(4))
           f(:,:,:,iss)=alog(gamma*rpp(4))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(4)
