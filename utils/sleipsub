@@ -22,7 +22,7 @@ if (! $?environment) set environment = "PENCIL_HOME=$PENCIL_HOME"
 if (! $?executable) set executable = start_run.csh
 if (! $?input) set input = /dev/null
 if (! $?output) set output = \$\(job_name\).\$\(jobid\).out
-if (! $?error) set error = \$\(job_name\).\$\(jobid\).err
+if (! $?error) set error = $output
 if (! $?notification) set notification = never
 
 #
