@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.142 2003-06-13 09:25:24 nilshau Exp $
+! $Id: equ.f90,v 1.143 2003-06-14 18:07:38 theine Exp $
 
 module Equ
 
@@ -209,7 +209,7 @@ module Equ
       use Density
 !
       logical :: early_finalize
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f,df
       real, dimension (nx,3,3) :: uij,udij
       real, dimension (nx,3) :: uu,uud,glnrho,glnrhod
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
@@ -221,7 +221,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.142 2003-06-13 09:25:24 nilshau Exp $")
+           "$Id: equ.f90,v 1.143 2003-06-14 18:07:38 theine Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -248,7 +248,7 @@ module Equ
 !  Calculate ionization degree (needed for thermodynamics)
 !  Radiation transport along rays
 !
-      if(lionization) call ionfrac(f)
+      if(lionization) call ioncalc(f)
       if(lradiation_ray) call radtransfer(f)
 !
 !  do loop over y and z

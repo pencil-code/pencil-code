@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.4 2003-06-14 15:43:36 brandenb Exp $
+! $Id: radiation_exp.f90,v 1.5 2003-06-14 18:07:38 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -14,7 +14,7 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad,chi,TT
+  real, dimension (mx,my,mz) :: Srad,kaprho
   logical :: nocooling=.false.,output_Qrad=.false.
 !
 !  default values for one pair of vertical rays
@@ -51,13 +51,21 @@ module Radiation
       if(.not. first) call stop_it('register_radiation called twice')
       first = .false.
 !
-      lradiation = .true.
-      lradiation_ray = .true.
+      lradiation=.true.
+      lradiation_ray=.true.
+!
+      iQrad = mvar + naux +1
+      naux = naux + 1
+!
+      if ((ip<=8) .and. lroot) then
+        print*, 'register_radiation: radiation nvar = ', nvar
+        print*, 'iQrad = ', iQrad
+      endif
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.4 2003-06-14 15:43:36 brandenb Exp $")
+           "$Id: radiation_exp.f90,v 1.5 2003-06-14 18:07:38 theine Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -67,7 +75,7 @@ module Radiation
 !
     endsubroutine initialize_radiation
 !***********************************************************************
-    subroutine source_function(f)
+    subroutine radcalc(f)
 !
 !  calculate source function
 !
@@ -77,7 +85,7 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT_,kappa
+      real, dimension(nx) :: lnrho,ss,yH,TT,kappa
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
@@ -87,14 +95,15 @@ module Radiation
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
          yH=f(l1:l2,m,n,iyH)
-         call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa)
-         Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
-         chi(l1:l2,m,n)=kappa*exp(lnrho)
-         TT(l1:l2,m,n)=TT_
+         TT=f(l1:l2,m,n,iTT)
+         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
+         kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
+               *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
+         kaprho(l1:l2,m,n)=kappa*exp(lnrho)
       enddo
       enddo
 !
-    endsubroutine source_function
+    endsubroutine radcalc
 !***********************************************************************
     function mean_intensity(f)
 !
@@ -118,7 +127,7 @@ module Radiation
       do lr=l1,l2
         Iup(lr,mr,n1)=Srad(lr,mr,n1)
         do nr=n1,n2
-          dtau=.5*(chi(lr,mr,nr)+chi(lr,mr,nr+1))*dz
+          dtau=.5*(kaprho(lr,mr,nr)+kaprho(lr,mr,nr+1))*dz
           emdtau=exp(-dtau)
           Iup(lr,mr,nr+1)=Iup(lr,mr,nr)*emdtau &
                           +(1.-emdtau)*Srad(lr,mr,nr) &
@@ -127,7 +136,7 @@ module Radiation
         enddo
         Idown(lr,mr,n2)=0
         do nr=n2,n1,-1
-          dtau=.5*(chi(lr,mr,nr)+chi(lr,mr,nr-1))*dz
+          dtau=.5*(kaprho(lr,mr,nr)+kaprho(lr,mr,nr-1))*dz
           emdtau=exp(-dtau)
           Idown(lr,mr,nr-1)=Idown(lr,mr,nr)*emdtau &
                             +(1.-emdtau)*Srad(lr,mr,nr) &
@@ -147,7 +156,6 @@ module Radiation
 !
       use Cdata
       use Sub
-      use Ionization
 !
       real, dimension(mx,my,mz,mvar) :: f
 !
@@ -155,8 +163,7 @@ module Radiation
 !
       if(lroot.and.headt) print*,'radtransfer'
 !
-      call source_function(f)
-      Qrad=-Srad+mean_intensity(f)
+      f(:,:,:,iQrad)=-Srad+mean_intensity(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -178,9 +185,9 @@ module Radiation
       do m=m1,m2
          if(.not. nocooling) then
             df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-                              +4.*pi*chi(l1:l2,m,n) &
-                               *Qrad(l1:l2,m,n) &
-                               /TT(l1:l2,m,n)*formfactor &
+                              +4.*pi*kaprho(l1:l2,m,n) &
+                               *f(l1:l2,m,n,iQrad) &
+                               /f(l1:l2,m,n,iTT)*formfactor &
                                *exp(-f(l1:l2,m,n,ilnrho))
          endif
       enddo
@@ -202,8 +209,8 @@ module Radiation
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
-      if(output_Qrad) write(lun) Qrad,Srad,chi,TT
+      !if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
+      !if(output_Qrad) write(lun) Qrad,Srad,kaprho,TT
 !
     endsubroutine output_radiation
 !***********************************************************************

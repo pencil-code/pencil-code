@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.39 2003-06-14 16:36:54 brandenb Exp $
+! $Id: ionization.f90,v 1.40 2003-06-14 18:07:38 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -12,7 +12,7 @@ module Ionization
   implicit none
 
   !  secondary parameters calculated in initialize
-  real :: m_H,m_He,fHe,mu
+  real :: m_H,m_He,mu
   real :: TT_ion,lnrho_ion,ss_ion,chiH
   real :: TT_ion_,lnrho_ion_,chiH_,kappa0
 
@@ -46,18 +46,20 @@ module Ionization
       first = .false.
 !
       iyH = mvar + naux +1
-      itemp 
+      naux = naux + 1 
+      iTT = mvar + naux +1
       naux = naux + 1 
 
-      !if ((ip<=8) .and. lroot) then
+      if ((ip<=8) .and. lroot) then
         print*, 'register_ionization: ionization nvar = ', nvar
         print*, 'iyH = ', iyH
-      !endif
+        print*, 'iTT = ', iTT
+      endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.39 2003-06-14 16:36:54 brandenb Exp $")
+           "$Id: ionization.f90,v 1.40 2003-06-14 18:07:38 theine Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -125,32 +127,36 @@ module Ionization
     endsubroutine rprint_ionization
 
 !***********************************************************************
-    subroutine ionfrac(f)
+    subroutine ioncalc(f)
 !
-!  calculate degree of ionization
+!   calculate degree of ionization and temperature
 !
 !   13-jun-03/tobi: coded
 !
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real :: lnrho,ss,yH
+      real :: lnrho,ss,yH,lnTT_
       integer :: l
 !
-!!!!  do n=n1,n2
       do n=1,mz
-      do m=m1,m2
-      do l=l1,l2
+      do m=1,my
+      do l=1,mx
          lnrho=f(l,m,n,ilnrho)
          ss=f(l,m,n,ient)
          yH=f(l,m,n,iyH)
          call rtsafe(lnrho,ss,yH)
          f(l,m,n,iyH)=yH
+         lnTT_=(2./3.)*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
+                        -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
+                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
+                        /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+         f(l,m,n,iTT)=exp(lnTT_)*TT_ion
       enddo
       enddo
       enddo
 !
-    endsubroutine ionfrac
+    endsubroutine ioncalc
 
 !***********************************************************************
     subroutine output_ionization(lun)
@@ -172,12 +178,10 @@ module Ionization
     endsubroutine output_ionization
 
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,yH,cs2,TT1,cp1tilde, &
-      Temperature,InternalEnergy)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
-!  TT1=1/T is the inverse temperature
 !  neutral gas: cp1tilde=ss_ion/cp=0.4 ("nabla_ad" maybe better name)
 !  in general: cp1tilde=dlnPdS/dlnPdlnrho
 !
@@ -189,49 +193,41 @@ module Ionization
       use General
       use Sub
 !
-      logical, save :: first=.true.
-      real, dimension (nx), intent(out), optional :: Temperature
-      real, dimension (nx), intent(out), optional :: InternalEnergy
-      real, dimension (nx) :: lnrho,ss,yH,ee,cs2,TT1,cp1tilde
-      real, dimension (nx) :: dlnPdlnrho,dlnPdss,TT,rho,lnTT
-      real :: ss0=-5.5542
+      real, dimension (nx), intent(in) :: lnrho,ss
+      real, dimension (nx), intent(out) :: cs2,cp1tilde,TT1
+      real, dimension (nx), optional, intent(in) :: yH,TT
+      real, dimension (nx) :: f,dlnTT_dy,dfdy,dlnTT_dlnrho
+      real, dimension (nx) :: dfdlnrho,dydlnrho,dlnPdlnrho
+      real, dimension (nx) :: dlnTT_dss,dfdss,dydss,dlnPdss
+      logical :: ldummy
 !
-!  calculate cs2, 1/T, and cp1tilde
+!  dummies, since yH and TT are always given if IONIZATION=ionization,
+!  which implies lionization=.true.
 !
-      if(cionization=='hydrogen') then
-        if(headtt.and.first) print*,'thermodynamics based on hydrogen ionization'
-        call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
-                                 dlnPdss=dlnPdss, &
-                                 TT=TT)
-        TT1=1./TT
-        cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
-        cp1tilde=dlnPdss/dlnPdlnrho
-        if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      if (present(yH)) ldummy=.true.
+      if (present(TT)) ldummy=.true.
 !
-!  neutral gas case: cp-cv=1*kB/mp, ie cp=2.5*kB/mp
+!  calculate cs2, TT1, and cp1tilde
 !
-      elseif(cionization=='neutral') then
-        if(headtt.and.first) print*,'thermodynamics: assume cp-cv=1 and cp=2.5'
-        dlnPdlnrho=gamma
-        dlnPdss=gamma1
-        !lnTT=gamma1*(lnrho+ss/ss_ion-ss0)
-        lnTT=gamma1*(lnrho+ss-ss0)
-        TT=exp(lnTT); TT1=1./TT
-        cs2=ss_ion*TT*dlnPdlnrho
-        cp1tilde=dlnPdss/dlnPdlnrho
-        if(headtt) print*,'thermodynamics: gamma1,lnTT,cs2=',gamma1,lnTT,cs2
-        if(ldiagnos) ee=cs2/(gamma*gamma1)
-      endif
+      f=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yH)-2.*log(yH)
+      dlnTT_dy=(log(m_H/m_p)-gamma1*(f+TT_ion/TT)-1.)/(1.+yH+fHe)
+      dfdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yH)-2./yH
+      dlnTT_dlnrho=gamma1
+      dfdlnrho=gamma1*TT_ion/TT
+      dydlnrho=-dfdlnrho/dfdy
+      dlnPdlnrho=1.+dydlnrho/(1.+yH+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+      dlnTT_dss=gamma1/((1.+yH+fHe)*ss_ion)
+      dfdss=(1.+dfdlnrho)/((1.+yH+fHe)*ss_ion)
+      dydss=-dfdss/dfdy
+      dlnPdss=dydss/(1.+yH+fHe)+dlnTT_dy*dydss+dlnTT_dss
 !
-!  optional output
+      TT1=1./TT
+      cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
+      cp1tilde=dlnPdss/dlnPdlnrho
 !
-      if(present(Temperature)) Temperature=TT
-      if(present(InternalEnergy)) InternalEnergy=ee
-!
-      first = .false.
     endsubroutine thermodynamics
 !***********************************************************************
-    subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
+    subroutine ioncalc_old(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
 !
 !   calculates thermodynamic quantities under partial ionization
 !
@@ -291,7 +287,7 @@ module Ionization
          kappa=.25*exp(lnrho-lnrho_ion_)*(TT_ion_/TT)**1.5 &
                *exp(TT_ion_/TT)*yH*(1.-yH)*kappa0
       endif
-    endsubroutine ioncalc
+    endsubroutine ioncalc_old
 !***********************************************************************
     subroutine rtsafe(lnrho,ss,yH)
 !

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.163 2003-06-14 15:43:36 brandenb Exp $
+! $Id: entropy.f90,v 1.164 2003-06-14 18:07:38 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -83,7 +83,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.163 2003-06-14 15:43:36 brandenb Exp $")
+           "$Id: entropy.f90,v 1.164 2003-06-14 18:07:38 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -439,13 +439,17 @@ module Entropy
 !  include in maximum advection speed (for timestep)
 !
       ss=f(l1:l2,m,n,ient)
-      yH=f(l1:l2,m,n,iyH)
+      if (lionization) then
+        yH=f(l1:l2,m,n,iyH)
+        TT=f(l1:l2,m,n,iTT)
+        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH=yH,TT=TT)
+      else
+        call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde) 
+      endif
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
 !
-      call thermodynamics(lnrho,ss,yH,cs2,TT1,cp1tilde, &
-        Temperature=TT,InternalEnergy=ee)
       if (headtt) print*,'dss_dt: cs2,TT,cp1tilde=',cs2(1),1./TT1(1),cp1tilde(1)
 !
 !  use sound speed in Courant condition

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.20 2003-06-14 16:40:49 brandenb Exp $
+! $Id: noionization.f90,v 1.21 2003-06-14 18:07:38 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -58,7 +58,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.20 2003-06-14 16:40:49 brandenb Exp $")
+           "$Id: noionization.f90,v 1.21 2003-06-14 18:07:38 theine Exp $")
 !
 !  Check we arn't registering too many auxilliary variables
 !
@@ -133,8 +133,7 @@ module Ionization
       if(ip==0) print*,lun  !(keep compiler quiet)
     endsubroutine output_ionization
 !***********************************************************************
-    subroutine thermodynamics(lnrho,ss,yH,cs2,TT1,cp1tilde, &
-      Temperature,InternalEnergy)
+    subroutine thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,yH,TT)
 !
 !  Calculate thermodynamical quantities, cs2, 1/T, and cp1tilde
 !  cs2=(dp/drho)_s is the adiabatic sound speed
@@ -147,88 +146,30 @@ module Ionization
       use Cdata
       use General
       use Sub
-      use Density, only:cs20, lnrho0,gamma
+      use Density, only:cs20,lnrho0,gamma
 !
-      real, dimension (nx), intent(out), optional :: Temperature
-      real, dimension (nx), intent(out), optional :: InternalEnergy
-      real, dimension (nx) :: lnrho,ss,yH,cs2,TT1,cp1tilde
-      real, dimension (nx) :: TT,dlnPdlnrho,dlnPdss,rho,ee
+      real, dimension (nx), intent(in) :: lnrho,ss
+      real, dimension (nx), intent(out) :: cs2,TT1,cp1tilde
+      real, dimension (nx), intent(in), optional :: yH,TT
+      logical :: ldummy
 !
-!  calculate cs2, 1/T, and cp1tilde
-!  leave this in, in case we may activate it
+      if (.not. present(yH)) ldummy=.true.
+      if (.not. present(TT)) ldummy=.true.
 !
-      if(lfixed_ionization) then
-        if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
-        call ioncalc(lnrho,ss,yH,dlnPdlnrho=dlnPdlnrho, &
-                                 dlnPdss=dlnPdss, &
-                                 TT=TT)
-        TT1=1./TT
-        cs2=(1.+yH+fHe)*ss_ion*TT*dlnPdlnrho
-        cp1tilde=dlnPdss/dlnPdlnrho
-        print*,'ss_ion,TT,dlnPdlnrho=',ss_ion,TT,dlnPdlnrho
-        if(present(InternalEnergy)) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
-        if(present(Temperature)) Temperature=TT
-        if(present(InternalEnergy)) InternalEnergy=ee
-      else
-!
-!  if ionization turned off, continue assuming cp=1
-!  with IONIZATION=noionization this is the only option
-!
-        if(headtt) print*,'thermodynamics: assume cp=1'
-        cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
-        TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-        cp1tilde=1.
-        if(present(Temperature)) Temperature=cs2/gamma1
-        if(present(InternalEnergy)) InternalEnergy=cs2/(gamma*gamma1)
-     endif
+      cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
+      TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
+      cp1tilde=1.
 !
     endsubroutine thermodynamics
 !***********************************************************************
-    subroutine ioncalc(lnrho,ss,yH,dlnPdlnrho,dlnPdss,TT,kappa)
+    subroutine ioncalc(f)
 !
-!   calculates thermodynamic quantities under partial ionization
+!   calculate degree of ionization and temperature
 !
-!   29-may-03/axel: coded replacement routine for fixed radiation
+!   13-jun-03/tobi: coded
 !
-      real, dimension(nx),intent(in)   :: lnrho,ss,yH
-      real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
-                           intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
-      double precision, dimension(nx)  :: lnTT_  ! lnTT_=log(TT/TT_ion)
-      double precision :: fHelogfHe
-!
-!  EOS: p=(1+yH+f)*rho*s0*T
-!
-      if (present(TT)) then
-         fHelogfHe=fHe*log(fHe)
-         if (fHe .eq. 0) fHelogfHe=0
-         lnTT_=(2./3.)*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
-                        -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
-                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHelogfHe) &
-                        /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
-      endif
-!
-!  dlnP/dlnrho=gamma
-!
-      if (present(dlnPdlnrho)) then
-         dlnPdlnrho=5./3.
-      endif
-!
-!  dlnP/dss=(gamma-1)/(1.+yH0+fHe)
-!
-      if (present(dlnPdss)) then
-         dlnPdss=(2./3.)/(1.+yH0+fHe)
-      endif
-!
-!  temperature (from lnTT_)
-!
-      if (present(TT)) TT=exp(lnTT_)*TT_ion
-!
-!  if kappa is needed, use electron scattering value, kappa_es
-!
-      if (present(kappa)) then
-         kappa=kappa_es
-      endif
-!
+    real, dimension (mx,my,mz,mvar) :: f
+    if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
     endsubroutine ioncalc
 !***********************************************************************
 endmodule ionization

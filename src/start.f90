@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.96 2003-06-14 15:37:22 theine Exp $
+! $Id: start.f90,v 1.97 2003-06-14 18:07:38 theine Exp $
 !
 !***********************************************************************
       program start
@@ -29,7 +29,7 @@
 !
         integer :: i
 !       logical :: lock=.false.
-        real, dimension (mx,my,mz,mvar+maux) :: f
+        real, dimension (mx,my,mz,mvar) :: f
         real, dimension (mx,my,mz) :: xx,yy,zz
         real :: x00,y00,z00
 !
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.96 2003-06-14 15:37:22 theine Exp $")
+             "$Id: start.f90,v 1.97 2003-06-14 18:07:38 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -152,7 +152,8 @@
 !
        if(lionization) then
          f(:,:,:,iyH)=0.5
-         call ionfrac(f)
+         call ioncalc(f)
+         print*,f(:,:,:,iyH),f(:,:,:,iTT)
        endif
        if(lradiation_ray) call radtransfer(f)
 !
