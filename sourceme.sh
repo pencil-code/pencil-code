@@ -9,6 +9,7 @@
 #
 
 if [ -z $PENCIL_HOME ]; then
+  unset _sourceme		# tabula rasa without PENCIL_HOME
   #
   # Try to identify position of the code's home directory:
   #
