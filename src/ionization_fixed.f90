@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.59 2004-04-10 04:24:02 brandenb Exp $
+! $Id: ionization_fixed.f90,v 1.60 2004-04-15 12:38:26 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -52,13 +52,13 @@ module Ionization
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
-  real :: yH0=0.,xHe=0.1,xH2=0.
+  real :: yH0=0.,xHe=0.1,xH2=0.,nu_mol=0.
 
   ! input parameters
   namelist /ionization_init_pars/ yH0,xHe,xH2
 
   ! run parameters
-  namelist /ionization_run_pars/ yH0,xHe,xH2
+  namelist /ionization_run_pars/ yH0,xHe,xH2,nu_mol
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_yHm=0,i_yHmax=0,i_TTm=0,i_TTmax=0
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.59 2004-04-10 04:24:02 brandenb Exp $")
+          "$Id: ionization_fixed.f90,v 1.60 2004-04-15 12:38:26 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
