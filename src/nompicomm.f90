@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.33 2002-07-23 16:06:09 dobler Exp $
+! $Id: nompicomm.f90,v 1.34 2002-08-14 15:23:45 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -74,7 +74,7 @@ module Mpicomm
 !
 !  do the lower stripe in the n-direction
 !
-      do n=n2i,n2
+      do n=max(n2i,n1+1),n2
         do m=m1i+1,m2i-1
           mm(imn)=m
           nn(imn)=n
@@ -84,7 +84,7 @@ module Mpicomm
 !
 !  upper stripe in the n-direction
 !
-      do n=n1,n1i
+      do n=n1,min(n1i,n2)
         do m=m1i+1,m2i-1
           mm(imn)=m
           nn(imn)=n
