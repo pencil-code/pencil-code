@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.168 2004-06-08 14:09:10 ajohan Exp $
+! $Id: hydro.f90,v 1.169 2004-06-08 14:17:22 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.168 2004-06-08 14:09:10 ajohan Exp $")
+           "$Id: hydro.f90,v 1.169 2004-06-08 14:17:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -402,6 +402,7 @@ module Hydro
       real, dimension (nx,3) :: uu,ugu,oo,glnrho,gshock,gui
       real, dimension (nx) :: u2,divu,o2,ou,rho1,rho,ux,uy,uz,sij2,shock,ugui
       real, dimension (nx) :: u2u13
+      real, dimension(nx) :: pdamp
       real :: c2,s2
       integer :: i,j
 !
@@ -515,11 +516,16 @@ module Hydro
 !  adding differential rotation via a frictional term
 !  (should later be moved to a separate routine)
 !  15-aug-03/christer: Added amplitude (ampl_diffrot) below
+!   7-jun-03/axel: modified to turn off diffrot for x>0 (recycle use of rdampint)
 !
       if (tau_diffrot1/=0) then
-        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy) &
-            -tau_diffrot1*(f(l1:l2,m,n,iuy) &
-                           -ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
+        if (rdampint>0) then
+          pdamp=1.-step(x_mn,rdampint,wdamp) ! outer damping profile
+        else
+          pdamp=1.
+        endif
+        df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-pdamp*tau_diffrot1* &
+                          (f(l1:l2,m,n,iuy)-ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
       endif
 !
 !  add the possibility of removing a mean flow in the y-direction

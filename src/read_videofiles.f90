@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.15 2004-03-26 13:13:19 dobler Exp $
+! $Id: read_videofiles.f90,v 1.16 2004-06-08 14:17:22 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -170,7 +170,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
 !
-      print*,'written full set of slices at t=',t
+      print*,'written full set of slices at t=',t,min_xy_loc,max_xy_loc
       enddo
 999   continue
       print*,'last file read: ',trim(fullname)

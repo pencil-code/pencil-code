@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.65 2004-05-30 08:01:40 brandenb Exp $
+! $Id: forcing.f90,v 1.66 2004-06-08 14:17:22 brandenb Exp $
 
 module Forcing
 
@@ -14,9 +14,10 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
-  real :: zff_ampl=0.,zff_hel=0.,max_force=0.02
+  real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=0.02
   real :: tsforce=-10., dtforce=10
-  real, dimension(mz) :: profz_ampl=1.,profz_hel=0.
+  real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
+  real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(should initialize profz_hel=1)
   integer :: kfountain=5,ifff,iffx,iffy,iffz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
   logical :: lmagnetic_forcing=.false.
@@ -31,7 +32,7 @@ module Forcing
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop, &
        dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
-       zff_ampl,zff_hel, &
+       wff_ampl,xff_ampl,zff_ampl,zff_hel, &
        lmagnetic_forcing,max_force,dtforce,old_forcing_evector, &
        iforce_profile
 
@@ -60,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.65 2004-05-30 08:01:40 brandenb Exp $")
+           "$Id: forcing.f90,v 1.66 2004-06-08 14:17:22 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -70,7 +71,7 @@ module Forcing
 !  nothing done from start.f90 (lstarting=.true.)
 !
       use Cdata
-      use Sub, only: inpui
+      use Sub, only: inpui,step
 !
       logical, save :: first=.true.
       logical :: lstarting
@@ -107,18 +108,24 @@ module Forcing
 !  default is constant profiles for rms velocity and helicity.
 !
       if (iforce_profile=='nothing') then
-        profz_ampl=1.
-        profz_hel=1.
+        profx_ampl=1.; profx_hel=1.
+        profz_ampl=1.; profz_hel=1.
       elseif (iforce_profile=='equator') then
+        profx_ampl=1.; profx_hel=1.
         profz_ampl=1.
         do n=1,mz
           profz_hel(n)=sin(z(n))
         enddo
       elseif (iforce_profile=='galactic') then
+        profx_ampl=1.; profx_hel=1.
         do n=1,mz
           if(abs(z(n))<zff_ampl) profz_ampl(n)=.5*(1.-cos(z(n)))
           if(abs(z(n))<zff_hel ) profz_hel (n)=.5*(1.+cos(z(n)/2.))
         enddo
+      elseif (iforce_profile=='diffrot_corona') then
+        profz_ampl=1.; profz_hel=1.
+        profx_ampl=.5*(1.-tanh((x(l1:l2)-xff_ampl)/wff_ampl))
+        profx_hel=1.
       endif
 !
     endsubroutine initialize_forcing
@@ -473,8 +480,8 @@ module Forcing
             do j=1,3
               if(extent(j)) then
                 jf=j+ifff-1
-                forcing_rhs(:,j)=rho1*profz_ampl(n)*force_ampl &
-                  *real(cmplx(coef1(j),profz_hel(n)*coef2(j)) &
+                forcing_rhs(:,j)=rho1*profx_ampl*profz_ampl(n)*force_ampl &
+                  *real(cmplx(coef1(j),profx_hel*profz_hel(n)*coef2(j)) &
                   *fx(l1:l2)*fy(m)*fz(n))
                 f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+forcing_rhs(:,j)
               endif
