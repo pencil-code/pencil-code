@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.19 2003-06-13 21:33:55 theine Exp $
+! $Id: noionization.f90,v 1.20 2003-06-14 16:40:49 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -35,6 +35,38 @@ module Ionization
 
 !***********************************************************************
     subroutine register_ionization()
+!
+!  14-jun-03/axel: adapted from register_ionization
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+      use Sub
+!
+      logical, save :: first=.true.
+!
+      if (.not. first) call stop_it('register_ionization called twice')
+      first = .false.
+!
+      iyH = 0
+      iTT = 0
+
+      !if ((ip<=8) .and. lroot) then
+        print*, 'register_ionization: ionization nvar = ', nvar
+        print*, 'iyH,iTT = ', iyH,iTT
+      !endif
+!
+!  identify version number
+!
+      if (lroot) call cvs_id( &
+           "$Id: noionization.f90,v 1.20 2003-06-14 16:40:49 brandenb Exp $")
+!
+!  Check we arn't registering too many auxilliary variables
+!
+      if (nvar > mvar) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('Register_ionization: naux > maux')
+      endif
+!
     endsubroutine register_ionization
 !***********************************************************************
     subroutine initialize_ionization()
@@ -70,6 +102,26 @@ module Ionization
       endif
 
     endsubroutine initialize_ionization
+!*******************************************************************
+    subroutine rprint_ionization(lreset)
+!
+!  Writes iyH and iTT to index.pro file
+!
+!  14-jun-03/axel: adapted from rprint_radiation
+!
+      use Cdata
+      use Sub
+!  
+      logical :: lreset
+!
+!  write column where which ionization variable is stored
+!
+      write(3,*) 'nname=',nname
+      write(3,*) 'iyH=',iyH
+      write(3,*) 'iTT=',iTT
+!   
+      if(ip==0) print*,lreset  !(to keep compiler quiet)
+    endsubroutine rprint_ionization
 !***********************************************************************
     subroutine ionfrac(f)
       real, dimension (mx,my,mz,mvar), intent(in) :: f
