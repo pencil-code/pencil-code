@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.9 2003-08-01 13:49:13 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.10 2003-08-02 13:05:26 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -67,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.9 2003-08-01 13:49:13 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.10 2003-08-02 13:05:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,6 +119,7 @@ module Dustvelocity
       select case(inituud)
 
       case('zero', '0'); if(lroot) print*,'zero dust velocity'
+      case('follow_gas'); f(:,:,:,iudx:iudz)=f(:,:,:,iux:iuz)
       case('Beltrami-x'); call beltrami(ampluud,f,iuud,kx=kx_uud)
       case('Beltrami-y'); call beltrami(ampluud,f,iuud,ky=ky_uud)
       case('Beltrami-z'); call beltrami(ampluud,f,iuud,kz=kz_uud)
