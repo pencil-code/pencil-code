@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   21-Jun-2001
-;;;  Version: 0.35 (CVS: $Revision: 1.1 $)
+;;;  Version: 0.35 (CVS: $Revision: 1.2 $)
 ;;;  Description:
 ;;;     Return a real vector of length N, containing equidistant values
 ;;;   between x1 and x2 inclusively.
@@ -19,7 +19,7 @@
 ;;;                after x2; GHOST can be a 2-element array
 ;;;                [left,right] or a scalar (applied to both sides)
 ;;;   UNIQ      -- flag for returning a list of unique elements.
-;;;                This implieas that you may get less than N elements
+;;;                This implies that you may get less than N elements
 ;;;                (in many cases just one).
 ;;;                Useful if you call
 ;;;                  contour,..,LEVELS=linspace(minmax(var),N)
@@ -39,7 +39,6 @@ function linspace, x1, x2, n, $
   if (keyword_set(peri)) then nghost=[0,-1]
   default, unique, 0
 
-;  nn = n       ; need to copy to void overwriting of actual arguments
   if (n_elements(x1) ge 2) then begin ; Reshuffle arguments
     xx1 = x1[0]
     xx2 = x1[1]
