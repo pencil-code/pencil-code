@@ -50,6 +50,7 @@ zero = 0*one
 ;  Read startup parameters
 ;
 Lx=zero & Ly=zero & Lz=zero
+cs0=zero & gamma=zero & gamma1=zero
 bx_ext=zero & by_ext=zero & bz_ext=zero
 pfile=datatopdir+'/'+'param.dat'
 dummy=findfile(pfile, COUNT=cpar)
@@ -57,7 +58,7 @@ if (cpar gt 0) then begin
   print, 'Reading grid.dat..'
   openr,1, datatopdir+'/'+'param.dat', /F77
   readu,1, Lx,Ly,Lz
-  readu,1, bx_ext,by_ext,bz_ext
+  readu,1, cs0,gamma,gamma1
   close,1
 endif else begin
   print, 'Warning: cannot find file ', pfile
@@ -70,15 +71,13 @@ t=zero
 x=fltarr(nx)*one & y=fltarr(ny)*one & z=fltarr(nz)*one
 Lx=zero &  Ly=zero &  Lz=zero
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
-gfile=datatopdir+'/'+'grid.dat'
+gfile=datadir+'/'+'grid.dat'
 dummy=findfile(gfile, COUNT=cgrid)
 if (cgrid gt 0) then begin
   print, 'Reading grid.dat..'
-  openr,1, datadir+'/'+'grid.dat', /F77
-  readu,1, xx,yy,zz
+  openr,1, gfile, /F77
   readu,1, t,x,y,z
-  readu,1, Lx,Ly,Lz
-  readu,1, dx,dy,dz,dxyz
+  readu,1, dx,dy,dz
   close,1
 endif else begin
   print, 'Warning: cannot find file ', gfile

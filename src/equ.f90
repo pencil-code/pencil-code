@@ -16,10 +16,12 @@ module Equ
       read(1,*) nt,it1,dt,isave,itorder
       read(1,*) dsnap,dvid,dforce
       read(1,*) tdamp,dampu
+      read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc
       read(1,*) cdiffrho
       read(1,*) gravz
+      read(1,*) cheat,rheat,cool
       read(1,*) iforce,force,relhel
       read(1,*) bcx
       read(1,*) bcy
@@ -45,11 +47,13 @@ module Equ
       if (lroot) then
         print*, 'nt,it1,dt,isave,itorder=', nt,it1,dt,isave,itorder
         print*, 'dsnap,dvid,dforce=', dsnap,dvid,dforce
-        print*, 'tdamp,dampu', tdamp,dampu
+        print*, 'tdamp,dampu=', tdamp,dampu
+        print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
+        print*, 'cheat,rheat,cool=', cheat,rheat,cool
         print*, 'iforce,force,relhel=', iforce,force,relhel
         print*, 'bcx=', bcx
         print*, 'bcy=', bcy
@@ -208,6 +212,7 @@ module Equ
       use Cdata
       use Slices
       use Sub
+      use Global
       use Gravity
       use Entropy
 !
@@ -216,6 +221,7 @@ module Equ
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
       real, dimension (nx) :: divu,uglnrho,u2,o2,ou,divu2
       real, dimension(nx) :: rho,rho1,nurho1,cs2,del2lam
+      real, dimension(nx) :: r,pdamp
       real :: diffrho
       integer :: i,j
 !
@@ -224,8 +230,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-01-20 22:34:10 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-01-21 18:23:46 $")
 !
 !  initiate communication
 !
@@ -283,7 +289,9 @@ module Equ
 !
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu-gpprho+fvisc
 !
-!  damp motion during time interval 0<t<tdamp.
+!  damping terms:
+!
+!  1. damp motion during time interval 0<t<tdamp.
 !  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
 !
         if ((dampu .ne. 0.) .and. (t < tdamp)) then
@@ -298,6 +306,14 @@ module Equ
             endif
           endif
         endif
+!
+!  2. damp motions for r>1
+!
+        r = rr(l1:l2,m,n)
+        pdamp = 0.5*(1+tanh((r-rdamp)/wdamp)) ! damping profile
+        do i=iux,iuz
+          df(l1:l2,m,n,i) = df(l1:l2,m,n,i) - dampuext*pdamp*f(l1:l2,m,n,i)
+        enddo
 !
 !  add gravity
 !

@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.8 $", &
-             "$Date: 2002-01-17 11:42:43 $")
+             "$Revision: 1.9 $", &
+             "$Date: 2002-01-21 18:23:46 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -48,6 +48,8 @@
 !  it1 is the frequency of output of rms and max values
 !  nu is viscosity
 !
+        call rparam             ! Read parameters from start.x;
+                                ! these may be overwritten by cread
         call cread
         call cprint
 !
@@ -60,14 +62,19 @@
 !  snapshot data are saved in the tmp subdirectory.
 !  This directory must exist, but may be linked to another disk.
 !
-        if (ip<=6) print*,'read var files'
+        if (ip<=6) print*,'reading var files'
         call input(trim(directory)//'/var.dat',f,mvar,1)
-        call read_global()
+        call rglobal()      ! Read global variables (if there are)
+!
+!  read coordinates
+!
+        if (ip<=6) print*,'reading grid coordinates'
+        call rgrid(trim(directory)//'/grid.dat')
 !
 !  read seed field parameters (only if forcing is turned on)
 !
         if (iforce/=0) then
-          if (lroot) print*,'read seed file'
+          if (lroot) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
           if (iproc < 10) print*,'iproc,seed=',iproc,seed
           call random_seed(put=seed)

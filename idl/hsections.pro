@@ -29,6 +29,9 @@ sz2 = '!8z!6='+strtrim(z[nz2],2)
 sz3 = '!8z=!6'+strtrim(z[nz3],2)
 
 save_state
+
+wput
+
 !p.multi = [0,3,2]
 !p.charsize = 1.8
 !x.title = '!8x!X'
@@ -43,8 +46,11 @@ endif else begin
 endelse
 
 plot_3d_vect, uu[*,*,nz1,*],x,y, /KEEP, TITLE=tit+sz1+'!X', ZRANGE=zruu
+opcircles, 1., LINE=2, THICK=2
 plot_3d_vect, uu[*,*,nz2,*],x,y, /KEEP, TITLE=tit+sz2+'!X', ZRANGE=zruu
+opcircles, 1., LINE=2, THICK=2
 plot_3d_vect, uu[*,*,nz3,*],x,y, /KEEP, TITLE=tit+sz3+'!X', ZRANGE=zruu
+opcircles, 1., LINE=2, THICK=2
 
 tit = '!8s!6 and !7r!6 at '
 !x.style = 1
@@ -62,15 +68,19 @@ endelse
 contourfill, ent[*,*,nz1],x,y, TITLE=tit+sz1+'!X', LEVELS=levent
 var = reform(lam[*,*,nz1])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
+opcircles, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,*,nz2],x,y, TITLE=tit+sz2+'!X', LEVELS=levent
 var = reform(lam[*,*,nz2])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
+opcircles, 1., LINE=2, THICK=2
 ;
 contourfill, ent[*,*,nz3],x,y, TITLE=tit+sz3+'!X', LEVELS=levent
 var = reform(lam[*,*,nz3])
 contour, var,x,y, /OVER, LEV=linspace(minmax(var),nrholevs)
+opcircles, 1., LINE=2, THICK=2
 
+wget
 
 restore_state
 

@@ -180,5 +180,37 @@ contains
       close(1)
     endsubroutine outpus
 !***********************************************************************
+    subroutine wgrid (file)
+!
+!  Write processor-local part of grid coordinates.
+!  21-jan-02/wolf: coded
+!
+      use Cdata, only: x,y,z,dx,dy,dz
+!      use Mpicomm
+!
+      character (LEN=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      write(1) t,x,y,z
+      write(1) dx,dy,dz
+!
+    endsubroutine wgrid
+!***********************************************************************
+    subroutine rgrid (file)
+!
+!  Read processor-local part of grid coordinates.
+!  21-jan-02/wolf: coded
+!
+      use Cdata, only: x,y,z,dx,dy,dz
+!      use Mpicomm
+!
+      character (LEN=*) :: file
+!
+      open(1,FILE=file,FORM='unformatted')
+      read(1) t,x,y,z
+      read(1) dx,dy,dz
+!
+    endsubroutine rgrid
+!***********************************************************************
 
 endmodule Io

@@ -4,6 +4,11 @@ module Sub
 
   implicit none
 
+  interface poly              ! Overload the `poly' function
+    module procedure poly_1
+    module procedure poly_3
+  endinterface
+
   contains
 
 !***********************************************************************
@@ -701,6 +706,40 @@ module Sub
       close(1)
     endsubroutine wdim
 !***********************************************************************
+    subroutine wparam ()
+!
+!  Write startup parameters
+!  21-jan-02/wolf: coded
+!
+      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1
+      use Mpicomm
+!
+      if (lroot) then
+        open(1,FILE='tmp/param.dat',FORM='unformatted')
+        write(1) Lx,Ly,Lz
+        write(1) cs0,gamma,gamma1 ! Write gamma1 here to ensure it is in sync
+      endif
+!
+    endsubroutine wparam
+!***********************************************************************
+    subroutine rparam ()
+!
+!  Read startup parameters
+!  21-jan-02/wolf: coded
+!
+      use Cdata, only: Lx,Ly,Lz,cs0,gamma,gamma1
+      use Mpicomm
+!
+!      if (lroot) then
+        open(1,FILE='tmp/param.dat',FORM='unformatted')
+        read(1) Lx,Ly,Lz
+        read(1) cs0,gamma,gamma1
+!      endif
+        print*, "Lx,Ly,Lz=", Lx,Ly,Lz
+        print*, "cs0,gamma,gamma1=", cs0,gamma,gamma1
+!
+    endsubroutine rparam
+!***********************************************************************
     subroutine out1 (file,tout,nout,dtout,t)
 !
       use Mpicomm
@@ -997,27 +1036,47 @@ module Sub
 !
     endsubroutine cvs_id
 !***********************************************************************
-    function poly(coef, x)
+    function poly_1(coef, x)
 !
 !  Horner's scheme for polynomial evaluation.
-!  Might be necessary to overload this at some point in order to allow
-!  for multi-dimensional arrays
+!  Version for 1d array.
 !  17-jan-02/wolf: coded 
 !
       real, dimension(:) :: coef
       real, dimension(:) :: x
-      real, dimension(size(x,1)) :: poly
+      real, dimension(size(x,1)) :: poly_1
       integer :: Ncoef,Nx,i
 
       Ncoef = size(coef,1)
       Nx = size(x,1)
 
-      poly = coef(Ncoef)
+      poly_1 = coef(Ncoef)
       do i=Ncoef-1,1,-1
-        poly = poly*x+coef(i)
+        poly_1 = poly_1*x+coef(i)
       enddo
 
-    endfunction poly
+    endfunction poly_1
+!***********************************************************************
+    function poly_3(coef, x)
+!
+!  Horner's scheme for polynomial evaluation.
+!  Version for 3d array.
+!  17-jan-02/wolf: coded 
+!
+      real, dimension(:) :: coef
+      real, dimension(:,:,:) :: x
+      real, dimension(size(x,1),size(x,2),size(x,3)) :: poly_3
+      integer :: Ncoef,Nx,i
+
+      Ncoef = size(coef,1)
+      Nx = size(x,1)
+
+      poly_3 = coef(Ncoef)
+      do i=Ncoef-1,1,-1
+        poly_3 = poly_3*x+coef(i)
+      enddo
+
+    endfunction poly_3
 !***********************************************************************
 
 endmodule Sub

@@ -39,16 +39,14 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-01-19 15:50:03 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-01-21 18:23:46 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('Register_ent: nvar > mvar')
       endif
 !
-      gamma = 5./3.
-      gamma1 = gamma - 1.
     endsubroutine register_ent
 !***********************************************************************
     subroutine init_ent(f,init,ampl,xx,yy,zz)
@@ -153,11 +151,13 @@ module Entropy
 !      df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
 !           + .3*spread(exp(-((z(n)+1.)/(2*dz))**2), 1,l2-l1+1) &
 !           * (1. + tanh((t-5.)/3.))
-!  TEMPORARY: heat at centre, cool outer layers
+!  heat at centre, cool outer layers
 !
       r = rr(l1:l2,m,n)
-      heat = 1.5*exp(-0.5*(r/0.2)**2) ! central heating
-      heat = heat - 0.5*(f(l1:l2,m,n,ient)-0.)*0.2*(1+tanh((r-1.)/0.15)) ! border cooling towards s=0
+      ! central heating
+      heat = cheat * exp(-0.5*(r/rheat)**2) * (2*pi*rheat**2)**(-1.5)
+      ! surface cooling towards s=0
+      heat = heat - cool*(f(l1:l2,m,n,ient)-0.)*0.5*(1+tanh((r-1.)/wcool))
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
 !***********************************************************************

@@ -30,8 +30,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.10 $", &
-             "$Date: 2002-01-19 15:50:03 $")
+             "$Revision: 1.11 $", &
+             "$Date: 2002-01-21 18:23:46 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -41,8 +41,9 @@
         open(1,FILE='start.in',FORM='formatted')
         read(1,*) ip
         read(1,*) Lx,Ly,Lz
-        read(1,*) ampl,init
-        read(1,*) cs0,rho0,gravz
+        read(1,*) iperx,ipery,iperz
+        read(1,*) ampl,init,urand
+        read(1,*) cs0,gamma,rho0,gravz
         close(1)
 !
 !  output on the console, but only when root processor
@@ -50,20 +51,28 @@
         if (lroot)then
           print*, 'ip=', ip
           print*, 'Lx,Ly,Lz=', Lx,Ly,Lz
-          print*, 'ampl,init=', ampl,init
-          print*, 'cs0,gravz=', cs0,gravz
+          print*, 'iperx,ipery,iperz=', iperx,ipery,iperz 
+          print*, 'ampl,init,urand=', ampl,init,urand
+          print*, 'cs0,gamma,gravz=', cs0,gamma,gravz
         endif
 !
-!  generate mesh, |x| < Lx, and similar for y and z.
+!  ..and write to a parameter file (for run.x and IDL)
 !
-        dx=Lx/nx
-        dy=Ly/(ny*nprocy)
-        dz=Lz/(nz*nprocz)
-        dz=Lz/((nz-1)*nprocz)
-        do i=1,mx; x(i)=-Lx/2.+(i-0.5-nghost       )*dx; enddo
-        do i=1,my; y(i)=-Ly/2.+(i-0.5-nghost+ipy*ny)*dy; enddo
-        do i=1,mz; z(i)=-Lz/2.+(i-0.5-nghost+ipz*nz)*dz; enddo
-        do i=1,mz; z(i)=-Lz/2.+(i-1.0-nghost+ipz*nz)*dz; enddo
+        gamma1 = gamma - 1.
+        call wparam()
+!
+!  generate mesh, |x| < Lx, and similar for y and z.
+!  iper{x,y,z} indicate periodicity of given direction
+!
+        if (iperx /= 0) then; dx = Lx/nx; else; dx = Lx/(nx-1); endif
+        if (ipery /= 0) then; dy = Ly/ny; else; dy = Ly/(ny-1); endif
+        if (iperz /= 0) then; dz = Lz/nz; else; dz = Lz/(nz-1); endif
+
+        do i=1,mx; x(i)=-Lx/2.+(i-nghost-1       )*dx; enddo
+        do i=1,my; y(i)=-Ly/2.+(i-nghost-1+ipy*ny)*dy; enddo
+        do i=1,mz; z(i)=-Lz/2.+(i-nghost-1+ipz*nz)*dz; enddo
+!
+        call wgrid(trim(directory)//'/grid.dat')
 !
 !  as full arrays
 !
@@ -91,7 +100,7 @@
 !  also write full dimensions to tmp/ :
         if (lroot) call wdim('tmp/dim.dat',nygrid,nzgrid)
 !  write global variables:
-        call write_global()
+        call wglobal()
 
 !
 !  seed for random number generator, have to have the same on each

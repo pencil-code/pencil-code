@@ -23,6 +23,11 @@ readu,1, uu, lam, ent, aa
 readu,1, t, x, y, z
 close,1
 ;
+xx = spread(x, [1,2], [ny,nz])
+yy = spread(y, [0,2], [nx,nz])
+zz = spread(z, [0,1], [nx,ny])
+rr = sqrt(xx^2+yy^2+zz^2)
+;
 print, ' var        minval       maxval'
 for j=0,2 do print, 'uu_', strtrim(j,2), ' =', minmax(uu(*,*,*,j))
 print, 'lam  =', minmax(lam)

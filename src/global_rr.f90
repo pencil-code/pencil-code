@@ -17,7 +17,7 @@ module Global
   contains
 
 !***********************************************************************
-    subroutine write_global()
+    subroutine wglobal()
 !
 !  write global variables
 !
@@ -29,9 +29,9 @@ module Global
 !
       call output(trim(directory)//'/rr.dat',rr,1)
 !
-    endsubroutine write_global
+    endsubroutine wglobal
 !***********************************************************************
-    subroutine read_global()
+    subroutine rglobal()
 !
 !  read global variables
 !
@@ -43,7 +43,7 @@ module Global
 !
       call input(trim(directory)//'/rr.dat',rr,1,0)
 !
-    endsubroutine read_global
+    endsubroutine rglobal
 !***********************************************************************
 
 endmodule Global

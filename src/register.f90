@@ -75,8 +75,8 @@ module Register
 !
       if (lroot) call cvs_id( &
            "$RCSfile: register.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-01-17 11:42:43 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-01-21 18:23:46 $")
 !
 !
       if (nvar > mvar) then
@@ -95,13 +95,15 @@ module Register
 !
       use Cdata
       use Sub
+      use Global
+      use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz
+      real, dimension (mx,my,mz) :: tmp,r,p,xx,yy,zz,pot
       real :: ampl
-      real :: dsdz0 = -0.2      ! (1/c_p)ds/dz
-      real :: zmax
-      integer :: init
+      real :: dsdz0 = -0.2      ! (1/c_p)ds/dz (ought to be input parameter)
+      real :: zmax,lnrho0
+      integer :: init,i
 !
       select case(init)
       case(0)               ! random ux (Gaussian distribution)
@@ -125,19 +127,13 @@ module Register
         endif
         !
         if (lgravr) then
-          if (lroot) print*,'radial density stratification (so far trivial)'
-          f(:,:,:,ilnrho) = 0.
+          if (lroot) print*,'radial density stratification (assumes s=const)'
+          call potential(rr, pot)       ! gravity potential
+          ! lnrho at point where cs=cs0 and s=s0 (assuming s0=0)
+          lnrho0 = alog(cs20/gamma)/gamma1
+          f(:,:,:,ilnrho) = lnrho0 +  alog(1 - gamma1/cs20*pot) / gamma1
         endif
         !
-!  The following needs better implementation: add random component 
-!  *after* major initialisation and make amplitude input parameter
-call random_number(tmp)
-f(:,:,:,iux) = 0.2*(tmp-0.5)   ! velocity perturbation
-call random_number(tmp)
-f(:,:,:,iuy) = 0.2*(tmp-0.5)   ! velocity perturbation
-call random_number(tmp)
-f(:,:,:,iuz) = 0.2*(tmp-0.5)   ! velocity perturbation
-!
       case(2)               ! oblique sound wave
         if (lroot) print*,'oblique sound wave'
         f(:,:,:,ilnrho)=ampl*cos(xx+2*yy)*sqrt(5.)
@@ -151,6 +147,22 @@ f(:,:,:,iuz) = 0.2*(tmp-0.5)   ! velocity perturbation
       case default
         if (lroot) print*,'Initialising everything to zero'
       endselect
+!
+      if (urand /= 0) then
+        if (lroot) print*, 'Adding random uu fluctuations'
+        if (urand > 0) then
+          do i=iux,iuz
+            call random_number(tmp)
+            f(:,:,:,i) = f(:,:,:,i) + urand*(tmp-0.5)
+          enddo
+        else
+          if (lroot) print*, '  ..multiplicative fluctuations'
+          do i=iux,iuz
+            call random_number(tmp)
+            f(:,:,:,i) = f(:,:,:,i) * urand*(tmp-0.5)
+          enddo
+        endif
+      endif
 !
 !
     endsubroutine init_hydro
