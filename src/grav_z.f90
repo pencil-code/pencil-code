@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.26 2002-11-13 18:33:03 ngrs Exp $
+! $Id: grav_z.f90,v 1.27 2002-11-14 12:33:13 dobler Exp $
 
 module Gravity
 
@@ -73,7 +73,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.26 2002-11-13 18:33:03 ngrs Exp $")
+           "$Id: grav_z.f90,v 1.27 2002-11-14 12:33:13 dobler Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -117,6 +117,8 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real :: nu_epicycle2
+!
+      intent(in)  :: f
 !
 !  different gravity profiles
 !

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.98 2002-11-13 21:10:13 tarek Exp $
+! $Id: magnetic.f90,v 1.99 2002-11-14 12:33:13 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -84,7 +84,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.98 2002-11-13 21:10:13 tarek Exp $")
+           "$Id: magnetic.f90,v 1.99 2002-11-14 12:33:13 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -203,6 +203,9 @@ module Magnetic
       real, dimension (nx) :: rho1,J2,TT1,b2,b2tot,ab,jb,bx,by,bz,va2
       real :: tmp,eta_out1
       integer :: j
+!
+      intent(in)  :: f,uu,rho1,TT1
+
 !
 !  identify module and boundary conditions
 !

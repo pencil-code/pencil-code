@@ -1,4 +1,4 @@
-! $Id: shear.f90,v 1.7 2002-08-20 13:20:07 brandenb Exp $
+! $Id: shear.f90,v 1.8 2002-11-14 12:33:13 dobler Exp $
 
 !  This modules deals with all aspects of shear; if no
 !  shear is invoked, a corresponding replacement dummy
@@ -41,7 +41,7 @@ module Shear
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: shear.f90,v 1.7 2002-08-20 13:20:07 brandenb Exp $")
+           "$Id: shear.f90,v 1.8 2002-11-14 12:33:13 dobler Exp $")
 !
     endsubroutine register_shear
 !***********************************************************************
@@ -61,6 +61,8 @@ module Shear
       integer :: j
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension(nx) :: uy0,dfdy
+!
+      intent(in)  :: f
 !
 !  print identifier
 !
