@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.59 2003-10-13 01:29:22 mee Exp $
+! $Id: interstellar.f90,v 1.60 2003-10-20 17:39:21 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -115,7 +115,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.59 2003-10-13 01:29:22 mee Exp $")
+           "$Id: interstellar.f90,v 1.60 2003-10-20 17:39:21 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -197,6 +197,13 @@ module Interstellar
       if (lroot.and.ip<14) then
         print*,'initialize_interstellar: nseed,seed',nseed,seed(1:nseed)
         print*,'initialize_interstellar: finished'
+      endif
+
+      if (lroot.and. (.not. lstart)) then
+         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+         write(1,'("# ",A)')  &
+          '--it-----t----------itype_SN---iproc_SN------x_SN-----------y_SN-----------z_SN-----------rho_SN---------EE_SN-----l_SN--m_SN--n_SN-----'
+         close(1)
       endif
 !
     endsubroutine initialize_interstellar
@@ -767,8 +774,6 @@ find_SN: do n=n1,n2
       
 
       EE_SN=0. !; EE_SN2=0.
-!open(1,file=trim(datadir)//'/testsn.dat',position='append')
-!write (1,"('#',A)") '--z---deltarho----rho_old---rho_new---TT_old---TT_new---ss_old---ss_new---deltaEE---EE_old----EE_new---'
       do n=n1,n2
          do m=m1,m2
             
@@ -790,11 +795,6 @@ find_SN: do n=n1,n2
                       mass_shell,cnorm_SN(idim),idim,mass_gain)
 
               lnrho=alog(amax1(rho_old(:)+deltarho(:),rho_min))
-       !       call perturb_energy(lnrho,(ee_old*rho_old+deltaEE)/exp(lnrho) &
-              ! Keep specific energy constant
- !             call perturb_energy(lnrho,ee_old,ss,TT,yH)
- !           else
- !             call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
             endif
   
             call perturb_energy(lnrho,ee_old+(deltaEE/rho_old),ss,TT,yH)
@@ -806,12 +806,8 @@ find_SN: do n=n1,n2
             if (iyH.ne.0) f(l1:l2,m,n,iyH)=yH
 !
 
-!            call thermodynamics(lnrho,ss,yH,TT,ee=ee_new)
-!write (1,'(f8.0, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3, 1e11.3)') n,deltarho,rho_old,exp(lnrho_new),TT_old,TT_new,ss_old,ss_new,deltaEE,ee_old,ee_new
-
        enddo
       enddo
- !close(1)     
 
       ! Sum and share diagnostics etc. amongst processors
       fmpi2_tmp=(/ mass_gain, EE_SN /)
@@ -826,15 +822,10 @@ find_SN: do n=n1,n2
            'explode_SN: mass_gain=',mass_gain
      
       if (lroot) then
-! [wd] Doesn't belong into time_series.dat and screws up auto-test:
-!         open(1,file=trim(datadir)//'/time_series.dat',position='append')
-!         write(1,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-!                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-!                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
-!         write(6,'(a,1e11.3," ",i1," ",i2," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3," ",1e11.3,a)')  &
-!                     '#ExplodeSN: (t,type,iproc,x,y,z,rho,energy)=(', &
-!                     t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN, ')'
-!         close(1)
+         open(1,file=trim(datadir)//'/sn_series.dat',position='append')
+         write(1,'(1i6,1e11.3,2i10,"    ",5e15.7,3i5)')  &
+                          it,t,itype_SN,iproc_SN,x_SN,y_SN,z_SN,rho_SN,EE_SN,l_SN,m_SN,n_SN
+         close(1)
       endif
       
     endsubroutine explode_SN
