@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.51 2003-10-12 05:45:16 brandenb Exp $
+! $Id: prints.f90,v 1.52 2003-11-22 13:28:15 brandenb Exp $
 
 module Print
 
@@ -178,6 +178,7 @@ module Print
 !  are still 2d after averaging) if it is time.
 !  In analogy to 3d output to VARN, the time interval between two writes
 !  is determined by a parameter (t2davg) in run.in.
+!  Note: this routine should only be called by the root processor
 !
 !   7-aug-03/wolf: adapted from wsnap
 !
@@ -197,11 +198,11 @@ module Print
       first = .false.
       !
       call update_snaptime(file,t2davg,n2davg,d2davg,t,lnow,ch,ENUM=.true.)
-      if (lnow) then
+      if (lnow.and.lroot) then
         if (lwrite_zaverages)   call write_zaverages(ch)
         if (lwrite_phiaverages) call write_phiaverages(ch)
         !
-        if(ip<=10.and.lroot) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch
+        if(ip<=10) print*, 'write_2daverages: wrote phi(etc.)avgs'//ch
       endif
 !
     endsubroutine write_2daverages
@@ -265,9 +266,21 @@ module Print
         call safe_character_assign(fname, &
                                    trim(datadir)//'/averages/PHIAVG'//trim(ch))
         open(1,FILE=fname,FORM='unformatted')
-        write(1) nrcyl,n2-n1+1,nnamerz ! sizes (just in case) 
+        write(1) nrcyl,n2-n1+1,nprocz,nnamerz ! sizes (just in case) 
         write(1) t,rcyl,z(n1:n2),drcyl,dz
-        write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
+!
+!  normalize by sum of unity which is accumulated in fnamerz(:,0,:,1:1)
+!
+!  ?AB: shouldn't we have a separate nnamerz-loop and normalize first?
+!  write(1) fnamerz(:,1:,:,1:nnamerz) / spread(fnamerz(:,0,:,1:1),2,nz)
+!
+        do i=2,nnamerz
+          fnamerz(:,1:,:,i)=fnamerz(:,1:,:,i)/spread(fnamerz(:,0,:,1),2,nz)
+        enddo
+        write(1) fnamerz(:,1:,:,1:nnamerz)
+!
+!  write labels at the end of file
+!
         labels = trim(cnamerz(1))
         do i=2,nnamerz
           call safe_character_append(labels,",",trim(cnamerz(i)))
