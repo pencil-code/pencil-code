@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.173 2004-03-30 05:33:55 brandenb Exp $
+! $Id: run.f90,v 1.174 2004-04-02 16:29:59 mee Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.173 2004-03-30 05:33:55 brandenb Exp $")
+             "$Id: run.f90,v 1.174 2004-04-02 16:29:59 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -195,7 +195,7 @@
             if (lroot) inquire(FILE="RELOAD", EXIST=reload)
             call mpibcast_logical(reload, 1)
             if (reload) then
-              if (lroot) write(0,*) "Found RELOAD file -- reloading parameters"
+              if (lroot) write(0,*) 'Found RELOAD file -- reloading parameters'
               ! Re-read configuration
               dt=0.
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
@@ -304,6 +304,7 @@
           if ((it < nt) .and. (dt < dtmin)) then
             if (lroot) &
                 write(0,*) 'run: Time step has become too short: dt = ', dt
+            call wsnap(trim(directory_snap)//'/VAR',f,mvar_io,ENUM=.true.)
             save_lastsnap=.false.
             exit Time_loop
           endif
