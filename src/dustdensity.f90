@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.117 2004-07-23 16:41:29 ajohan Exp $
+! $Id: dustdensity.f90,v 1.118 2004-07-24 12:47:14 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -22,9 +22,9 @@ module Dustdensity
   
   real, dimension(nx,ndustspec,ndustspec) :: dkern
   real, dimension(nx,ndustspec) :: nd_diff=0.,md_diff=0.,mi_diff=0.
-  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd00=1.
-  real :: mdave0=1., adpeak=5e-4
-  real :: supsatfac=1.,supsatfac1=1.
+  real :: nd_const=1.,dkern_cst=1.,eps_dtog=0.,rhod0=1.,nd0=1.
+  real :: mdave0=1., adpeak=5e-4, supsatfac=1.,supsatfac1=1.
+  real :: scaleHd
   character (len=labellen) :: initnd='zero'
   logical :: ldustdensity_log=.false.
   logical :: ldustgrowth=.false.,ldustcoagulation=.false.,ludstickmax=.true.
@@ -34,7 +34,7 @@ module Dustdensity
   logical :: ldeltaud_thermal=.true., ldeltaud_turbulent=.true.
 
   namelist /dustdensity_init_pars/ &
-      rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd00, mdave0, &
+      rhod0, initnd, eps_dtog, nd_const, dkern_cst, nd0, mdave0, scaleHd, &
       adpeak, ldustgrowth, ldustcoagulation, &
       lcalcdkern, supsatfac, lkeepinitnd, ldustcontinuity, &
       ldeltaud_thermal, ldeltaud_turbulent, ldustdensity_log
@@ -118,7 +118,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.117 2004-07-23 16:41:29 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.118 2004-07-24 12:47:14 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -227,16 +227,24 @@ module Dustdensity
       select case(initnd)
  
       case('zero'); if(lroot) print*,'init_nd: zero nd'
+      case('const_nd')
+        f(:,:,:,ind) = nd_const
+        if (lroot) print*, 'init_nd: Constant dust number density'
+      case('gaussian_z')
+        do n=1,mz
+          f(:,:,n,ind) = nd0*exp(-z(n)**2/scaleHd**2)
+        enddo
+        if (lroot) print*, 'init_nd: Gaussian distribution in z'
       case('first')
         print*, 'init_nd: All dust particles in first bin.'
         f(:,:,:,ind) = 0.
-        f(:,:,:,ind(1)) = nd00
+        f(:,:,:,ind(1)) = nd0
         if (eps_dtog /= 0.) f(:,:,:,ind(1))= eps_dtog*exp(f(:,:,:,ilnrho))/md(1)
       case('firsttwo')
         print*, 'init_nd: All dust particles in first and second bin.'
         f(:,:,:,ind) = 0.
         do k=1,2
-          f(:,:,:,ind(k)) = nd00/2
+          f(:,:,:,ind(k)) = nd0/2
         enddo
       case('MRN77')   ! Mathis, Rumpl, & Nordsieck (1977)
         print*,'init_nd: Initial dust distribution of MRN77'
@@ -258,9 +266,6 @@ module Dustdensity
               f(:,:,:,ind(k))*eps_dtog*exp(f(:,:,:,ilnrho))/(rhodmt*unit_md)
         enddo
         
-      case('const_nd')
-        f(:,:,:,ind) = nd_const
-        if (lroot) print*, 'init_nd: Constant dust number density'
       case('frac_of_gas_loc')
         if (eps_dtog < 0.) &
             call stop_it("init_nd: Negative eps_dtog!")
@@ -281,13 +286,13 @@ module Dustdensity
             ' epsd =', eps_dtog
       case('kernel_cst')
         f(:,:,:,ind) = 0.
-        f(:,:,:,ind(1)) = nd00
+        f(:,:,:,ind(1)) = nd0
         if (lroot) print*, &
             'init_nd: Test of dust coagulation with constant kernel'
       case('kernel_lin')
         do k=1,ndustspec
           f(:,:,:,ind(k)) = &
-              nd00*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
+              nd0*( exp(-mdminus(k)/mdave0)-exp(-mdplus(k)/mdave0) )
         enddo
         if (lroot) print*, &
             'init_nd: Test of dust coagulation with linear kernel'
@@ -311,7 +316,7 @@ module Dustdensity
 !      
       if (lmice) f(:,:,:,imi) = 0.
 !
-!  Take logarithm if necessary
+!  Take logarithm if necessary (remember that nd then really means ln nd)
 !
       if (ldustdensity_log) then
         do k=1,ndustspec; f(:,:,:,ind(k)) = alog(f(:,:,:,ind(k))); enddo
@@ -320,15 +325,12 @@ module Dustdensity
 !  sanity check
 !
       do k=1,ndustspec
-        if ( notanumber(f(:,:,:,ind(k))) ) then
-          call stop_it('init_nd: Imaginary dust number density values')
-        endif
-        if (lmdvar .and. notanumber(f(:,:,:,imd(k))) ) then
-          call stop_it('init_nd: Imaginary dust density values')
-        endif
-        if (lmice .and. notanumber(f(:,:,:,imi(k))) ) then
-          call stop_it('init_nd: Imaginary ice density values')
-        endif
+        if ( notanumber(f(:,:,:,ind(k))) ) &
+            call stop_it('init_nd: Imaginary dust number density values')
+        if (lmdvar .and. notanumber(f(:,:,:,imd(k))) ) &
+            call stop_it('init_nd: Imaginary dust density values')
+        if (lmice .and. notanumber(f(:,:,:,imi(k))) ) &
+            call stop_it('init_nd: Imaginary ice density values')
       enddo
 !
     endsubroutine init_nd
@@ -350,7 +352,7 @@ module Dustdensity
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd
       real, dimension (nx,3) :: glnrho
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: del2nd,del2md,del2mi,del2lnrho,gndglnrho
+      real, dimension (nx) :: del2nd,del2md,del2mi,del2lnrho,gndglnrho,gnd2
       real, dimension (nx) :: udgnd,udgmd,rho,rho1,TT1,cs2,cc,cc1,mfluxcond
       integer :: k
 !
@@ -398,7 +400,7 @@ module Dustdensity
         if (lmdvar .and. lmd_turb_diff) md_diff(:,k) = nu_turb
         if (lmice  .and. lmi_turb_diff) mi_diff(:,k) = nu_turb
 !
-!  Diffusion terms
+!  Diffusion terms from drhod/dt = div(D*rho*grad(rhod/rho))
 !
         if (maxval(nd_diff(:,k)) /= 0.) then
           call del2(f,ind(k),del2nd)
@@ -407,8 +409,14 @@ module Dustdensity
             call del2(f,ilnrho,del2lnrho)
             call grad(f,ind(k),gnd(:,:,k))
             call dot_mn(gnd(:,:,k),glnrho,gndglnrho)
-            df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(:,k)*( &
-                del2nd - nd(:,k)*del2lnrho - gndglnrho)
+            if (ldustdensity_log) then
+              call dot2_mn(gnd(:,:,k),gnd2)
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
+                  nd_diff(:,k)*(del2nd + gnd2 - gndglnrho - del2lnrho)
+            else
+              df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + &
+                  nd_diff(:,k)*(del2nd - gndglnrho - nd(:,k)*del2lnrho)
+            endif
           else
             df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) + nd_diff(:,k)*del2nd
           endif

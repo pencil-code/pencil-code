@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.64 2004-07-22 11:41:42 nilshau Exp $
+### $Id: Makefile.src,v 1.65 2004-07-24 12:47:14 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -11,7 +11,7 @@ LDMPI=-lmpi
 
 MPICOMM      = nompicomm
 GLOBAL       = noglobal
-GRID         =   grid
+GRID         =   grid_equidistant
 IO           =   io_dist
 FFT          = nofft
 FFTPACK      = nofftpack
