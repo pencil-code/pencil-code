@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.7 2004-05-05 16:26:35 dobler Exp $
+; $Id: wdvelovect.pro,v 1.8 2004-08-07 16:51:20 mee Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -10,7 +10,7 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
         Missing = Missing, Length = length, Dots = dots,  $
         Color=color, CLIP=clip, NOCLIP=noclip, OVERPLOT=overplot,  $
         NOZERO=nozero, CENTER=center, XRANGE=xrange, YRANGE=yrange,  $
-        POSITION=position, $
+        POSITION=position, POLAR=POLAR, LINEONLY=LINEONLY, $
         ScaLength = scalength, MAXVEC=maxvec, NOPLOT=noplot, QUIET=quiet, $
         _EXTRA=extra
 ;
@@ -48,6 +48,14 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;
 ;			ATAN2(V[i,j],U[i,j]).
 ;
+;  OR, if the keyword POLAR is set then:
+;
+;	U:	The magnitude of the two-dimensional field.  
+;		U must be a two-dimensional array.
+;
+;	V:	The angular direction of the two dimensional field (in radians).  
+;               Y must have same dimensions as X.  
+;
 ; OPTIONAL INPUT PARAMETERS:
 ; 	X:	Optional abcissae values.  X must be a vector with a length 
 ;		equal to the first dimension of U and V *OR* a 2-dimensional
@@ -63,6 +71,11 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;	DOTS:	Set this keyword to 1 to place a dot at each missing point. 
 ;		Set this keyword to 0 or omit it to draw nothing for missing
 ;		points.  Has effect only if MISSING is specified.
+;
+;        POLAR: Use the U and V specified as the magnitude and direction,
+;               respectively, of the two-dimensional vector field. 
+;               (See U and V above)
+;
 ;
 ;	LENGTH:	Length factor.  The default of 1.0 makes the longest (U,V)
 ;		vector the length of a cell.
@@ -150,6 +163,10 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;       19 Jul 2001: wd. Apply reform() to arguments U and V
 ;       22 Mar 2002: wd. Reverted F. Rohrer's silly LENGTH behaviour to original
 ;       22 Mar 2002: wd. Added MAXVEC, QUIET and NOPLOT keywords
+;       07 Aug 2004: Antony Mee, U. of Newcastle upon Tyne
+;              Added POLAR keyword to allow specification of vectors as
+;              magnitude and direction.  Also added LINEONLY to prevent
+;              drawing an arrow head.
 ;-
 ;
         on_error,2                      ;Return to caller if an error occurs
@@ -269,7 +286,11 @@ bady:            message, 'Y array has incorrect size.'
 ; ### FR: use LENGTH differently -- allows absolute scaling
 ;       if n_elements(length) le 0 then length = 1.0
 
-        mag = sqrt(u^2.+v^2.)             ;magnitude.
+        if keyword_set(POLAR) then begin
+          mag = u
+        endif else begin
+          mag = sqrt(u^2.+v^2.)             ;magnitude.
+        endelse
                 ;Subscripts of good elements
         nbad = 0                        ;# of missing points
 ; ## mgs: because of defaulting 5 lines above, missing always has a value!!
@@ -288,16 +309,22 @@ bady:            message, 'Y array has incorrect size.'
 	x_step=(x1-x0)/(s[1]-1.0)   ; Convert to float. Integer math
 	y_step=(y1-y0)/(s[2]-1.0)   ; could result in divide by 0
 
-	maxmag=max([max(abs(ugood/x_step)),max(abs(vgood/y_step))])
+        if keyword_set(POLAR) then begin
+	  maxmag=max(abs(u))/min([x_step,y_step])
+          sina = length*ugood/maxmag*sin(vgood)
+          cosa = length*ugood/maxmag*cos(vgood)
+        endif else begin
+	  maxmag=max([max(abs(ugood/x_step)),max(abs(vgood/y_step))])
 ; ### FR:
-        if n_elements(scalength) gt 0 then maxmag=scalength/x_step
-        sina = (ugood/maxmag)
-        cosa = (vgood/maxmag)
+          if n_elements(scalength) gt 0 then maxmag=scalength/x_step
+          sina = (ugood/maxmag)
+          cosa = (vgood/maxmag)
 ; ### wd: LENGTH overrides SCALENGTH
-        if (n_elements(length) gt 0) then begin
-          sina = length * (ugood/maxmag)
-          cosa = length * (vgood/maxmag)
-        endif
+          if (n_elements(length) gt 0) then begin
+            sina = length * (ugood/maxmag)
+            cosa = length * (vgood/maxmag)
+          endif
+        endelse
 ;
         if n_elements(title) le 0 then title = ''
         ;--------------  plot to get axes  ---------------
@@ -360,11 +387,16 @@ bady:            message, 'Y array has incorrect size.'
                         plots,x0,y0,psym=3,color=color,clip=clip,  $
                         noclip=noclip  
                 endif else $
+                  if keyword_set(LINEONLY) then begin
+                    plots,[x0,x1],[y0,y1], $
+                           color=color,clip=clip,noclip=noclip
+                  endif else begin
                     plots,[x0,x1,x1-(ct*dx/xd-st*dy/yd)*xd, $
                            x1,x1-(ct*dx/xd+st*dy/yd)*xd], $
                           [y0,y1,y1-(ct*dy/yd+st*dx/xd)*yd, $
                            y1,y1-(ct*dy/yd-st*dx/xd)*yd], $
                            color=color,clip=clip,noclip=noclip
+                  endelse
             endfor
             if nbad gt 0 then begin
                 if (sx[0] eq 2) then begin ;Dots for missing?
