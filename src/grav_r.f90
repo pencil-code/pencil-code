@@ -9,7 +9,9 @@ module Gravity
   implicit none
 
   ! coefficients for potential
-  real, dimension (5) :: cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
+!  real, dimension (5) :: cpot = (/ 5.088, -4.344, 61.36, 10.91, -13.93 /)
+  real, dimension (5) :: cpot = (/ 1., 0., 0., 1., 0. /)
+!  real, dimension (5) :: cpot = (/ 0., 0., 0., 0., 0. /)
 
   contains
 
@@ -33,8 +35,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_r.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-04-10 16:26:31 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-04-29 19:59:21 $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -90,6 +92,10 @@ module Gravity
 !                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
       gg = evr*spread(g_r,2,3)
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg
+!
+if (headt .and. lfirst) call output_stenc('tmp/proc0/gg.dat',gg,3)
+!
+
 !
     endsubroutine duu_dt_grav
 !***********************************************************************
