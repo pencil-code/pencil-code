@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.26 2002-06-06 15:06:39 brandenb Exp $
+! $Id: nompicomm.f90,v 1.27 2002-06-07 08:18:46 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -27,6 +27,15 @@ module Mpicomm
 
 !***********************************************************************
     subroutine mpicomm_init()
+!
+!  Before the communication has been completed, the nhost=3 layers next
+!  to the processor boundary (m1, m2, n1, or n2) cannot be used yet.
+!  In the mean time we can calculate the interior points sufficiently far
+!  away from the boundary points. Here we calculate the order in which
+!  m and n are executed. At one point, necessary(imn)=.true., which is
+!  the moment when all communication must be completed.
+!
+!   6-jun-02/axel: generalized to allow for ny=1
 !
       use General
       use Cdata, only: lmpicomm,directory
@@ -83,6 +92,8 @@ module Mpicomm
       enddo
 !
 !  left and right hand boxes
+!  NOTE: need to have min(m1i,m2) instead of just m1i, and max(m2i,m1)
+!  instead of just m2i, to make sure the case ny=1 works ok.
 !
       do n=n1,n2
         do m=m1,min(m1i,m2)

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.15 2002-06-06 07:09:35 brandenb Exp $
+! $Id: prints.f90,v 1.16 2002-06-07 08:18:46 brandenb Exp $
 
 module Print
 
@@ -18,6 +18,7 @@ module Print
 !
 !   3-may-02/axel: coded
 !  27-may-02/axel: it,t,dt added as extra save parameters
+!   7-jun-02/axel: dtc (=dt/cdt) added as extra save parameter
 !
       use Cdata
       use Sub
@@ -36,6 +37,7 @@ module Print
       if (i_t/=0) call save_name(tdiagnos,i_t)
       if (i_dt/=0) call save_name(dt,i_dt)
       if (i_it/=0) call save_name(float(it-1),i_it)
+      if (i_dtc/=0) call save_name(dt/cdt,i_dtc)
 !
 !  Magnetic energy in horizontally averaged field
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.17 2002-06-06 07:09:35 brandenb Exp $
+! $Id: hydro.f90,v 1.18 2002-06-07 08:18:46 brandenb Exp $
 
 module Hydro
 
@@ -20,7 +20,7 @@ module Hydro
        nu,ivisc
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_t=0,i_it=0,i_dt=0,i_u2m=0,i_um2=0,i_oum,i_o2m
+  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_u2m=0,i_um2=0,i_oum,i_o2m
 
   contains
 
@@ -58,8 +58,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.17 $", &
-           "$Date: 2002-06-06 07:09:35 $")
+           "$Revision: 1.18 $", &
+           "$Date: 2002-06-07 08:18:46 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -251,7 +251,7 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_t=0; i_it=0; i_dt=0; i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
+        i_t=0; i_it=0; i_dt=0; i_dtc=0; i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -261,6 +261,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'t',i_t)
         call parse_name(iname,cname(iname),cform(iname),'it',i_it)
         call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
+        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
         call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
@@ -273,6 +274,7 @@ module Hydro
       write(3,*) 'i_t=',i_t
       write(3,*) 'i_it=',i_it
       write(3,*) 'i_dt=',i_dt
+      write(3,*) 'i_dtc=',i_dtc
       write(3,*) 'i_u2m=',i_u2m
       write(3,*) 'i_um2=',i_um2
       write(3,*) 'i_o2m=',i_o2m
