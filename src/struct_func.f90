@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.4 2003-01-06 20:30:15 nilshau Exp $
+! $Id: struct_func.f90,v 1.5 2003-01-07 12:59:46 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -58,7 +58,7 @@ module struct_func
   if (iproc==root) print*,'Doing structure functions'
   do ivec=1,3
      !
-     u_vec(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+     u_vec(:,:,:,ivec)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)
      do n=n1,n2
         do m=m1,m2
            call curli(f,iaa,bb,ivec)
