@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.41 2004-05-12 17:41:48 mee Exp $
+! $Id: slices.f90,v 1.42 2004-05-30 05:17:33 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -16,16 +16,20 @@ module Slices
   real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
   real, dimension (nx,ny) :: Isurf_xy
+  real, dimension (nx,ny) :: XX_chiral_xy,XX_chiral_xy2
+  real, dimension (nx,ny) :: YY_chiral_xy,YY_chiral_xy2
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz,aa_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
   real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,o2_xz,b2_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
+  real, dimension (nx,nz) :: XX_chiral_xz,YY_chiral_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz,oo_yz,aa_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
   real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,o2_yz,b2_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
+  real, dimension (ny,nz) :: XX_chiral_yz,YY_chiral_yz
   real :: tvid
   integer :: nvid
 
@@ -345,6 +349,30 @@ module Slices
         call wslice(path//'lncc.xz',lncc_xz,y(iy),nx,nz)
         call wslice(path//'lncc.xy',lncc_xy,z(iz),nx,ny)
         call wslice(path//'lncc.Xy',lncc_xy2,z(iz2),nx,ny)
+!
+!  chirality fields: XX
+!
+      case ('XX_chiral')
+        XX_chiral_yz=f(ix,m1:m2,n1:n2,iXX_chiral)
+        XX_chiral_xz=f(l1:l2,iy,n1:n2,iXX_chiral)
+        XX_chiral_xy=f(l1:l2,m1:m2,iz,iXX_chiral)
+        XX_chiral_xy2=f(l1:l2,m1:m2,iz2,iXX_chiral)
+        call wslice(path//'XX_chiral.yz',XX_chiral_yz,x(ix),ny,nz)
+        call wslice(path//'XX_chiral.xz',XX_chiral_xz,y(iy),nx,nz)
+        call wslice(path//'XX_chiral.xy',XX_chiral_xy,z(iz),nx,ny)
+        call wslice(path//'XX_chiral.Xy',XX_chiral_xy2,z(iz2),nx,ny)
+!
+!  chirality fields: YY
+!
+      case ('YY_chiral')
+        YY_chiral_yz=f(ix,m1:m2,n1:n2,iYY_chiral)
+        YY_chiral_xz=f(l1:l2,iy,n1:n2,iYY_chiral)
+        YY_chiral_xy=f(l1:l2,m1:m2,iz,iYY_chiral)
+        YY_chiral_xy2=f(l1:l2,m1:m2,iz2,iYY_chiral)
+        call wslice(path//'YY_chiral.yz',YY_chiral_yz,x(ix),ny,nz)
+        call wslice(path//'YY_chiral.xz',YY_chiral_xz,y(iy),nx,nz)
+        call wslice(path//'YY_chiral.xy',YY_chiral_xy,z(iz),nx,ny)
+        call wslice(path//'YY_chiral.Xy',YY_chiral_xy2,z(iz2),nx,ny)
 !
 !  Cosmic ray energy density
 !
