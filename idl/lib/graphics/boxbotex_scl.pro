@@ -246,6 +246,10 @@ endif else begin
 endelse
 a=tvrd()
 ;
+;  make background white
+;
+bad=where(a eq 0) & a(bad)=255
+;
 ;  plot
 ;
 if keyword_set(dev) then begin
