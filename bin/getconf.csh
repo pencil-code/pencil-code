@@ -56,7 +56,9 @@ if ($mpi) then
     echo "lamndodes:"
     lamnodes
     set mpirun = mpirun
-    set mpirunops = "-O -s n0 N"
+    #set mpirunops = "-O -s n0 N"
+    #set mpirunops = "-O -s n0 N -lamd -ger"
+    set mpirunops = "-O -s n0 N -lamd"
   else
     set mpirun = mpirun
   endif

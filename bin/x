@@ -12,4 +12,4 @@ tail tmp/n.dat
 #  among other things, to assess easily the speed
 #   of the simulation.
 #
-(date;tail -1 tmp/n.dat;echo "") >>SPEED
+(date;cat tmp/proc0/alive.info;tail -1 tmp/n.dat;echo "") >>SPEED
