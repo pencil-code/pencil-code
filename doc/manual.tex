@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.117 2002-10-01 16:00:58 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.118 2002-10-02 16:43:06 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -288,6 +288,8 @@
 
 \newcommand{\jv}            {\vekt{j}}
 
+\newcommand{\omv}           {\boldsymbol{\omega}}
+
 \newcommand{\Ra}            {\mathrm{Ra}}
 \newcommand{\Reynolds}      {\mathrm{Re}}
 \newcommand{\Rm}            {\mathrm{Rm}}
@@ -313,7 +315,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.117 $ $}
+\date{\today,~ $ $Revision: 1.118 $ $}
 
 % ====================================================================== %
 
@@ -346,7 +348,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.117 $ $}
+  \emph{\today,~ $ $Revision: 1.118 $ $}
 
   \vspace{\stretch{3}}
 
@@ -1564,9 +1566,10 @@ In the directory where you started the code, create the file
 to force the code to re-read the runtime parameters from \file{run.in}.
 This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
-see Sect.~\ref{S-start-params}). [Occasionally, however, and only on some
-machines, one of the processors may not survive the MPI barrier and
-stops; we will need to look further into this.]
+see Sect.~\ref{S-start-params}).
+% [Occasionally, however, and only on some
+% machines, one of the processors may not survive the MPI barrier and
+% stops; we will need to look further into this.]
 
 \paragraph{Stopping the code}
 In the directory where you started the code, create the file
@@ -1577,9 +1580,10 @@ In the directory where you started the code, create the file
 to stop the code in a controlled manner (it will write the latest
 snapshot).
 Again, the action will happen the next time the code is writing monitoring
-output. The \file{run.csh} removes any \file{STOP} files before starting
-\file{src/run.x}. If you run without the \file{run.csh} script you need
-to remember doing this by hand.
+output.
+% The \file{run.csh} removes any \file{STOP} files before starting
+% \file{src/run.x}. If you run without the \file{run.csh} script you need
+% to remember doing this by hand.
 
 % ---------------------------------------------------------------------- %
 
@@ -1778,6 +1782,7 @@ The following conditions are available:
   arbitrarily set $\ln\varrho$)
 \item[\option{db}] low-order one-sided derivatives (``no
     boundary condition'') for density
+\item[\option{she}] shearing-sheet boundary condition (default when )
 \end{description}
 The extended syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
 boundary condition $a$ at the left/lower boundary, but
@@ -4016,7 +4021,7 @@ possible inputs to the \file{print.in} file.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.117 2002-10-01 16:00:58 dobler Exp $ $}
+$ $Id: manual.tex,v 1.118 2002-10-02 16:43:06 dobler Exp $ $}
 
 
 \end{document}
