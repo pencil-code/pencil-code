@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.142 2003-11-19 12:37:29 theine Exp $
+! $Id: ionization.f90,v 1.143 2003-11-19 14:25:05 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -118,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.142 2003-11-19 12:37:29 theine Exp $")
+           "$Id: ionization.f90,v 1.143 2003-11-19 14:25:05 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -200,7 +200,7 @@ module Ionization
       if (xHe>0) then
         xHe_term=xHe*(log(xHe)-lnrho_He)
       elseif (xHe<0) then
-        call stop_it('error (initialize_ionization): xHe lower than zero makes no sense')
+        call stop_it('initialize_ionization: xHe lower than zero makes no sense')
       else
         xHe_term=0
       endif
@@ -447,7 +447,7 @@ module Ionization
       real, dimension(nx), intent(in) :: lnrho,lnTT
       real, dimension(nx), intent(out) :: ss
 !
-      call stop_it("ionput_pencil: NOT IMPLEMENTED IN IONIZATION")
+      call stop_it("getentropy_pencil: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) print*,lnrho           !(keep compiler quiet)
       if (ip==0) print*,lnTT            !(keep compiler quiet)
       if (ip==0) print*,ss              !(keep compiler quiet)      
@@ -464,7 +464,7 @@ module Ionization
       real, intent(in) :: lnrho,lnTT
       real, intent(out) :: ss
 !
-      call stop_it("ionput_point: NOT IMPLEMENTED IN IONIZATION")
+      call stop_it("getentropy_point: NOT IMPLEMENTED IN IONIZATION")
       if (ip==0) print*,lnrho           !(keep compiler quiet)
       if (ip==0) print*,lnTT            !(keep compiler quiet)
       if (ip==0) print*,ss              !(keep compiler quiet)
