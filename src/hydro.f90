@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.54 2002-08-11 03:28:59 brandenb Exp $
+! $Id: hydro.f90,v 1.55 2002-08-14 15:22:45 nilshau Exp $
 
 module Hydro
 
@@ -17,16 +17,18 @@ module Hydro
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
-       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu
+       uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu, &
+       Omega
 
   ! run parameters
   real, dimension (nx,3,3) :: sij
   real :: theta=0.
   real :: tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
+  real :: frek_ux=100,ampl_osc_ux=1e-3
   namelist /hydro_run_pars/ &
        nu,ivisc, &
        Omega,theta, &
-       tdamp,dampu,dampuext,rdamp,wdamp
+       tdamp,dampu,dampuext,rdamp,wdamp,frek_ux,ampl_osc_ux
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -67,7 +69,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.54 2002-08-11 03:28:59 brandenb Exp $")
+           "$Id: hydro.f90,v 1.55 2002-08-14 15:22:45 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

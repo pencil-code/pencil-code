@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.27 2002-08-09 08:15:30 nilshau Exp $
+! $Id: boundcond.f90,v 1.28 2002-08-14 15:22:45 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -73,6 +73,11 @@ module Boundcond
               if (j==ie) call bc_ee_inflow_x(f,'bot')
             case ('out')
               if (j==ie) call bc_ee_outflow_x(f,'bot')
+            case ('db')
+               call bc_db_x(f,'bot',j)
+            case ('osc')
+!               if (j==ilnrho) call bc_lnrho_osc_x(f,'bot')
+               call bc_osc_x(f,'bot',j)
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx1 = ", &
@@ -96,16 +101,21 @@ module Boundcond
             case ('a')          ! antisymmetry
               f(l2,:,:,j) = 0.  ! ensure bdry value=0 (indep.of initial cond.)
               do i=1,nghost; f(l2+i,:,:,j) = -f(l2-i,:,:,j); enddo
-            case ('a2')             ! antisymmetry relative to boundary value
+            case ('a2')            ! antisymmetry relative to boundary value
               do i=1,nghost; f(l2+i,:,:,j) = 2*f(l2,:,:,j)-f(l2-i,:,:,j); enddo
-            case ('cT')             ! constant temp. (processed in own routine)
+            case ('cT')            ! constant temp. (processed in own routine)
               if (j==ient) call bc_ss_temp_x(f,'top')
-            case ('sT')             ! symmetric temp. (processed in own routine)
+            case ('sT')            ! symmetric temp. (processed in own routine)
               if (j==ient) call bc_ss_stemp_x(f,'top')
             case ('in')
                if (j==ie) call bc_ee_inflow_x(f,'top')
             case ('out')
-               if (j==ie) call bc_ee_outflow_x(f,'bot')
+               if (j==ie) call bc_ee_outflow_x(f,'top')
+            case ('db')
+               call bc_db_x(f,'top',j)
+            case ('osc')
+!               if (j==ilnrho) call bc_lnrho_osc_x(f,'top')
+               call bc_osc_x(f,'top',j)
             case default
               if (lroot) &
                    print*, "No such boundary condition bcx2 = ", &
@@ -251,7 +261,7 @@ module Boundcond
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp_old(f,'bot')
           case ('db')             ! complex (processed in its own routine)
-            if (j==ilnrho) call bc_lnrho_db(f,'bot') 
+            call bc_db_z(f,'bot',j) 
           case ('ce')             ! complex (processed in its own routine) 
              if (j==ient) call bc_ss_energy(f,'bot')
           case default
@@ -288,7 +298,7 @@ module Boundcond
           case ('c2')             ! complex (processed in its own routine)
             if (j==ient) call bc_ss_temp_old(f,'top')
           case ('db')             ! complex (processed in its own routine)
-             if (j==ilnrho) call bc_lnrho_db(f,'top') 
+             call bc_db_z(f,'top',j) 
           case ('ce')             ! complex (processed in its own routine)
              if (j==ient) call bc_ss_energy(f,'top')
           case default
@@ -302,5 +312,128 @@ module Boundcond
 !
     endsubroutine boundconds_z
 !***********************************************************************
- 
+    subroutine bc_db_z(f,topbot,j)
+!
+!  boundary condition for density
+!
+!  may-2002/nils: coded
+!  11-jul-2002/nils: moved into the density module
+!  13-aug-2002/nils: moved into boundcond
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my) :: fder
+      integer :: i,j
+      !
+      !  Set ghost zone to reproduce one-sided boundary condition 
+      !  (2nd order):
+      !  Finding the derivatives on the boundary using a one 
+      !  sided final difference method. This derivative is being 
+      !  used to calculate the boundary points. This will probably
+      !  only be used for ln(rho)
+      !
+    select case(topbot)
+!
+! Bottom boundary
+!
+    case('bot')
+       do i=1,nghost
+          fder=(-3*f(:,:,n1-i+1,j)+4*f(:,:,n1-i+2,j)&
+               -f(:,:,n1-i+3,j))/(2*dz)
+          f(:,:,n1-i,j)=f(:,:,n1-i+2,j)-2*dz*fder
+       end do
+    case('top')
+       do i=1,nghost
+          fder=(3*f(:,:,n2+i-1,j)-4*f(:,:,n2+i-2,j)&
+               +f(:,:,n2+i-3,j))/(2*dz)
+          f(:,:,n2+i,j)=f(:,:,n2+i-2,j)+2*dz*fder
+       end do
+    case default
+       if(lroot) print*,"invalid argument for 'bc_db_z'"
+    endselect
+!
+  end subroutine bc_db_z
+!*********************************************************************** 
+    subroutine bc_db_x(f,topbot,j)
+!
+!  boundary condition for density
+!
+!  may-2002/nils: coded
+!  11-jul-2002/nils: moved into the density module
+!  13-aug-2002/nils: moved into boundcond
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (my,mz) :: fder
+      integer :: i,j
+      !
+      !  Set ghost zone to reproduce one-sided boundary condition 
+      !  (2nd order):
+      !  Finding the derivatives on the boundary using a one 
+      !  sided final difference method. This derivative is being 
+      !  used to calculate the boundary points. This will probably
+      !  only be used for ln(rho)
+      !
+    select case(topbot)
+!
+! Bottom boundary
+!
+    case('bot')
+       do i=1,nghost
+          fder=(-3*f(l1-i+1,:,:,j)+4*f(l1-i+2,:,:,j)&
+               -f(l1-i+3,:,:,j))/(2*dx)
+          f(l1-i,:,:,j)=f(l1-i+2,:,:,j)-2*dx*fder
+       end do
+    case('top')
+       do i=1,nghost
+          fder=(3*f(l2+i-1,:,:,j)-4*f(l2+i-2,:,:,j)&
+               +f(l2+i-3,:,:,j))/(2*dx)
+          f(l2+i,:,:,j)=f(l2+i-2,:,:,j)+2*dx*fder
+       end do
+    case default
+       if(lroot) print*,"invalid argument for 'bc_db_x'"
+    endselect
+!
+  end subroutine bc_db_x
+!***********************************************************************
+    subroutine  bc_osc_x(f,topbot,j)
+!
+!
+!  12-aug-02/nils: coded
+!  14-aug-02/nils: moved to boundcond
+!
+      use Cdata
+      use Density
+      use Hydro
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      real :: ampl_osc,frek
+      integer :: i,pnts=10,j
+!
+      if (j==ilnrho) then
+         ampl_osc=ampl_osc_lnrho
+         frek=frek_lnrho
+      elseif (j==iux) then
+         ampl_osc=ampl_osc_ux
+         frek=frek_ux
+      else
+         if(lroot) print*,"invalid argument for 'bc_osc_x'"
+      endif
+!         
+      if (topbot=='bot') then
+         do i=1,pnts
+            f(i,:,:,j)=ampl_osc*sin(t*frek)*cos(2*pi*x(i)*mx/(Lx*pnts))
+         enddo
+      else
+         do i=1,pnts
+            f(mx+1-i,:,:,j)=ampl_osc*sin(t*frek)*cos(2*pi*x(mx+1-i)*mx/(pnts*Lx))
+         enddo
+      endif
+      end subroutine  bc_osc_x
+!*********************************************************************** 
 endmodule Boundcond
