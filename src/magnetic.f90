@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.183 2004-04-08 12:47:08 dobler Exp $
+! $Id: magnetic.f90,v 1.184 2004-04-10 04:24:02 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -23,6 +23,7 @@ module Magnetic
   character (len=labellen) :: initaa='zero',initaa2='zero'
   character (len=labellen) :: iresistivity='eta-const'
   ! input parameters
+  real, dimension(3) :: B_ext=(/0.,0.,0./),BB_ext
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
   real, dimension(3) :: axisr2=(/1,0,0/),dispr2=(/0.,-0.5,0./)
   real, dimension (nx,3) :: bbb
@@ -39,7 +40,7 @@ module Magnetic
   real :: omega_Bz_ext
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
-  logical :: llorentzforce=.true.
+  logical :: llorentzforce=.true.,linduction=.true.
   ! dgm: for hyper diffusion in any spatial variation of eta
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   character (len=40) :: kinflow=''
@@ -47,6 +48,7 @@ module Magnetic
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
 
   namelist /magnetic_init_pars/ &
+       B_ext, &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
@@ -54,7 +56,6 @@ module Magnetic
        kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss
 
   ! run parameters
-  real, dimension(3) :: B_ext=(/0.,0.,0./),BB_ext
   real :: eta=0.,height_eta=0.,eta_out=0.
   real :: eta_int=0.,eta_ext=0.,wresistivity=.01
   real :: tau_aa_exterior=0.
@@ -66,7 +67,7 @@ module Magnetic
        bthresh,bthresh_per_brms, &
        iresistivity,lresistivity_hyper, &
        eta_int,eta_ext,eta_shock,wresistivity, &
-       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce
+       rhomin_JxB,va2max_JxB,va2power_JxB,llorentzforce,linduction
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0,i_ubm,i_epsM=0
@@ -117,7 +118,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.183 2004-04-08 12:47:08 dobler Exp $")
+           "$Id: magnetic.f90,v 1.184 2004-04-10 04:24:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -429,7 +430,11 @@ module Magnetic
 !  calculate uxB+eta*del2A and add to dA/dt
 !  (Note: the linear shear term is added later)
 !
-      call cross_mn(uu,bb,uxB)
+      if (linduction) then
+        call cross_mn(uu,bb,uxB)
+      else
+        uxB=0.
+      endif
 !
 !  calculate restive term
 !

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.163 2004-04-04 19:52:30 theine Exp $
+! $Id: ionization.f90,v 1.164 2004-04-10 04:24:01 brandenb Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -20,7 +20,7 @@ module Ionization
   implicit none
   private  
 
-  public :: eoscalc,pressure_gradient,temperature_gradient
+  public :: eoscalc,pressure_gradient,temperature_gradient,temperature_hessian
   public :: perturb_energy, perturb_mass
   public :: get_soundspeed
   public :: getmu
@@ -130,7 +130,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.163 2004-04-04 19:52:30 theine Exp $")
+           "$Id: ionization.f90,v 1.164 2004-04-10 04:24:01 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -558,6 +558,44 @@ module Ionization
       enddo
 !
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally hlnPP and hlnTT
+!   hP/rho=cs2*(hlnrho+cp1tilde*hss)
+!
+!   10-apr-04/axel: adapted from temperature_gradient
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3,3), intent(in) :: hlnrho,hss
+      real, dimension(nx,3,3), intent(out) :: hlnTT
+      real, dimension(nx) :: lnrho,yH,lnTT,TT1,fractions1
+      real, dimension(nx) :: R,dlnTTdy,dRdy
+      real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho,dlnTTdss
+      integer :: i,j
+!
+      lnrho=f(l1:l2,m,n,ilnrho)
+      yH=f(l1:l2,m,n,iyH)
+      lnTT=f(l1:l2,m,n,ilnTT)
+      TT1=exp(-lnTT)
+      fractions1=1/(1+yH+xHe)
+!
+      R=lnrho_e-lnrho+1.5*(lnTT-lnTT_ion)-TT_ion*TT1+log(1-yH)-2*log(yH)
+      dlnTTdy=((2.0/3.0)*(lnrho_H-lnrho_p-R-TT_ion*TT1)-1)*fractions1
+      dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
+      dlnTTdydRdy=dlnTTdy/dRdy
+      dlnTTdlnrho=(2.0/3.0)*(1-TT_ion*TT1*dlnTTdydRdy)
+      dlnTTdss=(dlnTTdlnrho-dlnTTdydRdy)*fractions1*ss_ion1
+      do j=1,3
+      do i=1,3
+        hlnTT(:,i,j)=dlnTTdlnrho*hlnrho(:,i,j)+dlnTTdss*hss(:,i,j)
+      enddo
+      enddo
+!
+    endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
 !

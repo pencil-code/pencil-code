@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.58 2004-04-05 14:37:40 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.59 2004-04-10 04:24:02 brandenb Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.58 2004-04-05 14:37:40 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.59 2004-04-10 04:24:02 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -437,6 +437,29 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       enddo
 !
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally hlnPP and hlnTT
+!   hP/rho=cs2*(hlnrho+cp1tilde*hss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3,3), intent(in) :: hlnrho,hss
+      real, dimension(nx,3,3), intent(out) :: hlnTT
+      integer :: i,j
+!
+      do j=1,3
+      do i=1,3
+        hlnTT(:,i,j)=(2.0/3.0)*(hlnrho(:,i,j)+hss(:,i,j)/ss_ion/(1+yH0+xHe-xH2))
+      enddo
+      enddo
+!
+    endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,lnrho,ss,yH,lnTT,ee,pp,lnchi)
 !

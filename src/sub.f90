@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.171 2004-04-08 11:05:47 ajohan Exp $ 
+! $Id: sub.f90,v 1.172 2004-04-10 04:24:02 brandenb Exp $ 
 
 module Sub 
 
@@ -3082,6 +3082,121 @@ nameloop: do
       endif
 !
     endsubroutine blob
+!***********************************************************************
+    subroutine tensor_diffusion_coef(gecr,ecr_ij,bij,bb,Kperp,Kpara,rhs,llog)
+!
+!  calculates tensor diffusion with variable tensor (or constant tensor)
+!  calculates parts common to both variable and constant tensor first
+!  note:ecr=lnecr in the below comment
+!  
+!  vKperp*del2ecr + d_i(vKperp)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j
+!  ecr)
+!      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)
+!   
+!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
+!      + ni*nj*Gi*(vKpara_j - vKperp_j),
+!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
+!  diffusion coefficients
+! 
+!  calculates (K.gecr).gecr
+!  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
+!                     
+!  adds both parts into decr/dt  
+!
+!  10-oct-03/axel: adapted from pscalar
+!  30-nov-03/snod: adapted from tensor_diff without variable diffusion
+!  04-dec-03/snod: converted for evolution of lnecr (=ecr)
+!   9-apr-04/axel: adapted for general purpose tensor diffusion
+!
+      use Cdata
+!
+      real, dimension (nx,3,3) :: ecr_ij,bij
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
+      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
+      real, dimension (nx) :: hhh2,quenchfactor,rhs
+      real :: Kperp,Kpara,limiter_tensordiff=3.
+      integer :: i,j,k
+!
+      logical, optional :: llog
+!
+!  calculate unit vector of bb
+!
+      call dot2_mn(bb,b2)
+      b1=1./amax1(tiny(b2),sqrt(b2))
+      call multsv_mn(b1,bb,bunit)
+!
+!  calculate first H_i
+!
+      do i=1,3
+        hhh(:,i)=0.
+        do j=1,3
+          tmpj(:)=0.
+          do k=1,3
+            tmpj(:)=tmpj(:)-2.*bunit(:,k)*bij(:,k,j)
+          enddo
+          hhh(:,i)=hhh(:,i)+bunit(:,j)*(bij(:,i,j)+bunit(:,i)*tmpj(:))
+        enddo
+      enddo
+      call multsv_mn(b1,hhh,hhh)
+!
+!  limit the length of H such that dxmin*H < 1, so we also multiply
+!  by 1/sqrt(1.+dxmin^2*H^2).
+!  and dot H with ecr gradient
+!
+      call dot2_mn(hhh,hhh2)
+      quenchfactor=1./sqrt(1.+(limiter_tensordiff*dxmin)**2*hhh2)
+      call multsv_mn(quenchfactor,hhh,hhh)
+      call dot_mn(hhh,gecr,tmp)
+!
+!  dot Hessian matrix of ecr with bi*bj, and add into tmp
+!
+      del2ecr=0.
+      do j=1,3
+        del2ecr=del2ecr+ecr_ij(:,j,j)
+        do i=1,3
+          tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+        enddo
+      enddo
+!
+!  calculate (Gi*ni)^2 needed for lnecr form; also add into tmp
+!
+      if (present(llog)) then
+        call dot_mn(gecr,bunit,tmpi)
+        tmp=tmp+tmpi**2
+      endif
+!
+!  calculate gecr2 - needed for lnecr form
+!  
+      call dot2_mn(gecr,gecr2)
+!
+!  if variable tensor, add extra terms and add result into decr/dt 
+!
+      vKpara(:)=Kpara
+      vKperp(:)=Kperp
+!
+!  set gvKpara, gvKperp
+!
+      gvKperp(:,:)=0.0
+      gvKpara(:,:)=0.0
+!
+!  put d_i ecr d_i vKperp into tmpj
+!
+      call dot_mn(gvKperp,gecr,tmpj)
+!
+!  nonuniform conductivities, add terms into tmpj
+!
+      do i=1,3
+        tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
+        do j=1,3
+          tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
+        enddo
+      enddo
+!
+!  calculate rhs
+!
+      rhs=vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj
+!
+    endsubroutine tensor_diffusion_coef
 !***********************************************************************
     subroutine max_for_dt_nx_nx(f,maxf)
 !

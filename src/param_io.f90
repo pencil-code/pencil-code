@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.169 2004-03-30 05:35:41 brandenb Exp $ 
+! $Id: param_io.f90,v 1.170 2004-04-10 04:24:02 brandenb Exp $ 
 
 module Param_IO
 
@@ -59,7 +59,7 @@ module Param_IO
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
        random_gen,nfilter,lserial_io,lread_oldsnap,lread_oldsnap_nomag, &
-       lwrite_aux,lcalc_cp, &
+       lwrite_aux,lcalc_cp,pretend_lnTT, &
        bcx,bcy,bcz,r_int,r_ext,mu0
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &
@@ -74,7 +74,7 @@ module Param_IO
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
-       lwrite_aux,onedall,lcalc_cp,old_cdtv,lmaxadvec_sum
+       lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum
   contains
 
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.55 2004-02-17 16:43:59 bingert Exp $
+! $Id: noentropy.f90,v 1.56 2004-04-10 04:24:02 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -57,7 +57,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noentropy.f90,v 1.55 2004-02-17 16:43:59 bingert Exp $")
+           "$Id: noentropy.f90,v 1.56 2004-04-10 04:24:02 brandenb Exp $")
 !
     endsubroutine register_entropy
 !***********************************************************************
@@ -86,7 +86,7 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ss
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -97,6 +97,7 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: bij
       real, dimension (nx,3) :: uu,glnrho,gshock,bb
       real, dimension (nx) :: lnrho,rho1,divu,cs2,TT1,uglnrho,shock,rho
       integer :: j,ju
@@ -134,7 +135,7 @@ module Entropy
         endif
       endif
 !
-      if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb  !(compiler)
+      if(ip==1) print*,f,df,uu,divu,rho1,shock,gshock,bb,bij  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset,lwrite)

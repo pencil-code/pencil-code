@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.198 2004-02-24 14:14:50 ajohan Exp $
+! $Id: equ.f90,v 1.199 2004-04-10 04:24:01 brandenb Exp $
 
 module Equ
 
@@ -237,7 +237,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.198 2004-02-24 14:14:50 ajohan Exp $")
+           "$Id: equ.f90,v 1.199 2004-04-10 04:24:01 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -336,7 +336,14 @@ module Equ
 !
         call duu_dt   (f,df,uu,glnrho,divu,rho1,u2,uij,shock,gshock)
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
-        call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb)
+!
+!  Magnetic field evolution
+!
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
+!
+!  Entropy (may need B-field)
+!
+        call dss_dt (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
         call dlncc_dt (f,df,uu,glnrho)
 !
 !  dust equations
@@ -353,10 +360,6 @@ module Equ
         if (lgrav) then
           if (lhydro) call duu_dt_grav(f,df,uu,rho1)
         endif
-!
-!  Magnetic field evolution
-!
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb,va2,shock,gshock)
 !
 !  cosmic ray energy density
         if (lcosmicray) call decr_dt(f,df,uu,rho1,divu,bij,bb)

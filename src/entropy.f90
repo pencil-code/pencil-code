@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.296 2004-04-04 19:52:30 theine Exp $
+! $Id: entropy.f90,v 1.297 2004-04-10 04:24:01 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -23,11 +23,14 @@ module Entropy
 
   implicit none
 
+!AB: need to avoid Kappa0, because it collides with kappa0 in ionization
+
   !real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.,widthss=2*epsi,epsilon_ss
   real :: luminosity=0.,wheat=0.1,cool=0.,rcool=1.,wcool=0.1
   real :: TT_int,TT_ext,cs2_int,cs2_ext,cool_int=0.,cool_ext=0.
   real :: chi=0.,chi_t=0.,chi_shock=0.,Kappa0=0.,Kisotr=0.
+  real :: Kgperp=0.,Kgpara=0.
   real :: ss_left,ss_right
   real :: ss0=0.,khor_ss=1.,ss_const=0.
   real :: tau_ss_exterior=0.,T0=1.
@@ -47,6 +50,7 @@ module Entropy
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond=.false.,lcalc_heatcond_constchi=.false.
   logical :: lupw_ss=.false.
+  logical :: lgaspressuregradient=.true.
   character (len=labellen), dimension(ninit) :: initss='nothing'
   character (len=labellen) :: pertss='zero'
   character (len=labellen) :: cooltype='Temp',iheatcond='K-const'
@@ -58,17 +62,19 @@ module Entropy
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
        T0, kx_ss, nu_turb0, tau_nuturb
-     
+
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss, &
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,chi,Kappa0,Kisotr,iheatcond, &
+       Kgperp,Kgpara, &
        lcalc_heatcond_simple,lcalc_heatcond,lcalc_heatcond_constchi,&
        tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
-       lshear_heat, nu_turb0, tau_nuturb
+       lshear_heat, nu_turb0, tau_nuturb, &
+       lgaspressuregradient
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -107,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.296 2004-04-04 19:52:30 theine Exp $")
+           "$Id: entropy.f90,v 1.297 2004-04-10 04:24:01 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -296,15 +302,22 @@ module Entropy
 !
       do iinit=1,ninit
 !
+!  if we pretend that ss in in reality g1lnTT, we initialize the background
+!  of lnTT/gamma such that it corresponds to ss=0.
+!
+      if (pretend_lnTT) f(:,:,:,iss)=(f(:,:,:,ilnrho)*gamma1-alog(gamma1))/gamma
+!
       if (initss(iinit)/='nothing') then
 !
       lnothing=.false.
       call chn(iinit,iinit_str)
 !
+!  select different initial conditions
+!
       select case(initss(iinit))
 
         case('zero', '0'); f(:,:,:,iss) = 0.
-        case('const_ss'); f(:,:,:,iss) = ss_const
+        case('const_ss'); f(:,:,:,iss)=f(:,:,:,iss)+ss_const
         case('blob'); call blob(ampl_ss,f,iss,radius_ss,0.,0.,0.)
         case('isothermal'); call isothermal_entropy(f,T0)
         case('isothermal_lnrho_ss')
@@ -864,7 +877,7 @@ module Entropy
 !
     endsubroutine ferriere
 !**********************************************************************
-    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb)
+    subroutine dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -883,11 +896,13 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (nx,3,3) :: bij,hss,hlnrho,hlnTT
       real, dimension (nx,3) :: uu,glnrho,gss,gshock,glnTT,bb
-      real, dimension (nx) :: ugss,uglnrho,divu
+      real, dimension (nx) :: ugss,uglnrho,divu,rhs
       real, dimension (nx) :: lnrho,ss,rho1,cs2,yH,lnTT,TT1,cp1tilde
       real, dimension (nx) :: rho,ee,shock
       real :: zbot,ztop,xi,profile_cor
+      real :: Kperp,Kpara
       integer :: j,ju
 !
       intent(in) :: f,uu,glnrho,rho1,lnrho,shock,gshock
@@ -898,7 +913,7 @@ module Entropy
       if (headtt.or.ldebug) print*,'dss_dt: SOLVE dss_dt'
       if (headtt) call identify_bcs('ss',iss)
 !
-!  define bottom and top height
+!  define bottom and top z positions
 !
       zbot=xyz0(3)
       ztop=xyz0(3)+Lxyz(3)
@@ -936,11 +951,18 @@ module Entropy
       if (lhydro) then
 !
 !  subtract pressure gradient term in momentum equation
+!  (allow suppression of pressure gradient for test purposes)
 !
-        do j=1,3
-          ju=j+iuu-1
-          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+cp1tilde*gss(:,j))
-        enddo
+        if (lgaspressuregradient) then
+          do j=1,3
+            ju=j+iuu-1
+            if (pretend_lnTT) then
+              df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)/gamma+cp1tilde*gss(:,j))
+            else
+              df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+cp1tilde*gss(:,j))
+            endif
+           enddo
+        endif
 !
 !  add pressure gradient force from isothermal background density change in x
 !
@@ -965,6 +987,12 @@ module Entropy
 !
       call u_dot_gradf(f,iss,gss,uu,ugss,UPWIND=lupw_ss)
       df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) - ugss
+!
+!  if pretend_lnTT=.true., we pretend that ss is actually lnTT
+!
+      if (pretend_lnTT) then
+        df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)-divu*gamma1/gamma
+      endif
 !
 !ajwm - lviscosity always true and there is not a noviscosity module
       if (lviscosity) call calc_viscous_heat(f,df,glnrho,divu,rho1,cs2,TT1,shock)
@@ -995,6 +1023,17 @@ module Entropy
          call calc_heatcond_simple(f,df,rho1,glnrho,gss)
       case('chi-const')
          call calc_heatcond_constchi(f,df,rho1,glnrho,gss)
+      case ('tensor-diffusion')
+         call g2ij(f,iss,hss)
+         if (pretend_lnTT) then
+           glnTT=gss
+           hlnTT=hss
+         else
+           call g2ij(f,ilnrho,hlnrho)
+           call temperature_hessian(f,hlnrho,hss,hlnTT)
+         endif
+         call tensor_diffusion_coef(glnTT,hlnTT,bij,bb,Kgperp,Kgpara,rhs,llog=.true.)
+         df(l1:l2,m,n,iss)=df(l1:l2,m,n,iss)+rhs
       case ('magnetic')
          call calc_heatcond_mpara(f,df,rho1,glnrho,gss,bb,cs2)
          call calc_heatcond_mperp(f,df,rho1,glnrho,gss,bb,cs2)
@@ -1127,7 +1166,7 @@ module Entropy
 !
 !  Calculates heat conduction parallel to magnetic field lines     
 !
-!  calculation of    gradient( kappa0 * T^5/2 * b *( b * gradientT))
+!  calculation of    gradient( Kappa0 * T^5/2 * b *( b * gradientT))
 !  where b is the unit vector of magnetic field
 !  See: Solar MHD; Priest 1982
 !

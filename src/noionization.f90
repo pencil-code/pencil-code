@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.109 2004-04-06 08:03:47 theine Exp $
+! $Id: noionization.f90,v 1.110 2004-04-10 04:24:02 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.109 2004-04-06 08:03:47 theine Exp $')
+           '$Id: noionization.f90,v 1.110 2004-04-10 04:24:02 brandenb Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -311,7 +311,14 @@ module Ionization
       ss=f(l1:l2,m,n,iss)
 !
       if (gamma1==0.) call stop_it('pressure_gradient_farray: gamma=1 not allowed w/entropy')
-      cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        cs2=cs20*exp(gamma*ss)*gamma1
+      else
+        cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+      endif
       cp1tilde=1
 !
     endsubroutine pressure_gradient_farray
@@ -331,7 +338,14 @@ module Ionization
       real, intent(out) :: cs2,cp1tilde
 !
       if (gamma1==0.) call stop_it('pressure_gradient_point: gamma=1 not allowed w/entropy')
-      cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        cs2=cs20*exp(gamma*ss)*gamma1
+      else
+        cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
+      endif
       cp1tilde=1
 !
     endsubroutine pressure_gradient_point
@@ -352,10 +366,45 @@ module Ionization
       real, dimension(nx,3), intent(out) :: glnTT
 !
       if (gamma1==0.) call stop_it('temperature_gradient: gamma=1 not allowed w/entropy')
-      glnTT=gamma1*glnrho+gamma*gss
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        glnTT=gamma*gss
+      else
+        glnTT=gamma1*glnrho+gamma*gss
+      endif
 !
       if (ip==0) print*,f !(keep compiler quiet)
     endsubroutine temperature_gradient
+!***********************************************************************
+    subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
+!
+!   Calculate thermodynamical quantities, cs2 and cp1tilde
+!   and optionally hlnPP and hlnTT
+!   hP/rho=cs2*(hlnrho+cp1tilde*hss)
+!
+!   17-nov-03/tobi: adapted from subroutine eoscalc
+!
+      use Cdata
+      use Mpicomm, only: stop_it
+!
+      real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
+      real, dimension(nx,3), intent(in) :: hlnrho,hss
+      real, dimension(nx,3), intent(out) :: hlnTT
+!
+      if (gamma1==0.) call stop_it('temperature_hessian: gamma=1 not allowed w/entropy')
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        hlnTT=gamma*hss
+      else
+        hlnTT=gamma1*hlnrho+gamma*hss
+      endif
+!
+      if (ip==0) print*,f !(keep compiler quiet)
+    endsubroutine temperature_hessian
 !***********************************************************************
     subroutine eoscalc_farray(f,psize,yH,lnTT,ee,pp,lnchi)
 !
@@ -390,13 +439,27 @@ module Ionization
 
       end select
 
-      lnTT_=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
-!
       if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
-      if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
-      if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+!
+!  pretend_lnTT
+!
+      if (pretend_lnTT) then
+        lnTT_=lnTT0+gamma*ss+alog(gamma1)
+        if (present(lnTT)) lnTT=lnTT_
+        !if (present(ee)) ee=cs20*exp(gamma*ss)/gamma1/gamma
+        if (present(ee)) ee=cs20*exp(gamma*ss)/gamma
+        if (present(pp)) pp=cs20*exp(gamma*ss+(lnrho-lnrho0))/gamma
+!
+!  ss is indeed the entropy (not lnTT/gamma)
+!
+      else
+        lnTT_=lnTT0+gamma*ss+gamma1*(lnrho-lnrho0)
+        if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
+        if (present(lnTT)) lnTT=lnTT_
+        if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
+        if (present(pp)) pp=cs20*exp(gamma*ss-gamma1*lnrho0)/gamma
+      endif
 !
      if (ldiagnos.and.psize==nx) then
         if (i_TTmax/=0) call max_mn_name(exp(lnTT_),i_TTmax)
