@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: pc_setup_src,v 1.1 2004-04-05 18:37:14 mee Exp $
+# CVS $Id: pc_setup_src,v 1.2 2004-04-26 17:05:55 mee Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -47,7 +47,7 @@ cd $src
 #
 n=0
 for file in $srcdir/*.f90 $srcdir/*.f $srcdir/*.c \
-              $srcdir/Makefile.src $srcdir/.cvsignore $srcdir/*.inc
+              $srcdir/Makefile.src $srcdir/.cvsignore $srcdir/*.inc $srcdir/scripts
 do
   if [ -e $file ]; then
     filename=${file/*\//}
