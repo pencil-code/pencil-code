@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.106 2002-11-29 10:33:26 theine Exp $ 
+! $Id: sub.f90,v 1.107 2003-01-27 21:56:08 dobler Exp $ 
 
 module Sub 
 
@@ -1938,7 +1938,7 @@ module Sub
 !  Get length of state of random number generator. The current seed can
 !  be represented by nseed (4-byte) integers.
 !  Different compilers have different lengths:
-!    SGI: 64, Intel: 47, NAG: 1, Compaq: 2
+!    NAG: 1, Compaq: 2, Intel: 47, SGI: 64, NEC: 256
 !
       use Cparam, only: mseed
       use Mpicomm, only: lroot,stop_it      
@@ -1951,7 +1951,8 @@ module Sub
       ! test whether mseed is large enough for this machine
       !
       if (nseed > mseed) then
-        if (lroot) print*, "This machine requires mseed >= ", nseed
+        if (lroot) print*, "This machine requires mseed >= ", nseed, &
+                           ", but you have only ", mseed
         call stop_it("Need to increase mseed")
       endif
 !
