@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.22 2002-06-19 10:39:45 brandenb Exp $
+! $Id: prints.f90,v 1.23 2002-06-24 17:45:29 brandenb Exp $
 
 module Print
 
@@ -26,9 +26,9 @@ module Print
       use Magnetic
 !
       logical,save :: first=.true.
-      character (len=320) :: fform,legend
+      character (len=320) :: fform,legend,line
       character (len=1) :: comma=','
-      integer :: iname
+      integer :: iname,index_d
 !
 !  If the timestep (=dt) is to be outputted, it is known only after
 !  rk_2n, so the best place to enter it into the save list is here
@@ -44,10 +44,10 @@ module Print
 !  must set cform(1) explicitly, and then do iname>=2 in loop
 !
         fform='('//cform(1)
-        legend=cname(1)
+        legend=noform(cname(1))
         do iname=2,nname
           fform=trim(fform)//comma//cform(iname)
-          legend=trim(legend)//comma//cname(iname)
+          legend=trim(legend)//noform(cname(iname))
         enddo
         fform=trim(fform)//')'
 !
@@ -59,23 +59,34 @@ module Print
 !  also listed in print.in.
 !
         if(first) print*
+        if(first) print*,trim(legend)
 !
 !  write legend to extra file
 !  (might want to do only once after each lreset)
 !
         open(1,file='tmp/legend.dat')
-        write(1,*) legend
+        write(1,*) trim(legend)
         close(1)
+!
+!  put output line into a string and remove spurious dots
+!
+        if(ldebug) print*,'bef. writing prints'
+        write(line,trim(fform)) fname(1:nname)
+        index_d=index(line,'. ')
+        line(index_d:index_d)=' '
 !
 !  append to diagnostics file
 !
         open(1,file='tmp/n.dat',position='append')
-        write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
-        write(6,trim(fform)) fname(1:nname)  ! write to standard output
+        !write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
+        !write(6,trim(fform)) fname(1:nname)  ! write to standard output
+        write(1,'(a)') trim(line)
+        write(6,'(a)') trim(line)
         close(1)
 !
       endif
 !
+      if(ldebug) print*,'exit prints'
       first = .false.
     endsubroutine Prints
 !***********************************************************************

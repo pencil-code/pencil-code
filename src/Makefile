@@ -151,7 +151,7 @@ $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(DENSITY).o $(IO).o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o $(FFT).o
-$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(DENSITY).o $(GRAVITY).o $(MAGNETIC).o slices.o
+$(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o $(DENSITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o debug_c.o
 # $(FFT).o:       $(FFT).f

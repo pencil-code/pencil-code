@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $ 
+! $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $ 
 
 module Param_IO
 
@@ -55,7 +55,7 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $
+!   $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $
 !   and extract the pieces it needs]
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
 !
@@ -108,9 +108,13 @@ module Param_IO
 !
 !  print cvs id from first line
 !  [temporary solution; should have cvs_id parse the line
-!   $Id: param_io.f90,v 1.28 2002-06-19 21:23:23 brandenb Exp $
-!   and extract the pieces it needs]
+!  $Id: param_io.f90,v 1.29 2002-06-24 17:45:29 brandenb Exp $
+!  and extract the pieces it needs]
+!  for general debugging, put ip<7
+!
       if(lroot) write(*,'(A,A)') 'CVS: ',trim(cvsid)
+      ldebug=lroot.and.(ip<7)
+      print*,'ldebug=',ldebug
 !
 !  Write data to file for IDL
 !

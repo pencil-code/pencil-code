@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.59 2002-06-21 16:34:55 dobler Exp $
+! $Id: cdata.f90,v 1.60 2002-06-24 17:45:28 brandenb Exp $
 
 module Cdata
 
@@ -46,7 +46,7 @@ module Cdata
 !  in this section are all the things related to printing
 !
   integer :: nname,nnamez,nnamexy
-  integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
+  integer :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
   integer, parameter :: mname=100,mnamez=20,mnamexy=5
   integer, dimension (mname) :: itype_name
   real, dimension (mname) :: fname
@@ -63,7 +63,7 @@ module Cdata
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
   logical :: lout,headt=.true.,headtt=.true.,ldt,lfirst,ldiagnos
   logical :: lwrite_ic=.false.,lnowrite=.false.
-  logical :: lroot=.true.
+  logical :: lroot=.true.,ldebug=.false.
   logical :: lfirstpoint
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz

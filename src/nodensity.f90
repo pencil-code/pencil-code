@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.2 2002-06-16 20:35:03 dobler Exp $
+! $Id: nodensity.f90,v 1.3 2002-06-24 17:45:29 brandenb Exp $
 
 module Density
 
@@ -41,8 +41,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nodensity.f90,v $", &
-           "$Revision: 1.2 $", &
-           "$Date: 2002-06-16 20:35:03 $")
+           "$Revision: 1.3 $", &
+           "$Date: 2002-06-24 17:45:29 $")
 !
     endsubroutine register_density
 !***********************************************************************
@@ -61,7 +61,7 @@ module Density
       if(ip==0) print*,f,xx,yy,zz
     endsubroutine init_lnrho
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
+    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
 !
 !  continuity equation, dummy routine
 !
@@ -71,18 +71,15 @@ module Density
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu
-      real, dimension (nx) :: rho1
 !
 !  will be accessed in noentropy
 !
-      rho1=1.
       lnrho=0.
       glnrho=0.
 !
-      if(ip==0) print*,f,df,uu,divu,sij
+      if(ip==0) print*,f,df,uu,divu
     endsubroutine dlnrho_dt
 !***********************************************************************
     subroutine rprint_density(lreset)

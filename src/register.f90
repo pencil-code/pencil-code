@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.40 2002-06-19 10:39:45 brandenb Exp $
+! $Id: register.f90,v 1.41 2002-06-24 17:45:29 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -28,9 +28,13 @@ module Register
       use Entropy
       use Magnetic
 !
+!  initialize all mpi stuff
+!
       call mpicomm_init
 !
-      nvar = 0                  ! to start with
+!  initialize nvar; is increased by the following routines
+!
+      nvar = 0 
       call register_hydro
       call register_density
       call register_forcing

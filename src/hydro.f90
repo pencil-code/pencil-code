@@ -1,10 +1,10 @@
-! $Id: hydro.f90,v 1.28 2002-06-18 16:26:45 dobler Exp $
+! $Id: hydro.f90,v 1.29 2002-06-24 17:45:28 brandenb Exp $
 
 module Hydro
 
   use Cparam
-  use Density
   use Cdata, only: nu,ivisc
+  use Density
 
   implicit none
 
@@ -17,6 +17,7 @@ module Hydro
        uu_left,uu_right
 
   ! run parameters
+  real, dimension (nx,3,3) :: sij
   real :: Omega=0.,theta=0.
   real :: tinit=0.,tdamp=0.,dampu=0.,dampuext=0.,rdamp=1.2,wdamp=0.2
   namelist /hydro_run_pars/ &
@@ -26,6 +27,7 @@ module Hydro
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+  integer :: i_urms=0,i_umax=0,i_orms=0,i_omax=0
 
   contains
 
@@ -63,8 +65,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.28 $", &
-           "$Date: 2002-06-18 16:26:45 $")
+           "$Revision: 1.29 $", &
+           "$Date: 2002-06-24 17:45:28 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -191,7 +193,7 @@ module Hydro
 !
     endsubroutine init_hydro
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,divu,sij,uij,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
 !
 !  velocity evolution
 !  calculate du/dt = - u.gradu - 2Omega x u + grav + Fvisc
@@ -199,25 +201,27 @@ module Hydro
 !
 !   7-jun-02/axel: incoporated from subroutine pde
 !  10-jun-02/axel+mattias: added Coriolis force
+!  23-jun-02/axel: glnrho and fvisc are now calculated in here
 !
       use Cdata
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,ugu,oo
-      real, dimension (nx) :: u2,divu,o2,ou
+      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3) :: uu,ugu,oo,fvisc,glnrho,sglnrho,del2u,graddivu
+      real, dimension (nx) :: u2,divu,o2,ou,murho1,rho1
       real :: c2,s2
       integer :: i,j
-!  
+!
 !  abbreviations
 !
-      if (headtt) print*,'solve duu_dt'
+      if (headtt.or.ldebug) print*,'SOLVE duu_dt'
       uu=f(l1:l2,m,n,iux:iuz)
       call dot2_mn(uu,u2)
 !
 !  calculate velocity gradient matrix
 !
+      if (ldebug) print*,'call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
       call gij(f,iuu,uij)
       divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
 !
@@ -234,6 +238,7 @@ module Hydro
 !
 !  advection term
 !
+      if (ldebug) print*,'call multmv_mn(uij,uu,ugu)'
       call multmv_mn(uij,uu,ugu)
       df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu
 !
@@ -257,8 +262,61 @@ module Hydro
         endif
       endif
 !
+!  calculate grad(lnrho) here: needed for ivisc=2 and continuity
+!
+      if(ldensity) call grad(f,ilnrho,glnrho)
+!
+!  viscosity operator
+!  rho1 is pre-calculated in equ
+!
+      if (nu /= 0.) then
+        select case (ivisc)
+!
+!  viscous force: nu*del2v
+!
+        case (0)
+          if (headtt) print*,'viscous force: nu*del2v'
+          call del2v(f,iuu,del2u)
+          fvisc=nu*del2u
+          maxdiffus=amax1(maxdiffus,nu)
+!
+!  viscous force: mu/rho*(del2u+graddivu/3)
+!
+        case(1)
+          if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
+          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=1'
+          murho1=(nu*rho0)*rho1  !(=mu/rho)
+          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+          do i=1,3
+            fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
+          enddo
+          maxdiffus=amax1(maxdiffus,murho1)
+!
+!  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
+!
+        case(2)
+          if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
+          if (.not.ldensity) print*,'ldensity better be .true. for ivisc=2'
+          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
+          if(ldensity) then
+            call multmv_mn(sij,glnrho,sglnrho)
+            fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
+            maxdiffus=amax1(maxdiffus,nu)
+          else
+            if(lfirstpoint) print*,'ldensity better be .true. for ivisc=2'
+          endif
+        case default
+          if (headtt) print*,'no viscous force'
+        endselect
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
+      else ! (nu=0)
+        if (headtt) print*,'no viscous force: (nu=0)'
+      endif
+!
 !  maximum squared avection speed
 !
+      if (headtt.or.ldebug) print*,'maximum squared avection speed'
+      if (headtt.or.ldebug) print*,'maxadvec2,u2=',maxval(maxadvec2),maxval(u2)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,u2)
 !
 !  >> Wolfgang, could you please reinstate this if you still need it?
@@ -270,19 +328,26 @@ module Hydro
 !  The length of the timestep is not known here (--> moved to prints.f90)
 !
       if (ldiagnos) then
+        if (headtt.or.ldebug) print*,'Calculate maxima and rms values...'
+        if (i_urms/=0) call sum_mn_name(u2,i_urms,lsqrt=.true.)
+        if (i_umax/=0) call max_mn_name(u2,i_umax,lsqrt=.true.)
         if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
         if (i_um2/=0) call max_mn_name(u2,i_um2)
         if (i_oum/=0 .or. i_o2m/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)
           oo(:,3)=uij(:,2,1)-uij(:,1,2)
+          !
           if (i_oum/=0) then
             call dot_mn(oo,uu,ou)
             call sum_mn_name(ou,i_oum)
           endif
-          if (i_o2m/=0) then
+          !
+          if (i_orms/=0.or.i_omax/=0.or.i_o2m/=0) then
             call dot2_mn(oo,o2)
-            call sum_mn_name(o2,i_o2m)
+            if(i_orms/=0) call sum_mn_name(o2,i_orms,lsqrt=.true.)
+            if(i_omax/=0) call max_mn_name(o2,i_omax,lsqrt=.true.)
+            if(i_o2m/=0)  call sum_mn_name(o2,i_o2m)
           endif
         endif
       endif
@@ -350,7 +415,8 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
+        i_u2m=0; i_um2=0; i_oum=0; i_o2m=0
+        i_urms=0; i_umax=0; i_orms=0; i_omax=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
@@ -361,6 +427,10 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
+        call parse_name(iname,cname(iname),cform(iname),'urms',i_urms)
+        call parse_name(iname,cname(iname),cform(iname),'umax',i_umax)
+        call parse_name(iname,cname(iname),cform(iname),'orms',i_orms)
+        call parse_name(iname,cname(iname),cform(iname),'omax',i_omax)
       enddo
 !
 !  write column where which magnetic variable is stored
@@ -370,6 +440,10 @@ module Hydro
       write(3,*) 'i_um2=',i_um2
       write(3,*) 'i_o2m=',i_o2m
       write(3,*) 'i_oum=',i_oum
+      write(3,*) 'i_urms=',i_urms
+      write(3,*) 'i_umax=',i_umax
+      write(3,*) 'i_orms=',i_orms
+      write(3,*) 'i_omax=',i_omax
       write(3,*) 'nname=',nname
       write(3,*) 'iuu=',iuu
       write(3,*) 'iux=',iux

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.14 2002-06-21 16:34:55 dobler Exp $
+! $Id: density.f90,v 1.15 2002-06-24 17:45:28 brandenb Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-06-21 16:34:55 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-06-24 17:45:28 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -75,10 +75,9 @@ module Density
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,p,pot,prof
-      real, dimension (mz) :: stp
+      real, dimension (mx,my,mz) :: xx,yy,zz,tmp,pot,prof
       real, dimension (nx,1) :: rmn
-      real :: beta1,lnrhoint,cs2int
+      real :: lnrhoint,cs2int
 !
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
@@ -280,7 +279,7 @@ module Density
 !
     endsubroutine polytropic_lnrho_z
 !***********************************************************************
-    subroutine dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
+    subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
 !
 !  continuity equation
 !  calculate dlnrho/dt = - u.gradlnrho - divu
@@ -290,16 +289,14 @@ module Density
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: sij
-      real, dimension (nx,3) :: uu,glnrho,sglnrho,del2u,graddivu,fvisc
+      real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
-      real, dimension (nx) :: murho1,rho1,del2lnrho
+      real, dimension (nx) :: del2lnrho
       real :: diffrho
-      integer :: i
 !
 !  define lnrho; calculate density gradient and avection term
 !
-      if (headtt) print*,'solve dlnrho_dt'
+      if (headtt.or.ldebug) print*,'SOLVE dlnrho_dt'
       lnrho=f(l1:l2,m,n,ilnrho)
       call grad(f,ilnrho,glnrho)
       call dot_mn(uu,glnrho,uglnrho)
@@ -316,42 +313,6 @@ module Density
         call dot2_mn(glnrho,glnrho2)
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
         maxdiffus=amax1(maxdiffus,diffrho)
-      endif
-!
-!  calculate viscous force for du/dt equation
-!
-      if(lhydro) then
-        rho1=exp(-lnrho)
-
-        if (nu /= 0.) then
-          select case (ivisc)
-          case (0)
-            if (headtt) print*,'viscous force: nu*del2v'
-            call del2v(f,iuu,del2u)
-            fvisc=nu*del2u
-            maxdiffus=amax1(maxdiffus,nu)
-          case(1)
-            if (headtt) print*,'viscous force: mu/rho*(del2u+graddivu/3)'
-            murho1=(nu*rho0)*rho1  !(=mu/rho)
-            call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-            do i=1,3
-              fvisc(:,i)=murho1*(del2u(:,i)+.333333*graddivu(:,i))
-            enddo
-            maxdiffus=amax1(maxdiffus,murho1)
-          case(2)
-            if (headtt) print*,'viscous force: nu*(del2u+graddivu/3+2S.glnrho)'
-            call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
-            call multmv_mn(sij,glnrho,sglnrho)
-            fvisc=2*nu*sglnrho+nu*(del2u+.333333*graddivu)
-            maxdiffus=amax1(maxdiffus,nu)
-          case default
-            if (headtt) print*,'no viscous force'
-          endselect
-        else ! (nu=0)
-          if (headtt) print*,'no viscous force: (nu=0)'
-        endif
-
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+fvisc
       endif
 !
     endsubroutine dlnrho_dt

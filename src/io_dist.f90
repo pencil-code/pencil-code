@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.26 2002-06-21 16:34:55 dobler Exp $
+! $Id: io_dist.f90,v 1.27 2002-06-24 17:45:28 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -140,7 +140,7 @@ contains
 !
       if (headt .and. (imn==1)) print*, &
            'OUTPUT_PENCIL: Writing to ', trim(file), &
-           ' for debugginh -- this may slow things down'
+           ' for debugging -- this may slow things down'
 !
        call output_penciled_c(file, a, ndim, &
                                imn, mm(imn), nn(imn), t, &
@@ -169,7 +169,7 @@ contains
 !
       if (headt .and. (imn==1)) print*, &
            'OUTPUT_PENCIL: Writing to ', trim(file), &
-           ' for debugginh -- this may slow things down'
+           ' for debugging -- this may slow things down'
 !
       call output_penciled_c(file, a, ndim, &
                               imn, mm(imn), nn(imn), t, &

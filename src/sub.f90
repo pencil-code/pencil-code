@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.63 2002-06-19 21:23:24 brandenb Exp $ 
+! $Id: sub.f90,v 1.64 2002-06-24 17:45:29 brandenb Exp $ 
 
 module Sub 
 
@@ -45,18 +45,20 @@ module Sub
 !
     endsubroutine save_name
 !***********************************************************************
-    subroutine max_mn_name(a,iname)
+    subroutine max_mn_name(a,iname,lsqrt)
 !
 !  successively calculate maximum of a, where a is supplied
 !  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
+!  23-jun-02/axel: allows for taking square root in the end
 !
       use Cdata
 !
       real, dimension (nx) :: a
       integer :: iname
+      logical, optional :: lsqrt
 !
       if (lfirstpoint) then
         fname(iname)=maxval(a)
@@ -66,22 +68,28 @@ module Sub
 !
 !  set corresponding entry in itype_name
 !
-      itype_name(iname)=ilabel_max
+      if (present(lsqrt)) then
+        itype_name(iname)=ilabel_max_sqrt
+      else
+        itype_name(iname)=ilabel_max
+      endif
 !
     endsubroutine max_mn_name
 !***********************************************************************
-    subroutine sum_mn_name(a,iname)
+    subroutine sum_mn_name(a,iname,lsqrt)
 !
 !  successively calculate sum of a, where a is supplied
 !  at each call. This routine initializes counter when m=n=1.
 !
 !   1-apr-01/axel+wolf: coded
 !   4-may-02/axel: adapted for fname array
+!  23-jun-02/axel: allows for taking square root in the end
 !
       use Cdata
 !
       real, dimension (nx) :: a
       integer :: iname
+      logical, optional :: lsqrt
 !
       if (lfirstpoint) then
         fname(iname)=sum(a)
@@ -91,7 +99,11 @@ module Sub
 !
 !  set corresponding entry in itype_name
 !
-      itype_name(iname)=ilabel_sum
+      if (present(lsqrt)) then
+        itype_name(iname)=ilabel_sum_sqrt
+      else
+        itype_name(iname)=ilabel_sum
+      endif
 !
     endsubroutine sum_mn_name
 !***********************************************************************
@@ -198,7 +210,6 @@ module Sub
       real, dimension (nx) :: a
       real :: res
 !
-!      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
         res=sum(a**2)
       else
@@ -219,7 +230,6 @@ module Sub
       real, dimension (nx) :: a2
       real :: res
 !
-!      if (m==m1.and.n==n1) then
       if (lfirstpoint) then
         res=sum(a2)
       else
@@ -1176,6 +1186,56 @@ module Sub
 !
     endsubroutine cvs_id
 !***********************************************************************
+    function noform(cname)
+!
+!  returns the name without format, fills empty space
+!  of correct length (depending on format) with dashes
+!
+!  22-jun-02/axel: coded 
+!
+      character (len=*) :: cname
+      character (len=20) :: noform,cform,cnumber,dash='----------'
+      integer :: index_e,index_f,index_g,index_i,index_d,index_r,index1,index2
+      integer :: iform1,iform2,length,number,number1,number2
+!
+      intent(in)  :: cname
+!
+!  find position of left bracket to isolate format, cform
+!
+      iform1=index(cname,'(')
+      iform2=index(cname,')')
+      cform=cname(iform1:iform2)
+!
+!  find length of formatted expression, examples: f10.2, e10.3, g12.1
+!  index_1 is the position of the format type (f,e,g), and
+!  index_d is the position of the dot
+!
+      length=iform1-1
+      index_e=index(cform,'e')
+      index_f=index(cform,'f')
+      index_g=index(cform,'g')
+      index_i=index(cform,'i')
+      index_d=index(cform,'.')
+      index_r=index(cform,')')
+      index1=max(index_e,index_f,index_g,index_i)
+      index2=index_d; if(index_d==0) index2=index_r
+!
+!  calculate the length of the format and assemble expression for legend
+!
+      cnumber=cform(index1+1:index2-1)
+      read(cnumber,'(i4)',err=99) number
+10    number1=max(0,(number-length)/2)
+      number2=max(0,number-length-number1)
+      noform=dash(1:number1)//cname(1:length)//dash(1:number2)
+      return
+!
+! in case of errors:
+!
+99    print*,'noform: formatting problem'
+      number=10
+      goto 10     
+    endfunction noform
+!***********************************************************************
     function poly_1(coef, x)
 !
 !  Horner's scheme for polynomial evaluation.
@@ -1354,12 +1414,10 @@ module Sub
 !
       character (len=*) :: cname,cform
       character (len=*) :: ctest
-      integer :: iname,itest,iform0,iform1,iform2,length
-      integer, save :: imsg=0
+      integer :: iname,itest,iform0,iform1,iform2,length,index_i
 !
       intent(in)  :: iname,cname,ctest
-      intent(out) :: cform
-      intent(inout) :: itest
+      intent(inout) :: itest,cform
 !
 !  check whether format is given
 !
@@ -1376,14 +1434,20 @@ module Sub
         cform='1p,e10.2,0p'  !!(the nag-f95 compiler requires a comma after 1p)
         length=iform0-1
       endif
-      if (cname(1:length)==ctest .and. itest==0) itest=iname
 !
-!  Integer formats not currently supported: check whether ok
+!  if the name matches, we keep the name and can strip off the format.
+!  The remaining name can then be used for the legend.
 !
-      if (index(cform,'i')/=0) then
-        if (imsg==0) print*,'INTEGER formats not currently supported!'
-        cform='f10.0'
-        imsg=1
+      if (cname(1:length)==ctest .and. itest==0) then
+        itest=iname
+      endif
+!
+!  Integer formats are turned into floating point numbers
+!
+      index_i=index(cform,'i')
+      if (index_i/=0) then
+        cform(index_i:index_i)='f'
+        cform=trim(cform)//'.0'
       endif
 !
       endsubroutine parse_name
@@ -1521,7 +1585,7 @@ module Sub
 !
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,width
 !
 !  set horizontal flux tubes
@@ -1537,6 +1601,7 @@ module Sub
         f(:,:,:,i+2)=0.
       endif
 !
+      if (ip==1) print*,xx,yy
     endsubroutine hlayer
 !***********************************************************************
     subroutine uniform_x(ampl,f,i,xx,yy,zz)
@@ -1549,8 +1614,8 @@ module Sub
 !
       integer :: i
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
-      real :: ampl,width
+      real, dimension (mx,my,mz) :: xx,yy,zz
+      real :: ampl
 !
 !  set horizontal flux tubes
 !
@@ -1559,12 +1624,13 @@ module Sub
         if (lroot) print*,'set variable to zero; i=',i
       else
         print*,'horizontal flux layer; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl,width
+        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=-ampl*zz
         f(:,:,:,i+2)=0.
       endif
 !
+      if (ip==1) print*,xx,yy
     endsubroutine uniform_x
 !***********************************************************************
     subroutine vfield(ampl,f,i,xx)

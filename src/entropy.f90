@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.72 2002-06-21 22:06:59 vpariev Exp $
+! $Id: entropy.f90,v 1.73 2002-06-24 17:45:28 brandenb Exp $
 
 module Entropy
 
@@ -61,8 +61,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.72 $", &
-           "$Date: 2002-06-21 22:06:59 $")
+           "$Revision: 1.73 $", &
+           "$Date: 2002-06-24 17:45:28 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -77,15 +77,13 @@ module Entropy
 !  7-nov-2001/wolf: coded
 !
       use Cdata
-      use Sub, only: step
       use Mpicomm
       use IO
       use Gravity
 !
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: tmp,p,xx,yy,zz
-      real, dimension (mz) :: stp
-      real :: beta1,cs2int,ssint
+      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real :: cs2int,ssint
 !
       intent(in) :: xx,yy,zz
       intent(inout) :: f
@@ -205,7 +203,7 @@ module Entropy
 
       endselect
 !
-    if(ip==0) print*,xx,yy  !(to keep compiler quiet)
+      if(ip==0) print*,xx,yy  !(to keep compiler quiet)
 !
     endsubroutine init_ent
 !***********************************************************************
@@ -260,7 +258,7 @@ module Entropy
 !
     endsubroutine polytropic_ss_z
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
@@ -277,19 +275,18 @@ module Entropy
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho,gss
       real, dimension (nx) :: ugss,sij2,del2ss        !(later,below) ,del2lnrho
       real, dimension (nx) :: lnrho,ss,rho1,cs2,TT1
 !     real, dimension (nx) :: heat
       integer :: i,j,ju
 !
-      intent(in) :: f,uu,sij,glnrho,rho1
+      intent(in) :: f,rho1
       intent(out) :: df,cs2,TT1
 !
 !  entropy gradient: needed for advection and pressure gradient
 !
-      if (headtt) print*,'solve dss_dt'
+      if (headtt.or.ldebug) print*,'SOLVE dss_dt'
       call grad(f,ient,gss)
 !
 !  sound speed squared
@@ -298,6 +295,7 @@ module Entropy
       ss=f(l1:l2,m,n,ient)
       cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
       if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
+      if (ip<10.and.lroot) print*,'maxadvec2,cs2=',maxadvec2,cs2
       if (headtt) print*,'entropy: cs20=',cs20
 !
 !  subtract pressure gradient term in momentum equation
@@ -321,6 +319,7 @@ module Entropy
       enddo
 !
 !  calculate 1/T (in units of cp)
+!  Viscous heating depends on ivisc; no visc heating if ivisc=0
 !
       TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
       if (headtt) print*,'dss_dt: TT1 ok'

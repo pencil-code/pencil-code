@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.65 2002-06-19 10:39:45 brandenb Exp $
+! $Id: equ.f90,v 1.66 2002-06-24 17:45:28 brandenb Exp $
 
 module Equ
 
@@ -200,7 +200,6 @@ module Equ
       use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,u2,rho,ee=0.,rho1
       real :: fac
@@ -211,10 +210,11 @@ module Equ
 !
       headtt = headt .and. lfirst .and. lroot
 
+      if (headtt.and.ldebug) print*,'ENTER equ'
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.65 $", &
-           "$Date: 2002-06-19 10:39:45 $")
+           "$Revision: 1.66 $", &
+           "$Date: 2002-06-24 17:45:28 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -223,6 +223,7 @@ module Equ
 !
 !  initiate communication and do boundary conditions
 !
+      if (ldebug) print*,'bef. initiate_isendrcv_bdry'
       call initiate_isendrcv_bdry(f)
       call boundconds(f,errmesg); if (errmesg/="") call stop_it(trim(errmesg))
 !
@@ -237,6 +238,7 @@ module Equ
 !
 !  coordinates are needed all the time
 !  (but not for isotropic turbulence!)
+!  There are many other ciscumstances where this is not needed.
 !
         x_mn = x(l1:l2)
         y_mn = spread(y(m),1,nx)
@@ -249,15 +251,24 @@ module Equ
         maxdiffus=0.
         maxadvec2=0.
 !
+!  calculate inverse density: currenly only needed
+!  in magnetic (provided lhydro=.true.) and for the
+!  viscosity (currently in ldensity)
+!  Better check that this is still true (after modifications)
+!  Otherwise, better always calculate rho1.
+!
+        if(ivisc==1.or.(lmagnetic.and.lhydro)) rho1=exp(-lnrho)
+!
 !  hydro, density, and entropy evolution
 !  They all are needed for setting some variables even
 !  if their evolution is turned off.
 !
-        call duu_dt(f,df,uu,divu,sij,uij,u2)
-        call dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
-        call dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
+        call duu_dt   (f,df,uu,glnrho,divu,rho1,u2)
+        call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
+        call dss_dt   (f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
 !
 !  Add gravity, if present
+!  Shouldn't we call this one in hydro itself?
 !
         if (lhydro) then
           if(lgrav) call duu_dt_grav(f,df)

@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.21 2002-06-12 11:32:39 brandenb Exp $
+! $Id: noentropy.f90,v 1.22 2002-06-24 17:45:29 brandenb Exp $
 
 module Entropy
 
@@ -45,8 +45,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.21 $", &
-           "$Date: 2002-06-12 11:32:39 $")
+           "$Revision: 1.22 $", &
+           "$Date: 2002-06-24 17:45:29 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -63,7 +63,7 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
+    subroutine dss_dt(f,df,uu,glnrho,rho1,lnrho,cs2,TT1)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -72,7 +72,6 @@ module Entropy
       use Density
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,rho1,cs2,TT1
       integer :: j,ju
@@ -83,7 +82,12 @@ module Entropy
 !  sound speed squared and inverse temperature
 !
       TT1=0.
-      cs2=cs20*exp(gamma1*lnrho)
+      if (gamma==1.) then
+        cs2=cs20
+      else
+        cs2=cs20*exp(gamma1*lnrho)
+      endif
+      if (lfirst.and.ldt) maxadvec2=amax1(maxadvec2,cs2)
 !
 !  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
@@ -94,7 +98,7 @@ module Entropy
         enddo
       endif
 !
-      if(ip==1) print*,f,df,uu,sij,rho1  !(compiler)
+      if(ip==1) print*,f,df,uu,rho1  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset)

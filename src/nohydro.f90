@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.1 2002-06-11 17:54:48 brandenb Exp $
+! $Id: nohydro.f90,v 1.2 2002-06-24 17:45:29 brandenb Exp $
 
 module Hydro
 
@@ -10,6 +10,9 @@ module Hydro
   integer :: dummyuu           ! We cannot define empty namelists
   namelist /hydro_init_pars/ dummyuu
   namelist /hydro_run_pars/  dummyuu
+
+  ! run parameters
+  real, dimension (nx,3,3) :: sij
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
@@ -39,8 +42,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-06-11 17:54:48 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-06-24 17:45:29 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -60,7 +63,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_hydro
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,divu,sij,uij,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -73,9 +76,8 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: divu,u2
+      real, dimension (nx,3) :: uu,glnrho
+      real, dimension (nx) :: divu,u2,rho1
 !
       if (kinflow=='ABC') then
         if (headtt) print*,'ABC flow'
@@ -104,7 +106,7 @@ module Hydro
         if (i_um2/=0) call max_mn_name(u2,i_um2)
       endif
 !
-      if(ip==0) print*,f,df,divu,sij,uij,u2  !(keep compiler quiet)
+      if(ip==0) print*,f,df,glnrho,divu,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine rprint_hydro(lreset)

@@ -1,4 +1,4 @@
-! $Id: nohydro_file.f90,v 1.1 2002-06-11 17:54:48 brandenb Exp $
+! $Id: nohydro_file.f90,v 1.2 2002-06-24 17:45:29 brandenb Exp $
 
 module Hydro
 
@@ -39,8 +39,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nohydro_file.f90,v $", &
-           "$Revision: 1.1 $", &
-           "$Date: 2002-06-11 17:54:48 $")
+           "$Revision: 1.2 $", &
+           "$Date: 2002-06-24 17:45:29 $")
 !
     endsubroutine register_hydro
 !***********************************************************************
@@ -60,7 +60,7 @@ module Hydro
       if(ip==0) print*,f,xx,yy,zz  !(keep compiler quiet)
     endsubroutine init_hydro
 !***********************************************************************
-    subroutine duu_dt(f,df,uu,divu,sij,uij,u2)
+    subroutine duu_dt(f,df,uu,glnrho,divu,rho1,u2)
 !
 !  velocity evolution, dummy routine
 !  This routine is used in kinematic dynamo calculations;
@@ -73,9 +73,8 @@ module Hydro
       use Sub
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu
-      real, dimension (nx) :: divu,u2
+      real, dimension (nx,3) :: uu,glnrho
+      real, dimension (nx) :: divu,u2,rho1
 !
       real, save, dimension (nx,ny,nz,3) :: uuu
       logical, save :: first=.true.
@@ -117,7 +116,7 @@ module Hydro
         if (i_um2/=0) call max_mn_name(u2,i_um2)
       endif
 !
-      if(ip==0) print*,f,df,divu,sij,uij,u2  !(keep compiler quiet)
+      if(ip==0) print*,f,df,glnrho,divu,rho1,u2  !(keep compiler quiet)
     endsubroutine duu_dt
 !***********************************************************************
     subroutine rprint_hydro(lreset)

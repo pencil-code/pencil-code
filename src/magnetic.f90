@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.53 2002-06-20 14:49:45 dobler Exp $
+! $Id: magnetic.f90,v 1.54 2002-06-24 17:45:29 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -41,8 +41,9 @@ module Magnetic
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+  integer :: i_brms,i_bmax,i_jrms,i_jmax,i_vArms=0,i_vAmax=0
   integer :: i_bxmz=0,i_bymz=0,i_bzmz=0,i_bmx=0,i_bmy=0,i_bmz=0
-  integer :: i_bxmxy,i_bymxy,i_bzmxy
+  integer :: i_bxmxy=0,i_bymxy=0,i_bzmxy=0
 
   contains
 
@@ -79,8 +80,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.53 $", &
-           "$Date: 2002-06-20 14:49:45 $")
+           "$Revision: 1.54 $", &
+           "$Date: 2002-06-24 17:45:29 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -278,7 +279,10 @@ module Magnetic
 !
 !  calculate B-field, and then max and mean (w/o imposed field, if any)
 !
-      if (headtt) print*,'solve daa_dt'
+      if (headtt.or.ldebug) print*,'SOLVE daa_dt'
+!
+!  solve uxB term
+!
       call curl(f,iaa,bb)
       if (ldiagnos) then
         aa=f(l1:l2,m,n,iax:iaz)
@@ -287,6 +291,8 @@ module Magnetic
         if (i_abm/=0) call sum_mn_name(ab,i_abm)
         if (i_b2m/=0) call sum_mn_name(b2,i_b2m)
         if (i_bm2/=0) call max_mn_name(b2,i_bm2)
+        if (i_brms/=0) call sum_mn_name(b2,i_brms,lsqrt=.true.)
+        if (i_bmax/=0) call max_mn_name(b2,i_bmax,lsqrt=.true.)
 !
 !  this doesn't need to be as frequent (check later)
 !
@@ -363,6 +369,8 @@ module Magnetic
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
+        if (i_vArms/=0) call sum_mn_name(va2,i_vArms,lsqrt=.true.)
+        if (i_vAmax/=0) call max_mn_name(va2,i_vAmax,lsqrt=.true.)
         !
         ! <J.B>
         !
@@ -373,10 +381,12 @@ module Magnetic
         !
         ! <J^2> and J^2|max
         !
-        if (i_j2m/=0 .or. i_jm2/=0) then
+        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0) then
           call dot2_mn(jj,j2)
           if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
           if (i_jm2/=0) call max_mn_name(j2,i_jm2)
+          if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
+          if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
         endif
         !
       endif
@@ -413,6 +423,7 @@ module Magnetic
 !
       if (lreset) then
         i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+        i_brms=0; i_bmax=0; i_jrms=0; i_jmax=0; i_vArms=0; i_vAmax=0
         i_bxmz=0; i_bymz=0; i_bzmz=0; i_bmx=0; i_bmy=0; i_bmz=0
         i_bxmxy=0; i_bymxy=0; i_bzmxy=0
       endif
@@ -426,6 +437,12 @@ module Magnetic
         call parse_name(iname,cname(iname),cform(iname),'bm2',i_bm2)
         call parse_name(iname,cname(iname),cform(iname),'j2m',i_j2m)
         call parse_name(iname,cname(iname),cform(iname),'jm2',i_jm2)
+        call parse_name(iname,cname(iname),cform(iname),'brms',i_brms)
+        call parse_name(iname,cname(iname),cform(iname),'bmax',i_bmax)
+        call parse_name(iname,cname(iname),cform(iname),'jrms',i_jrms)
+        call parse_name(iname,cname(iname),cform(iname),'jmax',i_jmax)
+        call parse_name(iname,cname(iname),cform(iname),'vArms',i_vArms)
+        call parse_name(iname,cname(iname),cform(iname),'vAmax',i_vAmax)
         call parse_name(iname,cname(iname),cform(iname),'bmx',i_bmx)
         call parse_name(iname,cname(iname),cform(iname),'bmy',i_bmy)
         call parse_name(iname,cname(iname),cform(iname),'bmz',i_bmz)
@@ -456,6 +473,12 @@ module Magnetic
       write(3,*) 'i_bm2=',i_bm2
       write(3,*) 'i_j2m=',i_j2m
       write(3,*) 'i_jm2=',i_jm2
+      write(3,*) 'i_brms=',i_brms
+      write(3,*) 'i_bmax=',i_bmax
+      write(3,*) 'i_jrms=',i_jrms
+      write(3,*) 'i_jmax=',i_jmax
+      write(3,*) 'i_vArms=',i_vArms
+      write(3,*) 'i_vAmax=',i_vAmax
       write(3,*) 'nname=',nname
       write(3,*) 'iaa=',iaa
       write(3,*) 'iax=',iax

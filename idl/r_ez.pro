@@ -33,5 +33,5 @@ print,'t=',t
 @tmp/magnetic
 
 ;  calculate bb
-bb=curl(f(*,*,*,iax-1:iaz-1))
+if iax ne 0 then bb=curl(f(*,*,*,iax-1:iaz-1))
 END
