@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.15 2003-04-09 10:21:17 theine Exp $
+! $Id: radiation_ray.f90,v 1.16 2003-04-10 06:58:24 brandenb Exp $
 
 module Radiation
 
@@ -11,7 +11,7 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
   logical :: nocooling=.false.,output_Qrad=.false.
 
   integer :: directions
@@ -31,10 +31,10 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max
+       radx,rady,radz,rad2max,output_Qrad
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max,nocooling,output_Qrad
+       radx,rady,radz,rad2max,output_Qrad,nocooling
 
   contains
 
@@ -60,7 +60,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.15 2003-04-09 10:21:17 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.16 2003-04-10 06:58:24 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -106,21 +106,27 @@ module Radiation
       use Ionization
 !
       real, dimension(mx,my,mz,mvar), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT,kappa_
+      real, dimension(nx) :: lnrho,ss,yH,TT_,kappa_
 !
-!  Use the thermodynamics module to calculate temperature
+!  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
+!  Need Source function even in the ghost zones (for lower bc)
 !
-      do n=n1,n2
+print*,'ss_border=',f(l1,m1,1:7,ient)
+print*,'lnrho_border=',f(l1,m1,1:7,ilnrho)
+!!!!  do n=n1,n2
+      do n=1,mz
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
          yH=yyH(l1:l2,m,n)
-         call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
-         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
+         call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
+         Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
+         TT(l1:l2,m,n)=TT_
          kappa(l1:l2,m,n)=kappa_
       enddo
       enddo
+print*,'Srad_border=',Srad(l1,m1,1:7)
 !
     endsubroutine source_function
 !***********************************************************************
@@ -193,7 +199,7 @@ module Radiation
           !
           call transfer(f,Intensity,lrad,mrad,nrad)
           Qrad=Qrad+frac*Intensity
-!write(27) Intensity,lrad,mrad,nrad
+write(28) Intensity,nrad
           !
           !  safe boundary values for next processor (or opposite boundary)
           !
@@ -207,9 +213,6 @@ module Radiation
       enddo
       enddo
       enddo
-print*,'Srad(4,4,:)=',Srad(4,4,:)
-print*,'Qrad(4,4,:)=',Qrad(4,4,:)
- write(28) Qrad,Srad
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -288,16 +291,17 @@ print*,'Qrad(4,4,:)=',Qrad(4,4,:)
       use Cdata
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx) :: rho
 !
 !  Add radiative cooling
 !
-if(nocooling) return
       do n=n1,n2
       do m=m1,m2
-        rho=exp(f(l1:l2,m,n,ilnrho))
-        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-                           +4.*pi*kappa(l1:l2,m,n)*Qrad(l1:l2,m,n)
+         if(.not. nocooling) then
+            df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
+                              +4.*pi*kappa(l1:l2,m,n) &
+                               *Qrad(l1:l2,m,n) &
+                               /TT(l1:l2,m,n)
+         endif
       enddo
       enddo
 !
@@ -316,9 +320,8 @@ if(nocooling) return
 !
 !  identifier
 !
-!     if(lroot.and.headt) print*,'output_radiation'
-!
-      if(output_Qrad) write(lun) Qrad
+      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
+      if(output_Qrad) write(lun) Qrad,Srad,kappa,TT
 !
     endsubroutine output_radiation
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.128 2003-03-06 14:25:51 brandenb Exp $
+! $Id: run.f90,v 1.129 2003-04-10 06:58:24 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.128 2003-03-06 14:25:51 brandenb Exp $")
+             "$Id: run.f90,v 1.129 2003-04-10 06:58:24 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -107,9 +107,7 @@
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-        call initialize_modules(f)
-!ajwm run_hooks renamed and moved to run_hooks subroutine
-!AB: do you mean "moved to initialize_modules subroutine"?
+        call initialize_modules(f,lstart=.false.)
 !
 !  Write data to file for IDL
 !
@@ -172,7 +170,7 @@
               ! Re-read configuration
               call read_runpars(PRINT=.true.,FILE=.true.,ANNOTATION='Reloading')
               call rprint_list(.true.) !(Re-read output list)
-              call initialize_modules(f)
+              call initialize_modules(f,lstart=.false.)
               if (lroot) call remove_file("RELOAD")
               reload = .false.
             endif

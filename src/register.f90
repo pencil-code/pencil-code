@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.71 2003-04-02 05:22:26 brandenb Exp $
+! $Id: register.f90,v 1.72 2003-04-10 06:58:24 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -13,7 +13,7 @@ module Register
 !***********************************************************************
     subroutine register_modules()
 !
-!  Call all registration hooks, i.e. initialise MPI and register
+!  Call all registration routines, i.e. initialise MPI and register
 !  physics modules. Registration implies getting slices of the f-array
 !  and setting logicals like lentropy to .true. This routine is called by
 !  both, start.x and run.x .
@@ -81,9 +81,9 @@ module Register
 !
     endsubroutine register_modules
 !***********************************************************************
-    subroutine initialize_modules(f)
+    subroutine initialize_modules(f,lstart)
 !
-!  Call initialization hooks, i.e. initialize physics and technical
+!  Call initialization routines, i.e. initialize physics and technical
 !  modules. This implies some preparation of auxiliary quantities, often
 !  based on input parameters. This routine is called by run.x (but not by
 !  start.x) initially and each time the run parameters have been reread.
@@ -111,6 +111,7 @@ module Register
 
       real, dimension(mx,my,mz,mvar) :: f
       real :: unit_mass,unit_energy,unit_time,unit_flux
+      logical :: lstart
 !
 !  Defaults for some logicals; will later be set to true if needed
       lneed_sij = .false.
@@ -168,8 +169,8 @@ module Register
 !
 !      call initialize_hydro
 !      call initialize_density
-      call initialize_forcing  ! get random seed from file, ..
-      call initialize_entropy  ! calculate radiative conductivity, etc.
+      call initialize_forcing(lstart)  ! get random seed from file, ..
+      call initialize_entropy          ! calculate radiative conductivity, etc.
 !      call initialize_magnetic
       call initialize_radiation
       call initialize_ionization
@@ -184,6 +185,9 @@ module Register
 !  timestep: if dt=0 (ie not initialized), ldt=.true.
 !
 !ajwm should this be moved to timestep.f90 as run_hooks_timestep() ??
+!AB: maybe not, because initialize_modules can also be run from start.f90,
+!AB: which has no knowledge of timestep.f90
+!
       ldt = (dt==0.)            ! need to calculate dt dynamically?
       if (lroot .and. ip<14) then
         if (ldt) then

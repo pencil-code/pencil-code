@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.150 2003-04-06 07:40:22 brandenb Exp $
+! $Id: entropy.f90,v 1.151 2003-04-10 06:58:24 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.150 2003-04-06 07:40:22 brandenb Exp $")
+           "$Id: entropy.f90,v 1.151 2003-04-10 06:58:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -122,7 +122,7 @@ module Entropy
           !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
+          if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
         endif
       endif
 !

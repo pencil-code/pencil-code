@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.82 2003-04-09 13:41:50 brandenb Exp $
+! $Id: start.f90,v 1.83 2003-04-10 06:58:24 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -34,7 +34,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.82 2003-04-09 13:41:50 brandenb Exp $")
+             "$Id: start.f90,v 1.83 2003-04-10 06:58:24 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -111,24 +111,15 @@
         zz=spread(spread(z,1,mx),2,my)
 !
 !  not currently needed.
-!  Wolfggang, can we take this out?
+!AB Wolfgang, can we take this out?
 !
 !!!!!    rr=sqrt(xx**2+yy**2+zz**2)
-!
-!  Seed for random number generator to be used in forcing.f90. Have to
-!  have the same on each  processor as forcing is applied in (global)
-!  Beltrami modes.
-!  This has to come before initialize_modules, because that module
-!  reads in the seed fields again.
-!
-        seed(1) = 1812
-        call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
 !  Allow modules to do any physics modules do parameter dependent
 !  initialization. And final pre-timestepping setup.
 !  (must be done before need_XXXX can be used, for example)
 !
-        call initialize_modules(f)
+        call initialize_modules(f,lstart=.true.)
 !
 !  different initial conditions
 !  initialize all variables to zero;
@@ -151,8 +142,8 @@
 !
 !  check whether we want ionization
 !
-        if(lionization) call ionfrac(f)
-        if(lradiation_ray) call radtransfer(f)
+!       if(lionization) call ionfrac(f)
+!       if(lradiation_ray) call radtransfer(f)
 !
 !  write to disk
 !  The option lnowrite writes everything except the actual var.dat file
@@ -179,6 +170,13 @@
 !  Do this late enough, so init_entropy etc. can adjust them
 !
         call wparam()
+!
+!  Seed for random number generator to be used in forcing.f90. Have to
+!  have the same on each  processor as forcing is applied in (global)
+!  Beltrami modes.
+!
+        seed(1) = 1812
+        call outpui(trim(directory)//'/seed.dat',seed,nseed)
 !
         call mpifinalize
         if (lroot) print*

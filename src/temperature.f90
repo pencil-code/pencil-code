@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.3 2003-02-02 15:12:52 brandenb Exp $
+! $Id: temperature.f90,v 1.4 2003-04-10 06:58:24 brandenb Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -79,7 +79,7 @@ ient=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.3 2003-02-02 15:12:52 brandenb Exp $")
+           "$Id: temperature.f90,v 1.4 2003-04-10 06:58:24 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -126,7 +126,7 @@ ient=ilnTT  !(need to think how to deal with this...)
           !
           Kbot=gamma1/gamma*(mpoly+1.)*Fbot
           FbotKbot=gamma/gamma1/(mpoly+1.)
-          if(lroot) print*,'ss_run_hook: Fbot,Kbot=',Fbot,Kbot
+          if(lroot) print*,'initialize_entropy: Fbot,Kbot=',Fbot,Kbot
         endif
       endif
 !

@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.42 2003-04-08 17:41:31 brandenb Exp $
+! $Id: forcing.f90,v 1.43 2003-04-10 06:58:24 brandenb Exp $
 
 module Forcing
 
@@ -38,6 +38,7 @@ module Forcing
       use Sub
 !
       logical, save :: first=.true.
+      logical :: lstart
 !
       if (.not. first) call stop_it('register_forcing called twice')
       first = .false.
@@ -47,39 +48,38 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.42 2003-04-08 17:41:31 brandenb Exp $")
+           "$Id: forcing.f90,v 1.43 2003-04-10 06:58:24 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
-    subroutine initialize_forcing()
+    subroutine initialize_forcing(lstart)
 !
 !  read seed field parameters
+!  nothing done from start.f90 (lstart=.true.)
 !
       use Cdata
       use Sub, only: inpui
 !
       logical, save :: first=.true.
+      logical :: lstart
 !
-!ajwm check this really should only be done once before
-!ajwm timestepping really starts, i.e. before time loop
-!ajwm and not after RELOAD
-!AB: I think we do *not* want to read seed.dat after RELOAD
-!
-      if (first) then
-         if (lroot.and.ip<14) print*, 'reading seed file'
-         call inpui(trim(directory)//'/seed.dat',seed,nseed)
-         call random_seed_wrapper(put=seed(1:nseed))
-      endif
-
-!ajwm - following was in sub param_check_forcing
+      if (lstart) then
+        if(ip<4) print*,'initialize_forcing: not needed in start'
+      else
+        if (first) then
+           if (lroot.and.ip<14) print*, 'reading seed file'
+           call inpui(trim(directory)//'/seed.dat',seed,nseed)
+           call random_seed_wrapper(put=seed(1:nseed))
+        endif
 !
 !  check whether we want constant forcing at each timestep,
 !  in which case lwork_ff is set to true.
 !
-      if(work_ff/=0.) then
-        force=1.
-        lwork_ff=.true.
-        if(lroot) print*,'reset force=1., because work_ff is set'
+        if(work_ff/=0.) then
+          force=1.
+          lwork_ff=.true.
+          if(lroot) print*,'reset force=1., because work_ff is set'
+        endif
       endif
 !
     endsubroutine initialize_forcing

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.16 2003-04-09 17:02:40 theine Exp $
+! $Id: feautrier.f90,v 1.17 2003-04-10 06:58:24 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.16 2003-04-09 17:02:40 theine Exp $")
+           "$Id: feautrier.f90,v 1.17 2003-04-10 06:58:24 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -113,8 +113,10 @@ module Radiation
       integer :: lrad,mrad,nrad
       logical :: err=.false.
 !
-      do lrad=l1,l2
+!  loop fastest over first index --> could do this for l-vectors
+!
       do mrad=m1,m2
+      do lrad=l1,l2
          kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral(z,kaprho)
          Srad_=Srad(lrad,mrad,n1:n2)
@@ -122,15 +124,22 @@ module Radiation
          !print*,'tau=',tau
          !print*,'Srad=',Srad_
 !
+!  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
+!  lower boundary: P=S
+!
          b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
          c(1)=-2./(tau(2)-tau(1))**2
          a(nz)=0.
          b(nz)=1.
 !
+!  interior, P"=P-S
+!
          a(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2))
          b(2:nz-1)=1.+2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2)) &
                      +2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
          c(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
+!
+!  solve tri-diagonal matrix, and give detailed error output if problems
 !
          call tridag(a,b,c,Srad_,Prad_,err=err)
          if (err) then
