@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.91 2002-10-04 18:40:50 dobler Exp $ 
+! $Id: sub.f90,v 1.92 2002-10-09 14:01:02 dobler Exp $ 
 
 module Sub 
 
@@ -1070,7 +1070,8 @@ module Sub
 !
       use Mpicomm
 !
-!  read in output times from control file
+!  Read in output time for next snapshot (or similar) from control file
+!
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !   9-sep-01/axel: adapted for MPI
@@ -1108,7 +1109,8 @@ module Sub
         bcast_array(2)=nout
       endif
 !
-!  broadcast tout and nout, encrypt into floating point array.
+!  broadcast tout and nout, botch into floating point array. Should be
+!  done with a special MPI datatype.
 !
       call mpibcast_real(bcast_array,nbcast_array)
       tout=bcast_array(1)
@@ -1134,7 +1136,8 @@ module Sub
 !
       use General
 !
-!  check whether we have output, done by all processors
+!  Check whether we need to write snapshot; done by all processors
+!
 !  30-sep-97/axel: coded
 !  24-aug-99/axel: allow for logarithmic spacing
 !

@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.9 2002-10-02 20:11:14 dobler Exp $
+! $Id: wsnaps.f90,v 1.10 2002-10-09 14:01:02 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -18,7 +18,7 @@ contains
     subroutine wsnap(chsnap,a,llabel)
 !
 !  Write snapshot file, labelled consecutively if llabel==.true.
-!  Otherwise just write a snapshot without label (used for restart files)
+!  Otherwise just write a snapshot without label (used for var.dat)
 !
 !  30-sep-97/axel: coded
 !
