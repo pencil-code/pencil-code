@@ -126,6 +126,9 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     var2 = avg.bzmphi
     var3 = avg.bpmphi
     var3_plot = var3
+    varname = 'B'
+    Etype = 'mag'
+    var3name = 'B_phi'
   endif else if (uu) then begin
     var1 = avg.urmphi
     var2 = avg.uzmphi
@@ -137,6 +140,9 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     endif else begin
       var3_plot = var3/spread(avg.rcyl>1.e-20,1,nz) ; colour-code omega=u_phi/r
     endelse
+    varname = 'v'
+    Etype = 'kin'
+    var3name = 'Omega'
   endif else begin
     message, 'Need one of UU or BB to be true'
   endelse
@@ -259,13 +265,25 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
       vvmin = (vvmax = NaN)
     endelse
 
+    ;; Net differential rotation Omega_max-Omega_min
+    dr = avg.rcyl[1]-avg.rcyl[0]
+    ; Exclude points closest to axis
+    noaxis1 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+0.5*dr)
+    noaxis2 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+1.5*dr)
+    noaxis3 = where(spread(avg.rcyl,1,nz) gt avg.rcyl[0]+2.5*dr)
+    dom0 = minmax(var3_plot         , /RANGE)
+    dom1 = minmax(var3_plot[noaxis1], /RANGE)
+    dom2 = minmax(var3_plot[noaxis2], /RANGE)
+    dom3 = minmax(var3_plot[noaxis3], /RANGE)
+    
+
     print, 'component:    min         rms_global    rms_'+spher+'   max'
     print, '------------------------------------------------------------------'
-    print, 'v_rcyl   :', vrmin, vrm, vrm2, vrmax
-    print, 'v_phi    :', vpmin, vpm, vpm2, vpmax
-    print, 'v_z      :', vzmin, vzm, vzm2, vzmax
+    print, varname+'_rcyl   :', vrmin, vrm, vrm2, vrmax
+    print, varname+'_phi    :', vpmin, vpm, vpm2, vpmax
+    print, varname+'_z      :', vzmin, vzm, vzm2, vzmax
     print, '------------------------------------------------------------------'
-    print, 'vv       :', vvmin, sqrt(vrm^2+vpm^2+vzm^2), $
+    print, varname+varname+'       :', vvmin, sqrt(vrm^2+vpm^2+vzm^2), $
         sqrt(vrm2^2+vpm2^2+vzm2^2), vvmax
 
     r_cyl = spread(avg.rcyl,1,nz)
@@ -274,11 +292,16 @@ pro pvv_phiavg, arg, BB=bb, UU=uu, $
     E_tor = mean(weight2*0.5*rho*var3^2)
     E_rot = mean(weight2*0.5*rho*r_cyl^2*Omega^2)
     print
-    print, '<E_kin>_'+spher+' = '
+    print, '<E_'+Etype+'>_'+spher+' = '
     print, '  pol ( /Erot):               ', E_pol, E_pol/E_rot
     print, '  tor ( /Erot):               ', E_tor, E_tor/E_rot
     print, 'E_rot ='
     print, '  <1/2*rho r_cyl^2.>_'+spher+' = ', E_rot
+    print
+    print, 'Delta ' + var3name $
+        + ', excluding   0            1            2            3        pts'
+    print, '  closest to axis:  ', [dom0,dom1,dom2,dom3]
+    print
 
     if (noomega) then print, 'WARNING: Assuming Omega=1.'
 
