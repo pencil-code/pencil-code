@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.25 2003-08-04 17:56:03 mee Exp $
+! $Id: visc_shock.f90,v 1.26 2003-10-10 01:28:02 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -53,7 +53,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.25 2003-08-04 17:56:03 mee Exp $")
+           "$Id: visc_shock.f90,v 1.26 2003-10-10 01:28:02 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -468,7 +468,6 @@ module Viscosity
 !  rho1 is pre-calculated in equ
 !
       if (nu_shock /= 0.) then
-
          !
          !  viscous force: nu*(del2u+graddivu/3+2S.glnrho)
          !  -- the correct expression for nu=const
@@ -478,10 +477,10 @@ module Viscosity
          if(ldensity) then
             call grad(f(:,:,:,ishock),gshock_characteristic)
             call multmv_mn(sij,glnrho,sglnrho)
-            call multsv_mn(glnrho,divu,fvisc)
+            call multsv_mn(divu,glnrho,fvisc)
             tmp=fvisc +graddivu
-            call multsv_mn(tmp,nu_shock*f(l1:l2,m,n,ishock),fvisc)
-            call multsv_add_mn(fvisc,nu_shock * divu, gshock_characteristic,tmp)
+            call multsv_mn(nu_shock*f(l1:l2,m,n,ishock),tmp,fvisc)
+            call multsv_add_mn(fvisc,nu_shock*divu,gshock_characteristic,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,maxeffectivenu)
          else

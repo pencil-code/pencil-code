@@ -1,4 +1,4 @@
-! $Id: nomagnetic.f90,v 1.34 2003-08-06 07:31:14 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.35 2003-10-10 01:28:02 brandenb Exp $
 
 module Magnetic
 
@@ -50,7 +50,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: nomagnetic.f90,v 1.34 2003-08-06 07:31:14 brandenb Exp $")
+           "$Id: nomagnetic.f90,v 1.35 2003-10-10 01:28:02 brandenb Exp $")
 !
     endsubroutine register_magnetic
 !***********************************************************************
@@ -77,7 +77,7 @@ module Magnetic
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
 !
 !  magnetic field evolution
 !  3-may-2002/wolf: dummy routine
@@ -87,11 +87,11 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
-      real, dimension (nx,3) :: uu
+      real, dimension (nx,3,3) :: uij,bij
+      real, dimension (nx,3) :: uu,bb
       real, dimension (nx) :: rho1,TT1
 !
-      if(ip==0) print*,f,df,uu,rho1,TT1,uij !(keep compiler quiet)
+      if(ip==0) print*,f,df,uu,rho1,TT1,uij,bij,bb !(keep compiler quiet)
     endsubroutine daa_dt
 !***********************************************************************
     subroutine rprint_magnetic(lreset)

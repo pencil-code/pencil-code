@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.135 2003-10-07 14:20:10 mee Exp $
+! $Id: magnetic.f90,v 1.136 2003-10-10 01:28:02 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -92,7 +92,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.135 2003-10-07 14:20:10 mee Exp $")
+           "$Id: magnetic.f90,v 1.136 2003-10-10 01:28:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -213,7 +213,7 @@ module Magnetic
 !
     endsubroutine init_aa
 !***********************************************************************
-    subroutine daa_dt(f,df,uu,rho1,TT1,uij)
+    subroutine daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
 !
 !  magnetic field evolution
 !
@@ -235,7 +235,7 @@ module Magnetic
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij
+      real, dimension (nx,3,3) :: uij,bij
       real, dimension (nx,3) :: bb,aa,jj,uxB,uu,JxB,JxBr,oxuxb,jxbxb
       real, dimension (nx,3) :: gpxb,glnrho,uxj
       real, dimension (nx,3) :: del2A,oo,oxu,bbb,uxDxuxb
@@ -335,7 +335,7 @@ module Magnetic
 !
       if (lhydro) then
         call cross_mn(jj,bb,JxB)
-        call multsv_mn(JxB,rho1,JxBr)
+        call multsv_mn(rho1,JxB,JxBr)
         df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
         if(lentropy) then
           call dot2_mn(jj,J2)

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.136 2003-09-02 13:43:12 dobler Exp $ 
+! $Id: sub.f90,v 1.137 2003-10-10 01:28:02 brandenb Exp $ 
 
 module Sub 
 
@@ -748,19 +748,19 @@ module Sub
 !
 !  vector multiplied with scalar, gives vector
 !   22-nov-01/nils erland: coded
+!   10-oct-03/axel: a is now the scalar (now consistent with old routines)
 !
-!ajwm - Called sv but parameters are vs!!
       use Cdata
 !
       intent(in) :: a,b
       intent(out) :: c
 !
-      real, dimension (nx,3) :: a, c
-      real, dimension (nx) :: b
+      real, dimension (nx,3) :: b,c
+      real, dimension (nx) :: a
       integer :: i
 !
       do i=1,3
-        c(:,i)=a(:,i)*b(:)
+        c(:,i)=a*b(:,i)
       enddo
 !
     endsubroutine multsv_mn

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.158 2003-10-09 17:57:49 brandenb Exp $
+! $Id: equ.f90,v 1.159 2003-10-10 01:28:02 brandenb Exp $
 
 module Equ
 
@@ -212,8 +212,8 @@ module Equ
       logical :: early_finalize
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,3) :: uij,udij
-      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod
+      real, dimension (nx,3,3) :: uij,udij,bij
+      real, dimension (nx,3) :: uu,uud,glnrho,glnrhod,bb
       real, dimension (nx) :: lnrho,lnrhod,divu,divud,u2,ud2,rho,rho1
       real, dimension (nx) :: cs2, TT1 
       real :: fac, facheat
@@ -224,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.158 2003-10-09 17:57:49 brandenb Exp $")
+           "$Id: equ.f90,v 1.159 2003-10-10 01:28:02 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -311,10 +311,6 @@ module Equ
         call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
         call dlncc_dt (f,df,uu,glnrho)
 !
-!  cosmic ray energy density
-!
-        call decr_dt  (f,df,uu,glnrho,divu)
-!
 !  dust equations
 !
         call duud_dt   (f,df,uu,uud,divud,ud2,udij)
@@ -332,7 +328,11 @@ module Equ
 !
 !  Magnetic field evolution
 !
-        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij)
+        if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1,uij,bij,bb)
+!
+!  cosmic ray energy density
+!
+        call decr_dt  (f,df,uu,glnrho,divu,bij,bb)
 !
 !  Evolution of radiative energy
 !
