@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.80 2002-08-19 06:48:46 brandenb Exp $
+! $Id: magnetic.f90,v 1.81 2002-08-19 12:10:26 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.80 2002-08-19 06:48:46 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.81 2002-08-19 12:10:26 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -559,7 +559,7 @@ module Magnetic
 !  ux and Ay
 !
       f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+      f(:,:,:,iaa)=+ampl*sin(kz*zz)
 !
     endsubroutine alfven_z
 !***********************************************************************
