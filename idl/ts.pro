@@ -4,8 +4,8 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  $Date: 2003-11-07 13:10:01 $
-;;;  $Revision: 1.4 $
+;;;  $Date: 2003-11-10 13:11:18 $
+;;;  $Revision: 1.5 $
 ;;;  Description:
 ;;;   Read time series data from data/time_series.dat into the
 ;;;   structure `ts' and plot urms(t) and brms(t) (if available).
@@ -41,7 +41,7 @@ end
 ; ---------------------------------------------------------------------- ;
 function list_idx, label, list
 ;
-;  Return index if label is contained in list, else 0
+;  Return index if label is contained in list, else -1
 ;
   return, (where(list eq label))[0]
 end
@@ -96,8 +96,8 @@ if (execute(cmd) ne 1) then $
 ;
 ;  Do two plots
 ;  Try to plot urms(t) and brms(t), if any of these two is not
-;  available, fill the list with the first two variables other than
-;  `it' and `dt'
+;  available or zero, fill the list with the first two variables other
+;  than `it' and `dt'
 ;
 if (in_list('t',labels)) then begin
   idxlist = [-1]                ; list of indices
@@ -108,9 +108,15 @@ if (in_list('t',labels)) then begin
 ;    print, strtrim(i,2), ' ', labels[i], $
 ;        in_list(labels[i], ['it','t','dt','urms','brms'])
   endfor
-  idxlist = [list_idx('brms',labels),idxlist]
-  idxlist = [list_idx('urms',labels),idxlist]
-  idxlist = idxlist[where(idxlist ge 0)]
+;  idxlist = [list_idx('brms',labels),idxlist]
+;  idxlist = [list_idx('urms',labels),idxlist]
+  if (in_list('brms',labels)) then begin
+    if (max(ts.brms gt 0)) then idxlist = [list_idx('brms',labels),idxlist]
+  endif
+  if (in_list('urms',labels)) then begin
+    if (max(ts.urms gt 0)) then idxlist = [list_idx('urms',labels),idxlist]
+  endif
+  idxlist = idxlist[where(idxlist ge 0)] ; clean list
   nplots = min([n_elements(idxlist),2])
   if (nplots eq 1) then !p.multi=[0,1,1] else !p.multi=[0,1,2]
   !x.title='!8t!X'
