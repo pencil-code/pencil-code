@@ -2,6 +2,7 @@
 ;  here we read the rprint files
 ;  to generate an index catalogue of what is written
 ;
+@tmp/general
 @tmp/hydro
 @tmp/density
 @tmp/entropy
@@ -25,7 +26,7 @@ if i_ekin ne 0 then ekin=reform(a(i_ekin-1,*))
 if i_rhom ne 0 then rhom=reform(a(i_rhom-1,*))
 ;
 ;!p.multi=[0,1,2]
-plot,t,u2m,yst=0
+if i_um2 ne 0 then plot,t,u2m,yst=0
 if i_bm2 ne 0 then oplot,t,b2m,col=122
 !p.multi=0
 ;save,file='hydro.sav',t,jmax2,j2m,bmax2,b2m

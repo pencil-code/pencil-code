@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.18 2002-06-08 08:01:16 brandenb Exp $
+! $Id: noentropy.f90,v 1.19 2002-06-09 10:13:02 brandenb Exp $
 
 module Entropy
 
@@ -12,12 +12,15 @@ module Entropy
 
   implicit none
 
-  integer :: dummy
-  namelist /entropy_init_pars/ dummy
-  namelist /entropy_run_pars/ dummy
+  integer :: dummyss          ! We cannot define empty namelists
+  namelist /entropy_init_pars/ dummyss
+  namelist /entropy_run_pars/  dummyss
 
   ! run parameters
   real, dimension (nx) :: cs2,TT1 ! Can't make this scalar, as daa_dt uses it
+
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_ssm=0
 
   contains
 
@@ -42,8 +45,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.18 $", &
-           "$Date: 2002-06-08 08:01:16 $")
+           "$Revision: 1.19 $", &
+           "$Date: 2002-06-09 10:13:02 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -57,34 +60,39 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
 !
-      cs2 = cs20                ! (Really needed?)
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
-!
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
+!   9-jun-02/axel: pressure gradient added to du/dt already here
 !
       use Density
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho
+      real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,cs2,TT1
+      integer :: j,ju
 !
       intent(in) :: f,uu,glnrho
-      intent(out) :: gpprho,cs2,TT1  !(df is dummy)
+      intent(out) :: cs2,TT1  !(df is dummy)
 !
 !  sound speed squared and inverse temperature
 !
       TT1=0.
       cs2=cs20*exp(gamma1*lnrho)
 !
-!  isothermal pressure gradient
+!  subtract isothermal/polytropic pressure gradient term in momentum equation
 !
-      gpprho=cs20*glnrho
+      if (lhydro) then
+        do j=1,3
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*glnrho(:,j)
+        enddo
+      endif
 !
       if(ip==1) print*,f,df,uu,sij  !(compiler)
     endsubroutine dss_dt
@@ -115,6 +123,7 @@ module Entropy
 !  write column where which magnetic variable is stored
 !
       open(3,file='tmp/entropy.pro')
+      write(3,*) 'i_ssm=',i_ssm
       write(3,*) 'nname=',nname
       write(3,*) 'ient=',ient
       close(3)

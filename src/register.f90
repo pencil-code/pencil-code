@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.35 2002-06-07 08:18:46 brandenb Exp $
+! $Id: register.f90,v 1.36 2002-06-09 10:13:02 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -84,12 +84,54 @@ module Register
 !
 !  check which variables are set
 !
+      call rprint_general(lreset)
       call rprint_hydro(lreset)
       call rprint_density(lreset)
       call rprint_entropy(lreset)
       call rprint_magnetic(lreset)
 !
     endsubroutine rprint_list
+!***********************************************************************
+    subroutine rprint_general(lreset)
+!
+!  reads and registers *general* print parameters
+!
+!   8-jun-02/axel: adapted from hydro
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+        i_t=0;i_it=0;i_dt=0;i_dtc=0
+      endif
+!
+!  iname runs through all possible names that may be listed in print.in
+!
+      if(lroot.and.ip<14) print*,'run through parse list'
+      do iname=1,nname
+        call parse_name(iname,cname(iname),cform(iname),'t',i_t)
+        call parse_name(iname,cname(iname),cform(iname),'it',i_it)
+        call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
+        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      open(3,file='tmp/general.pro')
+      write(3,*) 'i_t=',i_t
+      write(3,*) 'i_it=',i_it
+      write(3,*) 'i_dt=',i_dt
+      write(3,*) 'i_dtc=',i_dtc
+      write(3,*) 'nname=',nname
+      close(3)
+!
+    endsubroutine rprint_general
 !***********************************************************************
 
 endmodule Register

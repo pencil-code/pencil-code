@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.23 2002-06-06 07:09:35 brandenb Exp $
+! $Id: io_dist.f90,v 1.24 2002-06-09 10:13:01 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -136,7 +136,7 @@ contains
       real, dimension (nx,ndim) :: a
       character (len=*) :: file
 !
-      if ((ip<=8) .and. lroot) print*,'OUTPUT_PENCIL_VECT: ndim =', ndim
+      if (ip<9.and.lroot) print*,'output_pencil_vect('//file//'): ndim=',ndim
 !
        call output_penciled_c(file, a, ndim, &
                                imn, mm(imn), nn(imn), t, &

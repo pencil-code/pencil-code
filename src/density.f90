@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.6 2002-06-08 11:17:15 brandenb Exp $
+! $Id: density.f90,v 1.7 2002-06-09 10:13:01 brandenb Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-06-08 11:17:15 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-06-09 10:13:01 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -226,6 +226,7 @@ module Density
       write(3,*) 'i_ekin=',i_ekin
       write(3,*) 'i_rhom=',i_rhom
       write(3,*) 'nname=',nname
+      write(3,*) 'ilnrho=',ilnrho
       close(3)
 !
     endsubroutine rprint_density

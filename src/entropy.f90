@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.53 2002-06-08 16:02:00 brandenb Exp $
+! $Id: entropy.f90,v 1.54 2002-06-09 10:13:01 brandenb Exp $
 
 module Entropy
 
@@ -57,8 +57,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.53 $", &
-           "$Date: 2002-06-08 16:02:00 $")
+           "$Revision: 1.54 $", &
+           "$Date: 2002-06-09 10:13:01 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -161,13 +161,14 @@ module Entropy
     if(ip==0) print*,xx,yy  !(to keep compiler quiet)
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
 !
 !  calculate right hand side of entropy equation
 !  heat condution is currently disabled until old stuff,
 !  which in now in calc_heatcond, has been reinstalled.
 !
 !  17-sep-01/axel: coded
+!   9-jun-02/axel: pressure gradient added to du/dt already here
 !
       use Cdata
       use Mpicomm
@@ -178,36 +179,35 @@ module Entropy
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
-      real, dimension (nx,3) :: uu,glnrho,gpprho,gss
+      real, dimension (nx,3) :: uu,glnrho,gss
       real, dimension (nx) :: ugss,del2ss,del2lnrho,sij2
       real, dimension (nx) :: lnrho,ss,cs2,TT1
 !     real, dimension (nx) :: heat
-      integer :: i,j
+      integer :: i,j,ju
 !
       intent(in) :: f,uu,sij,glnrho
-      intent(out) :: df,gpprho,cs2,TT1
+      intent(out) :: df,cs2,TT1
 !
-!  begin by calculating all necessary dervatives
+!  entropy gradient: needed for advection and pressure gradient
 !
       if (headtt) print*,'solve dss_dt'
       call grad(f,ient,gss)
-      call del2(f,ient,del2ss)
-      call del2(f,ilnrho,del2lnrho)
 !
 !  sound speed squared
+!  include in maximum advection speed (for timestep)
 !
       ss=f(l1:l2,m,n,ient)
       cs2=cs20*exp(gamma1*lnrho+gamma*ss)
-!
-!  maximum advection speed (sound)
-!
       maxadvec2=amax1(maxadvec2,cs2)
 !
-!  pressure gradient term
+!  subtract pressure gradient term in momentum equation
 !
-      do j=1,3
-        gpprho(:,j)=cs2*(glnrho(:,j)+gss(:,j))
-      enddo
+      if (lhydro) then
+        do j=1,3
+          ju=j+iuu-1
+          df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+gss(:,j))
+        enddo
+      endif
 !
 !  advection term
 !
@@ -228,6 +228,8 @@ module Entropy
 !
 !  Heat conduction / entropy diffusion
 !
+!--   call del2(f,ient,del2ss)
+!--   call del2(f,ilnrho,del2lnrho)
 !--   df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
 !
 !  Calculate entropy related diagnostics
@@ -369,7 +371,7 @@ module Entropy
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-!       i_ssm=0
+        i_ssm=0
       endif
 !
       do iname=1,nname

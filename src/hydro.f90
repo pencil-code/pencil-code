@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.20 2002-06-08 11:17:15 brandenb Exp $
+! $Id: hydro.f90,v 1.21 2002-06-09 10:13:01 brandenb Exp $
 
 module Hydro
 
@@ -22,7 +22,7 @@ module Hydro
        tinit,tdamp,dampu,dampuext,rdamp,wdamp
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0,i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
+  integer :: i_u2m=0,i_um2=0,i_oum=0,i_o2m=0
 
   contains
 
@@ -60,8 +60,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.20 $", &
-           "$Date: 2002-06-08 11:17:15 $")
+           "$Revision: 1.21 $", &
+           "$Date: 2002-06-09 10:13:01 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -249,8 +249,8 @@ module Hydro
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,ugu
-      real, dimension (nx) :: u2,divu
+      real, dimension (nx,3) :: uu,ugu,oo
+      real, dimension (nx) :: u2,divu,o2,ou
       integer :: i,j
 !  
 !  abbreviations
@@ -283,10 +283,31 @@ module Hydro
 !
         maxadvec2=amax1(maxadvec2,u2)
 !
-!  Wolfgang, could you please reinstate this if you still need it?
-!  Your old material is now in the damping routine below.
+!  >> Wolfgang, could you please reinstate this if you still need it?
+!  >> Your old material is now in the damping routine below.
+!  >> if (...) call udamping(f,df)
 !
-!???    if (...) call udamping(f,df)
+!  Calculate maxima and rms values for diagnostic purposes
+!  (The corresponding things for magnetic fields etc happen inside magnetic etc)
+!  The length of the timestep is not known here (--> moved to prints.f90)
+!
+        if (ldiagnos) then
+          if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
+          if (i_um2/=0) call max_mn_name(u2,i_um2)
+          if (i_oum/=0 .or. i_o2m/=0) then
+            oo(:,1)=uij(:,3,2)-uij(:,2,3)
+            oo(:,2)=uij(:,1,3)-uij(:,3,1)
+            oo(:,3)=uij(:,2,1)-uij(:,1,2)
+            if (i_oum/=0) then
+              call dot_mn(oo,uu,ou)
+              call sum_mn_name(ou,i_oum)
+            endif
+            if (i_o2m/=0) then
+              call dot2_mn(oo,o2)
+              call sum_mn_name(o2,i_o2m)
+            endif
+          endif
+        endif
 !
     endsubroutine duu_dt
 !***********************************************************************
@@ -301,6 +322,12 @@ module Hydro
       real, dimension(nx) :: pdamp
       integer :: i
 !  
+!  warn about the damping term
+!
+        if (headtt .and. (dampu /= 0.) .and. (t < tdamp)) then
+          print*, 'Damping velocities until time ', tdamp
+        endif
+!
 !  1. damp motion during time interval 0<t<tdamp.
 !  damping coefficient is dampu (if >0) or |dampu|/dt (if dampu <0)
 !
@@ -345,17 +372,13 @@ module Hydro
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_t=0;i_it=0;i_dt=0;i_dtc=0;i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
+        i_u2m=0;i_um2=0;i_oum=0;i_o2m=0
       endif
 !
 !  iname runs through all possible names that may be listed in print.in
 !
       if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
-        call parse_name(iname,cname(iname),cform(iname),'t',i_t)
-        call parse_name(iname,cname(iname),cform(iname),'it',i_it)
-        call parse_name(iname,cname(iname),cform(iname),'dt',i_dt)
-        call parse_name(iname,cname(iname),cform(iname),'dtc',i_dtc)
         call parse_name(iname,cname(iname),cform(iname),'u2m',i_u2m)
         call parse_name(iname,cname(iname),cform(iname),'um2',i_um2)
         call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
@@ -365,15 +388,15 @@ module Hydro
 !  write column where which magnetic variable is stored
 !
       open(3,file='tmp/hydro.pro')
-      write(3,*) 'i_t=',i_t
-      write(3,*) 'i_it=',i_it
-      write(3,*) 'i_dt=',i_dt
-      write(3,*) 'i_dtc=',i_dtc
       write(3,*) 'i_u2m=',i_u2m
       write(3,*) 'i_um2=',i_um2
       write(3,*) 'i_o2m=',i_o2m
       write(3,*) 'i_oum=',i_oum
       write(3,*) 'nname=',nname
+      write(3,*) 'iuu=',iuu
+      write(3,*) 'iux=',iux
+      write(3,*) 'iuy=',iuy
+      write(3,*) 'iuz=',iuz
       close(3)
 !
     endsubroutine rprint_hydro

@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.57 2002-06-08 16:02:00 brandenb Exp $
+! $Id: equ.f90,v 1.58 2002-06-09 10:13:01 brandenb Exp $
 
 module Equ
 
@@ -73,7 +73,7 @@ module Equ
 !
 !  sort back into original array
 !  need to take sqare root if |itype|=2
-!  THIS COULD BE SIMPLIFIED!!
+!  (in current version, don't need itype=2 anymore)
 !
       imax_count=0
       isum_count=0
@@ -181,8 +181,8 @@ module Equ
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij
-      real, dimension (nx,3) :: uu,glnrho,oo,gpprho
-      real, dimension (nx) :: lnrho,divu,u2,o2,ou,rho,ee,rho1
+      real, dimension (nx,3) :: uu,glnrho
+      real, dimension (nx) :: lnrho,divu,u2,rho,ee,rho1
       real :: fac
       integer :: j
 !
@@ -192,12 +192,13 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.57 $", &
-           "$Date: 2002-06-08 16:02:00 $")
+           "$Revision: 1.58 $", &
+           "$Date: 2002-06-09 10:13:01 $")
 !
 !  initialize counter for calculating and communicating print results
 !
-      ldiagnos= lfirst .and. lout
+      ldiagnos=lfirst.and.lout
+      if (ldiagnos) tdiagnos=t !(diagnostics are for THIS time)
 !
 !  initiate communication
 !
@@ -226,27 +227,28 @@ module Equ
         maxdiffus=0.
         maxadvec2=0.
 !
-!  hydro and density parts
+!  hydro, density, and entropy evolution
+!  They all are needed for setting some variables even
+!  if their evolution is turned off.
 !
-        if (lhydro)   call duu_dt   (f,df,uu,divu,sij,uij,u2)
-        if (ldensity) call dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
+        call duu_dt(f,df,uu,divu,sij,uij,u2)
+        call dlnrho_dt(f,df,uu,divu,sij,lnrho,glnrho,rho1)
+        call dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
 !
-!  entropy equation: needs to be called EVERY time EVEN with noentropy,
-!  because it is here that we set cs2, TT1, and gpprho
+!  Add gravity, if present
 !
-        call dss_dt(f,df,uu,sij,lnrho,glnrho,gpprho,cs2,TT1)
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-gpprho
+        if (lhydro) then
+          if(lgrav) call duu_dt_grav(f,df)
+        endif
 !
-!  magnetic part
+!  Magnetic field evolution
 !
         if (lmagnetic) call daa_dt(f,df,uu,rho1,TT1)
 !
-!  add gravity
-!
-        if (lgrav) call duu_dt_grav(f,df)
-!
 !  write slices for animation
+!  this needs to be put somewhere else for compactness
 !
+        if (lhydro) then
         if (n.eq.iz) then
           divu_xy(:,m-m1+1)=divu
           if (ldensity) lnrho_xy(:,m-m1+1)=f(l1:l2,m,n,ilnrho)
@@ -262,6 +264,7 @@ module Equ
             uu_xz(:,n-n1+1,j)=f(l1:l2,m,n,iuu+j-1)
           enddo
         endif
+        endif  !(end from lhydro)
 !
 !  In max_mn maximum values of u^2 (etc) are determined sucessively
 !  va2 is set in magnetic (or nomagnetic)
@@ -274,29 +277,10 @@ module Equ
           call max_mn(sqrt(maxadvec2)+fac*maxdiffus,UUmax)
         endif
 !
-!  Calculate maxima and rms values for diagnostic purposes
-!  (The corresponding things for magnetic fields etc happen inside magnetic etc)
-!  The length of the timestep is not known here (--> moved to prints.f90)
-!
-        if (ldiagnos) then
-          tdiagnos = t !(diagnostics are for THIS time)
-          oo(:,1)=uij(:,3,2)-uij(:,2,3)
-          oo(:,2)=uij(:,1,3)-uij(:,3,1)
-          oo(:,3)=uij(:,2,1)-uij(:,1,2)
-          if (i_oum/=0) then
-            call dot_mn(oo,uu,ou)
-            call sum_mn_name(ou,i_oum)
-          endif
-          if (i_o2m/=0) then
-            call dot2_mn(oo,o2)
-            call sum_mn_name(o2,i_o2m)
-          endif
-          if (i_u2m/=0) call sum_mn_name(u2,i_u2m)
-          if (i_um2/=0) call max_mn_name(u2,i_um2)
-!
 !  calculate density diagnostics: mean density
 !  Note that p/rho = gamma1*e = cs2/gamma, so e = cs2/(gamma1*gamma).
 !
+        if (ldiagnos.and.lhydro.and.ldensity) then
           ee=cs2/(gamma*gamma1)
           rho=exp(f(l1:l2,m,n,ilnrho))
           if (i_eth/=0)  call sum_mn_name(rho*ee,i_eth)

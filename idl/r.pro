@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.15 2002-06-02 07:51:39 brandenb Exp $
+; $Id: r.pro,v 1.16 2002-06-09 10:13:01 brandenb Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -18,11 +18,10 @@ undefine, read_all
 default, datadir, 'tmp'
 default, file, 'var.dat'
 ;
-uu    = fltarr(mx,my,mz,3)*one
-lnrho = fltarr(mx,my,mz  )*one
-if (lentropy)  then ss = fltarr(mx,my,mz  )*one
-if (lmagnetic) then aa = fltarr(mx,my,mz,3)*one
-;
+if (iuu)    then uu    = fltarr(mx,my,mz,3)*one
+if (ilnrho) then lnrho = fltarr(mx,my,mz  )*one
+if (ient)   then ss = fltarr(mx,my,mz  )*one
+if (iaa)    then aa = fltarr(mx,my,mz,3)*one
 ;
 ;  Read startup parameters
 ;
@@ -50,10 +49,26 @@ endelse
 ;
 close,1
 openr,1, datadir+'/'+file, /F77
-  if (lentropy and lmagnetic)           then readu,1, uu, lnrho, ss, aa
-  if ((not lentropy) and lmagnetic)     then readu,1, uu, lnrho, aa
-  if (lentropy and not lmagnetic)       then readu,1, uu, lnrho, ss
-  if ((not lentropy) and not lmagnetic) then readu,1, uu, lnrho
+  ;
+  if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
+    print,'MHD with entropy'
+    readu,1,uu,lnrho,ss,aa
+  end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
+    print,'hydro with entropy, but no magnetic field'
+    readu,1,uu,lnrho,ss
+  end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
+    print,'hydro with no entropy and no magnetic field'
+    readu,1,uu,lnrho
+  end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
+    print,'just velocity (Burgers)'
+    readu,1,uu
+  end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
+    print,'just magnetic ffield (kinematic)
+    readu,1,aa
+  end else begin
+    print,'not prepared...'
+  end
+  ;
 readu,1, t, x, y, z
 close,1
 ;
@@ -67,18 +82,19 @@ rr = sqrt(xx^2+yy^2+zz^2)
 xyz = ['x', 'y', 'z']
 fmt = '(A,4G15.6)'
 print, ' var        minval         maxval            mean           rms'
-for j=0,2 do $
-    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
-    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
-print, FORMAT=fmt, 'lnrho  =', $
-    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
-if (lentropy) then $
-    print, FORMAT=fmt, 'ss  =', $
-      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
-if (lmagnetic) then $
-    for j=0,2 do $
-      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
-      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
+;AB:  does not work ok for kinematic case. I suggest to use only f.
+;for j=0,2 do $
+;    print, FORMAT=fmt, 'uu_'+xyz[j]+' =', $
+;    minmax(uu(*,*,*,j)), mean(uu(*,*,*,j),/DOUBLE), rms(uu(*,*,*,j),/DOUBLE)
+;print, FORMAT=fmt, 'lnrho  =', $
+;    minmax(lnrho), mean(lnrho,/DOUBLE), rms(lnrho,/DOUBLE)
+;if (lentropy) then $
+;    print, FORMAT=fmt, 'ss  =', $
+;      minmax(ss), mean(ss,/DOUBLE), rms(ss,/DOUBLE)
+;if (lmagnetic) then $
+;    for j=0,2 do $
+;      print, FORMAT=fmt, 'aa_'+xyz[j]+' =', $
+;      minmax(aa(*,*,*,j)), mean(aa(*,*,*,j),/DOUBLE), rms(aa(*,*,*,j),/DOUBLE)
 ;
 print,'t = ',t
 ;

@@ -46,6 +46,15 @@ endif else begin
 endelse
 zero = 0*one
 ;
+;  the following files contain the positions of variables in f
+;
+@tmp/general
+@tmp/hydro
+@tmp/density
+@tmp/entropy
+@tmp/magnetic
+print,'nname=',nname
+;
 ;  Read startup parameters
 ;
 pfile=datatopdir+'/'+'param.nml'
@@ -56,9 +65,12 @@ if (cpar gt 0) then begin
   @tmp/param.pro
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
-  cs0=par.cs0 & rho0=par.rho0
-  gamma=par.gamma & gamma1=gamma-1.
+  ;AB: the following is not defined if nohydro.
+  ;cs0=par.cs0 & rho0=par.rho0
+  ;gamma=par.gamma & gamma1=gamma-1.
   lgravz=par.lgravz & lgravr = par.lgravr
+  ;lhydro=par.lhydro
+  ;ldensity=par.ldensity
   lforcing=par.lforcing
   lentropy=par.lentropy
   lmagnetic=par.lmagnetic

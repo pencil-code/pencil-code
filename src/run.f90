@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.38 2002-06-08 16:02:00 brandenb Exp $
+! $Id: run.f90,v 1.39 2002-06-09 10:13:02 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.38 $", &
-             "$Date: 2002-06-08 16:02:00 $")
+             "$Revision: 1.39 $", &
+             "$Date: 2002-06-09 10:13:02 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -78,12 +78,6 @@
           if (lroot.and.ip<14) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
           call random_seed(put=seed)
-        endif
-!
-!  warn about the damping term
-!
-        if (lroot .and. (dampu /= 0.) .and. (t < tdamp)) then 
-          print*, 'Damping velocities until time ', tdamp
         endif
 !
 !  advance equations

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.39 2002-06-08 08:01:16 brandenb Exp $
+! $Id: magnetic.f90,v 1.40 2002-06-09 10:13:02 brandenb Exp $
 
 module Magnetic
 
@@ -14,7 +14,9 @@ module Magnetic
   real :: fring1=0.,Iring1=0.,Rring1=1.,wr1=0.3
   real :: fring2=0.,Iring2=0.,Rring2=1.,wr2=0.3
   real :: amplaa=0., radius=.1, epsilonaa=1e-2
+  real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   logical :: lpress_equil
+  character(len=40) kinflow
 
   namelist /magnetic_init_pars/ &
        fring1,Iring1,Rring1,wr1,axisr1,dispr1, &
@@ -29,7 +31,8 @@ module Magnetic
 
   namelist /magnetic_run_pars/ &
        eta,B_ext, &
-       height_eta,eta_out
+       height_eta,eta_out, &
+       kinflow,kx,ky,kz,ABC_A,ABC_B,ABC_C
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
@@ -70,8 +73,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.39 $", &
-           "$Date: 2002-06-08 08:01:16 $")
+           "$Revision: 1.40 $", &
+           "$Date: 2002-06-09 10:13:02 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -150,8 +153,6 @@ module Magnetic
           endif
           phi   = atan2(axis(2),axis(1)+epsi)
           theta = atan2(sqrt(axis(1)**2+axis(2)**2)+epsi,axis(3))
-!          if (ip <= 6 .and. lroot) print*, 'Init_aa: phi,theta = ', phi,theta
-if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
           ct = cos(theta); st = sin(theta)
           cp = cos(phi)  ; sp = sin(phi)
           ! Calculate D^(-1)*(xxx-disp)
@@ -251,22 +252,29 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
       call del2v_etc(f,iaa,del2A,curlcurl=jj)
 !
-!  calculating JxB/rho, uxB, J^2 and var1
+!  calculate JxB/rho (when hydro is on) and J^2 (when entropy is on)
+!  add JxB/rho to momentum equation, and eta mu_0 J2/rho to entropy equation
 !
-      call cross_mn(jj,bb,JxB)
-      call multsv_mn(JxB,rho1,JxBr)
+      if (lhydro) then
+        call cross_mn(jj,bb,JxB)
+        call multsv_mn(JxB,rho1,JxBr)
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
+        if(lentropy) then
+          call dot2_mn(jj,J2)
+          df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
+        endif
+      endif
+!
+!  calculate uxB and shear term (if shear is on)
+!
       call cross_mn(uu,bb,uxB)
-      call dot2_mn(jj,J2)
-    !  var1=qshear*Omega*aa(:,2)
-!
-!  shear term
-!
-    !  call multvs_mn(dAdy,uy0,shearA)
+      ! call multvs_mn(dAdy,uy0,shearA)
+      ! var1=qshear*Omega*aa(:,2)
 !
 !  calculate dA/dt
 !
-    !  df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
-    !  df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
+      ! df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-shearA+uxB-eta*mu_0*jj
+      ! df(l1:l2,m,n,iaa)=df(l1:l2,m,n,iaa)+var1
       df(l1:l2,m,n,iax:iaz)=df(l1:l2,m,n,iax:iaz)+uxB+eta*del2A
 !
 !  Possibility of adding extra diffusivity in some halo of given geometry:
@@ -279,20 +287,8 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
         df(l1:l2,m,n,iaa:iaa+2)=df(l1:l2,m,n,iaa:iaa+2)-eta_out1*jj
       endif
 !
-!  add JxB/rho to momentum equation
-!
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+JxBr
-!
-!  add eta mu_0 J2/rho to entropy equation
-!  Need to check whether entropy equation has been registered
-!
-      if (lentropy) df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+eta*J2*rho1*TT1
-!
-!  check maximum diffusion (for timestep)
-!
-      maxdiffus=amax1(maxdiffus,eta)
-!
 !  For the timestep calculation, need maximum Alfven speed.
+!  and maximum diffusion (for timestep)
 !  This must include the imposed field (if there is any)
 !  The b2 calculated above for only updated when diagnos=.true.
 !
@@ -300,17 +296,29 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
           call dot2_mn(bb,b2tot)
           va2=b2tot*rho1
           maxadvec2=amax1(maxadvec2,va2)
+          maxdiffus=amax1(maxdiffus,eta)
         endif
 !
 !  calculate max and rms current density
 !  at the moment (and in future?) calculate max(b^2) and mean(b^2).
 !
       if (ldiagnos) then
-        call dot_mn(jj,bb,jb)
-        call dot2_mn(jj,j2)
-        if (i_jbm/=0) call sum_mn_name(jb,i_jbm)
-        if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
-        if (i_jm2/=0) call max_mn_name(j2,i_jm2)
+        !
+        ! <J.B>
+        !
+        if (i_jbm/=0) then
+          call dot_mn(jj,bb,jb)
+          call sum_mn_name(jb,i_jbm)
+        endif
+        !
+        ! <J^2> and J^2|max
+        !
+        if (i_j2m/=0 .or. i_jm2/=0) then
+          call dot2_mn(jj,j2)
+          if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
+          if (i_jm2/=0) call max_mn_name(j2,i_jm2)
+        endif
+        !
       endif
 !
 !  debug output

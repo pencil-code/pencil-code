@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.45 2002-06-08 16:02:00 brandenb Exp $
+! $Id: cdata.f90,v 1.46 2002-06-09 10:13:01 brandenb Exp $
 
 module Cdata
 
@@ -50,6 +50,9 @@ module Cdata
   real, dimension (mname) :: fname
   real, dimension (nz,mnamez) :: fnamez
   character (len=30) :: cname(mname),cform(mname),cnamez(mnamez),cformz(mnamez)
+
+  ! other variables (needs to be consistent with reset list in register.90)
+  integer :: i_t=0,i_it=0,i_dt=0,i_dtc=0
 
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false.
