@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.68 2004-06-30 04:38:11 theine Exp $
+! $Id: forcing.f90,v 1.69 2004-07-01 15:01:40 brandenb Exp $
 
 module Forcing
 
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.68 2004-06-30 04:38:11 theine Exp $")
+           "$Id: forcing.f90,v 1.69 2004-07-01 15:01:40 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -199,6 +199,7 @@ module Forcing
       complex, dimension (my) :: fy
       complex, dimension (mz) :: fz
       complex, dimension (3) :: ikk
+      logical, dimension (3), save :: extent
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
@@ -218,6 +219,9 @@ module Forcing
         read(9,*) (kky(ik),ik=1,nk)
         read(9,*) (kkz(ik),ik=1,nk)
         close(9)
+        extent(1)=nx.ne.1
+        extent(2)=ny.ne.1
+        extent(3)=nz.ne.1
       endif
       ifirst=ifirst+1
 !
@@ -240,12 +244,14 @@ module Forcing
       ikk(3)=cmplx(0.,kkz(ik))
 !
       do j=1,3
-        jf=j+ifff-1
-        do n=n1,n2
-        do m=m1,m2
-          f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
-        enddo
-        enddo
+        if(extent(j)) then
+          jf=j+ifff-1
+          do n=n1,n2
+          do m=m1,m2
+            f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
+          enddo
+          enddo
+        endif
       enddo
 !
     endsubroutine forcing_irro
