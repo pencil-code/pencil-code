@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.3 2002-11-19 10:51:52 mee Exp $
+! $Id: read_videofiles.f90,v 1.4 2002-11-19 13:44:14 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -114,6 +114,7 @@
       call safe_character_assign(wfile,trim(datadir)//trim(file))
       call wslice(trim(wfile),yz,slice_xpos,nygrid,nzgrid,t,it,lun4)
 !
+      print*,'written full set of slices at t=',t
       enddo
 999   continue
       print*,'finished OK'
@@ -135,15 +136,21 @@
       if(it==1) open(lun,file=file,form='unformatted')
 
       pos=0.  ! By default (i.e. if missing from record)
-      read(lun,end=999) a,t,pos
+      read(lun,end=999,err=998) a,t,pos
       lun=lun+1
+      goto 900
+!
+!  error: suspect wrong record length
+!
+998   read(lun,end=999) a,t
+      lun=lun+1
+      goto 900
 !
 !  when end of file
 !
-      goto 888
 999   eof=.true.
-888   continue
 !
+900   continue
     endsubroutine rslice
 !***********************************************************************
     subroutine wslice(file,a,pos,ndim1,ndim2,t,it,lun)
