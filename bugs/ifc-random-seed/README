@@ -2,14 +2,63 @@
                            ifc-random-seed
                           -----------------
 
-$Id: README,v 1.1 2004-08-26 17:27:19 dobler Exp $
+$Id: README,v 1.2 2004-08-26 18:50:20 dobler Exp $
+
+0. NOTE:
+
+  This is most probably _not_ a bug, just surprising behaviour.
 
 
 1. Symptoms:
 
   The attached file seed.f90 prints the random number generator's seed,
   which should be nontrivial. But initially there are only zeros,which are
-  replaced by other numbers only as random_number() is producing numbers.
+  replaced by other numbers only as random_number() is producing numbers:
+
+   ---------------------------------------------
+   Seed = 
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0
+   ---------------------------------------------
+   X =   0.7732671      0.8232512      0.1481206      0.6567149    
+   ---------------------------------------------
+   Seed = 
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0 -1334651909  -774030393  1299365796
+    2082507851          -4          -4           1 -1449744276
+   ---------------------------------------------
+   X =   0.8420556      0.6285801      0.3304787      0.7688151    
+   ---------------------------------------------
+   Seed = 
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0           0
+             0           0           0           0           0  2000795129
+    -338859605  1234459146  1665195641 -1334651909  -774030393  1299365796
+    2082507851          -8          -8           1  1395478744
+   ---------------------------------------------
+
+   Notes:
+   (a) What is disturbing here are the zeros where practically all other
+       random number generators would give some "radnom" integers
+   (b) The shifting in of non-zero values shows that the random number
+       generator does apparently _not_ use the full seed vector as entropy
+       pool, i.e. if you change seed(1), you'll probably get the same first
+       46 numbers (not tried, though).
+       ifc 7.0 does the same -- apart from the values (which are non-zero).
 
 2. Command sequence:
 
