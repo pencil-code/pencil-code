@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.2 2002-11-19 14:58:58 ngrs Exp $
+! $Id: interstellar.f90,v 1.3 2002-11-19 19:26:42 mee Exp $
 
 !  This modules solves contains ISM and SNe 
 
@@ -47,7 +47,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.2 2002-11-19 14:58:58 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.3 2002-11-19 19:26:42 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -284,7 +284,7 @@ module Interstellar
     real, dimension(nx,ny,nz) :: dr2_SN
     real :: width_SN,c_SN,rho_SN,TT_SN,lnrhol,ssl
 !  The following arrays can be streamlined, after debugging.
-    real, dimension(nx) :: lnrho,rho,dd,TT,ss,dss,profile
+    real, dimension(nx) :: lnrho,rho,TT,ss,dss,profile
     real :: cnorm_SN=1.5484             ! (int exp(-r^6) 4\pi r^2 dr)^{1/3}
     real :: cp1=27.8,TT_limit=1.e7       
     real, dimension(2) :: fmax,fmax_tmp 
