@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.82 2003-06-14 16:41:44 brandenb Exp $
+! $Id: register.f90,v 1.83 2003-06-14 17:11:38 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -214,6 +214,7 @@ module Register
       use Entropy
       use Magnetic
       use Radiation
+      use Ionization
       use Pscalar
       use Dustvelocity
       use Dustdensity
