@@ -1,0 +1,131 @@
+### $Id: Makefile.treesource,v 1.1 2003-08-14 20:50:15 mee Exp $
+### Machine Specific Makefile for modular pencil code
+### 
+### The appropriate Makefile will be chosen from the config tree and included during at compile time 
+### 
+
+## Uncomment this line to inherit the Makefile in the parent directory
+include ../Makefile
+
+### Begin machine dependent
+## IRIX64:
+#FC=f90
+#FFLAGS= -64 -O3 -mips4
+#FFLAGS= -auto_use mpi_interface -64 -O3 -C -macro_expand  #(gridur|embla|balder|sander|antares)
+#FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
+#FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
+#FFLAGS= -64 -O3 -auto_use mpi_interface -mips4 #(ukaff|origin)
+#FFLAGS= -64 -O3 -mips4 -r12000 -flist #(green)
+#FFLAGS= -64 -O3 -mips4 -r12000 #(wrenstandard)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M #(wrencache)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wrenpacx)
+#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wrenpacx)
+#FFLAGS= -64 -O3 -mips4 -r12000 -LNO:cs1=32k:cs2=8M -I/share/apps/unsupported/pacx/standard/include -L/share/apps/unsupported/pacx/standard/lib #(wren)
+#LDMPI= -L/share/apps/unsupported/pacx/standard/lib -lpacxf -lpacx -lmpi #(wren)
+##FC=/c/brandenb/pacx/bin/pacxfc #(tacsg2)
+#FFLAGS=-64 -O3 -mips4 #(tacsg2)
+#OPTFLAGS= -64
+#F77=$(FC)
+#CFLAGS=-O3 -64 -DFUNDERSC=1
+
+## OSF1:
+#FC=f95 #(Mhd.)
+#FC=f90 #(Mhd.)
+#OPTFLAGS=-fast -O5 
+#OPTFLAGS=-fast -O5 -notransform_loops #(Mhd.)
+#FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
+#F77=$(FC)
+#LIBSIG=-lsig
+
+## Linux:
+## The -tpp7 flag leads to a 10% speedup on nl6
+#
+#FC=f95
+#FFLAGS=-O3
+#F90FLAGS=-u -tpp7
+#F90FLAGS= # (fire)
+#F90FLAGS=
+#LDMPI=
+##LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (copson) 
+##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
+#FC=mpif90 # (Samos|fire|copson)
+#FC=/usr/lib/lam/bin/mpif95 #(Cincinnatus|Owen|Master)
+##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
+##FC=mpif77 #(fe[0-3])
+#FC=mpif77 #(ns0)
+#FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
+#FC=f95 -I/usr/lib/lam/include -mismatch #(morvern)      
+#FC=ifc -I/usr/lib/lam/include #(morvern)  
+##FC=/home/brandenb/pacx/bin/pacxfc #(ns0)
+#FC=ifc #(nl6|mmtf|nl19|hamlet|nw46)
+#FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
+#FC=f95 #(karbala)
+#FC=pgf90 #(erland|igor|tycho|linux29|onsager|fe4|monolith)
+#FFLAGS=-O # (Samos)
+#FFLAGS= # (fire)
+#LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
+#LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio #(morvern)
+#LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
+##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
+#FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager|fe4)
+#FFLAGS= -fast -lm -Nscampi   #(monolith)
+#F90FLAGS= #(erland|igor|tycho|linux29|onsager|fe4|monolith)
+##FFLAGS=-O3 -ipo #(fe[0-3])
+#FFLAGS= #(fe[0-3])  ##(compiles faster/axel)
+#FFLAGS=-O4 -C -gline -Wc,-malign-double #(Mephisto)
+#FFLAGS=-O4 #(nl3)
+#FFLAGS= -O3 -w90 #(cosmo|nw17|nl6|nl11|wormhole|sandin)
+#FC=ifc -I/usr/lib/lam/include #(cosmo|nw17|nl6|nl11|wormhole)  
+#FC=ifc #(sandin)  
+#FC=ifc -I/usr/lib/lam/include -i_dynamic #(cosmo|sandin|nl11|wormhole)  
+#LDMPI=-L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(cosmo|nw17|nl6|nl11|wormhole)
+#LDMPI= # (Samos|fire|sandin)
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall
+#F77=$(FC)
+#F77=$(FC) -dusty #(nl3|Mephisto|mmtf|karbala|morvern)
+#F77=$(FC) -lm  #(tycho|erland|igor|onsager|fe4|monolith)
+#F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
+
+
+## SunOS:
+#FC=f90
+#FC=pghpf #(Lomond)
+#FFLAGS=-O4
+#FFLAGS= -Msmp -O4  #(Lomond)
+#CFLAGS=-O4 -DFUNDERSC=1
+#CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
+#LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
+#F77=$(FC)
+
+## UNICOS/mk:
+#FC=f90
+#FFLAGS=-O3 -em
+
+## HI-UX/MPP:
+#FC=mpif90
+#F77=$(FC)
+#FFLAGS=-lowercase -I/usr/mpi/include -O4 -pvec -parallel=0
+#FFLAGS=-lowercase -Os -noparallel -O4
+#CFLAGS=-O4 -DFUNDERSC=0
+#LDMPI=-L/usr/mpi/lib/lib32 -lfmpi -lmpi
+
+## SUPER-UX:
+#FC=f90 -I/usr/include
+#F77=$(FC)
+#FFLAGS=-C hopt
+
+## AIX:
+#CFLAGS=-O3 -DFUNDERSC=0
+##-------------------
+## USE NON MP COMPILERS FOR INTERACTIVE RUNNING 
+##F77=xlf
+##FC=xlf90
+##-------------------
+#F77=mpxlf
+#FC=mpxlf90
+##-------------------
+#FLAGS=-O5 -qstrict
+#F90FLAGS=-qsuffix=f=f90
+#LDMPI=
+
+### End machine dependent
