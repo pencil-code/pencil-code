@@ -25,7 +25,8 @@ exec $perl -x -S $0 "$@"        # -x: start from the following line
 #line 26
 
 # TO DO:
-# - extract gnuplot labels for plots from `check'
+# - extract gnuplot labels for plots from header; pick interesting
+#   variables automatically
 #
 
 use strict;
@@ -41,11 +42,11 @@ $rows--;
 my $term = "dumb $cols $rows";	# only default value
 my $gpsetup;
 my $count = 0;
-my @cols = (3,4);
+my @cols = (5,6);
 my @cols1;
-my @title = ('urms','umax','3','4','5','6','7','8','9','10');
+my @title = ('brms','bmax','5','6','7','8','9','10');
 my ($linlog,$i);
-my $ncols = 15;  # Minumum number of columns for valid line
+my $ncols = 5;  # Minumum number of columns for valid line
 
 my ($line,$geom,$xr,$yr,$gpterm,$plotcmd,$gppostplot);
 my @array;
@@ -146,7 +147,7 @@ print "Opening $ts_file\n";
 open(LOG,"< $ts_file") or die "Can't open file $ts_file";
 open(TMP,"> $tmpfile") or die "Can't open file $tmpfile";
 while(defined($line = <LOG>)){
-    if ($line =~ /^\s*[+-\.]?[0-9][-+ 0-9\.Ee]*$/) {
+    if ($line =~ /^\s*[+-\.]?[0-9][-+ 0-9\.EeDd]*$/) {
 	@array = split(' ',$line);
         if (@array >= $ncols) {  # Don't accept shorter lines
             print TMP $line;
