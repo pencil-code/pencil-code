@@ -1,4 +1,4 @@
-! $Id: struct_func.f90,v 1.20 2003-12-04 09:03:38 brandenb Exp $
+! $Id: struct_func.f90,v 1.21 2004-02-11 13:22:59 nilshau Exp $
 !
 !  Calculates 2-point structure functions and/or PDFs
 !  and saves them during the run.
@@ -40,13 +40,15 @@ module struct_func
   integer, parameter :: imax=lb_nxgrid*2-2
   integer, parameter :: n_pdf=101
   real, dimension (mx,my,mz,mvar+maux) :: f
-  real, dimension (nx,ny,nz) :: vect,b_vec
+  real, dimension (:,:,:,:), allocatable :: flux_vec
+  real, dimension (nx,ny,nz) :: vect,vectb,b_vec
   real, dimension (imax,qmax,3) :: sf,sf_sum
-  real, dimension (ny,nz) :: dvect1,dvect2
+  real, dimension (ny,nz,3) :: dvect_flux1,dvect_flux2
+  real, dimension (ny,nz) :: dvect1,dvect2,sf3_flux1,sf3_flux2
   real, dimension(n_pdf,imax,3) :: p_du,p_du_sum
   real, dimension(n_pdf) :: x_du
   integer, dimension (ny,nz) :: i_du1,i_du2
-  integer :: l,q,direction,ll1,ll2
+  integer :: l,q,direction,ll1,ll2,mtmp,ntmp
   integer :: i,ivec,lb_ll,separation,exp1,exp2
   integer(KIND=ikind8) :: ndiv
   real :: pdf_max,pdf_min,normalization,dx_du
@@ -77,13 +79,34 @@ module struct_func
      sf=0.
      llsf=.true.
      llpdf=.false.
-  elseif (variabl .eq. 'z2') then
+   elseif (variabl .eq. 'z2') then
      vect(:,:,:)=f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
      filetowrite='/sfz2-'
      sf=0.
      llsf=.true.
      llpdf=.false.
-  end if
+   elseif (variabl .eq. 'flux') then
+     !
+     ! Here we calculate the flux like structure functions of
+     ! Politano & Pouquet (1998)
+     !
+     allocate(flux_vec(nx,ny,nz,3))
+     mtmp=m
+     ntmp=n
+     do m=m1,m2
+       do n=n1,n2
+         call curl(f,iaa,flux_vec(:,m-nghost,n-nghost,:))
+       enddo
+     enddo
+     m=mtmp
+     n=ntmp
+     vect(:,:,:)  = f(l1:l2,m1:m2,n1:n2,iuu+ivec-1)-b_vec(:,:,:)
+     flux_vec=f(l1:l2,m1:m2,n1:n2,iux:iuz)+flux_vec
+     filetowrite='/sfflux-'
+     sf=0.
+     llsf=.true.
+     llpdf=.false.
+   end if
   !
   !  Setting some variables depending on wether we want to
   !  calculate pdf or structure functions.
@@ -152,6 +175,10 @@ endif
            ll2=mod(l-separation+nx-1,nx)+1
            dvect1=vect(l,:,:)-vect(ll1,:,:)
            dvect2=vect(l,:,:)-vect(ll2,:,:)
+           if (variabl .eq. 'flux') then
+             dvect_flux1=flux_vec(l,:,:,:)-flux_vec(ll1,:,:,:)
+             dvect_flux2=flux_vec(l,:,:,:)-flux_vec(ll2,:,:,:)
+           endif
            if (llpdf) then !if pdf=.true.
               i_du1=1+int((dvect1-pdf_min)*n_pdf/(pdf_max-pdf_min))
               i_du1=min(max(i_du1,1),n_pdf)  !(make sure its inside array bdries)
@@ -171,17 +198,49 @@ endif
            endif
            !
            if (llsf) then
-              !
-              !  Calculates sf
-              !
-              do q=1,qmax-1   
+             !
+             !  Calculates sf
+             !
+             if (variabl .eq. 'flux') then
+               sf3_flux1= &
+                    dvect1(:,:)* &
+                    (dvect_flux1(:,:,1)**2 &
+                    +dvect_flux1(:,:,2)**2 &
+                    +dvect_flux1(:,:,3)**2)
+               sf3_flux2= &
+                    dvect2(:,:)* &
+                    (dvect_flux2(:,:,1)**2 &
+                    +dvect_flux2(:,:,2)**2 &
+                    +dvect_flux2(:,:,3)**2)
+             endif
+             !
+             ! Loop over all q values
+             !
+             do q=1,qmax-1   
+               if (variabl .eq. 'flux') then
                  sf(lb_ll,q,direction) &
                       =sf(lb_ll,q,direction) &
-                      +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
+                      +sum(abs(sf3_flux1(:,:))**(q/3.)) &
+                      +sum(abs(sf3_flux2(:,:))**(q/3.))
+                else
+                  sf(lb_ll,q,direction) &
+                       =sf(lb_ll,q,direction) &
+                       +sum(abs(dvect1(:,:))**q)+sum(abs(dvect2(:,:))**q)
+                end if
               enddo
-              sf(lb_ll,qmax,direction) &
-                   =sf(lb_ll,qmax,direction) &
-                   +sum(dvect1(:,:)**3)+sum(dvect2(:,:)**3)
+              !
+              ! Do unsigned third moment (store in last slot of array)
+              !
+              if (variabl .eq. 'flux') then
+                sf(lb_ll,qmax,direction) &
+                     =sf(lb_ll,qmax,direction) &
+                     +sum(sf3_flux1(:,:)) &
+                     +sum(sf3_flux2(:,:))
+              else
+                sf(lb_ll,qmax,direction) &
+                     =sf(lb_ll,qmax,direction) &
+                     +sum(dvect1(:,:)**3)+sum(dvect2(:,:)**3)
+              endif
            endif
         enddo
      enddo

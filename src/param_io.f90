@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.157 2004-02-07 11:12:21 brandenb Exp $ 
+! $Id: param_io.f90,v 1.158 2004-02-11 13:22:59 nilshau Exp $ 
 
 module Param_IO
 
@@ -72,7 +72,7 @@ module Param_IO
        ix,iy,iz,iz2,slice_position, &
        bcx,bcy,bcz,r_int,r_ext, &
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
-       lsfu,lsfb,lsfz1,lsfz2,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
+       lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,lcalc_cp,old_cdtv,lmaxadvec_sum
   contains
 

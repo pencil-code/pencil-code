@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.46 2004-02-07 11:12:21 brandenb Exp $
+! $Id: wsnaps.f90,v 1.47 2004-02-11 13:22:59 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -160,7 +160,7 @@ contains
          !  Doing structure functions
          !
          do ivec=1,3
-            if (lsfb .or. lsfz1 .or. lsfz2 .or. lpdfb .or. lpdfz1 .or. lpdfz2) then
+            if (lsfb .or. lsfz1 .or. lsfz2 .or. lsfflux .or. lpdfb .or. lpdfz1 .or. lpdfz2) then
                do n=n1,n2
                   do m=m1,m2
                      call curli(a,iaa,bb,ivec)
@@ -175,6 +175,7 @@ contains
             if (lsfb)     call structure(a,ivec,b_vec,'b')
             if (lsfz1)    call structure(a,ivec,b_vec,'z1')
             if (lsfz2)    call structure(a,ivec,b_vec,'z2')
+            if (lsfflux)  call structure(a,ivec,b_vec,'flux')
             if (lpdfu)    call structure(a,ivec,b_vec,'pdfu')
             if (lpdfb)    call structure(a,ivec,b_vec,'pdfb')
             if (lpdfz1)   call structure(a,ivec,b_vec,'pdfz1')
