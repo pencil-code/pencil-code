@@ -1,10 +1,10 @@
-; $Id: pc_read_ts.pro,v 1.13 2004-05-05 17:17:22 mee Exp $
+; $Id: pc_read_ts.pro,v 1.14 2004-05-24 13:57:21 mee Exp $
 ;
 ;  Read time_series.dat and sort data into structure or variables
 ;
 ;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;  $Date: 2004-05-05 17:17:22 $
-;  $Revision: 1.13 $
+;  $Date: 2004-05-24 13:57:21 $
+;  $Revision: 1.14 $
 ;
 ;  14-nov-02/wolf: coded
 ;  27-nov-02/tony: ported to routine of standard structure
@@ -69,7 +69,7 @@ pro pc_read_ts, $
                 OBJECT=object, $ 
                 PRINT=PRINT, QUIET=QUIET, HELP=HELP, VERBOSE=VERBOSE, $
                 N=n, IT=it, T=t, DT=dt, DTC=dtc, URMS=urms, $
-                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm
+                EKIN=ekin, ETH=eth, RHOM=rhom, SSM=ssm, TRIMFIRST=TRIMFIRST 
 COMPILE_OPT IDL2,HIDDEN
 
 ; If no meaningful parameters are given show some help!
@@ -233,6 +233,8 @@ COMPILE_OPT IDL2,HIDDEN
   endwhile
 
 
+; If we wish to throw away the initial diagnostics line:
+  if keyword_set(TRIMFIRST) then full_data=full_data[*,1:*]
 ;
 ;  assemble the data
 ;
