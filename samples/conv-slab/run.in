@@ -4,14 +4,14 @@
 ! Run parameters
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.6 2002-08-02 20:26:44 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.7 2002-08-03 20:47:39 dobler Exp $',
   ip=14,
-  nt=1000, it1=50, isave=200, itorder=3,
+  nt=400, it1=50, isave=200, itorder=3,
   cdt=0.4, cdtv=0.2, dtmin=1e-6,
   dsnap=20., dvid=0.2,
   bcx = 'p','p','p', 'p',    'p'
   bcy = 'p','p','p', 'p',    'p'
-  bcz = 's','s','a','a2','c1:c2'
+  bcz = 's','s','a','a2','c1:cT'
 /
 &hydro_run_pars
   nu=4e-3, ivisc='simplified'

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.112 2002-08-02 18:04:53 dobler Exp $
+! $Id: entropy.f90,v 1.113 2002-08-03 20:47:39 dobler Exp $
 
 module Entropy
 
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.112 2002-08-02 18:04:53 dobler Exp $")
+           "$Id: entropy.f90,v 1.113 2002-08-03 20:47:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -829,9 +829,9 @@ endif
 !
     endsubroutine bc_ss_flux
 !***********************************************************************
-    subroutine bc_ss_temp(f,topbot)
+    subroutine bc_ss_temp_old(f,topbot)
 !
-!  boundary condition for entropy
+!  boundary condition for entropy: constant temperature
 !
 !  23-jan-2002/wolf: coded
 !  11-jun-2002/axel: moved into the entropy module
@@ -889,7 +889,157 @@ endif
         if(lroot) print*,"invalid argument for 'bc_ss_flux'"
       endselect
 !
-    endsubroutine bc_ss_temp
+    endsubroutine bc_ss_temp_old
+!***********************************************************************
+    subroutine bc_ss_temp_x(f,topbot)
+!
+!  boundary condition for entropy: constant temperature
+!
+!  3-aug-2002/wolf: coded
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('bot')
+        if (ldebug) print*,'set x bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        do i=1,nghost
+          f(l1-i,:,:,ient) = f(l1+i,:,:,ient) &
+               + gamma1/gamma*(f(l1+i,:,:,ilnrho)-f(l1-i,:,:,ilnrho))
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*,'set x top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        do i=1,nghost
+          f(l2+i,:,:,ient) = f(l2-i,:,:,ient) &
+               + gamma1/gamma*(f(l2-i,:,:,ilnrho)-f(l2+i,:,:,ilnrho))
+        enddo
+
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_temp_x'"
+      endselect
+!
+    endsubroutine bc_ss_temp_x
+!***********************************************************************
+    subroutine bc_ss_temp_y(f,topbot)
+!
+!  boundary condition for entropy: constant temperature
+!
+!  3-aug-2002/wolf: coded
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_ss_temp_y, cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('bot')
+        if (ldebug) print*,'set y bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        do i=1,nghost
+          f(:,m1-i,:,ient) = f(:,m1+i,:,ient) &
+               + gamma1/gamma*(f(:,m1+i,:,ilnrho)-f(:,m1-i,:,ilnrho))
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*,'set y top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        do i=1,nghost
+          f(:,m2+i,:,ient) = f(:,m2-i,:,ient) &
+               + gamma1/gamma*(f(:,m2-i,:,ilnrho)-f(:,m2+i,:,ilnrho))
+        enddo
+
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_temp_y'"
+      endselect
+!
+    endsubroutine bc_ss_temp_y
+!***********************************************************************
+    subroutine bc_ss_temp_z(f,topbot)
+!
+!  boundary condition for entropy: constant temperature
+!
+!  3-aug-2002/wolf: coded
+!
+      use Mpicomm, only: stop_it
+      use Cdata
+      use Gravity
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar) :: f
+      integer :: i
+!
+      if(ldebug) print*,'ENTER: bc_ss_temp_x, cs20,cs0=',cs20,cs0
+!
+!  Constant temperature/sound speed for entropy.
+!  This assumes that the density is already set (ie density _must_ register
+!  first!)
+!
+!  check whether we want to do top or bottom (this is precessor dependent)
+!
+      select case(topbot)
+!
+!  bottom boundary
+!
+      case('bot')
+        if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
+        if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
+        do i=1,nghost
+          f(:,:,n1-i,ient) = f(:,:,n1+i,ient) &
+               + gamma1/gamma*(f(:,:,n1+i,ilnrho)-f(:,:,n1-i,ilnrho))
+        enddo
+!
+!  top boundary
+!
+      case('top')
+        if (ldebug) print*,'set z top temperature: cs2top=',cs2top
+        if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
+        do i=1,nghost
+          f(:,:,n2+i,ient) = f(:,:,n2-i,ient) &
+               + gamma1/gamma*(f(:,:,n2-i,ilnrho)-f(:,:,n2+i,ilnrho))
+        enddo
+
+      case default
+        if(lroot) print*,"invalid argument for 'bc_ss_temp_z'"
+      endselect
+!
+    endsubroutine bc_ss_temp_z
 !***********************************************************************
     subroutine bc_ss_energy(f,topbot)
 !
