@@ -37,12 +37,12 @@ if (! $?PENCIL_HOME) then
 endif
     
 found:
-#echo "PENCIL_HOME = <$PENCIL_HOME>"
+if ($?_sourceme_verbose) echo "PENCIL_HOME = <$PENCIL_HOME>"
 
 if (! $?_sourceme) then		# called for the fist time?
   if (-d $PENCIL_HOME/bin) then
     #  Set shell path
-    #echo "Adding $PENCIL_HOME/bin to path"
+    if ($?_sourceme_verbose) echo "Adding $PENCIL_HOME/bin to path"
     set path = ( $path $PENCIL_HOME/bin )
     #  Set IDL path
     if ($?IDL_PATH) then
