@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.194 2003-12-04 23:23:37 snod Exp $
+! $Id: cdata.f90,v 1.195 2003-12-04 23:44:01 snod Exp $
 
 module Cdata
 
@@ -61,6 +61,7 @@ module Cdata
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0,ihyper3=0
   integer :: ilnecr=0
+  integer :: iecr=0
   integer :: iQrad=0,iSrad=0,ikappa=0,ilnTT=0
   integer :: nt=1000000,it1=10
   integer :: it=1,itsub,ix,iy,iz,iz2
