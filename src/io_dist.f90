@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.67 2003-09-08 10:02:49 dobler Exp $
+! $Id: io_dist.f90,v 1.68 2004-01-23 18:00:05 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -7,6 +7,13 @@
 !!!  Distributed IO (i.e. each process writes its own file data/procX)
 !!!  07-Nov-2001/wd: Put into separate module, so one can choose
 !!!  alternative IO mechanism.
+!!!
+!!!  The file format written by output() (and used, e.g. in var.dat)
+!!!  consists of the followinig Fortran records:
+!!!    1. data(mx,my,mz,nvar)
+!!!    2. t(1), x(mx), y(my), z(mz), dx(1), dy(1), dz(1), deltay(1)
+!!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
+!!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
 
 module Io
 
@@ -82,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.67 2003-09-08 10:02:49 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.68 2004-01-23 18:00:05 dobler Exp $")
 !
     endsubroutine register_io
 !
