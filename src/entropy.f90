@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.107 2002-07-29 09:13:22 brandenb Exp $
+! $Id: entropy.f90,v 1.108 2002-07-31 21:20:25 dobler Exp $
 
 module Entropy
 
@@ -14,7 +14,7 @@ module Entropy
   real :: chi_t=0.,ss0=0.,khor_ss=1.
   real :: tau_ss_exterior=0.
   real :: hcond0=0.
-  real :: Fheat=impossible,hcond1=impossible,hcond2=impossible
+  real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   logical :: lcalc_heatcond_simple=.false.
   character (len=labellen) :: initss='nothing',pertss='zero'
 
@@ -26,7 +26,7 @@ module Entropy
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,widthss,cheat,wheat,cool,wcool,Fheat, &
+       hcond0,hcond1,hcond2,widthss,cheat,wheat,cool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior
 
   ! other variables (needs to be consistent with reset list below)
@@ -64,7 +64,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.107 2002-07-29 09:13:22 brandenb Exp $")
+           "$Id: entropy.f90,v 1.108 2002-07-31 21:20:25 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -398,11 +398,11 @@ module Entropy
         if (hcond1==impossible) hcond1 = (mpoly1+1.)/(mpoly0+1.)
         if (hcond2==impossible) hcond2 = (mpoly2+1.)/(mpoly0+1.)
         !
-        !  calculate Fheat if it has not been set in run.in
+        !  calculate Fbot if it has not been set in run.in
         !
-        if ((Fheat==impossible) .and. (bcz1(ient)=='c1')) then
-          Fheat = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
-          if (lroot) print*, 'Calculated Fheat = ', Fheat
+        if ((Fbot==impossible) .and. (bcz1(ient)=='c1')) then
+          Fbot = - gamma/(gamma-1)*hcond0*gravz/(mpoly0+1)
+          if (lroot) print*, 'Calculated Fbot = ', Fbot
         endif
       endif
 !
@@ -430,7 +430,7 @@ module Entropy
 !
 !  This particular version assumes a simple polytrope, so mpoly is known
 !
-      hcond=gamma1/gamma*(mpoly+1.)*Fheat
+      hcond=gamma1/gamma*(mpoly+1.)*Fbot
       if(headtt) print*,'calc_heatcond_simple: hcond in ', &
            minval(hcond), maxval(hcond)
 !
@@ -489,7 +489,7 @@ module Entropy
 !
       if(headtt) then
         print*,'calc_heatcond: hcond0=',hcond0
-        print*,'Fheat=',Fheat
+        print*,'Fbot=',Fbot
       endif
 
       if ((hcond0 /= 0) .or. (chi_t /= 0)) then
@@ -790,7 +790,7 @@ endif
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n1,ient) &
                        - gamma1*(f(:,:,n1,ilnrho)-lnrho0))
-        tmp_xy = Fheat/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
+        tmp_xy = Fbot/(hcond0*hcond1) * tmp_xy ! F_heat/(hcond T_0)
         do i=1,nghost
           f(:,:,n1-i,ient) = &
                (2*i*dz*tmp_xy &
@@ -807,7 +807,7 @@ endif
         tmp_xy = gamma1/cs20 & ! 1/T_0 (i.e. 1/T at boundary)
                  * exp(-gamma*f(:,:,n2,ient) &
                        - gamma1*(f(:,:,n2,ilnrho)-lnrho0))
-        tmp_xy = Fheat/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
+        tmp_xy = Fbot/(hcond0*hcond2) * tmp_xy ! F_heat/(hcond T_0)
         do i=1,nghost
           f(:,:,n2+i,ient) = &
                (-2*i*dz*tmp_xy &

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.74 2002-07-26 05:03:15 brandenb Exp $
+! $Id: run.f90,v 1.75 2002-07-31 21:20:25 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -45,7 +45,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.74 2002-07-26 05:03:15 brandenb Exp $")
+             "$Id: run.f90,v 1.75 2002-07-31 21:20:25 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -90,7 +90,7 @@
 !
 !  run hooks for individual modules
 !
-        call ss_run_hook()      ! calculate Fheat, ..
+        call ss_run_hook()      ! calculate Fbot, ..
         call forcing_run_hook() ! get random seed from file, ..
 !
 !  Write data to file for IDL
