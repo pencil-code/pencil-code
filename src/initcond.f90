@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.19 2002-11-09 16:42:17 brandenb Exp $ 
+! $Id: initcond.f90,v 1.20 2002-11-23 17:50:01 brandenb Exp $ 
 
 module Initcond 
  
@@ -580,6 +580,7 @@ module Initcond
 !  periodic in periodic ones (for testing purposes).
 !
 !  5-nov-02/wolf: coded
+! 23-nov-02/axel: included scaling factor ampl, corrected lperi argument
 !
       integer :: ivar
       real, dimension (mx,my,mz,mvar) :: f
@@ -591,30 +592,29 @@ module Initcond
 !  x direction
 !
       if (lperi(1)) then
-        tmp = xx
-      else
         tmp = sin(2*pi/Lx*(xx-xyz0(1)-0.25*Lxyz(1)))
+      else
+        tmp = xx
       endif
 !
 !  y direction
 !
-      if (lperi(1)) then
-        tmp = tmp + 10*yy
-      else
+      if (lperi(2)) then
         tmp = tmp + 10*sin(2*pi/Ly*(yy-xyz0(2)-0.25*Lxyz(2)))
+      else
+        tmp = tmp + 10*yy
       endif
 !
 !  z direction
 !
-      if (lperi(1)) then
-        tmp = tmp + 100*zz
-      else
+      if (lperi(3)) then
         tmp = tmp + 100*sin(2*pi/Lz*(zz-xyz0(3)-0.25*Lxyz(3)))
+      else
+        tmp = tmp + 100*zz
       endif
 !
-      f(:,:,:,ivar) = tmp
+      f(:,:,:,ivar) = ampl*tmp
 !
-      if(ip==0) print*,ampl  !(to keep compiler quiet)
     endsubroutine trilinear
 !***********************************************************************
 
