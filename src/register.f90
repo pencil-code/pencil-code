@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.70 2003-04-01 22:18:30 theine Exp $
+! $Id: register.f90,v 1.71 2003-04-02 05:22:26 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -110,7 +110,7 @@ module Register
       use Param_IO
 
       real, dimension(mx,my,mz,mvar) :: f
-      real :: unit_mass,unit_energy,unit_time
+      real :: unit_mass,unit_energy,unit_time,unit_flux
 !
 !  Defaults for some logicals; will later be set to true if needed
       lneed_sij = .false.
@@ -123,6 +123,7 @@ module Register
       unit_mass=unit_density*unit_length**3
       unit_energy=unit_mass*unit_velocity**2
       unit_time=unit_length/unit_velocity
+      unit_flux=unit_energy/(unit_length**2*unit_time)
 !
 !  convert physical constants
 !
@@ -134,17 +135,15 @@ module Register
         m_e=m_e_cgs/unit_mass
         eV=eV_cgs/unit_energy
         sigmaH_=sigmaH_cgs/unit_length**2
-        sigmaSB=sigmaSB_cgs/(unit_energy/unit_length**2/unit_time &
-                                      /unit_temperature**4)
+        sigmaSB=sigmaSB_cgs/(unit_flux/unit_temperature**4)
       elseif (unit_system=='SI') then
         print*,'units of length,velocity,density are given in SI'
         k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
         m_p=m_p_cgs*1e-3/unit_mass
         m_e=m_e_cgs*1e-3/unit_mass
         eV=eV_cgs*1e-7/unit_energy
-        sigmaH_=sigmaH_cgs*1.e-4/unit_length**2
-!        sigmaSB=sigmaSB_cgs/(unit_energy/unit_length**2/unit_time &
-!                                      /unit_temperature**4)
+        sigmaH_=sigmaH_cgs*1e-4/unit_length**2
+        sigmaSB=sigmaSB_cgs*1e-3/(unit_flux/unit_temperature**4)
       endif
 !
 !  print parameters in code units, but only when used

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.10 2003-04-01 22:18:30 theine Exp $
+! $Id: radiation_ray.f90,v 1.11 2003-04-02 05:22:26 brandenb Exp $
 
 module Radiation
 
@@ -16,10 +16,11 @@ module Radiation
   real, dimension (radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
   real, dimension (mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
   real, dimension (mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
-  real, dimension (mx,my,mz) :: Qrad,Source,kappa=1.
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
 !
 !  default values for one pair of vertical rays
 !
+  logical :: nocooling=.false.
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -32,7 +33,7 @@ module Radiation
        radx,rady,radz,rad2max
 
   namelist /radiation_run_pars/ &
-       radx,rady,radz,rad2max
+       radx,rady,radz,rad2max,nocooling
 
   contains
 
@@ -41,7 +42,7 @@ module Radiation
 !
 !  initialise radiation flags
 !
-! 24-mar-03/axel+tobi: coded
+!  24-mar-03/axel+tobi: coded
 !
       use Cdata
       use Mpicomm
@@ -58,7 +59,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.10 2003-04-01 22:18:30 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.11 2003-04-02 05:22:26 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -67,7 +68,7 @@ module Radiation
 !  Calculate number of directions of rays
 !  Do this in the beginning of each run
 !
-! 25-mar-03/axel+tobi: coded
+!  25-mar-03/axel+tobi: coded
 !
   integer :: lrad,mrad,nrad,rad2
 !
@@ -98,25 +99,25 @@ module Radiation
 !
 !  calculate source function
 !
-! 24-mar-03/axel+tobi: coded
+!  24-mar-03/axel+tobi: coded
 !
       use Cdata
       use Ionization
 !
-      real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (nx) :: lnrho,ss,cs2,TT,TT1,cp1tilde
-!
-      intent(in)  :: f
+      real, dimension(mx,my,mz,mvar), intent(in) :: f
+      real, dimension(nx) :: lnrho,ss,yH,TT,kappa_
 !
 !  Use the thermodynamics module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
 !
-      do n=1,mz
-      do m=1,my
-        ss=f(l1:l2,m,n,ient)
-        lnrho=f(l1:l2,m,n,ilnrho)
-        call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde,Temperature=TT)
-        Source(l1:l2,m,n)=sigmaSB*TT**4/pi
+      do n=n1,n2
+      do m=m1,m2
+         lnrho=f(l1:l2,m,n,ilnrho)
+         ss=f(l1:l2,m,n,ient)
+         yH=ionfrac(lnrho,ss)
+         call ioncalc(lnrho,ss,yH,TT=TT,kappa=kappa_)
+         Srad(l1:l2,m,n)=sigmaSB*TT**4/pi
+         kappa(l1:l2,m,n)=kappa_
       enddo
       enddo
 !
@@ -148,7 +149,7 @@ module Radiation
       do nrad=+1,+radz
       do mrad=-rady,rady
       do lrad=-radx,radx
-        Intensity_xy(:,:,:,lrad,mrad,nrad)=Source(:,:,n1-radz0:n1-1)
+        Intensity_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
       enddo
       enddo
       enddo
@@ -166,7 +167,7 @@ module Radiation
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
-      Qrad=-Source
+      Qrad=-Srad
 !
 !  loop over rays
 !
@@ -205,7 +206,7 @@ module Radiation
       enddo
       enddo
       enddo
- write(28) Qrad,Source
+ write(28) Qrad,Srad
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -268,7 +269,7 @@ module Radiation
         fnew=1.+dtau05
         fold=1.-dtau05
         Intensity(l,m,n)=(fold*Intensity(l-lrad,m-mrad,n-nrad) &
-           +dtau05*(Source(l,m,n)+Source(l-lrad,m-mrad,n-nrad)))/fnew
+           +dtau05*(Srad(l,m,n)+Srad(l-lrad,m-mrad,n-nrad)))/fnew
       enddo
       enddo
       enddo
@@ -279,7 +280,7 @@ module Radiation
 !
 !  calculate source function
 !
-! 25-mar-03/axel+tobi: coded
+!  25-mar-03/axel+tobi: coded
 !
       use Cdata
 !
@@ -288,6 +289,7 @@ module Radiation
 !
 !  Add radiative cooling
 !
+if(nocooling) return
       do n=1,mz
       do m=1,my
         rho=exp(f(l1:l2,m,n,ilnrho))

@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.3 2003-04-01 22:18:30 theine Exp $
+! $Id: feautrier.f90,v 1.4 2003-04-02 05:22:26 brandenb Exp $
 
 module Radiation
 
@@ -11,7 +11,7 @@ module Radiation
 
   implicit none
 
-  real, dimension(mx,my,mz) :: Qrad,Srad,kappa
+  real, dimension (mx,my,mz) :: Qrad,Srad,kappa
 !
 !  default values for one pair of vertical rays
 !
@@ -36,7 +36,7 @@ module Radiation
 !
 !  initialise radiation flags
 !
-! 24-mar-03/axel+tobi: coded
+!  24-mar-03/axel+tobi: coded
 !
       use Cdata
       use Mpicomm
@@ -53,7 +53,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.3 2003-04-01 22:18:30 theine Exp $")
+           "$Id: feautrier.f90,v 1.4 2003-04-02 05:22:26 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -150,6 +150,7 @@ module Radiation
       call source_function(f)
       Qrad=-Srad
 
+!AB: could avoid Prad array by adding in feautrier directly into Qrad
       call feautrier(f,Prad)
       Qrad=Qrad+Prad
 
