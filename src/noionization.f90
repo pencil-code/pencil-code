@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.17 2003-05-31 04:42:30 brandenb Exp $
+! $Id: noionization.f90,v 1.18 2003-06-13 09:28:58 nilshau Exp $
 
 !  Dummy routine for noionization
 
@@ -14,9 +14,9 @@ module Ionization
   real :: yyH=0.
 
   !  secondary parameters calculated in initialize
-  real :: m_H,m_He,mu
-  real :: TT_ion,lnrho_ion,ss_ion,chiH
-  real :: TT_ion_,lnrho_ion_,chiH_,kappa0
+  double precision :: m_H,m_He,mu
+  double precision :: TT_ion,lnrho_ion,ss_ion,chiH
+  double precision :: TT_ion_,lnrho_ion_,kappa0,chiH_
 
   !  lionization initialized to .false.
   !  cannot currently be reset to .true. in namelist
@@ -25,11 +25,11 @@ module Ionization
   real :: yH0=impossible,fHe=0.
 
   ! input parameters
-  integer :: dummy 
-  namelist /ionization_init_pars/ dummy
+  integer :: dummy_ni 
+  namelist /ionization_init_pars/ dummy_ni 
 
   ! run parameters
-  namelist /ionization_run_pars/  dummy
+  namelist /ionization_run_pars/  dummy_ni 
 
   contains
 
@@ -127,8 +127,6 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp=1'
         cs2=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)
         TT1=gamma1/cs2            ! 1/(c_p T) = (gamma-1)/cs^2
-
-
         cp1tilde=1.
         if(present(Temperature)) Temperature=cs2/gamma1
         if(present(InternalEnergy)) InternalEnergy=cs2/(gamma*gamma1)
@@ -146,8 +144,9 @@ module Ionization
       real, dimension(nx),intent(in)   :: lnrho,ss
       real, dimension(nx), optional    :: dlnPdlnrho,dlnPdss,TT,kappa
                            intent(out) :: dlnPdlnrho,dlnPdss,TT,kappa
-      real, dimension(nx)              :: lnTT_  ! lnTT_=log(TT/TT_ion)
+      double precision, dimension(nx)  :: lnTT_  ! lnTT_=log(TT/TT_ion)
       real, dimension(nx),intent(out)  :: yH
+      double precision :: fHelogfHe
 !
 !  initialize yH from global yyH array
 !  set equal to yH0, but limit within 1e-5 and 1-1e-5
@@ -156,13 +155,13 @@ module Ionization
 !
 !  EOS: p=(1+yH+f)*rho*s0*T
 !
-      if (present(dlnPdlnrho).or.present(dlnPdss) &
-           .or.present(TT).or.present(kappa)) then
+      if (present(TT)) then
+         fHelogfHe=fHe*log(fHe)
+         if (fHe .eq. 0) fHelogfHe=0
          lnTT_=(2./3.)*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
                         -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
-                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
+                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHelogfHe) &
                         /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
-         if(headtt) print*,'ss,lnrho,TT=',ss,lnrho,TT_ion*exp(lnTT_),yH,fHe
       endif
 !
 !  dlnP/dlnrho=gamma
@@ -179,7 +178,7 @@ module Ionization
 !
 !  temperature (from lnTT_)
 !
-      if (present(TT).or.present(kappa)) TT=exp(lnTT_)*TT_ion
+      if (present(TT)) TT=exp(lnTT_)*TT_ion
 !
 !  if kappa is needed, use electron scattering value, kappa_es
 !

@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.93 2003-06-11 22:38:43 mee Exp $
+! $Id: start.f90,v 1.94 2003-06-13 09:28:58 nilshau Exp $
 !
 !***********************************************************************
       program start
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.93 2003-06-11 22:38:43 mee Exp $")
+             "$Id: start.f90,v 1.94 2003-06-13 09:28:58 nilshau Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -158,7 +158,13 @@
 !  This can be useful if auxiliary files are outdated, and don't want
 !  to overwrite an existing var.dat
 !
-       if (lwrite_ic) call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
+       if (lwrite_ic) then
+          if (lwrite_aux) then
+             call wsnap(trim(directory_snap)//'/VAR0',f,mvar+maux,.false.)
+          else
+             call wsnap(trim(directory_snap)//'/VAR0',f,mvar,.false.)
+          endif
+       endif
        if (.not.lnowrite) then
           if (lwrite_aux) then
              call wsnap(trim(directory_snap)//'/var.dat',f,mvar+maux,.false.)

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.138 2003-06-12 02:11:22 mee Exp $
+! $Id: run.f90,v 1.139 2003-06-13 09:28:58 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.138 2003-06-12 02:11:22 mee Exp $")
+             "$Id: run.f90,v 1.139 2003-06-13 09:28:58 nilshau Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -87,7 +87,13 @@
 !
 !ajwm - no need to read maux variables as they will be calculated
 !       at the first time step...? Even if lwrite_aux is set
-        call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+!nelh - must read maux variables to get initial conditions of radiation
+!
+        if (lwrite_aux) then
+           call input(trim(directory_snap)//'/var.dat',f,mvar+maux,1) 
+        else
+           call input(trim(directory_snap)//'/var.dat',f,mvar,1) 
+        endif
         call rtime(trim(directory)//'/time.dat',t)
         call rglobal()      ! Read global variables (if there are)
 !

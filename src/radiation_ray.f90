@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.16 2003-04-10 06:58:24 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.17 2003-06-13 09:28:58 nilshau Exp $
 
 module Radiation
 
@@ -11,7 +11,6 @@ module Radiation
 
   implicit none
 
-  real, dimension (mx,my,mz) :: Qrad,Srad,kappa,TT
   logical :: nocooling=.false.,output_Qrad=.false.
 
   integer :: directions
@@ -24,6 +23,12 @@ module Radiation
 !
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
+! init parameteres
+!
+  character (len=labellen) :: initrad='equil',pertee='none'
+  real :: amplee=0
+  real :: ampl_pert=0
+!
 !  definition of dummy variables for FLD routine
 !
   real :: DFF_new=0.  !(dum)
@@ -31,7 +36,7 @@ module Radiation
   integer :: i_Egas_rms=0,i_Egas_max=0
 
   namelist /radiation_init_pars/ &
-       radx,rady,radz,rad2max,output_Qrad
+       radx,rady,radz,rad2max,output_Qrad,initrad,amplee,pertee,ampl_pert
 
   namelist /radiation_run_pars/ &
        radx,rady,radz,rad2max,output_Qrad,nocooling
@@ -60,7 +65,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.16 2003-04-10 06:58:24 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.17 2003-06-13 09:28:58 nilshau Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -105,8 +110,8 @@ module Radiation
       use Cdata
       use Ionization
 !
-      real, dimension(mx,my,mz,mvar), intent(in) :: f
-      real, dimension(nx) :: lnrho,ss,yH,TT_,kappa_
+      real, dimension(mx,my,mz,mvar+maux) :: f
+      real, dimension(nx) :: lnrho,ss,yH,kappa_,cs2,TT1,cp1tilde
 !
 !  Use the ionization module to calculate temperature
 !  At the moment we don't calculate ghost zones (ok for vertical arrays)  
@@ -119,14 +124,15 @@ print*,'lnrho_border=',f(l1,m1,1:7,ilnrho)
       do m=m1,m2
          lnrho=f(l1:l2,m,n,ilnrho)
          ss=f(l1:l2,m,n,ient)
-         yH=yyH(l1:l2,m,n)
-         call ioncalc(lnrho,ss,yH,TT=TT_,kappa=kappa_)
-         Srad(l1:l2,m,n)=sigmaSB*TT_**4/pi
-         TT(l1:l2,m,n)=TT_
-         kappa(l1:l2,m,n)=kappa_
+!         yH=yyH(l1:l2,m,n) yh is beeing calculated in ioncalc
+         call ioncalc(lnrho,ss,yH,kappa=kappa_)
+         call thermodynamics(lnrho,ss,cs2,TT1,cp1tilde)
+         f(l1:l2,m,n,iSrad)=sigmaSB/(pi*TT1**4)
+         f(l1:l2,m,n,iTT)=1./TT1
+         f(l1:l2,m,n,ikappa)=kappa_
       enddo
       enddo
-print*,'Srad_border=',Srad(l1,m1,1:7)
+print*,'Srad_border=',f(l1,m1,1:7,iSrad)
 !
     endsubroutine source_function
 !***********************************************************************
@@ -140,7 +146,7 @@ print*,'Srad_border=',Srad(l1,m1,1:7)
       use Sub
 !
       real :: frac
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: Intensity
       integer :: lrad,mrad,nrad,rad2
 !
@@ -156,7 +162,7 @@ print*,'Srad_border=',Srad(l1,m1,1:7)
       do nrad=+1,+radz
       do mrad=-rady,rady
       do lrad=-radx,radx
-        Intensity_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
+        Intensity_xy(:,:,:,lrad,mrad,nrad)=f(:,:,n1-radz0:n1-1,iSrad)
       enddo
       enddo
       enddo
@@ -174,7 +180,7 @@ print*,'Srad_border=',Srad(l1,m1,1:7)
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
-      Qrad=-Srad
+      f(:,:,:,iQrad)=-f(:,:,:,iSrad)
 !
 !  loop over rays
 !
@@ -198,7 +204,7 @@ print*,'Srad_border=',Srad(l1,m1,1:7)
           !  do the ray, and add corresponding contribution to Q
           !
           call transfer(f,Intensity,lrad,mrad,nrad)
-          Qrad=Qrad+frac*Intensity
+          f(:,:,:,iQrad)=f(:,:,:,iQrad)+frac*Intensity
 write(28) Intensity,nrad
           !
           !  safe boundary values for next processor (or opposite boundary)
@@ -224,7 +230,7 @@ write(28) Intensity,nrad
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: Intensity
       real :: dlength,lnrhom,fnew,fold,dtau05
       integer :: l,lrad,mrad,nrad
@@ -271,11 +277,11 @@ write(28) Intensity,nrad
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
         lnrhom=0.5*(f(l,m,n,ilnrho)+f(l-lrad,m-mrad,n-nrad,ilnrho))
-        dtau05=0.5*kappa(l,m,n)*exp(lnrhom)*dlength
+        dtau05=0.5*f(l,m,n,ikappa)*exp(lnrhom)*dlength
         fnew=1.+dtau05
         fold=1.-dtau05
         Intensity(l,m,n)=(fold*Intensity(l-lrad,m-mrad,n-nrad) &
-           +dtau05*(Srad(l,m,n)+Srad(l-lrad,m-mrad,n-nrad)))/fnew
+           +dtau05*(f(l,m,n,iSrad)+f(l-lrad,m-mrad,n-nrad,iSrad)))/fnew
       enddo
       enddo
       enddo
@@ -290,7 +296,8 @@ write(28) Intensity,nrad
 !
       use Cdata
 !
-      real, dimension (mx,my,mz,mvar) :: f,df
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my,mz,mvar) :: df
 !
 !  Add radiative cooling
 !
@@ -298,9 +305,9 @@ write(28) Intensity,nrad
       do m=m1,m2
          if(.not. nocooling) then
             df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient) &
-                              +4.*pi*kappa(l1:l2,m,n) &
-                               *Qrad(l1:l2,m,n) &
-                               /TT(l1:l2,m,n)
+                              +4.*pi*f(l1:l2,m,n,ikappa) &
+                               *f(l1:l2,m,n,iQrad) &
+                               /f(l1:l2,m,n,iTT)
          endif
       enddo
       enddo
@@ -320,8 +327,9 @@ write(28) Intensity,nrad
 !
 !  identifier
 !
-      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
-      if(output_Qrad) write(lun) Qrad,Srad,kappa,TT
+!      if(lroot.and.headt) print*,'output_radiation',Qrad(4,4,4)
+!      if(output_Qrad) write(lun) f(:,:,:,iQrad),f(:,:,:,iSrad), &
+!           f(:,:,:,ikappa),f(:,:,:,iTT)
 !
     endsubroutine output_radiation
 !***********************************************************************
@@ -335,7 +343,7 @@ write(28) Intensity,nrad
       use Cdata
       use Sub
 !
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
 !
       if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
@@ -385,6 +393,10 @@ write(28) Intensity,nrad
       write(3,*) 'ifx=',ifx
       write(3,*) 'ify=',ify
       write(3,*) 'ifz=',ifz
+      write(3,*) 'iQrad=',iQrad
+      write(3,*) 'iSrad=',iSrad
+      write(3,*) 'ikappa=',ikappa
+      write(3,*) 'iTT=',iTT
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_radiation
@@ -396,7 +408,7 @@ write(28) Intensity,nrad
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
@@ -409,7 +421,7 @@ write(28) Intensity,nrad
 !  8-aug-02/nils: coded
 !
       character (len=3) :: topbot
-      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz,mvar+maux) :: f
 !
       if (ip==1) print*,topbot,f(1,1,1,1)  !(to keep compiler quiet)
 !
