@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.2 2003-03-25 05:42:57 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.3 2003-03-25 15:37:26 brandenb Exp $
 
 module Radiation
 
@@ -48,7 +48,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.2 2003-03-25 05:42:57 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.3 2003-03-25 15:37:26 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -111,6 +111,8 @@ module Radiation
 !
 !  set boundary values, I=0 at the top, I=S at the bottom
 !
+      Intensity(1:l1-1,:,:)=Source(1:l1-1,:,:)
+      Intensity(:,1:m1-1,:)=Source(:,1:m1-1,:)
       Intensity(:,:,n2+1:mz)=0.
       Intensity(:,:,1:n1-1)=Source(:,:,1:n1-1)
 !
@@ -118,6 +120,7 @@ module Radiation
 !  First initialize Qrad=-S. 
 !
       Qrad=-Source
+write(28) Source
 !
 !  loop over rays
 !
@@ -129,6 +132,7 @@ module Radiation
         rad2=lrad**2+mrad**2+nrad**2
         if(rad2>0 .and. rad2<=rad2max) then 
           call transfer(f,Intensity,lrad,mrad,nrad)
+write(28) Intensity
           Qrad=Qrad+frac*Intensity
         endif
       enddo
@@ -140,7 +144,7 @@ write(28) Qrad
 !***********************************************************************
     subroutine transfer(f,Intensity,lrad,mrad,nrad)
 !
-!  Integration radioation transfer equation along all rays
+!  Integration radiation transfer equation along all rays
 !
 !  24-mar-03/axel+tobi: coded
 !
@@ -160,15 +164,16 @@ write(28) Qrad
 !
 !  calculate start and stop values
 !
-      if(lrad>0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
-      if(mrad>0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
-      if(nrad>0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
+      if(lrad>=0) then; lstart=l1; lstop=l2; else; lstart=l2; lstop=l1; endif
+      if(mrad>=0) then; mstart=m1; mstop=m2; else; mstart=m2; mstop=m1; endif
+      if(nrad>=0) then; nstart=n1; nstop=n2; else; nstart=n2; nstop=n1; endif
 !
-!  avoid problems with lrad,mrad,nrad=0.
+!  make sure the loop is executed at least once, even when
+!  lrad,mrad,nrad=0.
 !
-      if(lrad==0) then; lstart=0; lstop=0; lrad1=1; else; lrad1=lrad; endif
-      if(mrad==0) then; mstart=0; mstop=0; mrad1=1; else; mrad1=mrad; endif
-      if(nrad==0) then; nstart=0; nstop=0; nrad1=1; else; nrad1=nrad; endif
+      if(lrad==0) then; lrad1=1; else; lrad1=lrad; endif
+      if(mrad==0) then; mrad1=1; else; mrad1=mrad; endif
+      if(nrad==0) then; nrad1=1; else; nrad1=nrad; endif
 !
 !  line elements
 !
@@ -184,6 +189,9 @@ write(28) Qrad
 !
 !  loop
 !
+print*,'nstart,nstop,nrad1=',nstart,nstop,nrad1
+print*,'mstart,mstop,mrad1=',mstart,mstop,mrad1
+print*,'lstart,lstop,lrad1=',lstart,lstop,lrad1
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
@@ -192,7 +200,8 @@ write(28) Qrad
         fnew=1.+dtau05
         fold=1.-dtau05
         Intensity(l,m,n)=(fold*Intensity(l-lrad,m-mrad,n-nrad) &
-           +dtau05*(Source(l,m,n)+Source(l-lrad,m-mrad,n-nrad)))
+           +dtau05*(Source(l,m,n)+Source(l-lrad,m-mrad,n-nrad)))/fnew
+print*,'n,lnrhom,dtau05,Intensity(l,m,n)=',n,lnrhom,dtau05,Source(l,m,n),Intensity(l,m,n)
       enddo
       enddo
       enddo
