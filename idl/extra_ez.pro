@@ -29,9 +29,9 @@ if (ient ne 0) then ppp=rho*cs2/gamma
 ;  calculate magnetic energy of mean field in the 3 directions
 ;
 if (iaa ne 0) then begin
-  bmx=sqrt(mean(dot2_1d(means(means(bbb,3),2))))
-  bmy=sqrt(mean(dot2_1d(means(means(bbb,3),1))))
-  bmz=sqrt(mean(dot2_1d(means(means(bbb,2),1))))
+  bmx=sqrt(means(dot2_1d(means(means(bbb,3),2))))
+  bmy=sqrt(means(dot2_1d(means(means(bbb,3),1))))
+  bmz=sqrt(means(dot2_1d(means(means(bbb,2),1))))
   print,'bmx,bmy,bmz=',bmx,bmy,bmz
   print,'bmax=',sqrt(max(dot2(bbb)))
 end
