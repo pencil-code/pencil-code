@@ -1,10 +1,10 @@
 PRO power,var1,var2,last,k=k,spec1=spec1,spec2=spec2,i=i
 ;
-;  $Id: power.pro,v 1.7 2002-10-07 11:28:25 nilshau Exp $
+;  $Id: power.pro,v 1.8 2002-10-07 12:50:44 nilshau Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
-;  enough spectra.) The time of the snapshot is not currently written.
+;  enough spectra.) 
 ;  By default, spec1 is kinetic energy and spec2 magnetic energy.
 ;  The routine plots the spectra for the last time saved in the file.
 ;  All times are stored in the arrays spec1 and spec2.
@@ -97,9 +97,7 @@ openr,1, datatopdir+'/'+file1
            if (max(spectrum2(1:*)) gt maxy) then maxy=max(spectrum2(1:*))
            if (min(spectrum2(1:*)) lt miny) then miny=min(spectrum2(1:*))
        endif
-print,time
-ttime='t=' + string(time)
-print,ttime
+       ttime='t=' + string(time)
        if (last eq 0) then begin
          plot_oo,xrange=[1,imax],yrange=[miny,maxy],k,spectrum1,xtitle='k',ytitle='P(k)',title=ttime
          if (file2 ne '') then oplot,k,spectrum2,col=122
