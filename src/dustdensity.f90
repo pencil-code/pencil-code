@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.125 2004-09-22 13:08:07 ajohan Exp $
+! $Id: dustdensity.f90,v 1.126 2004-10-12 08:22:25 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -74,31 +74,32 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
-! Set ind to consecutive numbers 0 ... ndustspec-1 
-      do k=1,ndustspec
-        ind(k)=k
-      enddo
-
-! Allocate some f array variables for Dust Number Density
-      ind=ind+nvar
-      nvar=nvar+ndustspec
-
-      if (lmdvar .and. lmice) then 
-        imd  = ind + ndustspec 
-        imi  = imd + ndustspec 
-        nvar = nvar+2 * ndustspec
-      else if (lmdvar) then 
-! Allocate some f array variables for Dust Density
-        imd  = ind + ndustspec 
-        nvar = nvar+ndustspec
-      else if (lmice) then 
-! Allocate some f array variables for Ice Density
-        imi  = ind + ndustspec
-        nvar = nvar+ndustspec
-      endif
-
+!  Set ind to consecutive numbers nvar+1, nvar+2, ..., nvar+ndustspec
 !
-! Print some diagnostics
+      do k=1,ndustspec
+        ind(k)=nvar+k
+      enddo
+!
+!  Increase nvar accordingly
+!
+      nvar=nvar+ndustspec
+!
+!  Allocate some f array variables for dust grain mass and ice density
+!
+      if (lmdvar .and. lmice) then   ! Both grain mass and ice density
+        imd  = ind  + ndustspec 
+        imi  = imd  + ndustspec 
+        nvar = nvar + 2*ndustspec
+      else if (lmdvar) then          ! Only grain mass
+        imd  = ind  + ndustspec 
+        nvar = nvar + ndustspec
+      else if (lmice) then           ! Only ice density
+        imi  = ind  + ndustspec
+        nvar = nvar + ndustspec
+      endif
+!
+!  Print some diagnostics
+!
       do k=1,ndustspec
         if ((ip<=8) .and. lroot) then
           print*, 'register_dustdensity: k = ', k
@@ -119,7 +120,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.125 2004-09-22 13:08:07 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.126 2004-10-12 08:22:25 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -132,7 +133,7 @@ module Dustdensity
         call stop_it('register_dustdensity: uud and ind are NOT contiguous in the f-array - as required by copy_bcs_dust')
       endif
 !
-!  Writing files for use with IDL
+!  Write files for use with IDL
 !
       do k=1,ndustspec
         call chn(k,sdust)
