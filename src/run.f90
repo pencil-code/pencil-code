@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.53 2002-06-25 14:58:47 dobler Exp $
+! $Id: run.f90,v 1.54 2002-07-03 15:27:36 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -44,7 +44,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.53 2002-06-25 14:58:47 dobler Exp $")
+             "$Id: run.f90,v 1.54 2002-07-03 15:27:36 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -71,6 +71,10 @@
 !
         call read_runpars(PRINT=.true.)
         call rprint_list(.false.)
+!
+!  print resolution
+!
+        if (lroot) print*, 'mx,my,mz=',mx,my,mz
 !
 !  read data
 !  snapshot data are saved in the tmp subdirectory.

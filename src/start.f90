@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.47 2002-06-25 14:58:47 dobler Exp $
+! $Id: start.f90,v 1.48 2002-07-03 15:27:36 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -31,7 +31,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.47 2002-06-25 14:58:47 dobler Exp $")
+             "$Id: start.f90,v 1.48 2002-07-03 15:27:36 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -46,6 +46,10 @@
 !
         call read_inipars()
         call rprint_list(.false.)
+!
+!  print resolution
+!
+        if (lroot) print*, 'mx,my,mz=',mx,my,mz
 !
 !  postprocess input parameters
 !
