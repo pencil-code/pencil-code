@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.125 2003-08-07 17:06:56 dobler Exp $ 
+! $Id: param_io.f90,v 1.126 2003-08-08 12:34:19 dobler Exp $ 
 
 module Param_IO
 
@@ -45,7 +45,7 @@ module Param_IO
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
-  logical :: lwrite_zaverages=.false.,lwrite_phiaverages=.false.
+  logical :: lwrite_zaverages=.true.,lwrite_phiaverages=.true.
   logical :: lread_oldsnap=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
   !

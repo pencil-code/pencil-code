@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.88 2003-08-03 02:49:41 theine Exp $
+! $Id: register.f90,v 1.89 2003-08-08 12:34:19 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -24,7 +24,7 @@ module Register
       use Mpicomm
       use Sub
       use IO
-      use Param_io
+      use Param_IO
       use Gravity
       use Hydro
       use Forcing
@@ -108,6 +108,7 @@ module Register
 ! 23-feb-03/axel: added physical constants conversion
 !
       use Cdata
+      use Param_IO
       use Print
       use Timeavg
       use Gravity
@@ -123,7 +124,6 @@ module Register
       use Interstellar
       use Shear
       use Viscosity
-      use Param_IO
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       double precision :: unit_mass,unit_energy,unit_time,unit_flux
@@ -233,6 +233,7 @@ module Register
 !   3-may-01/axel: coded
 !
       use Cdata
+      use Param_IO
       use Hydro
       use Entropy
       use Magnetic
@@ -258,7 +259,7 @@ module Register
 !
 !  read in the list of variables for xy-averages
 !
-      inquire(file='xyaver.in',exist=exist)
+      inquire(FILE='xyaver.in',EXIST=exist)
       if (exist) then
         open(1,file='xyaver.in')
         do inamez=1,mnamez
@@ -271,7 +272,7 @@ module Register
 !
 !  read in the list of variables for z-averages
 !
-      inquire(file='zaver.in',exist=exist)
+      inquire(FILE='zaver.in',EXIST=exist)
       if (exist) then
         open(1,file='zaver.in')
         do inamexy=1,mnamexy
@@ -279,12 +280,14 @@ module Register
         enddo
 97      nnamexy=inamexy-1
         close(1)
+      else
+        lwrite_zaverages = .false. ! switch zaverages off
       endif
       if (lroot.and.ip<14) print*,'nnamexy=',nnamexy
 !
 !  read in the list of variables for phi-averages
 !
-      inquire(file='phiaver.in',exist=exist)
+      inquire(FILE='phiaver.in',EXIST=exist)
       if (exist) then
         open(1,file='phiaver.in')
         do inamerz=1,mnamerz
@@ -292,6 +295,8 @@ module Register
         enddo
 96      nnamerz=inamerz-1
         close(1)
+      else
+        lwrite_phiaverages = .false. ! switch phiaverages off
       endif
       if (lroot.and.ip<14) print*,'nnamerz=',nnamerz
 !
