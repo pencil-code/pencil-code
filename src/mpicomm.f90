@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.39 2002-09-03 22:21:41 nilshau Exp $
+! $Id: mpicomm.f90,v 1.40 2002-09-04 08:53:39 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -614,12 +614,15 @@ module Mpicomm
 !
       real, dimension(nx,ny,nz,mvar) :: send_buf, recv_buf
       real,dimension(nx,ny,nz) :: a
-      real, dimension(nz) :: tmp
-      integer :: i,j,proc,sendc,recvc,sender,pz,py
+      real, dimension(nz) :: tmp_z
+      real, dimension(ny) :: tmp_y
+      integer :: i,j,proc,sendc_y,recvc_y,sendc_z,recvc_z,sender,pz,py
       character :: var
 !
-      sendc=nx*ny*nz/(nprocy*nprocz)
-      recvc=nx*ny*nz/(nprocy**2*nprocz)
+      sendc_y=nx*ny*nz
+      recvc_y=nx*ny*nz/nprocy
+      sendc_z=nx*ny*nz
+      recvc_z=nx*ny*nz/nprocz
 !
 !  Doing x-y transpose if var='y'
 !
@@ -631,7 +634,7 @@ if (var=='y') then
          if (ipz==pz) then
             do py=0,nprocy-1
                sender=py+ipz*nprocy
-               call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
+               call MPI_SCATTER(send_buf,sendc_y,MPI_REAL,recv_buf,recvc_y,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
             enddo
          end if
       enddo
@@ -641,9 +644,9 @@ if (var=='y') then
       do proc=1,nprocy
          do i=1,ny/nprocy
             do j=1,ny/nprocy
-               tmp=recv_buf(i,j,:,proc)
+               tmp_z=recv_buf(i,j,:,proc)
                recv_buf(i,j,:,proc)= recv_buf(j,i,:,proc)
-               recv_buf(j,i,:,proc)=tmp
+               recv_buf(j,i,:,proc)=tmp_z
             enddo
          enddo
       enddo
@@ -658,7 +661,7 @@ elseif (var=='z') then
          if (ipy==py) then
             do pz=0,nprocz-1
                sender=pz+ipz*nprocy
-               call MPI_SCATTER(send_buf,sendc,MPI_REAL,recv_buf,recvc,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
+               call MPI_SCATTER(send_buf,sendc_z,MPI_REAL,recv_buf,recvc_z,sender,MPI_REAL,MPI_COMM_WORLD,ierr)
             enddo
          end if
       enddo
@@ -668,9 +671,9 @@ elseif (var=='z') then
       do proc=1,nprocz
          do i=1,nz/nprocz
             do j=1,nz/nprocz
-               tmp=recv_buf(i,:,j,proc)
+               tmp_y=recv_buf(i,:,j,proc)
                recv_buf(i,:,j,proc)= recv_buf(j,:,i,proc)
-               recv_buf(j,:,i,proc)=tmp
+               recv_buf(j,:,i,proc)=tmp_y
             enddo
          enddo
       enddo
