@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.165 2004-02-18 08:13:55 dobler Exp $ 
+! $Id: sub.f90,v 1.166 2004-02-19 23:18:52 dobler Exp $ 
 
 module Sub 
 
@@ -21,6 +21,71 @@ module Sub
     module procedure notanumber_2
     module procedure notanumber_3
     module procedure notanumber_4
+  endinterface
+
+  interface cross
+    module procedure cross_global
+    module procedure cross_mn
+  endinterface
+
+  interface dot
+    module procedure dot_global
+    module procedure dot_mn
+  endinterface
+
+  interface dot2
+    module procedure dot2_global
+    module procedure dot2_mn
+  endinterface
+
+  interface dot_add
+    ! module procedure dot_global_add ! not yet implemented
+    module procedure dot_mn_add
+  endinterface
+
+  interface dot_sub
+    ! module procedure dot_global_sub ! not yet implemented
+    module procedure dot_mn_sub
+  endinterface
+
+  interface multsv
+    module procedure multsv_global
+    module procedure multsv_mn
+  endinterface
+
+  interface multsv_add
+    module procedure multsv_add_global
+    module procedure multsv_add_mn
+  endinterface
+
+  interface multvs
+    ! module procedure multvs_global  ! never implemented
+    module procedure multvs_mn
+  endinterface
+
+  interface multvv_mat
+    ! module procedure multvv_mat_global ! never implemented
+    module procedure multvv_mat_mn
+  endinterface
+
+  interface multmm_sc
+    ! module procedure multmm_sc_global ! never implemented
+    module procedure multmm_sc_mn
+  endinterface
+
+  interface multm2
+    ! module procedure multm2_global ! never implemented
+    module procedure multm2_mn
+  endinterface
+
+  interface multmv_transp
+    ! module procedure multmv_global_transp ! never implemented
+    module procedure multmv_mn_transp
+  endinterface
+
+  interface multmv
+    ! module procedure multmv_global ! never implemented
+    module procedure multmv_mn
   endinterface
 
   interface cvs_id              ! Overload the cvs_id function
@@ -470,7 +535,41 @@ module Sub
 !
     endsubroutine exps
 !***********************************************************************
-    subroutine dot2(a,b)
+    subroutine dot_global(a,b,c)
+!
+!  dot product, c=a.b, on global arrays
+!  29-sep-97/axel: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,3) :: a,b
+      real, dimension (mx,my,mz) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c=a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
+!
+    endsubroutine dot_global
+!***********************************************************************
+    subroutine dot_mn(a,b,c)
+!
+!  dot product, c=a.b, on pencil arrays
+!   3-apr-01/axel+gitta: coded
+!
+      use Cdata
+!
+      real, dimension (nx,3) :: a,b
+      real, dimension (nx) :: c
+!
+      intent(in) :: a,b
+      intent(out) :: c
+!
+      c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
+!
+    endsubroutine dot_mn
+!***********************************************************************
+    subroutine dot2_global(a,b)
 !
 !  dot product with itself, to calculate max and rms values of a vector
 !  29-sep-97/axel: coded,
@@ -485,24 +584,25 @@ module Sub
 !
       b=a(l1:l2,m,n,1)**2+a(l1:l2,m,n,2)**2+a(l1:l2,m,n,3)**2
 !
-    endsubroutine dot2
+    endsubroutine dot2_global
 !***********************************************************************
-    subroutine dot_mn(a,b,c)
+    subroutine dot2_mn(a,b)
 !
-!  dot product
-!   3-apr-01/axel+gitta: coded
+!  dot product with itself, to calculate max and rms values of a vector
+!  29-sep-97/axel: coded
+!   1-apr-01/axel: adapted for cache-efficient sub-array formulation
 !
       use Cdata
 !
-      real, dimension (nx,3) :: a,b
-      real, dimension (nx) :: c
+      real, dimension (nx,3) :: a
+      real, dimension (nx) :: b
 !
-      intent(in) :: a,b
-      intent(out) :: c
+      intent(in) :: a
+      intent(out) :: b
 !
-      c=a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3)
+      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
 !
-    endsubroutine dot_mn
+    endsubroutine dot2_mn
 !***********************************************************************
     subroutine dot_mn_add(a,b,c)
 !
@@ -537,24 +637,6 @@ module Sub
       c=c-(a(:,1)*b(:,1)+a(:,2)*b(:,2)+a(:,3)*b(:,3))
 !
     endsubroutine dot_mn_sub
-!***********************************************************************
-    subroutine dot2_mn(a,b)
-!
-!  dot product with itself, to calculate max and rms values of a vector
-!  29-sep-97/axel: coded
-!   1-apr-01/axel: adapted for cache-efficient sub-array formulation
-!
-      use Cdata
-!
-      real, dimension (nx,3) :: a
-      real, dimension (nx) :: b
-!
-      intent(in) :: a
-      intent(out) :: b
-!
-      b=a(:,1)**2+a(:,2)**2+a(:,3)**2
-!
-    endsubroutine dot2_mn
 !**********************************************************************
     subroutine div(f,k,g)
 !
@@ -582,7 +664,7 @@ module Sub
 !***********************************************************************
     subroutine curl_mn(a,b)
 !
-!  curl of a matrix
+!  calculate curl from derivative matrix
 !  21-jul-03/axel: coded
 !
       use Cdata
@@ -737,7 +819,8 @@ module Sub
 !***********************************************************************
     subroutine dot2mu(a,b,c)
 !
-!  dot product with itself, to calculate max and rms values of a vector
+!  dot product with itself times scalar, to calculate max and rms values
+!  of a vector, c=b*dot2(a)
 !  29-sep-97/axel: coded,
 !
       use Cdata
@@ -751,23 +834,6 @@ module Sub
       c=b*(a(:,:,:,1)**2+a(:,:,:,2)**2+a(:,:,:,3)**2)
 !
     endsubroutine dot2mu
-!***********************************************************************
-    subroutine dot(a,b,c)
-!
-!  dot product, c=a.b
-!  29-sep-97/axel: coded
-!
-      use Cdata
-!
-      real, dimension (mx,my,mz,3) :: a,b
-      real, dimension (mx,my,mz) :: c
-!
-      intent(in) :: a,b
-      intent(out) :: c
-!
-      c=a(:,:,:,1)*b(:,:,:,1)+a(:,:,:,2)*b(:,:,:,2)+a(:,:,:,3)*b(:,:,:,3)
-!
-    endsubroutine dot
 !***********************************************************************
     subroutine dotneg(a,b,c)
 !
@@ -803,7 +869,7 @@ module Sub
 !
     endsubroutine dotadd
 !***********************************************************************
-    subroutine multsv(a,b,c)
+    subroutine multsv_global(a,b,c)
 !
 !  multiply scalar with a vector
 !  29-sep-97/axel: coded
@@ -821,7 +887,7 @@ module Sub
         c(:,:,:,j)=a*b(:,:,:,j)
       enddo
 !
-    endsubroutine multsv
+    endsubroutine multsv_global
 !***********************************************************************
     subroutine multsv_mn(a,b,c)
 !
@@ -844,7 +910,7 @@ module Sub
 !
     endsubroutine multsv_mn
 !***********************************************************************
-    subroutine multsv_add(a,b,c,d)
+    subroutine multsv_add_global(a,b,c,d)
 !
 !  multiply scalar with a vector and subtract from another vector
 !  29-oct-97/axel: coded
@@ -862,7 +928,7 @@ module Sub
         d(:,:,:,j)=a(:,:,:,j)+b*c(:,:,:,j)
       enddo
 !
-    endsubroutine multsv_add
+    endsubroutine multsv_add_global
 !***********************************************************************
     subroutine multsv_add_mn(a,b,c,d)
 !
@@ -906,7 +972,7 @@ module Sub
 !***********************************************************************
     subroutine multvs_mn(a,b,c)
 !
-!  vector multiplied with scalar, gives vector
+!  vector pencil multiplied with scalar pencil, gives vector pencil
 !   22-nov-01/nils erland: coded
 !
       use Cdata
@@ -921,9 +987,9 @@ module Sub
 !
     endsubroutine multvs_mn
 !***********************************************************************
-    subroutine cross(a,b,c)
+    subroutine cross_global(a,b,c)
 !
-!  cross product, c = a x b
+!  cross product, c = a x b, on global arrays
 !
       use Cdata
 !
@@ -936,11 +1002,11 @@ module Sub
       c(:,:,:,2)=a(:,:,:,3)*b(:,:,:,1)-a(:,:,:,1)*b(:,:,:,3)
       c(:,:,:,3)=a(:,:,:,1)*b(:,:,:,2)-a(:,:,:,2)*b(:,:,:,1)
 !
-    endsubroutine cross
+    endsubroutine cross_global
 !***********************************************************************
     subroutine cross_mn(a,b,c)
 !
-!  cross product, c = a x b, for stencil variables.
+!  cross product, c = a x b, for pencil variables.
 !  Previously called crossp.
 !
       use Cdata
