@@ -6,19 +6,43 @@
  */
 digraph G {
 
-  /* Mark the two executables */
-  Start [shape=box];
-  Run [shape=box];
+  /* The two executables */
+  node [shape=box];
+  { rank=same; Start; Run }
+
+  /* */
+  node [shape=ellipse];
+  { rank=same; Register; Timestep }
+
+  Equ;
+
+  { rank=same; Sub; Slices }
 
   /* The physics modules */
-   Forcing [shape=diamond];
-   Entropy [shape=diamond];
-   Magnetic [shape=diamond];
+  node [shape=diamond];
+  { rank=same; Forcing; Entropy; Magnetic }
+
+  /* */
+  node [shape=ellipse];
+  { rank=same; Deriv; IO }
 
   /* These do not depend on anybody else */
-  General [shape=circle];
-  Mpicomm [shape=circle];
-  Cparam [shape=circle];
+  node [shape=circle];
+  { rank=same; General; Mpicomm; Cdata }
+
+
+
+  node [shape=ellipse];
+  Cparam;
+
+/*    Start [shape=box]; */
+/*    Run [shape=box]; */
+
+    /* The physics modules */
+/*     Forcing [shape=diamond]; */
+/*     Entropy [shape=diamond]; */
+/*     Magnetic [shape=diamond]; */
+
 
   Start -> Cdata;
   Start -> General;
@@ -58,6 +82,7 @@ digraph G {
   Register -> Mpicomm;
   Register -> Entropy;
   Register -> Magnetic;
+/*    Register -> Forcing; */
 
   Equ -> Cdata;
   Equ -> Slices;
@@ -65,6 +90,7 @@ digraph G {
   Equ -> Deriv;
   Equ -> Entropy;
   Equ -> Magnetic;
+/*    Equ -> Forcing; */
   Equ -> Mpicomm;
 
   Timestep -> Cdata;
