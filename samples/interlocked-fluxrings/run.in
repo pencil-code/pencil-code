@@ -1,0 +1,25 @@
+5000,50,-.4,50,3,	nt,it1,dt,isave,iorder
+2.,.2,0e-2,1e-6,	dsnap,dvid,dforce,dtmin
+0.,0.,0.,		tinit,tdamp,dampu
+0.,1.2,0.2,		dampuext,rdamp,wdamp
+14,,,,			ip,ix,iy,iz
+,1e-2,0,0.08,		cs,nu,ivisc,cdtv
+1e-2,1,1,1,		hcond0,hcond1,hcond2,whcond
+0.e-2,0.,0.,0.,		eta,Bx_ext,By_ext,Bz_ext
+0.,			cdiffrho,
+-0.1,			gravz
+5.,0.25,0.,0.2		cheat,wheat,cool,wcool
+0.0625,			Fheat
+0,2e-1,.3,		iforce,force,relhel
+p,p,p,p,p,p,p,p,	bcx
+p,p,p,p,p,p,p,p,	bcy
+p,p,p,p,p,p,p,p,	bcz
+'(i8,f11.5,1p,50(e10.3," "))',	form1
+
+# Nomenclature for boundary conditions:
+#   Variables are (currently): ux,uy,uz,lam,ent,ax,ay,az
+#   p      : periodic
+#   s/a/a2 : symmetric/antisymmetric/antisymmetric w.r.t. boundary value
+#   s:a2   : bc `s' at lower (left) and `a2' at upper (right) boundary
+
+# tinit    -- initial time for smoothly switching on heating, etc
