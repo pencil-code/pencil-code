@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.44 2003-02-24 21:22:11 theine Exp $
+;;; $Id: start.pro,v 1.45 2003-04-29 12:46:05 nilshau Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -37,6 +37,7 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 default, proc, 0
 default, datatopdir, 'data'
 default, varfile, 'var.dat'
+default, dimfile, 'dim.dat'
 datadir = datatopdir+'/proc'+str(proc)
 ; Directory for temporary output by the IDL scripts. Defaults to
 ; data/, but can be overwritten in case you don't have write access to
@@ -50,7 +51,7 @@ prec=''
 nghostx=0L & nghosty=0L & nghostz=0L
 ;
 close,1
-openr,1,datadir+'/'+'dim.dat'
+openr,1,datadir+'/'+dimfile
 readf,1,mx,my,mz,nvar
 readf,1,prec
 readf,1,nghostx,nghosty,nghostz
