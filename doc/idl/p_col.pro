@@ -1,4 +1,4 @@
-; $Id: p_col.pro,v 1.2 2002-10-16 13:59:22 brandenb Exp $
+; $Id: p_col.pro,v 1.3 2003-05-09 06:17:37 brandenb Exp $
 ;
 window,xs=600,ys=480
 !p.charthick=3 & !p.thick=3 & !x.thick=3 & !y.thick=3
@@ -13,9 +13,11 @@ fact=1.
 a=rtable('timings.dat',2,head=1)
 b=rtable('horseshoe.dat',2,head=1)
 c=rtable('kabul.dat',2,head=1)
+d=rtable('horseshoe_mega.dat',2,head=1)
 n=reform(a(0,*)) & t=reform(a(1,*))
 m=reform(b(0,*)) & s=reform(b(1,*))
 k=reform(c(0,*)) & r=reform(c(1,*))
+l=reform(d(0,*)) & q=reform(d(1,*))
 ;
 !p.multi=[0,1,2]
 !p.multi=[0,2,1]
@@ -28,13 +30,15 @@ k=reform(c(0,*)) & r=reform(c(1,*))
 plot_oo,n,fact*t,ps=-1,yr=fact*[.07,15],li=1,back=255,col=1
 oplot,m,fact*s,ps=-5,li=0,col=122
 oplot,k,fact*r,ps=-6,li=2,col=55
+oplot,l,fact*q,ps=-6,li=3,col=166
 ;
-xx=5. & dx=20. & siz=2.0
+xx=6. & dx=20. & siz=2.0 & xx2=7.
 legend,xx,dx,10^0.9,1,'!6Origin3000',col=1,siz=siz
 legend,xx,dx,10^0.7,0,'!6Horseshoe',col=122,siz=siz
 legend,xx,dx,10^0.5,2,'!6Kabul',col=55,siz=siz
+legend,xx,dx,10^0.3,3,'!6Mega-queue',col=166,siz=siz
 ;
 ; xx=[1,120] & oplot,col=1,xx,4./xx^.7
-print,'import ptimings.jpg'
-print,'scp2 ptimings.jpg $scr/ccp2001'
+print,'import ptimings.png'
+print,'scp2 ptimings.png $scr/ccp2001'
 END
