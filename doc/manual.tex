@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.271 2004-08-06 04:09:14 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.272 2004-08-20 20:31:21 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -371,7 +371,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-08-06 04:09:14 $ $,~ $ $Revision: 1.271 $ $}
+%\date{$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}
 
 % ====================================================================== %
 
@@ -408,7 +408,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-08-06 04:09:14 $ $,~ $ $Revision: 1.271 $ $}\\
+  \emph{$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}\\
   \url{http://www.nordita.dk/software/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3109,6 +3109,7 @@ basic message is to watch out for such effects and to try varying
 
 \subsection{Running in double-precision}
 \label{double-precision}
+\index{double precision}
 
 With many compilers, you can easily switch to double precision (8-byte
 floating point numbers) as follows.
@@ -4653,7 +4654,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-08-06 04:09:14 $ $,~ $ $Revision: 1.271 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-08-20 20:31:21 $ $,~ $ $Revision: 1.272 $ $}
 
 \section{Timings}
 
@@ -4763,9 +4764,10 @@ application on your specific hardware.
   16 & fe1   & 1.77 &  $64^3$ & convstar     &        &  9-feb-03 & AB \\
   16 & copson& 0.596& $128^3$ & geodynamo/ks95 &      & 21-nov-03 & DM \\
   16 & fe1   & 0.94 & $128^3$ & magn/noentro &  4x4   &  8-sep-02 & AB \\
-  16 & fe1   & 0.75 & $128^3$ & magn/noentro & 4x4/ifc&  9-may-03 & AB \\
-  16 & giga  & 0.47 & $128^3$ & chiral       & 4x4/ifc& 29-may-04 & AB \\
-  16 & giga  & 0.43 & $128^3$ & nomag/noentro& 4x4/ifc& 28-apr-03 & AB \\
+  16 & fe1   & 0.75 & $128^3$ & magn/noentro &4x4/ifc6&  9-may-03 & AB \\
+  16 & s40s17& 0.39 & $128^3$ & magn/noentro &4x4/ifc6& 20-aug-04 & AB \\
+  16 & giga  & 0.47 & $128^3$ & chiral       &4x4/ifc6& 29-may-04 & AB \\
+  16 & giga  & 0.43 & $128^3$ & nomag/noentro&4x4/ifc6& 28-apr-03 & AB \\
   16 & Mhd   & 2.03 & $128^3$ & magn/noentro &        & 26-nov-02 & AB \\
   16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 MB & 22-may-02 & AB \\
   16 & fe1   & 0.56 & $256^3$ & magn/noentro &  4x4   & 16-aug-02 & AB \\
@@ -4799,9 +4801,10 @@ application on your specific hardware.
  128 & fe1   & 2.8  & $512^3$ & magn/noentro & 16x8   &  5-sep-02 & AB \\
  128 & fe1   & 0.51 & $512^3$ & magn/noentro & 8x16   &  5-sep-02 & AB \\
  128 & fe1   & 0.27 & $512^3$ & magn/noentro & 4x32   &  5-sep-02 & AB \\
- 128 & fe1   & 0.108& $512^3$ & magn/noentro &4x32/ifc&  5-jan-02 & AB \\
+ 128 & fe1   & 0.108& $512^3$ & magn/noentro &4x32/ifc6& 5-jan-02 & AB \\
  128 & fe1   & 0.35 & $512^3$ & magn/noentro & 2x64   &  9-sep-02 & AB \\
- 128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc&  9-sep-02 & AB \\
+ 128 & fe1   & 0.094& $786^3$ & magn/noentro &4x32/ifc6& 9-sep-02 & AB \\
+ 256 & s40p17& 0.028& $1024^3$& magn/noentro &4x32/ifc6&20-aug-04 & AB \\
     \bottomrule
   \end{longtable}
   %\end{tabular}
@@ -7709,7 +7712,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.271 2004-08-06 04:09:14 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.272 2004-08-20 20:31:21 brandenb Exp $ $}
 
 
 \end{document}
