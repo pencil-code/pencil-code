@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.81 2002-08-19 12:10:26 nilshau Exp $
+! $Id: magnetic.f90,v 1.82 2002-08-20 07:38:11 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.81 2002-08-19 12:10:26 nilshau Exp $")
+           "$Id: magnetic.f90,v 1.82 2002-08-20 07:38:11 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,6 +129,8 @@ module Magnetic
       case('sinxsinz'); call sinxsinz(amplaa,f,iaa)
       case('crazy', '5'); call crazy(amplaa,f,iaa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa)
+      case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
+      case('Alfven-test'); call alfven_test(amplaa,f,iuu,iaa,zz,kz_aa)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -548,6 +550,12 @@ module Magnetic
     subroutine alfven_z(ampl,f,iuu,iaa,zz,kz)
 !
 !  Alfven wave propagating in the z-direction
+!  ux = cos(kz-ot), for B0z=1 and rho=1.
+!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
+!
+!  satisfies the equations
+!  dux/dt = Bx'  ==>  dux/dt = -Ay''
+!  dBx/dt = ux'  ==>  dAy/dt = -ux.
 !
 !  18-aug-02/axel: coded
 !
@@ -559,9 +567,57 @@ module Magnetic
 !  ux and Ay
 !
       f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
-      f(:,:,:,iaa)=+ampl*sin(kz*zz)
+      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
 !
     endsubroutine alfven_z
+!***********************************************************************
+    subroutine alfvenz_rot(ampl,f,iuu,iaa,zz,kz,O)
+!
+!  Alfven wave propagating in the z-direction
+!  ux = cos(kz-ot), for B0z=1 and rho=1.
+!  Ay = sin(kz-ot), ie Bx=-cos(kz-ot)
+!
+!  satisfies the equations
+!  dux/dt - 2Omega*uy = -Ay''
+!  duy/dt + 2Omega*ux = +Ax''
+!  dAx/dt = +uy
+!  dAy/dt = -ux
+!
+!  18-aug-02/axel: coded
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: zz
+      real :: ampl,kz,O,fac
+      integer :: iuu,iaa
+!
+!  ux and Ay
+!
+      print*,'Alfven wave with rotation; O,kz=',O,kz
+      fac=-O+sqrt(O**2+kz**2)
+      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)*fac/kz
+      f(:,:,:,iuu+1)=-ampl*sin(kz*zz)*fac/kz
+      f(:,:,:,iaa+0)=-ampl*cos(kz*zz)
+      f(:,:,:,iaa+1)=+ampl*sin(kz*zz)
+!
+    endsubroutine alfvenz_rot
+!***********************************************************************
+    subroutine alfven_test(ampl,f,iuu,iaa,zz,kz)
+!
+!  Alfven wave propagating in the z-direction
+!
+!  19-aug-02/nils: adapted from alfven_z
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (mx,my,mz) :: zz
+      real :: ampl,kz
+      integer :: iuu,iaa
+!
+!  ux and Ay
+!
+      f(:,:,:,iuu+0)=+ampl*cos(kz*zz)
+      f(:,:,:,iaa)=+ampl*sin(kz*zz)
+!
+    endsubroutine alfven_test
 !***********************************************************************
     subroutine fluxrings(f,ivar,xx,yy,zz)
 !
