@@ -30,27 +30,45 @@ if ($has_filetmp) { import File::Temp qw/tempfile/ };
 my $parfile = "data/params.log"; # Default parameter file
 #my $diff = "diff";		 # Shell `diff' function to use
 my $diff = "sdiff";		# Shell `diff' function to use
-# my @diff_opts = qw/-s -w78 -W/;	# Options for $diff (GNU sdiff only)
 my @diff_opts = qw/-s -w78/;	# Options for $diff
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $need_cleanup = 0;
 my ($tmp1,$tmp2,$tmpname1,$tmpname2) = ('fh01', 'fh02');
-
+my $full = 0;
 
 my $log;
 
 
 (my $progname = $0) =~ s|.*/||;
-my $usage="Usage:  $progname [<params_file>]
-Evaluate <params_file> (default is `$parfile') and print a history
-of changes.
+my $usage="Usage:  $progname [-f] [<params_file>]
+  Evaluate <params_file> (default is `$parfile') and print a history
+  of changes.
+Options:
+  -f, --full : Print all differences, including those where no parameters
+               have changed
+  -h, --help : This usage overview
 ";
 
-if ((@ARGV > 0) && ($ARGV[0] =~ /^(-h|--help)/)) {
-    die $usage;
+if (@ARGV > 0) {
+    if ($ARGV[0] =~ /^(-h|--help)/) {
+	die $usage;
+    }
+    elsif ($ARGV[0] =~ /^(-f|--full)/) {
+	$full = 1;
+	shift;
+    }
 }
 
 $parfile = $ARGV[0] || $parfile;
+
+
+## Find out whether sdiff supports the `-W' option (ignore whitespace):
+if ($diff eq 'sdiff') {
+    my $status = system("sdiff -W /dev/null /dev/null 2>/dev/null");
+    unless ($status) {
+	push @diff_opts, '-W';
+    }
+}
 
 ## Read whole file and split contents by separator line
 {
@@ -109,8 +127,12 @@ while (@entries) {
     close($tmp1);
 
     # Do the diff
-    system("$diff", @diff_opts, "$tmpname2", "$tmpname1");
-    print "$sepline\n";
+    # system("$diff", @diff_opts, "$tmpname2", "$tmpname1");
+    my $difference = `$diff @diff_opts $tmpname2 $tmpname1`;
+    if ($full || ($difference =~ /^\s*[^#\s]/sm)) {
+	print $difference;
+	print "$sepline\n";
+    }
 }
 
 END {
