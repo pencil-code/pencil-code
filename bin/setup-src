@@ -4,7 +4,7 @@
 # Description:
 #   Link files into a local src directory
 #   Also link files from the bin directory ==> should be renamed
-# CVS $Id: setup-src,v 1.14 2003-05-23 09:34:02 brandenb Exp $
+# CVS $Id: setup-src,v 1.15 2003-08-09 12:55:55 mee Exp $
 # Usage:
 #   setup-src  [src-dir]
 
@@ -35,6 +35,9 @@ foreach script (start.csh start_run.csh run.csh getconf.csh)
     echo "No such file: $bindir/$script"
   endif
 end
+
+## Make a link to a root Makefile to allow make from the run directory
+ln -s $srcdir/Makefile.parent Makefile
 
 ## src subdirectory
 if (-d $src) then

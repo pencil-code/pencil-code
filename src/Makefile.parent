@@ -1,0 +1,7 @@
+default:
+	cd src; make
+clean:
+	cd src; make clean
+cleann:
+	cd src; make cleann
+
