@@ -1,0 +1,45 @@
+
+                           ifc-random-seed
+                          -----------------
+
+$Id: README,v 1.1 2004-08-26 17:27:19 dobler Exp $
+
+
+1. Symptoms:
+
+  The attached file seed.f90 prints the random number generator's seed,
+  which should be nontrivial. But initially there are only zeros,which are
+  replaced by other numbers only as random_number() is producing numbers.
+
+2. Command sequence:
+
+  unix>  make FC=ifc test
+or
+  fe4>  make FC=ifort80 NLSPATH=/usr/local/lib/intel/intel_fc_80/lib/ifcore_msg.cat test
+(or similar)
+
+3. Platforms:
+   32-bit:
+
+   Gentoo, Kernel 2.4.24, Intel Xeon, 2.4GHz
+       ifc 7.1   Build 20040713Z
+
+4. Other compilers tested (OK means problem could not be reproduced):
+   - Intel ifc 6.0                 (x86 Linux)  OK
+   - Intel ifc 7.0 Build 20021028Z (x8 Linux)   OK
+   - Intel ifort 8.0 Build 20040616Z Package ID: l_fc_pc_8.0.046_pe049.1
+                                                OK
+
+5. Workaround:
+   - Call random_number to produce at least 47 random numbers before
+     working with seed
+   - Don't multiply seed with processor number, replace it or add it
+
+6. Comment:
+   I am not sure this is a real bug; but it is definitively annoying.
+   Doesn't seem to be a problem for the Pencil Code as far as I see.
+
+7. Original date:
+
+   Wed 26 Aug 2004
+
