@@ -16,7 +16,7 @@ default, vname, 'b2mphi'
 
 az = read_phiavg(avgdir+'/'+phiavgfile)
 
-pos = aspect((max(az.z)-min(az.z))/(max(az.rcyl)-min(az.rcyl)), $
+pos = aspect_pos((max(az.z)-min(az.z))/(max(az.rcyl)-min(az.rcyl)), $
              MARGIN=0.1)
 
 if (any(tag_names(az) eq strupcase(vname))) then begin
