@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.21 2003-05-29 11:19:30 ngrs Exp $
+! $Id: interstellar.f90,v 1.22 2003-05-30 12:53:30 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -77,7 +77,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.21 2003-05-29 11:19:30 ngrs Exp $")
+           "$Id: interstellar.f90,v 1.22 2003-05-30 12:53:30 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -124,6 +124,7 @@ module Interstellar
             else
                interstellarsave(1)=t_next_SNI
             endif
+
          endif
          call mpibcast_real(interstellarsave,1)
          t_next_SNI=interstellarsave(1)
@@ -646,11 +647,10 @@ find_SN: do n=n1,n2
 !               print*,e_old-e_new
 !            endif
 
-!ajwm - 4\pi ??? What's that all about?...
             if (move_mass.eq.1) f(l1:l2,m,n,ilnrho)=alog(rho_old+deltarho)
             f(l1:l2,m,n,ient)=ss_old + &
                  ( alog(1.+ (deltaEE  &                           ! / 12.56637061
-                            *(rho_old+deltarho) / e_old)) ) / gamma  
+                            / (rho_old+deltarho) / e_old)) ) / gamma  
             if (move_mass.eq.1) f(l1:l2,m,n,ient) = f(l1:l2,m,n,ient) &
                                           - (gamma1*alog(1 + deltarho / rho_old) )/ gamma
 
@@ -658,9 +658,7 @@ find_SN: do n=n1,n2
 
             EE2_SN=EE2_SN+sum((e_new*exp(f(l1:l2,m,n,ilnrho)))-(e_old*rho_old))
 
-            if (sum(deltaEE).gt.1.) then
-               print*, sum(e_new*exp(f(l1:l2,m,n,ilnrho))),sum(e_old*rho_old),sum(e_new*exp(f(l1:l2,m,n,ilnrho)))-sum(e_old*rho_old),sum(deltaEE)
-            endif
+
        enddo
       enddo
       
