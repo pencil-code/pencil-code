@@ -24,7 +24,7 @@ default,ymin,0.
 ; so providing the units of dx and dist_to_object are identical we are good !
 ;
   beam_width=beam_width_arcseconds*dist_to_obj*one_arcsec
-  return, filter_image( var, FWHM = beam_width, /ALL )
+  return, filter_image( var, FWHM = [beam_width/dx,beam_width/dy], /ALL )
 
 ;    units are pc by default; for kpc specify length_unit=1000.0
 ;
