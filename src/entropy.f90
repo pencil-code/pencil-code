@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.22 $", &
-           "$Date: 2002-02-22 11:55:18 $")
+           "$Revision: 1.23 $", &
+           "$Date: 2002-02-22 14:53:12 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -89,6 +89,7 @@ module Entropy
       use Sub
       use Global
       use Slices
+      use IO
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij,sij

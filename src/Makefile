@@ -128,9 +128,9 @@ $(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
-$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o slices.o
+$(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(IO).o slices.o
 $(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o
-$(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o
+$(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o debug_c.o
 #
 debug_c.o:   debug_c.c
 

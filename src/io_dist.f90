@@ -37,6 +37,8 @@ module Io
   !     endsubroutine output_stenciled_c
   !   endinterface
 
+  external output_stenciled_c   ! Note really needed, but self-documenting
+
 contains
 
 !***********************************************************************
@@ -192,7 +194,7 @@ contains
       use Mpicomm, only: mm,nn
 !
       integer :: ndim,imn
-      real, dimension (mx,ndim) :: a
+      real, dimension (nx,ndim) :: a
       character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_STENC_VECT: nn =', nn
@@ -215,7 +217,7 @@ contains
 
 !
       integer :: ndim,imn
-      real, dimension (mx) :: a
+      real, dimension (nx) :: a
       character (LEN=*) :: file
 !
       if ((ip<=8) .and. lroot) print*,'OUTPUT_SCALAR'
