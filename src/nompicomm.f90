@@ -329,6 +329,14 @@ module Mpicomm
       fmax=fmax_tmp
     endsubroutine mpireduce_max
 !***********************************************************************
+    subroutine mpireduce_min(fmin_tmp,fmin,nreduce)
+!
+      integer :: nreduce
+      real, dimension(nreduce) :: fmin_tmp, fmin
+!
+      fmin=fmin_tmp
+    endsubroutine mpireduce_min
+!***********************************************************************
     subroutine mpireduce_sum(fsum_tmp,fsum,nreduce)
 !
       integer :: nreduce
