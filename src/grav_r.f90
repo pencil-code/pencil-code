@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.64 2004-06-18 12:19:03 mcmillan Exp $
+! $Id: grav_r.f90,v 1.65 2004-07-01 16:51:17 mcmillan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -67,7 +67,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.64 2004-06-18 12:19:03 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.65 2004-07-01 16:51:17 mcmillan Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -146,7 +146,7 @@ module Gravity
           cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
         case ('geo-benchmark')      ! for geodynamo benchmark runs
           if (lroot) print*, 'initialize_gravity: gravity linear in radius'
-          cpot = (/ 0., .5, 0., 0., 0. /)
+          cpot = (/ 0., -.5, 0., 0., 0. /)
         case ('geo-kws')
           if (lroot) print*, 'initialize_gravity: '//&
                              'smoothed 1/r potential in spherical shell'
@@ -193,8 +193,7 @@ module Gravity
 !
         gg_mn = evr*spread(g_r,2,3)
         call set_global(gg_mn,m,n,'gg')
-
-      enddo
+       enddo
 !
       endif
 
