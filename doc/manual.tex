@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.209 2003-11-15 19:03:25 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.210 2003-11-20 11:59:17 ajohan Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -345,7 +345,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-15 19:03:25 $ $,~ $ $Revision: 1.209 $ $}
+%\date{$ $Date: 2003-11-20 11:59:17 $ $,~ $ $Revision: 1.210 $ $}
 
 % ====================================================================== %
 
@@ -380,7 +380,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-15 19:03:25 $ $,~ $ $Revision: 1.209 $ $}\\
+  \emph{$ $Date: 2003-11-20 11:59:17 $ $,~ $ $Revision: 1.210 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3354,7 +3354,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-15 19:03:25 $ $,~ $ $Revision: 1.209 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-20 11:59:17 $ $,~ $ $Revision: 1.210 $ $}
 
 \section{Timings}
 
@@ -4950,7 +4950,11 @@ double precision, $\varepsilon\approx10^{-15}$.
                  \item[\code{'nr_f90'}] (the Parker-Miller-Marsaglia
                    generator \code{ran()} from `Numerical Recipes for
                    F90').
-                 \end{description}
+                 \end{description} \\
+  \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
+               & boundary conditions (for \file{start.csh}). 
                  \\
 %
 \midrule
@@ -5969,7 +5973,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.209 2003-11-15 19:03:25 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.210 2003-11-20 11:59:17 ajohan Exp $ $}
 
 
 \end{document}
