@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.92 2003-11-15 19:09:02 brandenb Exp $ 
+! $Id: initcond.f90,v 1.93 2003-11-16 15:28:59 ajohan Exp $ 
 
 module Initcond 
  
@@ -984,18 +984,18 @@ module Initcond
 !      
     endsubroutine planet
 !***********************************************************************
-    subroutine baroclinic(f,xx,yy,zz,gamma,t_fct_type,rhomid_fct_type, &
-                          TT_til0,alpha_TT,rho0,beta_rho)
+    subroutine baroclinic(f,xx,yy,zz,gamma,t_fct_type,hires_q_z, &
+                          TT_til0,alpha_TT,rho0,dlnrhobdx)
 !
 !  Baroclinic shearing sheet initial condition
 !  11-nov-03/anders: coded
 !
-      integer :: i,j,k,izmid,hr_q,mz_hr,izmid_hr
+      integer :: i,j,k,izmid,hires_q_z,mz_hr,izmid_hr
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz,I_int,rho,TT_til,dlnrhodx
-      real, dimension (1000*mz) :: z_hr,I_int_z,TT_til_hr,dPhidz_hr
-      real :: gamma,TT_til0,alpha_TT,rho0,beta_rho,dz_hr
-      character (len=labellen):: t_fct_type,rhomid_fct_type
+      real, dimension (hires_q_z*mz) :: z_hr,I_int_z,TT_til_hr,dPhidz_hr
+      real :: gamma,TT_til0,alpha_TT,rho0,dlnrhobdx,dz_hr
+      character (len=labellen) :: t_fct_type
 !
 !  Temperature
 !
@@ -1006,8 +1006,7 @@ module Initcond
 !
 !  Need high resolution in z to calculate integral
 !
-          hr_q     = 1000
-          mz_hr    = hr_q*mz
+          mz_hr    = hires_q_z*mz
 !
 !  Index number of mid-plane
 !
@@ -1030,43 +1029,35 @@ module Initcond
               1/TT_til_hr(izmid_hr:mz_hr)*dPhidz_hr(izmid_hr:mz_hr))
           I_int_z(izmid_hr:1:-1) = spline_integral(z_hr(izmid_hr:1:-1), &
               1/TT_til_hr(izmid_hr:1:-1)*dPhidz_hr(izmid_hr:1:-1))
-          print*,I_int_z(1),I_int_z(mz_hr)
+          if (lroot .and. ip<14) print*,I_int_z(1),I_int_z(mz_hr)
 !
 !  Put high resolution integral back into normal resolution array
 !
           do i=1,mx
             do j=1,my
               do k=1,mz
-                I_int(i,j,k) = I_int_z(hr_q*(k-1)+1)
+                I_int(i,j,k) = I_int_z(hires_q_z*(k-1)+1)
               enddo
             enddo
           enddo
       endselect
 !
-!  Density in the mid-plane
-!
-      select case(rhomid_fct_type)
-        case ('linear_x')
-          f(:,:,izmid,ilnrho) = alog(rho0 + beta_rho * xx(:,:,izmid))
-      endselect
-!
 !  Solution to hydrostatic equlibrium in the z-direction
 !
       do k=1,mz
-        f(:,:,k,ilnrho) = f(:,:,izmid,ilnrho) - &
+        f(:,:,k,ilnrho) = alog(rho0) - &
             alog(TT_til(:,:,k)/TT_til(:,:,izmid)) - I_int(:,:,k)
       enddo
-
+!
+!  The derivative of the density in the x direction only gets a
+!  contribution from the derivative of the background density ln rhob
+!  (here assume ln rhob << ln rho)
+!
       rho = exp(f(:,:,:,ilnrho))
-     
-      do j=0,my
-        do k=0,mz
-          dlnrhodx(:,j,k) = spline_derivative(xx(:,j,k),f(:,j,k,ilnrho))
-        enddo
-      enddo
+      dlnrhodx(:,:,:) = dlnrhobdx
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
-!  (potential term vansihes when velocities measured relative to -1.5 O x.
+!  (potential term vanishes when velocities measured relative to -1.5 O x.)
 !
       f(:,:,:,iuy) = 1/(2*Omega)*TT_til*dlnrhodx(:,:,:)
 !
