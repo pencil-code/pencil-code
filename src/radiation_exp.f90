@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.76 2003-08-04 01:32:39 theine Exp $
+! $Id: radiation_exp.f90,v 1.77 2003-08-04 01:50:24 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -85,7 +85,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.76 2003-08-04 01:32:39 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.77 2003-08-04 01:50:24 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -369,15 +369,15 @@ module Radiation
             Irad0_zx=0
             emtau0_zx=1
           else
-            call radboundary_zx_recv(rady0,ylneigh,Irad0_zx,emtau0_zx)
+            call radboundary_zx_recv(rady0,mrad,Irad0_zx,emtau0_zx)
           endif
           Irad0_zx=Irad0_zx*emtau(:,m2-rady0+1:m2,:)+Irad(:,m2-rady0+1:m2,:)
           emtau0_zx=emtau0_zx*emtau(:,m2-rady0+1:m2,:)
           if (ipy==nprocy-1) then
             Irad0_zx=Irad0_zx/(1-emtau0_zx)
-            call radboundary_zx_send(rady0,yuneigh,Irad0_zx)
+            call radboundary_zx_send(rady0,mrad,Irad0_zx)
           else
-            call radboundary_zx_send(rady0,yuneigh,Irad0_zx,emtau0_zx)
+            call radboundary_zx_send(rady0,mrad,Irad0_zx,emtau0_zx)
           endif 
         endif
 !
@@ -386,15 +386,15 @@ module Radiation
             Irad0_zx=0
             emtau0_zx=1
           else
-            call radboundary_zx_recv(rady0,yuneigh,Irad0_zx,emtau0_zx)
+            call radboundary_zx_recv(rady0,mrad,Irad0_zx,emtau0_zx)
           endif
           Irad0_zx=Irad0_zx*emtau(:,m1:m1+rady0-1,:)+Irad(:,m1:m1+rady0-1,:)
           emtau0_zx=emtau0_zx*emtau(:,m1:m1+rady0-1,:)
           if (ipy==0) then
             Irad0_zx=Irad0_zx/(1-emtau0_zx)
-            call radboundary_zx_send(rady0,ylneigh,Irad0_zx)
+            call radboundary_zx_send(rady0,mrad,Irad0_zx)
           else
-            call radboundary_zx_send(rady0,ylneigh,Irad0_zx,emtau0_zx)
+            call radboundary_zx_send(rady0,mrad,Irad0_zx,emtau0_zx)
           endif 
         endif
 !
@@ -409,15 +409,15 @@ module Radiation
             Irad0_xy=0
             emtau0_xy=1
           else
-            call radboundary_xy_recv(radz0,zlneigh,Irad0_xy,emtau0_xy)
+            call radboundary_xy_recv(radz0,nrad,Irad0_xy,emtau0_xy)
           endif
           Irad0_xy=Irad0_xy*emtau(:,:,n2-radz0+1:n2)+Irad(:,:,n2-radz0+1:n2)
           emtau0_xy=emtau0_xy*emtau(:,:,n2-radz0+1:n2)
           if (ipz==nprocz-1) then
             Irad0_xy=Irad0_xy/(1-emtau0_xy)
-            call radboundary_xy_send(radz0,zuneigh,Irad0_xy)
+            call radboundary_xy_send(radz0,nrad,Irad0_xy)
           else
-            call radboundary_xy_send(radz0,zuneigh,Irad0_xy,emtau0_xy)
+            call radboundary_xy_send(radz0,nrad,Irad0_xy,emtau0_xy)
           endif 
         endif
 !
@@ -426,15 +426,15 @@ module Radiation
             Irad0_xy=0
             emtau0_xy=1
           else
-            call radboundary_xy_recv(radz0,zuneigh,Irad0_xy,emtau0_xy)
+            call radboundary_xy_recv(radz0,nrad,Irad0_xy,emtau0_xy)
           endif
           Irad0_xy=Irad0_xy*emtau(:,:,n1:n1+radx0-1)+Irad(:,:,n1:n1+radx0-1)
           emtau0_xy=emtau0_xy*emtau(:,:,n1:n1+radx0-1)
           if (ipz==0) then
             Irad0_xy=Irad0_xy/(1-emtau0_xy)
-            call radboundary_xy_send(radz0,zlneigh,Irad0_xy)
+            call radboundary_xy_send(radz0,nrad,Irad0_xy)
           else
-            call radboundary_xy_send(radz0,zlneigh,Irad0_xy,emtau0_xy)
+            call radboundary_xy_send(radz0,nrad,Irad0_xy,emtau0_xy)
           endif 
         endif
 !
@@ -503,12 +503,12 @@ module Radiation
 !
       if (mrad>0) then
         if (ipy==0) call radboundary_zx_set(Irad0_zx)
-        if (ipy/=0) call radboundary_zx_recv(rady0,ylneigh,Irad0_zx)
+        if (ipy/=0) call radboundary_zx_recv(rady0,mrad,Irad0_zx)
         Irad0(:,m1-rady0:m1-1,:)=Irad0_zx
       endif
       if (mrad<0) then
         if (ipy==nprocy-1) call radboundary_zx_set(Irad0_zx)
-        if (ipy/=nprocy-1) call radboundary_zx_recv(rady0,yuneigh,Irad0_zx)
+        if (ipy/=nprocy-1) call radboundary_zx_recv(rady0,mrad,Irad0_zx)
         Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
       endif
 !
@@ -516,12 +516,12 @@ module Radiation
 !
       if (nrad>0) then
         if (ipz==0) call radboundary_xy_set(Irad0_xy)
-        if (ipz/=0) call radboundary_xy_recv(radz0,zlneigh,Irad0_xy)
+        if (ipz/=0) call radboundary_xy_recv(radz0,nrad,Irad0_xy)
         Irad0(:,:,n1-radz0:n1-1)=Irad0_xy
       endif
       if (nrad<0) then
         if (ipz==nprocz-1) call radboundary_xy_set(Irad0_xy)
-        if (ipz/=nprocz-1) call radboundary_xy_recv(radz0,zuneigh,Irad0_xy)
+        if (ipz/=nprocz-1) call radboundary_xy_recv(radz0,nrad,Irad0_xy)
         Irad0(:,:,n2+1:n2+radz0)=Irad0_xy
       endif
 !
@@ -601,14 +601,14 @@ module Radiation
         Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
                 *emtau(:,m2-rady0+1:m2,:) &
                  +Irad(:,m2-rady0+1:m2,:)
-        call radboundary_zx_send(rady0,yuneigh,Irad0_zx)
+        call radboundary_zx_send(rady0,mrad,Irad0_zx)
       endif
 !
       if (mrad<0.and.ipy/=0) then
         Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
                 *emtau(:,m1:m1+rady0-1,:) &
                  +Irad(:,m1:m1+rady0-1,:)
-        call radboundary_zx_send(rady0,ylneigh,Irad0_zx)
+        call radboundary_zx_send(rady0,mrad,Irad0_zx)
       endif
 !
 !  xy boundary plane
@@ -617,14 +617,14 @@ module Radiation
         Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
                 *emtau(:,:,n2-radz0+1:n2) &
                  +Irad(:,:,n2-radz0+1:n2)
-        call radboundary_xy_send(radz0,zuneigh,Irad0_xy)
+        call radboundary_xy_send(radz0,nrad,Irad0_xy)
       endif
 !
       if (nrad<0.and.ipz/=0) then
         Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
                 *emtau(:,:,n1:n1+radz0-1) &
                  +Irad(:,:,n1:n1+radz0-1)
-        call radboundary_xy_send(radz0,zlneigh,Irad0_xy)
+        call radboundary_xy_send(radz0,nrad,Irad0_xy)
       endif
 !
     end subroutine send_intensity
@@ -692,7 +692,7 @@ module Radiation
         ! rays parallel to an axis
         case ('p'); if (lrad==0.and.nrad==0) then
                       if (nprocy>1) then
-                        call radboundary_zx_recv(rady0,ylneigh,Irad0_zx)
+                        call radboundary_zx_recv(rady0,mrad,Irad0_zx)
                       else
                         Irad0_zx=Irad(:,m2-rady0+1:m2,:)/(1.-emtau(:,m2-rady0+1:m2,:))
                       endif
@@ -712,7 +712,7 @@ module Radiation
         ! rays parallel to an axis
         case ('p'); if (lrad==0.and.nrad==0) then
                       if (nprocy>1) then
-                        call radboundary_zx_recv(rady0,yuneigh,Irad0_zx)
+                        call radboundary_zx_recv(rady0,mrad,Irad0_zx)
                       else
                         Irad0_zx=Irad(:,m1:m1+rady0-1,:)/(1.-emtau(:,m1:m1+rady0-1,:))
                       endif
@@ -755,7 +755,7 @@ module Radiation
         ! rays parallel to an axis
         case ('p'); if (lrad==0.and.mrad==0) then
                       if (nprocz>1) then
-                        call radboundary_xy_recv(radz0,zlneigh,Irad0_xy)
+                        call radboundary_xy_recv(radz0,nrad,Irad0_xy)
                       else
                         Irad0_xy=Irad(:,:,n2-radz0+1:n2)/(1.-emtau(:,:,n2-radz0+1:n2))
                       endif
@@ -782,7 +782,7 @@ module Radiation
         ! rays parallel to an axis
         case ('p'); if (lrad==0.and.mrad==0) then
                       if (nprocz>1) then
-                        call radboundary_xy_recv(radz0,zuneigh,Irad0_xy)
+                        call radboundary_xy_recv(radz0,nrad,Irad0_xy)
                       else
                         Irad0_xy=Irad(:,:,n1:n1+radz0-1)/(1.-emtau(:,:,n1:n1+radz0-1))
                       endif
