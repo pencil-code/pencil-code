@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.60 2003-07-16 10:44:52 ajohan Exp $ 
+! $Id: initcond.f90,v 1.61 2003-07-17 10:37:58 ajohan Exp $ 
 
 module Initcond 
  
@@ -607,7 +607,7 @@ module Initcond
 !
 !  calculate sigma
 !
-      print*,'planet: qshear,eps=',qshear,eps
+      if (lroot) print*,'planet: qshear,eps=',qshear,eps
       eps2=eps**2
       radius2=radius**2
       sigma2=2*qshear/(1.-eps2)
@@ -622,15 +622,15 @@ module Initcond
 !  calculate delta
 !
       delta2=(2.-sigma)*sigma
-      print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
+      if (lroot) print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
       if (delta2<0.) then
         print*,'delta2<0 not allowed'
       else
         delta=sqrt(delta2)
       endif
 
-      ztop=z(n2)
-      if(lroot) print*,'planet: ztop=', ztop
+      ztop=z0+lz
+      if (lroot) print*,'planet: ztop=', ztop
 !
 !  Cylinder vortex 3-D solution (b_ell along x, a_ell along y)
 !
@@ -638,22 +638,18 @@ module Initcond
       a_ell = radius/eps
       c_ell = radius*delta
       r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
-      if(lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=',b_ell,a_ell,c_ell
+      if(lroot) print*,'planet: Ellipse axes (b_ell,a_ell,c_ell)=', &
+          b_ell,a_ell,c_ell
 !
 !  xi is 1 inside vortex and 0 outside
 !
-      !hh=+.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)
-      !xi=.5+.5*tanh(hh/width)
-
       xi = 1./(exp((1/width)*(r_ell-rbound))+1.)
-      if(lroot) print*,'planet: width,rbound', width,rbound
+      if(lroot) print*,'planet: width,rbound',width,rbound
 !
 !  Calculate enthalpy inside vortex
 !
       hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
            -0.5*Omega**2*zz**2 + 0.5*Omega**2*ztop**2 + hh0
-
-
 !
 !  Calculate enthalpy outside vortex
 !
@@ -675,7 +671,7 @@ module Initcond
 !
 !  calculate density, depending on what gamma is
 !
-      print*,'planet: hh0,hmin',&
+      if (lroot) print*,'planet: hh0,hmin',&
            hh0,minval(hh(l1:l2,m1:m2,n1:n2))
       if (lentropy .and. lroot) print*,'planet: smin,smax', &
            minval(f(:,:,:,ient)), maxval(f(:,:,:,ient))
@@ -687,15 +683,15 @@ module Initcond
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
             (alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20) &
             - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
-        print*,'planet solution with entropy jump for gamma=',gamma
+        if (lroot) print*,'planet solution with entropy jump for gamma=',gamma
       else
       if(gamma==1.) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
-          print*,'planet solution for gamma=1'
+          if (lroot) print*,'planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
                alog((gamma1/gamma)*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
-          print*,'planet solution for gamma=',gamma
+          if (lroot) print*,'planet solution for gamma=',gamma
         endif
       endif
 !
