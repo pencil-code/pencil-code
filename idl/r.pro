@@ -1,4 +1,4 @@
-; $Id: r.pro,v 1.38 2002-10-05 11:28:55 dobler Exp $
+; $Id: r.pro,v 1.39 2002-10-05 12:52:15 dobler Exp $
 
 ;;;;;;;;;;;;;;;
 ;;;  r.pro  ;;;
@@ -6,7 +6,7 @@
 
 ;;; Read the data produced on one processor
 ;;; You should have run `start.pro' once before.
-;;; $Id: r.pro,v 1.38 2002-10-05 11:28:55 dobler Exp $
+;;; $Id: r.pro,v 1.39 2002-10-05 12:52:15 dobler Exp $
 
 function param2
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -34,13 +34,14 @@ if (lpscalar )  then lncc  = fltarr(mx,my,mz  )*one
 ;
 ;  Read startup parameters
 ;
-pfile=datatopdir+'/'+'param2.nml'
-dummy=findfile(pfile, COUNT=cpar)
+pfile = datatopdir+'/'+'param2.nml'
+dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
-  print, 'Generating and reading param2.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param2 -m '+datatopdir+'/param2.nml > '+datatopdir+'/param2.pro'
-  resolve_routine, 'param2', /IS_FUNCTION
-  par2=param2()
+  print, 'Reading param2.nml..'
+  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param2.nml', result
+  res = flatten_strings(result)
+  if (execute('par2 = '+res) ne 1) then $
+      message, 'There was a problem with param.nml', /INFO
   if (lhydro) then begin
     cs0=par2.cs0 & nu=par2.nu
   endif

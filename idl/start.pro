@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.40 2002-10-05 11:28:55 dobler Exp $
+;;; $Id: start.pro,v 1.41 2002-10-05 12:52:15 dobler Exp $
 
 function param
 ; Dummy to keep IDL from complaining. The real param() routine will be
@@ -33,7 +33,11 @@ common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
 default, proc, 0
 default, datatopdir, 'data'
 default, varfile, 'var.dat'
-datadir=datatopdir+'/proc'+str(proc)
+datadir = datatopdir+'/proc'+str(proc)
+; Directory for temporary output by the IDL scripts. Defaults to
+; data/, but can be overwritten in case you don't have write access to
+; data/ (e.g. when working in another user's directory or on CD data):
+default, tmpdir, datatopdir
 ;
 ;  Read the dimensions and precision (single or double) from dim.dat
 ;
@@ -100,13 +104,16 @@ nz=mz-2*nghostz
 ;
 ;  Read startup parameters
 ;
-pfile=datatopdir+'/param.nml'
-dummy=findfile(pfile, COUNT=cpar)
+pfile = datatopdir+'/param.nml'
+dummy = findfile(pfile, COUNT=cpar)
 if (cpar gt 0) then begin
   print, 'Reading param.nml..'
-  spawn, '$PENCIL_HOME/bin/nl2idl -f param -m '+datatopdir+'/param.nml > '+datatopdir+'/param.pro'
-  resolve_routine, 'param', /IS_FUNCTION
-  par=param()
+  spawn, '$PENCIL_HOME/bin/nl2idl -1 -m '+datatopdir+'/param.nml', result
+  ;; Output may be split in 1024-byte blocks (ludicrous; IDL's fault),
+  ;; so join these (joinstr is not available with IDL 5.2):
+  res = flatten_strings(result)
+  if (execute('par = '+res) ne 1) then $
+      message, 'There was a problem with param.nml', /INFO
   x0=par.xyz0[0] & y0=par.xyz0[1] & z0=par.xyz0[2]
   Lx=par.Lxyz[0] & Ly=par.Lxyz[1] & Lz=par.Lxyz[2]
   ;
