@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.144 2003-11-19 16:41:51 theine Exp $
+! $Id: ionization.f90,v 1.145 2003-11-19 17:40:08 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -108,7 +108,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.144 2003-11-19 16:41:51 theine Exp $")
+           "$Id: ionization.f90,v 1.145 2003-11-19 17:40:08 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -471,10 +471,9 @@ module Ionization
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
       real, dimension(nx,3), intent(in) :: glnrho,gss
       real, dimension(nx,3), intent(out) :: glnTT
-      real, dimension(nx) :: lnrho,yH,lnTT
-      real, dimension(nx) :: TT1,fractions1
+      real, dimension(nx) :: lnrho,yH,lnTT,TT1,fractions1
       real, dimension(nx) :: R,dlnTTdy,dRdy
-      real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho
+      real, dimension(nx) :: dlnTTdydRdy,dlnTTdlnrho,dlnTTdss
       integer :: j
 !
       lnrho=f(l1:l2,m,n,ilnrho)
@@ -488,9 +487,9 @@ module Ionization
       dRdy=dlnTTdy*(1.5+TT_ion*TT1)-1/(1-yH)-2/yH
       dlnTTdydRdy=dlnTTdy/dRdy
       dlnTTdlnrho=(2.0/3.0)*(1-TT_ion*TT1*dlnTTdydRdy)
+      dlnTTdss=(dlnTTdlnrho-dlnTTdydRdy)*fractions1*ss_ion1
       do j=1,3
-        glnTT(:,j)=dlnTTdlnrho*glnrho(:,j) &
-                 +(dlnTTdlnrho-dlnTTdydRdy)*gss(:,j)*fractions1*ss_ion1
+        glnTT(:,j)=dlnTTdlnrho*glnrho(:,j)+dlnTTdss*gss(:,j)
       enddo
 !
     endsubroutine temperature_gradient
@@ -512,20 +511,21 @@ module Ionization
       real, dimension(nx), intent(out), optional :: lnrho,ss
       real, dimension(nx), intent(out), optional :: yH,lnTT
       real, dimension(nx), intent(out), optional :: ee,pp
-      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_
+      real, dimension(nx) :: lnrho_,ss_,yH_,lnTT_,TT_,fractions
 !
       lnrho_=f(l1:l2,m,n,ilnrho)
       ss_=f(l1:l2,m,n,iss)
       yH_=f(l1:l2,m,n,iyH)
       lnTT_=f(l1:l2,m,n,ilnTT)
       TT_=exp(lnTT_)
+      fractions=(1+yH_+xHe)
 
       if (present(lnrho)) lnrho=lnrho_
       if (present(ss)) ss=ss_
       if (present(yH)) yH=yH_
       if (present(lnTT)) lnTT=lnTT_
-      if (present(ee)) ee=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
-      if (present(pp)) pp=(1+yH_+xHe)*exp(lnrho_)*TT_*ss_ion
+      if (present(ee)) ee=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+      if (present(pp)) pp=fractions*exp(lnrho_)*TT_*ss_ion
 !
       if (ldiagnos) then
         if (i_yHmax/=0) call max_mn_name(yH_,i_yHmax)
@@ -553,7 +553,7 @@ module Ionization
       real, intent(out), optional :: lnrho,ss
       real, intent(out), optional :: yH,lnTT
       real, intent(out), optional :: ee,pp
-      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_
+      real :: lnrho_,ss_,yH_,lnTT_,TT_,rho_,ee_,pp_,fractions
 !
       select case (vars)
 
@@ -562,40 +562,42 @@ module Ionization
         ss_=var1
         yH_=0.5*yHmax
         call rtsafe('lnrho|ss',lnrho_,ss_,yHmin,yHmax,yH_)
+        fractions=(1+yH_+xHe)
         lnTT_=(2.0/3.0)*((ss_/ss_ion+(1-yH_)*(log(1-yH_)-lnrho_H) &
                           +yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
-                          +xHe_term)/(1+yH_+xHe) &
-                         +lnrho_-2.5)+lnTT_ion
+                          +xHe_term)/fractions+lnrho_-2.5)+lnTT_ion
         TT_=exp(lnTT_)
         rho_=exp(lnrho_)
-        ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
-        pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
+        pp_=fractions*rho_*TT_*ss_ion
 
       case ('lnrho|ee')
         lnrho_=var1
         ee_=var2
         yH_=0.5*yHmax
         call rtsafe('lnrho|ee',lnrho_,ee_,yHmin,yHmax*min(ee_/ee_ion,1.0),yH_)
-        TT_=(ee_-yH_*ee_ion)/(1.5*(1+yH_+xHe)*ss_ion)
+        fractions=(1+yH_+xHe)
+        TT_=(ee_-yH_*ee_ion)/(1.5*fractions*ss_ion)
         lnTT_=log(TT_)
         rho_=exp(lnrho_)
-        ss_=ss_ion*((1+yH_+xHe)*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
                     -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
                     -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
-        pp_=(1+yH_+xHe)*rho_*TT_*ss_ion
+        pp_=fractions*rho_*TT_*ss_ion
 
       case ('lnrho|pp')
         lnrho_=var1
         pp_=var2
         yH_=0.5*yHmax
         call rtsafe('lnrho|pp',lnrho_,pp_,yHmin,yHmax,yH_)
+        fractions=(1+yH_+xHe)
         rho_=exp(lnrho_)
-        TT_=pp_/((1+yH_+xHe)*ss_ion*rho_)
+        TT_=pp_/(fractions*ss_ion*rho_)
         lnTT_=log(TT_)
-        ss_=ss_ion*((1+yH_+xHe)*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
+        ss_=ss_ion*(fractions*(1.5*(lnTT_-lnTT_ion)-lnrho_+2.5) &
                    -yH_*(2*log(yH_)-lnrho_e-lnrho_p) &
                    -(1-yH_)*(log(1-yH_)-lnrho_H)-xHe_term)
-        ee_=1.5*(1+yH_+xHe)*ss_ion*TT_+yH_*ee_ion
+        ee_=1.5*fractions*ss_ion*TT_+yH_*ee_ion
 
       end select
 
@@ -657,7 +659,7 @@ module Ionization
       real, dimension(mx), intent(inout) :: yH
 !
       real, dimension(mx) :: dyHold,dyH,yHl,yHh,f,df,temp
-      real, dimension(mx) :: lnTT_,dlnTT_,TT1_
+      real, dimension(mx) :: lnTT_,dlnTT_,TT1_,fractions1
       integer             :: i
       integer, parameter  :: maxit=1000
 !
@@ -668,13 +670,13 @@ module Ionization
 !
       temp=0
 !
+      fractions1=1/(1+yH+xHe)
       lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                          +yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                         +xHe_term)/(1+yH+xHe) &
-                        +lnrho-2.5)
+                         +xHe_term)*fractions1+lnrho-2.5)
       TT1_=exp(-lnTT_)
       f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
       df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
       do i=1,maxit
@@ -692,13 +694,13 @@ module Ionization
           endwhere
         endwhere
         where (abs(dyH)>yHacc*yH.and.temp/=yH)
+          fractions1=1/(1+yH+xHe)
           lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                              +yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                             +xHe_term)/(1+yH+xHe) &
-                            +lnrho-2.5)
+                             +xHe_term)*fractions1+lnrho-2.5)
           TT1_=exp(-lnTT_)
           f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
-          dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+          dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
           df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
           where (f<0)
             yHh=yH
@@ -785,7 +787,9 @@ module Ionization
       real, intent(out)            :: f,df
 !
       real :: lnrho,ss,ee,pp
-      real :: lnTT_,dlnTT_,TT1_
+      real :: lnTT_,dlnTT_,TT1_,fractions1
+!
+      fractions1=1/(1+yH+xHe)
 !
       select case (variables)
       case ('lnrho|ss')
@@ -793,23 +797,22 @@ module Ionization
         ss=variable2
         lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
                          +yH*(2*log(yH)-lnrho_e-lnrho_p) &
-                         +xHe_term)/(1+yH+xHe) &
-                        +lnrho-2.5)
+                         +xHe_term)*fractions1+lnrho-2.5)
       case ('lnrho|ee')
         lnrho=variable1
         ee=variable2
-        lnTT_=log(ee/ee_ion-yH)-log(1.5*(1+yH+xHe))
+        lnTT_=log(2.0/3.0*(ee/ee_ion-yH)*fractions1)
       case ('lnrho|pp')
         lnrho=variable1
         pp=variable2
-        lnTT_=log(pp)-lnrho-log((1+yH+xHe)*ee_ion)
+        lnTT_=log(pp/ee_ion*fractions1)-lnrho
       case default
         call stop_it("saha: I don't get what the independent variables are.")
       end select
 !
       TT1_=exp(-lnTT_)
       f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
-      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)*fractions1
       df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
 !
     endsubroutine saha
