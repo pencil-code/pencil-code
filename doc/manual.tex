@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.195 2003-08-15 17:21:43 mee Exp $
+%%  CVS: $Id: manual.tex,v 1.196 2003-08-16 05:53:38 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -343,7 +343,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{$ $Date: 2003-08-15 17:21:43 $ $,~ $ $Revision: 1.195 $ $}
+\date{$ $Date: 2003-08-16 05:53:38 $ $,~ $ $Revision: 1.196 $ $}
 
 % ====================================================================== %
 
@@ -376,7 +376,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-08-15 17:21:43 $ $,~ $ $Revision: 1.195 $ $}
+  \emph{$ $Date: 2003-08-16 05:53:38 $ $,~ $ $Revision: 1.196 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3287,7 +3287,7 @@ version of \file{param_io.f90}, and recompile each time you make changes.
 % ====================================================================== %
 
 \section*{A P P E N D I X
-\hfill{\normalsize\rm {$ $Date: 2003-08-15 17:21:43 $ $,~ $ $Revision: 1.195 $ $}}}
+\hfill{\normalsize\rm {$ $Date: 2003-08-16 05:53:38 $ $,~ $ $Revision: 1.196 $ $}}}
 
 \section{Timings}
 
@@ -5371,12 +5371,15 @@ the latest set of parameters, you need to look at the code.
                advection term $\uv\cdot\grad s$ to avoid spurious Nyquist
                signal (`wiggles'); see \S\ref{S-upwind}. \\
   \var{tauheat_buffer} [$0.$]
-               & time scale for heating to target temperature; zero disables
-	       the buffer zone. \\
+               & time scale for heating to target temperature
+               (=\var{TTheat_buffer}); zero disables the buffer zone. \\
   \var{zheat_buffer} [$0.$]
-               & size of the thermal buffer zone. \\
+               & $z$ coordinate of the thermal buffer zone. Buffering
+               is active in $|z|>$\var{TTheat_buffer}. \\
+  \var{dheat_buffer1} [$0.$]
+               & Inverse thickness of transition to buffered layer.\\
   \var{TTheat_buffer} [$0.$]
-               & target temperature in thermal buffer zone (z-direction only). \\ 
+               & target temperature in thermal buffer zone ($z$ direction only). \\ 
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
@@ -5854,7 +5857,7 @@ initial condition.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.195 2003-08-15 17:21:43 mee Exp $ $}
+$ $Id: manual.tex,v 1.196 2003-08-16 05:53:38 brandenb Exp $ $}
 
 
 \end{document}
