@@ -13,6 +13,9 @@ module Magnetic
   ! run parameters
   real :: va2=0.
 
+  ! other variables (needs to be consistent with reset list below)
+  integer :: i_b2m=0,i_bm2=0,i_j2m=0,i_jm2=0,i_abm=0,i_jbm=0
+
   contains
 
 !***********************************************************************
@@ -37,8 +40,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.6 $", &
-           "$Date: 2002-05-29 07:09:06 $")
+           "$Revision: 1.7 $", &
+           "$Date: 2002-05-31 04:20:48 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -76,6 +79,19 @@ module Magnetic
 !   3-may-02/axel: coded
 !
       logical :: lreset
+!
+!  write column where which magnetic variable is stored
+!  idl needs this even if everything is zero
+!
+      open(3,file='tmp/magnetic.pro')
+      write(3,*) 'i_abm=',i_abm
+      write(3,*) 'i_jbm=',i_jbm
+      write(3,*) 'i_b2m=',i_b2m
+      write(3,*) 'i_bm2=',i_bm2
+      write(3,*) 'i_j2m=',i_j2m
+      write(3,*) 'i_jm2=',i_jm2
+      write(3,*) 'nname=',nname
+      close(3)
 !
     endsubroutine rprint_magnetic
 !***********************************************************************

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.31 2002-05-30 15:31:46 brandenb Exp $
+! $Id: magnetic.f90,v 1.32 2002-05-31 04:20:48 brandenb Exp $
 
 module Magnetic
 
@@ -67,8 +67,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.31 $", &
-           "$Date: 2002-05-30 15:31:46 $")
+           "$Revision: 1.32 $", &
+           "$Date: 2002-05-31 04:20:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -322,13 +322,14 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
 !
 !  write column where which magnetic variable is stored
 !
-      open(3,file='tmp/magnetic.col')
-      write(3,*) 'i_abm',i_abm
-      write(3,*) 'i_jbm',i_jbm
-      write(3,*) 'i_b2m',i_b2m
-      write(3,*) 'i_bm2',i_bm2
-      write(3,*) 'i_j2m',i_j2m
-      write(3,*) 'i_jm2',i_jm2
+      open(3,file='tmp/magnetic.pro')
+      write(3,*) 'i_abm=',i_abm
+      write(3,*) 'i_jbm=',i_jbm
+      write(3,*) 'i_b2m=',i_b2m
+      write(3,*) 'i_bm2=',i_bm2
+      write(3,*) 'i_j2m=',i_j2m
+      write(3,*) 'i_jm2=',i_jm2
+      write(3,*) 'nname=',nname
       close(3)
 !
     endsubroutine rprint_magnetic

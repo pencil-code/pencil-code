@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.8 2002-05-30 07:12:45 brandenb Exp $
+! $Id: hydro.f90,v 1.9 2002-05-31 04:20:48 brandenb Exp $
 
 module Hydro
 
@@ -53,8 +53,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.8 $", &
-           "$Date: 2002-05-30 07:12:45 $")
+           "$Revision: 1.9 $", &
+           "$Date: 2002-05-31 04:20:48 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -231,6 +231,19 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'o2m',i_o2m)
         call parse_name(iname,cname(iname),cform(iname),'oum',i_oum)
       enddo
+!
+!  write column where which magnetic variable is stored
+!
+      open(3,file='tmp/hydro.pro')
+      write(3,*) 'i_t=',i_t
+      write(3,*) 'i_it=',i_it
+      write(3,*) 'i_dt=',i_dt
+      write(3,*) 'i_u2m=',i_u2m
+      write(3,*) 'i_um2=',i_um2
+      write(3,*) 'i_o2m=',i_o2m
+      write(3,*) 'i_oum=',i_oum
+      write(3,*) 'nname=',nname
+      close(3)
 !
     endsubroutine rprint_hydro
 !***********************************************************************
