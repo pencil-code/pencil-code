@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.47 2003-11-29 10:56:25 theine Exp $
+! $Id: visc_shock.f90,v 1.48 2003-11-29 19:04:21 brandenb Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -24,14 +24,15 @@ module Viscosity
   character (len=labellen) :: ivisc=''
   real :: maxeffectivenu
   integer :: itest
-  logical :: lvisc_first=.false.,lvisc_addnu=.false.
+  logical :: lvisc_first=.false.,lvisc_addnu=.false.,lsmooth5=.true.
 
   ! input parameters
   integer :: dummy
   namelist /viscosity_init_pars/ dummy
 
   ! run parameters
-  namelist /viscosity_run_pars/ nu,nu_shock,lvisc_first,lvisc_addnu
+  namelist /viscosity_run_pars/ nu,nu_shock,lvisc_first,lvisc_addnu, &
+       lsmooth5
  
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtnu=0,i_shockmax=0
@@ -68,7 +69,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.47 2003-11-29 10:56:25 theine Exp $")
+           "$Id: visc_shock.f90,v 1.48 2003-11-29 19:04:21 brandenb Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -184,11 +185,18 @@ module Viscosity
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
 !         f(:,:,:,ishock)=0.
 !         f(mx/2,my/2,mz/2,ishock)=10.
-
 !
-!  take the max over 5 neighboring points and smooth
+!  take the max over 5 neighboring points and smooth.
+!  Note that this means that we'd need 4 ghost zones, so
+!  we use one-sided formulae on processor boundaries.
+!  Alternatively, to get the same result with and without MPI
+!  you may want to try lsmooth5=.false. (default is .true.)  
 !
-         call shock_max5(f(:,:,:,ishock),tmp)
+         if (lsmooth5) then
+           call shock_max5(f(:,:,:,ishock),tmp)
+         else
+           call shock_max3(f(:,:,:,ishock),tmp)
+         endif
 
 ! Save test data and scale to match the maximum expected result of smoothing 
          f(:,:,:,itest)=tmp  
@@ -361,6 +369,77 @@ module Viscosity
       endif
 !
     endsubroutine shock_max5
+
+!***********************************************************************
+!ajwm Utility routines - poss need moving elsewhere
+    subroutine shock_max3(f,maxf)
+!
+!  return array maxed with by 2 points either way
+!  skipping 1 data point all round
+!
+!  29-nov-03/axel: adapted from shock_max5
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz) :: f
+      real, dimension (mx,my,mz) :: maxf, tmp
+!
+!  x-direction, f -> maxf
+!  check for degeneracy
+!
+      if (nxgrid/=1) then
+         if (mx.ge.3) then
+            maxf(1     ,:,:) = amax1(f(1     ,:,:), &
+                                     f(2     ,:,:))
+            maxf(2:mx-1,:,:) = amax1(f(1:mx-2,:,:), &
+                                     f(2:mx-1,:,:), &
+                                     f(3:mx  ,:,:))
+            maxf(  mx  ,:,:) = amax1(f(  mx-1,:,:), &
+                                     f(  mx  ,:,:))
+         else
+            maxf=f
+         endif
+      else
+         maxf=f
+      endif
+!
+!  y-direction, maxf -> f (swap back again)
+!  check for degeneracy
+!
+      if (nygrid/=1) then
+         if (my.ge.3) then
+            tmp(:,1     ,:) = amax1(maxf(:,1     ,:),  &
+                                    maxf(:,2     ,:))
+            tmp(:,2:my-1,:) = amax1(maxf(:,1:my-2,:), &
+                                    maxf(:,2:my-1,:), &
+                                    maxf(:,3:my  ,:))
+            tmp(:,  my  ,:) = amax1(maxf(:,  my-1,:), &
+                                    maxf(:,  my  ,:))
+         else
+            tmp=maxf
+         endif
+      else
+         tmp=maxf
+      endif
+!
+!  z-direction, f -> maxf
+!  check for degeneracy
+!
+      if (nzgrid/=1) then
+         if (mz.ge.3) then
+            maxf(:,:,1     ) = amax1(tmp(:,:,1     ),  &
+                                     tmp(:,:,2     ))
+            maxf(:,:,2:mz-1) = amax1(tmp(:,:,1:mz-2), &
+                                     tmp(:,:,2:mz-1), &
+                                     tmp(:,:,3:mz  ))
+            maxf(:,:,mz    ) = amax1(tmp(:,:,  mz-1), &
+                                     tmp(:,:,  mz  ))
+         endif
+      else
+         maxf=tmp
+      endif
+!
+    endsubroutine shock_max3
 
 !***********************************************************************
     subroutine shock_smooth(f,smoothf)
