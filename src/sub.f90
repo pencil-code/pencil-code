@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.113 2003-03-06 14:23:57 brandenb Exp $ 
+! $Id: sub.f90,v 1.114 2003-04-28 08:25:00 nilshau Exp $ 
 
 module Sub 
 
@@ -947,6 +947,32 @@ module Sub
       enddo
 !
     endsubroutine del2v
+!***********************************************************************
+    subroutine del6v(f,k,del6f)
+!
+!  calculate del2 of a vector, get vector
+!  28-oct-97/axel: coded
+!  24-apr-03/nils: adapted from del2v
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,3) :: del6f
+      real, dimension (nx) :: tmp
+      integer :: i,k,k1
+!
+      intent(in) :: f,k
+      intent(out) :: del6f
+!
+!  do the del2 diffusion operator
+!
+      k1=k-1
+      do i=1,3
+        call del6(f,k1+i,tmp)
+        del6f(:,i)=tmp
+      enddo
+!
+    endsubroutine del6v
 !***********************************************************************
     subroutine del2v_etc(f,k,del2,graddiv,curlcurl)
 !
