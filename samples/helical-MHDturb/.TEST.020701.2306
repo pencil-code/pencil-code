@@ -1,0 +1,59 @@
+$Id: .TEST.020701.2306,v 1.1 2002-07-02 05:01:53 brandenb Exp $
+brandenb@nl3:/home/brandenb/f90/pencil_modular/runs/forced/hel1
+
+Non-MPI version
+Mon Jul  1 23:06:26 MDT 2002
+   src/start.x
+CVS: hydro.f90          v. 1.34         (brandenb  ) 2002/07/02 00:50:44
+CVS: density.f90        v. 1.19         (brandenb  ) 2002/06/30 17:44:52
+CVS: forcing.f90        v. 1.14         (brandenb  ) 2002/06/25 17:06:14
+CVS: noentropy.f90      v. 1.23         (dobler    ) 2002/06/25 14:58:47
+CVS: magnetic.f90       v. 1.56         (dobler    ) 2002/06/25 14:58:47
+CVS: nograv.f90         v. 1.9          (nilshau   ) 2002/07/01 12:43:44
+CVS: start.f90          v. 1.47         (dobler    ) 2002/06/25 14:58:47
+CVS: start.in           v. 1.15         (dobler    ) 2002/06/25 12:25:49
+
+ init_hydro: zero velocity
+ uniform lnrho
+ verify(!): cs2bot,cs2top=   0.0000000E+00   0.0000000E+00
+ set y-dependent Betrami field for variable i= 5
+
+0.090u 0.070s 0:00.74 21.6%	0+0k 0+0io 360pf+0w
+
+Mon Jul  1 23:06:27 MDT 2002
+
+Non-MPI version
+Mon Jul  1 23:06:28 MDT 2002
+   src/run.x
+CVS: hydro.f90          v. 1.34         (brandenb  ) 2002/07/02 00:50:44
+CVS: density.f90        v. 1.19         (brandenb  ) 2002/06/30 17:44:52
+CVS: forcing.f90        v. 1.14         (brandenb  ) 2002/06/25 17:06:14
+CVS: noentropy.f90      v. 1.23         (dobler    ) 2002/06/25 14:58:47
+CVS: magnetic.f90       v. 1.56         (dobler    ) 2002/06/25 14:58:47
+CVS: nograv.f90         v. 1.9          (nilshau   ) 2002/07/01 12:43:44
+CVS: run.f90            v. 1.53         (dobler    ) 2002/06/25 14:58:47
+CVS: run.in             v. 1.17         (brandenb  ) 2002/06/24 17:45:28
+ ldebug,ip= F 14
+ ENTER: pde
+CVS: equ.f90            v. 1.68         (brandenb  ) 2002/06/27 22:02:59
+ SOLVE duu_dt
+ viscous force: nu*del2v
+ maximum squared avection speed
+ maxadvec2,u2=   0.0000000E+00   0.0000000E+00
+ Calculate maxima and rms values...
+ SOLVE dlnrho_dt
+ SOLVE daa_dt
+ opening k.dat
+ average k=   3.1341600
+
+ --it-----t--------dt-------umax-------urms-------brms-------jrms-------jmax-------orms-------omax-------vAmax-------abm--------jbm--------oum-------rhom---
+    0    0.000  7.80E-02  0.000E+00  0.000E+00   1.00E-01   1.00E-01   1.00E-01   0.00E+00   0.00E+00   1.00E-01  -1.00E-02  -1.00E-02   0.00E+00  1.000000
+    1    0.078  7.80E-02  2.448E-02  2.183E-02   1.00E-01   1.00E-01   1.00E-01   6.33E-02   6.92E-02   2.72E-01  -9.99E-03  -9.99E-03   1.35E-03  1.000000
+    2    0.156  7.80E-02  4.882E-02  3.082E-02   9.99E-02   9.99E-02   1.01E-01   9.72E-02   1.50E-01   2.72E-01  -9.98E-03  -9.98E-03   2.92E-03  1.000000
+    3    0.234  7.80E-02  7.190E-02  3.765E-02   9.99E-02   9.99E-02   1.04E-01   1.17E-01   2.19E-01   2.72E-01  -9.98E-03  -9.98E-03   4.32E-03  1.000000
+
+ Wall clock time [sec]=   4.4840002  (+/-    1.0000000E-03 )
+ Wall clock time/timestep/meshpoint [microsec]=  34.2102051
+
+4.360u 0.070s 0:04.73 93.6%	0+0k 0+0io 660pf+0w
+Mon Jul  1 23:06:33 MDT 2002
