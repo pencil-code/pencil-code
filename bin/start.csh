@@ -44,14 +44,14 @@ foreach dir ($subdirs)
     rm -f $dir/*.xy $dir/*.xz >& /dev/null
   endif
   # Create directories on local scratch disk if necessary
-  if ($local_disc) then
-    if (! -e $localdir) then
-      mkdir $dir
-    else
-      # Clean up
-      rm -f $localdir/VAR* $localdir/var.dat >& /dev/null
-    endif
-  endif
+  #if ($local_disc) then
+  #  if (! -e $localdir) then
+  #    mkdir $dir
+  #  else
+  #    # Clean up
+  #    rm -f $localdir/VAR* $localdir/var.dat >& /dev/null
+  #  endif
+  #endif
 end
 if (-e $datadir/time_series.dat && ! -z $datadir/time_series.dat) mv $datadir/time_series.dat $datadir/time_series.`timestr`
 rm -f $datadir/*.dat $datadir/*.nml $datadir/param*.pro $datadir/index*.pro >& /dev/null
