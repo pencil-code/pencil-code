@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.97 2003-06-18 13:14:15 dobler Exp $
+! $Id: density.f90,v 1.98 2003-06-18 14:02:02 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -70,7 +70,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.97 2003-06-18 13:14:15 dobler Exp $")
+           "$Id: density.f90,v 1.98 2003-06-18 14:02:02 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -303,8 +303,16 @@ module Density
       case('planet')
         !
         !  planet solution of Goodman, Narayan & Goldreich (1987)
+        !  (Simple 3-D)
         !
         call planet(rbound,f,xx,yy,zz,eps_planet,radius_lnrho,gamma,cs20,widthlnrho,hh0)
+
+      case('planet_hc')
+        !
+        !  planet solution of Goodman, Narayan & Goldreich (1987)
+        !  (3-D with hot corona)
+        !
+        call planet_hc(ampllnrho,f,xx,yy,zz,eps_planet,radius_lnrho,gamma,cs20,widthlnrho)
 
       case('kepvor')
         !
