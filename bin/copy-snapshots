@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.35 2004-09-22 08:18:03 ajohan Exp $
+# CVS: $Id: copy-snapshots,v 1.36 2004-09-22 10:09:44 ajohan Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -12,19 +12,16 @@
 #     Should better be a Perl script.
 
 set debug = 0
-if ($#argv > 0) then
-  if (($1 == "-v") || ($1 == "--verbose")) then
-    set debug = 1
-    shift
+foreach argv_scalar ($argv)
+  if (($argv_scalar == "-v") || ($argv_scalar == "--verbose")) then
+    set debug = 1          # for debugging output (recommended)
+  else if (($argv_scalar == "-1")) then
+    set run_only_once = 1  # check only once for files to copy
+  else
+    set varfile = $argv_scalar
+    if ($debug) echo "varfile = <$varfile>"
   endif
-endif
-##
-## Command line input provides the name of the file that should be copied
-##
-if ($#argv > 0) then
-  set varfile = $1
-  if ($debug) echo "varfile = <$varfile>"
-endif
+end
 ##
 ## Set some necessary filesystem variables...
 ##
@@ -177,6 +174,10 @@ else
       printf "  ##Nothing to copy:\n"
       printf "  ##no {proc0,allprocs}/{VAR,TIMEAVG}[0-9]* at the root processor's scratch disc\n"
     endif
+##
+## Break infinite while loop if set to check only once for files to copy
+##
+    if ($?run_only_once) break
 ##
 ## Check only every 60 seconds
 ##
