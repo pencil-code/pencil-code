@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.92 2003-08-14 14:21:40 dobler Exp $
+! $Id: register.f90,v 1.93 2003-09-09 16:44:19 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -21,23 +21,24 @@ module Register
 !  6-nov-01/wolf: coded
 !
       use Cdata
-      use Mpicomm
-      use Sub
-      use IO
-      use Param_IO
-      use Gravity
-      use Hydro
-      use Forcing
-      use Entropy
-      use Magnetic
-      use Radiation
-      use Ionization
-      use Pscalar
-      use Dustdensity
-      use Dustvelocity
-      use Interstellar
-      use Shear
-      use Viscosity
+      use Mpicomm,      only: mpicomm_init, stop_it
+      use Sub 
+      use Param_IO,     only: get_datadir, get_snapdir
+      use IO,           only: register_io
+      use Gravity,      only: register_gravity
+      use Hydro,        only: register_hydro
+      use Density,      only: register_density
+      use Forcing,      only: register_forcing
+      use Entropy,      only: register_entropy
+      use Magnetic,     only: register_magnetic
+      use Radiation,    only: register_radiation
+      use Ionization,   only: register_ionization
+      use Pscalar,      only: register_pscalar
+      use Dustdensity,  only: register_dustdensity
+      use Dustvelocity, only: register_dustvelocity
+      use Interstellar, only: register_interstellar
+      use Shear,        only: register_shear
+      use Viscosity,    only: register_viscosity
 !
 !  initialize all mpi stuff
 !
@@ -110,20 +111,21 @@ module Register
       use Cdata
       use Param_IO
       use Print
-      use Timeavg
-      use Gravity
-      use Hydro
-      use Forcing
-      use Entropy
-      use Magnetic
-      use Radiation
-      use Ionization
-      use Pscalar
-      use Dustdensity
-      use Dustvelocity
-      use Interstellar
-      use Shear
-      use Viscosity
+!      use Hydro
+!      use Density
+      use Timeavg,      only: initialize_timeavg
+      use Gravity,      only: initialize_gravity
+      use Forcing,      only: initialize_forcing
+      use Entropy,      only: initialize_entropy
+!      use Magnetic
+      use Radiation,    only: initialize_radiation
+      use Ionization,   only: initialize_ionization
+      use Pscalar,      only: initialize_pscalar
+      use Dustdensity,  only: initialize_dustdensity
+      use Dustvelocity, only: initialize_dustvelocity
+      use Interstellar, only: initialize_interstellar
+      use Shear,        only: initialize_shear
+      use Viscosity,    only: initialize_viscosity
 
       real, dimension(mx,my,mz,mvar+maux) :: f
       logical :: lstart
@@ -234,15 +236,15 @@ module Register
 !
       use Cdata
       use Param_IO
-      use Hydro
-      use Entropy
-      use Magnetic
-      use Radiation
-      use Ionization
-      use Pscalar
-      use Dustvelocity
-      use Dustdensity
-      use Gravity
+      use Hydro,        only: rprint_hydro
+      use Entropy,      only: rprint_entropy
+      use Magnetic,     only: rprint_magnetic
+      use Radiation,    only: rprint_radiation
+      use Ionization,   only: rprint_ionization
+      use Pscalar,      only: rprint_pscalar
+      use Dustvelocity, only: rprint_dustvelocity
+      use Dustdensity,  only: rprint_dustdensity
+      use Gravity,      only: rprint_gravity
 !
       integer :: iname,inamez,inamexy,inamerz
       logical :: lreset,exist
