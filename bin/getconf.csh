@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.82 2003-09-04 13:06:40 dobler Exp $
+# $Id: getconf.csh,v 1.83 2003-09-04 14:00:37 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -71,12 +71,12 @@ if ($?PBS_NODEFILE) then
   if ($debug) echo "PBS job"
   set nodelist = `cat $PBS_NODEFILE | grep -v '^#' | sed 's/:[0-9]*//'`
 else if ($?JOB_ID) then
-  if ($debug) echo "Scout [?] job"
   if (-e $HOME/.score/ndfile.$JOB_ID) then
+    if ($debug) echo "Scout job"
     set nodelist = `cat $HOME/.score/ndfile.$JOB_ID | grep -v '^#' | sed 's/:[0-9]*//'`
   else
-    echo "JOB_ID=$JOB_ID, but can't find ~/.score/ndfile.$JOB_ID -- aborting"
-    kill $$			# full-featured suicide
+    # E.g. for wd running SGE on Kabul cluster
+    echo "Apparently not a scout job"
   endif
 else
   if ($debug) echo "Setting nodelist to ($hn)"
