@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.179 2004-06-09 10:20:47 ajohan Exp $ 
+! $Id: param_io.f90,v 1.180 2004-06-15 14:06:32 mcmillan Exp $ 
 
 module Param_IO
 
@@ -552,7 +552,7 @@ module Param_IO
 !
       if (lroot) then
         open(1,file=trim(datadir)//'/slice_position.dat',STATUS='unknown')
-        write(1,*) slice_position
+        write(1,'(a)') slice_position
         close(1)
       endif
 !  
