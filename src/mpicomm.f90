@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.70 2002-12-09 12:42:33 ngrs Exp $
+! $Id: mpicomm.f90,v 1.71 2003-02-06 12:08:53 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -1074,5 +1074,48 @@ subroutine transform_nr(a_re,a_im)
   if(lroot .AND. ip<10) print*,'fft has finished'
 !
 endsubroutine transform_nr
+!***********************************************************************
+subroutine transform_fftpack_1d(a_re,a_im)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data.
+!  This version works currently only when nxgrid=nygrid=nzgrid!
+!  The length of the work arrays for ffts is therefore always nx.
+!
+!  06-feb-03/nils: adapted from transform_fftpack
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  real,dimension(4*nx+15) :: wsavex
+  integer :: l,m,n
+!
+!  check whether nxgrid=nygrid=nzgrid
+!
+  if(nxgrid/=nygrid .or. nxgrid/=nzgrid) then
+    print*,'transform_fftpack: must have nxgrid=nygrid=nzgrid!'
+    call stop_it("must have nxgrid=nygrid=nzgrid!")
+  endif
+!
+!  need to initialize cfft only once, because nxgrid=nygrid=nzgrid
+!
+  call cffti(nx,wsavex)
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  do n=1,nz
+  do m=1,ny
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+  if(lroot .AND. ip<10) print*,'fft has finished'
+!
+endsubroutine transform_fftpack_1d
 !***********************************************************************
 endmodule Mpicomm

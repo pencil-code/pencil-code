@@ -519,4 +519,34 @@ subroutine transform_nr(a_re,a_im)
 !
 end subroutine transform_nr
 !***********************************************************************
+subroutine transform_fftpack_1d(a_re,a_im)
+!
+!  Subroutine to do Fourier transform
+!  The routine overwrites the input data
+!
+!  06-feb-03/nils: adapted from transform_fftpack
+!
+  real,dimension(nx,ny,nz) :: a_re,a_im
+  complex,dimension(nx) :: ax
+  real,dimension(4*nx+15) :: wsavex
+  integer :: l,m,n
+!
+  if(lroot .AND. ip<10) print*,'doing FFTpack in x'
+  call cffti(nx,wsavex)
+  do m=1,ny
+  do n=1,nz
+    ax=cmplx(a_re(:,m,n),a_im(:,m,n))
+    call cfftf(nx,ax,wsavex)
+    a_re(:,m,n)=real(ax)
+    a_im(:,m,n)=aimag(ax)
+  enddo
+  enddo
+!
+!  Normalize
+!
+  a_re=a_re/nwgrid
+  a_im=a_im/nwgrid
+!
+end subroutine transform_fftpack_1d
+!***********************************************************************
 endmodule Mpicomm

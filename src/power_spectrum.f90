@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.27 2003-01-01 07:49:49 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.27 2003-01-01 07:49:49 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -154,7 +154,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.27 2003-01-01 07:49:49 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -274,6 +274,100 @@ module  power_spectrum
   endif
   !
   endsubroutine powerhel
+!***********************************************************************
+    subroutine power_1d(f,sp)
+!
+!  Calculate power spectra (on shperical shells) of the variable
+!  specified by `sp'.
+!  Since this routine is only used at the end of a time step,
+!  one could in principle reuse the df array for memory purposes.
+!
+  integer, parameter :: nk=nx/2
+  integer :: i,k,ikx,iky,ikz,im,in,ivec
+  real, dimension (mx,my,mz,mvar) :: f
+  real, dimension(nx,ny,nz) :: a1,b1
+  real, dimension(nx) :: bb
+  real, dimension(nk) :: spectrum=0.,spectrum_sum=0
+  real, dimension(nxgrid) :: kx
+  character (len=1) :: sp
+  !
+  !  identify version
+  !
+  if (lroot .AND. ip<10) call cvs_id( &
+       "$Id: power_spectrum.f90,v 1.28 2003-02-06 12:08:53 nilshau Exp $")
+  !
+  !  Define wave vector, defined here for the *full* mesh.
+  !  Each processor will see only part of it.
+  !
+  kx=cshift((/(i-(nxgrid+1)/2,i=0,nxgrid-1)/),+(nxgrid+1)/2)*2*pi/Lx
+  !
+  spectrum=0
+  !
+  !  In fft, real and imaginary parts are handled separately.
+  !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
+  !
+  ivec=1
+  !
+  if (sp=='u') then
+     a1=f(l1:l2,m1:m2,n1:n2,iux+ivec-1)
+  elseif (sp=='b') then
+     do n=n1,n2
+        do m=m1,m2
+           call curli(f,iaa,bb,ivec)
+           im=m-nghost
+           in=n-nghost
+           a1(:,im,in)=bb
+        enddo
+     enddo
+  elseif (sp=='a') then
+     a1=f(l1:l2,m1:m2,n1:n2,iax+ivec-1)
+  else
+     print*,'There are no such sp=',sp
+  endif
+  b1=0
+  !
+  !  Doing the Fourier transform
+  !
+  call transform_fftpack_1d(a1,b1)
+  !
+  !    Stopping the run if FFT=nofft
+  !
+  if(.NOT.lfft) call stop_it('Need FFT=fft in Makefile.local to get spectra!')
+  !
+  !  integration over shells
+  !
+  if(lroot .AND. ip<10) print*,'fft done; now integrate over shells...'
+  do ikx=1,nx
+     do m=1,ny
+        do n=1,nz
+           k=abs(kx(ikx))
+           spectrum(k+1)=spectrum(k+1)+a1(ikx,m,n)**2+b1(ikx,m,n)**2
+        enddo
+     enddo
+  enddo
+  !
+  !  Summing up the results from the different processors
+  !  The result is available only on root
+  !
+  call mpireduce_sum(spectrum,spectrum_sum,nk)
+  !
+  !  on root processor, write global result to file
+  !  multiply by 1/2, so \int E(k) dk = (1/2) <u^2>
+  !
+!
+!  append to diagnostics file
+!
+  if (iproc==root) then
+     if (ip<10) print*,'Writing power spectra of variable',sp &
+          ,'to ',trim(datadir)//'/power'//trim(sp)//'x_x.dat'
+     spectrum_sum=.5*spectrum_sum
+     open(1,file=trim(datadir)//'/power'//trim(sp)//'x_x.dat',position='append')
+     write(1,*) t
+     write(1,'(1p,8e10.2)') spectrum_sum
+     close(1)
+  endif
+  !
+  endsubroutine power_1d
 !***********************************************************************
 
 end module power_spectrum
