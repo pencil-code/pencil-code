@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.140 2003-05-30 20:47:44 ngrs Exp $
+! $Id: equ.f90,v 1.141 2003-06-04 10:44:36 brandenb Exp $
 
 module Equ
 
@@ -220,7 +220,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.140 2003-05-30 20:47:44 ngrs Exp $")
+           "$Id: equ.f90,v 1.141 2003-06-04 10:44:36 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -315,8 +315,9 @@ module Equ
 !  Shouldn't we call this one in hydro itself?
 !  WD: there is some virtue in calling all of the dXX_dt in equ.f90
 !  AB: but it is not really a new dXX_dt, because XX=uu.
+!  duu_dt_grav now also takes care of dust velocity
 !
-        if (lhydro) then
+        if (lhydro.or.ldustvelocity) then
           if(lgrav) call duu_dt_grav(f,df,uu,rho1)
         endif
 !

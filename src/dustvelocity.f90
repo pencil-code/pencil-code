@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $
+! $Id: dustvelocity.f90,v 1.4 2003-06-04 10:44:36 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -13,7 +13,9 @@ module Dustvelocity
   implicit none
 
   ! init parameters
-  real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1., taud=0., taud1=0.
+  real :: ampluud=0., kx_uud=1., ky_uud=1., kz_uud=1., beta=0.
+  real :: taud=0., taud1=0.
+  logical :: lfeedback_gas=.true.
   character (len=labellen) :: inituud='zero'
 
   namelist /dustvelocity_init_pars/ &
@@ -21,7 +23,7 @@ module Dustvelocity
 
   ! run parameters
   namelist /dustvelocity_run_pars/ &
-       nud, taud
+       nud, beta, taud, lfeedback_gas
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ud2m=0,i_udm2=0,i_oudm=0,i_od2m=0
@@ -65,7 +67,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.3 2003-04-26 09:21:06 brandenb Exp $")
+           "$Id: dustvelocity.f90,v 1.4 2003-06-04 10:44:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -139,8 +141,8 @@ module Dustvelocity
 !
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: udij
-      real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud
-      real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz
+      real, dimension (nx,3) :: uu,uud,udgud,ood,del2ud,fac
+      real, dimension (nx) :: ud2,divud,od2,oud,udx,udy,udz,rho1,rhod1
       real :: c2,s2 !(coefs for Coriolis force with inclined Omega)
       integer :: i,j
 !
@@ -214,8 +216,20 @@ module Dustvelocity
 !
       call del2v(f,iuud,del2ud)
       maxdiffus=amax1(maxdiffus,nud)
-      if (taud /= 0.) taud1=1./taud
-      df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-taud1*(uud-uu)
+      !if (taud /= 0.) taud1=1./taud
+      !df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-taud1*(uud-uu)
+!
+      rhod1=exp(-f(l1:l2,m,n,ilnrhod))
+      do j=1,3; fac(:,j)=beta*rhod1; enddo
+      df(l1:l2,m,n,iudx:iudz)=df(l1:l2,m,n,iudx:iudz)+nud*del2ud-fac*(uud-uu)
+!
+!  add drag force on gas (if Mdust_to_Mgas is large enough)
+!
+      if(lfeedback_gas) then
+        rho1=exp(-f(l1:l2,m,n,ilnrho))
+        do j=1,3; fac(:,j)=beta*rho1; enddo
+        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-fac*(uu-uud)
+      endif
 !
 !  maximum squared avection speed
 !

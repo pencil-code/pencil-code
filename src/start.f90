@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.90 2003-05-31 04:42:30 brandenb Exp $
+! $Id: start.f90,v 1.91 2003-06-04 10:44:36 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -38,7 +38,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.90 2003-05-31 04:42:30 brandenb Exp $")
+             "$Id: start.f90,v 1.91 2003-06-04 10:44:36 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -146,6 +146,7 @@
         call init_rad  (f,xx,yy,zz)
         call init_lncc (f,xx,yy,zz)
         call init_uud  (f,xx,yy,zz)
+        call init_lnrhod(f,xx,yy,zz)
 !
 !  check whether we want ionization
 !

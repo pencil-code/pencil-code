@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.2 2003-03-18 23:27:09 brandenb Exp $
+! $Id: dustdensity.f90,v 1.3 2003-06-04 10:44:36 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -11,13 +11,14 @@ module Dustdensity
 
   implicit none
 
-  real :: rhod0=1.,lnrhod0,ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.,lnrhod_const=0.
+  real :: rhod0=1.,lnrhod0,ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.
+  real :: lnrhod_const=0.,rhod_const=1.
   real :: kx_lnrhod,ky_lnrhod,kz_lnrhod
   character (len=labellen) :: initlnrhod='zero'
 
   namelist /dustdensity_init_pars/ &
        rhod0,ampllnrhod,initlnrhod, &
-       kx_lnrhod,ky_lnrhod,kz_lnrhod,amplrhod
+       kx_lnrhod,ky_lnrhod,kz_lnrhod,amplrhod,rhod_const
 
   namelist /dustdensity_run_pars/ &
        rhod0,cdiffrhod
@@ -56,7 +57,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.2 2003-03-18 23:27:09 brandenb Exp $")
+           "$Id: dustdensity.f90,v 1.3 2003-06-04 10:44:36 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -100,6 +101,7 @@ module Dustdensity
       select case(initlnrhod)
 
       case('zero'); if(lroot) print*,'zero lnrhod'
+      case('const_rhod'); f(:,:,:,ilnrhod)=alog(rhod_const)
       case('const_lnrhod'); f(:,:,:,ilnrhod)=lnrhod_const
       case default
         !

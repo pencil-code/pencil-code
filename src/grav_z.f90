@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.33 2003-05-05 18:48:52 brandenb Exp $
+! $Id: grav_z.f90,v 1.34 2003-06-04 10:44:36 brandenb Exp $
 
 module Gravity
 
@@ -80,7 +80,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.33 2003-05-05 18:48:52 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.34 2003-06-04 10:44:36 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -120,6 +120,7 @@ module Gravity
 !  9-jan-02/wolf: coded
 ! 28-jun-02/axel: added 'linear' gravity profile
 ! 28-jul-02/axel: added 'const_zero' gravity profile
+!  1-jun-03/axel: dust velocity added
 !
       use Cdata
       use Sub
@@ -135,14 +136,18 @@ module Gravity
 !
       if (grav_profile=='const') then
         if (headtt) print*,'duu_dt_grav: constant gravz=',gravz
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
+        if(lhydro)        df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
+        if(ldustvelocity) df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)+gravz
 !
 !  linear gravity profile (for accretion discs)
 !
       elseif (grav_profile=='const_zero') then
         if (headtt) print*,'duu_dt_grav: const_zero gravz=',gravz
         if (zgrav==impossible.and.lroot) print*,'zgrav is not set!'
-        if (z(n)<=zgrav) df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)+gravz
+        if (z(n)<=zgrav) then
+          if(lhydro)        df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) +gravz
+          if(ldustvelocity) df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)+gravz
+        endif
 !
 !  linear gravity profile (for accretion discs)
 !
@@ -151,15 +156,18 @@ module Gravity
         !  if (lroot) print*,'Omega,nu_epicycle=',Omega,nu_epicycle
         !endif
         nu_epicycle2=nu_epicycle**2
-        if (headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) - nu_epicycle2*z(n)
+        if(headtt) print*,'duu_dt_grav: linear grav, nu=',nu_epicycle
+        if(lhydro)        df(l1:l2,m,n,iuz) =df(l1:l2,m,n,iuz) -nu_epicycle2*z(n)
+        if(ldustvelocity) df(l1:l2,m,n,iudz)=df(l1:l2,m,n,iudz)-nu_epicycle2*z(n)
 !
 !  gravity profile from K. Ferriere, ApJ 497, 759, 1998, eq (34)
 !   at solar radius.  (for interstellar runs)
 !
       elseif (grav_profile=='Ferriere') then
 !  nb: 331.5 is conversion factor: 10^-9 cm/s^2 -> kpc/Gyr^2)  (/= 321.1 ?!?)
-        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
+        if(lhydro)        df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) & 
+             -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
+        if(ldustvelocity) df(l1:l2,m,n,iudz) = df(l1:l2,m,n,iudz) & 
              -331.5*(4.4*z(n)/sqrt(z(n)**2+(0.2)**2) + 1.7*z(n))
       else
         if(lroot) print*,'no gravity profile given'

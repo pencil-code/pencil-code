@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.44 2003-05-31 04:25:14 brandenb Exp $ 
+! $Id: initcond.f90,v 1.45 2003-06-04 10:44:36 brandenb Exp $ 
 
 module Initcond 
  
@@ -520,8 +520,8 @@ module Initcond
 !
       delta2=(2.-sigma)*sigma
       print*,'planet: sigma,delta2,radius=',sigma,delta2,radius
-      if (delta2<=0.) then
-        print*,'delta2<=0 not allowed'
+      if (delta2<0.) then
+        print*,'delta2<0 not allowed'
       else
         delta=sqrt(delta2)
       endif
@@ -541,16 +541,25 @@ module Initcond
 !  xi=1 inside vortex, and 0 outside
 !  NOTE: if width is too small, the vertical integration below may fail.
 !
-      rr2=xx**2+eps2*yy**2+zz**2/delta2
-      hh=+.5*delta2*Omega**2*(radius2-rr2)
-      xi=.5+.5*tanh(hh/width)
+      rr2=delta2*(xx**2+eps2*yy**2)+zz**2
+      hh=+.5*Omega**2*(delta2*radius2-rr2)
+      if(delta==0.) then
+        if(lroot) print*,'planet: delta=0, so we ignore z-dependence of xi'
+        xi=.5+.5*tanh((radius2-xx**2-eps2*yy**2)/width**2)
+      else
+        if(lroot) print*,'planet: delta/=0, so we include z-dependence of xi'
+        xi=.5+.5*tanh((radius2-xx**2-eps2*yy**2-zz**2/delta2**2)/width**2)
+      endif
+      if(lroot) print*,'planet: minmax(xi),width=',minval(xi),maxval(xi),width
 !
-    if(.not.lentropy) then
+    if(nz.eq.1) then
 !
 !  Solution as in the old disc code
+!  add floor value (currently a constant)
 !
       print*,'use h -> h+h0 and constant entropy'
-      hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
+      !hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
+      hh=max(hh,ampl**gamma1/gamma1)
       if(lentropy) f(:,:,:,ient)=0.
     else
 !
@@ -580,7 +589,9 @@ module Initcond
 !
 !  calculate density, depending on what gamma is
 !
-      print*,'planet: hmin=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
+      print*,'planet: hmin,zinfty2=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
+      print*,'hh=amin1(1e-5*maxval(hh),hh)'
+      hh=amin1(1e-5*maxval(hh),hh)
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
