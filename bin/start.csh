@@ -80,6 +80,9 @@ if ($local_disc) then
   copy-snapshots -v var.dat
 endif
 
+# Change permissions for DX General Importer shell script
+chmod +x $datadir/*.dxsh
+
 # cut & paste for job submission on the mhd machine
 # bsub -n  4 -q 4cpu12h mpijob dmpirun src/start.x
 # bsub -n  8 -q 8cpu12h mpijob dmpirun src/start.x
