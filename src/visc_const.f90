@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.43 2004-10-04 17:24:08 nilshau Exp $
+! $Id: visc_const.f90,v 1.44 2004-10-26 08:41:33 ajohan Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.43 2004-10-04 17:24:08 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.44 2004-10-26 08:41:33 ajohan Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -249,13 +249,26 @@ module Viscosity
           endif
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
-        case ('hyper6')
+        case ('hyper3_simplified', 'hyper6')
           !
           !  viscous force: nu*del6v
           !
           if (headtt) print*,'viscous force: nu*del6v'
           call del6v(f,iuu,del6u)
           fvisc=nu*del6u
+!          call max_for_dt(nu,maxdiffus)
+          diffus_nu=max(diffus_nu,nu*dxyz_2)
+
+        case ('hyper3_simplified2')
+          !
+          !  viscous force: nu*del6v
+          !
+          if (headtt) print*,'viscous force: nu*del6v'
+          murho1=(nu*rho0)*rho1  !(=mu/rho)
+          call del6v(f,iuu,del6u)
+          do i=1,3
+            fvisc(:,i)=murho1*del6u(:,i)
+          enddo
 !          call max_for_dt(nu,maxdiffus)
           diffus_nu=max(diffus_nu,nu*dxyz_2)
 
