@@ -116,6 +116,9 @@ $(FORCING).o:  $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:  $(ENTROPY).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 $(MAGNETIC).o: $(MAGNETIC).f90 cdata.o deriv.o $(MPICOMM).o sub.o slices.o
 
+TAG_SOURCE=$(run_deps:.o=.f90)
+TAGS: $(TAG_SOURCE)
+	etags $(TAG_SOURCE)
 
 clean:
 	rm -f *.x *.o *.mod
