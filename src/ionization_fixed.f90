@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.28 2003-10-21 17:47:10 mee Exp $
+! $Id: ionization_fixed.f90,v 1.29 2003-10-21 17:49:25 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.28 2003-10-21 17:47:10 mee Exp $")
+          "$Id: ionization_fixed.f90,v 1.29 2003-10-21 17:49:25 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -432,7 +432,7 @@ module Ionization
 !***********************************************************************
     subroutine read_ionization_init_pars(unit,iostat)
       integer, intent(in) :: unit
-      integer, intent(inout) :: iostat
+      integer, intent(inout), optional :: iostat
 
       if (present(iostat)) then
         read(unit,NML=ionization_init_pars,ERR=99, IOSTAT=iostat)
