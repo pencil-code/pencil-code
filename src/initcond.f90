@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.47 2003-06-06 15:26:37 ajohan Exp $ 
+! $Id: initcond.f90,v 1.48 2003-06-07 12:00:15 ajohan Exp $ 
 
 module Initcond 
  
@@ -497,12 +497,14 @@ module Initcond
 !   6-jul-02/axel: coded
 !  22-feb-03/axel: fixed 3-D background solution for enthalpy
 !
+      use sub
+
       real, dimension (mx,my,mz,mvar) :: f
-      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell
+      real, dimension (mx,my,mz) :: xx,yy,zz,rr2,hh,xi,r_ell,ux,uy
       real, dimension (mx,my) :: delS
       real :: ampl,sigma2,sigma,delta2,delta,eps,radius
       real :: gamma,eps2,radius2,width,a_ell,b_ell,c_ell
-      real :: gamma1,zinfty2,cs20,hh0
+      real :: gamma1,zinfty2,cs20,hh0,hhmin
       integer :: i,j,k
 !
 !  calculate sigma
@@ -553,73 +555,92 @@ module Initcond
       endif
       if(lroot) print*,'planet: minmax(xi),width=',minval(xi),maxval(xi),width
 !
-    if(nz.eq.1) then
+      if(nz.eq.1) then
 !
 !  2-d solution. Outside vortex enthalpy is ampl**gamma1/gamma1
 !
-      print*,'use h -> h+h0 and constant entropy'
-      !hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
-      hh=max(hh,ampl**gamma1/gamma1)
-      if(lentropy) f(:,:,:,ient)=0.
-    else
+        print*,'use h -> h+h0 and constant entropy'
+        !hh=max(hh,+.5*delta2*Omega**2*radius2*ampl**gamma1)
+        hh=max(hh,ampl**gamma1/gamma1)
+        if(lentropy) f(:,:,:,ient)=0.
+      else
 !
-!  Naive 3-D solution
+!  Cylinder vortex 3-D solution
 !
-!!$      b_ell = radius
-!!$      a_ell = radius/eps
-!!$      c_ell = radius*delta 
-!!$      r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2+zz**2/c_ell**2)
-!!$
-!!$      hh=0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2)-0.5*Omega**2*zz**2+hh0
-!!$
-!!$      do i=1,mx
-!!$        do j=1,my
-!!$          do k=1,mz
-!!$            if(r_ell(i,j,k) .gt. 1) then
-!!$              hh(i,j,k) = -0.5*Omega**2*zz(i,j,k)**2+hh0
-!!$            endif
-!!$          enddo
-!!$        enddo
-!!$      enddo
+        b_ell = radius
+        a_ell = radius/eps
+        c_ell = radius*delta 
+        r_ell = sqrt(xx**2/b_ell**2+yy**2/a_ell**2)
+
+        xi = 1./(exp(10.*(r_ell-1.))+1.)
+
+        hh = 0.5*delta2*Omega**2*(radius2-xx**2-eps2*yy**2) &
+             -0.5*Omega**2*zz**2 + hh0
+
+        do i=1,mx
+          do j=1,my
+            do k=1,mz
+              if(r_ell(i,j,k) .gt. 1) then
+                hh(i,j,k) = -0.5*Omega**2*zz(i,j,k)**2 + hh0
+              endif
+            enddo
+          enddo
+        enddo
+
+        call smooth_3d (hh,3)
+
+        ux = eps2*sigma *Omega*yy*xi
+        uy = (qshear-sigma)*Omega*xx*xi
+!
+!  Avoid negative enthalpy if gamma != 1
+!
+        if (gamma .ne. 1) then
+          hhmin = minval(hh(l1:l2,m1:m2,n1:n2))
+          hh = hh - hhmin + hh0
+        endif
 !
 !  Embed vortex in hot corona
 !
-      print*,"With entropy: integrate hot corona"
-      hh(:,:,n2)=1.  !(initial condition)
-      f(:,:,:,ient)=-alog(ampl)*xi
-      do n=n2-1,n1,-1
-        delS=f(:,:,n+1,ient)-f(:,:,n,ient)
-        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS) + &
-             Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
-      enddo
-
-     endif
+!!$      print*,"With entropy: integrate hot corona"
+!!$      hh(:,:,n2)=1.  !(initial condition)
+!!$      f(:,:,:,ient)=-alog(ampl)*xi
+!!$      do n=n2-1,n1,-1
+!!$        delS=f(:,:,n+1,ient)-f(:,:,n,ient)
+!!$        hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS) + &
+!!$             Omega**2*.5*(z(n)+z(n+1))*dz)/(1.+.5*delS)
+!!$      enddo
+!!$
+      endif
 !
 !  calculate mask function xi, which is 0 outside and 1 inside the vortex
 !  At present, width is not measured in sensible units...
 !
       f(:,:,:,iux)=   eps2*sigma *Omega*yy*xi
       f(:,:,:,iuy)=(qshear-sigma)*Omega*xx*xi
+
+      f(:,:,:,iux)= ux
+      f(:,:,:,iuy)= uy
 !
 !  calculate density, depending on what gamma is
 !
       print*,'planet: hmin,zinfty2=',minval(hh(l1:l2,m1:m2,n1:n2)),zinfty2
 !!$      print*,'hh=amin1(1e-5*maxval(hh),hh)'
-      hh=amin1(1e-5*maxval(hh),hh)
+!!$      hh=amin1(1e-5*maxval(hh),hh)
       if(gamma1<0.) print*,'must have gamma>1 for planet solution'
 !
 !  have to use explicit indices here, because ghostzones are not set
 !
       if(lentropy) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=(alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
-            -gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
+        f(l1:l2,m1:m2,n1:n2,ilnrho) = (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+             - gamma*f(l1:l2,m1:m2,n1:n2,ient))/gamma1
         print*,'planet solution with entropy jump for gamma=',gamma
       else
         if(gamma==1.) then
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=hh(l1:l2,m1:m2,n1:n2)/cs20
+          f(l1:l2,m1:m2,n1:n2,ilnrho) = hh(l1:l2,m1:m2,n1:n2)/cs20
           print*,'planet solution for gamma=1'
         else
-          f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+          f(l1:l2,m1:m2,n1:n2,ilnrho) = &
+               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           print*,'planet solution for gamma=',gamma
         endif
       endif
