@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.49 2003-07-02 18:06:18 mee Exp $
+! $Id: boundcond.f90,v 1.50 2003-07-11 19:27:13 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -105,6 +105,8 @@ module Boundcond
                 case ('osc')
 !                 if (j==ilnrho) call bc_lnrho_osc_x(f,topbot)
                   call bc_osc_x(f,topbot,j)
+                case ('1')        ! f=1 (for debugging)
+                  call bc_one_x(f,topbot,j)
                 case default
                   if (lroot) &
                        print*, "No such boundary condition bcx1/2 = ", &
@@ -172,6 +174,8 @@ module Boundcond
                 if (j==ient) call bc_ss_temp_y(f,topbot)
               case ('sT')       ! symmetric temp.
                 if (j==ient) call bc_ss_stemp_y(f,topbot)
+              case ('1')        ! f=1 (for debugging)
+                call bc_one_y(f,topbot,j)
               case default
                 if (lroot) &
                      print*, "No such boundary condition bcy1/2 = ", &
@@ -260,6 +264,8 @@ module Boundcond
                 call bc_extrap_2_1(f,topbot,j)
               case ('e2')       ! extrapolation
                 call bc_extrap_2_2(f,topbot,j)
+              case ('1')        ! f=1 (for debugging)
+                call bc_one_z(f,topbot,j)
               case ('')         ! do nothing; assume that everything is set
               case default
                 if (lroot) &
@@ -773,7 +779,88 @@ module Boundcond
         enddo
       endif
     endsubroutine bc_osc_x
-!*********************************************************************** 
+!***********************************************************************
+    subroutine bc_one_x(f,topbot,j)
+!
+!  Set bdry values to 1 for debugging purposes
+!
+!  11-jul-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          f(1:l1-1,:,:,j)=1.
+
+      case('top')               ! top boundary
+          f(l2+1:mx,:,:,j)=1.
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_one_x
+!***********************************************************************
+    subroutine bc_one_y(f,topbot,j)
+!
+!  Set bdry values to 1 for debugging purposes
+!
+!  11-jul-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          f(:,1:m1-1,:,j)=1.
+
+      case('top')               ! top boundary
+          f(:,m2+1:my,:,j)=1.
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_one_y
+!***********************************************************************
+    subroutine bc_one_z(f,topbot,j)
+!
+!  Set bdry values to 1 for debugging purposes
+!
+!  11-jul-02/wolf: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      integer :: j
+      character (len=3) :: topbot
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+          f(:,:,1:n1-1,j)=1.
+
+      case('top')               ! top boundary
+          f(:,:,n2+1:mz,j)=1.
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_one_z
+!***********************************************************************
     subroutine update_ghosts(a)
 !
 !  update all ghost zones of a

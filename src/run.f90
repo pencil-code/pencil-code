@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.143 2003-06-24 15:00:01 dobler Exp $
+! $Id: run.f90,v 1.144 2003-07-11 19:27:13 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -52,7 +52,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.143 2003-06-24 15:00:01 dobler Exp $")
+             "$Id: run.f90,v 1.144 2003-07-11 19:27:13 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -184,6 +184,12 @@
           !  this is often an indication of bad boundary conditions!
           !  iwig=500 is a typical value. For iwig=0 no action is taken.
           !  (The two queries below must come separately on compaq machines.)
+          !
+          !  N.B.: We now (July 2003) know that boundary conditions
+          !  change practically nothing, apart from avoiding stationary
+          !  stagnation points/surfaces in the first place.
+          !    rmwig is superseeded by the switches lupw_lnrho, lupw_ss,
+          !  which should provide a far better solution to the problem.
           !
           if (iwig/=0) then
             if (mod(it,iwig).eq.0) then

@@ -1,11 +1,12 @@
-! $Id: io_mpio.f90,v 1.17 2003-07-10 13:43:47 dobler Exp $
+! $Id: io_mpio.f90,v 1.18 2003-07-11 19:27:13 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
 !!!!!!!!!!!!!!!!!!!!!!!!!
 
-!!!  Parallel IO via MPI2 (i.e. all process write to the same file, e.g.
-!!!  tmp/var.dat)
+!!!  Parallel IO via MPI2 (i.e. all process write to the same file, like
+!!!  data/allprocs/var.dat)
+!!!
 !!!  19-sep-02/wolf: started
 
 module Io
@@ -102,7 +103,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.17 2003-07-10 13:43:47 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.18 2003-07-11 19:27:13 dobler Exp $")
 !
 !  global indices of first element of iproc's data in the file
 !
