@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.92 2003-06-17 16:57:14 torkel Exp $
+! $Id: hydro.f90,v 1.93 2003-06-23 19:21:52 brandenb Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -85,7 +85,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.92 2003-06-17 16:57:14 torkel Exp $")
+           "$Id: hydro.f90,v 1.93 2003-06-23 19:21:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -378,7 +378,7 @@ module Hydro
           s2=2*Omega*sin(theta*pi/180.)
           df(l1:l2,m,n,iux)=df(l1:l2,m,n,iux)+c2*uu(:,2)
           df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-c2*uu(:,1)+s2*uu(:,3)
-          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           +s2*uu(:,2)
+          df(l1:l2,m,n,iuz)=df(l1:l2,m,n,iuz)           -s2*uu(:,2)
         endif
       endif
 !
