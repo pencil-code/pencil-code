@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.63 2004-04-16 14:32:09 ajohan Exp $
+! $Id: dustdensity.f90,v 1.64 2004-04-17 09:19:36 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -99,7 +99,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.63 2004-04-16 14:32:09 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.64 2004-04-17 09:19:36 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -321,9 +321,9 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3,ndustspec) :: gnd,grhod,uud
+      real, dimension (nx,3,ndustspec) :: uud,gnd,gmd,gmi
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: ugnd,gnd2,del2nd,rho,rho1,TT1,cs2
+      real, dimension (nx) :: udgnd,udgmd,udgmi,gnd2,del2nd,rho,rho1,TT1,cs2
       real, dimension (ndustspec) :: mice
       real :: diffnd
       integer :: k
@@ -367,12 +367,24 @@ module Dustdensity
 !
       do k=1,ndustspec
 !
-!  Continuity equation
+!  Continuity equations
 !
         call grad(f,ind(k),gnd(:,:,k))
-        call dot_mn(uud(:,:,k),gnd(:,:,k),ugnd)
+        call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
         df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
-            ugnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+            udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
+
+        if (lmdvar) then
+          call grad(f,imd(k),gmd(:,:,k))
+          call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
+          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
+        endif
+
+        if (lmice) then
+          call grad(f,imi(k),gmi(:,:,k))
+          call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)
+          df(l1:l2,m,n,imi(k)) = df(l1:l2,m,n,imi(k)) - udgmi
+        endif
 !
 !  Mass diffusion, in units of dxmin*cs0
 !
@@ -483,12 +495,18 @@ module Dustdensity
                 ndnew(i_targ)*minew(i_targ))/(f(3+l,m,n,ind(k))+ndnew(i_targ))
             ndnew(i_targ) = ndnew(i_targ) + f(3+l,m,n,ind(k))
             ndnew(k)      = ndnew(k)      - f(3+l,m,n,ind(k))
+            if (ndnew(k) == 0.) mdnew(k) = 0.5*(mdminus(k)+mdplus(k))
           elseif (i_targ == 0) then
 !
 !  Underflow below lower boundary
 !          
             f(3+l,m,n,ilncc) = &
                 f(3+l,m,n,ilncc) + f(3+l,m,n,ind(k))*md(k)*unit_md*rho1(l)
+            ndnew(i_targ) = ndnew(i_targ) - nd(l,i_targ)
+            if (ndnew(i_targ) == 0.) then
+              mdnew(i_targ) = 0.5*(mdminus(i_targ)+mdplus(i_targ))
+              if (lmice) minew(i_targ) = 0.
+            endif
           endif
         enddo
         f(3+l,m,n,ind(:)) = ndnew(:)
