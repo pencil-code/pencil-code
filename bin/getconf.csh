@@ -48,7 +48,7 @@ if ($mpi) then
       set local_disc = 1
     endif
     lamboot -v lamhosts
-    echo "lamndodes:"
+    echo "lamnodes:"
     lamnodes
     set mpirun = /usr/bin/mpirun
     set mpirunops = "-O -c2c -s n0"
@@ -62,8 +62,11 @@ if ($mpi) then
     echo "Use options for the Horseshoe cluster"
     set nodelist = `cat $PBS_NODEFILE`
     cat $PBS_NODEFILE > lamhosts
+#echo $nodelist > lamhosts.before
+#shift nodelist
+#cat $nodelist > lamhosts
     lamboot -v lamhosts
-    echo "lamndodes:"
+    echo "lamnodes:"
     lamnodes
     set mpirun = mpirun
     #set mpirunops = "-O -s n0 N -lamd"
@@ -106,5 +109,9 @@ endif
 
 echo "datadir = $datadir"
 exit
+
+# If we are using local disk, the directory name is written into
+# data/directory_snap. This is read by the code during run time
+if ($local_disc) echo $SCRATCH_DIR >$datadir/directory_snap
 
 # End of file getconf.csh
