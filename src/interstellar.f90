@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.31 2003-06-16 04:41:10 brandenb Exp $
+! $Id: interstellar.f90,v 1.32 2003-06-18 00:26:57 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -51,6 +51,10 @@ module Interstellar
         coolH=(/ 5.595e15, 2.503e17, 1.156e12, 4.45e29, 8.054e20, 0.   /),  &
         coolB=(/ 2.,       1.5,      2.867,    -.65,    0.5,      0.   /)
   integer :: iproc_SN,ipy_SN,ipz_SN
+  logical :: ltestSN = .false.  ! If set .true. SN are only exploded at the
+                              ! origin and ONLY the type I scheme is used
+                              ! Used in kompaneets test etc.
+
 
   ! input parameters
  
@@ -61,7 +65,7 @@ module Interstellar
   logical:: uniform_zdist_SNI = .false.
   namelist /interstellar_run_pars/ &
       t_next_SNI,t_interval_SNI,h_SNI,ampl_SN,tau_cloud, &
-      uniform_zdist_SNI
+      uniform_zdist_SNI, ltestSN
 
   contains
 
@@ -88,7 +92,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.31 2003-06-16 04:41:10 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.32 2003-06-18 00:26:57 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -228,7 +232,7 @@ module Interstellar
 !  Do separately for SNI (simple scheme) and SNII (Boris' scheme)
 !
     call check_SNI (f,l_SNI)
-    ! call check_SNII(f,l_SNI)  !ngrs: leave out for faster debug
+    ! if (.not.ltestSN) call check_SNII(f,l_SNI)  !ngrs: leave out for faster debug
 !
     endsubroutine check_SN
 !***********************************************************************
@@ -252,17 +256,17 @@ module Interstellar
 !
     l_SNI=.false.
     if (t >= t_next_SNI) then
-      call position_SNI(f)
-      call explode_SN(f,1)
-!  pre-determine time for next SNI
-      if (lroot) then
-        call random_number_wrapper(franSN)   
-        t_next_SNI=t_next_SNI + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
-        if (ip<14) print*,'Next SNI at time: ',t_next_SNI
-        interstellarsave(1)=t_next_SNI
-      endif
-      call mpibcast_real(t_next_SNI,1)
-      l_SNI=.true.
+       call position_SNI(f)
+       call explode_SN(f,1)
+       !  pre-determine time for next SNI
+       if (lroot) then
+          call random_number_wrapper(franSN)   
+          t_next_SNI=t_next_SNI + (1.0 + 0.4*(franSN(1)-0.5)) * t_interval_SNI
+          if (ip<14) print*,'Next SNI at time: ',t_next_SNI
+          interstellarsave(1)=t_next_SNI
+       endif
+       call mpibcast_real(t_next_SNI,1)
+       l_SNI=.true.
     endif
 !
     endsubroutine check_SNI
@@ -396,20 +400,41 @@ module Interstellar
     !
     !  Pick SN position (x_SN,y_SN,z_SN)
     !
+    call random_number(fran3)    ! get 3 random numbers
+                                 ! on all processors to keep
+                                 ! rnd. generators in sync
     if (lroot) then
-       call random_number(fran3)    ! get 3 random numbers
-       i=int(fran3(1)*nxgrid)+1
-       x_SN=x0+(i-1)*dx
-       l_SN=(i-1)
+       if (ltestSN) then
+          i=int(nxgrid/2)+1
+          x_SN=x0+(i-1)*dx
+          l_SN=(i-1)
+       else
+          i=int(fran3(1)*nxgrid)+1
+          x_SN=x0+(i-1)*dx
+          l_SN=(i-1)
+       endif
        !if (lroot) print*, 'x',fran3(1),x_SN
-       
-       i=int(fran3(2)*nygrid)+1
-       y_SN=y0+(i-1)*dy
-       ipy_SN=(i-1)/ny  ! uses integer division
-       m_SN=(i-1)-(ipy_SN*ny)+nghost
-       !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
-       
-       if (uniform_zdist_SNI) then
+
+       if (ltestSN) then
+          i=int(nygrid/2)+1
+          y_SN=y0+(i-1)*dy
+          ipy_SN=(i-1)/ny  ! uses integer division
+          m_SN=(i-1)-(ipy_SN*ny)+nghost
+          !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
+       else
+          i=int(fran3(2)*nygrid)+1
+          y_SN=y0+(i-1)*dy
+          ipy_SN=(i-1)/ny  ! uses integer division
+          m_SN=(i-1)-(ipy_SN*ny)+nghost
+          !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
+       endif
+
+       if (ltestSN) then
+          i=int(nzgrid/2)+1
+          z_SN=z0+(i-1)*dz
+          ipz_SN=(i-1)/nz   ! uses integer division
+          n_SN=(i-1)-(ipz_SN*nz)+nghost
+       elseif (uniform_zdist_SNI) then
           i=int(fran3(3)*nzgrid)+1
           z_SN=z0+(i-1)*dz
           ipz_SN=(i-1)/nz   ! uses integer division
@@ -617,7 +642,7 @@ find_SN: do n=n1,n2
       real, dimension(2) :: fmpi2, fmpi2_tmp
      ! the following not really wanted, but are required if we want
      ! to use the thermodynamics function in the [No]Ionisation module
-      real, dimension(nx) ::  lnrho_old, ss_old, TT1, cs2, cp1tilde 
+      real, dimension(nx) ::  lnrho_old, ss_old, TT1_old, cs2_old, cp1tilde_old ,yH_old
 
       logical :: lmove_mass=.false.
       integer :: idim
@@ -638,11 +663,12 @@ find_SN: do n=n1,n2
       if (nygrid/=1) dv=dv*dy
       if (nzgrid/=1) dv=dv*dz
 
-      if (lroot.and.ip<14) print*,'width_SN,c_SN', width_SN,c_SN
+      if (lroot.and.ip<=14) print*,'width_SN,c_SN', width_SN,c_SN
         
       !
       !  Now deal with (if nec.) mass relocation
       !
+      !  need to call thermodynamics
       TT_SN_new=TT_SN + c_SN/rho_SN*gamma*cp1    !nb: gamma*cp1 == TTunits
       if(lroot) print*, &
          'explode_SN: TT_SN, TT_SN_new, TT_limit :',TT_SN,TT_SN_new,TT_limit
@@ -688,8 +714,8 @@ find_SN: do n=n1,n2
             ss_old=f(l1:l2,m,n,ient)
 
             !compare old and new conversions for consistency...
-            call thermodynamics(lnrho_old,ss_old,cs2,TT1,cp1tilde, &
-                                     InternalEnergy=ee_old)
+            call ionset(f,lnrho_old,ss_old,yH_old,TT_old)
+            call thermodynamics(lnrho_old,ss_old,TT1_old,cs2_old,cp1tilde_old,ee_old,yH=yH_old,TT=TT_old)
             ! TT_old=cs20*exp(gamma1*(lnrho_old-lnrho0)+gamma*ss_old)/gamma1*cp1
             ! ee_old=TT_old/TTunits
             ! TT1=1./TT_old

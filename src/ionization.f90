@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.48 2003-06-16 10:20:59 nilshau Exp $
+! $Id: ionization.f90,v 1.49 2003-06-18 00:26:57 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -60,7 +60,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.48 2003-06-16 10:20:59 nilshau Exp $")
+           "$Id: ionization.f90,v 1.49 2003-06-18 00:26:57 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -269,7 +269,7 @@ module Ionization
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (ldiagnos) ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
+      ee=1.5*(1.+yH+fHe)*ss_ion*TT+yH*ss_ion*TT_ion
 !
     endsubroutine thermodynamics
 !***********************************************************************
