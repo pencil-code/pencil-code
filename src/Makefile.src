@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.71 2004-08-16 08:07:03 ajohan Exp $
+### $Id: Makefile.src,v 1.72 2004-08-16 14:48:28 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -126,6 +126,7 @@ FCCLEANER=
 #FFLAGS=-O3 -I/opt/mpich/include #(aida[0-9]*)
 #LDMPI=-L /home/johansen/mpich/lib -lmpich #(aida[0-9]*)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
+##FC=ifort -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
 #FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
 #FC=fort -I/usr/lib/lam/include #(mhd)
