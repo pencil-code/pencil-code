@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.148 2003-02-01 10:54:33 dobler Exp $
+### $Id: Makefile,v 1.149 2003-02-01 12:58:23 brandenb Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -72,7 +72,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS=-64 -O3 -mips4 #(tacsg2)
 #OPTFLAGS= -64
 #F77=$(FC)
-CFLAGS=-O3 -64 -DFUNDERSC=1
+#CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## OSF1:
 #FC=f95 #(Mhd.)
@@ -120,6 +120,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #FFLAGS=-O4
 #FFLAGS= -Msmp -O4  #(Lomond)
 #CFLAGS=-O4 -DFUNDERSC=1
+#CFLAGS=-O4 -DFUNDERSC=0 #(ursa)
 #LDMPI=-L/opt/local/mpich/lib -lmpich -lsocket -lnsl -laio
 #F77=$(FC)
 
