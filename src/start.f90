@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.103 2003-07-02 14:33:35 theine Exp $
+! $Id: start.f90,v 1.104 2003-07-12 21:12:49 theine Exp $
 !
 !***********************************************************************
       program start
@@ -39,7 +39,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.103 2003-07-02 14:33:35 theine Exp $")
+             "$Id: start.f90,v 1.104 2003-07-12 21:12:49 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -148,7 +148,7 @@
 !  check whether we want ionization
 !
         if(lionization) then
-          f(:,:,:,iyH)=0.5
+          call ioninit(f)
           call ioncalc(f)
         endif
         if(lradiation_ray) call radtransfer(f)

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.60 2003-07-11 19:59:21 brandenb Exp $
+! $Id: ionization.f90,v 1.61 2003-07-12 21:12:49 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -71,7 +71,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.60 2003-07-11 19:59:21 brandenb Exp $")
+           "$Id: ionization.f90,v 1.61 2003-07-12 21:12:49 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -161,7 +161,21 @@ module Ionization
 !   
       if(ip==0) print*,lreset  !(to keep compiler quiet)
     endsubroutine rprint_ionization
-
+!***********************************************************************
+    subroutine ioninit(f)
+!
+!  the ionization fraction has to be set to a value yH0 < yH < yH1 before
+!  rtsafe is called for the first time
+!
+!  12-jul-03/tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+!
+      f(:,:,:,iyH)=0.5
+!
+    endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc(f)
 !

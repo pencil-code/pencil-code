@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.35 2003-07-09 18:09:14 theine Exp $
+! $Id: noionization.f90,v 1.36 2003-07-12 21:12:49 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -72,7 +72,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.35 2003-07-09 18:09:14 theine Exp $")
+           "$Id: noionization.f90,v 1.36 2003-07-12 21:12:49 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -113,7 +113,7 @@ module Ionization
       lnrho_e_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu      ! AKA c_p for noionisation
       kappa0=sigmaH_/m_H/mu
-!
+
 !  the following array subscripts may be used to avoid unnecessary
 !  calculations in the ghost zones. useful
 !  for 1- and 2-dimensional runs with radiation
@@ -188,6 +188,11 @@ module Ionization
       endif
 !
     endsubroutine ionset
+!***********************************************************************
+    subroutine ioninit(f)
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      if(ip==0) print*,f(1,1,1,1)  !(keep compiler quiet)
+    endsubroutine ioninit
 !***********************************************************************
     subroutine ioncalc_ss_point(lnrho,TT,ss)
       real,intent(in) :: lnrho,TT
