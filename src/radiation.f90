@@ -1,10 +1,9 @@
-! $Id: radiation.f90,v 1.32 2004-02-24 14:14:50 ajohan Exp $
+! $Id: radiation.f90,v 1.33 2004-03-12 14:12:30 dobler Exp $
 
-!  This modules deals with all aspects of radiation; if no
-!  radiation are invoked, a corresponding replacement dummy
-!  routine is used instead which absorbs all the calls to the
-!  radiationally relevant subroutines listed in here.
-
+!  Radiation in the fluxlimited-diffusion approximation.
+!  Doesn't work convincingly (and maybe never will). Look at the
+!  (still experimental) module radiation_ray.f90 for a more
+!  sophisticated approach.
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -91,7 +90,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.32 2004-02-24 14:14:50 ajohan Exp $")
+           "$Id: radiation.f90,v 1.33 2004-03-12 14:12:30 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
