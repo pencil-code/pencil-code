@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.123 2003-10-21 18:14:03 theine Exp $
+! $Id: ionization.f90,v 1.124 2003-10-21 21:04:09 mee Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -24,6 +24,8 @@ module Ionization
   public :: thermodynamics, ionput, ionget
   public :: perturb_energy, perturb_mass
   public :: get_soundspeed
+  public :: getmu
+  public :: getdensity
 
   public :: register_ionization
   public :: initialize_ionization
@@ -118,7 +120,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.123 2003-10-21 18:14:03 theine Exp $")
+           "$Id: ionization.f90,v 1.124 2003-10-21 21:04:09 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
