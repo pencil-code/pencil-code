@@ -2,7 +2,7 @@
 ! Initialisation parameters for magnetic flux rings
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.1 2004-04-26 15:41:25 dobler Exp $'
+  cvsid='$Id: start.in,v 1.2 2004-04-27 16:04:24 dobler Exp $'
   xyz0 = , , 0.
   ! Lxyz =  6.28.,   6.28.,  6.28.
   lperi = T,    T,   F
@@ -17,6 +17,6 @@
 /
 &magnetic_init_pars
   initaa='fluxrings', amplaa=1e-0
-  fring1=1e-0, Iring1=0., Rring1=1.6, wr1=0.3,
+  fring1=1e-0, Iring1=0., Rring1=1.6, wr1=0.4,
     axisr1=0.,1.,0., dispr1=0.,0.,0.,
 /
