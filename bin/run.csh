@@ -8,7 +8,9 @@
 #PBS -q p-long
 #PBS -l nodes=nq0+nq1+nq2+nq3
 
-setenv PGHPF_HOST -file=$PBS_NODEFILE
+if ($?PBS_NODEFILE) then
+  setenv PGHPF_HOST -file=$PBS_NODEFILE
+endif
 #setenv MPI_HOST nq1,nq2,nq3,nq4
 #echo $PBS_NODEFILE
 
@@ -26,7 +28,7 @@ rm -f STOP RELOAD fort.20
 date
 #
 echo "$mpirun $mpirunops $npops src/run.x"
-time mpirun $mpirunops $npops src/run.x
+time $mpirun $mpirunops $npops src/run.x
 #
 date
 
