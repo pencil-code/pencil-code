@@ -77,12 +77,12 @@ function texsyms, DEVICE=device
               psi_c       : '!7Y!X' , $
               omega_c     : '!7W!X' , $
     ; other symbols
-              cdot        : '!6Å∑!X' , $
+              cdot        : '!6∑!X' , $
               mid         : '!6|!X' , $
-              Im          : '!7Å¡!X' , $
-              Re          : '!7Å¬!X' , $
-              sqrt        : '!7Å÷!X' , $
-              times       : '!7Å¥!X' , $
+              Im          : '!7¡!X' , $
+              Re          : '!7¬!X' , $
+              sqrt        : '!7÷!X' , $
+              times       : '!7¥!X' , $
               leq         : '!6!S<!R_!X' , $ ; `le' is reserved..
               geq         : '!6!S>!R_!X' , $ ; `ge' is reserved..
               uparrow     : '!7≠!X', $
@@ -151,7 +151,7 @@ function texsyms, DEVICE=device
               psi_c       : '!7W!X' , $
               omega_c     : '!7X!X' , $
     ; other symbols
-              cdot        : '!6Å∑!X',   $
+              cdot        : '!3∑!X',   $
               mid         : '!3|!X' ,  $
               Im          : '!15I!X',  $
               Re          : '!15R!X',  $
