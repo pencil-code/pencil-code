@@ -1377,12 +1377,19 @@ module Sub
       subroutine parse_name(iname,cname,cform,ctest,itest)
 !
 !  Parse name and format of print variable
-!  On output, itest is set to iname if cname matches ctest
-!  and cform is set to the format given as default
+!  On output, ITEST is set to INAME if CNAME matches CTEST
+!  and CFORM is set to the format given as default.
+!  E.g. if CTEST='bmax' *i.e. we are testing input line CNAME for 'bmax',
+!  CNAME='bmax' will be parsed to ITEST=INAME, CFORM='(1pe10.2)',
+!  CNAME='bmax(G5.1)' to ITEST=INAME, CFORM='G5.1',
+!  CNAME='brms' to ITEST=<unchanged, normally 0>, CFORM='(1pe10.2)'
 !
       character*(*) :: cname,cform
       character*(*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length
+!
+      intent(in)  :: iname,cname,ctest
+      intent(out) :: cform,itest
 !
 !  check whether format is given
 !
