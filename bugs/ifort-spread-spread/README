@@ -2,7 +2,7 @@
                            ifort-spread-spread
                           ---------------------
 
-$Id: README,v 1.2 2004-04-28 12:19:50 dobler Exp $
+$Id: README,v 1.3 2004-04-28 12:55:27 dobler Exp $
 
 
 1. Symptoms:
@@ -47,15 +47,26 @@ However, with ifort (Intel Fortran compiler, version 8.0), one gets
 
 2. Command sequence:
 
-  unix>  make FC=ifort test
+  kabul>  make FC=ifort test
 or
-  unix>  make FC=ifort LD_LIBRARY_PATH=/usr/opt/intel/lib test
+  fe4>  make FC=ifort80 NLSPATH=/usr/local/lib/intel/intel_fc_80/lib/ifcore_msg.cat test
+or
+  fe4>  set ifort=/people/disk2/theine/compilers/ifort
+  fe4>  make FC=$ifort/bin/ifortbin INTEL_LICENSE_FILE=$ifort/licenses/ NLSPATH=$ifort/lib/ifcore_msg.cat test
+or
+  nw43>  set ifort=/home/ajohan/.intel/ifc/compiler80
+  nw43>  make FC=$ifort/bin/ifortbin INTEL_LICENSE_FILE=$ifort/licenses/ LD_LIBRARY_PATH=$ifort/lib NLSPATH=$ifort/lib/ifcore_msg.cat test
+
 (or similar)
 
 3. Platforms:
-   SuSe Linux 8.0,   Kernel 2.4.18-4GB-SMP, dual AMD Athlon MP 1900+, 1600 MHz
-   RedHat Linux 9.0, Kernel 2.4.20-28.9smp, dual Pentium III,          930 MHz
-
+   SuSE   8.0, Kernel 2.4.18-4GB-SMP, dual AMD Athlon MP 1900+, 1.6  GHz
+       ifort 8.0, Build 20031016Z, Package ID: l_fc_p_8.0.034   
+   RedHat 9.0, Kernel 2.4.20-28.9smp, dual Pentium III,         0.93 GHz
+       ifort 8.0, Build 20031016Z
+   Debian 3.0, Kernel 2.4.26,              Pentium 4,           2.0  Ghz
+       ifort 8.0, Build 20031016Z
+   and ifort 8.0, Build 20040318Z, Package ID: l_fc_pc_8.0.039_pe044.1
 
 4. Other compilers tested (OPK means problem could not be reproduced):
    - Intel ifc 6.0 (Linux)  OK

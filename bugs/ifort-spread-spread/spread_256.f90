@@ -12,6 +12,4 @@ program test
   write(0,*) 'spread_256: Done.' 
   write(0,*)
 
-
 endprogram test
-
