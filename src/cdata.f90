@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.167 2003-10-07 14:20:10 mee Exp $
+! $Id: cdata.f90,v 1.168 2003-10-09 16:31:57 mee Exp $
 
 module Cdata
 
@@ -50,6 +50,7 @@ module Cdata
   integer :: iuud=0,iudx=0,iudy=0,iudz=0,ilnrhod=0,igg=0,igx=0,igy=0,igz=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0,ishock=0,iyH=0
+  integer :: iecr=0
   integer :: iQrad=0,iSrad=0,ikappa=0,iTT=0
   integer :: nt=1000000,it1=10
   integer :: it,itsub,ix=l1,iy=m1,iz=n1,iz2=n2
@@ -102,6 +103,7 @@ module Cdata
   logical :: lshear=.false.,lpscalar=.false.,lviscosity=.false.
   logical :: lradiation=.false.,lradiation_ray=.false.,lradiation_fld=.false.
   logical :: ldustdensity=.false.,ldustvelocity=.false.,linterstellar=.false.
+  logical :: lcosmicray=.false.
   logical :: lselfgravity=.false.
   logical :: lmonolithic_io=.false.
   logical :: lionization=.false.,lionization_fixed=.false.

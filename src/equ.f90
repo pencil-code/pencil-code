@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.156 2003-09-12 11:36:39 mee Exp $
+! $Id: equ.f90,v 1.157 2003-10-09 16:31:57 mee Exp $
 
 module Equ
 
@@ -204,6 +204,7 @@ module Equ
       use Pscalar
       use Dustvelocity
       use Dustdensity
+      use CosmicRay
       use Boundcond
       use Shear
       use Density
@@ -223,7 +224,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.156 2003-09-12 11:36:39 mee Exp $")
+           "$Id: equ.f90,v 1.157 2003-10-09 16:31:57 mee Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -309,6 +310,10 @@ module Equ
         call dlnrho_dt(f,df,uu,glnrho,divu,lnrho)
         call dss_dt   (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1)
         call dlncc_dt (f,df,uu,glnrho)
+!
+!  cosmic ray energy density
+!
+        call decr_dt (f,df,uu,glnrho)
 !
 !  dust equations
 !

@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.135 2003-09-12 16:16:20 mee Exp $ 
+! $Id: param_io.f90,v 1.136 2003-10-09 16:31:57 mee Exp $ 
 
 module Param_IO
 
@@ -16,6 +16,7 @@ module Param_IO
   use Density
   use Magnetic
   use Pscalar
+  use CosmicRay
   use Dustvelocity
   use Dustdensity
   use Radiation
@@ -187,6 +188,9 @@ module Param_IO
       label='dustdensity_init_pars'
       if (ldustdensity ) read(1,NML=dustdensity_init_pars  ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
+      label='cosmicray_init_pars'
+      if (lcosmicray   ) read(1,NML=cosmicray_init_pars ,ERR=99, IOSTAT=ierr)
+      call sgi_fix(lsgifix,1,'start.in')
       label='interstellar_init_pars'
       if (linterstellar) read(1,NML=interstellar_init_pars ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'start.in')
@@ -263,6 +267,7 @@ module Param_IO
         if (lpscalar     ) print*,'&pscalar_init_pars        /'
         if (ldustvelocity) print*,'&dustvelocity_init_pars   /'
         if (ldustdensity ) print*,'&dustdensity_init_pars    /'
+        if (lcosmicray   ) print*,'&cosmicray_init_pars   /'
         if (linterstellar) print*,'&interstellar_init_pars   /'
         if (lshear       ) print*,'&shear_init_pars          /'
         ! no input parameters for viscosity
@@ -313,6 +318,7 @@ module Param_IO
         if (lpscalar     ) write(unit,NML=pscalar_init_pars     )
         if (ldustvelocity) write(unit,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_init_pars )
+        if (lcosmicray   ) write(unit,NML=cosmicray_init_pars   )
         if (linterstellar) write(unit,NML=interstellar_init_pars)
         if (lshear       ) write(unit,NML=shear_init_pars       )
         ! no input parameters for viscosity
@@ -390,6 +396,9 @@ module Param_IO
       call sgi_fix(lsgifix,1,'run.in')
       label='dustdensity_run_pars'
       if (ldustdensity ) read(1,NML=dustdensity_run_pars  ,ERR=99, IOSTAT=ierr)
+      call sgi_fix(lsgifix,1,'run.in')
+      label='cosmicray_run_pars'
+      if (lcosmicray   ) read(1,NML=cosmicray_run_pars    ,ERR=99, IOSTAT=ierr)
       call sgi_fix(lsgifix,1,'run.in')
       label='interstellar_run_pars'
       if (linterstellar) read(1,NML=interstellar_run_pars ,ERR=99, IOSTAT=ierr)
@@ -473,6 +482,7 @@ module Param_IO
         if (lpscalar     ) print*,'&pscalar_run_pars        /'
         if (ldustvelocity) print*,'&dustvelocity_run_pars   /'
         if (ldustdensity ) print*,'&dustdensity_run_pars    /'
+        if (lcosmicray   ) print*,'&cosmicray_run_pars      /'
         if (linterstellar) print*,'&interstellar_run_pars   /'
         if (lshear       ) print*,'&shear_run_pars          /'
         if (lviscosity   ) print*,'&viscosity_run_pars      /'
@@ -546,6 +556,7 @@ module Param_IO
         if (lpscalar     ) write(unit,NML=pscalar_run_pars     )
         if (ldustvelocity) write(unit,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(unit,NML=dustdensity_run_pars )
+        if (lcosmicray   ) write(unit,NML=cosmicray_run_pars   )
         if (linterstellar) write(unit,NML=interstellar_run_pars)
         if (lshear       ) write(unit,NML=shear_run_pars       )
         if (lviscosity   ) write(unit,NML=viscosity_run_pars   )
@@ -652,9 +663,9 @@ module Param_IO
 !
       namelist /lphysics/ &
            lhydro,ldensity,lentropy,lmagnetic,lpscalar,lradiation, &
-           lforcing,lgravz,lgravr,lshear,linterstellar,lionization, &
+           lforcing,lgravz,lgravr,lshear,linterstellar,lcosmicray, &
            ldustvelocity,ldustdensity,lvisc_shock,lradiation_fld,  &
-           lionization_fixed
+           lionization, lionization_fixed
 !
 !  Write this file from each processor; needed for pacx-MPI (grid-style
 !  computations across different platforms), where the data/ directories
@@ -676,6 +687,7 @@ module Param_IO
         if (lpscalar     ) write(1,NML=pscalar_init_pars     )
         if (ldustvelocity) write(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) write(1,NML=dustdensity_init_pars )
+        if (lcosmicray   ) write(1,NML=cosmicray_init_pars   )
         if (linterstellar) write(1,NML=interstellar_init_pars)
         if (lshear       ) write(1,NML=shear_init_pars       )
         ! no input parameters for viscosity
@@ -708,6 +720,7 @@ module Param_IO
         if (lpscalar     ) read(1,NML=pscalar_init_pars     )
         if (ldustvelocity) read(1,NML=dustvelocity_init_pars)
         if (ldustdensity ) read(1,NML=dustdensity_init_pars )
+        if (lcosmicray   ) read(1,NML=cosmicray_init_pars   )
         if (linterstellar) read(1,NML=interstellar_init_pars)
         if (lshear       ) read(1,NML=shear_init_pars       )
         ! no input parameters for viscosity
@@ -741,6 +754,7 @@ module Param_IO
         if (lpscalar     ) write(1,NML=pscalar_run_pars     )
         if (ldustvelocity) write(1,NML=dustvelocity_run_pars)
         if (ldustdensity ) write(1,NML=dustdensity_run_pars )
+        if (lcosmicray   ) write(1,NML=cosmicray_run_pars   )
         if (linterstellar) write(1,NML=interstellar_run_pars)
         if (lshear       ) write(1,NML=shear_run_pars       )
         if (lviscosity   ) write(1,NML=viscosity_run_pars   )
