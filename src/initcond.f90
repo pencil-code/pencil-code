@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.90 2003-11-13 14:40:27 ajohan Exp $ 
+! $Id: initcond.f90,v 1.91 2003-11-13 20:00:02 mcmillan Exp $ 
 
 module Initcond 
  
@@ -337,7 +337,7 @@ module Initcond
 !
       integer :: i
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
       complex :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
@@ -354,7 +354,7 @@ module Initcond
 !
       integer :: i,ivv
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
       complex, dimension (3) :: coef
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz
@@ -373,7 +373,7 @@ module Initcond
 !
       integer :: i,ivv
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my,mz) :: tmp,xx,yy,zz
+      real, dimension (mx,my,mz) :: xx,yy,zz
       complex, dimension (3) :: coef,coefb
       complex :: ii=(0.,1.)
       real :: ampl,kx,ky,kz,k2
