@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.307 2004-05-12 17:41:48 mee Exp $
+! $Id: entropy.f90,v 1.308 2004-05-17 13:03:58 mcmillan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.307 2004-05-12 17:41:48 mee Exp $")
+           "$Id: entropy.f90,v 1.308 2004-05-17 13:03:58 mcmillan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1575,12 +1575,12 @@ module Entropy
             z_prev = z_mn(1)
           endif
         else
-          call heatcond(x_mn,y_mn,z_mn,hcond)
-          call gradloghcond(x_mn,y_mn,z_mn, glhc)
+          call heatcond(x_mn,y_mn,z_mn,hcond)        ! returns hcond=hcond0
+          call gradloghcond(x_mn,y_mn,z_mn, glhc)    ! returns glhc=0
         endif
         call del2(f,ilnrho,del2lnrho)
         chix = rho1*hcond
-        glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
+        glnT = gamma*gss + gamma1*glnrho             ! grad ln(T)
         glnThcond = glnT + glhc/spread(hcond,2,3)    ! grad ln(T*hcond)
         call dot_mn(glnT,glnThcond,g2)
         thdiff = chix * (gamma*del2ss+gamma1*del2lnrho + g2)
