@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.78 2002-06-27 22:02:59 brandenb Exp $
+! $Id: entropy.f90,v 1.79 2002-06-30 17:44:52 brandenb Exp $
 
 module Entropy
 
@@ -60,7 +60,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.78 2002-06-27 22:02:59 brandenb Exp $")
+           "$Id: entropy.f90,v 1.79 2002-06-30 17:44:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,6 +92,13 @@ module Entropy
 
         case('zero', '0')
           f(:,:,:,ient) = 0.
+
+        case('isothermal')
+          !
+          !  ss = -(gamma-1)*(lnrho-lnrho0)/gamma
+          !
+          if (lroot) print*,'init_ent: isothermal stratification'
+          f(:,:,:,ient)=-gamma1*(f(:,:,:,ilnrho)-lnrho0)/gamma
 
         case('isentropic', '1')
           !

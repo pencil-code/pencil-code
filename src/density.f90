@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.18 2002-06-27 22:02:59 brandenb Exp $
+! $Id: density.f90,v 1.19 2002-06-30 17:44:52 brandenb Exp $
 
 module Density
 
@@ -53,7 +53,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.18 2002-06-27 22:02:59 brandenb Exp $")
+           "$Id: density.f90,v 1.19 2002-06-30 17:44:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -66,7 +66,8 @@ module Density
 !
 !  initialise lnrho; called from start.f90
 !
-!  7-nov-2001/wolf: coded
+!  7-nov-01/wolf: coded
+! 28-jun-02/axel: added isothermal
 !
       use Mpicomm
       use Sub
@@ -90,6 +91,20 @@ module Density
         if (lroot) print*,'uniform lnrho'
         f(:,:,:,ilnrho)=0.
 
+      case('isothermal')
+        !
+        !  rho=0
+        !
+        if (lroot) print*,'init_lnrho: isothermal lnrho'
+        if (grav_profile=='const') then
+          if (lroot) print*,'lnrho=lnrho0+(gamma*gravz/cs20)*zz (const grav)'
+          f(:,:,:,ilnrho)=lnrho0+(gamma*gravz/cs20)*zz
+        elseif (grav_profile=='linear') then
+          if (lroot) print*,'lnrho=lnrho0+.5*(gamma*gravz/cs20)*zz**2 (discs)'
+          f(:,:,:,ilnrho)=lnrho0+(.5*gamma*gravz/cs20)*zz**2
+        endif
+        cs2bot=cs20; cs2top=cs20 !(possibly needed for b.c.)
+
       case('hydrostatic-z', '1')
         !
         !  hydrostatic for T=const or polytropic atmosphere
@@ -97,8 +112,7 @@ module Density
         if (gamma1==0.) then
           if (lroot) print*,'lnrho=lnrho0+gravz*zz/cs0^2 (for isothermal atmosphere)'
           f(:,:,:,ilnrho)=lnrho0+(gravz/cs0**2)*zz
-          cs2bot=cs20
-          cs2top=cs20
+          cs2bot=cs20; cs2top=cs20 !(possibly needed for b.c.)
         else
           !
           !  To maintain continuity with respect to the isothermal case,
@@ -237,7 +251,7 @@ module Density
       !
       !  check whether cs2bot,cs2top have been set
       !
-      if(lroot) print*,'cs2bot,cs2top=',cs2bot,cs2top
+      if(lroot) print*,'verify(!): cs2bot,cs2top=',cs2bot,cs2top
       !
       if(ip==0) print*,prof,yy  ! keep compiler quiet
     endsubroutine init_lnrho

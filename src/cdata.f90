@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.60 2002-06-24 17:45:28 brandenb Exp $
+! $Id: cdata.f90,v 1.61 2002-06-30 17:44:52 brandenb Exp $
 
 module Cdata
 
@@ -22,8 +22,6 @@ module Cdata
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
   real :: o2m,om2,oum
   real :: UUmax,x0,y0,z0,Lx,Ly,Lz
-!  real :: z1,z2,ztop,zref=0.
-!  real :: gravz=0.
   real :: grads0=0.   ! (1/c_p)ds/dz
 
 ! These are parameters of Entropy, but appear in Boundcond and (worse) in
@@ -35,7 +33,8 @@ module Cdata
   integer:: isothtop
 
   integer, dimension (2) :: seed
-  integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0,iaa=0,iax=0,iay=0,iaz=0
+  integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0
+  integer :: iaa=0,iax=0,iay=0,iaz=0
   integer :: nt=0,it1,isave
   integer :: it,ix=(mx+1)/2,iy=(my+1)/2,iz=(mz+1)/2
   integer :: ivisc

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.32 2002-06-27 22:02:59 brandenb Exp $
+! $Id: hydro.f90,v 1.33 2002-06-30 17:44:52 brandenb Exp $
 
 module Hydro
 
@@ -65,7 +65,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.32 2002-06-27 22:02:59 brandenb Exp $")
+           "$Id: hydro.f90,v 1.33 2002-06-30 17:44:52 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -96,11 +96,11 @@ module Hydro
       select case(inituu)
 
       case('zero', '0')
-        if (lroot) print*,'zero velocity'
+        if (lroot) print*,'init_hydro: zero velocity'
         f(:,:,:,iux)=0.
 
       case('random-normal', '1') ! random ux (Gaussian distribution)
-        if (lroot) print*,'Gaussian-distributed ux'
+        if (lroot) print*,'init_hydro: Gaussian-distributed ux'
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
@@ -117,7 +117,7 @@ module Hydro
         !
         !  shock tube test (should be consistent with density module)
         !
-        print*,'polytopic standing shock'
+        print*,'init_hydro: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthuu))
         f(:,:,:,iux)=uu_left+(uu_right-uu_left)*prof
 
