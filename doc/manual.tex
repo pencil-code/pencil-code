@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.47 2002-07-13 16:36:21 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.48 2002-07-14 21:16:40 dobler Exp $
 %%  Description:
 %     User manual for the MHD code 
 %   Process with:
@@ -81,6 +81,9 @@
 
 %%% Macros
 
+%% Centered table cells for headings
+\newcommand{\mcc}[1]{\multicolumn{1}{c}{#1}}
+
 %% Bold face \tt prompts (only works within `alltt' or \tt environment)
 \newcommand{\prompt}[1]{{\ttfamily\bfseries{}#1}}
 
@@ -97,7 +100,7 @@
 \newcommand{\samp}[1]{`\code{#1}'}
 \newcommand{\var}[1]{\textsl{#1}\index{#1@\emph{#1}}\/}
 \newcommand{\env}[1]{\code{#1}\index{#1@\emph{#1}}}
-\newcommand{\file}[1]{`\texttt{#1}'}
+\newcommand{\file}[1]{`\texttt{#1}'\index{#1@\texttt{#1}}}
 \newcommand{\command}[1]{\code{#1}\index{#1}}
 \newcommand{\cmd}[1]{\command{#1}}
 \newcommand{\option}[1]{`\code{#1}'\index{#1@\emph{`#1'} option}}
@@ -148,7 +151,7 @@
 % \newcommand{\ey}            {\ev_{y}}
 % \newcommand{\ez}            {\ev_{z}}
 
-% \newcommand{\Fv}            {\vekt{F}}
+\newcommand{\Fv}            {\vekt{F}}
 
 \newcommand{\gv}            {\vekt{g}}
 
@@ -156,8 +159,6 @@
 \newcommand{\Heavi}         {\theta}
 
 \newcommand{\jv}            {\vekt{j}}
-
-% \newcommand{\nullvekt}      {\vekt{0}}
 
 \newcommand{\Ra}            {\mathrm{Ra}}
 \newcommand{\Reynolds}      {\mathrm{Re}}
@@ -170,7 +171,7 @@
 
 \newcommand{\xv}            {\vekt{x}}
 
-% \newcommand{\zerovect}      {\nullvekt}
+\newcommand{\zerovect}      {\vekt{0}}
 
 %AB: I've added here some of my favorite macros
 \newcommand{\bra}[1]{\langle #1\rangle}
@@ -183,7 +184,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order MHD MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.47 $ $}
+\date{\today,~ $ $Revision: 1.48 $ $}
 
 % ====================================================================== %
 
@@ -212,7 +213,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.47 $ $}
+  \emph{\today,~ $ $Revision: 1.48 $ $}
 
 
 \end{center}
@@ -543,7 +544,7 @@ Sect.~\ref{S-IDLroutines}).
 \begin{itemize}
 \item sourceme.x (where \var{x} stands for \var{csh} or \var{sh})
 \item lnsrc (alias setup)
-\item Localize the Makefile (see \S \ref{adapt-mkfile})
+\item Localize the Makefile (see Sect.~\ref{adapt-mkfile})
 \end{itemize}
 \vspace{7cm}
 
@@ -924,9 +925,10 @@ Here's how to use the code \ldots
 % ---------------------------------------------------------------------- %
 
 \subsection{I/O diagnostics}
+\label{diagnostic-IO}
 
-Every \var{n1} time steps (\var{n1} is a runtime parameter, see
-\S\ref{Run-params}), the code writes monitoring output to \name{stdout}
+Every \var{it1} time steps (\var{it1} is a runtime parameter, see
+Sect.~\ref{Run-params}), the code writes monitoring output to \name{stdout}
 and, parallel to this, to the file \file{tmp/n.dat}.
 The variables that appear in this listing and the output format are
 defined in the file \file{print.in} and can be changed without touching
@@ -1000,7 +1002,7 @@ In the directory where you started the code, create the file
 to force the code to re-read the runtime parameters from \file{run.in}.
 This will happen the next time the code is writing monitoring output (the
 frequency of this happening is controlled by the input parameter \var{it},
-see \S\ref{start-params}).
+see Sect.~\ref{start-params}).
 
 \paragraph{Stopping the code}
 In the directory where you started the code, create the file
@@ -1047,15 +1049,21 @@ variables or (if you are \emph{very} minimalistic) none at all.
 If you want to run a particular problem, it is best to start by
 modifying a particular example which is closest to your application.
 
-The following table lists all (at the time of writing, June 2002)
-namelists with their corresponding start parameters and their default
-values (in brackets).
+The following table lists all (at the time of writing, July 2002)
+namelists with their corresponding start parameters (file \file{start.in})
+and their default values (in square brackets).
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
 Not all parameters are used for a given scenario.
-This lit can in many cases only give an idea of the corresponding initial
-state; to get more insight, you should have a look at the code.
+This list is likely to not be up to date; also, in many cases it can only
+give an idea of the corresponding initial state; to get more insight and
+the latest information, you should have a look at the code.
 
+The value $\varepsilon$ corresponds to 5 times the smallest number larger
+than zero.
+For single precision, this is typically about
+$\varepsilon \approx 5\times1.2\times10^{-7} = 6\times10^{-7}$; for
+double precision, $\varepsilon\approx10^{-15}$.
 
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.6\textwidth}}
@@ -1083,19 +1091,19 @@ state; to get more insight, you should have a look at the code.
                  periodic (in which case the last point is omitted) or not.
                  In all cases, three ghost zones will be added. \\
   \var{lwrite_ic}
-               & ??? \\
+               & ???. \\
   \var{lnowrite}
-               & ??? \\
+               & ???. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
 \midrule
   \var{inituu} [\code{'zero'}]
                & initialization of velocity. Currently valid choices are
-                 `zero' ($\uv=0$), 
-                 `random-normal' (random, normally-distributed $u_x$), 
-                 `sound=wave' (sound wave in $x$ direction), 
-                 `shock-tube' (polytropic standing shock). \\
+                 \code{`zero'} ($\uv=0$), 
+                 \code{`random-normal'} (random, normally-distributed $u_x$), 
+                 \code{`sound=wave'} (sound wave in $x$ direction), 
+                 \code{`shock-tube'} (polytropic standing shock). \\
   \var{ampluu} [$0.$]
                & amplitude for some types of initial velocities. \\
   \var{widthuu} [$0.1$]
@@ -1108,7 +1116,7 @@ state; to get more insight, you should have a look at the code.
                  $u_i \mapsto u_i \times u_{\rm rand}{\cal U}_{[0.5,0.5]}$;
                  in both cases, ${\cal U}_{[0.5,0.5]}$ is a uniformly
                  distributed random variable on the interval $[-0.5,0.5]$.\\
-  \var{uu_left} [$1.$],
+  \var{uu_left} [$1.$], \\
   \var{uu_right} [$1.$]
                & needed for \code{inituu='shock-tube'}.\\
 %
@@ -1117,105 +1125,208 @@ state; to get more insight, you should have a look at the code.
 \midrule
   \var{initlnrho} [\code{'zero'}]
                & initialization of density. Currently valid choices are
-                 `zero' ($\ln\varrho=0$),
-                 `isothermal' (isothermal stratification),
-                 `polytropic\_simple' (polytropic stratification),
-                 `hydrostatic-z-2' (hydrostatic vertical stratification
-                                    for isentropic atmosphere),
-                 `rho-jump' (density jump of width \var{widthlnrho}),
-                 `piecew-poly' (piecewise polytropic vertical
+                 \code{`zero'} ($\ln\varrho=0$),
+                 \code{`isothermal'} (isothermal stratification),
+                 \code{`polytropic\_simple'} (polytropic stratification),
+                 \code{`hydrostatic-z-2'} (hydrostatic vertical
+                   stratification for isentropic atmosphere),
+                 \code{`rho-jump'} (density jump of width \var{widthlnrho}),
+                 \code{`piecew-poly'} (piecewise polytropic vertical
                                stratification for solar convection),
-                 `polytropic' (polytropic vertical stratification),
-                 `sound-wave' (sound wave),
-                 `shock-tube' (polytropic standing shock).\\
+                 \code{`polytropic'} (polytropic vertical stratification),
+                 \code{`sound-wave'} (sound wave),
+                 \code{`shock-tube'} (polytropic standing shock).\\
   \var{gamma} [$5./3$]
                & adiabatic index $\gamma=c_p/c_v$. \\
-  \var{cs0} [$1.$], rho0} [$1.$]
-               & reference values of sound speed and density,
+  \var{cs0} [$1.$], \\
+  \var{rho0} [$1.$]
+               & \label{cs0-rho0-init}%
+                 reference values of sound speed and density,
                  i.\,e.~values at height \var{zref}. \\
-  \var{ampllnrho} [$1.$],
+  \var{ampllnrho} [$1.$], \\
   \var{widthlnrho} [$0.1$]
                & amplitude and width for some types of initial densities. \\
-  \var{rho_left} [$1.$],
+  \var{rho_left} [$1.$], \\
   \var{rho_right} [$1.$]
                & needed for \code{initlnrho='shock-tube'}. \\
-  \var{cs2bot} [--],
+  \var{cs2bot} [--], \\
   \var{cs2top} [--]
                & sound speed at bottom and top. Needed for some types of
-                 stratification. \\ 
+                 stratification. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{grav_init_pars}} \\
 \midrule
   \var{zref} [$0.$]
-               & reference height where in the initial stratification
+               & \label{zref-init}%
+                 reference height where in the initial stratification
                  $c_{\rm s}^2=c_{\rm s0}^2$ and $\ln\rho=\ln\rho_0$.\\
   \var{gravz} [$-1.$]
                & vertical gravity component $g_z$.\\
+  \var{grav_profile} \\{}
+    [\code{'const'}]
+               & constant gravity $g_z = \texttt{gravz}$
+                 (\code{grav_profile='const'}) gravity
+                 or linear profile $g_z = \texttt{gravz}\cdot z$
+                 (\code{grav_profile='linear'}, for accretion discs and
+                 similar). \\
+  \var{z1} [--], \\
+  \var{z2} [--]
+               & specific to the solar convection case
+                 \code{initlnrho='piecew-poly'}.
+                 The stable layer is $z_0 < z < z_1$, the unstable layer
+                 $z_1 < z < z_2$, and the top (isothermal) layer is
+                 $z_2 < z < z_{\rm top}$. \\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{entropy_init_pars}} \\
 \midrule
   \var{initss} [\code{'nothing'}]
                & initialization of entropy. Currently valid choices are
-                 `nothing' (leaves the initialization done in the density
-                 module unchanged),
-                 `zero' (put $s=0$ explicitly; this may overwrite the
-                 initialization done in the density module),
-                 `isothermal' (isothermal stratification).\\
-%
-\midrule
-  \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
-\midrule
-
-
-
-
-
-\midrule
-  \multicolumn{2}{c}{[Old stuff:]} \\
-\midrule
-
-
-
-  \var{z1}, \var{z2}, \var{ztop}
-               & specific to the solar convection case.
-                 The stable layer is $z_0 < z < z_1$, the unstable layer
-                 $z_1 < z < z_2$, and the top (isothermal) layer is
-                 $z_2 < z < z_{\rm top}$
-                 \Note{How is this related to $L_z$??} \\
-  \var{hcond[0-2]}, \var{whcond}
-               & specific to the solar convection case: heat conductivities
-                 $\lambda$ in the individual layers. \var{hcond0} is the
-                 value $\lambda_{\rm unst}$ in the unstable layer,
-                 \var{hcond1} is the ratio
+                 \code{`nothing'} (leaves the initialization done in the
+                   density module unchanged),
+                 \code{`zero'} (put $s=0$ explicitly; this may overwrite
+                   the initialization done in the density module),
+                 \code{`isothermal'} (isothermal stratification, $T=\const$),
+                 \code{`isobaric'} (isobaric, $p=\const$),
+                 \code{`isentropic'} (isentropic with superimposed hot [or
+                   cool] bubble),
+                 \code{`linprof'} (linear entropy profile in $z$),
+                 \code{`piecew-poly'} (piecewise polytropic stratification
+                   for convection),
+                 \code{`polytropic'} (polytropic stratification,
+                   polytropic exponent is \var{mpoly0}). \\
+  \var{pertss} [\code{'zero'}]
+               & additional perturbation to entropy. Currently valid
+                 choices are
+                 \code{'zero'} (no perturbation)
+                 \code{'hexagonal'} (hexagonal perturbation for convection). \\
+  \var{ampl_ss} [$0.$]
+               & amplitude for some types of initial entropy profiles. \\
+  \var{grads0} [$0.$]
+               & initial entropy gradient for \code{initss=linprof}. \\
+  \var{radius_ss} [$0.1$]
+               & radius of bubble for \code{initss=isentropic}. \\
+  \var{hcond0} [$0.$], \\
+  \var{hcond1} [$0.$], \\
+  \var{hcond2} [$0.$]
+               & \label{hcond0123-init}%
+                 specific to the solar convection case
+                 \code{initss=piecew-poly}:
+                 heat conductivities $\lambda$ in the individual layers.
+                 \var{hcond0} is the value $\lambda_{\rm unst}$ in the
+                 unstable layer, \var{hcond1} is the ratio
                  $\lambda_{\rm stab}/\lambda_{\rm unst}$ for the stable
                  layer, and \var{hcond2} is the ratio 
                  $\lambda_{\rm top}/\lambda_{\rm unst}$ for the top layer.
                  The function $\lambda(z)$ is not discontinuous, as the
                  transition between the different values is smoothed over
                  the width \var{whcond}. \\
-  \var{mpoly[0-2]}, \var{isothtop}
-               & specific to the solar convection case: polytropic indices
-                 of unstable (\var{mpoly0}), stable (\var{mpoly1}) and top
-                 layer (\var{mpoly2}).
+  \var{whcond} [$2\varepsilon$]
+               & width of transition region between layers for
+                 \code{initss=piecew-poly}. \\
+  \var{mpoly0} [--], \\
+  \var{mpoly1} [--], \\
+  \var{mpoly2} [--]
+               & specific to the solar convection case
+                 \code{initss=piecew-poly}:
+                 polytropic indices of unstable (\var{mpoly0}), stable
+                 (\var{mpoly1}) and top layer (\var{mpoly2}).
                  If the flag \var{isothtop} is set, the
                  top layer is initialized to be isothermal, otherwise
                  thermal (plus hydrostatic) equilibrium is assumed for all
                  three layers, which results in a piecewise polytropic
                  stratification. \\
-  \var{ampl}   & ??? \\
-  \var{init}   & ??? \\
-  \var{urand}  & amplitude of initial random velocity fluctuations \\
-  \var{gamma}  & adiabatic index of the gas (typically $\gamma=5/3$ in
-                 astrophysical applications \\
-  \var{cs0}, \var{rho0}
-               & reference values of sound speed $\cs$ and density
-                 $\varrho$. In the convection case, these are the values of
-                 $\cs$ and $\varrho$ at $z=z_{\rm top}$. \\
-  \var{gravz}  & vertical gravity $g_z$; normally $<0$. \\
-  \var{grads0} & [Not used for convection reference case] initial entropy
-                 gradient. \\
+  \var{isothtop} [--]
+               & flag for isothermal top layer for \code{initss=piecew-poly}. \\
+  \var{khor_ss} [$1.$]
+               & horizontal wave number for \code{initss=hexagonal} \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{magnetic_init_pars}} \\
+\midrule
+  \var{initaa} [\code{'zero'}]
+               & initialization of magnetic field (vector potential).
+                 Currently valid choices are
+                 \code{`zero'} (zero field),
+                 \code{`gaussian-noise'} (white noise),
+                 \code{`Beltrami-x'} ($x$-dependent Beltrami wave),
+                 \code{`Beltrami-y'} ($y$-dependent Beltrami wave),
+                 \code{`Beltrami-z'} ($z$-dependent Beltrami wave),
+                 \code{`hor-fluxtube'} (horizontal flux tube),
+                 \code{`hor-fluxlayer'} (horizontal flux layer),
+                 \code{`uniform-Bx'} (uniform field in $x$ direction),
+                 \code{`Bz(x)'} ($B_z\propto\cos(k x)$),
+                 \code{`fluxrings'} (two interlocked magnetic fluxrings;
+                   see Sect.~\ref{fluxrings}),
+                 \code{`crazy'} (for testing purposes),
+                 \code{`Alfven-circ-x'} (circularly polarized Alfvén wave).
+                 \\
+  \var{initaa2} [\code{'zero'}]
+               & additional perturbation of magnetic field.
+                 Currently valid choices are
+                 \code{`zero'} (zero perturbation),
+                 \code{`Beltrami-x'} ($x$-dependent Beltrami wave),
+                 \code{`Beltrami-y'} ($y$-dependent Beltrami wave),
+                 \code{`Beltrami-z'} ($z$-dependent Beltrami wave). \\
+  \var{amplaa} []
+               & amplitude for some types of initial magnetic fields. \\
+  \var{amplaa2} []
+               & amplitude for some types of magnetic field perturbation. \\
+  \var{fring\{1,2\}} [$0.$], \\
+  \var{Iring\{1,2\}} [$0.$], \\
+  \var{Rring\{1,2\}} [$1.$], \\
+  \var{wr\{1,2\}} [$0.3$]
+               & flux, current, outer and inner radius of flux ring 1/2;
+                 see Sect.~\ref{fluxrings}. \\
+  \var{radius} [$0.1$]
+               & used by some initial fields. \\
+  \var{epsilonaa} [$10^{-2}$]
+               & used by some initial fields. \\
+  \var{widthaa} [$0.5$]
+               & used by some initial fields. \\
+  \var{z0aa} [$0.$]
+               & used by some initial fields. \\
+  \var{kx_aa} [$1.$], \\
+  \var{ky_aa} [$1.$], \\
+  \var{kz_aa} [$1.$]
+               & wavenumbers used by some initial fields. \\
+  \var{lpress_equil} [--]
+               & flag for pressure equilibrium (used by some initial fields) \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{pscalar_init_pars}} \\
+\midrule
+  \var{initlncc} [\code{'zero'}]
+               & initialization of passive scalar (concentration $c$).
+                 Currently valid choices are
+                 \code{`zero'} ($\ln c=0.$),
+                 \code{`gaussian-noise'} (white noise),
+                 \code{`wave-x'} (wave in $x$ direction),
+                 \code{`wave-y'} (wave in $y$ direction),
+                 \code{`wave-z'} (wave in $z$ direction). \\
+  \var{initlncc2} [\code{'zero'}]
+               & additional perturbation of passive scalar concentration $c$.
+                 Currently valid choices are
+                 \code{`zero'} ($\delta\ln c=0.$),
+                 \code{`wave-x'} (add $x$-directed wave to $\ln c$). \\
+  \var{ampllncc} [$0.1$]
+               & amplitude for some types of initial concentration. \\
+  \var{ampllncc2} [$0.$]
+               & amplitude for some types of concentration perturbation. \\
+  \var{kx_lncc} [$1.$], \\
+  \var{ky_lncc} [$1.$], \\
+  \var{kz_lncc} [$1.$]
+               & Wave numbers for some types of initial concentration. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{shear_init_pars}} \\
+\midrule
+  \var{qshear} [$0.$]
+               & \label{qshear-init}%
+                 Degree of shear (???) for shearing-box simulations (the
+                 shearing-periodic boundaries are the $x$-boundaries and
+                 are sheared in the $y$-direction). \\
 \bottomrule
 %\end{tabular}
 \end{longtable}
@@ -1227,145 +1338,275 @@ state; to get more insight, you should have a look at the code.
 \subsection{Run parameters}
 \label{Run-params}
 
-Here is a list of parameters that are set in \file{run.in}.
 
-Note that formatted \name{Fortran} input allows for parameters to be
-skipped (indicated by possible whitespace, followed by a comma), which
-causes the corresponding variable to retain the value it had before the
-\cmd{read} command was called.
-In most cases, this default value will be the one set in \file{start.in}.
-
+The following table lists all (at the time of writing, July 2002)
+namelists with their corresponding run parameters (file \file{run.in}) and
+their default values (in square brackets).
+Default values marked as [start] are taken from \file{start.in}.
 Any variable referred to as a \dfn{flag} can be set to any nonzero value
 to switch the corresponding feature on.
-
 Not all parameters are used for a given scenario.
+This list is likely to not be up to date; also, in many cases it can only
+give an idea of the corresponding initial state; to get more insight and
+the latest information, you should have a look at the code.
 
 
 % ---------------------------------------------------------------------- %
 \begin{longtable}{lp{0.6\textwidth}}
+%\begin{tabular}{lp{0.6\textwidth}}
 \toprule
-  \multicolumn{1}{c}{\emph{Variable}}
+  \multicolumn{1}{c}{\emph{Variable [default value]}}
                & \multicolumn{1}{c}{\emph{Meaning}} \\
 \midrule
-  \var{nt}     & number of time steps to carry out. \\
-  \var{it1}    & write monitoring output every \var{it1} time steps.\\
-  \var{dt}     & time step $\delta t$ (if set and different from zero).\\
-  \var{cdt}    & CFL (or Courant) coefficient,
-                 $\delta t/\delta t_{\rm Courant}$. A typical
-                 value is \code{cdt=0.4}. Using less can be useful as a
-                 temporary fix until the source of the problem is found.\\
-  \var{cdtv}   & viscous time step; actual time step is given by
-                 \begin{equation}
-                   \delta t
-                   = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
-                                     {U_{\rm max}} ,
-                                c_{\delta t_v}
-                                \frac{\delta x_{\rm min}^2}
-                                     {D_{\rm max}}
-                         \right) \; ,
-                 \end{equation}
-                 where
-                 $\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
-                 $U_{\rm max} \equiv \max\left(|\uv|
-                                     + \sqrt{\cs^2{+}\vA^2}\right)$,
-                 $\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
-                 respectively;
-                 and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
-                 $\nu$ denotes kinematic viscosity,
-                 $\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
-                 $\eta$ the magnetic diffusivity.
-                 \\
-  \var{isave}  & update snapshot file \file{var.dat} every \var{isave}
-                 time steps. \\
-  \var{iorder} & order of time step. Set \code{iorder=1} for Euler
-                 stepping, \code{iorder=3} for the 3rd-order Runge-Kutta
-                 (2$N$) scheme. \code{iorder=1} is useful for debugging,
-                 because one wants to know what happens after the first
-                 or second step. \code{iorder=2} is also possible, but
-                 not \code{iorder>3}.\\
-  \var{dsnap}  & save full snapshots \file{VAR$N$} every \var{dsnap} time
-                 units. \\
-  \var{dvid}   & write two-dimensional sections for generation of videos
-                 every \var{dsnap} time units. \\
-  \var{dtmin}  & abort if time step $\delta t < \delta t_{\rm min}$. \\
-  \var{tinit}  & ??? \\
-  \var{tdamp}  & damp velocities in the initial time interval
-                 $0 < t < t_{\rm damp}$. \\
-  \var{dampu}  & strength of initial damping of velocity. \\
-  \var{dampuext}, \var{rdamp}, \var{wdamp}
-               & permanently damp velocities at $|\xv| > r_{\rm damp}$
-                 with strength \var{dampuext}, with a smooth transition
-                 between damped and undamped of radial width \var{wdamp}. \\
-  \var{ip}     & (anti-)verbosity level: \code{ip=1} produces lots of
+  \multicolumn{2}{c}{Namelist \name{init_pars}}\\
+\midrule
+  \var{cvsid} [\code{''}]
+               & the \name{CVS} identification string, which allows you to
+                 keep track of the version of \file{run.in}. \\
+  \var{ip} [$14$]
+               & (anti-)verbosity level: \code{ip=1} produces lots of
                  diagnostic output, \code{ip=14} virtually none. \\
-  \var{i[x-z]} & monitor values of some variables in point with indices
-                 $(i_x,i_y,i_z)$. \\
-  \var{cs}, \var{rho}
-               & reference values of sound speed $\cs$ and density
-                 $\varrho$. In the convection case, these are the values of
-                 $\cs$ and $\varrho$ at $z=z_{\rm top}$. \\
-  \var{ivisc}  & switch for viscosity term
-                 \Note{which value gives which term?} \\
-  \var{hcond[0-2]}, \var{whcond}
-               & heat conductivities, see Sec~\ref{Input-params}; leave
-                 these empty unless you want to override the settings from
-                 \file{start.in}. \\
-  \var{cdiffrho}
-               & ??? \\
-  \var{gravz}  & vertical gravity, see Sec~\ref{Input-params}; leave
-                 this empty unless you want to override the setting from
-                 \file{start.in}. \\
-  \var{cheat}, \var{wheat}
-               & heating term: add total amount \var{cheat} of heat per
-                 time unit in zone near bottom of width \var{wheat}.
-                 You probably rather want to use \var{Fheat} (see below). \\
-  \var{cool}, \var{wcool}
-               & cooling term: cool top layer of width \var{wcool} to
-                 reference temperature (given by ${\cs}_0$) by cooling term
-                 of strength \var{cool}. \\
-  \var{Fheat}  & heat flux through bottom boundary. \\
-  \var{iforce}, \var{force}, \var{relhel}
-               & on-off flag, strength and kinetic helicity of forcing
-                 terms. \\
-  \var{bc[x-z]}
-               & boundary conditions. Set these to a sequence of letters 
-                 like `p,p,p,p,p,p,p,p' for periodic boundaries, or
-                 `s,s,a,a2,c1:c2,s,s,a' for non-periodic ones.
-                 Each entry (between commas) corresponds to one of the
-                 variables, normally these are $u_x$, $u_y$, $u_z$,
-                 $\ln\varrho$, $s/c_p$, $A_x$, $A_x$ and $A_x$, in this
-                 order.
+  \var{nt} [$0$]
+               & number of time steps to run (at most). \\
+  \var{it1} [$10$]
+               & write diagnostic output every \var{it} time steps 
+                 (see Sect.~\ref{diagnostic-IO}). \\
+  \var{cdt} [$0.4$]
+               & Courant coefficient for advective time step; see
+                 \S\ref{time-step}. \\
+  \var{cdtv} [$0.08$]
+               & Courant coefficient for diffusive time step; see
+                 \S\ref{time-step}. \\
+  \var{dt} [$0.$]
+               & \label{dt-run}%
+                 time step; if $\ne 0.$, this overwrites
+                 the Courant time step. See \S\ref{time-step} for a
+                 discussion of the latter. \\
+  \var{dtmin} [$0.$]
+               & abort if time step $\delta t < \delta t_{\rm min}$. \\
+  \var{tmax} [$10^{33}$]
+               & don't run time steps beyond this time. Useful if you want
+                 to run for a given amount of time, but don't know the
+                 necessary number of time steps.\\
+  \var{isave} [$100$]
+               & update current snapshot \file{var.dat} every \var{isave}
+                 time steps. \\
+  \var{itorder} [$3$]
+               & order of time step (1 for Euler; 2 for 3nd-order, 3 for
+                 3rd-order Runge--Kutta). \\
+  \var{dsnap} [$100.$]
+               & save permanent snapshot every \var{dsnap} time units to
+                 files \file{VAR$N$}. \\
+  \var{dvid} [$100.$]
+               & write two-dimensional sections for generation of videos
+                 every \var{dvid} time units [to which file? Is this
+                 implemented at all?]. \\
+  \var{iwig} [$0$]
+               & if $\ne 0$, apply a Nyquist filter (a filter eliminating
+                 any signal at the Nyquist frequency, but affecting large
+                 scales as little as possible) every \var{iwig} time steps to
+                 logarithmic density (sometimes necessary with convection
+                 simulations). \\
+  \var{ialive} [$0$]
+               & if $\ne 0$, each processor writes the current time step
+                 to \file{alive.info} every \var{ialive} time steps. \\
+  \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
+  \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
+               & boundary conditions. See Sect.~\ref{boundconds} for a
+                 discussion. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{hydro_run_pars}} \\
+\midrule
+  \var{nu} [$0.$]
+               & kinematical viscosity. \\
+  \var{ivisc} [--]
+               & select form of viscous term:
                  \begin{description}
-                 \item[\option{p}] indicates periodicity
-                 \item[\option{a}] indicates antisymmetry w.\,r.\,t.~the
-                   boundary, i.\,e.~vanishing value
-                 \item[\option{s}] indicates symmetry w.\,r.\,t.~the
-                   boundary, i.\,e.~vanishing first derivative
-                 \item[\option{a2}] indicates antisymmetry w.\,r.\,t.~the
-                   arbitrary value on the boundary, i.\,e.~vanishing
-                   second derivative
-                 \item[\option{c1}] is a special boundary condition for
-                   $\ln\varrho$ and $s$, which ensures constant heat flux
-                   through the boundary
-                 \item[\option{c2}] is a special boundary condition for
-                   $\ln\varrho$ and $s$, which ensures constant
-                   temperature at the boundary 
+                 \item[\code{ivisc=0}] Simplified viscous force
+                   $\Fv_{\rm visc}=\nu\Laplace\uv$
+                 \item[\code{ivisc=1}] Viscous force for
+                   $\mu\equiv\varrho\nu=\const$,
+                   $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv)$
+                 \item[\code{ivisc=2}] Mysterious viscous force
+                   $\Fv_{\rm visc}=\mu/\varrho(\Laplace\uv+1/3\grad\Div\uv
+                    + 2\mathsf{S}\cdot\grad\ln\varrho)$
                  \end{description}
-                 The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
-                 boundary condition $a$ at the left/lower boundary, but
-                 $b$ at the right/upper one. 
                  \\
-  \var{form1}  & format for monitoring output. typically something like
-                 \code{'(i8,f11.5,1p,50(e10.3," "))'} for printing number
-                 of time step, time, and then a lot of different
-                 quantities. Make sure you allow for sufficiently many
-                 quantities here (you can always use a large multiplier to
-                 be on the safe side). \\
+  \var{Omega} [$0.$]
+               & magnitude of angular velocity for Coriolis force (note:
+                 no centrifugal force is implemented). \\
+  \var{theta} [$$]
+               & direction of angular velocity ($\vartheta=0$ for
+                 $z$-direction, $\vartheta=\pi/2$ for $x$-direction. \\
+  \var{tinit} [$0.$]
+               & initial time span for which to do something special
+                 Currently just used for heating [Should be in
+                 \name{run_pars}, rather than here]. \\
+  \var{tdamp} [$0.$], \\
+  \var{dampu} [$0.$]
+               & damp motions during the initial time interval
+                 $0<t<t_{\rm damp}$ with a damping term $-\var{dampu}(\uv)$.
+                 Useful for situations where initial conditions are not near
+                 equilibrium. \\
+  \var{dampuext} [$0.$], \\
+  \var{rdamp} [$1.2$], \\
+  \var{wdamp} [$0.2$]
+               & permanently damp motions in $|\xv|>r_{\rm damp}$ with
+                 damping term $-\var{damp}_u \,\uv\,\chi(r{-}r_{\rm damp})$,
+                 where $\chi(\cdot)$ is a smooth profile of width
+                 \var{wdamp}. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{density_run_pars}} \\
+\midrule
+  \var{cs0} [start], \\
+  \var{rho0} [start], \\
+  \var{gamma} [start]
+               & see start parameters, p.~\pageref{cs0-rho0-init} \\
+  \var{cdiffrho} [$0.$]
+               & Coefficient for mass diffusion (diffusion term will be
+                 $c_{\rm diffrho}\,\delta x\, {\cs}_0$ . \\
+  \var{cs2bot} [start], \\
+  \var{cs2top} [start]
+               & squared sound speed at bottom and top for boundary
+                 condition \option{c2}. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{entropy_run_pars}} \\
+\midrule
+  \var{hcond0} [start], \\
+  \var{hcond1} [start], \\
+  \var{hcond2} [start]
+               & heat conductivities for solar convection case.
+                 See start parameters, p.~\pageref{hcond0123-init}. \\
+  \var{whcond} [start]
+               & width of transition region between layers.
+                 See start parameters, p.~\pageref{hcond0123-init}. \\
+  \var{mpoly0} [start], \\
+  \var{mpoly1} [start], \\
+  \var{mpoly2} [start]
+               & polytropic exponents for solar convection case.
+                 See start parameters, p.~\pageref{hcond0123-init}. \\
+  \var{isothtop} [start]
+               & flag for isothermal top layer for solar convection case.
+                 See start parameters, p.~\pageref{hcond0123-init}. \\
+  \var{cheat} [--], \\
+  \var{wheat} [--]
+               & strength and width of heating region. \\
+  \var{cool} [$0.$], \\
+  \var{wcool} [--]
+               & strength and width of cooling region. \\
+  \var{Fheat} [start]
+               & heat flux for boundary condition \option{c1}.
+                 For polytropic atmospheres calculated by \cmd{start.x}. \\
+  \var{chi_t} [$0.$]
+               & entropy diffusion coefficient for diffusive term
+                 $\partial s/\partial t = \ldots + \chi_{\rm t}\Laplace s$
+                 in the entropy equation, that can represent some kind of
+                 turbulent (sub-grid) mixing.
+                 It is probably a bad idea to combine this with heat
+                 conduction $\var{hcond0} \ne 0$. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{magnetic_run_pars}} \\
+\midrule
+  \var{B_ext} [$(0.,0.,0.)$]
+               & uniform background magnetic field (for fully periodic
+                 boundary conditions, uniform fields need to be explicitly
+                 added, since otherwise the vector potential $\Av$ has a
+                 linear $\xv$-dependence which is incompatible with
+                 periodicity). \\
+  \var{eta} [$0.$]
+               & magnetic diffusivity $\eta=1/(\mu_0\sigma)$, where
+                 $\sigma$ is the electric conductivity. \\
+  \var{height_eta} [$0.$], \\
+  \var{eta_out} [$0.$]
+               & used to add extra diffusivity in a halo region. \\
+  \var{kinflow} [\code{''}]
+               & set type of flow fixed with \option{nohydro}. Currently
+                 the only recognized value is \code{'ABC'} for an $ABC$
+                 flow; all other values lead to $\uv=\zerovect$. \\
+  \var{kx} [$1.$], \\
+  \var{ky} [$1.$], \\
+  \var{kz} [$1.$]
+               & wave numbers for $ABC$ flow. \\
+  \var{ABC_A} [$1.$], \\
+  \var{ABC_B} [$1.$], \\
+  \var{ABC_C} [$1.$]
+               & amplitudes $A$, $B$ and $C$ for $ABC$ flow. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{pscalar_run_pars}} \\
+\midrule
+  \var{pscalar_diff} [$0.$]
+               & diffusion for passive scalar concentration $c$. \\
+  \var{tensor_pscalar_diff} [--]
+               & coefficient for non-isotropic diffusion of passive scalar. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{forcing_run_pars}} \\
+\midrule
+  \var{iforce} [$2$]
+               & select form of forcing in the equation of motion:
+                 \begin{description}
+                 \item[\code{iforce=1}] irrotational forcing
+                 \item[\code{iforce=2}] helical forcing
+                 \item[\code{iforce=3}] fountain forcing (???)
+                 \item[\code{iforce=4}] forcing horizontal shear (???)
+                 \end{description}
+                 \\
+  \var{iforce2} [$0$]
+               & select form of additional forcing in the equation of motion:
+                 \begin{description}
+                 \item[\code{iforce=1}] fountain forcing (???)
+                 \end{description}
+                 \\
+  \var{force} [$0.$]
+               & amplitude of forcing. \\
+  \var{relhel} [$1.$]
+               & helicity of forcing ($\pm1 \rightarrow$ maximum helicity
+                 of either sign). \\
+  \var{height_ff} [$0.$]
+               & multiply forcing by $z$-dependent profile of width
+               \var{height_ff} (if $\ne 0$) . \\
+  \var{r_ff} [$0.$]
+               & if $\ne 0$, multiply forcing by spherical cutoff profile
+                 (of radius \var{r_ff}) and flip signs of helicity at
+                 equatorial plane. \\
+  \var{width_ff} [$0.5$]
+               & width of vertical and radial profiles for modifying
+                 forcing. \\
+  \var{kfountain} [$5$]
+               & ???. \\
+  \var{fountain} [$1.$]
+               & ???. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{grav_run_pars}} \\
+\midrule
+  \var{zref} [start], \\
+  \var{gravz} [start], \\
+  \var{grav_profile} [start]
+               & see p.~\pageref{zref-init}. \\
+%
+\midrule
+  \multicolumn{2}{c}{Namelist \name{shear_run_pars}} \\
+\midrule
+  \var{qshear} [start]
+               & See p.~\pageref{qshear-init}. \\
 \bottomrule
 \end{longtable}
+% ---------------------------------------------------------------------- %
+
 
 \paragraph{The time step}
-The actual time step is [either set explicitly, or] given by
+\label{time-step}
+
+The time step is normally specified as Courant time step through the
+coefficients \var{cdt} ($c_{\delta t}$) and \var{cdtv} ($c_{\delta t_v}$).
+The resulting Courant step is given by
 \begin{equation}
   \delta t
   = \min\left( c_{\delta t}\frac{\delta x_{\rm min}}
@@ -1376,15 +1617,21 @@ The actual time step is [either set explicitly, or] given by
         \right) \; ,
 \end{equation}
 where
-$\delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z)$;
-$U_{\rm max} \equiv \max\left(|\uv|
-                    + \sqrt{\cs^2{+}\vA^2}\right)$,
-$\cs$ and $\vA$ denoting sound speed and Alfv\'en speed,
-respectively;
+\begin{equation}
+  \delta x_{\rm min} \equiv \min(\delta x, \delta y, \delta z) \; ;
+\end{equation}
+\begin{equation}
+  U_{\rm max} \equiv \max\left(|\uv|
+                      + \sqrt{\cs^2{+}\vA^2}\right) \; ,
+\end{equation}
+$\cs$ and $\vA$ denoting sound speed and Alfv\'en speed, respectively;
 and $D_{\rm max} = \max(\nu,\chi,\eta)$, where
 $\nu$ denotes kinematic viscosity,
-$\chi = \lambda/(c_p\varrho)$ thermal diffusivity and
-$\eta$ the magnetic diffusivity.
+$\chi = \gamma\lambda/(c_p\varrho)$ (a quantity proportional to) thermal
+diffusivity and $\eta$ the magnetic diffusivity.
+
+To fix the time step $\delta t$ to a value independent of velocities and
+diffusivities, use the run parameter \var{dt} (see p.~\ref{dt-run}).
 
 % ---------------------------------------------------------------------- %
 
@@ -1533,7 +1780,8 @@ magnetic vacuum permeability.
 % ---------------------------------------------------------------------- %
 
 \subsection{Entropy equation}
-\index{entropy}
+\index{entropy}%
+\label{entropy}%
 
 The current thermodynamics module \file{entropy} formulates the thermal
 part of the physics in terms of \emph{entropy} $s$, rather than thermal
@@ -1580,52 +1828,167 @@ module.
 % ====================================================================== %
 
 \section{Boundary conditions}
-
+Boundary conditions are implemented through three layers of
+\name{ghost points} on either boundary, which is a quite natural choice
+for an MPI code that uses ghost zones for representing values located on
+the neighboring processors anyway.
+The desired type of boundary condition is set through the parameters
+\var{bc\{x,y,z\}} in \file{run.in}; the nomenclature used is as follows.
+Set \var{bc\{x,y,z\}} to a sequence of letters like
+\begin{alltt}
+  bcx = 'p','p','p', 'p',  'p'
+\end{alltt}
+for periodic boundaries, or
+\begin{alltt}
+  bcz = 's','s','a','a2','c1:c2'
+\end{alltt}
+for non-periodic ones.
+Each element corresponds to one of the
+variables, which are
+$u_x$, $u_y$, $u_z$, $\ln\varrho$, $s/c_p$, $A_x$, $A_x$, $A_x$, $\ln c$
+(minus the unused variables) in this order.
 \begin{description}
-\item[a]
-\item[s]
-\item[a2]
-\item[c1]
-\item[c2]
+\item[\option{p}] periodic boundary condition
+\item[\option{a}] antisymmetric condition w.\,r.\,t.~the
+  boundary, i.\,e.~vanishing value
+\item[\option{s}] symmetric condition w.\,r.\,t.~the
+  boundary, i.\,e.~vanishing first derivative
+\item[\option{a2}] antisymmetry w.\,r.\,t.~the
+  arbitrary value on the boundary, i.\,e.~vanishing
+  second derivative
+\item[\option{c1}] special boundary condition for
+  $\ln\varrho$ and $s$: constant heat flux through the
+  boundary
+\item[\option{c2}] special boundary condition for
+  $\ln\varrho$ and $s$: constant temperature at the
+  boundary
+\item[\option{ce}] special boundary condition for
+  $s$: constant temperature at the boundary for
+  arbitrarily set $\ln\varrho$
+\item[\option{db}] low-order one-sided derivatives {``no
+    boundary condition''} for density
 \end{description}
+The special syntax $a$:$b$ (e.\,g.~`\code{c1:c2}') means: use
+boundary condition $a$ at the left/lower boundary, but
+$b$ at the right/upper one.
+
 
 % ====================================================================== %
 
 \section{Adapting the code}
 
-In some cases, the best will be
-to write a new module that takes care of everything.
-In many cases it will not be enough to just replace (in the Makefile)
-an already existing module. Instead, it will often be necessary to
-add new things into several other routines. In order to come back
-to other cases (needed for regular tests of the code and for future
-releases) it is important to supply also a corresponding dummy routine,
-whose name will start with `no'.
+If you want to add new physics to the code, you will in many cases want to
+add a new module \name{newphysics} together with the corresponding
+\name{nonewphysics} module.
+For a module involving a new variable, the \name{pscalar} module is a good
+prototype.
+The grep command
+\begin{alltt}
+  \prompt{unix> } grep -i pscalar src/*
+\end{alltt}
+gives you a good overview of which files you need to edit or add.
+
+If you just want to add a few new terms to the equation of motion or
+other evolution equations, \name{grav_z} or \name{forcing} may be a good
+starting point.
+
 
 % ---------------------------------------------------------------------- %
 
 \subsection{Adding new output diagnostics}
 
 With the implementation of new physics and the development of new procedures
-in the code it will become necessary to monitor new diagnostic quantities that
-have not yet been implemented in the code. Here is what needs to be done.
+it will become necessary to monitor new diagnostic quantities that
+have not yet been implemented in the code.
+In the following, we describe the steps necessary to set up a new
+diagnostic variable.
 
-The best will be to follow an example, e.g.\ \var{jbm}. Here only the
-module Magnetic is being affected; say \file{grep jbm *.f90}. A corresponding
-integer label with the name \var{i\_jbm} is defined (and initialized to zero).
-Depending on whether this is the mean or a maximum value of the quantity
-\var{jb}, which is calculated in a suitable place in the code, we use the
-label \var{i\_jbm} in connection with the subroutine \code{sum\_mn\_name} or
-\code{max\_mn\_name}. Here we use
-\begin{verbatim}
-        if (i_jbm/=0) call sum_mn_name(jb,i_jbm)
-\end{verbatim}
-In \file{register.f90} we \code{call rprint\_magnetic} where 
-\begin{verbatim}
-        call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
-\end{verbatim}
-has to be added to the list of names that are to be recognized from the
-\file{print.in} file.
+This is nontrivial as, in the interest of efficient communication on
+multi-processor machines, the code minimizes the number of global
+reduction operations by assembling all quantities that need the maximum
+taken in \var{fmax}, and those that need to be summed up over all
+processors (mostly for calculating mean quantities) in \var{fsum} (see
+subroutine \code{diagnostic} in file \file{src/eq.f90}).
+
+As a sample variable, let us consider \var{jbm} (the volume average
+$\left<\jv\dot\Bv\right>$).
+Only the module \name{Magnetic} will be affected, as you can see (the
+diagnostic quantity \var{jbm} is already implemented) with
+\begin{alltt}
+  \prompt{unix> } grep -i jbm src/*.f90
+\end{alltt}
+
+If we pretend for the sake of the exercise that no trace of \var{jbm} was
+in the code, we would need to do the following
+\begin{enumerate}
+\item add the variable \var{i_jbm} to the \emph{module variables} of
+  \name{Magnetic} in both \file{magnetic.f90} and \file{nomagnetic.f90}:
+  \begin{alltt}
+  integer :: i_jbm=0
+  \end{alltt}
+  The variable \var{i_jbm} is needed for matching with the list of
+  diagnostic variables specified in \file{print.in}.
+\item in the subroutine \code{daa_dt} in \file{magnetic.f90}, declare and
+  calculate the quantity \var{jb} (the average of which will be
+  \var{jbm}), and call \code{sum_mn_name}
+  \begin{alltt}
+  real, dimension (nx) :: jb
+  {\sl[\ldots]}
+  if (ldiagnos) then          {\sl! only calculate if diagnostics is required}
+    if (i_jbm/=0) then        {\sl! anybody asked for jbm?}
+      call dot_mn(jj,bb,jb)   {\sl! assuming jj and bb are known}
+      call sum_mn_name(jb,i_jbm)
+    endif
+  endif
+  \end{alltt}
+\item in the subroutine \code{rprint_magnetic} in both \file{magnetic.f90}
+  and \file{nomagnetic.f90}, add the following:
+  \begin{alltt}
+  !
+  !  reset everything in case of reset
+  !  (this needs to be consistent with what is defined above!)
+  !
+  if (lreset) then  {\sl! need to reset list of diagnostic variables?}
+    {\sl[\ldots]}
+    i_jbm=0
+    {\sl[\ldots]}
+  endif
+  !
+  !  check for those quantities that we want to evaluate online
+  !
+  do iname=1,nname
+    {\sl[\ldots]}
+    call parse_name(iname,cname(iname),cform(iname),'jbm',i_jbm)
+    {\sl[\ldots]}
+  enddo
+  {\sl[\ldots]}
+  !
+  !  write column where which magnetic variable is stored
+  !
+  {\sl[\ldots]}
+  write(3,*) 'i_jbm=',i_jbm
+  {\sl[\ldots]}
+  \end{alltt}
+\item in the subroutine \code{rprint_magnetic} in \file{nomagnetic.f90}, add
+  the following (newer version of the code may not require this any more):
+  \begin{alltt}
+  !
+  !  write column where which magnetic variable is stored
+  !  idl needs this even if everything is zero
+  !
+  {\sl[\ldots]}
+  write(3,*) 'i_jbm=',i_jbm
+  {\sl[\ldots]}
+  \end{alltt}
+\item and don't forget to add your new variable to \file{print.in}:
+  \begin{alltt}
+  jbm(F10.5)
+  \end{alltt}
+\end{enumerate}
+
+If, instead of a mean value, you want a new maximum quantity, you need to
+replace \code{sum\_mn\_name()} by \code{max\_mn\_name()}.
+
 
 % ---------------------------------------------------------------------- %
 
@@ -1648,63 +2011,101 @@ Example: passive scalar.
 
 \section{Timings}
 
+In Table~\ref{Ttimescale} we list the results of timings of the code on
+different machines.
+Shown is (amon other quantities) the wall clock time per mesh point
+(excluding the ghost zones) and per full 3-stage time step.
+
+As these results were assembled during the development phase of the code
+(that hasn't really finished yet\ldots), you may not get the same numbers,
+but they should give some orientation of what to expect for you specific
+application on your specific hardware.
+Not that the timer currently used will overflow on some machines (after
+about 50 minutes), so you should not blindly trust the timings given by
+the code.
+
+
+% ---------------------------------------------------------------------- %
 \begin{table}[htb]
   \begin{center}
     \caption{
       Wall clock time per mesh point (excluding the ghost zones)
       and per full 3-stage time step.
-      The Compaq (mhd) machine has 4 processors per node, so the memory
-      consumption is given per node.
-      For example, a $256^3$ MHD run without entropy evolution requires 241 Mb
-      per node. So the size per processor is 241/4 Mb = 60 Mb.
-      }
+      The Mhd machine has 4 processors per node sharing memory;
+      for easier comparison, we list the memory per CPU (i.\,e.~memory per
+      node, divided by 4).
+    }
     \label{Ttimescale}
     \begin{small}
-      \begin{tabular}{rllrlrl}
-proc(s)& machine          &  $\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}
-                             \rule[-2.8ex]{0pt}{5pt}$
-                                 & resol.\ & what         & Size/proc
-                                                                   & when/who \\
-\hline
- 1    & 500MHz linux (nl3)&  19  &  $64^3$ & kinematic    &  10 Mb & (20-may-02/AB)\\
- 1    & 500MHz linux (nl3)&  30  &  $64^3$ & magn/noentro &  20 Mb & (20-may-02/AB)\\
- 1    & 924MHz linux (nq1)&  10  &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
- 1    & Origin3000 (ukaff)& 9.2  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
- 1    & Compaq (mhd)      & 7.8  &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
- 1    & Linux (Kabul)     & 4.4  & $128^3$ & magn/noentro & 130 Mb & (20-jun-02/WD)\\
- 2    & Linux (Kabul)     & 2.5  & $128^3$ & magn/noentro &  80 Mb & (20-jun-02/WD)\\
- 4    & Linux nq0-3       & 6.8  & $256^3$ & magn/noentro & 294 Mb & (10-jun-02/AB)\\
- 4    & Compaq (mhd)      & 2.76 &  $64^3$ & magn/noentro &        & (30-may-02/AB)\\
- 4    & Linux (Kabul)     & 1.5  & $128^3$ & magn/noentro &  47 Mb & (20-jun-02/WD)\\
- 8    & Origin3000 (ukaff)& 1.24 &  $64^3$ & magn/noentro &        & (20-may-02/AB)\\
- 8    & Linux (Kabul)     & 1.25 & $64^2\times128$
-                                           & nomagn/entro &        & (11-jul-02/WD)\\
- 8    & Linux (Kabul)     & 0.83 & $128^3$ & magn/noentro &  28 Mb & (20-jun-02/WD)\\
- 8    & Linux (Kabul)     & 0.87 & $256^3$ & magn/noentro & 160 Mb & (20-jun-02/WD)\\
-16    & Compaq (mhd)      & 0.64 & $256^3$ & magn/noentro &241/4 Mb& (22-may-02/AB)\\
-16    & Origin3000 (ukaff)& 0.61 & $128^3$ & magn/noentro &        & (22-may-02/AB)\\
-16    & Origin3000 (ukaff)& 0.64 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
-16    & Linux (Kabul)     & 0.80 & $128^3$ & magn/noentro &  16 Mb & (20-jun-02/WD)\\
-16    & Linux (Kabul)     & 0.51 & $256^3$ & magn/noentro &   9 Mb & (20-jun-02/WD)\\
-32    & Origin3000 (ukaff)& 0.34 & $256^3$ & magn/noentro &        & (20-may-02/AB)\\
-32    & Origin3000 (ukaff)& 0.32 & $512^3$ & magn/noentro &        & (20-may-02/AB)\\
-64    & Origin3000 (ukaff)& 0.17 & $512^3$ & magn/noentro &        & (21-may-02/AB)\\
-      \end{tabular}
+    \begin{tabular}{rllrlrll}
+    \toprule
+   \mcc{proc(s)}
+     & \mcc{machine}
+             & \mcc{$\displaystyle\frac{{\mu\rm s}}{\rm pt\;\;step}$}
+                    & \mcc{resol.} 
+                              & \mcc{what}
+                                             & \mcc{mem./proc}
+                                                      & \mcc{when}&\mcc{who}\\
+    \midrule
+   1 & Nl3   &  19  &  $64^3$ & kinematic    &  10 Mb & 20-may-02 & AB \\
+   1 & Nl3   &  30  &  $64^3$ & magn/noentro &  20 Mb & 20-may-02 & AB \\
+   1 & Nq1   &  10  &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   1 & Ukaff & 9.2  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Mhd   & 7.8  &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   1 & Kabul & 4.4  & $128^3$ & magn/noentro & 130 Mb & 20-jun-02 & WD \\
+   2 & Kabul & 2.5  & $128^3$ & magn/noentro &  80 Mb & 20-jun-02 & WD \\
+   4 & Nq0-3 & 6.8  & $256^3$ & magn/noentro & 294 Mb & 10-jun-02 & AB \\
+   4 & Mhd   & 2.76 &  $64^3$ & magn/noentro &        & 30-may-02 & AB \\
+   4 & Kabul & 1.5  & $128^3$ & magn/noentro &  47 Mb & 20-jun-02 & WD \\
+   8 & Ukaff & 1.24 &  $64^3$ & magn/noentro &        & 20-may-02 & AB \\
+   8 & Kabul & 1.25 & $64^2{\times}128$                                  
+                              & nomagn/entro &        & 11-jul-02 & WD \\
+   8 & Kabul & 0.83 & $128^3$ & magn/noentro &  28 Mb & 20-jun-02 & WD \\
+   8 & Kabul & 0.87 & $256^3$ & magn/noentro & 160 Mb & 20-jun-02 & WD \\
+  16 & Mhd   & 0.64 & $256^3$ & magn/noentro &  60 Mb & 22-may-02 & AB \\
+  16 & Ukaff & 0.61 & $128^3$ & magn/noentro &        & 22-may-02 & AB \\
+  16 & Ukaff & 0.64 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  16 & Kabul & 0.80 & $128^3$ & magn/noentro &  16 Mb & 20-jun-02 & WD \\
+  16 & Kabul & 0.51 & $256^3$ & magn/noentro &   9 Mb & 20-jun-02 & WD \\
+  32 & Ukaff & 0.34 & $256^3$ & magn/noentro &        & 20-may-02 & AB \\
+  32 & Ukaff & 0.32 & $512^3$ & magn/noentro &        & 20-may-02 & AB \\
+  64 & Ukaff & 0.17 & $512^3$ & magn/noentro &        & 21-may-02 & AB \\
+    \bottomrule
+    \end{tabular}
     \end{small}
   \end{center}
 \end{table}
+% ---------------------------------------------------------------------- %
 
-Below we quote the wall clock time per mesh point (including the ghost zones)
-and per full 3-stage time step.
+The machines we have used can be characterized as follows:
+\begin{description}
+\item[Nl3:] 500\,MHz Pentium??? single CPU; Linux;
+  ???> memory per (dual) node
+\item[Nq$N$:] 924\,MHz Pentium??? cluster; Linux;
+  ???> memory per (dual) node
+\item[Kabul:] 1.9\,GHz Athlon dual-CPU cluster;
+  1\,GB memory per (dual) node;
+  Gigabit ethernet;
+  SuSE Linux 8.0;
+  LAM-MPI
+\item[Ukaff:] ???\,MHz SGI Origin 3000;
+  IRIX ???;
+  native MPI
+\item[Mhd:] ???\,MHz EV? Compaq cluster with 4 CPUs per node;
+  OSF1 (Tru64);
+  native MPI
+\end{description}
 
-Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
+%WD: The following should be in table or is outdated (???):
+
+%Linux 500 MHz: 22 $\mu$s/pt/step in reference implementation (21-Mar-02/AB)
 %CVS:  run.f90               version 1.18          of 2002/03/05 17:43:13 
 %CVS:  register.f90          version 1.15          of 2002/03/08 15:43:19 
 %CVS:  entropy.f90           version 1.33          of 2002/03/09 20:18:55 
 %CVS:  magnetic.f90          version 1.6           of 2002/01/30 16:56:30 
 %CVS:  grav_z.f90            version 1.5           of 2002/01/23 19:56:13 
 
-Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
+%Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 %7288 with 32x32x64 (single processor, linux)
 %print,38*38*71.*8.*2.*4./1e6
 
@@ -1714,21 +2115,22 @@ Memory usage: 7.3 MB for $32\times32\times64$ MHD simulation.
 
 \section{Frequently Asked Questions}
 
-\begin{description}
+% ---------------------------------------------------------------------- %
 
-\item[Compilation stops with the cryptic error message]{\bfseries \ 
+\subsection{Compilation}
 
-    \begin{Verbatim}
+\subsubsection{Compilation stops with the cryptic error message:}
+\begin{Verbatim}
 f95  -O3 -u -c .f90.f90
 Error : Could not open sourcefile .f90.f90
 compilation aborted for .f90.f90 (code 1)
 make[1]: *** [.f90.o] Error 1
-    \end{Verbatim}
-  
-    What is the problem?}
-  \medskip
+\end{Verbatim}
+What is the problem?
 
-  {\em
+\medskip
+
+{\em
   One of the variables for the \file{makefile} has not been set, so
   \cmd{make} expands it to the empty string.
   Most probably you forgot to specify a module in
@@ -1738,46 +2140,12 @@ make[1]: *** [.f90.o] Error 1
   
   Compare your \file{src/Makefile.local} to one of the examples that
   work.
-  }
+}
 
-\item[start.pro doesn't work:]{\bfseries \
 
-    \begin{Verbatim}
-Reading grid.dat..
-Reading param.nml..
-% Expression must be a structure in this context: PAR.
-% Execution halted at:  $MAIN$            104
-/home/brandenb/pencil/runs/forced/hel1/../../../idl/start.pro
-    \end{Verbatim}
-    }
-    \medskip
-
-    {\em
-    You don't have the subdirectory \file{tmp} in your IDL \var{!path}
-    variable. Make sure you source \file{sourceme.csh}/\file{sourceme.sh}
-    or set a sufficient IDL path otherwise.
-    }
-
-\item[run.csh doesn't work:]{\bfseries \
-
-    \begin{Verbatim}
-Invalid character ''' in NAMELIST input
-Program terminated by fatal I/O error
-Abort
-    \end{Verbatim}
-    }
-    \medskip
-
-    {\em
-    The string array for the boundary condition, e.g.\ \var{bcx} or
-    \var{bcz} is too long. Make sure it has exactly as many elements
-    as nvar is big.
-    }
-
-\item[It doesn't compile--something with MVAR:]{\bfseries \
-
-    \begin{Verbatim}
-brandenb@nl3:/home/brandenb/pencil/runs/gravz/conv0/src> make
+\subsubsection{The code doesn't compile,}
+\ldots there is a problem with \var{mvar}:
+\begin{Verbatim}
 make start.x run.x
 make[1]: Entering directory `/home/brandenb/pencil/runs/gravz/conv0/src'
 f95 -O4 -u -Wc,-malign-double    -c cparam.f90
@@ -1788,19 +2156,58 @@ Error: cdata.f90, line 71: Implicit type for MVAR
 make[1]: *** [cdata.o] Error 2
 make[1]: Leaving directory `/home/brandenb/pencil/runs/gravz/conv0/src'
 make: *** [code] Error 2
-    \end{Verbatim}
-    }
-    \medskip
+\end{Verbatim}
 
-    {\em
-Check and make sure that \file{mkcparam} is in your path.
-It this doesn't help, there may be an {\it empty} \file{cparam.inc}
-file in your \file{src} directory. Remove \file{cparam.inc} and try again.
-(Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
-I just added \file{\rm *.inc} to the \file{Makefile}.}
-    }
+\medskip
 
-\end{description}
+{\em
+  Check and make sure that \file{mkcparam} (directory
+  \file{\$PENCIL_HOME/bin}) is in your path.
+  It this doesn't help, there may be an {\it empty} \file{cparam.inc}
+  file in your \file{src} directory. Remove \file{cparam.inc} and try again.
+  (Note that \file{cparam.inc} is automatically generated.)\footnote{Wolfgang,
+    I just added \file{\rm *.inc} to the \file{Makefile}.}
+}
+
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Running}
+
+\subsubsection{run.csh doesn't work:}
+\begin{Verbatim}
+Invalid character ''' in NAMELIST input
+Program terminated by fatal I/O error
+Abort
+\end{Verbatim}
+
+{\em
+  The string array for the boundary condition, e.g.\ \var{bcx} or
+  \var{bcz} is too long. Make sure it has exactly as many elements
+  as \var{nvar} is big.
+}
+
+% ---------------------------------------------------------------------- %
+
+\subsection{Visualization}
+
+\subsubsection{\file{start.pro} doesn't work:}
+\begin{Verbatim}
+Reading grid.dat..
+Reading param.nml..
+% Expression must be a structure in this context: PAR.
+% Execution halted at:  $MAIN$            104
+/home/brandenb/pencil/runs/forced/hel1/../../../idl/start.pro
+\end{Verbatim}
+
+\medskip
+
+{\em
+  You don't have the subdirectory \file{tmp} in your IDL variable
+  \var{!path}.
+  Make sure you source \file{sourceme.csh}/\file{sourceme.sh}
+  or set a sufficient IDL path otherwise.
+}
 
 
 % ====================================================================== %
@@ -1865,11 +2272,6 @@ Akademie-Verlag, Berlin; also Pergamon Press, Oxford (1980)
 % ====================================================================== %
 \appendix
 
-\section {To Do}
-\begin{itemize}
-\item \var{ialive}
-\end{itemize}
-
 
 \section{Some specific initial conditions}
 
@@ -1894,6 +2296,7 @@ and the power spectrum of $\Bv$ increases like $k^4$.
 % ---------------------------------------------------------------------- %
 
 \subsection{Magnetic flux rings}
+\label{fluxrings}
 
 This initial condition sets up two interlocked thin magnetic tori
 (i.\,e.~thin, torus-shaped magnetic flux tubes).
@@ -1961,13 +2364,15 @@ $g_z=-\dd\Phi/\dd z$.
 Use \var{grav_profile='const'} (which is already the default)
 together with \var{gravz}$=-1$ to get
 \begin{equation} \label{constgrav-gravz-init}
-\Phi=(z-z_\infty)(-g_z),\quad g_z=-1.
+  \Phi=(z-z_\infty)(-g_z),\quad g_z=-1.
 \end{equation}
 Use \var{grav_profile='linear'} to get
 \begin{equation} \label{disc-gravz-init}
-\Phi={\textstyle{1\over2}}(z^2-z_\infty^2)\Omega^2,\quad g_z=-\Omega^2z
+  \Phi={\textstyle\frac{1}{2}}(z^2-z_\infty^2)\Omega^2,\quad g_z=-\Omega^2z
 \end{equation}
-where (currently) the parameter \var{gravz} is used in place of $-\Omega^2$.
+where (currently) the parameter \var{gravz} is used in place of
+$-\Omega^2$; this form of the gravitational potential is commonly used for
+accretion discs.
 
 The value of $z_\infty$ is determined such that $\rho=\rho_0$ and
 $c_{\rm s}^2=c_{\rm s0}^2$ at $z=z_{\rm ref}$. This depends on the
@@ -1976,82 +2381,101 @@ values of $\gamma$ and the polytropic index $m$ (see below).
 \subsubsection{Isothermal atmosphere}
 
 Here we want $c_{\rm s}=c_{\rm s0}=\mbox{const}$.
-Using \var{initlnrho='isothermal'} means
+Using \code{initlnrho='isothermal'} means
 \begin{equation} \label{constgrav-lnrho-init}
-\ln\rho/\rho_0=-\gamma\Phi/c_{\rm s0}^2.
+  \ln\frac{\rho}{\rho_0}
+  = -\gamma \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
 The entropy is then initialized to
 \begin{equation} \label{constgrav-ss-init}
-s/c_{\rm p}=(\gamma-1)\Phi/c_{\rm s0}^2.
+  \frac{s}{c_{\rm p}}
+  = (\gamma{-}1) \frac{\Phi}{c_{\rm s0}^2} \; .
 \end{equation}
 In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose $z_\infty=z_{\rm ref}$.
 
 \subsubsection{Polytropic atmosphere}
 
-For polytropes with $p=K\rho^\Gamma$, where $\Gamma\neq\gamma$ in general,
-we can write
+For a polytropic equation of state, $p=K\rho^\Gamma$, where generally
+$\Gamma\neq\gamma$, we can write
 \begin{equation}
--\nab h+T\nab s=-{1\over\rho}\nab p
-=-\nab\left({\Gamma K\over\Gamma-1}\rho^{\Gamma-1}\right)
+  -\nab h+T\nab s
+  = -\frac{1}{\rho}\nab p
+  = -\nab\left(\frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}\right)
 \equiv-\nab\tilde{h},
 \end{equation}
-where we have introduced the pseudo enthalpy $\tilde{h}$ as
+where we have introduced a pseudo enthalpy $\tilde{h}$ as
 \begin{equation}
-\tilde{h}={\Gamma K\over\Gamma-1}\rho^{\Gamma-1}
-=\left[\left(1-{1\over\gamma}\right)
-\left/\left(1-{1\over\Gamma}\right)\right]\,h\right..
+  \tilde{h} = \frac{\Gamma K}{\Gamma{-}1}\rho^{\Gamma{-}1}
+  =\left[\left(1-\frac{1}{\gamma}\right)
+    \left/\left(1-\frac{1}{\Gamma}\right)\right.\right]\,h\; .
 \end{equation}
-Instead of specifying $\Gamma$, one usually defines the polytopic
-index $m=1/(\Gamma-1)$. Thus, $\Gamma=1+1/m$, and
+Obviously, for $\Gamma=\gamma$, the pseudo enthalpy $\tilde{h}$ is
+identical to $h$ itself.
+Instead of specifying $\Gamma$, one usually defines the polytropic
+index $m=1/(\Gamma{-}1)$. Thus, $\Gamma=1+1/m$, and
 \begin{equation}\label{hhtilde}
-\tilde{h}=(m+1)\left(1-{1\over\gamma}\right)\,h
+  \tilde{h}=(m{+}1)\left(1-\frac{1}{\gamma}\right)\,h
 \end{equation}
 
 This is consistent with a fixed entropy dependence,
 where $s$ only depends on $\rho$ like
 \begin{equation}
-s/c_{\rm p}=(\Gamma/\gamma-1)\ln\rho/\rho_0,
+  \frac{s}{c_{\rm p}} = \left( \frac{\Gamma}{\gamma} - 1 \right)
+                        \ln\frac{\rho}{\rho_0} \; ,
 \end{equation}
 and implies that
 \begin{equation}
-\ln c_{\rm s}^2/c_{\rm s0}^2=(\Gamma-1)\ln\rho/\rho_0.
+  \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
+  = (\Gamma{-}1) \ln\frac{\rho}{\rho_0} \; .
 \end{equation}
 
-For hydrostatic equilibrium we require $\tilde{h}+\Phi=\tilde{h}_{\rm ext}$.
+For hydrostatic equilibrium we require
+$\tilde{h}+\Phi=\tilde{h}_{\rm ext}=\const$.
 For gravity potentials that vanish at infinity, we can have
+\footnote{Axel, it might be better to rename $h_{\rm ext}$ to $h_0$.
+  Only for some systems, there is really an external region that allows
+  a direct interpretation of this value. ???
+}%
 $\tilde{h}_{\rm ext}\neq0$, i.e.\ a finite pseudo enthalpy at infinity.
 For $g_z=-1$ or $g_z=-z$, this is not the case, so we put
 $\tilde{h}_{\rm ext}=0$, and therefore $\tilde{h}=-\Phi$.
-Using $c_{\rm s}^2=(\gamma-1)h$ together with (\ref{hhtilde}) we find
+Using $c_{\rm s}^2=(\gamma{-}1)h$ together with (\ref{hhtilde}) we find
 \begin{equation}
-c_{\rm s}^2=-{\gamma\over m+1}\,\Phi.
+  c_{\rm s}^2 = -\frac{\gamma}{m{+}1}\,\Phi.
 \end{equation}
 In order that $\rho=\rho_0$ and $c_{\rm s}^2=c_{\rm s0}^2$ at
 $z=z_{\rm ref}$, we have to choose (remember that $g_z$ is normally negative!)
 \begin{equation}\label{zinfty}
-z_\infty=z_{\rm ref}+(m+1)c_{\rm s0}^2/(-\gamma g_z)
-\quad\mbox{for \var{grav_profile='const'}},
+  z_\infty = z_{\rm ref} + (m{+}1) \frac{c_{\rm s0}^2}{-\gamma g_z}
+  \quad\mbox{for \var{grav_profile='const'}},
 \end{equation}
 and
 \begin{equation}\label{zinfty}
-z_\infty^2=z_{\rm ref}^2
-+(m+1)c_{\rm s0}^2/({\textstyle{1\over2}}\gamma\Omega^2)
-\quad\mbox{for \var{grav_profile='linear'}}.
+  z_\infty^2
+  = z_{\rm ref}^2
+    + (m{+}1) \frac{c_{\rm s0}^2}{{\textstyle\frac{1}{2}}\gamma\Omega^2}
+  \quad\mbox{for \var{grav_profile='linear'}}.
 \end{equation}
 
-Thus, when using \var{initlnrho='polytropic\_simple'} we calculate
+Thus, when using \var{initlnrho='polytropic\_simple'}\footnote{
+  Axel, is in this case $\tilde{h}_{\rm ext} = \tilde{h}(z_\infty)$???
+}
+ we calculate
 \begin{equation}
-\ln c_{\rm s}^2/c_{\rm s0}^2
-=\ln\left[-{\gamma\Phi\over(m+1)c_{\rm s0}^2}\right]
+  \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2}
+  =\ln\left[-\frac{\gamma\Phi}{(m{+}1)c_{\rm s0}^2}\right]
 \end{equation}
 and so the stratification is given by
 \begin{equation}
-\ln\rho/\rho_0=m
-\ln c_{\rm s}^2/c_{\rm s0}^2,\quad
-s/c_{\rm p}=\left({\Gamma\over\gamma}-1\right)
-m\ln c_{\rm s}^2/c_{\rm s0}^2.
+  \ln\frac{\rho}{\rho_0}
+  = m \ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; ,\quad
+  %
+  \frac{s}{c_{\rm p}}
+  = \left(\frac{\Gamma}{\gamma}-1\right)
+    m\ln \frac{c_{\rm s}^2}{c_{\rm s0}^2} \; .
 \end{equation}
+
 
 \subsubsection{Changing the stratification}
 
@@ -2065,12 +2489,12 @@ Can increase stratification by increasing $g_z$ to
 $g_{\max}$, which can be obtained by putting $z_{\rm top}=z_\infty$
 in (\ref{zinfty}), so
 \begin{equation}\label{zinfty}
-g_{\max}={m+1\over\gamma}\,{c_{\rm s0}^2\over z_{\rm top}-z_{\rm ref}}.
+  g_{\max}=\frac{m{+}1}{\gamma}\,\frac{c_{\rm s0}^2}{z_{\rm top}-z_{\rm ref}}.
 \end{equation}
 For $m=1$, $\gamma=5/3$, $z_{\rm top}=1$, and $z_{\rm ref}=0$, for
 example, we have $g_{\max}=6/5=1.2$.
 
-Gravitational box units: measure speed in units of $g_z/d$.
+Gravitational box units: measure speed in units of $\sqrt{g_z d}$.
 The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
@@ -2081,7 +2505,7 @@ to approach the Boussinesq case.
 \
 
 \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.47 2002-07-13 16:36:21 dobler Exp $ $}
+$ $Id: manual.tex,v 1.48 2002-07-14 21:16:40 dobler Exp $ $}
 
 
 \end{document}
@@ -2106,4 +2530,17 @@ $ $Id: manual.tex,v 1.47 2002-07-13 16:36:21 dobler Exp $ $}
 % LocalWords:  tinit tdamp dampu dampuext rdamp wdamp ivisc cdiffrho Fheat tvid
 % LocalWords:  wcool iforce relhel tsnap hystrostatic isothermality initaa jbm
 % LocalWords:  meshpoints jb mn rprint xy Compaq Mb resol linux magn noentro nq
-% LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp
+% LocalWords:  ukaff jun sourcefile kbd env rm dfn MNRAS url html dobler Exp ic
+% LocalWords:  ODEs PDEs iterform ccccccc pscalar nopscalar urms rhom Lxyz xyz
+% LocalWords:  cvsid lperi lwrite lnowrite inituu ampluu widthuu uu initlnrho
+% LocalWords:  widthlnrho piecew zref ampllnrho const initss linprof pertss ss
+% LocalWords:  khor gaussian hor fluxtube fluxlayer Bx Bz fluxrings fluxrings
+% LocalWords:  Alfven circ amplaa fring Iring Rring wr epsilonaa widthaa nvar
+% LocalWords:  kx ky kz wavenumbers lpress equil initlncc ampllncc lncc qshear
+% LocalWords:  tmax itorder iwig ialive bcx bcy bcz ce diffrho kinflow ABC diff
+% LocalWords:  ff kfountain nomagn entro jul cdata mkcparam inc Phys Lele al hy
+% LocalWords:  Nordlund Comput Commun Astrophys Ferriz Mas enez Stanescu adler
+% LocalWords:  Habashi dro dy na mics Akademie polytropes nondimensional mvar
+% LocalWords:  Boussinesq Wc newphysics nonewphysics fmax fsum daa nx ldiagnos
+% LocalWords:  endif lreset iname nname cname cform enddo Pentium GHz Athlon
+% LocalWords:  SuSE SGI IRIX Tru
