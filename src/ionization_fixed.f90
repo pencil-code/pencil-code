@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.61 2004-04-16 07:36:33 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.62 2004-04-19 08:51:02 ajohan Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -69,7 +69,7 @@ module Ionization
   real :: cs0=impossible, rho0=impossible
   real :: cs20=impossible, lnrho0=impossible
   logical :: lcalc_cp = .false.
-  real :: gamma=impossible, gamma1=impossible
+  real :: gamma=5/3., gamma1
   real :: cp=impossible, cp1=impossible
 !ajwm  can't use impossible else it breaks reading param.nml 
   real :: cs2bot=1., cs2top=1. 
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.61 2004-04-16 07:36:33 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.62 2004-04-19 08:51:02 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -391,8 +391,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       ss=f(l1:l2,m,n,iss)
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
-      cs2=(5.0/3.0)*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
-      cp1tilde=(2.0/5.0)/(1+yH0+xHe-xH2)/ss_ion
+      cs2=gamma*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
+      cp1tilde=(1-gamma1)/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_farray
 !***********************************************************************
@@ -412,8 +412,8 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
 !
       lnTT=lnTTss*ss+lnTTlnrho*lnrho+lnTT0
 !
-      cs2=(5.0/3.0)*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
-      cp1tilde=(2.0/5.0)/(1+yH0+xHe-xH2)/ss_ion
+      cs2=gamma*(1+yH0+xHe-xH2)*ss_ion*exp(lnTT)
+      cp1tilde=(1-gamma1)/(1+yH0+xHe-xH2)/ss_ion
 !
     endsubroutine pressure_gradient_point
 !***********************************************************************
