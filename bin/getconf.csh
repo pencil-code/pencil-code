@@ -44,6 +44,7 @@ if ($mpi) then
   else if ($hn =~ nq*) then
     set mpirun = /usr/lib/lam/bin/mpirun
     set mpirun = /usr/bin/mpirun
+    set mpirunops = "-lamd -v"
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
   else if ($hn =~ s*p*) then
