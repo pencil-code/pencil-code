@@ -32,7 +32,7 @@ module Mpicomm
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: nprocs,iproc,root=0
-  integer :: ipy,ipz
+  integer :: ipx,ipy,ipz
   integer :: tolowy=3,touppy=4,tolowz=5,touppz=6 ! msg. tags
   integer :: isend_rq_tolowy,isend_rq_touppy,irecv_rq_fromlowy,irecv_rq_fromuppy
   integer :: isend_rq_tolowz,isend_rq_touppz,irecv_rq_fromlowz,irecv_rq_fromuppz
@@ -100,6 +100,7 @@ module Mpicomm
 !  position on the processor grid
 !  x is fastest direction, z slowest
 !
+      ipx = 1
       ipy = modulo(iproc, nprocy)
       ipz = iproc/(nprocy)
 !

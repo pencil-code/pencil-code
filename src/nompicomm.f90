@@ -20,7 +20,7 @@ module Mpicomm
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: iproc,root=0
-  integer :: ipy,ipz
+  integer :: ipx=1,ipy=1,ipz=1
   logical, dimension (nx*ny) :: necessary=.false.
 !  logical :: lroot=.true.       ! is this the root process?
 
