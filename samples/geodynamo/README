@@ -1,0 +1,5 @@
+$Id: README,v 1.1 2004-06-18 08:37:59 brandenb Exp $
+
+Setup used for convective geodynamo simulations
+In the present setup, enhanced stratification has been used.
+Only the upper hemisphere is simulated (symmetry b.c. are used on the equator)
