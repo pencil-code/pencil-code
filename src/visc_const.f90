@@ -1,4 +1,4 @@
-! $Id: visc_const.f90,v 1.35 2004-07-16 13:45:38 nilshau Exp $
+! $Id: visc_const.f90,v 1.36 2004-07-22 12:32:39 nilshau Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for cases 1) nu constant, 2) mu = rho.nu 3) constant and 
@@ -63,7 +63,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_const.f90,v 1.35 2004-07-16 13:45:38 nilshau Exp $")
+           "$Id: visc_const.f90,v 1.36 2004-07-22 12:32:39 nilshau Exp $")
 
 
 ! Following test unnecessary as no extra variable is evolved
@@ -201,7 +201,7 @@ module Viscosity
       shock=0.
       gshock=0.
 
-      if ((nu /= 0.) .or. (ivisc == 'smagorinsky')) then
+      if ((nu /= 0.) .or. (ivisc == 'smagorinsky_simplified')) then
         select case (ivisc)
 
         case ('simplified', '0')
