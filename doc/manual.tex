@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.211 2003-11-20 13:07:59 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.212 2003-11-20 13:17:53 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -58,7 +58,7 @@
 \else                           % running pdflatex
   \documentclass[pdftex,12pt,twoside,notitlepage,a4paper]{article}
 \fi
-\usepackage[bookmarks=false]{hyperref}
+\usepackage[dvipdfm]{hyperref}
 
 %\usepackage{url} %(do we not need this; but it's not working anyway)
 %\usepackage{german,a4}
@@ -345,7 +345,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-20 13:07:59 $ $,~ $ $Revision: 1.211 $ $}
+%\date{$ $Date: 2003-11-20 13:17:53 $ $,~ $ $Revision: 1.212 $ $}
 
 % ====================================================================== %
 
@@ -380,7 +380,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-20 13:07:59 $ $,~ $ $Revision: 1.211 $ $}\\
+  \emph{$ $Date: 2003-11-20 13:17:53 $ $,~ $ $Revision: 1.212 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -3396,7 +3396,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-20 13:07:59 $ $,~ $ $Revision: 1.211 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-11-20 13:17:53 $ $,~ $ $Revision: 1.212 $ $}
 
 \section{Timings}
 
@@ -4996,7 +4996,9 @@ double precision, $\varepsilon\approx10^{-15}$.
   \var{bcx} [(\code{'p'}, \code{'p'}, \ldots)], \\
   \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
   \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
-               & boundary conditions (for \file{start.csh}). 
+               & boundary conditions. See Sect.~\ref{boundconds} for a
+                 discussion of where and how to set these. \\
+
                  \\
 %
 \midrule
@@ -5389,7 +5391,7 @@ the latest set of parameters, you need to look at the code.
   \var{bcy} [(\code{'p'}, \code{'p'}, \ldots)], \\
   \var{bcz} [(\code{'p'}, \code{'p'}, \ldots)]
                & boundary conditions. See Sect.~\ref{boundconds} for a
-                 discussion. \\
+                 discussion of where and how to set these. \\
   \var{random_gen} [start]
                & see start parameters, p.~\pageref{random-gen-init} \\
   \var{lwrite_aux} [start]
@@ -6015,7 +6017,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.211 2003-11-20 13:07:59 dobler Exp $ $}
+$ $Id: manual.tex,v 1.212 2003-11-20 13:17:53 dobler Exp $ $}
 
 
 \end{document}
