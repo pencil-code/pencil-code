@@ -1,0 +1,27 @@
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2003-08-29 19:16:23 mee Exp $'
+  unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
+  bcz = 's','s','a','a2','sT'
+  xyz0=-0.25,-0.25,-.25
+  xyz1=+0.25,+0.25,+.25
+  lperi=T,T,F
+  lwrite_aux=T
+/
+&hydro_init_pars
+/
+&density_init_pars
+  initlnrho='const_lnrho', lnrho_const=0.
+/
+&grav_init_pars
+  grav_profile='Ferriere' 
+/
+&entropy_init_pars
+  initss='const_ss', ss_const=0.4  
+/
+&ionization_init_pars
+/
+&interstellar_init_pars
+/
+&shear_init_pars
+  qshear=1.0
+/ 

@@ -1,0 +1,32 @@
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2003-08-29 19:16:23 mee Exp $',
+  nt=5, it1=1, isave=50, itorder=3
+  cdt=0.4, cdtv=0.08
+  dsnap=2., dvid=2.
+  ip=14
+/
+&hydro_run_pars
+  Omega=25.0
+/
+&density_run_pars
+  !lupw_lnrho=T
+/
+&grav_run_pars
+/
+&entropy_run_pars
+/
+&ionization_run_pars
+/
+&interstellar_run_pars
+  ampl_SN=3.182119037
+  lSNI=T, lSNII=F
+  ltestSN=T                !Position SN at centre of box only
+  t_interval_SNI=1000000.  !Never do another one
+  t_next_SNI=0.
+  point_width=4
+/
+&shear_run_pars
+/
+&viscosity_run_pars
+  nu=2e-5,nu_shock=5.0
+/
