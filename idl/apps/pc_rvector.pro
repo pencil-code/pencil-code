@@ -1,4 +1,4 @@
-;  $Id: pc_rvector.pro,v 1.7 2003-08-18 15:56:16 brandenb Exp $
+;  $Id: pc_rvector.pro,v 1.8 2003-08-18 18:08:02 brandenb Exp $
 ;
 ;  Reads pre-selected vectors and plots in a 3-D box.
 ;  Data must be preprocessed with read_vectorfiles.x
@@ -39,9 +39,9 @@ while not eof(lun) do begin
     t=bx
     print,'nread=',nread
     if nread gt 0 then begin
-      vecgdv_good,ll-4,mm-4,nn-1,bbx,bby,bbz,$
+      pc_vectors_selected,ll-4,mm-4,nn-1,bbx,bby,bbz,$
         indgen(nxyz),indgen(nxyz),indgen(nxyz),$
-        ax=30,az=30,len=1e6,back=255
+        ax=30,az=30,len=5,back=255
       xyouts,-5,-5,'!8t!6='+string(t,fo=fo),siz=siz,col=1
       wait,.05
       ;

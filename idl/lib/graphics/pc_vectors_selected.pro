@@ -1,4 +1,6 @@
-PRO vecgdv_good,l,m,n,U,V,W,X,Y,Z,length=length,ax=ax,az=az,nbox=nbox,$
+;  $Id: pc_vectors_selected.pro,v 1.4 2003-08-18 18:08:02 brandenb Exp $
+;
+PRO pc_vectors_selected,l,m,n,U,V,W,X,Y,Z,length=length,ax=ax,az=az,nbox=nbox,$
 	color=color,symsize=symsize,scale=scale,black=black,field=field,$
 	per=per,center=center,nobox=nobox,noarrow=noarrow,back=back
 ;
@@ -70,7 +72,7 @@ end
         autocol=0
       endelse
       if n_elements(length) eq 0 then length=3.0
-      if n_elements(thresh) eq 0 then thresh=.25*max([u,v,w])
+      if n_elements(thresh) eq 0 then thresh=0.0
       if n_elements(ax)     eq 0 then ax=30
       if n_elements(az)     eq 0 then az=30
       if n_elements(nbox)   eq 0 then nbox=0
@@ -100,10 +102,7 @@ if (field eq 2) then icol0=[128,254]
       t = size(v)
       q = size(w)
       ;
-      if thresh ge 0. then begin
-	;print,'TEST1'
-        mag = sqrt(u^2+v^2+w^2)       ;magnitude.
-      endif
+      mag = sqrt(u^2+v^2+w^2)       ;magnitude.
       ;
       ;print,minmax(mag)
       ugood = U
@@ -119,22 +118,20 @@ if (field eq 2) then icol0=[128,254]
       rmax=[x1,y1,z1]
       ;
       maxmag0 = max(mag)
-      if (length le 0) then begin
-        maxmag=(mag/abs(length) > 1e-22)
-      endif else begin
-        maxmag = max(mag)/length
-      endelse
+;     if (length le 0) then begin
+;       maxmag=(mag/abs(length) > 1e-22)
+;     endif else begin
+;       maxmag = max(mag)/length
+;     endelse
       ;dx = (x1-x0)/maxmag*ugood      ;components.
       ;dy = (y1-y0)/maxmag*vgood
       ;dz = (z1-z0)/maxmag*wgood
 
-maxmag=length
+maxmag=length/maxmag0
+
       dx = maxmag*ugood      ;components.
       dy = maxmag*vgood
       dz = maxmag*wgood
-;print,minmax(dx)
-;print,minmax(dy)
-;print,minmax(dz)
 
       xstylesav=!x.style
       ystylesav=!y.style
