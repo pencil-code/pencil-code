@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.66 2003-07-11 14:42:39 theine Exp $
+! $Id: radiation_exp.f90,v 1.67 2003-07-11 16:45:10 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -83,7 +83,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.66 2003-07-11 14:42:39 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.67 2003-07-11 16:45:10 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -238,25 +238,34 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-!
-           if (lrad>=0) then; llstart=l1; llstop=l2; ldir=+1
-                        else; llstart=l2; llstop=l1; ldir=-1; endif
-           if (mrad>=0) then; mmstart=m1; mmstop=m2; mdir=+1
-                        else; mmstart=m2; mmstop=m1; mdir=-1; endif
-           if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
-                        else; nnstart=n2; nnstop=n1; ndir=-1; endif
-!
+           call intensity_startstop()
            call intensity_intrinsic(f)
            call intensity_periodic()
            call intensity_communicate()
            call intensity_revision(f)
-!
         endif
       enddo
       enddo
       enddo
 !
     endsubroutine radtransfer
+!***********************************************************************
+    subroutine intensity_startstop()
+!
+!  calculate start and stop values for a given direction
+!
+!  11-jul-03/tobi: coded
+!
+      use Cdata
+!
+      if (lrad>=0) then; llstart=l1; llstop=l2; ldir=+1
+                   else; llstart=l2; llstop=l1; ldir=-1; endif
+      if (mrad>=0) then; mmstart=m1; mmstop=m2; mdir=+1
+                   else; mmstart=m2; mmstop=m1; mdir=-1; endif
+      if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
+                   else; nnstart=n2; nnstop=n1; ndir=-1; endif
+!
+    endsubroutine intensity_startstop
 !***********************************************************************
     subroutine intensity_intrinsic(f)
 !
@@ -309,6 +318,11 @@ module Radiation
     endsubroutine intensity_intrinsic
 !***********************************************************************
     subroutine intensity_periodic()
+!
+!  calculate boundary intensities for rays parallel to a coordinate
+!  axis with periodic boundary conditions
+!
+!  11-jul-03/tobi: coded
 !
       use Cdata
       use Mpicomm
@@ -371,6 +385,7 @@ module Radiation
           call radboundary_xy_send(radz0,zuneigh,Irad0_xy,emtau0_xy)
         endif 
       endif
+!
       if (nrad<0.and.bc_rad2(3)=='p') then
         if (ipz==nprocz-1) then
           Irad0_xy=0
@@ -421,6 +436,10 @@ module Radiation
 !***********************************************************************
     subroutine receive_intensity()
 !
+!  set boundary intensities or receive from neighboring processors
+!
+!  11-jul-03/tobi: coded
+!
       use Cdata
       use Mpicomm
 !
@@ -432,7 +451,7 @@ module Radiation
 !
       if(lroot.and.headt) print*,'receive_intensity'
 !
-!  ... in the x-direction
+!  yz boundary plane
 !
       if (lrad>0) then
         call radboundary_yz_set(Irad0_yz)
@@ -443,7 +462,7 @@ module Radiation
         Irad0(l2+1:l2+radx0,:,:)=Irad0_yz
       endif
 !
-!  ... in the y-direction
+!  zx boundary plane
 !
       if (mrad>0) then
         if (ipy==0) call radboundary_zx_set(Irad0_zx)
@@ -456,7 +475,7 @@ module Radiation
         Irad0(:,m2+1:m2+rady0,:)=Irad0_zx
       endif
 !
-!  ... in the z-direction
+!  xy boundary plane
 !
       if (nrad>0) then
         if (ipz==0) call radboundary_xy_set(Irad0_xy)
@@ -524,6 +543,10 @@ module Radiation
 !***********************************************************************
     subroutine send_intensity()
 !
+!  send boundary intensities to neighboring processors
+!
+!  11-jul-03/tobi: coded
+!
       use Cdata
       use Mpicomm
 !
@@ -535,7 +558,7 @@ module Radiation
 !
       if(lroot.and.headt) print*,'send_intensity'
 !
-!  ... in the y-direction
+!  zx boundary plane
 !
       if (mrad>0.and.ipy/=nprocy-1) then
         Irad0_zx=Irad0(:,m2-rady0+1:m2,:) &
@@ -543,6 +566,7 @@ module Radiation
                  +Irad(:,m2-rady0+1:m2,:)
         call radboundary_zx_send(rady0,yuneigh,Irad0_zx)
       endif
+!
       if (mrad<0.and.ipy/=0) then
         Irad0_zx=Irad0(:,m1:m1+rady0-1,:) &
                 *emtau(:,m1:m1+rady0-1,:) &
@@ -550,7 +574,7 @@ module Radiation
         call radboundary_zx_send(rady0,ylneigh,Irad0_zx)
       endif
 !
-!  ... in the z-direction
+!  xy boundary plane
 !
       if (nrad>0.and.ipz/=nprocz-1) then
         Irad0_xy=Irad0(:,:,n2-radz0+1:n2) &
@@ -558,6 +582,7 @@ module Radiation
                  +Irad(:,:,n2-radz0+1:n2)
         call radboundary_xy_send(radz0,zuneigh,Irad0_xy)
       endif
+!
       if (nrad<0.and.ipz/=0) then
         Irad0_xy=Irad0(:,:,n1:n1+radz0-1) &
                 *emtau(:,:,n1:n1+radz0-1) &
@@ -602,7 +627,7 @@ module Radiation
 !***********************************************************************
     subroutine radboundary_zx_set(Irad0_zx)
 !
-!  sets the physical boundary condition on xy plane
+!  sets the physical boundary condition on zx plane
 !
 !   6-jul-03/axel: coded
 !
@@ -669,11 +694,10 @@ module Radiation
 !***********************************************************************
     subroutine intensity_revision(f)
 !
-!  Integration radiation transfer equation along rays
-!
 !  This routine is called after the communication part
 !  The true boundary intensities I0 are now known and
-!    the correction term I0*exp(-tau) is added
+!  the correction term I0*exp(-tau) is added
+!
 !  16-jun-03/axel+tobi: coded
 !
       use Cdata

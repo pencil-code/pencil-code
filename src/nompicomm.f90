@@ -200,21 +200,6 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
-    subroutine radboundary_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
-!
-!   2-jul-03/tony: dummy created
-!
-      integer :: radx0,idest
-      real, dimension(radx0,my,mz) :: Ibuf_yz
-      real, dimension(radx0,my,mz), optional :: taubuf_yz
-!
-      if (ip==0) then
-         print*,radx0,idest,Ibuf_yz
-         if (present(taubuf_yz)) print*,taubuf_yz
-      endif
-!
-    endsubroutine radboundary_yz_recv
-!***********************************************************************
     subroutine radboundary_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
 !
 !   2-jul-03/tony: dummy created
@@ -244,21 +229,6 @@ module Mpicomm
       endif
 !
     endsubroutine radboundary_xy_recv
-!***********************************************************************
-    subroutine radboundary_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
-!
-!   2-jul-03/tony: dummy created
-!
-      integer :: radx0,idest
-      real, dimension(radx0,my,mz) :: Ibuf_yz
-      real, dimension(radx0,my,mz), optional :: taubuf_yz
-!
-      if (ip==0) then
-         print*,radx0,idest,Ibuf_yz
-         if (present(taubuf_yz)) print*,taubuf_yz
-      endif
-!
-    endsubroutine radboundary_yz_send
 !***********************************************************************
     subroutine radboundary_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !

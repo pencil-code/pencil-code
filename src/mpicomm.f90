@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.99 2003-07-10 10:16:10 brandenb Exp $
+! $Id: mpicomm.f90,v 1.100 2003-07-11 16:45:10 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -574,53 +574,20 @@ module Mpicomm
 !
        endsubroutine finalise_shearing
 !***********************************************************************
-    subroutine radboundary_yz_recv(radx0,idest,Ibuf_yz,taubuf_yz)
+    subroutine radboundary_zx_recv(rady0,isource,Ibuf_zx,taubuf_zx)
 !
-!  receive intensities from x direction
-!  (At the moment we have only one processor in x, so this doesn't do anything)
+!  receive intensities from neighboring processor in y
 !
-!   2-jul-03/axel: adapted from recv_Irad0_xy
+!  11-jul-03/tobi: coded
 !
-      integer :: radx0,idest
-      real, dimension(radx0,my,mz) :: Ibuf_yz
-      real, dimension(radx0,my,mz), optional :: taubuf_yz
-      integer :: nbuf_yz
-!
-!  Identifier
-!
-      if(lroot.and.ip<5) print*,'radboundary_yz_recv: ipx,idest=',ipx,idest
-!
-!  buffer sizes
-!
-      nbuf_yz=radx0*my*mz
-!
-!  initiate receive for the intensity
-!
-      call MPI_RECV(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
-                     MPI_COMM_WORLD,irecv_yz,ierr)
-!
-!  ...and optionally for the optical depth
-!
-      if (present(taubuf_yz)) &
-      call MPI_RECV(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
-                     MPI_COMM_WORLD,irecv_yz,ierr)
-!
-    endsubroutine radboundary_yz_recv
-!***********************************************************************
-    subroutine radboundary_zx_recv(rady0,idest,Ibuf_zx,taubuf_zx)
-!
-!  send intensities
-!
-!   1-jul-03/axel: adapted from recv_Irad0_xy
-!
-      integer :: rady0,idest
+      integer :: rady0,isource
       real, dimension(mx,rady0,mz) :: Ibuf_zx
       real, dimension(mx,rady0,mz), optional :: taubuf_zx
       integer :: nbuf_zx
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_recv: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radboundary_zx_recv'
 !
 !  buffer sizes
 !
@@ -628,31 +595,31 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
+      call MPI_RECV(Ibuf_zx,nbuf_zx,MPI_REAL,isource,Itag_zx, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
-      call MPI_RECV(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
+      call MPI_RECV(taubuf_zx,nbuf_zx,MPI_REAL,isource,tautag_zx, &
                      MPI_COMM_WORLD,irecv_zx,ierr)
 !
     endsubroutine radboundary_zx_recv
 !***********************************************************************
-    subroutine radboundary_xy_recv(radz0,idest,Ibuf_xy,taubuf_xy)
+    subroutine radboundary_xy_recv(radz0,isource,Ibuf_xy,taubuf_xy)
 !
-!  receive intensities
+!  receive intensities from neighboring processor in z
 !
-!   1-jul-03/axel: coded
+!  11-jul-03/tobi: coded
 !
-      integer :: radz0,idest
+      integer :: radz0,isource
       real, dimension(mx,my,radz0) :: Ibuf_xy
       real, dimension(mx,my,radz0), optional :: taubuf_xy
       integer :: nbuf_xy
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_recv: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radboundary_xy_recv'
 !
 !  buffer sizes
 !
@@ -660,55 +627,22 @@ module Mpicomm
 !
 !  initiate receive for the intensity
 !
-      call MPI_RECV(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
+      call MPI_RECV(Ibuf_xy,nbuf_xy,MPI_REAL,isource,Itag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
-      call MPI_RECV(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
+      call MPI_RECV(taubuf_xy,nbuf_xy,MPI_REAL,isource,tautag_xy, &
                      MPI_COMM_WORLD,irecv_xy,ierr)
 !
     endsubroutine radboundary_xy_recv
 !***********************************************************************
-    subroutine radboundary_yz_send(radx0,idest,Ibuf_yz,taubuf_yz)
-!
-!  send intensities in x direction
-!  (At the moment we have only one processor in x, so this doesn't do anything)
-!
-!   2-jul-03/axel: adapted from send_Irad0_xy
-!
-      integer :: radx0,idest
-      real, dimension(radx0,my,mz) :: Ibuf_yz
-      real, dimension(radx0,my,mz), optional :: taubuf_yz
-      integer :: nbuf_yz
-!
-!  Identifier
-!
-      if(lroot.and.ip<5) print*,'radboundary_yz_send: ipx,idest=',ipx,idest
-!
-!  buffer size
-!
-      nbuf_yz=radx0*my*mz
-!
-!  initiate send for the intensity
-!
-      call MPI_SEND(Ibuf_yz,nbuf_yz,MPI_REAL,idest,Itag_yz, &
-                     MPI_COMM_WORLD,isend_yz,ierr)
-!
-!  ...and optionally for the optical depth
-!
-      if (present(taubuf_yz)) &
-      call MPI_SEND(taubuf_yz,nbuf_yz,MPI_REAL,idest,tautag_yz, &
-                     MPI_COMM_WORLD,isend_yz,ierr)
-!
-    endsubroutine radboundary_yz_send
-!***********************************************************************
     subroutine radboundary_zx_send(rady0,idest,Ibuf_zx,taubuf_zx)
 !
-!  send intensities
+!  send intensities to neighboring processor in y
 !
-!   1-jul-03/axel: adapted from send_Irad0_xy
+!  11-jul-03/tobi: coded
 !
       integer :: rady0,idest
       real, dimension(mx,rady0,mz) :: Ibuf_zx
@@ -717,7 +651,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_zx_send: ipy,idest=',ipy,idest
+      if(lroot.and.ip<5) print*,'radboundary_zx_send'
 !
 !  buffer size
 !
@@ -738,9 +672,9 @@ module Mpicomm
 !***********************************************************************
     subroutine radboundary_xy_send(radz0,idest,Ibuf_xy,taubuf_xy)
 !
-!  send intensities
+!  send intensities to neighboring processor in z
 !
-!   1-jul-03/axel: coded
+!  11-jul-03/tobi: coded
 !
       integer :: radz0,idest
       real, dimension(mx,my,radz0) :: Ibuf_xy
@@ -749,7 +683,7 @@ module Mpicomm
 !
 !  Identifier
 !
-      if(lroot.and.ip<5) print*,'radboundary_xy_send: ipz,idest=',ipz,idest
+      if(lroot.and.ip<5) print*,'radboundary_xy_send'
 !
 !  buffer size
 !
