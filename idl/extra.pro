@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.30 2003-11-02 03:57:25 brandenb Exp $
+;  $Id: extra.pro,v 1.31 2004-02-17 10:28:03 ajohan Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -40,13 +40,6 @@ if (ilnrho ne 0) then begin
 ;ajwm NOT SO SURE THE ENTHALPY IS CORRECT EITHER
   hhh=cs2/gamma1  ;(enthalpy)
 ;
-end
-;
-;  dust density
-;
-if (ilnrhod ne 0) then begin
-  llnrhod=lnrhod(l1:l2,m1:m2,n1:n2)
-  rhod=exp(llnrhod)
 end
 ;
 if (iqrad ne 0) then QQrad=reform(Qrad(l1:l2,m1:m2,n1:n2))
