@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.329 2004-11-09 21:40:14 dobler Exp $
+! $Id: entropy.f90,v 1.330 2005-03-02 06:10:04 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.329 2004-11-09 21:40:14 dobler Exp $")
+           "$Id: entropy.f90,v 1.330 2005-03-02 06:10:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -312,7 +312,7 @@ module Entropy
       intent(in) :: xx,yy,zz
       intent(inout) :: f
 !
-      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-alog(gamma1))/gamma
+      if (pretend_lnTT) f(:,:,:,iss)=f(:,:,:,iss)+(f(:,:,:,ilnrho)*gamma1-log(gamma1))/gamma
       do iinit=1,ninit
 !
 !  if we pretend that ss in in reality g1lnTT, we initialize the background
@@ -349,13 +349,13 @@ module Entropy
         case('sedov') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
         call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
-      !   f(:,:,:,iss) = f(:,:,:,iss) + (alog(f(:,:,:,iss) + thermal_background)+alog(thermal_scaling))/gamma 
+      !   f(:,:,:,iss) = f(:,:,:,iss) + (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma 
 
         case('sedov-dual') 
           if (lroot) print*,'init_ss: sedov - thermal background with gaussian energy burst'
         call blob(thermal_peak,f,iss,radius_ss,center1_x,center1_y,center1_z)
         call blob(thermal_peak,f,iss,radius_ss,center2_x,center2_y,center2_z)
-      !   f(:,:,:,iss) = (alog(f(:,:,:,iss) + thermal_background)+alog(thermal_scaling))/gamma 
+      !   f(:,:,:,iss) = (log(f(:,:,:,iss) + thermal_background)+log(thermal_scaling))/gamma 
    
         case('shock2d') 
           call shock2d(f,xx,yy,zz)
@@ -372,7 +372,7 @@ module Entropy
           !  ss = const.
           !
           if (lroot) print*,'init_ss: isentropic stratification'
-          ! ss0=alog(-gamma1*gravz*zinfty)/gamma
+          ! ss0=log(-gamma1*gravz*zinfty)/gamma
           ! print*,'init_ss: isentropic stratification; ss=',ss0
           f(:,:,:,iss)=0.
           if (ampl_ss/=0.) then
@@ -423,7 +423,7 @@ module Entropy
               !
               if (cs2cool == 0) &
                    call stop_it("Inconsistency: cs2cool can't be 0")
-              ss_ext = 0. + alog(cs2cool/cs2_ext)
+              ss_ext = 0. + log(cs2cool/cs2_ext)
               ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic f. r<r_ext
               where (pot <= pot_ext) ! isentropic for r<r_ext
                 f(:,:,:,iss) = 0.
@@ -629,9 +629,9 @@ module Entropy
         tmp = 1 + beta1*(zz-zint)/cs2int
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * alog(tmp)
+                      * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * alog(1 + beta1*(zbot-zint)/cs2int)
+                        * log(1 + beta1*(zbot-zint)/cs2int)
       endif
       cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
 
@@ -684,9 +684,9 @@ module Entropy
         tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * alog(tmp)
+                      * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * alog(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
+                        * log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
       endif
       cs2int = cs2int + beta1*(zbot**2-zint**2)/2. 
              ! cs2 at layer interface (bottom)
@@ -877,7 +877,7 @@ module Entropy
 !       (1.09*0.340*T_c + 1.09*0.226*T_w + 2.09*0.025*T_i + 2.27*0.00048*T_h)
 !      cs20=gamma*pp0/rho0
 !      cs0=sqrt(cs20)
-!      ss0=alog(gamma*pp0/cs20/rho0)/gamma   !ss0=zero  (not needed)
+!      ss0=log(gamma*pp0/cs20/rho0)/gamma   !ss0=zero  (not needed)
 !
       do n=n1,n2            ! nb: don't need to set ghost-zones here
       absz=abs(z(n))
@@ -897,7 +897,7 @@ module Entropy
 !  normalised s.t. rho0 gives mid-plane density directly (in 10^-24 g/cm^3)
         !rho=rho0/(0.340+0.226+0.025+0.00048)*(n_c+n_w+n_i+n_h)*rhoscale
         rho=(n_c+n_w+n_i+n_h)*rhoscale
-        lnrho=alog(rho)
+        lnrho=log(rho)
         f(l1:l2,m,n,ilnrho)=lnrho
 
 !  define entropy via pressure, assuming fixed T for each component
@@ -979,29 +979,29 @@ module Entropy
         rpu(4) = 0.0d0
         rpv(4) = 1.206045378311055d0
 !
-!  s=-lnrho+alog(gamma*p)/gamma
+!  s=-lnrho+log(gamma*p)/gamma
 !
         where ( (xx>=0.) .and. (yy>=0.) )
-          f(:,:,:,ilnrho)=alog(rpr(1))
-          f(:,:,:,iss)=alog(gamma*rpp(1))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,ilnrho)=log(rpr(1))
+          f(:,:,:,iss)=log(gamma*rpp(1))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(1)
           f(:,:,:,iuy)=rpv(1)
         endwhere
         where ( (xx<0.) .and. (yy>=0.) )
-          f(:,:,:,ilnrho)=alog(rpr(2))
-          f(:,:,:,iss)=alog(gamma*rpp(2))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,ilnrho)=log(rpr(2))
+          f(:,:,:,iss)=log(gamma*rpp(2))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(2)
           f(:,:,:,iuy)=rpv(2)
         endwhere
         where ( (xx<0.) .and. (yy<0.) )
-          f(:,:,:,ilnrho)=alog(rpr(3))
-          f(:,:,:,iss)=alog(gamma*rpp(3))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,ilnrho)=log(rpr(3))
+          f(:,:,:,iss)=log(gamma*rpp(3))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(3)
           f(:,:,:,iuy)=rpv(3)
         endwhere
         where ( (xx>=0.) .and. (yy<0.) )
-          f(:,:,:,ilnrho)=alog(rpr(4))
-          f(:,:,:,iss)=alog(gamma*rpp(4))/gamma-f(:,:,:,ilnrho)
+          f(:,:,:,ilnrho)=log(rpr(4))
+          f(:,:,:,iss)=log(gamma*rpp(4))/gamma-f(:,:,:,ilnrho)
           f(:,:,:,iux)=rpu(4)
           f(:,:,:,iuy)=rpv(4)
         endwhere
@@ -1736,7 +1736,7 @@ module Entropy
           heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
         ! cooling profile; maximum = 1
-        ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop
+        ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
         heat = heat - cool*prof*(cs2-cs20)/cs20
       endif

@@ -1,4 +1,4 @@
-! $Id: grav_x.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $
+! $Id: grav_x.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -75,7 +75,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_x.f90,v 1.8 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: grav_x.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $")
 !
       lgrav =.true.
       lgravx=.true.
@@ -110,7 +110,7 @@ module Gravity
         if (dgravx==0.) call stop_it("initialize_gravity: dgravx=0 not OK")
         if (lroot) print*,'initialize_gravity: tanh profile, gravx=',gravx
         if (lroot) print*,'initialize_gravity: xgrav,dgravx=',xgrav,dgravx
-        gravx=-alog(pot_ratio)/dgravx
+        gravx=-log(pot_ratio)/dgravx
         gravx_pencil=gravx*.5/cosh((x(l1:l2)-xgrav)/dgravx)**2
         potx_pencil=-gravx*.5*(1.+tanh((x(l1:l2)-xgrav)/dgravx))*dgravx
 

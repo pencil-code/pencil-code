@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.89 2004-10-30 15:22:46 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.90 2005-03-02 06:10:04 dobler Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -111,7 +111,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.89 2004-10-30 15:22:46 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.90 2005-03-02 06:10:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -406,7 +406,7 @@ module Dustvelocity
               do n=n1,n2
                 if (ldensity_nolog) then
                   rho = f(l1:l2,m,n,ilnrho)
-                  lnrho = alog(rho)
+                  lnrho = log(rho)
                 else
                   lnrho = f(l1:l2,m,n,ilnrho)
                   rho = exp(lnrho)

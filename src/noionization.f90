@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.119 2004-10-27 14:21:47 ajohan Exp $
+! $Id: noionization.f90,v 1.120 2005-03-02 06:10:05 dobler Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.119 2004-10-27 14:21:47 ajohan Exp $')
+           '$Id: noionization.f90,v 1.120 2005-03-02 06:10:05 dobler Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -436,7 +436,7 @@ module Ionization
 
       end select
 !
-      if (ldensity_nolog) lnrho_=alog(lnrho_)
+      if (ldensity_nolog) lnrho_=log(lnrho_)
 !
       if (gamma1==0.) call stop_it('eoscalc_farray: gamma=1 not allowed w/entropy')
       if (present(yH)) yH=impossible
@@ -444,7 +444,7 @@ module Ionization
 !  pretend_lnTT
 !
       if (pretend_lnTT) then
-        lnTT_=lnTT0+gamma*ss+alog(gamma1)
+        lnTT_=lnTT0+gamma*ss+log(gamma1)
         if (present(lnTT)) lnTT=lnTT_
         !if (present(ee)) ee=cs20*exp(gamma*ss)/gamma1/gamma
         if (present(ee)) ee=cs20*exp(gamma*ss)/gamma
@@ -570,7 +570,7 @@ module Ionization
       case (ilnrho_pp)
         lnrho_=var1
         pp_=var2
-        ss_=alog(gamma*pp_/cs20)/gamma + gamma1/gamma*lnrho0 - lnrho_
+        ss_=log(gamma*pp_/cs20)/gamma + gamma1/gamma*lnrho0 - lnrho_
         ee_=gamma*gamma1*pp_*exp(lnrho_)
         lnTT_=log(gamma*cp1*ee_)
 
@@ -658,12 +658,12 @@ module Ionization
 !  if T0 is different from unity, we interpret
 !  ss_offset = ln(T0)/gamma as an additive offset of ss
 !
-      if (T0/=1.) ss_offset=alog(T0)/gamma
+      if (T0/=1.) ss_offset=log(T0)/gamma
 !
       do n=n1,n2
       do m=m1,m2
         if (ldensity_nolog) then
-          lnrho=alog(f(l1:l2,m,n,ilnrho))
+          lnrho=log(f(l1:l2,m,n,ilnrho))
         else
           lnrho=f(l1:l2,m,n,ilnrho)
         endif
@@ -854,7 +854,7 @@ module Ionization
         if (cs2bot<=0.) &
               print*,'bc_ss_temp_old: cannot have cs2bot<=0'
         tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
-             + alog(cs2bot/cs20)) / gamma
+             + log(cs2bot/cs20)) / gamma
         f(:,:,n1,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
@@ -873,7 +873,7 @@ module Ionization
   !     if (bcz1(ilnrho) /= 'a2') &
   !          call stop_it('BOUNDCONDS: Inconsistent boundary conditions 4.')
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                 + alog(cs2top/cs20)) / gamma
+                 + log(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
@@ -919,7 +919,7 @@ module Ionization
                    'bc_ss_temp_x: set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_x: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
@@ -933,7 +933,7 @@ module Ionization
                        'bc_ss_temp_x: set x top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*, &
                        'bc_ss_temp_x: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
@@ -983,7 +983,7 @@ module Ionization
                    'bc_ss_temp_y: set y bottom temperature - cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_y: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
@@ -997,7 +997,7 @@ module Ionization
                      'bc_ss_temp_y: set y top temperature - cs2top=',cs2top
         if (cs2top<=0.) print*, &
                      'bc_ss_temp_y: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
@@ -1045,7 +1045,7 @@ module Ionization
                    'bc_ss_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0.) print*, &
                    'bc_ss_temp_z: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
@@ -1058,7 +1058,7 @@ module Ionization
         if (ldebug) print*, &
                      'bc_ss_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0.) print*,'bc_ss_temp_z: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &

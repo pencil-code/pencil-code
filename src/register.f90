@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.142 2004-11-22 21:13:31 dobler Exp $
+! $Id: register.f90,v 1.143 2005-03-02 06:10:05 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -221,7 +221,7 @@ module Register
       else
         cs20=cs0**2
       endif
-      lnrho0=alog(rho0)
+      lnrho0=log(rho0)
       mu01=1./mu0
 !
 !  run initialization of individual modules

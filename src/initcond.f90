@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.116 2004-10-15 17:52:02 brandenb Exp $ 
+! $Id: initcond.f90,v 1.117 2005-03-02 06:10:05 dobler Exp $ 
 
 module Initcond 
  
@@ -404,7 +404,7 @@ module Initcond
           if (lroot) print*,'wave_uu: ampl=0; kx=',k
         else
           if (lroot) print*,'wave_uu: kx,i=',k,i
-          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*x),2,my),3,mz)*f(:,:,:,iux))
+          f(:,:,:,i)=log(1.+ampl*spread(spread(sin(k*x),2,my),3,mz)*f(:,:,:,iux))
         endif
       endif
 !
@@ -416,7 +416,7 @@ module Initcond
           if (lroot) print*,'wave_uu: ampl=0; ky=',k
         else
           if (lroot) print*,'wave_uu: ky,i=',k,i
-          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*y),1,mx),3,mz)*f(:,:,:,iuy))
+          f(:,:,:,i)=log(1.+ampl*spread(spread(sin(k*y),1,mx),3,mz)*f(:,:,:,iuy))
         endif
       endif
 !
@@ -428,7 +428,7 @@ module Initcond
           if (lroot) print*,'wave_uu: ampl=0; kz=',k
         else
           if (lroot) print*,'wave_uu: kz,i=',k,i,iuz
-          f(:,:,:,i)=alog(1.+ampl*spread(spread(sin(k*z),1,mx),2,my)*f(:,:,:,iuz))
+          f(:,:,:,i)=log(1.+ampl*spread(spread(sin(k*z),1,mx),2,my)*f(:,:,:,iuz))
         endif
       endif
 !
@@ -553,10 +553,10 @@ module Initcond
 !  Ay=+int Bz dx
 !  Az=-int By dx
 !
-!  alog(cosh(x/width)) = 
+!  log(cosh(x/width)) = 
 !
       case('x')
-        alog_cosh_xwidth=abs(x/width)+alog(.5*(1.+exp(-2*abs(x/width))))
+        alog_cosh_xwidth=abs(x/width)+log(.5*(1.+exp(-2*abs(x/width))))
         prof=.5*(fright+fleft)*x &
             +.5*(fright-fleft)*width*alog_cosh_xwidth
         f(:,:,:,i)=f(:,:,:,i)-spread(spread(prof,2,my),3,mz)
@@ -913,7 +913,7 @@ module Initcond
 !
       if (lroot) print*,"planet_hc: integrate hot corona"
       hh(:,:,n2)=1.  !(initial condition)
-      f(:,:,:,iss)=-alog(ampl)*xi
+      f(:,:,:,iss)=-log(ampl)*xi
       do n=n2-1,n1,-1
         delS=f(:,:,n+1,iss)-f(:,:,n,iss)
         hh(:,:,n)=(hh(:,:,n+1)*(1.-.5*delS)+ &
@@ -934,7 +934,7 @@ module Initcond
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho)= &
-             (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+             (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
              -gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         if (lroot) &
           print*,'planet_hc: planet solution with entropy for gamma=',gamma
@@ -944,7 +944,7 @@ module Initcond
           if (lroot) print*,'planet_hc: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho)=&
-               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+               log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           if (lroot) print*,'planet_hc: planet solution for gamma=',gamma
         endif
       endif
@@ -973,7 +973,7 @@ module Initcond
 !
 !  Multiply density by rho0 (divide by <rho>)
 !      
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + log(rho0)
 !
     endsubroutine planet_hc
 !***********************************************************************
@@ -1062,7 +1062,7 @@ module Initcond
 !
       if(lentropy) then
         f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-            (alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
+            (log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20) &
             - gamma*f(l1:l2,m1:m2,n1:n2,iss))/gamma1
         if (lroot) print*,'planet: planet solution for gamma=',gamma
       else
@@ -1071,7 +1071,7 @@ module Initcond
           if (lroot) print*,'planet: planet solution for gamma=1'
         else
           f(l1:l2,m1:m2,n1:n2,ilnrho) = &
-               alog(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
+               log(gamma1*hh(l1:l2,m1:m2,n1:n2)/cs20)/gamma1
           if (lroot) print*,'planet: planet solution for gamma=',gamma
         endif
       endif
@@ -1100,7 +1100,7 @@ module Initcond
 !
 !  Multiply density by rho0 (divide by <rho>)
 !      
-      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + alog(rho0)
+      f(l1:l2,m1:m2,n1:n2,ilnrho) = f(l1:l2,m1:m2,n1:n2,ilnrho) + log(rho0)
 !      
     endsubroutine planet
 !***********************************************************************
@@ -1164,7 +1164,7 @@ module Initcond
 !
 !  Solution to hydrostatic equlibrium in the z-direction
 !
-      f(:,:,:,ilnrho) = 1/(gamma-1) * alog( (1-gamma)/cs20 * I_int + 1 ) - sz
+      f(:,:,:,ilnrho) = 1/(gamma-1) * log( (1-gamma)/cs20 * I_int + 1 ) - sz
 !
 !  Toroidal velocity comes from hyd. stat. eq. equ. in the x-direction
 !
@@ -1313,7 +1313,7 @@ module Initcond
       if (ampl==0) then
         if (lroot) print*,'magsupport: do nothing'
       else
-        lnrho0=alog(rho0)
+        lnrho0=log(rho0)
         H=(1+ampl)*cs0**2/abs(gravz)
         A0=-2*H*ampl*cs0*sqrt(2*rho0)
         if (lroot) print*,'magsupport: H,A0=',H,A0
@@ -1630,9 +1630,9 @@ module Initcond
           if (modulo(i-i1,2)==0) then
             call random_number_wrapper(r)
             call random_number_wrapper(p)
-            tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+            tmp=sqrt(-2*log(r))*sin(2*pi*p)
           else
-            tmp=sqrt(-2*alog(r))*cos(2*pi*p)
+            tmp=sqrt(-2*log(r))*cos(2*pi*p)
           endif
           !call smooth_3d(tmp,ismo)  !(may want to smooth)
           f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
@@ -1662,7 +1662,7 @@ module Initcond
         if ((ip<=8).and.lroot) print*,'gaunoise_scal: i=',i
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-        tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+        tmp=sqrt(-2*log(r))*sin(2*pi*p)
         f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
         if (lroot) print*,'gaunoise_scal: variable i=',i
       endif
@@ -1690,9 +1690,9 @@ module Initcond
         if (modulo(i-i1,2)==0) then
           call random_number_wrapper(r)
           call random_number_wrapper(p)
-          tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+          tmp=sqrt(-2*log(r))*sin(2*pi*p)
         else
-          tmp=sqrt(-2*alog(r))*cos(2*pi*p)
+          tmp=sqrt(-2*log(r))*cos(2*pi*p)
         endif
         f(:,:,:,i)=f(:,:,:,i)+ampl*tmp
         if (lroot) print*,'gaunoise_vect: variable i=',i

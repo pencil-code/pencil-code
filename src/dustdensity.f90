@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.129 2004-10-29 10:07:32 ajohan Exp $
+! $Id: dustdensity.f90,v 1.130 2005-03-02 06:10:04 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -120,7 +120,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.129 2004-10-29 10:07:32 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.130 2005-03-02 06:10:04 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -332,7 +332,7 @@ module Dustdensity
 !  Take logarithm if necessary (remember that nd then really means ln nd)
 !
       if (ldustdensity_log) then
-        do k=1,ndustspec; f(:,:,:,ind(k)) = alog(f(:,:,:,ind(k))); enddo
+        do k=1,ndustspec; f(:,:,:,ind(k)) = log(f(:,:,:,ind(k))); enddo
       endif
 !
 !  sanity check
@@ -615,7 +615,7 @@ module Dustdensity
                 f(3+l,m,n,ilncc) = f(3+l,m,n,ilncc) + &
                      nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho))
               elseif (lpscalar) then
-                f(3+l,m,n,ilncc) = alog(exp(f(3+l,m,n,ilncc)) + &
+                f(3+l,m,n,ilncc) = log(exp(f(3+l,m,n,ilncc)) + &
                      nd(l,k)*md(k)*unit_md*exp(-f(3+l,m,n,ilnrho)))
               endif
             endif

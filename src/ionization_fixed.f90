@@ -1,4 +1,4 @@
-! $Id: ionization_fixed.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $
+! $Id: ionization_fixed.f90,v 1.66 2005-03-02 06:10:05 dobler Exp $
 
 !
 !  Thermodynamics with Fixed ionization fraction
@@ -102,7 +102,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-          "$Id: ionization_fixed.f90,v 1.65 2004-10-27 14:21:47 ajohan Exp $")
+          "$Id: ionization_fixed.f90,v 1.66 2005-03-02 06:10:05 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -760,7 +760,7 @@ print*,'ss_ion,ee_ion,TT_ion',ss_ion,ee_ion,TT_ion
       do m=m1,m2
 !
         if (ldensity_nolog) then
-          lnrho=alog(f(l1:l2,m,n,ilnrho))
+          lnrho=log(f(l1:l2,m,n,ilnrho))
         else
           lnrho=f(l1:l2,m,n,ilnrho)
         endif

@@ -1,4 +1,4 @@
-! $Id: filter.f90,v 1.2 2003-08-13 15:30:07 mee Exp $
+! $Id: filter.f90,v 1.3 2005-03-02 06:10:04 dobler Exp $
 
 module Filter
 
@@ -74,8 +74,8 @@ module Filter
 !  Revert back to f if we have been working on exp(f)
 !
       if (present(explog)) then
-        f(l1:l2,m1:m2,n1:n2,ilnrho)=alog(f(l1:l2,m1:m2,n1:n2,ilnrho))
-        if(lroot) print*,'rmwig: turn f back into alog(f), ilnrho=',ilnrho
+        f(l1:l2,m1:m2,n1:n2,ilnrho)=log(f(l1:l2,m1:m2,n1:n2,ilnrho))
+        if(lroot) print*,'rmwig: turn f back into log(f), ilnrho=',ilnrho
       endif
 !
     endsubroutine rmwig
@@ -221,8 +221,8 @@ module Filter
 !  The latter can be useful if the variable is lnrho or lncc.
 !
       if (present(explog)) then
-        f(l1:l2,m1:m2,n1:n2,ivar)=alog(f(l1:l2,m1:m2,n1:n2,ivar))
-        if(lroot) print*,'rmwig_old: turn f back into alog(f), ivar=',ivar
+        f(l1:l2,m1:m2,n1:n2,ivar)=log(f(l1:l2,m1:m2,n1:n2,ivar))
+        if(lroot) print*,'rmwig_old: turn f back into log(f), ivar=',ivar
       endif
 !
     endsubroutine rmwig_old
@@ -255,7 +255,7 @@ rhom2=sum(xyaver_smooth(n1:n2))/nz
 !
       do n=1,mz
         del_average=xyaver(n)-xyaver_smooth(n)
-        f(l1:l2,m1:m2,n,ivar)=alog(exp(f(l1:l2,m1:m2,n,ivar))-del_average)
+        f(l1:l2,m1:m2,n,ivar)=log(exp(f(l1:l2,m1:m2,n,ivar))-del_average)
       enddo
 !
 !  print identifier

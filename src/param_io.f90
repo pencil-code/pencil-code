@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.194 2005-02-01 21:45:01 brandenb Exp $ 
+! $Id: param_io.f90,v 1.195 2005-03-02 06:10:05 dobler Exp $ 
 
 module Param_IO
 
@@ -254,7 +254,7 @@ module Param_IO
       else
         cs20=cs0**2
       endif
-      lnrho0=alog(rho0)
+      lnrho0=log(rho0)
 !
 !  parse boundary conditions; compound conditions of the form `a:s' allow
 !  to have different variables at the lower and upper boundaries

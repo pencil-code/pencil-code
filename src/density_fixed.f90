@@ -1,4 +1,4 @@
-! $Id: density_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $
+! $Id: density_fixed.f90,v 1.6 2005-03-02 06:10:04 dobler Exp $
 
 !  This module takes care of density. Treats density as an auxiliary variable
 !  that does not undergo dynamical change. Useful for focusing on other
@@ -92,7 +92,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density_fixed.f90,v 1.5 2004-06-30 04:38:11 theine Exp $")
+           "$Id: density_fixed.f90,v 1.6 2005-03-02 06:10:04 dobler Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -189,9 +189,9 @@ module Density
 !  different initializations of lnrho (called from start).
 !  If initrho does't match, f=0 is assumed (default).
 !
-      lnrho0      = alog(rho0)
-      lnrho_left  = alog(rho_left)
-      lnrho_right = alog(rho_right)
+      lnrho0      = log(rho0)
+      lnrho_left  = log(rho_left)
+      lnrho_right = log(rho_right)
 
       lnothing=.true.
 
@@ -207,7 +207,7 @@ module Density
 
       case('zero', '0'); f(:,:,:,ilnrho)=0.
       case('const_lnrho'); f(:,:,:,ilnrho)=lnrho_const
-      case('constant'); f(:,:,:,ilnrho)=alog(rho_left)
+      case('constant'); f(:,:,:,ilnrho)=log(rho_left)
       case('mode'); call modes(ampllnrho,coeflnrho,f,ilnrho,kx_lnrho,ky_lnrho,kz_lnrho,xx,yy,zz)
       case('blob'); call blob(ampllnrho,f,ilnrho,radius_lnrho,0.,0.,0.)
       case('isothermal'); call isothermal_density(f)
@@ -245,7 +245,7 @@ module Density
         if (lroot) print*, &
                'init_lnrho: density jump; widthlnrho=',widthlnrho
         prof=.5*(1.+tanh(zz/widthlnrho))
-        f(:,:,:,ilnrho)=alog(rho_left)+alog(rho_left/rho_right)*prof
+        f(:,:,:,ilnrho)=log(rho_left)+log(rho_left/rho_right)*prof
 
       case ('hydrostatic-z-2', '3')
         !
@@ -257,10 +257,10 @@ module Density
           ! isentropic case:
           !        zmax = -cs20/gamma1/gravz
           !        print*, 'zmax = ', zmax
-          !        f(:,:,:,ilnrho) = 1./gamma1 * alog(abs(1-zz/zmax))
+          !        f(:,:,:,ilnrho) = 1./gamma1 * log(abs(1-zz/zmax))
           ! linear entropy gradient;
           f(:,:,:,ilnrho) = -grads0*zz &
-                            + 1./gamma1*alog( 1 + gamma1*gravz/grads0/cs20 &
+                            + 1./gamma1*log( 1 + gamma1*gravz/grads0/cs20 &
                                                   *(1-exp(-grads0*zz)) )
         endif
 
@@ -282,7 +282,7 @@ module Density
           !
           if (gamma /= 1) then  ! isentropic
             f(:,:,:,ilnrho) = lnrho0 &
-                              + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
+                              + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
           else                  ! isothermal
             f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
           endif
@@ -313,11 +313,11 @@ module Density
             !     only work if grav_r<=0 everywhere -- but that seems
             !     reasonable.
             call potential(R=r_ext,POT=pot_ext) ! get pot_ext=pot(r_ext)
-            lnrho_ext = lnrho0 + alog(1 - gamma1*(pot_ext-pot0)/cs20) / gamma1
+            lnrho_ext = lnrho0 + log(1 - gamma1*(pot_ext-pot0)/cs20) / gamma1
             cs2_ext   = cs20*(1 - gamma1*(pot_ext-pot0)/cs20)
             ! Adjust for given cs2cool (if given) or set cs2cool (otherwise)
             if (cs2cool/=0) then
-              lnrho_ext = lnrho_ext - alog(cs2cool/cs2_ext)
+              lnrho_ext = lnrho_ext - log(cs2cool/cs2_ext)
             else
               cs2cool   = cs2_ext
             endif
@@ -326,7 +326,7 @@ module Density
             ! where (sqrt(xx**2+yy**2+zz**2) <= r_ext) ! isentropic for r<r_ext
             where (pot <= pot_ext) ! isentropic for r<r_ext
               f(:,:,:,ilnrho) = lnrho0 &
-                                + alog(1 - gamma1*(pot-pot0)/cs20) / gamma1
+                                + log(1 - gamma1*(pot-pot0)/cs20) / gamma1
             elsewhere           ! isothermal for r>r_ext
               f(:,:,:,ilnrho) = lnrho_ext - gamma*(pot-pot_ext)/cs2cool
             endwhere
@@ -425,7 +425,7 @@ module Density
         !  sound wave (should be consistent with hydro module)
         !
         if (lroot) print*,'init_lnrho: x-wave in rho; ampllnrho=',ampllnrho
-        f(:,:,:,ilnrho)=alog(rho_const+amplrho*sin(kx_lnrho*xx))
+        f(:,:,:,ilnrho)=log(rho_const+amplrho*sin(kx_lnrho*xx))
 
       case('sound-wave2')
         !
@@ -440,7 +440,7 @@ module Density
         !  
         if (lroot) print*,'init_lnrho: polytopic standing shock'
         prof=.5*(1.+tanh(xx/widthlnrho))
-        f(:,:,:,ilnrho)=alog(rho_left)+(alog(rho_right)-alog(rho_left))*prof
+        f(:,:,:,ilnrho)=log(rho_left)+(log(rho_right)-log(rho_left))*prof
 
       case('sin-xy')
         !
@@ -448,7 +448,7 @@ module Density
         !  
         if (lroot) print*,'init_lnrho: lnrho=sin(x)*sin(y)'
         f(:,:,:,ilnrho) = &
-             alog(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
+             log(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
 
       case('sin-xy-rho')
         !
@@ -456,14 +456,14 @@ module Density
         !  
         if (lroot) print*,'init_lnrho: rho=sin(x)*sin(y)'
         f(:,:,:,ilnrho) = &
-             alog(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
+             log(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
 
       case('linear')
         !
         !  linear profile in kk.xxx
         !  
         if (lroot) print*,'init_lnrho: linear profile'
-        f(:,:,:,ilnrho) = alog(rho0) &
+        f(:,:,:,ilnrho) = log(rho0) &
              + ampllnrho*(kx_lnrho*xx+ky_lnrho*yy+kz_lnrho*zz) &
                / sqrt(kx_lnrho**2+ky_lnrho**2+kz_lnrho**2)
 
@@ -635,8 +635,8 @@ module Density
         beta1 = gamma*gravz/(mpoly+1)
         tmp = 1 + beta1*(zz-zint)/cs2int
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly*alog(tmp)
-        lnrhoint = lnrhoint + mpoly*alog(1 + beta1*(zbot-zint)/cs2int)
+        tmp = lnrhoint + mpoly*log(tmp)
+        lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot-zint)/cs2int)
       endif
       cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
       !
@@ -688,8 +688,8 @@ module Density
         beta1 = gamma*gravz*nu_epicycle2/(mpoly+1)
         tmp = 1 + beta1*(zz**2-zint**2)/cs2int/2.
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
-        tmp = lnrhoint + mpoly*alog(tmp)
-        lnrhoint = lnrhoint + mpoly*alog(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
+        tmp = lnrhoint + mpoly*log(tmp)
+        lnrhoint = lnrhoint + mpoly*log(1 + beta1*(zbot**2-zint**2)/cs2int/2.)
       endif
       cs2int = cs2int + beta1*(zbot**2-zint**2)/2. ! cs2 at layer interface (bottom)
       !
@@ -957,7 +957,7 @@ module Density
       do n=n1,n2
       do m=m1,m2
         call potential(x(l1:l2),y(m),z(n),pot=pot)
-        dlncs2=alog(-gamma*pot/((mpoly+1.)*cs20))
+        dlncs2=log(-gamma*pot/((mpoly+1.)*cs20))
         f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
         if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
       enddo
@@ -1011,7 +1011,7 @@ module Density
                  'bc_lnrho_temp_z: set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*, &
                  'bc_lnrho_temp_z: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !
@@ -1034,7 +1034,7 @@ module Density
                     'bc_lnrho_temp_z: set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*, &
                     'bc_lnrho_temp_z: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
 !
 !  set boundary value for entropy, then extrapolate ghost pts by antisymmetry
 !

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.68 2004-10-27 14:21:47 ajohan Exp $
+! $Id: grav_r.f90,v 1.69 2005-03-02 06:10:04 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -58,7 +58,7 @@ module Gravity
 !  10-jan-02/wolf: coded
 !
       use Cdata
-      use Mpicomm
+      use Mpicomm, only: stop_it
       use Sub
 !
       logical, save :: first=.true.
@@ -68,7 +68,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.68 2004-10-27 14:21:47 ajohan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.69 2005-03-02 06:10:04 dobler Exp $")
 !
       lgrav =.true.
       lgravr=.true.

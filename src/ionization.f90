@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.168 2004-10-27 14:21:47 ajohan Exp $
+! $Id: ionization.f90,v 1.169 2005-03-02 06:10:05 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -135,7 +135,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.168 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: ionization.f90,v 1.169 2005-03-02 06:10:05 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -321,7 +321,7 @@ module Ionization
       do n=1,mz
       do m=1,my
         if (ldensity_nolog) then
-          lnrho=alog(f(:,m,n,ilnrho))
+          lnrho=log(f(:,m,n,ilnrho))
         else
           lnrho=f(:,m,n,ilnrho)
         endif
@@ -353,7 +353,7 @@ module Ionization
       do n=1,mz
       do m=1,my
         if (ldensity_nolog) then
-          lnrho=alog(f(:,m,n,ilnrho))
+          lnrho=log(f(:,m,n,ilnrho))
         else
           lnrho=f(:,m,n,ilnrho)
         endif
@@ -554,7 +554,7 @@ module Ionization
       integer :: j
 !
       if (ldensity_nolog) then
-        lnrho=alog(f(l1:l2,m,n,ilnrho))
+        lnrho=log(f(l1:l2,m,n,ilnrho))
       else  
         lnrho=f(l1:l2,m,n,ilnrho)
       endif
@@ -594,7 +594,7 @@ module Ionization
       integer :: i,j
 !
       if (ldensity_nolog) then
-        lnrho=alog(f(l1:l2,m,n,ilnrho))
+        lnrho=log(f(l1:l2,m,n,ilnrho))
       else
         lnrho=f(l1:l2,m,n,ilnrho)
       endif
@@ -1123,7 +1123,7 @@ module Ionization
       do m=m1,m2
 !
         if (ldensity_nolog) then
-          lnrho=alog(f(l1:l2,m,n,ilnrho))
+          lnrho=log(f(l1:l2,m,n,ilnrho))
         else
           lnrho=f(l1:l2,m,n,ilnrho)
         endif

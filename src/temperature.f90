@@ -1,4 +1,4 @@
-! $Id: temperature.f90,v 1.15 2004-09-16 14:52:49 ajohan Exp $
+! $Id: temperature.f90,v 1.16 2005-03-02 06:10:05 dobler Exp $
 
 !  This module replaces the entropy module by using lnT as dependent
 !  variable. For a perfect gas with constant coefficients (no ionization)
@@ -88,7 +88,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: temperature.f90,v 1.15 2004-09-16 14:52:49 ajohan Exp $")
+           "$Id: temperature.f90,v 1.16 2005-03-02 06:10:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -216,9 +216,9 @@ iss=ilnTT  !(need to think how to deal with this...)
         tmp = 1 + beta1*(zz-zint)/cs2int
         tmp = max(tmp,epsi)  ! ensure arg to log is positive
         tmp = ssint + (1-mpoly*gamma1)/gamma &
-                      * alog(tmp)
+                      * log(tmp)
         ssint = ssint + (1-mpoly*gamma1)/gamma & ! ss at layer interface
-                        * alog(1 + beta1*(zbot-zint)/cs2int)
+                        * log(1 + beta1*(zbot-zint)/cs2int)
       endif
       cs2int = cs2int + beta1*(zbot-zint) ! cs2 at layer interface (bottom)
 
@@ -304,7 +304,7 @@ iss=ilnTT  !(need to think how to deal with this...)
 !
       if (ldiagnos) then
         if (i_ssm/=0) then
-          lnTT0=alog(cs20/gamma1)
+          lnTT0=log(cs20/gamma1)
           ss=( (lnTT-lnTT0) - gamma1*(lnrho-lnrho0) )
           call sum_mn_name(ss,i_ssm)
         endif
@@ -584,7 +584,7 @@ endif
           heat = heat * t*(2*ttransient-t)/ttransient**2
         endif
         ! cooling profile; maximum = 1
-        ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop
+        ssref = ss0 + (-log(gamma) + log(cs20))/gamma + grads0*ztop
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
         heat = heat - cool*prof*rho1*(cs2-cs20)/cs20
       endif
@@ -871,7 +871,7 @@ endif
         if (bcz1(ilnrho) /= "a2") &
              call stop_it("BOUNDCONDS: Inconsistent boundary conditions 3.")
         tmp_xy = (-gamma1*(f(:,:,n1,ilnrho)-lnrho0) &
-                 + alog(cs2bot/cs20)) / gamma
+                 + log(cs2bot/cs20)) / gamma
         f(:,:,n1,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n1-i,iss) = 2*tmp_xy - f(:,:,n1+i,iss)
@@ -885,7 +885,7 @@ endif
 !       if (bcz1(ilnrho) /= "a2") &
 !            call stop_it("BOUNDCONDS: Inconsistent boundary conditions 4.")
         tmp_xy = (-gamma1*(f(:,:,n2,ilnrho)-lnrho0) &
-                 + alog(cs2top/cs20)) / gamma
+                 + log(cs2top/cs20)) / gamma
         f(:,:,n2,iss) = tmp_xy
         do i=1,nghost
           f(:,:,n2+i,iss) = 2*tmp_xy - f(:,:,n2-i,iss)
@@ -928,7 +928,7 @@ endif
       case('bot')
         if (ldebug) print*,'set x bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(l1,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l1,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l1-i,:,:,iss) = -f(l1+i,:,:,iss) + tmp &
@@ -940,7 +940,7 @@ endif
       case('top')
         if (ldebug) print*,'set x top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(l2,:,:,iss) = 0.5*tmp - gamma1/gamma*(f(l2,:,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(l2+i,:,:,iss) = -f(l2-i,:,:,iss) + tmp &
@@ -985,7 +985,7 @@ endif
       case('bot')
         if (ldebug) print*,'set y bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(:,m1,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m1,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m1-i,:,iss) = -f(:,m1+i,:,iss) + tmp &
@@ -997,7 +997,7 @@ endif
       case('top')
         if (ldebug) print*,'set y top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(:,m2,:,iss) = 0.5*tmp - gamma1/gamma*(f(:,m2,:,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,m2+i,:,iss) = -f(:,m2-i,:,iss) + tmp &
@@ -1042,7 +1042,7 @@ endif
       case('bot')
         if (ldebug) print*,'set z bottom temperature: cs2bot=',cs2bot
         if (cs2bot<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2bot<=0'
-        tmp = 2/gamma*alog(cs2bot/cs20)
+        tmp = 2/gamma*log(cs2bot/cs20)
         f(:,:,n1,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n1,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n1-i,iss) = -f(:,:,n1+i,iss) + tmp &
@@ -1054,7 +1054,7 @@ endif
       case('top')
         if (ldebug) print*,'set z top temperature: cs2top=',cs2top
         if (cs2top<=0. .and. lroot) print*,'BOUNDCONDS: cannot have cs2top<=0'
-        tmp = 2/gamma*alog(cs2top/cs20)
+        tmp = 2/gamma*log(cs2top/cs20)
         f(:,:,n2,iss) = 0.5*tmp - gamma1/gamma*(f(:,:,n2,ilnrho)-lnrho0)
         do i=1,nghost
           f(:,:,n2+i,iss) = -f(:,:,n2-i,iss) + tmp &

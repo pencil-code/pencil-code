@@ -1,4 +1,4 @@
-! $Id: hydro_fixed.f90,v 1.8 2004-10-03 20:03:24 nilshau Exp $
+! $Id: hydro_fixed.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $
 
 !  This module takes care of velocities. Treats velocity components as auxiliary
 !  variables that do not undergo dynamical change. Useful for focusing on other
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro_fixed.f90,v 1.8 2004-10-03 20:03:24 nilshau Exp $")
+           "$Id: hydro_fixed.f90,v 1.9 2005-03-02 06:10:05 dobler Exp $")
 !
       if (naux > maux) then
         if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
@@ -306,7 +306,7 @@ module Hydro
         print*, 'init_uu: ampluu=',ampluu
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-!        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
+!        tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-zz**2*10.)
         tmp=exp(-zz**2*10.)*cos(2.*xx+sin(4.*xx))
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
   

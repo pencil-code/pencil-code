@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.192 2004-10-30 15:24:41 ajohan Exp $
+! $Id: hydro.f90,v 1.193 2005-03-02 06:10:05 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,8 +31,8 @@ module Hydro
   character (len=labellen) :: inituu='zero'
   real, dimension(3) :: gradH0=(/0.,0.,0./), uu_const=(/0.,0.,0./)
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
-  real :: kep_cutoff_pos_ext= huge(1.0),kep_cutoff_width_ext=0.0
-  real :: kep_cutoff_pos_int=-huge(1.0),kep_cutoff_width_int=0.0
+  real :: kep_cutoff_pos_ext= huge1,kep_cutoff_width_ext=0.0
+  real :: kep_cutoff_pos_int=-huge1,kep_cutoff_width_int=0.0
   real :: u_out_kep=0.0
   integer :: N_modes_uu
 
@@ -128,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.192 2004-10-30 15:24:41 ajohan Exp $")
+           "$Id: hydro.f90,v 1.193 2005-03-02 06:10:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -315,7 +315,7 @@ module Hydro
         print*, 'init_uu: ampluu=',ampluu
         call random_number_wrapper(r)
         call random_number_wrapper(p)
-!        tmp=sqrt(-2*alog(r))*sin(2*pi*p)*exp(-zz**2*10.)
+!        tmp=sqrt(-2*log(r))*sin(2*pi*p)*exp(-zz**2*10.)
         tmp=exp(-zz**2*10.)*cos(2.*xx+sin(4.*xx))
         f(:,:,:,iuz)=f(:,:,:,iuz)+ampluu*tmp
   
@@ -1308,7 +1308,7 @@ module Hydro
       do m=m1,m2
         do n=n1,n2
           if (ldensity_nolog) then
-            lnrho=alog(f(l1:l2,m,n,ilnrho))
+            lnrho=log(f(l1:l2,m,n,ilnrho))
           else
             lnrho=f(l1:l2,m,n,ilnrho)
           endif

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.51 2004-10-27 14:21:47 ajohan Exp $
+! $Id: pscalar.f90,v 1.52 2005-03-02 06:10:05 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -79,7 +79,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.51 2004-10-27 14:21:47 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.52 2005-03-02 06:10:05 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -136,7 +136,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc)=alog(cc_const)
+        case('constant'); f(:,:,:,ilncc)=log(cc_const)
         case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
         case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
         case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
@@ -167,7 +167,7 @@ module Pscalar
 !  add floor value if cc_min is set
 !
       if(cc_min/=0.) then
-        lncc_min=alog(cc_min)
+        lncc_min=log(cc_min)
         if(lroot) print*,'set floor value for cc; cc_min=',cc_min
         f(:,:,:,ilncc)=max(lncc_min,f(:,:,:,ilncc))
       endif

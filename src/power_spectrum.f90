@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -41,7 +41,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -152,7 +152,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
   !
   !  Define wave vector, defined here for the *full* mesh.
   !  Each processor will see only part of it.
@@ -261,7 +261,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -418,7 +418,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
   !
   !   Stopping the run if FFT=nofft (applies only to Singleton fft)
   !   But at the moment, fftpack is always linked into the code
@@ -528,7 +528,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.44 2004-06-01 10:27:44 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.45 2005-03-02 06:10:05 dobler Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -753,7 +753,7 @@ module  power_spectrum
        pdf_dx=(pdf_max-pdf_min)/n_pdf
        pdf_dx1=1./pdf_dx
        do l=l1,l2
-         i_pdf=1+int(pdf_dx1*alog10(pdf_scl*pdf_var(l))-pdf_min)
+         i_pdf=1+int(pdf_dx1*log10(pdf_scl*pdf_var(l))-pdf_min)
          i_pdf=min(max(i_pdf,1),n_pdf)  !(make sure its inside array boundries)
          pdf_yy(i_pdf)=pdf_yy(i_pdf)+1
        enddo

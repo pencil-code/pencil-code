@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.203 2004-11-02 20:47:21 dobler Exp $ 
+! $Id: sub.f90,v 1.204 2005-03-02 06:10:05 dobler Exp $ 
 
 module Sub 
 
@@ -1983,10 +1983,10 @@ module Sub
 !  now tout and nout refer to the next snapshopt to be written
 !
           if (dtout.lt.0.) then
-            tout=alog10(t)
+            tout=log10(t)
           else
             !  make sure the tout is a good time
-            if (dtout.ne.0.) tout=t-amod(t,abs(dtout))+dtout
+            if (dtout.ne.0.) tout=t-mod(t,abs(dtout))+dtout
           endif
           nout=1
           write(lun,*) tout,nout
@@ -2041,7 +2041,7 @@ module Sub
 !  use tt as a shorthand for either t or lg(t)
 !
       if (dtout.lt.0.) then
-        tt=alog10(t)
+        tt=log10(t)
       else
         tt=t
       endif
@@ -3144,7 +3144,7 @@ nameloop: do
       print*,'remove wiggles in lnrho, t=',t
       tmp=exp(f(:,:,:,ilnrho))
       call smooth_3d(tmp,1)
-      f(:,:,:,ilnrho)=alog(tmp)
+      f(:,:,:,ilnrho)=log(tmp)
 !
     endsubroutine rmwig0
 !***********************************************************************
