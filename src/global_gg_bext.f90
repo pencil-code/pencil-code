@@ -1,4 +1,4 @@
- ! $Id: global_gg_bext.f90,v 1.1 2004-06-07 19:52:37 theine Exp $
+ ! $Id: global_gg_bext.f90,v 1.2 2004-06-09 21:55:00 theine Exp $
 
 module Global
 
@@ -96,12 +96,7 @@ module Global
       use Cdata
       use IO
 !
-!  No need to read/write them as run.f90 will recalculate anyway
-!
-      if (ip <= 4) then
-        call output(trim(directory)//'/gg.dat'  ,gg  ,3)
-      endif
-
+      call output(trim(directory)//'/gg.dat'  ,gg  ,3)
       call output(trim(directory)//'/B_ext_pot.dat'  ,B_ext_pot  ,3)
 !
     endsubroutine wglobal
@@ -115,9 +110,8 @@ module Global
       use Cdata
       use IO
 !
-!  No need to read/write them as run.f90 will recalculate anyway
-!
       call input(trim(directory)//'/B_ext_pot.dat'  ,B_ext_pot  ,3,0)
+      call input(trim(directory)//'/gg.dat'  ,gg  ,3,0)
 !
     endsubroutine rglobal
 !***********************************************************************

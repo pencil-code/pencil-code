@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.63 2004-05-30 23:10:53 theine Exp $
+! $Id: boundcond.f90,v 1.64 2004-06-09 21:55:00 theine Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -979,6 +979,8 @@ module Boundcond
         call bc_force_uxy_sin_cos(f,n1,j)
       case ('uxy_convection')
         call stop_it("BC_FORCE_Z: uxy_convection not implemented yet")
+      case ('kepler')
+        call bc_force_kepler(f,n1,j)
       case default
         if (lroot) print*, "No such value for force_lower_bound: <", &
              trim(force_lower_bound),">"
@@ -991,7 +993,7 @@ module Boundcond
 !
     endsubroutine bc_force_z
 !***********************************************************************
-    subroutine bc_force_uxy_sin_cos(f,iiz,j)
+    subroutine bc_force_uxy_sin_cos(f,idz,j)
 !
 !  Set (ux, uy) = (cos y, sin x) in vertical layer
 !
@@ -1000,22 +1002,59 @@ module Boundcond
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      integer :: iiz,j
+      integer :: idz,j
       real :: kx,ky
 !
       if (iuz == 0) call stop_it("BC_FORCE_UXY_SIN_COS: Bad idea...")
 !
       if (j==iux) then
         if (Ly>0) then; ky=2*pi/Ly; else; ky=0.; endif 
-        f(:,:,iiz,j) = spread(cos(ky*y),1,mx)
+        f(:,:,idz,j) = spread(cos(ky*y),1,mx)
       elseif (j==iuy) then
         if (Lx>0) then; kx=2*pi/Lx; else; kx=0.; endif 
-        f(:,:,iiz,j) = spread(sin(kx*x),2,my)
+        f(:,:,idz,j) = spread(sin(kx*x),2,my)
       elseif (j==iuz) then
-        f(:,:,n1,j) = 0.
+        f(:,:,idz,j) = 0.
       endif
 !
     endsubroutine bc_force_uxy_sin_cos
+!***********************************************************************
+    subroutine bc_force_kepler(f,idz,j)
+
+      use Cdata, only: x,y,iux,iuy,iuz
+      use Mpicomm, only: stop_it
+      use Global, only: get_global
+
+      real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      integer, intent(in) :: idz,j
+      real, dimension (nx,3) :: gg
+      real, dimension (nx) :: r,g_r
+      real, dimension (mx,my), save :: ux,uy
+      integer :: m
+      logical, save :: initialize=.true.
+
+      if (initialize) then
+        do m=m1,m2
+          r=sqrt(y(m)**2+x(l1:l2)**2)
+          call get_global(gg,m,idz,'gg')
+          g_r=sqrt(gg(:,1)**2+gg(:,2)**2)
+          ux(l1:l2,m)=-y(m)    *sqrt(g_r/r)
+          uy(l1:l2,m)= x(l1:l2)*sqrt(g_r/r)
+          initialize=.false.
+        enddo
+      endif
+
+      if (j==iux) then
+        f(:,:,idz,j)=ux
+      elseif (j==iuy) then
+        f(:,:,idz,j)=uy
+      elseif (j==iuz) then
+        f(:,:,idz,j)=0
+      else
+        call stop_it('BC_FORCE_KEPLER: only implemented for uu')
+      endif
+
+    endsubroutine bc_force_kepler
 !***********************************************************************
     subroutine bc_one_x(f,topbot,j)
 !
