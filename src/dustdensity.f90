@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.46 2004-03-31 11:17:02 ajohan Exp $
+! $Id: dustdensity.f90,v 1.47 2004-03-31 15:37:12 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dnd_dt and init_nd, among other auxiliary routines.
@@ -91,7 +91,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.46 2004-03-31 11:17:02 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.47 2004-03-31 15:37:12 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -322,7 +322,6 @@ module Dustdensity
       real, dimension (nx) :: mfluxcond, nofluxcond
       real :: diffnd
       integer :: i,j,k,i_targ
-      logical :: lfirstpoint2
 !
       intent(in)  :: uud,divud
       intent(out) :: df,gnd
@@ -366,16 +365,16 @@ module Dustdensity
             ndnew(:,i_targ) = ndnew(:,i_targ) + f(l1:l2,m,n,ind(k))
             rhodnew(:,i_targ) = rhodnew(:,i_targ) + f(l1:l2,m,n,irhod(k))
           elseif (i_targ .eq. 0) then
-            print*, 'dnd_dt: WARNING: Dust grains lost to gas!'
-            stop
-            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+            if (lkeepinitnd) then
+              print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+              call stop_it('dnd_dt: WARNING: Dust grains lost to gas!')
+            endif
             f(l1:l2,m,n,ilncc) = &
                 f(l1:l2,m,n,ilncc) + f(l1:l2,m,n,irhod(k))*rho1
           elseif (i_targ .eq. ndustspec+1) then
             ndnew(:,k) = ndnew(:,k) + f(l1:l2,m,n,ind(k))
             rhodnew(:,k) = rhodnew(:,k) + f(l1:l2,m,n,irhod(k))
-            print*, 'dnd_dt: Hit maximum grain mass border!'
-            print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
+            !print*, k, md(k), f(l1:l2,m,n,ind(k)), f(l1:l2,m,n,irhod(k)), n
             !call stop_it('dnd_dt: Hit maximum grain mass border!')
           endif
         enddo
@@ -424,7 +423,7 @@ module Dustdensity
         do k=1,ndustspec
           if (lmdvar) then
             dndfac = surfd(k)*mfluxcond(:)*nd(:,k)
-            if (dndfac(1) .lt. 0. .and. f(l1,m,n,ilncc) .gt. eps_ctog &
+            if (dndfac(1) < 0. .and. f(l1,m,n,ilncc) >= eps_ctog &
                 .and. lkeepinitnd) then
               ! Do nothing when mass is set to decrease below initial
             else
@@ -521,14 +520,15 @@ module Dustdensity
         endif
 !
         if (ldiagnos) then
-          if (i_ndm(k)/=0) call sum_mn_name(nd(:,k),i_ndm(k))
-          if (i_rhodm/=0) then
-            if (lfirstpoint .and. k .ne. 1) then
-              lfirstpoint2 = .true.
+          if (i_ndm(k) /= 0) call sum_mn_name(nd(:,k),i_ndm(k))
+          if (i_rhodm /= 0) then
+            if (lfirstpoint .and. k /= 1) then
               lfirstpoint = .false.
+              call sum_mn_name(nd(:,k)*md(k),i_rhodm)
+              lfirstpoint = .true.
+            else
+              call sum_mn_name(nd(:,k)*md(k),i_rhodm)
             endif
-            call sum_mn_name(nd(:,k)*md(k),i_rhodm)
-            lfirstpoint = lfirstpoint2
           endif
         endif
 !
