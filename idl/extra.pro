@@ -5,7 +5,7 @@ zz = spread(z, [0,1], [mx,my])
 ;
 ;  calculate extra stuff that may be of some convenience
 ;
-oo=curl(uu)
+;oo=(curl(uu))(l1:l2,m1:m2,n1:n2,*)
 bb=curl(aa)
 jj=curl2(aa)
 xxx=x(l1:l2)

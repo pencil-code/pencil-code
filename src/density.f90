@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.3 2002-06-04 11:08:37 brandenb Exp $
+! $Id: density.f90,v 1.4 2002-06-06 07:09:35 brandenb Exp $
 
 module Density
 
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.3 $", &
-           "$Date: 2002-06-04 11:08:37 $")
+           "$Revision: 1.4 $", &
+           "$Date: 2002-06-06 07:09:35 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -143,7 +143,7 @@ module Density
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(ip<15) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
       enddo

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.16 2002-06-04 10:02:30 brandenb Exp $
+! $Id: hydro.f90,v 1.17 2002-06-06 07:09:35 brandenb Exp $
 
 module Hydro
 
@@ -58,8 +58,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.16 $", &
-           "$Date: 2002-06-04 10:02:30 $")
+           "$Revision: 1.17 $", &
+           "$Date: 2002-06-06 07:09:35 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -212,7 +212,7 @@ module Hydro
         ! Fix origin of log density
         f(:,:,:,ilnrho) = f(:,:,:,ilnrho) + alog(rho0)
       case default
-        if (lroot) print*,'Initialising everything to zero'
+!       if (lroot) print*,'note: the init parameter is no longer used'
       endselect
 !
       if (urand /= 0) then
@@ -256,7 +256,7 @@ module Hydro
 !
 !  iname runs through all possible names that may be listed in print.in
 !
-      if(ip<15) print*,'run through parse list'
+      if(lroot.and.ip<14) print*,'run through parse list'
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'t',i_t)
         call parse_name(iname,cname(iname),cform(iname),'it',i_it)

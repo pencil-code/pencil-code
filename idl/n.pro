@@ -8,8 +8,6 @@
 print,'nname=',nname
 ;
 file='tmp/n.dat'
-file='tmp/n.tmp'
-;
 a=rtable(file,nname)
 if i_t ne 0 then t=reform(a(i_t-1,*))
 if i_it ne 0 then it=reform(a(i_it-1,*))

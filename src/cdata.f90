@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.41 2002-06-05 23:45:57 brandenb Exp $
+! $Id: cdata.f90,v 1.42 2002-06-06 07:09:35 brandenb Exp $
 
 module Cdata
 
@@ -41,7 +41,6 @@ module Cdata
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-
 !
 !  in this section are all the things related to printing
 !
@@ -56,7 +55,7 @@ module Cdata
   logical :: lhydro=.true., ldensity=.true., lentropy=.false., lmagnetic=.false.
   logical :: lmpicomm=.false., lforcing=.false.
   logical :: lgrav=.false., lgravz=.false., lgravr=.false.
-  logical :: lout,headt,headtt,ldt,lfirst,ldiagnos
+  logical :: lout,headt,headtt,ldt,lfirst,ldiagnos,lwrite_ic=.false.
   logical :: lroot=.true.
   logical :: lfirstpoint
 

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.50 2002-06-05 23:45:57 brandenb Exp $ 
+! $Id: sub.f90,v 1.51 2002-06-06 07:09:35 brandenb Exp $ 
 
 module Sub 
 
@@ -737,8 +737,8 @@ module Sub
       integer, dimension (nn) :: a
       character (len=*) :: file
 !
-      open(1,file=file,form='unformatted')
-      read(1) a
+      open(1,file=file,form='formatted')
+      read(1,*) a
       close(1)
     endsubroutine inpui
 !***********************************************************************
@@ -784,8 +784,8 @@ module Sub
       integer, dimension (nn) :: a
       character (len=*) :: file
 !
-      open(1,file=file,form='unformatted')
-      write(1) a
+      open(1,file=file,form='formatted')
+      write(1,*) a
       close(1)
     endsubroutine outpui
 !***********************************************************************

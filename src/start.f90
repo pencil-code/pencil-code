@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.36 2002-06-04 10:02:30 brandenb Exp $
+! $Id: start.f90,v 1.37 2002-06-06 07:09:35 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -31,8 +31,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.36 $", &
-             "$Date: 2002-06-04 10:02:30 $")
+             "$Revision: 1.37 $", &
+             "$Date: 2002-06-06 07:09:35 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -98,12 +98,17 @@
 !
 !  write to disk
 !
+        if (lwrite_ic) call output(trim(directory)//'/VAR0',f,mvar)
         call output(trim(directory)//'/var.dat',f,mvar)
         call wdim(trim(directory)//'/dim.dat')
+!
 !  also write full dimensions to tmp/ :
+!
         if (lroot) call wdim('tmp/dim.dat', &
              nxgrid+2*nghost,nygrid+2*nghost,nzgrid+2*nghost)
+!
 !  write global variables:
+!
         call wglobal()
 !
 !  seed for random number generator, have to have the same on each
@@ -111,7 +116,6 @@
 !
         seed(1)=1000
         call outpui(trim(directory)//'/seed.dat',seed,2)
-        if (iproc < 10) print*,'iproc,seed(1:2)=',iproc,seed
 !
         call mpifinalize
 !

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.35 2002-06-05 23:45:57 brandenb Exp $
+! $Id: run.f90,v 1.36 2002-06-06 07:09:35 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -43,8 +43,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.35 $", &
-             "$Date: 2002-06-05 23:45:57 $")
+             "$Revision: 1.36 $", &
+             "$Date: 2002-06-06 07:09:35 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -76,7 +76,7 @@
 !  read seed field parameters (only if forcing is turned on)
 !
         if (lforcing) then
-          if (lroot) print*,'reading seed file'
+          if (lroot.and.ip<14) print*,'reading seed file'
           call inpui(trim(directory)//'/seed.dat',seed,2)
           call random_seed(put=seed)
         endif
@@ -94,12 +94,10 @@
         if(lroot) then
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
-          print*,'start time loop'
         endif
 !
 !  do loop in time
 !
-print*,'bef time loop: dx=',dx
         Time_loop: do it=1,nt
           lout=mod(it-1,it1).eq.0
           if (lout) then

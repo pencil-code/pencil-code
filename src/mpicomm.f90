@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.20 2002-05-27 12:04:32 dobler Exp $
+! $Id: mpicomm.f90,v 1.21 2002-06-06 07:09:35 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -137,7 +137,7 @@ module Mpicomm
 !  15 | 12  13  14  15 | 12
 !  should print (3,15,12,13,1,5,5,7) for iproc=0
 !
-      if (ip<15) &
+      if (ip<5) &
            write(*,'(A,I4,"(",2I4,"): ",8I4)') &
            'MPICOMM neighbors ', &
            iproc,ipy,ipz, &

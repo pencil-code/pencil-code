@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.14 2002-06-06 00:14:09 brandenb Exp $
+! $Id: prints.f90,v 1.15 2002-06-06 07:09:35 brandenb Exp $
 
 module Print
 
@@ -63,10 +63,21 @@ module Print
 !  also listed in print.in.
 !
       if(lroot) then
+!
+!  write legend to extra file
+!  (might want to do only once after each lreset)
+!
+        open(1,file='tmp/legend.dat')
+        write(1,*) legend
+        close(1)
+!
+!  append to diagnostics file
+!
         open(1,file='tmp/n.dat',position='append')
         write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
         write(6,trim(fform)) fname(1:nname)  ! write to standard output
         close(1)
+!
       endif
       first = .false.
 !

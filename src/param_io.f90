@@ -1,4 +1,5 @@
-! $Id: param_io.f90,v 1.10 2002-06-05 08:52:46 brandenb Exp $ 
+! $Id: param_io.f90,v 1.11 2002-06-06 07:09:35 brandenb Exp $ 
+
 module Param_IO
 
 !
@@ -16,7 +17,7 @@ module Param_IO
   implicit none 
 !
   namelist /init_pars/ &
-       ip,xyz0,Lxyz,lperi
+       ip,xyz0,Lxyz,lperi,lwrite_ic
   namelist /run_pars/ &
        ip,nt,it1,dt,cdt,cdtv,isave,itorder, &
        dsnap,dvid,dtmin, &
@@ -30,7 +31,16 @@ module Param_IO
 !
 !  read input parameters (done by each processor)
 !
+      character(len=80) Id
+!
+!  open namelist file; read/print cvs id from first line
+!
       open(1,FILE='start.in',FORM='formatted')
+      read(1,*) Id; if(lroot) then; print*; print*,Id; endif
+!
+!  read through all items that *may* be present
+!  in the various modules
+!
                      read(1,NML=init_pars         )
       if (lhydro)    read(1,NML=hydro_init_pars   )
       if (ldensity)  read(1,NML=density_init_pars   )
@@ -42,7 +52,7 @@ module Param_IO
 !
 !  output on the console, but only when root processor
 !
-      if (lroot) then
+      if (lroot.and.ip<14) then
                        write(*,NML=init_pars         )
         if (lhydro   ) write(*,NML=hydro_init_pars   )
         if (ldensity ) write(*,NML=density_init_pars   )
@@ -57,12 +67,13 @@ module Param_IO
     subroutine read_runpars(print)
 !
 !  read input parameters
+!
 !  14-sep-01/axel: inserted from run.f90
 !  31-may-02/wolf: renamed from cread to read_runpars
 !
-      use Cdata
       use Sub, only: parse_bc
 !
+      character(len=80) Id
       logical, optional :: print
       integer :: i
 !
@@ -72,9 +83,14 @@ module Param_IO
       do i=1,mvar; bcy(i)='p'; enddo
       do i=1,mvar; bcz(i)='p'; enddo
 !
-!  open run.in and read
+!  open namelist file; read/print cvs id from first line
 !
       open(1,file='run.in',form='formatted')
+      read(1,*) Id; if(lroot) then; print*; print*,Id; endif
+!
+!  read through all items that *may* be present
+!  in the various modules
+!
                      read(1,NML=run_pars         )
       if (lhydro   ) read(1,NML=hydro_run_pars )
       if (ldensity ) read(1,NML=density_run_pars )
@@ -109,7 +125,7 @@ module Param_IO
       call parse_bc(bcx,bcx1,bcx2)
       call parse_bc(bcy,bcy1,bcy2)
       call parse_bc(bcz,bcz1,bcz2)
-      if (lroot) then
+      if (lroot.and.ip<14) then
         print*, 'bcx1,bcx2= ', bcx1," : ",bcx2
         print*, 'bcy1,bcy2= ', bcy1," : ",bcy2
         print*, 'bcz1,bcz2= ', bcz1," : ",bcz2
@@ -118,7 +134,7 @@ module Param_IO
 !  timestep
 !
       ldt=cdt/=0.
-      if (ldt.and.lroot) print*,'timestep based on CFL cond; cdt=',cdt
+      if (ldt.and.lroot.and.ip<14) print*,'timestep based on CFL cond; cdt=',cdt
 !
     endsubroutine read_runpars
 !***********************************************************************
@@ -130,7 +146,7 @@ module Param_IO
 !
       use Cdata
 !
-      if (lroot) then
+      if (lroot.and.ip<14) then
                        write(*,NML=run_pars         )
         if (lhydro   ) write(*,NML=hydro_run_pars   )
         if (lforcing ) write(*,NML=forcing_run_pars )
@@ -186,8 +202,7 @@ module Param_IO
         if (lmagnetic) read(1,NML=magnetic_init_pars)
         close(1)
 !
-      if (lroot) then
-        print*, "Lx,Ly,Lz=", Lx,Ly,Lz
+      if (lroot.and.ip<14) then
         print*, "rho0,gamma=", rho0,gamma
       endif
 !

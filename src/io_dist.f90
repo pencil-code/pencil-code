@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.22 2002-06-01 02:56:21 brandenb Exp $
+! $Id: io_dist.f90,v 1.23 2002-06-06 07:09:35 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -180,10 +180,6 @@ contains
       character (len=*) :: file
       real, dimension (mx,my,mz,nn) :: a
 !
-!nn=mx/2
-!l1=(mx-nn)/2+1; l2=l1+nn-1
-!m1=(mx-nn)/2+1; m2=m1+nn-1
-!n1=(mx-nn)/2+1; n2=n1+nn-1
       open(1,file=file,form='unformatted')
       write(1) a(l1:l2,m1:m2,n1:n2,:)
       write(1) t,x,y,z,dx,dy,dz

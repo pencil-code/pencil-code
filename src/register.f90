@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.33 2002-06-05 23:45:57 brandenb Exp $
+! $Id: register.f90,v 1.34 2002-06-06 07:09:35 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -67,7 +67,7 @@ module Register
       enddo
       close(1)
 99    nname=iname-1
-      if (lroot) print*,'nname=',nname
+      if (lroot.and.ip<14) print*,'nname=',nname
 !
 !  read in the list of variables for xy-averages
 !
@@ -77,7 +77,7 @@ module Register
       enddo
       close(1)
 98    nnamez=inamez-1
-      if (lroot) print*,'nnamez=',nnamez
+      if (lroot.and.ip<14) print*,'nnamez=',nnamez
 !
 !  check which variables are set
 !

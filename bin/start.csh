@@ -50,8 +50,3 @@ time $mpirun $mpirunops $npops src/start.x
 #
 date
 
-#Save initial state
-foreach dir ($subdirs)
-  cp $dir/var.dat $dir/VAR0
-end
-
