@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $
+! $Id: hydro.f90,v 1.136 2003-11-21 01:54:06 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -102,7 +102,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.135 2003-11-15 19:09:02 brandenb Exp $")
+           "$Id: hydro.f90,v 1.136 2003-11-21 01:54:06 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -494,10 +494,32 @@ module Hydro
           df(l1:l2,m,n,iuu+j-1)=df(l1:l2,m,n,iuu+j-1)-gradH0(j)
         endif
       enddo
-
-    
+!
+!  interface for your personal subroutines calls
+!
       if (lspecial) call special_calc_hydro(f,df,uu,glnrho,divu,rho1,u2,uij)
-    
+
+!
+!  write oo-slices for output in wvid in run.f90
+!  This must be done outside the diagnostics loop (accessed at different times).
+!  Note: ix is the index with respect to array with ghost zones.
+!
+      if(lvid.and.lfirst) then
+        oo(:,1)=uij(:,3,2)-uij(:,2,3)
+        oo(:,2)=uij(:,1,3)-uij(:,3,1)
+        oo(:,3)=uij(:,2,1)-uij(:,1,2)
+        call dot2_mn(oo,o2)
+        do j=1,3
+          oo_yz(m-m1+1,n-n1+1,j)=oo(ix-l1+1,j)
+          if (m.eq.iy)  oo_xz(:,n-n1+1,j)=oo(:,j)
+          if (n.eq.iz)  oo_xy(:,m-m1+1,j)=oo(:,j)
+          if (n.eq.iz2) oo_xy2(:,m-m1+1,j)=oo(:,j)
+        enddo
+          o2_yz(m-m1+1,n-n1+1)=o2(ix-l1+1)
+          if (m.eq.iy)  o2_xz(:,n-n1+1)=o2
+          if (n.eq.iz)  o2_xy(:,m-m1+1)=o2
+          if (n.eq.iz2) o2_xy2(:,m-m1+1)=o2
+      endif
 !
 !  Calculate maxima and rms values for diagnostic purposes
 !  (The corresponding things for magnetic fields etc happen inside magnetic etc)
@@ -591,17 +613,6 @@ module Hydro
           endif
         endif
         !
-        !  write oo-slices for output in wvid in run.f90
-        !  Note: ix is the index with respect to array with ghost zones.
-        !
-        if(lvid.and.lfirst) then
-          do j=1,3
-            oo_yz(m-m1+1,n-n1+1,j)=oo(ix-l1+1,j)
-            if (m.eq.iy)  oo_xz(:,n-n1+1,j)=oo(:,j)
-            if (n.eq.iz)  oo_xy(:,m-m1+1,j)=oo(:,j)
-            if (n.eq.iz2) oo_xy2(:,m-m1+1,j)=oo(:,j)
-          enddo
-        endif
       endif
 !
     endsubroutine duu_dt

@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.140 2003-11-20 19:56:24 theine Exp $ 
+! $Id: sub.f90,v 1.141 2003-11-21 01:54:06 brandenb Exp $ 
 
 module Sub 
 
@@ -1633,9 +1633,13 @@ module Sub
       if (enum) call chn(nout,ch,'update_snaptime: '//trim(file))
 !
 !  Mark lout=.true. when time has exceeded the value of tout
+!  do while loop to make make sure tt is always larger than tout.
+!  (otherwise slices are written just to catch up with tt.)
 !
       if (tt.ge.tout) then
-        tout=tout+abs(dtout)
+        do while (tt>tout)
+          tout=tout+abs(dtout)
+        enddo
         nout=nout+1
         lout=.true.
 !

@@ -1,4 +1,4 @@
-! $Id: read_videofiles.f90,v 1.9 2003-11-20 18:51:18 brandenb Exp $
+! $Id: read_videofiles.f90,v 1.10 2003-11-21 01:54:06 brandenb Exp $
 
 !***********************************************************************
       program rvid_box
@@ -63,9 +63,10 @@
         ipy_front=0
       elseif (position_arrangement=='m') then
         ipz_top=nprocz/2
-        ipz_bottom=0
+        ipz_bottom=nprocz/2
         ipy_front=nprocy/2
       endif
+      print*,'ipz_top,ipz_bottom,ipy_front=',ipz_top,ipz_bottom,ipy_front
 !
 !  loop through all times
 !

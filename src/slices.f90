@@ -1,4 +1,4 @@
-! $Id: slices.f90,v 1.31 2003-11-15 17:15:11 theine Exp $
+! $Id: slices.f90,v 1.32 2003-11-21 01:54:06 brandenb Exp $
 
 !  This module produces slices for animation purposes
 
@@ -11,7 +11,7 @@ module Slices
   real, dimension (nx,ny,3) :: uu_xy,uu_xy2,uud_xy,uud_xy2,bb_xy,bb_xy2
   real, dimension (nx,ny,3) :: oo_xy,oo_xy2,aa_xy,aa_xy2
   real, dimension (nx,ny) :: lnrho_xy,lnrho_xy2,lnrhod_xy,lnrhod_xy2
-  real, dimension (nx,ny) :: divu_xy,divu_xy2,b2_xy,b2_xy2
+  real, dimension (nx,ny) :: divu_xy,divu_xy2,o2_xy,o2_xy2,b2_xy,b2_xy2
   real, dimension (nx,ny) :: ss_xy,ss_xy2,lncc_xy,lncc_xy2
   real, dimension (nx,ny) :: lnTT_xy,lnTT_xy2,yH_xy,yH_xy2,ecr_xy,ecr_xy2
   real, dimension (nx,ny) :: Qrad_xy,Qrad_xy2,shock_xy,shock_xy2
@@ -19,12 +19,12 @@ module Slices
 
   real, dimension (nx,nz,3) :: uu_xz,uud_xz,bb_xz,oo_xz,aa_xz
   real, dimension (nx,nz) :: lnrho_xz,lnrhod_xz,ss_xz,lncc_xz,divu_xz
-  real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,b2_xz
+  real, dimension (nx,nz) :: lnTT_xz,yH_xz,ecr_xz,o2_xz,b2_xz
   real, dimension (nx,nz) :: Qrad_xz,shock_xz
 
   real, dimension (ny,nz,3) :: uu_yz,uud_yz,bb_yz,oo_yz,aa_yz
   real, dimension (ny,nz) :: lnrho_yz,lnrhod_yz,ss_yz,lncc_yz,divu_yz
-  real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,b2_yz
+  real, dimension (ny,nz) :: lnTT_yz,yH_yz,ecr_yz,o2_yz,b2_yz
   real, dimension (ny,nz) :: Qrad_yz,shock_yz
 
   contains
@@ -119,6 +119,12 @@ module Slices
         call wslice(path//'ox.Xy',oo_xy2(:,:,1),z(iz2),nx,ny)
         call wslice(path//'oy.Xy',oo_xy2(:,:,2),z(iz2),nx,ny)
         call wslice(path//'oz.Xy',oo_xy2(:,:,3),z(iz2),nx,ny)
+!
+      case ('o2')
+        call wslice(path//'o2.yz',o2_yz,x(ix),ny,nz)
+        call wslice(path//'o2.xz',o2_xz,y(iy),nx,nz)
+        call wslice(path//'o2.xy',o2_xy,z(iz),nx,ny)
+        call wslice(path//'o2.Xy',o2_xy2,z(iz2),nx,ny)
 !
       case ('divu')
         call wslice(path//'divu.yz',divu_yz,x(ix),ny,nz)
