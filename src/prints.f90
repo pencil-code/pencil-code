@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.26 2002-08-04 08:08:09 dobler Exp $
+! $Id: prints.f90,v 1.27 2002-08-04 23:15:00 brandenb Exp $
 
 module Print
 
@@ -64,9 +64,11 @@ module Print
 !  write legend to extra file
 !  (might want to do only once after each lreset)
 !
-        open(1,file='tmp/legend.dat')
-        write(*,'(" ",A)') trim(legend)
-        close(1)
+        if(first) then
+          open(1,file='tmp/legend.dat')
+          write(1,'(" ",A)') trim(legend)
+          close(1)
+        endif
 !
 !  put output line into a string and remove spurious dots
 !
@@ -80,6 +82,7 @@ module Print
 !  append to diagnostics file
 !
         open(1,file='tmp/n.dat',position='append')
+        if(first) write(1,'(" ",A)') trim(legend)
         !write(1,trim(fform)) fname(1:nname)  ! write to `n.dat'
         !write(6,trim(fform)) fname(1:nname)  ! write to standard output
         write(1,'(a)') trim(line)
