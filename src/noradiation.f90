@@ -1,4 +1,4 @@
-! $Id: noradiation.f90,v 1.8 2003-03-24 18:44:29 brandenb Exp $
+! $Id: noradiation.f90,v 1.9 2003-03-25 20:27:47 brandenb Exp $
 
 
 module Radiation
@@ -37,7 +37,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noradiation.f90,v 1.8 2003-03-24 18:44:29 brandenb Exp $")
+           "$Id: noradiation.f90,v 1.9 2003-03-25 20:27:47 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -65,6 +65,19 @@ module Radiation
 !  do nothing
 !
     endsubroutine initialize_radiation
+!***********************************************************************
+    subroutine radiative_cooling(df)
+!
+!  dummy routine
+!
+! 25-mar-03/axel+tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: df
+!
+      if(ip==0) print*,df !(keep compiler quiet)
+    endsubroutine radiative_cooling
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

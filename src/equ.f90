@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.128 2003-03-24 18:44:29 brandenb Exp $
+! $Id: equ.f90,v 1.129 2003-03-25 20:27:47 brandenb Exp $
 
 module Equ
 
@@ -210,7 +210,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'ENTER: pde'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.128 2003-03-24 18:44:29 brandenb Exp $")
+           "$Id: equ.f90,v 1.129 2003-03-25 20:27:47 brandenb Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -358,6 +358,7 @@ module Equ
         lfirstpoint=.false.
       enddo
       if (lradiation_fld) f(:,:,:,idd)=DFF_new
+      if (lentropy) call radiative_cooling(df)
 !
 !  diagnostic quantities
 !  collect from different processors UUmax for the time step

@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.4 2003-03-25 17:13:49 brandenb Exp $
+! $Id: radiation_ray.f90,v 1.5 2003-03-25 20:27:47 brandenb Exp $
 
 module Radiation
 
@@ -8,8 +8,16 @@ module Radiation
 
   implicit none
 
+  integer :: directions
+  integer, parameter :: radx0=1,rady0=1,radz0=1
+  real, dimension (radx0,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
+  real, dimension (mx,rady0,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
+  real, dimension (mx,my,radz0,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
   real, dimension (mx,my,mz) :: Qrad,Source
   real :: arad=0.,kappa=0.
+!
+!  default values for one pair of vertical rays
+!
   integer :: radx=0,rady=0,radz=1,rad2max=1
 !
 !  definition of dummy variables for FLD routine
@@ -48,14 +56,33 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.4 2003-03-25 17:13:49 brandenb Exp $")
+           "$Id: radiation_ray.f90,v 1.5 2003-03-25 20:27:47 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
     subroutine initialize_radiation()
 !
-!  Set up some variables for radiation; do nothing
-!  Possible examples: reading in of tables etc
+!  Calculate number of directions of rays
+!  Do this in the beginning of each run
+!
+! 25-mar-03/axel+tobi: coded
+!
+  integer :: lrad,mrad,nrad,rad2
+!
+!  count
+!
+      directions=0
+      do nrad=-radz,radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        rad2=lrad**2+mrad**2+nrad**2
+        if(rad2>0 .and. rad2<=rad2max) then 
+          directions=directions+1
+        endif
+      enddo
+      enddo
+      enddo
+      print*,'initialize_radiation: directions=',directions
 !
     endsubroutine initialize_radiation
 !***********************************************************************
@@ -97,15 +124,10 @@ module Radiation
       use Cdata
       use Sub
 !
-      integer, parameter :: radx0=1,rady0=1,radz0=1
+      real :: frac
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: Intensity
-      real, dimension (mx,my,nghost,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_xy
-      real, dimension (nghost,my,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_yz
-      real, dimension (mx,nghost,mz,-radx0:radx0,-rady0:rady0,-radz0:radz0) :: Intensity_zx
-      real :: frac
       integer :: lrad,mrad,nrad,rad2
-      integer :: directions=2  !(at the moment)
 !
 !  identifier
 !
@@ -114,17 +136,30 @@ module Radiation
       call source_function(f)
 !
 !  set boundary values, I=0 at the top, I=S at the bottom
+!  bottom boundary:
 !
-      Intensity(1:l1-1,:,:)=Source(1:l1-1,:,:)
-      Intensity(:,1:m1-1,:)=Source(:,1:m1-1,:)
-      Intensity(:,:,n2+1:mz)=0.
-      Intensity(:,:,1:n1-1)=Source(:,:,1:n1-1)
+      do nrad=-radz,-1
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        Intensity_xy(:,:,:,lrad,mrad,nrad)=Source(:,:,n1-radz0:n1-1)
+      enddo
+      enddo
+      enddo
+!
+!  top boundary:
+!
+      do nrad=+1,+radz
+      do mrad=-rady,rady
+      do lrad=-radx,radx
+        Intensity_xy(:,:,:,lrad,mrad,nrad)=0.
+      enddo
+      enddo
+      enddo
 !
 !  Accumulate the result for Qrad=(J-S),
 !  First initialize Qrad=-S. 
 !
       Qrad=-Source
-write(28) Source
 !
 !  loop over rays
 !
@@ -135,18 +170,33 @@ write(28) Source
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if(rad2>0 .and. rad2<=rad2max) then 
-          !call (Intensity,Intensity_boundary)
+          !
+          !  set ghost zones, data from next processor (or opposite boundary)
+          !
+          if(lrad>0) Intensity(l1-radx0:l1-1,:,:)=Intensity_yz(:,:,:,lrad,mrad,nrad)
+          if(lrad<0) Intensity(l2+1:l2+radx0,:,:)=Intensity_yz(:,:,:,lrad,mrad,nrad)
+          if(mrad>0) Intensity(:,m1-rady0:m1-1,:)=Intensity_zx(:,:,:,lrad,mrad,nrad)
+          if(mrad<0) Intensity(:,m2+1:m2+rady0,:)=Intensity_zx(:,:,:,lrad,mrad,nrad)
+          if(nrad>0) Intensity(:,:,n1-radz0:n1-1)=Intensity_xy(:,:,:,lrad,mrad,nrad)
+          if(nrad<0) Intensity(:,:,n2+1:n2+radz0)=Intensity_xy(:,:,:,lrad,mrad,nrad)
+          !
+          !  do the ray, and add corresponding contribution to Q
+          !
           call transfer(f,Intensity,lrad,mrad,nrad)
-write(28) Intensity
           Qrad=Qrad+frac*Intensity
-          Intensity_xy(:,:,:,lrad,mrad,nrad)=Intensity(:,:,1:nghost)
-          Intensity_yz(:,:,:,lrad,mrad,nrad)=Intensity(1:nghost,:,:)
-          Intensity_zx(:,:,:,lrad,mrad,nrad)=Intensity(:,1:nghost,:)
+          !
+          !  safe boundary values for next processor (or opposite boundary)
+          !
+          if(lrad<0) Intensity_yz(:,:,:,lrad,mrad,nrad)=Intensity(l1-radx0:l1-1,:,:)
+          if(lrad>0) Intensity_yz(:,:,:,lrad,mrad,nrad)=Intensity(l2+1:l2+radx0,:,:)
+          if(mrad<0) Intensity_zx(:,:,:,lrad,mrad,nrad)=Intensity(:,m1-rady0:m1-1,:)
+          if(mrad>0) Intensity_zx(:,:,:,lrad,mrad,nrad)=Intensity(:,m2+1:m2+rady0,:)
+          if(nrad<0) Intensity_xy(:,:,:,lrad,mrad,nrad)=Intensity(:,:,n1-radz0:n1-1)
+          if(nrad>0) Intensity_xy(:,:,:,lrad,mrad,nrad)=Intensity(:,:,n2+1:n2+radz0)
         endif
       enddo
       enddo
       enddo
-write(28) Qrad
 !
     endsubroutine radtransfer
 !***********************************************************************
@@ -161,7 +211,7 @@ write(28) Qrad
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: Intensity
       real :: dlength,lnrhom,fnew,fold,dtau05
-      integer :: l,lrad,mrad,nrad,rad2
+      integer :: l,lrad,mrad,nrad
       integer :: lstart,lstop,lrad1
       integer :: mstart,mstop,mrad1
       integer :: nstart,nstop,nrad1
@@ -197,9 +247,6 @@ write(28) Qrad
 !
 !  loop
 !
-print*,'nstart,nstop,nrad1=',nstart,nstop,nrad1
-print*,'mstart,mstop,mrad1=',mstart,mstop,mrad1
-print*,'lstart,lstop,lrad1=',lstart,lstop,lrad1
       do n=nstart,nstop,nrad1
       do m=mstart,mstop,mrad1
       do l=lstart,lstop,lrad1
@@ -209,12 +256,31 @@ print*,'lstart,lstop,lrad1=',lstart,lstop,lrad1
         fold=1.-dtau05
         Intensity(l,m,n)=(fold*Intensity(l-lrad,m-mrad,n-nrad) &
            +dtau05*(Source(l,m,n)+Source(l-lrad,m-mrad,n-nrad)))/fnew
-print*,'n,lnrhom,dtau05,Intensity(l,m,n)=',n,lnrhom,dtau05,Source(l,m,n),Intensity(l,m,n)
       enddo
       enddo
       enddo
 !
     endsubroutine transfer
+!***********************************************************************
+    subroutine radiative_cooling(df)
+!
+!  calculate source function
+!
+! 25-mar-03/axel+tobi: coded
+!
+      use Cdata
+!
+      real, dimension (mx,my,mz,mvar) :: df
+!
+!  Add radiative cooling
+!
+      do n=1,mz
+      do m=1,my
+        df(l1:l2,m,n,ient)=df(l1:l2,m,n,ient)+Qrad(l1:l2,m,n)
+      enddo
+      enddo
+!
+    endsubroutine radiative_cooling
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !
