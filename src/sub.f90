@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.162 2004-02-17 16:38:55 bingert Exp $ 
+! $Id: sub.f90,v 1.163 2004-02-17 22:48:50 dobler Exp $ 
 
 module Sub 
 
@@ -2963,12 +2963,17 @@ nameloop: do
 !
       use Cdata
 !
-      real, dimension(nx) :: maxf,f
+      real, dimension(nx) :: maxf,f,mask
 !
       intent(in)    :: f
       intent(inout) :: maxf
 
-      maxf = amax1(f,maxf)
+      if (rmax_dt>0) then
+        mask = merge(1.,0.,r_mn<rmax_dt)
+        maxf = amax1(maxf,f*mask)   ! exclude all points beyond r_max_dt
+      else
+        maxf = amax1(f,maxf)    ! include all points
+      endif
 
     endsubroutine max_for_dt_nx_nx
 !***********************************************************************
@@ -2980,13 +2985,18 @@ nameloop: do
 !
       use Cdata
 !
-      real, dimension(nx) :: maxf
+      real, dimension(nx) :: maxf,mask
       real                :: f
 !
       intent(in)    :: f
       intent(inout) :: maxf
 
-      maxf = amax1(f,maxf)
+      if (rmax_dt>0) then
+        mask = merge(1.,0.,r_mn<rmax_dt)
+        maxf = amax1(maxf,f*mask)   ! exclude all points beyond r_max_dt
+      else
+        maxf = amax1(f,maxf)    ! include all points
+      endif
 
     endsubroutine max_for_dt_1_nx
 !***********************************************************************
