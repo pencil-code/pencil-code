@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: new,v 1.9 2002-10-21 07:59:07 brandenb Exp $
+#  $Id: new,v 1.10 2002-12-03 21:58:18 brandenb Exp $
 #
 #  This script uses mkdatadir which links the subdirectory data
 #  to some data disk (which is machine dependent and therefore
@@ -17,9 +17,15 @@ mkdir $2
 cd $2
 set targetdir=$cwd
 #
-#  In the new run directory, call mkdatadir, and go there
+#  In the new run directory, call mkdatadir, and
+#  write file with name of directory from which
+#  the new one is generated
 #
 $PENCIL_HOME/bin/mkdatadir
+(echo $CWD/$1; /bin/date) >>! data/new_from.dir
+#
+#  make src dir and go there
+#
 mkdir src
 cd src
 #
