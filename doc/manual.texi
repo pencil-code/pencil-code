@@ -1,0 +1,127 @@
+\input texinfo   @c -*-texinfo-*-
+
+@c %**start of header
+
+@setfilename manual
+@settitle Installing and Using the MHD Code
+@setchapternewpage odd
+
+@c Merge all indices into one:
+@syncodeindex vr cp
+@syncodeindex fn cp
+
+@c %**end of header
+
+@ifinfo
+This file documents the basic usage of the MHD code.
+
+Copyright 2002 Axel Brandenburg & Wolfgang Dobler
+
+Permission is granted to ... (?)
+@end ifinfo
+
+@titlepage
+@title Installing and Using the MHD Code
+@subtitle A very preliminary manual
+@author Axel Brandenburg & Wolfgang Dobler
+
+@page
+@vskip 0pt plus 1filll
+Copyright @copyright{} 2002 Axel Brandenburg & Wolfgang Dobler
+
+Published by ... [nobody]
+
+Permission is granted to ... (?)
+@end titlepage
+
+@node Top, Overview, , (dir)
+
+@ifinfo
+This document describes how to set up and get started with the MHD code.
+
+This document applies to the current version of the code, but is likely to
+never be quite up-to-date.
+@end ifinfo
+
+@menu
+* Copying::          Your rights and freedoms.
+* First Chapter::    Getting the code
+* Second Chapter::   Setting the code up
+* Third Chapter::    Equations
+* Fourth Chapter::   Using the code
+@end menu
+
+@node    First Chapter, Second Chapter, top,      top
+@comment node-name,     next,           previous, up
+@chapter Obtaining the Code
+@cindex CVS (obtaining the code)
+
+To obtain the MHD code, you should use CVS (concurrent version system, see
+@url{http://fill.this.in}).
+You proceed as follows:
+
+@enumerate
+
+@item Get a CVS client from @url{fill this in} and install it
+
+@item Get the password for anonymous CVS access to the MHD code
+
+@item Set your environment variable @env{CVSROOT} (you probably want to
+  put this into your @file{.cshrc} or @file{.profile} setup files):
+@example
+csh>  setenv CVSROOT :pserver:anonymous@@norserv.nordita.dk:/home/brandenb/CVS
+[or]
+sh>  CVSROOT :pserver:anonymous@@norserv.nordita.dk:/home/brandenb/CVS
+sh>  export CVSROOT
+@end example
+
+@item Log in:
+@example
+unix>  cvs login
+cvs pasword: ......
+@end example
+
+@item Go to wherever you want the code:
+@example
+unix>  cd @file{somewhere}
+@end example
+
+@item Check the code out:
+@example
+unix>  cvs checkout -d mhd f90/pencil_modular
+@end example 
+This creates a subdirectory @file{mhd} of your current directory
+@file{somewhere} and populates it with the MHD code's subdirectories.
+
+@end enumerate
+
+
+@chapter The equations
+@cindex Equations
+
+The equations solved by the MHD code are basically the standard
+compressible MHD equations. However, the modular structure allows to
+implement different versions of the MHD equations, as well as to switch
+some of the equations off.
+
+@cindex entropy
+@cindex thermodynamics
+The current thermodynamics module @file{entropy} formulates the thermal
+part of the physics in terms of @emph{entropy} @math{$s$}, rather than thermal
+energy $e$, which you may be more familiar with.
+Thus the two fundamental thermodynamical variables are @math{\ln\varrho}
+and @math{s}.
+The reason for this choice of variables is that entropy is the natural
+physical variable for (at least) convection processes: the sign of the
+entropy gradient determines convective (in)stability, the
+@emph{Rayleigh number} is proportional to the entropy gradient, etc.
+
+
+
+@node Index, Top
+@comment    node-name,         next,       previous, up
+@unnumbered Index
+
+@printindex cp
+
+@c End of file

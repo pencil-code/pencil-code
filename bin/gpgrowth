@@ -1,0 +1,202 @@
+#!/bin/sh
+# -*-perl-*-
+#
+# Name:   gpgrowth
+# Author: wd (Wolfgang.Dobler@ncl.ac.uk)
+# Date:   22-May-2000
+# Description:
+#   Extract growth information for velocity or B-field from run.log or
+#   other file and display via gnuplot.
+#======================================================================#
+# Run the right perl version:
+if [ -x /usr/local/bin/perl ]; then
+  perl=/usr/local/bin/perl
+elif [ -x /usr/bin/perl ]; then
+  perl=/usr/bin/perl
+else
+  perl=`which perl| sed 's/.*aliased to *//'`
+fi
+
+exec $perl -x -S $0 "$@"        # -x: start from the following line
+# Line numbers in perl warnings are counted from the following line as
+# line zero.
+#======================================================================#
+#! /good_path/perl -w 
+#line 26
+
+# TO DO:
+# - extract gnuplot labels for plots from `check'
+#
+
+use strict;
+use Getopt::Long;
+
+my @ts_files = qw( tmp/n.dat run.out run.log mhd.out mhd.log );
+my $ts_file;
+my $tmpfile = 'tmp/growth.tmp';
+my $gpscript = 'tmp/gplot.tmp';
+#my $numeral = '(?:[+-]?[0-9]*\.?[0-9]\.?[0-9]*(?:[EeDd][+-]?[0-9]+)?)';
+my ($rows,$cols) = get_tty_rc(); # get terminal size
+$rows--;
+my $term = "dumb $cols $rows";	# only default value
+my $gpsetup;
+my $count = 0;
+my @cols = (3,4);
+my @cols1;
+my @title = ('urms','umax','3','4','5','6','7','8','9','10');
+my ($linlog,$i);
+my $ncols = 15;  # Minumum number of columns for valid line
+
+my ($line,$geom,$xr,$yr,$gpterm,$plotcmd,$gppostplot);
+my @array;
+
+my (%opts);     # Variables written by GetOptions
+my $cmdname = (split('/', $0))[-1];
+my $usage = "Usage:  $cmdname [options] [file]
+Options:
+  -h, --help             \tShow usage overview
+      --x11              \tPlot to X11 canvas window;
+                         \tdefault is Ascii terminal, like with `-a 79 30'
+  -a <width>x<height>
+      --ascii=<w>x<h>    \tPlot in Ascii mode, with specified width and
+                         \theight
+  -l, --lin              \tLinear plot (default: semilogarithmic)
+  -x <x0>:<x1>
+      --xrange=<x0>:<x1> \tSpecify x axis range to plot
+  -y <x0>:<x1>
+      --yrange=<y0>:<y1> \tSpecify y axis range to plot
+  -v n1[,n2]
+      --var=n1[,n2]      \tSpecify column number(s) for variable(s) to plot
+                         \t(default: @cols)
+Purpose:
+  Plot B_max, B_rms (or other variables) from FILE (default:
+  try <@ts_files> in order)
+  as function of time.
+    Run `catcheck -n' to find the column numbers of the variables\n";
+
+## Process command line
+GetOptions(\%opts,
+           qw( -h   --help
+                    --x11
+               -a=s --ascii=s
+	       -x=s --xrange=s
+	       -y=s --yrange=s
+	       -v=s --var=s
+               -l   --linear
+             ));
+
+if ($opts{'h'} || $opts{'help'}) { die $usage; }
+
+# Process terminal-related arguments
+if ($opts{'x11'}) { $term = "X11";}
+$geom = ($opts{'a'} || $opts{'ascii'} || '');
+if ($geom) {
+    $geom =~ s/x/ /;
+    $term = "dumb $geom";
+}
+$gpterm = "set term $term";
+$gppostplot = (($term =~ /x11/i) ? 'pause -1  "Hit return to exit"' : '');
+
+# Process x- and y-range
+$xr = ($opts{'x'} || $opts{'xrange'} || ':');
+$yr = ($opts{'y'} || $opts{'yrange'} || ':');
+
+# Process column numbers
+if ($opts{'v'} || $opts{'var'}) {
+    @cols = split /,/, ($opts{'v'} || $opts{'var'});
+}
+
+# Process log/linear option
+if ($opts{'l'} || $opts{'lin'}) {
+    $linlog = 'nologscale';
+} else {
+    $linlog = 'logscale'
+}
+
+$gpsetup = "#set linestyle 1
+set $linlog y
+set zero 1e-30
+set xlabel 't'
+#set ylabel 'B_max, B_rms'";
+
+# Build gnuplot commands
+$plotcmd = "plot [$xr] [$yr] ";
+foreach $i (0..$#cols) {
+    $plotcmd .= "'$tmpfile' using 2:$cols[$i] title '$title[$i]'";
+    if ($i < $#cols) {
+	$plotcmd .= ", ";
+    } else {
+	$plotcmd .= "\n";
+    }
+}
+
+if (@ARGV) { unshift @ts_files, @ARGV }; # try user-provided file(s) first
+
+## Find the first existing file in @ts_files:
+foreach my $f (@ts_files) {
+    if (-e $f) { $ts_file=$f; last; }
+}
+print "Opening $ts_file\n";
+
+# Extract `good' lines from log file and write to tmpfile
+open(LOG,"< $ts_file") or die "Can't open file $ts_file";
+open(TMP,"> $tmpfile") or die "Can't open file $tmpfile";
+while(defined($line = <LOG>)){
+    if ($line =~ /^\s*[+-\.]?[0-9][-+ 0-9\.Ee]*$/) {
+	@array = split(' ',$line);
+        if (@array >= $ncols) {  # Don't accept shorter lines
+            print TMP $line;
+            $count++;
+            $ncols = @array;
+	}
+    }
+}
+close TMP;
+if ($count < 2) { die "Found less than 2 data points in $ts_file"; }
+
+# Create script for gnuplot:
+open(SCRIPT,"> $gpscript") or die "Can't create file $gpscript";
+print SCRIPT "$gpterm\n";
+print SCRIPT "$gpsetup\n";
+print SCRIPT "$plotcmd\n";
+print SCRIPT "$gppostplot\n";
+close SCRIPT;
+
+# Plot
+system("gnuplot $gpscript");
+
+#unlink $gpscript;
+
+# ---------------------------------------------------------------------- #
+
+sub get_tty_rc {
+## Returns the number of rows and columns according to `stty -a', the
+## outout of which can either be `31 rows', `rows 31' or `rows = 31'.
+#
+## Special considerations for the systematic incompatibility system SunOS:
+    require POSIX;
+    my $stty = "stty";
+    if ((POSIX::uname())[0] =~ /SunOS/) {
+	$stty = "/usr/bin/stty"; # Must use this instead of /usr/ucb/stty,
+				 # to avoid `stty: : Invalid argument'
+    }
+#
+    my ($entry,$first,$last);
+    my %geom;
+    my @lines = grep(/columns|rows/, `$stty -a`);
+    # Join the (possibly two) lines and then split them at the semicolons
+    foreach (split(/(?:\s*;\s*)+/, join(";", @lines))) {
+	if (/columns|rows/i) {
+	    s/=/ /;		# SunOS writes an equal sign
+	    ($first,$last) = split;
+	    if ($first =~ /columns|rows/i) {
+		$geom{"\L$first"} = $last; # Downcase is probably unnecessary
+	    } else {
+		$geom{"\L$last"} = $first;
+	    }
+	}
+    }
+    ($geom{rows}||24, $geom{columns}||80);
+}
+
+# End of file gpgrowth
