@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.17 2002-07-31 23:17:05 dobler Exp $
+! $Id: nograv.f90,v 1.18 2002-07-31 23:38:41 brandenb Exp $
 
 module Gravity
 
@@ -15,7 +15,7 @@ module Gravity
     module procedure potential_penc
   endinterface
 
-  real :: z1,z2,zref,zgrav,gravz,zinfty,zgrav  !(used by Entropy and Density)
+  real :: z1,z2,zref,zgrav,gravz,zinfty  !(used by Entropy and Density)
   character (len=labellen) :: grav_profile='const'  !(used by Density)
 
   integer :: dummy              ! We cannot define empty namelists
@@ -44,7 +44,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.17 2002-07-31 23:17:05 dobler Exp $")
+           "$Id: nograv.f90,v 1.18 2002-07-31 23:38:41 brandenb Exp $")
 !
       lgrav = .false.
       lgravz = .false.
