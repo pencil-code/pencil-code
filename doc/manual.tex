@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.247 2004-04-12 20:56:20 dobler Exp $
+%%  CVS: $Id: manual.tex,v 1.248 2004-04-13 08:40:57 dobler Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -372,7 +372,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2004-04-12 20:56:20 $ $,~ $ $Revision: 1.247 $ $}
+%\date{$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}
 
 % ====================================================================== %
 
@@ -407,7 +407,7 @@ $\displaystyle##$\hfil\cr>\cr\sim\cr}}}
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2004-04-12 20:56:20 $ $,~ $ $Revision: 1.247 $ $}\\
+  \emph{$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -4108,7 +4108,7 @@ in any routine that \cmd{use}s the module \name{Cdata}.
 \part{Appendix}
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2004-04-12 20:56:20 $ $,~ $ $Revision: 1.247 $ $}
+  \hfill\normalsize\rm$ $Date: 2004-04-13 08:40:57 $ $,~ $ $Revision: 1.248 $ $}
 
 \section{Timings}
 
@@ -6560,17 +6560,20 @@ possible inputs to the file \file{print.in}.
 \midrule
   \multicolumn{2}{c}{Module \file{hydro.f90}} \\
 \midrule
-  \var{u2m}  & $\left<\uv^2\right>$ \\
-  \var{urms} & $\left<\uv^2\right>^{1/2}$ \\
-  \var{umax} & $\max(|\uv|)$ \\
-  \var{o2m}  & $\left<\boldsymbol{\omega}^2\right>$ \\
-  \var{orms} & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
-  \var{omax} & $\max(|\boldsymbol{\omega}|)$ \\
-  \var{oum}  & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
-  \var{epsK} & $\left<2\nu\varrho\Strain^2\right>$ \\
-  \var{ruxm} & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
-  \var{ruym} & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
-  \var{ruzm} & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
+  \var{u2m}   & $\left<\uv^2\right>$ \\
+  \var{urms}  & $\left<\uv^2\right>^{1/2}$ \\
+  \var{umax}  & $\max(|\uv|)$ \\
+  \var{uzrms}  & $\left<u_z^2\right>^{1/2}$ \\
+  \var{uzmax}  & $\max(|u_z|)$ \\
+  \var{o2m}   & $\left<\boldsymbol{\omega}^2\right>$ \\
+  \var{orms}  & $\left<\boldsymbol{\omega}^2\right>^{1/2}$ \\
+  \var{omax}  & $\max(|\boldsymbol{\omega}|)$ \\
+  \var{oum}   & $\left<\boldsymbol{\omega}\cdot\uv\right>$ \\
+  \var{epsK}  & $\left<2\nu\varrho\Strain^2\right>$ \\
+  \var{ruxm}  & $\left<\varrho u_x\right>$ \quad(mean $x$-momentum) \\
+  \var{ruym}  & $\left<\varrho u_y\right>$ \quad(mean $y$-momentum) \\
+  \var{ruzm}  & $\left<\varrho u_z\right>$ \quad(mean $z$-momentum) \\
+  \var{rumax} & $\max(\varrho \uv)$ \quad(maximum modulus of momentum) \\
 %
 \midrule
   \multicolumn{2}{c}{Module \file{density.f90}} \\
@@ -7083,7 +7086,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.247 2004-04-12 20:56:20 dobler Exp $ $}
+$ $Id: manual.tex,v 1.248 2004-04-13 08:40:57 dobler Exp $ $}
 
 
 \end{document}
