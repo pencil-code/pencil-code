@@ -1,4 +1,4 @@
-;  $Id: r_ez.pro,v 1.8 2002-10-05 11:28:55 dobler Exp $
+;  $Id: r_ez.pro,v 1.9 2002-11-27 11:25:01 brandenb Exp $
 ;
 ;  this routine is an easy-to-use replacement of r.pro,
 ;  which can sometimes fail (if nml2idl fails, for example).
@@ -26,9 +26,9 @@ f=fltarr(mx,my,mz,mvar)
 x=fltarr(mx)
 y=fltarr(my)
 z=fltarr(mz)
-openr,1,datadir+varfile,/f77
+openr,1,datadir+'/'+varfile,/f77
 readu,1,f
-readu,1,t,x,y,z,dx,dy,dz,deltay
+if (lshear) then readu,1,t,x,y,z,dx,dy,dz,deltay else readu,1,t,x,y,z,dx,dy,dz
 close,1
 print,'t=',t
  
