@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.145 2003-01-27 21:15:08 dobler Exp $
+### $Id: Makefile,v 1.146 2003-01-29 13:55:58 ngrs Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -75,10 +75,10 @@ CFLAGS=-O3 -DFUNDERSC=1
 CFLAGS=-O3 -64 -DFUNDERSC=1
 
 ## OSF1:
+#FC=f95 #(Mhd.)
 #FC=f90 #(Mhd.)
-#OPTFLAGS=
-#OPTFLAGS=-fast -O5 -notransform_loops
 #OPTFLAGS=-fast -O5 
+#OPTFLAGS=-fast -O5 -notransform_loops #(Mhd.)
 #FFLAGS=$(OPTFLAGS) -tune ev6 -arch ev6 #(Mhd.)
 #F77=$(FC)
 #LIBSIG=-lsig
