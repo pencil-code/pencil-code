@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.30 2003-10-20 17:35:45 mee Exp $
+! $Id: visc_shock.f90,v 1.31 2003-10-24 11:06:57 dobler Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -62,7 +62,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.30 2003-10-20 17:35:45 mee Exp $")
+           "$Id: visc_shock.f90,v 1.31 2003-10-24 11:06:57 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -76,7 +76,7 @@ module Viscosity
       if (naux < maux) aux_var(aux_count)=',shock $'
       if (naux == maux) aux_var(aux_count)=',shock'
       aux_count=aux_count+1
-      write(5,*) 'shock = fltarr(mx,my,mz)*one'
+      write(15,*) 'shock = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_viscosity
 !***********************************************************************

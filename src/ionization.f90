@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.126 2003-10-23 14:01:51 dobler Exp $
+! $Id: ionization.f90,v 1.127 2003-10-24 11:06:57 dobler Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -119,7 +119,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.126 2003-10-23 14:01:51 dobler Exp $")
+           "$Id: ionization.f90,v 1.127 2003-10-24 11:06:57 dobler Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -135,8 +135,8 @@ module Ionization
       if (naux < maux)  aux_var(aux_count)=',TT $'
       if (naux == maux) aux_var(aux_count)=',TT'
       aux_count=aux_count+1
-      write(5,*) 'yH = fltarr(mx,my,mz)*one'
-      write(5,*) 'TT = fltarr(mx,my,mz)*one'
+      write(15,*) 'yH = fltarr(mx,my,mz)*one'
+      write(15,*) 'TT = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_ionization
 !*******************************************************************

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.222 2003-10-24 11:04:30 mcmillan Exp $
+! $Id: entropy.f90,v 1.223 2003-10-24 11:06:57 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -100,7 +100,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.222 2003-10-24 11:04:30 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.223 2003-10-24 11:06:57 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -115,7 +115,7 @@ module Entropy
       else
         write(4,*) ',ss $'
      endif
-      write(5,*) 'ss = fltarr(mx,my,mz)*one'
+      write(15,*) 'ss = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_entropy
 !***********************************************************************

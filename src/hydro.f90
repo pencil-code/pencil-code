@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.123 2003-10-24 09:40:33 dobler Exp $
+! $Id: hydro.f90,v 1.124 2003-10-24 11:06:57 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -98,7 +98,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.123 2003-10-24 09:40:33 dobler Exp $")
+           "$Id: hydro.f90,v 1.124 2003-10-24 11:06:57 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -113,7 +113,7 @@ module Hydro
       else
          write(4,*) ',uu $'
       endif
-      write(5,*) 'uu = fltarr(mx,my,mz,3)*one'
+      write(15,*) 'uu = fltarr(mx,my,mz,3)*one'
 !
     endsubroutine register_hydro
 !***********************************************************************

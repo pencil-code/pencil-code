@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $
+! $Id: pscalar.f90,v 1.37 2003-10-24 11:06:57 dobler Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -72,7 +72,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.36 2003-10-20 16:27:21 dobler Exp $")
+           "$Id: pscalar.f90,v 1.37 2003-10-24 11:06:57 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -87,7 +87,7 @@ module Pscalar
       else
          write(4,*) ',lncc $'
       endif
-      write(5,*) 'lncc = fltarr(mx,my,mz)*one'
+      write(15,*) 'lncc = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_pscalar
 !***********************************************************************

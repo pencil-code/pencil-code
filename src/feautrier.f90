@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.37 2003-10-20 16:27:20 dobler Exp $
+! $Id: feautrier.f90,v 1.38 2003-10-24 11:06:57 dobler Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.37 2003-10-20 16:27:20 dobler Exp $")
+           "$Id: feautrier.f90,v 1.38 2003-10-24 11:06:57 dobler Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -90,7 +90,7 @@ module Radiation
       if (naux < maux) aux_var(aux_count)=',Qrad $'
       if (naux == maux) aux_var(aux_count)=',Qrad'
       aux_count=aux_count+1
-      write(5,*) 'Qrad = fltarr(mx,my,mz)*one'
+      write(15,*) 'Qrad = fltarr(mx,my,mz)*one'
 !
     endsubroutine register_radiation
 !***********************************************************************
