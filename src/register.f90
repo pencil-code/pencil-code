@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.95 2003-09-12 11:06:27 mee Exp $
+! $Id: register.f90,v 1.96 2003-10-07 13:28:29 mcmillan Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -196,6 +196,7 @@ module Register
 !ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages
 !
+      call initialize_gravity
 !      call initialize_hydro
       call initialize_density
       call initialize_forcing(lstart)  ! get random seed from file, ..
@@ -206,7 +207,6 @@ module Register
       call initialize_pscalar(f)
 !      call initialize_dustvelocity
 !      call initialize_dustdensity
-      call initialize_gravity
       call initialize_interstellar(lstart)
       call initialize_shear
       call initialize_viscosity
