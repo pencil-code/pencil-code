@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.50 2003-08-13 15:30:07 mee Exp $
+! $Id: forcing.f90,v 1.51 2003-09-10 17:32:54 brandenb Exp $
 
 module Forcing
 
@@ -14,8 +14,9 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
-  integer :: kfountain=5
+  integer :: kfountain=5,iff,ifx,ify,ifz
   logical :: lwork_ff=.false.,lmomentum_ff=.false.
+  logical :: lmagnetic_forcing=.false.
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
   integer :: dummy              ! We cannot define empty namelists
@@ -24,7 +25,8 @@ module Forcing
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,force2,kfountain,fountain,tforce_stop, &
-       dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff
+       dforce,radius_ff,k1_ff,slope_ff,work_ff,lmomentum_ff, &
+       lmagnetic_forcing
 
   contains
 
@@ -49,7 +51,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.50 2003-08-13 15:30:07 mee Exp $")
+           "$Id: forcing.f90,v 1.51 2003-09-10 17:32:54 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -72,6 +74,15 @@ module Forcing
            call inpui(trim(directory)//'/seed.dat',seed,nseed)
            call random_seed_wrapper(put=seed(1:nseed))
         endif
+!
+!  check whether we want ordinary hydro forcing or magnetic forcing
+!
+        if (lmagnetic_forcing) then
+          iff=iaa; ifx=iax; ify=iay; ifz=iaz
+        else
+          iff=iuu; ifx=iux; ify=iuy; ifz=iuz
+        endif
+        if (ldebug) print*,'initialize_forcing: iff=',iff
 !
 !  check whether we want constant forcing at each timestep,
 !  in which case lwork_ff is set to true.
@@ -195,7 +206,7 @@ module Forcing
       ikk(3)=cmplx(0.,kkz(ik))
 !
       do j=1,3
-        jf=j+iux-1
+        jf=j+iff-1
         do n=n1,n2
         do m=m1,m2
           f(l1:l2,m,n,jf)=f(l1:l2,m,n,jf)+real(ikk(j)*fx(l1:l2)*fy(m)*fz(n))
@@ -398,7 +409,7 @@ module Forcing
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
         do j=1,3
           if(extent(j)) then
-            jf=j+iux-1
+            jf=j+iff-1
             do n=n1,n2
               do m=m1,m2
                 f(l1:l2,m,n,jf) = f(l1:l2,m,n,jf) &
@@ -410,7 +421,7 @@ module Forcing
       else                      ! with radial profile
         do j=1,3
           if(extent(j)) then
-            jf=j+iux-1
+            jf=j+iff-1
             do n=n1,n2
               sig = relhel*tmpz(n)
               coef(1)=cmplx(k*kex,sig*kkex)
@@ -458,7 +469,7 @@ module Forcing
       do n=n1,n2
         do m=m1,m2
           rho=exp(f(l1:l2,m,n,ilnrho))
-          uu=f(l1:l2,m,n,iux:iuz)
+          uu=f(l1:l2,m,n,ifx:ifz)
           udotf=0.
           do j=1,3
             udotf=udotf+uu(:,j)*real(coef(j)*fx(l1:l2)*fy(m)*fz(n))
@@ -633,7 +644,7 @@ module Forcing
 !
       if (r_ff == 0) then       ! no radial profile
         do j=1,3
-          jf=j+iux-1
+          jf=j+iff-1
           do n=n1,n2
             do m=m1,m2
               f(l1:l2,m,n,jf) = &
@@ -643,7 +654,7 @@ module Forcing
         enddo
       else                      ! with radial profile
         do j=1,3
-          jf=j+iux-1
+          jf=j+iff-1
           do n=n1,n2
             sig = relhel*tmpz(n)
             coef(1)=cmplx(k*float(kex),sig*float(kkex))
@@ -725,9 +736,9 @@ module Forcing
 !
       do n=n1,n2
       do m=m1,m2
-        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ffnorm*(+sxx*cy(m)*gz1(n)+cxx*sy(m)*gg(n))
-        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*(-cxx*sy(m)*gz1(n)+sxx*cy(m)*gg(n))
-        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ffnorm*sxx*sy(m)*gz(n)*2.
+        f(l1:l2,m,n,ifx)=f(l1:l2,m,n,ifx)+ffnorm*(+sxx*cy(m)*gz1(n)+cxx*sy(m)*gg(n))
+        f(l1:l2,m,n,ify)=f(l1:l2,m,n,ify)+ffnorm*(-cxx*sy(m)*gz1(n)+sxx*cy(m)*gg(n))
+        f(l1:l2,m,n,ifz)=f(l1:l2,m,n,ifz)+ffnorm*sxx*sy(m)*gz(n)*2.
       enddo
       enddo
 !
@@ -795,9 +806,9 @@ module Forcing
 !
       do n=n1,n2
       do m=m1,m2
-        f(l1:l2,m,n,iux)=f(l1:l2,m,n,iux)+ffnorm*(cxx*sy(m)*gg(n))
-        f(l1:l2,m,n,iuy)=f(l1:l2,m,n,iuy)+ffnorm*(sxx*cy(m)*gg(n))
-        f(l1:l2,m,n,iuz)=f(l1:l2,m,n,iuz)+ffnorm*sxx*sy(m)*gz(n)*2.
+        f(l1:l2,m,n,ifx)=f(l1:l2,m,n,ifx)+ffnorm*(cxx*sy(m)*gg(n))
+        f(l1:l2,m,n,ify)=f(l1:l2,m,n,ify)+ffnorm*(sxx*cy(m)*gg(n))
+        f(l1:l2,m,n,ifz)=f(l1:l2,m,n,ifz)+ffnorm*sxx*sy(m)*gz(n)*2.
       enddo
       enddo
 !
@@ -882,15 +893,15 @@ module Forcing
         !
         ry2=((y(m)-ytwist1)/width_ff)**2
         fy=exp(-ry2/amax1(1.-ry2,1e-5))
-        f(l1:l2,m,n1:n2,iux)=f(l1:l2,m,n1:n2,iux)+fy*fx
-        f(l1:l2,m,n1:n2,iuz)=f(l1:l2,m,n1:n2,iuz)+fy*fz
+        f(l1:l2,m,n1:n2,ifx)=f(l1:l2,m,n1:n2,ifx)+fy*fx
+        f(l1:l2,m,n1:n2,ifz)=f(l1:l2,m,n1:n2,ifz)+fy*fz
         !
         ! second twister
         !
         ry2=((y(m)-ytwist2)/width_ff)**2
         fy=exp(-ry2/amax1(1.-ry2,1e-5))
-        f(l1:l2,m,n1:n2,iux)=f(l1:l2,m,n1:n2,iux)-fy*fx
-        f(l1:l2,m,n1:n2,iuz)=f(l1:l2,m,n1:n2,iuz)-fy*fz
+        f(l1:l2,m,n1:n2,ifx)=f(l1:l2,m,n1:n2,ifx)-fy*fx
+        f(l1:l2,m,n1:n2,ifz)=f(l1:l2,m,n1:n2,ifz)-fy*fz
       enddo
 !
     endsubroutine forcing_twist
@@ -1198,7 +1209,7 @@ module Forcing
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,coef,force_ampl)
         do j=1,3
-          jf=j+iux-1
+          jf=j+iff-1
           do n=n1,n2
             do m=m1,m2
                force1(l1:l2,m,n,jf) = &
@@ -1208,7 +1219,7 @@ module Forcing
         enddo
       else                      ! with radial profile
         do j=1,3
-          jf=j+iux-1
+          jf=j+iff-1
           do n=n1,n2
             sig = relhel*tmpz(n)
             coef(1)=cmplx(k*kex,sig*kkex)

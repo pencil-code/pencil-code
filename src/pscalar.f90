@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.33 2003-07-29 14:25:12 dobler Exp $
+! $Id: pscalar.f90,v 1.34 2003-09-10 17:32:55 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -63,7 +63,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.33 2003-07-29 14:25:12 dobler Exp $")
+           "$Id: pscalar.f90,v 1.34 2003-09-10 17:32:55 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -201,14 +201,13 @@ module Pscalar
           df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
         endif
 !
-!  add diffusion of imposed constant gradient of c
-!  restrict ourselves (for the time being) to z-gradient only
+!  add advection of imposed constant gradient of lncc (called gradC0)
 !  makes sense really only for periodic boundary conditions
+!  This gradient can have arbitary direction.
 !
         do j=1,3
           if (gradC0(j)/=0.) then
-            cc=exp(lncc)
-            df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-gradC0(j)*uu(:,j)/cc
+            df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)-gradC0(j)*uu(:,j)
           endif
         enddo
 !

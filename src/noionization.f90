@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.66 2003-09-10 12:40:14 mee Exp $
+! $Id: noionization.f90,v 1.67 2003-09-10 17:32:55 brandenb Exp $
 
 !  Dummy routine for noionization
 
@@ -76,7 +76,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.66 2003-09-10 12:40:14 mee Exp $")
+           "$Id: noionization.f90,v 1.67 2003-09-10 17:32:55 brandenb Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -278,10 +278,12 @@ module Ionization
       use Cdata
       use General
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, dimension(nx), intent(in) :: lnrho,ss,yH,TT
       real, dimension(nx), optional :: cs2,cp1tilde,ee,pp
 !
+      if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
       if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma
@@ -304,10 +306,12 @@ module Ionization
       use Cdata
       use General
       use Sub
+      use Mpicomm, only: stop_it
 !
       real, intent(in) :: lnrho,ss,yH,TT
       real, optional :: cs2,cp1tilde,ee,pp
 !
+      if (gamma1==0.) call stop_it("thermodynamics: gamma=1 not allowed w/entropy")
       if (present(cs2)) cs2=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))
       if (present(cp1tilde)) cp1tilde=1.
       if (present(ee)) ee=cs20*exp(gamma*ss+gamma1*(lnrho-lnrho0))/gamma1/gamma

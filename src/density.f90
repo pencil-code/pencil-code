@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.111 2003-09-10 11:13:24 brandenb Exp $
+! $Id: density.f90,v 1.112 2003-09-10 17:32:54 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -13,7 +13,7 @@ module Density
   real :: cs0=1., rho0=1.
   real :: cs20, lnrho0
   real :: ampllnrho=0., gamma=5./3., widthlnrho=.1
-  real :: rho_left=1., rho_right=1., cdiffrho=0., lnrho_const=0.
+  real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., lnrho_const=0.
   real :: cs2bot=1., cs2top=1., gamma1,amplrho=0
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
@@ -21,6 +21,7 @@ module Density
   real :: mpoly=1.5
   real :: mpoly0=1.5,mpoly1=1.5,mpoly2=1.5
   real :: frec_lnrho=1,ampl_osc_lnrho=1e-3
+  real, dimension(3) :: gradlnrho0=(/0.,0.,0./)
   integer:: isothtop=0
   logical :: lupw_lnrho=.false.
   character (len=labellen) :: initlnrho='nothing', initlnrho2='nothing'
@@ -34,7 +35,8 @@ module Density
        kx_lnrho,ky_lnrho,kz_lnrho,amplrho
 
   namelist /density_run_pars/ &
-       cs0,rho0,gamma,cdiffrho,cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho, &
+       cs0,rho0,gamma,cdiffrho,diffrho,gradlnrho0, &
+       cs2bot,cs2top,frec_lnrho,ampl_osc_lnrho, &
        lupw_lnrho
   ! diagnostic variables (needs to be consistent with reset list below)
   integer :: i_ekin=0,i_rhom=0,i_ekintot=0
@@ -70,7 +72,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.111 2003-09-10 11:13:24 brandenb Exp $")
+           "$Id: density.f90,v 1.112 2003-09-10 17:32:54 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -94,9 +96,15 @@ module Density
 !  Perform any post-parameter-read initialization i.e. calculate derived
 !  parameters.
 !
-!  24-nov-02/tony: coded 
+!  For compatibility with other applications, we keep the possibility
+!  of giving diffrho units of dxmin*cs0, but cs0 is not well defined general
 !
-!  do nothing
+!  24-nov-02/tony: coded 
+!  31-aug-03/axel: normally, diffrho should be given in absolute units
+!
+      if(diffrho==0.) then
+        diffrho=cdiffrho*dxmin*cs0
+      endif
 !
     endsubroutine initialize_density
 !***********************************************************************
@@ -527,7 +535,7 @@ module Density
       real, dimension (nx,3) :: uu,glnrho
       real, dimension (nx) :: lnrho,divu,uglnrho,glnrho2
       real, dimension (nx) :: del2lnrho
-      real :: diffrho
+      integer :: j
 !
       intent(in)  :: f,uu,divu
       intent(out) :: df,glnrho,lnrho
@@ -547,15 +555,25 @@ module Density
 !
       df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-uglnrho-divu
 !
-!  mass diffusion, in units of dxmin*cs0
+!  mass diffusion, in absolute units (similar to nu, chi, and eta)
 !
-      if (cdiffrho /= 0.) then
-        diffrho=cdiffrho*dxmin*cs0
+      if (diffrho/=0.) then
+        if(headtt) print*,'dlnrho_dt: diffrho=',diffrho
         call del2(f,ilnrho,del2lnrho)
         call dot2_mn(glnrho,glnrho2)
         df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)+diffrho*(del2lnrho+glnrho2)
         maxdiffus=amax1(maxdiffus,diffrho)
       endif
+!
+!  add advection of imposed constant gradient of lnrho (called gradlnrho0)
+!  makes sense really only for periodic boundary conditions
+!  This gradient can have arbitary direction.
+!
+        do j=1,3
+          if (gradlnrho0(j)/=0.) then
+            df(l1:l2,m,n,ilnrho)=df(l1:l2,m,n,ilnrho)-gradlnrho0(j)*uu(:,j)
+          endif
+        enddo
 !
     endsubroutine dlnrho_dt
 !***********************************************************************
