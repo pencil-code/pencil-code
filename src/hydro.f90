@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.188 2004-10-04 17:24:08 nilshau Exp $
+! $Id: hydro.f90,v 1.189 2004-10-09 11:17:35 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -50,7 +50,7 @@ module Hydro
   real :: tdamp=0.,dampu=0.,wdamp=0.
   real :: dampuint=0.0,dampuext=0.0,rdampint=0.0,rdampext=impossible
   real :: tau_damp_ruxm=0.,tau_damp_ruym=0.,tau_diffrot1=0.
-  real :: ampl_diffrot=0.,Omega_int=0.
+  real :: ampl_diffrot=0.,Omega_int=0.,xexp_diffrot=1.,kx_diffrot=1.
   real :: othresh=0.,othresh_per_orms=0.,orms=0.,othresh_scl=1.
   integer :: novec,novecmax=nx*ny*nz/4
   logical :: ldamp_fade=.false.,lOmega_int=.false.,lupw_uu=.false.
@@ -62,6 +62,7 @@ module Hydro
        Omega,theta, &         ! remove and use viscosity_run_pars only
        tdamp,dampu,dampuext,dampuint,rdampext,rdampint,wdamp, &
        tau_damp_ruxm,tau_damp_ruym,tau_diffrot1,ampl_diffrot,gradH0, &
+       xexp_diffrot,kx_diffrot, &
        lOmega_int,Omega_int, ldamp_fade, lupw_uu, othresh,othresh_per_orms, &
        nu_turb0, tau_nuturb, nu_turb1, lcalc_turbulence_pars
 ! end geodynamo
@@ -127,7 +128,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.188 2004-10-04 17:24:08 nilshau Exp $")
+           "$Id: hydro.f90,v 1.189 2004-10-09 11:17:35 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -548,7 +549,8 @@ module Hydro
         !                  (f(l1:l2,m,n,iuy)-ampl_diffrot*cos(x(l1:l2))*cos(z(n)))
         df(l1:l2,m,n,iuy)=df(l1:l2,m,n,iuy)-tau_diffrot1* &
                           (f(l1:l2,m,n,iuy)-ampl_diffrot*&
-                          cos(x(l1:l2))*cos(z(n))*pdamp)
+                          cos(kx_diffrot*x(l1:l2))**xexp_diffrot* &
+                          cos(z(n))*pdamp)
       endif
 !
 !  add the possibility of removing a mean flow in the y-direction
