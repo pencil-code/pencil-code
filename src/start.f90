@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.119 2003-10-24 12:48:44 dobler Exp $
+! $Id: start.f90,v 1.120 2003-10-24 12:50:35 dobler Exp $
 !
 !***********************************************************************
       program start
@@ -43,7 +43,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.119 2003-10-24 12:48:44 dobler Exp $")
+             "$Id: start.f90,v 1.120 2003-10-24 12:50:35 dobler Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -127,7 +127,7 @@
 !
 !  write .general file for data explorer
 !
-        call write_dx_general(trim(datadir)//'/var.general')
+          if (lroot) call write_dx_general(trim(datadir)//'/var.general')
 !
 !  as full arrays
 !
