@@ -1,4 +1,4 @@
-! $Id: io_mpio.f90,v 1.26 2004-01-23 18:00:05 dobler Exp $
+! $Id: io_mpio.f90,v 1.27 2004-01-23 18:09:54 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_mpi-io.f90   !!!
@@ -11,7 +11,7 @@
 !!!
 !!!  The file format written by output() (and used, e.g. in var.dat)
 !!!  consists of the followinig Fortran records:
-!!!    1. data(mx,my,mz,nvar)
+!!!    1. data(nx,ny,nz,nvar)
 !!!    2. t(1)
 !!!  Here nvar denotes the number of slots, i.e. 1 for one scalar field, 3
 !!!  for one vector field, 8 for var.dat in the case of MHD with entropy.
@@ -110,7 +110,7 @@ contains
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: io_mpio.f90,v 1.26 2004-01-23 18:00:05 dobler Exp $")
+           "$Id: io_mpio.f90,v 1.27 2004-01-23 18:09:54 dobler Exp $")
 !
 !  consistency check
 !
