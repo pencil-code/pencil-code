@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.46 2003-06-20 07:44:47 dobler Exp $
+! $Id: boundcond.f90,v 1.47 2003-06-21 12:13:04 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -491,31 +491,36 @@ module Boundcond
 !  Generalized antisymmetric bc (a al `a2') with removal of Nyquist wiggles
 !  Does not seem to help against wiggles -- use upwinding instead
 !
+!  TEMPORARY HACK: Commented put calculation of Nyquist, as this creates
+!  problems for some 2D runs and this boundary condition was not really
+!  helpful so far. Will either have to find a better solution or remove
+!  this altogether. wd, 21-jun-2003
+!
 !  17-jun-03/wolf: coded
 !
       use Cdata
 !
       character (len=3) :: topbot
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx,my) :: Nyquist
+      real, dimension (mx,my) :: Nyquist=impossible
       integer :: j
 !
       select case(topbot)
 
       case('bot')               ! bottom boundary
         ! Nyquist = 0.25*(f(:,:,n1,j)-2*f(:,:,n1+1,j)+f(:,:,n1+2,j))
-        Nyquist = 0.0625*(     f(:,:,n1  ,j)+f(:,:,n1+4,j) &
-                          - 4*(f(:,:,n1+1,j)+f(:,:,n1+3,j)) &
-                          + 6* f(:,:,n1+2,j) )
+        ! Nyquist = 0.0625*(     f(:,:,n1  ,j)+f(:,:,n1+4,j) &
+        !                   - 4*(f(:,:,n1+1,j)+f(:,:,n1+3,j)) &
+        !                   + 6* f(:,:,n1+2,j) )
         f(:,:,n1-1,j) = 2*f(:,:,n1,j) - f(:,:,n1+1,j) -4*Nyquist
         f(:,:,n1-2,j) = 2*f(:,:,n1,j) - f(:,:,n1+2,j)
         f(:,:,n1-3,j) = 2*f(:,:,n1,j) - f(:,:,n1+3,j) -4*Nyquist
 
       case('top')               ! top boundary
         ! Nyquist = 0.25*(f(:,:,n2,j)-2*f(:,:,n2-1,j)+f(:,:,n2-2,j))
-        Nyquist = 0.0625*(     f(:,:,n2  ,j)+f(:,:,n2-4,j) &
-                          - 4*(f(:,:,n2-1,j)+f(:,:,n2-3,j)) &
-                          + 6* f(:,:,n2-2,j) )
+        ! Nyquist = 0.0625*(     f(:,:,n2  ,j)+f(:,:,n2-4,j) &
+        !                   - 4*(f(:,:,n2-1,j)+f(:,:,n2-3,j)) &
+        !                   + 6* f(:,:,n2-2,j) )
         f(:,:,n2+1,j) = 2*f(:,:,n2,j) - f(:,:,n2-1,j) -4*Nyquist
         f(:,:,n2+2,j) = 2*f(:,:,n2,j) - f(:,:,n2-2,j)
         f(:,:,n2+3,j) = 2*f(:,:,n2,j) - f(:,:,n2-3,j) -4*Nyquist
