@@ -1,9 +1,9 @@
 #!/bin/csh
-#$Id: copy-VARN-to-var,v 1.3 2002-11-16 09:17:43 brandenb Exp $
+#$Id: copy-VARN-to-var,v 1.4 2002-11-26 11:13:10 brandenb Exp $
 #
 #  Examples:
-#     copy-VAR-to-var 10 .
-#     copy-VAR-to-var 40 ../hydro256e
+#     nohup copy-VAR-to-var 10 .
+#     nohup copy-VAR-to-var 40 ../hydro256e
 #
 #  Usage:
 #     will copy all VAR5 files to var.dat in each proc directory.
@@ -11,11 +11,15 @@
 #  Description:
 #     Used for restarting from a given VAR file.
 #     Copies all VARx files to var.dat in each proc directory.
+#     Run this command from run directory, not data directory.
 #     The first argument gives the number of the snapshot.
 #     The second argument gives the target directory.
 #
 #  14-nov-02/axel: coded
 #  16-nov-02/axel: enhanced comments
+
+/bin/pwd >>! $2/data/copied_from.dir
+/bin/date >>! $2/data/copied_from.dir
 
 set procdirs  =  `ls data | grep proc `
 foreach proc ($procdirs)
