@@ -19,9 +19,6 @@ module General
 !  take care of numbers that have less than 4 digits
 !  30-sep-97/axel: coded
 !
-
-print*,'CHN 1: n = ', n, ' #######'
-
       ch='    '
       if (n.lt.0) stop 'chn: lt1'
       if (n.lt.10) then
@@ -36,7 +33,6 @@ print*,'CHN 1: n = ', n, ' #######'
         print*,'n=',n
         stop "chn: n too large"
       endif
-print*,'CHN 10: n = ', n, ' #######'
 !
     endsubroutine chn
 !***********************************************************************
