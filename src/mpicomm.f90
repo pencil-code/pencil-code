@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.100 2003-07-11 16:45:10 theine Exp $
+! $Id: mpicomm.f90,v 1.101 2003-07-15 13:06:38 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -72,9 +72,9 @@ module Mpicomm
              irecv_rq_fromlastya,irecv_rq_fromnextya ! For shear
   integer :: isend_rq_tolastyb,isend_rq_tonextyb, &
              irecv_rq_fromlastyb,irecv_rq_fromnextyb ! For shear
-  integer :: isend_xy,irecv_xy, &  !(for radiation)
-             isend_yz,irecv_yz, &
-             isend_zx,irecv_zx
+  integer, dimension(MPI_STATUS_SIZE) :: isend_xy,irecv_xy, &  !(for radiation)
+                                         isend_yz,irecv_yz, &
+                                         isend_zx,irecv_zx
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_tl,isend_stat_tu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_fl,irecv_stat_fu
   integer, dimension(MPI_STATUS_SIZE) :: isend_stat_Tll,isend_stat_Tul, &
@@ -660,13 +660,13 @@ module Mpicomm
 !  initiate send for the intensity
 !
       call MPI_SEND(Ibuf_zx,nbuf_zx,MPI_REAL,idest,Itag_zx, &
-                     MPI_COMM_WORLD,isend_zx,ierr)
+                     MPI_COMM_WORLD,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_zx)) &
       call MPI_SEND(taubuf_zx,nbuf_zx,MPI_REAL,idest,tautag_zx, &
-                     MPI_COMM_WORLD,isend_zx,ierr)
+                     MPI_COMM_WORLD,ierr)
 !
     endsubroutine radboundary_zx_send
 !***********************************************************************
@@ -692,13 +692,13 @@ module Mpicomm
 !  initiate send for the intensity
 !
       call MPI_SEND(Ibuf_xy,nbuf_xy,MPI_REAL,idest,Itag_xy, &
-                     MPI_COMM_WORLD,isend_xy,ierr)
+                     MPI_COMM_WORLD,ierr)
 !
 !  ...and optionally for the optical depth
 !
       if (present(taubuf_xy)) &
       call MPI_SEND(taubuf_xy,nbuf_xy,MPI_REAL,idest,tautag_xy, &
-                     MPI_COMM_WORLD,isend_xy,ierr)
+                     MPI_COMM_WORLD,ierr)
 !
     endsubroutine radboundary_xy_send
 !***********************************************************************
