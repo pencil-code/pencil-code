@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.52 2004-05-03 13:49:55 dobler Exp $
+### $Id: Makefile.src,v 1.53 2004-05-04 15:19:12 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -113,7 +113,7 @@ FCCLEANER=
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 ##FC=ifc_6.0 -i_dynamic #(nw46|nq1)
-#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx)
+#FC=ifort #(nw[0-9]*|hamlet|ns0|lynx|brahe)
 #FC=ifc_6.0 -I/usr/local/lib/LAM/include #(fe[0-9])
 #FC=f95 -I/usr/lib/lam/include -mismatch #(morvern|renton|lanark)      
 #FC=ifc -I/usr/lib/lam/include #(morvern|renton|lanark)
@@ -136,6 +136,7 @@ FCCLEANER=
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
 #LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(ns0|nw46)
 #LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam #(lynx)
+#LDMPI=-lmpi #(brahe)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)
 #FFLAGS= -fast -lm -Nscampi   #(monolith)
