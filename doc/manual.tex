@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.83 2002-08-19 14:00:05 nilshau Exp $
+%%  CVS: $Id: manual.tex,v 1.84 2002-08-28 13:53:41 brandenb Exp $
 %%  Description:
 %     User manual for the pencil code 
 %   Process with:
@@ -218,7 +218,7 @@
 \title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.83 $ $}
+\date{\today,~ $ $Revision: 1.84 $ $}
 
 % ====================================================================== %
 
@@ -247,7 +247,7 @@
 
   \vspace{2cm}
 
-  \emph{\today,~ $ $Revision: 1.83 $ $}
+  \emph{\today,~ $ $Revision: 1.84 $ $}
 
 
 \end{center}
@@ -1509,6 +1509,10 @@ double precision, $\varepsilon\approx10^{-15}$.
                  except file{var.dat}. This option allows you to use old
                  file{var.dat} files, but updates all other initialization
                  files. This could be useful after having changed the code.\\
+  \var{random_gen} [\code{system}]
+               & If set to \code{system}, the systems random number generator
+                 is used. If set to \code{min_std}, a Numerical Recipes
+                 routine is used.\\
 %
 \midrule
   \multicolumn{2}{c}{Namelist \name{hydro_init_pars}} \\
@@ -3305,7 +3309,7 @@ horizontal sections for time $t=50$.
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.83 2002-08-19 14:00:05 nilshau Exp $ $}
+$ $Id: manual.tex,v 1.84 2002-08-28 13:53:41 brandenb Exp $ $}
 
 
 \end{document}
