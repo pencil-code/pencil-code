@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.82 2002-08-20 07:38:11 brandenb Exp $
+! $Id: magnetic.f90,v 1.83 2002-09-03 16:35:04 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -21,7 +21,7 @@ module Magnetic
   real :: amplaa=0., radius=.1, epsilonaa=1e-2, widthaa=.5,z0aa=0.
 !  real :: kx=1.,ky=1.,kz=1.,ABC_A=1.,ABC_B=1.,ABC_C=1.
   real :: ABC_A=1.,ABC_B=1.,ABC_C=1.
-  real :: amplaa2=0.,kx_aa=0.,ky_aa=0.,kz_aa=0.
+  real :: amplaa2=0.,kx_aa=1.,ky_aa=1.,kz_aa=1.
   logical :: lpress_equil=.false.
   character (len=40) :: kinflow=''
 
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.82 2002-08-20 07:38:11 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.83 2002-09-03 16:35:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -116,9 +116,9 @@ module Magnetic
 
       case('zero', '0'); f(:,:,:,iax:iaz) = 0.
       case('gaussian-noise'); call gaunoise(amplaa,f,iax,iaz)
-      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=1.)
-      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=1.)
-      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=1.)
+      case('Beltrami-x', '11'); call beltrami(amplaa,f,iaa,KX=kx_aa)
+      case('Beltrami-y', '12'); call beltrami(amplaa,f,iaa,KY=ky_aa)
+      case('Beltrami-z', '1');  call beltrami(amplaa,f,iaa,KZ=kz_aa)
       case('hor-fluxtube', '2'); call htube(amplaa,f,iaa,xx,yy,zz, &
                                             radius,epsilonaa)
       case('hor-fluxlayer'); call hlayer(amplaa,f,iaa,xx,yy,zz,z0aa,widthaa)

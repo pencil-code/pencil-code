@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.24 2002-08-18 12:04:40 brandenb Exp $
+! $Id: forcing.f90,v 1.25 2002-09-03 16:35:04 brandenb Exp $
 
 module Forcing
 
@@ -10,7 +10,7 @@ module Forcing
   implicit none
 
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
-  real :: dforce=0.,radius_ff
+  real :: dforce=0.,radius_ff,k1_ff=1.
   integer :: kfountain=5
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
@@ -20,7 +20,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,kfountain,fountain, &
-       dforce,radius_ff
+       dforce,radius_ff,k1_ff
 
   contains
 
@@ -44,7 +44,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.24 2002-08-18 12:04:40 brandenb Exp $")
+           "$Id: forcing.f90,v 1.25 2002-09-03 16:35:04 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -176,6 +176,7 @@ module Forcing
 !  add helical forcing function, using a set of precomputed wavevectors
 !
 !  10-apr-00/axel: coded
+!   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
 !
       use Mpicomm
       use Cdata
@@ -274,6 +275,8 @@ module Forcing
 !  This does already include the new sqrt(2) factor (missing in B01).
 !  So, in order to reproduce the 0.1 factor mentioned in B01
 !  we have to set force=0.07.
+!  Note: kav is not to be scaled with k1_ff (forcing should remain
+!  unaffected when changing k1_ff).
 !
       ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
       if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
@@ -289,9 +292,9 @@ module Forcing
 !  The wavevector is for the case where Lx=Ly=Lz=2pi. If that is not the
 !  case one needs to scale by 2pi/Lx, etc.
 !
-      fx=exp(cmplx(0.,2*pi/Lx*kx*x+phase))*fact
-      fy=exp(cmplx(0.,2*pi/Ly*ky*y))
-      fz=exp(cmplx(0.,2*pi/Lz*kz*z))
+      fx=exp(cmplx(0.,kx*k1_ff*x+phase))*fact
+      fy=exp(cmplx(0.,ky*k1_ff*y))
+      fz=exp(cmplx(0.,kz*k1_ff*z))
 !
 !  possibly multiply forcing by z-profile
 !
