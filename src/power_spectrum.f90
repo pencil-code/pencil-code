@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.2 2002-09-24 13:47:41 nilshau Exp $
+! $Id: power_spectrum.f90,v 1.3 2002-09-24 14:12:19 brandenb Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -36,15 +36,15 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.2 2002-09-24 13:47:41 nilshau Exp $")
+       "$Id: power_spectrum.f90,v 1.3 2002-09-24 14:12:19 brandenb Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
   !
   if (sp=='u') then
-     a1=f(l1:l2,m1:m2,n1:n2,1)
-     a2=f(l1:l2,m1:m2,n1:n2,2)
-     a3=f(l1:l2,m1:m2,n1:n2,3)
+     a1=f(l1:l2,m1:m2,n1:n2,iux)
+     a2=f(l1:l2,m1:m2,n1:n2,iuy)
+     a3=f(l1:l2,m1:m2,n1:n2,iuz)
   elseif (sp=='b') then
      do n=n1,n2
         do m=m1,m2
