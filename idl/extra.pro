@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.17 2003-03-10 15:19:29 brandenb Exp $
+;  $Id: extra.pro,v 1.18 2003-05-08 17:19:16 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -51,6 +51,13 @@ if (ient ne 0) then begin
     cs2m=haver(cs2) & csm=sqrt(cs2m)
     rhom=haver(rho)
   end
+end
+;
+;  passive scalar
+;
+if (ilncc ne 0) then begin
+  llncc=lncc(l1:l2,m1:m2,n1:n2)
+  ccc=exp(llncc)
 end
 ;
 ;  in case we need it
