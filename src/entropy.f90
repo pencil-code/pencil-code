@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.257 2003-12-23 10:50:59 dobler Exp $
+! $Id: entropy.f90,v 1.258 2004-01-05 11:58:55 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -106,7 +106,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.257 2003-12-23 10:50:59 dobler Exp $")
+           "$Id: entropy.f90,v 1.258 2004-01-05 11:58:55 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1283,7 +1283,7 @@ endif
         ! cooling profile; maximum = 1
         ssref = ss0 + (-alog(gamma) + alog(cs20))/gamma + grads0*ztop
         prof = spread(exp(-0.5*((ztop-z(n))/wcool)**2), 1, l2-l1+1)
-        heat = heat - cool*prof*rho1*(cs2-cs20)/cs20
+        heat = heat - cool*prof*(cs2-cs20)/cs20
       endif
 !
 !  Spherical case:
@@ -1303,7 +1303,7 @@ endif
         !
         select case(cooltype)
         case ('cs2', 'Temp')    ! cooling to reference temperature cs2cool
-          heat = heat - cool*prof*rho1*(cs2-cs2cool)/cs2cool
+          heat = heat - cool*prof*(cs2-cs2cool)/cs2cool
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,iss)-0.)
 ! dgm
@@ -1313,9 +1313,9 @@ endif
             case ('geo-kws'); heat=0.        ! can add heating later based on value of initss
           endselect
           prof = step(r_mn,r_ext,wcool)      ! outer heating/cooling step
-          heat = heat - cool_ext*prof*rho1*(cs2-cs2_ext)/cs2_ext
+          heat = heat - cool_ext*prof*(cs2-cs2_ext)/cs2_ext
           prof = 1 - step(r_mn,r_int,wcool)  ! inner heating/cooling step
-          heat = heat - cool_int*prof*rho1*(cs2-cs2_int)/cs2_int
+          heat = heat - cool_int*prof*(cs2-cs2_int)/cs2_int
 !
         case default
           if (lroot) print*, &
