@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.137 2004-10-25 10:35:15 ajohan Exp $
+# $Id: getconf.csh,v 1.138 2004-11-11 17:14:00 dobler Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -609,10 +609,10 @@ endif
 if ($one_local_disc) then
   if ($?masternode) then
     set nodelist=$masternode
-    echo "Setting nodelist to master node $masternode"
+    echo "one_local_disc=1 -> setting nodelist to master node $masternode"
   else
     set nodelist=$nodelist[1]
-    echo "Setting nodelist to node $nodelist"
+    echo "one_local_disc=1 -> setting nodelist to node $nodelist"
   endif
 endif
 
