@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.75 2002-07-09 12:57:55 dobler Exp $ 
+! $Id: sub.f90,v 1.76 2002-07-12 17:40:59 brandenb Exp $ 
 
 module Sub 
 
@@ -732,6 +732,34 @@ module Sub
       endif
 !
     endsubroutine del2v_etc
+!***********************************************************************
+    subroutine g2ij(f,k,g)
+!
+!  calculates all second derivative of a scalar
+!
+!  11-jul-02/axel: coded
+!
+      use Cdata
+      use Deriv
+!
+      real, dimension (mx,my,mz,mvar) :: f
+      real, dimension (nx,3,3) :: g
+      real, dimension (nx) :: tmp
+      integer :: i,j,k
+!
+      intent(in) :: f,k
+      intent(out) :: g
+!
+!  run though all 9 possibilities, treat diagonals separately
+!
+      do j=1,3
+        call der2 (f,k,tmp,j); g(:,j,j)=tmp
+        do i=j+1,3
+          call derij(f,k,tmp,i,j); g(:,i,j)=tmp; g(:,j,i)=tmp
+        enddo
+      enddo
+!
+    endsubroutine g2ij
 !***********************************************************************
 !   subroutine del2v_graddiv(f,del2f,graddiv)
 !

@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.3 2002-07-11 00:24:33 brandenb Exp $
+! $Id: pscalar.f90,v 1.4 2002-07-12 17:40:59 brandenb Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -11,6 +11,7 @@ module Pscalar
 
   integer :: ilncc=0
   character(len=labellen) :: initlncc='wave-y',initlncc2='zero'
+  character(len=40) :: tensor_pscalar_file
   logical :: nopscalar=.false.
 
   ! input parameters
@@ -21,7 +22,7 @@ module Pscalar
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc
 
   ! run parameters
-  real :: pscalar_diff=0.
+  real :: pscalar_diff=0.,tensor_pscalar_diff
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff
@@ -60,7 +61,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.3 2002-07-11 00:24:33 brandenb Exp $")
+           "$Id: pscalar.f90,v 1.4 2002-07-12 17:40:59 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -119,7 +120,7 @@ module Pscalar
 !
 !  gradient of passive scalar
 !  allow for possibility to turn off passive scalar
-!  without changing file size etc.
+!  without changing file size and recompiling everything.
 !
       if (nopscalar) then
         if (headtt.or.ldebug) print*,'not SOLVED: dlncc_dt'
@@ -141,19 +142,11 @@ module Pscalar
           diff_op=diff_op+del2lncc
           df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
         endif
-      endif
 !
-!  tensor diffusion (keep the isotropic one)
-!  dlnc/dt = ... + tensor_pscalar_diff*[Tij*Gi*Gj+Tij*Gij],
-!  where Gj=dlnc/dxj and Gij=d2lnc/(dxi*dxj) and 
+!  tensor diffusion (but keep the isotropic one)
 !
-        if (tensor_pscalar_diff/=0.) then
-          if(headtt) print*,'dlncc_dt: pscalar_diff=',pscalar_diff
-          call dot_mn(glncc+glnrho,glncc,diff_op)
-          call del2(f,ilncc,del2lncc)
-          diff_op=diff_op+del2lncc
-          df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+pscalar_diff*diff_op
-        endif
+        if (tensor_pscalar_diff/=0.) call tensor_diff(f,df,tensor_pscalar_diff,glncc)
+!
       endif
 !
 !  diagnostics
@@ -198,6 +191,61 @@ module Pscalar
       write(3,*) 'ilncc=',ilncc
 !
     endsubroutine rprint_pscalar
+!***********************************************************************
+    subroutine tensor_diff(f,df,tensor_pscalar_diff,glncc)
+!
+!  reads file
+!
+!  11-jul-02/axel: coded
+!
+      use Sub
+!
+      real, dimension (mx,my,mz,mvar) :: f,df
+      real, save, dimension (nx,ny,nz,3) :: bunit,hhh
+      real, dimension (nx,3,3) :: g
+      real, dimension (nx,3) :: glncc
+      real, dimension (nx) :: tmp,scr
+      real :: tensor_pscalar_diff
+      integer :: mm,nn,i,j
+      logical, save :: first=.true.
+!
+!  read H and Bunit arrays and keep them in memory
+!
+      if(first) then
+        open(1,file=trim(directory)//'/bunit.dat',form='unformatted')
+        print*,'read bunit.dat with dimension: ',nx,ny,nz,3
+        read(1) bunit,hhh
+        close(1)
+        print*,'read bunit.dat; bunit(1,1,1,1)=',bunit(1,1,1,1)
+      endif
+!
+!  tmp = (Bunit.G)^2 + H.G + Bi*Bj*Gij
+!  for details, see tex/mhd/thcond/tensor_der.tex
+!
+      call dot_mn(bunit,glncc,scr)
+      call dot_mn(hhh,glncc,tmp)
+      tmp=tmp+scr**2
+!
+!  calculate Hessian matrix of lncc
+!
+      call g2ij(f,ilncc,g)
+!
+!  dot with bi*bj
+!
+      mm=m-m1+1
+      nn=n-n1+1
+      do j=1,3
+      do i=1,3
+        tmp=tmp+bunit(:,mm,nn,i)*bunit(:,mm,nn,j)*g(:,i,j)
+      enddo
+      enddo
+!
+!  and add result to the dlncc/dt equation
+!
+      df(l1:l2,m,n,ilncc)=df(l1:l2,m,n,ilncc)+tensor_pscalar_diff*tmp
+!
+      first=.false.
+    endsubroutine tensor_diff
 !***********************************************************************
 
 endmodule Pscalar

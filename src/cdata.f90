@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.71 2002-07-11 00:24:33 brandenb Exp $
+! $Id: cdata.f90,v 1.72 2002-07-12 17:40:59 brandenb Exp $
 
 module Cdata
 
@@ -16,7 +16,7 @@ module Cdata
   real, parameter :: pi=3.14159265358979323844,epsi=5*epsilon(1.)
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,dx,dy,dz,dxmin,dxmax
-  real :: dsnap,dvid,dtmin=0.
+  real :: dsnap=100.,dvid=100.,dtmin=0.
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
