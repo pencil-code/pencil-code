@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.54 2004-05-11 22:45:53 theine Exp $
+### $Id: Makefile.src,v 1.55 2004-05-25 13:21:28 dobler Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -98,18 +98,22 @@ FCCLEANER=
 
 ## Linux:
 #FC=f95
+#F77=$(FC)
 #FFLAGS=-O3
 #F90FLAGS=-u -tpp7
-#F90FLAGS= # (fire)
 #F90FLAGS=
 #LDMPI=
+#CFLAGS=-O3 -DFUNDERSC=1 -Wall
 ##LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (copson) 
 ##LDMPI=-L/usr/X11R6/lib/ -lfmpich -lampe -lmpe -lpmpich -lX11 # (copson)
 #FC=mpif90 # (Samos|fire|copson)
 #FFLAGS=-gm -fast -Mvect # (copson)
 #LDMPI=-lfmpich -lmpich -lmpe -lpmpich -llmpe # (nw43) 
 #FC=/usr/lib/lam/bin/mpif95 #(Owen|Master)
-#FC=/usr/lib/lam/bin/mpif95 -i_dynamic #(Cincinnatus)
+#FC=g95 #(Cincinnatus)
+#F77=$(FC) #(Cincinnatus)
+#FFLAGS=-O4 #(Cincinnatus)
+#CFLAGS=-O3 -DFUNDERSC=2 #(Cincinnatus)
 ##FC=/home/brandenb/pacx/bin/pacxfc #PACX #(fe[0-3])
 ##FC=mpif77 #(fe[0-3])
 #FC=mpif77 -pthread #(obelix)
@@ -164,15 +168,13 @@ FCCLEANER=
 #LDMPI= # (Samos|fire|sandin)
 #LDMPI=-llammpio -llamf77mpi -lmpi -llam -lutil #(cosmo)
 #LDMPI=-L/usr/lib/lam/lib -llam -lmpi -lpmpi -llamf77mpi -llammpi++ -llammpio -lnsl -lutil #(mhd)
-#CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall -m32 #(lynx)
 #CFLAGS=$(FFLAGS) -DFUNDERSC=1 #(cosmo|obelix)
 #CFLAGS=-O3 -DFUNDERSC=2 -Wall #(mhd)
-#F77=$(FC)
 #F77=$(FC) -dusty #(nl3|Mephisto|Aladdin|mmtf|karbala|morvern|renton|lanark)
 #F77=$(FC) -w90 -w95 #(morvern|renton|lanark)
 #F77=$(FC) -lm  #(tycho|erland|igor|onsager|monolith)
-#F77=$(FC) #(Cincinnatus|Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
+#F77=$(FC) #(Owen|Master|cosmo|nl6|nw17|nl11|wormhole)
 #F77FLAGS=-w90 #(nw[0-9]*|ns0|cosmo|nw17|nl6|nl11|wormhole|sandin)
 #FC=ifc -i_dynamic -I/addon/shared/lam/include #(giga[0-9]*)  
 #LDMPI=-L/addon/shared/lam/lib -llamf77mpi -lmpi -llam -lnsl -lutil -lpthread #(giga[0-9]*)
