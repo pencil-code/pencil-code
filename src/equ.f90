@@ -350,8 +350,8 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.31 $", &
-           "$Date: 2002-05-04 12:04:25 $")
+           "$Revision: 1.32 $", &
+           "$Date: 2002-05-04 12:33:23 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -431,10 +431,10 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
         if (lentropy .or. headtt) then
           call dss_dt(f,df,uu,uij,divu,rho1,glnrho,gpprho,cs2,TT1,chi)
         endif
+        if (lentropy) df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
 !
 !  thermal part of eq. of motion (pressure force)
 !
-        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - gpprho
 !
 !  magnetic part
 !
@@ -549,7 +549,16 @@ print*,'iname,itype_name(iname)=',iname,itype_name(iname)
         call diagnostic
         !call diagnostic_old !!(should still be intact)
       endif
-print*,'end of pde'
+if (any(abs(df(l1:l2,m,n,4))> 1e20)) write(0,*) 'Fishy lam'
+do i=5,7
+  if (any(abs(df(l1:l2,m,n,i))> 1e20)) write(0,*) 'Fishy aa'
+enddo
+do i=1,3
+  if (any(abs(df(l1:l2,m,n,i))>1e20)) then
+    write(0,*) 'Fishy uu'
+  endif
+enddo
+
 !
     endsubroutine pde
 !***********************************************************************
