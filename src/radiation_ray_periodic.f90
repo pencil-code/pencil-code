@@ -1,4 +1,4 @@
-! $Id: radiation_ray_periodic.f90,v 1.1 2004-09-30 22:09:39 theine Exp $
+! $Id: radiation_ray_periodic.f90,v 1.2 2004-10-01 15:59:34 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -116,7 +116,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray_periodic.f90,v 1.1 2004-09-30 22:09:39 theine Exp $")
+           "$Id: radiation_ray_periodic.f90,v 1.2 2004-10-01 15:59:34 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -153,29 +153,29 @@ module Radiation
       if (radz>1) call stop_it("radz currently must not be greater than 1")
 
       if (radx==1.and.nz>nx) then
-        call stop_it("For periodic rays in the x-direction we need "//&
-                     "nz <= nx") ! could be fixed but it's probably not worth it
+        ! could be fixed but it's probably not worth it...
+        call stop_it("initialize_radiation: For periodic boundaries in the"//&
+                     "x-direction we need nz <= nx")
       endif
       if (rady==1.and.nz>ny) then
-        call stop_it("For periodic rays in the y-direction we need "//&
-                     "nz <= ny") ! could be fixed but it's probably not worth it
+        ! could be fixed but it's probably not worth it...
+        call stop_it("initialize_radiation: For periodic boundaries in the"//&
+                     "y-direction we need nz <= ny")
       endif
 !
 !  count
 !
       idir=1
 !
-      do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
-        rad2=lrad**2+mrad**2+nrad**2
-        if(rad2>0.and.rad2<=rad2max) then 
+        rad2=1+mrad**2+nrad**2
+        if(rad2<=rad2max) then 
           dir(idir,1)=lrad
           dir(idir,2)=mrad
           dir(idir,3)=nrad
           idir=idir+1
         endif
-      enddo
       enddo
       enddo
 !
@@ -356,9 +356,13 @@ module Radiation
 !
       f(:,:,:,iQrad)=0
 !
-!  loop over rays
+!  loop over directions ``in the upper half room'' (nrad==1)
 !
-      !do idir=1,ndir
+      do idir=1,ndir
+!
+!  do forward and backwards ray
+!
+      do nrad=1,-1,-2
 
         call raydirection
 
@@ -370,7 +374,8 @@ module Radiation
 
         f(:,:,:,iQrad)=f(:,:,:,iQrad)+weight(idir)*Qrad
 
-      !enddo
+      enddo
+      enddo
 
     endsubroutine radtransfer
 !***********************************************************************
@@ -388,9 +393,8 @@ module Radiation
 !
 !  get direction components
 !
-      lrad=radx
-      mrad=rady
-      nrad=radz
+      lrad=dir(idir,1)
+      mrad=dir(idir,2)
 !
 !  determine start and stop positions
 !
@@ -563,6 +567,9 @@ module Radiation
         enddo
 !
 !  add boundary contribution
+!
+!  TH: This should be done in the loop above. Right now it's in a seperate
+!      loop for the sake of analogy to the mrad/=0 case.
 !
         do m=mmstart-mrad,mmstop,msign
         do n=nnstart-nrad,nnstop,nsign
