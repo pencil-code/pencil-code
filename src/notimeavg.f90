@@ -1,4 +1,4 @@
-! $Id: notimeavg.f90,v 1.7 2003-08-08 08:49:38 dobler Exp $ 
+! $Id: notimeavg.f90,v 1.8 2004-04-02 22:47:39 dobler Exp $ 
 
 module Timeavg
 
@@ -44,10 +44,11 @@ module Timeavg
 !
     endsubroutine update_timeavgs
 !***********************************************************************
-    subroutine wsnap_timeavgs(chsnap,enum)
+    subroutine wsnap_timeavgs(chsnap,enum,flist)
 !
-      character (len=*) :: chsnap
+      character (len=*) :: chsnap,flist
       logical :: enum
+      optional :: flist
 !
       if(chsnap=='X') enum=.false. !(to keep compiler quiet)
     endsubroutine wsnap_timeavgs
