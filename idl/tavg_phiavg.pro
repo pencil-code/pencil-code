@@ -72,15 +72,22 @@ function tavg_phiavg, range, DIR=avgdir, QUIET=quiet
 
   first = 1
   count = 0.
+  need_newline = 0
+  last_file_was_in_range = 0
   for i=range[0],range[1] do begin
     phiavgfile = 'PHIAVG'+strtrim(i,2)
 
     file = avgdir+'/'+phiavgfile
 
     if (any(findfile(file) ne '')) then begin
-      avg_i = read_phiavg(avgdir+'/'+phiavgfile)
-      if ((avg_i.t ge trange[0]) and (avg_i.t le trange[1])) then begin
-        if (not quiet) then print, phiavgfile, ': t='+strtrim(avg_i.t,2)
+      t = read_phiavg(file,/TONLY)
+      if ((t ge trange[0]) and (t le trange[1])) then begin
+        ;; t in trange -> read data
+        avg_i = read_phiavg(file)
+        if (not quiet) then begin
+          if (need_newline) then print
+          print, phiavgfile, ': t='+strtrim(avg_i.t,2)
+        endif
         if (first) then begin
           avg = avg_i           ; copy first struct (for grid, etc.)
           struct_mul, avg, 0., avg.labels ; zero out content
@@ -89,20 +96,30 @@ function tavg_phiavg, range, DIR=avgdir, QUIET=quiet
         ;; Sum up and count
         struct_add, avg, avg_i, avg.labels
         count = count+1.
+        need_newline = 0
+        last_file_was_in_range = 1
       endif else begin
+        ;; t not in trange
         if (not quiet) then begin
-          print, phiavgfile + ': t='+strtrim(avg_i.t,2) + ' not in trange = [' $
-            + strtrim(trange[0],2) + ', ' + strtrim(trange[1],2) + ']'
+          if (last_file_was_in_range) then prefix='' else prefix=string(13B)
+          print, prefix + phiavgfile + ': t='+strtrim(t,2) $
+              + ' not in trange = [' $
+              + strtrim(trange[0],2) + ', ' + strtrim(trange[1],2) + ']', $
+              FORMAT='(A,$)'
+          need_newline = 1
+          last_file_was_in_range = 0
         endif
       endelse
 
     endif else begin
 
+      if (need_newline) then print
       message, /INFO, 'No such file: ' + file
 
     endelse
 
   endfor
+  if (need_newline) then print
 
   if (count gt 0) then begin
     struct_mul, avg, 1./count, avg.labels ; normalize
