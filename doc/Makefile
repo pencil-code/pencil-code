@@ -74,14 +74,26 @@ appendix.ps: manual.tex
 faq: www/faq.html
 
 www/faq.html: www/faq.tex
-	(cd www; htlatex faq)
+	cd www; if [ -z "`type htlatex 2> /dev/null`" ]; \
+	        then htlatex="htlatex.sh"; \
+	        else htlatex="htlatex"; fi; $$htlatex faq
 
 www/faq.tex: manual.tex
+# 1. Extract header
+# 2. Extract \section{... FAQ} till next section/part
+# 3. Comment out \usepackage{titlesec} (which has problems with htlatex)
+# 4. replace last \section/\part with \end{document}
 	if [ ! -d www ]; then mkdir www; fi
-	perl -ne 'print if (1 .. /^\s*\\begin{document}/); \
-	          print if (/^\s*\\section{Frequently Asked Questions}/ ... \
-	                    /^\s*\\section/)' manual.tex \
-	| tac | perl -0777 -pe's/^\s*\\section.*/\\end{document}\n/' | tac > www/faq.tex
+	perl -n -e 'print if (1 .. /^\s*\\begin{document}/);' \
+	        -e 'print if (/^\s*\\section.*Frequently Asked Questions/ \
+	                      ... \
+	                      /^\s*\\(section|part)/)' manual.tex \
+	| perl -p -e 's/^(\\usepackage\[[^\]]*]\s*\{titlesec\b)/%% $$1/;' \
+	          -e 's/^(\s*\\titleformat)/%% $$1/' \
+	| tac \
+	| perl -0777 -p -e 's/^\s*\\(section|part).*/\\end{document}\n/' \
+	| tac \
+	> www/faq.tex
 
 # Clean up
 clean:
