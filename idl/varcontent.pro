@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.15 2003-12-07 23:28:28 dobler Exp $
+;  $Id: varcontent.pro,v 1.16 2003-12-09 10:36:04 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -99,19 +99,19 @@ varcontent[ilncc].idlinit    = INIT_SCALAR
 varcontent[ilncc].idlvarloc= 'lncc_loc'
 varcontent[ilncc].idlinitloc = INIT_SCALAR_LOC
 
-varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
-varcontent[iecr].idlvar   = 'ecr'
-varcontent[iecr].idlinit    = INIT_SCALAR
-varcontent[iecr].idlvarloc= 'ecr_loc'
-varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
+;varcontent[iecr].variable = 'Cosmic ray energy density (ecr)'
+;varcontent[iecr].idlvar   = 'ecr'
+;varcontent[iecr].idlinit    = INIT_SCALAR
+;varcontent[iecr].idlvarloc= 'ecr_loc'
+;varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
-default, dustlayers,0
-for idust=1,dustlayers do begin
+default, ndustspec,0
+for idust=1,ndustspec do begin
 
-  if (dustlayers gt 1) then begin
+  if (ndustspec gt 1) then begin
     sidust = strtrim(string(idust),2)
-    iuud=iuud1+3*(idust-1)
-    ilnrhod=ilnrhod1+(idust-1)
+    iuud=iuud1+4*(idust-1)
+    ilnrhod=ilnrhod1+4*(idust-1)
   endif else begin
     sidust = ''
   endelse
