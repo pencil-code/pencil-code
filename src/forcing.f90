@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.71 2004-07-19 15:08:23 brandenb Exp $
+! $Id: forcing.f90,v 1.72 2004-10-04 12:01:33 nilshau Exp $
 
 module Forcing
 
@@ -14,7 +14,7 @@ module Forcing
   real :: relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
   real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.,work_ff=0.
   real :: tforce_stop=impossible
-  real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=0.02
+  real :: wff_ampl=0.,xff_ampl=0.,zff_ampl=0.,zff_hel=0.,max_force=impossible
   real :: tsforce=-10., dtforce=10
   real, dimension(nx) :: profx_ampl=1.,profx_hel=1.
   real, dimension(mz) :: profz_ampl=1.,profz_hel=0. !(should initialize profz_hel=1)
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.71 2004-07-19 15:08:23 brandenb Exp $")
+           "$Id: forcing.f90,v 1.72 2004-10-04 12:01:33 nilshau Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -282,8 +282,9 @@ module Forcing
       use Sub
       use Hydro
 !
-      real :: phase,ffnorm
+      real :: phase,ffnorm,irufm
       real, save :: kav
+      real, dimension (1) :: fsum_tmp,fsum
       real, dimension (2) :: fran
       real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
       real, dimension (mz) :: tmpz
@@ -492,6 +493,7 @@ module Forcing
 !  each loop cycle which could inhibit (pseudo-)vectorisation
 !  calculate energy input from forcing; must use lout (not ldiagnos)
 !
+      irufm=0
       if (r_ff == 0) then       ! no radial profile
         if (lwork_ff) call calc_force_ampl(f,fx,fy,fz,profz_ampl(n)*cmplx(coef1,profz_hel(n)*coef2),force_ampl)
         do n=n1,n2
@@ -510,7 +512,8 @@ module Forcing
               if (i_rufm/=0) then
                 call multsv_mn(rho/dt,forcing_rhs,force_all)
                 call dot_mn(variable_rhs,force_all,ruf)
-                call sum_mn_name(ruf/(nw*ncpus),i_rufm)
+                irufm=irufm+sum(ruf)
+                !call sum_mn_name(ruf/(nw*ncpus),i_rufm)
               endif
             endif
           enddo
@@ -533,6 +536,25 @@ module Forcing
             enddo
           endif
         enddo
+      endif
+      !
+      ! For printouts
+      !
+      if (lout) then
+        if (i_rufm/=0) then 
+          irufm=irufm/(nwgrid)
+          !
+          !  on different processors, irufm needs to be communicated
+          !  to other processors
+          !
+          fsum_tmp(1)=irufm
+          call mpireduce_sum(fsum_tmp,fsum,1)
+          irufm=fsum(1)
+          call mpibcast_real(irufm,1)
+          !
+          fname(i_rufm)=irufm
+          itype_name(i_rufm)=ilabel_sum
+        endif
       endif
 !
       if (ip.le.9) print*,'forcing_hel: forcing OK'
