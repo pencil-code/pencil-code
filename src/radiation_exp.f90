@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.74 2003-08-03 15:25:28 theine Exp $
+! $Id: radiation_exp.f90,v 1.75 2003-08-03 17:21:26 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -17,14 +17,16 @@ module Radiation
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
   integer, parameter :: radx0=1,rady0=1,radz0=1
+  integer, parameter :: maxdir=190  ! 7^3 - 5^3 - 3^3 - 1^3 = 190
   real, dimension (mx,my,mz) :: Srad,kaprho,emtau,Irad,Irad0
-  real, dimension(mx,my,mz,3) :: pos
+  integer, dimension (mx,my,mz,3) :: pos
+  integer, dimension (maxdir,3) :: dir
   integer :: lrad,mrad,nrad,rad2
-  integer :: directions
+  integer :: idir,ndir
   real :: frac
-  integer :: llstart,llstop,ldir
-  integer :: mmstart,mmstop,mdir
-  integer :: nnstart,nnstop,ndir
+  integer :: llstart,llstop,lsign
+  integer :: mmstart,mmstop,msign
+  integer :: nnstart,nnstop,nsign
   integer :: l
   logical, dimension(3) :: lhori=.false.
 !
@@ -83,7 +85,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.74 2003-08-03 15:25:28 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.75 2003-08-03 17:21:26 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -120,19 +122,25 @@ module Radiation
 !
 !  count
 !
-      directions=0
+      idir=1
+!
       do nrad=-radz,radz
       do mrad=-rady,rady
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if(rad2>0 .and. rad2<=rad2max) then 
-          directions=directions+1
+          dir(idir,1)=lrad
+          dir(idir,2)=mrad
+          dir(idir,3)=nrad
+          idir=idir+1
         endif
       enddo
       enddo
       enddo
 !
-      print*,'initialize_radiation: directions=',directions
+      ndir=idir-1
+!
+      print*,'initialize_radiation: ndir=',ndir
 !
 !  initialize position array
 !
@@ -243,23 +251,22 @@ module Radiation
 !
 !  calculate weights
 !
-      frac=1./directions
+      frac=1./ndir
 !
 !  loop over rays
 !
-      do nrad=-radz,radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        rad2=lrad**2+mrad**2+nrad**2
-        if (rad2>0 .and. rad2<=rad2max) then 
-           call intensity_startstop()
-           call intensity_intrinsic(f)
-           call intensity_periodic()
-           call intensity_communicate()
-           call intensity_revision(f)
-        endif
-      enddo
-      enddo
+      do idir=1,ndir
+!
+        lrad=dir(idir,1)
+        mrad=dir(idir,2)
+        nrad=dir(idir,3)
+!
+        call intensity_startstop()
+        call intensity_intrinsic(f)
+        call intensity_periodic()
+        call intensity_communicate()
+        call intensity_revision(f)
+!
       enddo
 !
     endsubroutine radtransfer
@@ -272,12 +279,12 @@ module Radiation
 !
       use Cdata
 !
-      if (lrad>=0) then; llstart=l1; llstop=l2; ldir=+1
-                   else; llstart=l2; llstop=l1; ldir=-1; endif
-      if (mrad>=0) then; mmstart=m1; mmstop=m2; mdir=+1
-                   else; mmstart=m2; mmstop=m1; mdir=-1; endif
-      if (nrad>=0) then; nnstart=n1; nnstop=n2; ndir=+1
-                   else; nnstart=n2; nnstop=n1; ndir=-1; endif
+      if (lrad>=0) then; llstart=l1; llstop=l2; lsign=+1
+                   else; llstart=l2; llstop=l1; lsign=-1; endif
+      if (mrad>=0) then; mmstart=m1; mmstop=m2; msign=+1
+                   else; mmstart=m2; mmstop=m1; msign=-1; endif
+      if (nrad>=0) then; nnstart=n1; nnstop=n2; nsign=+1
+                   else; nnstart=n2; nnstop=n1; nsign=-1; endif
 !
     endsubroutine intensity_startstop
 !***********************************************************************
@@ -314,9 +321,9 @@ module Radiation
 !  Note: for dtau -> 0, the quantity (emdtau-1+dtau)/amax1(dtau,1e-38) goes
 !  linearly to zero. The amax1(dtau,dtaumin) construct avoids division by 0.
 !
-      do n=nnstart,nnstop,ndir
-      do m=mmstart,mmstop,mdir
-      do l=llstart,llstop,ldir 
+      do n=nnstart,nnstop,nsign
+      do m=mmstart,mmstop,msign
+      do l=llstart,llstop,lsign 
           dtau=.5*(kaprho(l-lrad,m-mrad,n-nrad)+kaprho(l,m,n))*dlength
           emdtau=exp(-dtau)
           emtau(l,m,n)=emtau(l-lrad,m-mrad,n-nrad)*emdtau
@@ -526,7 +533,7 @@ module Radiation
 !
 !  initialize position array in ghost zones
 !
-      do l=llstop-ldir*radx0+ldir,llstop,ldir
+      do l=llstop-lsign*radx0+lsign,llstop,lsign
       do m=m1,m2
       do n=n1,n2
          ll=pos(l,m,n,1)
@@ -537,7 +544,7 @@ module Radiation
       enddo
       enddo
       do l=l1,l2
-      do m=mmstop-mdir*rady0+mdir,mmstop,mdir
+      do m=mmstop-msign*rady0+msign,mmstop,msign
       do n=n1,n2
          ll=pos(l,m,n,1)
          mm=pos(l,m,n,2)
@@ -548,7 +555,7 @@ module Radiation
       enddo
       do l=l1,l2
       do m=m1,m2
-      do n=nnstop-ndir*radz0+ndir,nnstop,ndir
+      do n=nnstop-nsign*radz0+nsign,nnstop,nsign
          ll=pos(l,m,n,1)
          mm=pos(l,m,n,2)
          nn=pos(l,m,n,3)
@@ -755,9 +762,9 @@ module Radiation
 !
 !  do the ray...
 !
-      do n=nnstart,nnstop,ndir
-      do m=mmstart,mmstop,mdir
-      do l=llstart,llstop,ldir
+      do n=nnstart,nnstop,nsign
+      do m=mmstart,mmstop,msign
+      do l=llstart,llstop,lsign
           Irad0(l,m,n)=Irad0(l-lrad,m-mrad,n-nrad)
           Irad(l,m,n)=Irad0(l,m,n)*emtau(l,m,n)
       enddo
