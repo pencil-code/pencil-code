@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.224 2004-09-24 02:48:27 snod Exp $
+! $Id: magnetic.f90,v 1.225 2004-09-24 14:08:25 nilshau Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -145,7 +145,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.224 2004-09-24 02:48:27 snod Exp $")
+           "$Id: magnetic.f90,v 1.225 2004-09-24 14:08:25 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -375,13 +375,7 @@ module Magnetic
       real, dimension (nx) :: ufres,rufres,etatotal,pp
       real :: tmp,eta_out1,B_ext21=1.
       integer :: j,i
-
-      real, dimension (nx,3,3) :: Jij
-      real, dimension (nx) :: Jij2
-      real, dimension (nx) :: bb12,eta_smag
-
-      real, dimension (nx,3) :: bglnrho
-      real, dimension (nx,3) :: nubglnrho,tmp1,tmp2
+      real, dimension (nx) :: eta_smag
 !
       intent(in)     :: f,uu,rho1,TT1,uij,bij,aij,bb,jj,del2A,shock,gshock
       intent(out)    :: va2
@@ -536,33 +530,11 @@ module Magnetic
           etatotal=eta
         endif
       case ('Smagorinsky')
-          if (headtt) print*,'resistive force: Smagorinsky'
-          if(ldensity) then
-            diva=aij(:,1,1)+aij(:,2,2)+aij(:,3,3)
-            do j=1,3
-              do i=1,3
-                !AB: Nils, are you sure?
-                Jij(:,i,j)=.5*(aij(:,i,j)-aij(:,j,i))
-              enddo
-              !Jij(:,j,j)=Jij(:,j,j)-.333333*diva
-            enddo
-            call dot2_mn(jj,J2)
-            eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
-            !AB: Nils, graddivA is now calculated outside this routine
-            !call del2v_etc(f,iaa,GRADDIV=graddiva)
-            call multmv_mn(Jij,glnrho,bglnrho)
-            call multsv_mn(eta_smag,bglnrho,nubglnrho)
-            tmp1=del2A+1./3.*graddiva
-            call multsv_mn(eta_smag,tmp1,tmp2)
-            fres=2*nubglnrho+tmp2
-            !
-            ! Add ordinary resistivity if eta /= 0
-            !
-            if (eta /= 0.) then
-               fres=fres+eta*del2A
-            endif
-          endif
-        case default
+        call dot2_mn(jj,J2)
+        eta_smag=(D_smag*dxmax)**2.*sqrt(J2)
+        call multsv(eta_smag+eta,del2A,fres)
+        etatotal=eta_smag+eta
+      case default
         if (lroot) print*,'daa_dt: no such ires:',iresistivity
         call stop_it("")
       end select
@@ -699,15 +671,6 @@ module Magnetic
 !
       if (ldiagnos) then
         !
-        !  mean heating term
-        !
-        if (i_epsM_LES/=0) then
-          if (iresistivity .eq. 'Smagorinsky') then
-            call multm2_mn(Jij,Jij2)
-            call sum_mn_name(2*eta_smag*exp(f(l1:l2,m,n,ilnrho))*Jij2,i_epsM_LES)
-           endif
-        endif
-        !
         ! Dissipated energy directly from the resistive force
         ! (only correct for periodic bc)
         !
@@ -740,13 +703,14 @@ module Magnetic
         !
         ! <J^2> and J^2|max
         !
-        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0.or.i_epsM/=0) then
+        if (i_jrms/=0.or.i_jmax/=0.or.i_j2m/=0.or.i_jm2/=0.or.i_epsM/=0.or.i_epsM_LES/=0) then
           call dot2_mn(jj,j2)
           if (i_j2m/=0) call sum_mn_name(j2,i_j2m)
           if (i_jm2/=0) call max_mn_name(j2,i_jm2)
           if (i_jrms/=0) call sum_mn_name(j2,i_jrms,lsqrt=.true.)
           if (i_jmax/=0) call max_mn_name(j2,i_jmax,lsqrt=.true.)
           if (i_epsM/=0) call sum_mn_name(eta*j2,i_epsM)
+          if (i_epsM/=0) call sum_mn_name(eta_smag*j2,i_epsM_LES)
         endif
         !
         ! epsM need del4A in cases with hyper resistivity
