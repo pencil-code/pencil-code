@@ -5,7 +5,7 @@
 %%  Date:   06-Mar-2002
 %%  Authors: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 %%           ab (Axel.Brandenburg@nordita.dk)
-%%  CVS: $Id: manual.tex,v 1.222 2003-11-27 13:30:37 mcmillan Exp $
+%%  CVS: $Id: manual.tex,v 1.223 2003-12-07 12:09:28 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -349,7 +349,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 %\author{Wolfgang Dobler \& Axel Brandenburg}
-%\date{$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}
+%\date{$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}
 
 % ====================================================================== %
 
@@ -384,7 +384,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}\\
+  \emph{$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}\\
   \url{http://www.nordita.dk/data/brandenb/pencil-code/}
 
   \vspace{\stretch{3}}
@@ -551,18 +551,28 @@ and Bob Stein (University of Michigan) who introduced us to the idea of
 using high-order schemes in compressible flows and who taught us a lot
 about simulations in general.
 
-The calculation of the power spectra, structure functions, the remeshing procedures,
+The calculation of the power spectra, structure functions,
+the remeshing procedures,
 routines for changing the number of processors, as well as
 the shearing sheet approximation and the flux-limited diffusion
 approximation for radiative transfer
 were implemented by Nils Erland L.\ Haugen (University of Trondheim).
-Tobi Heinemann added the Feautrier method for radiative transfer as well as
-hydrogen ionization.
+Tobi Heinemann added the long characteristics method for
+radiative transfer as well as hydrogen ionization.
+He also added and/or improved shock diffusion for other variables
+and improved the resulting timestep control.
 Anders Johansen and Anja Andersen contributed to the implementation of
-the dust equations.
+the dust equations (which now comprises an array of different components).
 Anthony (Tony) Mee (University of Newcastle) implemented shock viscosity
-and Graeme R.\ Sarson (also University of Newcastle) added the
-interstellar module.
+and added the interstellar module together with
+Graeme R.\ Sarson (also University of Newcastle), who also implemented
+the geodynamo set-up together with David McMillan
+(currently also at the University of Newcastle).
+Tony also included a method for outputting auxiliary variables and
+enhanced the overall functionality of the code and related idl and dx
+procedures.
+He also added, together with Andrew Snodin, the evolution equations
+for the cosmic ray energy density.
 Vladimir Pariev (University of Rochester) contributed to the development
 and testing of the potential field boundary condition.
 
@@ -1953,6 +1963,32 @@ output.
 
 % ---------------------------------------------------------------------- %
 
+\subsection{RERUN and NEWDIR files}
+\label{RERUN}
+\index{RERUN file}
+\index{NEWDIR file}
+
+After the code finishes (e.g., when the final timestep number is reached
+or when a \file{STOP} file is found), the \file{run.csh} script checks
+whether there is a \file{RERUN} file.
+If so, so code will simply run again, which may be after you have
+recompiled the code.
+This is useful in the development phase when you changed something in
+the code, so you don't need to wait for a new slot in the queue!
+
+Even more naughty, as Tony says, is the \file{NEWDIR} file, where
+you can enter a new directory path (relative path is ok, e.g.\
+\code{../conv-slab}).
+If nothing is written in this file (e.g.\ via \cmd{touch NEWDIR})
+it stays in the same directory.
+On distributed machines, the \file{NEWDIR} method will copy all the
+\file{VAR\#} and \file{var.dat} files back to and from the sever.
+This can be useful if you want to run with new data files, but you
+better do it in a separate directory, because with \file{NEWDIR}
+the latest data from the code are written back to the server before
+running again.
+
+% ---------------------------------------------------------------------- %
 
 \subsection{Start and run parameters}
 \label{S-start-params}
@@ -2145,8 +2181,10 @@ diffusivity and $\eta$ the magnetic diffusivity;
 and
 \begin{equation} \label{Hmax}
   H_{\rm max} = \max\left(\frac{2\nu\Strain^2
-+\zeta_{\rm shock}(\Div\uv)^2}{c_vT}\right),
++\zeta_{\rm shock}(\Div\uv)^2+...}{c_vT}\right),
 \end{equation}
+where dots indicate the presence of other terms on the rhs of the
+entropy equation.
 
 To fix the time step $\delta t$ to a value independent of velocities and
 diffusivities, explicitly set the run parameter \var{dt}, rather than
@@ -3567,7 +3605,7 @@ doesn't overwrite or erase the \file{var.dat} and other \file{VAR} and
 % ====================================================================== %
 
 \section*{APPENDIX
-  \hfill\normalsize\rm$ $Date: 2003-11-27 13:30:37 $ $,~ $ $Revision: 1.222 $ $}
+  \hfill\normalsize\rm$ $Date: 2003-12-07 12:09:28 $ $,~ $ $Revision: 1.223 $ $}
 
 \section{Timings}
 
@@ -5134,6 +5172,13 @@ double precision, $\varepsilon\approx10^{-15}$.
                & if set \code{T}, auxiliary variables (those calculated at
                  each step, but not evolved mathematically) to 
                  \file{var.dat} after the evolved quantities. \\
+  \var{lread_oldsnap} [\code{F}]
+               & if set \code{T}, the old snapshot will be read in before
+                 producing (overwriting) initial conditions. For example, if
+                 you just want to add a perturbation to the magnetic field,
+                 you'd give no initial condition for density and velocity
+                 (so you keep the data from a hopefully relaxed run),
+                 and just add whatever you need for the magnetic field.\\
   \var{unit_system} [\code{'cgs'}]
                & you can set this character string to \index{SI units}
                  \code{'SI'}, which means that you can give \index{Units}
@@ -5958,6 +6003,17 @@ possible inputs to the file \file{phiaver.in}.
   \var{oumphi} & $\left<\omv\cdot\uv\right>_\varphi$ \\
 %
 \midrule
+  \multicolumn{2}{c}{Module \file{density.f90}} \\
+\midrule
+  \var{lnrhomphi} & $\left<\ln\varrho\right>_\varphi$ \\
+  \var{rhomphi} & $\left<\varrho\right>_\varphi$ \\
+%
+\midrule
+  \multicolumn{2}{c}{Module \file{entropy.f90}} \\
+\midrule
+  \var{ssmphi} & $\left<s\right>_\varphi$ \\
+%
+\midrule
   \multicolumn{2}{c}{Module \file{magnetic.f90}} \\
 \midrule
   \var{brmphi} & $\left<B_\varpi\right>_\varphi$ [cyl.\ polar coords $(\varpi,\varphi,z)$]\\
@@ -6267,7 +6323,7 @@ initial condition.
   commands. Files and variables have their own indexes.]
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.222 2003-11-27 13:30:37 mcmillan Exp $ $}
+$ $Id: manual.tex,v 1.223 2003-12-07 12:09:28 brandenb Exp $ $}
 
 
 \end{document}
