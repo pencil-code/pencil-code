@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.10 2002-12-10 16:55:30 brandenb Exp $
+! $Id: interstellar.f90,v 1.11 2002-12-10 17:03:16 brandenb Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -69,7 +69,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.10 2002-12-10 16:55:30 brandenb Exp $")
+           "$Id: interstellar.f90,v 1.11 2002-12-10 17:03:16 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -131,7 +131,7 @@ module Interstellar
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx) :: rho1,TT1
       real, dimension (nx) :: TT,heat,cool 
-      integer :: i,l
+      integer :: i
 !
       intent(in) :: rho1,TT1
       intent(inout) :: df
@@ -258,8 +258,8 @@ module Interstellar
 !    real :: lnrho,rho,rho_cloud,ss,TT
     real :: mass_cloud,mass_cloud_dim,freq_SNII,prob_SNII,rate_SNII
     real, dimension(1) :: fran1,fsum1,fsum1_tmp,fmpi1
-    real, dimension(ncpus) :: mass_cloud_byproc,fmax,fmax_tmp
-    integer :: icpu,l
+    real, dimension(ncpus) :: mass_cloud_byproc
+    integer :: icpu
     logical :: l_SNI
 !
     intent(in) :: l_SNI
@@ -285,14 +285,6 @@ module Interstellar
           where (rho(:) >= rho_crit .and. TT(:) <= TT_crit)   &
                                               rho_cloud(:)=rho(:)
           mass_cloud=mass_cloud+sum(rho_cloud(:))
-!          do l=l1,l2
-!            lnrho=f(l,m,n,ilnrho)
-!            rho=exp(lnrho)
-!            ss=f(l,m,n,ient)
-!            TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1*cp1
-!            if (rho >= rho_crit .and. TT <= TT_crit)   &
-!                                              mass_cloud=mass_cloud+rho
-!          enddo
         enddo
       enddo
       fsum1_tmp=(/ mass_cloud /)
@@ -322,11 +314,6 @@ module Interstellar
           call mpibcast_real_nonroot(fmpi1,1,icpu-1)
           mass_cloud_byproc(icpu)=fmpi1(1)
         enddo  
-!! alternatively, use mpireduce_max (not working?)
-!        mass_cloud_byproc(iproc+1)=mass_cloud
-!        fmax_tmp(:)=mass_cloud_byproc(:)
-!        call mpireduce_max(fmax_tmp,fmax,ncpus)
-!        mass_cloud_byproc=fmax
         if (lroot) print*,'check_SNII, mass_cloud_byproc:',mass_cloud_byproc
         call position_SNII(f,mass_cloud_byproc)
         call explode_SN(f,2)
@@ -556,7 +543,7 @@ find_SN: do n=n1,n2
     real :: dx_SN_in,dx_SN_out_x0,dx_SN_out_x1,dy_SN_in,dy_SN_out_y
     real :: dy_SN_out_x0a,dy_SN_out_x0b,dy_SN_out_x1a,dy_SN_out_x1b
     real :: dz_SN,yshift
-    real :: width_SN,width_shell_outer,width_shell_inner,c_SN,lnrhol,ssl
+    real :: width_SN,width_shell_outer,width_shell_inner,c_SN
     real :: mass,mass_cavity,mass_check,mass_shell,c_shell
     real :: EE_SN,lnrho_SN,lnrho_SN_new,TT_SN_new
 !  (Can't do all of this within a single pencil-sweep, as I need a global
@@ -565,7 +552,7 @@ find_SN: do n=n1,n2
 !   the following on pencils, and wouldn't need to communicate rho_SN, TT_SN)
     real, dimension(nx,ny,nz) :: dr2_SN,rho_old
 !  The following arrays can be streamlined, after debugging.
-    real, dimension(nx) :: lnrho,rho,TT,ss,dss,dee,dlnrho,profile_SN
+    real, dimension(nx) :: lnrho,rho,TT,ss,dss,dee,profile_SN
     real, dimension(nx) :: profile_shell_outer,profile_shell_inner
     real, dimension(2) :: fsum2,fsum2_tmp
     real, dimension(1) :: fsum1,fsum1_tmp
@@ -582,7 +569,7 @@ find_SN: do n=n1,n2
 !
 !  identifier
 !
-    if(headtt) print*,'explode_SN'
+    if(lroot) print*,'explode_SN, itype_SN:',itype_SN
 !
     width_SN=point_width*dxmin
     width_shell_outer=2.0*width_SN

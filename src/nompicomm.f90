@@ -234,6 +234,7 @@ module Mpicomm
       real, dimension(nbcast_array) :: bcast_array,dummy
 !
       dummy=bcast_array
+      dummy=ibcast_proc
     endsubroutine mpibcast_real_nonroot
 !***********************************************************************
     subroutine mpireduce_max(fmax_tmp,fmax,nreduce)
