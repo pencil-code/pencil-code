@@ -1,6 +1,8 @@
-! $Id: deriv.f90,v 1.14 2004-06-02 16:27:09 bingert Exp $
+! $Id: deriv.f90,v 1.15 2004-06-03 10:30:03 bingert Exp $
 
 module Deriv
+  
+  use Mpicomm, only: stop_it
 
   implicit none
 
@@ -9,6 +11,7 @@ module Deriv
     module procedure der_other  ! derivative of another field
   endinterface
 
+  
   contains
 
 !***********************************************************************
@@ -105,6 +108,10 @@ module Deriv
       real :: fac
       integer :: j
 !
+      if (.not. lequidist(j)) then
+        call stop_it('der_other: NOT IMPLEMENTED for no equidistant grid')
+      endif
+
       if (j==1) then
         if (nxgrid/=1) then
           fac=1./(60.*dx)
@@ -243,6 +250,10 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
+      if (.not. lequidist(j)) then
+        call stop_it('der6: NOT IMPLEMENTED for no equidistant grid')
+      endif
+!   
       if (present(ignoredx)) then
         igndx = ignoredx
       else
@@ -330,6 +341,10 @@ module Deriv
       intent(in)  :: f,k,j,ignoredx
       intent(out) :: df
 !
+      if (.not. lequidist(j)) then
+        call stop_it('der4: NOT IMPLEMENTED for no equidistant grid')
+      endif
+
       if (present(ignoredx)) then
         igndx = ignoredx
       else
@@ -402,6 +417,10 @@ module Deriv
       real :: fac
       integer :: i,j,k
 !
+      if (.not. lequidist(j) .or. .not. lequidist(i)) then
+        call stop_it('derij: NOT IMPLEMENTED for no equidistant grid')
+      endif
+!      
       if ((i==1.and.j==2).or.(i==2.and.j==1)) then
         if (nxgrid/=1.and.nygrid/=1) then
           fac=1./(60.**2*dx*dy)
@@ -501,6 +520,10 @@ module Deriv
       real, dimension (nx,3) :: uu
       real, dimension (nx) :: df
       integer :: j,k,l
+!
+      if (.not. lequidist(j)) then
+        call stop_it('der_upwind1st: NOT IMPLEMENTED for no equidistant grid')
+      endif
 !
       if (j == 1) then
         if (nxgrid /= 1) then

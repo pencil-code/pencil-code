@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.133 2004-06-02 21:23:10 mee Exp $
+! $Id: start.f90,v 1.134 2004-06-03 10:30:03 bingert Exp $
 !
 !***********************************************************************
       program start
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.133 2004-06-02 21:23:10 mee Exp $")
+             "$Id: start.f90,v 1.134 2004-06-03 10:30:03 bingert Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -177,6 +177,9 @@
         do i=1,mx; x(i)=x00+(i-nghost-1+ipx*nx)*dx; enddo
         do i=1,my; y(i)=y00+(i-nghost-1+ipy*ny)*dy; enddo
         do i=1,mz; zeta_grid(i)=i-nghost-1+ipz*nz; enddo 
+        if (.not. lequidist(1) .or. .not. lequidist(2)) then 
+          call stop_it('start: no non equidistant grid_func for x and y direction')
+        endif
         if (.not. lequidist(3)) then 
           select case(grid_func)
           case ('linear') 
@@ -185,9 +188,9 @@
             zprim2=0.
           case ('sinh')
             c_grid1=Lz/(sinh(coef_grid(1)*(zeta_grid(n2)-zeta_grid0))- &
-                 sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
-            z=z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
-            zprim=c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
+                    sinh(coef_grid(1)*(zeta_grid(n1)-zeta_grid0)))
+            z     =z00+c_grid1*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
+            zprim =c_grid1*coef_grid(1)*cosh(coef_grid(1)*(zeta_grid-zeta_grid0))  
             zprim2=c_grid1*coef_grid(1)**2*sinh(coef_grid(1)*(zeta_grid-zeta_grid0))
           case default
             call stop_it('start: Unknown grid_func for no equidistant z-grid')
