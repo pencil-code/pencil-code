@@ -18,12 +18,12 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   cleanf95
 # Author: Tony Mee (A.J.Mee@ncl.ac.uk)
 # Date:   10-Oct-2002
-# CVS: $Id: cleanf95,v 1.5 2003-08-27 17:04:58 dobler Exp $
+# CVS: $Id: cleanf95,v 1.6 2003-08-29 10:43:20 dobler Exp $
 # Description:
-#   Read standard input (piped from Intel Fortran compiler with 2>&1 | 
-#   i.e. from STDERR)
-#   Strip all the subroutine / function lines and dump the rest back
-#   out to STDERR
+#   Read standard input (piped from Intel Fortran compiler with 2>&1 | i.e.
+#   from STDERR).
+#   Strip all the subroutine / function lines and dump the rest back out
+#   to STDERR
 # Usage:
 #   make [--intel|--hitachi] |& cleanf95      # (csh)
 #   make [--intel|--hitachi] 2>&1 | cleanf95  # (sh)
@@ -46,23 +46,30 @@ GetOptions(\%opts,
            qw( --hitachi
                --intel
                -h --help
+	       --debug
               ));
 
 die usage() if ($opts{h} || $opts{help});
 $compiler = 'hitachi' if ($opts{hitachi}); 
+my $debug = ($opts{debug} || 0);
+my $first = 1;
 
 while(<STDIN>)
 {
     chomp;
+    print STDERR substr($_,0,50)," [..]\n" if ($debug);
     if ($compiler eq 'intel') {
 	## Intel F95 compiler
+	print STDERR "Intel settings\n-------------\n" if ($debug && $first);
 	next if /^\s*(module|external)\s+(subroutine|function)\s+$IDENTI\s*$/;
 	next if /^\s*(program|module)\s+$IDENTI\s*$/;
 	next if /^[0-9]+\s*lines compiled/i;
 #	next if /^\s*$/; # handled by ship_out() now
+	ship_out($line);
 	$line = $_;
     } elsif ($compiler eq 'hitachi') {
 	## Hitachi F90 compiler
+	print STDERR "Hitachi settings\n-------------\n" if ($debug && $first);
 	# Continuation statements
 	if ($multi && /^             ?(\S.*?)\s*$/) {
 	    $line .= $1 if $append;
@@ -94,7 +101,11 @@ while(<STDIN>)
     } else {
 	die "Don't know what to filter for\n";
     }
+} continue {
+    $first = 0;
 }
+ship_out($line);		# last line
+
 # ---------------------------------------------------------------------- #
 sub ship_out {
     my $line = join(' ', @_);
