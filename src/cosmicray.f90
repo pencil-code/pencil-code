@@ -1,9 +1,10 @@
-! $Id: cosmicray.f90,v 1.20 2003-12-04 21:11:34 snod Exp $
+! $Id: cosmicray.f90,v 1.21 2003-12-05 04:01:05 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
-!  ZEUS 3D implementation.
+!  ZEUS 3D implementation.  
 !
+!  this module solves for ln(ecr).  ecr is used for lnecr  
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -83,7 +84,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.20 2003-12-04 21:11:34 snod Exp $")
+           "$Id: cosmicray.f90,v 1.21 2003-12-05 04:01:05 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -167,6 +168,11 @@ module CosmicRay
         case('wave-x'); call wave(amplecr2,f,iecr,ky=5.)
       endselect
 !
+! 
+!  form lnecr from initecr  
+!
+!        f(:,:,:,iecr)=log(f(:,:,:,iecr))
+      
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_ecr
 !***********************************************************************
@@ -174,10 +180,16 @@ module CosmicRay
 !
 !  cosmic ray evolution
 !  calculate decr/dt + div(u.ecr - flux) = -pcr*divu = -(gammacr-1)*ecr*divu
-!  solve as decr/dt + u.grad(ecr) = -gammacr*ecr*divu + div(flux)
+!
+!  solve as decr/dt + u.grad(ecr) = -gammacr*divu + div(flux(ecr))  
+!  + (K grad(ecr)).(grad(ecr))
+!  
 !  add du = ... - (1/rho)*grad(pcr) to momentum equation
 !
+!  ecr=ecrn
+!
 !   09-oct-03/tony: coded
+!   04-dec-03/snod: modified for lnecr (=ecr)
 !
       use Sub
 !
@@ -188,7 +200,7 @@ module CosmicRay
       real, intent(in), dimension (nx) :: divu,rho1
 !
       real, dimension (nx,3) :: gecr
-      real, dimension (nx) :: ecr,del2ecr,ugecr,vKperp,vKpara
+      real, dimension (nx) :: ecr,del2ecr,ugecr,vKperp,vKpara,gecr2
       integer :: j
 !
 !  identify module and boundary conditions
@@ -211,7 +223,7 @@ module CosmicRay
 !
       if(.not.lnegl)then
         do j=0,2
-          df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)
+          df(l1:l2,m,n,iux+j)=df(l1:l2,m,n,iux+j)-gammacr1*rho1*gecr(:,1+j)*exp(ecr(:))
         enddo
       endif
 !
@@ -223,7 +235,8 @@ module CosmicRay
       elseif (cosmicray_diff/=0.) then
         if(headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
         call del2(f,iecr,del2ecr)
-        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+cosmicray_diff*del2ecr
+        call dot2_mn(gecr,gecr2)
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+cosmicray_diff*(del2ecr+gecr2)
       else
         if(headtt) print*,'decr_dt: no diffusion'
       endif
@@ -302,17 +315,25 @@ module CosmicRay
     subroutine tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
 !
 !  calculates tensor diffusion with variable tensor (or constant tensor)
+!  calculates parts common to both variable and constant tensor first
+!  note:ecr=lnecr in the below comment
 !  
 !  vKperp*del2ecr + d_i(vKperp)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j ecr)
 !      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)
 !   
-!  = vKperp*del2ecr + gKpara.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
+!  = vKperp*del2ecr + gKperp.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
 !      + ni*nj*Gi*(vKpara_j - vKperp_j),
 !  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
 !  diffusion coefficients
+! 
+!  calculates (K.gecr).gecr
+!  =  vKperp(gecr.gecr) + (vKpara-vKperp)*Gi(ni*nj*Gj)
+!                     
+!  adds both parts into decr/dt  
 !
 !  10-oct-03/axel: adapted from pscalar
 !  30-nov-03/snod: adapted from tensor_diff without variable diffusion
+!  04-dec-03/snod: converted for evolution of lnecr (=ecr)
 !
       use Sub
 !
@@ -320,7 +341,7 @@ module CosmicRay
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
       real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
-      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi
+      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara,tmpi,gecr2
 !
 !  use global Kperp, Kpara ?
 ! 
@@ -373,6 +394,19 @@ module CosmicRay
         enddo
       enddo
 !
+!  calculate   Gi(ni*nj*Gj)  needed for lnecr form; also add into tmp
+!                     
+      do i=1,3
+        tmpi(:)=gecr(:,i)*bunit(:,i)
+        do j=1,3
+          tmp(:)=tmp(:)+bunit(:,j)*gecr(:,j)*tmpi(:)
+        enddo
+      enddo            
+!
+!  calculate gecr2 - needed for lnecr form
+!  
+      call dot2_mn(gecr,gecr2)
+
 !  if variable tensor, add extra terms and add result into decr/dt 
 !
       if(lvariable_tensor_diff)then
@@ -398,21 +432,21 @@ module CosmicRay
         do i=1,3
           tmpi(:)=bunit(:,i)*(gvKpara(:,i)-gvKperp(:,i))
           do j=1,3
-            tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi
+            tmpj(:)=tmpj(:)+bunit(:,j)*gecr(:,j)*tmpi(i)
           enddo
         enddo           
 !
 !  
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) & 
-        + vKperp*del2ecr + (vKpara-vKperp)*tmp + tmpj 
+        + vKperp*(del2ecr+gecr2) + (vKpara-vKperp)*tmp + tmpj 
       else
 !
 !  for constant tensor (or otherwise), just add result into 
 !  the decr/dt equation without tmpj
 !
         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr) &
-        + Kperp*del2ecr + (Kpara-Kperp)*tmp
+        + Kperp*(del2ecr+gecr2) + (Kpara-Kperp)*tmp
  
       endif     
 !
