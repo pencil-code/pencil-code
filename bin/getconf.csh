@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.85 2003-09-04 16:17:15 theine Exp $
+# $Id: getconf.csh,v 1.86 2003-09-05 12:40:40 theine Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -334,7 +334,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separateds) environment variable
 # NODELIST for transport to sub-processes.
-setenv NODELIST `echo $nodelist | xargs printf ":%s" | sed s/^://`
+setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
   echo '$mpi          = ' "<$mpi>"
