@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.16 2002-07-10 12:36:07 dobler Exp $
+! $Id: forcing.f90,v 1.17 2002-07-11 12:51:17 dobler Exp $
 
 module Forcing
 
@@ -40,7 +40,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.16 2002-07-10 12:36:07 dobler Exp $")
+           "$Id: forcing.f90,v 1.17 2002-07-11 12:51:17 dobler Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -54,6 +54,9 @@ module Forcing
 !
       real, dimension (mx,my,mz,mvar) :: f
 !
+      if (headtt.or.ldebug) print*,'FORCING: addforce started'
+!
+!
 !  calculate and add forcing function
 !
       if(iforce==1) call forcing_irro(f)
@@ -64,6 +67,8 @@ module Forcing
 !  add *additional* forcing function
 !
       if(iforce2==1) call forcing_fountain(f)
+!
+      if (headtt.or.ldebug) print*,'FORCING: done addforce'
 !
     endsubroutine addforce
 !***********************************************************************
@@ -281,9 +286,10 @@ module Forcing
       coef(3)=cmplx(k*float(kez),sig*float(kkez))
       if (ip.le.5) print*,'coef=',coef
 !
-      if (r_ff == 0) then
-        ! loop the two cases separately, so we don't check for r_ff during
-        ! each loop cycle which could inhibit (pseudo-)vectorisation
+! loop the two cases separately, so we don't check for r_ff during
+! each loop cycle which could inhibit (pseudo-)vectorisation
+!
+      if (r_ff == 0) then       ! no radial profile
         do j=1,3
           jf=j+iux-1
           do n=n1,n2
@@ -293,10 +299,14 @@ module Forcing
             enddo
           enddo
         enddo
-      else
+      else                      ! with radial profile
         do j=1,3
           jf=j+iux-1
           do n=n1,n2
+            sig = relhel*tmpz(n)
+            coef(1)=cmplx(k*float(kex),sig*float(kkex))
+            coef(2)=cmplx(k*float(key),sig*float(kkey))
+            coef(3)=cmplx(k*float(kez),sig*float(kkez))
             do m=m1,m2
               radius = sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)
               tmpx = 0.5*(1.-tanh((radius-r_ff)/width_ff))

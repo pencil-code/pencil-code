@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.43 2002-07-09 23:06:27 brandenb Exp $
+! $Id: hydro.f90,v 1.44 2002-07-11 12:51:17 dobler Exp $
 
 module Hydro
 
@@ -67,7 +67,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.43 2002-07-09 23:06:27 brandenb Exp $")
+           "$Id: hydro.f90,v 1.44 2002-07-11 12:51:17 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -256,7 +256,8 @@ module Hydro
 !
 !  calculate velocity gradient matrix
 !
-      if (ldebug) print*,'call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
+      if (lroot .and. ip < 5) &
+           print*,'call dot2_mn(uu,u2); m,n,iux,iuz,u2=',m,n,iux,iuz,u2
       call gij(f,iuu,uij)
       divu=uij(:,1,1)+uij(:,2,2)+uij(:,3,3)
 !
