@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.110 2004-03-04 13:12:47 dobler Exp $
+# $Id: getconf.csh,v 1.111 2004-03-05 10:35:56 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -121,7 +121,7 @@ else if ($hn =~ giga[0-9][0-9].ncl.ac.uk) then
     echo "Non-SGE, running on `hostname`"
   endif
   set mpirun = /addon/shared/lam/bin/mpirun
-  set mpirunops = "-O -c2c -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
+  set mpirunops = "-O -ssi rpi tcp -s n0 -x LD_ASSUME_KERNEL=2.4.1" #Fix bug in Redhat 9
   if ($local_disc) then
     #setenv SCRATCH_DIR `cat $TMPDIR/scratch` 
     setenv SCRATCH_DIR /work/$JOB_ID 
