@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   nl2idl
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   28-May-2002
-# $Id: nl2idl,v 1.9 2002-10-05 12:49:33 dobler Exp $
+# $Id: nl2idl,v 1.10 2002-10-16 14:34:22 dobler Exp $
 # Description:
 #   Convert Fortran namelists into IDL code that defines the corresponding
 #   variables as slots of a structure.
@@ -36,7 +36,7 @@ my $funcname = "param";		# default name of idl function
 my $email = 'Wolfgang.Dobler@kis.uni-freiburg.de';
 my $id = "[a-zA-Z](?:[a-zA-Z0-9_])*"; # allowed namelist/variable identifiers
 my $nlstart = "^\\s*&($id)";	# regexp for start of a namelist
-my $numeric = '(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[Ee](?:[+-]?\d+))?'; # float
+my $numeric = '(?:[+-]?)(?=\d|\.\d)\d*(?:\.\d*)?(?:[EeDd](?:[+-]?\d+))?'; # float
 my $prefix="  par";
 
 my %nlists;
@@ -87,7 +87,7 @@ if ($debug) {
 }
 if ($opts{'version'}) {
     die "  $cmdname version\n" .
-	'  $Id: nl2idl,v 1.9 2002-10-05 12:49:33 dobler Exp $ ' . "\n";
+	'  $Id: nl2idl,v 1.10 2002-10-16 14:34:22 dobler Exp $ ' . "\n";
 }
 
 $funcname = ($opts{'f'} || $opts{'function'} || $funcname);
