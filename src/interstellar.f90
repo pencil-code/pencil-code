@@ -1,4 +1,4 @@
-! $Id: interstellar.f90,v 1.28 2003-06-10 19:21:01 mee Exp $
+! $Id: interstellar.f90,v 1.29 2003-06-11 16:13:05 mee Exp $
 
 !  This modules contains the routines for SNe-driven ISM simulations.
 !  Still in development. 
@@ -88,7 +88,7 @@ module Interstellar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: interstellar.f90,v 1.28 2003-06-10 19:21:01 mee Exp $")
+           "$Id: interstellar.f90,v 1.29 2003-06-11 16:13:05 mee Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -365,72 +365,83 @@ module Interstellar
     real, dimension(3) :: fran3,fmpi3
     real, dimension(2) :: fmpi2
     integer :: i, l, nzskip=10   !prevent SNI from being too close to boundaries
-    integer, dimension(1) :: impi
-    logical :: lfound,lfoundx,lfoundy,lfoundz
+    integer, dimension(4) :: impi4
 !
     !intent(in) :: f
     intent(inout) :: f
 !
 !  identifier
 !
-      if(headtt) print*,'position_SNI'
-!
-!  NB: this routine not usefully parallelised -- could all be done on root.
-!
-!  Lx,Ly,Lz,x0,y0,z0 not necessarily (correctly) set in cdata module. 
-!  (dx,dy,dz OK.  Lx,Ly,Lz assume periodic domains, not true for z.
-!   x0,y0,z0 not set (& note that their value also depends on periodicity.) )
-!  The following assumes x, y periodic, z non-periodic (see start.f90)
+    if(headtt) print*,'position_SNI'
+    
+    !
+    !  NB: this routine not usefully parallelised -- could all be done on root.
+    !
+    !  Lx,Ly,Lz,x0,y0,z0 not necessarily (correctly) set in cdata module. 
+    !  (dx,dy,dz OK.  Lx,Ly,Lz assume periodic domains, not true for z.
+    !   x0,y0,z0 not set (& note that their value also depends on periodicity.) )
+    !  The following assumes x, y periodic, z non-periodic (see start.f90)
     Lx=Lxyz(1);       Ly=Lxyz(2);       Lz=Lxyz(3)
     !dx=Lx/nxgrid;     dy=Ly/nygrid;     dz=Lz/(nzgrid-1)    !already OK
     x0=xyz0(1)+.5*dx; y0=xyz0(2)+.5*dy; z0=xyz0(3)
+    
+    if (lperi(1)) then; x0=xyz0(1)+.5*dx; else; x0=xyz0(1); endif
+    if (lperi(2)) then; y0=xyz0(2)+.5*dy; else; y0=xyz0(2); endif
+    if (lperi(3)) then; z0=xyz0(3)+.5*dz; else; z0=xyz0(3); endif
+    
     !if (lroot) print*, 'dx,dy,dz',dx,dy,dz
     !if (lroot) print*, 'x0,y0,z0,Lx,Ly,Lz',x0,y0,z0,Lx,Ly,Lz
-!
-!  Cumulative probability funcion in z currently calculated each time.
-!  It's constant, and could be stored (and calculated in init)
-!
-    cum_prob_SNI(1:nzskip)=0.0
-    do n=nzskip+1,nzgrid-nzskip
-      zn=z0+(n-1)*dz
-      cum_prob_SNI(n)=cum_prob_SNI(n-1)+exp(-(zn/h_SNI)**2)
-    enddo
-    cum_prob_SNI=cum_prob_SNI/cum_prob_SNI(nzgrid-nzskip)
-!  The following should never be needed, but just in case floating point 
-!  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
-    cum_prob_SNI(nzgrid-nzskip+1:nzgrid)=1.0   
-    !if (lroot) print*, 'cum_prob_SNI',cum_prob_SNI
-!
-!  Pick SN position (x_SN,y_SN,z_SN)
-!
-    call random_number(fran3)    ! get 3 random numbers
-    i=int(fran3(1)*nxgrid)+1
-    x_SN=x0+(i-1)*dx
-    !if (lroot) print*, 'x',fran3(1),x_SN
-!
-    i=int(fran3(2)*nygrid)+1
-    y_SN=y0+(i-1)*dy
-    ipy_SN=(i-1)/ny
-    !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
-!
-
-    if (uniform_zdist_SNI) then
-       i=int(fran3(3)*nzgrid)+1
-       z_SN=z0+(i-1)*dz
-       ipz_SN=(i-1)/nz
-    else
-       do i=nzskip+1,nzgrid-nzskip
-          if (cum_prob_SNI(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(i)) &
-               then
-               z_SN=z0+(i-1)*dz
-               ipz_SN=(i-1)/nz
-               exit
-            endif
-       enddo
+    
+    !
+    !  Pick SN position (x_SN,y_SN,z_SN)
+    !
+    if (lroot) then
+       call random_number(fran3)    ! get 3 random numbers
+       i=int(fran3(1)*nxgrid)+1
+       x_SN=x0+(i-1)*dx
+       l_SN=(i-1)
+       !if (lroot) print*, 'x',fran3(1),x_SN
+       
+       i=int(fran3(2)*nygrid)+1
+       y_SN=y0+(i-1)*dy
+       ipy_SN=(i-1)/ny  ! uses integer division
+       m_SN=(i-1)-(ipy_SN*ny)+nghost
+       !if (lroot) print*, 'y',fran3(2),i,y_SN,ipy_SN
+       
+       if (uniform_zdist_SNI) then
+          i=int(fran3(3)*nzgrid)+1
+          z_SN=z0+(i-1)*dz
+          ipz_SN=(i-1)/nz   ! uses integer division
+          n_SN=(i-1)-(ipz_SN*nz)+nghost
+       else
+          !
+          !  Cumulative probability funcion in z currently calculated each time.
+          !  It's constant, and could be stored (and calculated in init)
+          cum_prob_SNI(1:nzskip)=0.0
+          do n=nzskip+1,nzgrid-nzskip
+             zn=z0+(n-1)*dz
+             cum_prob_SNI(n)=cum_prob_SNI(n-1)+exp(-(zn/h_SNI)**2)
+          enddo
+          cum_prob_SNI=cum_prob_SNI/cum_prob_SNI(nzgrid-nzskip)
+          !  The following should never be needed, but just in case floating point 
+          !  errors ever lead to cum_prob_SNI(nzgrid-nzskip) < rnd < 1.
+          cum_prob_SNI(nzgrid-nzskip+1:nzgrid)=1.0   
+          !if (lroot) print*, 'cum_prob_SNI',cum_prob_SNI
+          
+          do i=nzskip+1,nzgrid-nzskip
+             if (cum_prob_SNI(i-1) <= fran3(3) .and. fran3(3) < cum_prob_SNI(i)) &
+                  then
+                z_SN=z0+(i-1)*dz
+                ipz_SN=(i-1)/nz  ! uses integer division
+                n_SN=(i-1)-(ipz_SN*nz)+nghost
+                exit
+             endif
+          enddo
+       endif
+       iproc_SN=ipz_SN*nprocy + ipy_SN
+       !if (lroot) print*, 'z',fran3(3),z_SN,ipz_SN,iproc_SN
     endif
-    iproc_SN=ipz_SN*nprocy + ipy_SN
 
-    !if (lroot) print*, 'z',fran3(3),z_SN,ipz_SN,iproc_SN
 !
 !  Broadcast position to all processors from root;
 !  also broadcast iproc_SN, needed for later broadcast of rho_SN.
@@ -439,26 +450,23 @@ module Interstellar
     call mpibcast_real(fmpi3,3)
     x_SN=fmpi3(1); y_SN=fmpi3(2); z_SN=fmpi3(3)
 !
-    impi=iproc_SN
-    call mpibcast_int(impi,1)
-    iproc_SN=impi(1)
+    impi4=(/ iproc_SN, l_SN, m_SN, n_SN /)
+    call mpibcast_int(impi4,4)
+    iproc_SN=impi4(1)
+    l_SN=impi4(2)
+    m_SN=impi4(3)
+    n_SN=impi4(4)
 !
 !  With current SN scheme, we need rho at the SN location.
 !
     rho_SN=0.0
-    lfound=.false.; lfoundx=.false.; lfoundy=.false.; lfoundz=.false.
     if (iproc==iproc_SN) then
-      do l=l1,l2; if (abs(x(l)-x_SN) < 1e-6) then; l_SN=l; lfoundx=.true.; endif; enddo
-      do m=m1,m2; if (abs(y(m)-y_SN) < 1e-6) then; m_SN=m; lfoundy=.true.; endif; enddo
-      do n=n1,n2; if (abs(z(n)-z_SN) < 1e-6) then; n_SN=n; lfoundz=.true.; endif; enddo
-      !print*,'l,m,n_SN',l_SN,m_SN,n_SN
-      lfound=(lfoundx .and. lfoundy .and. lfoundz)
-      if (.not. lfound) print*,'position_SNI: SN not found!'
       !print*, 'position_SNI:',l_SN,m_SN,n_SN,ilnrho,f(l_SN,m_SN,n_SN,ilnrho)
       lnrho_SN=f(l_SN,m_SN,n_SN,ilnrho)
       rho_SN=exp(lnrho_SN)
 ! calculate TT_SN here, for later use in explode_SN
       ss_SN=f(l_SN,m_SN,n_SN,ient)
+
 ! NEED TO USE IONISATION CALCS 
 
 !      call ioncalc(lnrho,ss,cs2,TT1,cp1tilde, &
