@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2003-11-03 09:34:18 $
-# $Revision: 1.15 $
+# $Date: 2004-02-23 09:23:43 $
+# $Revision: 1.16 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -28,17 +28,18 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #   -h, --help          -- Help
 #   -H, --html          -- Write output as elementary HTML (mostly <pre>)
 #   -u, --update        -- `cvs update' before compiling
+#   -U, --UPDATE        -- `cvs update; cvs update -d samples' before compiling
 #   -c, --clean         -- `make cleann' before compiling
 #   -m <emaillist>,
 #   --mail=<emaillist>  -- Specify who to send mail to if tests fail
-# Crontab entry:
-#   05 01 * * *     $HOME/bin/pencil-test --html --update HOST > $HOME/public_html/pencil-code/tests/HOST.html
 # Email list syntax:
 #   -m '{-:fluxrings},defaulty@any.where,nosy@some.where{+:fluxrings,+:rad1},ignorant@else.where{-:hydro.*}'
 #   will not send mail if `interlocked-fluxrings' fails -- except for Nosy
 #   who explicitly requested this. Ignorant will not get emails if only `hydro1'
 #   or `hydrogen-bond' fail. Note that the patterns are anchored at the end,
 #   but not at the beginning.
+# Crontab entry:
+#   05 01 * * *     $HOME/bin/pencil-test -HUm '{-:solar1d4},email1@domain1,email2@domain2' kabul > $HOME/public_html/pencil-code/tests/kabul.html
 
 use strict;
 use Getopt::Long;
@@ -54,6 +55,7 @@ GetOptions(\%opts,
 	   qw( -h   --help
 	       -H   --html
 	       -u   --update
+	       -U   --UPDATE
 	       -c   --clean
                -m=s --mail=s
 	       -p=s --postproc=s
@@ -64,6 +66,8 @@ my $debug     = (              $opts{'debug'}      || 0);
 my $html      = ($opts{'H'} || $opts{'html'}       || 0);
 my $clean     = ($opts{'c'} || $opts{'clean'}      || 0);
 my $update    = ($opts{'u'} || $opts{'update'}     || 0);
+my $UPDATE    = ($opts{'U'} || $opts{'UPDATE'}     || 0);
+if ($UPDATE) { $update=1 };
 my $emails    = ($opts{'m'} || $opts{'mail'}       || '');
 my $postproc  = ($opts{'p'} || $opts{'postproc'}   || '');
 
@@ -99,7 +103,8 @@ foreach my $host (@ARGV) {
     # Construct and execute remote command
     my @cmd = ("ssh", "-n", "$host");
     my $remcmd = 'cd $PENCIL_HOME';
-    if ($update) { $remcmd .= "; cvs update >& /dev/null"};
+    if ($update) { $remcmd .= "; cvs update >& /dev/null" };
+    if ($UPDATE) { $remcmd .= "; cvs update -d samples >& /dev/null" };
     $remcmd .= "; ./bin/auto-test -s -t";
     if ($clean) { $remcmd .= " --clean" };
     if ($postproc) { $remcmd .= " --postproc=\"$postproc\"" };
