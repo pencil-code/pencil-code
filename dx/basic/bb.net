@@ -1,18 +1,18 @@
 //
-// time: Fri Oct  4 21:41:36 2002
+// time: Thu Nov 13 10:39:55 2003
 //
 // version: 3.1.2 (format), 4.1.3 (DX)
 //
 //
 // MODULE main
-// workspace: width = 607, height = 636
+// workspace: width = 643, height = 636
 // layout: snap = 0, width = 50, height = 50, align = NN
 //
 macro main(
 ) -> (
 ) {
     // 
-    // node Import[1]: x = 159, y = 40, inputs = 6, label = Import
+    // node Import[1]: x = 159, y = 39, inputs = 6, label = Import
     // input[1]: defaulting = 0, visible = 1, type = 32, value = "data/var.general"
     // input[2]: defaulting = 1, visible = 1, type = 32, value = NULL
     //
@@ -58,14 +58,14 @@ main_Color_1_out_1 =
     main_Color_1_in_5
     ) [instance: 1, cache: 1];
     // 
-    // node Selector[1]: x = 543, y = 152, inputs = 7, label = Selector
+    // node Selector[1]: x = 579, y = 128, inputs = 7, label = Selector
     // input[1]: defaulting = 0, visible = 0, type = 32, value = "Selector_1"
-    // input[2]: defaulting = 0, visible = 0, type = 32, value = "ribbons" 
-    // input[3]: defaulting = 0, visible = 0, type = 29, value = 2 
-    // input[4]: defaulting = 1, visible = 1, type = 16777248, value = { "lines", "ribbons" }
-    // input[5]: defaulting = 1, visible = 0, type = 16777245, value = { 1, 2 }
-    // output[1]: visible = 1, type = 29, value = 2 
-    // output[2]: visible = 1, type = 32, value = "ribbons" 
+    // input[2]: defaulting = 0, visible = 0, type = 32, value = "tubes" 
+    // input[3]: defaulting = 0, visible = 0, type = 29, value = 3 
+    // input[4]: defaulting = 1, visible = 1, type = 16777248, value = { "lines" "ribbons" "tubes" }
+    // input[5]: defaulting = 1, visible = 0, type = 16777245, value = { 1 2 3 }
+    // output[1]: visible = 1, type = 29, value = 3 
+    // output[2]: visible = 1, type = 32, value = "tubes" 
     //
     // 
     // node Select[1]: x = 259, y = 129, inputs = 3, label = Select
@@ -87,29 +87,50 @@ main_DivCurl_1_out_2 =
     main_DivCurl_1_in_2
     ) [instance: 1, cache: 1];
     // 
+    // node Integer[1]: x = 503, y = 131, inputs = 11, label = Integer
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Integer_1"
+    // input[3]: defaulting = 0, visible = 0, type = 1, value = 100 
+    // input[5]: defaulting = 1, visible = 0, type = 1, value = 0
+    // input[6]: defaulting = 1, visible = 0, type = 1, value = 1000000
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 0
+    // output[1]: visible = 1, type = 1, value = 100 
+    //
+    // 
     // node Sample[1]: x = 349, y = 211, inputs = 2, label = Sample
-    // input[2]: defaulting = 0, visible = 1, type = 1, value = 40
+    // input[2]: defaulting = 1, visible = 1, type = 1, value = 40
     //
 main_Sample_1_out_1 = 
     Sample(
     main_Select_1_out_1,
-    main_Sample_1_in_2
+    main_Integer_1_out_1
     ) [instance: 1, cache: 1];
     // 
-    // node Streamline[1]: x = 270, y = 296, inputs = 7, label = Streamline
+    // node Scalar[1]: x = 430, y = 131, inputs = 11, label = Scalar
+    // input[1]: defaulting = 0, visible = 0, type = 32, value = "Scalar_1"
+    // input[3]: defaulting = 0, visible = 0, type = 5, value = 1000.0 
+    // input[5]: defaulting = 1, visible = 0, type = 5, value = 0.0
+    // input[6]: defaulting = 1, visible = 0, type = 5, value = 1000000.0
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 1.0
+    // input[9]: defaulting = 1, visible = 0, type = 1, value = 1
+    // output[1]: visible = 1, type = 5, value = 1000.0 
+    //
+    // 
+    // node Streamline[1]: x = 269, y = 296, inputs = 7, label = Streamline
+    // input[4]: defaulting = 1, visible = 1, type = 5, value = 1000.
     //
 main_Streamline_1_out_1 = 
     Streamline(
     main_DivCurl_1_out_2,
     main_Sample_1_out_1,
     main_Streamline_1_in_3,
-    main_Streamline_1_in_4,
+    main_Scalar_1_out_1,
     main_Streamline_1_in_5,
     main_Streamline_1_in_6,
     main_Streamline_1_in_7
     ) [instance: 1, cache: 1];
     // 
-    // node Ribbon[1]: x = 364, y = 377, inputs = 2, label = Ribbon
+    // node Ribbon[1]: x = 344, y = 388, inputs = 2, label = Ribbon
     //
 main_Ribbon_1_out_1 = 
     Ribbon(
@@ -117,13 +138,25 @@ main_Ribbon_1_out_1 =
     main_Ribbon_1_in_2
     ) [instance: 1, cache: 1];
     // 
-    // node Switch[1]: x = 297, y = 460, inputs = 3, label = Switch
+    // node Tube[2]: x = 456, y = 403, inputs = 4, label = Tube
+    // input[2]: defaulting = 0, visible = 1, type = 5, value = 0.015
+    //
+main_Tube_2_out_1 = 
+    Tube(
+    main_Streamline_1_out_1,
+    main_Tube_2_in_2,
+    main_Tube_2_in_3,
+    main_Tube_2_in_4
+    ) [instance: 2, cache: 1];
+    // 
+    // node Switch[1]: x = 297, y = 467, inputs = 4, label = Switch
     //
 main_Switch_1_out_1 = 
     Switch(
     main_Selector_1_out_1,
     main_Streamline_1_out_1,
-    main_Ribbon_1_out_1
+    main_Ribbon_1_out_1,
+    main_Tube_2_out_1
     ) [instance: 1, cache: 1];
     // 
     // node Collect[1]: x = 166, y = 482, inputs = 2, label = Collect
@@ -137,13 +170,13 @@ main_Collect_1_out_1 =
     // node Image[1]: x = 158, y = 574, inputs = 49, label = Image
     // input[1]: defaulting = 0, visible = 0, type = 67108863, value = "Image_1"
     // input[4]: defaulting = 0, visible = 0, type = 1, value = 1
-    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.078125 0.078125 0.513546]
-    // input[6]: defaulting = 0, visible = 0, type = 8, value = [-1.68505 -6.78433 2.47815]
-    // input[7]: defaulting = 1, visible = 0, type = 5, value = 3.94028
-    // input[8]: defaulting = 0, visible = 0, type = 1, value = 640
-    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.751
-    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.0143742 0.271783 0.962251]
-    // input[11]: defaulting = 0, visible = 0, type = 5, value = 30.0
+    // input[5]: defaulting = 0, visible = 0, type = 8, value = [0.0591916 -1.35575 0.0769225]
+    // input[6]: defaulting = 0, visible = 0, type = 8, value = [0.520629 -6.21446 9.70617]
+    // input[7]: defaulting = 1, visible = 0, type = 5, value = 4.89522
+    // input[8]: defaulting = 0, visible = 0, type = 1, value = 804
+    // input[9]: defaulting = 0, visible = 0, type = 5, value = 0.815
+    // input[10]: defaulting = 0, visible = 0, type = 8, value = [0.00290121 0.892838 0.450368]
+    // input[11]: defaulting = 0, visible = 0, type = 5, value = 25.5489
     // input[12]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[14]: defaulting = 0, visible = 0, type = 1, value = 1
     // input[15]: defaulting = 1, visible = 0, type = 32, value = "none"
@@ -152,10 +185,12 @@ main_Collect_1_out_1 =
     // input[18]: defaulting = 1, visible = 0, type = 1, value = 1
     // input[19]: defaulting = 0, visible = 0, type = 1, value = 0
     // input[22]: defaulting = 0, visible = 0, type = 32, value = "white"
+    // input[25]: defaulting = 0, visible = 0, type = 32, value = "img_10"
+    // input[26]: defaulting = 0, visible = 0, type = 32, value = "tiff"
     // input[29]: defaulting = 1, visible = 0, type = 3, value = 0
     // input[41]: defaulting = 0, visible = 0, type = 32, value = "rotate"
     // depth: value = 24
-    // window: position = (0.3438,0.0885), size = 0.6387x0.6823
+    // window: position = (0.3531,0.2900), size = 0.6391x0.6826
     // internal caching: 1
     //
 main_Image_1_out_1,
@@ -241,28 +276,54 @@ main_Color_1_in_4 = NULL;
 main_Color_1_in_5 = NULL;
 main_Color_1_out_1 = NULL;
 main_Selector_1_in_1 = "Selector_1";
-main_Selector_1_in_2 = "ribbons" ;
-main_Selector_1_in_3 = 2 ;
+main_Selector_1_in_2 = "tubes" ;
+main_Selector_1_in_3 = 3 ;
 main_Selector_1_in_4 = NULL;
 main_Selector_1_in_5 = NULL;
 main_Selector_1_in_6 = NULL;
 main_Selector_1_in_7 = NULL;
-main_Selector_1_out_1 = 2 ;
+main_Selector_1_out_1 = 3 ;
 main_Select_1_in_2 = "aa";
 main_Select_1_in_3 = NULL;
 main_Select_1_out_1 = NULL;
 main_DivCurl_1_in_2 = NULL;
 main_DivCurl_1_out_2 = NULL;
-main_Sample_1_in_2 = 40;
+main_Integer_1_in_1 = "Integer_1";
+main_Integer_1_in_2 = NULL;
+main_Integer_1_in_3 = 100 ;
+main_Integer_1_in_4 = NULL;
+main_Integer_1_in_5 = NULL;
+main_Integer_1_in_6 = NULL;
+main_Integer_1_in_7 = NULL;
+main_Integer_1_in_8 = NULL;
+main_Integer_1_in_9 = NULL;
+main_Integer_1_in_10 = NULL;
+main_Integer_1_in_11 = NULL;
+main_Integer_1_out_1 = 100 ;
 main_Sample_1_out_1 = NULL;
+main_Scalar_1_in_1 = "Scalar_1";
+main_Scalar_1_in_2 = NULL;
+main_Scalar_1_in_3 = 1000.0 ;
+main_Scalar_1_in_4 = NULL;
+main_Scalar_1_in_5 = NULL;
+main_Scalar_1_in_6 = NULL;
+main_Scalar_1_in_7 = NULL;
+main_Scalar_1_in_8 = NULL;
+main_Scalar_1_in_9 = NULL;
+main_Scalar_1_in_10 = NULL;
+main_Scalar_1_in_11 = NULL;
+main_Scalar_1_out_1 = 1000.0 ;
 main_Streamline_1_in_3 = NULL;
-main_Streamline_1_in_4 = NULL;
 main_Streamline_1_in_5 = NULL;
 main_Streamline_1_in_6 = NULL;
 main_Streamline_1_in_7 = NULL;
 main_Streamline_1_out_1 = NULL;
 main_Ribbon_1_in_2 = NULL;
 main_Ribbon_1_out_1 = NULL;
+main_Tube_2_in_2 = 0.015;
+main_Tube_2_in_3 = NULL;
+main_Tube_2_in_4 = NULL;
+main_Tube_2_out_1 = NULL;
 main_Switch_1_out_1 = NULL;
 main_Collect_1_out_1 = NULL;
 macro Image(
@@ -580,13 +641,13 @@ macro Image(
 main_Image_1_in_1 = "Image_1";
 main_Image_1_in_3 = "X24,,";
 main_Image_1_in_4 = 1;
-main_Image_1_in_5 = [0.078125 0.078125 0.513546];
-main_Image_1_in_6 = [-1.68505 -6.78433 2.47815];
+main_Image_1_in_5 = [0.0591916 -1.35575 0.0769225];
+main_Image_1_in_6 = [0.520629 -6.21446 9.70617];
 main_Image_1_in_7 = NULL;
-main_Image_1_in_8 = 640;
-main_Image_1_in_9 = 0.751;
-main_Image_1_in_10 = [0.0143742 0.271783 0.962251];
-main_Image_1_in_11 = 30.0;
+main_Image_1_in_8 = 804;
+main_Image_1_in_9 = 0.815;
+main_Image_1_in_10 = [0.00290121 0.892838 0.450368];
+main_Image_1_in_11 = 25.5489;
 main_Image_1_in_12 = 1;
 main_Image_1_in_13 = NULL;
 main_Image_1_in_14 = 1;
@@ -599,8 +660,8 @@ main_Image_1_in_20 = NULL;
 main_Image_1_in_21 = NULL;
 main_Image_1_in_22 = "white";
 main_Image_1_in_23 = NULL;
-main_Image_1_in_25 = NULL;
-main_Image_1_in_26 = NULL;
+main_Image_1_in_25 = "img_10";
+main_Image_1_in_26 = "tiff";
 main_Image_1_in_27 = NULL;
 main_Image_1_in_28 = NULL;
 main_Image_1_in_29 = NULL;
