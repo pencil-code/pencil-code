@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.54 2003-08-19 07:54:01 ajohan Exp $
+! $Id: boundcond.f90,v 1.55 2003-08-21 09:21:40 ajohan Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -523,7 +523,7 @@ module Boundcond
       cpoly1(:,:)=-(-3*f(:,:,n2,j)+4*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz)
       cpoly2(:,:)=-(-f(:,:,n2,j)+2*f(:,:,n2-1,j)-f(:,:,n2-2,j))/(2*dz**2)
       do i=1,nghost
-        f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dx)**2
+        f(:,:,n2+i,j) = cpoly0(:,:) + cpoly1(:,:)*i*dz + cpoly2(:,:)*(i*dz)**2
       enddo
 
     endselect
