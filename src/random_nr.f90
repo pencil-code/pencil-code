@@ -1,4 +1,4 @@
-! $Id: random_nr.f90,v 1.2 2002-08-28 13:19:08 dobler Exp $ 
+! $Id: random_nr.f90,v 1.3 2002-09-04 03:17:18 brandenb Exp $ 
 
 module Random_nr
 
@@ -78,7 +78,6 @@ module Random_nr
 !  with the 'Minimal Standard' random number generator
 !      
       real, dimension(mx,my,mz) :: matrix
-      real :: dummy
       integer :: i,j,k
       integer, save :: idum=-10 ! _must_ be < 0 for ran()
 !
