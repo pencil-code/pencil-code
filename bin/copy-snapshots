@@ -50,6 +50,7 @@ else
   set size = $lsout[5]
 
   while (1)
+    date
     set i=0
     foreach node ($nodelist)
       if ($debug) echo "node=$node"
