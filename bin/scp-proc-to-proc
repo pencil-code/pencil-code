@@ -1,0 +1,17 @@
+#!/bin/csh
+#$Id: scp-proc-to-proc,v 1.1 2003-01-19 16:12:14 brandenb Exp $
+#
+#  Example:
+#     scp-proc-to-proc grid.dat ../hydro256e
+#     scp-proc-to-proc seed.dat ../hydro256e
+#     scp-proc-to-proc dim.dat $serv/f90/pencil-code/runs/forced/relax_twist128a
+
+#  will copy all var.dat files fron current directory to var.dat in
+#  another run directory.
+#  Used for restarting in a different directory.
+
+set procdirs  =  `ls data | grep proc `
+foreach proc ($procdirs)
+  echo "cp data/$proc/$1 $2/data/$proc"
+  scp data/$proc/$1 $2/data/$proc
+end

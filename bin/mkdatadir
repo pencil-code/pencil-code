@@ -1,6 +1,6 @@
 #!/bin/csh
 #
-#  $Id: mkdatadir,v 1.6 2002-11-27 21:03:57 tarek Exp $
+#  $Id: mkdatadir,v 1.7 2003-01-19 16:12:14 brandenb Exp $
 #
 #  This script generates a link to a data directory
 #  with the same name as the current working directory
@@ -17,7 +17,7 @@ echo $cwd >! .tmp
 set hn = `hostname`
 echo "we are on" $hn ", the new workspace will be"
 if ($hn =~ mhd*.st-and.ac.uk) then
-  set str='s/home/work4/g'
+  set str='s/home/work2/g'
 else if ($hn =~ fe*) then
   set str='s/home/wkspace/g'
 else if ($hn =~ sander*) then
