@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.36 2002-06-01 02:56:21 brandenb Exp $
+! $Id: cdata.f90,v 1.37 2002-06-01 09:36:38 brandenb Exp $
 
 module Cdata
 
@@ -35,7 +35,7 @@ module Cdata
   integer:: isothtop
 
   integer, dimension (2) :: seed
-  integer :: nvar,iuu,iux,iuy,iuz,ilnrho,ient,iaa,iax,iay,iaz
+  integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0,iaa=0,iax=0,iay=0,iaz=0
   integer :: nt,it1,isave,itorder
   integer :: it,ix,iy,iz
   integer :: ivisc

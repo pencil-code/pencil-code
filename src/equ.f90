@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.49 2002-06-01 02:56:21 brandenb Exp $
+! $Id: equ.f90,v 1.50 2002-06-01 09:36:38 brandenb Exp $
 
 module Equ
 
@@ -116,17 +116,21 @@ module Equ
 !
       file='tvid.dat'
       if (ifirst==0) then
-        open(41,file=chdir//'/divu.dat',form='unformatted')
-        open(43,file=chdir//'/ux.dat',form='unformatted')
-        open(44,file=chdir//'/uz.dat',form='unformatted')
+        open(41,file=chdir//'/divu.xy',form='unformatted')
+        open(43,file=chdir//'/ux.xy',form='unformatted')
+        open(44,file=chdir//'/uz.xy',form='unformatted')
+        open(45,file=chdir//'/uz.xz',form='unformatted')
+        open(46,file=chdir//'/lnrho.xz',form='unformatted')
         call out1 (file,tvid,nvid,dvid,t)
         ifirst=1
       else
         call out2 (file,tvid,nvid,dvid,t,lvid,ch,.false.)
         if (lvid) then
-          write(41) divu_slice(:,:),t
-          write(43) uu_slice(:,:,1),t
-          write(44) uu_slice(:,:,3),t
+          write(41) divu_xy(:,:),t
+          write(43) uu_xy(:,:,1),t
+          write(44) uu_xy(:,:,3),t
+          write(45) uu_xz(:,:,3),t
+          write(46) lnrho_xz(:,:),t
         endif
       endif
     endsubroutine wvid
@@ -153,10 +157,10 @@ module Equ
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: uij
       real, dimension (nx,3) :: uu,del2u,glnrho,ugu,oo,graddivu,fvisc,gpprho
-      real, dimension (nx) :: divu,uglnrho,u2,o2,ou
+      real, dimension (nx) :: divu,lnrho,uglnrho,u2,o2,ou
       real, dimension(nx) :: rho1,nu_var,chi,diff,del2lam
       real, dimension(nx) :: pdamp
-      real :: diffrho
+      real :: diffrho,fac
       integer :: i,j
 !
 !  print statements when they are first executed
@@ -165,8 +169,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.49 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.50 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -186,6 +190,11 @@ module Equ
         m=mm(imn)
         if (necessary(imn)) call finalise_isendrcv_bdry(f)
 !
+!  abbreviations
+!
+        uu=f(l1:l2,m,n,iux:iuz)
+        lnrho=f(l1:l2,m,n,ilnrho)
+!
 !  do all the neccessary derivatives here
 !
         call gij(f,iuu,uij)
@@ -200,7 +209,7 @@ module Equ
 !
 !  rho1 (=1/rho) is needed for viscous term, heat conduction, and Lorentz force
 !
-        rho1=exp(-f(l1:l2,m,n,ilnrho))
+        rho1=exp(-lnrho)
 !
 !  viscosity operator
 !
@@ -216,10 +225,6 @@ module Equ
           call del2v(f,iuu,del2u)
           fvisc=nu*del2u
         endif
-!
-!  abbreviations
-!
-        uu=f(l1:l2,m,n,iux:iuz)
 !
 !  auxiliary terms
 !
@@ -297,9 +302,17 @@ module Equ
 !  write slices for animation
 !
         if (n.eq.iz) then
-          divu_slice(:,m-m1+1)=divu
+          divu_xy(:,m-m1+1)=divu
+          lnrho_xy(:,m-m1+1)=lnrho
           do j=1,3
-            uu_slice(:,m-m1+1,j)=uu(:,j)
+            uu_xy(:,m-m1+1,j)=uu(:,j)
+          enddo
+        endif
+!
+        if (m.eq.iy) then
+          lnrho_xz(:,n-n1+1)=lnrho
+          do j=1,3
+            uu_xz(:,n-n1+1,j)=uu(:,j)
           enddo
         endif
 !
@@ -310,9 +323,10 @@ module Equ
 !  the first substep of each time step
 !
         if (lfirst.and.ldt) then
-          diff = nu
+          fac=cdt/(cdtv*dxmin)
+          diff = nu  !!(for the time being)
           if (lentropy)  diff = max(diff, chi)
-          call max_mn(u2+cs2+va2+cdtv*diff/dxmin,UUmax)
+          call max_mn(sqrt(u2+cs2+va2)+fac*diff,UUmax)
         endif
 !
 !  Calculate maxima and rms values for diagnostic purposes

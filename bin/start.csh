@@ -16,6 +16,17 @@ endif
 # Determine whether this is MPI, how many CPUS etc.
 source getconf.csh
 
+#
+#  If we don't have a tmp subdirectory: give warning and make a local one
+#
+if (! -e tmp) then
+  echo ""
+  echo ">> WARNING: need tmp directory; make local directory underneath"
+  echo ">> IN FUTURE: you may want to make a link to some fast scratch disk!"
+  echo ""
+  mkdir tmp
+endif
+
 # Create list of subdirectories
 set subdirs = `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"tmp/proc";' 'i; }' | bc`
 foreach dir ($subdirs)

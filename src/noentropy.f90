@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.14 2002-06-01 02:56:21 brandenb Exp $
+! $Id: noentropy.f90,v 1.15 2002-06-01 09:36:38 brandenb Exp $
 
 module Entropy
 
@@ -44,8 +44,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.14 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.15 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -95,6 +95,38 @@ module Entropy
       if(ip==1) print*,f,df,uu,uij,divu,rho1,glnrho,gpprho  !(to remove compiler warnings)
 !
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine rprint_entropy(lreset)
+!
+!  reads and registers print parameters relevant to entropy
+!
+!   1-jun-02/axel: adapted from magnetic fields
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+!       i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+      endif
+!
+      do iname=1,nname
+!       call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      open(3,file='tmp/entropy.pro')
+      write(3,*) 'nname=',nname
+      write(3,*) 'ient=',ient
+      close(3)
+!
+    endsubroutine rprint_entropy
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)
 !

@@ -1,12 +1,10 @@
-! $Id: nomagnetic.f90,v 1.9 2002-06-01 02:56:21 brandenb Exp $
+! $Id: nomagnetic.f90,v 1.10 2002-06-01 09:36:38 brandenb Exp $
 
 module Magnetic
 
   use Cparam
 
   implicit none
-
-  integer :: iaa
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /magnetic_init_pars/ dummy
@@ -42,8 +40,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: nomagnetic.f90,v $", &
-           "$Revision: 1.9 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.10 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
     endsubroutine register_aa
 !***********************************************************************
@@ -80,7 +78,7 @@ module Magnetic
 !  dummy routine
 !   3-may-02/axel: coded
 !
-      use Cdata, only: nname
+      use Cdata
 !
       logical :: lreset
 !
@@ -95,6 +93,10 @@ module Magnetic
       write(3,*) 'i_j2m=',i_j2m
       write(3,*) 'i_jm2=',i_jm2
       write(3,*) 'nname=',nname
+      write(3,*) 'iaa=',iaa
+      write(3,*) 'iax=',iax
+      write(3,*) 'iay=',iay
+      write(3,*) 'iaz=',iaz
       close(3)
 !
     endsubroutine rprint_magnetic

@@ -1,4 +1,4 @@
-! $Id: noforcing.f90,v 1.3 2002-06-01 02:56:21 brandenb Exp $
+! $Id: noforcing.f90,v 1.4 2002-06-01 09:36:38 brandenb Exp $
 
 module Forcing
 
@@ -35,8 +35,8 @@ module Forcing
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noforcing.f90,v $", &
-           "$Revision: 1.3 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.4 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -48,6 +48,7 @@ module Forcing
 !
       real, dimension (mx,my,mz,mvar) :: df
 !
+      if(ip==1) print*,df !(to remove compiler warnings)
     endsubroutine addforce
 !***********************************************************************
 

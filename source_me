@@ -3,5 +3,6 @@
 #  alternatively, put this into your .cshrc
 #  Wolfgang, could this be made shell-independent?
 #
-set path=($cwd/bin $HOME/bin $path)
+set path=(../bin ../../bin ../../../bin $HOME/bin $path)
 setenv IDL_PATH "../idl:../../idl:../../../idl:+~/idl:+/usr/local/rsi/idl"
+set cdpath = ( ../  ../../ ../../../ ~/ )

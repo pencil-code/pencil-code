@@ -107,6 +107,10 @@ l1=3 & l2=mx-4
 m1=3 & m2=my-4
 n1=3 & n2=mz-4
 ;
+nx=mx-2*nghostx
+ny=my-2*nghosty
+nz=mz-2*nghostz
+;
 print, '..done'
 ;
 started=1

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.32 2002-05-31 04:20:48 brandenb Exp $
+! $Id: magnetic.f90,v 1.33 2002-06-01 09:36:38 brandenb Exp $
 
 module Magnetic
 
@@ -6,7 +6,7 @@ module Magnetic
 
   implicit none
 
-  integer :: iaa,initaa=0
+  integer :: initaa=0
 
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
@@ -67,8 +67,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.32 $", &
-           "$Date: 2002-05-31 04:20:48 $")
+           "$Revision: 1.33 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -330,6 +330,10 @@ if (lroot) print*, 'Init_aa: phi,theta = ', phi,theta
       write(3,*) 'i_j2m=',i_j2m
       write(3,*) 'i_jm2=',i_jm2
       write(3,*) 'nname=',nname
+      write(3,*) 'iaa=',iaa
+      write(3,*) 'iax=',iax
+      write(3,*) 'iay=',iay
+      write(3,*) 'iaz=',iaz
       close(3)
 !
     endsubroutine rprint_magnetic

@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.47 2002-06-01 02:56:21 brandenb Exp $
+! $Id: entropy.f90,v 1.48 2002-06-01 09:36:38 brandenb Exp $
 
 module Entropy
 
@@ -7,7 +7,7 @@ module Entropy
 
   implicit none
 
-  integer :: initss
+  integer :: initss=0
   real, dimension (nx) :: cs2,TT1
 
   ! input parameters
@@ -53,8 +53,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.47 $", &
-           "$Date: 2002-06-01 02:56:21 $")
+           "$Revision: 1.48 $", &
+           "$Date: 2002-06-01 09:36:38 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -310,6 +310,38 @@ module Entropy
 
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + heat
     endsubroutine dss_dt
+!***********************************************************************
+    subroutine rprint_entropy(lreset)
+!
+!  reads and registers print parameters relevant to entropy
+!
+!   1-jun-02/axel: adapted from magnetic fields
+!
+      use Cdata
+      use Sub
+!
+      integer :: iname
+      logical :: lreset
+!
+!  reset everything in case of reset
+!  (this needs to be consistent with what is defined above!)
+!
+      if (lreset) then
+!       i_b2m=0; i_bm2=0; i_j2m=0; i_jm2=0; i_abm=0; i_jbm=0
+      endif
+!
+      do iname=1,nname
+!       call parse_name(iname,cname(iname),cform(iname),'abm',i_abm)
+      enddo
+!
+!  write column where which magnetic variable is stored
+!
+      open(3,file='tmp/entropy.pro')
+      write(3,*) 'nname=',nname
+      write(3,*) 'ient=',ient
+      close(3)
+!
+    endsubroutine rprint_entropy
 !***********************************************************************
     subroutine heatcond(x,y,z,hcond)
 !
