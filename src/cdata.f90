@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.114 2002-11-24 13:14:59 mee Exp $
+! $Id: cdata.f90,v 1.115 2002-12-01 11:59:28 mee Exp $
 
 module Cdata
 
@@ -13,10 +13,7 @@ module Cdata
   real, dimension (nx) :: x_mn,y_mn,z_mn,r_mn
   real, dimension (nx) :: maxadvec2,maxdiffus
 
-!ajwm - rate of strain tensor brought from hydro.f90
-!ajwm - so it may be used in Viscosity module
-!ajwm - though is is still initialised by Hydro.f90
-  real, dimension (nx,3,3) :: sij
+  real, dimension (nx,3,3) :: sij  !Rate of Strain tensor
 
   real, parameter :: pi=3.14159265358979324D0,epsi=5*epsilon(1.)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
@@ -36,15 +33,14 @@ module Cdata
 
   integer, dimension(mseed) :: seed=0
   integer :: nseed=0
-  integer :: nvar,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0
+  integer :: nvar,naux,iuu=0,iux=0,iuy=0,iuz=0,ilnrho=0,ient=0
   integer :: iaa=0,iax=0,iay=0,iaz=0
-  integer :: ie,iff,ifx,ify,ifz,idd
+  integer :: ie=0,iff=0,ifx=0,ify=0,ifz=0,idd=0, ishock=0
   integer :: nt=0,it1=10
   integer :: it,ix=l1,iy=m1,iz=n1,iz2=n2
   integer :: m,n
   integer :: iproc,ipx,ipy,ipz,root=0
   logical, dimension(3) :: lperi
-!ajwm ivisc moved to Viscosity module
   character (len=labellen) ::fft_switch='Singleton'
 
 !
@@ -80,6 +76,9 @@ module Cdata
   logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
   logical :: ab_spec=.false.,ou_spec=.false.
   logical :: test_nonblocking=.false.
+
+!  logical, dimension(mvar + maux) :: lsnap ! Flag which variables should be written
+                                             ! To the snapshots
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2

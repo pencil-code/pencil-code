@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.56 2002-11-24 13:14:59 mee Exp $
+! $Id: register.f90,v 1.57 2002-12-01 11:59:28 mee Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules). Didn't know where else to put this:
@@ -42,6 +42,7 @@ module Register
 !  initialize nvar; is increased by the following routines
 !
       nvar = 0 
+      naux = 0 
 !
       call register_io
 !

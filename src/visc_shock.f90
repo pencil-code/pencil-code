@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.9 2002-11-27 13:52:44 mee Exp $
+! $Id: visc_shock.f90,v 1.10 2002-12-01 11:59:28 mee Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock * dx * smooth(max5(-(div u)))) 
@@ -13,7 +13,6 @@ module Viscosity
 
 !  real :: nu=0.
   real :: nu_shock = 0.
-  real, dimension(mx,my,mz) :: shock_characteristic
   character (len=labellen) :: ivisc=''
   integer :: icalculated = -1
 
@@ -42,23 +41,26 @@ module Viscosity
 !
       lviscosity = .true.
 !
+      ishock = mvar + naux + 1
+      naux = naux + 1 
+!
       if ((ip<=8) .and. lroot) then
-        print*, 'register_viscosity: constant viscosity'
+        print*, 'register_viscosity: constant viscosity nvar = ', nvar
+        print*, 'ishock = ', ishock
       endif
 !
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.9 2002-11-27 13:52:44 mee Exp $")
+           "$Id: visc_shock.f90,v 1.10 2002-12-01 11:59:28 mee Exp $")
 
 
-! Following test unnecessary as no extra variable is evolved
-!
-!      if (nvar > mvar) then
-!        if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
-!        call stop_it('Register_viscosity: nvar > mvar')
-!      endif
-!
+! Check we arn't registering too many auxilliary variables
+      if (naux > maux) then
+        if (lroot) write(0,*) 'naux = ', naux, ', maux = ', maux
+        call stop_it('Register_viscosity: naux > maux')
+      endif
+
     endsubroutine register_viscosity
 !***********************************************************************
     subroutine initialize_viscosity()
@@ -84,21 +86,21 @@ module Viscosity
       real, dimension (mx,my,mz) :: tmp
 
       if (nu_shock /= 0.) then
-         call shock_divu(f,shock_characteristic)
-        shock_characteristic=amax1(0., -shock_characteristic)
+         call shock_divu(f)
+         f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
 
  
-         call shock_max5(shock_characteristic,tmp)
-         call shock_smooth(tmp,shock_characteristic)   
+         call shock_max5(f(:,:,:,ishock),tmp)
+         call shock_smooth(tmp,f(:,:,:,ishock))   
 
-         shock_characteristic = shock_characteristic * dxmin**2 
+         f(:,:,:,ishock) = f(:,:,:,ishock) * dxmin**2 
       else
-         shock_characteristic = 0.
+         f(:,:,:,ishock) = 0.
       end if
 
       icalculated = it
 !ajwm debug onyl line:-
-! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',shock_characteristic,1)
+! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
     endsubroutine calc_viscosity
 !***********************************************************************
 !ajwm Utility routines - poss need moving elsewhere
@@ -320,7 +322,7 @@ module Viscosity
 
     endsubroutine shock_smooth
 !***********************************************************************
-    subroutine shock_divu(f,df)
+    subroutine shock_divu(f)
 !
 !  calculate divergence of a vector U, get scalar
 !  accurate to 2nd order, explicit,  centred an left and right biased 
@@ -338,38 +340,38 @@ module Viscosity
       df=0.
 
       if (nxgrid/=1) then
-         df(1     ,:,:) =   (  4.*f(2,:,:,iux) &
+         f(1     ,:,:,ishock) =   (  4.*f(2,:,:,iux) &
                                - 3.*f(1,:,:,iux) &
                                -    f(3,:,:,iux) &
                                )/(2.*dx) 
-         df(2:mx-1,:,:) =   (f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux))/(2.*dx) 
-         df(mx    ,:,:) =   (  3.*f(mx  ,:,:,iux) &
+         f(2:mx-1,:,:,ishock) =   (f(3:mx,:,:,iux)-f(1:mx-2,:,:,iux))/(2.*dx) 
+         f(mx    ,:,:,ishock) =   (  3.*f(mx  ,:,:,iux) &
                              - 4.*f(mx-1,:,:,iux) &
                              +    f(mx-2,:,:,iux) &
                              )/(2.*dx)
       endif
 
       if (nygrid/=1) then
-         df(:,1     ,:) = df(:,1     ,:) &
+         f(:,1     ,:,ishock) = df(:,1     ,:) &
                           + (  4.*f(:,2,:,iuy) &
                              - 3.*f(:,1,:,iuy) &
                              -    f(:,3,:,iuy))/(2.*dy) 
-         df(:,2:my-1,:) = df(:,2:my-1,:) &  
+         f(:,2:my-1,:,ishock) = df(:,2:my-1,:) &  
                           + (f(:,3:my,:,iuy)-f(:,1:my-2,:,iuy))/(2.*dy) 
-         df(:,my    ,:) = df(:,my    ,:) & 
+         f(:,my    ,:,ishock) = df(:,my    ,:) & 
                           + (  3.*f(:,my  ,:,iuy) &
                              - 4.*f(:,my-1,:,iuy) &
                              +    f(:,my-2,:,iuy))/(2.*dy)
       end if
 
       if (nzgrid/=1) then
-         df(:,:,1     ) = df(:,:,1     ) &
+         f(:,:,1     ,ishock) = df(:,:,1     ) &
                           + (  4.*f(:,:,2,iuz) &
                              - 3.*f(:,:,1,iuz) &
                              -    f(:,:,3,iuz))/(2.*dz) 
-         df(:,:,2:mz-1) = df(:,:,2:mz-1) & 
+         f(:,:,2:mz-1,ishock) = df(:,:,2:mz-1) & 
                           + (f(:,:,3:mz,iuz)-f(:,:,1:mz-2,iuz))/(2.*dz) 
-         df(:,:,mz    ) = df(:,:,mz    ) &   
+         f(:,:,mz    ,ishock) = df(:,:,mz    ) &   
                           + (  3.*f(:,:,mz  ,iuz) &
                              - 4.*f(:,:,mz-1,iuz) &
                              +    f(:,:,mz-2,iuz))/(2.*dz)
@@ -402,7 +404,7 @@ module Viscosity
 
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + TT1 * &
            (2.*nu*sij2 & 
-           + nu_shock * shock_characteristic(l1:l2,m,n) * divu**2)
+           + nu_shock * f(l1:l2,m,n,ishock) * divu**2)
     endsubroutine calc_viscous_heat
 
 !***********************************************************************
@@ -439,11 +441,11 @@ module Viscosity
 !         if (headtt) print*,'viscous force: (nu_total) *(del2u+graddivu/3+2S.glnrho) + 2S.gnu_total)'
          call del2v_etc(f,iuu,del2u,GRADDIV=graddivu)
          if(ldensity) then
-            call grad(shock_characteristic,gshock_characteristic)
+            call grad(f(:,:,:,ishock),gshock_characteristic)
             call multmv_mn(sij,glnrho,sglnrho)
             call multsv_mn(glnrho,divu,fvisc)
             tmp=fvisc +graddivu
-            call multsv_mn(tmp,nu_shock*shock_characteristic(l1:l2,m,n),fvisc)
+            call multsv_mn(tmp,nu_shock*f(l1:l2,m,n,ishock),fvisc)
             call multsv_add_mn(fvisc,nu_shock * divu, gshock_characteristic,tmp)
             fvisc = tmp + 2*nu*sglnrho+nu*(del2u+1./3.*graddivu)
             maxdiffus=amax1(maxdiffus,nu)

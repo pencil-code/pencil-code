@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.116 2002-11-24 13:14:59 mee Exp $
+! $Id: run.f90,v 1.117 2002-12-01 11:59:28 mee Exp $
 !
 !***********************************************************************
       program run
@@ -30,7 +30,8 @@
 !
         implicit none
 !
-        real, dimension (mx,my,mz,mvar) :: f,df
+        real, dimension (mx,my,mz,mvar+maux) :: f
+        real, dimension (mx,my,mz,mvar) :: df
         double precision :: time1,time2
         integer :: count
         logical :: stop=.false.,reload=.false.,save_lastsnap=.true.
@@ -50,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.116 2002-11-24 13:14:59 mee Exp $")
+             "$Id: run.f90,v 1.117 2002-12-01 11:59:28 mee Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
