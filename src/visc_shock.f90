@@ -1,4 +1,4 @@
-! $Id: visc_shock.f90,v 1.55 2004-01-31 14:01:22 dobler Exp $
+! $Id: visc_shock.f90,v 1.56 2004-02-03 12:13:33 theine Exp $
 
 !  This modules implements viscous heating and diffusion terms
 !  here for shock viscosity nu_total = nu + nu_shock*dx*smooth(max5(-(div u)))) 
@@ -8,7 +8,7 @@
 ! variables and auxiliary variables added by this module
 !
 ! MVAR CONTRIBUTION 0
-! MAUX CONTRIBUTION 2
+! MAUX CONTRIBUTION 1
 !
 !***************************************************************
 
@@ -23,7 +23,6 @@ module Viscosity
   real :: nu_shock = 0.
   character (len=labellen) :: ivisc=''
   real :: nutotal_max
-  integer :: itest
   logical :: lvisc_first=.false.,lshock_max5=.true.
 
   ! input parameters
@@ -57,9 +56,7 @@ module Viscosity
       lvisc_shock = .true.
 !
       ishock = mvar + naux + 1
-      itest = mvar + naux + 2
-      !naux = naux + 1
-      naux = naux + 2
+      naux = naux + 1
 !
       if ((ip<=8) .and. lroot) then
         print*, 'register_viscosity: shock viscosity nvar = ', nvar
@@ -69,7 +66,7 @@ module Viscosity
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: visc_shock.f90,v 1.55 2004-01-31 14:01:22 dobler Exp $")
+           "$Id: visc_shock.f90,v 1.56 2004-02-03 12:13:33 theine Exp $")
 !
 ! Check we aren't registering too many auxiliary variables
 !
@@ -138,7 +135,6 @@ module Viscosity
           write(3,*) 'i_shockmax=',i_dtnu
           write(3,*) 'ihyper=',ihyper
           write(3,*) 'ishock=',ishock
-          write(3,*) 'itest=',itest
         endif
       endif
 !   
@@ -152,13 +148,9 @@ module Viscosity
 !  23-nov-02/tony: coded
 !
       use IO
-!     use Sub, only: grad
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: tmp
-!      real, dimension (mx,my,mz,3) :: savef
-!      real, dimension (nx,3) :: tmpuu
-!      real :: radius 
 !
       if(headt) print*,'calc_viscosity: dxmin=',dxmin
 !
@@ -168,23 +160,9 @@ module Viscosity
 !
 !  calculate (-divu)_+
 !
-!savef=f(:,:,:,iux:iuz)
-!        radius=dxmin*10.
-!        f(:,:,:,ishock)= spread(spread(exp((-x/radius)**2),2,my),3,mz) &
-!                        *spread(spread(exp((-y/radius)**2),1,mx),3,mz) &
-!                        *spread(spread(exp((-z/radius)**2),1,mx),2,my)
-        
-!         do n=n1,n2
-!         do m=m1,m2
-!           call grad(f,ishock,tmpuu)
-!           f(l1:l2,m,n,iux:iuz)=tmpuu    
-!         enddo
-!         enddo
-
          call shock_divu(f,f(:,:,:,ishock))
+!
          f(:,:,:,ishock)=amax1(0., -f(:,:,:,ishock))
-!         f(:,:,:,ishock)=0.
-!         f(mx/2,my/2,mz/2,ishock)=10.
 !
 !  take the max over 5 neighboring points and smooth.
 !  Note that this means that we'd need 4 ghost zones, so
@@ -199,11 +177,8 @@ module Viscosity
          endif
 
 ! Save test data and scale to match the maximum expected result of smoothing 
-         f(:,:,:,itest)=tmp  
 
-         !f(:,:,:,itest)=f(:,:,:,ishock)
          call shock_smooth(tmp,f(:,:,:,ishock))
-         !f(:,:,:,ishock)=tmp
 !
 !  scale with dxmin**2
 !
@@ -211,7 +186,6 @@ module Viscosity
       else
          f(:,:,:,ishock) = 0.
       end if
-!f(:,:,:,iux:iuz)=savef
 !
 !ajwm debug only line:-
 ! if (ip=0) call output(trim(directory_snap)//'/shockvisc.dat',f(:,:,:,ishock),1)
