@@ -1,5 +1,5 @@
 #!/bin/csh
-#$Id: copy-VARN-to-var,v 1.4 2002-11-26 11:13:10 brandenb Exp $
+#$Id: copy-VARN-to-var,v 1.5 2004-04-29 09:08:21 ajohan Exp $
 #
 #  Examples:
 #     nohup copy-VAR-to-var 10 .
@@ -21,8 +21,9 @@
 /bin/pwd >>! $2/data/copied_from.dir
 /bin/date >>! $2/data/copied_from.dir
 
-set procdirs  =  `ls data | grep proc `
+set procdirs  =  `\ls data | grep proc `
+echo $procdirs
 foreach proc ($procdirs)
   echo "cp data/$proc/VAR$1 $2/data/$proc/var.dat"
-  cp data/$proc/VAR$1 $2/data/$proc/var.dat
+  \cp data/$proc/VAR$1 $2/data/$proc/var.dat
 end
