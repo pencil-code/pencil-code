@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.115 2002-08-04 17:29:38 brandenb Exp $
+! $Id: entropy.f90,v 1.116 2002-08-05 23:06:52 dobler Exp $
 
 module Entropy
 
@@ -26,8 +26,8 @@ module Entropy
 
   ! run parameters
   namelist /entropy_run_pars/ &
-       hcond0,hcond1,hcond2,widthss,luminosity,wheat, &
-       cooltype,cs2cool,cool,rcool,wcool,Fbot, &
+       hcond0,hcond1,hcond2,widthss, &
+       luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior
 
   ! other variables (needs to be consistent with reset list below)
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.115 2002-08-04 17:29:38 brandenb Exp $")
+           "$Id: entropy.f90,v 1.116 2002-08-05 23:06:52 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -653,6 +653,8 @@ endif
         case ('entropy')        ! cooling to reference entropy (currently =0)
           heat = heat - cool*prof*(f(l1:l2,m,n,ient)-0.)
         case default
+          if (lroot) print*,'No such value for cooltype: ', trim(cooltype)
+          call stop_it("")
         endselect
       endif
 !
