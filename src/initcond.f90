@@ -1,4 +1,4 @@
-! $Id: initcond.f90,v 1.58 2003-07-11 16:23:17 brandenb Exp $ 
+! $Id: initcond.f90,v 1.59 2003-07-12 22:58:02 brandenb Exp $ 
 
 module Initcond 
  
@@ -476,10 +476,20 @@ module Initcond
       real, dimension (mx,my,mz) :: xx,yy,zz
       real, dimension (mz) :: lnrho0,SS0
       real :: ztmp,ampl
+      logical :: exist
 !
 !  read mean stratification and write into array
+!  if file is not found in run directory, search under trim(directory)
 !
-      open(19,file=trim(directory)//'/stratification.ascii')
+      inquire(file='stratification.dat',exist=exist)
+      if(exist) then
+        open(19,file='stratification.dat')
+      else
+        open(19,file=trim(directory)//'/stratification.ascii')
+      endif
+!
+!  read data
+!
       do n=1,mz
         read(19,*) ztmp,lnrho0(n),SS0(n)
         if(ip<5) print*,ztmp,lnrho0(n),SS0(n)
