@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.55 2004-06-03 17:25:53 brandenb Exp $
+# CVS: $Id: start.csh,v 1.56 2004-07-19 16:38:17 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -45,6 +45,16 @@ if (! -d "$datadir") then
   echo ">>  slow"
   echo
   exit 0
+endif
+
+#
+#  Execute some script or command specified by the user.
+#  E.g. run src-to-data to save disk space in /home by moving src/ to
+#  data/ and linking
+#
+if ($?PENCIL_START1_CMD) then
+  echo "Running $PENCIL_START1_CMD"
+  $PENCIL_START1_CMD
 endif
 
 # ---------------------------------------------------------------------- #
