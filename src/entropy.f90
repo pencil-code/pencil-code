@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.182 2003-08-03 02:49:41 theine Exp $
+! $Id: entropy.f90,v 1.183 2003-08-03 15:33:00 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -28,6 +28,7 @@ module Entropy
   real :: hcond0=0.
   real :: Fbot=impossible,hcond1=impossible,hcond2=impossible
   real :: FbotKbot=impossible,Kbot=impossible
+  real :: tauheat_coronal=0.,TTheat_coronal=0.,zheat_coronal=0.
   real :: heat_uniform=0.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond_constchi=.false.
@@ -49,6 +50,7 @@ module Entropy
        luminosity,wheat,cooltype,cool,cs2cool,rcool,wcool,Fbot, &
        chi_t,chi_shock,lcalc_heatcond_simple,tau_ss_exterior, &
        chi,lcalc_heatcond_constchi,lmultilayer,Kbot, &
+       tauheat_coronal,TTheat_coronal,zheat_coronal, &
        heat_uniform,lupw_ss
 
   ! other variables (needs to be consistent with reset list below)
@@ -86,7 +88,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.182 2003-08-03 02:49:41 theine Exp $")
+           "$Id: entropy.f90,v 1.183 2003-08-03 15:33:00 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -585,9 +587,6 @@ module Entropy
       ss=f(l1:l2,m,n,ient)
       call ionget(f,yH,TT)
       call thermodynamics(lnrho,ss,yH,TT,cs2=cs2,cp1tilde=cp1tilde,ee=ee)
-!?? does this option make sense?
-!       call thermodynamics(lnrho,ss,TT1,cs2,cp1tilde,ee)
-!     endif
 !
 !  calculate cs2, TT1, and cp1tilde in a separate routine
 !  With IONIZATION=noionization, assume perfect gas with const coeffs
@@ -638,8 +637,11 @@ module Entropy
 !
 !  heating/cooling
 !
-      if ((luminosity /= 0) .or. (cool /= 0) .or. (heat_uniform /= 0)) &
-        call calc_heat_cool(f,df,rho1,cs2,TT1)
+      if ((luminosity /= 0) .or. &
+          (cool /= 0) .or. &
+          (tauheat_coronal /= 0) .or. &
+          (heat_uniform /= 0)) &
+        call calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
 !
 !ngrs: switch off for debug
 !      if (linterstellar) &
@@ -961,7 +963,7 @@ endif
 !
     endsubroutine calc_heatcond
 !***********************************************************************
-    subroutine calc_heat_cool(f,df,rho1,cs2,TT1)
+    subroutine calc_heat_cool(f,df,rho1,cs2,ss,TT,TT1)
 !
 !  add combined heating and cooling
 !
@@ -974,9 +976,9 @@ endif
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx) :: rho1,cs2,TT1
+      real, dimension (nx) :: rho1,cs2,ss,TT,TT1
       real, dimension (nx) :: heat,prof
-      real :: ssref,zbot,ztop
+      real :: ssref,zbot,ztop,TTref
 !
       intent(in) :: f,rho1,cs2
       intent(out) :: df
@@ -1044,6 +1046,15 @@ endif
 !  add spatially uniform heating (usually as a test)
 !
       if(heat_uniform/=0.) heat=heat+heat_uniform
+!
+!  add "coronal" heating (to simulate a hot corona)
+!  assume a linearly increasing reference profile, TTref
+!  This 1/rho1 business is clumpsy, but so would be obvious alternatives...
+!
+      if(tauheat_coronal/=0.) then
+        TTref=(z(n)-ztop)/(zheat_coronal-ztop)*TTheat_coronal
+        heat=heat+amax1(0.,ss*(TTref-TT)/(rho1*tauheat_coronal))
+      endif
 !
 !  add to entropy equation
 !
