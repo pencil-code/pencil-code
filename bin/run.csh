@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.69 2004-03-22 12:55:34 brandenb Exp $
+# CVS: $Id: run.csh,v 1.70 2004-04-02 20:51:46 dobler Exp $
 
 #                       run.csh
 #                      ---------
@@ -47,6 +47,7 @@ if ($local_disc) then
     foreach node ($nodelist)
       foreach d (`cd $datadir; ls -d proc* allprocs`)
 	$SCP $datadir/$d/var.dat ${node}:$SCRATCH_DIR/$d/
+	$SCP $datadir/$d/timeavg.dat ${node}:$SCRATCH_DIR/$d/
       end
       $SCP $datadir/allprocs/dxyz.dat ${node}:$SCRATCH_DIR/allprocs
     end
@@ -58,6 +59,7 @@ if ($local_disc) then
       set j=$nprocpernode
       while ($j != 0)
         $SCP $datadir/proc$i/var.dat ${node}:$SCRATCH_DIR/proc$i/
+        $SCP $datadir/proc$i/timeavg.dat ${node}:$SCRATCH_DIR/proc$i/
         set i=`expr $i + 1`
         set j=`expr $j - 1`
       end
@@ -132,8 +134,9 @@ endif
 # directory
 if ($local_disc) then
   echo "Copying final var.dat back from local scratch disk"
-  copy-snapshots -v var.dat >&! copy-snapshots2.log
-  copy-snapshots -v crash.dat >>& copy-snapshots2.log
+  copy-snapshots -v var.dat     >&! copy-snapshots2.log
+  copy-snapshots -v timeavg.dat >>& copy-snapshots2.log
+  copy-snapshots -v crash.dat   >>& copy-snapshots2.log
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific
   set pids=`ps -U $USER -o pid,command | grep -E 'remote-top|copy-snapshots' | sed 's/^ *//' | cut -d ' ' -f 1`

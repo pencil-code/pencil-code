@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.175 2004-04-02 16:55:38 mee Exp $
+! $Id: run.f90,v 1.176 2004-04-02 20:51:45 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.175 2004-04-02 16:55:38 mee Exp $")
+             "$Id: run.f90,v 1.176 2004-04-02 20:51:45 dobler Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -273,8 +273,10 @@
                  call outpui(trim(directory)//'/alive.info', &
                  spread(it,1,1) ,1) !(all procs alive?)
           endif
-          call wsnap(trim(directory_snap)//'/VAR',f,mvar_io,ENUM=.true.)
-          call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true.)
+          call wsnap(trim(directory_snap)//'/VAR',f,mvar_io,ENUM=.true., &
+               FLIST='varN.list')
+          call wsnap_timeavgs(trim(directory_snap)//'/TAVG',ENUM=.true., &
+               FLIST='tavgN.list')
           !
           !  Write slices (for animation purposes)
           !
@@ -320,6 +322,8 @@
         call wtime(trim(directory)//'/time.dat',t)
         if(save_lastsnap) then
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
+          call wsnap_timeavgs(trim(directory_snap)//'/timeavg.dat', &
+                                  ENUM=.false.)
           if (ip<=11) &
                call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
         else

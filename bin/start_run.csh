@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start_run.csh,v 1.29 2004-03-22 12:55:34 brandenb Exp $
+# CVS: $Id: start_run.csh,v 1.30 2004-04-02 20:51:46 dobler Exp $
 
 #                       start_run.csh
 #                      ---------------
@@ -110,6 +110,7 @@ if ($local_disc) then
   # the background process copy-snapshots will know how large the snapshots
   # ought to be. Certainly far from elegant..
   copy-snapshots -v var.dat >& copy-snapshots.log
+  copy-snapshots -v timeavg.dat >>& copy-snapshots.log
 
   # On machines with local scratch directory, initialize automatic
   # background copying of snapshots back to the data directory.
@@ -144,6 +145,7 @@ date
 if ($local_disc) then
   echo "Copying final var.dat back from local scratch disk"
   copy-snapshots -v var.dat
+  copy-snapshots -v timeavg.dat
   copy-snapshots -v dxyz.dat
   echo "done, will now killall copy-snapshots"
   # killall copy-snapshots   # Linux-specific

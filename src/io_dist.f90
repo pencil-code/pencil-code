@@ -1,4 +1,4 @@
-! $Id: io_dist.f90,v 1.68 2004-01-23 18:00:05 dobler Exp $
+! $Id: io_dist.f90,v 1.69 2004-04-02 20:51:45 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   io_dist.f90   !!!
@@ -89,7 +89,7 @@ contains
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.68 2004-01-23 18:00:05 dobler Exp $")
+      if (lroot) call cvs_id("$Id: io_dist.f90,v 1.69 2004-04-02 20:51:45 dobler Exp $")
 !
     endsubroutine register_io
 !
@@ -313,6 +313,25 @@ contains
       write(1) t,x,y,z,dx,dy,dz,deltay
       close(1)
     endsubroutine outpus
+!***********************************************************************
+    subroutine log_filename_to_file(filename,flist)
+!
+!  In the directory containing `filename', append one line to file
+!  `flist' containing the file part of filename
+!
+      use Cparam, only: fnlen
+      use General, only: parse_filename
+      use Mpicomm, only: stop_it
+!
+      character (len=*) :: filename,flist
+      character (len=fnlen) :: dir,fpart
+!
+      call parse_filename(filename,dir,fpart)
+      open(1,FILE=trim(dir)//'/'//trim(flist),POSITION='append')
+      write(1,'(A)') trim(fpart)
+      close(1)
+!
+    endsubroutine log_filename_to_file
 !***********************************************************************
     subroutine wgrid (file)
 !

@@ -1,4 +1,4 @@
-! $Id: general.f90,v 1.34 2004-03-10 22:21:51 dobler Exp $
+! $Id: general.f90,v 1.35 2004-04-02 20:51:45 dobler Exp $
 
 module General
 
@@ -385,6 +385,29 @@ module General
       time1=time2
 !
     endsubroutine chk_time
+!***********************************************************************
+    subroutine parse_filename(filename,dirpart,filepart)
+!
+!  Split full pathname of a file into directory part and local filename part.
+!
+!  02-apr-04/wolf: coded
+!
+      character (len=*) :: filename,dirpart,filepart
+      integer :: i
+!
+      intent(in)  :: filename
+      intent(out) :: dirpart,filepart
+!
+      i = index(filename,'/',BACK=.true.) ! search last slash
+      if (i>0) then
+        call safe_character_assign(dirpart,filename(1:i-1))
+        call safe_character_assign(filepart,trim(filename(i+1:)))
+      else
+        call safe_character_assign(dirpart,'.')
+        call safe_character_assign(filepart,trim(filename))
+      endif
+
+    endsubroutine parse_filename
 !***********************************************************************
     subroutine safe_character_assign(dest,src)
 !

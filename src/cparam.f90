@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.36 2004-01-30 16:12:19 dobler Exp $
+! $Id: cparam.f90,v 1.37 2004-04-02 20:51:45 dobler Exp $
 
 module Cparam
 
@@ -40,12 +40,13 @@ module Cparam
   integer, parameter :: mreduce=6
   integer :: ip=14
 !
-!  length of strings for boundary condition,
+!  length of file names
+!            strings for boundary condition,
 !            labels a la initss, initaa,
 !            lines to be read in
 !            date-and-time string
 !
-  integer, parameter :: bclen=3,labellen=25,linelen=256,datelen=30
+  integer, parameter :: fnlen=128,bclen=3,labellen=25,linelen=256,datelen=30
 !
 !  significant length of random number generator state
 !  Different compilers have different lengths:

@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.53 2004-03-22 12:55:34 brandenb Exp $
+# CVS: $Id: start.csh,v 1.54 2004-04-02 20:51:46 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -97,6 +97,7 @@ date
 if ($local_disc) then
   echo "Copying var.dat back to data directory"
   copy-snapshots -v var.dat
+  copy-snapshots -v timeavg.dat
   copy-snapshots -v dxyz.dat
 
   if ($remove_scratch_root) then

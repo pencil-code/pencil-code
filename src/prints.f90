@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.63 2004-01-24 17:21:01 dobler Exp $
+! $Id: prints.f90,v 1.64 2004-04-02 20:51:45 dobler Exp $
 
 module Print
 
@@ -313,14 +313,15 @@ module Print
 !
       integer :: i
       character (len=4) :: ch
-      character (len=80) :: fname
+      character (len=80) :: avgdir,sname,fname
       character (len=1024) :: labels
 !
 !  write result; normalization is already done in phiaverages_rz
 !
       if(lroot.and.nnamerz>0) then
-        call safe_character_assign(fname, &
-                                   trim(datadir)//'/averages/PHIAVG'//trim(ch))
+        call safe_character_assign(avgdir, trim(datadir)//'/averages')
+        call safe_character_assign(sname, 'PHIAVG'//trim(ch))
+        call safe_character_assign(fname, trim(avgdir)//'/'//trim(sname))
         open(1,FILE=fname,FORM='unformatted')
         write(1) nrcyl,nzgrid,nnamerz,nprocz
         write(1) t2davgfirst,rcyl, &
@@ -336,6 +337,13 @@ module Print
         enddo
         write(1) len(labels),labels
         close(1)
+!
+!  write file name to file list
+!
+        open(1,FILE=trim(avgdir)//'/phiavg.files',POSITION='append')
+        write(1,'(A)') trim(sname)
+        close(1)
+!
       endif
 !
     endsubroutine write_phiaverages

@@ -1,4 +1,4 @@
-! $Id: wsnaps.f90,v 1.47 2004-02-11 13:22:59 nilshau Exp $
+! $Id: wsnaps.f90,v 1.48 2004-04-02 20:51:45 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!   wsnaps.f90   !!!
@@ -14,7 +14,7 @@ module Wsnaps
 contains
 
 !***********************************************************************
-    subroutine wsnap(chsnap,a,msnap,enum)
+    subroutine wsnap(chsnap,a,msnap,enum,flist)
 !
 !  Write snapshot file, labelled consecutively if enum==.true.
 !  Otherwise just write a snapshot without label (used for var.dat)
@@ -39,11 +39,12 @@ contains
       integer :: msnap
       real, dimension (mx,my,mz,msnap) :: a
       character (len=4) :: ch
-      character (len=135) :: file
-      character (len=*) :: chsnap
-      logical lsnap,enum
+      character (len=fnlen) :: file
+      character (len=*) :: chsnap,flist
+      logical :: lsnap,enum
       integer, save :: ifirst=0,nsnap
       real, save :: tsnap
+      optional :: flist
 !
 !  Output snapshot with label in 'tsnap' time intervals
 !  file keeps the information about number and time of last snapshot
@@ -68,6 +69,7 @@ contains
           call update_ghosts(a)
           call output(chsnap//ch,a,msnap)
           if(ip<=10.and.lroot) print*,'wsnap: written snapshot ',chsnap//ch
+          if (present(flist)) call log_filename_to_file(chsnap//ch,flist)
         endif
 !
       else

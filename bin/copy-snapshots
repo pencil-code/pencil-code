@@ -1,12 +1,12 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.29 2004-03-22 12:55:34 brandenb Exp $
+# CVS: $Id: copy-snapshots,v 1.30 2004-04-02 20:51:46 dobler Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   24-Sep-2002
 # Description:
-#   Copy snapshots VAR# from /scratch to $PBS_O_WORKDIR (from where the
-#   code started).
+#   Copy snapshots VAR# and TAVG# from /scratch to $PBS_O_WORKDIR (from
+#   where the code started).
 #     Relies on PBS (and on tcsh)  and is needed on Horseshoe (the Odense
 #   cluster).
 #     Should better be a Perl script.
@@ -47,8 +47,8 @@ if ($?varfile) then		# explicit filename given
       echo "node=$node"
       printf "\n$SSH $node ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile :\n"
       $SSH $node "ls -ltd $SCRATCH_DIR $SCRATCH_DIR/proc*/$varfile $SCRATCH_DIR $SCRATCH_DIR/allprocs/$varfile"
-      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allproc/ :\n"
-      $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allproc/"
+      printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/ :\n"
+      $SSH $node "ls -ltd $targetdir/proc*/ $targetdir/allprocs/"
       echo
     endif
     # Copy all files you find (not efficient on dual-CPU systems, unless
@@ -65,11 +65,11 @@ if ($?varfile) then		# explicit filename given
     set remcmd = "$cmd1$cmd2$cmd3$cmd4$cmd5$cmd6$cmd7$cmd8"
     if ($debug) echo "Now running <$SSH $node sh -c $remcmd>"
     $SSH $node sh -c "'$remcmd'"
-    printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allproc/$varfile :\n"
-    $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allproc/$varfile"
+    printf "\n$SSH $node ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile :\n"
+    $SSH $node "ls -ltd $targetdir/proc*/$varfile $targetdir/allprocs/$varfile"
   end
 
-else
+else				# no explicit file given -- copy VARN, TAVGN
 
   # Get size of var.dat (must exist, since run.csh only ever runs after
   # start.csh). Quite some silly hack.
@@ -92,26 +92,72 @@ else
   while (1)
     echo
     date
-    foreach node ($nodelist)
-      if ($debug) echo "node=$node"
-      echo '$targetdir' $targetdir
-      foreach file (`$SSH $node "cd $SCRATCH_DIR; ls proc*/VAR[0-9]* allproc/VAR[0-9]*"`)
-	set lsout = (`$SSH $node ls -l "$SCRATCH_DIR/$file"`)
-        set VARsize = $lsout[5]
-        if ($VARsize >= $size) then
-	  # if file is ready, copy it and delete original 
-	  if ($debug) echo "Moving ${node}:$SCRATCH_DIR/$file to $targetdir/$file"
-	  if ($debug) echo "$SSH $node 'mv $SCRATCH_DIR/$file $targetdir/$file'"
-	  $SSH $node "mv -f $SCRATCH_DIR/$file $targetdir/$file"
-        else
-	  if ($debug) echo "Size of $SCRATCH_DIR/$file < $size, so not copying yet"
-        endif
-      end
-    end
+    ## Is there something to copy? (It is sufficient to copy once the
+    ## files show up for the master process of this job -- might depend on
+    ## the queuing system etc.)
+    if { ( (ls $SCRATCH_DIR/proc0/VAR[0-9]*     || \
+            ls $SCRATCH_DIR/proc0/TIMEAVG[0-9]* || \
+            ls $SCRATCH_DIR/allprocs/VAR[0-9]*  || \
+            ls $SCRATCH_DIR/allprocs/TIMEAVG[0-9]* ) >& /dev/null ) } then
+      ## Decide whether to check for file size (old scheme; won't work with
+      ## TAVGN unless they have the same size as var.dat), or to use list of
+      ## snapshot files (new scheme, will not work with old binaries).
+      if ( (-e $SCRATCH_DIR/proc0/varN.list)     || \
+           (-e $SCRATCH_DIR/proc0/tavgN.list)    || \
+           (-e $SCRATCH_DIR/allprocs/tavgN.list) || \
+           (-e $SCRATCH_DIR/allprocs/tavgN.list) ) then
+	## New scheme
+	echo "New scheme for copying (based on varN.list)"
+	foreach node ($nodelist)
+echo "---------------------- $node ---------------------------"
+	  if ($debug) echo "node=$node"
+	  echo '$targetdir' $targetdir
+	  foreach d (`cd $SCRATCH_DIR; ls -d allprocs proc*`)
+	    set fdir = $SCRATCH_DIR/$d
 
-    if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
-      echo "No parent process (pid $PARENT_PID) -- exiting"
-      exit 1
+echo "cd $SCRATCH_DIR; ls allprocs proc* -->"
+cd $SCRATCH_DIR; ls allprocs proc*
+echo "d     = <$d>"
+echo "fdir = <$fdir>"
+	    foreach f (`$SSH $node "cat $fdir/*.list"`)
+	      set file = "$fdir/$f"
+echo "f     = <$f>"
+echo "file = <$file>"
+	      if ($debug) echo "$SSH $node 'if (-e $file) mv -f $file $targetdir/$d/'"
+	      $SSH $node "if (-e $file) mv -f $file $targetdir/$d/"
+	    end
+	  end
+echo "--------------------------------------------------------"
+	end
+
+      else
+
+	## Old scheme
+	echo "Old scheme for copying (size-based)-- will be removed at some point"
+	foreach node ($nodelist)
+	  if ($debug) echo "node=$node"
+	  echo '$targetdir' $targetdir
+	  foreach file (`$SSH $node "cd $SCRATCH_DIR; ls proc*/VAR[0-9]* proc*/TAVG[0-9]* allprocs/VAR[0-9]* allprocs/TAVG[0-9]*"`)
+	    set lsout = (`$SSH $node ls -l "$SCRATCH_DIR/$file"`)
+	    set VARsize = $lsout[5]
+	    if ($VARsize >= $size) then
+	      # if file is ready, copy it and delete original 
+	      if ($debug) echo "Moving ${node}:$SCRATCH_DIR/$file to $targetdir/$file"
+	      if ($debug) echo "$SSH $node 'mv $SCRATCH_DIR/$file $targetdir/$file'"
+	      $SSH $node "mv -f $SCRATCH_DIR/$file $targetdir/$file"
+	    else
+	      if ($debug) echo "Size of $SCRATCH_DIR/$file < $size, so not copying yet"
+	    endif
+	  end      
+	end
+
+      endif
+
+      if (`ps -p $PARENT_PID | fgrep -c $PARENT_PID` <= 0) then
+	echo "No parent process (pid $PARENT_PID) -- exiting"
+	exit 1
+      endif
+
     endif
 
     if (! $?varfile) then
