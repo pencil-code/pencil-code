@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.27 2002-09-07 20:12:47 brandenb Exp $
+! $Id: forcing.f90,v 1.28 2002-09-25 06:40:15 brandenb Exp $
 
 module Forcing
 
@@ -45,7 +45,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.27 2002-09-07 20:12:47 brandenb Exp $")
+           "$Id: forcing.f90,v 1.28 2002-09-25 06:40:15 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -193,6 +193,7 @@ module Forcing
 !
 !  10-apr-00/axel: coded
 !   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
+!  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
 !
       use Mpicomm
       use Cdata
@@ -213,7 +214,7 @@ module Forcing
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf
-      real :: kx0,kx,ky,kz,k2,k,force_ampl
+      real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
 !
       if (ifirst==0) then

@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.85 2002-09-24 17:35:17 brandenb Exp $
+! $Id: run.f90,v 1.86 2002-09-25 06:40:15 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -48,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.85 2002-09-24 17:35:17 brandenb Exp $")
+             "$Id: run.f90,v 1.86 2002-09-25 06:40:15 brandenb Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -92,7 +92,7 @@
 !
         call get_nseed(nseed)   ! get state length of random number generator
 !
-!  run hooks for individual modules
+!  run initialization of individual modules
 !
         call ss_run_hook()      ! calculate radiative conductivity (or Fbot), etc.
         call forcing_run_hook() ! get random seed from file, ..
