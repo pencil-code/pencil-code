@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.223 2004-05-14 11:23:21 ajohan Exp $
+! $Id: cdata.f90,v 1.224 2004-05-16 15:26:42 ajohan Exp $
 
 module Cdata
 
@@ -21,6 +21,7 @@ module Cdata
   real, parameter :: epsi=5*epsilon(1.0),tini=5*tiny(1.0)
   real, dimension(3) :: Lxyz,xyz0,xyz1=impossible
   real :: t,dt=0.
+  real, dimension (3) :: alpha,beta,dt_beta
   real :: cdt=0.4,cdtv=0.4,cdts=1.0,cdtr=1.0
   real :: cdtvDim
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
