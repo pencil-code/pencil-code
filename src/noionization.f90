@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.29 2003-06-19 11:22:41 mee Exp $
+! $Id: noionization.f90,v 1.30 2003-06-24 16:28:41 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -32,7 +32,7 @@ module Ionization
   !  cannot currently be reset to .true. in namelist
   !  because the namelist is now not even read
   logical :: lionization=.false.,lfixed_ionization=.false.
-  real :: yH0=impossible,fHe=0.1
+  real :: yH0=impossible,xHe=0.1
 
   ! input parameters
   integer :: dummy_ni 
@@ -67,7 +67,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.29 2003-06-19 11:22:41 mee Exp $")
+           "$Id: noionization.f90,v 1.30 2003-06-24 16:28:41 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -96,7 +96,7 @@ module Ionization
 !
       m_H=m_p+m_e
       m_He=3.97153*m_H
-      mu=1.+3.97153*fHe  
+      mu=1.+3.97153*xHe  
       chiH=13.6*eV
 !ajwm commented unused quantities
 !ajwm      chiH_=0.75*eV
@@ -113,12 +113,12 @@ module Ionization
 !
       yH=amin1(amax1(yH0,1e-5),1.-1e-5)
       lnTT0=log(TT_ion)+(2./3.)*((-1.5*(1.-yH)*log(m_H/m_e) &
-                        -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
-                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
-                        /(1.+yH+fHe)-lnrho_ion-2.5)
+                        -1.5*yH*log(m_p/m_e)-1.5*xHe*log(m_He/m_e) &
+                        +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+xHe*log(xHe)) &
+                        /(1.+yH+xHe)-lnrho_ion-2.5)
 
       dlnPdlnrho=5./3.    ! gamma?
-      dlnPdss=(2./3.)/(1.+yH0+fHe)  !(gamma - 1) / (\mu_{effective}/\mu) ?
+      dlnPdss=(2./3.)/(1.+yH0+xHe)  !(gamma - 1) / (\mu_{effective}/\mu) ?
 !
       coef_lr=dlnPdlnrho-1.
       coef_ss=dlnPdss/ss_ion 
@@ -206,9 +206,9 @@ module Ionization
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
 !ajwm but where does the reference density come in to this? 
 
-        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
         if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+        if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
         TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
@@ -247,9 +247,9 @@ module Ionization
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
 !ajwm but where does the reference density come in to this? 
 
-        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
         if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+        if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
         TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1
@@ -287,9 +287,9 @@ module Ionization
         if(headtt) print*,'thermodynamics: assume cp is not 1, yH0=',yH0
         TT=exp(coef_ss*ss+coef_lr*lnrho+lnTT0)
 !ajwm but where does the reference density come in to this? 
-        if (present(cs2))      cs2=(1.+yH0+fHe)*ss_ion*TT*dlnPdlnrho
+        if (present(cs2))      cs2=(1.+yH0+xHe)*ss_ion*TT*dlnPdlnrho
         if (present(cp1tilde)) cp1tilde=dlnPdss/dlnPdlnrho
-        if (present(ee))       ee=1.5*(1.+yH0+fHe)*ss_ion*TT+yH0*ss_ion*TT_ion
+        if (present(ee))       ee=1.5*(1.+yH0+xHe)*ss_ion*TT+yH0*ss_ion*TT_ion
       else
         if(headtt) print*,'thermodynamics: assume cp=1'
         TT=cs20*exp(gamma1*(lnrho-lnrho0)+gamma*ss)/gamma1

@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.52 2003-06-19 11:22:41 mee Exp $
+! $Id: ionization.f90,v 1.53 2003-06-24 16:28:41 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -18,16 +18,17 @@ module Ionization
   endinterface
 
   !  secondary parameters calculated in initialize
-  real :: m_H,m_He,mu
+  real :: m_H,m_He,mu,twothirds
   real :: TT_ion ,lnrho_ion ,chiH ,ss_ion
   real :: TT_ion_,lnrho_ion_,chiH_,kappa0
-  real :: lnmHme,lnmpme,lnmHeme,lnmHmp,lnfHe
+  real :: lnmHme,lnmpme,lnmHeme,lnmHmp,lnxHe
+  real :: lnrho_H,lnrho_e,lnrho_p,lnrho_He
 
   !  lionization initialized to .true.
   !  it can be reset to .false. in namelist
   logical :: lionization=.true.,lfixed_ionization=.false.,output_yH=.false.
   character (len=labellen) :: cionization='hydrogen'
-  real :: yH0=impossible,fHe=0.1
+  real :: yH0=impossible,xHe=0.1
 
   ! input parameters
   namelist /ionization_init_pars/ cionization,output_yH
@@ -66,7 +67,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.52 2003-06-19 11:22:41 mee Exp $")
+           "$Id: ionization.f90,v 1.53 2003-06-24 16:28:41 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -108,14 +109,19 @@ module Ionization
       lnmpme=log(m_p/m_e)
       lnmHeme=log(m_He/m_e)
       lnmHmp=log(m_H/m_p)
-      lnfHe=log(fHe)
-      mu=1.+3.97153*fHe
+      lnxHe=log(xHe)
+      twothirds=2./3.
+      mu=1.+3.97153*xHe
       chiH=13.6*eV
       chiH_=0.75*eV
       TT_ion=chiH/k_B
       TT_ion_=chiH_/k_B
       lnrho_ion=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       lnrho_ion_=1.5*log((m_e/hbar)*(chiH_/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_e=1.5*log((m_e/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_H=1.5*log((m_H/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_p=1.5*log((m_p/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
+      lnrho_He=1.5*log((m_He/hbar)*(chiH/hbar)/2./pi)+log(m_H)+log(mu)
       ss_ion=k_B/m_H/mu
       kappa0=sigmaH_/m_H/mu
       if(lroot) then
@@ -183,10 +189,10 @@ module Ionization
          yH=f(l,m,n,iyH)
          call rtsafe(lnrho,ss,yH)
          f(l,m,n,iyH)=yH
-         lnTT_=(2./3.)*((ss/ss_ion &
-                         -1.5*(1.-yH)*lnmHme-1.5*yH*lnmpme-1.5*fHe*lnmHeme &
-                         +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*lnfHe) &
-                        /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+         lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
+                           +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
+                           +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                          +lnrho-2.5)
          f(l,m,n,iTT)=exp(lnTT_)*TT_ion
       enddo
       enddo
@@ -214,10 +220,11 @@ module Ionization
          yHcalc=yH(l-l1)
          call rtsafe(lnrho(l-l1),ss(l-l1),yHcalc)
          yH(l-l1)=yHcalc
-         lnTT_=(2./3.)*((ss(l-l1)/ss_ion &
-                         -1.5*(1.-yHcalc)*lnmHme-1.5*yHcalc*lnmpme-1.5*fHe*lnmHeme &
-                         +(1.-yHcalc)*log(1.-yHcalc)+2.*yHcalc*log(yHcalc)+fHe*lnfHe) &
-                        /(1.+yHcalc+fHe)+lnrho(l-l1)-lnrho_ion-2.5)
+         lnTT_=twothirds*((ss(l-l1)/ss_ion &
+                           +(1.-yHcalc)*(log(1.-yHcalc)-lnrho_H) &
+                           +yHcalc*(2.*log(yHcalc)-lnrho_e-lnrho_p) &
+                           +xHe*(lnxHe-lnrho_He))/(1.+yHcalc+xHe) &
+                          +lnrho(l-l1)-2.5)
          TT(l-l1)=exp(lnTT_)*TT_ion
       enddo
 !
@@ -240,10 +247,10 @@ module Ionization
 !  do the loop
 !
       call rtsafe(lnrho,ss,yH)
-      lnTT_=(2./3.)*((ss/ss_ion &
-           -1.5*(1.-yH)*lnmHme-1.5*yH*lnmpme-1.5*fHe*lnmHeme &
-           +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*lnfHe) &
-           /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+      lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
+                        +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
+                        +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                       +lnrho-2.5)
       TT=exp(lnTT_)*TT_ion
 !
     endsubroutine ioncalc_point
@@ -310,7 +317,6 @@ module Ionization
       real, dimension (nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension (nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
-      logical :: ldummy
 !
 ! P...p...p...pick up a Pencil for readability
 !
@@ -319,34 +325,35 @@ module Ionization
       yHcalc=f(l1:l2,m,n,iyH)
       TT=f(l1:l2,m,n,iTT)
 !
-!  calculate cs2, TT1, and cp1tilde
-!
-      ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yHcalc)-2.*log(yHcalc)
-      dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+fHe)
-      dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
-      dlnTT_dlnrho=gamma1
-      dffdlnrho=gamma1*TT_ion/TT
-      dydlnrho=-dffdlnrho/dffdy
-      dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-!
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
-      if (present(TT1))      TT1=1./TT
-      if (present(yH))       yH=yHcalc
-      if (present(cs2))      cs2=(1.+yHcalc+fHe)*ss_ion*TT*dlnPdlnrho
-
+      if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yHcalc
+      if (present(cs2).or.present(cp1tilde)) then
+         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+            +log(1.-yHcalc)-2.*log(yHcalc)
+         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+      endif
+      if (present(cs2)) then
+         dlnTT_dlnrho=gamma1
+         dffdlnrho=gamma1*TT_ion/TT
+         dydlnrho=-dffdlnrho/dffdy
+         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+      endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+fHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+fHe)*ss_ion)
+         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+fHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee))       ee=1.5*(1.+yHcalc+fHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_penc
 !***********************************************************************
@@ -371,39 +378,39 @@ module Ionization
       real, dimension (nx) :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real, dimension (nx) :: dffdlnrho,dydlnrho,dlnPdlnrho
       real, dimension (nx) :: dlnTT_dss,dffdss,dydss,dlnPdss
-      logical :: ldummy
 
 !  calculate TT, yH for arbitrary pencil
       call ioncalc_penc(lnrho,ss,TT,yHcalc)
 !
-!  calculate cs2, TT1, and cp1tilde
-!
-      ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yHcalc)-2.*log(yHcalc)
-      dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+fHe)
-      dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
-      dlnTT_dlnrho=gamma1
-      dffdlnrho=gamma1*TT_ion/TT
-      dydlnrho=-dffdlnrho/dffdy
-      dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-!
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
-      if (present(TT1))      TT1=1./TT
-      if (present(yH))       yH=yHcalc
-      if (present(cs2))      cs2=(1.+yHcalc+fHe)*ss_ion*TT*dlnPdlnrho
-
+      if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yHcalc
+      if (present(cs2).or.present(cp1tilde)) then
+         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+            +log(1.-yHcalc)-2.*log(yHcalc)
+         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+      endif
+      if (present(cs2)) then
+         dlnTT_dlnrho=gamma1
+         dffdlnrho=gamma1*TT_ion/TT
+         dydlnrho=-dffdlnrho/dffdy
+         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+      endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+fHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+fHe)*ss_ion)
+         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+fHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee))       ee=1.5*(1.+yHcalc+fHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_arbpenc
 !***********************************************************************
@@ -428,40 +435,40 @@ module Ionization
       real :: ff,dlnTT_dy,dffdy,dlnTT_dlnrho
       real :: dffdlnrho,dydlnrho,dlnPdlnrho
       real :: dlnTT_dss,dffdss,dydss,dlnPdss
-      logical :: ldummy
 !
 ! P...p...p..pick up a Pencil for readability
 !
       call ioncalc_point(lnrho,ss,TT,yHcalc)
 !
-!  calculate cs2, TT1, and cp1tilde
-!
-      ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT+log(1.-yHcalc)-2.*log(yHcalc)
-      dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+fHe)
-      dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
-      dlnTT_dlnrho=gamma1
-      dffdlnrho=gamma1*TT_ion/TT
-      dydlnrho=-dffdlnrho/dffdy
-      dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+fHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
-!
 !  calculate 1/T (=TT1), sound speed, and coefficient cp1tilde in
 !  the expression (1/rho)*gradp = cs2*(gradlnrho + cp1tilde*gradss)
 !
-      if (present(TT1))      TT1=1./TT
-      if (present(yH))       yH=yHcalc
-      if (present(cs2))      cs2=(1.+yHcalc+fHe)*ss_ion*TT*dlnPdlnrho
-
+      if (present(TT1)) TT1=1./TT
+      if (present(yH)) yH=yHcalc
+      if (present(cs2).or.present(cp1tilde)) then
+         ff=lnrho_ion-lnrho+1.5*alog(TT/TT_ion)-TT_ion/TT &
+            +log(1.-yHcalc)-2.*log(yHcalc)
+         dlnTT_dy=(lnmHmp-gamma1*(ff+TT_ion/TT)-1.)/(1.+yHcalc+xHe)
+         dffdy=dlnTT_dy*(1.5+TT_ion/TT)-1./(1.-yHcalc)-2./yHcalc
+      endif
+      if (present(cs2)) then
+         dlnTT_dlnrho=gamma1
+         dffdlnrho=gamma1*TT_ion/TT
+         dydlnrho=-dffdlnrho/dffdy
+         dlnPdlnrho=1.+dydlnrho/(1.+yHcalc+xHe)+dlnTT_dy*dydlnrho+dlnTT_dlnrho
+         cs2=(1.+yHcalc+xHe)*ss_ion*TT*dlnPdlnrho
+      endif
       if (present(cp1tilde)) then
-         dlnTT_dss=gamma1/((1.+yHcalc+fHe)*ss_ion)
-         dffdss=(1.+dffdlnrho)/((1.+yHcalc+fHe)*ss_ion)
+         dlnTT_dss=gamma1/((1.+yHcalc+xHe)*ss_ion)
+         dffdss=(1.+dffdlnrho)/((1.+yHcalc+xHe)*ss_ion)
          dydss=-dffdss/dffdy
-         dlnPdss=dydss/(1.+yHcalc+fHe)+dlnTT_dy*dydss+dlnTT_dss
+         dlnPdss=dydss/(1.+yHcalc+xHe)+dlnTT_dy*dydss+dlnTT_dss
          cp1tilde=dlnPdss/dlnPdlnrho
       endif
 !
 !  calculate internal energy for calculating thermal energy
 !
-      if (present(ee))       ee=1.5*(1.+yHcalc+fHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
+      if (present(ee)) ee=1.5*(1.+yHcalc+xHe)*ss_ion*TT+yHcalc*ss_ion*TT_ion
 !
     endsubroutine thermodynamics_arbpoint
 !***********************************************************************
@@ -535,12 +542,12 @@ module Ionization
       real, intent(out) :: f,df
       real              :: lnTT_,dlnTT_     ! lnTT_=log(TT/TT_ion)
 
-      lnTT_=gamma1*((ss/ss_ion-1.5*(1.-yH)*log(m_H/m_e) &
-           -1.5*yH*log(m_p/m_e)-1.5*fHe*log(m_He/m_e) &
-           +(1.-yH)*log(1.-yH)+2.*yH*log(yH)+fHe*log(fHe)) &
-           /(1.+yH+fHe)+lnrho-lnrho_ion-2.5)
+      lnTT_=twothirds*((ss/ss_ion+(1.-yH)*(log(1.-yH)-lnrho_H) &
+                        +yH*(2.*log(yH)-lnrho_e-lnrho_p) &
+                        +xHe*(lnxHe-lnrho_He))/(1.+yH+xHe) &
+                       +lnrho-2.5)
       f=lnrho_ion-lnrho+1.5*lnTT_-exp(-lnTT_)+log(1.-yH)-2.*log(yH)
-      dlnTT_=(log(m_H/m_p)-gamma1*(f+exp(-lnTT_))-1.)/(1.+yH+fHe)
+      dlnTT_=(log(m_H/m_p)-twothirds*(f+exp(-lnTT_))-1.)/(1.+yH+xHe)
       df=dlnTT_*(1.5+exp(-lnTT_))-1./(1.-yH)-2./yH
     endsubroutine saha
 
