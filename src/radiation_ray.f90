@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.28 2003-10-06 13:24:31 theine Exp $
+! $Id: radiation_ray.f90,v 1.29 2003-10-06 15:24:08 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -34,7 +34,7 @@ module Radiation
   integer, parameter :: idtau_m=1,idtau_p=2
   integer, parameter :: idSdtau_m=3,idSdtau_p=4
   integer, parameter :: iSrad1st=5,iSrad2nd=6
-  integer, parameter :: iemtau=7,iQrad=8
+  integer, parameter :: iemtau=7,iQrad1=8
 !
 !  default values for one pair of vertical rays
 !
@@ -90,7 +90,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.28 2003-10-06 13:24:31 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.29 2003-10-06 15:24:08 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -361,7 +361,7 @@ module Radiation
 !
       if (lrad_debug) then
         temp(:,:,:,iemtau)=emtau
-        temp(:,:,:,iQrad)=Qrad
+        temp(:,:,:,iQrad1)=Qrad
         call chn(idir,idir_str)
         call output(trim(directory)//'/rad_debug'//trim(idir_str)//'.dat',temp,8)
       endif
@@ -1060,7 +1060,7 @@ module Radiation
       write (1,*) 'idtau_m=',idtau_m-1,' & idtau_p=',idtau_p-1
       write (1,*) 'idSdtau_m=',idSdtau_m-1,' & idSdtau_p=',idSdtau_p-1
       write (1,*) 'iSrad1st=',iSrad1st-1,' & iSrad2nd=',iSrad2nd-1
-      write (1,*) 'iemtau=',iemtau-1,' & iQrad=',iQrad-1
+      write (1,*) 'iemtau=',iemtau-1,' & iQrad=',iQrad1-1
       write (1,*) "openr,1,'"//trim(directory)//"/rad_debug.dat',/f77"
       write (1,*) "temp=fltarr(mx,my,mz,2)"
       write (1,*) "readu,1,temp"
