@@ -1,4 +1,4 @@
-! $Id: pscalar_nolog.f90,v 1.21 2004-05-07 13:52:18 ajohan Exp $
+! $Id: pscalar_nolog.f90,v 1.22 2004-05-12 17:27:07 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 !  Solves for c, not lnc. Keep ilncc and other names involving "ln"
@@ -27,14 +27,13 @@ module Pscalar
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
-  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
-  real :: eps_ctog=0.01
-  real :: unit_rhocc=1.
+  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
+  real :: epsilon_lncc=0., cc_const=1., unit_rhocc=1.
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min,eps_ctog
+       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
@@ -87,7 +86,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar_nolog.f90,v 1.21 2004-05-07 13:52:18 ajohan Exp $")
+           "$Id: pscalar_nolog.f90,v 1.22 2004-05-12 17:27:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -136,7 +135,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc) = eps_ctog
+        case('constant'); f(:,:,:,ilncc)=cc_const
         case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
         case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
         case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
@@ -190,7 +189,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
-        case('constant'); f(:,:,:,ilncc) = eps_ctog
+        case('constant'); f(:,:,:,ilncc)=cc_const
         case('hat-x'); call hat(ampllncc,f,ilncc,widthlncc,kx=kx_lncc)
         case('hat-y'); call hat(ampllncc,f,ilncc,widthlncc,ky=ky_lncc)
         case('hat-z'); call hat(ampllncc,f,ilncc,widthlncc,kz=kz_lncc)
@@ -235,7 +234,7 @@ module Pscalar
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine dlncc_dt(f,df,uu,glnrho)
+    subroutine dlncc_dt(f,df,uu,glnrho,cc,cc1)
 !
 !  passive scalar evolution
 !  calculate dc/dt=-uu.gcc + pscaler_diff*[del2cc + glnrho.gcc]
@@ -262,6 +261,11 @@ module Pscalar
         if (headtt.or.ldebug) print*,'SOLVE dcc_dt'
       endif
       if (headtt) call identify_bcs('cc',ilncc)
+!
+!  Abbreviations
+!       
+      cc=f(l1:l2,m,n,ilncc)
+      cc1=1/cc
 !
 !  gradient of passive scalar
 !  allow for possibility to turn off passive scalar
@@ -320,9 +324,7 @@ module Pscalar
 !  <u_k u_j d_j c> = <u_k c uu.gradlncc>
 !
       if (ldiagnos) then
-        cc=f(l1:l2,m,n,ilncc)
         rho=exp(f(l1:l2,m,n,ilnrho))
-        cc1=rho*abs(cc)
         call dot2_mn(gcc,gcc2); gcc1=sqrt(gcc2)
         if (i_rhoccm/=0) call sum_mn_name(rho*cc/unit_rhocc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)

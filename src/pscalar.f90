@@ -1,4 +1,4 @@
-! $Id: pscalar.f90,v 1.42 2004-04-30 09:30:50 ajohan Exp $
+! $Id: pscalar.f90,v 1.43 2004-05-12 17:27:07 ajohan Exp $
 
 !  This modules solves the passive scalar advection equation
 
@@ -24,16 +24,17 @@ module Pscalar
 
   ! input parameters
   real :: ampllncc=.1, widthlncc=.5, cc_min=0., lncc_min
-  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.,epsilon_lncc=0.
-  real :: eps_ctog=0.,unit_rhocc=0.
+  real :: ampllncc2=0.,kx_lncc=1.,ky_lncc=1.,kz_lncc=1.,radius_lncc=0.
+  real :: epsilon_lncc=0., cc_const=0., unit_rhocc=0.
   real, dimension(3) :: gradC0=(/0.,0.,0./)
 
   namelist /pscalar_init_pars/ &
        initlncc,initlncc2,ampllncc,ampllncc2,kx_lncc,ky_lncc,kz_lncc, &
-       radius_lncc,epsilon_lncc,widthlncc,cc_min
+       radius_lncc,epsilon_lncc,widthlncc,cc_min,cc_const
 
   ! run parameters
   real :: pscalar_diff=0.,tensor_pscalar_diff=0.
+  real :: rhoccm=0., cc2m=0., gcc2m=0.
 
   namelist /pscalar_run_pars/ &
        pscalar_diff,nopscalar,tensor_pscalar_diff,gradC0
@@ -41,6 +42,10 @@ module Pscalar
   ! other variables (needs to be consistent with reset list below)
   integer :: i_rhoccm=0,i_ccmax=0,i_lnccm=0,i_lnccmz=0
   integer :: i_ucm=0,i_uudcm=0,i_Cz2m=0,i_Cz4m=0,i_Crmsm=0
+  integer :: i_cc1m=0,i_cc2m=0,i_cc3m=0,i_cc4m=0,i_cc5m=0
+  integer :: i_cc6m=0,i_cc7m=0,i_cc8m=0,i_cc9m=0,i_cc10m=0
+  integer :: i_gcc1m=0,i_gcc2m=0,i_gcc3m=0,i_gcc4m=0,i_gcc5m=0
+  integer :: i_gcc6m=0,i_gcc7m=0,i_gcc8m=0,i_gcc9m=0,i_gcc10m=0
 
   contains
 
@@ -73,7 +78,7 @@ module Pscalar
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: pscalar.f90,v 1.42 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: pscalar.f90,v 1.43 2004-05-12 17:27:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -130,6 +135,7 @@ module Pscalar
 !
       select case(initlncc)
         case('zero'); f(:,:,:,ilncc)=0.
+        case('constant'); f(:,:,:,ilncc)=alog(cc_const)
         case('gaussian-x'); call gaussian(ampllncc,f,ilncc,kx=kx_lncc)
         case('gaussian-y'); call gaussian(ampllncc,f,ilncc,ky=ky_lncc)
         case('gaussian-z'); call gaussian(ampllncc,f,ilncc,kz=kz_lncc)
@@ -168,7 +174,7 @@ module Pscalar
       if(ip==0) print*,xx,yy,zz !(prevent compiler warnings)
     endsubroutine init_lncc
 !***********************************************************************
-    subroutine dlncc_dt(f,df,uu,glnrho)
+    subroutine dlncc_dt(f,df,uu,glnrho,cc,cc1)
 !
 !  passive scalar evolution
 !  calculate dc/dt=-uu.glncc + pscaler_diff*[del2lncc + (glncc+glnrho).glncc]
@@ -180,7 +186,7 @@ module Pscalar
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3) :: uu,glncc,glnrho
-      real, dimension (nx) :: lncc,cc,rho,uglncc,diff_op,del2lncc
+      real, dimension (nx) :: lncc,cc,cc1,rho,uglncc,diff_op,del2lncc
       integer :: j
 !
       intent(in)  :: f,uu,glnrho
@@ -194,6 +200,11 @@ module Pscalar
         if (headtt.or.ldebug) print*,'SOLVE dlncc_dt'
       endif
       if (headtt) call identify_bcs('cc',ilncc)
+!
+!  Abbreviations
+!        
+      cc=exp(f(l1:l2,m,n,ilncc))
+      cc1=1/cc
 !
 !  gradient of passive scalar
 !  allow for possibility to turn off passive scalar
@@ -240,7 +251,6 @@ module Pscalar
 !
       if (ldiagnos) then
         lncc=f(l1:l2,m,n,ilncc)
-        cc=exp(lncc)
         rho=exp(f(l1:l2,m,n,ilnrho))
         if (i_rhoccm/=0) call sum_mn_name(rho*cc,i_rhoccm)
         if (i_ccmax/=0) call max_mn_name(cc,i_ccmax)

@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.82 2004-05-11 08:42:36 ajohan Exp $
+! $Id: dustdensity.f90,v 1.83 2004-05-12 17:27:07 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -112,7 +112,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.82 2004-05-11 08:42:36 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.83 2004-05-12 17:27:07 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -329,7 +329,7 @@ module Dustdensity
 !
     endsubroutine init_nd
 !***********************************************************************
-    subroutine dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,gnd)
+    subroutine dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
 !
 !  continuity equation
 !  calculate dnd/dt = - u.gradnd - nd*divud
@@ -338,16 +338,15 @@ module Dustdensity
 !
       use Sub
       use Density, only: cs0
-      use Pscalar, only: eps_ctog
+      use Pscalar, only: cc_const
       use Mpicomm, only: stop_it
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: udgnd,udgmd,gnd2,del2nd,rho,rho1,TT1,cs2
+      real, dimension (nx) :: udgnd,udgmd,gnd2,del2nd,rho,rho1,TT1,cs2,cc,cc1
       real, dimension (nx) :: mfluxcond
-      real, dimension (ndustspec) :: mice
       real :: diffnd
       integer :: k
 !
@@ -369,7 +368,7 @@ module Dustdensity
 !  Continuity equations for nd, md and mi.
 !
       if (ldustcontinuity) &
-         call dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
+         call dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1)
 !
 !  Calculate kernel of coagulation equation
 !
@@ -381,7 +380,8 @@ module Dustdensity
 !
 !  Dust growth due to condensation on grains
 !
-      if (ldustgrowth) call dust_condensation(f,df,rho,rho1,TT1,nd,mfluxcond)
+      if (ldustgrowth) &
+          call dust_condensation(f,df,rho,rho1,TT1,cc,cc1,nd,mfluxcond)
 !
 !  Loop over dust layers
 !
@@ -495,8 +495,8 @@ module Dustdensity
                 ndnew(i_targ)*minew(i_targ))/(nd(l,k) + ndnew(i_targ))
             ndnew(i_targ) = ndnew(i_targ) + nd(l,k)
           elseif (i_targ == 0) then        !  Underflow below lower boundary
-            f(3+l,m,n,ilncc) = f(3+l,m,n,ilncc) + &
-                nd(l,k)*md(k)*unit_md*exp(-f(l,m,n,ilnrho))
+            f(3+l,m,n,ilncc) = alog(exp(f(3+l,m,n,ilncc)) + &
+                 nd(l,k)*md(k)*unit_md*exp(-f(l,m,n,ilnrho)))
           endif
         enddo
         f(3+l,m,n,ind(:)) = ndnew(:)
@@ -506,17 +506,17 @@ module Dustdensity
 !
     endsubroutine redist_mdbins
 !***********************************************************************
-    subroutine dust_condensation (f,df,rho,rho1,TT1,nd,mfluxcond)
+    subroutine dust_condensation(f,df,rho,rho1,TT1,cc,cc1,nd,mfluxcond)
 !
 !  Calculate condensation of dust on existing dust surfaces
 !
       use Mpicomm, only: stop_it
-      use Pscalar, only: eps_ctog
+      use Pscalar, only: cc_const
 
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,ndustspec) :: nd
-      real, dimension (nx) :: rho,rho1,TT1,mfluxcond
+      real, dimension (nx) :: rho,rho1,TT1,cc,cc1,mfluxcond
       real :: dmdfac
       integer :: k,l
 !
@@ -525,7 +525,7 @@ module Dustdensity
 !
 !  Calculate mass flux of condensing monomers
 !          
-      call get_mfluxcond(f,mfluxcond,rho,TT1)
+      call get_mfluxcond(f,mfluxcond,rho,TT1,cc)
 !
 !  Loop over pencil
 !      
@@ -541,14 +541,15 @@ module Dustdensity
             df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
             df(3+l,m,n,imi(k)) = df(3+l,m,n,imi(k)) + dmdfac
             df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc) - &
-                 rho1(l)*dmdfac*nd(l,k)*unit_md
+                 rho1(l)*dmdfac*nd(l,k)*unit_md*cc1(l)
           else
-            if (dmdfac < 0. .and. f(3+l,m,n,ilncc) >= 0.99*eps_ctog &
+            if (dmdfac < 0. .and. cc(l) >= 0.99*cc_const &
                 .and. lkeepinitnd) then
               ! Do nothing when dust mass is set to decrease below initial
             elseif (nd(l,k) >= 0.) then
               df(3+l,m,n,imd(k)) = df(3+l,m,n,imd(k)) + dmdfac
-              df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc)  - rho1(l)*dmdfac*nd(l,k)
+              df(3+l,m,n,ilncc)  = df(3+l,m,n,ilncc)  - &
+                  rho1(l)*dmdfac*nd(l,k)*cc1(l)
             endif
           endif
         enddo
@@ -556,7 +557,7 @@ module Dustdensity
 !
     endsubroutine dust_condensation
 !***********************************************************************
-    subroutine get_mfluxcond(f,mfluxcond,rho,TT1)
+    subroutine get_mfluxcond(f,mfluxcond,rho,TT1,cc)
 !
 !  Calculate mass flux of condensing monomers
 !
@@ -566,23 +567,22 @@ module Dustdensity
       use Sub
 
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (nx) :: mfluxcond,rho,TT1,pp,ppmon,ppsat,vth,epsmon
+      real, dimension (nx) :: mfluxcond,rho,TT1,cc,pp,ppmon,ppsat,vth
       real, dimension (nx) :: supsatratio1
       real, save :: mu
 !
       select case(dust_chemistry)
 
       case ('ice')
-        epsmon = f(l1:l2,m,n,ilncc)
         if (it == 1) call getmu(mu)
         call eoscalc_pencil &
             (ilnrho_ss,f(l1:l2,m,n,ilnrho),f(l1:l2,m,n,iss),pp=pp)
-        ppmon = pp*epsmon*mu/mumon
+        ppmon = pp*cc*mu/mumon
         ppsat = 6.035e12*exp(-5938*TT1)
         vth = (3*k_B/(TT1*mmon))**0.5
         supsatratio1 = ppsat/ppmon
 
-        mfluxcond = vth*epsmon*rho*(1-supsatratio1)
+        mfluxcond = vth*cc*rho*(1-supsatratio1)
         if (ldiagnos) then
           if (i_ssrm/=0)   call sum_mn_name(1/supsatratio1(:),i_ssrm)
           if (i_ssrmax/=0) call max_mn_name(1/supsatratio1(:),i_ssrmax)
@@ -772,7 +772,7 @@ module Dustdensity
 !
     endsubroutine dust_coagulation
 !***********************************************************************
-    subroutine dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1,mfluxcond)
+    subroutine dust_continuity(f,df,nd,uud,divud,gnd,udgnd,rho1)
 !
 !  Dust continuity and advective equations
 !
@@ -782,26 +782,25 @@ module Dustdensity
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,ndustspec) :: uud,gnd,gmd,gmi
       real, dimension (nx,ndustspec) :: nd,divud
-      real, dimension (nx) :: udgnd,udgmd,udgmi,dmifac,rho1,mfluxcond
+      real, dimension (nx) :: udgnd,udgmd,udgmi,dmifac,rho1
       integer :: k
 !
 !  Continuity equations
 !
       do k=1,ndustspec
+        if (lmdvar) then
+          call grad(f,imd(k),gmd(:,:,k))
+          call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
+          df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
+        endif
 !
-!  Regular differentiation scheme
+!  Regular differentiation scheme for nd and mi
 !
         if (.not. lupwind1stdust) then
           call grad(f,ind(k),gnd(:,:,k))
           call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
               udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
-
-          if (lmdvar) then
-            call grad(f,imd(k),gmd(:,:,k))
-            call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
-            df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
-          endif
 
           if (lmice) then
             call grad(f,imi(k),gmi(:,:,k))
@@ -810,19 +809,13 @@ module Dustdensity
           endif
         else
 !
-!  Upwind differentiation scheme
+!  Upwind differentiation scheme for nd and mi
 !
           call gradf_upw1st(f,uud(:,:,k),ind(k),gnd(:,:,k))
           call dot_mn(uud(:,:,k),gnd(:,:,k),udgnd)
           df(l1:l2,m,n,ind(k)) = df(l1:l2,m,n,ind(k)) - &
               udgnd - f(l1:l2,m,n,ind(k))*divud(:,k)
-
-          if (lmdvar) then
-            call gradf_upw1st(f,uud(:,:,k),imd(k),gmd(:,:,k))
-            call dot_mn(uud(:,:,k),gmd(:,:,k),udgmd)
-            df(l1:l2,m,n,imd(k)) = df(l1:l2,m,n,imd(k)) - udgmd
-          endif
-
+          
           if (lmice) then
             call gradf_upw1st(f,uud(:,:,k),imi(k),gmi(:,:,k))
             call dot_mn(uud(:,:,k),gmi(:,:,k),udgmi)

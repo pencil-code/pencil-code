@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.204 2004-04-28 14:43:54 ajohan Exp $
+! $Id: equ.f90,v 1.205 2004-05-12 17:27:07 ajohan Exp $
 
 module Equ
 
@@ -229,7 +229,7 @@ module Equ
       real, dimension (nx,3,ndustspec) :: uud,gnd
       real, dimension (nx,ndustspec) :: divud,ud2
       real, dimension (nx) :: lnrho,divu,u2,rho,rho1
-      real, dimension (nx) :: cs2,va2,TT1,shock,UUtemp,maxadvec
+      real, dimension (nx) :: cs2,va2,TT1,cc,cc1,shock,UUtemp,maxadvec
       integer :: iv
 !
 !  print statements when they are first executed
@@ -238,7 +238,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.204 2004-04-28 14:43:54 ajohan Exp $")
+           "$Id: equ.f90,v 1.205 2004-05-12 17:27:07 ajohan Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -352,13 +352,13 @@ module Equ
 !
 !  Entropy (may need B-field)
 !
-        call dss_dt (f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
-        call dlncc_dt (f,df,uu,glnrho)
+        call dss_dt(f,df,uu,glnrho,divu,rho1,lnrho,cs2,TT1,shock,gshock,bb,bij)
+        call dlncc_dt(f,df,uu,glnrho,cc,cc1)
 !
 !  dust equations
 !
-        call duud_dt  (f,df,uu,rho1,cs2,uud,divud,ud2,udij)
-        call dndmd_dt (f,df,rho1,TT1,cs2,uud,divud,gnd)
+        call duud_dt (f,df,uu,rho1,cs2,uud,divud,ud2,udij)
+        call dndmd_dt(f,df,rho1,TT1,cs2,uud,divud,cc,cc1,gnd)
 !
 !  Add gravity, if present
 !  Shouldn't we call this one in hydro itself?
