@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.50 2003-08-06 02:22:06 theine Exp $
+! $Id: noionization.f90,v 1.51 2003-08-06 10:13:05 mee Exp $
 
 !  Dummy routine for noionization
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.50 2003-08-06 02:22:06 theine Exp $")
+           "$Id: noionization.f90,v 1.51 2003-08-06 10:13:05 mee Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -172,9 +172,9 @@ module Ionization
 
 ! Handle isothermal case safely, to prevent divide by zero
         if (gamma/=1.) then
+          lnTT0=alog(cs20/gamma1)-gamma1*lnrho0
+        else
           if (lentropy) then
-            lnTT0=alog(cs20/gamma1)-gamma1*lnrho0
-          else 
             call stop_it("initialise_ionization: Entropy evolution NOT IMPLEMENTED with gamma=1.")
           endif
           !lnTT0=0.
