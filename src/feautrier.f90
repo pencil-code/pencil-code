@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.7 2003-04-02 11:43:12 theine Exp $
+! $Id: feautrier.f90,v 1.8 2003-04-02 17:28:45 brandenb Exp $
 
 module Radiation
 
@@ -54,7 +54,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.7 2003-04-02 11:43:12 theine Exp $")
+           "$Id: feautrier.f90,v 1.8 2003-04-02 17:28:45 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -114,9 +114,9 @@ module Radiation
          kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
          tau=spline_integral(z,kaprho)
          Srad_=Srad(lrad,mrad,n1:n2)
-         print*,'kappa=',kappa(lrad,mrad,n1:n2)
-         print*,'tau=',tau
-         print*,'Srad=',Srad_
+         !print*,'kappa=',kappa(lrad,mrad,n1:n2)
+         !print*,'tau=',tau
+         !print*,'Srad=',Srad_
 !
          b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
          c(1)=-2./(tau(2)-tau(1))**2
@@ -131,7 +131,7 @@ module Radiation
          call tridag(a,b,c,Srad_,Prad_)
 !
          feautrier(lrad,mrad,n1:n2)=Prad_
-         print*,'Prad',Prad_
+         !print*,'Prad',Prad_
       enddo
       enddo
     endfunction feautrier
