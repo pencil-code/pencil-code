@@ -1,9 +1,8 @@
-! $Id: timestep.f90,v 1.22 2004-05-16 15:26:42 ajohan Exp $
+! $Id: timestep.f90,v 1.23 2004-05-19 07:27:28 brandenb Exp $
 
 module Timestep
 
   use Cparam
-  use Cdata
 
   implicit none
 
@@ -14,6 +13,8 @@ module Timestep
   real, dimension(mx) :: border_prof_x=1.
   real, dimension(my) :: border_prof_y=1.
   real, dimension(mz) :: border_prof_z=1.
+
+! integer :: itorder=3
 
   contains
 
@@ -32,6 +33,7 @@ module Timestep
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
+      real, dimension (3) :: alpha,beta,dt_beta
       real :: ds
       integer :: j
 !
@@ -54,10 +56,6 @@ module Timestep
         call mpifinalize
       endif
 !
-!  dt_beta may be needed in other modules (like Dustdensity)
-!
-      if (.not. ldt) dt_beta=dt*beta
-!
       do itsub=1,itorder
         if (itsub==1) then
           lfirst=.true.
@@ -76,13 +74,11 @@ module Timestep
 !  Only do it on the root processor, then broadcast dt to all others.
 !
         if (lfirst.and.lroot) then
-          if (ldt) then
-            dt = cdt*dxmin/UUmax
-            dt_beta=dt*beta
-          endif
+          if (ldt) dt = cdt*dxmin/UUmax
           if (ip<7) print*,'dt,cdt,dx,dy,dz,UUmax=',dt,cdt,dx,dy,dz,UUmax
         endif
         if (lfirst) call mpibcast_real(dt,1)
+        dt_beta=dt*beta
         if (ip<=6) print*,'TIMESTEP: iproc,dt=',iproc,dt  !(all have same dt?)
 !
 !  do this loop in pencils, for cache efficiency
