@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.198 2004-06-22 04:21:25 brandenb Exp $
+! $Id: magnetic.f90,v 1.199 2004-06-22 05:05:02 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -133,7 +133,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.198 2004-06-22 04:21:25 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.199 2004-06-22 05:05:02 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -792,7 +792,6 @@ module Magnetic
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
       real, dimension (nx,3) :: bb,bb_ext_pot
-      real, dimension (nx) :: bb_x,bb_y,bb_z
       real :: B2_ext,c,s
       
       intent(in)  :: f
@@ -1005,7 +1004,6 @@ module Magnetic
 !  27-may-02/axel: added possibility to reset list
 !
       use Cdata
-      use Mpicomm, only: stop_it
       use Sub
 !
       integer :: iname,inamez,ixy,irz
@@ -1492,7 +1490,7 @@ module Magnetic
 !
 !  30-may-04/tobi: coded
 !
-      use Cdata, only: x,y,z,lroot,dx,dy,dz,directory,ip,m,n
+      use Cdata, only: x,y,z,lroot,dx,dz,directory,ip,m,n
       use Sub, only: hypergeometric2F1
       use Global, only: set_global
       use Deriv, only: der
@@ -1501,7 +1499,6 @@ module Magnetic
       real, intent(in) :: mu,Bz0,r0
       real :: xi2,A_phi,fac,Bz
       real, parameter :: tol=1e-5
-      real :: a,b,c
       integer :: l
       integer, dimension(1) :: ll,mm,nn
       real, dimension(mx,my,mz) :: Ax_ext,Ay_ext

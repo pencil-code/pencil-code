@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.66 2004-06-08 14:17:22 brandenb Exp $
+! $Id: forcing.f90,v 1.67 2004-06-22 05:05:02 brandenb Exp $
 
 module Forcing
 
@@ -61,7 +61,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.66 2004-06-08 14:17:22 brandenb Exp $")
+           "$Id: forcing.f90,v 1.67 2004-06-22 05:05:02 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -71,7 +71,7 @@ module Forcing
 !  nothing done from start.f90 (lstarting=.true.)
 !
       use Cdata
-      use Sub, only: inpui,step
+      use Sub, only: inpui
 !
       logical, save :: first=.true.
       logical :: lstarting
@@ -273,7 +273,6 @@ module Forcing
       real :: phase,ffnorm
       real, save :: kav
       real, dimension (2) :: fran
-      real, dimension (1) :: frane
       real, dimension (nx) :: radius,tmpx,rho1,ruf,rho
       real, dimension (mz) :: tmpz
       real, dimension (nx,3) :: variable_rhs,forcing_rhs,force_all
@@ -283,14 +282,13 @@ module Forcing
       complex, dimension (mz) :: fz
       real, dimension (3) :: coef1,coef2
       logical, dimension (3), save :: extent
-      logical :: same
       integer, parameter :: mk=3000
       integer, dimension(mk), save :: kkx,kky,kkz
       integer, save :: ifirst,nk
       integer :: ik,j,jf
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
-      real, dimension(3) :: ek,e1,e2,ee,kk
+      real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
 !
       if (ifirst==0) then
@@ -605,7 +603,7 @@ module Forcing
       integer, save :: ifirst,nk
       integer :: ik,j,jf,kx,ky,kz,kex,key,kez,kkex,kkey,kkez
       real :: k2,k,ex,ey,ez,kde,sig=1.,fact
-      real, dimension(3) :: ek,e1,e2,ee,kk
+      real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
 !
       if (ifirst==0) then
@@ -1259,7 +1257,7 @@ module Forcing
       integer :: ifirst
       real :: kx0,kx,ky,kz,k2,k,force_ampl=1.
       real :: ex,ey,ez,kde,sig=1.,fact,kex,key,kez,kkex,kkey,kkez
-      real, dimension(3) :: ek,e1,e2,ee,kk
+      real, dimension(3) :: e1,e2,ee,kk
       real :: norm,phi
 !
 !  in the shearing sheet approximation, kx = kx0 - St*k_y.
