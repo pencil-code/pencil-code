@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: start.csh,v 1.59 2004-09-28 11:33:06 ajohan Exp $
+# CVS: $Id: start.csh,v 1.60 2004-11-02 19:22:03 dobler Exp $
 
 #                       start.csh
 #                      -----------
@@ -58,14 +58,14 @@ if ($?PENCIL_START1_CMD) then
 endif
 
 # ---------------------------------------------------------------------- #
-#  for testing backwards compatibility, it is useful to make sure
-#  start.x is never excecuted, and that the old var.dat etc files
-#  are not deleted. time_series.dat will be renamed, so we can write
-#  a fresh one to compare against.
+
+#  For testing backwards compatibility, do not excecute start.x, an do not
+#  delete existing var.dat (etc.) files.
+#  Rename time_series.dat, so run.x can write a fresh one to compare
+#  against.
 #
 if (-e NOSTART) then
-  echo "The file NOSTART exists, so we have to exit"
-  echo "and don't overwrite existing data"
+  echo "Found NOSTART file. Won't run start.x"
   mv $datadir/time_series.dat $datadir/time_series.`timestr`
   exit
 endif
