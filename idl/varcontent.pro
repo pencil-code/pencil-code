@@ -1,4 +1,4 @@
-;  $Id: varcontent.pro,v 1.16 2003-12-09 10:36:04 ajohan Exp $
+;  $Id: varcontent.pro,v 1.17 2003-12-09 13:47:21 ajohan Exp $
 ;
 ; VARCONTENT STRUCTURE DESCRIPTION
 ;
@@ -105,31 +105,29 @@ varcontent[ilncc].idlinitloc = INIT_SCALAR_LOC
 ;varcontent[iecr].idlvarloc= 'ecr_loc'
 ;varcontent[iecr].idlinitloc = INIT_SCALAR_LOC
 
-default, ndustspec,0
-for idust=1,ndustspec do begin
+for idust=0,n_elements(iuud)-1 do begin
 
-  if (ndustspec gt 1) then begin
-    sidust = strtrim(string(idust),2)
-    iuud=iuud1+4*(idust-1)
-    ilnrhod=ilnrhod1+4*(idust-1)
-  endif else begin
-    sidust = ''
-  endelse
+  sidust = strtrim(string(idust),2)
 
-  varcontent[iuud].variable = 'Dust velocity ' + sidust + $
+  varcontent[iuud(idust)].variable = 'Dust velocity ' + sidust + $
       ' (uud' + sidust + ')'
-  varcontent[iuud].idlvar   = 'uud'+sidust
-  varcontent[iuud].idlinit    = INIT_3VECTOR
-  varcontent[iuud].idlvarloc= 'uud'+sidust+'_loc'
-  varcontent[iuud].idlinitloc = INIT_3VECTOR_LOC
-  varcontent[iuud].skip     = 2
+  varcontent[iuud(idust)].idlvar   = 'uud'+sidust
+  varcontent[iuud(idust)].idlinit    = INIT_3VECTOR
+  varcontent[iuud(idust)].idlvarloc= 'uud'+sidust+'_loc'
+  varcontent[iuud(idust)].idlinitloc = INIT_3VECTOR_LOC
+  varcontent[iuud(idust)].skip     = 2
+endfor
 
-  varcontent[ilnrhod].variable = 'Dust log density ' + sidust + $
+for idust=0,n_elements(ilnrhod)-1 do begin
+  
+  sidust = strtrim(string(idust),2)
+
+  varcontent[ilnrhod(idust)].variable = 'Dust log density ' + sidust + $
       ' (lnrhod'+sidust+')'
-  varcontent[ilnrhod].idlvar   = 'lnrhod'+sidust
-  varcontent[ilnrhod].idlinit    = INIT_SCALAR
-  varcontent[ilnrhod].idlvarloc= 'lnrhod'+sidust+'_loc'
-  varcontent[ilnrhod].idlinitloc = INIT_SCALAR_LOC
+  varcontent[ilnrhod(idust)].idlvar   = 'lnrhod'+sidust
+  varcontent[ilnrhod(idust)].idlinit    = INIT_SCALAR
+  varcontent[ilnrhod(idust)].idlvarloc= 'lnrhod'+sidust+'_loc'
+  varcontent[ilnrhod(idust)].idlinitloc = INIT_SCALAR_LOC
 
 endfor
 
