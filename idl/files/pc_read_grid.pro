@@ -1,8 +1,14 @@
-; $Id: pc_read_grid.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+; $Id: pc_read_grid.pro,v 1.3 2002-11-28 02:07:00 mee Exp $
 ;
+;   Read grid.dat
 ;
-;  Read grid.dat
+;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+;  $Date: 2002-11-28 02:07:00 $
+;  $Revision: 1.3 $
 ;
+;  27-nov-02/tony: coded 
+;
+;  
 pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, $
                  datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
   COMMON pc_precision, zero, one
@@ -39,13 +45,14 @@ pro pc_read_grid,t=t,x=x,y=y,z=z,dx=dx,dy=dy,dz=dz,object=object, $
 
 default, datadir, 'data'
 
-pc_set_precision
+; Get necessary dimensions, inheriting QUIET
+pc_read_dim,mx=mx,my=my,mz=mz,datadir=datadir,proc=proc,QUIET=QUIET 
+; and check pc_precision is set!
+pc_set_precision,precision=precision,QUIET=QUIET
 
 ;
 ; Initialize / set default returns for ALL variables
 ;
-pc_read_dim,mx=mx,my=my,mz=mz,proc=proc,QUIET=QUIET ; Get necessary dimensions, inheriting QUIET
-                                                    ; and check pc_precision is set!
 t=zero
 x=fltarr(mx)*one & y=fltarr(my)*one & z=fltarr(mz)*one
 dx=zero &  dy=zero &  dz=zero & dxyz=zero
@@ -60,27 +67,28 @@ filename=datadir+'/proc'+str(proc)+'/grid.dat'   ; Read processor box dimensions
 ; Check for existance and read the data
 dummy=findfile(filename, COUNT=cgrid)
 if (cgrid gt 0) then begin
-  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' + filename + '...'
+  IF ( not keyword_set(QUIET) ) THEN print, 'Reading ' , filename , '...'
 
   openr,file,filename
   readu,file, t,x,y,z
   readu,file, dx,dy,dz
   close,file 
 end else begin
-  message, 'ERROR: cannot find file ' + filename
+  message, 'ERROR: cannot find file ' , filename
 end
 
 ; Build structure of all the variables
-object = CREATE_STRUCT(['t','x','y','z','dx','dy','dz'],t,x,y,z,dx,dy,dz)
+object = CREATE_STRUCT(name=filename,['t','x','y','z','dx','dy','dz'],t,x,y,z,dx,dy,dz)
 
 ; If requested print a summary
+fmt = '(A,4G15.6)'
 if keyword_set(PRINT) then begin
-  print, 'For '+proc+' calculation domain:'
+  print, FORMAT='(A,I2,A)', 'For processor ',proc,' calculation domain:'
   print, '             t = ', t
-  print, 'min(x), max(x) = '+min(x)+', '+max(x)
-  print, 'min(y), max(y) = '+min(y)+', '+max(y)
-  print, 'min(z), max(z) = '+min(z)+', '+max(z)
-  print, '    dx, dy, dz = ' + dx + ', ' + dy + ', ' + dz
+  print, 'min(x), max(x) = ',min(x),', ',max(x)
+  print, 'min(y), max(y) = ',min(y),', ',max(y)
+  print, 'min(z), max(z) = ',min(z),', ',max(z)
+  print, '    dx, dy, dz = ' , dx , ', ' , dy , ', ' , dz
 endif
 
 end

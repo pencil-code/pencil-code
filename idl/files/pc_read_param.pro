@@ -1,29 +1,37 @@
-; $Id: pc_read_params.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+; $Id: pc_read_param.pro,v 1.1 2002-11-28 02:07:00 mee Exp $
 ;
+;   Read param.nml
 ;
-;  Read params.nml
+;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+;  $Date: 2002-11-28 02:07:00 $
+;  $Revision: 1.1 $
 ;
-pro pc_read_params,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,lentropy=lentropy, $
-                   lmagnetic=lmagnetic, lradiation=lradiation,lpscalar=lpscalar, lforcing=lforcing, $
-                   lshear=lshear, $
-                   cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1, $
-                   z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz, $
-                   mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
-                   object=object, $
-                   datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
+;  27-nov-02/tony: coded mostly from Wolgang's start.pro
+;
+;  REQUIRES: external 'nl2idl' perl script (WD)
+;  
+;  
+pro pc_read_param,lhydro=lhydro,ldensity=ldensity,lgravz=lgravz,lgravr=lgravr,lentropy=lentropy, $
+                  lmagnetic=lmagnetic, lradiation=lradiation,lpscalar=lpscalar, lforcing=lforcing, $
+                  lshear=lshear, $
+                  cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1, $
+                  z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz, $
+                  mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop, $
+                  object=object, $
+                  datadir=datadir,PRINT=PRINT,QUIET=QUIET,HELP=HELP
   COMMON pc_precision, zero, one
 ; If no meaningful parameters are given show some help!
   IF ( keyword_set(HELP) ) THEN BEGIN
     print, "Usage: "
     print, ""
-    print, "pc_read_params, lhydro=lhydro, ldensity=ldensity, lgravz=lgravz, lgravr=lgravr,            " 
-    print, "                lentropy=lentropy, lmagnetic=lmagnetic, lradiation=lradiation,             "
-    print, "                lpscalar=lpscalar, lforcing=lforcing, lshear=lshear,                       "
-    print, "                cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1,  "
-    print, "                z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz,                    "
-    print, "                mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop,            "
-    print, "                object=object,                                                             "
-    print, "                datadir=datadir, proc=proc,                                                "
+    print, "pc_read_param, lhydro=lhydro, ldensity=ldensity, lgravz=lgravz, lgravr=lgravr,            " 
+    print, "               lentropy=lentropy, lmagnetic=lmagnetic, lradiation=lradiation,             "
+    print, "               lpscalar=lpscalar, lforcing=lforcing, lshear=lshear,                       "
+    print, "               cs0=cs0, cs20=cs20, rho0=rho0, lnrho0=lnrho0, gamma=gamma, gamma1=gamma1,  "
+    print, "               z1=z1, z2=z2, z3=z3, zref=zref, ztop=ztop, gravz=gravz,                    "
+    print, "               mpoly0=mpoly0, mpoly1=mpoly1, mpoly2=mpoly2, isothtop=isothtop,            "
+    print, "               object=object,                                                             "
+    print, "               datadir=datadir, proc=proc,                                                "
     print, "               /PRINT, /QUIET, /HELP                                                       "
     print, "                                                                                           "
     print, "Returns the parameters of a Pencil-Code run. Returns zeros and empty in all variables on   "
@@ -100,7 +108,6 @@ mpoly0    = zero
 mpoly1    = zero
 mpoly2    = zero
 isothtop  = zero
-print, one, zero
 ; Get a unit number
 ; GET_LUN, file   DON'T NEED TO OPEN A FILE!!
 

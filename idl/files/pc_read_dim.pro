@@ -1,7 +1,14 @@
-; $Id: pc_read_dim.pro,v 1.2 2002-11-27 17:55:59 mee Exp $
+; $Id: pc_read_dim.pro,v 1.3 2002-11-28 02:07:00 mee Exp $
 ;
-;  Read dim.dat
+;   Read stuff from dim.dat
 ;
+;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
+;  $Date: 2002-11-28 02:07:00 $
+;  $Revision: 1.3 $
+;
+;  27-nov-02/tony: coded 
+;
+;  
 pro pc_read_dim, mx=mx, my=my, mz=mz, mvar=mvar, $
                  nx=nx, ny=ny, nz=nz, $
                  precision=precision, $
@@ -115,7 +122,7 @@ precision = strmid(precision,0,1)
 
 
 ; Build structure of all the variables
-object = CREATE_STRUCT(['mx','my','mz','mw','mvar', $
+object = CREATE_STRUCT(name=filename,['mx','my','mz','mw','mvar', $
                         'precision', $
                         'nx','ny','nz', $
                         'nghostx','nghosty','nghostz', $
@@ -126,17 +133,17 @@ object = CREATE_STRUCT(['mx','my','mz','mw','mvar', $
 ; If requested print a summary
 if keyword_set(PRINT) then begin
   if keyword_set(proc) then begin
-      print, 'For '+proc+' calculation domain:'
+      print, 'For processor ',proc,' calculation domain:'
   endif else begin
       print, 'For GLOBAL calculation domain:'
   endelse
 
-  print, '          (mx,my,mz,mvar) = ('+mx+','+my+','+mz+','+mvar+')'
-  print, '                       mw = '+mw
-  print, '               (nx,ny,nz) = ('+nx+','+ny+','+nz+')'
+  print, '          (mx,my,mz,mvar) = (',mx,',',my,',',mz,',',mvar,')'
+  print, '                       mw = ',mw
+  print, '               (nx,ny,nz) = (',nx,',',ny,',',nz,')'
   print, '                precision = ', precision
-  print, '(nghostx,nghosty,nghostz) = ('+nghostx+','+nghosty+','+nghostz+')'
-  print, '   (nprocx,nprocy,nprocz) = ('+nprocx+','+nprocy+','+nprocz+')'
+  print, '(nghostx,nghosty,nghostz) = (',nghostx,',',nghosty,',',nghostz,')'
+  print, '   (nprocx,nprocy,nprocz) = (',nprocx,',',nprocy,',',nprocz,')'
 endif
 
 end
