@@ -101,6 +101,18 @@ pro pse, $
     comment = ''
   endelse
 
+  ;; quote double quote characters
+  pos = 0
+  iquot = strpos(cmdlist,'"',pos)
+  if (debug) then print,'1.  pos, iquot = ', pos, iquot
+  while (iquot ge pos) do begin
+    cmdlist = strmid(cmdlist,0,iquot)+'\'+strmid(cmdlist,iquot)
+    pos = iquot+2
+    iquot = strpos(cmdlist,'"',pos)
+    if (debug) then print, 'Loop: cmdlist=<', cmdlist,'>'
+    if (debug) then print, 'Loop:   pos, iquot = ', pos, iquot
+  endwhile
+
   ;; remove trailing \n
   l = strlen(cmdlist)
   if (strmid(cmdlist,l-2) eq '\n') then cmdlist = strmid(cmdlist,0,l-2)
@@ -108,9 +120,9 @@ pro pse, $
   ;; modify PS file
   if (debug) then begin
     print, $
-        "<" + "ps-annotate" + " --cmd '" + cmdlist + "' " + _fname+comment + ">"
+        '<' + 'ps-annotate' + ' --cmd "' + cmdlist + '" ' + _fname+comment + '>'
   endif
-  spawn, /SH, "ps-annotate" + " --cmd '" + cmdlist + "' " + _fname + comment
+  spawn, /SH, 'ps-annotate' + ' --cmd "' + cmdlist + '" ' + _fname + comment
   if (fixbb) then begin
     if (debug) then begin
       print, 'Running psfixbb..'
