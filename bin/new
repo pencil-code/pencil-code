@@ -1,23 +1,34 @@
 #!/bin/csh
-
-# An obscure script used by no-one else than Axel Brandenburg. It won't work
-# for you, since you don't have his `mktmp'. So just ignore it
-
+#
+#  $Id: new,v 1.7 2002-10-04 06:23:41 brandenb Exp $
+#
+#  This script uses mkdatadir which links the subdirectory data
+#  to some data disk (which is machine dependent and therefore
+#  you may want to adapt mkdatadir for your particular machine).
+#
+#  save current working directory and make new run directory
+#  and go there.
+#
 set CWD=$cwd
 mkdir $2
 cd $2
 #
-$HOME/bin/mktmp
+#  In the new run directory, call mkdatadir, and go there
+#
+$HOME/bin/mkdatadir
 mkdir src
 cd src
 #
-#  use previous src directory
+#  use *.local files from previous src directory
+#  and run setup-src
 #
 cp ../../$1/src/*.local .
 cd ..
 $PENCIL_HOME/bin/setup-src
 #
-#  copy some files into new directory
+#  copy *.in and k.dat files into new directory
+#  the k.dat file is actually only needed for forced
+#  turbulence runs
 #
 cd ../$1
 cp *.in k.dat ../$2

@@ -1,0 +1,30 @@
+#!/bin/csh
+#
+#  $Id: mkdatadir,v 1.1 2002-10-04 06:23:41 brandenb Exp $
+#
+#  This script generates a link to a data directory
+#  with the same name as the current working directory
+#  but that is located on a data disk. The name of the
+#  desired data disk will be different and different
+#  machine, so you may need to add your particular
+#  machine name below
+#
+echo $cwd > .tmp
+#
+#  in the following if block one can add more machines
+#  where workspace can be allocated.
+#
+set hn = `hostname`
+echo "we are on" $hn ", the new workspace will be"
+if ($hn =~ mhd*.st-and.ac.uk) then
+  set str='s/home/work4/g'
+else if ($hn =~ fe*) then
+  set str='s/home/wkspace/g'
+else if ($hn =~ sander*) then
+  set str='s/astro/scratch1\/astro/g'
+endif
+#
+sed -e $str .tmp > .scr
+cat .scr
+mkdir -p `cat .scr`
+ln -s `cat .scr` data
