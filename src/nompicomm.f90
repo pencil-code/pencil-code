@@ -200,6 +200,36 @@ module Mpicomm
       end if
     end subroutine finalise_shearing
 !***********************************************************************
+    subroutine send_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+!
+!  send intensities
+!
+!  29-jun-03/axel: coded
+!
+      integer :: nbuf_xy,ipz_dest,tag_xy,isend_xy,radx0,rady0,radz0
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+!
+    endsubroutine send_Irad0_xy
+!***********************************************************************
+    subroutine receive_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+!
+!  send intensities
+!
+!  29-jun-03/axel: coded
+!
+      integer :: nbuf_xy,ipz_dest,tag_xy,irecv_xy,radx0,rady0,radz0
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+!
+    endsubroutine receive_Irad0_xy
+!***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
       integer :: nbcast_array

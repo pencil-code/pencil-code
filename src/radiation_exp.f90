@@ -1,4 +1,4 @@
-! $Id: radiation_exp.f90,v 1.24 2003-06-29 16:52:25 theine Exp $
+! $Id: radiation_exp.f90,v 1.25 2003-06-29 22:07:38 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -76,7 +76,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_exp.f90,v 1.24 2003-06-29 16:52:25 theine Exp $")
+           "$Id: radiation_exp.f90,v 1.25 2003-06-29 22:07:38 brandenb Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -207,7 +207,7 @@ module Radiation
       do lrad=-radx,radx
         rad2=lrad**2+mrad**2+nrad**2
         if (rad2>0 .and. rad2<=rad2max) then 
-           ! no boundary conditions
+           ! zero boundary conditions
            tau=0.
            Irad=0.
            ! they will be communicated in radtransfer_comm
@@ -309,34 +309,90 @@ module Radiation
 !***********************************************************************
     subroutine radtransfer_comm()
 !
-      use Cdata
+!  This routine sets Irad0_xy, Irad0_yz, and Irad0_zx on the
+!  neighboring processors.
 !
+!  29-jun-03/tobi: coded
+!  29-jun-03/axel: added communication calls
+!
+      use Cdata
+      use Mpicomm
+!
+      integer :: tag_xyp,tag_xym
       integer :: lrad,mrad,nrad,rad2
       logical, save :: first=.true.
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Iradcomm_xy
 !
 !  Identifier
 !
       if (first) print*,'radtransfer_comm'
 !
-!  bottom boundary (rays point upwards): I=S
+!  Vertical direction:
 !
-      do nrad=+1,+radz
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        Irad0_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
-      enddo
-      enddo
-      enddo
+!  upward ray:
+!  (starting this is optimal when ipz < nprocz/2;
+!  otherwise we better start the other way around)
+!
+      if(ipz==0) then
+        !
+        !  bottom boundary (rays point upwards): I=S
+        !  (take S from the ghost zones)
+        !
+        do nrad=+1,+radz
+        do mrad=-rady,rady
+        do lrad=-radx,radx
+          Irad0_xy(:,:,:,lrad,mrad,nrad)=Srad(:,:,n1-radz0:n1-1)
+        enddo
+        enddo
+        enddo
+      else
+        !
+        !  receive from previous processor
+        !
+        if (first) print*,'radtransfer_comm: receive_Irad0_xyp, ipz-1=',ipz-1
+        call receive_Irad0_xy(Iradcomm_xy,ipz-1,radx0,rady0,radz0,tag_xyp)
+        Irad0_xy(:,:,:,:,:,1:radz)=Iradcomm_xy(:,:,:,:,:,1:radz)
+      endif
+!
+!  send Iradcomm_xy to ipz+1
+!
+      if(ipz/=nprocz-1) then
+        if (first) print*,'radtransfer_comm: send_Irad0_xyp, ipz+1=',ipz+1
+        Iradcomm_xy=Irad_xy(:,:,:,:,:,1:radz) &
+                  +Irad0_xy(:,:,:,:,:,1:radz)*exp(-tau_xy(:,:,:,:,:,1:radz))
+        call send_Irad0_xy(Iradcomm_xy,ipz+1,radx0,rady0,radz0,tag_xyp)
+      endif
+!
+!  downward ray
+!  start at the top
 !
 !  top boundary (rays point downwards): I=0
 !
-      do nrad=-radz,-1
-      do mrad=-rady,rady
-      do lrad=-radx,radx
-        Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
-      enddo
-      enddo
-      enddo
+      if(ipz==nprocz-1) then
+        do nrad=-radz,-1
+        do mrad=-rady,rady
+        do lrad=-radx,radx
+          Irad0_xy(:,:,:,lrad,mrad,nrad)=0.
+        enddo
+        enddo
+        enddo
+      else
+        !
+        !  receive from previous processor
+        !
+        if (first) print*,'radtransfer_comm: receive_Irad0_xym, ipz+1=',ipz+1
+        call receive_Irad0_xy(Iradcomm_xy,ipz+1,radx0,rady0,radz0,tag_xym)
+        Irad0_xy(:,:,:,:,:,-radz:-1)=Iradcomm_xy
+      endif
+!
+!  send Iradcomm_xy to ipz-1
+!
+      if(ipz/=nprocz-1) then
+        if (first) print*,'radtransfer_comm: send_Irad0_xym, ipz-1=',ipz-1
+        Iradcomm_xy=Irad_xy(:,:,:,:,:,-radz:-1) &
+                  +Irad0_xy(:,:,:,:,:,-radz:-1)*exp(-tau_xy(:,:,:,:,:,-radz:-1))
+        call send_Irad0_xy(Iradcomm_xy,ipz-1,radx0,rady0,radz0,tag_xym)
+      endif
 !
 !  side boundaries : initially I=0
 !

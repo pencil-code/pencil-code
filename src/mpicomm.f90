@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.79 2003-06-21 04:28:36 brandenb Exp $
+! $Id: mpicomm.f90,v 1.80 2003-06-29 22:07:38 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -78,6 +78,7 @@ module Mpicomm
                                          isend_stat_Tuu,isend_stat_Tlu
   integer, dimension(MPI_STATUS_SIZE) :: irecv_stat_Fuu,irecv_stat_Flu, &
                                          irecv_stat_Fll,irecv_stat_Ful
+  integer, dimension(MPI_STATUS_SIZE) :: isend_xy_stat,irecv_xy_stat
   integer :: ylneigh,zlneigh ! `lower' neighbours
   integer :: yuneigh,zuneigh ! `upper' neighbours
   integer :: llcorn,lucorn,uucorn,ulcorn !!(the 4 corners in yz-plane)
@@ -565,6 +566,46 @@ module Mpicomm
          if (lastya/=iproc) call MPI_WAIT(isend_rq_tolastya,isend_stat_tla,ierr)
 !
        endsubroutine finalise_shearing
+!***********************************************************************
+    subroutine send_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+!
+!  send intensities
+!
+!  29-jun-03/axel: coded
+!
+      integer :: nbuf_xy,ipz_dest,tag_xy,isend_xy,radx0,rady0,radz0
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+!
+!  initiate and finalize straight away
+!
+      call MPI_ISEND(Ibuf_xy,nbuf_xy,MPI_REAL,ipz_dest,tag_xy,MPI_COMM_WORLD,isend_xy,ierr)
+      call MPI_WAIT(isend_xy,isend_xy_stat,ierr)
+!
+    endsubroutine send_Irad0_xy
+!***********************************************************************
+    subroutine receive_Irad0_xy(Ibuf_xy,ipz_dest,radx0,rady0,radz0,tag_xy)
+!
+!  send intensities
+!
+!  29-jun-03/axel: coded
+!
+      integer :: nbuf_xy,ipz_dest,tag_xy,irecv_xy,radx0,rady0,radz0
+      real, dimension(mx,my,radz0,-radx0:radx0,-rady0:rady0,radz0) :: Ibuf_xy
+!
+!  buffer size
+!
+      nbuf_xy=mx*my*radz0*(2*radx0+1)*(2*rady0+1)*radz0
+!
+!  initiate and finalize straight away
+!
+      call MPI_IRECV(Ibuf_xy,nbufy,MPI_REAL,ipz_dest,tolowy,MPI_COMM_WORLD,irecv_xy,ierr)
+      call MPI_WAIT(irecv_xy,irecv_xy_stat,ierr)
+!
+    endsubroutine receive_Irad0_xy
 !***********************************************************************
     subroutine mpibcast_int(ibcast_array,nbcast_array)
 !
