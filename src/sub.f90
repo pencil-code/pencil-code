@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.90 2002-10-04 18:20:09 dobler Exp $ 
+! $Id: sub.f90,v 1.91 2002-10-04 18:40:50 dobler Exp $ 
 
 module Sub 
 
@@ -1822,9 +1822,58 @@ module Sub
       use Cdata
 !
       character (len=*) :: file
-      character(datelen) :: date
+      character (len=datelen) :: date
+      character (len=linelen) :: field='',struct='',type='',dep=''
 !
       call date_time_string(date)
+!
+!  accumulate a few lines
+!
+      if (lhydro    ) then
+        field  = trim(field ) // 'uu, '
+        struct = trim(struct) // '3-vector, '
+        type   = trim(type  ) // 'float, '
+        dep    = trim(dep   ) // 'positions, ' 
+      endif
+      if (ldensity  ) then
+        field  = trim(field ) // 'lnrho, '
+        struct = trim(struct) // 'scalar, '
+        type   = trim(type  ) // 'float, '
+        dep    = trim(dep   ) // 'positions, ' 
+      endif
+      if (lentropy  ) then
+        field  = trim(field ) // 'ss, '
+        struct = trim(struct) // 'scalar, '
+        type   = trim(type  ) // 'float, '
+        dep    = trim(dep   ) // 'positions, ' 
+      endif
+      if (lmagnetic ) then
+        field  = trim(field ) // 'aa, '
+        struct = trim(struct) // '3-vector, '
+        type   = trim(type  ) // 'float, '
+        dep    = trim(dep   ) // 'positions, ' 
+      endif
+      if (lradiation) then
+        field  = trim(field ) // 'e_rad, ff_rad, '
+        struct = trim(struct) // 'scalar, 3-vector, '
+        type   = trim(type  ) // 'float, float, '
+        dep    = trim(dep   ) // 'positions, positions, ' 
+      endif
+      if (lpscalar  ) then
+        field  = trim(field ) // 'lncc, '
+        struct = trim(struct) // 'scalar, '
+        type   = trim(type  ) // 'float, '
+        dep    = trim(dep   ) // 'positions, ' 
+      endif
+!
+!  remove trailing comma
+!
+      field  = field (1:len(trim(field ))-1)
+      struct = struct(1:len(trim(struct))-1)
+      type   = type  (1:len(trim(type  ))-1)
+      dep    = dep   (1:len(trim(dep   ))-1)
+!
+!  now write
 !
       open(1,FILE=file)
 !
@@ -1837,10 +1886,10 @@ module Sub
       write(1,'(A,A)') 'header = ', 'bytes 4'
       write(1,'(A,A)') 'interleaving = ', 'record'
       write(1,'(A,A)') 'majority = ', 'column'
-      write(1,'(A,A)') 'field = ', 'uu'
-      write(1,'(A,A)') 'structure = ', '3-vector'
-      write(1,'(A,A)') 'type = ', 'float'
-      write(1,'(A,A)') 'dependency = ', 'positions'
+      write(1,'(A,A)') 'field = ', trim(field)
+      write(1,'(A,A)') 'structure = ', trim(struct)
+      write(1,'(A,A)') 'type = ', trim(type)
+      write(1,'(A,A)') 'dependency = ', trim(dep)
       write(1,'(A,A,6(", ",1PG12.4))') 'positions = ', &
            'regular, regular, regular', &
            x0, dx, y0, dy, z0, dz 
