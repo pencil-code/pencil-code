@@ -1,4 +1,4 @@
-! $Id: nohydro.f90,v 1.13 2003-07-19 07:39:36 brandenb Exp $
+! $Id: nohydro.f90,v 1.14 2003-08-13 06:33:49 brandenb Exp $
 
 module Hydro
 
@@ -11,6 +11,7 @@ module Hydro
   namelist /hydro_init_pars/ dummyuu
   namelist /hydro_run_pars/  dummyuu
 
+  real :: theta=0.
   real :: frec_ux=100,ampl_osc_ux=1e-3
 
   ! other variables (needs to be consistent with reset list below)
@@ -47,7 +48,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nohydro.f90,v 1.13 2003-07-19 07:39:36 brandenb Exp $")
+           "$Id: nohydro.f90,v 1.14 2003-08-13 06:33:49 brandenb Exp $")
 !
     endsubroutine register_hydro
 !***********************************************************************
