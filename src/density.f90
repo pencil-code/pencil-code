@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.22 2002-07-03 16:44:39 dobler Exp $
+! $Id: density.f90,v 1.23 2002-07-04 09:19:57 dobler Exp $
 
 module Density
 
@@ -56,7 +56,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.22 2002-07-03 16:44:39 dobler Exp $")
+           "$Id: density.f90,v 1.23 2002-07-04 09:19:57 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -250,6 +250,14 @@ module Density
         if (lroot) print*,'lnrho: sin(x)*sin(y)'
         f(:,:,:,ilnrho) = &
              alog(rho0) + ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)
+
+      case('sin-xy-rho')
+        !
+        !  sin profile in x and y, but in rho, not ln(rho)
+        !  
+        if (lroot) print*,'rho: sin(x)*sin(y)'
+        f(:,:,:,ilnrho) = &
+             alog(rho0*(1+ampllnrho*sin(kx_lnrho*xx)*sin(ky_lnrho*yy)))
 
       case default
         !
