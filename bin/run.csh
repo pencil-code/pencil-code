@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: run.csh,v 1.76 2004-09-01 16:55:44 dobler Exp $
+# CVS: $Id: run.csh,v 1.77 2004-09-03 10:00:20 ajohan Exp $
 
 #                       run.csh
 #                      ---------
@@ -110,9 +110,9 @@ endif
 
 # Run run.x
 date
-echo "$mpirun $mpirunops $npops $run_x $x_ops"
-echo $mpirun $mpirunops $npops $run_x $x_ops >! run_command.log
-time $mpirun $mpirunops $npops $run_x $x_ops
+echo "$mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops"
+echo $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops >! run_command.log
+time $mpirun $mpirunops $npops $mpirunops2 $run_x $x_ops
 set run_status=$status		# save for exit
 date
 

@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.130 2004-09-01 08:24:50 ajohan Exp $
+# $Id: getconf.csh,v 1.131 2004-09-03 10:00:20 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -98,7 +98,8 @@ set booted_lam = 0
 echo `uname -a`
 set hn = `uname -n`
 if ($mpi) echo "Running under MPI"
-set mpirunops = ''
+set mpirunops  = ''  # options before -np $ncpus
+set mpirunops2 = ''  # options after -np $ncpus
 
 # Get list of nodes; filters lines such that it would also handle
 # machines.XXX files or lam-bhost.der, although this is hardly necessary.
@@ -479,6 +480,21 @@ else if ($hn =~ mhd) then
     setenv SCRATCH_DIR /var/tmp
   endif
 
+else if ($hn =~ opto[1-4]) then
+  echo "opto[1-4] 4xAMD opteron procs@2190.948 MHz at MPIA"
+  set nprocpernode = 4
+  set mpirun = mpirun_rsh
+  if ($ncpus <= 4) then
+    set mpirunops2 = `repeat $ncpus echo $hn`
+  else
+    set ncpus2=`echo $ncpus-4 | bc`
+    if ($hn =~ opto4) set hn2=opto3
+    if ($hn =~ opto3) set hn2=opto4
+    set mpirunops2 = `repeat 4 echo $hn; repeat $ncpus2 echo $hn2`
+  endif
+  set local_disc = 0
+  set one_local_disc = 0 
+
 else
   echo "Generic setup; hostname is <$hn>"
   if ($mpi) echo "Use mpirun"
@@ -508,6 +524,7 @@ else # no MPI
   echo "Non-MPI version"
   set mpirun = ''
   set mpirunops = ''
+  set mpirunops2 = ''
   set npops = ''
   set ncpus = 1
   set nprocpernode = 1
@@ -603,6 +620,7 @@ if ($debug) then
   echo '$hn           	= ' "<$hn>"
   echo '$mpirun       	= ' "<$mpirun>"
   echo '$mpirunops    	= ' "<$mpirunops>"
+  echo '$mpirunops2   	= ' "<$mpirunops2>"
   echo '$x_ops        	= ' "<$x_ops>"
   echo '$NODELIST     	= ' "<$NODELIST>"
   echo '$SSH          	= ' "<$SSH>"
