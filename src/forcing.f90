@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.25 2002-09-03 16:35:04 brandenb Exp $
+! $Id: forcing.f90,v 1.26 2002-09-07 06:05:13 brandenb Exp $
 
 module Forcing
 
@@ -10,7 +10,7 @@ module Forcing
   implicit none
 
   real :: force=0.,relhel=1.,height_ff=0.,r_ff=0.,fountain=1.,width_ff=.5
-  real :: dforce=0.,radius_ff,k1_ff=1.
+  real :: dforce=0.,radius_ff,k1_ff=1.,slope_ff=0.
   integer :: kfountain=5
   character (len=labellen) :: iforce='zero', iforce2='zero'
 
@@ -20,7 +20,7 @@ module Forcing
   namelist /forcing_run_pars/ &
        iforce,force,relhel,height_ff,r_ff,width_ff, &
        iforce2,kfountain,fountain, &
-       dforce,radius_ff,k1_ff
+       dforce,radius_ff,k1_ff,slope_ff
 
   contains
 
@@ -44,7 +44,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.25 2002-09-03 16:35:04 brandenb Exp $")
+           "$Id: forcing.f90,v 1.26 2002-09-07 06:05:13 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -278,7 +278,7 @@ module Forcing
 !  Note: kav is not to be scaled with k1_ff (forcing should remain
 !  unaffected when changing k1_ff).
 !
-      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)
+      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
       if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
