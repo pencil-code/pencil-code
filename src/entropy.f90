@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.111 2002-08-02 07:45:52 dobler Exp $
+! $Id: entropy.f90,v 1.112 2002-08-02 18:04:53 dobler Exp $
 
 module Entropy
 
@@ -27,7 +27,7 @@ module Entropy
   ! run parameters
   namelist /entropy_run_pars/ &
        hcond0,hcond1,hcond2,widthss,luminosity,wheat, &
-       cooltype,cs2cool,cool,wcool,Fbot, &
+       cooltype,cs2cool,cool,rcool,wcool,Fbot, &
        chi_t,lcalc_heatcond_simple,tau_ss_exterior
 
   ! other variables (needs to be consistent with reset list below)
@@ -65,7 +65,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.111 2002-08-02 07:45:52 dobler Exp $")
+           "$Id: entropy.f90,v 1.112 2002-08-02 18:04:53 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
