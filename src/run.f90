@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.44 2002-06-12 12:18:16 brandenb Exp $
+! $Id: run.f90,v 1.45 2002-06-15 09:29:04 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -44,8 +44,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.44 $", &
-             "$Date: 2002-06-12 12:18:16 $")
+             "$Revision: 1.45 $", &
+             "$Date: 2002-06-15 09:29:04 $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values
@@ -127,7 +127,7 @@
           call rk_2n(f,df)
           count = count + 1     !  reliable loop count even for premature exit
           if (lforcing) call addforce(f)
-          if(lout) call wzaverages
+          if(lout) call write_xyaverages
           if(lout) call prints
           call wsnap(trim(directory)//'/VAR',f,.true.)
           call wvid(trim(directory))

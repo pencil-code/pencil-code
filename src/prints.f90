@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.17 2002-06-08 16:02:00 brandenb Exp $
+! $Id: prints.f90,v 1.18 2002-06-15 09:29:04 brandenb Exp $
 
 module Print
 
@@ -40,8 +40,10 @@ module Print
       if (i_dtc/=0) call save_name(dt/(dxmin*cs0),i_dtc)
 !
 !  Magnetic energy in horizontally averaged field
+!  The bxmz and bymz must have been calculated,
+!  so they are present on the root processor.
 !
-      if (i_bmz/=0.and.lroot) then
+      if (lmagnetic.and.i_bmz/=0.and.lroot) then
         bmz=sum(fnamez(:,i_bxmz)**2+fnamez(:,i_bymz)**2)/nz
         call save_name(bmz,i_bmz)
       endif
@@ -85,7 +87,7 @@ module Print
 !
     endsubroutine Prints
 !***********************************************************************
-    subroutine wzaverages
+    subroutine write_xyaverages
 !
 !  reads and registers print parameters gathered from the different
 !  modules and marked in `print.in'
@@ -99,14 +101,14 @@ module Print
       logical,save :: first=.true.
 !
       if(lroot.and.nnamez>0) then
-        open(1,file='tmp/zaverages.dat',position='append')
+        open(1,file='tmp/xyaverages.dat',position='append')
         write(1,'(1pe12.5)') t
         write(1,'(1p,8e10.3)') fnamez(:,1:nnamez)
         close(1)
       endif
       first = .false.
 !
-    endsubroutine wzaverages
+    endsubroutine write_xyaverages
 !***********************************************************************
 
 endmodule Print

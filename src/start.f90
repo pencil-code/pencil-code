@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.40 2002-06-13 15:55:49 brandenb Exp $
+! $Id: start.f90,v 1.41 2002-06-15 09:29:04 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -32,8 +32,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: start.f90,v $", &
-             "$Revision: 1.40 $", &
-             "$Date: 2002-06-13 15:55:49 $")
+             "$Revision: 1.41 $", &
+             "$Date: 2002-06-15 09:29:04 $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -106,9 +106,12 @@
         call init_grav (f,xx,yy,zz)
 !
 !  write to disk
+!  The option lnowrite writes everything except the actual var.dat file
+!  This can be useful if auxiliary files are outdated, and don't want
+!  to overwrite an existing var.dat
 !
         if (lwrite_ic) call output(trim(directory)//'/VAR0',f,mvar)
-        call output(trim(directory)//'/var.dat',f,mvar)
+        if (.not.lnowrite) call output(trim(directory)//'/var.dat',f,mvar)
         call wdim(trim(directory)//'/dim.dat')
 !
 !  also write full dimensions to tmp/ :

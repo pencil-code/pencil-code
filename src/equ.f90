@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.62 2002-06-12 09:46:03 brandenb Exp $
+! $Id: equ.f90,v 1.63 2002-06-15 09:29:04 brandenb Exp $
 
 module Equ
 
@@ -95,9 +95,9 @@ module Equ
 !
     endsubroutine diagnostic
 !***********************************************************************
-    subroutine zaverages
+    subroutine xyaverages
 !
-!  calculate z-averages
+!  calculate xy-averages (as functions of z)
 !   6-jun-02/axel: coded
 !
       use Mpicomm
@@ -110,13 +110,13 @@ module Equ
 !
       call mpireduce_sum(fnamez,fsumz,nnamez*nz)
 !
-!  the result is present only on the root processor
+!  the result is only present on the root processor
 !
       if(lroot) then
         fnamez=fsumz/(nx*ny*ncpus)
       endif
 !
-    endsubroutine zaverages
+    endsubroutine xyaverages
 !***********************************************************************
     subroutine wvid(chdir)
 !
@@ -194,8 +194,8 @@ module Equ
 
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.62 $", &
-           "$Date: 2002-06-12 09:46:03 $")
+           "$Revision: 1.63 $", &
+           "$Date: 2002-06-15 09:29:04 $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -303,7 +303,7 @@ module Equ
       if (lfirst.and.ldt) call calc_UUmax
       if (ldiagnos) then
         call diagnostic
-        call zaverages
+        call xyaverages
       endif
 !
     endsubroutine pde

@@ -1,6 +1,22 @@
 ### Makefile for modular pencil code
 
-## Include settings local to run directory
+## Default settings: they can be overwritten by src/Makefile.local
+## which should be present in each local to run directory.
+
+LIBSIG=-L$(HOME)/f90/lib  ##(Wolfgang, should we take this out?)
+LDMPI=-lmpi
+MPICOMM=nompicomm
+GLOBAL=noglobal
+GRAVITY=nograv
+FORCING=noforcing
+ENTROPY=noentropy
+MAGNETIC=nomagnetic
+HYDRO=hydro
+DENSITY=density
+IO=io_dist
+FFT=nofft
+
+## Overwrite settings that are local to each run directory
 include Makefile.local
 
 ## Default settings
@@ -99,9 +115,9 @@ technical=cparam.o cdata.o general.o slices.o deriv.o boundcond.o register.o pri
 physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY).o $(MAGNETIC).o
 comm_deps=$(technical) $(IO).o sub.o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
-start_deps=$(start_deps_f90) debug_c.o fft.o
+start_deps=$(start_deps_f90) debug_c.o $(FFT).o
 run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
-run_deps=$(run_deps_f90) debug_c.o fft.o
+run_deps=$(run_deps_f90) debug_c.o $(FFT).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
 
@@ -133,13 +149,13 @@ $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
 $(FORCING).o:   $(FORCING).f90 cdata.o $(MPICOMM).o sub.o
 $(ENTROPY).o:   $(ENTROPY).f90 cdata.o $(MPICOMM).o sub.o $(GLOBAL).o $(HYDRO).o $(DENSITY).o $(IO).o slices.o
-$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o fft.o
+$(MAGNETIC).o:  $(MAGNETIC).f90 cdata.o $(MPICOMM).o sub.o slices.o $(FFT).o
 $(HYDRO).o:     $(HYDRO).f90 cdata.o $(MPICOMM).o sub.o $(DENSITY).o $(GRAVITY).o $(MAGNETIC).o slices.o
 $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(GRAVITY).o slices.o
 $(IO).o:        $(IO).f90 cdata.o $(MPICOMM).o debug_c.o
+# $(FFT).o:       $(FFT).f
 #
 debug_c.o:   debug_c.c
-fft.o:       fft.f
 
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
