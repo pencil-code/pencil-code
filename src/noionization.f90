@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.117 2004-07-06 00:18:07 theine Exp $
+! $Id: noionization.f90,v 1.118 2004-09-14 12:51:28 bingert Exp $
 
 !  Dummy routine for noionization
 
@@ -95,7 +95,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           '$Id: noionization.f90,v 1.117 2004-07-06 00:18:07 theine Exp $')
+           '$Id: noionization.f90,v 1.118 2004-09-14 12:51:28 bingert Exp $')
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -378,7 +378,7 @@ module Ionization
     endsubroutine temperature_gradient
 !***********************************************************************
     subroutine temperature_hessian(f,hlnrho,hss,hlnTT)
-!
+
 !   Calculate thermodynamical quantities, cs2 and cp1tilde
 !   and optionally hlnPP and hlnTT
 !   hP/rho=cs2*(hlnrho+cp1tilde*hss)
@@ -389,19 +389,18 @@ module Ionization
       use Mpicomm, only: stop_it
 !
       real, dimension(mx,my,mz,mvar+maux), intent(in) :: f
-      real, dimension(nx,3), intent(in) :: hlnrho,hss
-      real, dimension(nx,3), intent(out) :: hlnTT
+      real, dimension(nx,3,3), intent(in) :: hlnrho,hss
+      real, dimension(nx,3,3), intent(out) :: hlnTT
 !
       if (gamma1==0.) call stop_it('temperature_hessian: gamma=1 not allowed w/entropy')
 !
-!  pretend_lnTT
-!
       if (pretend_lnTT) then
-        hlnTT=gamma*hss
+        hlnTT=hss
       else
-        hlnTT=gamma1*hlnrho+gamma*hss
+        hlnTT=gamma*hss+gamma1*hlnrho
       endif
 !
+
       if (ip==0) print*,f !(keep compiler quiet)
     endsubroutine temperature_hessian
 !***********************************************************************
