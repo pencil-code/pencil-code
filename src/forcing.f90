@@ -1,4 +1,4 @@
-! $Id: forcing.f90,v 1.33 2002-11-02 08:49:58 brandenb Exp $
+! $Id: forcing.f90,v 1.34 2002-11-09 08:23:00 brandenb Exp $
 
 module Forcing
 
@@ -47,7 +47,7 @@ module Forcing
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: forcing.f90,v 1.33 2002-11-02 08:49:58 brandenb Exp $")
+           "$Id: forcing.f90,v 1.34 2002-11-09 08:23:00 brandenb Exp $")
 !
     endsubroutine register_forcing
 !***********************************************************************
@@ -199,11 +199,17 @@ module Forcing
 !***********************************************************************
     subroutine forcing_hel(f)
 !
-!  add helical forcing function, using a set of precomputed wavevectors
+!  Add helical forcing function, using a set of precomputed wavevectors.
+!  The relative helicity of the forcing function is determined by the factor
+!  sigma, called here also relhel. If it is +1 or -1, the forcing is a fully
+!  helical Beltrami wave of positive or negative helicity. For |relhel| < 1
+!  the helicity less than maximum. For relhel=0 the forcing is nonhelical.
+!  The forcing function is now normalized to unity (also for |relhel| < 1).
 !
 !  10-apr-00/axel: coded
 !   3-sep-02/axel: introduced k1_ff, to rescale forcing function if k1/=1.
 !  25-sep-02/axel: preset force_ampl to unity (in case slope is not controlled)
+!   9-nov-02/axel: corrected normalization factor for the case |relhel| < 1.
 !
       use Mpicomm
       use Cdata
@@ -297,16 +303,23 @@ module Forcing
 !
 !  ik x (k x e) + i*phase
 !
-!  Normalise ff; since we don't know dt yet, we finalize this
+!  Normalize ff; since we don't know dt yet, we finalize this
 !  within timestep where dt is determined and broadcast.
 !
 !  This does already include the new sqrt(2) factor (missing in B01).
 !  So, in order to reproduce the 0.1 factor mentioned in B01
 !  we have to set force=0.07.
+!
+!  Furthermore, for |relhel| < 1, sqrt(2) should be replaced by
+!  sqrt(1.+relhel**2). This is done now (9-nov-02).
+!  This means that the previous value of force=0.07 (for relhel=0)
+!  should now be replaced by 0.05.
+!
 !  Note: kav is not to be scaled with k1_ff (forcing should remain
 !  unaffected when changing k1_ff).
 !
-      ffnorm=sqrt(2.)*k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
+      ffnorm=sqrt(1.+relhel**2) &
+        *k*sqrt(k2-kde**2)/sqrt(kav*cs0**3)*(k/kav)**slope_ff
       if (ip.le.12) print*,'k,kde,ffnorm,kav,dt,cs0=',k,kde,ffnorm,kav,dt,cs0
       if (ip.le.12) print*,'k*sqrt(k2-kde**2)=',k*sqrt(k2-kde**2)
       write(21,'(f10.4,5f8.2)') t,kx0,kx,ky,kz,phase
@@ -351,10 +364,9 @@ module Forcing
 !
 !  prefactor
 !
-      sig=relhel
-      coef(1)=cmplx(k*kex,sig*kkex)
-      coef(2)=cmplx(k*key,sig*kkey)
-      coef(3)=cmplx(k*kez,sig*kkez)
+      coef(1)=cmplx(k*kex,relhel*kkex)
+      coef(2)=cmplx(k*key,relhel*kkey)
+      coef(3)=cmplx(k*kez,relhel*kkez)
       if (ip.le.5) print*,'coef=',coef
 !
 ! loop the two cases separately, so we don't check for r_ff during
