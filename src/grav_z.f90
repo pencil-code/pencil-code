@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.53 2004-03-14 16:35:34 mee Exp $
+! $Id: grav_z.f90,v 1.54 2004-03-17 14:05:16 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -30,7 +30,7 @@ module Gravity
 !  density module) is the height where rho=cs2=0.
 
   integer :: ngrav=10
-  real :: z1=0.,z2=1.,zref=0.,gravz=-1.,zinfty,zgrav=impossible,nu_epicycle=1.
+  real :: z1=0.,z2=1.,zref=0.,gravz=0.,zinfty,zgrav=impossible,nu_epicycle=1.
   real :: lnrho_bot,lnrho_top,ss_bot,ss_top
   real :: grav_const=1.
   real :: g0
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.53 2004-03-14 16:35:34 mee Exp $")
+           "$Id: grav_z.f90,v 1.54 2004-03-17 14:05:16 theine Exp $")
 !
       lgrav = .true.
       lgravz = .true.
