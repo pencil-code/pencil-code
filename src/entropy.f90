@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.310 2004-05-19 10:47:34 ajohan Exp $
+! $Id: entropy.f90,v 1.311 2004-05-28 16:44:39 dobler Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,7 +113,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.310 2004-05-19 10:47:34 ajohan Exp $")
+           "$Id: entropy.f90,v 1.311 2004-05-28 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1172,7 +1172,7 @@ module Entropy
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        if (i_ssmphi/=0) call phisum_mn_name_rz(ss,i_ssmphi)
+        call phisum_mn_name_rz(ss,i_ssmphi)
       endif
 !
 !  Calculate entropy related diagnostics

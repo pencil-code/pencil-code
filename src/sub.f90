@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.183 2004-05-27 20:07:30 mee Exp $ 
+! $Id: sub.f90,v 1.184 2004-05-28 16:44:39 dobler Exp $ 
 
 module Sub 
 
@@ -184,6 +184,13 @@ module Sub
 !   4-may-02/axel: adapted for fname array
 !  23-jun-02/axel: allows for taking square root in the end
 !
+!  Note [24-may-2004, wd]:
+!    This routine should incorporate a test for iname /= 0, so instead of
+!         if (i_b2m/=0)    call sum_mn_name(b2,i_b2m)
+!    we can just use
+!         call sum_mn_name(b2,i_b2m)
+!  Same holds for similar routines.
+!
       use Cdata
 !
       real, dimension (nx) :: a
@@ -323,30 +330,38 @@ module Sub
       real, dimension (nx) :: a
       integer :: iname,n_nghost,ir
 !
+      if (iname == 0) then
+!
+!  Nothing to be done (this variable was never asked for)
+!
+      else
+!
 !  Initialize to zero, including other parts of the rz-array
 !  which are later merged with an mpi reduce command.
 !  At least the root processor needs to reset all ipz slots, as it uses
 !  fnamerz(:,:,:,:) for the final averages to write [see
 !  phiaverages_rz()]; so we better reset everything:
 !      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
-      if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
+        if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
-      n_nghost=n-nghost
-      do ir=1,nrcyl
-        fnamerz(ir,n_nghost,ipz+1,iname) &
-           = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
-      enddo
+        n_nghost=n-nghost
+        do ir=1,nrcyl
+          fnamerz(ir,n_nghost,ipz+1,iname) &
+               = fnamerz(ir,n_nghost,ipz+1,iname) + sum(a*phiavg_profile(ir,:))
+        enddo
 !
 !  sum up ones for normalization; store result in fnamerz(:,0,:,1)
 !  Only do this for the first n, or we would sum up nz times too often
 !
-      if (iname==1 .and. n_nghost==1) then
-        do ir=1,nrcyl
-          fnamerz(ir,0,ipz+1,iname) &
-               = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))   
-        enddo
+        if (iname==1 .and. n_nghost==1) then
+          do ir=1,nrcyl
+            fnamerz(ir,0,ipz+1,iname) &
+                 = fnamerz(ir,0,ipz+1,iname) + sum(1.*phiavg_profile(ir,:))   
+          enddo
+        endif
+!
       endif
 !
     endsubroutine phisum_mn_name_rz

@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.187 2004-04-30 09:30:50 ajohan Exp $
+! $Id: magnetic.f90,v 1.188 2004-05-28 16:44:39 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,6 +83,7 @@ module Magnetic
   integer :: i_uxbmx=0,i_uxbmy=0,i_uxbmz=0,i_uxjm=0,i_ujxbm
   integer :: i_b2b13m=0
   integer :: i_brmphi=0,i_bpmphi=0,i_bzmphi=0,i_b2mphi=0,i_jbmphi=0
+  integer :: i_uxbrmphi,i_uxbpmphi,i_uxbzmphi
   integer :: i_dteta=0
 
   contains
@@ -125,7 +126,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.187 2004-04-30 09:30:50 ajohan Exp $")
+           "$Id: magnetic.f90,v 1.188 2004-05-28 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -484,7 +485,7 @@ module Magnetic
       if (headtt) print*,'daa_dt: iresistivity=',iresistivity
 !
 !  Switch off diffusion of horizontal components in boundary slice if
-!  desired by boundconds
+!  requested by boundconds
 !
       if (lfrozen_bz_z_bot) then
         !
@@ -529,13 +530,19 @@ module Magnetic
         bx=bb(:,1)
         by=bb(:,2)
         bz=bb(:,3)
-        if (i_brmphi/=0) call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
-        if (i_bpmphi/=0) call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
-        if (i_bzmphi/=0) call phisum_mn_name_rz(bz,i_bzmphi)
-        if (i_b2mphi/=0) call phisum_mn_name_rz(b2,i_b2mphi)
+        call phisum_mn_name_rz(bx*pomx+by*pomy,i_brmphi)
+        call phisum_mn_name_rz(bx*phix+by*phiy,i_bpmphi)
+        call phisum_mn_name_rz(bz,i_bzmphi)
+        call phisum_mn_name_rz(b2,i_b2mphi)
         if (i_jbmphi/=0) then
           call dot_mn(jj,bb,jb)
           call phisum_mn_name_rz(jb,i_jbmphi)
+        endif
+        if (any((/i_uxbrmphi,i_uxbpmphi,i_uxbzmphi/) /= 0)) then
+          call cross_mn(uu,bb,uxb)
+          call phisum_mn_name_rz(uxb(:,1)*pomx+uxb(:,2)*pomy,i_uxbrmphi)
+          call phisum_mn_name_rz(uxb(:,1)*phix+uxb(:,2)*phiy,i_uxbpmphi)
+          call phisum_mn_name_rz(uxb(:,3)                   ,i_uxbzmphi)
         endif
       endif
 !
@@ -960,6 +967,7 @@ module Magnetic
         i_uxjm=0; i_ujxbm=0
         i_b2b13m=0
         i_brmphi=0; i_bpmphi=0; i_bzmphi=0; i_b2mphi=0; i_jbmphi=0
+        i_uxbrmphi=0; i_uxbpmphi=0; i_uxbzmphi=0;
         i_dteta=0
       endif
 !
@@ -1029,11 +1037,14 @@ module Magnetic
 !  check for those quantities for which we want phi-averages
 !
       do irz=1,nnamerz
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi',i_brmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi',i_bpmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi',i_bzmphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi',i_b2mphi)
-        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi',i_jbmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'brmphi'  ,i_brmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bpmphi'  ,i_bpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'bzmphi'  ,i_bzmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'b2mphi'  ,i_b2mphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'jbmphi'  ,i_jbmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbrmphi',i_uxbrmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbpmphi',i_uxbpmphi)
+        call parse_name(irz,cnamerz(irz),cformrz(irz),'uxbzmphi',i_uxbzmphi)
       enddo
 !
 !  write column, i_XYZ, where our variable XYZ is stored

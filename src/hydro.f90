@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.166 2004-05-23 10:33:33 ajohan Exp $
+! $Id: hydro.f90,v 1.167 2004-05-28 16:44:39 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -119,7 +119,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.166 2004-05-23 10:33:33 ajohan Exp $")
+           "$Id: hydro.f90,v 1.167 2004-05-28 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -664,10 +664,10 @@ module Hydro
         ux=uu(:,1)
         uy=uu(:,2)
         uz=uu(:,3)
-        if (i_urmphi/=0) call phisum_mn_name_rz(ux*pomx+uy*pomy,i_urmphi)
-        if (i_upmphi/=0) call phisum_mn_name_rz(ux*phix+uy*phiy,i_upmphi)
-        if (i_uzmphi/=0) call phisum_mn_name_rz(uz,i_uzmphi)
-        if (i_u2mphi/=0) call phisum_mn_name_rz(u2,i_u2mphi)
+        call phisum_mn_name_rz(ux*pomx+uy*pomy,i_urmphi)
+        call phisum_mn_name_rz(ux*phix+uy*phiy,i_upmphi)
+        call phisum_mn_name_rz(uz,i_uzmphi)
+        call phisum_mn_name_rz(u2,i_u2mphi)
         if (i_oumphi/=0) then
           oo(:,1)=uij(:,3,2)-uij(:,2,3)
           oo(:,2)=uij(:,1,3)-uij(:,3,1)

@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.161 2004-05-18 15:38:24 dobler Exp $
+! $Id: density.f90,v 1.162 2004-05-28 16:44:39 dobler Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -52,7 +52,7 @@ module Density
        cs0,rho0,gamma,cdiffrho,diffrho,diffrho_shock,gradlnrho0, &
        cs2bot,cs2top,lupw_lnrho,cp
   ! diagnostic variables (needs to be consistent with reset list below)
-  integer :: i_ekin=0,i_rhom=0,i_ekintot=0
+  integer :: i_ekin=0,i_rhom=0,i_ekintot=0,i_rhomin=0,i_rhomax=0
   integer :: i_lnrhomphi=0,i_rhomphi=0
 
   contains
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.161 2004-05-18 15:38:24 dobler Exp $")
+           "$Id: density.f90,v 1.162 2004-05-28 16:44:39 dobler Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -814,8 +814,8 @@ module Density
 !  Note that this does not necessarily happen with ldiagnos=.true.
 !
       if (l2davgfirst) then
-        if (i_lnrhomphi/=0) call phisum_mn_name_rz(lnrho,i_lnrhomphi)
-        if (i_rhomphi/=0) call phisum_mn_name_rz(exp(lnrho),i_rhomphi)
+        call phisum_mn_name_rz(lnrho,i_lnrhomphi)
+        call phisum_mn_name_rz(exp(lnrho),i_rhomphi)
       endif
 !
     endsubroutine dlnrho_dt
@@ -840,7 +840,7 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ekin=0; i_rhom=0; i_ekintot=0
+        i_ekin=0; i_rhom=0; i_ekintot=0; i_rhomin=0; i_rhomax=0
         i_lnrhomphi=0; i_rhomphi=0
       endif
 !
@@ -851,6 +851,8 @@ module Density
         call parse_name(iname,cname(iname),cform(iname),'ekintot',i_ekintot)
         call parse_name(iname,cname(iname),cform(iname),'ekin',i_ekin)
         call parse_name(iname,cname(iname),cform(iname),'rhom',i_rhom)
+        call parse_name(iname,cname(iname),cform(iname),'rhomin',i_rhomin)
+        call parse_name(iname,cname(iname),cform(iname),'rhomax',i_rhomax)
       enddo
 !
 !  check for those quantities for which we want phi-averages
@@ -866,6 +868,8 @@ module Density
         write(3,*) 'i_ekintot=',i_ekintot
         write(3,*) 'i_ekin=',i_ekin
         write(3,*) 'i_rhom=',i_rhom
+        write(3,*) 'i_rhomin=',i_rhomin
+        write(3,*) 'i_rhomax=',i_rhomax
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
         write(3,*) 'i_lnrhomphi=',i_lnrhomphi

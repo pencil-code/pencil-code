@@ -1,4 +1,4 @@
-! $Id: equ.f90,v 1.211 2004-05-27 20:07:30 mee Exp $
+! $Id: equ.f90,v 1.212 2004-05-28 16:44:39 dobler Exp $
 
 module Equ
 
@@ -83,7 +83,7 @@ module Equ
          imax_count=0
          isum_count=0
          do iname=1,nname
-           if(itype_name(iname)<0) then
+           if(itype_name(iname)<0) then ! max
              imax_count=imax_count+1
 
              if(itype_name(iname)==ilabel_max)            &
@@ -101,7 +101,7 @@ module Equ
              if(itype_name(iname)==ilabel_max_reciprocal) &
                  fname(iname)=1./fmax(imax_count)
 
-           elseif(itype_name(iname)>0) then
+           elseif(itype_name(iname)>0) then ! sum
              isum_count=isum_count+1
 
              if(itype_name(iname)==ilabel_sum)            &
@@ -259,7 +259,7 @@ module Equ
 
       if (headtt.or.ldebug) print*,'pde: ENTER'
       if (headtt) call cvs_id( &
-           "$Id: equ.f90,v 1.211 2004-05-27 20:07:30 mee Exp $")
+           "$Id: equ.f90,v 1.212 2004-05-28 16:44:39 dobler Exp $")
 !
 !  initialize counter for calculating and communicating print results
 !
@@ -339,10 +339,10 @@ module Equ
 !  general phiaverage quantities -- useful for debugging
 !
         if (l2davgfirst) then
-          if (i_rcylmphi/=0) call phisum_mn_name_rz(rcyl_mn,i_rcylmphi)
-          if (i_phimphi/=0)  call phisum_mn_name_rz(phi_mn ,i_phimphi)
-          if (i_zmphi/=0)    call phisum_mn_name_rz(z_mn   ,i_zmphi)
-          if (i_rmphi/=0)    call phisum_mn_name_rz(r_mn   ,i_rmphi)
+          call phisum_mn_name_rz(rcyl_mn,i_rcylmphi)
+          call phisum_mn_name_rz(phi_mn ,i_phimphi)
+          call phisum_mn_name_rz(z_mn   ,i_zmphi)
+          call phisum_mn_name_rz(r_mn   ,i_rmphi)
         endif
 !
 !  for each pencil, accumulate through the different routines
@@ -466,6 +466,8 @@ module Equ
             if (i_ekin/=0) call sum_mn_name(.5*rho*u2,i_ekin)
             if (i_ekintot/=0) call integrate_mn_name(.5*rho*u2,i_ekintot)
             if (i_rhom/=0) call sum_mn_name(rho,i_rhom)
+            if (i_rhomin/=0) call max_mn_name(-rho,i_rhomin,lneg=.true.)
+            if (i_rhomax/=0) call max_mn_name(rho,i_rhomax)
           endif
           !
           !  Mach number, rms and max

@@ -1,4 +1,4 @@
-! $Id: prints.f90,v 1.66 2004-04-26 17:25:35 ngrs Exp $
+! $Id: prints.f90,v 1.67 2004-05-28 16:44:39 dobler Exp $
 
 module Print
 
@@ -91,12 +91,12 @@ module Print
         if (lhydro)    call calc_mflow
         if (lpscalar)  call calc_mpscalar
 !
-!  whenever itype_name=-3, scale result by dt (for printing Courant time)
-!  This trick is necessary, because dt is not known at the time when
-!  the corresponding contribution to UUmax is known.
+!  whenever itype_name=ilabel_max_dt, scale result by dt (for printing
+!  Courant time). This trick is necessary, because dt is not known at the
+!  time when the corresponding contribution to UUmax is known.
 !
         do iname=1,nname
-          if(itype_name(iname)==-3) fname(iname)=dt*fname(iname)
+          if(itype_name(iname)==ilabel_max_dt) fname(iname)=dt*fname(iname)
         enddo
 !
 !  produce the format

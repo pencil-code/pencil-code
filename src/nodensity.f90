@@ -1,4 +1,4 @@
-! $Id: nodensity.f90,v 1.23 2004-03-24 11:21:39 mee Exp $
+! $Id: nodensity.f90,v 1.24 2004-05-28 16:44:39 dobler Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -24,7 +24,7 @@ module Density
   namelist /density_run_pars/  dummy
 
   ! other variables (needs to be consistent with reset list below)
-  integer :: i_ekin=0,i_rhom=0,i_ekintot=0
+  integer :: i_ekin=0,i_rhom=0,i_ekintot=0,i_rhomin=0,i_rhomax=0
 
   contains
 
@@ -50,7 +50,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nodensity.f90,v 1.23 2004-03-24 11:21:39 mee Exp $")
+           "$Id: nodensity.f90,v 1.24 2004-05-28 16:44:39 dobler Exp $")
 !
 !ajwm Necessary? added incase
       gamma=1.
@@ -142,7 +142,7 @@ module Density
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ekin=0; i_rhom=0; i_ekintot=0
+        i_ekin=0; i_rhom=0; i_ekintot=0; i_rhomin=0; i_rhomax=0
       endif
 !
 !  write column where which magnetic variable is stored
@@ -151,6 +151,8 @@ module Density
         write(3,*) 'i_ekintot=',i_ekintot
         write(3,*) 'i_ekin=',i_ekin
         write(3,*) 'i_rhom=',i_rhom
+        write(3,*) 'i_rhomin=',i_rhomin
+        write(3,*) 'i_rhomax=',i_rhomax
         write(3,*) 'nname=',nname
         write(3,*) 'ilnrho=',ilnrho
       endif

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.130 2004-05-17 17:00:34 dobler Exp $
+! $Id: register.f90,v 1.131 2004-05-28 16:44:39 dobler Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -210,22 +210,22 @@ module Register
 !ajwm timeavg needs tidying to be similar structure to other modules
       call initialize_timeavg(f) ! initialize time averages
 !
-      call initialize_gravity
-      call initialize_hydro
-      call initialize_ionization
-      call initialize_density
+      call initialize_gravity()
+      call initialize_hydro()
+      call initialize_ionization()
+      call initialize_density()
       call initialize_forcing(lstarting)  ! get random seed from file, ..
-      call initialize_entropy          ! calculate radiative conductivity, etc.
-      call initialize_magnetic
-      call initialize_radiation
+      call initialize_entropy() ! calculate radiative conductivity, etc.
+      call initialize_magnetic()
+      call initialize_radiation()
       call initialize_pscalar(f)
-      call initialize_dustvelocity
-      call initialize_dustdensity
+      call initialize_dustvelocity()
+      call initialize_dustdensity()
       call initialize_cosmicray(f)
       call initialize_interstellar(lstarting)
-      call initialize_shear
-      call initialize_viscosity
-      call initialize_special
+      call initialize_shear()
+      call initialize_viscosity()
+      call initialize_special()
 !
 !  timestep: if dt=0 (ie not initialized), ldt=.true.
 !
@@ -423,8 +423,9 @@ module Register
       !
       !  expand some shorthand labels 
       !
-      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
       call expand_cname(cnamerz,nnamerz,'uumphi','urmphi','upmphi','uzmphi')
+      call expand_cname(cnamerz,nnamerz,'bbmphi','brmphi','bpmphi','bzmphi')
+      call expand_cname(cnamerz,nnamerz,'uxbmphi','uxbrmphi','uxbpmphi','uxbzmphi')
       !
       !  some generic quantities (mostly coordinates for debugging)
       !

@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.39 2004-05-27 20:07:30 mee Exp $
+! $Id: cparam.f90,v 1.40 2004-05-28 16:44:39 dobler Exp $
 
 module Cparam
 
@@ -66,12 +66,16 @@ module Cparam
 !
 ! Diagnostic variable types 
 !
-!     values greater than 0 get maxed across all  processors before any transformation using mpi_reduce_max
-!     values less than 0 get summed over all processors before any transformation using mpi_reduce_sum
-!     the value 0 causes the value simply to be used from the root processor
+!  Values > 0 get maxed across all  processors before any
+!  transformation using mpi_reduce_max;
+!  values < 0 get summed over all processors before any transformation
+!  using mpi_reduce_sum;
+!  value 0 causes the value simply to be used from the root processor 
 !
-  integer, parameter :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0,ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
-  integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4, ilabel_max_reciprocal=-5
+  integer, parameter :: ilabel_max=-1,ilabel_sum=1,ilabel_save=0
+  integer, parameter :: ilabel_max_sqrt=-2,ilabel_sum_sqrt=2
+  integer, parameter :: ilabel_max_dt=-3,ilabel_max_neg=-4
+  integer, parameter :: ilabel_max_reciprocal=-5
   integer, parameter :: ilabel_integrate=3,ilabel_surf=4
 !
 endmodule Cparam
