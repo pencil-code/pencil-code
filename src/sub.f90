@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.176 2004-04-26 13:57:26 dobler Exp $ 
+! $Id: sub.f90,v 1.177 2004-04-30 09:30:50 ajohan Exp $ 
 
 module Sub 
 
@@ -2294,7 +2294,7 @@ module Sub
 !
     endsubroutine cvs_id_3
 !***********************************************************************
-    subroutine identify_bcs(varname,idx)
+    subroutine identify_bcs(varname_input,idx)
 !
 !  print boundary conditions for scalar field
 !
@@ -2302,11 +2302,11 @@ module Sub
 !
       use Cdata
 !
-      character (len=*) :: varname
+      character (len=*) :: varname_input
       integer :: idx
 !
       write(*,'(A,A6,",  x: <",A6,">, y: <",A6,">,  z: <",A6,">")') &
-           'Bcs for ', varname, &
+           'Bcs for ', varname_input, &
            trim(bcx(idx)), trim(bcy(idx)), trim(bcz(idx))
 !
     endsubroutine identify_bcs
@@ -2659,6 +2659,58 @@ module Sub
              ( (f /= g) .or. (f == g-sign(1.0,g)*float(radix(g))**exponent(g)) )
 !
       endfunction notanumber_4
+!***********************************************************************
+      subroutine nan_inform(f,msg,lnan)
+!
+!  Check input array (f or df) for NaN, -Inf, Inf, and output location in
+!  array.
+!
+!  30-apr-04/anders: coded
+!
+        use Cdata
+!        
+        real, dimension(:,:,:,:) :: f
+        character (len=*) :: msg
+        integer :: i,j,k,kk
+        logical, optional :: lnan
+!
+        do i=l1,l2
+          do j=m1,m2
+            do k=n1,n2
+              do kk=1,size(f,4)
+                if (notanumber(f(i,j,k,kk))) then
+                  print*,'nan_inform: NaN with message "', msg, &
+                      '" encountered in the variable ', varname(kk)
+                  print*,'nan_inform: ', varname(kk), ' = ', f(i,j,k,kk)
+                  print*,'nan_inform: t, it, itsub   = ', t, it, itsub
+                  print*,'nan_inform: l, m, n, iproc = ', i, j, k, iproc
+                  print*,'----------------------------'
+                  if (present(lnan)) lnan = .true.
+                endif
+              enddo
+            enddo
+          enddo
+        enddo
+!
+      endsubroutine nan_inform
+!***********************************************************************
+      subroutine nan_stop(f,msg)
+!
+!  Check input array (f or df) for NaN, -Inf, Inf. Stop if found.
+!
+!  30-apr-04/anders: coded
+!
+        use Mpicomm, only: stop_it
+!
+        real, dimension(:,:,:,:) :: f
+        character (len=*) :: msg
+        integer :: i,j,k,kk
+        logical :: lnan=.false.
+!
+        call nan_inform(f,msg,lnan)
+        if (lnan) call stop_it('nan_stop')
+!
+      endsubroutine nan_stop
 !***********************************************************************
       subroutine parse_bc(bc,bc1,bc2)
 !

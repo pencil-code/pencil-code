@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.29 2004-04-10 04:24:01 brandenb Exp $
+! $Id: cosmicray.f90,v 1.30 2004-04-30 09:30:49 ajohan Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -82,10 +82,14 @@ module CosmicRay
         print*, 'register_cosmicray: iecr = ', iecr
       endif
 !
+!  Put variable names in array
+!
+      varname(iecr) = 'lnecr'
+!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.29 2004-04-10 04:24:01 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.30 2004-04-30 09:30:49 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

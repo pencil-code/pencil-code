@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.50 2004-04-16 14:32:09 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.51 2004-04-30 09:30:50 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -72,7 +72,7 @@ module Dustvelocity
       use General, only: chn
 !
       logical, save :: first=.true.
-      integer :: i
+      integer :: k
       character(len=4) :: sdust
 !
       if (.not. first) call stop_it('register_dustvelocity: called twice')
@@ -80,35 +80,42 @@ module Dustvelocity
 !
       ldustvelocity = .true.
 !
-      do i=1,ndustspec
-        if (i == 1) then
+      do k=1,ndustspec
+        if (k == 1) then
           iuud(1) = nvar+1
         else
           if (lmdvar .and. lmice) then
-            iuud(i) = iuud(i-1) + 6
+            iuud(k) = iuud(k-1) + 6
           elseif (lmdvar) then
-            iuud(i) = iuud(i-1) + 5
+            iuud(k) = iuud(k-1) + 5
           else
-            iuud(i) = iuud(i-1) + 4
+            iuud(k) = iuud(k-1) + 4
           endif
         endif
-        iudx(i) = iuud(i)
-        iudy(i) = iuud(i)+1
-        iudz(i) = iuud(i)+2
+        iudx(k) = iuud(k)
+        iudy(k) = iuud(k)+1
+        iudz(k) = iuud(k)+2
         nvar = nvar+3                ! add 3 variables pr. dust layer
 !
         if ((ip<=8) .and. lroot) then
           print*, 'register_dustvelocity: nvar = ', nvar
-          print*, 'register_dustvelocity: i = ', i
+          print*, 'register_dustvelocity: k = ', k
           print*, 'register_dustvelocity: iudx,iudy,iudz = ', &
-              iudx(i),iudy(i),iudz(i)
+              iudx(k),iudy(k),iudz(k)
         endif
+!
+!  Put variable name in array
+!
+        call chn(k,sdust)
+        varname(iudx(k)) = 'udx('//trim(sdust)//')'
+        varname(iudy(k)) = 'udy('//trim(sdust)//')'
+        varname(iudz(k)) = 'udz('//trim(sdust)//')'
       enddo
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.50 2004-04-16 14:32:09 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.51 2004-04-30 09:30:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -117,8 +124,8 @@ module Dustvelocity
 !
 !  Writing files for use with IDL
 !
-      do i=1,ndustspec
-        call chn(i,sdust)
+      do k=1,ndustspec
+        call chn(k,sdust)
         if (ndustspec == 1) sdust = ''
         if (lroot) then
           if (maux == 0) then

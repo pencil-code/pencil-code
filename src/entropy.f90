@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.303 2004-04-23 18:20:37 ngrs Exp $
+! $Id: entropy.f90,v 1.304 2004-04-30 09:30:50 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -113,12 +113,16 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.303 2004-04-23 18:20:37 ngrs Exp $")
+           "$Id: entropy.f90,v 1.304 2004-04-30 09:30:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
         call stop_it('register_entropy: nvar > mvar')
       endif
+!
+!  Put variable name in array
+!
+      varname(iss) = 'ss'
 !
 !  Writing files for use with IDL
 !

@@ -1,5 +1,5 @@
 ###                          -*-Makefile-*- (for Emacs)
-### $Id: Makefile.src,v 1.50 2004-04-19 12:09:45 ngrs Exp $
+### $Id: Makefile.src,v 1.51 2004-04-30 09:30:49 ajohan Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -124,7 +124,7 @@ FCCLEANER=
 #FFLAGS=-O3 -Wl,-rpath,/opt/intel/compiler60/ia32/lib #(taspd209a)
 #LDMPI=-I/usr/lib/lam/include -L/usr/lib/lam/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam -lnsl -lutil #(taspd209a)
 #FFLAGS=-O3 -L/home/dobler/lib -lc-2.2.93 #(nw46)
-#FFLAGS=-fast -Wl,-rpath,/usr/opt/intel/lib #(ns0)
+##FFLAGS=-fast -Wl,-rpath,/usr/opt/intel/lib #(ns0)
 #FC=f95 #(karbala)
 #FC=pgf90 #(erland|igor|tycho|linux29|onsager|monolith)
 #FC=efc #(user0[1-9])
@@ -134,7 +134,7 @@ FCCLEANER=
 #LDMPI=-static -L/usr/local/lib/LAM/lib -llamf77mpi -lmpi -llam -lnsl -lutil -L/usr/local/lib/PGI/linux86/lib -lpgc #(fe[0-4])
 #LDMPI=-L/usr/lib/lam/lib -llammpio -llamf77mpi -lmpi -llam -lutil #(morvern|renton|lanark)
 #LDMPI=-static -L/opt/lam/lib -lmpi -llamf77mpi -llam  #(nw50)
-#LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(nw46)
+#LDMPI=-llammpio -lpmpi -llamf77mpi -lmpi -llam #(ns0|nw46)
 #LDMPI=-Wl,-m elf_i386 -L/home/ajohan/f90/lib -llammpio -lpmpi -llamf77mpi -lmpi -llam #(lynx)
 ##FFLAGS=-O3 -ipo #PACX #(fe[0-3])
 #FFLAGS=-fast -lm #(erland|igor|tycho|linux29|onsager)

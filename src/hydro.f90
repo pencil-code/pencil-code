@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.161 2004-04-20 13:31:35 dobler Exp $
+! $Id: hydro.f90,v 1.162 2004-04-30 09:30:50 ajohan Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -103,14 +103,20 @@ module Hydro
       nvar = nvar+3             ! added 3 variables
 !
       if ((ip<=8) .and. lroot) then
-        print*, 'register_hydro:  nvar = ', nvar
+        print*, 'register_hydro: nvar = ', nvar
         print*, 'register_hydro: iux,iuy,iuz = ', iux,iuy,iuz
       endif
+!
+!  Put variable names in array
+!
+      varname(iux) = 'ux'
+      varname(iuy) = 'uy'
+      varname(iuz) = 'uz'
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.161 2004-04-20 13:31:35 dobler Exp $")
+           "$Id: hydro.f90,v 1.162 2004-04-30 09:30:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

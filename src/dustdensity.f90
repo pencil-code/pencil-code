@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.72 2004-04-28 14:43:54 ajohan Exp $
+! $Id: dustdensity.f90,v 1.73 2004-04-30 09:30:50 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dndrhod_dt and init_nd, among other auxiliary routines.
@@ -59,7 +59,7 @@ module Dustdensity
       use General, only: chn
 !
       logical, save :: first=.true.
-      integer :: i
+      integer :: k
       character (len=4) :: sdust
 !
       if (.not. first) call stop_it('register_dustdensity: called twice')
@@ -67,21 +67,21 @@ module Dustdensity
 !
       ldustdensity = .true.
 !
-      do i=1,ndustspec
-        if (i == 1) then
+      do k=1,ndustspec
+        if (k == 1) then
           ind(1) = iuud(1)+3         ! indix to access lam
           if (lmdvar) imd(1) = ind(1) + 1
           if (lmice)  imi(1) = ind(1) + 2
         else
           if (lmdvar .and. lmice) then
-            ind(i) = ind(i-1) + 6
-            imd(i) = ind(i) + 1
-            imi(i) = ind(i) + 2
+            ind(k) = ind(k-1) + 6
+            imd(k) = ind(k) + 1
+            imi(k) = ind(k) + 2
           elseif (lmdvar) then
-            ind(i) = ind(i-1) + 5
-            imd(i) = ind(i) + 1
+            ind(k) = ind(k-1) + 5
+            imd(k) = ind(k) + 1
           else
-            ind(i) = ind(i-1) + 4
+            ind(k) = ind(k-1) + 4
           endif
         endif  
         nvar = nvar + 1                ! add 1 variable pr. dust species
@@ -89,18 +89,25 @@ module Dustdensity
         if (lmice)  nvar = nvar + 1
 !
         if ((ip<=8) .and. lroot) then
-          print*, 'register_dustdensity: i = ', i
+          print*, 'register_dustdensity: k = ', k
           print*, 'register_dustdensity: nvar = ', nvar
-          print*, 'register_dustdensity: ind = ', ind(i)
-          if (lmdvar) print*, 'register_dustdensity: imd = ', imd(i)
-          if (lmice)  print*, 'register_dustdensity: imi = ', imi(i)
+          print*, 'register_dustdensity: ind = ', ind(k)
+          if (lmdvar) print*, 'register_dustdensity: imd = ', imd(k)
+          if (lmice)  print*, 'register_dustdensity: imi = ', imi(k)
         endif
+!
+!  Put variable name in array
+!
+        call chn(k,sdust)
+        varname(ind(k)) = 'nd('//trim(sdust)//')'
+        if (lmdvar) varname(imd(k)) = 'md('//trim(sdust)//')'
+        if (lmice)  varname(imi(k)) = 'mi('//trim(sdust)//')'
       enddo
 !
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.72 2004-04-28 14:43:54 ajohan Exp $")
+           "$Id: dustdensity.f90,v 1.73 2004-04-30 09:30:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -109,31 +116,31 @@ module Dustdensity
 !
 !  Writing files for use with IDL
 !
-      do i=1,ndustspec
-        call chn(i,sdust)
+      do k=1,ndustspec
+        call chn(k,sdust)
         if (ndustspec == 1) sdust = ''
         if (lroot) then
           if (maux == 0) then
             if (nvar < mvar) then
               write(4,*) ',nd'//trim(sdust)//' $'
-              if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
-              if (lmice)  write(4,*) ',rhoi'//trim(sdust)//' $'
+              if (lmdvar) write(4,*) ',md'//trim(sdust)//' $'
+              if (lmice)  write(4,*) ',mi'//trim(sdust)//' $'
             endif
             if (nvar == mvar) then
               write(4,*) ',nd'//trim(sdust)
-              if (lmdvar) write(4,*) ',rhod'//trim(sdust)
-              if (lmice)  write(4,*) ',rhoi'//trim(sdust)
+              if (lmdvar) write(4,*) ',md'//trim(sdust)
+              if (lmice)  write(4,*) ',mi'//trim(sdust)
             endif
           else
             write(4,*) ',nd'//trim(sdust)//' $'
-            if (lmdvar) write(4,*) ',rhod'//trim(sdust)//' $'
-            if (lmice)  write(4,*) ',rhoi'//trim(sdust)//' $'
+            if (lmdvar) write(4,*) ',md'//trim(sdust)//' $'
+            if (lmice)  write(4,*) ',mi'//trim(sdust)//' $'
           endif
           write(15,*) 'nd'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
           if (lmdvar) &
-              write(15,*) 'rhod'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
+              write(15,*) 'md'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
           if (lmice) &
-              write(15,*) 'rhoi'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
+              write(15,*) 'mi'//trim(sdust)//' = fltarr(mx,my,mz,1)*one'
         endif
       enddo
 !

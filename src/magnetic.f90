@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.186 2004-04-26 16:05:16 dobler Exp $
+! $Id: magnetic.f90,v 1.187 2004-04-30 09:30:50 ajohan Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -116,10 +116,16 @@ module Magnetic
         print*, 'register_magnetic: iaa,iax,iay,iaz = ', iaa,iax,iay,iaz
       endif
 !
+!  Put variable names in array
+!
+      varname(iax) = 'ax'
+      varname(iay) = 'ay'
+      varname(iaz) = 'az'
+!
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.186 2004-04-26 16:05:16 dobler Exp $")
+           "$Id: magnetic.f90,v 1.187 2004-04-30 09:30:50 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

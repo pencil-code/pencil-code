@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.220 2004-04-26 16:05:16 dobler Exp $
+! $Id: cdata.f90,v 1.221 2004-04-30 09:30:49 ajohan Exp $
 
 module Cdata
 
@@ -156,6 +156,7 @@ module Cdata
 
   character (len=2*bclen+1), dimension(mvar) :: bcx='p',bcy='p',bcz='p'
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2
+  character (len=6), dimension(mvar+maux) :: varname
   character (len=labellen) :: force_lower_bound=''
   character (len=120) :: datadir='data' ! default; may be overwritten in
                                         ! Register.initialize()

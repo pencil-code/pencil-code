@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.164 2004-04-10 04:24:01 brandenb Exp $
+! $Id: ionization.f90,v 1.165 2004-04-30 09:30:50 ajohan Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -127,10 +127,15 @@ module Ionization
         print*, 'register_ionization: ilnTT = ', ilnTT
       endif
 !
+!  Put variable names in array
+!
+      varname(iyH)   = 'yH'
+      varname(ilnTT) = 'lnTT'
+!
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.164 2004-04-10 04:24:01 brandenb Exp $")
+           "$Id: ionization.f90,v 1.165 2004-04-30 09:30:50 ajohan Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
