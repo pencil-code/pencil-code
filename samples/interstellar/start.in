@@ -3,7 +3,7 @@
 ! Initialisation parameters for interstellar
 !
 &init_pars
-  cvsid='$Id: start.in,v 1.4 2004-04-07 10:36:34 theine Exp $'
+  cvsid='$Id: start.in,v 1.5 2004-07-10 16:43:44 brandenb Exp $'
   unit_length=3.16e21, unit_velocity=1e5, unit_density=1e-24
   bcz = 's','s','a','a2','sT'
   xyz0=-0.25,-0.25,-0.25
@@ -13,6 +13,7 @@
   !lcalc_cp=T
 /
 &hydro_init_pars
+  Omega=25.
 /
 &density_init_pars
   initlnrho='Ferriere'

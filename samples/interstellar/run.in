@@ -3,14 +3,13 @@
 !  run parameters for interstellar
 !
 &run_pars
-  cvsid='$Id: run.in,v 1.10 2004-07-02 10:08:16 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.11 2004-07-10 16:43:44 brandenb Exp $',
   nt=5, it1=1, isave=50, itorder=3
   cdt=0.4, cdtv=0.3, dtmin=1e-9
   dsnap=2., dvid=2.
   ip=20
 /
 &hydro_run_pars
-  Omega=25.0
 /
 &density_run_pars
   lupw_lnrho=T
