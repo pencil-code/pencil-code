@@ -1,4 +1,4 @@
-! $Id: radiation_ray.f90,v 1.46 2003-11-07 10:27:42 theine Exp $
+! $Id: radiation_ray.f90,v 1.47 2003-11-10 18:22:11 theine Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -25,6 +25,7 @@ module Radiation
 !
   character (len=2*bclen+1), dimension(3) :: bc_rad=(/'0:0','0:0','S:0'/)
   character (len=bclen), dimension(3) :: bc_rad1,bc_rad2
+  character (len=bclen) :: bc_ray_x,bc_ray_y,bc_ray_z
   integer, parameter :: maxdir=26
   real, dimension (mx,my,mz) :: Srad,lnchi,tau,Qrad,Qrad0
   integer, dimension (maxdir,3) :: dir
@@ -93,7 +94,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation_ray.f90,v 1.46 2003-11-07 10:27:42 theine Exp $")
+           "$Id: radiation_ray.f90,v 1.47 2003-11-10 18:22:11 theine Exp $")
 !
 !  Check that we aren't registering too many auxilary variables
 !
@@ -221,6 +222,55 @@ module Radiation
 !
     endsubroutine radtransfer
 !***********************************************************************
+    subroutine raydirection
+!
+!  Determine certain variables depending on the ray direction
+!
+!  10-nov-03/tobi: coded
+!
+      use Cdata, only: ldebug,headt
+!
+!  identifier
+!
+    if(ldebug.and.headt) print*,'raydirection'
+!
+!  determine start and stop positions
+!
+      llstart=l1; llstop=l2; lsign=+1
+      mmstart=m1; mmstop=m2; msign=+1
+      nnstart=n1; nnstop=n2; nsign=+1
+      if (lrad>0) then; llstart=l1; llstop=l2; lsign=+1; endif
+      if (lrad<0) then; llstart=l2; llstop=l1; lsign=-1; endif
+      if (mrad>0) then; mmstart=m1; mmstop=m2; msign=+1; endif
+      if (mrad<0) then; mmstart=m2; mmstop=m1; msign=-1; endif
+      if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
+      if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
+!
+!  determine boundary conditions
+!
+      if (lrad>0) bc_ray_x=bc_rad1(1)
+      if (lrad<0) bc_ray_x=bc_rad2(1)
+      if (mrad>0) bc_ray_y=bc_rad1(2)
+      if (mrad<0) bc_ray_y=bc_rad2(2)
+      if (nrad>0) bc_ray_z=bc_rad1(3)
+      if (nrad<0) bc_ray_z=bc_rad2(3)
+!
+!  are we dealing with a periodic ray?
+!
+      lperiodic_ray_x=bc_ray_x=='p'.and.mrad==0.and.nrad==0
+      lperiodic_ray_y=bc_ray_y=='p'.and.nrad==0.and.lrad==0
+      lperiodic_ray_z=bc_ray_z=='p'.and.lrad==0.and.mrad==0
+      lperiodic_ray=lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_z
+!
+!  determine start and stop processors
+!
+      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
+      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
+      if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
+      if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
+!
+    endsubroutine raydirection
+!***********************************************************************
     subroutine Qintrinsic
 !
 !  Integration radiation transfer equation along rays
@@ -248,35 +298,13 @@ module Radiation
       mrad=dir(idir,2)
       nrad=dir(idir,3)
 !
-!  are we dealing with a periodic ray?
+!  Determine certain variables depending on the ray direction
 !
-      lperiodic_ray_x=bc_rad1(1)=='p'.and.bc_rad2(1)=='p'.and.mrad==0.and.nrad==0
-      lperiodic_ray_y=bc_rad1(2)=='p'.and.bc_rad2(2)=='p'.and.nrad==0.and.lrad==0
-      lperiodic_ray_z=bc_rad1(3)=='p'.and.bc_rad2(3)=='p'.and.lrad==0.and.mrad==0
-      lperiodic_ray=lperiodic_ray_x.or.lperiodic_ray_y.or.lperiodic_ray_z
+      call raydirection
 !
 !  line elements
 !
       dlength=sqrt((dx*lrad)**2+(dy*mrad)**2+(dz*nrad)**2)
-!
-!  determine start and stop positions
-!
-      llstart=l1; llstop=l2; lsign=+1
-      mmstart=m1; mmstop=m2; msign=+1
-      nnstart=n1; nnstop=n2; nsign=+1
-      if (lrad>0) then; llstart=l1; llstop=l2; lsign=+1; endif
-      if (lrad<0) then; llstart=l2; llstop=l1; lsign=-1; endif
-      if (mrad>0) then; mmstart=m1; mmstop=m2; msign=+1; endif
-      if (mrad<0) then; mmstart=m2; mmstop=m1; msign=-1; endif
-      if (nrad>0) then; nnstart=n1; nnstop=n2; nsign=+1; endif
-      if (nrad<0) then; nnstart=n2; nnstop=n1; nsign=-1; endif
-!
-!  determine start and stop processors
-!
-      if (mrad>0) then; ipystart=0; ipystop=nprocy-1; endif
-      if (mrad<0) then; ipystart=nprocy-1; ipystop=0; endif
-      if (nrad>0) then; ipzstart=0; ipzstop=nprocz-1; endif
-      if (nrad<0) then; ipzstart=nprocz-1; ipzstop=0; endif
 !
 !  set optical depth and intensity initially to zero
 !
@@ -545,57 +573,22 @@ module Radiation
 !
       real, dimension(my,mz) :: Qrad0_yz
 !
-!--------------------
-!  lower x-boundary
-!--------------------
-!
-      if (lrad>0) then
-!
 ! no incoming intensity
 !
-        if (bc_rad1(1)=='0') then
-          Qrad0_yz=-Srad(l1-1,:,:)
-        endif
+      if (bc_ray_x=='0') then
+        Qrad0_yz=-Srad(llstart-lrad,:,:)
+      endif
 !
 ! periodic boundary consition
 !
-        if (bc_rad1(1)=='p') then
-          Qrad0_yz=Qrad(l2,:,:)
-        endif
-!
-! set intensity equal to source function
-!
-        if (bc_rad1(1)=='S') then
-          Qrad0_yz=0
-        endif
-!
+      if (bc_ray_x=='p') then
+        Qrad0_yz=Qrad(llstop-lrad,:,:)
       endif
 !
-!--------------------
-!  upper x-boundary
-!--------------------
-!
-      if (lrad<0) then
-!
-! no incoming intensity
-!
-        if (bc_rad2(1)=='0') then
-          Qrad0_yz=-Srad(l2+1,:,:)
-        endif
-!
-! periodic boundary consition (currently only implemented for
-! rays parallel to an axis
-!
-        if (bc_rad2(1)=='p') then
-          Qrad0_yz=Qrad(l1,:,:)
-        endif
-!
 ! set intensity equal to source function
 !
-        if (bc_rad2(1)=='S') then
-          Qrad0_yz=0
-        endif
-!
+      if (bc_ray_x=='S') then
+        Qrad0_yz=0
       endif
 !
     endsubroutine radboundary_yz_set
@@ -610,64 +603,26 @@ module Radiation
 !
       real, dimension(mx,mz) :: Qrad0_zx
 !
-!--------------------
-!  lower y-boundary
-!--------------------
-!
-      if (mrad>0) then
-!
 ! no incoming intensity
 !
-        if (bc_rad1(2)=='0') then
-          Qrad0_zx=-Srad(:,m1-1,:)
-        endif
-!
-! periodic boundary consition (currently not implemented for
-! multiple processors in the y-direction)
-!
-        if (bc_rad1(2)=='p') then
-          if (nprocy>1) then
-            call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
-          endif
-          Qrad0_zx=Qrad(:,m2,:)
-        endif
-!
-! set intensity equal to source function
-!
-        if (bc_rad1(2)=='S') then
-          Qrad0_zx=0
-        endif
-!
+      if (bc_ray_y=='0') then
+        Qrad0_zx=-Srad(:,mmstart-mrad,:)
       endif
 !
-!--------------------
-!  upper y-boundary
-!--------------------
-!
-      if (mrad<0) then
-!
-! no incoming intensity
-!
-        if (bc_rad2(2)=='0') then
-          Qrad0_zx=-Srad(:,m2+1,:)
-        endif
-!
 ! periodic boundary consition (currently not implemented for
 ! multiple processors in the y-direction)
 !
-        if (bc_rad2(2)=='p') then
-          if (nprocy>1) then
-            call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
-          endif
-          Qrad0_zx=Qrad(:,m1,:)
+      if (bc_ray_y=='p') then
+        if (nprocy>1) then
+          call stop_it("radboundary_zx_set: periodic bc not implemented for nprocy>1")
         endif
+        Qrad0_zx=Qrad(:,mmstop-mrad,:)
+      endif
 !
 ! set intensity equal to source function
 !
-        if (bc_rad2(2)=='S') then
-          Qrad0_zx=0
-        endif
-!
+      if (bc_ray_y=='S') then
+        Qrad0_zx=0
       endif
 !
     endsubroutine radboundary_zx_set
@@ -682,64 +637,26 @@ module Radiation
 !
       real, dimension(mx,my) :: Qrad0_xy
 !
-!--------------------
-!  lower z-boundary
-!--------------------
-!
-      if (nrad>0) then
-!
 !  no incoming intensity
 !
-        if (bc_rad1(3)=='0') then
-          Qrad0_xy=-Srad(:,:,n1-1)
-        endif
+      if (bc_ray_z=='0') then
+        Qrad0_xy=-Srad(:,:,nnstart-nrad)
+      endif
 !
 ! periodic boundary consition (currently not implemented for
 ! multiple processors in the z-direction)
 !
-        if (bc_rad1(3)=='p') then
-          if (nprocz>1) then
-            call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
-          endif
-          Qrad0_xy=Qrad(:,:,n2)
+      if (bc_ray_z=='p') then
+        if (nprocz>1) then
+          call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
         endif
+        Qrad0_xy=Qrad(:,:,nnstop-nrad)
+      endif
 !
 !  set intensity equal to source function
 !
-        if (bc_rad1(3)=='S') then
-          Qrad0_xy=0
-        endif
-!
-      endif
-!
-!--------------------
-!  upper z-boundary
-!--------------------
-!
-      if (nrad<0) then
-!
-! no incoming intensity
-!
-        if (bc_rad2(3)=='0') then
-          Qrad0_xy=-Srad(:,:,n2+1)
-        endif
-!
-! periodic boundary consition (currently not implemented for
-! multiple processors in the z-direction)
-!
-        if (bc_rad2(3)=='p') then
-          if (nprocz>1) then
-            call stop_it("radboundary_xy_set: periodic bc not implemented for nprocz>1")
-          endif
-          Qrad0_xy=Qrad(:,:,n1)
-        endif
-!
-! set intensity equal to source function
-!
-        if (bc_rad2(3)=='S') then
-          Qrad0_xy=0
-        endif
-!
+      if (bc_ray_z=='S') then
+        Qrad0_xy=0
       endif
 !
     endsubroutine radboundary_xy_set
