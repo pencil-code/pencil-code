@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.11 2002-08-09 10:40:32 nilshau Exp $
+! $Id: radiation.f90,v 1.12 2002-08-27 04:28:04 brandenb Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -78,7 +78,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.11 2002-08-09 10:40:32 nilshau Exp $")
+           "$Id: radiation.f90,v 1.12 2002-08-27 04:28:04 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -101,7 +101,7 @@ module Radiation
 !
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz)      :: xx,yy,zz
-      real :: taux,nr1,nr2
+      real :: nr1,nr2
       integer :: l12
 !
       select case(initrad)
@@ -162,6 +162,7 @@ module Radiation
          
       endselect
 !
+      if(ip==0) print*,yy !(keep compiler quiet)
     endsubroutine init_rad
 !********************************************************************
     subroutine de_dt(f,df,rho1,divu,uu,uij,TT1,gamma)
@@ -176,8 +177,8 @@ module Radiation
       use Mpicomm
 !
       real, dimension (mx,my,mz,mvar) :: f,df
-      real, dimension (nx,3) :: gradE,uu,n_vec
-      real, dimension (nx,3,3) :: uij, P_tens,f_mat,n_mat
+      real, dimension (nx,3) :: gradE,uu
+      real, dimension (nx,3,3) :: uij, P_tens
       real, dimension (nx) :: E_rad,divu,rho1,source,Edivu,ugradE,divF
       real, dimension (nx) :: graduP,cooling,c_entr
       real, dimension (nx) :: kappa_abs,kappa,E_gas,TT1,f2,divF2
@@ -349,7 +350,7 @@ module Radiation
       real, dimension (nx,3,3) :: P_tens,f_mat,n_mat
       real, dimension (nx) :: E_rad,rho1,diffus_speed
       real, dimension (nx) :: lgamma,RF,DFF,absgradE,var1
-      real, dimension (nx) :: f_sc,kappa,E_gas,divF,del2E
+      real, dimension (nx) :: f_sc,kappa,divF,del2E
       integer :: i,j,teller
 !
 
