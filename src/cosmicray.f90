@@ -1,4 +1,4 @@
-! $Id: cosmicray.f90,v 1.17 2003-11-03 03:50:07 brandenb Exp $
+! $Id: cosmicray.f90,v 1.18 2003-12-02 21:25:13 snod Exp $
 
 !  This modules solves the cosmic ray energy density equation.
 !  It follows the description of Hanasz & Lesch (2002,2003) as used in their
@@ -29,22 +29,28 @@ module CosmicRay
   real :: amplecr2=0.,kx_ecr=1.,ky_ecr=1.,kz_ecr=1.,radius_ecr=0.,epsilon_ecr=0.
 
   logical :: lnegl = .false.
-
+  logical :: lvariable_tensor_diff = .false.
+  
   namelist /cosmicray_init_pars/ &
        initecr,initecr2,amplecr,amplecr2,kx_ecr,ky_ecr,kz_ecr, &
        radius_ecr,epsilon_ecr,widthecr,ecr_const, &
-       gammacr, lnegl
+       gammacr, lnegl, lvariable_tensor_diff
 
   ! run parameters
   real :: cosmicray_diff=0., Kperp=0., Kpara=0.
   logical :: simplified_cosmicray_tensor=.false.
+  logical :: luse_diff_constants = .false.
+
 
   namelist /cosmicray_run_pars/ &
        cosmicray_diff,Kperp,Kpara, &
-       gammacr,simplified_cosmicray_tensor,lnegl
+       gammacr,simplified_cosmicray_tensor,lnegl,lvariable_tensor_diff, &
+       luse_diff_constants
+
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_ecrm=0,i_ecrmax=0
+  integer :: i_kmax=0
 
   contains
 
@@ -77,7 +83,7 @@ module CosmicRay
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: cosmicray.f90,v 1.17 2003-11-03 03:50:07 brandenb Exp $")
+           "$Id: cosmicray.f90,v 1.18 2003-12-02 21:25:13 snod Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,7 +188,7 @@ module CosmicRay
       real, intent(in), dimension (nx) :: divu,rho1
 !
       real, dimension (nx,3) :: gecr
-      real, dimension (nx) :: ecr,del2ecr,ugecr
+      real, dimension (nx) :: ecr,del2ecr,ugecr,vKperp,vKpara
       integer :: j
 !
 !  identify module and boundary conditions
@@ -211,9 +217,9 @@ module CosmicRay
 !
 !  tensor diffusion, or, alternatively scalar diffusion or no diffusion
 !
-      if (Kperp/=0. .or. Kpara/=0.) then
+      if ((Kperp/=0. .or. Kpara/=0. .or. lvariable_tensor_diff) then
         if(headtt) print*,'decr_dt: Kperp,Kpara=',Kperp,Kpara
-        call tensor_diff(f,df,Kperp,Kpara,gecr,bij,bb)
+        call tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
       elseif (cosmicray_diff/=0.) then
         if(headtt) print*,'decr_dt: cosmicray_diff=',cosmicray_diff
         call del2(f,iecr,del2ecr)
@@ -225,7 +231,11 @@ module CosmicRay
 !  For the timestep calculation, need maximum diffusion
 !
       if (lfirst.and.ldt) then
-        maxdiffus=amax1(maxdiffus,cosmicray_diff,Kperp,Kpara)
+        if(lvariable_tensor_diff)then
+           maxdiffus=amax1(maxdiffus,cosmicray_diff,maxval(vKperp),maxval(vKpara))
+        else
+           maxdiffus=amax1(maxdiffus,cosmicray_diff,Kperp,Kpara)   
+        endif
       endif
 !
 !  diagnostics
@@ -237,6 +247,7 @@ module CosmicRay
         ecr=f(l1:l2,m,n,iecr)
         if (i_ecrm/=0) call sum_mn_name(ecr,i_ecrm)
         if (i_ecrmax/=0) call max_mn_name(ecr,i_ecrmax)
+        if (i_kmax/=0) call max_mn_name(vKpara,i_kmax)
       endif
 !
     endsubroutine decr_dt
@@ -260,7 +271,7 @@ module CosmicRay
 !  (this needs to be consistent with what is defined above!)
 !
       if (lreset) then
-        i_ecrm=0; i_ecrmax=0
+        i_ecrm=0; i_ecrmax=0 ; i_kmax=0
       endif
 !
 !  check for those quantities that we want to evaluate online
@@ -268,6 +279,7 @@ module CosmicRay
       do iname=1,nname
         call parse_name(iname,cname(iname),cform(iname),'ecrm',i_ecrm)
         call parse_name(iname,cname(iname),cform(iname),'ecrmax',i_ecrmax)
+        call parse_name(iname,cname(iname),cform(iname),'kmax',i_kmax)
       enddo
 !
 !  check for those quantities for which we want xy-averages
@@ -281,30 +293,46 @@ module CosmicRay
       if (lwr) then
         write(3,*) 'i_ecrm=',i_ecrm
         write(3,*) 'i_ecrmax=',i_ecrmax
+        write(3,*) 'i_kmax=',i_kmax
         write(3,*) 'iecr=',iecr
       endif
 !
     endsubroutine rprint_cosmicray
 !***********************************************************************
-    subroutine tensor_diff(f,df,Kperp,Kpara,gecr,bij,bb)
+    subroutine tensor_diffusion(f,df,gecr,bij,bb,vKperp,vKpara)
 !
-!  calculates tensor diffusion
-!  Kperp*del2ecr + (Kpara-Kperp) d_i ( n_i n_j d_j ecr) 
-!  = Kperp*del2ecr + (Kpara-Kperp) (H.G + ni*nj*Gij),
-!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b|
+!  calculates tensor diffusion with variable tensor
+!  
+!  vKperp*del2ecr + d_i(vKpara)d_i(gecr) + (vKpara-vKperp) d_i ( n_i n_j d_j ecr)
+!      + n_i n_j d_i(ecr)d_j(vKpara-vKperp)   
+!  = vKperp*del2ecr + gKpara.gecr + (vKpara-vKperp) (H.G + ni*nj*Gij) 
+!      + ni*nj*Gi*(vKpara_j - vKperp_j),
+!  where H_i = (nj bij - 2 ni nj nk bk,j)/|b| and vKperp, vKpara are variable
+!  diffusion coefficients
 !
 !  10-oct-03/axel: adapted from pscalar
-!  10-oct-03/snod: fixed term in momentum equation
+!  30-nov-03/snod: adapted from tensor_diff without variable diffusion
 !
       use Sub
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
       real, dimension (nx,3,3) :: ecr_ij,bij
-      real, dimension (nx,3) :: gecr,bb,bunit,hhh
-      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj
-      real :: Kperp,Kpara
+      real, dimension (nx,3) :: gecr,bb,bunit,hhh,gvKperp,gvKpara
+      real, dimension (nx) :: tmp,b2,b1,del2ecr,tmpj,vKperp,vKpara
+!
+!  use global Kperp, Kpara ?
+! 
+!      real :: Kperp,Kpara
+!
       integer :: i,j,k
+!
+!
+      if (Kpara==(0.0).and.Kperp==(0.0).and.luse_diff_constants) then
+          print *,"cosmicray: no diffusion"
+          stop
+      endif
+
 !
 !  calculate unit vector of bb
 !
@@ -340,15 +368,39 @@ module CosmicRay
       do j=1,3 
         del2ecr=del2ecr+ecr_ij(:,j,j)
         do i=1,3
-          tmp=tmp+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
+          tmp(:)=tmp(:)+bunit(:,i)*bunit(:,j)*ecr_ij(:,i,j)
         enddo
       enddo
 !
+!  add extra terms
+!
+     if(lvariable_tensor_diff)then
+        do i=1,nx
+        vKpara(i)=Kpara
+! *(abs (x(i)))
+        end do
+        vKperp(:)=Kperp
+        gvKperp(:,:)=0.0  ! assume constant kpara,kperp
+        gvKpara(:,:)=0.0
+        call dot_mn(gvKperp,gecr,tmpj)
+        do j=1,3
+          do i=1,3
+            tmpj(:)=tmpj(:)+bunit(:,i)*bunit(:,j)*   &
+             gecr(:,i)*(gvKpara(:,j)-gvKperp(:,j))
+          enddo
+        end do           
+!
 !  and add result to the decr/dt equation
 !
-      df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+Kperp*del2ecr+(Kpara-Kperp)*tmp
+        df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+vKperp*del2ecr+(vKpara-vKperp)*tmp &
+         + tmpj 
+
+     else
+         df(l1:l2,m,n,iecr)=df(l1:l2,m,n,iecr)+Kperp*del2ecr+(Kpara-Kperp)*tmp
+ 
+     end if     
 !
-    endsubroutine tensor_diff
+    endsubroutine tensor_diffusion
 !***********************************************************************
 
 endmodule CosmicRay
