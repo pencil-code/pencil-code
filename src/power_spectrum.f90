@@ -1,4 +1,4 @@
-! $Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $
+! $Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $
 !
 !  reads in full snapshot and calculates power spetrum of u
 !
@@ -39,7 +39,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $")
   !
   !  In fft, real and imaginary parts are handled separately.
   !  Initialize real part a1-a3; and put imaginary part, b1-b3, to zero
@@ -143,7 +143,7 @@ module  power_spectrum
   !  identify version
   !
   if (lroot .AND. ip<10) call cvs_id( &
-       "$Id: power_spectrum.f90,v 1.13 2002-10-25 07:49:43 brandenb Exp $")
+       "$Id: power_spectrum.f90,v 1.14 2002-10-25 08:34:12 nilshau Exp $")
   !
   !    Stopping the run if FFT=nofft
   !
@@ -259,6 +259,7 @@ module  power_spectrum
 !  08-oct-02/tony: expanded file to handle 120 character datadir // '/tspec.dat'
 !
       use Io
+      use Boundcond
 !
       real, dimension (mx,my,mz,mvar) :: a
       character (len=135) :: file
@@ -267,13 +268,13 @@ module  power_spectrum
       integer, save :: ifirst,nspec
       real, save :: tspec
 !
-!  Output snapshot with label in 'tpower' time intervals
-!  file keeps the information about number and time of last snapshot
+!  Output snapshot in 'tpower' time intervals
+!  file keeps the information about time of last snapshot
 !
       file=trim(datadir)//'/tspec.dat'
 !
-!  at first call, need to initialize tsnap
-!  tsnap calculated in out1, but only available to root processor
+!  at first call, need to initialize tspec
+!  tspec calculated in out1, but only available to root processor
 !
       if (ifirst==0) then
          call out1 (trim(file),tspec,nspec,dspec,t)
@@ -285,11 +286,12 @@ module  power_spectrum
 !
       call out2 (trim(file),tspec,nspec,dspec,t,lspec,ch,.false.)
       if (lspec) then
+         call update_ghosts(a)
          if (vel_spec) call power(a,'u')
          if (mag_spec) call power(a,'b')
          if (vec_spec) call power(a,'a')
-         if (ab_spec) call powerhel(a,'mag')
-         if (ou_spec) call powerhel(a,'kin')
+         if (ab_spec)  call powerhel(a,'mag')
+         if (ou_spec)  call powerhel(a,'kin')
       endif
 !
     endsubroutine powersnap
