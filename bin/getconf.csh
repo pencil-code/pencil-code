@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.93 2003-10-29 15:48:19 dobler Exp $
+# $Id: getconf.csh,v 1.94 2003-11-06 16:12:59 mee Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -192,6 +192,21 @@ else if (($hn =~ s[0-9]*p[0-9]*) || ($hn =~ 10_[0-9]*_[0-9]*_[0-9]*)) then
     lamnodes
     set mpirunops = ''
     set mpirun = ''
+  endif
+
+else if ($hn =~ giga*) then
+  echo "Giga Cluster"
+  setenv SCRATCH_DIR /work
+  if ($?JOB_ID) then
+# Need to find out/configure where the SGE is writing the node list
+    if (-e $HOME/.score/ndfile.$JOB_ID) then
+      set local_disc=1
+    else
+      echo "WARNING: Cannot find ~/.score/ndfile.$JOB_ID, continuing without local disk access"
+      set local_disc=0
+    endif
+  else
+    set local_disc=0
   endif
 
 else if (($hn =~ copson*.st-and.ac.uk) || ($hn =~ comp*.st-and.ac.uk)) then
