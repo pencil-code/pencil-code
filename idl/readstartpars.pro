@@ -1,8 +1,8 @@
-;  $Id: readstartpars.pro,v 1.15 2004-06-03 17:10:11 mee Exp $
+;  $Id: readstartpars.pro,v 1.16 2004-07-03 04:13:44 dobler Exp $
 ;
 ;  Read startup parameters
 ;
-forward_function safe_get_tag
+;forward_function safe_get_tag
 
 pfile = datatopdir+'/'+'param2.nml'
 dummy = findfile(pfile, COUNT=cpar)
@@ -35,12 +35,14 @@ if (cpar gt 0) then begin
   par2 = param2()
 
   ;; Abbreviate some frequently used parameters
+  default, STRUCT=par2, ['nu','cs0'], 0.
+
   if (lhydro) then begin
     nu=par2.nu
   endif
 
   if (ldensity) then begin
-    cs0=safe_get_tag(par2,'cs0')
+    cs0=par2.cs0
   endif
   if (lentropy) then begin
     hcond0=par2.hcond0 & hcond1=par2.hcond1 & hcond2=par2.hcond2

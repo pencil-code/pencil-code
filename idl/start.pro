@@ -5,7 +5,7 @@
 ;;; Initialise coordinate arrays, detect precision and dimensions.
 ;;; Typically run only once before running `r.pro' and other
 ;;; plotting/analysing scripts.
-;;; $Id: start.pro,v 1.67 2004-07-03 04:02:40 dobler Exp $
+;;; $Id: start.pro,v 1.68 2004-07-03 04:13:44 dobler Exp $
 
 function param
   COMPILE_OPT IDL2,HIDDEN 
@@ -14,7 +14,7 @@ function param
 end
 
 common cdat,x,y,z,mx,my,mz,nw,ntmax,date0,time0
-forward_function safe_get_tag
+;forward_function safe_get_tag
 ;
 ;  Compile the derivative routines for data that have ghost zones
 ;  For analysis purposes, one may want to use other routines (called
@@ -171,6 +171,7 @@ if (cpar gt 0) then begin
   unit_density=par.unit_density
   unit_temperature=par.unit_temperature
   ;
+  default, STRUCT=par, ['lionization','lionization_fixed'],  0L
   lhydro    = par.lhydro
   ldensity  = par.ldensity
   lgravz    = par.lgravz
@@ -178,8 +179,8 @@ if (cpar gt 0) then begin
   lentropy  = par.lentropy
   lmagnetic = par.lmagnetic
   lradiation= par.lradiation
-  lionization=safe_get_tag(par,'lionization',DEFAULT=safe_get_tag(par,'leos_ionization',DEFAULT=0))
-  lionization_fixed=safe_get_tag(par,'lionization_fixed',DEFAULT=safe_get_tag(par,'leos_fixed_ionization',DEFAULT=0))
+  lionization=par.lionization
+  lionization_fixed=par.lionization_fixed
   lvisc_shock=par.lvisc_shock
   ;lvisc_hyper3=par.lvisc_hyper3
   lpscalar  = par.lpscalar
