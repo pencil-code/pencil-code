@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 # Name:   mkcparam
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Started:   06-Jul-2002
-# CVS: $Id: mkcparam,v 1.27 2004-01-29 11:20:26 ajohan Exp $
+# CVS: $Id: mkcparam,v 1.28 2004-03-02 17:07:03 ajohan Exp $
 # Usage:
 #   mkcparam <file1> [<file2> [..]] [-o outfile]\n
 # Description:
@@ -48,16 +48,18 @@ exec $perl -x -S $0 "$@";     # -x: start from the following line
 #
 
 # ---------------------------------------------------------------------- #
-my $mvar_decl      = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $maux_decl      = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
-my $ndustspec_decl = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $mvar_decl = '^\s*!\s*MVAR\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $maux_decl = '^\s*!\s*MAUX\s*CONTRIBUTION\s*([0-9]+)\s*$';
+my $dust_decl = '^\s*!\s*NDUSTSPEC\s*CONTRIBUTION\s*([0-9]+\*[0-9])\s*$';
 # ---------------------------------------------------------------------- #
 
 use strict;
 use Getopt::Long;
 
 my $line;
-my ($maux,$mvar,$ndustspec) = (0) x 3;
+my $dust_string='1*4';
+my $lmdvar='.false.';
+my ($maux,$mvar,$ndustspec,$mvar_per_dust) = (0) x 4;
 
 (my $cmdname = $0) =~ s{.*/}{};
 
@@ -84,16 +86,22 @@ file: foreach my $infile (@ARGV) {
     line: while (defined($line=<INPUT>)) {
 	next line if ($line =~ /^\s*$/); # ignore empty lines
 	last line if ($line !~ /^\s*!/); # done if non-comment line
-	extract_decl($line,$mvar_decl     ,\$mvar     );
-	extract_decl($line,$maux_decl     ,\$maux     );
-	extract_decl($line,$ndustspec_decl,\$ndustspec);
-
+	extract_decl($line,$mvar_decl,\$mvar       );
+	extract_decl($line,$maux_decl,\$maux       );
+# Check for information about number of dust species and discretization type   
+	if ($line=~ /$dust_decl/) {$dust_string=$1;}
     }
 }
-if ($ndustspec == 0) {$ndustspec = 1;}
+# More processing of dust information
+($ndustspec,$mvar_per_dust) = split /\*/, $dust_string;
+if ($ndustspec >= 1) {
+  $mvar = $mvar - 4;
+  $mvar = $mvar + $ndustspec*$mvar_per_dust;
+  }
+if ($mvar_per_dust == 5) {$lmdvar = '.true.';}
 
 
-## ..and write output
+## Write output
 print OUT <<"EOF";
 !                       -*-f90-*- (for Emacs)
 !  cparam.inc
@@ -104,6 +112,7 @@ print OUT <<"EOF";
 
 integer, parameter :: mvar=$mvar, maux=$maux
 integer, parameter :: ndustspec=$ndustspec
+logical, parameter :: lmdvar=$lmdvar
 
 EOF
 
@@ -115,8 +124,8 @@ sub extract_decl{
     my $counter_ref = shift;
 
     if ($line =~ /$regexp/) {
-	$$counter_ref += $1;
-    }
+	  $$counter_ref += $1;
+      }
 }
 
 # ---------------------------------------------------------------------- #
