@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.200 2003-09-06 18:55:30 theine Exp $
+! $Id: entropy.f90,v 1.201 2003-09-08 17:14:46 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -91,7 +91,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.200 2003-09-06 18:55:30 theine Exp $")
+           "$Id: entropy.f90,v 1.201 2003-09-08 17:14:46 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1083,6 +1083,7 @@ endif
 !
       if(tauheat_coronal/=0.) then
         TTref=(z(n)-ztop)/(zheat_coronal-ztop)*TTheat_coronal
+        TTref=(z(n)-zheat_coronal)/(ztop-zheat_coronal)*TTheat_coronal
         heat=heat+amax1(0.,ss*(TTref-TT)/(rho1*tauheat_coronal))
       endif
 !
