@@ -10,6 +10,7 @@
 ;;;   Collapse contents of string array into a flat string
 
 function flatten_strings, strarr
+COMPILE_OPT IDL2,HIDDEN
 
   strarr1 = strarr              ; copy to avoid overwriting of original
   res = strarr1[0]

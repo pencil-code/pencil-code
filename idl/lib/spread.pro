@@ -16,6 +16,7 @@
 ;;;   consecutively with DIMS and SIZES.
 
 function spread, arr, dim, size 
+COMPILE_OPT IDL2,HIDDEN
 
 ;  if (n_elements(arr) eq 1) then arr = [arr] ; Treat scalar as 1-element array
 

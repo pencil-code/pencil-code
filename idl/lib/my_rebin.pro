@@ -11,6 +11,7 @@
 ;;;   accepts complex numbers.
 
 function my_rebin, arr, dimv, _EXTRA=_extra
+COMPILE_OPT IDL2,HIDDEN
 
   ;; Incredibly stupid: rebin does not work on complex data...
   s = size(arr)

@@ -1,4 +1,5 @@
  function lenstr,str
+COMPILE_OPT IDL2,HIDDEN
 ;+
 ; ROUTINE:         lenstr
 ; USEAGE:          result=lenstr(str)
@@ -50,8 +51,8 @@ case nn of
      else:begin
        w=fltarr(nn)
        for i=0,nn-1 do begin
-         xyouts,0,0,/device,str(i),width=ww
-         w(i)=ww
+         xyouts,0,0,/device,str[i],width=ww
+         w[i]=ww
        endfor
      end
 endcase

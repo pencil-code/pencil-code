@@ -4,12 +4,13 @@
 
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-;;;  Date:   $Date: 2003-10-08 16:51:16 $
+;;;  Date:   $Date: 2004-05-05 16:42:57 $
 ;;;
 ;;;  Description:
 ;;;   Second derivative function like IDL's deriv().
 
 function wdderiv2, arg1, arg2
+COMPILE_OPT IDL2,HIDDEN
 
   n1 = n_elements(arg1)
   n2 = n_elements(arg2)
