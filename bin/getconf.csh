@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.42 2002-11-24 18:27:33 brandenb Exp $
+# $Id: getconf.csh,v 1.43 2002-11-26 10:47:45 mattias Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence. This
@@ -17,7 +17,7 @@ set start_x = "src/start.x"
 set run_x = "src/run.x"
 
 # settings for machines with local data disks
-set local_disc = 0  #use global file system by default
+set local_disc = 0  #use global file system by default (if set to zero)
 setenv SCRATCH_DIR /scratch
 setenv SSH ssh
 setenv SCP scp
