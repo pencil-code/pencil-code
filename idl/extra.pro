@@ -1,4 +1,4 @@
-;  $Id: extra.pro,v 1.16 2003-02-22 17:27:55 brandenb Exp $
+;  $Id: extra.pro,v 1.17 2003-03-10 15:19:29 brandenb Exp $
 ;
 ;  This routine calculates a number of extra variables
 ;
@@ -23,6 +23,7 @@ ooo=oo(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then aaa=aa(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then bbb=bb(l1:l2,m1:m2,n1:n2,*)
 if (iaa ne 0) then jjj=jj(l1:l2,m1:m2,n1:n2,*)
+;
 if (ilnrho ne 0) then llnrho=lnrho(l1:l2,m1:m2,n1:n2)
 if (ilnrho ne 0) then rho=exp(llnrho)
 if (ilnrho ne 0 and ient eq 0) then cs2=cs20*exp(gamma1*llnrho)
@@ -46,10 +47,14 @@ end
 ;  calculate vertical averages
 ;
 if (ient ne 0) then begin
-  if (ny gt 1) then begin
+  if (nz gt 1) then begin
     cs2m=haver(cs2) & csm=sqrt(cs2m)
     rhom=haver(rho)
   end
 end
+;
+;  in case we need it
+;
+hhh=cs2/gamma1  ;(enthalpy)
 ;
 END
