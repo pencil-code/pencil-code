@@ -1,5 +1,5 @@
 &run_pars
-  cvsid='$Id: run.in,v 1.2 2003-09-10 18:10:06 brandenb Exp $',
+  cvsid='$Id: run.in,v 1.3 2003-11-28 09:57:14 theine Exp $',
   nt=5, it1=1, isave=50, itorder=3
   cdt=0.4, cdtv=0.08, dtmin=1e-9
   dsnap=2., dvid=2.
@@ -32,4 +32,5 @@
 /
 &viscosity_run_pars
   nu=0.2,nu_shock=5.0
+  lvisc_first=T
 /
