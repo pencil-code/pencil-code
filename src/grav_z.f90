@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.11 2002-06-03 14:59:48 dobler Exp $
+! $Id: grav_z.f90,v 1.12 2002-06-10 07:54:55 brandenb Exp $
 
 module Gravity
 
@@ -39,8 +39,8 @@ module Gravity
 !
       if (lroot) call cvs_id( &
            "$RCSfile: grav_z.f90,v $", &
-           "$Revision: 1.11 $", &
-           "$Date: 2002-06-03 14:59:48 $")
+           "$Revision: 1.12 $", &
+           "$Date: 2002-06-10 07:54:55 $")
 !
       lgrav = .true.
       lgravz = .true.
@@ -60,17 +60,17 @@ module Gravity
 !
 ! Not doing anything (this might change if we decide to store gg)
 !
-!
+      if(ip==0) print*,f,xx,yy,zz !(keep compiler quiet)
     endsubroutine init_grav
 !***********************************************************************
     subroutine duu_dt_grav(f,df)
 !
 !  add duu/dt according to gravity
+!  (do we need f here?/AB)
 !
 !  9-jan-02/wolf: coded
 !
       use Cdata
-!      use Mpicomm
       use Sub
       use Slices
 !
@@ -78,6 +78,7 @@ module Gravity
 !
       df(l1:l2,m,n,iuz) = df(l1:l2,m,n,iuz) + gravz
 !
+      if(ip==0) print*,f !(keep compiler quiet)
     endsubroutine duu_dt_grav
 !***********************************************************************
     subroutine potential(xmn,ymn,zmn,rmn, pot)
@@ -85,13 +86,13 @@ module Gravity
 !  gravity potential
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: nx,ny,nz,gravz
-      use Sub, only: poly
+      use Cdata, only: nx,gravz
 !
       real, dimension (nx,1,1) :: xmn,ymn,zmn,rmn, pot
 !
       pot = -gravz*zmn
 !
+      if(ip==0) print*,xmn,ymn,rmn !(keep compiler quiet)
     endsubroutine potential
 !***********************************************************************
 

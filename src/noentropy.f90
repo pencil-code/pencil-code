@@ -1,4 +1,4 @@
-! $Id: noentropy.f90,v 1.19 2002-06-09 10:13:02 brandenb Exp $
+! $Id: noentropy.f90,v 1.20 2002-06-10 07:54:55 brandenb Exp $
 
 module Entropy
 
@@ -45,8 +45,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: noentropy.f90,v $", &
-           "$Revision: 1.19 $", &
-           "$Date: 2002-06-09 10:13:02 $")
+           "$Revision: 1.20 $", &
+           "$Date: 2002-06-10 07:54:55 $")
 !
     endsubroutine register_ent
 !***********************************************************************
@@ -63,7 +63,7 @@ module Entropy
       if(ip==1) print*,f,xx,yy,zz  !(to remove compiler warnings)
     endsubroutine init_ent
 !***********************************************************************
-    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,cs2,TT1)
+    subroutine dss_dt(f,df,uu,sij,lnrho,glnrho,rho1,cs2,TT1)
 !
 !  28-mar-02/axel: dummy routine, adapted from entropy.f of 6-nov-01.
 !  19-may-02/axel: added isothermal pressure gradient
@@ -74,10 +74,10 @@ module Entropy
       real, dimension (mx,my,mz,mvar) :: f,df
       real, dimension (nx,3,3) :: sij
       real, dimension (nx,3) :: uu,glnrho
-      real, dimension (nx) :: lnrho,cs2,TT1
+      real, dimension (nx) :: lnrho,rho1,cs2,TT1
       integer :: j,ju
 !
-      intent(in) :: f,uu,glnrho
+      intent(in) :: f,uu,glnrho,rho1
       intent(out) :: cs2,TT1  !(df is dummy)
 !
 !  sound speed squared and inverse temperature
@@ -94,7 +94,7 @@ module Entropy
         enddo
       endif
 !
-      if(ip==1) print*,f,df,uu,sij  !(compiler)
+      if(ip==1) print*,f,df,uu,sij,rho1  !(compiler)
     endsubroutine dss_dt
 !***********************************************************************
     subroutine rprint_entropy(lreset)
