@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.158 2003-10-12 05:45:16 brandenb Exp $
+! $Id: run.f90,v 1.159 2003-10-30 12:18:15 ajohan Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.158 2003-10-12 05:45:16 brandenb Exp $")
+             "$Id: run.f90,v 1.159 2003-10-30 12:18:15 ajohan Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -302,7 +302,7 @@
           if (lroot) print*, 'Writing final snapshot for t=', t
           call wsnap(trim(directory_snap)//'/var.dat',f,mvar_io,ENUM=.false.)
           call wtime(trim(directory)//'/time.dat',t)
-          if (ip<=10) &
+          if (ip<=11) &
                call wsnap(trim(directory)//'/dvar.dat',df,mvar,ENUM=.false.)
         endif
 !
