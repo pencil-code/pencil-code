@@ -40,6 +40,7 @@ module Sub
 !  set corresponding entry in itype_name
 !
       itype_name(iname)=ilabel_max
+if (m==10 .and. n==10) print*,'MAX_MN_NAME: itype_name=',itype_name
 !
     endsubroutine max_mn_name
 !***********************************************************************
@@ -65,6 +66,7 @@ module Sub
 !  set corresponding entry in itype_name
 !
       itype_name(iname)=ilabel_sum
+if (m==10 .and. n==10) print*,'SUM_MN_NAME: itype_name=',itype_name
 !
     endsubroutine sum_mn_name
 !***********************************************************************
@@ -1387,6 +1389,7 @@ module Sub
       character*(*) :: cname,cform
       character*(*) :: ctest
       integer :: iname,itest,iform0,iform1,iform2,length
+integer :: itest_old
 !
       intent(in)  :: iname,cname,ctest
       intent(out) :: cform,itest
@@ -1407,7 +1410,10 @@ module Sub
         length=iform0-1
       endif
 !
-      if (cname(1:length)==ctest) itest=iname
+itest_old=itest
+      if (cname(1:length)==ctest .and. itest==0) itest=iname
+write(*, '("PARSE_NAME: cname(1:",I5,")=<",A,">, ctest=<",A,">, itest=",I5,"->",I5,",iname=",I5)') &
+     length, cname(1:length),ctest,itest_old,itest,iname
 !
       endsubroutine parse_name
 !***********************************************************************
