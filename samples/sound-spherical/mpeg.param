@@ -1,0 +1,38 @@
+# Parameter file to produce an MPEG movie out of PNG images
+# Usage:
+#   mpeg_encode mpeg.param
+
+PATTERN                IBBPBBPBBPBBPBB
+#PATTERN         I
+
+OUTPUT          data/movie.mpg
+GOP_SIZE        30
+SLICES_PER_FRAME        1
+
+BASE_FILE_FORMAT        PPM
+# YUV_SIZE        352x240
+
+INPUT_CONVERT   xxxtoppm *
+
+INPUT_DIR       .
+
+INPUT
+img_*.png [0000-0104]
+END_INPUT
+
+# quality parameters
+
+IQSCALE         8
+PQSCALE         10
+BQSCALE         25
+
+# motion vector search parameters
+
+PIXEL           HALF
+
+RANGE           10
+
+PSEARCH_ALG     LOGARITHMIC
+BSEARCH_ALG     CROSS2
+
+REFERENCE_FRAME DECODED
