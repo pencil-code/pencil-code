@@ -5,7 +5,7 @@
 ;;;
 ;;;  Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 ;;;  Date:   09-Sep-2001
-;;;  $Id: rall.pro,v 1.34 2003-07-02 12:05:08 dobler Exp $
+;;;  $Id: rall.pro,v 1.35 2003-09-10 16:15:19 dobler Exp $
 ;;;
 ;;;  Description:
 ;;;   Read data from all processors and combine them into one array
@@ -178,11 +178,6 @@ xx = spread(x, [1,2], [my,mz])
 yy = spread(y, [0,2], [mx,mz])
 zz = spread(z, [0,1], [mx,my])
 rr = sqrt(xx^2+yy^2+zz^2)
-;
-;  Summarize data
-;
-@varcontent_stats
-
 
 ; reset datadir to more reasonable default
 datadir=datatopdir+'/proc0'
@@ -203,6 +198,10 @@ nz=mz-2*nghostz
 if (lgravz) then begin
   ztop=z[n2] & z3=ztop
 endif
+;
+;  Summarize data
+;
+@varcontent_stats
 ;
 ;  free memory
 ;
