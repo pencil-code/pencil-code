@@ -1,4 +1,4 @@
-! $Id: boundcond.f90,v 1.42 2003-06-16 04:41:10 brandenb Exp $
+! $Id: boundcond.f90,v 1.43 2003-06-17 22:52:39 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!!!
 !!!   boundcond.f90   !!!
@@ -235,6 +235,8 @@ module Boundcond
                 call bc_sym_z(f,-1,topbot,j)
               case ('a2')       ! antisymmetry relative to boundary value
                 call bc_sym_z(f,-1,topbot,j,REL=.true.)
+              case ('a3')       ! a2 - wiggles
+                call bc_asym3(f,topbot,j)
               case ('1s')        ! one-sided
                 call bc_onesided_z(f,topbot,j)
               case ('c1')       ! complex
@@ -479,6 +481,47 @@ module Boundcond
       endselect
 !
     endsubroutine bc_sym_z
+!***********************************************************************
+    subroutine bc_asym3(f,topbot,j)
+!
+!  Generalized antisymmetric bc (a al `a2') with removal of Nyquist wiggles
+!  Does not seem to help against wiggles -- use upwinding instead
+!
+!  17-jun-03/wolf: coded
+!
+      use Cdata
+!
+      character (len=3) :: topbot
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (mx,my) :: Nyquist
+      integer :: j
+!
+      select case(topbot)
+
+      case('bot')               ! bottom boundary
+        ! Nyquist = 0.25*(f(:,:,n1,j)-2*f(:,:,n1+1,j)+f(:,:,n1+2,j))
+        Nyquist = 0.0625*(     f(:,:,n1  ,j)+f(:,:,n1+4,j) &
+                          - 4*(f(:,:,n1+1,j)+f(:,:,n1+3,j)) &
+                          + 6* f(:,:,n1+2,j) )
+        f(:,:,n1-1,j) = 2*f(:,:,n1,j) - f(:,:,n1+1,j) -4*Nyquist
+        f(:,:,n1-2,j) = 2*f(:,:,n1,j) - f(:,:,n1+2,j)
+        f(:,:,n1-3,j) = 2*f(:,:,n1,j) - f(:,:,n1+3,j) -4*Nyquist
+
+      case('top')               ! top boundary
+        ! Nyquist = 0.25*(f(:,:,n2,j)-2*f(:,:,n2-1,j)+f(:,:,n2-2,j))
+        Nyquist = 0.0625*(     f(:,:,n2  ,j)+f(:,:,n2-4,j) &
+                          - 4*(f(:,:,n2-1,j)+f(:,:,n2-3,j)) &
+                          + 6* f(:,:,n2-2,j) )
+        f(:,:,n2+1,j) = 2*f(:,:,n2,j) - f(:,:,n2-1,j) -4*Nyquist
+        f(:,:,n2+2,j) = 2*f(:,:,n2,j) - f(:,:,n2-2,j)
+        f(:,:,n2+3,j) = 2*f(:,:,n2,j) - f(:,:,n2-3,j) -4*Nyquist
+
+      case default
+        if(lroot) print*, topbot, " should be `top' or `bot'"
+
+      endselect
+!
+    endsubroutine bc_asym3
 !***********************************************************************
     subroutine bc_onesided_z(f,topbot,j)
 !
