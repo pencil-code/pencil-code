@@ -24,7 +24,8 @@ umeanabs = sqrt(umeanz[*,0]^2+umeanz[*,1]^2+umeanz[*,2]^2)
 
 save_state
 
-!p.multi=[0,2,1]
+!p.multi = [0,2,1]
+!y.style = 3
 
 xr = minmax([urms1,urms,umeanabs])
 plot, urms, z, /XLOG, $
