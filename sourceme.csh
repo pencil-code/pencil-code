@@ -15,13 +15,15 @@ if (! $?PENCIL_HOME) then
   #
   # Try to identify position of the code's home directory:
   #
-  foreach _dir ( . .. ../.. ../../.. ../../../.. pencil pencil-code \
-                f90/pencil f90/pencil-code)
+  foreach _dir ( . .. ../.. ../../.. ../../../.. \
+                pencil pencil-code \
+		f90/pencil f90/pencil-code \
+		pencil_modular f90/pencil_modular)
     if ( (-e $_dir/sourceme.csh) && \
          (-d $_dir/bin)          && \
 	 (-d $_dir/doc)          && \
 	 (-d $_dir/src)          && \
-         (-d $_dir/runs)            \
+	 (-d $_dir/samples)         \
        ) then
       setenv PENCIL_HOME `cd $_dir; pwd`
       goto found

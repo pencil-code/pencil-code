@@ -13,13 +13,15 @@ if [ -z $PENCIL_HOME ]; then
   #
   # Try to identify position of the code's home directory:
   #
-  for _dir in   . .. ../.. ../../.. ../../../.. pencil pencil_modular \
-                f90/pencil f90/pencil_modular ; do
+  for _dir in   . .. ../.. ../../.. ../../../.. \
+                pencil pencil-code \
+		f90/pencil f90/pencil-code \
+		pencil_modular f90/pencil_modular ; do
     if ( [ -e $_dir/sourceme.csh ] && \
          [ -d $_dir/bin ]          && \
 	 [ -d $_dir/doc ]          && \
 	 [ -d $_dir/src ]          && \
-         [ -d $_dir/runs ]            \
+	 [ -d $_dir/samples ]         \
        ); then
       PENCIL_HOME=`cd $_dir; echo $PWD`
       break
