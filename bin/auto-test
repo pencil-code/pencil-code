@@ -18,7 +18,7 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 # Name:   auto-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
 # Date:   12-Aug-2002
-# CVS: $Id: auto-test,v 1.15 2002-09-26 14:54:14 dobler Exp $
+# CVS: $Id: auto-test,v 1.16 2002-09-26 20:25:08 dobler Exp $
 # Description:
 #   Test compilation and results on a set of sample directories to
 #   validate the pencil code. Uses Perl because I started to do this with
@@ -43,8 +43,8 @@ my @sampdir = qw( conv-slab conv-slab-flat
 my @runsdir = qw( forced/hydro1 radiation/rad1);
 # ---------------------------------------------------------------------- #
 ## Override for testing:
-#@sampdir = qw( conv-slab );
-#@runsdir = qw(  );
+@sampdir = qw( conv-slab );
+@runsdir = qw(  );
 
 
 my $tmpdir = "/var/tmp/pencil-tmp-$$";
@@ -84,7 +84,7 @@ GetOptions(\%opts,
 if ($opts{'h'} || $opts{'help'}) { $help=1; die "$usage\n"; }
 if ($opts{'v'} || $opts{'version'}) {
     $help=1;
-    die '$Id: auto-test,v 1.15 2002-09-26 14:54:14 dobler Exp $ ' . "\n";
+    die '$Id: auto-test,v 1.16 2002-09-26 20:25:08 dobler Exp $ ' . "\n";
 }
 if ($opts{'c'} || $opts{'compile-only'}) { $t_start=$t_run=$t_res=0; }
 if ($opts{'nr'} || $opts{'norun'}) { $t_run=0; }
@@ -211,7 +211,7 @@ sub test_results {
 	    if ($rdmsg) {
 		print " [$rdmsg]\n";
 	    } else {
-		my $comp = compare_results(\@ref_output,\@output,$diagn);
+		my $comp = compare_results(\@ref_output,\@foutput,$diagn);
 		my_ok($comp,1,$diagn,$dir,"results");
 	    }
 	} else { # No header line found
