@@ -1,4 +1,4 @@
-! $Id: radiation.f90,v 1.26 2003-08-04 17:56:02 mee Exp $
+! $Id: radiation.f90,v 1.27 2003-08-06 14:56:12 theine Exp $
 
 !  This modules deals with all aspects of radiation; if no
 !  radiation are invoked, a corresponding replacement dummy
@@ -82,7 +82,7 @@ module Radiation
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: radiation.f90,v 1.26 2003-08-04 17:56:02 mee Exp $")
+           "$Id: radiation.f90,v 1.27 2003-08-06 14:56:12 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -129,10 +129,6 @@ module Radiation
 !
       if(ip==0) print*,f,df !(keep compiler quiet)
     endsubroutine radiative_cooling
-!***********************************************************************
-    subroutine output_radiation(lun)
-      integer, intent(in) :: lun
-    endsubroutine output_radiation
 !***********************************************************************
     subroutine init_rad(f,xx,yy,zz)
 !

@@ -1,4 +1,4 @@
-! $Id: noionization.f90,v 1.51 2003-08-06 10:13:05 mee Exp $
+! $Id: noionization.f90,v 1.52 2003-08-06 14:56:12 theine Exp $
 
 !  Dummy routine for noionization
 
@@ -39,7 +39,7 @@ module Ionization
 
   ! secondary parameters calculated in initialize
   real,parameter :: twothirds=2./3.
-  real :: TT_ion,TT_ion_,ss_ion,kappa0,xHetilde
+  real :: TT_ion,TT_ion_,ss_ion,kappa0
   real :: lnrho_H,lnrho_e,lnrho_e_,lnrho_p,lnrho_He
   real :: yHmin,yHmax
 
@@ -82,7 +82,7 @@ module Ionization
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: noionization.f90,v 1.51 2003-08-06 10:13:05 mee Exp $")
+           "$Id: noionization.f90,v 1.52 2003-08-06 14:56:12 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -128,12 +128,6 @@ module Ionization
         ss_ion=k_B/m_H/mu      
         kappa0=sigmaH_/m_H/mu
 !
-        if (xHe==0.) then
-          xHetilde=0.
-        else
-          xHetilde=xHe*(log(xHe)-lnrho_He)
-        endif
-!
         if(lroot) then
           print*,'initialize_ionization: reference values for ionization'
           print*,'TT_ion,lnrho_e,ss_ion=',TT_ion,lnrho_e,ss_ion
@@ -152,10 +146,8 @@ module Ionization
         if (yH0 .ne. 1.) one_yH0_term=(1.-yH0)*(log(1.-yH0)-lnrho_H)
         if (xHe .ne. 0.) xHe_term=xHe*(log(xHe)-lnrho_He)
 
-        lnTT0=log(TT_ion)+(2./3.)*( &
-                              (one_yH0_term + yH0_term + xHe_term) &
-                              / (1.+yH0+xHe) - 2.5)
-        
+        lnTT0=log(TT_ion)+(2./3.)*((one_yH0_term+yH0_term+xHe_term) &
+                                   /(1.+yH0+xHe)-2.5)
 
         cs2TT=(1.+yH0+xHe)*ss_ion*dlnPdlnrho
         eeTT=ss_ion/dlnPdss
