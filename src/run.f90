@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.180 2004-05-30 08:01:40 brandenb Exp $
+! $Id: run.f90,v 1.181 2004-06-03 17:26:37 brandenb Exp $
 !
 !***********************************************************************
       program run
@@ -36,7 +36,7 @@
         real, dimension (mx,my,mz,mvar) :: df
         double precision :: time1,time2
         integer :: count
-        logical :: stop=.false.,reload=.false.,save_lastsnap=.true.
+        logical :: stop=.false.,reload=.false.
         real :: wall_clock_time, time_per_step
         real :: time_last_diagnostic, time_this_diagnostic
         integer ::  it_last_diagnostic
@@ -51,7 +51,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.180 2004-05-30 08:01:40 brandenb Exp $")
+             "$Id: run.f90,v 1.181 2004-06-03 17:26:37 brandenb Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -349,8 +349,10 @@
         endif
 !
 !  write seed parameters (only if forcing is turned on)
+!  disable this if save_lastsnap=F (because this is used mainly for
+!  testing purposes, so we want the run to be reproducible.
 !
-        if (lforcing .or. linterstellar) then
+        if ((lforcing .or. linterstellar) .and. save_lastsnap) then
           call random_seed_wrapper(get=seed(1:nseed))
           call outpui(trim(directory)//'/seed.dat',seed,nseed)
         endif

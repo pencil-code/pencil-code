@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.177 2004-06-02 21:23:09 mee Exp $ 
+! $Id: param_io.f90,v 1.178 2004-06-03 17:26:37 brandenb Exp $ 
 
 module Param_IO
 
@@ -76,6 +76,7 @@ module Param_IO
        ttransient,tavg,idx_tavg,lserial_io,nr_directions, &
        lsfu,lsfb,lsfz1,lsfz2,lsfflux,lpdfu,lpdfb,lpdfz1,lpdfz2,oned, &
        lwrite_aux,onedall,lcalc_cp,pretend_lnTT,old_cdtv,lmaxadvec_sum, &
+       save_lastsnap, &
        force_lower_bound,twod
   contains
 

@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.233 2004-06-03 15:49:45 brandenb Exp $
+! $Id: cdata.f90,v 1.234 2004-06-03 17:26:37 brandenb Exp $
 
 module Cdata
 
@@ -139,6 +139,7 @@ module Cdata
   logical :: lmonolithic_io=.false.
   logical :: lionization=.false.,lionization_fixed=.false.
   logical :: pretend_lnTT=.false.
+  logical :: save_lastsnap=.true.
 
   ! variables to allow modules to share 'precalculated' stuff
   ! when necessary (set in module initialize functions)
