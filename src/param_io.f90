@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.168 2004-03-18 15:01:35 theine Exp $ 
+! $Id: param_io.f90,v 1.169 2004-03-30 05:35:41 brandenb Exp $ 
 
 module Param_IO
 
@@ -46,7 +46,7 @@ module Param_IO
   real :: tmax=1e33,awig=1.
   integer :: isave=100,iwig=0,ialive=0,nfilter=0
   logical :: lrmwig_rho=.false.,lrmwig_full=.false.,lrmwig_xyaverage=.false.
-  logical :: lread_oldsnap=.false.
+  logical :: lread_oldsnap=.false.,lread_oldsnap_nomag=.false.
   logical :: lwrite_aux=.false., lsgifix=.false.
   character (len=1) :: slice_position='p'
   !
@@ -58,7 +58,8 @@ module Param_IO
   namelist /init_pars/ &
        cvsid,ip,xyz0,xyz1,Lxyz,lperi,lshift_origin,lwrite_ic,lnowrite, &
        unit_system,unit_length,unit_velocity,unit_density,unit_temperature, &
-       random_gen,nfilter,lserial_io,lread_oldsnap, lwrite_aux,lcalc_cp, &
+       random_gen,nfilter,lserial_io,lread_oldsnap,lread_oldsnap_nomag, &
+       lwrite_aux,lcalc_cp, &
        bcx,bcy,bcz,r_int,r_ext,mu0
   namelist /run_pars/ &
        cvsid,ip,nt,it1,dt,cdt,cdtv,cdts,cdtr,isave,itorder, &

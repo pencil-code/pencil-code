@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.153 2004-03-30 05:33:51 brandenb Exp $
+! $Id: hydro.f90,v 1.154 2004-03-30 05:35:40 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -109,7 +109,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.153 2004-03-30 05:33:51 brandenb Exp $")
+           "$Id: hydro.f90,v 1.154 2004-03-30 05:35:40 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -182,6 +182,7 @@ module Hydro
 !
       select case(inituu)
 
+      case('nothing'); if(lroot) print*,'init_uu: nothing'
       case('zero', '0'); 
                      if(lroot) print*,'init_uu: zero velocity'
                      ! Ensure really is zero, as may have used lread_oldsnap
@@ -219,7 +220,7 @@ module Hydro
         !  sound wave (should be consistent with density module)
         !
         if (lroot) print*,'init_uu: x-wave in uu; ampluu=',ampluu
-        f(:,:,:,iux)=ampluu*sin(kx_uu*xx)
+        f(:,:,:,iux)=uu_const(1)+ampluu*sin(kx_uu*xx)
 
       case('sound-wave2')
         !

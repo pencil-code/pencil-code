@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.129 2004-03-19 09:50:56 dobler Exp $
+! $Id: start.f90,v 1.130 2004-03-30 05:35:41 brandenb Exp $
 !
 !***********************************************************************
       program start
@@ -46,7 +46,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.129 2004-03-19 09:50:56 dobler Exp $")
+             "$Id: start.f90,v 1.130 2004-03-30 05:35:41 brandenb Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -202,6 +202,15 @@
         if(lread_oldsnap) then
           print*,'read old snapshot file'
           call input(trim(directory_snap)//'/var.dat',f,mvar,1)
+        elseif(lread_oldsnap_nomag) then
+          print*,'read old snapshot file (but without magnetic field)'
+          call input(trim(directory_snap)//'/var.dat',f,mvar-3,1)
+          if (iaz<mvar) then
+            do i=iaz+1,mvar
+              f(:,:,:,i)=f(:,:,:,i-3)
+            enddo
+            f(:,:,:,iax:iaz)=0.
+          endif
         else
           f = 0.
         endif

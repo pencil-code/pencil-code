@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.157 2004-03-29 13:52:08 theine Exp $
+! $Id: density.f90,v 1.158 2004-03-30 05:35:34 brandenb Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -23,7 +23,7 @@ module Density
 
   real :: ampllnrho=0., widthlnrho=.1
   real :: rho_left=1., rho_right=1., cdiffrho=0., diffrho=0., diffrho_shock=0.
-  real :: lnrho_const=0.
+  real :: lnrho_const=0., rho_const=1.
   real :: amplrho=0,cs2cool=0.
   real :: radius_lnrho=.5,kx_lnrho=1.,ky_lnrho=1.,kz_lnrho=1.
   real :: eps_planet=.5
@@ -86,7 +86,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.157 2004-03-29 13:52:08 theine Exp $")
+           "$Id: density.f90,v 1.158 2004-03-30 05:35:34 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -410,6 +410,13 @@ module Density
         if (lroot) print*,'init_lnrho: x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=lnrho_const+ampllnrho*sin(kx_lnrho*xx)
 
+      case('sound-wave-exp')
+        !
+        !  sound wave (should be consistent with hydro module)
+        !
+        if (lroot) print*,'init_lnrho: x-wave in rho; ampllnrho=',ampllnrho
+        f(:,:,:,ilnrho)=alog(rho_const+amplrho*sin(kx_lnrho*xx))
+
       case('sound-wave2')
         !
         !  sound wave (should be consistent with hydro module)
@@ -522,11 +529,7 @@ module Density
       endif
 !
 !  check that cs2bot,cs2top are ok
-!  dave:
-!  these variables are not always used, but always checked; 
-!  is there a way to limit this check to the appropriate cases?
-!  tobi:
-!  only print out when noionization is used
+!  for runs with ionization or fixed ionization, don't print them
 !
       if (lionization .or. lionization_fixed) then
         cs2top=impossible
@@ -534,7 +537,6 @@ module Density
       else
         if(lroot) print*,'init_lnrho: cs2bot,cs2top=',cs2bot,cs2top
       endif
-!
 !
 !  Add some structures to the lnrho initialized above
 !  Tobi: This is only kept for backwards compatibility

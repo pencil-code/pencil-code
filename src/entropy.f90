@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.292 2004-03-29 17:06:59 mcmillan Exp $
+! $Id: entropy.f90,v 1.293 2004-03-30 05:35:38 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.292 2004-03-29 17:06:59 mcmillan Exp $")
+           "$Id: entropy.f90,v 1.293 2004-03-30 05:35:38 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -926,8 +926,12 @@ module Entropy
       if (lfirst.and.ldt) call max_for_dt(cs2,maxadvec2)
       if (ip<8.and.lroot.and.imn==1) print*, &
                         'dss_dt: maxadvec2,cs2=',maxadvec2,cs2
-      if (headtt) print*, &
-                 'dss_dt: entropy (but not used with ionization): cs20=',cs20
+!
+!  don't print out cs20 (in runs with ionization is in not defined)
+!  and ideally it should be avoided from the entropy module altoghether
+!
+!     if (headtt) print*, &
+!                'dss_dt: entropy (but not used with ionization): cs20=',cs20
 !
       if (lhydro) then
 !

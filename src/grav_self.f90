@@ -1,4 +1,4 @@
-! $Id: grav_self.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $
+! $Id: grav_self.f90,v 1.21 2004-03-30 05:35:40 brandenb Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -32,6 +32,7 @@ module Gravity
 !  with usage of quantities from grav_z in density.f90
 
   real :: z1,z2,zref,gravz=-1.,zinfty,zgrav=impossible
+  real :: gg_quench=0.
   character (len=labellen) :: grav_profile='const'
 
 !  The gravity potential must always be negative. However, in an plane
@@ -45,7 +46,7 @@ module Gravity
 !  run, but "adjusting" the profile slighly may be quite useful.
 
   namelist /grav_run_pars/ &
-    grav_const,gravdiff
+    grav_const,gravdiff,gg_quench
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -85,7 +86,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_self.f90,v 1.20 2003-12-23 10:51:00 dobler Exp $")
+           "$Id: grav_self.f90,v 1.21 2004-03-30 05:35:40 brandenb Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -140,7 +141,7 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: uu,gg,curlgg,curlcurlgg
+      real, dimension (nx,3) :: uu,gg,curlgg,curlcurlgg,quench
       real, dimension (nx) :: rho1,rho,curlgg2,divgg,divgg2,udotg,g2
       integer :: j
 !
@@ -165,9 +166,21 @@ module Gravity
         df(l1:l2,m,n,igx:igz)=df(l1:l2,m,n,igx:igz)-gravdiff*curlcurlgg
       endif
 !
+!  quenching factor
+!
+      if (gg_quench/=0.) then
+        gg=f(l1:l2,m,n,igx:igz)
+        call dot2_mn(gg,g2)
+        quench(:,1)=1./(1.+g2/gg_quench)
+        quench(:,2)=quench(:,1)
+        quench(:,3)=quench(:,1)
+      else
+        quench=1.
+      endif
+!
 !  add gravitational acceleration to momentum equation
 !
-      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+f(l1:l2,m,n,igx:igz)
+      df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)+quench*f(l1:l2,m,n,igx:igz)
 !
 !  diagnostics
 !
