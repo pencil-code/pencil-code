@@ -1,4 +1,4 @@
-! $Id: dustdensity.f90,v 1.7 2003-08-01 13:49:13 brandenb Exp $
+! $Id: dustdensity.f90,v 1.8 2003-08-12 09:42:26 ajohan Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrhod_dt and init_lnrhod, among other auxiliary routines.
@@ -12,12 +12,12 @@ module Dustdensity
   implicit none
 
   real :: rhod0=1.,lnrhod0,ampllnrhod=0.,amplrhod=0.,cdiffrhod=0.
-  real :: lnrhod_const=0.,rhod_const=1.
+  real :: lnrhod_const=0.,rhod_const=1.,dust_to_gas_ratio=0.
   real :: kx_lnrhod,ky_lnrhod,kz_lnrhod
   character (len=labellen) :: initlnrhod='zero'
 
   namelist /dustdensity_init_pars/ &
-       rhod0,ampllnrhod,initlnrhod, &
+       rhod0,ampllnrhod,initlnrhod,dust_to_gas_ratio, &
        kx_lnrhod,ky_lnrhod,kz_lnrhod,amplrhod,rhod_const
 
   namelist /dustdensity_run_pars/ &
@@ -57,7 +57,7 @@ module Dustdensity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustdensity.f90,v 1.7 2003-08-01 13:49:13 brandenb Exp $")
+           "$Id: dustdensity.f90,v 1.8 2003-08-12 09:42:26 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -103,6 +103,7 @@ module Dustdensity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
+      integer :: i,j
 !
 !  different initializations of lnrhod (called from start).
 !  If initrhod does't match, f=0 is assumed (default).
@@ -113,6 +114,19 @@ module Dustdensity
       case('zero'); if(lroot) print*,'zero lnrhod'
       case('const_rhod'); f(:,:,:,ilnrhod)=alog(rhod_const)
       case('const_lnrhod'); f(:,:,:,ilnrhod)=lnrhod_const
+      case('frac_of_gas_loc')
+        if (dust_to_gas_ratio .lt. 0.) &
+            call stop_it("Negative dust_to_gas_ratio!")
+        f(:,:,:,ilnrhod)=alog(dust_to_gas_ratio)+f(:,:,:,ilnrho)
+      case('frac_of_gas_glo')
+        if (dust_to_gas_ratio .lt. 0.) &
+            call stop_it("Negative dust_to_gas_ratio!")
+        do i=1,mx
+          do j=1,my
+            f(i,j,:,ilnrhod) = &
+                alog(dust_to_gas_ratio)+f(4,4,:,ilnrho)
+          enddo
+        enddo
       case default
         !
         !  Catch unknown values
