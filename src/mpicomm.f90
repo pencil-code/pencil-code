@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.49 2002-10-05 13:34:58 dobler Exp $
+! $Id: mpicomm.f90,v 1.50 2002-10-05 13:48:07 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -606,14 +606,14 @@ module Mpicomm
 !***********************************************************************
     function mpiwtime()
 !
-      real :: mpiwtime
+      double precision :: mpiwtime
 !
       mpiwtime = MPI_WTIME()
     endfunction mpiwtime
 !***********************************************************************
     function mpiwtick()
 !
-      real :: mpiwtick
+      double precision :: mpiwtick
 !
       mpiwtick = MPI_WTICK()
     endfunction mpiwtick

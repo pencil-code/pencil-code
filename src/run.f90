@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.97 2002-10-05 13:34:58 dobler Exp $
+! $Id: run.f90,v 1.98 2002-10-05 13:48:07 dobler Exp $
 !
 !***********************************************************************
       program run
@@ -30,7 +30,7 @@
         implicit none
 !
         real, dimension (mx,my,mz,mvar) :: f,df
-        real :: time1,time2
+        double precision :: time1,time2
         integer :: count
         logical :: stop=.false.,reload=.false.
         real :: wall_clock_time
@@ -49,7 +49,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.97 2002-10-05 13:34:58 dobler Exp $")
+             "$Id: run.f90,v 1.98 2002-10-05 13:48:07 dobler Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)

@@ -252,7 +252,7 @@ module Mpicomm
 !
 !   5-oct-2002/wolf: coded
 !
-      real :: mpiwtime
+      double precision :: mpiwtime
       integer :: count_rate,time
 !
       call system_clock(COUNT_RATE=count_rate)
@@ -268,7 +268,7 @@ module Mpicomm
 !
 !   5-oct-2002/wolf: coded
 !
-      real :: mpiwtick
+      double precision :: mpiwtick
       integer :: count_rate
 !
       call system_clock(COUNT_RATE=count_rate)
