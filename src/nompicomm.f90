@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.34 2002-08-14 15:23:45 brandenb Exp $
+! $Id: nompicomm.f90,v 1.35 2002-08-16 21:23:48 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -167,7 +167,7 @@ module Mpicomm
          f( 1:l1-1,:,:,:) = f(l2i:l2,:,:,:)
          f(l2+1:mx,:,:,:) = f(l1:l1i,:,:,:)
       else
-         deltay=qshear*Lx*Omega*t
+         deltay=-Sshear*Lx*t
          deltay=deltay-int(deltay/Ly)*Ly
          deltay=deltay/dy
          displs=int(deltay)

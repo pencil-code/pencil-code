@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.77 2002-08-04 17:29:38 brandenb Exp $
+! $Id: magnetic.f90,v 1.78 2002-08-16 21:23:48 brandenb Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -83,7 +83,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.77 2002-08-04 17:29:38 brandenb Exp $")
+           "$Id: magnetic.f90,v 1.78 2002-08-16 21:23:48 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -250,8 +250,6 @@ module Magnetic
 !  calculate uxB and shear term (if shear is on)
 !
       call cross_mn(uu,bb,uxB)
-      ! call multvs_mn(dAdy,uy0,shearA)
-      ! var1=qshear*Omega*aa(:,2)
 !
 !  calculate dA/dt
 !

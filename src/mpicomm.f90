@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.34 2002-08-14 15:23:45 brandenb Exp $
+! $Id: mpicomm.f90,v 1.35 2002-08-16 21:23:48 brandenb Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -384,9 +384,12 @@ module Mpicomm
       integer :: i, ystep
       integer :: tolastya=11, tolastyb=12, tonextya=13, tonextyb=14
 !
-!        Sixth order interpolation along the y-direction
+!  Shear is now given by the parameter Sshear (independent of Omega)
 !
-      deltay=qshear*Lx*Omega*t
+      deltay=-Sshear*Lx*t
+!
+!  Sixth order interpolation along the y-direction
+!
       deltay=deltay-int(deltay/Ly)*Ly
       deltay=deltay/dy
       displs=int(deltay)

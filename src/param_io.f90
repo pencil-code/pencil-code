@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.47 2002-08-05 08:04:34 nilshau Exp $ 
+! $Id: param_io.f90,v 1.48 2002-08-16 21:23:48 brandenb Exp $ 
 
 module Param_IO
 
@@ -96,6 +96,13 @@ module Param_IO
       cs20=cs0**2
       lnrho0=alog(rho0)
 !
+!  calculate shear flow velocity; if Sshear is not given
+!  then Sshear=-qshear*Omega is calculated.
+!
+      if (lshear) then
+        if (Sshear==impossible) Sshear=-qshear*Omega
+      endif
+!
 !  in case of i/o error: print sample input list
 !
       return
@@ -140,8 +147,10 @@ module Param_IO
       bcz(1:nvar)='p'
 !
 !  set default to shearing sheet if lshear=.true.
+!  AB: (even when Sshear==0.)
 !
-      if (lshear .AND. qshear/=0) bcx(1:nvar)='she'
+      !! if (lshear .AND. Sshear/=0) bcx(1:nvar)='she'
+      if (lshear) bcx(1:nvar)='she'
 !
 !  open namelist file
 !
@@ -214,6 +223,13 @@ module Param_IO
       gamma1=gamma-1.
       cs20=cs0**2
       lnrho0=alog(rho0)
+!
+!  calculate shear flow velocity; if Sshear is not given
+!  then Sshear=-qshear*Omega is calculated.
+!
+      if (lshear) then
+        if (Sshear==impossible) Sshear=-qshear*Omega
+      endif
 !
 !  timestep: if dt=0 (ie not initialized), ldt=.true.
 !
