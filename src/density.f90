@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.162 2004-05-28 16:44:39 dobler Exp $
+! $Id: density.f90,v 1.163 2004-06-07 19:50:13 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.162 2004-05-28 16:44:39 dobler Exp $")
+           "$Id: density.f90,v 1.163 2004-06-07 19:50:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -269,7 +269,7 @@ module Density
 !ajwm - here's the init call that needs sorting!
 !          call initialize_gravity()     ! get coefficients cpot(1:5)
 
-          call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
+          call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !
           ! rho0, cs0, pot0 are the values in the centre
@@ -294,7 +294,7 @@ module Density
           if (lroot) print*, &
                'init_lnrho: isentropic star with isothermal atmosphere'
 !          call initialize_gravity()     ! get coefficients cpot(1:5)
-          call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
+          call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
           call output(trim(directory)//'/pot.dat',pot,1)
           !
           ! rho0, cs0, pot0 are the values in the centre
@@ -908,7 +908,7 @@ module Density
       if (lroot) print*,'isothermal_density: isothermal stratification'
       do n=n1,n2
         do m=m1,m2
-          call potential(x(l1:l2),y(m),z(n),pot)
+          call potential(x(l1:l2),y(m),z(n),pot=pot)
 !        if (lionization_fixed) then
 !           call isothermal_density_ion(pot,tmp)
 !            tmp=0.
@@ -995,7 +995,7 @@ module Density
 !
       do n=n1,n2
       do m=m1,m2
-        call potential(x(l1:l2),y(m),z(n),pot)
+        call potential(x(l1:l2),y(m),z(n),pot=pot)
         dlncs2=alog(-gamma*pot/((mpoly+1.)*cs20))
         f(l1:l2,m,n,ilnrho)=lnrho0+mpoly*dlncs2
         if(lentropy) f(l1:l2,m,n,iss)=mpoly*(ggamma/gamma-1.)*dlncs2
@@ -1006,13 +1006,13 @@ module Density
 !  In spherical geometry, ztop is z at the outer edge of the box,
 !  so this calculation still makes sense.
 !
-      call potential(zero,0.,ztop,ptop)
+      call potential(zero,0.,ztop,pot=ptop)
       cs2top=-gamma/(mpoly+1.)*ptop(1)
 !
 !  In spherical geometry ztop should never be used.
 !  Even in slab geometry ztop is not normally used.
 !
-      call potential(zero,0.,zbot,pbot)
+      call potential(zero,0.,zbot,pot=pbot)
       cs2bot=-gamma/(mpoly+1.)*pbot(1)
 !
     endsubroutine polytropic_simple

@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.61 2004-05-30 08:01:40 brandenb Exp $
+! $Id: grav_r.f90,v 1.62 2004-06-07 19:50:13 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -73,7 +73,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.61 2004-05-30 08:01:40 brandenb Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.62 2004-06-07 19:50:13 theine Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -100,14 +100,13 @@ module Gravity
       real, dimension (nx) :: g_r
 
       logical, save :: first=.true.
-! geodynamo - set to false on condition of 1/r potential
-      logical :: lpade=.true.
+      logical :: lpade=.true. ! set to false for 1/r potential
+
+      !ajwm - should this be done on RELOAD too??
+      if (first) then
 !
-!ajwm - should this be done on RELOAD too??
-   if (first) then
-!
-!  set coefficients for potential (coefficients a0, a2, a3, b2, b3)
-!  for the rational approximation
+!  for lpade=.true. set coefficients for potential (coefficients a0, a2, a3,
+!  b2, b3) for the rational approximation
 !
 !              a_0   +   a_2 r^2 + a_3 r^3
 !    Phi(r) = ---------------------------------------
@@ -143,21 +142,28 @@ module Gravity
           if (lroot) print*, 'initialize_gravity: simple gravity potential'
           cpot =  (/ 1., 1., 0., 1., 1. /)
 
-! geodynamo
-        case ('geo-kws-approx')     ! approximates 1/r potential between r=.5 and r=1
+        case ('smoothed-newton')
+          if (lroot) print*,'initialize_gravity: smoothed 1/r potential'
+          lpade=.false.
+
+        ! geodynamo
+        case ('geo-kws-approx')     ! approx. 1/r potential between r=.5 and r=1
           if (lroot) print*, 'initialize_gravity: approximate 1/r potential'
           cpot = (/ 0., 2.2679, 0., 0., 1.1697 /)
         case ('geo-kws')
-          if (lroot) print*, 'initialize_gravity: smoothed 1/r potential in spherical shell'
-          if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small. Can be set in grav_r namelists.'
+          if (lroot) print*, 'initialize_gravity: '//&
+                             'smoothed 1/r potential in spherical shell'
+          if (r0_pot < epsi) print*, 'WARNING: grav_r: r0_pot is too small.'//&
+                                     'Can be set in grav_r namelists.'
           lpade=.false.
-! end geodynamo
+        ! end geodynamo
 
         case default
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'initialize_gravity: No such value for ipotential: ', trim(ipotential)
+        if (lroot) print*, 'initialize_gravity: '//&
+                           'No such value for ipotential: ', trim(ipotential)
         call stop_it("")
         
       endselect
@@ -165,12 +171,14 @@ module Gravity
 !  initialize gg, so we can later retrieve gravity via get_global
 !
       do imn=1,ny*nz
+
         n=nn(imn)
         m=mm(imn)
 !
         call calc_unitvects_sphere()
 !
         if (lpade) then
+
           g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
                                   3*(cpot(1)*cpot(5)-cpot(3)), &
                                   4*cpot(1)*cpot(3), &
@@ -179,17 +187,20 @@ module Gravity
                                   cpot(3)**2  /), r_mn) &
                        / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
 
-! geodynamo; smoothed 1/r potential in a spherical shell
         else
-          g_r=-g0*r_mn**(n_pot-1)*(r_mn**n_pot+r0_pot**n_pot)**(-1./float(n_pot)-1.)
-! end geodynamo
+
+          ! smoothed 1/r potential in a spherical shell
+          g_r=-g0*r_mn**(n_pot-1)*(r_mn**n_pot+r0_pot**n_pot)**(-1.0/n_pot-1.0)
+
         endif
 !
         gg_mn = evr*spread(g_r,2,3)
         call set_global(gg_mn,m,n,'gg')
+
       enddo
 !
       endif
+
     endsubroutine initialize_gravity
 !***********************************************************************
     subroutine init_gg(f,xx,yy,zz)
@@ -264,23 +275,30 @@ endif
 !
       use Cdata, only: mx,my,mz
       use Sub, only: poly
-!
+
       real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
-      real, optional :: pot0
+      real, optional :: pot0           ! potential ar r=0
 !
 !  remove this if you are sure rr is already calculated elsewhere      
 !
       rr=sqrt(xx**2+yy**2+zz**2)
-      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
-              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
-!
-      if (present(pot0)) then
-        pot0 = -cpot(1)            ! potential at r=0
-      endif
-!
+
+      select case (ipotential)
+
+      case ('geo-kws','smoothed-newton')
+        pot=-g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+        if (present(pot0)) pot0=-1.0/r0_pot
+
+      case default
+        pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
+                / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rr)
+        if (present(pot0)) pot0=-cpot(1)
+
+      endselect
+
     endsubroutine potential_global
 !***********************************************************************
-    subroutine potential_penc(xmn,ymn,zmn, pot,pot0, grav,rmn)
+    subroutine potential_penc(xmn,ymn,zmn,rmn, pot,pot0, grav)
 !
 !  Gravity potential along one pencil
 !
@@ -288,21 +306,39 @@ endif
 !
       use Cdata, only: nx
       use Sub, only: poly
-!
-      real, dimension (nx) :: xmn, pot
-      real :: ymn,zmn
+      use Mpicomm, only: stop_it
+
+      real, dimension (nx) :: rad, pot
+      real, dimension (nx), optional :: xmn, rmn
+      real, optional :: ymn, zmn
       real, optional :: pot0
-      real, optional, dimension (nx) :: rmn
       real, optional, dimension (nx,3) :: grav
-!      
-      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
-              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
-!
-      if (present(pot0)) then
-        pot0 = cpot(1)            ! potential at r=0
+      
+      if (present(rmn)) then
+        rad = rmn
+      else
+        if (present(xmn) .and. present(ymn) .and. present(zmn)) then
+          rad = sqrt(xmn**2+ymn**2+zmn**2)
+        else
+          call stop_it("POTENTIAL_PENC: Need to specify either x,y,z or r.")
+        endif
       endif
-!
-      if(ip==0) print*,xmn,ymn,zmn,grav  !(to keep compiler quiet)
+
+      select case (ipotential)
+
+      case ('geo-kws','smoothed-newton')
+        pot=-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+        if (present(pot0)) pot0=-1.0/r0_pot
+
+      case default
+        pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
+                / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rmn)
+        if (present(pot0)) pot0=-cpot(1)
+
+      endselect
+
+      if(ip==0) print*,present(grav)
+
     endsubroutine potential_penc
 !***********************************************************************
     subroutine potential_point(x,y,z,r, pot,pot0, grav)
@@ -313,11 +349,11 @@ endif
 !
       use Sub, only: poly
       use Mpicomm, only: stop_it
-!
+
       real :: pot,rad
       real, optional :: x,y,z,r
       real, optional :: pot0,grav
-!
+
       if (present(r)) then
         rad = r
       else
@@ -327,15 +363,22 @@ endif
           call stop_it("Need to specify either x,y,z or r in potential_point()")
         endif
       endif
-!      
-      pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
-              / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rad)
-!
-      if (present(pot0)) then
-        pot0 = cpot(1)            ! potential at r=0
-      endif
-!
-      if(ip==0) print*,grav     !(to keep compiler quiet)
+
+      select case (ipotential)
+
+      case ('geo-kws','smoothed-newton')
+        pot=-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
+        if (present(pot0)) pot0=-1.0/r0_pot
+
+      case default
+        pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
+                / poly((/1., 0., cpot(4), cpot(5), cpot(3)/), rad)
+        if (present(pot0)) pot0=-cpot(1)
+
+      endselect
+
+      if(ip==0) print*,present(grav)
+
     endsubroutine potential_point
 !***********************************************************************
     subroutine smoothpotential_pencil(xmn,ymn,zmn,rmn,pot)

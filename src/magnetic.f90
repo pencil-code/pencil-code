@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.193 2004-06-05 13:54:37 mcmillan Exp $
+! $Id: magnetic.f90,v 1.194 2004-06-07 19:50:13 theine Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -38,7 +38,7 @@ module Magnetic
   real :: eta_shock=0.
   real :: rhomin_JxB=0.,va2max_JxB=0.
   real :: omega_Bz_ext
-  real :: mu_r=-0.5
+  real :: mu_ext_pot=-0.5,Bz0_ext_pot=1.0,r0_ext_pot=1.0
   real :: rescale_aa=1.
   integer :: nbvec,nbvecmax=nx*ny*nz/4,va2power_JxB=5
   logical :: lpress_equil=.false., lpress_equil_via_ss=.false.
@@ -47,6 +47,7 @@ module Magnetic
   logical :: lresistivity_hyper=.false.,leta_const=.true.
   logical :: lfrozen_bz_z_bot=.false.,lfrozen_bz_z_top=.false.
   logical :: reinitalize_aa=.false.
+  logical :: lB_ext_pot=.false.,lB_ext_pot_normalize=.false.
   character (len=40) :: kinflow=''
   real :: nu_ni,nu_ni1,alpha_effect
   complex, dimension(3) :: coefaa=(/0.,0.,0./), coefbb=(/0.,0.,0./)
@@ -57,7 +58,8 @@ module Magnetic
        fring2,Iring2,Rring2,wr2,axisr2,dispr2, &
        radius,epsilonaa,x0aa,z0aa,widthaa,by_left,by_right, &
        initaa,initaa2,amplaa,amplaa2,kx_aa,ky_aa,kz_aa,coefaa,coefbb, &
-       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss,mu_r
+       kx_aa2,ky_aa2,kz_aa2,lpress_equil,lpress_equil_via_ss, &
+       mu_ext_pot,Bz0_ext_pot,r0_ext_pot,lB_ext_pot,lB_ext_pot_normalize
 
   ! run parameters
   real :: eta=0.,height_eta=0.,eta_out=0.
@@ -130,7 +132,7 @@ module Magnetic
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: magnetic.f90,v 1.193 2004-06-05 13:54:37 mcmillan Exp $")
+           "$Id: magnetic.f90,v 1.194 2004-06-07 19:50:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -228,7 +230,9 @@ module Magnetic
       case('Alfven-x'); call alfven_x(amplaa,f,iuu,iaa,ilnrho,xx,kx_aa)
       case('Alfven-z'); call alfven_z(amplaa,f,iuu,iaa,zz,kz_aa,mu0)
       case('Alfvenz-rot'); call alfvenz_rot(amplaa,f,iuu,iaa,zz,kz_aa,Omega)
-      case('force-free-jet'); call force_free_jet(f,xx,yy,zz)
+      case('force-free-jet')
+        lB_ext_pot=.true.
+        call force_free_jet(mu_ext_pot,Bz0_ext_pot,r0_ext_pot)
       case('Alfven-circ-x')
         !
         !  circularly polarised Alfven wave in x direction
@@ -770,9 +774,12 @@ module Magnetic
 !
       use Cdata
       use Sub
+      use Deriv
+      use Global
 
       real, dimension (mx,my,mz,mvar+maux) :: f       
-      real, dimension (nx,3) :: bb
+      real, dimension (nx,3) :: bb,bb_ext_pot
+      real, dimension (nx) :: bb_x,bb_y,bb_z
       real :: B2_ext,c,s
       
       intent(in)  :: f
@@ -809,6 +816,13 @@ module Magnetic
         if (B_ext(3)/=0.) bb(:,3)=bb(:,3)+BB_ext(3)
         if (headtt) print*,'calculate_vars_magnetic: B_ext=',B_ext
         if (headtt) print*,'calculate_vars_magnetic: BB_ext=',BB_ext
+      endif
+!
+!  add the external potential field
+!
+      if (lB_ext_pot) then
+        call get_global(bb_ext_pot,m,n,'B_ext_pot')
+        bb=bb+bb_ext_pot
       endif
 
     endsubroutine calculate_vars_magnetic
@@ -1436,12 +1450,12 @@ module Magnetic
 !
     endsubroutine norm_ring
 !***********************************************************************
-    subroutine force_free_jet(f,xx,yy,zz)
+    subroutine force_free_jet(mu,Bz0,r0)
 !
 !  Force free magnetic field configuration for jet simulations
 !  with a fixed accretion disk at the bottom boundary.
 !
-!  The input parameter mu_r specifies the radial dependency of
+!  The input parameter mu specifies the radial dependency of
 !  the magnetic field in the disk.
 !
 !  Solves the laplace equation in cylindrical coordinates for the
@@ -1452,84 +1466,109 @@ module Magnetic
 !
 !  For the desired boundary condition in the accretion disk
 !
-!    B_r=B0*r**(mu_r-1)  (z == 0)
+!    B_r=B0*r**(mu-1)  (z == 0)
 !
 !  the solution is
 !
-!    A_phi = -Hypergeometric2F1( (1-mu_r)/2, (2+mu_r)/2, 2, xi**2 )
-!            *xi*(r**2+z**2)**(mu_r/2)
+!    A_phi = Hypergeometric2F1( (1-mu)/2, (2+mu)/2, 2, xi**2 )
+!            *xi*(r**2+z**2)**(mu/2)
 !
 !  where xi = sqrt(r**2/(r**2+z**2))
 !
 !
-!  TO DO:
-!
-!  1) Improve numerical algorithm for calculating the hypergeometric function
-!     as it currently converges very slowly
-!
-!  2) Add normalization of vector potential
-!
-!
 !  30-may-04/tobi: coded
 !
-      use Cdata
-      use Sub
+      use Cdata, only: x,y,z,lroot,dx,dy,dz,directory,ip,m,n
+      use Sub, only: hypergeometric2F1
+      use Global, only: set_global
+      use Deriv, only: der
+      use Io, only: output
 
-      real, dimension(mx,my,mz,mvar+maux), intent(inout) :: f
-      real, dimension(mx,my,mz), intent(in) :: xx,yy,zz
-      real, dimension(mx,my,mz) :: xi2,A_phi,fac,phi
-      real, parameter :: tol=1e-6
+      real, intent(in) :: mu,Bz0,r0
+      real :: xi2,A_phi,fac,Bz
+      real, parameter :: tol=1e-5
       real :: a,b,c
-      integer :: i
-!
-!  Calculate hypergeometric function 2F1
-!
-      a=(1-mu_r)/2
-      b=(2+mu_r)/2
-      c=2
-      xi2=(xx**2+yy**2)/(xx**2+yy**2+zz**2)
+      integer :: l
+      integer, dimension(1) :: ll,mm,nn
+      real, dimension(mx,my,mz) :: Ax_ext,Ay_ext
+      real, dimension(mx,my,mz,3) :: B_ext_pot
+      real, dimension(nx,3) :: bb_ext_pot
+      real, dimension(nx) :: bb_x,bb_y,bb_z
 
-      i=1
-      fac=1
-      A_phi=fac
+!
+!  calculate external vector potential
+!
+      if (lroot) print*,'force_free_jet: calculating external vector potential'
 
-      do while (any(fac>tol))
-        !print*,i,maxval(fac)
-        where (fac>tol)
-          fac=fac*a*b*xi2/c/i
-          A_phi=A_phi+fac
-        endwhere
-        a=a+1
-        b=b+1
-        c=c+1
-        i=i+1
+      do l=1,mx
+      do m=1,my
+      do n=1,mz
+
+        xi2=(x(l)**2+y(m)**2)/(x(l)**2+y(m)**2+(z(n)+0*dz)**2)
+        A_phi=hypergeometric2F1((1-mu)/2,(2+mu)/2,2.0,xi2,tol) &
+             *sqrt(xi2)*sqrt(x(l)**2+y(m)**2+(z(n)+0*dz)**2)**mu
+
+        Ax_ext(l,m,n)=-sin(atan2(y(m),x(l)))*A_phi
+        Ay_ext(l,m,n)= cos(atan2(y(m),x(l)))*A_phi
+
+      enddo
+      enddo
       enddo
 !
-!  Get full potential
+!  normalize such that the Bz=Bz0 at r=r0
 !
-      A_phi=-A_phi*sqrt(xi2)*(xx**2+yy**2+zz*2)**(mu_r/2)
+      if (lB_ext_pot_normalize) then
+
+        if (lroot.and.ip<=5) print*,'normalizing the external vector potential'
+
+        ll=minloc((x-r0)**2)
+        mm=minloc((y)**2)
+        nn=minloc((z)**2)
+
+        if (lroot.and.ip<=5) print*,'xloc1,yloc0,zloc0=',ll(1),mm(1),nn(1)
+
+        fac=1/(6*dx)
+        Bz=fac*(45*(Ay_ext(l+1,m,n)-Ay_ext(l-1,m,n))  &
+                -9*(Ay_ext(l+2,m,n)-Ay_ext(l-2,m,n))  &
+                  +(Ay_ext(l+3,m,n)-Ay_ext(l-3,m,n))) &
+          -fac*(45*(Ax_ext(l,m+1,n)-Ax_ext(l,m-1,n))  &
+                -9*(Ax_ext(l,m+2,n)-Ax_ext(l,m-2,n))  &
+                  +(Ax_ext(l,m+3,n)-Ax_ext(l,m-3,n)))
+
+        Ax_ext=Ax_ext/Bz*Bz0
+        Ay_ext=Ay_ext/Bz*Bz0
+
+      endif
+
 !
-!  Calculate azimuthal angle
+!  calculate external magnetic field
 !
-      where (xx == 0.0)
-        where (yy < 0.0)
-          phi=-pi/2
-        elsewhere
-          phi= pi/2
-        endwhere
-      elsewhere
-        where (xx > 0.0)
-          phi=atan(yy/xx)
-        elsewhere
-          phi=atan(yy/xx)+pi
-        endwhere
-      endwhere
-!
-!  Get x- and y-component of magnetic field from phi-component
-!
-      f(:,:,:,iax)=-sin(phi)*A_phi
-      f(:,:,:,iay)= cos(phi)*A_phi
-        
+      if (lroot.and.ip<=5) print*,'calculating the external magnetic field'
+
+      do n=n1,n2
+      do m=m1,m2
+        call der(Ay_ext,bb_x,3)
+        bb_ext_pot(:,1)=-bb_x
+          B_ext_pot(l1:l2,m,n,1)=-bb_x
+        call der(Ax_ext,bb_y,3)
+        bb_ext_pot(:,2)= bb_y
+          B_ext_pot(l1:l2,m,n,2)= bb_y
+        call der(Ay_ext,bb_z,1)
+        bb_ext_pot(:,3)= bb_z
+          B_ext_pot(l1:l2,m,n,3)= bb_z
+        call der(Ax_ext,bb_z,2)
+        bb_ext_pot(:,3)=bb_ext_pot(:,3)-bb_z
+          B_ext_pot(l1:l2,m,n,3)=B_ext_pot(l1:l2,m,n,3)-bb_z
+        call set_global(bb_ext_pot,m,n,'B_ext_pot')
+      enddo
+      enddo
+
+      if (ip<=5) then
+        call output(trim(directory)//'/Ax_ext.dat',Ax_ext,1)
+        call output(trim(directory)//'/Ay_ext.dat',Ay_ext,1)
+        call output(trim(directory)//'/B_ext_pot2.dat',B_ext_pot,3)
+      endif
+
     endsubroutine force_free_jet
 !***********************************************************************
     subroutine bc_frozen_in_bb_z(topbot)

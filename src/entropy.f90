@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.312 2004-05-30 08:01:40 brandenb Exp $
+! $Id: entropy.f90,v 1.313 2004-06-07 19:50:13 theine Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -115,7 +115,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.312 2004-05-30 08:01:40 brandenb Exp $")
+           "$Id: entropy.f90,v 1.313 2004-06-07 19:50:13 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -403,7 +403,7 @@ module Entropy
             if (lroot) print*, &
                  'init_lnrho: isentropic star with isothermal atmosphere'
             ! call initialize_gravity()     ! already done by init_lnrho
-            call potential(xx,yy,zz,pot,POT0=pot0) ! gravity potential
+            call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
             !
             ! rho0, cs0,pot0 are the values in the centre
             !
