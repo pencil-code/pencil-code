@@ -1,4 +1,4 @@
-! $Id: nompicomm.f90,v 1.16 2002-05-01 10:13:44 brandenb Exp $
+! $Id: nompicomm.f90,v 1.17 2002-05-01 11:56:42 dobler Exp $
 
 !!!!!!!!!!!!!!!!!!!!!!!
 !!!  nompicomm.f90  !!!
@@ -22,7 +22,7 @@ module Mpicomm
   integer, dimension (ny*nz) :: mm,nn
   integer :: ierr,imn
   integer :: iproc,root=0
-  integer :: ipx=1,ipy=1,ipz=1
+  integer :: ipx=0,ipy=0,ipz=0
   logical, dimension (nx*ny) :: necessary=.false.
 !  logical :: lroot=.true.       ! is this the root process?
 
