@@ -1,10 +1,10 @@
-; $Id: pc_read_var.pro,v 1.18 2004-05-19 19:15:03 mee Exp $
+; $Id: pc_read_var.pro,v 1.19 2004-05-25 09:19:32 mee Exp $
 ;
 ;   Read var.dat, or other VAR file
 ;
 ;  Author: Tony Mee (A.J.Mee@ncl.ac.uk)
-;  $Date: 2004-05-19 19:15:03 $
-;  $Revision: 1.18 $
+;  $Date: 2004-05-25 09:19:32 $
+;  $Revision: 1.19 $
 ;
 ;  27-nov-02/tony: coded 
 ;
@@ -33,7 +33,8 @@ end
 
 pro pc_read_var,t=t,dx=dx,dy=dy,dz=dz,deltay=deltay, $
             object=object, varfile=varfile, ASSOCIATE=ASSOCIATE, $
-            variables=variables,tags=tags, TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL, $
+            variables=variables,tags=tags, MAGIC=MAGIC, $
+            TRIMXYZ=TRIMXYZ, TRIMALL=TRIMALL, $
             nameobject=nameobject, $
             dim=dim,param=param, $
             datadir=datadir,proc=proc,PRINT=PRINT,QUIET=QUIET,HELP=HELP
@@ -69,6 +70,9 @@ COMPILE_OPT IDL2,HIDDEN
     print, "variables: an array of textual names of variables that one would like to have   [string(*)]"
     print, "           returned in the object"
     print, ""
+    print, "   /MAGIC: call pc_magic_var to replace special variable names with their functional       "
+    print, "           equivalents"
+    print, ""
     print, " /TRIMXYZ: removes the ghost zone points from the x,y,z arrays that are returned           "
     print, " /TRIMALL: removes the ghost zone points from all returned variables and x,y,z arrays      "
     print, "             - this is equivalent to wrapping each requested variable with                 "
@@ -87,6 +91,7 @@ IF keyword_set(HELP) THEN PRINT, "WARNING: USING EXPERIMENTAL OPTION ASSOC!!"
 default, datadir, 'data'
 default,varfile,'var.dat'
 
+  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
 ; Get necessary dimensions, inheriting QUIET
   if (n_elements(dim) eq 0) then pc_read_dim,object=dim,datadir=datadir,proc=proc,quiet=quiet
   if (n_elements(proc) eq 1) then begin
@@ -97,7 +102,6 @@ default,varfile,'var.dat'
 
 ; and check pc_precision is set!                                                    
 pc_set_precision,dim=dim,quiet=quiet
-  if (n_elements(param) eq 0) then pc_read_param,object=param,dim=dim,datadir=datadir,QUIET=QUIET 
 
 if keyword_set(TRIMALL) then TRIMXYZ=1L
 
@@ -139,12 +143,15 @@ varcontent=pc_varcontent(datadir=datadir,dim=dim,param=param,quiet=quiet)
 totalvars=(size(varcontent))[1]-1L
 
 
+if n_elements(variables) ne 0 then VALIDATE_VARIABLES=1
 default,variables,(varcontent[where((varcontent[*].idlvar ne 'dummy'))].idlvar)[1:*]
 default,tags,variables
 
 if (n_elements(variables) ne n_elements(tags)) then begin
   message, 'ERROR: variables and tags arrays differ in size' 
 endif
+
+if keyword_set(MAGIC) then pc_magic_var,variables,tags,param=param
 
 ; Get a unit number
 GET_LUN, file
@@ -309,6 +316,25 @@ endif
 
 ;makeobject="object = CREATE_STRUCT(name='"+objectname+"',['t','x','y','z','dx','dy','dz'" + $
 
+if keyword_set(VALIDATE_VARIABLES) then begin
+  skipvariable=make_array(n_elements(variables),/INT,value=0)
+  for iv=0,n_elements(variables)-1 do begin
+  ;  res1=execute("testvariable=n_elements("+variables[iv]+")")
+    res=execute("testvariable="+variables[iv])
+    if not res then begin
+      if not keyword_set(QUIET) then print,"% Skipping: "+tags[iv]+" -> "+variables[iv]
+      skipvariable[iv]=1
+    endif 
+  endfor
+  testvariable=0
+;  skippedvariables=variables[where(skipvariable eq 1)]
+;  skippedtags=tags[where(skipvariable eq 1)]
+  if max(skipvariable) eq 1 then begin
+    variables=variables[where(skipvariable eq 0)]
+    tags=tags[where(skipvariable eq 0)]
+  endif
+endif
+
 if keyword_set(TRIMALL) then begin
 ;  if not keyword_set(QUIET) then print,'NOTE: TRIMALL assumes the result of all specified variables has dimensions from the varfile (with ghosts)'
   variables = 'pc_noghost('+variables+',dim=dim)'
@@ -320,9 +346,10 @@ makeobject="object = CREATE_STRUCT(name=objectname,['t','x','y','z','dx','dy','d
                                      arraytostring(tags,QUOTE="'") + $
                                      "],t,x,y,z,dx,dy,dz" + $
                                      arraytostring(variables) + ")"
-if (execute(makeobject) ne 1) then $
-      message, 'ERROR Evaluating variables: '+makeobject 
-
+if (execute(makeobject) ne 1) then begin
+      message, 'ERROR Evaluating variables: '+makeobject,/INFO
+      undefine,object
+endif
 
 ; If requested print a summary
 if keyword_set(PRINT) then begin

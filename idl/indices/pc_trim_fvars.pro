@@ -1,10 +1,10 @@
-; $Id: pc_trim_fvars.pro,v 1.2 2004-05-11 09:32:14 ajohan Exp $
+; $Id: pc_trim_fvars.pro,v 1.1 2004-05-25 09:19:32 mee Exp $
 ;
 ;  Trim f array variables in structure of ghost zones and empty dimensions
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2004-05-11 09:32:14 $
-;  $Revision: 1.2 $
+;  $Date: 2004-05-25 09:19:32 $
+;  $Revision: 1.1 $
 ;
 ;  11-may-04/anders: coded
 ;

@@ -1,10 +1,10 @@
-; $Id: pc_trim_var.pro,v 1.3 2004-05-11 08:45:06 ajohan Exp $
+; $Id: pc_trim_var.pro,v 1.1 2004-05-25 09:19:32 mee Exp $
 ;
 ;  Trim variable of ghost zones and empty dimensions
 ;
 ;  Author: Anders Johansen (ajohan@astro.ku.dk)
-;  $Date: 2004-05-11 08:45:06 $
-;  $Revision: 1.3 $
+;  $Date: 2004-05-25 09:19:32 $
+;  $Revision: 1.1 $
 ;
 ;  07-may-04/anders: coded
 ;
