@@ -13,6 +13,8 @@
 # Revert with:
 #   mv src-orig src ; rm -r src-{ser,par} ; mv data-orig data ; rm data-{ser,par} ; rm -r data/data-{ser,par}
 
+setenv PATH ${PATH}:${PENCIL_HOME}/bin:${PENCIL_HOME}/utils
+
 if ($#argv > 0) goto usage
 
 # Are we in a run directory?
