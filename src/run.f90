@@ -20,6 +20,7 @@
         use Timestep
 !
         implicit none
+!
         integer :: time1,time2,count_rate
         real, dimension (mx,my,mz,mvar) :: f,df
 !     
@@ -32,8 +33,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.9 $", &
-             "$Date: 2002-01-21 18:23:46 $")
+             "$Revision: 1.10 $", &
+             "$Date: 2002-01-22 18:32:36 $")
 !
         call initialize         ! register modules, etc.
 !
