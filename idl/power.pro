@@ -1,8 +1,9 @@
 PRO power,var1,var2,last,w,v1=v1,v2=v2,all=all,wait=wait,k=k,spec1=spec1, $
           spec2=spec2,i=i,tt=tt,noplot=noplot,tmin=tmin,tmax=tmax, $
-          tot=tot,lin=lin,png=png,yrange=yrange,norm=norm,compensate=compensate
+          tot=tot,lin=lin,png=png,yrange=yrange,norm=norm, $
+          compensate=compensate,datatopdir=datatopdir
 ;
-;  $Id: power.pro,v 1.25 2004-07-23 10:30:20 nilshau Exp $
+;  $Id: power.pro,v 1.26 2004-09-22 08:44:58 brandenb Exp $
 ;
 ;  This routine reads in the power spectra generated during the run
 ;  (provided dspec is set to a time interval small enough to produce
@@ -48,6 +49,7 @@ default,tot,0
 default,lin,0
 default,dir,''
 default,compensate,0
+default,datatopdir,'data'
 ;
 ;  This is done to make the code backward compatible.
 ;
@@ -90,7 +92,6 @@ nghostx=0L & nghosty=0L & nghostz=0L
 ;  Need both mx and nghostx to work out nx.
 ;  Assume nx=ny=nz
 ;
-datatopdir='data'
 close,1
 openr,1,datatopdir+'/'+'dim.dat'
 readf,1,mx,my,mz,nvar
