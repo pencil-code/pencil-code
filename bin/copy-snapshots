@@ -1,5 +1,5 @@
 #!/bin/csh
-# CVS: $Id: copy-snapshots,v 1.31 2004-04-15 14:56:39 dobler Exp $
+# CVS: $Id: copy-snapshots,v 1.32 2004-07-22 16:27:56 dobler Exp $
 
 # Name:   copy-snapshots
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
@@ -19,6 +19,11 @@ if ($#argv > 0) then
     shift
   endif
 endif
+
+# if($debug) then
+#   echo "copy-snapshots: pid=$$ starting" >> $targetdir/copy-snaps_was_here.log
+#   echo "copy-snapshots: pid=$$ args=<$*>" >> $targetdir/copy-snaps_was_here.log
+# endif
 
 if ($debug) then
 #  set verbose
@@ -170,5 +175,9 @@ endif
 
 if ($debug) echo "copy-snapshots: done"
 echo "------------------------------------------------------"
+
+# if($debug) then
+#   echo "copy-snapshots: pid=$$ finished" >> $targetdir/copy-snaps_was_here.log
+# endif
 
 # End of file copy-snapshots
