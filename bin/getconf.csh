@@ -3,7 +3,7 @@
 # Name:   getconf.csh
 # Author: wd (Wolfgang.Dobler@ncl.ac.uk)
 # Date:   16-Dec-2001
-# $Id: getconf.csh,v 1.129 2004-08-31 17:20:39 dobler Exp $
+# $Id: getconf.csh,v 1.130 2004-09-01 08:24:50 ajohan Exp $
 #
 # Description:
 #  Initiate some variables related to MPI and the calling sequence, and do
@@ -225,6 +225,8 @@ else if ($hn =~ psi*) then
   setenv SCP rcp
   setenv LANG en_US
   setenv SCRATCH_DIR /ptmp/$USER
+  set masternode=psi24
+  echo "Setting master node to psi24, the only node that is accesible by rsh"
 
 else if ( ($hn =~ node*.clusters.com) || ($hn =~ fire) ) then
   echo "fire in Bergen"
@@ -548,14 +550,29 @@ if ($local_binary) then
   set run_x   = $SCRATCH_DIR/run.x
 endif
 
+# Set nodelist to first node (or master node, if specified in the machine
+# dependent part), if common scratch disc.
+if ($one_local_disc) then
+  if ($?masternode) then
+    set nodelist=$masternode
+    echo "Setting nodelist to master node $masternode"
+  else
+    set nodelist=$nodelist[1]
+    echo "Setting nodelist to node $nodelist"
+  endif
+endif
 
-# Created subdirectories on local scratch disc (start.csh will also create
+# Create subdirectories on local scratch disc (start.csh will also create
 # them under $datadir/)
 set subdirs = ("allprocs" "averages" "idl")
 set procdirs = \
     `printf "%s%s%s\n" "for(i=0;i<$ncpus;i++){" '"proc";' 'i; }' | bc`
 if ($local_disc) then
-  echo "Creating directory structure on scratch disc(s)"
+  if ($one_local_disc) then
+    echo "Creating directory structure on common scratch disc"
+  else
+    echo "Creating directory structure on local scratch disc(s)"
+  endif
   foreach host ($nodelist)
     $SSH $host "if (! -e $SCRATCH_DIR ) mkdir -p $SCRATCH_DIR; cd $SCRATCH_DIR; mkdir -p $procdirs $subdirs" 
   end
@@ -571,12 +588,7 @@ endif
 
 # Wrap up nodelist as (scalar, colon-separated) environment variable
 # NODELIST for transport to sub-processes.
-if ($one_local_disc) then
-  make copy-snapshots copy only once
-  setenv NODELIST $nodelist[1]
-else
-  setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
-endif
+setenv NODELIST `echo $nodelist | perl -ne 'print join(":",split(/\s/,$_)),"\n"'`
 
 if ($debug) then
   echo '$mpi            = ' "<$mpi>"
