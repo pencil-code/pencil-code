@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.140 2003-11-18 11:02:37 theine Exp $
+! $Id: ionization.f90,v 1.141 2003-11-19 11:27:15 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -118,7 +118,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.140 2003-11-18 11:02:37 theine Exp $")
+           "$Id: ionization.f90,v 1.141 2003-11-19 11:27:15 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -565,6 +565,7 @@ module Ionization
       real, dimension(nx) :: yHi,lnTTi
       real, dimension(nx) :: lnrho,TT
 !
+      lnrho=f(l1:l2,m,n,ilnrho)
       yHi=f(l1:l2,m,n,iyH)
       lnTTi=f(l1:l2,m,n,ilnTT)
       TT=exp(lnTTi)
