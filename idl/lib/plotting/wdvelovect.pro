@@ -1,4 +1,4 @@
-; $Id: wdvelovect.pro,v 1.5 2004-02-20 08:22:53 dobler Exp $
+; $Id: wdvelovect.pro,v 1.6 2004-02-20 09:09:13 dobler Exp $
 ;
 ; Copyright (c) 1983-1998, Research Systems, Inc.  All rights reserved.
 ;	Unauthorized reproduction prohibited.
@@ -67,7 +67,7 @@ PRO WDVELOVECT,U_in,V_in,X_in,Y_in, $
 ;	LENGTH:	Length factor.  The default of 1.0 makes the longest (U,V)
 ;		vector the length of a cell.
 ;
-;       SCALENgTH:  Franz Rohrer's modification of the LENGTH keyword:
+;       SCALENGTH:  Franz Rohrer's modification of the LENGTH keyword:
 ;              SCALENGTH applies a scale factor relative to the data
 ;              values, not just a relative scaling.
 ;              [wd: renamed this from LENGTH. The new behaviour is
