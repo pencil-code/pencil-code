@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.173 2004-04-10 19:12:07 dobler Exp $ 
+! $Id: sub.f90,v 1.174 2004-04-13 12:34:30 dobler Exp $ 
 
 module Sub 
 
@@ -315,10 +315,11 @@ module Sub
 !
 !  Initialize to zero, including other parts of the rz-array
 !  which are later merged with an mpi reduce command.
-!  Each processor needs only reset it's own slot.
-!  Each y-processors needs to do this separately.
-!
-      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
+!  At least the root processor needs to reset all ipz slots, as it uses
+!  fnamerz(:,:,:,:) for the final averages to write [see
+!  phiaverages_rz()]; so we better reset everything:
+!      if (lfirstpoint) fnamerz(:,:,ipz+1,iname) = 0.
+      if (lfirstpoint) fnamerz(:,:,:,iname) = 0.
 !
 !  n starts with nghost+1=4, so the correct index is n-nghost
 !
@@ -363,8 +364,7 @@ module Sub
       real :: r0,width
       integer :: ir
 !
-!  The following Gaussian profile sums up to approximately one. Since we
-!  are now explicitly normalizing, this is no longer important.
+!  We use a quartic-Gaussian profile ~ exp(-r^4)
 !
 !      width = .5*drcyl
       width = .7*drcyl
