@@ -41,7 +41,7 @@ cd src
 #  LINK all *.f90, *.f, and the Makefile to local src directory
 #
 set n=0
-foreach file ($srcdir/*.f90 ../$srcdir/*.f $srcdir/Makefile $srcdir/*.c)
+foreach file ($srcdir/*.f90 $srcdir/*.f $srcdir/Makefile $srcdir/*.c)
   if (-e $file) then
     if (! -e $file:t) then
       ln -s $file .
