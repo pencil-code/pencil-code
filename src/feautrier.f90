@@ -1,4 +1,4 @@
-! $Id: feautrier.f90,v 1.18 2003-04-11 17:59:31 brandenb Exp $
+! $Id: feautrier.f90,v 1.19 2003-04-11 19:04:24 brandenb Exp $
 
 !!!  NOTE: this routine will perhaps be renamed to radiation_feautrier
 !!!  or it may be combined with radiation_ray.
@@ -57,7 +57,7 @@ module Radiation
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: feautrier.f90,v 1.18 2003-04-11 17:59:31 brandenb Exp $")
+           "$Id: feautrier.f90,v 1.19 2003-04-11 19:04:24 brandenb Exp $")
 !
     endsubroutine register_radiation
 !***********************************************************************
@@ -102,13 +102,76 @@ module Radiation
 !  At the moment for vertical rays only
 !
 !  01-apr/tobi: coded
-!  11-apr/axel: turned some matrix stuff into double precision
 !
       use Cdata
       use General
 !
       real, dimension(mx,my,mz,mvar) :: f
       real, dimension(mx,my,mz) :: feautrier
+      real, dimension(nz) :: kaprho,tau,Srad_,Prad_
+      real, dimension(nz) :: a,b,c
+      integer :: lrad,mrad,nrad
+      logical :: err=.false.
+!
+!  loop fastest over first index --> could do this for l-vectors
+!
+      do mrad=m1,m2
+      do lrad=l1,l2
+         kaprho=kappa(lrad,mrad,n1:n2)*exp(f(lrad,mrad,n1:n2,ilnrho))
+         tau=spline_integral(z,kaprho)
+         Srad_=Srad(lrad,mrad,n1:n2)
+         !print*,'kappa=',kappa(lrad,mrad,n1:n2)
+         !print*,'tau=',tau
+         !print*,'Srad=',Srad_
+!
+!  top boundary: P'=P, together with P1-P0=dtau*P'+.5*dtau^2*P" and P"=P-S
+!  lower boundary: P=S
+!
+         b(1)=1.+2./(tau(2)-tau(1))+2./(tau(2)-tau(1))**2
+         c(1)=-2./(tau(2)-tau(1))**2
+         a(nz)=0.
+         b(nz)=1.
+!
+!  interior, P"=P-S
+!
+         a(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2))
+         b(2:nz-1)=1.+2./(tau(3:nz)-tau(1:nz-2))/(tau(2:nz-1)-tau(1:nz-2)) &
+                     +2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
+         c(2:nz-1)=  -2./(tau(3:nz)-tau(1:nz-2))/(tau(3:nz)-tau(2:nz-1))
+!
+!  solve tri-diagonal matrix, and give detailed error output if problems
+!
+         call tridag(a,b,c,Srad_,Prad_,err=err)
+         if (err) then
+            print*,'lnrho=',f(lrad,mrad,n1:n1+5,ilnrho),'...', &
+                            f(lrad,mrad,n2-5:n2,ilnrho)
+            print*,'ss=',f(lrad,mrad,n1:n1+5,ient),'...', &
+                         f(lrad,mrad,n2-5:n2,ient)
+            print*,'tau=',tau(1:6),'...',tau(n2-n1-5:n2-n1)
+            print*,'kappa=',kappa(lrad,mrad,n1:n1+5),'...', &
+                            kappa(lrad,mrad,n2-5:n2)
+            stop
+         endif
+!
+         feautrier(lrad,mrad,n1:n2)=Prad_
+!         print*,'Prad',Prad_
+      enddo
+      enddo
+    endfunction feautrier
+!***********************************************************************
+    function feautrier_double(f)
+!
+!  Solves the transfer equation using Feautrier's method
+!  At the moment for vertical rays only
+!
+!  01-apr/tobi: coded
+!  11-apr/axel: turned some matrix stuff into double precision
+!
+      use Cdata
+      use General
+!
+      real, dimension(mx,my,mz,mvar) :: f
+      real, dimension(mx,my,mz) :: feautrier_double
       double precision, dimension(nz) :: kaprho,tau,Srad_,Prad_
       double precision, dimension(nz) :: a,b,c
       integer :: lrad,mrad,nrad
@@ -154,11 +217,11 @@ module Radiation
             stop
          endif
 !
-         feautrier(lrad,mrad,n1:n2)=Prad_
+         feautrier_double(lrad,mrad,n1:n2)=Prad_
 !         print*,'Prad',Prad_
       enddo
       enddo
-    endfunction feautrier
+    endfunction feautrier_double
 !***********************************************************************
     subroutine radtransfer(f)
 !
@@ -178,7 +241,7 @@ module Radiation
 !
       call source_function(f)
       Qrad=-Srad
-      Qrad=Qrad+feautrier(f)
+      Qrad=Qrad+feautrier_double(f)
 !
     endsubroutine radtransfer
 !***********************************************************************
