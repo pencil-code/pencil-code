@@ -103,7 +103,7 @@ if (lmagnetic) then begin
 endif
 ;
 for i=0,ncpus-1 do begin        ; read data from individual files
-  tag='reading proc '+str(i)+': '
+  tag='proc'+str(i)
   datadir=datatopdir+'/proc'+strtrim(i,2)
   ; read processor position
   dummy=''
@@ -119,26 +119,31 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   openr,1, datadir+'/'+file, /F77
     ;
     if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa ne 0 then begin
-      print,tag,'MHD with entropy'
+      id='MHD with entropy'
       readu,1,uu_loc,lnrho_loc,ss_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa ne 0 then begin
-      print,tag,'hydro without entropy, but with magnetic field'
+      id='hydro without entropy, but with magnetic field'
       readu,1,uu_loc,lnrho_loc,aa_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient ne 0 and iaa eq 0 then begin
-      print,tag,'hydro with entropy, but no magnetic field'
+      id='hydro with entropy, but no magnetic field'
       readu,1,uu_loc,lnrho_loc,ss_loc
     end else if iuu ne 0 and ilnrho ne 0 and ient eq 0 and iaa eq 0 then begin
-      print,tag,'hydro with no entropy and no magnetic field'
+      id='hydro with no entropy and no magnetic field'
       readu,1,uu_loc,lnrho_loc
     end else if iuu ne 0 and ilnrho eq 0 and ient eq 0 and iaa eq 0 then begin
-      print,tag,'just velocity (Burgers)'
+      id='just velocity (Burgers)'
       readu,1,uu_loc
     end else if iuu eq 0 and ilnrho eq 0 and ient eq 0 and iaa ne 0 then begin
-      print,tag,'just magnetic ffield (kinematic)'
+      id='just magnetic ffield (kinematic)'
       readu,1,aa_loc
     end else begin
-      print,tag,'not prepared...'
+      id='not prepared...'
     end
+    if (i eq 0) then begin
+      print, id
+      print, FORMAT='(A,$)', "Reading: "
+    endif
+    print, FORMAT='(A," ",$)', tag
     ;
   readu,1, t, xloc, yloc, zloc
   close,1
@@ -183,6 +188,7 @@ for i=0,ncpus-1 do begin        ; read data from individual files
   if (iaa ne 0) then aa [i0x:i1x,i0y:i1y,i0z:i1z,*] =  $
       aa_loc [i0xloc:i1xloc,i0yloc:i1yloc,i0zloc:i1zloc,*]
 endfor
+print
 ;
 xx = spread(x, [1,2], [my,mz])
 yy = spread(y, [0,2], [mx,mz])
