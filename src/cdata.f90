@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.88 2002-09-19 07:35:08 brandenb Exp $
+! $Id: cdata.f90,v 1.89 2002-09-24 11:17:07 nilshau Exp $
 
 module Cdata
 
@@ -21,7 +21,7 @@ module Cdata
   real, dimension(3) :: xyz0,Lxyz
   real :: t,dt=0.,cdt=0.4,cdtv=0.08,ttransient=0.
   real :: dx,dy,dz,dxmin,dxmax
-  real :: dsnap=100.,dvid=100.,dtmin=1.e-6
+  real :: dsnap=100.,dvid=100.,dtmin=1.e-6,dspect=impossible,spect=0
   real :: DD,nu=0.,cmu,cnu2
   real :: tdiagnos,dtu
   real :: rmean,rrms,rmax,u2m,um2,u2max,divurms,divumax,divu2max
@@ -67,6 +67,7 @@ module Cdata
   logical :: lroot=.true.,ldebug=.false.
   logical :: lshear=.false.,lpscalar=.false.,lradiation=.false.
   logical :: lfirstpoint
+  logical :: vel_spec=.false.,mag_spec=.false.,vec_spec=.false.
 
   character (len=2*bclen+1), dimension(mvar) :: bcx,bcy,bcz
   character (len=bclen), dimension(mvar) :: bcx1,bcx2,bcy1,bcy2,bcz1,bcz2

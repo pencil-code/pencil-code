@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.82 2002-09-22 18:19:17 brandenb Exp $
+! $Id: run.f90,v 1.83 2002-09-24 11:17:07 nilshau Exp $
 !
 !***********************************************************************
       program run
@@ -25,6 +25,7 @@
         use Timestep
         use Wsnaps
         use Boundcond
+        use Power_spectrum
 !
         implicit none
 !
@@ -47,7 +48,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.82 2002-09-22 18:19:17 brandenb Exp $")
+             "$Id: run.f90,v 1.83 2002-09-24 11:17:07 nilshau Exp $")
 !
 !  ix,iy,iz are indices for checking variables at some selected point
 !  set default values (should work also for 1-D and 2-D runs)
@@ -192,6 +193,16 @@
             if (mod(it,isave)==0) &
                  call wsnap(trim(directory)//'/var.dat',f,.false.)
           endif
+          !
+          !  save spectrum snapshot
+          !
+          if ((t>spect) .AND. (dspect .NE. impossible)) then
+             spect=spect+dspect 
+             if (vel_spec==.TRUE.) call power(f,'u')
+             if (mag_spec==.TRUE.) call power(f,'b')
+             if (vec_spec==.TRUE.) call power(f,'a')
+          endif
+          !
           headt=.false.
           if ((it < nt) .and. (dt < dtmin)) then
             write(0,*) 'Time step has become too short: dt = ', dt
@@ -207,6 +218,12 @@
         call wsnap(trim(directory)//'/var.dat',f,.false.)
         call wtime(trim(directory)//'/time.dat',t)
         if (ip<=10) call wsnap(trim(directory)//'/dvar.dat',df,.false.)
+!
+!  save spectrum snapshot
+!
+        if (vel_spec==.TRUE.) call power(f,'u')
+        if (mag_spec==.TRUE.) call power(f,'b')
+        if (vec_spec==.TRUE.) call power(f,'a')
 !
 !  write seed parameters (only if forcing is turned on)
 !

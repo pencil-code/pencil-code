@@ -1,4 +1,4 @@
-! $Id: mpicomm.f90,v 1.45 2002-09-21 14:05:52 dobler Exp $
+! $Id: mpicomm.f90,v 1.46 2002-09-24 11:17:07 nilshau Exp $
 
 !!!!!!!!!!!!!!!!!!!!!
 !!!  mpicomm.f90  !!!
@@ -685,5 +685,52 @@ endif
 !
  end subroutine transp
 !***********************************************************************
-
+subroutine transform(a1,a2,a3,b1,b2,b3)
+!
+!  Subroutine to do fourier transform
+!  The routine overwrites the input data
+!
+!  03-sep-02/nils: coded
+!  05-nov-02/axel: added normalization factor
+!
+  real,dimension(nx,ny,nz) :: a1,b1,a2,b2,a3,b3
+  
+  ! Doing the x field
+  if(lroot .AND. ip<10) print*,'doing fft of x-component'
+  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! x-direction
+  call transp(a1,'y')
+  call transp(b1,'y')
+  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! y-direction
+  call transp(a1,'z')
+  call transp(b1,'z')
+  call fft(a1,b1, nx*ny*nz, nx, nx,-1) ! z-direction
+  
+  ! Doing the y field
+  if(lroot .AND. ip<10) print*,'doing fft of y-component'
+  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! x-direction
+  call transp(a2,'y')
+  call transp(b2,'y')
+  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! y-direction
+  call transp(a2,'z')
+  call transp(b2,'z')
+  call fft(a2,b2, nx*ny*nz, nx, nx,-1) ! z-direction
+  
+  ! Doing the z field
+  if(lroot .AND. ip<10) print*,'doing fft of z-component'
+  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! x-direction
+  call transp(a3,'y')
+  call transp(b3,'y')
+  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! y-direction
+  call transp(a3,'z')
+  call transp(b3,'z')
+  call fft(a3,b3, nx*ny*nz, nx, nx,-1) ! z-direction
+!
+!  Normalize
+!
+  a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
+  b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
+  if(lroot) print*,'fft is finnished'
+!
+end subroutine transform
+!***********************************************************************
 endmodule Mpicomm

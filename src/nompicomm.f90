@@ -291,5 +291,38 @@ endif
 !
  end subroutine transp
 !***********************************************************************
+subroutine transform(a1,a2,a3,b1,b2,b3)
+!
+!  Subroutine to do fourier transform
+!  The routine overwrites the input data
+!
+!  03-nov-02/nils: coded
+!  05-nov-02/axel: added normalization factor
+!
+  real,dimension(nx,ny,nz) :: a1,a2,a3,b1,b2,b3
+!
+  if(lroot .AND. ip<10) print*,'doing fft of x-component'
+  ! Doing the x field
+  call fft(a1,b1, nx*ny*nz, nx, nx      ,-1) ! x-direction
+  call fft(a1,b1, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+  call fft(a1,b1, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
+  
+  ! Doing the y field
+  if(lroot .AND. ip<10) print*,'doing fft of y-component'
+  call fft(a2,b2, nx*ny*nz, nx, nx      ,-1) ! x-direction
+  call fft(a2,b2, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+  call fft(a2,b2, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
+  
+  ! Doing the z field
+  if(lroot .AND. ip<10) print*,'doing fft of z-component'
+  call fft(a3,b3, nx*ny*nz, nx, nx      ,-1) ! x-direction
+  call fft(a3,b3, nx*ny*nz, ny, nx*ny   ,-1) ! y-direction
+  call fft(a3,b3, nx*ny*nz, nz, nx*ny*nz,-1) ! z-direction
 
+  ! Normalize
+  a1=a1/nwgrid; a2=a2/nwgrid; a3=a3/nwgrid
+  b1=b1/nwgrid; b2=b2/nwgrid; b3=b3/nwgrid
+
+end subroutine transform
+!***********************************************************************
 endmodule Mpicomm

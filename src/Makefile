@@ -1,4 +1,4 @@
-### $Id: Makefile,v 1.98 2002-09-23 15:38:53 dobler Exp $
+### $Id: Makefile,v 1.99 2002-09-24 11:17:07 nilshau Exp $
 ### Makefile for modular pencil code
 
 ## Default settings: they can be overwritten by src/Makefile.local
@@ -43,6 +43,7 @@ CFLAGS=-O3 -DFUNDERSC=1
 #FFLAGS= -pfalist -64 -O3 -mips4 -r10000 -C -macro_expand  #(Grand)
 #FFLAGS= -64 -O3 -mips4 -r12000 #(Ukaff)
 #FFLAGS= -64 -O3 -auto_use mpi_interface -mips4 #(ukaff|origin)
+#OPTFLAGS= -64
 #F77=$(FC)
 CFLAGS=-O3 -64 -DFUNDERSC=1
 
@@ -76,6 +77,7 @@ CFLAGS=-O3 -64 -DFUNDERSC=1
 #LDMPI= # (Samos)
 #CFLAGS=-O3 -DFUNDERSC=1 -Wall
 #F77=$(FC) -O4 -dusty
+#F77=$(FC) -lm  #(tycho|erland)
 #F77=$(FC) -O3 #(Cincinnatus|Owen|Master)
 
 ## SunOS:
@@ -134,7 +136,7 @@ physics=$(GLOBAL).o $(HYDRO).o $(DENSITY).o $(FORCING).o $(GRAVITY).o $(ENTROPY)
 comm_deps=$(technical) sub.o $(IO).o param_io.o $(MPICOMM).o $(physics)
 start_deps_f90=$(comm_deps)
 start_deps=$(start_deps_f90) $(DEBUG).o $(FFT).o
-run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o
+run_deps_f90=$(comm_deps) equ.o timestep.o wsnaps.o power_spectrum.o
 run_deps=$(run_deps_f90) $(DEBUG).o $(FFT).o
 start=start.o $(start_deps)
 run=run.o $(run_deps)
@@ -165,7 +167,7 @@ initcond.o:  initcond.f90 cdata.o random_nr.o
 timestep.o:  timestep.f90 cdata.o $(MPICOMM).o equ.o $(FORCING).o
 wsnaps.o:    wsnaps.f90 cdata.o $(MPICOMM).o $(IO).o boundcond.o
 #
-$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o
+$(MPICOMM).o:   $(MPICOMM).f90 cdata.o general.o $(FFT).o 
 $(GLOBAL).o:    $(GLOBAL).f90 cdata.o $(IO).o $(MPICOMM).o
 $(SHEAR).o:	$(SHEAR).f90 $(MPICOMM).o cdata.o sub.o cparam.o $(HYDRO).o
 $(GRAVITY).o:   $(GRAVITY).f90 cdata.o $(MPICOMM).o sub.o slices.o $(GLOBAL).o
@@ -178,7 +180,7 @@ $(DENSITY).o:   $(DENSITY).f90 cdata.o $(MPICOMM).o sub.o $(IO).o initcond.o $(G
 $(PSCALAR).o:   $(PSCALAR).f90 cdata.o $(MPICOMM).o sub.o initcond.o
 $(IO).o:        $(IO).f90 cdata.o sub.o $(MPICOMM).o $(DEBUG).o
 nodebug.o:   nodebug.f90 cdata.o $(MPICOMM).o
-
+power_spectrum.o:power_spectrum.f90 cdata.o sub.o $(MPICOMM).o general.o
 
 TAG_SOURCE=$(run_deps_f90:.o=.f90) start.f90 run.f90 debug_c.c
 TAGS: $(TAG_SOURCE)
