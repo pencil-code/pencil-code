@@ -1,0 +1,16 @@
+#!/bin/csh
+
+# Name:   own-risk
+# Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
+# Date:   19-Jul-2002
+# Description:d
+#   Map pencil_modular/runs to pencil_moular_runs in all CVS/Repository
+#   files below the current directory. This is to follow the separation of
+#   the runs/ directory from the main code without removing and checking in
+#   anew.
+# Use at your own risk (one backup copy is made, though).
+
+find . -path '*/CVS/Repository' -exec \
+  perl -i.bak -pe 's{pencil_modular/runs}{pencil_modular_runs}' {} \;
+
+# End of file own-risc
