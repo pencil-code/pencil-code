@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.165 2004-03-12 13:41:46 dobler Exp $ 
+! $Id: param_io.f90,v 1.166 2004-03-12 15:26:17 dobler Exp $ 
 
 module Param_IO
 
@@ -354,6 +354,7 @@ module Param_IO
 !   6-jul-02/axel: in case of error, print sample namelist
 !  21-oct-03/tony: moved sample namelist stuff to a separate procedure
 !
+      use Mpicomm, only: stop_it
       use Sub, only: parse_bc
       use Dustvelocity, only: copy_bcs_dust
 !
