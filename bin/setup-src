@@ -65,6 +65,8 @@ foreach file (../$srcdir/*.local)
   endif
 end
 #
-if ($n == 1) echo "$existf already exists in src"
+if ($n == 1) then
+  echo "$existf already exists in src"
+endif
 if ($n > 1) echo "$n files already exist in src"
 
