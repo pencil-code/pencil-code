@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.182 2004-07-16 13:45:38 nilshau Exp $
+! $Id: hydro.f90,v 1.183 2004-07-23 09:35:42 nilshau Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -78,7 +78,7 @@ module Hydro
   integer :: i_uxmz=0,i_uymz=0,i_uzmz=0,i_umx=0,i_umy=0,i_umz=0
   integer :: i_uxmxy=0,i_uymxy=0,i_uzmxy=0
   integer :: i_Marms=0,i_Mamax=0
-  integer :: i_divum=0,i_divu2m=0,i_epsK=0
+  integer :: i_divum=0,i_divu2m=0,i_epsK=0,i_epsK_LES=0
   integer :: i_u2u13m
   integer :: i_urmphi=0,i_upmphi=0,i_uzmphi=0,i_u2mphi=0,i_oumphi=0
 
@@ -126,7 +126,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.182 2004-07-16 13:45:38 nilshau Exp $")
+           "$Id: hydro.f90,v 1.183 2004-07-23 09:35:42 nilshau Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -624,15 +624,15 @@ module Hydro
 !
 !  mean heating term
 !
-        if (i_epsK/=0) then
+        if ((i_epsK/=0) .or. (i_epsK_LES/=0)) then
            if (.not. lvisc_hyper) then
-              if (ivisc .eq. 'smagorinsky_simplified') then
-                 call multm2_mn(sij,sij2)
+             call multm2_mn(sij,sij2)
+             if (ivisc .eq. 'smagorinsky_simplified') then
                  SS12=sqrt(2*sij2)
-                 !nu_smag=(C_smag*dxmax)**2.*SS12     
+                 nu_smag=(C_smag*dxmax)**2.*SS12     
+                 call sum_mn_name(2*nu_smag*rho*sij2,i_epsK_LES)
               endif
               rho=exp(f(l1:l2,m,n,ilnrho))
-              call multm2_mn(sij,sij2)
               call sum_mn_name(2*nu*rho*sij2,i_epsK)
            else
               ! In this case the calculation is done in visc_hyper.f90
@@ -1007,7 +1007,7 @@ module Hydro
         i_oxoym=0; i_oxozm=0; i_oyozm=0
         i_umx=0; i_umy=0; i_umz=0
         i_Marms=0; i_Mamax=0
-        i_divum=0; i_divu2m=0; i_epsK=0
+        i_divum=0; i_divu2m=0; i_epsK=0; i_epsK_LES=0
         i_u2u13m=0
         i_urmphi=0; i_upmphi=0; i_uzmphi=0; i_u2mphi=0; i_oumphi=0
       endif
@@ -1055,6 +1055,7 @@ module Hydro
         call parse_name(iname,cname(iname),cform(iname),'divum',i_divum)
         call parse_name(iname,cname(iname),cform(iname),'divu2m',i_divu2m)
         call parse_name(iname,cname(iname),cform(iname),'epsK',i_epsK)
+        call parse_name(iname,cname(iname),cform(iname),'epsK_LES',i_epsK_LES)
         call parse_name(iname,cname(iname),cform(iname),'u2u13m',i_u2u13m)
         call parse_name(iname,cname(iname),cform(iname),'uxpt',i_uxpt)
         call parse_name(iname,cname(iname),cform(iname),'uypt',i_uypt)
@@ -1129,6 +1130,7 @@ module Hydro
         write(3,*) 'i_divum=',i_divum
         write(3,*) 'i_divu2m=',i_divu2m
         write(3,*) 'i_epsK=',i_epsK
+        write(3,*) 'i_epsK_LES=',i_epsK_LES
         write(3,*) 'i_u2u13m=',i_u2u13m
         write(3,*) 'nname=',nname
         write(3,*) 'iuu=',iuu
