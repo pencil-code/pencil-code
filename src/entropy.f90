@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-01-25 08:04:47 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-02-14 14:35:03 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -165,7 +165,6 @@ module Entropy
       call dot_mn(g1,g2,g1_g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g1_g2)
 
-print*,'chi in ', minval(chi), maxval(chi)
 if (notanumber(thdiff)) print*, 'NaNs in thdiff'
       df(l1:l2,m,n,ient) = df(l1:l2,m,n,ient) + thdiff
 !
@@ -220,10 +219,11 @@ if (notanumber(thdiff)) print*, 'NaNs in thdiff'
       real, dimension (nx) :: hcond
 !
       if (lgravz) then
-        hcond = hcond0 + (hcond1-hcond0)*step(z,z2,whcond)
+        hcond = hcond0 * (1 + (hcond1-1)*step(z,z2,whcond))
       endif
 
       if (lgravr) then
+        write(0,*) 'What should I do in heatcond() for spherical geometry?'
       endif
 !
     endsubroutine heatcond

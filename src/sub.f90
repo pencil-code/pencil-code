@@ -776,7 +776,8 @@ module Sub
 !  Write startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1,rho0,grads0
+      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1, &
+                       rho0,grads0,hcond0,hcond1,hcond2,whcond
       use Mpicomm
 !
       if (lroot) then
@@ -784,6 +785,7 @@ module Sub
         write(1) x0,y0,z0,Lx,Ly,Lz
         write(1) cs0,gamma,gamma1 ! Write gamma1 here to ensure it is in sync
         write(1) rho0,grads0
+        write(1) hcond0,hcond1,hcond2,whcond
       endif
 !
     endsubroutine wparam
@@ -793,17 +795,20 @@ module Sub
 !  Read startup parameters
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1,rho0,grads0
+      use Cdata, only: x0,y0,z0,Lx,Ly,Lz,cs0,gamma,gamma1, &
+                       rho0,grads0,hcond0,hcond1,hcond2,whcond
       use Mpicomm
 !
         open(1,FILE='tmp/param.dat',FORM='unformatted')
         read(1) x0,y0,z0,Lx,Ly,Lz
         read(1) cs0,gamma,gamma1
         read(1) rho0,grads0
-!      if (lroot) then
+        read(1) hcond0,hcond1,hcond2,whcond
+!
+      if (lroot) then
         print*, "Lx,Ly,Lz=", Lx,Ly,Lz
         print*, "rho0,gamma,gamma1=", rho0,gamma,gamma1
-!      endif
+      endif
 !
     endsubroutine rparam
 !***********************************************************************

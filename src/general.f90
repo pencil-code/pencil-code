@@ -9,13 +9,19 @@ module General
 
 !***********************************************************************
     subroutine chn(n,ch)
+!
       character (LEN=4) :: ch
       integer :: n
+!
+      intent(in) :: n
 !
 !  make a character out of a number
 !  take care of numbers that have less than 4 digits
 !  30-sep-97/axel: coded
 !
+
+print*,'CHN 1: n = ', n, ' #######'
+
       ch='    '
       if (n.lt.0) stop 'chn: lt1'
       if (n.lt.10) then
@@ -30,6 +36,7 @@ module General
         print*,'n=',n
         stop "chn: n too large"
       endif
+print*,'CHN 10: n = ', n, ' #######'
 !
     endsubroutine chn
 !***********************************************************************

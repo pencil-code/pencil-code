@@ -23,6 +23,9 @@
 !
         real, dimension (mx,my,mz,mvar) :: f,df
         integer :: time1,time2,count_rate
+!        real :: time1,time2     ! cpu_time can measure longer times than
+                                ! system clock, but takes 15 seconds to
+                                ! calibrate at startup with Intel F95
 !     
 !  initialize MPI
 !
@@ -33,8 +36,8 @@
 !
         if (lroot) call cvs_id( &
              "$RCSfile: run.f90,v $", &
-             "$Revision: 1.12 $", &
-             "$Date: 2002-01-25 08:04:47 $")
+             "$Revision: 1.13 $", &
+             "$Date: 2002-02-14 14:35:03 $")
 !
         call initialize         ! register modules, etc.
 !
@@ -105,6 +108,7 @@
         if(lroot) then
           call system_clock(count_rate=count_rate)
           call system_clock(count=time1)
+!          call cpu_time(time1)
           print*,'start time loop'
         endif
 !
@@ -138,6 +142,7 @@
           if (it>=nt) exit Time_loop
         enddo Time_loop
         if(lroot) call system_clock(count=time2)
+!        if(lroot) call cpu_time(time2)
 !
 !  write data at end of run for restart
 !  dvar is written for analysis purposes only
@@ -158,6 +163,7 @@
         if(lroot) &
              print*,'Wall clock time=',(time2-time1)/real(count_rate), &
                     ' (+/- ', 1./count_rate,')'
+!             print*, 'Wall clock time=', time2-time1
         call mpifinalize
 !
       endprogram run

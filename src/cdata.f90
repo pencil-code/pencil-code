@@ -12,7 +12,7 @@ module Cdata
   real :: dsnap,dvid,dforce
   real :: tinit,tdamp,dampu,dampuext,rdamp,wdamp
   real :: cs0,rho0,cs20,gamma,gamma1,force,relhel
-  real :: DD,nu,cmu,cnu2,cdiffrho,hcond0,hcond1,hcond2,whcond,chi0,chi2
+  real :: DD,nu,cmu,cnu2,cdiffrho,hcond0,hcond1,hcond2,whcond
   real :: t_diag,rmean,rrms,rmax,urms,umax,u2max,divurms,divumax,divu2max
   real :: orms,omax,o2max,ourms,oumax
   real :: UUmax,cdt,x0,y0,z0,Lx,Ly,Lz

@@ -21,7 +21,7 @@ module Equ
       read(1,*) dampuext,rdamp,wdamp
       read(1,*) ip,ix,iy,iz
       read(1,*) cs0,nu,ivisc
-      read(1,*) chi0,chi2
+      read(1,*) hcond0,hcond1,hcond2,whcond
       read(1,*) cdiffrho
       read(1,*) gravz
       read(1,*) cheat,wheat,cool,wcool
@@ -59,7 +59,7 @@ module Equ
         print*, 'dampuext,rdamp,wdamp=', dampuext,rdamp,wdamp
         print*, 'ip,ix,iy,iz=', ip,ix,iy,iz
         print*, 'cs0,nu,ivisc=', cs0,nu,ivisc
-        print*, 'chi,chi2=', chi0,chi2
+        print*, 'hcond0,hcond1,hcond2,whcond,=', hcond0,hcond1,hcond2,whcond
         print*, 'cdiffrho=', cdiffrho
         print*, 'gravz=', gravz
         print*, 'cheat,wheat,cool,wcool=', cheat,wheat,cool,wcool
@@ -239,8 +239,8 @@ module Equ
       headtt = headt .and. lfirst .and. lroot
       if (headtt) call cvs_id( &
            "$RCSfile: equ.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-01-25 08:04:47 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-02-14 14:35:03 $")
 !
 !  initiate communication
 !
@@ -261,11 +261,14 @@ module Equ
         call gij(f,iuu,uij)
         call grad(f,ilnrho,glnrho)
 !
+!  rho1 is needed by viscous term and heat conduction
+!
+        rho1=exp(-f(l1:l2,m,n,ilnrho))
+!
 !  viscosity operator
 !
         if (ivisc==1) then
           if (headtt) print*,'full viscous force'
-          rho1=exp(-f(l1:l2,m,n,ilnrho))
           nurho1=nu*rho1
           call del2v_etc(f,iuu,del2u,graddiv=graddivu)
           do i=1,3
@@ -296,7 +299,7 @@ module Equ
 !
 !  momentum equation (forcing is now done in timestep)
 !
-        df(l1:l2,m,n,iux:iuz)=df(l1:l2,m,n,iux:iuz)-ugu-gpprho+fvisc
+        df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) - ugu - gpprho + fvisc
 !
 !  damping terms:
 !
@@ -377,7 +380,7 @@ module Equ
           call rms_mn (ou,ourms)
           call max_mn (divu2,divu2max)
           call rms2_mn(divu2,divurms)
-          call mean_mn (rho,rmean)
+          call mean_mn(rho,rmean)
           call max_mn (rho,rmax)
           call rms_mn (rho,rrms)
         endif

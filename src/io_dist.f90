@@ -8,6 +8,8 @@
 
 module Io
 
+  implicit none
+
   interface output              ! Overload the `output' function
     module procedure output_vect
     module procedure output_scal
@@ -44,9 +46,9 @@ contains
         if (my.gt.1) then; dy=y(5)-y(4); else; dy=0.; endif
         if (mz.gt.1) then; dz=z(5)-z(4); else; dz=0.; endif
         dxmax=max(dx,dy,dz)
-        if (mx.eq.1) dx=dmax
-        if (my.eq.1) dy=dmax
-        if (mz.eq.1) dz=dmax
+        if (mx.eq.1) dx=dxmax
+        if (my.eq.1) dy=dxmax
+        if (mz.eq.1) dz=dxmax
         dxmin=min(dx,dy,dz)
         Lx=dx*mx
         Ly=dy*my
@@ -183,7 +185,7 @@ contains
 !  Write processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x,y,z,dx,dy,dz
+      use Cdata, only: t,x,y,z,dx,dy,dz
 !      use Mpicomm
 !
       character (LEN=*) :: file
@@ -199,7 +201,7 @@ contains
 !  Read processor-local part of grid coordinates.
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: x,y,z,dx,dy,dz
+      use Cdata, only: t,x,y,z,dx,dy,dz
 !      use Mpicomm
 !
       character (LEN=*) :: file

@@ -43,6 +43,8 @@ module Mpicomm
 !
       lmpicomm = .false.
       iproc=root
+
+print*,'###### root, iproc = ', root, iproc, ' ############'
 !
 !  produce index-array the the sequence of points to be worked through first
 !
@@ -53,11 +55,17 @@ module Mpicomm
           nn(imn)=n
           imn=imn+1
         enddo
+print*,'###### CPU NO', n, iproc, ' ############'
       enddo
 !
 !  produce a directory name for the output
 !
+print*,'###### CPU NO', iproc, ' ############'
+
       call chn(iproc,chproc)
+
+print*,'###### CPU NO', iproc, chproc, ' ############'
+
       directory='tmp/proc'//chproc
 !
     endsubroutine mpicomm_init
