@@ -39,8 +39,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.34 $", &
-           "$Date: 2002-04-04 16:24:51 $")
+           "$Revision: 1.35 $", &
+           "$Date: 2002-04-04 17:07:25 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -218,9 +218,13 @@ use IO
           z_prev = z_mn(1)
         endif
       endif
+      if (lgravr) then
+        call heatcond(x_mn,y_mn,z_mn,lambda)
+        call gradloghcond(x_mn,y_mn,z_mn, glhc)
+      endif
       chi = rho1*lambda
       glnT = gamma*gss + gamma1*glnrho ! grad ln(T)
-       glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
+      glnTlambda = glnT + glhc/spread(lambda,2,3)    ! grad ln(T*lambda)
       call dot_mn(glnT,glnTlambda,g2)
       thdiff = chi * (gamma*del2ss+gamma1*del2lnrho + g2)
 
@@ -295,7 +299,7 @@ use IO
       endif
 
       if (lgravr) then
-        write(0,*) 'What should I do in heatcond() for spherical geometry?'
+        hcond = hcond0
       endif
 !
     endsubroutine heatcond
@@ -321,6 +325,7 @@ use IO
       endif
 
       if (lgravr) then
+        glhc = 0.
       endif
 !
     endsubroutine gradloghcond
