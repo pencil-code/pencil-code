@@ -1,4 +1,4 @@
-! $Id: param_io.f90,v 1.94 2003-02-22 13:39:04 brandenb Exp $ 
+! $Id: param_io.f90,v 1.95 2003-02-23 07:49:34 brandenb Exp $ 
 
 module Param_IO
 
@@ -25,7 +25,7 @@ module Param_IO
  
   implicit none 
 
-  ! start parameters (units)
+  ! physical constants, taken from:
   ! http://www.astro.wisc.edu/~dolan/constants.html
 
   real, parameter :: hbar_cgs=1.0545726663d-27 ! [erg*s]
@@ -121,7 +121,6 @@ module Param_IO
 !
       use Mpicomm, only: stop_it
 !
-      real :: unit_mass,unit_energy,unit_time
       integer :: ierr
       logical, optional :: print,file
       character (len=30) :: label='[none]'
@@ -181,32 +180,6 @@ module Param_IO
           call print_startpars(FILE=trim(datadir)//'/params.log')
         endif
       endif
-!
-!  evaluate physical units used in ionization
-!  (and perhaps later in the interstellar module)
-!
-      unit_mass=unit_density*unit_length**3
-      unit_energy=unit_mass*unit_velocity**2
-      unit_time=unit_length/unit_velocity
-!
-      if (unit_system=='cgs') then
-        hbar=hbar_cgs/(unit_energy*unit_time)
-        k_B=k_B_cgs/(unit_energy/unit_temperature)
-        m_p=m_p_cgs/unit_mass
-        m_e=m_e_cgs/unit_mass
-        eV=eV_cgs/unit_energy
-      elseif (unit_system=='SI') then
-        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
-        m_p=m_p_cgs*1e-3/unit_mass
-        m_e=m_e_cgs*1e-3/unit_mass
-        eV=eV_cgs*1e-7/unit_energy
-      endif
-!
-!  set gamma1, cs20, and lnrho0
-!
-      gamma1=gamma-1.
-      cs20=cs0**2
-      lnrho0=alog(rho0)
 !
 !  calculate shear flow velocity; if Sshear is not given
 !  then Sshear=-qshear*Omega is calculated.

@@ -1,4 +1,4 @@
-! $Id: register.f90,v 1.61 2003-02-21 20:21:52 brandenb Exp $
+! $Id: register.f90,v 1.62 2003-02-23 07:49:34 brandenb Exp $
 
 !!!  A module for setting up the f-array and related variables (`register' the
 !!!  entropy, magnetic, etc modules).
@@ -85,6 +85,7 @@ module Register
 !  start.x) initially and each time the run parameters have been reread.
 !
 !  6-nov-01/wolf: coded
+! 23-feb-03/axel: added physical constants conversion
 !
       use Cdata
       use Print
@@ -100,14 +101,43 @@ module Register
       use Interstellar
       use Shear
       use Viscosity
+      use Param_IO
 
       real, dimension(mx,my,mz,mvar) :: f
+      real :: unit_mass,unit_energy,unit_time
 !
 !  Defaults for some logicals; will later be set to true if needed
       lneed_sij = .false.
       lneed_glnrho = .false.
 !
+!  evaluate physical units
+!  used currently only in ionization, but later also in
+!  the interstellar and radiation modules, for example
+!
+      unit_mass=unit_density*unit_length**3
+      unit_energy=unit_mass*unit_velocity**2
+      unit_time=unit_length/unit_velocity
+!
+!  convert physical constants
+!
+      if (unit_system=='cgs') then
+        print*,'units of length,velocity,density are given in cgs'
+        hbar=hbar_cgs/(unit_energy*unit_time)
+        k_B=k_B_cgs/(unit_energy/unit_temperature)
+        m_p=m_p_cgs/unit_mass
+        m_e=m_e_cgs/unit_mass
+        eV=eV_cgs/unit_energy
+      elseif (unit_system=='SI') then
+        print*,'units of length,velocity,density are given in SI'
+        k_B=1e-7*k_B_cgs/(unit_energy/unit_temperature)
+        m_p=m_p_cgs*1e-3/unit_mass
+        m_e=m_e_cgs*1e-3/unit_mass
+        eV=eV_cgs*1e-7/unit_energy
+      endif
+      print'(a,1p,4e14.6)',' register: k_B,m_p,m_e,eV=',k_B,m_p,m_e,eV
+!
 !  set gamma1, cs20, and lnrho0
+!  (used currently for non-dimensional equation of state)
 !
       gamma1=gamma-1.
       cs20=cs0**2
