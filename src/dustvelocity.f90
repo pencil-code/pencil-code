@@ -1,4 +1,4 @@
-! $Id: dustvelocity.f90,v 1.42 2004-04-01 14:29:55 ajohan Exp $
+! $Id: dustvelocity.f90,v 1.43 2004-04-04 16:07:08 ajohan Exp $
 
 
 !  This module takes care of everything related to velocity
@@ -105,7 +105,7 @@ module Dustvelocity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: dustvelocity.f90,v 1.42 2004-04-01 14:29:55 ajohan Exp $")
+           "$Id: dustvelocity.f90,v 1.43 2004-04-04 16:07:08 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -323,13 +323,13 @@ module Dustvelocity
         enddo
       case('terminal_vz')
         if (ldustdrag) then
-          rho = exp(f(l1:l2,m,n,ilnrho))
           do k=1,ndustspec
-            rhod = f(l1:l2,m,n,ind(k))*md(k)
-            call pressure_gradient(f,cs2,cp1tilde)
-            call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
             do m=m1,m2
               do n=n1,n2
+                rho = exp(f(l1:l2,m,n,ilnrho))
+                rhod = f(l1:l2,m,n,ind(k))*md(k)
+                call pressure_gradient(f,cs2,cp1tilde)
+                call get_stoppingtime(f,rho,cs2,rhod,tausd1,k)
                 f(l1:l2,m,n,iudz(k)) = -tausd1**(-1)*Omega**2*z(n)
               enddo
             enddo
@@ -644,7 +644,6 @@ module Dustvelocity
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (nx) :: rho,rhod,csrho,cs2,tausd1
       integer :: k
-      save :: csrho
 !
       select case(draglaw)
         
@@ -653,9 +652,7 @@ module Dustvelocity
       case ('epstein_cst_b')
         tausd1 = betad(k)/rhod
       case ('epstein_var')
-        if (k .eq. 1) then
-          csrho = sqrt(cs2)*rho
-        endif
+        csrho  = sqrt(cs2)*rho
         tausd1 = csrho*rhodsad1(k)
       case default
          call stop_it("get_stoppingtime: No valid drag law specified.")
