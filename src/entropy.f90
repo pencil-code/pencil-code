@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.149 2003-04-05 19:05:07 brandenb Exp $
+! $Id: entropy.f90,v 1.150 2003-04-06 07:40:22 brandenb Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -75,7 +75,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.149 2003-04-05 19:05:07 brandenb Exp $")
+           "$Id: entropy.f90,v 1.150 2003-04-06 07:40:22 brandenb Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -400,7 +400,6 @@ module Entropy
           df(l1:l2,m,n,ju)=df(l1:l2,m,n,ju)-cs2*(glnrho(:,j)+cp1tilde*gss(:,j))
         enddo
       endif
-if(m==4.and.n>250) print*,'glnrho(4,3),cp1tilde(4),gss(4,3)=',glnrho(4,3),cp1tilde(4),gss(4,3)
 !
 !  advection term
 !
