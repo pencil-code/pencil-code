@@ -10,7 +10,10 @@
 
 # cut & paste for job submission for PBS
 # qsub -l ncpus=64,mem=32gb,walltime=1:00:00 -W group_list=UK07001 -q UK07001 start.csh
-# qsub -l nodes=nq1+nq2+nq3+nq4,mem=1gb,cput=1:00:00 -q p-long start.csh
+# qsub -l nodes=nq1+nq2+nq3+nq4,mem=1gb,cput=0:10:00 -q p-long start.csh
+# qsub -l nodes=4 -q p-long start.csh
+# qsub -l nodes=nq1+nq2+nq3+nq4 -q p-long start.csh
+# qsub -l nodes=nq1+nq2 -q p-long start.csh
 # qsub -l ncpus=4,mem=1gb,walltime=0:05:00 -q parallel start.csh
 # qsub -l ncpus=16,mem=1gb,walltime=0:05:00 -q parallel start.csh
 #

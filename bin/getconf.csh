@@ -42,11 +42,20 @@ if ($mpi) then
 #    set mpirunops = " c0-7"
 #    set mpirunops = "-c2c c8-13"
   else if ($hn =~ nq*) then
-    set mpirun = /usr/lib/lam/bin/mpirun
-    set mpirun = /usr/bin/mpirun
-    set mpirunops = "-lamd -v"
+#-  set mpirun = /usr/lib/lam/bin/mpirun
+#-  set mpirun = /usr/bin/mpirun
+#-  set mpirunops = "-lamd -v"
 #    set mpirun = /usr/local/mpich-1.2.1/bin/mpirun
 #    set mpirunops = "-machinefile machines"
+    #  is that the right place??
+    echo "are we here on the Nordita cluster?"
+    set nodelist = `cat $PBS_NODEFILE`
+    cat $PBS_NODEFILE > lamhosts
+    lamboot -v lamhosts
+    echo "lamndodes:"
+    lamnodes
+    set mpirun = /usr/bin/mpirun
+    set mpirunops = "-O -c2c"
   else if ($hn =~ s*p*) then
     #  is that the right place??
     echo "are we here on the fe1 cluster?"
