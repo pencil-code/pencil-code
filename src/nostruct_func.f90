@@ -1,4 +1,4 @@
-! $Id: nostruct_func.f90,v 1.4 2003-01-13 19:00:57 mee Exp $
+! $Id: nostruct_func.f90,v 1.5 2003-01-20 16:56:53 nilshau Exp $
 !
 module  struct_func
   !
@@ -9,9 +9,11 @@ module  struct_func
   contains
 
 !***********************************************************************
-    subroutine structure(f,variabl)
+    subroutine structure(f,ivec,b_vec,variabl)
 !
   real, dimension (mx,my,mz,mvar) :: f
+  real, dimension (nx,ny,nz) :: b_vec
+  integer :: ivec
   character (len=*) :: variabl
   !
   if(ip<=15) print*,'Use POWER=power_spectrum in Makefile.local'
