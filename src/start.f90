@@ -1,4 +1,4 @@
-! $Id: start.f90,v 1.121 2003-10-24 16:07:15 dobler Exp $
+! $Id: start.f90,v 1.122 2003-11-05 11:57:47 theine Exp $
 !
 !***********************************************************************
       program start
@@ -43,7 +43,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: start.f90,v 1.121 2003-10-24 16:07:15 dobler Exp $")
+             "$Id: start.f90,v 1.122 2003-11-05 11:57:47 theine Exp $")
 !
 !  set default values: box of size (2pi)^3
 !
@@ -170,10 +170,7 @@
 !
 !  check whether we want ionization
 !
-        if(lionization) then
-          call ioninit(f)
-          call ioncalc(f)
-        endif
+        if(lionization) call ioninit(f)
         if(lradiation_ray) call radtransfer(f)
 !
 !  filter initial velocity

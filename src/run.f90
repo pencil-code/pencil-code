@@ -1,4 +1,4 @@
-! $Id: run.f90,v 1.160 2003-11-03 03:50:07 brandenb Exp $
+! $Id: run.f90,v 1.161 2003-11-05 11:57:47 theine Exp $
 !
 !***********************************************************************
       program run
@@ -47,7 +47,7 @@
 !  identify version
 !
         if (lroot) call cvs_id( &
-             "$Id: run.f90,v 1.160 2003-11-03 03:50:07 brandenb Exp $")
+             "$Id: run.f90,v 1.161 2003-11-05 11:57:47 theine Exp $")
 !
 !  read parameters from start.x (default values; may be overwritten by
 !  read_runpars)
@@ -118,10 +118,7 @@
 !
 !  initialize ionization array
 !
-        if(lionization) then
-          call ioninit(f)
-          call ioncalc(f)
-        endif
+        if(lionization) call ioninit(f)
 !
 !  Write data to file for IDL
 !

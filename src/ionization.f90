@@ -1,4 +1,4 @@
-! $Id: ionization.f90,v 1.134 2003-11-02 04:00:18 theine Exp $
+! $Id: ionization.f90,v 1.135 2003-11-05 11:57:47 theine Exp $
 
 !  This modules contains the routines for simulation with
 !  simple hydrogen ionization.
@@ -123,7 +123,7 @@ module Ionization
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: ionization.f90,v 1.134 2003-11-02 04:00:18 theine Exp $")
+           "$Id: ionization.f90,v 1.135 2003-11-05 11:57:47 theine Exp $")
 !
 !  Check we aren't registering too many auxiliary variables
 !
@@ -297,8 +297,21 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux), intent(inout) :: f
+      real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
-      f(:,:,:,iyH)=0.5
+      do n=1,mz
+      do m=1,my
+        lnrho=f(:,m,n,ilnrho)
+        ss=f(:,m,n,iss)
+        yH=0.5
+        call rtsafe_pencil(lnrho,ss,yH)
+        f(:,m,n,iyH)=yH
+        lnTT=(ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+              +yH*(2*log(yH)-lnrho_e-lnrho_p)+xHe_term)/(1+yH+xHe)
+        lnTT=(2.0/3.0)*(lnTT+lnrho-2.5)+lnTT_ion
+        f(:,m,n,ilnTT)=lnTT
+      enddo
+      enddo
 !
     endsubroutine ioninit
 !***********************************************************************
@@ -312,21 +325,18 @@ module Ionization
       use Cdata
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
-      real, dimension (mx) :: lnTT
-      real :: lnrho,ss,yH
+      real, dimension (mx) :: lnrho,ss,yH,lnTT
 !
       do n=1,mz
       do m=1,my
-        do l=1,mx
-           lnrho=f(l,m,n,ilnrho)
-           ss=f(l,m,n,iss)
-           yH=f(l,m,n,iyH)
-           call rtsafe('lnrho|ss',lnrho,ss,yHmin,yHmax,yH)
-           f(l,m,n,iyH)=yH
-           lnTT(l)=(ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
-                    +yH*(2*log(yH)-lnrho_e-lnrho_p)+xHe_term)/(1+yH+xHe)
-        enddo
-        lnTT=(2.0/3.0)*(lnTT+f(:,m,n,ilnrho)-2.5)+lnTT_ion
+        lnrho=f(:,m,n,ilnrho)
+        ss=f(:,m,n,iss)
+        yH=f(:,m,n,iyH)
+        call rtsafe_pencil(lnrho,ss,yH)
+        f(:,m,n,iyH)=yH
+        lnTT=(ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+              +yH*(2*log(yH)-lnrho_e-lnrho_p)+xHe_term)/(1+yH+xHe)
+        lnTT=(2.0/3.0)*(lnTT+lnrho-2.5)+lnTT_ion
         f(:,m,n,ilnTT)=lnTT
       enddo
       enddo
@@ -653,6 +663,73 @@ module Ionization
 
       write(unit,NML=ionization_run_pars)
     endsubroutine write_ionization_run_pars
+!***********************************************************************
+    subroutine rtsafe_pencil(lnrho,ss,yH)
+!
+!   safe newton raphson algorithm (adapted from NR) !
+!   09-apr-03/tobi: changed to subroutine
+!
+      use Cdata
+!
+      real, dimension(mx), intent(in) :: lnrho,ss
+      real, dimension(mx), intent(inout) :: yH
+!
+      real, dimension(mx) :: dyHold,dyH,yHl,yHh,f,df,temp
+      real, dimension(mx) :: lnTT_,dlnTT_,TT1_
+      integer             :: i
+      integer, parameter  :: maxit=1000
+!
+      yHl=2*tiny(yHl)
+      yHh=1-2*epsilon(yHh)
+      dyH=1
+      dyHold=dyH
+!
+      temp=0
+!
+      lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                         +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                         +xHe_term)/(1+yH+xHe) &
+                        +lnrho-2.5)
+      TT1_=exp(-lnTT_)
+      f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
+      dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+      df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
+!
+      do i=1,maxit
+        where (yH/=temp)
+          where (((yH-yHl)*df-f)*((yH-yHh)*df-f)>0.or.abs(2*f)>abs(dyHold*df))
+            dyHold=dyH
+            dyH=0.5*(yHl-yHh)
+            temp=yHh
+            yH=yHh+dyH
+          elsewhere
+            dyHold=dyH
+            dyH=f/df
+            temp=yH
+            yH=yH-dyH
+          endwhere
+        endwhere
+        where (abs(dyH)>yHacc*yH.and.temp/=yH)
+          lnTT_=(2.0/3.0)*((ss/ss_ion+(1-yH)*(log(1-yH)-lnrho_H) &
+                             +yH*(2*log(yH)-lnrho_e-lnrho_p) &
+                             +xHe_term)/(1+yH+xHe) &
+                            +lnrho-2.5)
+          TT1_=exp(-lnTT_)
+          f=lnrho_e-lnrho+1.5*lnTT_-TT1_+log(1-yH)-2*log(yH)
+          dlnTT_=((2.0/3.0)*(lnrho_H-lnrho_p-f-TT1_)-1)/(1+yH+xHe)
+          df=dlnTT_*(1.5+TT1_)-1/(1-yH)-2/yH
+          where (f<0)
+            yHh=yH
+          elsewhere
+            yHl=yH
+          endwhere
+        elsewhere
+          temp=yH
+        endwhere
+        if (all(temp==yH)) return
+      enddo
+!
+    endsubroutine rtsafe_pencil
 !***********************************************************************
     subroutine rtsafe(variables,variable1,variable2,yHlb,yHub,yH,rterror,rtdebug)
 !
