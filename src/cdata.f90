@@ -1,4 +1,4 @@
-! $Id: cdata.f90,v 1.241 2004-07-05 20:50:10 theine Exp $
+! $Id: cdata.f90,v 1.242 2004-07-05 22:19:49 theine Exp $
 
 module Cdata
 
@@ -34,6 +34,7 @@ module Cdata
   real :: dx,dy,dz,dxmin,dxmax,drcyl,dsurfxy,dsurfyz,dsurfzx,dvol
   real :: dsnap=100.,d2davg=100.,dvid=100.,dtmin=1.e-6,dspec=impossible
   real :: r_int=0.,r_ext=impossible   ! for spherical shell problems
+  real :: r_ref=0.0
   real :: ttransient=0.
   real, dimension (2) :: fran1,fran2
 

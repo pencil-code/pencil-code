@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.172 2004-07-03 02:13:13 theine Exp $
+! $Id: density.f90,v 1.173 2004-07-05 22:19:49 theine Exp $
 
 !  This module is used both for the initial condition and during run time.
 !  It contains dlnrho_dt and init_lnrho, among other auxiliary routines.
@@ -90,7 +90,7 @@ module Density
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: density.f90,v 1.172 2004-07-03 02:13:13 theine Exp $")
+           "$Id: density.f90,v 1.173 2004-07-05 22:19:49 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -273,10 +273,11 @@ module Density
 !ajwm - here's the init call that needs sorting!
 !          call initialize_gravity()     ! get coefficients cpot(1:5)
 
-          call potential(xx,yy,zz,POT=pot,POT0=pot0) ! gravity potential
+          call potential(xx,yy,zz,POT=pot) ! gravity potential
+          call potential(R=r_ref,POT=pot0)
           call output(trim(directory)//'/pot.dat',pot,1)
           !
-          ! rho0, cs0, pot0 are the values in the centre
+          ! rho0, cs0, pot0 are the values at r=r_ref
           !
           if (gamma /= 1) then  ! isentropic
             f(:,:,:,ilnrho) = lnrho0 &
@@ -284,6 +285,14 @@ module Density
           else                  ! isothermal
             f(:,:,:,ilnrho) = lnrho0 - (pot-pot0)/cs20
           endif
+
+          !
+          ! the following sets gravity gg in order to achieve numerical
+          ! exact equilibrium at t=0
+          !
+
+          if (lnumerical_equilibrium) call numerical_equilibrium(f)
+
         endif
 
       case ('isentropic-star')
@@ -742,6 +751,40 @@ module Density
       enddo 
 !      
     endsubroutine shell_lnrho
+!***********************************************************************
+    subroutine numerical_equilibrium(f)
+!
+!  sets gravity gg in order to achieve an numerical exact equilbrium
+!  at t=0. This is only valid for the polytropic case, i.e.
+!
+!    (1/rho) grad(P) = cs20 (rho/rho0)^(gamma-2) grad(rho)
+!
+      use Sub, only: grad
+      use Ionization, only: pressure_gradient,temperature_gradient
+      use Global, only: set_global
+      use IO
+
+      real, dimension (mx,my,mz,mvar+maux) :: f
+      real, dimension (nx) :: lnrho,cs2,cp1tilde
+      real, dimension (nx,3) :: glnrho,gg_tmp
+      real, dimension (nx,3) :: gg_mn
+      integer :: j
+      
+      do m=m1,m2
+      do n=n1,n2
+
+        lnrho=f(l1:l2,m,n,ilnrho)
+        cs2=cs20*exp(gamma1*(lnrho-lnrho0))
+        call grad(f,ilnrho,glnrho)
+        do j=1,3
+          gg_mn(:,j)=cs2*glnrho(:,j)
+        enddo
+        call set_global(gg_mn,m,n,'gg')
+
+      enddo
+      enddo
+
+    endsubroutine numerical_equilibrium
 !***********************************************************************
     subroutine dlnrho_dt(f,df,uu,glnrho,divu,lnrho,shock,gshock)
 !

@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.177 2004-07-03 02:13:14 theine Exp $
+! $Id: hydro.f90,v 1.178 2004-07-05 22:19:50 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,12 +31,18 @@ module Hydro
   character (len=labellen) :: inituu='zero'
   real, dimension(3) :: gradH0=(/0.,0.,0./), uu_const=(/0.,0.,0./)
   complex, dimension(3) :: coefuu=(/0.,0.,0./)
+  real :: kep_cutoff_pos_ext= huge(1.0),kep_cutoff_width_ext=0.0
+  real :: kep_cutoff_pos_int=-huge(1.0),kep_cutoff_width_int=0.0
+  real :: u_out_kep=0.0
 
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right,uu_lower,uu_upper,kx_uu,ky_uu,kz_uu,coefuu, &
        uy_left,uy_right,uu_const, Omega,initpower,cutoff, &
-       nu_turb0, tau_nuturb, nu_turb1
+       nu_turb0, tau_nuturb, nu_turb1, &
+       kep_cutoff_pos_ext,kep_cutoff_width_ext, &
+       kep_cutoff_pos_int,kep_cutoff_width_int, &
+       u_out_kep
 
   ! run parameters
   real :: theta=0.
@@ -119,7 +125,7 @@ module Hydro
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: hydro.f90,v 1.177 2004-07-03 02:13:14 theine Exp $")
+           "$Id: hydro.f90,v 1.178 2004-07-05 22:19:50 theine Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar

@@ -1,4 +1,4 @@
-! $Id: grav_z.f90,v 1.58 2004-06-12 10:25:25 brandenb Exp $
+! $Id: grav_z.f90,v 1.59 2004-07-05 22:19:50 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -35,7 +35,7 @@ module Gravity
   real :: g0=0.,r0_pot=0.
   integer :: n_pot=10   
   character (len=labellen) :: grav_profile='const'
-  logical :: lgravzd = .true.
+  logical :: lgravzd=.true.,lnumerical_equilibrium=.false.
 
   real, parameter :: g_A_cgs=4.4e-9
   real, parameter :: g_C_cgs=1.7e-9
@@ -102,7 +102,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: grav_z.f90,v 1.58 2004-06-12 10:25:25 brandenb Exp $")
+           "$Id: grav_z.f90,v 1.59 2004-07-05 22:19:50 theine Exp $")
 !
       lgrav = .true.
       lgravz = .true.

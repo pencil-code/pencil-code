@@ -1,4 +1,4 @@
-! $Id: grav_r.f90,v 1.65 2004-07-01 16:51:17 mcmillan Exp $
+! $Id: grav_r.f90,v 1.66 2004-07-05 22:19:50 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -39,10 +39,11 @@ module Gravity
   ! variables for compatibility with grav_z (used by Entropy and Density):
   real :: z1,z2,zref,zgrav,gravz,zinfty
   character (len=labellen) :: grav_profile='const'
+  logical :: lnumerical_equilibrium=.false.
 
-  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot
+  namelist /grav_init_pars/ ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
 
-  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot
+  namelist /grav_run_pars/  ipotential,g0,r0_pot,n_pot,lnumerical_equilibrium
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_curlggrms=0,i_curlggmax=0,i_divggrms=0,i_divggmax=0
@@ -67,7 +68,7 @@ module Gravity
 !
 !  identify version number
 !
-      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.65 2004-07-01 16:51:17 mcmillan Exp $")
+      if (lroot) call cvs_id("$Id: grav_r.f90,v 1.66 2004-07-05 22:19:50 theine Exp $")
 !
       lgrav = .true.
       lgravz = .false.
@@ -91,7 +92,7 @@ module Gravity
       use Global
 !
       real, dimension (nx,3) :: gg_mn
-      real, dimension (nx) :: g_r
+      real, dimension (nx) :: g_r,rr_mn
 
       logical, save :: first=.true.
       logical :: lpade=.true. ! set to false for 1/r potential
@@ -167,34 +168,49 @@ module Gravity
 !
 !  initialize gg, so we can later retrieve gravity via get_global
 !
-      do imn=1,ny*nz
+      if (lnumerical_equilibrium) then
 
-        n=nn(imn)
-        m=mm(imn)
-!
-        call calc_unitvects_sphere()
-!
-        if (lpade) then
-
-          g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
-                                  3*(cpot(1)*cpot(5)-cpot(3)), &
-                                  4*cpot(1)*cpot(3), &
-                                  cpot(5)*cpot(2)-cpot(3)*cpot(4), &
-                                  2*cpot(2)*cpot(3), &
-                                  cpot(3)**2  /), r_mn) &
-                       / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
-
-        else
-
-          ! smoothed 1/r potential in a spherical shell
-          g_r=-g0*r_mn**(n_pot-1)*(r_mn**n_pot+r0_pot**n_pot)**(-1.0/n_pot-1.0)
-
+        if (lroot) then
+          print*,'inititialize_gravity: numerical exact equilibrium -- gravity'
+          print*,'                      will be calculated in density module'
         endif
+
+      else
+
+        do n=n1,n2
+        do m=m1,m2
 !
-        gg_mn = evr*spread(g_r,2,3)
-        call set_global(gg_mn,m,n,'gg')
-       enddo
+          rr_mn=sqrt(x(l1:l2)**2+y(m)**2+z(n)**2)+tini
 !
+          if (lpade) then
+
+            g_r = - rr_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
+                                     3*(cpot(1)*cpot(5)-cpot(3)), &
+                                      4*cpot(1)*cpot(3), &
+                                        cpot(5)*cpot(2)-cpot(3)*cpot(4), &
+                                      2*cpot(2)*cpot(3), &
+                                        cpot(3)**2  /), rr_mn) &
+                         / poly( (/ 1., 0., cpot(4), cpot(5), &
+                                            cpot(3) /), rr_mn)**2
+
+          else
+
+            ! smoothed 1/r potential in a spherical shell
+            g_r=-g0*rr_mn**(n_pot-1) &
+                   *(rr_mn**n_pot+r0_pot**n_pot)**(-1./n_pot-1.)
+
+          endif
+!
+          gg_mn(:,1) = x(l1:l2)/rr_mn*g_r
+          gg_mn(:,2) = y(  m  )/rr_mn*g_r
+          gg_mn(:,3) = z(  n  )/rr_mn*g_r
+          call set_global(gg_mn,m,n,'gg')
+
+        enddo
+        enddo
+!
+      endif
+
       endif
 
     endsubroutine initialize_gravity
@@ -228,33 +244,34 @@ module Gravity
 !
       real, dimension (mx,my,mz,mvar+maux) :: f
       real, dimension (mx,my,mz,mvar) :: df
-      real, dimension (nx,3) :: gg_mn,uu
+      real, dimension (nx,3) :: gg_mn
+      real, dimension (nx,3) :: uu
       real, dimension (nx) :: g_r,rho1
 !
 !  evr is the radial unit vector
 !
-if (.false.) then               ! switch between the two methods for timing
+!if (.false.) then               ! switch between the two methods for timing
 !if (.true.) then               ! switch between the two methods for timing
 !
-       g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
-                              3*(cpot(1)*cpot(5)-cpot(3)), &
-                              4*cpot(1)*cpot(3), &
-                              cpot(5)*cpot(2)-cpot(3)*cpot(4), &
-                              2*cpot(2)*cpot(3), &
-                              cpot(3)**2  /), r_mn) &
-                   / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
+!       g_r = - r_mn * poly( (/ 2*(cpot(1)*cpot(4)-cpot(2)), &
+!                              3*(cpot(1)*cpot(5)-cpot(3)), &
+!                              4*cpot(1)*cpot(3), &
+!                              cpot(5)*cpot(2)-cpot(3)*cpot(4), &
+!                              2*cpot(2)*cpot(3), &
+!                              cpot(3)**2  /), r_mn) &
+!                   / poly( (/ 1., 0., cpot(4), cpot(5), cpot(3) /), r_mn)**2
 !      g_r = - r_mn**2 * poly( (/ 3., 0., 1. /), r_mn) &
 !                   / poly( (/ 1., 0., 1., 1. /), r_mn)**2
 !
 ! dgm: radial unit vector evr now calculated in subroutine 
 ! calc_unitvects_sphere()
 !
-      gg_mn = evr*spread(g_r,2,3)
-      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
-else
+!      gg_mn = evr*spread(g_r,2,3)
+!      df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
+!else
       call get_global(gg_mn,m,n,'gg')
       df(l1:l2,m,n,iux:iuz) = df(l1:l2,m,n,iux:iuz) + gg_mn
-endif
+!endif
 !
 ! if (headtt) call output_pencil(trim(datadir)//'/proc0/gg0.dat',gg_mn,3)
 !
@@ -269,11 +286,13 @@ endif
 !
 !  16-jul-02/wolf: coded
 !
-      use Cdata, only: mx,my,mz
+      use Cdata, only: mx,my,mz,dx
       use Sub, only: poly
 
-      real, dimension (mx,my,mz) :: xx,yy,zz, rr, pot
+      real, dimension (mx,my,mz) :: xx,yy,zz, pot
       real, optional :: pot0           ! potential ar r=0
+
+      real, dimension (mx,my,mz) :: rr
 !
 !  remove this if you are sure rr is already calculated elsewhere      
 !
@@ -283,7 +302,7 @@ endif
 
       case ('geo-kws','smoothed-newton')
         pot=-g0*(rr**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=-1.0/r0_pot
+        if (present(pot0)) pot0=-g0/r0_pot
 
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rr) &
@@ -300,7 +319,7 @@ endif
 !
 !  21-jan-02/wolf: coded
 !
-      use Cdata, only: nx
+      use Cdata, only: nx,dx
       use Sub, only: poly
       use Mpicomm, only: stop_it
 
@@ -323,7 +342,7 @@ endif
 
       case ('geo-kws','smoothed-newton')
         pot=-g0*(rmn**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=-1.0/r0_pot
+        if (present(pot0)) pot0=-g0/r0_pot
 
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rmn) &
@@ -332,7 +351,8 @@ endif
 
       endselect
 
-      if(ip==0) print*,present(grav)
+      if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
+                                      "not implemented")
 
     endsubroutine potential_penc
 !***********************************************************************
@@ -342,6 +362,7 @@ endif
 !
 !  20-dec-03/wolf: coded
 !
+      use Cdata, only: dx
       use Sub, only: poly
       use Mpicomm, only: stop_it
 
@@ -363,7 +384,7 @@ endif
 
       case ('geo-kws','smoothed-newton')
         pot=-g0*(rad**n_pot+r0_pot**n_pot)**(-1.0/n_pot)
-        if (present(pot0)) pot0=-1.0/r0_pot
+        if (present(pot0)) pot0=-g0/r0_pot
 
       case default
         pot = - poly((/cpot(1), 0., cpot(2), cpot(3)/), rad) &
@@ -372,7 +393,8 @@ endif
 
       endselect
 
-      if(ip==0) print*,present(grav)
+      if (present(grav)) call stop_it("POTENTIAL_PENC: Argument grav"//&
+                                      "not implemented")
 
     endsubroutine potential_point
 !***********************************************************************

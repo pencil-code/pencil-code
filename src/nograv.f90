@@ -1,4 +1,4 @@
-! $Id: nograv.f90,v 1.36 2004-06-11 17:19:11 mcmillan Exp $
+! $Id: nograv.f90,v 1.37 2004-07-05 22:19:50 theine Exp $
 
 !** AUTOMATIC CPARAM.INC GENERATION ****************************
 ! Declare (for generation of cparam.inc) the number of f array
@@ -31,6 +31,7 @@ module Gravity
   real :: g0=0.,r0_pot=0.
   integer :: n_pot=10
   character (len=labellen) :: grav_profile='const'  !(used by Density)
+  logical :: lnumerical_equilibrium=.false.
 
   integer :: dummy              ! We cannot define empty namelists
   namelist /grav_init_pars/ dummy
@@ -61,7 +62,7 @@ module Gravity
 !  identify version number (generated automatically by CVS)
 !
       if (lroot) call cvs_id( &
-           "$Id: nograv.f90,v 1.36 2004-06-11 17:19:11 mcmillan Exp $")
+           "$Id: nograv.f90,v 1.37 2004-07-05 22:19:50 theine Exp $")
 !
       lgrav = .false.
       lgravz = .false.
