@@ -1,4 +1,4 @@
-! $Id: hydro.f90,v 1.29 2002-06-24 17:45:28 brandenb Exp $
+! $Id: hydro.f90,v 1.30 2002-06-25 12:25:52 dobler Exp $
 
 module Hydro
 
@@ -9,9 +9,10 @@ module Hydro
   implicit none
 
   ! init parameters
-  integer :: init=-1,inituu=0
   real :: ampluu=0., widthuu=.1, urand=0.
   real :: uu_left=1.,uu_right=1.
+  character (len=labellen) :: inituu='zero'
+
   namelist /hydro_init_pars/ &
        ampluu,inituu,widthuu,urand, &
        uu_left,uu_right
@@ -65,8 +66,8 @@ module Hydro
 !
       if (lroot) call cvs_id( &
            "$RCSfile: hydro.f90,v $", &
-           "$Revision: 1.29 $", &
-           "$Date: 2002-06-24 17:45:28 $")
+           "$Revision: 1.30 $", &
+           "$Date: 2002-06-25 12:25:52 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -95,30 +96,29 @@ module Hydro
       cs20=cs0**2
 !
 !  inituu corresponds to different initializations of uu (called from start).
-!  If init does't match, f=0 is assumed (default).
 !
 
       select case(inituu)
 
-      case(0)
+      case('zero', '0')
         if (lroot) print*,'zero velocity'
         f(:,:,:,iux)=0.
 
-      case(1)               ! random ux (Gaussian distribution)
+      case('random-normal', '1') ! random ux (Gaussian distribution)
         if (lroot) print*,'Gaussian-distributed ux'
         call random_number(r)
         call random_number(p)
         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
         f(:,:,:,iux)=ampluu*tmp
 
-      case(11)
+      case('sound-wave', '11')
         !
         !  sound wave (should be consistent with density module)
         !
         print*,'x-wave in uu; ampluu=',ampluu
         f(:,:,:,iux)=ampluu*sin(xx)
 
-      case(13)
+      case('shock-tube', '13')
         !
         !  shock tube test (should be consistent with density module)
         !
@@ -130,49 +130,49 @@ module Hydro
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'There is no such such value for inituu:', inituu
+        if (lroot) print*, 'No such such value for inituu: ', trim(inituu)
         call stop_it("")
 
       endselect
 
 !
-!  init corresponds to different initializations of lnrho (called from start).
-!  If init does't match, f=0 is assumed (default).
+!  This stuff is obsolete; should be incorporated into the new scheme or
+!  removed
 !
-      select case(init)
+!       select case(init)
 
-      case (-1)
-        if (lroot) print*,'Doing nothing with init -- do we need it at all?'
+!       case (-1)
+!         if (lroot) print*,'Doing nothing with init -- do we need it at all?'
 
-      case(0)               ! random ux (Gaussian distribution)
-        if (lroot) print*,'Gaussian-distributed ux'
-        call random_number(r)
-        call random_number(p)
-        tmp=sqrt(-2*alog(r))*sin(2*pi*p)
-        f(:,:,:,iux)=ampluu*tmp
+!       case(0)               ! random ux (Gaussian distribution)
+!         if (lroot) print*,'Gaussian-distributed ux'
+!         call random_number(r)
+!         call random_number(p)
+!         tmp=sqrt(-2*alog(r))*sin(2*pi*p)
+!         f(:,:,:,iux)=ampluu*tmp
 
-      case(2)               ! oblique sound wave
-        if (lroot) print*,'oblique sound wave'
-        tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
-        f(:,:,:,ilnrho)=ampluu*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
-        f(:,:,:,iux)=ampluu*cos(tmp)
-        f(:,:,:,iuy)=ampluu*cos(tmp)*2.
-        f(:,:,:,iuz)=ampluu*cos(tmp)*(-1)
+!       case(2)               ! oblique sound wave
+!         if (lroot) print*,'oblique sound wave'
+!         tmp = 2*pi*(xx/Lx+2*yy/Ly-zz/Lz)    ! phase
+!         f(:,:,:,ilnrho)=ampluu*cos(tmp)*sqrt(1.**2+2.**2+1.**2)/sqrt(gamma)
+!         f(:,:,:,iux)=ampluu*cos(tmp)
+!         f(:,:,:,iuy)=ampluu*cos(tmp)*2.
+!         f(:,:,:,iuz)=ampluu*cos(tmp)*(-1)
 
-      case(3)               ! uu = (sin 2x, sin 3y , cos z)
-        if (lroot) print*,'uu harmonic (what is this good for?)'
-        f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
-                     spread(spread(sin(3*y),1,mx),3,mz)* &
-                     spread(spread(cos(1*z),1,mx),2,my)
+!       case(3)               ! uu = (sin 2x, sin 3y , cos z)
+!         if (lroot) print*,'uu harmonic (what is this good for?)'
+!         f(:,:,:,iux)=spread(spread(sin(2*x),2,my),3,mz)* &
+!                      spread(spread(sin(3*y),1,mx),3,mz)* &
+!                      spread(spread(cos(1*z),1,mx),2,my)
 
-      case default
-        !
-        !  Catch unknown values
-        !
-        if (lroot) print*,'There is no such value for init:', init
-        call stop_it("")
+!       case default
+!         !
+!         !  Catch unknown values
+!         !
+!         if (lroot) print*,'There is no such value for init:', init
+!         call stop_it("")
 
-      endselect
+!       endselect
 !
       if (urand /= 0) then
         if (lroot) print*, 'Adding random uu fluctuations'

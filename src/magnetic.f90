@@ -1,4 +1,4 @@
-! $Id: magnetic.f90,v 1.54 2002-06-24 17:45:29 brandenb Exp $
+! $Id: magnetic.f90,v 1.55 2002-06-25 12:25:52 dobler Exp $
 
 !  This modules deals with all aspects of magnetic fields; if no
 !  magnetic fields are invoked, a corresponding replacement dummy
@@ -11,7 +11,7 @@ module Magnetic
 
   implicit none
 
-  integer :: initaa=0
+  character(len=labellen) :: initaa='zero'
 
   ! input parameters
   real, dimension(3) :: axisr1=(/0,0,1/),dispr1=(/0.,0.5,0./)
@@ -80,8 +80,8 @@ module Magnetic
 !
       if (lroot) call cvs_id( &
            "$RCSfile: magnetic.f90,v $", &
-           "$Revision: 1.54 $", &
-           "$Date: 2002-06-24 17:45:29 $")
+           "$Revision: 1.55 $", &
+           "$Date: 2002-06-25 12:25:52 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -116,55 +116,61 @@ module Magnetic
 !
       select case(initaa)
 
-      case(0)
+      case('zero', '0')
+        !
+        !  Gaussian noise
+        !
+        f(:,:,:,iax:iaz) = 0.
+
+      case('gaussian-noise', '10')
         !
         !  Gaussian noise
         !
         call gaunoise(amplaa,f,iax,iaz)
 
-      case(1)
+      case('beltrami-z', '1')
         !
         !  Beltrami field
         !
         call beltrami(amplaa,f,iaa)
 
-      case(11)
+      case('beltrami-x', '11')
         !
         !  One more Beltrami field
         !
         call beltrami_x(amplaa,f,iaa)
 
-      case(12)
+      case('beltrami-y', '12')
         !
         !  Yet another Beltrami field
         !
         call beltrami_y(amplaa,f,iaa)
 
-      case(2)
+      case('hor-fluxtube', '2')
         !
         !  Horizontal flux tube
         !
         call htube(amplaa,f,iaa,xx,yy,zz,radius,epsilonaa)
 
-      case(22)
+      case('hor-fluxlayer', '22')
         !
         !  Horizontal flux layer
         !
         call hlayer(amplaa,f,iaa,xx,yy,zz,widthaa)
 
-      case(23)
+      case('uniform-Bx', '23')
         !
         !  Horizontal flux layer
         !
         call uniform_x(amplaa,f,iaa,xx,yy,zz)
 
-      case(3)
+      case('Bz(x)', '3')
         !
         !  Vertical field, Bz=coskx
         !
         call vfield(amplaa,f,iaa,xx)
 
-      case(4)
+      case('fluxrings', '4')
         !
         !  Magnetic flux rings. Constructed from a canonical ring which is the
         !  rotated and translated:
@@ -216,7 +222,7 @@ module Magnetic
         endif
         if (lroot) print*, 'Magnetic flux rings initialized'
 
-      case(5)
+      case('crazy', '5')
         !
         !  some other (crazy) initial condition
         !  (was useful to initialize all points with finite values)
@@ -236,7 +242,7 @@ module Magnetic
         !
         !  Catch unknown values
         !
-        if (lroot) print*, 'There is no such such value for initaa:', initaa
+        if (lroot) print*, 'No such such value for initaa: ', trim(initaa)
         call stop_it("")
 
       endselect

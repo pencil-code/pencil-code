@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.75 2002-06-24 18:04:22 dobler Exp $
+! $Id: entropy.f90,v 1.76 2002-06-25 12:25:52 dobler Exp $
 
 module Entropy
 
@@ -11,7 +11,7 @@ module Entropy
   real, dimension (nx) :: cs2,TT1
   real :: radius_ss=0.1,ampl_ss=0.
   real :: chi_t=0.,ss0=0.,khor_ss=1.
-  integer :: initss=0,pertss=0
+  character (len=labellen) :: initss='zero',pertss='zero'
 
   ! input parameters
   namelist /entropy_init_pars/ &
@@ -61,8 +61,8 @@ module Entropy
 !
       if (lroot) call cvs_id( &
            "$RCSfile: entropy.f90,v $", &
-           "$Revision: 1.75 $", &
-           "$Date: 2002-06-24 18:04:22 $")
+           "$Revision: 1.76 $", &
+           "$Date: 2002-06-25 12:25:52 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -92,10 +92,10 @@ module Entropy
 
         select case(initss)
 
-        case(0)
+        case('zero', '0')
           f(:,:,:,ient) = 0.
 
-        case(1)
+        case('isentropic', '1')
           !
           !  ss = const.
           !
@@ -110,14 +110,14 @@ module Entropy
             !f(:,:,:,ient)=f(:,:,:,ient)+ampl_ss*exp(-tmp/radius_ss**2)
           endif
 
-        case(2)
+        case('linprof', '2')
           !
           !  linear profile of ss, centered around ss=0.
           !
           if (lroot) print*,'linear entropy profile'
           f(:,:,:,ient) = grads0*zz
 
-        case(4)
+        case('piecew-poly', '4')
           !
           !  piecewise polytropic convection setup
           !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -145,7 +145,7 @@ module Entropy
           ! stable layer
           call polytropic_ss_z(f,mpoly1,zz,tmp,z1,z0,z1,0,cs2int,ssint)
 
-        case(5)
+        case('polytropic', '5')
           !
           !  polytropic stratification
           !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -164,7 +164,7 @@ module Entropy
           !
           !  Catch unknown values
           !
-          if (lroot) print*,'No such value for initss:', initss
+          if (lroot) print*,'No such value for initss: ', trim(initss)
           call stop_it("")
 
         endselect
@@ -180,10 +180,10 @@ module Entropy
 !
       select case (pertss)
 
-      case(0)
+      case('zero', '0')
         ! Don't perturb
 
-      case (1)
+      case ('hexagonal', '1')
         !
         !  hexagonal perturbation
         !

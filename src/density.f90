@@ -1,4 +1,4 @@
-! $Id: density.f90,v 1.15 2002-06-24 17:45:28 brandenb Exp $
+! $Id: density.f90,v 1.16 2002-06-25 12:25:52 dobler Exp $
 
 module Density
 
@@ -7,10 +7,10 @@ module Density
 
   implicit none
 
-  integer :: initlnrho=0
   real :: cs0=1., rho0=1., ampllnrho=1., gamma=5./3., widthlnrho=.1, &
           rho_left=1., rho_right=1., cdiffrho=0., &
           cs20,cs2bot,cs2top,gamma1,zinfty,lnrho0
+  character (len=labellen) :: initlnrho='zero'
 
   namelist /density_init_pars/ &
        cs0,rho0,ampllnrho,gamma,initlnrho,widthlnrho, &
@@ -54,8 +54,8 @@ module Density
 !
       if (lroot) call cvs_id( &
            "$RCSfile: density.f90,v $", &
-           "$Revision: 1.15 $", &
-           "$Date: 2002-06-24 17:45:28 $")
+           "$Revision: 1.16 $", &
+           "$Date: 2002-06-25 12:25:52 $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -70,6 +70,7 @@ module Density
 !
 !  7-nov-2001/wolf: coded
 !
+      use Mpicomm
       use Sub
       use Global
       use Gravity
@@ -84,14 +85,14 @@ module Density
 !
       select case(initlnrho)
 
-      case(0)
+      case('zero', '0')
         !
         !  rho=0
         !
         if (lroot) print*,'uniform lnrho'
         f(:,:,:,ilnrho)=0.
 
-      case(1)
+      case('hydrostatic-z', '1')
         !
         !  hydrostatic for T=const or polytropic atmosphere
         !
@@ -112,7 +113,7 @@ module Density
           f(:,:,n1:n2,ilnrho)=alog(1.-zz(:,:,n1:n2)/zinfty)/gamma1
         endif
 
-      case(2)
+      case('rho-jump', '2')
         !
         !  density jump (for shocks?)
         !
@@ -121,7 +122,7 @@ module Density
         prof=.5*(1.+tanh(zz/widthlnrho))
         f(:,:,:,ilnrho)=alog(rho_left)+alog(rho_left/rho_right)*prof
 
-      case (3)
+      case ('hydrostatic-z-2', '3')
         !
         !  hydrostatic density stratification for isentropic atmosphere
         !
@@ -158,7 +159,7 @@ module Density
           endif
         endif
 
-      case (4)
+      case ('piecew-poly', '4')
         !
         !  piecewise polytropic for solar convection stuff
         !
@@ -184,7 +185,7 @@ module Density
           cs2top = cs20 + gamma/gamma1*gravz/(mpoly0+1)*(z(n2)-zref)
         endif
 
-      case (5)
+      case ('polytropic', '5')
         !
         !  polytropic stratification
         !  cs0, rho0 and ss0=0 refer to height z=zref
@@ -204,14 +205,14 @@ module Density
         cs2bot = cs20 + gamma*gravz/(mpoly0+1)*(z(n1)-zref)
         cs2top = cs20 + gamma*gravz/(mpoly0+1)*(z(n2)-zref)
 
-      case(11)
+      case('sound-wave', '11')
         !
         !  sound wave (should be consistent with hydro module)
         !
         if (lroot) print*,'x-wave in lnrho; ampllnrho=',ampllnrho
         f(:,:,:,ilnrho)=ampllnrho*sin(xx)
 
-      case(13)
+      case('shock-tube', '13')
         !
         !  shock tube test (should be consistent with hydro module)
         !  
@@ -221,9 +222,11 @@ module Density
 
       case default
         !
-        !  set default
+        !  Catch unknown values
         !
-        if (lroot) print*,'Default: initializing lnrho to zero'
+        if (lroot) print*,'No such value for initlnrho: ', trim(initlnrho)
+        call stop_it("")
+
       endselect
 !
       if(ip==0) print*,prof,yy  ! keep compiler quiet

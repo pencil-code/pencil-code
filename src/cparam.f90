@@ -1,4 +1,4 @@
-! $Id: cparam.f90,v 1.18 2002-06-04 11:08:37 brandenb Exp $
+! $Id: cparam.f90,v 1.19 2002-06-25 12:25:52 dobler Exp $
 
 module Cparam
 
@@ -18,7 +18,7 @@ module Cparam
 !
 !  derived and fixed parameters
 !
-  integer, parameter :: nghost=3,bclen=3
+  integer, parameter :: nghost=3
   integer, parameter :: nx=nxgrid,ny=nygrid/nprocy,nz=nzgrid/nprocz,nw=nx*ny*nz
   integer, parameter :: mx=nx+2*nghost,l1=1+nghost,l2=mx-nghost
   integer, parameter :: my=ny+2*nghost,m1=1+nghost,m2=my-nghost
@@ -36,6 +36,9 @@ module Cparam
   integer, parameter :: mreduce=6
   integer :: ip=14
 !
+!  length of strings for boundary conditions and lables a la initss, initaa 
+!
+  integer, parameter :: bclen=3,labellen=15
 
 endmodule Cparam
 

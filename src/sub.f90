@@ -1,4 +1,4 @@
-! $Id: sub.f90,v 1.64 2002-06-24 17:45:29 brandenb Exp $ 
+! $Id: sub.f90,v 1.65 2002-06-25 12:25:52 dobler Exp $ 
 
 module Sub 
 
@@ -1466,7 +1466,7 @@ module Sub
 !***********************************************************************
     subroutine beltrami_x(ampl,f,i)
 !
-!  Write x-dependent Beltrami field as initial condition
+!  x-dependent Beltrami field as initial condition
 !
 !  19-jun-02/axel: coded
 !
@@ -1492,7 +1492,7 @@ module Sub
 !***********************************************************************
     subroutine beltrami_y(ampl,f,i)
 !
-!  Write x-dependent Beltrami field as initial condition
+!  x-dependent Beltrami field as initial condition
 !
 !  19-jun-02/axel: coded
 !
@@ -1518,7 +1518,7 @@ module Sub
 !***********************************************************************
     subroutine beltrami(ampl,f,i)
 !
-!  Write Beltrami field as initial condition
+!  z-dependent Beltrami field as initial condition
 !
 !  26-may-02/axel: coded
 !
@@ -1555,8 +1555,6 @@ module Sub
       real, dimension (mx,my,mz) :: tmp,xx,yy,zz,modulate
       real :: ampl,radius,epsilon_nonaxi,ky
 !
-!  set horizontal flux tubes
-!
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
@@ -1577,7 +1575,7 @@ module Sub
 !***********************************************************************
     subroutine hlayer(ampl,f,i,xx,yy,zz,width)
 !
-!  Horizontal flux tube (for vector potential)
+!  Horizontal flux layer (for vector potential)
 !
 !  19-jun-02/axel: coded
 !
@@ -1587,8 +1585,6 @@ module Sub
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl,width
-!
-!  set horizontal flux tubes
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
@@ -1606,7 +1602,7 @@ module Sub
 !***********************************************************************
     subroutine uniform_x(ampl,f,i,xx,yy,zz)
 !
-!  Horizontal flux tube (for vector potential)
+!  Uniform B_x field (for vector potential)
 !
 !  19-jun-02/axel: coded
 !
@@ -1617,14 +1613,12 @@ module Sub
       real, dimension (mx,my,mz) :: xx,yy,zz
       real :: ampl
 !
-!  set horizontal flux tubes
-!
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
         if (lroot) print*,'set variable to zero; i=',i
       else
-        print*,'horizontal flux layer; i=',i
-        if ((ip<=16).and.lroot) print*,'ampl,width=',ampl
+        print*,'uniform x-field ; i=',i
+        if ((ip<=16).and.lroot) print*,'ampl=',ampl
         f(:,:,:,i  )=0.
         f(:,:,:,i+1)=-ampl*zz
         f(:,:,:,i+2)=0.
@@ -1645,8 +1639,6 @@ module Sub
       real, dimension (mx,my,mz,mvar) :: f
       real, dimension (mx,my,mz) :: xx
       real :: ampl,kx
-!
-!  set horizontal flux tubes
 !
       if (ampl==0) then
         f(:,:,:,i:i+2)=0
