@@ -1,0 +1,31 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Initialisation parameters
+!
+&init_pars
+  cvsid='$Id: start.in,v 1.1 2002-07-22 10:10:48 dobler Exp $',
+  ip=14,                        ! debugging parameter
+  xyz0  = -2., -2.,  0.,        ! first corner of box
+  Lxyz  =  4.,  4.,  1.,        ! box size
+  lperi =  T ,  T ,  F,         ! periodic direction?
+/
+&hydro_init_pars
+!  inituu='up-down',
+  inituu='zero',
+  ampluu=1.e-1
+  widthuu=0.1
+  urand=0.1,
+/
+&density_init_pars
+  initlnrho='polytropic'
+  cs0=2., rho0=1.,
+/
+&grav_init_pars
+  gravz=-1.,
+  z1=0.5,                       ! may be used for initial perturbation
+/
+&entropy_init_pars
+  initss='polytropic'
+  mpoly0=1.,
+
+/

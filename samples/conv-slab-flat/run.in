@@ -1,0 +1,26 @@
+!                           -*-f90-*-     (for Emacs)
+!
+!  Run parameters
+!
+&run_pars
+  cvsid='$Id: run.in,v 1.1 2002-07-22 10:10:48 dobler Exp $',
+  nt=5000, it1=100, dsnap=200
+  cdt=0.4, cdtv=0.2, dtmin=1e-6,
+  dsnap=20., dvid=0.2,
+  bcx = 'p','p','p', 'p',    'p'
+  bcy = 'p','p','p', 'p',    'p'
+  bcz = 's','s','a','a2','c1:c2'
+/
+&hydro_run_pars
+  nu=2e-3, ivisc='simplified'
+!  Omega=0.1 ! angular velocity
+  theta=0.  ! direction of angular velocity vector (0 : vertical)
+/
+&density_run_pars
+/
+&grav_run_pars
+  gravz=-1.
+/
+&entropy_run_pars
+  hcond0=2.e-3
+/
