@@ -1,4 +1,4 @@
-! $Id: entropy.f90,v 1.293 2004-03-30 05:35:38 brandenb Exp $
+! $Id: entropy.f90,v 1.294 2004-04-01 14:27:23 ajohan Exp $
 
 !  This module takes care of entropy (initial condition
 !  and time advance)
@@ -42,7 +42,7 @@ module Entropy
   real :: Ftop=impossible,FtopKtop=impossible,Ktop=impossible
   real :: tau_cor=0.,TT_cor=0.,z_cor=0.
   real :: tauheat_buffer=0.,TTheat_buffer=0.,zheat_buffer=0.,dheat_buffer1=0.
-  real :: heat_uniform=0.,nu_turb=0.
+  real :: heat_uniform=0.,nu_turb=0.,nu_turb0=0.,tau_nuturb=0.
   logical :: lshear_heat=.false.
   logical :: lcalc_heatcond_simple=.false.,lmultilayer=.true.
   logical :: lcalc_heatcond=.false.,lcalc_heatcond_constchi=.false.
@@ -57,7 +57,7 @@ module Entropy
        ss_left,ss_right,ss_const,mpoly0,mpoly1,mpoly2,isothtop, &
        khor_ss,thermal_background,thermal_peak,thermal_scaling,cs2cool, &
        center1_x, center1_y, center1_z, center2_x, center2_y, center2_z, &
-       T0, kx_ss, nu_turb
+       T0, kx_ss, nu_turb0, tau_nuturb
      
   ! run parameters
   namelist /entropy_run_pars/ &
@@ -68,7 +68,7 @@ module Entropy
        tau_ss_exterior,lmultilayer,Kbot,tau_cor,TT_cor,z_cor, &
        tauheat_buffer,TTheat_buffer,zheat_buffer,dheat_buffer1, &
        heat_uniform,lupw_ss,lcalc_cp,cool_int,cool_ext, &
-       lshear_heat, nu_turb
+       lshear_heat, nu_turb0, tau_nuturb
 
   ! other variables (needs to be consistent with reset list below)
   integer :: i_dtc=0,i_eth=0,i_ethdivum=0,i_ssm=0,i_ugradpm=0, i_ethtot=0
@@ -107,7 +107,7 @@ module Entropy
 !  identify version number
 !
       if (lroot) call cvs_id( &
-           "$Id: entropy.f90,v 1.293 2004-03-30 05:35:38 brandenb Exp $")
+           "$Id: entropy.f90,v 1.294 2004-04-01 14:27:23 ajohan Exp $")
 !
       if (nvar > mvar) then
         if (lroot) write(0,*) 'nvar = ', nvar, ', mvar = ', mvar
@@ -1651,6 +1651,8 @@ endif
 !  Parametrized turbulent heating
 !
       if(lshear_heat) then
+        if (tau_nuturb /= 0. .and. lfirstpoint .and. itsub == 1) &
+            nu_turb = nu_turb0*exp(-t/tau_nuturb)
         df(l1:l2,m,n,iss) = df(l1:l2,m,n,iss) + TT1*nu_turb*(qshear*Omega)**2
       endif
 !
