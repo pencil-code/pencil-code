@@ -17,8 +17,8 @@ exec $perl -x -S $0 "$@"     # -x: start from the following line
 #
 # Name:   pencil-test
 # Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-# $Date: 2002-12-06 14:17:34 $
-# $Revision: 1.4 $
+# $Date: 2003-01-03 10:25:23 $
+# $Revision: 1.5 $
 # Description:
 #   Run the pencil code's auto-test on some remote host(s) and wrap
 #   results in HTML if required. Can be used from crontab.
@@ -65,9 +65,10 @@ END_HEAD
 my $first = 1;
 foreach my $host (@ARGV) {
     # Identify host
+    my ($shost) = ($host =~ /([^.]*)/); # host name sans domain
     if ($html) {
 	unless ($first) { print "</pre>\n<p>\n<hr>\n<p>\n" };
-	print "<h2>$host:</h2>\n\n<pre>\n";
+	print "<h2>$shost:</h2>\n\n<pre>\n";
     } else {
 	unless ($first) { print "\n\n" };
 	print "  $host:\n================\n";
