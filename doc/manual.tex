@@ -4,7 +4,7 @@
 %%
 %%  Date:   06-Mar-2002
 %%  Author: wd (Wolfgang.Dobler@kis.uni-freiburg.de)
-%%  CVS: $Id: manual.tex,v 1.132 2002-10-16 13:59:22 brandenb Exp $
+%%  CVS: $Id: manual.tex,v 1.133 2002-10-20 08:15:12 brandenb Exp $
 %%  Description:
 %     User manual for the Pencil Code 
 %   Process with:
@@ -317,7 +317,7 @@
 %\title{{\sffamily\bfseries Installing and Using the High-Order Pencil MPI code}}
 %\subtitle{A very preliminary manual}
 \author{Wolfgang Dobler \& Axel Brandenburg}
-\date{\today,~ $ $Revision: 1.132 $ $}
+\date{\today,~ $ $Revision: 1.133 $ $}
 
 % ====================================================================== %
 
@@ -350,7 +350,7 @@
 
   \vspace{\stretch{1}}
 
-  \emph{\today,~ $ $Revision: 1.132 $ $}
+  \emph{\today,~ $ $Revision: 1.133 $ $}
 
   \vspace{\stretch{3}}
 
@@ -3068,6 +3068,40 @@ The limit of vanishing stratification corresponds to
 $c_{\rm s0}\rightarrow\infty$. This seems optimal if we want
 to approach the Boussinesq case.
 
+In Hurlburt et al.\ (1984), $z$ increased downward and the atmosphere
+always terminated at $z=0$. In order to reproduce their case most
+directly, we put $z_\infty=0$ and consider only negative values of $z$.
+To reproduce their chase with a density stratification of 1:1.5, we place
+the top of the model at $z=-2$ and the bottom at $z=-3$. In addition,
+the reference height, $z_{\rm ref}$, is chosen to be at the top of the
+box, i.e.\ $z_{\rm ref}=-2$. From Eq.~(\ref{zinfty}) we have
+$c_{\rm s0}^2=\gamma(-g_z)(-z_{\rm ref})/(m+1)$. Using $(-g_z)=1$
+and $m=1$ we find $c_{\rm s0}^2=\gamma$, so $c_{\rm s0}=1.291$
+(for $\gamma=5/3$). Values for other combinations are listed in
+Table~\ref{Tdensitycontrast}.
+
+\begin{table}[htb]
+  \begin{center}
+    \caption{
+      Correspondence between density contrast, top and bottom values
+      of $z$, and $c_{\rm s0}$ for $(-g_z)=1$, $m=1$, and $\gamma=5/3$.
+    }
+    \label{Tdensitycontrast}
+    \begin{tabular}{cccc}
+    \toprule
+$\varrho_{\rm bot}/\varrho_{\rm top}$ &
+$z_{\rm bot}$ & $z_{\rm top}$ & $c_{\rm s0}$ \\
+    \midrule
+ 1.5  & 3    & 2    & 1.291 \\
+ 3    & 1.5  & 0.5  & 0.645 \\
+ 6    & 1.2  & 0.2  & 0.408 \\
+ 11   & 1.1  & 0.1  & 0.289 \\
+ 21   & 1.05 & 0.05 & 0.204 \\
+    \bottomrule
+    \end{tabular}
+  \end{center}
+\end{table}
+
 \subsubsection{The Rayleigh number}
 
 Brandenburg et al.\ (1996) defined the Rayleigh number as
@@ -3098,8 +3132,17 @@ $[(z_{\infty}-z_{\rm m})/d]^2$. Therefore
   \Ra_{\rm HTM}=\left({z_{\infty}-z_{\rm m}\over d}\right)^{2m}
   \left({\rho_{\rm top}\over\overline\rho}\right)^2\Ra
 \end{equation}
+In the first model of Hurlburt et al.\ (1984), the Rayleigh
+number, $\Ra_{\rm HTM}$, was chosen to be 310 times supercritical,
+and the critical Rayleigh number was around 400, so
+$\Ra_{\rm HTM}=1.25\times10^5$. In their model the density contrast
+was 1:1.5 and $m=1$. This turns out to correspond to $\Ra=4.9\times10^4$,
+$F_{\rm bot}=0.0025$, and $K=0.002$.
 
-%\subsubsection{Relation to the setup of Hurlburt \& Toomre}
+Another model that was considered by Hurlburt \& Toomre (1988) had
+$\Ra_{\rm HTM}=10^5$, a density contrast of 11, and had a vertical imposed
+magnetic field (Chandrasekhar number $Q=72$). This corresponds to
+$\Ra=3.6\times10^8$, $K=0.0011$, $F_{\rm bot}=0.0014$.
 
 \subsubsection{Entropy boundary condition}
 
@@ -4353,7 +4396,7 @@ of isotropic helical hydromagnetic turbulence''
 
 
 \ \vfill\bigskip\noindent{\footnotesize\it
-$ $Id: manual.tex,v 1.132 2002-10-16 13:59:22 brandenb Exp $ $}
+$ $Id: manual.tex,v 1.133 2002-10-20 08:15:12 brandenb Exp $ $}
 
 
 \end{document}
